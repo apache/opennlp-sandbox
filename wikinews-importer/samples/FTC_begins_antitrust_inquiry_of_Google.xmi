@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xmi:XMI xmlns:cas="http:///uima/cas.ecore" xmlns:annotations="http:///org/apache/opennlp/annotations.ecore" xmlns:xmi="http://www.omg.org/XMI" xmlns:tcas="http:///uima/tcas.ecore" xmi:version="2.0">
+    <cas:NULL xmi:id="0"/>
+    <cas:Sofa xmi:id="1" sofaNum="1" sofaID="_InitialView" mimeType="text" sofaString="FTC begins antitrust inquiry of Google&#10;&#10;Google has confirmed that it has &quot;received formal notification,&quot; that the&#10;Federal Trade Commission (FTC) is investigating its business practices.&#10;The acknowledgment was posted on the internet search engine company's blog&#10;Friday. Google said it was unclear about the nature of the probe.&#10;&#10;A broad FTC investigation would cause the company be tied up in defending&#10;itself for years, and according to Bloomberg, might well be the government’s &#10;biggest antitrust case since the Microsoft probe.&#10;&#10;The FTC will likely launch an anti-trust investigation, as the company has &#10;been the target of many past smaller ones, according to CNN.&#10;&#10;Mercury News reported Friday morning that the FTC review will probably focus&#10;on whether Google is using its dominance in the internet search business to&#10;promote its own products and services. Google's rivals say Google unfairly&#10;profits from its monopoly in the search engine business by using its search&#10;services to point users of its internet search engine to its own sites and&#10;services while hiding links to its competitors.&#10;&#10;The FCC probe is expected to determine if Google abuses it market dominance&#10;to promote moneymaking online marketing, such as its mapping, comparison&#10;shopping and travel services. According to CNN, &quot;Google dominates search&#10;in the United States, controlling about two-thirds of the market, according&#10;to comScore. It also licenses the world's largest smartphone operating system,&#10;and its share of U.S. display advertising revenue recently eclipsed&#10;long-time leader Yahoo.&quot;&#10;&#10;Google's response is that most complaints of anticompetitive behavior come&#10;from companies who are displeased with their ranking in Google's search engine.&#10;However, Joshua Wright, law professor at George Mason University said the&#10;FTC will be looking at possible harm to users and not complaints&#10;by Google’s competitors.&#10;&#10;Melissa Maxman, co-chair of a Washington-based, antitrust practice&#10;group, said the FTC's Bureau of Consumer Protection unit will almost&#10;certainly be involved to see if Google deceives search engine users&#10;by screening search results to profit its own services. She said she&#10;would be &quot;shocked&quot; if the consumer protection unit was not involved.&#10;&#10;Google Fellow Amit Singhal said in the post, &quot;We respect the FTC's&#10;process and will be working with them (as we have with other agencies)&#10;over the coming months to answer questions about Google and our services.&quot;&#10;But Singhal acknowledged, &quot;It's still unclear exactly what the FTC's&#10;concerns are, but we're clear about where we stand. Since the beginning,&#10;we have been guided by the idea that, if we focus on the user,&#10;all else will follow.&quot;&#10;&#10;Bloomberg reported Friday: &quot;Google has set aside $500 million for a&#10;U.S. government investigation into online pharmacy ads the company&#10;accepted that may have violated the law.&quot;&#10;&#10;Google's efforts to improve privacy policies after last years'&#10;determination that its social-networking service Google Buzz used&#10;deceptive tactics, are currently being overseen by the FTC."/>
+    <tcas:DocumentAnnotation xmi:id="8" sofa="1" begin="0" end="3039" language="x-unspecified"/>
+    <annotations:Headline xmi:id="13" sofa="1" begin="0" end="38"/>
+    <annotations:Sentence xmi:id="17" sofa="1" begin="40" end="185"/>
+    <annotations:Sentence xmi:id="21" sofa="1" begin="186" end="326"/>
+    <annotations:Sentence xmi:id="25" sofa="1" begin="328" end="529"/>
+    <annotations:Sentence xmi:id="29" sofa="1" begin="531" end="667"/>
+    <annotations:Sentence xmi:id="33" sofa="1" begin="861" end="1095"/>
+    <annotations:Sentence xmi:id="37" sofa="1" begin="669" end="860"/>
+    <annotations:Sentence xmi:id="41" sofa="1" begin="2851" end="3039"/>
+    <annotations:Sentence xmi:id="45" sofa="1" begin="2673" end="2849"/>
+    <annotations:Sentence xmi:id="49" sofa="1" begin="2231" end="2443"/>
+    <annotations:Sentence xmi:id="53" sofa="1" begin="2444" end="2671"/>
+    <annotations:Sentence xmi:id="57" sofa="1" begin="2148" end="2229"/>
+    <annotations:Sentence xmi:id="61" sofa="1" begin="1888" end="2147"/>
+    <annotations:Sentence xmi:id="65" sofa="1" begin="1568" end="1722"/>
+    <annotations:Sentence xmi:id="69" sofa="1" begin="1723" end="1886"/>
+    <annotations:Sentence xmi:id="73" sofa="1" begin="1097" end="1275"/>
+    <annotations:Sentence xmi:id="77" sofa="1" begin="1276" end="1407"/>
+    <annotations:Sentence xmi:id="81" sofa="1" begin="1408" end="1566"/>
+    <annotations:Organization xmi:id="85" sofa="1" begin="0" end="3"/>
+    <annotations:Organization xmi:id="89" sofa="1" begin="32" end="38"/>
+    <annotations:Organization xmi:id="93" sofa="1" begin="40" end="46"/>
+    <annotations:Organization xmi:id="97" sofa="1" begin="114" end="144"/>
+    <annotations:Organization xmi:id="101" sofa="1" begin="269" end="275"/>
+    <annotations:Organization xmi:id="105" sofa="1" begin="336" end="339"/>
+    <annotations:Organization xmi:id="109" sofa="1" begin="437" end="446"/>
+    <annotations:Organization xmi:id="113" sofa="1" begin="513" end="522"/>
+    <annotations:Organization xmi:id="117" sofa="1" begin="535" end="538"/>
+    <annotations:Organization xmi:id="121" sofa="1" begin="663" end="666"/>
+    <annotations:Organization xmi:id="125" sofa="1" begin="669" end="681"/>
+    <annotations:Organization xmi:id="129" sofa="1" begin="715" end="718"/>
+    <annotations:Organization xmi:id="133" sofa="1" begin="757" end="763"/>
+    <annotations:Organization xmi:id="137" sofa="1" begin="861" end="867"/>
+    <annotations:Organization xmi:id="141" sofa="1" begin="881" end="887"/>
+    <annotations:Organization xmi:id="145" sofa="1" begin="1101" end="1104"/>
+    <annotations:Organization xmi:id="149" sofa="1" begin="1139" end="1145"/>
+    <annotations:Organization xmi:id="153" sofa="1" begin="1289" end="1292"/>
+    <annotations:Organization xmi:id="157" sofa="1" begin="1295" end="1301"/>
+    <annotations:Organization xmi:id="161" sofa="1" begin="1398" end="1406"/>
+    <annotations:Organization xmi:id="165" sofa="1" begin="1559" end="1564"/>
+    <annotations:Organization xmi:id="169" sofa="1" begin="1568" end="1574"/>
+    <annotations:Organization xmi:id="173" sofa="1" begin="1699" end="1705"/>
+    <annotations:Organization xmi:id="177" sofa="1" begin="1764" end="1787"/>
+    <annotations:Organization xmi:id="181" sofa="1" begin="1797" end="1800"/>
+    <annotations:Organization xmi:id="185" sofa="1" begin="1865" end="1871"/>
+    <annotations:Organization xmi:id="189" sofa="1" begin="1971" end="1974"/>
+    <annotations:Organization xmi:id="193" sofa="1" begin="2056" end="2062"/>
+    <annotations:Organization xmi:id="197" sofa="1" begin="2231" end="2237"/>
+    <annotations:Organization xmi:id="201" sofa="1" begin="2292" end="2295"/>
+    <annotations:Organization xmi:id="205" sofa="1" begin="2418" end="2424"/>
+    <annotations:Organization xmi:id="209" sofa="1" begin="2507" end="2510"/>
+    <annotations:Organization xmi:id="213" sofa="1" begin="2673" end="2682"/>
+    <annotations:Organization xmi:id="217" sofa="1" begin="2701" end="2707"/>
+    <annotations:Organization xmi:id="221" sofa="1" begin="2851" end="2857"/>
+    <annotations:Organization xmi:id="225" sofa="1" begin="3035" end="3038"/>
+    <annotations:Organization xmi:id="229" sofa="1" begin="2963" end="2969"/>
+    <annotations:Person xmi:id="233" sofa="1" begin="1732" end="1745"/>
+    <annotations:Person xmi:id="237" sofa="1" begin="1888" end="1902"/>
+    <annotations:Person xmi:id="241" sofa="1" begin="2245" end="2257"/>
+    <annotations:Person xmi:id="245" sofa="1" begin="2448" end="2455"/>
+    <annotations:Paragraph xmi:id="249" sofa="1" begin="40" end="326"/>
+    <annotations:Paragraph xmi:id="253" sofa="1" begin="328" end="529"/>
+    <annotations:Paragraph xmi:id="257" sofa="1" begin="531" end="667"/>
+    <annotations:Paragraph xmi:id="261" sofa="1" begin="669" end="1095"/>
+    <annotations:Paragraph xmi:id="265" sofa="1" begin="1097" end="1566"/>
+    <annotations:Paragraph xmi:id="269" sofa="1" begin="1568" end="1886"/>
+    <annotations:Paragraph xmi:id="273" sofa="1" begin="1888" end="2229"/>
+    <annotations:Paragraph xmi:id="277" sofa="1" begin="2231" end="2671"/>
+    <annotations:Paragraph xmi:id="281" sofa="1" begin="2673" end="2849"/>
+    <annotations:Paragraph xmi:id="285" sofa="1" begin="2851" end="3039"/>
+    <cas:View sofa="1" members="8 13 17 21 25 29 33 37 41 45 49 53 57 61 65 69 73 77 81 85 89 93 97 101 105 109 113 117 121 125 129 133 137 141 145 149 153 157 161 165 169 173 177 181 185 189 193 197 201 205 209 213 217 221 225 229 233 237 241 245 249 253 257 261 265 269 273 277 281 285"/>
+</xmi:XMI>

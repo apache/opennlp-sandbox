@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmlns:cas="http:///uima/cas.ecore" xmlns:annotations="http:///org/apache/opennlp/annotations.ecore" xmlns:xmi="http://www.omg.org/XMI" xmlns:tcas="http:///uima/tcas.ecore" xmi:version="2.0">
+    <cas:NULL xmi:id="0"/>
+    <cas:Sofa xmi:id="1" sofaNum="1" sofaID="_InitialView" mimeType="text" sofaString="Ratko Mladić said to be too ill to face trial&#10;&#10;Ratko Mladić, a former Bosnian Serb general, is allegedly too ill to&#10;face trial for war crimes. According to his lawyer, 69-year-old Mladić&#10;will not survive to see the start of proceedings.&#10;&#10;Concerns for the health of Mladić come despite a Serbian judge having&#10;ruled him fit for extradition to the UN war crimes tribunal in The Hague&#10;only last Friday, a ruling which his lawyer seeks to appeal.&#10;&#10;“It was impossible to have a coherent conversation with him or to talk&#10;of his defence,” said lawyer Milos Saljic, after meeting with Mladić on Sunday.&#10;&#10;Serbian deputy war crimes prosecutor Bruno Vekaric believes Mladić is&#10;using his illness in an attempt to delay his extradition.&#10;&#10;“He's a man who has not taken care of his health for a while, but not&#10;to the point that he cannot stand trial,&quot; says Vekaric. &quot;According to&#10;doctors, he doesn't need hospitalisation.&quot;&#10;&#10;Chief prosecutor Vladimir Vukcevic echoed these sentiments, stating&#10;that Mladić was both well enough to make the two-hour flight to the&#10;Netherlands and is conscious of the charges against him, despite claims&#10;from family members that the former general is not lucid.&#10;&#10;Mladić’s son, Darko Mladić, is calling for his father’s health to be&#10;reviewed by independent experts. Mladić has reportedly suffered three&#10;strokes, the last in 2008, resulting in the partial paralysis of his&#10;right side. His family has expressed concerns he will not receive&#10;adequate treatment in The Hague.&#10;&#10;Mladić is being indicted for crimes against humanity, war crimes&#10;and genocide, notably the Srebrenica massacre during the Bosnian war.&#10;"/>
+    <tcas:DocumentAnnotation xmi:id="8" sofa="1" begin="0" end="1618" language="x-unspecified"/>
+    <annotations:Headline xmi:id="13" sofa="1" begin="0" end="45"/>
+    <annotations:Paragraph xmi:id="17" sofa="1" begin="47" end="236"/>
+    <annotations:Paragraph xmi:id="21" sofa="1" begin="238" end="441"/>
+    <annotations:Paragraph xmi:id="25" sofa="1" begin="443" end="593"/>
+    <annotations:Paragraph xmi:id="29" sofa="1" begin="595" end="722"/>
+    <annotations:Paragraph xmi:id="33" sofa="1" begin="724" end="906"/>
+    <annotations:Paragraph xmi:id="37" sofa="1" begin="908" end="1173"/>
+    <annotations:Paragraph xmi:id="45" sofa="1" begin="1483" end="1617"/>
+    <annotations:Paragraph xmi:id="101" sofa="1" begin="1175" end="1481"/>
+    <annotations:Sentence xmi:id="49" sofa="1" begin="143" end="236"/>
+    <annotations:Sentence xmi:id="53" sofa="1" begin="47" end="142"/>
+    <annotations:Sentence xmi:id="57" sofa="1" begin="238" end="441"/>
+    <annotations:Sentence xmi:id="61" sofa="1" begin="443" end="593"/>
+    <annotations:Sentence xmi:id="65" sofa="1" begin="595" end="722"/>
+    <annotations:Sentence xmi:id="69" sofa="1" begin="850" end="906"/>
+    <annotations:Sentence xmi:id="73" sofa="1" begin="724" end="849"/>
+    <annotations:Sentence xmi:id="77" sofa="1" begin="908" end="1173"/>
+    <annotations:Sentence xmi:id="81" sofa="1" begin="1395" end="1481"/>
+    <annotations:Sentence xmi:id="85" sofa="1" begin="1277" end="1394"/>
+    <annotations:Sentence xmi:id="89" sofa="1" begin="1175" end="1276"/>
+    <annotations:Sentence xmi:id="93" sofa="1" begin="1483" end="1617"/>
+    <cas:View sofa="1" members="8 13 17 21 25 29 33 37 45 101 49 53 57 61 65 69 73 77 81 85 89 93"/>
+</xmi:XMI>

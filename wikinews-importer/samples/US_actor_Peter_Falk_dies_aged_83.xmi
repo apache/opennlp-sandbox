@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmlns:cas="http:///uima/cas.ecore" xmlns:annotations="http:///org/apache/opennlp/annotations.ecore" xmlns:xmi="http://www.omg.org/XMI" xmlns:tcas="http:///uima/tcas.ecore" xmi:version="2.0">
+    <cas:NULL xmi:id="0"/>
+    <cas:Sofa xmi:id="1" sofaNum="1" sofaID="_InitialView" mimeType="text" sofaString="US actor Peter Falk dies aged 83&#10;&#10;US actor Peter Falk died on Thursday at his home in Beverly Hills, California&#10;after a struggle with Alzheimer's disease. Falk may be most known for his&#10;role as Detective Columbo in the television series of the same name that ran&#10;on NBC from 1968 to 1978, which moved to ABC in 1989. The last episode aired&#10;in 2003. His portrayal of the character won him four Emmy Awards.&#10;&#10;Falk, born in 1927, had his right eye surgically removed at the age of&#10;three, due to a cancerous growth. He wore a glass eye for most of his life.&#10;Because of this, he was rejected by the armed services at the end of World War II.&#10;&#10;Falk starred in his first crime film, Murder, Inc. in 1960, for which&#10;he was nominated for an Academy Award. In Blake Edwards's 1965 film The&#10;Great Race, he appeared with Jack Lemmon, Tony Curtis, and Natalie Wood.&#10;&#10;Falk is survived by his wife and two daughters.&#10;"/>
+    <tcas:DocumentAnnotation xmi:id="8" sofa="1" begin="0" end="902" language="x-unspecified"/>
+    <annotations:Headline xmi:id="13" sofa="1" begin="0" end="32"/>
+    <annotations:Paragraph xmi:id="17" sofa="1" begin="34" end="405"/>
+    <annotations:Paragraph xmi:id="21" sofa="1" begin="407" end="636"/>
+    <annotations:Paragraph xmi:id="25" sofa="1" begin="638" end="852"/>
+    <annotations:Paragraph xmi:id="29" sofa="1" begin="854" end="901"/>
+    <annotations:Sentence xmi:id="33" sofa="1" begin="554" end="636"/>
+    <annotations:Sentence xmi:id="37" sofa="1" begin="34" end="154"/>
+    <annotations:Sentence xmi:id="41" sofa="1" begin="155" end="316"/>
+    <annotations:Sentence xmi:id="45" sofa="1" begin="317" end="348"/>
+    <annotations:Sentence xmi:id="49" sofa="1" begin="349" end="405"/>
+    <annotations:Sentence xmi:id="53" sofa="1" begin="407" end="511"/>
+    <annotations:Sentence xmi:id="57" sofa="1" begin="512" end="553"/>
+    <annotations:Sentence xmi:id="61" sofa="1" begin="638" end="746"/>
+    <annotations:Sentence xmi:id="65" sofa="1" begin="747" end="852"/>
+    <annotations:Sentence xmi:id="69" sofa="1" begin="854" end="901"/>
+    <cas:View sofa="1" members="8 13 17 21 25 29 33 37 41 45 49 53 57 61 65 69"/>
+</xmi:XMI>
