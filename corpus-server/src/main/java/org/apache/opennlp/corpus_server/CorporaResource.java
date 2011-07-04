@@ -17,11 +17,33 @@
 
 package org.apache.opennlp.corpus_server;
 
+import java.io.IOException;
+
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
 
 @Path("/corpora")
 public class CorporaResource {
+	
+	/**
+	 * Creates a new corpus.
+	 * <br>
+	 * Note: Type system references are not supported currently!
+	 * 
+	 * @param casId
+	 * @param typeSystemBytes
+	 */
+	@POST
+	@Consumes(MediaType.TEXT_XML)
+	@Path("_createCorpus")
+	public void createCorpus(@QueryParam("corpusName") String corpusName,
+			byte[] typeSystemBytes) throws IOException {
+		CorporaStore.getStore().addCorpus(corpusName, typeSystemBytes);
+	}
 	
 	@Path("{corpus}")
 	public CorpusResource getCorpus(

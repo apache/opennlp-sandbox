@@ -17,6 +17,7 @@
 
 package org.apache.opennlp.corpus_server;
 
+import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,11 +31,17 @@ public class CorporaStore {
 		
 		if (instance == null) {
 			instance = new CorporaStore();
-			
-			instance.corpora.put("wikinews", new CorpusStore());
 		}
 		
 		return instance;
+	}
+	
+	// Note: Add one twice, overwrites an existing one!
+	public void addCorpus(String corpusName,
+			byte typeSystemBytes[]) {
+		corpora.put(corpusName, new CorpusStore(corpusName, 
+				UimaUtil.createTypeSystemDescription(
+				new ByteArrayInputStream(typeSystemBytes))));
 	}
 	
 	public CorpusStore getCorpus(String corpusId) {

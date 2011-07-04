@@ -46,12 +46,6 @@
 		    <name>Java.net Repository for Maven</name>
 		    <url>http://download.java.net/maven/2/</url>
 		    <layout>default</layout>
-		</repository> 
-		<repository>
-		    <id>maven-repository.java.net</id>
-		    <name>Java.net Maven 1 Repository (legacy)</name>
-		    <url>http://download.java.net/maven/1</url>
-		    <layout>legacy</layout>
 		</repository>
 	</repositories>
 	
@@ -68,6 +62,13 @@
 		    <version>1.8</version>
 		</dependency>
 
+		<dependency>
+			<groupId>org.apache.uima</groupId>
+			<artifactId>uimaj-core</artifactId>
+			<version>2.3.1</version>
+			<scope>compile</scope>
+		</dependency>
+		
 		<dependency>
 		    <groupId>com.sun.jersey</groupId>
 		    <artifactId>jersey-client</artifactId>

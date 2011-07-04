@@ -17,6 +17,7 @@
 
 package org.apache.opennlp.corpus_server;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Collection;
 
@@ -29,6 +30,9 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+
+import org.apache.uima.resource.metadata.TypeSystemDescription;
+import org.xml.sax.SAXException;
 
 public class CorpusResource {
 
@@ -87,7 +91,21 @@ public class CorpusResource {
 	@Path("_typesystem")
 	public byte[] getTypeSystem() {
 		CorpusStore corpusStore = CorporaStore.getStore().getCorpus(corpus);
-		return corpusStore.getTypeSystem();
+		
+		TypeSystemDescription typeSystem = corpusStore.getTypeSystem();
+
+		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+		
+		try {
+			typeSystem.toXML(bytes);
+		} catch (SAXException e) {
+			// TODO: Throw exception here to report error ...
+			e.printStackTrace();
+		} catch (IOException e) {
+			throw new IllegalStateException("Writing to memory must not fail!");
+		}
+		
+		return bytes.toByteArray();
 	}
 	
 	@GET

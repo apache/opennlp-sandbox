@@ -17,46 +17,54 @@
 
 package org.apache.opennlp.corpus_server;
 
-import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.apache.uima.cas.CAS;
+import org.apache.uima.resource.metadata.TypeSystemDescription;
 
 /**
  * Dummy in memory corpus store.
  */
 public class CorpusStore {
 
+	private final String corpusName;
+	private final TypeSystemDescription typeSystem;
+	
 	private Map<String, byte[]> casStore = new HashMap<String, byte[]>();
+	
+	CorpusStore(String corpusName, TypeSystemDescription typeSystem) {
+		this.corpusName = corpusName;
+		this.typeSystem = typeSystem;
+	}
 	
 	public byte[] getCAS(String casId) {
 		return casStore.get(casId);
 	}
 	
+	// TODO: Add exception declaration to propagte errors back to client ...
 	public void addCAS(String casID, byte[] content) {
-		casStore.put(casID, content);
-	}
-	
-	public byte[] getTypeSystem() {
 		
-		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+		// Note:
+		// Directly store data as xmi, but deserialization is needed to index and validate it!
 		
-		InputStream tsIn = CorpusStore.class.getResourceAsStream("/TypeSystem.xml");
+		CAS cas = UimaUtil.createEmptyCAS(typeSystem);
 		
 		try {
-			byte buffer[] = new byte[1024];
-			int length;
-			while ((length = tsIn.read(buffer)) > 0 ) {
-				bytes.write(buffer, 0, length);
-			}
-		}
-		catch (IOException e) {
+			UimaUtil.deserializeXmiCAS(cas, new ByteArrayInputStream(content));
+		} catch (IOException e) {
+			// TODO: Send error back to client ...
 			e.printStackTrace();
 		}
 		
-		return bytes.toByteArray();
+		casStore.put(casID, content);
+	}
+	
+	public TypeSystemDescription getTypeSystem() {
+		return typeSystem;
 	}
 	
 	public Collection<String> search(String query) {
