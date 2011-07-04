@@ -17,37 +17,30 @@
 
 package org.apache.opennlp.wikinews_importer;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
-import javax.ws.rs.core.MediaType;
+public class FileUtil {
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+  static byte[] fileToBytes(File file) throws IOException {
 
-public class WikinewsImporter {
+    ByteArrayOutputStream fileBytes = new ByteArrayOutputStream(
+        (int) file.length());
 
-	public static void main(String[] args) throws Exception {
-		
-		if (args.length != 2) {
-			System.out.println("WikinewsImporter address xmiFile");
-			System.exit(-1);
-		}
-		
-		Client c = Client.create();
-		
-		WebResource r = c.resource(args[0]);
-		
-		File xmiFile = new File(args[1]);
-		byte xmiBytes[] = FileUtil.fileToBytes(xmiFile);
-		
-		ClientResponse response = r
-				.path(xmiFile.getName())
-				.accept(MediaType.TEXT_XML)
-				// TODO: How to fix this? Shouldn't accept do it?
-				.header("Content-Type", MediaType.TEXT_XML)
-				.post(ClientResponse.class, xmiBytes);
-		
-		System.out.println(xmiFile.getName() + " " + response.getStatus());
-	}
+    InputStream fileIn = new FileInputStream(file);
+
+    byte buffer[] = new byte[1024];
+    int length;
+    while ((length = fileIn.read(buffer)) > 0) {
+      fileBytes.write(buffer, 0, length);
+    }
+
+    fileIn.close();
+
+    return fileBytes.toByteArray();
+  }
+
 }

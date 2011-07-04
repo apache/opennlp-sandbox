@@ -25,29 +25,36 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
-public class WikinewsImporter {
-
+/**
+ * Command Line Tool to create a new corpus in the corpus server.
+ */
+public class CreateCorpus {
 	public static void main(String[] args) throws Exception {
 		
-		if (args.length != 2) {
-			System.out.println("WikinewsImporter address xmiFile");
+		if (args.length != 3) {
+			System.out.println("CreateCorpus address corpusName typeSystemFile");
 			System.exit(-1);
 		}
+		
+		String corpusName = args[1];
 		
 		Client c = Client.create();
 		
 		WebResource r = c.resource(args[0]);
 		
-		File xmiFile = new File(args[1]);
-		byte xmiBytes[] = FileUtil.fileToBytes(xmiFile);
+		byte typeSystemBytes[] = FileUtil.fileToBytes(new File(args[2]));
+		
+		
+		// load ts file from disk into mem ...
 		
 		ClientResponse response = r
-				.path(xmiFile.getName())
+				.path("_createCorpus")
+				.queryParam("corpusName", corpusName)
 				.accept(MediaType.TEXT_XML)
 				// TODO: How to fix this? Shouldn't accept do it?
 				.header("Content-Type", MediaType.TEXT_XML)
-				.post(ClientResponse.class, xmiBytes);
+				.post(ClientResponse.class, typeSystemBytes);
 		
-		System.out.println(xmiFile.getName() + " " + response.getStatus());
+		System.out.println("Result: " + response.getStatus());
 	}
 }
