@@ -17,30 +17,21 @@
 
 package org.apache.opennlp.wikinews_importer;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+public class Annotation {
 
-public class FileUtil {
+    public final int begin;
 
-  static byte[] fileToBytes(File file) throws IOException {
+    public final int end;
 
-    ByteArrayOutputStream fileBytes = new ByteArrayOutputStream(
-        (int) file.length());
+    public final String label;
+    
+    public final String value;
 
-    InputStream fileIn = new FileInputStream(file);
-
-    byte buffer[] = new byte[1024];
-    int length;
-    while ((length = fileIn.read(buffer)) > 0) {
-      fileBytes.write(buffer, 0, length);
+    public Annotation(int start, int end, String label, String value) {
+        this.begin = start;
+        this.end = end;
+        this.label = label;
+        this.value = value;
     }
-
-    fileIn.close();
-
-    return fileBytes.toByteArray();
-  }
 
 }

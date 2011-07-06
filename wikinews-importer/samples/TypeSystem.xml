@@ -32,34 +32,53 @@
 			<description></description>
 			<supertypeName>uima.tcas.Annotation</supertypeName>
 		</typeDescription>
-		
+
+		<typeDescription>
+			<name>org.apache.opennlp.annotations.SubHeadline</name>
+			<description></description>
+			<supertypeName>uima.tcas.Annotation</supertypeName>
+		</typeDescription>
+
 		<typeDescription>
 			<name>org.apache.opennlp.annotations.Paragraph</name>
 			<description></description>
 			<supertypeName>uima.tcas.Annotation</supertypeName>
 		</typeDescription>
-		
+
 		<typeDescription>
 			<name>org.apache.opennlp.annotations.Sentence</name>
 			<description></description>
 			<supertypeName>uima.tcas.Annotation</supertypeName>
 		</typeDescription>
-		
+
 		<typeDescription>
 			<name>org.apache.opennlp.annotations.Token</name>
 			<description></description>
 			<supertypeName>uima.tcas.Annotation</supertypeName>
 		</typeDescription>
-		
+
 		<typeDescription>
 			<name>org.apache.opennlp.annotations.Person</name>
 			<description></description>
 			<supertypeName>uima.tcas.Annotation</supertypeName>
 		</typeDescription>
+
 		<typeDescription>
 			<name>org.apache.opennlp.annotations.Organization</name>
 			<description></description>
 			<supertypeName>uima.tcas.Annotation</supertypeName>
+		</typeDescription>
+
+		<typeDescription>
+			<name>org.apache.opennlp.annotations.WikiLink</name>
+			<supertypeName>uima.tcas.Annotation</supertypeName>
+			<features>
+				<featureDescription>
+					<name>link</name>
+					<description></description>
+					<rangeTypeName>uima.cas.String</rangeTypeName>
+				</featureDescription>
+			</features>
 		</typeDescription>
 	</types>
 </typeSystemDescription>
