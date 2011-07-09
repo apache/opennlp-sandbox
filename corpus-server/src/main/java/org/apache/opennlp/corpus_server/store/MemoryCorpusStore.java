@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.opennlp.corpus_server;
+package org.apache.opennlp.corpus_server.store;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -23,20 +23,21 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.opennlp.corpus_server.UimaUtil;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.resource.metadata.TypeSystemDescription;
 
 /**
  * Dummy in memory corpus store.
  */
-public class CorpusStore {
+public class MemoryCorpusStore implements CorpusStore {
 
 	private final String corpusName;
 	private final TypeSystemDescription typeSystem;
 	
 	private Map<String, byte[]> casStore = new HashMap<String, byte[]>();
 	
-	CorpusStore(String corpusName, TypeSystemDescription typeSystem) {
+	MemoryCorpusStore(String corpusName, TypeSystemDescription typeSystem) {
 		this.corpusName = corpusName;
 		this.typeSystem = typeSystem;
 	}
@@ -61,6 +62,11 @@ public class CorpusStore {
 		}
 		
 		casStore.put(casID, content);
+	}
+	
+	@Override
+	public void updateCAS(String casID, byte[] content) throws IOException {
+	  addCAS(casID, content);
 	}
 	
 	public TypeSystemDescription getTypeSystem() {

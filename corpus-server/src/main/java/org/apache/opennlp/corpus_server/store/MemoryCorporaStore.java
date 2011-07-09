@@ -15,36 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.opennlp.corpus_server;
+package org.apache.opennlp.corpus_server.store;
 
 import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CorporaStore {
+import org.apache.opennlp.corpus_server.UimaUtil;
+
+public class MemoryCorporaStore implements CorporaStore {
 	
-	private static CorporaStore instance;
+	private static MemoryCorporaStore instance;
 	
-	private Map<String, CorpusStore> corpora = new HashMap<String, CorpusStore>();
+	private Map<String, MemoryCorpusStore> corpora = new HashMap<String, MemoryCorpusStore>();
 	
-	public static synchronized CorporaStore getStore() {
+	public void initialize() {
+	}
+	
+	public void shutdown() {
+	}
+	
+	public static synchronized MemoryCorporaStore getStore() {
 		
 		if (instance == null) {
-			instance = new CorporaStore();
+			instance = new MemoryCorporaStore();
 		}
 		
 		return instance;
 	}
 	
 	// Note: Add one twice, overwrites an existing one!
-	public void addCorpus(String corpusName,
+	public void createCorpus(String corpusName,
 			byte typeSystemBytes[]) {
-		corpora.put(corpusName, new CorpusStore(corpusName, 
+		corpora.put(corpusName, new MemoryCorpusStore(corpusName, 
 				UimaUtil.createTypeSystemDescription(
 				new ByteArrayInputStream(typeSystemBytes))));
 	}
 	
-	public CorpusStore getCorpus(String corpusId) {
+	public MemoryCorpusStore getCorpus(String corpusId) {
 		return corpora.get(corpusId);
 	}
 }

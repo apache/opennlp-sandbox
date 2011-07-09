@@ -31,14 +31,15 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.opennlp.corpus_server.store.CorpusStore;
 import org.apache.uima.resource.metadata.TypeSystemDescription;
 import org.xml.sax.SAXException;
 
 public class CorpusResource {
 
-	private final String corpus;
+	private final CorpusStore corpus;
 	
-	public CorpusResource(String corpus) {
+	public CorpusResource(CorpusStore corpus) {
 		this.corpus = corpus;
 	}
 	
@@ -52,8 +53,7 @@ public class CorpusResource {
 	@Path("{casId}")
 	public void addCAS(@PathParam("casId") String casId, 
 			byte[] cas) throws IOException {
-		CorpusStore corpusStore = CorporaStore.getStore().getCorpus(corpus);
-		corpusStore.addCAS(casId, cas);
+		corpus.addCAS(casId, cas);
 	}
 	
 	/**
@@ -65,8 +65,7 @@ public class CorpusResource {
 	@Path("{casId}")
 	public void updateCAS(@PathParam("casId") String casId, 
 			byte[] cas) throws IOException {
-		CorpusStore corpusStore = CorporaStore.getStore().getCorpus(corpus);
-		corpusStore.addCAS(casId, cas);
+		corpus.updateCAS(casId, cas);
 	}
 	
 	/**
@@ -77,9 +76,8 @@ public class CorpusResource {
 	@GET
 	@Produces(MediaType.TEXT_XML)
 	@Path("{casId}")
-	public byte[] getCAS(@PathParam("casId") String casId) {
-		CorpusStore corpusStore = CorporaStore.getStore().getCorpus(corpus);
-		return corpusStore.getCAS(casId);
+	public byte[] getCAS(@PathParam("casId") String casId) throws IOException{
+		return corpus.getCAS(casId);
 	}
 
 	/**
@@ -89,18 +87,15 @@ public class CorpusResource {
 	@GET
 	@Produces(MediaType.TEXT_XML)
 	@Path("_typesystem")
-	public byte[] getTypeSystem() {
-		CorpusStore corpusStore = CorporaStore.getStore().getCorpus(corpus);
-		
-		TypeSystemDescription typeSystem = corpusStore.getTypeSystem();
+	public byte[] getTypeSystem() throws IOException {
+		TypeSystemDescription typeSystem = corpus.getTypeSystem();
 
 		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 		
 		try {
 			typeSystem.toXML(bytes);
 		} catch (SAXException e) {
-			// TODO: Throw exception here to report error ...
-			e.printStackTrace();
+		  throw new IOException(e);
 		} catch (IOException e) {
 			throw new IllegalStateException("Writing to memory must not fail!");
 		}
@@ -111,8 +106,7 @@ public class CorpusResource {
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("_search")
-	public Collection<String> search(@QueryParam("q") String q) {
-		CorpusStore corpusStore = CorporaStore.getStore().getCorpus(corpus);
-		return corpusStore.search(q);
+	public Collection<String> search(@QueryParam("q") String q) throws IOException{
+		return corpus.search(q);
 	}
 }

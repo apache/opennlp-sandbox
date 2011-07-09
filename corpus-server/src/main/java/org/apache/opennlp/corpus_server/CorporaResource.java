@@ -26,6 +26,8 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.opennlp.corpus_server.store.CorporaStore;
+
 @Path("/corpora")
 public class CorporaResource {
 	
@@ -42,12 +44,20 @@ public class CorporaResource {
 	@Path("_createCorpus")
 	public void createCorpus(@QueryParam("corpusName") String corpusName,
 			byte[] typeSystemBytes) throws IOException {
-		CorporaStore.getStore().addCorpus(corpusName, typeSystemBytes);
+	  
+	  CorpusServer corpusServer = CorpusServer.getInstance();
+	  CorporaStore store = corpusServer.getStore();
+	  
+	  store.createCorpus(corpusName, typeSystemBytes);
 	}
-	
-	@Path("{corpus}")
+
+  @Path("{corpus}")
 	public CorpusResource getCorpus(
-			@PathParam("corpus") String corpus) {
-		return new CorpusResource(corpus);
+			@PathParam("corpus") String corpus) throws IOException {
+    
+      CorpusServer corpusServer = CorpusServer.getInstance();
+      CorporaStore store = corpusServer.getStore();
+    
+      return new CorpusResource(store.getCorpus(corpus));
 	}
 }

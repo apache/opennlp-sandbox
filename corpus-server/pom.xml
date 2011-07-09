@@ -50,6 +50,14 @@
 	</repositories>
 	
 	<dependencies>
+	
+	    <dependency>
+      		<groupId>javax.servlet</groupId>
+      		<artifactId>servlet-api</artifactId>
+      		<version>2.4</version>
+      		<scope>provided</scope>
+    	</dependency>
+    
 		<dependency>
 		    <groupId>com.sun.jersey</groupId>
 		    <artifactId>jersey-server</artifactId>
@@ -60,6 +68,12 @@
 		    <groupId>com.sun.jersey</groupId>
 		    <artifactId>jersey-json</artifactId>
 		    <version>1.8</version>
+		</dependency>
+
+		<dependency>
+		    <groupId>org.apache.derby</groupId>
+		    <artifactId>derby</artifactId>
+		    <version>10.8.1.2</version>
 		</dependency>
 
 		<dependency>

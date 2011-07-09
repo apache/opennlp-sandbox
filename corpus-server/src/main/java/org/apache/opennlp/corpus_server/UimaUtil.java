@@ -42,7 +42,7 @@ import org.xml.sax.SAXException;
 
 public class UimaUtil {
 
-  static TypeSystemDescription createTypeSystemDescription(InputStream in) {
+  public static TypeSystemDescription createTypeSystemDescription(InputStream in) {
 
     // Note:
     // Type System location is not set correctly,
@@ -67,7 +67,7 @@ public class UimaUtil {
     return typeSystemDesciptor;
   }
 
-  static CAS createEmptyCAS(TypeSystemDescription typeSystem) {
+  public static CAS createEmptyCAS(TypeSystemDescription typeSystem) {
     ResourceSpecifierFactory resourceSpecifierFactory = UIMAFramework
         .getResourceSpecifierFactory();
     TypePriorities typePriorities = resourceSpecifierFactory
@@ -90,7 +90,7 @@ public class UimaUtil {
     return cas;
   }
 
-  static void deserializeXmiCAS(CAS cas, InputStream xmiIn) throws IOException {
+  public static void deserializeXmiCAS(CAS cas, InputStream xmiIn) throws IOException {
 
     SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
     saxParserFactory.setValidating(false);
