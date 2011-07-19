@@ -59,7 +59,7 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     entityColumn.setWidth(135);
     
     entityList.setLabelProvider(new EntityLabelProvider());
-    entityList.setContentProvider(new EntityContentProvider(entityList));
+    entityList.setContentProvider(new EntityContentProvider(new NameFinderJob(), entityList));
     getSite().setSelectionProvider(entityList);
     
     entityList.setInput(editor.getDocument());
