@@ -143,6 +143,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
       nameFinder.setText(text);
       nameFinder.setSentences(sentences.toArray(new Span[sentences.size()]));
       nameFinder.setTokens(tokens.toArray(new Span[tokens.size()]));
+      nameFinder.setVerifiedNames(nameSpans.toArray(new Span[nameSpans.size()]));
       
       nameFinder.schedule();
     }

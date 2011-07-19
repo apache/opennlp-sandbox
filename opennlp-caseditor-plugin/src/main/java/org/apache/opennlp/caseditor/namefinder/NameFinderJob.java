@@ -20,9 +20,12 @@ package org.apache.opennlp.caseditor.namefinder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import opennlp.tools.namefind.NameFinderME;
+import opennlp.tools.namefind.NameFinderSequenceValidator;
 import opennlp.tools.namefind.TokenNameFinderModel;
 import opennlp.tools.util.Span;
 
@@ -37,12 +40,38 @@ import org.eclipse.core.runtime.jobs.Job;
 // don't change setting, while job is running!
 public class NameFinderJob extends Job {
   
+  // TODO: It should be changed in a way that detected annotations are always
+  // a perfect match with existing annotations
+  static class RestrictedSequencesValidator extends NameFinderSequenceValidator {
+    
+    private Set<Integer> nameIndex = new HashSet<Integer>();
+    
+    // also give it a no-name index
+    void setRestriction(Set<Integer> nameIndex) {
+      this.nameIndex = nameIndex;
+    }
+    
+    @Override
+    public boolean validSequence(int i, String[] inputSequence,
+        String[] outcomesSequence, String outcome) {
+      boolean valid = super.validSequence(i, inputSequence, outcomesSequence, outcome);
+      
+      if (valid && nameIndex.contains(i)) {
+        return outcome.endsWith(NameFinderME.START) || outcome.endsWith(NameFinderME.CONTINUE);
+      }
+      
+      return valid;
+    }
+  }
+  
   private NameFinderME nameFinder;
+  private RestrictedSequencesValidator sequenceValidator;
   
   private String modelPath;
   private String text;
   private Span sentences[];
   private Span tokens[];
+  private Span verifiedNames[] = new Span[0];
   
   private List<Entity> nameList;
   
@@ -65,6 +94,10 @@ public class NameFinderJob extends Job {
   synchronized void setTokens(Span tokens[]) {
     this.tokens = tokens;
   }
+  
+  synchronized void setVerifiedNames(Span verifiedNames[]) {
+    this.verifiedNames = verifiedNames;
+  }
 
   // maybe report result, through an interface?!
   @Override
@@ -77,7 +110,8 @@ public class NameFinderJob extends Job {
         modelIn = NameFinderViewPage.class
             .getResourceAsStream("/en-ner-per.bin");
         TokenNameFinderModel model = new TokenNameFinderModel(modelIn);
-        nameFinder = new NameFinderME(model, null, 5);
+        sequenceValidator = new RestrictedSequencesValidator();
+        nameFinder = new NameFinderME(model, null, 5, sequenceValidator);
       } catch (IOException e) {
         e.printStackTrace();
       } finally {
@@ -112,6 +146,19 @@ public class NameFinderJob extends Job {
           Span token = sentenceTokens.get(i);
           tokenStrings[i] = token.getCoveredText(text).toString();
         }
+        
+        Set<Integer> verifiedNameTokens = new HashSet<Integer>();
+        
+        // iterate over names, to find token indexes
+        for (Span verifiedName : verifiedNames) {
+          for (int i = 0; i < sentenceTokens.size(); i++) {
+            if (verifiedName.contains(sentenceTokens.get(i))) {
+              verifiedNameTokens.add(i);
+            }
+          }
+        }
+        
+        sequenceValidator.setRestriction(verifiedNameTokens);
         
         Span names[] = nameFinder.find(tokenStrings);
         double nameProbs[] = nameFinder.probs(names);
