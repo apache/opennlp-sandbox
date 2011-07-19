@@ -24,15 +24,19 @@ public class Entity {
   
   private final String entityText;
  
+  private boolean isConfirmed;
+  
   private Double confidence;
   
-  Entity(int beginIndex, int endIndex, String entityText, Double confidence) {
+  Entity(int beginIndex, int endIndex, String entityText, Double confidence, boolean isConfirmed) {
     this.beginIndex = beginIndex;
     this.endIndex = endIndex;
     
     this.entityText = entityText;
     
     this.confidence = confidence;
+    
+    this.isConfirmed = isConfirmed;
   }
   
   int getBeginIndex() {
@@ -49,6 +53,10 @@ public class Entity {
   
   void setConfidence(Double confidence) {
     this.confidence = confidence;
+  }
+  
+  boolean isConfirmed() {
+    return isConfirmed;
   }
   
   Double getConfidence() {

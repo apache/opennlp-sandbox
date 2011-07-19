@@ -55,6 +55,10 @@ public class EntityLabelProvider implements ITableLabelProvider {
     else if (columnIndex == 1) {
       result = entity.getEntityText();
     }
+    else if (columnIndex == 2) {
+      // TODO: Confirmed entities could be marked by a color, or small image
+      result = Boolean.toString(entity.isConfirmed());
+    }
     
     return result;
   }

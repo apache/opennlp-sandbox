@@ -126,7 +126,7 @@ public class NameFinderJob extends Job {
           String coveredText = text.substring(beginIndex, endIndex);
           
           
-          nameList.add(new Entity(beginIndex, endIndex, coveredText, nameProbs[i]));
+          nameList.add(new Entity(beginIndex, endIndex, coveredText, nameProbs[i], false));
         }
       }
     }

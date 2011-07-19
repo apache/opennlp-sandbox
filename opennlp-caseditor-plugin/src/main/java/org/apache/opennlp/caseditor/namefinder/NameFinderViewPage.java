@@ -58,6 +58,11 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     entityColumn.setText("Entity");
     entityColumn.setWidth(135);
     
+    TableViewerColumn confirmedViewerColumn = new TableViewerColumn(entityList, SWT.NONE);
+    TableColumn confirmedColumn = confirmedViewerColumn.getColumn();
+    confirmedColumn.setText("Confirmed");
+    confirmedColumn.setWidth(60);
+    
     entityList.setLabelProvider(new EntityLabelProvider());
     entityList.setContentProvider(new EntityContentProvider(new NameFinderJob(), entityList));
     getSite().setSelectionProvider(entityList);
