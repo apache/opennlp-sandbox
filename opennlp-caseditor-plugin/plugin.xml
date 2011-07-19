@@ -27,5 +27,12 @@
           class="org.apache.opennlp.caseditor.OpenNLPPreferenceInitializer">
     </initializer>
  </extension>
-
+ 
+  <extension point="org.eclipse.ui.preferencePages">
+    <page
+          class="org.apache.opennlp.caseditor.namefinder.NameFinderPreferencePage"
+          id="org.apache.opennlp.caseditor.NameFinderPreference"
+          name="OpenNLP Name Finder">
+    </page>
+ </extension>
 </plugin>
