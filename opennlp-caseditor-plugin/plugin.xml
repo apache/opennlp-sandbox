@@ -21,8 +21,15 @@
 -->
 
 <plugin>
+
+  <extension point="org.eclipse.ui.views">
+    <view id="org.apache.opennlp.caseditor.NameFinderView"
+	      name="Name Finder"
+          class="org.apache.opennlp.caseditor.namefinder.NameFinderView"
+          category="org.apache.opennlp.caseditor" />	
+  </extension>	
 	
-	<extension  point="org.eclipse.core.runtime.preferences">
+ <extension  point="org.eclipse.core.runtime.preferences">
     <initializer
           class="org.apache.opennlp.caseditor.OpenNLPPreferenceInitializer">
     </initializer>
