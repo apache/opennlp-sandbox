@@ -18,6 +18,7 @@
 package org.apache.opennlp.caseditor.namefinder;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -28,9 +29,11 @@ import org.apache.opennlp.caseditor.OpenNLPPlugin;
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.cas.FSIndex;
+import org.apache.uima.cas.FeatureStructure;
 import org.apache.uima.cas.Type;
 import org.apache.uima.cas.text.AnnotationFS;
 import org.apache.uima.caseditor.editor.ICasDocument;
+import org.apache.uima.caseditor.editor.ICasDocumentListener;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
@@ -40,17 +43,155 @@ import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.widgets.Display;
 
+// Need its own list (or map), otherwise it is complicated to compute updates ...
+// Maybe we should create again, a "View" map of indexes to its annotations?!
 public class EntityContentProvider implements IStructuredContentProvider {
 
+  class NameFinderTrigger implements ICasDocumentListener {
+
+    
+    @Override
+    public void added(FeatureStructure fs) {
+      runNameFinder();
+    }
+
+    @Override
+    public void added(Collection<FeatureStructure> featureStructures) {
+      runNameFinder();
+    }
+
+    @Override
+    public void changed() {
+      runNameFinder();
+    }
+
+    @Override
+    public void removed(FeatureStructure fs) {
+      runNameFinder();
+    }
+
+    @Override
+    public void removed(Collection<FeatureStructure> featureStructures) {
+      runNameFinder();
+    }
+
+    @Override
+    public void updated(FeatureStructure fs) {
+      runNameFinder();
+    }
+
+    @Override
+    public void updated(Collection<FeatureStructure> featureStructures) {
+      runNameFinder();
+      
+    }
+
+    @Override
+    public void viewChanged(String oldView, String newView) {
+      runNameFinder();
+    }
+    
+  }
+  
+  // Question, how to determine overlaps between two annotations ?!
+  
+  class ConfirmedEntityListener implements ICasDocumentListener {
+    
+    @Override
+    public void added(FeatureStructure fs) {
+      
+      if (fs instanceof AnnotationFS && fs.getType().getName().equals(nameTypeName)) {
+        // TODO: Check that type matches ...
+        AnnotationFS annotation = (AnnotationFS) fs;
+        
+        Entity newEntity = new Entity(annotation.getBegin(), annotation.getEnd(),
+            annotation.getCoveredText(), null, true);
+        
+        Entity potentialEntity = searchEntity(EntityContentProvider.this.potentialEntities,
+            annotation.getBegin(), annotation.getEnd());
+        
+        if (potentialEntity != null)
+          EntityContentProvider.this.entityList.remove(potentialEntity);
+        
+        confirmedEntities.add(newEntity);
+        EntityContentProvider.this.entityList.add(newEntity);
+      }
+    }
+
+    @Override
+    public void added(Collection<FeatureStructure> featureStructures) {
+      for (FeatureStructure fs : featureStructures){
+        added(fs);
+      }
+    }
+
+    @Override
+    public void changed() {
+      // just refresh ...
+    }
+
+    @Override
+    public void removed(FeatureStructure fs) {
+      
+      if (fs instanceof AnnotationFS && fs.getType().getName().equals(nameTypeName)) {
+        AnnotationFS annotation = (AnnotationFS) fs;
+        
+        Entity confirmedEntity = searchEntity(EntityContentProvider.this.confirmedEntities,
+            annotation.getBegin(), annotation.getEnd());
+        
+        if (confirmedEntity != null) {
+          EntityContentProvider.this.confirmedEntities.remove(confirmedEntity);
+          EntityContentProvider.this.entityList.remove(confirmedEntity);
+        }
+      }
+      
+      // TODO: Eventually add it to a black list, so tokens in this
+      // area cannot be detected as a name
+    }
+
+    @Override
+    public void removed(Collection<FeatureStructure> featureStructures) {
+      for (FeatureStructure fs : featureStructures) {
+        removed(fs);
+      }
+    }
+
+    @Override
+    public void updated(FeatureStructure fs) {
+    }
+
+    @Override
+    public void updated(Collection<FeatureStructure> featureStructures) {
+      
+    }
+
+    @Override
+    public void viewChanged(String oldView, String newView) {
+    }
+  }
+  
   private NameFinderJob nameFinder;
+  
+  private NameFinderTrigger nameFinderTrigger = new NameFinderTrigger();
+  private ConfirmedEntityListener casChangeListener = new ConfirmedEntityListener();
   
   private TableViewer entityList;
   
   private ICasDocument input;
   
+  // contains all existing entity annotations and is synchronized!
+  // needed by name finder to calculate updates ... 
+  private List<Entity> confirmedEntities = new ArrayList<Entity>();
+  private List<Entity> potentialEntities = new ArrayList<Entity>();
+  
+  private String nameTypeName;
+  
   EntityContentProvider(NameFinderJob nameFinder, TableViewer entityList) {
     this.nameFinder = nameFinder;
     this.entityList = entityList;
+    
+    IPreferenceStore store = OpenNLPPlugin.getDefault().getPreferenceStore();
+    nameTypeName = store.getString(OpenNLPPreferenceConstants.NAME_TYPE);
     
     nameFinder.addJobChangeListener(new JobChangeAdapter() {
       public void done(final IJobChangeEvent event) {
@@ -62,8 +203,31 @@ public class EntityContentProvider implements IStructuredContentProvider {
             IStatus status = event.getResult();
             
             if (status.getSeverity() == IStatus.OK) {
-              List<Entity> potentialEntities = EntityContentProvider.this.nameFinder.getNames();
-              EntityContentProvider.this.entityList.add(potentialEntities.toArray());
+              
+              // 
+              List<Entity> newPotentialEntities = EntityContentProvider.this.nameFinder.getNames();
+              
+              // Remove all potential annotations from list ?! Yes! Note: We should compute a delta here in the future ...
+              EntityContentProvider.this.entityList.remove(potentialEntities.toArray());
+              // Then add like described below:
+              
+              for (Entity newPotentialEntity : newPotentialEntities) {
+                
+                // A confirmed entity already exists, update its confidence score
+                Entity confirmedEntity = searchEntity(confirmedEntities, newPotentialEntity.getBeginIndex(), newPotentialEntity.getEndIndex());
+                if (confirmedEntity != null) {
+                  confirmedEntity.setConfidence(newPotentialEntity.getConfidence());
+                  EntityContentProvider.this.entityList.refresh(confirmedEntity);
+                  continue;
+                }
+                
+                // potential entity should be added!
+                // TODO: that is slow and should be done in a bulk update ...
+                EntityContentProvider.this.entityList.add(newPotentialEntity);
+              }
+              
+              // Remember entities for next update
+              potentialEntities = newPotentialEntities;
             }
           }
         });
@@ -73,9 +237,42 @@ public class EntityContentProvider implements IStructuredContentProvider {
   
   public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
     
-    input = (ICasDocument) newInput;
+    IPreferenceStore store = OpenNLPPlugin.getDefault().getPreferenceStore();
+    String nameTypeName = store.getString(OpenNLPPreferenceConstants.NAME_TYPE);
     
-    runNameFinder();
+    if (input != newInput) {
+      
+      input = (ICasDocument) newInput;
+      
+      if (oldInput != null && oldInput != newInput) {
+        
+        ICasDocument oldDocument = (ICasDocument) oldInput;
+        oldDocument.removeChangeListener(casChangeListener);
+        oldDocument.removeChangeListener(nameFinderTrigger);
+      }
+      
+      if (newInput != null) {
+        // Note: Name Finder might run to often ... 
+        input.addChangeListener(casChangeListener);
+        input.addChangeListener(nameFinderTrigger);
+        
+        // Create initial list of confirmed entities ...
+        Type nameType = input.getCAS().getTypeSystem().getType(nameTypeName); 
+        
+        FSIndex<AnnotationFS> nameAnnotations = input.getCAS()
+            .getAnnotationIndex(nameType);
+
+        for (Iterator<AnnotationFS> nameIterator = nameAnnotations
+            .iterator(); nameIterator.hasNext();) {
+          
+          AnnotationFS nameAnnotation = (AnnotationFS) nameIterator.next();
+          
+          confirmedEntities.add(new Entity(nameAnnotation.getBegin(), nameAnnotation.getEnd(), nameAnnotation.getCoveredText(), null, true));
+        }
+        
+        runNameFinder();
+      }
+    }
   }
   
   void runNameFinder() {
@@ -150,9 +347,28 @@ public class EntityContentProvider implements IStructuredContentProvider {
   }
   
   public Object[] getElements(Object inputElement) {
-    return new Entity[] {};
+    // Note: 
+    // Called directly after showing the view, the
+    // name finder is triggered to produce names
+    // which will be added to the viewer
+    return confirmedEntities.toArray();
   }
   
   public void dispose() {
+  }
+  
+  // TODO: Write some static util method to search for an overlapping entity in a list!
+  
+  static Entity searchEntity(List<Entity> entities, int begin, int end) {
+    
+    for (Entity entity : entities) {
+      // TODO: Should test for overlapping
+      if (entity.getBeginIndex() == begin && 
+          entity.getEndIndex() == end) {
+        return entity;
+      }
+    }
+    
+    return null;
   }
 }
