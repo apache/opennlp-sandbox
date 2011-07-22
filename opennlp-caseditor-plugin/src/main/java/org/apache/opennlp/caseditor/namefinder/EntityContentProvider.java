@@ -47,9 +47,10 @@ import org.eclipse.swt.widgets.Display;
 // Maybe we should create again, a "View" map of indexes to its annotations?!
 public class EntityContentProvider implements IStructuredContentProvider {
 
+  // TODO: Triggering should be more refined, and only happen if
+  // Sentences, Tokens, or entities change ..
   class NameFinderTrigger implements ICasDocumentListener {
 
-    
     @Override
     public void added(FeatureStructure fs) {
       runNameFinder();
@@ -357,14 +358,16 @@ public class EntityContentProvider implements IStructuredContentProvider {
   public void dispose() {
   }
   
-  // TODO: Write some static util method to search for an overlapping entity in a list!
-  
   static Entity searchEntity(List<Entity> entities, int begin, int end) {
     
+    Span testSpan = new Span(begin, end);
+    
     for (Entity entity : entities) {
-      // TODO: Should test for overlapping
-      if (entity.getBeginIndex() == begin && 
-          entity.getEndIndex() == end) {
+      
+      Span entitySpan = new Span(entity.getBeginIndex(),
+          entity.getEndIndex());
+      
+      if (entitySpan.intersects(testSpan)) {
         return entity;
       }
     }
