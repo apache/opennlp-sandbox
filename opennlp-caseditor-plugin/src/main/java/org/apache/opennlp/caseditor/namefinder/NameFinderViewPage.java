@@ -30,6 +30,8 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
+import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -87,7 +89,16 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     entityList.setContentProvider(new EntityContentProvider(new NameFinderJob(), entityList));
     getSite().setSelectionProvider(entityList);
     
-    // TODO: Do we need a sorter here?!
+    entityList.setComparator(new ViewerComparator(){
+      @Override
+      public int compare(Viewer viewer, Object o1, Object o2) {
+        
+        Entity e1 = (Entity) o1;
+        Entity e2 = (Entity) o2;
+        
+        return e1.getBeginIndex() - e2.getBeginIndex();
+      }
+    });
     
     entityList.setInput(editor.getDocument());
   }
