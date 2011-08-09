@@ -106,7 +106,7 @@ public class CorpusResource {
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("_search")
-	public Collection<String> search(@QueryParam("q") String q) throws IOException{
-		return corpus.search(q);
+	public Collection<String> search(@QueryParam("q") String q) throws IOException {
+		return null; // corpus.search(q);
 	}
 }

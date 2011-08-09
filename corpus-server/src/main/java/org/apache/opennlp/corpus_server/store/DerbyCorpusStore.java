@@ -25,7 +25,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -40,11 +39,12 @@ public class DerbyCorpusStore implements CorpusStore {
       DerbyCorpusStore.class .getName());
 
   private DataSource dataSource;
-  
+  private DerbyCorporaStore store;
   private String corpusName;
   
-  DerbyCorpusStore(DataSource dataSource, String corpusName) {
+  DerbyCorpusStore(DataSource dataSource, DerbyCorporaStore store, String corpusName) {
     this.dataSource = dataSource;
+    this.store = store;
     this.corpusName = corpusName;
   }
   
@@ -109,6 +109,10 @@ public class DerbyCorpusStore implements CorpusStore {
       
       throw new IOException(e);
     }
+    
+    for (CorporaChangeListener listener : store.getListeners()) {
+      listener.addedCAS(this, casID);
+    }
   }
 
   @Override
@@ -138,6 +142,10 @@ public class DerbyCorpusStore implements CorpusStore {
       }
       
       throw new IOException(e);
+    }
+    
+    for (CorporaChangeListener listener : store.getListeners()) {
+      listener.updatedCAS(this, casID);
     }
   }
   
@@ -171,10 +179,5 @@ public class DerbyCorpusStore implements CorpusStore {
     }
     
     return tsDescription;
-  }
-
-  @Override
-  public Collection<String> search(String query) {
-    return null;
   }
 }

@@ -17,21 +17,31 @@
 
 package org.apache.opennlp.corpus_server.store;
 
-import java.io.IOException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
-import org.apache.uima.resource.metadata.TypeSystemDescription;
+abstract class AbstractCorporaStore implements CorporaStore {
 
-/**
- * A Corpus Store contains a set of CASes and is responsible to host them
- * together with a type system.
- */
-public interface CorpusStore {
+  private Set<CorporaChangeListener> listeners = new HashSet<CorporaChangeListener>();
   
-  byte[] getCAS(String casId) throws IOException;
+  @Override
+  public void addCorpusChangeListener(CorporaChangeListener listener) {
+    if (listener == null)
+      throw new IllegalArgumentException("listener must not be null!");
+    
+    listeners.add(listener);
+  }
   
-  void addCAS(String casID, byte[] content) throws IOException;
+  @Override
+  public void removeCorpusChangeListener(CorporaChangeListener listener) {
+    if (listener == null)
+      throw new IllegalArgumentException("listener must not be null!");
+    
+    listeners.remove(listener);
+  }
   
-  void updateCAS(String casID, byte[] content) throws IOException;
-  
-  TypeSystemDescription getTypeSystem() throws IOException;
+  Set<CorporaChangeListener> getListeners() {
+    return Collections.unmodifiableSet(listeners);
+  }
 }

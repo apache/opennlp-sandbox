@@ -18,49 +18,110 @@
 package org.apache.opennlp.corpus_server;
 
 import java.io.IOException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
+import org.apache.opennlp.corpus_server.search.LuceneSearchService;
+import org.apache.opennlp.corpus_server.search.SearchService;
+import org.apache.opennlp.corpus_server.store.CorporaChangeListener;
 import org.apache.opennlp.corpus_server.store.CorporaStore;
+import org.apache.opennlp.corpus_server.store.CorpusStore;
 import org.apache.opennlp.corpus_server.store.DerbyCorporaStore;
 
 public class CorpusServer implements ServletContextListener {
 
+  static class IndexListener implements CorporaChangeListener {
+    
+    private final SearchService searchService;
+    
+    IndexListener(SearchService searchService) {
+      this.searchService = searchService;
+    }
+    
+    @Override
+    public void addedCAS(CorpusStore store, String casId) {
+      try {
+        searchService.index(store, casId);
+      } catch (IOException e) {
+        // TODO: Also log store name!
+        LOGGER.warning("Failed to index cas: " + casId);
+      }
+    }
+
+    @Override
+    public void updatedCAS(CorpusStore store, String casId) {
+      addedCAS(store, casId);
+    }
+  }
+  
   private final static Logger LOGGER = Logger.getLogger(
       CorpusServer.class .getName());
   
   private static CorpusServer instance;
   
   private CorporaStore store;
+  private SearchService searchService;
+  
+  private CorporaChangeListener indexListener;
   
   @Override
   public void contextInitialized(ServletContextEvent sce) {
     
     instance = this;
+    
     store = new DerbyCorporaStore();
     try {
       store.initialize();
     } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      LOGGER.log(Level.SEVERE, "Failed to start corpora store!", e);
     }
+    
+    searchService = new LuceneSearchService();
+    
+    try {
+      searchService.initialize();
+    } catch (IOException e) {
+      LOGGER.log(Level.SEVERE, "Failed to start search service!", e);
+    }
+    
+    indexListener = new IndexListener(searchService);
+    store.addCorpusChangeListener(indexListener);
   }
   
   @Override
   public void contextDestroyed(ServletContextEvent sce) {
+    
+    // Note: 
+    // Everything should be shutdown in the opposite
+    // order than the startup.
+    
+    store.removeCorpusChangeListener(indexListener);
+    
+    if (searchService != null) {
+      try {
+        searchService.shutdown();
+      } catch (IOException e) {
+        LOGGER.log(Level.SEVERE, "Failed to shutdown search service!", e);
+      }
+    }
+    
     if (store != null)
       try {
         store.shutdown();
       } catch (IOException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
+        LOGGER.log(Level.SEVERE, "Failed to shutdown corpora store!", e);
       }
   }
 
   public CorporaStore getStore() {
     return store;
+  }
+  
+  public SearchService getSearchService() {
+    return searchService;
   }
   
   public static CorpusServer getInstance() {

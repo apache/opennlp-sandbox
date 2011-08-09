@@ -24,6 +24,10 @@ import java.io.IOException;
  */
 public interface CorporaStore {
 
+  void addCorpusChangeListener(CorporaChangeListener listener);
+  
+  void removeCorpusChangeListener(CorporaChangeListener listener);
+  
   /**
    * Initializes the corpora store. Must be called before any other method
    * of the store is called.

@@ -31,7 +31,7 @@ import javax.sql.DataSource;
 
 import org.apache.derby.jdbc.EmbeddedDataSource40;
 
-public class DerbyCorporaStore implements CorporaStore {
+public class DerbyCorporaStore extends AbstractCorporaStore {
 
   private final static Logger LOGGER = Logger.getLogger(
       DerbyCorporaStore.class .getName());
@@ -42,7 +42,7 @@ public class DerbyCorporaStore implements CorporaStore {
   public void initialize() {
 
     EmbeddedDataSource40 ds = new EmbeddedDataSource40(); 
-    ds.setDatabaseName("XmiCasDB7");
+    ds.setDatabaseName("XmiCasDB");
     ds.setCreateDatabase("create");
     
     dataSource = ds;
@@ -88,7 +88,7 @@ public class DerbyCorporaStore implements CorporaStore {
 
   @Override
   public CorpusStore getCorpus(String corpusId) {
-    return new DerbyCorpusStore(dataSource, corpusId);
+    return new DerbyCorpusStore(dataSource, this, corpusId);
   }
 
   @Override

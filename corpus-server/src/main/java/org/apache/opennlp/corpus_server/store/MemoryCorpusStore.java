@@ -19,7 +19,6 @@ package org.apache.opennlp.corpus_server.store;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -71,9 +70,5 @@ public class MemoryCorpusStore implements CorpusStore {
 	
 	public TypeSystemDescription getTypeSystem() {
 		return typeSystem;
-	}
-	
-	public Collection<String> search(String query) {
-		return casStore.keySet();
 	}
 }

@@ -15,23 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.opennlp.corpus_server.store;
+package org.apache.opennlp.corpus_server.search;
 
 import java.io.IOException;
+import java.util.Collection;
 
-import org.apache.uima.resource.metadata.TypeSystemDescription;
+import org.apache.opennlp.corpus_server.store.CorpusStore;
 
-/**
- * A Corpus Store contains a set of CASes and is responsible to host them
- * together with a type system.
- */
-public interface CorpusStore {
+public interface SearchService {
+
+  void initialize() throws IOException;
   
-  byte[] getCAS(String casId) throws IOException;
+  // index
+  void index(CorpusStore store, String casId) throws IOException;
   
-  void addCAS(String casID, byte[] content) throws IOException;
+  Collection<String> search(CorpusStore store, String q) throws IOException;
   
-  void updateCAS(String casID, byte[] content) throws IOException;
+  void shutdown() throws IOException;
   
-  TypeSystemDescription getTypeSystem() throws IOException;
 }

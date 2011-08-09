@@ -23,7 +23,7 @@ import java.util.Map;
 
 import org.apache.opennlp.corpus_server.UimaUtil;
 
-public class MemoryCorporaStore implements CorporaStore {
+public class MemoryCorporaStore extends AbstractCorporaStore {
 	
 	private static MemoryCorporaStore instance;
 	

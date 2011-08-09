@@ -17,21 +17,24 @@
 
 package org.apache.opennlp.corpus_server.store;
 
-import java.io.IOException;
-
-import org.apache.uima.resource.metadata.TypeSystemDescription;
-
 /**
- * A Corpus Store contains a set of CASes and is responsible to host them
- * together with a type system.
+ * Change listener to notify about corpora changes.
  */
-public interface CorpusStore {
+public interface CorporaChangeListener {
+
+  /**
+   * Indicates that the CAS was added to the corpus.
+   * 
+   * @param store
+   * @param casId
+   */
+  void addedCAS(CorpusStore store, String casId);
   
-  byte[] getCAS(String casId) throws IOException;
-  
-  void addCAS(String casID, byte[] content) throws IOException;
-  
-  void updateCAS(String casID, byte[] content) throws IOException;
-  
-  TypeSystemDescription getTypeSystem() throws IOException;
+  /**
+   * Indicates that a CAS was removed from the corpus.
+   * 
+   * @param store
+   * @param casId
+   */
+  void updatedCAS(CorpusStore store, String casId);
 }
