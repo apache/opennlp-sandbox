@@ -58,6 +58,6 @@ public class CorporaResource {
       CorpusServer corpusServer = CorpusServer.getInstance();
       CorporaStore store = corpusServer.getStore();
     
-      return new CorpusResource(store.getCorpus(corpus));
+      return new CorpusResource(store.getCorpus(corpus), corpusServer.getSearchService());
 	}
 }

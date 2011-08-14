@@ -82,7 +82,7 @@ public class CorpusServer implements ServletContextListener {
     searchService = new LuceneSearchService();
     
     try {
-      searchService.initialize();
+      searchService.initialize(store);
     } catch (IOException e) {
       LOGGER.log(Level.SEVERE, "Failed to start search service!", e);
     }

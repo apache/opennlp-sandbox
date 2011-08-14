@@ -20,11 +20,12 @@ package org.apache.opennlp.corpus_server.search;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.apache.opennlp.corpus_server.store.CorporaStore;
 import org.apache.opennlp.corpus_server.store.CorpusStore;
 
 public interface SearchService {
 
-  void initialize() throws IOException;
+  void initialize(CorporaStore corporaStore) throws IOException;
   
   // index
   void index(CorpusStore store, String casId) throws IOException;

@@ -41,7 +41,7 @@
       <nameValuePair>
         <name>mappingFile</name>
         <value>
-          <string>/Users/joern/dev/opennlp-apache/sandbox/corpus-server/src/main/resources/org/apache/opennlp/corpus_server/search/lucas.xml</string>
+          <string>file-will-be-set-by-ae-integration</string>
         </value>
       </nameValuePair>
     </configurationParameterSettings>
@@ -61,4 +61,24 @@
       <outputsNewCASes>false</outputsNewCASes>
     </operationalProperties>
   </processingResourceMetaData>
+  
+  <resourceManagerConfiguration>
+    <externalResources>
+      <externalResource>
+        <name>LucasIndexWriterProvider</name>
+        <description>Provides a index writer instance.</description>
+        <fileResourceSpecifier>
+          <fileUrl>file:src/test/resources/IndexWriter.properties</fileUrl>
+        </fileResourceSpecifier>
+        <implementationName>org.apache.uima.lucas.indexer.IndexWriterProviderImpl</implementationName>
+      </externalResource>
+    </externalResources>
+    <externalResourceBindings>
+      <externalResourceBinding>
+        <key>indexWriterProvider</key>
+        <resourceName>LucasIndexWriterProvider</resourceName>
+      </externalResourceBinding>
+    </externalResourceBindings>
+  </resourceManagerConfiguration>
+  
 </analysisEngineDescription>

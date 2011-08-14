@@ -18,6 +18,7 @@
 package org.apache.opennlp.corpus_server.store;
 
 import java.io.IOException;
+import java.util.Set;
 
 /**
  * The Corpora Store is the central storage which manages the corpora.
@@ -44,6 +45,8 @@ public interface CorporaStore {
    * @param typeSystemBytes
    */
   void createCorpus(String corpusName, byte typeSystemBytes[]) throws IOException;
+  
+  Set<String> getCorpusIds() throws IOException;
   
   /**
    * Retrieves a corpus of the given name from the store.

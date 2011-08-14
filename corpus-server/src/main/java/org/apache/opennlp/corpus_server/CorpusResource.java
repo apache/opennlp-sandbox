@@ -20,6 +20,8 @@ package org.apache.opennlp.corpus_server;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -31,17 +33,20 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.opennlp.corpus_server.search.SearchService;
 import org.apache.opennlp.corpus_server.store.CorpusStore;
 import org.apache.uima.resource.metadata.TypeSystemDescription;
 import org.xml.sax.SAXException;
 
 public class CorpusResource {
 
-	private final CorpusStore corpus;
+  private final CorpusStore corpus;
+  private final SearchService service;
 	
-	public CorpusResource(CorpusStore corpus) {
-		this.corpus = corpus;
-	}
+  public CorpusResource(CorpusStore corpus, SearchService service) {
+    this.corpus = corpus;
+    this.service = service;
+  }
 	
 	/**
 	 * Adds a new CAS to the store.
@@ -107,6 +112,6 @@ public class CorpusResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("_search")
 	public Collection<String> search(@QueryParam("q") String q) throws IOException {
-		return null; // corpus.search(q);
+	  return service.search(corpus, q);
 	}
 }

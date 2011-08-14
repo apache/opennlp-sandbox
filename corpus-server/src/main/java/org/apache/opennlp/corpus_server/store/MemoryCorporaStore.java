@@ -18,8 +18,11 @@
 package org.apache.opennlp.corpus_server.store;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.opennlp.corpus_server.UimaUtil;
 
@@ -42,6 +45,11 @@ public class MemoryCorporaStore extends AbstractCorporaStore {
 		}
 		
 		return instance;
+	}
+	
+	@Override
+	public Set<String> getCorpusIds() throws IOException {
+	  return Collections.unmodifiableSet(corpora.keySet());
 	}
 	
 	// Note: Add one twice, overwrites an existing one!

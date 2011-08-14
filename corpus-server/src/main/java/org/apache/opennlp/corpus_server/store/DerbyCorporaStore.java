@@ -20,10 +20,15 @@ package org.apache.opennlp.corpus_server.store;
 import java.io.IOException;
 import java.sql.Blob;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -86,6 +91,37 @@ public class DerbyCorporaStore extends AbstractCorporaStore {
     }
   }
 
+  public Set<String> getCorpusIds() throws IOException {
+    
+    Set<String> corpusIds = new HashSet<String>();
+    
+    try {
+      Connection conn = dataSource.getConnection();
+      DatabaseMetaData dbmd = conn.getMetaData();
+
+      String[] types = { "TABLE" };
+      ResultSet resultSet = dbmd.getTables(null, null, "%", types);
+
+      while (resultSet.next()) {
+        String tableName = resultSet.getString(3);
+        corpusIds.add(tableName.toLowerCase());
+      }
+
+      conn.close();
+
+    } catch (SQLException e) {
+
+      if (LOGGER.isLoggable(Level.SEVERE)) {
+        LOGGER.log(Level.SEVERE, "Failed to retrieve corpus ids!", e);
+      }
+
+      throw new IOException(e);
+    }
+    
+    
+    return Collections.unmodifiableSet(corpusIds); 
+  }
+  
   @Override
   public CorpusStore getCorpus(String corpusId) {
     return new DerbyCorpusStore(dataSource, this, corpusId);

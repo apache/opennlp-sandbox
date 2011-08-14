@@ -27,6 +27,8 @@ import org.apache.uima.resource.metadata.TypeSystemDescription;
  */
 public interface CorpusStore {
   
+  String getCorpusId();
+  
   byte[] getCAS(String casId) throws IOException;
   
   void addCAS(String casID, byte[] content) throws IOException;

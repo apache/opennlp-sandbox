@@ -41,6 +41,11 @@ public class MemoryCorpusStore implements CorpusStore {
 		this.typeSystem = typeSystem;
 	}
 	
+	@Override
+	public String getCorpusId() {
+	  return corpusName;
+	}
+	
 	public byte[] getCAS(String casId) {
 		return casStore.get(casId);
 	}

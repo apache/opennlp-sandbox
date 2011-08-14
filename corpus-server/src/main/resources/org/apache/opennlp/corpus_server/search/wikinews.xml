@@ -22,7 +22,7 @@
 <fields xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:noNamespaceSchemaLocation="../../main/resources/lucas.xsd">
 
-	<field name="headline" index="yes" stored="yes">
+	<field name="headline" index="yes" stored="no">
 		<annotations>
 			<annotation type="org.apache.opennlp.annotations.Headline" tokenizer="standard"/>
 		</annotations>

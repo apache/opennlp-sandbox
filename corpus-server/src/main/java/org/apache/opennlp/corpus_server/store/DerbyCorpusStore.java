@@ -40,12 +40,17 @@ public class DerbyCorpusStore implements CorpusStore {
 
   private DataSource dataSource;
   private DerbyCorporaStore store;
-  private String corpusName;
+  private final String corpusName;
   
   DerbyCorpusStore(DataSource dataSource, DerbyCorporaStore store, String corpusName) {
     this.dataSource = dataSource;
     this.store = store;
     this.corpusName = corpusName;
+  }
+  
+  @Override
+  public String getCorpusId() {
+    return corpusName;
   }
   
   @Override
