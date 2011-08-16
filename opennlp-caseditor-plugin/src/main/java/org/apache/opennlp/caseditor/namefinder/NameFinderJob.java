@@ -20,9 +20,9 @@ package org.apache.opennlp.caseditor.namefinder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 import opennlp.tools.namefind.NameFinderME;
 import opennlp.tools.namefind.NameFinderSequenceValidator;
@@ -44,10 +44,10 @@ public class NameFinderJob extends Job {
   // a perfect match with existing annotations
   static class RestrictedSequencesValidator extends NameFinderSequenceValidator {
     
-    private Set<Integer> nameIndex = new HashSet<Integer>();
+    private Map<Integer, String> nameIndex = new HashMap<Integer, String>();
     
     // also give it a no-name index
-    void setRestriction(Set<Integer> nameIndex) {
+    void setRestriction(Map<Integer, String> nameIndex) {
       this.nameIndex = nameIndex;
     }
     
@@ -56,8 +56,9 @@ public class NameFinderJob extends Job {
         String[] outcomesSequence, String outcome) {
       boolean valid = super.validSequence(i, inputSequence, outcomesSequence, outcome);
       
-      if (valid && nameIndex.contains(i)) {
-        return outcome.endsWith(NameFinderME.START) || outcome.endsWith(NameFinderME.CONTINUE);
+      if (valid && nameIndex.get(i) != null) {
+        String desiredOutcome = nameIndex.get(i);
+        return outcome.endsWith(desiredOutcome);
       }
       
       return valid;
@@ -147,13 +148,26 @@ public class NameFinderJob extends Job {
           tokenStrings[i] = token.getCoveredText(text).toString();
         }
         
-        Set<Integer> verifiedNameTokens = new HashSet<Integer>();
+        Map<Integer, String> verifiedNameTokens = new HashMap<Integer, String>();
         
+        // Note: This is slow!
         // iterate over names, to find token indexes
         for (Span verifiedName : verifiedNames) {
           for (int i = 0; i < sentenceTokens.size(); i++) {
+            boolean isStart = true;
             if (verifiedName.contains(sentenceTokens.get(i))) {
-              verifiedNameTokens.add(i);
+              
+              String outcome;
+              
+              // Need better mechanism here, first token in entity should be start!
+              if (isStart) {
+                outcome = NameFinderME.START;
+                isStart = false;
+              }
+              else 
+                outcome = NameFinderME.CONTINUE;
+              
+              verifiedNameTokens.put(i, outcome);
             }
           }
         }
