@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
@@ -111,7 +112,7 @@ public class CorpusResource {
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("_search")
-	public Collection<String> search(@QueryParam("q") String q) throws IOException {
+	public List<String> search(@QueryParam("q") String q) throws IOException {
 	  return service.search(corpus, q);
 	}
 }
