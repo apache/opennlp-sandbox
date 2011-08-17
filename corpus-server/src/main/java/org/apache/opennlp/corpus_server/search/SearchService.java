@@ -18,7 +18,7 @@
 package org.apache.opennlp.corpus_server.search;
 
 import java.io.IOException;
-import java.util.Collection;
+import java.util.List;
 
 import org.apache.opennlp.corpus_server.store.CorporaStore;
 import org.apache.opennlp.corpus_server.store.CorpusStore;
@@ -30,7 +30,7 @@ public interface SearchService {
   // index
   void index(CorpusStore store, String casId) throws IOException;
   
-  Collection<String> search(CorpusStore store, String q) throws IOException;
+  List<String> search(CorpusStore store, String q) throws IOException;
   
   void shutdown() throws IOException;
   
