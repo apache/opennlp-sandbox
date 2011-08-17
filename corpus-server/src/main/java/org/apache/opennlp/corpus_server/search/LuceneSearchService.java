@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
@@ -251,7 +252,7 @@ public class LuceneSearchService implements SearchService {
   }
 
   @Override
-  public Collection<String> search(CorpusStore store, String q)
+  public List<String> search(CorpusStore store, String q)
       throws IOException {
     
     // TODO:
@@ -263,7 +264,7 @@ public class LuceneSearchService implements SearchService {
     QueryParser parser = null;
     
     final IndexSearcher searcher = new IndexSearcher(indexLocation.getAbsolutePath());
-    parser = new QueryParser("content", new StandardAnalyzer());
+    parser = new QueryParser("text", new WhitespaceAnalyzer());
     
     Query query;
     try {
@@ -272,17 +273,18 @@ public class LuceneSearchService implements SearchService {
       throw new IOException(e);
     }
     
-    final Set<String> results = new HashSet<String>();
+    final List<String> results = new ArrayList<String>();
     
     // query index ...
     searcher.search(query, new Collector() {
       
+
       @Override
       public void setScorer(Scorer scorer) throws IOException {
       }
       
       @Override
-      public void setNextReader(IndexReader reader, int arg1) throws IOException {
+      public void setNextReader(IndexReader reader, int docBase) throws IOException {
       }
       
       @Override
