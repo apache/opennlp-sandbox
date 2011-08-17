@@ -60,16 +60,19 @@ public class DerbyCorpusStore implements CorpusStore {
     
     try {
       Connection conn = dataSource.getConnection();
-      Statement s = conn.createStatement();
-      ResultSet casResult = s.executeQuery("select * FROM " + corpusName +
-          " WHERE name='" + casId + "'");
+      
+      PreparedStatement ps = conn.prepareStatement("select * from " + 
+          corpusName + " where name=?");
+      ps.setString(1, casId);
+      
+      ResultSet casResult = ps.executeQuery();
       
       if (casResult.next()) {
         casBytes = casResult.getBytes(2);
       }
       
       casResult.close();
-      s.close();
+      ps.close();
       conn.close();
       
     } catch (SQLException e) {
