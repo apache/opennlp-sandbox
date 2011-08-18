@@ -47,13 +47,22 @@ public class CorpusServer implements ServletContextListener {
         searchService.index(store, casId);
       } catch (IOException e) {
         // TODO: Also log store name!
-        LOGGER.warning("Failed to index cas: " + casId);
+        LOGGER.log(Level.WARNING,"Failed to index cas: " + casId, e);
       }
     }
 
     @Override
     public void updatedCAS(CorpusStore store, String casId) {
       addedCAS(store, casId);
+    }
+
+    @Override
+    public void addedCorpus(CorpusStore store) {
+      try {
+        searchService.createIndex(store);
+      } catch (IOException e) {
+        LOGGER.log(Level.WARNING, "Failed to create index: " + store.getCorpusId(), e);
+      }
     }
   }
   
@@ -77,7 +86,10 @@ public class CorpusServer implements ServletContextListener {
       store.initialize();
     } catch (IOException e) {
       LOGGER.log(Level.SEVERE, "Failed to start corpora store!", e);
+      return;
     }
+    
+    LOGGER.info("Successfully loaded database.");
     
     searchService = new LuceneSearchService();
     
@@ -85,7 +97,10 @@ public class CorpusServer implements ServletContextListener {
       searchService.initialize(store);
     } catch (IOException e) {
       LOGGER.log(Level.SEVERE, "Failed to start search service!", e);
+      return;
     }
+    
+    LOGGER.info("Successfully started search service.");
     
     indexListener = new IndexListener(searchService);
     store.addCorpusChangeListener(indexListener);
@@ -108,12 +123,13 @@ public class CorpusServer implements ServletContextListener {
       }
     }
     
-    if (store != null)
+    if (store != null) {
       try {
         store.shutdown();
       } catch (IOException e) {
         LOGGER.log(Level.SEVERE, "Failed to shutdown corpora store!", e);
       }
+    }
   }
 
   public CorporaStore getStore() {

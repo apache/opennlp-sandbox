@@ -22,6 +22,8 @@ package org.apache.opennlp.corpus_server.store;
  */
 public interface CorporaChangeListener {
 
+  void addedCorpus(CorpusStore store);
+  
   /**
    * Indicates that the CAS was added to the corpus.
    * 

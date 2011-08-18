@@ -24,18 +24,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryParser.ParseException;
@@ -55,6 +51,7 @@ import org.apache.uima.cas.CAS;
 import org.apache.uima.cas.Feature;
 import org.apache.uima.cas.FeatureStructure;
 import org.apache.uima.cas.Type;
+import org.apache.uima.lucas.indexer.IndexWriterProviderImpl;
 import org.apache.uima.resource.FileResourceSpecifier;
 import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.resource.impl.FileResourceSpecifier_impl;
@@ -78,127 +75,137 @@ public class LuceneSearchService implements SearchService {
     return new File("index" + File.separator + corpusId);
   }
   
+  private void createIndexWriter(String corpusId, boolean createIndex) throws IOException {
+    // Set the index mapping file for this corpus in the analysis engine descriptor
+    
+    XMLInputSource in = new XMLInputSource(LuceneSearchService.class.getResourceAsStream(
+        "/org/apache/opennlp/corpus_server/search/LuceneIndexer.xml"), new File(""));
+    
+    try {
+      AnalysisEngineDescription specifier;
+      specifier = (AnalysisEngineDescription) UIMAFramework.getXMLParser().parseResourceSpecifier(in);
+      
+      // TODO: How to store mapping file? Should be transmitted during corpus creation ...
+
+      File mappingTmpFile = File.createTempFile("lucas-mapping", corpusId + ".xml");
+      mappingTmpFile.deleteOnExit();
+      
+      InputStream mappingFileIn = null;
+      OutputStream mappingTmpOut = null;
+      
+      try {
+        mappingFileIn = LuceneSearchService.class.getResourceAsStream(
+            "/org/apache/opennlp/corpus_server/search/" + corpusId + ".xml");
+        mappingTmpOut = new FileOutputStream(mappingTmpFile);
+        
+        byte buffer[] = new byte[1024];
+        int len = 0;
+        while ((len = mappingFileIn.read(buffer)) > 0) {
+          mappingTmpOut.write(buffer, 0, len);
+        }
+      }
+      catch (IOException e) {
+        // TODO: Or just ignore it ?! and do not create the indexer for this corpus?!
+        throw e;
+      }
+      finally {
+        if (mappingFileIn != null) {
+          try {
+            mappingFileIn.close();
+          }
+          catch (IOException e) {}
+        }
+        
+        if (mappingTmpOut != null) {
+          try {
+            mappingTmpOut.close();
+          }
+          catch (IOException e) {}
+        }
+      }
+      
+      
+      specifier.getAnalysisEngineMetaData().
+      getConfigurationParameterSettings().setParameterValue("mappingFile",
+          mappingTmpFile.getAbsolutePath());
+      
+      // Set the index writer properties file in the analysis engine
+      // and replace the index path with the index location for this corpus
+      
+      Properties indexWriterProperties = new Properties();
+      
+      InputStream indexWriterPropertiesIn = null;
+      try {
+        // TODO: Retrieve file form somewhere for this corpus
+        indexWriterPropertiesIn = LuceneSearchService.class.getResourceAsStream(
+            "/org/apache/opennlp/corpus_server/search/IndexWriter.properties");
+      
+        indexWriterProperties.load(indexWriterPropertiesIn);
+      }
+      finally {
+        if (indexWriterPropertiesIn != null) {
+          try {
+            indexWriterPropertiesIn.close();
+          }
+          catch (IOException e) {}
+        }
+      }
+      
+      indexWriterProperties.setProperty(IndexWriterProviderImpl.INDEX_PATH_PROPERTY,
+          getIndexDirectory(corpusId).getAbsolutePath());
+      
+      indexWriterProperties.setProperty(IndexWriterProviderImpl.CREATE_INDEX_PROPERTY,
+          Boolean.toString(createIndex));
+      
+      File indexWriterTmpFile = File.createTempFile("index-writer", corpusId + ".properties");
+      indexWriterTmpFile.deleteOnExit();
+      
+      OutputStream indexPropertiesOut = null; 
+      try {
+        indexPropertiesOut = new FileOutputStream(indexWriterTmpFile);
+        // write properties into a tmp file
+        indexWriterProperties.store(indexPropertiesOut, null);
+      }
+      finally {
+        if (indexPropertiesOut != null) {
+          try {
+            indexPropertiesOut.close();
+          }
+          catch (IOException e) {}
+        }
+      }
+      
+      FileResourceSpecifier indexWriterFileSpecifier = new FileResourceSpecifier_impl();
+      indexWriterFileSpecifier.setFileUrl(indexWriterTmpFile.toURL().toString());
+      // TODO: This will fail ...
+      specifier.getResourceManagerConfiguration().getExternalResources()[0].setResourceSpecifier(indexWriterFileSpecifier);
+      
+      AnalysisEngine indexer = UIMAFramework.produceAnalysisEngine(specifier);
+      corpusIndexerMap.put(corpusId, indexer);
+    } catch (InvalidXMLException e) {
+      throw new IOException(e);
+    } catch (ResourceInitializationException e) {
+      throw new IOException(e);
+    }
+  }
+  
   @Override
   public synchronized void initialize(CorporaStore corporaStore) throws IOException {
     
- // TODO: Need to take care for thread safety ..
-    
     for (String corpusId : corporaStore.getCorpusIds()) {
-      
-      
-      // Set the index mapping file for this corpus in the analysis engine descriptor
-      
-      XMLInputSource in = new XMLInputSource(LuceneSearchService.class.getResourceAsStream(
-          "/org/apache/opennlp/corpus_server/search/LuceneIndexer.xml"), new File(""));
-      
-      try {
-        AnalysisEngineDescription specifier;
-        specifier = (AnalysisEngineDescription) UIMAFramework.getXMLParser().parseResourceSpecifier(in);
-        
-        // TODO: How to store mapping file? Should be transmitted during corpus creation ...
-
-        File mappingTmpFile = File.createTempFile("lucas-mapping", corpusId + ".xml");
-        mappingTmpFile.deleteOnExit();
-        
-        InputStream mappingFileIn = null;
-        OutputStream mappingTmpOut = null;
-        
-        try {
-          mappingFileIn = LuceneSearchService.class.getResourceAsStream(
-              "/org/apache/opennlp/corpus_server/search/" + corpusId + ".xml");
-          mappingTmpOut = new FileOutputStream(mappingTmpFile);
-          
-          byte buffer[] = new byte[1024];
-          int len = 0;
-          while ((len = mappingFileIn.read(buffer)) > 0) {
-            mappingTmpOut.write(buffer, 0, len);
-          }
-        }
-        catch (IOException e) {
-          // TODO: Or just ignore it ?! and do not create the indexer for this corpus?!
-          throw e;
-        }
-        finally {
-          if (mappingFileIn != null) {
-            try {
-              mappingFileIn.close();
-            }
-            catch (IOException e) {}
-          }
-          
-          if (mappingTmpOut != null) {
-            try {
-              mappingTmpOut.close();
-            }
-            catch (IOException e) {}
-          }
-        }
-        
-        
-        specifier.getAnalysisEngineMetaData().
-        getConfigurationParameterSettings().setParameterValue("mappingFile",
-            mappingTmpFile.getAbsolutePath());
-        
-        // Set the index writer properties file in the analysis engine
-        // and replace the index path with the index location for this corpus
-        
-        Properties indexWriterProperties = new Properties();
-        
-        InputStream indexWriterPropertiesIn = null;
-        try {
-          // TODO: Retrieve file form somewhere for this corpus
-          indexWriterPropertiesIn = LuceneSearchService.class.getResourceAsStream(
-              "/org/apache/opennlp/corpus_server/search/IndexWriter.properties");
-        
-          indexWriterProperties.load(indexWriterPropertiesIn);
-        }
-        finally {
-          if (indexWriterPropertiesIn != null) {
-            try {
-              indexWriterPropertiesIn.close();
-            }
-            catch (IOException e) {}
-          }
-        }
-        
-        indexWriterProperties.setProperty("indexPath", getIndexDirectory(corpusId).getAbsolutePath());
-        
-        File indexWriterTmpFile = File.createTempFile("index-writer", corpusId + ".properties");
-        indexWriterTmpFile.deleteOnExit();
-        
-        OutputStream indexPropertiesOut = null; 
-        try {
-          indexPropertiesOut = new FileOutputStream(indexWriterTmpFile);
-          // write properties into a tmp file
-          indexWriterProperties.store(indexPropertiesOut, null);
-        }
-        finally {
-          if (indexPropertiesOut != null) {
-            try {
-              indexPropertiesOut.close();
-            }
-            catch (IOException e) {}
-          }
-        }
-        
-        FileResourceSpecifier indexWriterFileSpecifier = new FileResourceSpecifier_impl();
-        indexWriterFileSpecifier.setFileUrl(indexWriterTmpFile.toURL().toString());
-        // TODO: This will fail ...
-        specifier.getResourceManagerConfiguration().getExternalResources()[0].setResourceSpecifier(indexWriterFileSpecifier);
-        
-        AnalysisEngine indexer = UIMAFramework.produceAnalysisEngine(specifier);
-        corpusIndexerMap.put(corpusId, indexer);
-      } catch (InvalidXMLException e) {
-        throw new IOException(e);
-      } catch (ResourceInitializationException e) {
-        throw new IOException(e);
-      }
+      createIndexWriter(corpusId, false);
+      LOGGER.info("Created Index Writer for " + corpusId + "corpus.");
     }
   }
-
   
   @Override
-  public  synchronized void index(CorpusStore store, String casId) throws IOException {
+  public synchronized void createIndex(CorpusStore store) throws IOException {
+    createIndexWriter(store.getCorpusId(), true);
+    LOGGER.info("Created Index Writer for " + store.getCorpusId() + " corpus.");
+  }
+  
+  @Override
+  public synchronized void index(CorpusStore store, String casId) throws IOException {
     
     // TODO: Need to take care for thread safety ..
     
@@ -248,7 +255,7 @@ public class LuceneSearchService implements SearchService {
       LOGGER.log(Level.SEVERE, "Failed to index CAS: " + casId, e);
     }
     
-    System.out.println("Index: " + casId);
+//    System.out.println("Index: " + casId);
   }
 
   @Override

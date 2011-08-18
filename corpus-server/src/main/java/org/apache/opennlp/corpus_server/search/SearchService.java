@@ -33,5 +33,7 @@ public interface SearchService {
   List<String> search(CorpusStore store, String q) throws IOException;
   
   void shutdown() throws IOException;
+
+  void createIndex(CorpusStore store) throws IOException;
   
 }

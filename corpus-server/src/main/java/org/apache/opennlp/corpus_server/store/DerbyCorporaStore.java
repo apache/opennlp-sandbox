@@ -89,6 +89,14 @@ public class DerbyCorporaStore extends AbstractCorporaStore {
       
       throw new IOException(e);
     }
+    
+    LOGGER.info("Created new corpus: " + corpusName);
+    
+    
+    for (CorporaChangeListener listener : getListeners()) {
+      // TODO: Maybe optimize this, or just pass the corpus id
+      listener.addedCorpus(getCorpus(corpusName));
+    }
   }
 
   public Set<String> getCorpusIds() throws IOException {
@@ -117,7 +125,6 @@ public class DerbyCorporaStore extends AbstractCorporaStore {
 
       throw new IOException(e);
     }
-    
     
     return Collections.unmodifiableSet(corpusIds); 
   }
