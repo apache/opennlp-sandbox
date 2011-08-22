@@ -30,6 +30,8 @@ import org.apache.opennlp.corpus_server.store.CorporaChangeListener;
 import org.apache.opennlp.corpus_server.store.CorporaStore;
 import org.apache.opennlp.corpus_server.store.CorpusStore;
 import org.apache.opennlp.corpus_server.store.DerbyCorporaStore;
+import org.apache.opennlp.corpus_server.taskqueue.MemoryTaskQueueService;
+import org.apache.opennlp.corpus_server.taskqueue.TaskQueueService;
 
 public class CorpusServer implements ServletContextListener {
 
@@ -73,6 +75,7 @@ public class CorpusServer implements ServletContextListener {
   
   private CorporaStore store;
   private SearchService searchService;
+  private TaskQueueService taskQueueService;
   
   private CorporaChangeListener indexListener;
   
@@ -104,6 +107,8 @@ public class CorpusServer implements ServletContextListener {
     
     indexListener = new IndexListener(searchService);
     store.addCorpusChangeListener(indexListener);
+    
+    taskQueueService = new MemoryTaskQueueService();
   }
   
   @Override
@@ -112,6 +117,8 @@ public class CorpusServer implements ServletContextListener {
     // Note: 
     // Everything should be shutdown in the opposite
     // order than the startup.
+    
+    taskQueueService = null;
     
     store.removeCorpusChangeListener(indexListener);
     
@@ -138,6 +145,10 @@ public class CorpusServer implements ServletContextListener {
   
   public SearchService getSearchService() {
     return searchService;
+  }
+  
+  public TaskQueueService getTaskQueueService() {
+    return taskQueueService;
   }
   
   public static CorpusServer getInstance() {
