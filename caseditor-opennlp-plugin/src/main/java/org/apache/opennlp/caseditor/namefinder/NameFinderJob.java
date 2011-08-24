@@ -80,6 +80,7 @@ public class NameFinderJob extends Job {
     super("Name Finder Job");
   }
   
+  // Should load model from specified path in configuration ...
   synchronized void setModelPath(String modelPath) {
     this.modelPath = modelPath;
   }
@@ -101,6 +102,7 @@ public class NameFinderJob extends Job {
   }
 
   // maybe report result, through an interface?!
+  // Note: Concurrency issue ... here! Editor might already be closed after model is loaded!
   @Override
   protected IStatus run(IProgressMonitor monitor) {
 
@@ -109,7 +111,7 @@ public class NameFinderJob extends Job {
       InputStream modelIn = null;
       try {
         modelIn = NameFinderViewPage.class
-            .getResourceAsStream("/en-ner-per.bin");
+            .getResourceAsStream("/en-ner-per.bin"); // TODO: Load model from specified path!
         TokenNameFinderModel model = new TokenNameFinderModel(modelIn);
         sequenceValidator = new RestrictedSequencesValidator();
         nameFinder = new NameFinderME(model, null, 5, sequenceValidator);
@@ -153,8 +155,9 @@ public class NameFinderJob extends Job {
         // Note: This is slow!
         // iterate over names, to find token indexes
         for (Span verifiedName : verifiedNames) {
+          boolean isStart = true;
+        	
           for (int i = 0; i < sentenceTokens.size(); i++) {
-            boolean isStart = true;
             if (verifiedName.contains(sentenceTokens.get(i))) {
               
               String outcome;
@@ -164,8 +167,9 @@ public class NameFinderJob extends Job {
                 outcome = NameFinderME.START;
                 isStart = false;
               }
-              else 
+              else {
                 outcome = NameFinderME.CONTINUE;
+              }
               
               verifiedNameTokens.put(i, outcome);
             }
