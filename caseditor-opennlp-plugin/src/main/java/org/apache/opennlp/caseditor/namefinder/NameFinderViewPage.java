@@ -20,14 +20,19 @@ package org.apache.opennlp.caseditor.namefinder;
 import org.apache.opennlp.caseditor.OpenNLPPlugin;
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
 import org.apache.uima.cas.FeatureStructure;
+import org.apache.uima.caseditor.editor.AnnotationEditor;
 import org.apache.uima.caseditor.editor.ICasDocument;
 import org.apache.uima.caseditor.editor.ICasEditor;
+import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IStatusLineManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.SelectionChangedEvent;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.jface.viewers.Viewer;
@@ -101,9 +106,35 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     });
     
     entityList.setInput(editor.getDocument());
+    
+    entityList.addSelectionChangedListener(new ISelectionChangedListener() {
+		
+		@Override
+		public void selectionChanged(SelectionChangedEvent event) {
+			// if confirmed, send selection event for FS
+			// else, do selectAndReveal
+			StructuredSelection selection = (StructuredSelection) event.getSelection();
+			
+			if (!selection.isEmpty()) {
+				Entity entity = (Entity) selection.getFirstElement();
+				
+				if (entity.isConfirmed()) {
+					// TODO: Send corresponding annotation selection event ...
+				}
+				else  {
+					if (editor instanceof AnnotationEditor) {
+						((AnnotationEditor) editor).selectAndReveal(entity.getBeginIndex(),
+								entity.getEndIndex() - entity.getBeginIndex());
+					}
+				}
+			}
+		}
+	});
   }
 
   public void selectionChanged(IWorkbenchPart part, ISelection selection) {
+
+	  // TODO: Synchronize entity list with selections in the editor ... 
   }
 
   public Control getControl() {
@@ -118,6 +149,17 @@ class NameFinderViewPage extends Page implements ISelectionListener {
       IToolBarManager toolBarManager, IStatusLineManager statusLineManager) {
     super.makeContributions(menuManager, toolBarManager, statusLineManager);
 
+    Action testSelect = new Action("test") {
+    	@Override
+    	public void run() {
+    		System.out.println("test");
+    		AnnotationEditor ed = (AnnotationEditor) editor;
+    		ed.selectAndReveal(0, 10);
+    	}
+    };
+    
+    toolBarManager.add(testSelect);
+    
     // TODO: Action is missing keyboard shortcut
     BaseSelectionListenerAction confirmAction = new BaseSelectionListenerAction("Confirm") {
       
