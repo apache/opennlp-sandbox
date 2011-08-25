@@ -21,13 +21,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import opennlp.tools.namefind.NameFinderME;
 import opennlp.tools.namefind.NameFinderSequenceValidator;
 import opennlp.tools.namefind.TokenNameFinderModel;
 import opennlp.tools.util.Span;
+import opennlp.tools.util.featuregen.StringPattern;
 
 import org.apache.opennlp.caseditor.OpenNLPPlugin;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -46,9 +49,15 @@ public class NameFinderJob extends Job {
     
     private Map<Integer, String> nameIndex = new HashMap<Integer, String>();
     
+    private Set<String> nameOnlyTokens;
+    
     // also give it a no-name index
     void setRestriction(Map<Integer, String> nameIndex) {
       this.nameIndex = nameIndex;
+    }
+    
+    void setNameOnlyTokens(Set<String> nameOnlyTokens) {
+      this.nameOnlyTokens =	nameOnlyTokens;
     }
     
     @Override
@@ -59,6 +68,13 @@ public class NameFinderJob extends Job {
       if (valid && nameIndex.get(i) != null) {
         String desiredOutcome = nameIndex.get(i);
         return outcome.endsWith(desiredOutcome);
+      }
+      
+      // if token part of name only token, then 
+      // its either start, or cont
+      if (valid && nameOnlyTokens.contains(inputSequence[i])) {
+    	  return outcome.endsWith(NameFinderME.START) || 
+    			  outcome.endsWith(NameFinderME.CONTINUE); 
       }
       
       return valid;
@@ -104,7 +120,7 @@ public class NameFinderJob extends Job {
   // maybe report result, through an interface?!
   // Note: Concurrency issue ... here! Editor might already be closed after model is loaded!
   @Override
-  protected IStatus run(IProgressMonitor monitor) {
+  protected synchronized IStatus run(IProgressMonitor monitor) {
 
     // lazy load model on first run ...
     if (nameFinder == null) {
@@ -132,6 +148,10 @@ public class NameFinderJob extends Job {
     
       nameList = new ArrayList<Entity>();
       
+      // remember name tokens, should be for the entire text,
+      // not just the prev sentences ...
+      Set<String> nameTokens = new HashSet<String>();
+      
       for (Span sentence : sentences) {
         
         // Create token list for sentence
@@ -154,6 +174,8 @@ public class NameFinderJob extends Job {
         
         // Note: This is slow!
         // iterate over names, to find token indexes
+
+        
         for (Span verifiedName : verifiedNames) {
           boolean isStart = true;
         	
@@ -172,11 +194,21 @@ public class NameFinderJob extends Job {
               }
               
               verifiedNameTokens.put(i, outcome);
+              
+              // TODO: Do not put stop word
+              // Only put, if char length is two
+              // Only put only letters in token
+              StringPattern pattern = StringPattern.recognize(tokenStrings[i]);
+              
+              if (pattern.isAllLetter() && tokenStrings[i].length() > 1) {
+            	  nameTokens.add(tokenStrings[i]);
+              }
             }
           }
         }
         
         sequenceValidator.setRestriction(verifiedNameTokens);
+        sequenceValidator.setNameOnlyTokens(nameTokens);
         
         Span names[] = nameFinder.find(tokenStrings);
         double nameProbs[] = nameFinder.probs(names);
