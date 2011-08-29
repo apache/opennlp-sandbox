@@ -17,6 +17,8 @@
 
 package org.apache.opennlp.corpus_server.caseditor;
 
+import javax.ws.rs.core.MediaType;
+
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
@@ -31,6 +33,10 @@ import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.part.ViewPart;
+
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
 
 /**
  * A task queue view to retrieve the next annotation task subject from the corpus server.
@@ -58,6 +64,9 @@ public class TaskQueueView extends ViewPart {
     GridDataFactory.swtDefaults().align(SWT.FILL, SWT.CENTER).grab(true, false)
         .applyTo(serverUrl);
     
+    // TOOD: Should be stored in some way, or just done more sophisticated ..
+    serverUrl.setText("http://localhost:8080/corpus-server/rest/queues/ObamaNerTask");
+    
     // Button for next cas (gets nexts and closes current one,
     // if not saved user is asked for it)
     Button nextDocument = new Button(explorerComposite, SWT.BORDER);
@@ -70,13 +79,27 @@ public class TaskQueueView extends ViewPart {
       @Override
       public void widgetSelected(SelectionEvent event) {
 
-        // get next cas id ...
-        String casId = "President_of_China_lunches_with_Brazilian_President.xmi";
+        Client c = Client.create();
         
+        WebResource queueWebResource = c.resource(serverUrl.getText());
+        
+        ClientResponse response2 = queueWebResource
+            .path("_nextTask")
+            .accept(MediaType.APPLICATION_JSON)
+            .header("Content-Type", MediaType.TEXT_XML)
+            .get(ClientResponse.class);
+        
+        String casId = response2.getEntity(String.class);
+        
+        // How to get the corpus uri for the item returned from the queue ???
+        // Queue could always return full URI ...
+        
+        // we also need to corpus the cas id belongs too ...
         IWorkbenchPage page = TaskQueueView.this.getSite().getPage();
         
+        // TODO: Thats a short cut, we need to make this work properly ...
         IEditorInput input = new CorpusServerCasEditorInput(
-            serverUrl.getText(), casId);
+            "http://localhost:8080/corpus-server/rest/corpora/wikinews", casId);
 
         try {
           page.openEditor(input, "org.apache.uima.caseditor.editor");
