@@ -26,5 +26,12 @@
 	      name="Task Queue"
           class="org.apache.opennlp.corpus_server.caseditor.TaskQueueView"
           category="org.apache.opennlp.caseditor" />	
-  </extension>	
+  </extension>
+  
+     <extension
+       point="org.apache.uima.caseditor.editor">
+    <provider
+          class="org.apache.opennlp.corpus_server.caseditor.DefaultCasDocumentProvider">
+    </provider>
+ </extension>
 </plugin>
