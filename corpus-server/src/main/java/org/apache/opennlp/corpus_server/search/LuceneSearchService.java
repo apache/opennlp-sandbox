@@ -25,9 +25,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -282,21 +284,25 @@ public class LuceneSearchService implements SearchService {
     
     final List<String> results = new ArrayList<String>();
     
+    final Set<Integer> filterSet = new HashSet<Integer>();
+    
     // query index ...
     searcher.search(query, new Collector() {
       
-
+      int docBase = Integer.MIN_VALUE;
+      
       @Override
       public void setScorer(Scorer scorer) throws IOException {
       }
       
       @Override
       public void setNextReader(IndexReader reader, int docBase) throws IOException {
+        this.docBase = docBase;
       }
       
       @Override
       public void collect(int id) throws IOException {
-        Document doc = searcher.doc(id);
+        Document doc = searcher.doc(docBase + id);
         String idString = doc.get("id");
         results.add(idString);
       }
