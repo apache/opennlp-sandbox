@@ -46,6 +46,9 @@ public class CorpusBackup {
     }
   }
   
+  // TODO: Make query configurable, maybe user just wants to pull out
+  //       some CAses into the zip package ...
+  
   public static void main(String[] args) {
 
     if (args.length != 3) {
@@ -55,7 +58,7 @@ public class CorpusBackup {
 
     Client c = Client.create();
 
-    WebResource r = c.resource(args[0]);
+    WebResource r = c.resource(args[0] + "/queues");
 
     String corpusId = args[1];
     String backupQueueId = args[1] + "BackupQueue";
@@ -79,7 +82,7 @@ public class CorpusBackup {
       backupOut = new FileOutputStream(backupFile);
       ZipOutputStream zipPackageOut = new ZipOutputStream(backupOut);
     
-      WebResource corpusWebResource = c.resource(args[0] + "/" + corpusId);
+      WebResource corpusWebResource = c.resource(args[0] + "/corpora/" + corpusId);
       
       // fetch ts, does it work like this!?
       ClientResponse tsResponse = corpusWebResource
@@ -97,9 +100,10 @@ public class CorpusBackup {
       zipPackageOut.closeEntry();
       
       // consume task queue
-      WebResource r2 = c.resource(args[0] + "/" + backupQueueId);
+      WebResource r2 = c.resource(args[0] + "/queues/" + backupQueueId);
       
       while (true) {
+        // TODO: Make query configurable ...
         ClientResponse response2 = r2
                 .path("_nextTask")
                 .queryParam("q", args[1])
@@ -111,6 +115,8 @@ public class CorpusBackup {
           System.out.println("##### FINISHED #####");
           break;
         }
+        
+        // check if response was ok ...
         
         String casId = response2.getEntity(String.class);
         
