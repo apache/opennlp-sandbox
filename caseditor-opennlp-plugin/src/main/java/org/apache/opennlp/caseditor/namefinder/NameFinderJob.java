@@ -33,6 +33,10 @@ import opennlp.tools.util.Span;
 import opennlp.tools.util.featuregen.StringPattern;
 
 import org.apache.opennlp.caseditor.OpenNLPPlugin;
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -96,7 +100,9 @@ public class NameFinderJob extends Job {
     super("Name Finder Job");
   }
   
-  // Should load model from specified path in configuration ...
+  /**
+   * @param modelPath
+   */
   synchronized void setModelPath(String modelPath) {
     this.modelPath = modelPath;
   }
@@ -124,10 +130,26 @@ public class NameFinderJob extends Job {
 
     // lazy load model on first run ...
     if (nameFinder == null) {
+    	
+      // TODO: Loading from a ULR (file, http) should be possible
+      //       if the model is already loaded a time stamp should be
+      //       used to detect an updated model, if model is updated,
+      //       load it and replace the old one!
+    	
       InputStream modelIn = null;
+      IResource modelResource = ResourcesPlugin.getWorkspace().getRoot().findMember(modelPath);
+      
+      if (modelResource instanceof IFile) {
+        IFile modelFile = (IFile) modelResource;
+        try {
+          modelIn = modelFile.getContents();
+        } catch (CoreException e) {
+          // TODO: Handle this exception correctly ...
+          e.printStackTrace();
+        }
+      }
+      
       try {
-        modelIn = NameFinderViewPage.class
-            .getResourceAsStream("/en-ner-per.bin"); // TODO: Load model from specified path!
         TokenNameFinderModel model = new TokenNameFinderModel(modelIn);
         sequenceValidator = new RestrictedSequencesValidator();
         nameFinder = new NameFinderME(model, null, 5, sequenceValidator);
