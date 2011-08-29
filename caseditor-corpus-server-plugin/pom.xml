@@ -200,12 +200,12 @@
 						<configuration>
 							<manifestLocation>META-INF/</manifestLocation>
 							<instructions>
-								<Bundle-SymbolicName>org.apache.opennlp.caseditor.CorpusServerPlugin;singleton:=true</Bundle-SymbolicName>
-								<!-- Bundle-Activator>org.apache.opennlp.caseditor.OpenNLPPlugin</Bundle-Activator-->
+								<Bundle-SymbolicName>org.apache.opennlp.corpus_server.caseditor.CorpusServerPlugin;singleton:=true</Bundle-SymbolicName>
+								<Bundle-Activator>org.apache.opennlp.corpus_server.caseditor.Activator</Bundle-Activator>
 								<Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
 								<Bundle-ActivationPolicy>lazy</Bundle-ActivationPolicy>
 								<Export-Package>
-								org.apache.opennlp.caseditor.*
+								org.apache.opennlp.corpus_server.caseditor.*
 								</Export-Package>
 								<Require-Bundle>
 									org.eclipse.jface.text,
