@@ -284,8 +284,6 @@ public class LuceneSearchService implements SearchService {
     
     final List<String> results = new ArrayList<String>();
     
-    final Set<Integer> filterSet = new HashSet<Integer>();
-    
     // query index ...
     searcher.search(query, new Collector() {
       
