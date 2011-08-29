@@ -20,6 +20,7 @@
 package org.apache.opennlp.corpus_server.caseditor;
 
 import java.awt.Color;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -190,8 +191,45 @@ public class DefaultCasDocumentProvider extends
   protected void doSaveDocument(IProgressMonitor monitor, Object element, IDocument document,
           boolean overwrite) throws CoreException {
     
-    // TODO: Add support to save changes back to the server, what to do, if there is already a newer version?
-    //       A dialog could ask if it should be overwritten, or not.
+    
+    fireElementStateChanging(element);
+
+    if (element instanceof CorpusServerCasEditorInput) {
+      
+      CorpusServerCasEditorInput casInput = (CorpusServerCasEditorInput) element;
+
+      // TODO: What to do if there is already a newer version?
+      //       A dialog could ask if it should be overwritten, or not.
+      
+      if (document instanceof AnnotationDocument) {
+        
+        AnnotationDocument annotationDocument = (AnnotationDocument) document;
+        DocumentUimaImpl documentImpl = (DocumentUimaImpl) annotationDocument.getDocument();
+        
+        ByteArrayOutputStream outStream = new ByteArrayOutputStream(40000); 
+        documentImpl.serialize(outStream);
+        
+        Client client = Client.create();
+        WebResource webResource = client.resource(casInput.getServerUrl());
+        
+        byte xmiBytes[] = outStream.toByteArray();
+        
+        ClientResponse response = webResource
+                .path(casInput.getName())
+                .accept(MediaType.TEXT_XML)
+                // TODO: How to fix this? Shouldn't accept do it?
+                .header("Content-Type", MediaType.TEXT_XML)
+                .put(ClientResponse.class, xmiBytes);
+        
+        // TODO: Check resposne for error
+        
+        // TODO: Is it writing in the UI thread?
+      }
+    }
+
+    // tell everyone that the element changed and is not
+    // dirty any longer
+    fireElementDirtyStateChanged(element, false);
     
   }
 
