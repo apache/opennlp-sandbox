@@ -70,7 +70,20 @@ public class CorpusServerCasEditorInput implements IEditorInput {
   
   @Override
   public boolean equals(Object obj) {
-    return super.equals(corpusUrl + casId);
+    
+    if (obj == this) {
+      return true;
+    }
+    else if (obj instanceof CorpusServerCasEditorInput) {
+      
+      CorpusServerCasEditorInput input = 
+          (CorpusServerCasEditorInput) obj;
+      
+      return (corpusUrl + casId).equals(input.corpusUrl + input.casId);
+    }
+    else {
+      return false;
+    }
   }
   
   @Override
