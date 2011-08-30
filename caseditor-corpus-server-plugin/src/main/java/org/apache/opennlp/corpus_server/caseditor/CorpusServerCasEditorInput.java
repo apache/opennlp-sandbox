@@ -67,4 +67,14 @@ public class CorpusServerCasEditorInput implements IEditorInput {
   public String getServerUrl() {
     return corpusUrl;
   }
+  
+  @Override
+  public boolean equals(Object obj) {
+    return super.equals(corpusUrl + casId);
+  }
+  
+  @Override
+  public int hashCode() {
+    return (corpusUrl + casId).hashCode();
+  }
 }
