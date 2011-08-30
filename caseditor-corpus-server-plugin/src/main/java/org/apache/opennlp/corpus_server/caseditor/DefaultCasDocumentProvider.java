@@ -26,6 +26,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import javax.ws.rs.core.MediaType;
 
@@ -62,6 +67,14 @@ import com.sun.jersey.api.client.WebResource;
 public class DefaultCasDocumentProvider extends
         org.apache.uima.caseditor.editor.CasDocumentProvider {
 
+  private Map<Object, Set<String>> shownTypesMap = new HashMap<Object, Set<String>>();
+  
+  private Map<Object, Map<String, AnnotationStyle>> annotationStyleMap =
+      new HashMap<Object, Map<String, AnnotationStyle>>();
+  
+  private Map<Object, EditorAnnotationStatus> editorStatusMap =
+      new HashMap<Object, EditorAnnotationStatus>();
+  
   private static TypeSystemDescription createTypeSystemDescription(InputStream in) throws IOException {
 
     // Note:
@@ -191,7 +204,6 @@ public class DefaultCasDocumentProvider extends
   protected void doSaveDocument(IProgressMonitor monitor, Object element, IDocument document,
           boolean overwrite) throws CoreException {
     
-    
     fireElementStateChanging(element);
 
     if (element instanceof CorpusServerCasEditorInput) {
@@ -230,36 +242,86 @@ public class DefaultCasDocumentProvider extends
     // tell everyone that the element changed and is not
     // dirty any longer
     fireElementDirtyStateChanged(element, false);
-    
   }
 
   @Override
   public AnnotationStyle getAnnotationStyle(Object element, Type type) {
-    return new AnnotationStyle(type.getName(), Style.SQUIGGLES, Color.BLUE, 1);
+    
+    Map<String, AnnotationStyle> styleMap = annotationStyleMap.get(element);
+    
+    AnnotationStyle style = null;
+    
+    if (styleMap != null) {
+      style = styleMap.get(type.getName());
+    }
+    
+    if (style == null) {
+      style = new AnnotationStyle(type.getName(), Style.SQUIGGLES, Color.RED, 1);
+    }
+    
+    return style;
   }
 
   @Override
   public void setAnnotationStyle(Object element, AnnotationStyle style) {
+    
+    Map<String, AnnotationStyle> styleMap = annotationStyleMap.get(element);
+    
+    if (styleMap == null) {
+      styleMap = new HashMap<String, AnnotationStyle>();
+      annotationStyleMap.put(element, styleMap);
+    }
+    
+    annotationStyleMap.put(element, styleMap);
   }
 
   @Override
   protected Collection<String> getShownTypes(Object element) {
-    return new ArrayList<String>();
+    Set<String> shownTypes = shownTypesMap.get(element);
+    
+    if (shownTypes != null) {
+      return Collections.unmodifiableCollection(shownTypes);
+    }
+    else {
+      return new ArrayList<String>();
+    }
   }
   
   @Override
   protected void addShownType(Object element, Type type) {
-    // Note: Should be local ...
+    Set<String> shownTypes = shownTypesMap.get(element);
+    
+    if (shownTypes != null) {
+      shownTypes = new HashSet<String>();
+      shownTypesMap.put(element, shownTypes);
+    }
+    
+    shownTypes.add(type.getName());
   }
   
   @Override
   protected void removeShownType(Object element, Type type) {
-    // Note: Should be local ...
+    Set<String> shownTypes = shownTypesMap.get(element);
+    
+    if (shownTypes != null) {
+      shownTypes = new HashSet<String>();
+      shownTypesMap.put(element, shownTypes);
+    }
+    
+    shownTypes.remove(type.getName());
   }
   
   @Override
   protected EditorAnnotationStatus getEditorAnnotationStatus(Object element) {
-    return new EditorAnnotationStatus(CAS.TYPE_NAME_ANNOTATION, null, CAS.NAME_DEFAULT_SOFA);
+    
+    EditorAnnotationStatus editorStatus = editorStatusMap.get(element);
+    
+    if (editorStatus == null) {
+      editorStatus = new EditorAnnotationStatus(CAS.TYPE_NAME_ANNOTATION,
+          null, CAS.NAME_DEFAULT_SOFA);
+    }
+    
+    return editorStatus;
   }
 
   @Override
@@ -267,18 +329,18 @@ public class DefaultCasDocumentProvider extends
   }
 
   @Override
-  public Composite createTypeSystemSelectorForm(ICasEditor arg0,
+  public Composite createTypeSystemSelectorForm(ICasEditor editor,
       Composite arg1, IStatus arg2) {
     
-    // should not be needed, we can always provide a type sytem, and
+    // Should not be needed, we can always provide a type system, and
     // if not, we can only show an error message!
     
     return null;
   }
 
   @Override
-  protected void setEditorAnnotationStatus(Object arg0,
-      EditorAnnotationStatus arg1) {
-    
+  protected void setEditorAnnotationStatus(Object element,
+      EditorAnnotationStatus editorStatus) {
+    editorStatusMap.put(element, editorStatus);
   }
 }
