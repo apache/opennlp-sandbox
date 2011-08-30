@@ -23,12 +23,12 @@
 <plugin>
 	<extension point="org.eclipse.ui.views">
 	
-	<category id="org.apache.uima.caseditor.ui.views" name="Corpus Server" />
+	<category id="org.apache.opennlp.corpus_server.caseditor.views" name="Corpus Server" />
 	
 	<view id="org.apache.opennlp.corpus_server.caseditor.TaskQueueView"
 		name="Task Queue"
 		class="org.apache.opennlp.corpus_server.caseditor.TaskQueueView"
-		category="org.apache.opennlp.caseditor" />	
+		category="org.apache.opennlp.corpus_server.caseditor.views" />	
 	</extension>
   
  	<extension point="org.apache.uima.caseditor.editor">
