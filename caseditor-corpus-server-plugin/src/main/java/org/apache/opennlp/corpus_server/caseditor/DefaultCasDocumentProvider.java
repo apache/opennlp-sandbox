@@ -38,12 +38,12 @@ import org.apache.uima.ResourceSpecifierFactory;
 import org.apache.uima.UIMAFramework;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.cas.Type;
-import org.apache.uima.caseditor.editor.AnnotationDocument;
 import org.apache.uima.caseditor.editor.AnnotationStyle;
 import org.apache.uima.caseditor.editor.AnnotationStyle.Style;
 import org.apache.uima.caseditor.editor.DocumentFormat;
 import org.apache.uima.caseditor.editor.DocumentUimaImpl;
 import org.apache.uima.caseditor.editor.EditorAnnotationStatus;
+import org.apache.uima.caseditor.editor.ICasDocument;
 import org.apache.uima.caseditor.editor.ICasEditor;
 import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.resource.metadata.FsIndexDescription;
@@ -57,7 +57,6 @@ import org.apache.uima.util.XMLParser;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.jface.text.IDocument;
 import org.eclipse.swt.widgets.Composite;
 
 import com.sun.jersey.api.client.Client;
@@ -123,7 +122,7 @@ public class DefaultCasDocumentProvider extends
   }
   
   @Override
-  protected IDocument createDocument(Object element) throws CoreException {
+  protected ICasDocument createDocument(Object element) throws CoreException {
     
     if (element instanceof CorpusServerCasEditorInput) {
       
@@ -191,21 +190,16 @@ public class DefaultCasDocumentProvider extends
         }
       }
       
-      AnnotationDocument document = new AnnotationDocument();
-      document.setDocument(doc);
-      
-      return document;
+      return doc;
     }
 
     return null;
   }
 
   @Override
-  protected void doSaveDocument(IProgressMonitor monitor, Object element, IDocument document,
+  protected void doSaveDocument(IProgressMonitor monitor, Object element, ICasDocument document,
           boolean overwrite) throws CoreException {
     
-    fireElementStateChanging(element);
-
     if (element instanceof CorpusServerCasEditorInput) {
       
       CorpusServerCasEditorInput casInput = (CorpusServerCasEditorInput) element;
@@ -213,10 +207,9 @@ public class DefaultCasDocumentProvider extends
       // TODO: What to do if there is already a newer version?
       //       A dialog could ask if it should be overwritten, or not.
       
-      if (document instanceof AnnotationDocument) {
+      if (document instanceof DocumentUimaImpl) {
         
-        AnnotationDocument annotationDocument = (AnnotationDocument) document;
-        DocumentUimaImpl documentImpl = (DocumentUimaImpl) annotationDocument.getDocument();
+        DocumentUimaImpl documentImpl = (DocumentUimaImpl) document;
         
         ByteArrayOutputStream outStream = new ByteArrayOutputStream(40000); 
         documentImpl.serialize(outStream);
@@ -291,7 +284,7 @@ public class DefaultCasDocumentProvider extends
   protected void addShownType(Object element, Type type) {
     Set<String> shownTypes = shownTypesMap.get(element);
     
-    if (shownTypes != null) {
+    if (shownTypes == null) {
       shownTypes = new HashSet<String>();
       shownTypesMap.put(element, shownTypes);
     }
@@ -303,7 +296,7 @@ public class DefaultCasDocumentProvider extends
   protected void removeShownType(Object element, Type type) {
     Set<String> shownTypes = shownTypesMap.get(element);
     
-    if (shownTypes != null) {
+    if (shownTypes == null) {
       shownTypes = new HashSet<String>();
       shownTypesMap.put(element, shownTypes);
     }
