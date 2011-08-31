@@ -17,13 +17,23 @@
 
 package org.apache.opennlp.corpus_server.caseditor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.ws.rs.core.MediaType;
 
 import org.eclipse.jface.layout.GridDataFactory;
+import org.eclipse.jface.viewers.ILabelProviderListener;
+import org.eclipse.jface.viewers.IOpenListener;
+import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.ITableLabelProvider;
+import org.eclipse.jface.viewers.OpenEvent;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
@@ -48,6 +58,8 @@ public class TaskQueueView extends ViewPart {
   
   private TableViewer historyViewer;
   
+  private List<IEditorInput> lastInputElements = new ArrayList<IEditorInput>();
+      
   @Override
   public void createPartControl(Composite parent) {
 
@@ -106,6 +118,16 @@ public class TaskQueueView extends ViewPart {
         } catch (PartInitException e) {
           e.printStackTrace();
         }
+        
+        // Add casId to historyViewer ... should be inserted at the top, not bottom.
+        
+        lastInputElements.add(input);
+        historyViewer.insert(input, 0);
+        
+        if (lastInputElements.size() > 10) {
+          IEditorInput tooOldInput = lastInputElements.remove(0);
+          historyViewer.remove(tooOldInput);
+        }
       }
 
       @Override
@@ -115,11 +137,58 @@ public class TaskQueueView extends ViewPart {
     
     // History view ... shows n last opened CASes ...
     historyViewer = new TableViewer(explorerComposite);
+    historyViewer.setLabelProvider(new ITableLabelProvider() {
 
-    GridDataFactory.swtDefaults().align(SWT.FILL, SWT.FILL).grab(true, true)
+      @Override
+      public void addListener(ILabelProviderListener arg0) {
+      }
+
+      @Override
+      public void dispose() {
+      }
+
+      @Override
+      public boolean isLabelProperty(Object arg0, String arg1) {
+        return false;
+      }
+
+      @Override
+      public void removeListener(ILabelProviderListener arg0) {
+      }
+
+      @Override
+      public Image getColumnImage(Object arg0, int arg1) {
+        return null;
+      }
+
+      @Override
+      public String getColumnText(Object arg0, int arg1) {
+        return ((IEditorInput) arg0).getName();
+      }});
+    
+      GridDataFactory.swtDefaults().align(SWT.FILL, SWT.FILL).grab(true, true)
         .span(2, 1).applyTo(historyViewer.getTable());
     
-    // User should be able to open cas from list ...
+      historyViewer.addOpenListener(new IOpenListener() {
+        
+        @Override
+        public void open(OpenEvent event) {
+          
+          StructuredSelection selection = (StructuredSelection) event.getSelection();
+          
+          if (!selection.isEmpty()) {
+            IWorkbenchPage page = TaskQueueView.this.getSite().getPage();
+            
+            IEditorInput input = (IEditorInput) selection.getFirstElement();
+
+            try {
+              page.openEditor(input, "org.apache.uima.caseditor.editor");
+            } catch (PartInitException e) {
+              e.printStackTrace();
+            }
+          }
+        }
+      });
   }
 
   @Override
