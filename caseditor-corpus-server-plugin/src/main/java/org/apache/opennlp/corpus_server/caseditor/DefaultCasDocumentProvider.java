@@ -71,8 +71,7 @@ public class DefaultCasDocumentProvider extends
   private Map<Object, Map<String, AnnotationStyle>> annotationStyleMap =
       new HashMap<Object, Map<String, AnnotationStyle>>();
   
-  private Map<Object, EditorAnnotationStatus> editorStatusMap =
-      new HashMap<Object, EditorAnnotationStatus>();
+  private Map<String, EditorAnnotationStatus> sharedEditorStatus = new HashMap<String, EditorAnnotationStatus>();
   
   private static TypeSystemDescription createTypeSystemDescription(InputStream in) throws IOException {
 
@@ -237,10 +236,15 @@ public class DefaultCasDocumentProvider extends
     fireElementDirtyStateChanged(element, false);
   }
 
+  private String getTypeSystemId(CorpusServerCasEditorInput input) {
+    return input.getServerUrl();
+  }
+  
   @Override
   public AnnotationStyle getAnnotationStyle(Object element, Type type) {
     
-    Map<String, AnnotationStyle> styleMap = annotationStyleMap.get(element);
+    Map<String, AnnotationStyle> styleMap = annotationStyleMap.get(
+        getTypeSystemId((CorpusServerCasEditorInput) element));
     
     AnnotationStyle style = null;
     
@@ -258,14 +262,15 @@ public class DefaultCasDocumentProvider extends
   @Override
   public void setAnnotationStyle(Object element, AnnotationStyle style) {
     
-    Map<String, AnnotationStyle> styleMap = annotationStyleMap.get(element);
+    Map<String, AnnotationStyle> styleMap = annotationStyleMap.get(
+        getTypeSystemId((CorpusServerCasEditorInput) element));
     
     if (styleMap == null) {
       styleMap = new HashMap<String, AnnotationStyle>();
-      annotationStyleMap.put(element, styleMap);
+      annotationStyleMap.put(getTypeSystemId((CorpusServerCasEditorInput) element), styleMap);
     }
     
-    annotationStyleMap.put(element, styleMap);
+    styleMap.put(style.getAnnotation(), style);
   }
 
   @Override
@@ -304,10 +309,13 @@ public class DefaultCasDocumentProvider extends
     shownTypes.remove(type.getName());
   }
   
+
+  
   @Override
   protected EditorAnnotationStatus getEditorAnnotationStatus(Object element) {
     
-    EditorAnnotationStatus editorStatus = editorStatusMap.get(element);
+    EditorAnnotationStatus editorStatus = sharedEditorStatus.get(getTypeSystemId(
+        (CorpusServerCasEditorInput) element));
     
     if (editorStatus == null) {
       editorStatus = new EditorAnnotationStatus(CAS.TYPE_NAME_ANNOTATION,
@@ -334,6 +342,7 @@ public class DefaultCasDocumentProvider extends
   @Override
   protected void setEditorAnnotationStatus(Object element,
       EditorAnnotationStatus editorStatus) {
-    editorStatusMap.put(element, editorStatus);
+    sharedEditorStatus.put(getTypeSystemId(
+        (CorpusServerCasEditorInput) element), editorStatus);
   }
 }
