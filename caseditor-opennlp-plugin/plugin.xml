@@ -23,10 +23,17 @@
 <plugin>
 
   <extension point="org.eclipse.ui.views">
+  	<category id="org.apache.opennlp.caseditor.views" name="OpenNLP" />
+  	
+    <view id="org.apache.opennlp.caseditor.sentdetect.SentenceDetectorView"
+	      name="Sentence Detector"
+          class="org.apache.opennlp.caseditor.sentdetect.SentenceDetectorView"
+          category="org.apache.opennlp.caseditor.views" />
+          
     <view id="org.apache.opennlp.caseditor.NameFinderView"
 	      name="Name Finder"
           class="org.apache.opennlp.caseditor.namefinder.NameFinderView"
-          category="org.apache.opennlp.caseditor" />	
+          category="org.apache.opennlp.caseditor.views" />
   </extension>	
 	
  <extension  point="org.eclipse.core.runtime.preferences">
@@ -36,6 +43,18 @@
  </extension>
  
   <extension point="org.eclipse.ui.preferencePages">
+    <page
+          class="org.apache.opennlp.caseditor.OpenNLPPreferencePage"
+          id="org.apache.opennlp.caseditor.OpenNLPPreference"
+          name="OpenNLP">
+    </page>
+
+    <page
+          class="org.apache.opennlp.caseditor.sentdetect.SentenceDetectorPreferencePage"
+          id="org.apache.opennlp.caseditor.SentenceDetectorPreference"
+          name="OpenNLP Sentence Detector">
+    </page>
+    
     <page
           class="org.apache.opennlp.caseditor.namefinder.NameFinderPreferencePage"
           id="org.apache.opennlp.caseditor.NameFinderPreference"

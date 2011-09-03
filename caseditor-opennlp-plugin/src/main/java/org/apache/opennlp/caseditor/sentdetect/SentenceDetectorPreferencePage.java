@@ -15,14 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.opennlp.caseditor;
+package org.apache.opennlp.caseditor.sentdetect;
 
-public class OpenNLPPreferenceConstants {
+import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
+import org.eclipse.jface.preference.FieldEditorPreferencePage;
+import org.eclipse.jface.preference.StringFieldEditor;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.IWorkbenchPreferencePage;
 
-  public static final String SENTENCE_DETECTOR_MODEL_PATH = "SENTENCE_DETECTOR_MODEL_PATH";
-  public static final String NAME_FINDER_MODEL_PATH = "NAME_FINDER_MODEL_PATH";
+public class SentenceDetectorPreferencePage extends FieldEditorPreferencePage
+    implements IWorkbenchPreferencePage {
+
+  private StringFieldEditor modelPath;
   
-  public static final String SENTENCE_TYPE = "SENTENCE_TYPE";
-  public static final String TOKEN_TYPE = "TOKEN_TYPE";
-  public static final String NAME_TYPE = "NAME_TYPE";
+  @Override
+  public void init(IWorkbench workbench) {
+  }
+
+  @Override
+  protected void createFieldEditors() {
+    modelPath = new StringFieldEditor(
+        OpenNLPPreferenceConstants.SENTENCE_DETECTOR_MODEL_PATH,
+        "Model Path", getFieldEditorParent());
+    addField(modelPath);
+  }
+
 }

@@ -15,14 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.opennlp.caseditor;
+package org.apache.opennlp.caseditor.sentdetect;
 
-public class OpenNLPPreferenceConstants {
+import org.apache.uima.caseditor.editor.AnnotationEditorView;
+import org.apache.uima.caseditor.editor.ICasDocument;
+import org.apache.uima.caseditor.editor.ICasEditor;
 
-  public static final String SENTENCE_DETECTOR_MODEL_PATH = "SENTENCE_DETECTOR_MODEL_PATH";
-  public static final String NAME_FINDER_MODEL_PATH = "NAME_FINDER_MODEL_PATH";
-  
-  public static final String SENTENCE_TYPE = "SENTENCE_TYPE";
-  public static final String TOKEN_TYPE = "TOKEN_TYPE";
-  public static final String NAME_TYPE = "NAME_TYPE";
+public class SentenceDetectorView extends AnnotationEditorView {
+
+  public SentenceDetectorView() {
+    super("The Sentence Detector View is currently not available.");
+  }
+
+  protected PageRec doCreatePage(ICasEditor editor) {
+    PageRec result = null;
+
+    ICasDocument document = editor.getDocument();
+
+    if (document != null) {
+
+      SentenceDetectorViewPage page = new SentenceDetectorViewPage(editor);
+      initPage(page);
+      page.createControl(getPageBook());
+
+      result = new PageRec(editor, page);
+    }
+
+    return result;
+  }
 }
