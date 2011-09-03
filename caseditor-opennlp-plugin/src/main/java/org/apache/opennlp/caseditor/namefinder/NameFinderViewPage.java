@@ -23,7 +23,6 @@ import org.apache.uima.cas.FeatureStructure;
 import org.apache.uima.caseditor.editor.AnnotationEditor;
 import org.apache.uima.caseditor.editor.ICasDocument;
 import org.apache.uima.caseditor.editor.ICasEditor;
-import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IStatusLineManager;
 import org.eclipse.jface.action.IToolBarManager;
@@ -55,6 +54,52 @@ import org.eclipse.ui.part.Page;
 //       when no names are detected. -> give an indication what could be wrong!
 class NameFinderViewPage extends Page implements ISelectionListener {
 
+  class ConfirmAnnotationAction extends BaseSelectionListenerAction {
+    
+    public ConfirmAnnotationAction() {
+      super("Confirm");
+    }
+    
+    @Override
+    protected boolean updateSelection(IStructuredSelection selection) {
+      
+      boolean result = false;
+      
+      if (!selection.isEmpty()) {
+        Entity entity = (Entity) selection.getFirstElement();
+        return !entity.isConfirmed();
+      }
+      
+      return result;
+    }
+    
+    // Note: Action can only handle one element.
+    //       Must be extended to handle "bulk" confirms
+    @Override
+    public void run() {
+      super.run();
+      
+      // get selected entities and add annotations to the CAS
+      IStructuredSelection selection = 
+          (IStructuredSelection) entityList.getSelection();
+      
+      Object elements[] = selection.toArray();
+
+      if (elements.length > 0) {
+        Entity selectedEntity = (Entity) elements[0];
+        if (!selectedEntity.isConfirmed()) {
+          ICasDocument document = editor.getDocument();
+          
+          FeatureStructure nameAnnotation = document.getCAS().createAnnotation(
+              document.getCAS().getTypeSystem().getType(nameTypeName),
+              selectedEntity.getBeginIndex(), selectedEntity.getEndIndex());
+          document.getCAS().addFsToIndexes(nameAnnotation);
+          document.addFeatureStructure(nameAnnotation);
+        }
+      }
+    }
+  }
+  
   private ICasEditor editor;
 
   private TableViewer entityList;
@@ -149,59 +194,10 @@ class NameFinderViewPage extends Page implements ISelectionListener {
       IToolBarManager toolBarManager, IStatusLineManager statusLineManager) {
     super.makeContributions(menuManager, toolBarManager, statusLineManager);
 
-    Action testSelect = new Action("test") {
-    	@Override
-    	public void run() {
-    		System.out.println("test");
-    		AnnotationEditor ed = (AnnotationEditor) editor;
-    		ed.selectAndReveal(0, 10);
-    	}
-    };
-    
-    toolBarManager.add(testSelect);
-    
     // TODO: Action is missing keyboard shortcut
-    BaseSelectionListenerAction confirmAction = new BaseSelectionListenerAction("Confirm") {
-      
-      @Override
-      protected boolean updateSelection(IStructuredSelection selection) {
-        
-        boolean result = false;
-        
-        if (!selection.isEmpty()) {
-          Entity entity = (Entity) selection.getFirstElement();
-          return !entity.isConfirmed();
-        }
-        
-        return result;
-      }
-      
-      // Note: Action can only handle one element.
-      //       Must be extended to handle "bulk" confirms
-      @Override
-      public void run() {
-        super.run();
-        
-        // get selected entities and add annotations to the CAS
-        IStructuredSelection selection = 
-            (IStructuredSelection) entityList.getSelection();
-        
-        Object elements[] = selection.toArray();
+    // TODO: We need a confirm icon
 
-        if (elements.length > 0) {
-          Entity selectedEntity = (Entity) elements[0];
-          if (!selectedEntity.isConfirmed()) {
-            ICasDocument document = editor.getDocument();
-            
-            FeatureStructure nameAnnotation = document.getCAS().createAnnotation(
-                document.getCAS().getTypeSystem().getType(nameTypeName),
-                selectedEntity.getBeginIndex(), selectedEntity.getEndIndex());
-            document.getCAS().addFsToIndexes(nameAnnotation);
-            document.addFeatureStructure(nameAnnotation);
-          }
-        }
-      }
-    };
+    BaseSelectionListenerAction confirmAction = new ConfirmAnnotationAction();
     
     getSite().getSelectionProvider().addSelectionChangedListener(confirmAction); // need also to unregister!!!!
     
