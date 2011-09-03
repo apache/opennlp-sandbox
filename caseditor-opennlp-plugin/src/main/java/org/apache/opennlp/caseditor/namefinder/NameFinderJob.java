@@ -32,6 +32,7 @@ import opennlp.tools.namefind.TokenNameFinderModel;
 import opennlp.tools.util.Span;
 import opennlp.tools.util.featuregen.StringPattern;
 
+import org.apache.opennlp.caseditor.ModelUtil;
 import org.apache.opennlp.caseditor.OpenNLPPlugin;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
@@ -131,23 +132,7 @@ public class NameFinderJob extends Job {
     // lazy load model on first run ...
     if (nameFinder == null) {
     	
-      // TODO: Loading from a ULR (file, http) should be possible
-      //       if the model is already loaded a time stamp should be
-      //       used to detect an updated model, if model is updated,
-      //       load it and replace the old one!
-    	
-      InputStream modelIn = null;
-      IResource modelResource = ResourcesPlugin.getWorkspace().getRoot().findMember(modelPath);
-      
-      if (modelResource instanceof IFile) {
-        IFile modelFile = (IFile) modelResource;
-        try {
-          modelIn = modelFile.getContents();
-        } catch (CoreException e) {
-          // TODO: Handle this exception correctly ...
-          e.printStackTrace();
-        }
-      }
+      InputStream modelIn = ModelUtil.openModelIn(modelPath);
       
       try {
         TokenNameFinderModel model = new TokenNameFinderModel(modelIn);
