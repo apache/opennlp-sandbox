@@ -29,14 +29,12 @@ public class NameFinderPreferencePage extends FieldEditorPreferencePage
 
   private StringFieldEditor modelPath;
   
-  private StringFieldEditor sentenceType;
-  private StringFieldEditor tokenType;
   private StringFieldEditor nameType;
   
   
   public NameFinderPreferencePage() {
     setPreferenceStore(OpenNLPPlugin.getDefault().getPreferenceStore());
-    setDescription("UIMA Annotation Editor Preferences.");
+    setDescription("Name Finder Preferences.");
   }
 
   @Override
@@ -45,21 +43,10 @@ public class NameFinderPreferencePage extends FieldEditorPreferencePage
 
   @Override
   protected void createFieldEditors() {
-    // editor line length hint
     modelPath = new StringFieldEditor(
-            OpenNLPPreferenceConstants.MODEL_PATH,
+            OpenNLPPreferenceConstants.NAME_FINDER_MODEL_PATH,
             "Model Path", getFieldEditorParent());
     addField(modelPath);
-    
-    sentenceType = new StringFieldEditor(
-        OpenNLPPreferenceConstants.SENTENCE_TYPE,
-        "Sentence Type", getFieldEditorParent());
-    addField(sentenceType);
-    
-    tokenType = new StringFieldEditor(
-        OpenNLPPreferenceConstants.TOKEN_TYPE,
-        "Token Type", getFieldEditorParent());
-    addField(tokenType);
     
     nameType = new StringFieldEditor(
         OpenNLPPreferenceConstants.NAME_TYPE,
