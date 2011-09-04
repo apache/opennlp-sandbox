@@ -17,6 +17,7 @@
 
 package org.apache.opennlp.caseditor.sentdetect;
 
+import org.apache.opennlp.caseditor.OpenNLPPlugin;
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.StringFieldEditor;
@@ -27,6 +28,11 @@ public class SentenceDetectorPreferencePage extends FieldEditorPreferencePage
     implements IWorkbenchPreferencePage {
 
   private StringFieldEditor modelPath;
+  
+  public SentenceDetectorPreferencePage() {
+    setPreferenceStore(OpenNLPPlugin.getDefault().getPreferenceStore());
+    setDescription("Sentence Detector Preferences.");
+  }
   
   @Override
   public void init(IWorkbench workbench) {
