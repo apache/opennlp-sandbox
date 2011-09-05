@@ -17,21 +17,78 @@
 
 package org.apache.opennlp.caseditor.sentdetect;
 
+import org.apache.opennlp.caseditor.namefinder.Entity;
+import org.apache.uima.caseditor.editor.ICasDocument;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.jobs.IJobChangeEvent;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
+import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.swt.widgets.Display;
 
 public class SentenceContentProvider implements IStructuredContentProvider {
 
-  @Override
-  public void dispose() {
+  private ICasDocument document;
+  
+  private SentenceDetectorJob sentenceDetector;
+  
+  private TableViewer sentenceList;
+  
+  public SentenceContentProvider(SentenceDetectorJob sentenceDetector, TableViewer sentenceList) {
+    this.sentenceDetector = sentenceDetector;
+    this.sentenceList = sentenceList;
+    
+    sentenceDetector.addJobChangeListener(new JobChangeAdapter() {
+      public void done(final IJobChangeEvent event) {
+        Display.getDefault().asyncExec(new Runnable() {
+          
+          @Override
+          public void run() {
+            IStatus status = event.getResult();
+            
+            if (status.getSeverity() == IStatus.OK) {
+              
+              Entity sentences[] = SentenceContentProvider.this.
+                  sentenceDetector.getDetectedSentences();
+              
+              SentenceContentProvider.this.sentenceList.refresh();
+              SentenceContentProvider.this.sentenceList.add(sentences);
+            }
+          }
+        });
+      }
+    });
+    
   }
-
+  
   @Override
   public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
+    
+    if (oldInput != null) {
+      // Remove listeners ...
+    }
+    
+    if (newInput != null) {
+      document = (ICasDocument) newInput;
+    }
   }
+  
+  void triggerSentenceDetector() {
+
+    // Add paragraph support ...
+    
+    sentenceDetector.setText(document.getCAS().getDocumentText());
+    sentenceDetector.schedule();
+  }
+  
 
   @Override
   public Object[] getElements(Object inputElement) {
-    return null;
+    return new Object[0];
+  }
+  
+  @Override
+  public void dispose() {
   }
 }

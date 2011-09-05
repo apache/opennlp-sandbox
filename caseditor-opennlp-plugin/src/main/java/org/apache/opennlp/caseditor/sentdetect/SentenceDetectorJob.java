@@ -26,6 +26,7 @@ import opennlp.tools.util.Span;
 
 import org.apache.opennlp.caseditor.ModelUtil;
 import org.apache.opennlp.caseditor.OpenNLPPlugin;
+import org.apache.opennlp.caseditor.namefinder.Entity;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -39,7 +40,7 @@ public class SentenceDetectorJob extends Job {
   
   private String text;
   
-  private Span detectedSentences[];
+  private Entity detectedSentences[];
   
   public SentenceDetectorJob() {
     super("Sentence Detector Job");
@@ -79,13 +80,21 @@ public class SentenceDetectorJob extends Job {
     
     // do detection only within container annotation ...
     
-    detectedSentences = sentenceDetector.sentPosDetect(text);
+    Span sentenceSpans[] = sentenceDetector.sentPosDetect(text);
+    double confidence[] = sentenceDetector.getSentenceProbabilities();
+    
+    detectedSentences = new Entity[sentenceSpans.length];
+    
+    for (int i = 0; i < sentenceSpans.length; i++) {
+      Span sentenceSpan = sentenceSpans[i];
+      detectedSentences[i] = new Entity(sentenceSpan.getStart(), sentenceSpan.getEnd(),
+          sentenceSpan.getCoveredText(text).toString(), confidence[i], false);
+    }
     
     return new Status(IStatus.OK, OpenNLPPlugin.ID, "OK");
   }
 
-  // retrieve proposed annotations ...
-  Span[] getDetectedSentences() {
+  Entity[] getDetectedSentences() {
     return detectedSentences;
   }
 }
