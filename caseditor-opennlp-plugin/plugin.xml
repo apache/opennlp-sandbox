@@ -57,13 +57,15 @@
     <page
           class="org.apache.opennlp.caseditor.sentdetect.SentenceDetectorPreferencePage"
           id="org.apache.opennlp.caseditor.SentenceDetectorPreference"
-          name="OpenNLP Sentence Detector">
+          name="Sentence Detector"
+          category="org.apache.opennlp.caseditor.OpenNLPPreference">
     </page>
     
     <page
           class="org.apache.opennlp.caseditor.namefinder.NameFinderPreferencePage"
           id="org.apache.opennlp.caseditor.NameFinderPreference"
-          name="OpenNLP Name Finder">
+          name="Name Finder"
+          category="org.apache.opennlp.caseditor.OpenNLPPreference">
     </page>
  </extension>
 </plugin>
