@@ -27,11 +27,6 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 public class NameFinderPreferencePage extends FieldEditorPreferencePage
     implements IWorkbenchPreferencePage {
 
-  private StringFieldEditor modelPath;
-  
-  private StringFieldEditor nameType;
-  
-  
   public NameFinderPreferencePage() {
     setPreferenceStore(OpenNLPPlugin.getDefault().getPreferenceStore());
     setDescription("Name Finder Preferences.");
@@ -43,15 +38,14 @@ public class NameFinderPreferencePage extends FieldEditorPreferencePage
 
   @Override
   protected void createFieldEditors() {
-    modelPath = new StringFieldEditor(
+    StringFieldEditor modelPath = new StringFieldEditor(
             OpenNLPPreferenceConstants.NAME_FINDER_MODEL_PATH,
             "Model Path", getFieldEditorParent());
     addField(modelPath);
     
-    nameType = new StringFieldEditor(
+    StringFieldEditor nameType = new StringFieldEditor(
         OpenNLPPreferenceConstants.NAME_TYPE,
         "Name Type", getFieldEditorParent());
     addField(nameType);
   }
-  
 }

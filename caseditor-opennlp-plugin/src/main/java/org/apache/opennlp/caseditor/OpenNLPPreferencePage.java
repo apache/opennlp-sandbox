@@ -25,9 +25,6 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 public class OpenNLPPreferencePage extends FieldEditorPreferencePage
     implements IWorkbenchPreferencePage {
 
-  private StringFieldEditor sentenceType;
-  private StringFieldEditor tokenType;
-  
   public OpenNLPPreferencePage() {
     setPreferenceStore(OpenNLPPlugin.getDefault().getPreferenceStore());
     setDescription("OpenNLP Common Preferences.");  }
@@ -38,12 +35,12 @@ public class OpenNLPPreferencePage extends FieldEditorPreferencePage
 
   @Override
   protected void createFieldEditors() {
-    sentenceType = new StringFieldEditor(
+    StringFieldEditor sentenceType = new StringFieldEditor(
         OpenNLPPreferenceConstants.SENTENCE_TYPE,
         "Sentence Type", getFieldEditorParent());
     addField(sentenceType);
     
-    tokenType = new StringFieldEditor(
+    StringFieldEditor tokenType = new StringFieldEditor(
         OpenNLPPreferenceConstants.TOKEN_TYPE,
         "Token Type", getFieldEditorParent());
     addField(tokenType);
