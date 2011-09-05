@@ -19,7 +19,6 @@ package org.apache.opennlp.caseditor.namefinder;
 
 import org.apache.opennlp.caseditor.OpenNLPPlugin;
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
-import org.apache.uima.cas.FeatureStructure;
 import org.apache.uima.caseditor.editor.AnnotationEditor;
 import org.apache.uima.caseditor.editor.ICasDocument;
 import org.apache.uima.caseditor.editor.ICasEditor;
@@ -29,13 +28,10 @@ import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
-import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
-import org.eclipse.jface.viewers.Viewer;
-import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -54,52 +50,6 @@ import org.eclipse.ui.part.Page;
 //       when no names are detected. -> give an indication what could be wrong!
 class NameFinderViewPage extends Page implements ISelectionListener {
 
-  class ConfirmAnnotationAction extends BaseSelectionListenerAction {
-    
-    public ConfirmAnnotationAction() {
-      super("Confirm");
-    }
-    
-    @Override
-    protected boolean updateSelection(IStructuredSelection selection) {
-      
-      boolean result = false;
-      
-      if (!selection.isEmpty()) {
-        Entity entity = (Entity) selection.getFirstElement();
-        return !entity.isConfirmed();
-      }
-      
-      return result;
-    }
-    
-    // Note: Action can only handle one element.
-    //       Must be extended to handle "bulk" confirms
-    @Override
-    public void run() {
-      super.run();
-      
-      // get selected entities and add annotations to the CAS
-      IStructuredSelection selection = 
-          (IStructuredSelection) entityList.getSelection();
-      
-      Object elements[] = selection.toArray();
-
-      if (elements.length > 0) {
-        Entity selectedEntity = (Entity) elements[0];
-        if (!selectedEntity.isConfirmed()) {
-          ICasDocument document = editor.getDocument();
-          
-          FeatureStructure nameAnnotation = document.getCAS().createAnnotation(
-              document.getCAS().getTypeSystem().getType(nameTypeName),
-              selectedEntity.getBeginIndex(), selectedEntity.getEndIndex());
-          document.getCAS().addFsToIndexes(nameAnnotation);
-          document.addFeatureStructure(nameAnnotation);
-        }
-      }
-    }
-  }
-  
   private ICasEditor editor;
 
   private TableViewer entityList;
@@ -139,16 +89,7 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     entityList.setContentProvider(new EntityContentProvider(new NameFinderJob(), entityList));
     getSite().setSelectionProvider(entityList);
     
-    entityList.setComparator(new ViewerComparator(){
-      @Override
-      public int compare(Viewer viewer, Object o1, Object o2) {
-        
-        Entity e1 = (Entity) o1;
-        Entity e2 = (Entity) o2;
-        
-        return e1.getBeginIndex() - e2.getBeginIndex();
-      }
-    });
+    entityList.setComparator(new EntityComperator());
     
     entityList.setInput(editor.getDocument());
     
@@ -197,7 +138,7 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     // TODO: Action is missing keyboard shortcut
     // TODO: We need a confirm icon
 
-    BaseSelectionListenerAction confirmAction = new ConfirmAnnotationAction();
+    BaseSelectionListenerAction confirmAction = new ConfirmAnnotationAction(entityList, editor.getDocument(), nameTypeName);
     
     getSite().getSelectionProvider().addSelectionChangedListener(confirmAction); // need also to unregister!!!!
     
