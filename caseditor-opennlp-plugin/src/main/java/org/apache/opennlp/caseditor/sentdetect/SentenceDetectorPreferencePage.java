@@ -27,8 +27,6 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 public class SentenceDetectorPreferencePage extends FieldEditorPreferencePage
     implements IWorkbenchPreferencePage {
 
-  private StringFieldEditor modelPath;
-  
   public SentenceDetectorPreferencePage() {
     setPreferenceStore(OpenNLPPlugin.getDefault().getPreferenceStore());
     setDescription("Sentence Detector Preferences.");
@@ -40,10 +38,14 @@ public class SentenceDetectorPreferencePage extends FieldEditorPreferencePage
 
   @Override
   protected void createFieldEditors() {
-    modelPath = new StringFieldEditor(
+    StringFieldEditor modelPath = new StringFieldEditor(
         OpenNLPPreferenceConstants.SENTENCE_DETECTOR_MODEL_PATH,
         "Model Path", getFieldEditorParent());
     addField(modelPath);
+    
+    StringFieldEditor paragraphType = new StringFieldEditor(
+        OpenNLPPreferenceConstants.PARAGRAPH_TYPE,
+        "Paragraph Type", getFieldEditorParent());
+    addField(modelPath);
   }
-
 }

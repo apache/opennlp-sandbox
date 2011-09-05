@@ -22,6 +22,7 @@ public class OpenNLPPreferenceConstants {
   public static final String SENTENCE_DETECTOR_MODEL_PATH = "SENTENCE_DETECTOR_MODEL_PATH";
   public static final String NAME_FINDER_MODEL_PATH = "NAME_FINDER_MODEL_PATH";
   
+  public static final String PARAGRAPH_TYPE = "PARAGRAPH_TYPE";
   public static final String SENTENCE_TYPE = "SENTENCE_TYPE";
   public static final String TOKEN_TYPE = "TOKEN_TYPE";
   public static final String NAME_TYPE = "NAME_TYPE";
