@@ -205,13 +205,12 @@ public class EntityContentProvider implements IStructuredContentProvider {
             
             if (status.getSeverity() == IStatus.OK) {
               
-              // 
               List<Entity> newPotentialEntities = EntityContentProvider.this.nameFinder.getNames();
               
               // Remove all potential annotations from list ?! Yes! Note: We should compute a delta here in the future ...
               EntityContentProvider.this.entityList.remove(potentialEntities.toArray());
-              // Then add like described below:
               
+              // Then add like described below:
               for (Entity newPotentialEntity : newPotentialEntities) {
                 
                 // A confirmed entity already exists, update its confidence score
@@ -223,7 +222,8 @@ public class EntityContentProvider implements IStructuredContentProvider {
                 }
                 
                 // potential entity should be added!
-                // TODO: that is slow and should be done in a bulk update ...
+                // TODO: that is slow and should be done in a bulk update ... to do so remember all
+                //       and do a bulk update after the for loop
                 EntityContentProvider.this.entityList.add(newPotentialEntity);
               }
               
@@ -237,42 +237,43 @@ public class EntityContentProvider implements IStructuredContentProvider {
   }
   
   public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
+
+    // Problem: "The viewer should not be updated during this call, as it might be in 
+   //           the process of being disposed." (Javadoc)
+    // Does it mean that the name finder listener must check if the viewer is still alive?
     
-    IPreferenceStore store = OpenNLPPlugin.getDefault().getPreferenceStore();
-    String nameTypeName = store.getString(OpenNLPPreferenceConstants.NAME_TYPE);
+    if (oldInput != null) {
+      ICasDocument oldDocument = (ICasDocument) oldInput;
+      oldDocument.removeChangeListener(casChangeListener);
+      oldDocument.removeChangeListener(nameFinderTrigger);      
+    }
     
-    if (input != newInput) {
+    if (newInput != null) {
+      IPreferenceStore store = OpenNLPPlugin.getDefault().getPreferenceStore();
+      String nameTypeName = store.getString(OpenNLPPreferenceConstants.NAME_TYPE);
       
       input = (ICasDocument) newInput;
       
-      if (oldInput != null && oldInput != newInput) {
+      // Note: Name Finder might run to often ... 
+      input.addChangeListener(casChangeListener);
+      input.addChangeListener(nameFinderTrigger);
+      
+      // Create initial list of confirmed entities ...
+      Type nameType = input.getCAS().getTypeSystem().getType(nameTypeName); 
+      
+      FSIndex<AnnotationFS> nameAnnotations = input.getCAS()
+          .getAnnotationIndex(nameType);
+      
+      for (Iterator<AnnotationFS> nameIterator = nameAnnotations
+          .iterator(); nameIterator.hasNext();) {
         
-        ICasDocument oldDocument = (ICasDocument) oldInput;
-        oldDocument.removeChangeListener(casChangeListener);
-        oldDocument.removeChangeListener(nameFinderTrigger);
+        AnnotationFS nameAnnotation = (AnnotationFS) nameIterator.next();
+        
+        confirmedEntities.add(new Entity(nameAnnotation.getBegin(),
+            nameAnnotation.getEnd(), nameAnnotation.getCoveredText(), null, true));
       }
       
-      if (newInput != null) {
-        // Note: Name Finder might run to often ... 
-        input.addChangeListener(casChangeListener);
-        input.addChangeListener(nameFinderTrigger);
-        
-        // Create initial list of confirmed entities ...
-        Type nameType = input.getCAS().getTypeSystem().getType(nameTypeName); 
-        
-        FSIndex<AnnotationFS> nameAnnotations = input.getCAS()
-            .getAnnotationIndex(nameType);
-
-        for (Iterator<AnnotationFS> nameIterator = nameAnnotations
-            .iterator(); nameIterator.hasNext();) {
-          
-          AnnotationFS nameAnnotation = (AnnotationFS) nameIterator.next();
-          
-          confirmedEntities.add(new Entity(nameAnnotation.getBegin(), nameAnnotation.getEnd(), nameAnnotation.getCoveredText(), null, true));
-        }
-        
-        runNameFinder();
-      }
+      runNameFinder();
     }
   }
   
@@ -280,6 +281,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
     IPreferenceStore store = OpenNLPPlugin.getDefault().getPreferenceStore();
     String sentenceTypeName = store.getString(OpenNLPPreferenceConstants.SENTENCE_TYPE);
     String nameTypeName = store.getString(OpenNLPPreferenceConstants.NAME_TYPE);
+    String modelPath = store.getString(OpenNLPPreferenceConstants.NAME_FINDER_MODEL_PATH);
     
     CAS cas = input.getCAS();
     
@@ -291,8 +293,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
 
     if (text != null) {
 
-      // get list of sentence annotations
-      // get list of token annotations
+      // TODO: get list of token annotations
 
       List<Span> sentences = new ArrayList<Span>();
       List<Span> tokens = new ArrayList<Span>();
@@ -322,6 +323,8 @@ public class EntityContentProvider implements IStructuredContentProvider {
         }
       }
 
+      // Note: When an annotation is removed, it might still be in the cas ...
+      
       List<Span> nameSpans = new ArrayList<Span>();
 
       Type nameType = cas.getTypeSystem().getType(nameTypeName); 
@@ -342,6 +345,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
       nameFinder.setSentences(sentences.toArray(new Span[sentences.size()]));
       nameFinder.setTokens(tokens.toArray(new Span[tokens.size()]));
       nameFinder.setVerifiedNames(nameSpans.toArray(new Span[nameSpans.size()]));
+      nameFinder.setModelPath(modelPath);
       
       nameFinder.schedule();
     }
