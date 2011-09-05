@@ -46,6 +46,6 @@ public class SentenceDetectorPreferencePage extends FieldEditorPreferencePage
     StringFieldEditor paragraphType = new StringFieldEditor(
         OpenNLPPreferenceConstants.PARAGRAPH_TYPE,
         "Paragraph Type", getFieldEditorParent());
-    addField(modelPath);
+    addField(paragraphType);
   }
 }
