@@ -17,6 +17,8 @@
 
 package org.apache.opennlp.caseditor.namefinder;
 
+// TODO: Rename to PotentialAnnotation, should also contain a type, then we can use
+//       reuse the code to create an annotation for it.
 public class Entity {
   
   private final int beginIndex;
@@ -28,7 +30,7 @@ public class Entity {
   
   private Double confidence;
   
-  Entity(int beginIndex, int endIndex, String entityText, Double confidence, boolean isConfirmed) {
+  public Entity(int beginIndex, int endIndex, String entityText, Double confidence, boolean isConfirmed) {
     this.beginIndex = beginIndex;
     this.endIndex = endIndex;
     
@@ -39,27 +41,27 @@ public class Entity {
     this.isConfirmed = isConfirmed;
   }
   
-  int getBeginIndex() {
+  public int getBeginIndex() {
     return beginIndex;
   }
   
-  int getEndIndex() {
+  public int getEndIndex() {
     return endIndex;
   }
   
-  String getEntityText() {
+  public String getEntityText() {
     return entityText;
   }
   
-  void setConfidence(Double confidence) {
+  public void setConfidence(Double confidence) {
     this.confidence = confidence;
   }
   
-  boolean isConfirmed() {
+  public boolean isConfirmed() {
     return isConfirmed;
   }
   
-  Double getConfidence() {
+  public Double getConfidence() {
     return confidence;
   }
   
