@@ -73,7 +73,7 @@ public class ConfirmAnnotationAction extends BaseSelectionListenerAction {
         FeatureStructure nameAnnotation = document.getCAS().createAnnotation(
             document.getCAS().getTypeSystem().getType(entityTypeName),
             selectedEntity.getBeginIndex(), selectedEntity.getEndIndex());
-        document.getCAS().addFsToIndexes(nameAnnotation);
+//        document.getCAS().addFsToIndexes(nameAnnotation);
         document.addFeatureStructure(nameAnnotation);
       }
     }
