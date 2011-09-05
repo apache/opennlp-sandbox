@@ -30,6 +30,11 @@
           class="org.apache.opennlp.caseditor.sentdetect.SentenceDetectorView"
           category="org.apache.opennlp.caseditor.views" />
           
+    <view id="org.apache.opennlp.caseditor.sentdetect.TokenizerView"
+	      name="Tokenizer"
+          class="org.apache.opennlp.caseditor.tokenize.TokenizerView"
+          category="org.apache.opennlp.caseditor.views" />
+          
     <view id="org.apache.opennlp.caseditor.NameFinderView"
 	      name="Name Finder"
           class="org.apache.opennlp.caseditor.namefinder.NameFinderView"
