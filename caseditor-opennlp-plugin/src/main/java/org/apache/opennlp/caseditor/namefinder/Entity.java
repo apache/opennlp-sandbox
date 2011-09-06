@@ -86,4 +86,22 @@ public class Entity {
     return entityText;
   }
 
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == this) {
+      return true;
+    }
+    else if (obj instanceof Entity) {
+      Entity entity = (Entity) obj;
+      return entity.getBeginIndex() == getBeginIndex() && entity.getEndIndex() == getEndIndex();
+    }
+    else {
+      return false;
+    }
+  }
+  
+  @Override
+  public int hashCode() {
+    return getBeginIndex() + getEndIndex();
+  }
 }

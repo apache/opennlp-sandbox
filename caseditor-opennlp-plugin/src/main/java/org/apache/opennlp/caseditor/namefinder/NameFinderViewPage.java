@@ -19,9 +19,11 @@ package org.apache.opennlp.caseditor.namefinder;
 
 import org.apache.opennlp.caseditor.OpenNLPPlugin;
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
+import org.apache.uima.cas.text.AnnotationFS;
 import org.apache.uima.caseditor.editor.AnnotationEditor;
 import org.apache.uima.caseditor.editor.ICasDocument;
 import org.apache.uima.caseditor.editor.ICasEditor;
+import org.apache.uima.caseditor.editor.util.AnnotationSelection;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IStatusLineManager;
 import org.eclipse.jface.action.IToolBarManager;
@@ -64,6 +66,9 @@ class NameFinderViewPage extends Page implements ISelectionListener {
   }
 
   public void createControl(Composite parent) {
+    
+    getSite().getPage().addSelectionListener(this);
+    
     entityList = new TableViewer(parent, SWT.NONE);
     
     Table entityTable = entityList.getTable();
@@ -105,7 +110,11 @@ class NameFinderViewPage extends Page implements ISelectionListener {
 				Entity entity = (Entity) selection.getFirstElement();
 				
 				if (entity.isConfirmed()) {
-					// TODO: Send corresponding annotation selection event ...
+				  // How to find corresponding annotation ?!
+				  // Annotation could be linked to entity
+				  
+				  // A selection provider needs to communicate the selection to other views,
+				  // the selection must contain a certrain object ... AnnotationTreeNode ?
 				}
 				else  {
 					if (editor instanceof AnnotationEditor) {
@@ -120,7 +129,23 @@ class NameFinderViewPage extends Page implements ISelectionListener {
 
   public void selectionChanged(IWorkbenchPart part, ISelection selection) {
 
-	  // TODO: Synchronize entity list with selections in the editor ... 
+//    if (isForeignSelection) {
+      if (selection instanceof StructuredSelection) {
+        AnnotationSelection annotations = new AnnotationSelection((StructuredSelection) selection);
+
+        if (!annotations.isEmpty()) {
+          AnnotationFS firstAnnotation = annotations.getFirst();
+          
+          // If that annotation exist, then match it.
+          // Bug: Need to check the type also ...
+          Entity entity = new Entity(firstAnnotation.getBegin(), firstAnnotation.getEnd(),
+              firstAnnotation.getCoveredText(), null, true);
+          
+          ISelection tableSelection = new StructuredSelection(entity);
+          entityList.setSelection(tableSelection, true);
+        }
+      }
+//    }
   }
 
   public Control getControl() {
