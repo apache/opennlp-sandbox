@@ -39,6 +39,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.actions.BaseSelectionListenerAction;
@@ -52,6 +53,8 @@ import org.eclipse.ui.part.Page;
 //       when no names are detected. -> give an indication what could be wrong!
 class NameFinderViewPage extends Page implements ISelectionListener {
 
+  private static final String QUICK_ANNOTATE_ACTION_ID = "QuickAnnotate";
+  
   private ICasEditor editor;
 
   private TableViewer entityList;
@@ -104,25 +107,23 @@ class NameFinderViewPage extends Page implements ISelectionListener {
 		
 		@Override
 		public void selectionChanged(SelectionChangedEvent event) {
-			// if confirmed, send selection event for FS
-			// else, do selectAndReveal
 			StructuredSelection selection = (StructuredSelection) event.getSelection();
+			
+			// There are two types of entities, confirmed and un-confirmed.
+			// Confirmed entities are linked with the according annotation and
+			// are selected through the entity lists selection provider.
+			
+			// Unconfirmed entities are not selected, but the span they are covering
+			// is highlighted and revealed in the Annotation Editor.
 			
 			if (!selection.isEmpty()) {
 				Entity entity = (Entity) selection.getFirstElement();
 				
-				if (entity.isConfirmed()) {
-				  // How to find corresponding annotation ?!
-				  // Annotation could be linked to entity
-				  
-				  // A selection provider needs to communicate the selection to other views,
-				  // the selection must contain a certrain object ... AnnotationTreeNode ?
-				}
-				else  {
-					if (editor instanceof AnnotationEditor) {
-						((AnnotationEditor) editor).selectAndReveal(entity.getBeginIndex(),
-								entity.getEndIndex() - entity.getBeginIndex());
-					}
+				if (!entity.isConfirmed()) {
+				  if (editor instanceof AnnotationEditor) {
+				    ((AnnotationEditor) editor).selectAndReveal(entity.getBeginIndex(),
+				        entity.getEndIndex() - entity.getBeginIndex());
+				  }
 				}
 			}
 		}
@@ -161,15 +162,17 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     entityList.getControl().setFocus();
   }
 
-  public void makeContributions(IMenuManager menuManager,
-      IToolBarManager toolBarManager, IStatusLineManager statusLineManager) {
-    super.makeContributions(menuManager, toolBarManager, statusLineManager);
-
-    // TODO: Action is missing keyboard shortcut
-    // TODO: We need a confirm icon
-
-    BaseSelectionListenerAction confirmAction = new ConfirmAnnotationAction(entityList, editor.getDocument(), nameTypeName);
+  @Override
+  public void setActionBars(IActionBars actionBars) {
+    super.setActionBars(actionBars);
     
+    // TODO: We need a confirm icon
+    
+    IToolBarManager toolBarManager = actionBars.getToolBarManager();
+    
+    BaseSelectionListenerAction confirmAction = new ConfirmAnnotationAction(entityList, editor.getDocument(), nameTypeName);
+    confirmAction.setActionDefinitionId(QUICK_ANNOTATE_ACTION_ID);
+    actionBars.setGlobalActionHandler(QUICK_ANNOTATE_ACTION_ID, confirmAction);
     getSite().getSelectionProvider().addSelectionChangedListener(confirmAction); // need also to unregister!!!!
     
     toolBarManager.add(confirmAction);
