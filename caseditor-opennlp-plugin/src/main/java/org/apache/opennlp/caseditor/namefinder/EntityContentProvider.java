@@ -112,6 +112,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
           entity.setEndIndex(annotation.getEnd());
           entity.setEntityText(annotation.getCoveredText());
           entity.setConfirmed(true);
+          entity.setLinkedAnnotation(annotation);
           entity.setConfidence(null);
           
           EntityContentProvider.this.entityListViewer.refresh(entity);
@@ -311,8 +312,10 @@ public class EntityContentProvider implements IStructuredContentProvider {
         
         AnnotationFS nameAnnotation = (AnnotationFS) nameIterator.next();
         
-        knownEntities.add(new Entity(nameAnnotation.getBegin(),
-            nameAnnotation.getEnd(), nameAnnotation.getCoveredText(), null, true));
+        Entity entity = new Entity(nameAnnotation.getBegin(),
+            nameAnnotation.getEnd(), nameAnnotation.getCoveredText(), null, true);
+        entity.setLinkedAnnotation(nameAnnotation);
+        knownEntities.add(entity);
       }
       
       runNameFinder();

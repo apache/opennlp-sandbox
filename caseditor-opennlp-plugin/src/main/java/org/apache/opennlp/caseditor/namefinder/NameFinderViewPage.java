@@ -98,6 +98,8 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     
     entityList.setInput(editor.getDocument());
     
+    getSite().setSelectionProvider(entityList);
+    
     entityList.addSelectionChangedListener(new ISelectionChangedListener() {
 		
 		@Override
@@ -128,8 +130,11 @@ class NameFinderViewPage extends Page implements ISelectionListener {
   }
 
   public void selectionChanged(IWorkbenchPart part, ISelection selection) {
-
-//    if (isForeignSelection) {
+ 
+    boolean isForeignSelection = !(part instanceof NameFinderView && 
+        ((NameFinderView) part).getCurrentPage() == this);
+    
+    if (isForeignSelection) {
       if (selection instanceof StructuredSelection) {
         AnnotationSelection annotations = new AnnotationSelection((StructuredSelection) selection);
 
@@ -145,7 +150,7 @@ class NameFinderViewPage extends Page implements ISelectionListener {
           entityList.setSelection(tableSelection, true);
         }
       }
-//    }
+    }
   }
 
   public Control getControl() {

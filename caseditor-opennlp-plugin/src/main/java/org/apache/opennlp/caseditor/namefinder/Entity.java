@@ -17,9 +17,13 @@
 
 package org.apache.opennlp.caseditor.namefinder;
 
+import org.apache.uima.cas.FeatureStructure;
+import org.apache.uima.cas.text.AnnotationFS;
+import org.eclipse.core.runtime.IAdaptable;
+
 // TODO: Rename to PotentialAnnotation, should also contain a type, then we can use
 //       reuse the code to create an annotation for it.
-public class Entity {
+public class Entity implements IAdaptable {
   
   private int beginIndex;
   private int endIndex;
@@ -29,6 +33,8 @@ public class Entity {
   private boolean isConfirmed;
   
   private Double confidence;
+  
+  private AnnotationFS linkedAnnotationFS;
   
   public Entity(int beginIndex, int endIndex, String entityText, Double confidence, boolean isConfirmed) {
     this.beginIndex = beginIndex;
@@ -69,6 +75,10 @@ public class Entity {
     this.confidence = confidence;
   }
   
+  public Double getConfidence() {
+    return confidence;
+  }
+  
   public void setConfirmed(boolean isConfirmed) {
     this.isConfirmed = isConfirmed;
   }
@@ -77,8 +87,8 @@ public class Entity {
     return isConfirmed;
   }
   
-  public Double getConfidence() {
-    return confidence;
+  public void setLinkedAnnotation(AnnotationFS linkedAnnotationFS) {
+    this.linkedAnnotationFS = linkedAnnotationFS;
   }
   
   @Override
@@ -104,4 +114,14 @@ public class Entity {
   public int hashCode() {
     return getBeginIndex() + getEndIndex();
   }
+  
+  public Object getAdapter(Class adapter) {
+    if (AnnotationFS.class.equals(adapter) || FeatureStructure.class.equals(adapter)) {
+      return linkedAnnotationFS;
+    }
+    else {
+      return null;
+    }
+  }
+  
 }
