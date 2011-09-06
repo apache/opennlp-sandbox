@@ -62,6 +62,13 @@
     </page>
     
     <page
+          class="org.apache.opennlp.caseditor.tokenize.TokenizerPreferencePage"
+          id="org.apache.opennlp.caseditor.tokenize.TokenizerPreferencePage"
+          name="Tokenizer"
+          category="org.apache.opennlp.caseditor.OpenNLPPreference">
+    </page>
+    
+    <page
           class="org.apache.opennlp.caseditor.namefinder.NameFinderPreferencePage"
           id="org.apache.opennlp.caseditor.NameFinderPreference"
           name="Name Finder"
