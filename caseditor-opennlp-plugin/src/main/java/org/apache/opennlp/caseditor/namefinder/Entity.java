@@ -49,8 +49,16 @@ public class Entity {
     return beginIndex;
   }
   
+  public void setEndIndex(int endIndex) {
+    this.endIndex = endIndex;
+  }
+  
   public int getEndIndex() {
     return endIndex;
+  }
+  
+  public void setEntityText(String entityText) {
+    this.entityText = entityText;
   }
   
   public String getEntityText() {
@@ -59,6 +67,10 @@ public class Entity {
   
   public void setConfidence(Double confidence) {
     this.confidence = confidence;
+  }
+  
+  public void setConfirmed(boolean isConfirmed) {
+    this.isConfirmed = isConfirmed;
   }
   
   public boolean isConfirmed() {
@@ -74,7 +86,4 @@ public class Entity {
     return entityText;
   }
 
-  public void setEndIndex(int endIndex) {
-    this.endIndex = endIndex;
-  }
 }
