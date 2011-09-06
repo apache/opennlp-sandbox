@@ -94,8 +94,6 @@ public class EntityContentProvider implements IStructuredContentProvider {
     
   }
   
-  // Question, how to determine overlaps between two annotations ?!
-  
   class ConfirmedEntityListener implements ICasDocumentListener {
     
     @Override
@@ -105,21 +103,36 @@ public class EntityContentProvider implements IStructuredContentProvider {
         // TODO: Check that type matches ...
         AnnotationFS annotation = (AnnotationFS) fs;
         
-        Entity newEntity = new Entity(annotation.getBegin(), annotation.getEnd(),
-            annotation.getCoveredText(), null, true);
-        
-        Entity entity = searchEntity(EntityContentProvider.this.knownEntities,
+        List<Entity> entityList = searchEntities(EntityContentProvider.this.knownEntities,
             annotation.getBegin(), annotation.getEnd());
         
-        if (entity != null) {
-          // Should be updated ... potentialEntity list needs to be changed ...
-          EntityContentProvider.this.entityListViewer.remove(entity);
-          EntityContentProvider.this.knownEntities.remove(entity);
+        if (!entityList.isEmpty()) {
+          Entity entity = entityList.get(0);
+          entity.setBeginIndex(annotation.getBegin());
+          entity.setEndIndex(annotation.getEnd());
+          entity.setEntityText(annotation.getCoveredText());
+          entity.setConfirmed(true);
+          entity.setConfidence(null);
+          
+          EntityContentProvider.this.entityListViewer.refresh(entity);
+          
+          // Delete all other entities which match
+          for (int i = 1; i < entityList.size(); i++) {
+            Entity removeEntity = entityList.get(i);
+            
+            if (!removeEntity.isConfirmed()) {
+              EntityContentProvider.this.entityListViewer.remove(removeEntity);
+              EntityContentProvider.this.knownEntities.remove(removeEntity);
+            }
+          }
         }
-        // else
-        // only if it was not updated, the else case
-        EntityContentProvider.this.entityListViewer.add(newEntity);
-        EntityContentProvider.this.knownEntities.add(newEntity);
+        else {
+          Entity newEntity = new Entity(annotation.getBegin(), annotation.getEnd(),
+              annotation.getCoveredText(), null, true);
+          
+          EntityContentProvider.this.entityListViewer.add(newEntity);
+          EntityContentProvider.this.knownEntities.add(newEntity);
+        }
       }
     }
 
@@ -212,7 +225,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
               List<Entity> detectedEntities = EntityContentProvider.this.nameFinder.getNames();
               
               // Remove all detected entities from the last run which are not detected anymore
-              for (Iterator<Entity> it = knownEntities.iterator(); it.hasNext();) {  
+              for (Iterator<Entity> it = knownEntities.iterator(); it.hasNext();) {
                 Entity entity = it.next();
                 if (searchEntity(detectedEntities, entity.getBeginIndex(),
                     entity.getEndIndex()) == null)  {                
@@ -228,6 +241,12 @@ public class EntityContentProvider implements IStructuredContentProvider {
               // Update if entity already exist, or add it
               for (Entity detectedEntity : detectedEntities) {
                 
+                // Bug: 
+                // There can be multiple entities in this span!
+                // In this case we want to keep the first, update it, and discard the others!
+                
+                // Case: One entity spanning two tokens replaces 
+                
                 Entity entity = searchEntity(knownEntities, detectedEntity.getBeginIndex(),
                     detectedEntity.getEndIndex());
                 
@@ -241,6 +260,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
                   else {
                     entity.setBeginIndex(detectedEntity.getBeginIndex());
                     entity.setEndIndex(detectedEntity.getEndIndex());
+                    entity.setEntityText(detectedEntity.getEntityText());
                     entity.setConfidence(detectedEntity.getConfidence());
                     
                     EntityContentProvider.this.entityListViewer.refresh(entity);
@@ -382,6 +402,25 @@ public class EntityContentProvider implements IStructuredContentProvider {
   }
   
   public void dispose() {
+  }
+  
+  static List<Entity> searchEntities(List<Entity> entities, int begin, int end) {
+    
+    List<Entity> intersectingEntities = new ArrayList<Entity>();
+    
+    Span testSpan = new Span(begin, end);
+    
+    for (Entity entity : entities) {
+      
+      Span entitySpan = new Span(entity.getBeginIndex(),
+          entity.getEndIndex());
+      
+      if (entitySpan.intersects(testSpan)) {
+        intersectingEntities.add(entity);
+      }
+    }
+    
+    return intersectingEntities;
   }
   
   static Entity searchEntity(List<Entity> entities, int begin, int end) {
