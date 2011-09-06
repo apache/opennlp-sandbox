@@ -108,14 +108,18 @@ public class EntityContentProvider implements IStructuredContentProvider {
         Entity newEntity = new Entity(annotation.getBegin(), annotation.getEnd(),
             annotation.getCoveredText(), null, true);
         
-        Entity potentialEntity = searchEntity(EntityContentProvider.this.potentialEntities,
+        Entity entity = searchEntity(EntityContentProvider.this.knownEntities,
             annotation.getBegin(), annotation.getEnd());
         
-        if (potentialEntity != null)
-          EntityContentProvider.this.entityList.remove(potentialEntity);
-        
-        confirmedEntities.add(newEntity);
-        EntityContentProvider.this.entityList.add(newEntity);
+        if (entity != null) {
+          // Should be updated ... potentialEntity list needs to be changed ...
+          EntityContentProvider.this.entityListViewer.remove(entity);
+          EntityContentProvider.this.knownEntities.remove(entity);
+        }
+        // else
+        // only if it was not updated, the else case
+        EntityContentProvider.this.entityListViewer.add(newEntity);
+        EntityContentProvider.this.knownEntities.add(newEntity);
       }
     }
 
@@ -137,12 +141,12 @@ public class EntityContentProvider implements IStructuredContentProvider {
       if (fs instanceof AnnotationFS && fs.getType().getName().equals(nameTypeName)) {
         AnnotationFS annotation = (AnnotationFS) fs;
         
-        Entity confirmedEntity = searchEntity(EntityContentProvider.this.confirmedEntities,
+        Entity confirmedEntity = searchEntity(EntityContentProvider.this.knownEntities,
             annotation.getBegin(), annotation.getEnd());
         
         if (confirmedEntity != null) {
-          EntityContentProvider.this.confirmedEntities.remove(confirmedEntity);
-          EntityContentProvider.this.entityList.remove(confirmedEntity);
+          EntityContentProvider.this.knownEntities.remove(confirmedEntity);
+          EntityContentProvider.this.entityListViewer.remove(confirmedEntity);
         }
       }
       
@@ -176,20 +180,20 @@ public class EntityContentProvider implements IStructuredContentProvider {
   private NameFinderTrigger nameFinderTrigger = new NameFinderTrigger();
   private ConfirmedEntityListener casChangeListener = new ConfirmedEntityListener();
   
-  private TableViewer entityList;
+  private TableViewer entityListViewer;
   
   private ICasDocument input;
   
   // contains all existing entity annotations and is synchronized!
   // needed by name finder to calculate updates ... 
-  private List<Entity> confirmedEntities = new ArrayList<Entity>();
-  private List<Entity> potentialEntities = new ArrayList<Entity>();
+//  private List<Entity> confirmedEntities = new ArrayList<Entity>();
+  private List<Entity> knownEntities = new ArrayList<Entity>();
   
   private String nameTypeName;
   
   EntityContentProvider(NameFinderJob nameFinder, TableViewer entityList) {
     this.nameFinder = nameFinder;
-    this.entityList = entityList;
+    this.entityListViewer = entityList;
     
     IPreferenceStore store = OpenNLPPlugin.getDefault().getPreferenceStore();
     nameTypeName = store.getString(OpenNLPPreferenceConstants.NAME_TYPE);
@@ -205,30 +209,48 @@ public class EntityContentProvider implements IStructuredContentProvider {
             
             if (status.getSeverity() == IStatus.OK) {
               
-              List<Entity> newPotentialEntities = EntityContentProvider.this.nameFinder.getNames();
+              List<Entity> detectedEntities = EntityContentProvider.this.nameFinder.getNames();
               
-              // Remove all potential annotations from list ?! Yes! Note: We should compute a delta here in the future ...
-              EntityContentProvider.this.entityList.remove(potentialEntities.toArray());
-              
-              // Then add like described below:
-              for (Entity newPotentialEntity : newPotentialEntities) {
-                
-                // A confirmed entity already exists, update its confidence score
-                Entity confirmedEntity = searchEntity(confirmedEntities, newPotentialEntity.getBeginIndex(), newPotentialEntity.getEndIndex());
-                if (confirmedEntity != null) {
-                  confirmedEntity.setConfidence(newPotentialEntity.getConfidence());
-                  EntityContentProvider.this.entityList.refresh(confirmedEntity);
-                  continue;
+              // Remove all detected entities from the last run which are not detected anymore
+              for (Iterator<Entity> it = knownEntities.iterator(); it.hasNext();) {  
+                Entity entity = it.next();
+                if (searchEntity(detectedEntities, entity.getBeginIndex(),
+                    entity.getEndIndex()) == null)  {                
+                  
+                  // TODO: Create an array of entities that should be removed, much faster ...
+                  EntityContentProvider.this.entityListViewer.remove(entity);
+                  
+                  // Can safely be removed, since it can only be an un-confirmed entity
+                  it.remove();
                 }
-                
-                // potential entity should be added!
-                // TODO: that is slow and should be done in a bulk update ... to do so remember all
-                //       and do a bulk update after the for loop
-                EntityContentProvider.this.entityList.add(newPotentialEntity);
               }
               
-              // Remember entities for next update
-              potentialEntities = newPotentialEntities;
+              // Update if entity already exist, or add it
+              for (Entity detectedEntity : detectedEntities) {
+                
+                Entity entity = searchEntity(knownEntities, detectedEntity.getBeginIndex(),
+                    detectedEntity.getEndIndex());
+                
+                // A confirmed entity already exists, update its confidence score
+                if (entity != null) {
+                  if (entity.isConfirmed()) {
+                    entity.setConfidence(detectedEntity.getConfidence());
+                    EntityContentProvider.this.entityListViewer.refresh(entity);
+                    continue;
+                  }
+                  else {
+                    entity.setBeginIndex(detectedEntity.getBeginIndex());
+                    entity.setEndIndex(detectedEntity.getEndIndex());
+                    entity.setConfidence(detectedEntity.getConfidence());
+                    
+                    EntityContentProvider.this.entityListViewer.refresh(entity);
+                  }
+                }
+                else {
+                  EntityContentProvider.this.entityListViewer.add(detectedEntity);
+                  knownEntities.add(detectedEntity);
+                }
+              }
             }
           }
         });
@@ -269,7 +291,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
         
         AnnotationFS nameAnnotation = (AnnotationFS) nameIterator.next();
         
-        confirmedEntities.add(new Entity(nameAnnotation.getBegin(),
+        knownEntities.add(new Entity(nameAnnotation.getBegin(),
             nameAnnotation.getEnd(), nameAnnotation.getCoveredText(), null, true));
       }
       
@@ -356,7 +378,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
     // Called directly after showing the view, the
     // name finder is triggered to produce names
     // which will be added to the viewer
-    return confirmedEntities.toArray();
+    return knownEntities.toArray();
   }
   
   public void dispose() {
