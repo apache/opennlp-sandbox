@@ -21,10 +21,10 @@ package org.apache.opennlp.caseditor.namefinder;
 //       reuse the code to create an annotation for it.
 public class Entity {
   
-  private final int beginIndex;
-  private final int endIndex;
+  private int beginIndex;
+  private int endIndex;
   
-  private final String entityText;
+  private String entityText;
  
   private boolean isConfirmed;
   
@@ -39,6 +39,10 @@ public class Entity {
     this.confidence = confidence;
     
     this.isConfirmed = isConfirmed;
+  }
+  
+  public void setBeginIndex(int beginIndex) {
+    this.beginIndex = beginIndex;
   }
   
   public int getBeginIndex() {
@@ -68,5 +72,9 @@ public class Entity {
   @Override
   public String toString() {
     return entityText;
+  }
+
+  public void setEndIndex(int endIndex) {
+    this.endIndex = endIndex;
   }
 }
