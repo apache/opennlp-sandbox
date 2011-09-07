@@ -24,8 +24,6 @@ import org.apache.opennlp.caseditor.namefinder.Entity;
 import org.apache.opennlp.caseditor.namefinder.EntityLabelProvider;
 import org.apache.uima.caseditor.editor.AnnotationEditor;
 import org.apache.uima.caseditor.editor.ICasEditor;
-import org.eclipse.jface.action.IMenuManager;
-import org.eclipse.jface.action.IStatusLineManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
@@ -38,11 +36,14 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.actions.BaseSelectionListenerAction;
 import org.eclipse.ui.part.Page;
 
 public class SentenceDetectorViewPage extends Page {
   
+  private static final String QUICK_ANNOTATE_ACTION_ID = "QuickAnnotate";
+
   private ICasEditor editor;
   
   private TableViewer sentenceList; 
@@ -129,9 +130,10 @@ public class SentenceDetectorViewPage extends Page {
   }
   
   @Override
-  public void makeContributions(IMenuManager menuManager,
-      IToolBarManager toolBarManager, IStatusLineManager statusLineManager) {
-    super.makeContributions(menuManager, toolBarManager, statusLineManager);
+  public void setActionBars(IActionBars actionBars) {
+    super.setActionBars(actionBars);
+    
+    IToolBarManager toolBarManager = actionBars.getToolBarManager();
     
     BaseSelectionListenerAction detectAction = new BaseSelectionListenerAction("Detect") {
       @Override
@@ -139,12 +141,15 @@ public class SentenceDetectorViewPage extends Page {
         contentProvider.triggerSentenceDetector();
       }
     };
-        
+    
     toolBarManager.add(detectAction);
     
     BaseSelectionListenerAction confirmAction =
         new ConfirmAnnotationAction(sentenceList, editor.getDocument(), sentenceTypeName);
+    confirmAction.setActionDefinitionId(QUICK_ANNOTATE_ACTION_ID);
+    actionBars.setGlobalActionHandler(QUICK_ANNOTATE_ACTION_ID, confirmAction);
     getSite().getSelectionProvider().addSelectionChangedListener(confirmAction); // need also to unregister!!!!
     toolBarManager.add(confirmAction);
   }
+    
 }
