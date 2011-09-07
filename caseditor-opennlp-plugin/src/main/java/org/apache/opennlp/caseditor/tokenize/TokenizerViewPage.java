@@ -18,10 +18,13 @@
 package org.apache.opennlp.caseditor.tokenize;
 
 import org.apache.uima.caseditor.editor.ICasEditor;
+import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.ui.IActionBars;
+import org.eclipse.ui.actions.BaseSelectionListenerAction;
 import org.eclipse.ui.part.Page;
 
 public class TokenizerViewPage extends Page {
@@ -40,6 +43,24 @@ public class TokenizerViewPage extends Page {
     testLabel.setText("This is a test :)");
   }
 
+  // Add action to trigger detection, just add all tokens to CAS
+  
+  @Override
+  public void setActionBars(IActionBars actionBars) {
+    super.setActionBars(actionBars);
+    
+    IToolBarManager toolBarManager = actionBars.getToolBarManager();
+    
+    BaseSelectionListenerAction detectAction = new BaseSelectionListenerAction("Detect") {
+      @Override
+      public void run() {
+        super.run();
+        
+        System.out.println("Test");
+      }
+    };
+  }
+  
   @Override
   public Control getControl() {
     return testLabel;

@@ -19,6 +19,7 @@ package org.apache.opennlp.caseditor.tokenize;
 
 import org.apache.opennlp.caseditor.OpenNLPPlugin;
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
+import org.eclipse.jface.preference.ComboFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.StringFieldEditor;
 import org.eclipse.ui.IWorkbench;
@@ -36,8 +37,24 @@ public class TokenizerPreferencePage extends FieldEditorPreferencePage
   public void init(IWorkbench workbench) {
   }
 
+  // TODO: Do it like in the "Build Path" path preference page ... 
+  //       radio combined with text field
   @Override
   protected void createFieldEditors() {
+    
+    // TODO: Need to set a default value
+    
+    String[][] namesAndValues = new String[][]{
+        new String[]{"Statistical", OpenNLPPreferenceConstants.TOKENIZER_ALGO_STATISTICAL},
+        new String[]{"Whitespace", OpenNLPPreferenceConstants.TOKENIZER_ALGO_WHITESPACE},
+        new String[]{"Simple", OpenNLPPreferenceConstants.TOKENIZER_ALGO_SIMPLE}
+    };
+    
+    ComboFieldEditor algorithmCombo = new ComboFieldEditor("TOKENIZER_ALGORITHM", 
+        "Algorithm", namesAndValues, getFieldEditorParent());
+    addField(algorithmCombo);
+
+    // Activate only if statistical is selected .. how to do that?
     StringFieldEditor modelPath = new StringFieldEditor(
         OpenNLPPreferenceConstants.TOKENIZER_MODEL_PATH,
         "Model Path", getFieldEditorParent());
