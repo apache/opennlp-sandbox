@@ -19,6 +19,8 @@ package org.apache.opennlp.caseditor.sentdetect;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
@@ -40,7 +42,9 @@ public class SentenceDetectorJob extends Job {
   
   private String text;
   
-  private Entity detectedSentences[];
+  private List<Span> paragraphs;
+  
+  private List<Entity> detectedSentences;
   
   public SentenceDetectorJob() {
     super("Sentence Detector Job");
@@ -54,7 +58,9 @@ public class SentenceDetectorJob extends Job {
     this.text = text;
   }
   
-  // user can set a container annotation, e.g. 
+  public void setParagraphs(List<Span> paragraphs) {
+    this.paragraphs =  paragraphs;
+  }
   
   @Override
   protected IStatus run(IProgressMonitor monitor) {
@@ -78,23 +84,26 @@ public class SentenceDetectorJob extends Job {
       }
     }
     
-    // do detection only within container annotation ...
+    detectedSentences = new ArrayList<Entity>();
+    for (Span para : paragraphs) {
     
-    Span sentenceSpans[] = sentenceDetector.sentPosDetect(text);
-    double confidence[] = sentenceDetector.getSentenceProbabilities();
-    
-    detectedSentences = new Entity[sentenceSpans.length];
-    
-    for (int i = 0; i < sentenceSpans.length; i++) {
-      Span sentenceSpan = sentenceSpans[i];
-      detectedSentences[i] = new Entity(sentenceSpan.getStart(), sentenceSpan.getEnd(),
-          sentenceSpan.getCoveredText(text).toString(), confidence[i], false);
+      Span sentenceSpans[] = sentenceDetector.sentPosDetect(para.getCoveredText(text).toString());
+      
+      double confidence[] = sentenceDetector.getSentenceProbabilities();
+      
+      for (int i = 0; i < sentenceSpans.length; i++) {
+        Span sentenceSpan = sentenceSpans[i];
+        String sentenceText = text.substring(para.getStart() + sentenceSpan.getStart(), para.getStart() + sentenceSpan.getEnd());
+        detectedSentences.add(new Entity(para.getStart() + sentenceSpan.getStart(), 
+            para.getStart() + sentenceSpan.getEnd(), sentenceText,
+            confidence[i], false));
+      }
     }
     
     return new Status(IStatus.OK, OpenNLPPlugin.ID, "OK");
   }
 
   Entity[] getDetectedSentences() {
-    return detectedSentences;
+    return detectedSentences.toArray(new Entity[detectedSentences.size()]);
   }
 }

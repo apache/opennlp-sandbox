@@ -17,11 +17,24 @@
 
 package org.apache.opennlp.caseditor.sentdetect;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import opennlp.tools.util.Span;
+
+import org.apache.opennlp.caseditor.OpenNLPPlugin;
+import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
 import org.apache.opennlp.caseditor.namefinder.Entity;
+import org.apache.uima.cas.CAS;
+import org.apache.uima.cas.FSIndex;
+import org.apache.uima.cas.Type;
+import org.apache.uima.cas.text.AnnotationFS;
 import org.apache.uima.caseditor.editor.ICasDocument;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
@@ -60,6 +73,7 @@ public class SentenceContentProvider implements IStructuredContentProvider {
       }
     });
     
+    
   }
   
   @Override
@@ -75,9 +89,36 @@ public class SentenceContentProvider implements IStructuredContentProvider {
   }
   
   void triggerSentenceDetector() {
-
-    // Add paragraph support ...
+    IPreferenceStore store = OpenNLPPlugin.getDefault().getPreferenceStore();
     
+    String paragraphTypeName = store.getString(OpenNLPPreferenceConstants.PARAGRAPH_TYPE);
+    
+    CAS cas = document.getCAS();
+    
+    List<Span> paragraphSpans = new ArrayList<Span>();
+    
+    Type paragraphType = cas.getTypeSystem().getType(paragraphTypeName); 
+    
+    if (paragraphType != null) {
+      
+      FSIndex<AnnotationFS> paragraphAnnotations = cas
+          .getAnnotationIndex(paragraphType);
+      
+      for (Iterator<AnnotationFS> sentenceIterator = paragraphAnnotations
+          .iterator(); sentenceIterator.hasNext();) {
+
+        AnnotationFS paragraphAnnotation = (AnnotationFS) sentenceIterator
+            .next();
+        
+        paragraphSpans.add(
+            new Span(paragraphAnnotation.getBegin(), paragraphAnnotation.getEnd()));
+      }
+    }
+    else {
+      paragraphSpans.add(new Span(0, cas.getDocumentText().length()));
+    }
+    
+    sentenceDetector.setParagraphs(paragraphSpans);
     sentenceDetector.setText(document.getCAS().getDocumentText());
     sentenceDetector.schedule();
   }
