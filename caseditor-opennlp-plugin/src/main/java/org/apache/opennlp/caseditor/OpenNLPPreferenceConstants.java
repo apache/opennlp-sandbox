@@ -27,4 +27,8 @@ public class OpenNLPPreferenceConstants {
   public static final String TOKEN_TYPE = "TOKEN_TYPE";
   public static final String NAME_TYPE = "NAME_TYPE";
   public static final String TOKENIZER_MODEL_PATH = "TOKENIZER_MODEL_PATH";
+  
+  public static final String TOKENIZER_ALGO_STATISTICAL = "TOKENIZER_ALGO_STATISTICAL";
+  public static final String TOKENIZER_ALGO_WHITESPACE = "TOKENIZER_ALGO_WHITESPACE";
+  public static final String TOKENIZER_ALGO_SIMPLE = "TOKENIZER_ALGO_SIMPLE";
 }
