@@ -43,6 +43,11 @@ public class NameFinderPreferencePage extends FieldEditorPreferencePage
             "Model Path", getFieldEditorParent());
     addField(modelPath);
     
+    StringFieldEditor additionalSentenceTypes = new StringFieldEditor(
+        OpenNLPPreferenceConstants.ADDITIONAL_SENTENCE_TYPE,
+        "Additional Sentence Types", getFieldEditorParent());
+    addField(additionalSentenceTypes);
+    
     StringFieldEditor nameType = new StringFieldEditor(
         OpenNLPPreferenceConstants.NAME_TYPE,
         "Name Type", getFieldEditorParent());

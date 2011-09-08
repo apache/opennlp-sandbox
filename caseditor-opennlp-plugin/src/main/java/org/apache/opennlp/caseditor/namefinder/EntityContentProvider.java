@@ -19,6 +19,7 @@ package org.apache.opennlp.caseditor.namefinder;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -325,6 +326,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
   void runNameFinder() {
     IPreferenceStore store = OpenNLPPlugin.getDefault().getPreferenceStore();
     String sentenceTypeName = store.getString(OpenNLPPreferenceConstants.SENTENCE_TYPE);
+    String additionalSentenceTypes = store.getString(OpenNLPPreferenceConstants.ADDITIONAL_SENTENCE_TYPE);
     String nameTypeName = store.getString(OpenNLPPreferenceConstants.NAME_TYPE);
     String modelPath = store.getString(OpenNLPPreferenceConstants.NAME_FINDER_MODEL_PATH);
     
@@ -332,43 +334,56 @@ public class EntityContentProvider implements IStructuredContentProvider {
     
     // just get it from preference store?!
     // Should have a good way to display an error when the type is incorrect ...
-    Type sentenceType = cas.getTypeSystem().getType(sentenceTypeName); 
+    
     
     String text = cas.getDocumentText();
 
     if (text != null) {
 
-      // TODO: get list of token annotations
-
       List<Span> sentences = new ArrayList<Span>();
-      List<Span> tokens = new ArrayList<Span>();
-      // get a list on name annotations, they will force the
-      // name finder to detect them ... and maybe maintain a negative list
 
-      FSIndex<AnnotationFS> sentenceAnnotations = cas
-          .getAnnotationIndex(sentenceType);
+      String sentenceTypeNames[] = (sentenceTypeName + "," +  additionalSentenceTypes) .split(",");
+      
+      for (String typeName : sentenceTypeNames) {
+        Type sentenceType = cas.getTypeSystem().getType(typeName.trim()); 
+      
+        // TODO: If type cannot be mapped, it throws a null pointer exception ...
+        
+        FSIndex<AnnotationFS> sentenceAnnotations = cas
+            .getAnnotationIndex(sentenceType);
+        
+        for (Iterator<AnnotationFS> sentenceIterator = sentenceAnnotations
+            .iterator(); sentenceIterator.hasNext();) {
+          
+          AnnotationFS sentenceAnnotation = (AnnotationFS) sentenceIterator
+              .next();
+          
+          sentences.add(new Span(sentenceAnnotation.getBegin(), sentenceAnnotation.getEnd()));
 
-      for (Iterator<AnnotationFS> sentenceIterator = sentenceAnnotations
-          .iterator(); sentenceIterator.hasNext();) {
-
-        AnnotationFS sentenceAnnotation = (AnnotationFS) sentenceIterator
-            .next();
-
-        sentences.add(new Span(sentenceAnnotation.getBegin(), sentenceAnnotation.getEnd()));
-
-        String sentText = sentenceAnnotation.getCoveredText();
-
-        Span tokenSpans[] = SimpleTokenizer.INSTANCE.tokenizePos(sentText);
-
-        int sentenceOffset = sentenceAnnotation.getBegin();
-
-        for (Span token : tokenSpans) {
-          tokens.add(new Span(sentenceOffset + token.getStart(),
-              sentenceOffset + token.getEnd()));
         }
       }
 
-      // Note: When an annotation is removed, it might still be in the cas ...
+      // sort sentences list ... ascending
+      Collections.sort(sentences);
+      
+      // iterate again and create tokens ...
+      List<Span> tokens = new ArrayList<Span>();
+      
+      for (Span sentence : sentences) {
+          String sentText = sentence.getCoveredText(text).toString();
+          
+          // TODO: Extract tokens here! Instead of using the simple tokenizer!
+          
+          Span tokenSpans[] = SimpleTokenizer.INSTANCE.tokenizePos(sentText);
+
+          int sentenceOffset = sentence.getStart();
+
+          for (Span token : tokenSpans) {
+            tokens.add(new Span(sentenceOffset + token.getStart(),
+                sentenceOffset + token.getEnd()));
+          }
+      }
+      
       
       List<Span> nameSpans = new ArrayList<Span>();
 

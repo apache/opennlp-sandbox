@@ -24,6 +24,7 @@ public class OpenNLPPreferenceConstants {
   
   public static final String PARAGRAPH_TYPE = "PARAGRAPH_TYPE";
   public static final String SENTENCE_TYPE = "SENTENCE_TYPE";
+  public static final String ADDITIONAL_SENTENCE_TYPE = "ADDITIONAL_SENTENCE_TYPE";
   public static final String TOKEN_TYPE = "TOKEN_TYPE";
   public static final String NAME_TYPE = "NAME_TYPE";
   public static final String TOKENIZER_MODEL_PATH = "TOKENIZER_MODEL_PATH";
