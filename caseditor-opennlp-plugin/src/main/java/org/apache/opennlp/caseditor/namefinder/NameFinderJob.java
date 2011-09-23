@@ -44,46 +44,9 @@ import org.eclipse.core.runtime.jobs.Job;
 // don't change setting, while job is running!
 public class NameFinderJob extends Job {
   
-  // TODO: It should be changed in a way that detected annotations are always
-  // a perfect match with existing annotations
-  static class RestrictedSequencesValidator extends NameFinderSequenceValidator {
-    
-    private Map<Integer, String> nameIndex = new HashMap<Integer, String>();
-    
-    private Set<String> nameOnlyTokens;
-    
-    // also give it a no-name index
-    void setRestriction(Map<Integer, String> nameIndex) {
-      this.nameIndex = nameIndex;
-    }
-    
-    void setNameOnlyTokens(Set<String> nameOnlyTokens) {
-      this.nameOnlyTokens =	nameOnlyTokens;
-    }
-    
-    @Override
-    public boolean validSequence(int i, String[] inputSequence,
-        String[] outcomesSequence, String outcome) {
-      boolean valid = super.validSequence(i, inputSequence, outcomesSequence, outcome);
-      
-      if (valid && nameIndex.get(i) != null) {
-        String desiredOutcome = nameIndex.get(i);
-        return outcome.endsWith(desiredOutcome);
-      }
-      
-      // if token part of name only token, then 
-      // its either start, or cont
-      if (valid && nameOnlyTokens.contains(inputSequence[i])) {
-    	  return outcome.endsWith(NameFinderME.START) || 
-    			  outcome.endsWith(NameFinderME.CONTINUE); 
-      }
-      
-      return valid;
-    }
-  }
   
-  private NameFinderME nameFinder;
-  private RestrictedSequencesValidator sequenceValidator;
+  private MultiModelNameFinder nameFinder;
+//  private RestrictedSequencesValidator sequenceValidator;
   
   private String modelPath;
   private String text;
@@ -125,25 +88,28 @@ public class NameFinderJob extends Job {
   @Override
   protected synchronized IStatus run(IProgressMonitor monitor) {
 
-    // lazy load model on first run ...
+    // lazy load model on first run ... how to lazy initialize multiple name finders?
     if (nameFinder == null) {
-    	
+      
+      // load multiple name finders here
+      
       InputStream modelIn = ModelUtil.openModelIn(modelPath);
       
-      try {
-        TokenNameFinderModel model = new TokenNameFinderModel(modelIn);
-        sequenceValidator = new RestrictedSequencesValidator();
-        nameFinder = new NameFinderME(model, null, 5, sequenceValidator);
-      } catch (IOException e) {
-        e.printStackTrace();
-      } finally {
-        if (modelIn != null) {
-          try {
-            modelIn.close();
-          } catch (IOException e) {
-          }
-        }
-      }
+//      try {
+//        TokenNameFinderModel model = new TokenNameFinderModel(modelIn);
+//        sequenceValidator = new RestrictedSequencesValidator();
+//        nameFinder = new NameFinderME(model, null, 5, sequenceValidator);
+        nameFinder = new MultiModelNameFinder(modelPath);
+//      } catch (IOException e) {
+//        e.printStackTrace();
+//      } finally {
+//        if (modelIn != null) {
+//          try {
+//            modelIn.close();
+//          } catch (IOException e) {
+//          }
+//        }
+//      }
     }
 
     if (nameFinder != null) {
@@ -210,11 +176,11 @@ public class NameFinderJob extends Job {
           }
         }
         
-        sequenceValidator.setRestriction(verifiedNameTokens);
-        sequenceValidator.setNameOnlyTokens(nameTokens);
+        nameFinder.setRestriction(verifiedNameTokens);
+        nameFinder.setNameOnlyTokens(nameTokens);
         
-        Span names[] = nameFinder.find(tokenStrings);
-        double nameProbs[] = nameFinder.probs(names);
+        // TODO: Use multiple name finders here .... 
+        ConfidenceSpan names[] = nameFinder.find(tokenStrings);
         
         for (int i = 0; i < names.length; i++) {
           
@@ -226,7 +192,8 @@ public class NameFinderJob extends Job {
           String coveredText = text.substring(beginIndex, endIndex);
           
           
-          nameList.add(new Entity(beginIndex, endIndex, coveredText, nameProbs[i], false));
+          nameList.add(new Entity(beginIndex, endIndex, coveredText,
+              names[i].getConfidence(), false));
         }
       }
     }
