@@ -18,6 +18,7 @@
 package org.apache.opennlp.caseditor.namefinder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -95,12 +96,23 @@ public class EntityContentProvider implements IStructuredContentProvider {
     
   }
   
+  private static boolean contains(String array[], String element) {
+    
+    for (String arrayElement : array) {
+      if (element.equals(arrayElement))
+        return true;
+    }
+    
+    return false;
+  }
+  
   class ConfirmedEntityListener implements ICasDocumentListener {
+    
     
     @Override
     public void added(FeatureStructure fs) {
       
-      if (fs instanceof AnnotationFS && fs.getType().getName().equals(nameTypeName)) {
+      if (fs instanceof AnnotationFS && contains(nameTypeNames, fs.getType().getName())) {
         // TODO: Check that type matches ...
         AnnotationFS annotation = (AnnotationFS) fs;
         
@@ -130,7 +142,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
         }
         else {
           Entity newEntity = new Entity(annotation.getBegin(), annotation.getEnd(),
-              annotation.getCoveredText(), null, true);
+              annotation.getCoveredText(), null, true, annotation.getType().getName());
           
           EntityContentProvider.this.entityListViewer.add(newEntity);
           EntityContentProvider.this.knownEntities.add(newEntity);
@@ -153,7 +165,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
     @Override
     public void removed(FeatureStructure fs) {
       
-      if (fs instanceof AnnotationFS && fs.getType().getName().equals(nameTypeName)) {
+      if (fs instanceof AnnotationFS && contains(nameTypeNames, fs.getType().getName())) {
         AnnotationFS annotation = (AnnotationFS) fs;
         
         Entity confirmedEntity = searchEntity(EntityContentProvider.this.knownEntities,
@@ -201,17 +213,20 @@ public class EntityContentProvider implements IStructuredContentProvider {
   
   // contains all existing entity annotations and is synchronized!
   // needed by name finder to calculate updates ... 
-//  private List<Entity> confirmedEntities = new ArrayList<Entity>();
   private List<Entity> knownEntities = new ArrayList<Entity>();
   
-  private String nameTypeName;
+  private String nameTypeNames[];
   
   EntityContentProvider(NameFinderJob nameFinder, TableViewer entityList) {
     this.nameFinder = nameFinder;
     this.entityListViewer = entityList;
     
     IPreferenceStore store = OpenNLPPlugin.getDefault().getPreferenceStore();
-    nameTypeName = store.getString(OpenNLPPreferenceConstants.NAME_TYPE);
+    nameTypeNames = store.getString(OpenNLPPreferenceConstants.NAME_TYPE).split(",");
+    
+    for (int i = 0; i < nameTypeNames.length; i++) {
+      nameTypeNames[i] = nameTypeNames[i].trim();
+    }
     
     nameFinder.addJobChangeListener(new JobChangeAdapter() {
       public void done(final IJobChangeEvent event) {
@@ -294,7 +309,6 @@ public class EntityContentProvider implements IStructuredContentProvider {
     
     if (newInput != null) {
       IPreferenceStore store = OpenNLPPlugin.getDefault().getPreferenceStore();
-      String nameTypeName = store.getString(OpenNLPPreferenceConstants.NAME_TYPE);
       
       input = (ICasDocument) newInput;
       
@@ -303,20 +317,25 @@ public class EntityContentProvider implements IStructuredContentProvider {
       input.addChangeListener(nameFinderTrigger);
       
       // Create initial list of confirmed entities ...
-      Type nameType = input.getCAS().getTypeSystem().getType(nameTypeName); 
       
-      FSIndex<AnnotationFS> nameAnnotations = input.getCAS()
-          .getAnnotationIndex(nameType);
-      
-      for (Iterator<AnnotationFS> nameIterator = nameAnnotations
-          .iterator(); nameIterator.hasNext();) {
+      for (String nameTypeName : nameTypeNames) {
+        Type nameType = input.getCAS().getTypeSystem().getType(nameTypeName); 
         
-        AnnotationFS nameAnnotation = (AnnotationFS) nameIterator.next();
+        FSIndex<AnnotationFS> nameAnnotations = input.getCAS()
+            .getAnnotationIndex(nameType);
         
-        Entity entity = new Entity(nameAnnotation.getBegin(),
-            nameAnnotation.getEnd(), nameAnnotation.getCoveredText(), null, true);
-        entity.setLinkedAnnotation(nameAnnotation);
-        knownEntities.add(entity);
+        for (Iterator<AnnotationFS> nameIterator = nameAnnotations
+            .iterator(); nameIterator.hasNext();) {
+          
+          AnnotationFS nameAnnotation = (AnnotationFS) nameIterator.next();
+          
+          // TODO: Entity must have a type ...
+          Entity entity = new Entity(nameAnnotation.getBegin(),
+              nameAnnotation.getEnd(), nameAnnotation.getCoveredText(), null, true,
+              nameAnnotation.getType().getName());
+          entity.setLinkedAnnotation(nameAnnotation);
+          knownEntities.add(entity);
+        }
       }
       
       runNameFinder();
@@ -327,14 +346,17 @@ public class EntityContentProvider implements IStructuredContentProvider {
     IPreferenceStore store = OpenNLPPlugin.getDefault().getPreferenceStore();
     String sentenceTypeName = store.getString(OpenNLPPreferenceConstants.SENTENCE_TYPE);
     String additionalSentenceTypes = store.getString(OpenNLPPreferenceConstants.ADDITIONAL_SENTENCE_TYPE);
-    String nameTypeName = store.getString(OpenNLPPreferenceConstants.NAME_TYPE);
-    String modelPath = store.getString(OpenNLPPreferenceConstants.NAME_FINDER_MODEL_PATH);
+   
+    String modelPathes[] = store.getString(OpenNLPPreferenceConstants.NAME_FINDER_MODEL_PATH).split(",");
+    
+    for (int i = 0; i < modelPathes.length; i++) {
+      modelPathes[i] = modelPathes[i].trim();
+    }
     
     CAS cas = input.getCAS();
     
     // just get it from preference store?!
     // Should have a good way to display an error when the type is incorrect ...
-    
     
     String text = cas.getDocumentText();
 
@@ -342,7 +364,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
 
       List<Span> sentences = new ArrayList<Span>();
 
-      String sentenceTypeNames[] = (sentenceTypeName + "," +  additionalSentenceTypes) .split(",");
+      String sentenceTypeNames[] = (sentenceTypeName + "," +  additionalSentenceTypes).split(",");
       
       for (String typeName : sentenceTypeNames) {
         Type sentenceType = cas.getTypeSystem().getType(typeName.trim()); 
@@ -359,7 +381,6 @@ public class EntityContentProvider implements IStructuredContentProvider {
               .next();
           
           sentences.add(new Span(sentenceAnnotation.getBegin(), sentenceAnnotation.getEnd()));
-
         }
       }
 
@@ -384,20 +405,23 @@ public class EntityContentProvider implements IStructuredContentProvider {
           }
       }
       
-      
       List<Span> nameSpans = new ArrayList<Span>();
 
-      Type nameType = cas.getTypeSystem().getType(nameTypeName); 
-
-      FSIndex<AnnotationFS> nameAnnotations = cas
-          .getAnnotationIndex(nameType);
-
-      for (Iterator<AnnotationFS> nameIterator = nameAnnotations
-          .iterator(); nameIterator.hasNext();) {
-
-        AnnotationFS nameAnnotation = (AnnotationFS) nameIterator.next();
-
-        nameSpans.add(new Span(nameAnnotation.getBegin(), nameAnnotation.getEnd()));
+      for (String nameTypeName : nameTypeNames) {
+        
+        Type nameType = cas.getTypeSystem().getType(nameTypeName); 
+  
+        FSIndex<AnnotationFS> nameAnnotations = cas
+            .getAnnotationIndex(nameType);
+  
+        for (Iterator<AnnotationFS> nameIterator = nameAnnotations
+            .iterator(); nameIterator.hasNext();) {
+  
+          AnnotationFS nameAnnotation = (AnnotationFS) nameIterator.next();
+  
+          nameSpans.add(new Span(nameAnnotation.getBegin(), nameAnnotation.getEnd(),
+              nameAnnotation.getType().getName()));
+        }
       }
       
       // This will cause issues when it is done while it is running!
@@ -405,7 +429,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
       nameFinder.setSentences(sentences.toArray(new Span[sentences.size()]));
       nameFinder.setTokens(tokens.toArray(new Span[tokens.size()]));
       nameFinder.setVerifiedNames(nameSpans.toArray(new Span[nameSpans.size()]));
-      nameFinder.setModelPath(modelPath);
+      nameFinder.setModelPath(modelPathes, nameTypeNames);
       
       nameFinder.schedule();
     }

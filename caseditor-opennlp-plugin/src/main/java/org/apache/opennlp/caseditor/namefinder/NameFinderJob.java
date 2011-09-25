@@ -17,8 +17,6 @@
 
 package org.apache.opennlp.caseditor.namefinder;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,12 +25,9 @@ import java.util.Map;
 import java.util.Set;
 
 import opennlp.tools.namefind.NameFinderME;
-import opennlp.tools.namefind.NameFinderSequenceValidator;
-import opennlp.tools.namefind.TokenNameFinderModel;
 import opennlp.tools.util.Span;
 import opennlp.tools.util.featuregen.StringPattern;
 
-import org.apache.opennlp.caseditor.ModelUtil;
 import org.apache.opennlp.caseditor.OpenNLPPlugin;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -46,9 +41,11 @@ public class NameFinderJob extends Job {
   
   
   private MultiModelNameFinder nameFinder;
-//  private RestrictedSequencesValidator sequenceValidator;
   
-  private String modelPath;
+  private String modelPath[];
+  
+  private String modelTypes[];
+  
   private String text;
   private Span sentences[];
   private Span tokens[];
@@ -63,8 +60,9 @@ public class NameFinderJob extends Job {
   /**
    * @param modelPath
    */
-  synchronized void setModelPath(String modelPath) {
-    this.modelPath = modelPath;
+  synchronized void setModelPath(String modelPathes[], String modelTypes[]) {
+    this.modelPath = modelPathes;
+    this.modelTypes = modelTypes;
   }
   
   synchronized void setText(String text) {
@@ -90,26 +88,7 @@ public class NameFinderJob extends Job {
 
     // lazy load model on first run ... how to lazy initialize multiple name finders?
     if (nameFinder == null) {
-      
-      // load multiple name finders here
-      
-      InputStream modelIn = ModelUtil.openModelIn(modelPath);
-      
-//      try {
-//        TokenNameFinderModel model = new TokenNameFinderModel(modelIn);
-//        sequenceValidator = new RestrictedSequencesValidator();
-//        nameFinder = new NameFinderME(model, null, 5, sequenceValidator);
-        nameFinder = new MultiModelNameFinder(modelPath);
-//      } catch (IOException e) {
-//        e.printStackTrace();
-//      } finally {
-//        if (modelIn != null) {
-//          try {
-//            modelIn.close();
-//          } catch (IOException e) {
-//          }
-//        }
-//      }
+      nameFinder = new MultiModelNameFinder(modelPath, modelTypes);
     }
 
     if (nameFinder != null) {
@@ -143,8 +122,8 @@ public class NameFinderJob extends Job {
         
         // Note: This is slow!
         // iterate over names, to find token indexes
-
         
+        // TODO: This must work with multiple types ...
         for (Span verifiedName : verifiedNames) {
           boolean isStart = true;
         	
@@ -191,9 +170,8 @@ public class NameFinderJob extends Job {
           
           String coveredText = text.substring(beginIndex, endIndex);
           
-          
           nameList.add(new Entity(beginIndex, endIndex, coveredText,
-              names[i].getConfidence(), false));
+              names[i].getConfidence(), false, names[i].getType()));
         }
       }
     }

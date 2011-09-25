@@ -71,11 +71,15 @@ public class MultiModelNameFinder implements TokenNameFinder {
     }
   }
   
+  
   private NameFinderME nameFinders[];
+  private String typeNames[]; // renmame to modelTypes
   
   private RestrictedSequencesValidator sequenceValidator;
   
-  MultiModelNameFinder(String... modelPathes) {
+  MultiModelNameFinder(String modelPathes[], String typeNames[]) {
+    
+    this.typeNames = typeNames;
     
     nameFinders = new NameFinderME[modelPathes.length];
         
@@ -87,8 +91,9 @@ public class MultiModelNameFinder implements TokenNameFinder {
       
       try {
         TokenNameFinderModel model = new TokenNameFinderModel(modelIn);
-        sequenceValidator = new RestrictedSequencesValidator();
-        nameFinders[i] = new NameFinderME(model, null, 5, sequenceValidator);
+//        sequenceValidator = new RestrictedSequencesValidator();
+//        nameFinders[i] = new NameFinderME(model, null, 5, sequenceValidator);
+        nameFinders[i] = new NameFinderME(model, null, 5);
       } catch (IOException e) {
         e.printStackTrace();
       } finally {
@@ -103,15 +108,15 @@ public class MultiModelNameFinder implements TokenNameFinder {
     
   }
   
+  // Needs to be changed, so different models are supported
   void setRestriction(Map<Integer, String> nameIndex) {
-    sequenceValidator.setRestriction(nameIndex);
+//    sequenceValidator.setRestriction(nameIndex);
   }
 
   // Needs to be changed, so it can be about different categories ... 
   void setNameOnlyTokens(Set<String> nameOnlyTokens) {
-    sequenceValidator.setNameOnlyTokens(nameOnlyTokens);
+//    sequenceValidator.setNameOnlyTokens(nameOnlyTokens);
   }
-  
   
   @Override
   public void clearAdaptiveData() {
@@ -125,14 +130,15 @@ public class MultiModelNameFinder implements TokenNameFinder {
     
     List<ConfidenceSpan> names = new ArrayList<ConfidenceSpan>();
     
-    for (NameFinderME nameFinder : nameFinders) {
+    for (int i = 0; i < nameFinders.length; i++) {
+      NameFinderME nameFinder = nameFinders[i];
       Span detectedNames[] = nameFinder.find(sentence);
       double confidence[] = nameFinder.probs();
       
-      for (int i = 0; i < detectedNames.length; i++) {
+      for (int j = 0; j < detectedNames.length; j++) {
         // TODO: Also add type ...
-        names.add(new ConfidenceSpan(detectedNames[i].getStart(), detectedNames[i].getEnd(),
-            confidence[i]));
+        names.add(new ConfidenceSpan(detectedNames[j].getStart(), detectedNames[j].getEnd(),
+            confidence[j], typeNames[i]));
       }
     }
     

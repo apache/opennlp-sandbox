@@ -24,19 +24,22 @@ import org.eclipse.core.runtime.IAdaptable;
 // TODO: Rename to PotentialAnnotation, should also contain a type, then we can use
 //       reuse the code to create an annotation for it.
 public class Entity implements IAdaptable {
-  
+
   private int beginIndex;
   private int endIndex;
-  
+
   private String entityText;
- 
+
   private boolean isConfirmed;
-  
+
   private Double confidence;
   
+  private String type;
+
   private AnnotationFS linkedAnnotationFS;
   
-  public Entity(int beginIndex, int endIndex, String entityText, Double confidence, boolean isConfirmed) {
+  public Entity(int beginIndex, int endIndex, String entityText, Double confidence,
+      boolean isConfirmed, String type) {
     this.beginIndex = beginIndex;
     this.endIndex = endIndex;
     
@@ -45,6 +48,12 @@ public class Entity implements IAdaptable {
     this.confidence = confidence;
     
     this.isConfirmed = isConfirmed;
+    
+    this.type = type;
+  }
+  
+  public Entity(int beginIndex, int endIndex, String entityText, Double confidence, boolean isConfirmed) {
+    this(beginIndex, endIndex, entityText, confidence, isConfirmed, null);
   }
   
   public void setBeginIndex(int beginIndex) {
@@ -69,6 +78,10 @@ public class Entity implements IAdaptable {
   
   public String getEntityText() {
     return entityText;
+  }
+  
+  public String getType() {
+    return type;
   }
   
   public void setConfidence(Double confidence) {

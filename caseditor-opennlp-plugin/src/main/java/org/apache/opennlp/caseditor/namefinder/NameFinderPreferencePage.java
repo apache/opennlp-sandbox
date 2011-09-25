@@ -38,19 +38,19 @@ public class NameFinderPreferencePage extends FieldEditorPreferencePage
 
   @Override
   protected void createFieldEditors() {
-    StringFieldEditor modelPath = new StringFieldEditor(
-            OpenNLPPreferenceConstants.NAME_FINDER_MODEL_PATH,
-            "Model Path", getFieldEditorParent());
-    addField(modelPath);
-    
     StringFieldEditor additionalSentenceTypes = new StringFieldEditor(
         OpenNLPPreferenceConstants.ADDITIONAL_SENTENCE_TYPE,
         "Additional Sentence Types", getFieldEditorParent());
     addField(additionalSentenceTypes);
     
+    StringFieldEditor modelPath = new StringFieldEditor(
+            OpenNLPPreferenceConstants.NAME_FINDER_MODEL_PATH,
+            "Model Path(es)", getFieldEditorParent());
+    addField(modelPath);
+    
     StringFieldEditor nameType = new StringFieldEditor(
         OpenNLPPreferenceConstants.NAME_TYPE,
-        "Name Type", getFieldEditorParent());
+        "Name Type(s)", getFieldEditorParent());
     addField(nameType);
   }
 }

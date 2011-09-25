@@ -145,7 +145,7 @@ class NameFinderViewPage extends Page implements ISelectionListener {
           // If that annotation exist, then match it.
           // Bug: Need to check the type also ...
           Entity entity = new Entity(firstAnnotation.getBegin(), firstAnnotation.getEnd(),
-              firstAnnotation.getCoveredText(), null, true);
+              firstAnnotation.getCoveredText(), null, true, firstAnnotation.getType().getName());
           
           ISelection tableSelection = new StructuredSelection(entity);
           entityList.setSelection(tableSelection, true);

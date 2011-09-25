@@ -25,9 +25,13 @@ public class ConfidenceSpan extends Span {
 
   private final double confidence;
   
-  public ConfidenceSpan(int s, int e, double confidence) {
-    super(s, e);
+  public ConfidenceSpan(int s, int e, double confidence, String type) {
+    super(s, e, type);
     this.confidence = confidence;
+  }
+  
+  public ConfidenceSpan(int s, int e, double confidence) {
+    this(s, e, confidence, null);
   }
   
   double getConfidence() {
