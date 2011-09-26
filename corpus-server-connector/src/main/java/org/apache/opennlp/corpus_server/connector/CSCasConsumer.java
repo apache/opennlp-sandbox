@@ -18,12 +18,8 @@
 package org.apache.opennlp.corpus_server.connector;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 
-import org.apache.opennlp.corpus_server.CorpusServer;
-import org.apache.opennlp.corpus_server.store.CorpusStore;
 import org.apache.uima.cas.CAS;
-import org.apache.uima.cas.impl.XmiCasSerializer;
 import org.apache.uima.collection.CasConsumer_ImplBase;
 import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.resource.ResourceProcessException;
@@ -36,28 +32,28 @@ public class CSCasConsumer extends CasConsumer_ImplBase {
 
   private static final String CORPUSNAME = "corpusName";
 
-  private CorpusStore corpusStore;
+//  private CorpusStore corpusStore;
 
   @Override
   public void initialize() throws ResourceInitializationException {
     super.initialize();
-    String corpusName = String.valueOf(getConfigParameterValue(CORPUSNAME));
-    try {
-      corpusStore = CorpusServer.getInstance().getStore().getCorpus(corpusName);
-    } catch (IOException e) {
-      throw new ResourceInitializationException(e);
-    }
+//    String corpusName = String.valueOf(getConfigParameterValue(CORPUSNAME));
+//    try {
+//      corpusStore = CorpusServer.getInstance().getStore().getCorpus(corpusName);
+//    } catch (IOException e) {
+//      throw new ResourceInitializationException(e);
+//    }
   }
 
   @Override
   public void processCas(CAS cas) throws ResourceProcessException {
     ByteArrayOutputStream os = new ByteArrayOutputStream();
-    try {
-      XmiCasSerializer.serialize(cas, os);
-      corpusStore.addCAS(String.valueOf(cas.getDocumentAnnotation().getCoveredText().hashCode()), os.toByteArray());
-    } catch (Exception e) {
-      throw new ResourceProcessException(e);
-    }
+//    try {
+//      XmiCasSerializer.serialize(cas, os);
+//      corpusStore.addCAS(String.valueOf(cas.getDocumentAnnotation().getCoveredText().hashCode()), os.toByteArray());
+//    } catch (Exception e) {
+//      throw new ResourceProcessException(e);
+//    }
 
   }
 

@@ -17,64 +17,43 @@
 
 package org.apache.opennlp.corpus_server.connector;
 
-import org.apache.opennlp.corpus_server.CorpusServer;
-import org.apache.opennlp.corpus_server.UimaUtil;
-import org.apache.opennlp.corpus_server.util.TestCorpusServer;
-import org.apache.opennlp.corpus_server.store.CorporaStore;
-import org.apache.opennlp.corpus_server.store.DerbyCorporaStore;
-import org.apache.uima.UIMAFramework;
-import org.apache.uima.cas.CAS;
-import org.apache.uima.cas.Type;
-import org.apache.uima.cas.text.AnnotationFS;
-import org.apache.uima.collection.CasConsumer;
-import org.apache.uima.resource.ResourceSpecifier;
-import org.apache.uima.resource.metadata.TypeSystemDescription;
-import org.apache.uima.util.XMLInputSource;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.InputStream;
-
-import static org.junit.Assert.fail;
 
 public class CSCasConsumerTest {
 
-  private static final String CCPATH = "src/test/resources/org/apache/opennlp/corpus_server/CSCasConsumerTestDescriptor.xml";
-
-  @Before
-  public void setUp() throws Exception {
-    InputStream in = CorpusServer.class
-            .getResourceAsStream("/org/apache/opennlp/corpus_server/search/TypeSystem.xml");
-    TypeSystemDescription tsd = UimaUtil.createTypeSystemDescription(in);
-    ByteArrayOutputStream os = new ByteArrayOutputStream();
-    tsd.toXML(os);
-    CorporaStore corporaStore = new DerbyCorporaStore();
-    try {
-      corporaStore.initialize();
-      corporaStore.createCorpus("wikinews", os.toByteArray());
-    } catch (Exception e) {
-      // do nothing
-    }
-    new TestCorpusServer();
-  }
-
-  @Test
-  public void testCasWrite() {
-    try {
-      XMLInputSource s = new XMLInputSource(new File(CCPATH));
-      ResourceSpecifier rs = UIMAFramework.getXMLParser().parseCasConsumerDescription(s);
-      CasConsumer casConsumer = UIMAFramework.produceCasConsumer(rs);
-      InputStream in = CorpusServer.class
-              .getResourceAsStream("/org/apache/opennlp/corpus_server/WikinewsTypeSystem.xml");
-      TypeSystemDescription tsd = UimaUtil.createTypeSystemDescription(in);
-      CAS cas = UimaUtil.createEmptyCAS(tsd);
-      cas.setDocumentText("this cas needs to be stored");
-      casConsumer.processCas(cas);
-    } catch (Exception e) {
-      e.printStackTrace();
-      fail(e.getLocalizedMessage());
-    }
-  }
+//  private static final String CCPATH = "src/test/resources/org/apache/opennlp/corpus_server/CSCasConsumerTestDescriptor.xml";
+//
+//  @Before
+//  public void setUp() throws Exception {
+//    InputStream in = CorpusServer.class
+//            .getResourceAsStream("/org/apache/opennlp/corpus_server/search/TypeSystem.xml");
+//    TypeSystemDescription tsd = UimaUtil.createTypeSystemDescription(in);
+//    ByteArrayOutputStream os = new ByteArrayOutputStream();
+//    tsd.toXML(os);
+//    CorporaStore corporaStore = new DerbyCorporaStore();
+//    try {
+//      corporaStore.initialize();
+//      corporaStore.createCorpus("wikinews", os.toByteArray());
+//    } catch (Exception e) {
+//      // do nothing
+//    }
+//    new TestCorpusServer();
+//  }
+//
+//  @Test
+//  public void testCasWrite() {
+//    try {
+//      XMLInputSource s = new XMLInputSource(new File(CCPATH));
+//      ResourceSpecifier rs = UIMAFramework.getXMLParser().parseCasConsumerDescription(s);
+//      CasConsumer casConsumer = UIMAFramework.produceCasConsumer(rs);
+//      InputStream in = CorpusServer.class
+//              .getResourceAsStream("/org/apache/opennlp/corpus_server/WikinewsTypeSystem.xml");
+//      TypeSystemDescription tsd = UimaUtil.createTypeSystemDescription(in);
+//      CAS cas = UimaUtil.createEmptyCAS(tsd);
+//      cas.setDocumentText("this cas needs to be stored");
+//      casConsumer.processCas(cas);
+//    } catch (Exception e) {
+//      e.printStackTrace();
+//      fail(e.getLocalizedMessage());
+//    }
+//  }
 }
