@@ -25,11 +25,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -83,7 +81,8 @@ public class LuceneSearchService implements SearchService {
     // Set the index mapping file for this corpus in the analysis engine descriptor
     CorpusStore corpusStore = CorpusServer.getInstance().getStore().getCorpus(corpusId);
     
-    XMLInputSource in = new XMLInputSource(new ByteArrayInputStream(corpusStore.getIndexMapping()), new File(""));
+    XMLInputSource in = new XMLInputSource(LuceneSearchService.class.getResourceAsStream(
+        "/org/apache/opennlp/corpus_server/search/LuceneIndexer.xml"), new File(""));
     
     try {
       AnalysisEngineDescription specifier;
@@ -93,13 +92,11 @@ public class LuceneSearchService implements SearchService {
 
       File mappingTmpFile = File.createTempFile("lucas-mapping", corpusId + ".xml");
       mappingTmpFile.deleteOnExit();
-      
-      InputStream mappingFileIn = null;
+
+      InputStream mappingFileIn = new ByteArrayInputStream(corpusStore.getIndexMapping());
       OutputStream mappingTmpOut = null;
       
       try {
-        mappingFileIn = LuceneSearchService.class.getResourceAsStream(
-            "/org/apache/opennlp/corpus_server/search/" + corpusId + ".xml");
         mappingTmpOut = new FileOutputStream(mappingTmpFile);
         
         byte buffer[] = new byte[1024];
@@ -127,7 +124,6 @@ public class LuceneSearchService implements SearchService {
           catch (IOException e) {}
         }
       }
-      
       
       specifier.getAnalysisEngineMetaData().
       getConfigurationParameterSettings().setParameterValue("mappingFile",
