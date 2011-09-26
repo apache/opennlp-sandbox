@@ -21,6 +21,7 @@
 	 ***************************************************************
    -->
    
+<!-- Type System is used by Lucas to index a CAS. -->
 <typeSystemDescription  xmlns="http://uima.apache.org/resourceSpecifier">
 	<name>IndexerTypeSystem</name>
 	<types>
