@@ -24,6 +24,9 @@ import javax.ws.rs.core.MediaType;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.api.client.config.ClientConfig;
+import com.sun.jersey.api.client.config.DefaultClientConfig;
+import com.sun.jersey.api.json.JSONConfiguration;
 
 /**
  * Command Line Tool to create a new corpus in the corpus server.
@@ -31,26 +34,34 @@ import com.sun.jersey.api.client.WebResource;
 public class CreateCorpus {
 	public static void main(String[] args) throws Exception {
 		
-		if (args.length != 3) {
+		if (args.length != 4) {
 			System.out.println("CreateCorpus address corpusName typeSystemFile");
 			System.exit(-1);
 		}
 		
 		String corpusName = args[1];
 		
-		Client c = Client.create();
+		ClientConfig clientConfig = new DefaultClientConfig();
+		clientConfig.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING, Boolean.TRUE);
+		
+		Client c = Client.create(clientConfig);
 		
 		WebResource r = c.resource(args[0]);
 		
+		byte[][] resources = new byte[2][];
 		byte typeSystemBytes[] = FileUtil.fileToBytes(new File(args[2]));
+		resources[0] = typeSystemBytes;
+		
+		byte indexMappingBytes[] = FileUtil.fileToBytes(new File(args[3]));
+		resources[1] = indexMappingBytes;
 		
 		ClientResponse response = r
 				.path("_createCorpus")
 				.queryParam("corpusName", corpusName)
-				.accept(MediaType.TEXT_XML)
+				.accept(MediaType.APPLICATION_JSON)
 				// TODO: How to fix this? Shouldn't accept do it?
-				.header("Content-Type", MediaType.TEXT_XML)
-				.post(ClientResponse.class, typeSystemBytes);
+				.header("Content-Type", MediaType.APPLICATION_JSON_TYPE)
+				.post(ClientResponse.class, resources);
 		
 		System.out.println("Result: " + response.getStatus());
 	}
