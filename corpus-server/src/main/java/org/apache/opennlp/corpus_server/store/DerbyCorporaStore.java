@@ -54,7 +54,7 @@ public class DerbyCorporaStore extends AbstractCorporaStore {
   }
 
   @Override
-  public void createCorpus(String corpusName, byte[] typeSystemBytes)
+  public void createCorpus(String corpusName, byte[] typeSystemBytes, byte indexMapping[])
       throws IOException {
     
     try {
@@ -62,22 +62,36 @@ public class DerbyCorporaStore extends AbstractCorporaStore {
       Statement s = conn.createStatement();
       s.execute("create table " + corpusName + 
           "(name varchar(1024), cas blob, unique (name))");
-
+      
+      s.close();
+      
       // Insert the type system
-      PreparedStatement ps = conn.prepareStatement("insert into " + corpusName
+      PreparedStatement typeSystemPS = conn.prepareStatement("insert into " + corpusName
           + " values (?, ?)");
 
-      ps.setString(1, "_typesystem");
+      typeSystemPS.setString(1, "_typesystem");
 
-      Blob b = conn.createBlob();
-      b.setBytes(1, typeSystemBytes);
-      ps.setBlob(2, b);
+      Blob typeSystemBlob = conn.createBlob();
+      typeSystemBlob.setBytes(1, typeSystemBytes);
+      typeSystemPS.setBlob(2, typeSystemBlob);
 
-      ps.executeUpdate();
+      typeSystemPS.executeUpdate();
 
+      PreparedStatement indexMappingPS = conn.prepareStatement("insert into " + corpusName
+          + " values (?, ?)");
+      
+      indexMappingPS.setString(1, "_indexMapping");
+      
+      Blob indexMappingBlob = conn.createBlob();
+      indexMappingBlob.setBytes(1, indexMapping);
+      indexMappingPS.setBlob(2, indexMappingBlob);
+      
+      indexMappingPS.executeUpdate();
+      
       conn.commit();
       
-      ps.close();
+      typeSystemPS.close();
+      indexMappingPS.close();
       conn.close();
 
     } catch (SQLException e) {

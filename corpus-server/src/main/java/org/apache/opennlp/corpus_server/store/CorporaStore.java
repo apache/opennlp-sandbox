@@ -43,8 +43,10 @@ public interface CorporaStore {
    * 
    * @param corpusName
    * @param typeSystemBytes
+   * @param indexMapping
    */
-  void createCorpus(String corpusName, byte typeSystemBytes[]) throws IOException;
+  void createCorpus(String corpusName, byte typeSystemBytes[],
+      byte indexMapping[]) throws IOException;
   
   Set<String> getCorpusIds() throws IOException;
   

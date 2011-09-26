@@ -36,4 +36,6 @@ public interface CorpusStore {
   void updateCAS(String casID, byte[] content) throws IOException;
   
   TypeSystemDescription getTypeSystem() throws IOException;
+  
+  byte[] getIndexMapping() throws IOException;
 }

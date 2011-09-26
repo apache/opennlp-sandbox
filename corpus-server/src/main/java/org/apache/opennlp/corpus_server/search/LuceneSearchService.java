@@ -42,6 +42,7 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
+import org.apache.opennlp.corpus_server.CorpusServer;
 import org.apache.opennlp.corpus_server.UimaUtil;
 import org.apache.opennlp.corpus_server.store.CorporaStore;
 import org.apache.opennlp.corpus_server.store.CorpusStore;
@@ -78,10 +79,11 @@ public class LuceneSearchService implements SearchService {
   }
   
   private void createIndexWriter(String corpusId, boolean createIndex) throws IOException {
-    // Set the index mapping file for this corpus in the analysis engine descriptor
     
-    XMLInputSource in = new XMLInputSource(LuceneSearchService.class.getResourceAsStream(
-        "/org/apache/opennlp/corpus_server/search/LuceneIndexer.xml"), new File(""));
+    // Set the index mapping file for this corpus in the analysis engine descriptor
+    CorpusStore corpusStore = CorpusServer.getInstance().getStore().getCorpus(corpusId);
+    
+    XMLInputSource in = new XMLInputSource(new ByteArrayInputStream(corpusStore.getIndexMapping()), new File(""));
     
     try {
       AnalysisEngineDescription specifier;

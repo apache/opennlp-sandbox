@@ -33,12 +33,14 @@ public class MemoryCorpusStore implements CorpusStore {
 
 	private final String corpusName;
 	private final TypeSystemDescription typeSystem;
+	private byte[] indexMapping;
 	
 	private Map<String, byte[]> casStore = new HashMap<String, byte[]>();
 	
-	MemoryCorpusStore(String corpusName, TypeSystemDescription typeSystem) {
+	MemoryCorpusStore(String corpusName, TypeSystemDescription typeSystem, byte[] indexMapping) {
 		this.corpusName = corpusName;
 		this.typeSystem = typeSystem;
+		this.indexMapping = indexMapping;
 	}
 	
 	@Override
@@ -76,4 +78,9 @@ public class MemoryCorpusStore implements CorpusStore {
 	public TypeSystemDescription getTypeSystem() {
 		return typeSystem;
 	}
+	
+  @Override
+  public byte[] getIndexMapping() throws IOException {
+    return indexMapping;
+  }
 }

@@ -188,4 +188,33 @@ public class DerbyCorpusStore implements CorpusStore {
     
     return tsDescription;
   }
+  
+  @Override
+  public byte[] getIndexMapping() throws IOException {
+    byte indexMappingBytes[] = null;
+    
+    try {
+      Connection conn = dataSource.getConnection();
+      Statement s = conn.createStatement();
+      ResultSet indexMappingResult = s.executeQuery("select * FROM " + corpusName + 
+          " WHERE name='_indexMapping'");
+      
+      if (indexMappingResult.next()) {
+        indexMappingBytes = indexMappingResult.getBytes(2);
+      }
+      
+      indexMappingResult.close();
+      s.close();
+      conn.close();
+    } catch (SQLException e) {
+      
+      if (LOGGER.isLoggable(Level.SEVERE)) {
+        LOGGER.log(Level.SEVERE, "Failed to retrieve type system", e);
+      }
+      
+      throw new IOException(e);
+    }
+    
+    return indexMappingBytes;
+  }
 }

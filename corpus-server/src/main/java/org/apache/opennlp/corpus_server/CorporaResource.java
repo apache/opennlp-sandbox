@@ -27,6 +27,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.opennlp.corpus_server.store.CorporaStore;
+import org.codehaus.jettison.json.JSONArray;
 
 @Path("/corpora")
 public class CorporaResource {
@@ -40,15 +41,19 @@ public class CorporaResource {
 	 * @param typeSystemBytes
 	 */
 	@POST
-	@Consumes(MediaType.TEXT_XML)
+	@Consumes(MediaType.APPLICATION_JSON)
 	@Path("_createCorpus")
 	public void createCorpus(@QueryParam("corpusName") String corpusName,
-			byte[] typeSystemBytes) throws IOException {
+			byte[][] resources) throws IOException {
+	  
+	  if (resources.length != 2) {
+	    // TODO: throw exception
+	  }
 	  
 	  CorpusServer corpusServer = CorpusServer.getInstance();
 	  CorporaStore store = corpusServer.getStore();
 	  
-	  store.createCorpus(corpusName, typeSystemBytes);
+	  store.createCorpus(corpusName, resources[0], resources[1]);
 	}
 
   @Path("{corpus}")
