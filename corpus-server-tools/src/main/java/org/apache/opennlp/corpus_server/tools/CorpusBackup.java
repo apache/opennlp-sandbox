@@ -33,6 +33,8 @@ import com.sun.jersey.api.client.WebResource;
 
 /** 
  * Tools to back up a corpus from the corpus server into a zip package.
+ * 
+ * Sample server address: http://localhost:8080/corpus-server/rest
  */
 public class CorpusBackup {
 
