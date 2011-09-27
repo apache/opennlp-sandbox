@@ -154,7 +154,7 @@ public class NameFinderJob extends Job {
               StringPattern pattern = StringPattern.recognize(tokenStrings[i]);
               
               if (pattern.isAllLetter() && tokenStrings[i].length() > 1) {
-            	  nameTokens.add(tokenStrings[i]);
+            	  nameTokens.add(verifiedName.getType() + "-" + tokenStrings[i]);
               }
             }
           }

@@ -78,10 +78,10 @@ public class MultiModelNameFinder implements TokenNameFinder {
       
       // if token part of name only token, then 
       // its either start, or cont
-//      if (valid && nameOnlyTokens.contains(inputSequence[i])) {
-//          return outcome.endsWith(NameFinderME.START) || 
-//                  outcome.endsWith(NameFinderME.CONTINUE); 
-//      }
+      if (valid && nameOnlyTokens.contains(modelType + "-" + inputSequence[i])) {
+          return outcome.endsWith(NameFinderME.START) || 
+                  outcome.endsWith(NameFinderME.CONTINUE); 
+      }
       
       return valid;
     }
@@ -134,10 +134,9 @@ public class MultiModelNameFinder implements TokenNameFinder {
 
   void setNameOnlyTokens(Set<String> nameOnlyTokens) {
     
-    // How to do this for different types ?!
-//    for (RestrictedSequencesValidator sequenceValidator :  sequenceValidators) {
-//      sequenceValidator.setNameOnlyTokens(nameOnlyTokens);
-//    }
+    for (RestrictedSequencesValidator sequenceValidator :  sequenceValidators) {
+      sequenceValidator.setNameOnlyTokens(nameOnlyTokens);
+    }
   }
   
   @Override
