@@ -28,7 +28,7 @@ import org.apache.uima.resource.ResourceProcessException;
  * a {@link org.apache.uima.collection.CasConsumer} which puts a passed {@link CAS}
  * inside a {@link CorpusStore}
  */
-public class CSCasConsumer extends CasConsumer_ImplBase {
+public class CSCasWriter extends CasConsumer_ImplBase {
 
   private static final String CORPUSNAME = "corpusName";
 
