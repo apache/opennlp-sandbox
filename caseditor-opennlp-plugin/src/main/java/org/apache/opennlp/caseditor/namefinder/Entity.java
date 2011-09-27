@@ -109,6 +109,8 @@ public class Entity implements IAdaptable {
     return entityText;
   }
 
+  // Note: equals and hashCode should ignore confirm status, confidence
+  
   @Override
   public boolean equals(Object obj) {
     if (obj == this) {
@@ -116,7 +118,9 @@ public class Entity implements IAdaptable {
     }
     else if (obj instanceof Entity) {
       Entity entity = (Entity) obj;
-      return entity.getBeginIndex() == getBeginIndex() && entity.getEndIndex() == getEndIndex();
+      return entity.getBeginIndex() == getBeginIndex() &&
+          entity.getEndIndex() == getEndIndex() && 
+          entity.getType().equals(type);
     }
     else {
       return false;
@@ -125,7 +129,7 @@ public class Entity implements IAdaptable {
   
   @Override
   public int hashCode() {
-    return getBeginIndex() + getEndIndex();
+    return getBeginIndex() + getEndIndex() + type.hashCode();
   }
   
   public Object getAdapter(Class adapter) {
