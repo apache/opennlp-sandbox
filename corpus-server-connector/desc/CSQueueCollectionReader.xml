@@ -49,13 +49,13 @@
 		    <nameValuePair>
 		        <name>CorpusAddress</name>
 		        <value>
-		            <string>C:/Program Files/apache-uima/examples/data</string>
+		            <string>http://localhost:8080/corpus-server/rest/corpora/wikinews</string>
 		        </value>
 		    </nameValuePair>
             <nameValuePair>
                 <name>QueueAddress</name>
                 <value>
-                    <string>false</string>
+                    <string>http://localhost:8080/corpus-server/rest/queues/WikinewsNerPersonTrainingTask</string>
                 </value>
             </nameValuePair>
 		</configurationParameterSettings>
