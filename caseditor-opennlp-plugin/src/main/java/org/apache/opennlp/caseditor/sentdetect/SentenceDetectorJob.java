@@ -42,6 +42,8 @@ public class SentenceDetectorJob extends Job {
   
   private String text;
   
+  private String sentenceType;
+  
   private List<Span> paragraphs;
   
   private List<Entity> detectedSentences;
@@ -56,6 +58,10 @@ public class SentenceDetectorJob extends Job {
 
   synchronized void setText(String text) {
     this.text = text;
+  }
+  
+  synchronized void setSentenceType(String sentenceType) {
+    this.sentenceType = sentenceType;
   }
   
   public void setParagraphs(List<Span> paragraphs) {
@@ -96,7 +102,7 @@ public class SentenceDetectorJob extends Job {
         String sentenceText = text.substring(para.getStart() + sentenceSpan.getStart(), para.getStart() + sentenceSpan.getEnd());
         detectedSentences.add(new Entity(para.getStart() + sentenceSpan.getStart(), 
             para.getStart() + sentenceSpan.getEnd(), sentenceText,
-            confidence[i], false));
+            confidence[i], false, sentenceType));
       }
     }
     

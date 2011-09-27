@@ -56,6 +56,14 @@ public class EntityLabelProvider implements ITableLabelProvider {
       result = entity.getEntityText();
     }
     else if (columnIndex == 2) {
+      // TODO: Improve this ...
+      if (entity.getType() != null && entity.getType() != null) {
+        String parts[] = entity.getType().split("\\.");
+        result = parts[parts.length - 1];
+      } else
+        result = "";
+    }
+    else if (columnIndex == 3) {
       // TODO: Confirmed entities could be marked by a color, or small image
       result = Boolean.toString(entity.isConfirmed());
     }

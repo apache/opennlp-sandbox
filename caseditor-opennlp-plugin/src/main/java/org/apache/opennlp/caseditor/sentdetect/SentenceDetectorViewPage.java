@@ -145,7 +145,7 @@ public class SentenceDetectorViewPage extends Page {
     toolBarManager.add(detectAction);
     
     BaseSelectionListenerAction confirmAction =
-        new ConfirmAnnotationAction(sentenceList, editor.getDocument(), sentenceTypeName);
+        new ConfirmAnnotationAction(sentenceList, editor.getDocument());
     confirmAction.setActionDefinitionId(QUICK_ANNOTATE_ACTION_ID);
     actionBars.setGlobalActionHandler(QUICK_ANNOTATE_ACTION_ID, confirmAction);
     getSite().getSelectionProvider().addSelectionChangedListener(confirmAction); // need also to unregister!!!!

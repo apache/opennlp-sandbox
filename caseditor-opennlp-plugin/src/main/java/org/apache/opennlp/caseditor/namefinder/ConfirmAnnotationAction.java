@@ -28,17 +28,14 @@ public class ConfirmAnnotationAction extends BaseSelectionListenerAction {
   private TableViewer entityList;
   private ICasDocument document;
   
-  private String entityTypeName;
-  
-  public ConfirmAnnotationAction(TableViewer entityList, ICasDocument document, String entityTypeName) {
+  public ConfirmAnnotationAction(TableViewer entityList, ICasDocument document) {
     super("Confirm");
     
-    if (entityList == null || document == null || entityTypeName == null)
+    if (entityList == null || document == null)
       throw new IllegalArgumentException("null values are not allowed!");
     
     this.entityList = entityList;
     this.document = document;
-    this.entityTypeName = entityTypeName;
   }
   
   @Override
@@ -71,7 +68,7 @@ public class ConfirmAnnotationAction extends BaseSelectionListenerAction {
       if (!selectedEntity.isConfirmed()) {
         
         FeatureStructure nameAnnotation = document.getCAS().createAnnotation(
-            document.getCAS().getTypeSystem().getType(entityTypeName),
+            document.getCAS().getTypeSystem().getType(selectedEntity.getType()),
             selectedEntity.getBeginIndex(), selectedEntity.getEndIndex());
 //        document.getCAS().addFsToIndexes(nameAnnotation);
         document.addFeatureStructure(nameAnnotation);

@@ -59,13 +59,8 @@ class NameFinderViewPage extends Page implements ISelectionListener {
 
   private TableViewer entityList;
 
-  private String nameTypeName;
-  
   NameFinderViewPage(ICasEditor editor, ICasDocument document) {
     this.editor = editor;
-    
-    IPreferenceStore store = OpenNLPPlugin.getDefault().getPreferenceStore();
-    nameTypeName = store.getString(OpenNLPPreferenceConstants.NAME_TYPE);
   }
 
   public void createControl(Composite parent) {
@@ -87,6 +82,11 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     TableColumn entityColumn = entityViewerColumn.getColumn();
     entityColumn.setText("Entity");
     entityColumn.setWidth(135);
+    
+    TableViewerColumn typeViewerColumn = new TableViewerColumn(entityList, SWT.NONE);
+    TableColumn typeColumn = typeViewerColumn.getColumn();
+    typeColumn.setText("Type");
+    typeColumn.setWidth(40);
     
     TableViewerColumn confirmedViewerColumn = new TableViewerColumn(entityList, SWT.NONE);
     TableColumn confirmedColumn = confirmedViewerColumn.getColumn();
@@ -170,7 +170,7 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     
     IToolBarManager toolBarManager = actionBars.getToolBarManager();
     
-    BaseSelectionListenerAction confirmAction = new ConfirmAnnotationAction(entityList, editor.getDocument(), nameTypeName);
+    BaseSelectionListenerAction confirmAction = new ConfirmAnnotationAction(entityList, editor.getDocument());
     confirmAction.setActionDefinitionId(QUICK_ANNOTATE_ACTION_ID);
     actionBars.setGlobalActionHandler(QUICK_ANNOTATE_ACTION_ID, confirmAction);
     getSite().getSelectionProvider().addSelectionChangedListener(confirmAction); // need also to unregister!!!!

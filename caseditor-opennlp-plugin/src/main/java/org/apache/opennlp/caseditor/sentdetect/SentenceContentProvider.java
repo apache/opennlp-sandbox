@@ -120,6 +120,8 @@ public class SentenceContentProvider implements IStructuredContentProvider {
     
     sentenceDetector.setParagraphs(paragraphSpans);
     sentenceDetector.setText(document.getCAS().getDocumentText());
+    sentenceDetector.setSentenceType(store.getString(OpenNLPPreferenceConstants.SENTENCE_TYPE));
+    
     sentenceDetector.schedule();
   }
   
