@@ -39,7 +39,7 @@ import com.sun.jersey.api.client.WebResource;
  * a {@link org.apache.uima.collection.CollectionReader} which reads {@link CAS}s from a corpus
  * in the {@link CorpusServer}
  */
-public class CSCollectionReader extends CollectionReader_ImplBase {
+public class CSQueueCollectionReader extends CollectionReader_ImplBase {
 
   private static final String CORPUS_ADDRESS = "CorpusAddress";
 

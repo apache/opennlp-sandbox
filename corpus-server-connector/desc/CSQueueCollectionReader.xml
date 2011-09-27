@@ -23,7 +23,7 @@
    
 <collectionReaderDescription  xmlns="http://uima.apache.org/resourceSpecifier">
     <frameworkImplementation>org.apache.uima.java</frameworkImplementation>
-    <implementationName>org.apache.opennlp.corpus_server.connector.CSCollectionReader</implementationName>
+    <implementationName>org.apache.opennlp.corpus_server.connector.CSQueueCollectionReader</implementationName>
     <processingResourceMetaData>
         <name>Corpus Server Collection Reader</name>
         <description>Reads CASes from a Corpus Server Queue.</description>
