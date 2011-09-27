@@ -37,9 +37,15 @@ public class MultiModelNameFinder implements TokenNameFinder {
 
   static class RestrictedSequencesValidator extends NameFinderSequenceValidator {
     
+    private String modelType;
+    
     private Map<Integer, String> nameIndex = new HashMap<Integer, String>();
     
     private Set<String> nameOnlyTokens;
+    
+    RestrictedSequencesValidator(String modelType) {
+      this.modelType = modelType;
+    }
     
     // also give it a no-name index
     void setRestriction(Map<Integer, String> nameIndex) {
@@ -56,16 +62,26 @@ public class MultiModelNameFinder implements TokenNameFinder {
       boolean valid = super.validSequence(i, inputSequence, outcomesSequence, outcome);
       
       if (valid && nameIndex.get(i) != null) {
-        String desiredOutcome = nameIndex.get(i);
-        return outcome.endsWith(desiredOutcome);
+        
+        // TODO: That could be improved!
+        String parts[] = nameIndex.get(i).split("-");
+        String nameModelType = parts[0];
+        String desiredOutcome = parts[1];
+        
+        if (modelType.equals(nameModelType)) {
+          return outcome.endsWith(desiredOutcome);
+        }
+        else {
+          return NameFinderME.OTHER.equals(outcome);
+        }
       }
       
       // if token part of name only token, then 
       // its either start, or cont
-      if (valid && nameOnlyTokens.contains(inputSequence[i])) {
-          return outcome.endsWith(NameFinderME.START) || 
-                  outcome.endsWith(NameFinderME.CONTINUE); 
-      }
+//      if (valid && nameOnlyTokens.contains(inputSequence[i])) {
+//          return outcome.endsWith(NameFinderME.START) || 
+//                  outcome.endsWith(NameFinderME.CONTINUE); 
+//      }
       
       return valid;
     }
@@ -73,16 +89,18 @@ public class MultiModelNameFinder implements TokenNameFinder {
   
   
   private NameFinderME nameFinders[];
-  private String typeNames[]; // renmame to modelTypes
+  private String modelTypes[];
   
-  private RestrictedSequencesValidator sequenceValidator;
+  // TODO: We need one per name finder instance ...
+  private RestrictedSequencesValidator sequenceValidators[];
   
-  MultiModelNameFinder(String modelPathes[], String typeNames[]) {
+  MultiModelNameFinder(String modelPathes[], String modelTypes[]) {
     
-    this.typeNames = typeNames;
+    this.modelTypes = modelTypes;
     
     nameFinders = new NameFinderME[modelPathes.length];
-        
+    sequenceValidators = new RestrictedSequencesValidator[modelPathes.length];
+    
     for (int i = 0; i < modelPathes.length; i++) {
       
       String modelPath = modelPathes[i];
@@ -91,9 +109,8 @@ public class MultiModelNameFinder implements TokenNameFinder {
       
       try {
         TokenNameFinderModel model = new TokenNameFinderModel(modelIn);
-//        sequenceValidator = new RestrictedSequencesValidator();
-//        nameFinders[i] = new NameFinderME(model, null, 5, sequenceValidator);
-        nameFinders[i] = new NameFinderME(model, null, 5);
+        sequenceValidators[i] = new RestrictedSequencesValidator(modelTypes[i]);
+        nameFinders[i] = new NameFinderME(model, null, 5, sequenceValidators[i]);
       } catch (IOException e) {
         e.printStackTrace();
       } finally {
@@ -108,14 +125,19 @@ public class MultiModelNameFinder implements TokenNameFinder {
     
   }
   
-  // Needs to be changed, so different models are supported
+  // Note: Outcome value needs to include the type
   void setRestriction(Map<Integer, String> nameIndex) {
-//    sequenceValidator.setRestriction(nameIndex);
+    for (RestrictedSequencesValidator sequenceValidator :  sequenceValidators) {
+      sequenceValidator.setRestriction(nameIndex);
+    }
   }
 
-  // Needs to be changed, so it can be about different categories ... 
   void setNameOnlyTokens(Set<String> nameOnlyTokens) {
-//    sequenceValidator.setNameOnlyTokens(nameOnlyTokens);
+    
+    // How to do this for different types ?!
+//    for (RestrictedSequencesValidator sequenceValidator :  sequenceValidators) {
+//      sequenceValidator.setNameOnlyTokens(nameOnlyTokens);
+//    }
   }
   
   @Override
@@ -138,7 +160,7 @@ public class MultiModelNameFinder implements TokenNameFinder {
       for (int j = 0; j < detectedNames.length; j++) {
         // TODO: Also add type ...
         names.add(new ConfidenceSpan(detectedNames[j].getStart(), detectedNames[j].getEnd(),
-            confidence[j], typeNames[i]));
+            confidence[j], modelTypes[i]));
       }
     }
     

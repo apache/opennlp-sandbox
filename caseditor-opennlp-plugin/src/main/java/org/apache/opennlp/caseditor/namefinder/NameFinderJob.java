@@ -96,7 +96,7 @@ public class NameFinderJob extends Job {
     
       nameList = new ArrayList<Entity>();
       
-      // remember name tokens, should be for the entire text,
+      // TODO: Name tokens, should be for the entire text,
       // not just the prev sentences ...
       Set<String> nameTokens = new HashSet<String>();
       
@@ -141,7 +141,12 @@ public class NameFinderJob extends Job {
                 outcome = NameFinderME.CONTINUE;
               }
               
-              verifiedNameTokens.put(i, outcome);
+              
+              // TODO: Overlapping names are dangerous here!
+              
+              // TODO: We could use type information here ... 
+              // as part of the outcome!
+              verifiedNameTokens.put(i, verifiedName.getType() + "-" + outcome);
               
               // TODO: Do not put stop word
               // Only put, if char length is two
