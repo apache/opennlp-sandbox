@@ -169,7 +169,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
         AnnotationFS annotation = (AnnotationFS) fs;
         
         Entity confirmedEntity = searchEntity(EntityContentProvider.this.knownEntities,
-            annotation.getBegin(), annotation.getEnd());
+            annotation.getBegin(), annotation.getEnd(), annotation.getType().getName());
         
         if (confirmedEntity != null) {
           EntityContentProvider.this.knownEntities.remove(confirmedEntity);
@@ -245,7 +245,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
               for (Iterator<Entity> it = knownEntities.iterator(); it.hasNext();) {
                 Entity entity = it.next();
                 if (searchEntity(detectedEntities, entity.getBeginIndex(),
-                    entity.getEndIndex()) == null)  {                
+                    entity.getEndIndex(), entity.getType()) == null)  {
                   
                   // TODO: Create an array of entities that should be removed, much faster ...
                   EntityContentProvider.this.entityListViewer.remove(entity);
@@ -265,7 +265,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
                 // Case: One entity spanning two tokens replaces 
                 
                 Entity entity = searchEntity(knownEntities, detectedEntity.getBeginIndex(),
-                    detectedEntity.getEndIndex());
+                    detectedEntity.getEndIndex(), detectedEntity.getType());
                 
                 // A confirmed entity already exists, update its confidence score
                 if (entity != null) {
@@ -465,7 +465,8 @@ public class EntityContentProvider implements IStructuredContentProvider {
     return intersectingEntities;
   }
   
-  static Entity searchEntity(List<Entity> entities, int begin, int end) {
+  // Could pass null, means any type
+  static Entity searchEntity(List<Entity> entities, int begin, int end, String type) {
     
     Span testSpan = new Span(begin, end);
     
@@ -474,7 +475,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
       Span entitySpan = new Span(entity.getBeginIndex(),
           entity.getEndIndex());
       
-      if (entitySpan.intersects(testSpan)) {
+      if (entitySpan.intersects(testSpan) && (type == null || type.equals(entity.getType()))) {
         return entity;
       }
     }
