@@ -26,7 +26,7 @@ public class OpenNLPPreferencePage extends FieldEditorPreferencePage
     implements IWorkbenchPreferencePage {
 
   public OpenNLPPreferencePage() {
-    setPreferenceStore(OpenNLPPlugin.getDefault().getPreferenceStore());
+//    setPreferenceStore(OpenNLPPlugin.getDefault().getPreferenceStore());
     setDescription("OpenNLP Common Preferences.");  }
   
   @Override

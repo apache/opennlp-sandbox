@@ -28,7 +28,7 @@ public class NameFinderPreferencePage extends FieldEditorPreferencePage
     implements IWorkbenchPreferencePage {
 
   public NameFinderPreferencePage() {
-    setPreferenceStore(OpenNLPPlugin.getDefault().getPreferenceStore());
+//    setPreferenceStore();
     setDescription("Name Finder Preferences.");
   }
 

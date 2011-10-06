@@ -17,17 +17,25 @@
 
 package org.apache.opennlp.caseditor.namefinder;
 
-import org.apache.opennlp.caseditor.OpenNLPPlugin;
-import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
+import org.apache.opennlp.caseditor.OpenNLPPreferencePage;
 import org.apache.uima.cas.text.AnnotationFS;
+import org.apache.uima.caseditor.CasEditorPlugin;
+import org.apache.uima.caseditor.Images;
 import org.apache.uima.caseditor.editor.AnnotationEditor;
 import org.apache.uima.caseditor.editor.ICasDocument;
 import org.apache.uima.caseditor.editor.ICasEditor;
+import org.apache.uima.caseditor.editor.styleview.AnnotationTypeNode;
 import org.apache.uima.caseditor.editor.util.AnnotationSelection;
-import org.eclipse.jface.action.IMenuManager;
-import org.eclipse.jface.action.IStatusLineManager;
+import org.apache.uima.caseditor.ui.property.EditorAnnotationPropertyPage;
+import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IToolBarManager;
+import org.eclipse.jface.preference.IPreferenceNode;
+import org.eclipse.jface.preference.IPreferencePage;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jface.preference.PreferenceManager;
+import org.eclipse.jface.preference.PreferenceNode;
+import org.eclipse.jface.preference.PreferenceStore;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
@@ -43,6 +51,8 @@ import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.actions.BaseSelectionListenerAction;
+import org.eclipse.ui.dialogs.PropertyPage;
+import org.eclipse.ui.internal.dialogs.PropertyDialog;
 import org.eclipse.ui.part.Page;
 
 
@@ -94,7 +104,7 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     confirmedColumn.setWidth(60);
     
     entityList.setLabelProvider(new EntityLabelProvider());
-    entityList.setContentProvider(new EntityContentProvider(new NameFinderJob(), entityList));
+    entityList.setContentProvider(new EntityContentProvider((AnnotationEditor) editor, new NameFinderJob(), entityList));
     getSite().setSelectionProvider(entityList);
     
     entityList.setComparator(new EntityComperator());
@@ -176,5 +186,46 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     getSite().getSelectionProvider().addSelectionChangedListener(confirmAction); // need also to unregister!!!!
     
     toolBarManager.add(confirmAction);
+    
+    
+    // TODO: Create a preference action
+    // Open a dialog like already done for the annotation styles
+    // Provide the preference store to this dialog
+    // Provide a type system to this preference store
+    
+    IAction action = new Action() {
+      @Override
+      public void run() {
+        super.run();
+        
+        // TODO: Wire this to the type system preference store
+        
+        PreferenceManager mgr = new PreferenceManager();
+        
+        IPreferencePage opennlpPage = new OpenNLPPreferencePage();
+        opennlpPage.setTitle("OpenNLP");
+        mgr.addToRoot(new PreferenceNode("1", opennlpPage));
+        
+        IPreferencePage nameFinderPage = new NameFinderPreferencePage();
+        nameFinderPage.setTitle("Name Finder");
+        mgr.addToRoot(new PreferenceNode("1", nameFinderPage));
+        
+        
+        PropertyDialog dialog = new PropertyDialog(getSite().getShell(), mgr, null);
+        dialog.setPreferenceStore(((AnnotationEditor) editor).
+            getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput()));
+        dialog.create();
+        dialog.setMessage(nameFinderPage.getTitle());
+        dialog.open();
+        
+        // TODO: Need to save ts preferences ... or to announce the change.
+      }
+    };
+    
+    action.setImageDescriptor(CasEditorPlugin
+        .getTaeImageDescriptor(Images.MODEL_PROCESSOR_FOLDER));
+    
+    toolBarManager.add(action);
+    
   }
 }

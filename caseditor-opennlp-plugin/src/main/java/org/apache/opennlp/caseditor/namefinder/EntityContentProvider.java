@@ -34,6 +34,7 @@ import org.apache.uima.cas.FSIndex;
 import org.apache.uima.cas.FeatureStructure;
 import org.apache.uima.cas.Type;
 import org.apache.uima.cas.text.AnnotationFS;
+import org.apache.uima.caseditor.editor.AnnotationEditor;
 import org.apache.uima.caseditor.editor.ICasDocument;
 import org.apache.uima.caseditor.editor.ICasDocumentListener;
 import org.eclipse.core.runtime.IStatus;
@@ -211,17 +212,20 @@ public class EntityContentProvider implements IStructuredContentProvider {
   
   private ICasDocument input;
   
+  private AnnotationEditor editor;
+  
   // contains all existing entity annotations and is synchronized!
   // needed by name finder to calculate updates ... 
   private List<Entity> knownEntities = new ArrayList<Entity>();
   
   private String nameTypeNames[];
   
-  EntityContentProvider(NameFinderJob nameFinder, TableViewer entityList) {
+  EntityContentProvider(AnnotationEditor editor, NameFinderJob nameFinder, TableViewer entityList) {
     this.nameFinder = nameFinder;
     this.entityListViewer = entityList;
+    this.editor = editor;
     
-    IPreferenceStore store = OpenNLPPlugin.getDefault().getPreferenceStore();
+    IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
     nameTypeNames = store.getString(OpenNLPPreferenceConstants.NAME_TYPE).split(",");
     
     for (int i = 0; i < nameTypeNames.length; i++) {
@@ -321,6 +325,10 @@ public class EntityContentProvider implements IStructuredContentProvider {
       for (String nameTypeName : nameTypeNames) {
         Type nameType = input.getCAS().getTypeSystem().getType(nameTypeName); 
         
+        // TODO: Do error handling!
+        if (nameType == null)
+          return;
+        
         FSIndex<AnnotationFS> nameAnnotations = input.getCAS()
             .getAnnotationIndex(nameType);
         
@@ -343,15 +351,27 @@ public class EntityContentProvider implements IStructuredContentProvider {
   }
   
   void runNameFinder() {
-    IPreferenceStore store = OpenNLPPlugin.getDefault().getPreferenceStore();
+    IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
     String sentenceTypeName = store.getString(OpenNLPPreferenceConstants.SENTENCE_TYPE);
+    
+    // TODO: Add check for sentence type name
+    if (sentenceTypeName.isEmpty())
+      return;
+    
     String additionalSentenceTypes = store.getString(OpenNLPPreferenceConstants.ADDITIONAL_SENTENCE_TYPE);
-   
+
+    // TODO: Add check for additional sentence type names
+    
     String modelPathes[] = store.getString(OpenNLPPreferenceConstants.NAME_FINDER_MODEL_PATH).split(",");
     
     for (int i = 0; i < modelPathes.length; i++) {
       modelPathes[i] = modelPathes[i].trim();
+      
+      // TODO: Add checks for model path names
+      if (modelPathes[i].isEmpty())
+        return;
     }
+
     
     CAS cas = input.getCAS();
     
