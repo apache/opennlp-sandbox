@@ -18,6 +18,7 @@
 package org.apache.opennlp.caseditor.namefinder;
 
 import org.apache.opennlp.caseditor.OpenNLPPreferencePage;
+import org.apache.opennlp.caseditor.OpenPreferenceDialog;
 import org.apache.uima.cas.text.AnnotationFS;
 import org.apache.uima.caseditor.CasEditorPlugin;
 import org.apache.uima.caseditor.Images;
@@ -193,34 +194,7 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     // Provide the preference store to this dialog
     // Provide a type system to this preference store
     
-    IAction action = new Action() {
-      @Override
-      public void run() {
-        super.run();
-        
-        // TODO: Wire this to the type system preference store
-        
-        PreferenceManager mgr = new PreferenceManager();
-        
-        IPreferencePage opennlpPage = new OpenNLPPreferencePage();
-        opennlpPage.setTitle("OpenNLP");
-        mgr.addToRoot(new PreferenceNode("1", opennlpPage));
-        
-        IPreferencePage nameFinderPage = new NameFinderPreferencePage();
-        nameFinderPage.setTitle("Name Finder");
-        mgr.addToRoot(new PreferenceNode("1", nameFinderPage));
-        
-        
-        PropertyDialog dialog = new PropertyDialog(getSite().getShell(), mgr, null);
-        dialog.setPreferenceStore(((AnnotationEditor) editor).
-            getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput()));
-        dialog.create();
-        dialog.setMessage(nameFinderPage.getTitle());
-        dialog.open();
-        
-        // TODO: Need to save ts preferences ... or to announce the change.
-      }
-    };
+    IAction action = new OpenPreferenceDialog(getSite().getShell(), editor);
     
     action.setImageDescriptor(CasEditorPlugin
         .getTaeImageDescriptor(Images.MODEL_PROCESSOR_FOLDER));

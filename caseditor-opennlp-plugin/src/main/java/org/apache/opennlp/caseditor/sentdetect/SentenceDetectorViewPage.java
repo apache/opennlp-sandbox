@@ -19,11 +19,15 @@ package org.apache.opennlp.caseditor.sentdetect;
 
 import org.apache.opennlp.caseditor.OpenNLPPlugin;
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
+import org.apache.opennlp.caseditor.OpenPreferenceDialog;
 import org.apache.opennlp.caseditor.namefinder.ConfirmAnnotationAction;
 import org.apache.opennlp.caseditor.namefinder.Entity;
 import org.apache.opennlp.caseditor.namefinder.EntityLabelProvider;
+import org.apache.uima.caseditor.CasEditorPlugin;
+import org.apache.uima.caseditor.Images;
 import org.apache.uima.caseditor.editor.AnnotationEditor;
 import org.apache.uima.caseditor.editor.ICasEditor;
+import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
@@ -150,6 +154,13 @@ public class SentenceDetectorViewPage extends Page {
     actionBars.setGlobalActionHandler(QUICK_ANNOTATE_ACTION_ID, confirmAction);
     getSite().getSelectionProvider().addSelectionChangedListener(confirmAction); // need also to unregister!!!!
     toolBarManager.add(confirmAction);
+    
+    IAction action = new OpenPreferenceDialog(getSite().getShell(), editor);
+    
+    action.setImageDescriptor(CasEditorPlugin
+        .getTaeImageDescriptor(Images.MODEL_PROCESSOR_FOLDER));
+    
+    toolBarManager.add(action);
   }
     
 }

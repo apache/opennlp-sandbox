@@ -28,7 +28,6 @@ public class SentenceDetectorPreferencePage extends FieldEditorPreferencePage
     implements IWorkbenchPreferencePage {
 
   public SentenceDetectorPreferencePage() {
-    setPreferenceStore(OpenNLPPlugin.getDefault().getPreferenceStore());
     setDescription("Sentence Detector Preferences.");
   }
   
