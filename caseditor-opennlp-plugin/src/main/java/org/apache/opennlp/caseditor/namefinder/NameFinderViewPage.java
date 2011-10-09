@@ -17,7 +17,6 @@
 
 package org.apache.opennlp.caseditor.namefinder;
 
-import org.apache.opennlp.caseditor.OpenNLPPreferencePage;
 import org.apache.opennlp.caseditor.OpenPreferenceDialog;
 import org.apache.uima.cas.text.AnnotationFS;
 import org.apache.uima.caseditor.CasEditorPlugin;
@@ -25,18 +24,9 @@ import org.apache.uima.caseditor.Images;
 import org.apache.uima.caseditor.editor.AnnotationEditor;
 import org.apache.uima.caseditor.editor.ICasDocument;
 import org.apache.uima.caseditor.editor.ICasEditor;
-import org.apache.uima.caseditor.editor.styleview.AnnotationTypeNode;
 import org.apache.uima.caseditor.editor.util.AnnotationSelection;
-import org.apache.uima.caseditor.ui.property.EditorAnnotationPropertyPage;
-import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IToolBarManager;
-import org.eclipse.jface.preference.IPreferenceNode;
-import org.eclipse.jface.preference.IPreferencePage;
-import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.jface.preference.PreferenceManager;
-import org.eclipse.jface.preference.PreferenceNode;
-import org.eclipse.jface.preference.PreferenceStore;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
@@ -52,8 +42,6 @@ import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.actions.BaseSelectionListenerAction;
-import org.eclipse.ui.dialogs.PropertyPage;
-import org.eclipse.ui.internal.dialogs.PropertyDialog;
 import org.eclipse.ui.part.Page;
 
 
@@ -98,11 +86,6 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     TableColumn typeColumn = typeViewerColumn.getColumn();
     typeColumn.setText("Type");
     typeColumn.setWidth(40);
-    
-    TableViewerColumn confirmedViewerColumn = new TableViewerColumn(entityList, SWT.NONE);
-    TableColumn confirmedColumn = confirmedViewerColumn.getColumn();
-    confirmedColumn.setText("Confirmed");
-    confirmedColumn.setWidth(60);
     
     entityList.setLabelProvider(new EntityLabelProvider());
     entityList.setContentProvider(new EntityContentProvider((AnnotationEditor) editor, new NameFinderJob(), entityList));
