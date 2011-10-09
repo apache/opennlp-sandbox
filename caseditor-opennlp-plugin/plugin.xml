@@ -46,33 +46,4 @@
           class="org.apache.opennlp.caseditor.OpenNLPPreferenceInitializer">
     </initializer>
  </extension>
- 
-  <extension point="org.eclipse.ui.preferencePages">
-    <page
-          class="org.apache.opennlp.caseditor.OpenNLPPreferencePage"
-          id="org.apache.opennlp.caseditor.OpenNLPPreference"
-          name="OpenNLP">
-    </page>
-
-    <page
-          class="org.apache.opennlp.caseditor.sentdetect.SentenceDetectorPreferencePage"
-          id="org.apache.opennlp.caseditor.SentenceDetectorPreference"
-          name="Sentence Detector"
-          category="org.apache.opennlp.caseditor.OpenNLPPreference">
-    </page>
-    
-    <page
-          class="org.apache.opennlp.caseditor.tokenize.TokenizerPreferencePage"
-          id="org.apache.opennlp.caseditor.tokenize.TokenizerPreferencePage"
-          name="Tokenizer"
-          category="org.apache.opennlp.caseditor.OpenNLPPreference">
-    </page>
-    
-    <page
-          class="org.apache.opennlp.caseditor.namefinder.NameFinderPreferencePage"
-          id="org.apache.opennlp.caseditor.NameFinderPreference"
-          name="Name Finder"
-          category="org.apache.opennlp.caseditor.OpenNLPPreference">
-    </page>
- </extension>
 </plugin>
