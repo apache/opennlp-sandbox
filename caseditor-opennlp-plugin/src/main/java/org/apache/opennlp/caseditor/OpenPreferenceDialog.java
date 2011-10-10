@@ -31,11 +31,11 @@ import org.eclipse.ui.internal.dialogs.PropertyDialog;
 public class OpenPreferenceDialog extends Action {
   
   private Shell shell;
-  private ICasEditor editor;
+  private AnnotationEditor editor;
 
   public OpenPreferenceDialog(Shell shell, ICasEditor editor) {
     this.shell = shell;
-    this.editor = editor;
+    this.editor = (AnnotationEditor) editor;
   }
   
   @Override
@@ -63,6 +63,6 @@ public class OpenPreferenceDialog extends Action {
     dialog.setMessage(nameFinderPage.getTitle());
     dialog.open();
     
-    // TODO: Need to save ts preferences ... or notify listeners about the change!
+    editor.getCasDocumentProvider().saveTypeSystemPreferenceStore(editor.getEditorInput());
   }
 }
