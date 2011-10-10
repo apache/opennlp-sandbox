@@ -18,6 +18,7 @@
 package org.apache.opennlp.caseditor;
 
 import org.apache.opennlp.caseditor.namefinder.NameFinderPreferencePage;
+import org.apache.opennlp.caseditor.sentdetect.SentenceDetectorPreferencePage;
 import org.apache.uima.caseditor.editor.AnnotationEditor;
 import org.apache.uima.caseditor.editor.ICasEditor;
 import org.eclipse.jface.action.Action;
@@ -47,7 +48,7 @@ public class OpenPreferenceDialog extends Action {
     opennlpPage.setTitle("General");
     mgr.addToRoot(new PreferenceNode("1", opennlpPage));
     
-    IPreferencePage sentenceDetectorPage = new NameFinderPreferencePage();
+    IPreferencePage sentenceDetectorPage = new SentenceDetectorPreferencePage();
     sentenceDetectorPage.setTitle("Sentence Detector");
     mgr.addToRoot(new PreferenceNode("1", sentenceDetectorPage));
     
