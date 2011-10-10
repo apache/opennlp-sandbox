@@ -18,7 +18,6 @@
 package org.apache.opennlp.caseditor.namefinder;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -27,7 +26,6 @@ import java.util.List;
 import opennlp.tools.tokenize.SimpleTokenizer;
 import opennlp.tools.util.Span;
 
-import org.apache.opennlp.caseditor.OpenNLPPlugin;
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.cas.FSIndex;
@@ -319,8 +317,6 @@ public class EntityContentProvider implements IStructuredContentProvider {
     }
     
     if (newInput != null) {
-      IPreferenceStore store = OpenNLPPlugin.getDefault().getPreferenceStore();
-      
       input = (ICasDocument) newInput;
       
       // Note: Name Finder might run to often ... 
