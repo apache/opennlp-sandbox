@@ -57,6 +57,8 @@ import org.apache.uima.util.XMLParser;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jface.preference.PreferenceStore;
 import org.eclipse.swt.widgets.Composite;
 
 import com.sun.jersey.api.client.Client;
@@ -240,75 +242,14 @@ public class DefaultCasDocumentProvider extends
     return input.getServerUrl();
   }
   
-  @Override
-  public AnnotationStyle getAnnotationStyle(Object element, Type type) {
-    
-    Map<String, AnnotationStyle> styleMap = annotationStyleMap.get(
-        getTypeSystemId((CorpusServerCasEditorInput) element));
-    
-    AnnotationStyle style = null;
-    
-    if (styleMap != null) {
-      style = styleMap.get(type.getName());
-    }
-    
-    if (style == null) {
-      style = new AnnotationStyle(type.getName(), Style.SQUIGGLES, Color.RED, 1);
-    }
-    
-    return style;
-  }
-
-  @Override
-  public void setAnnotationStyle(Object element, AnnotationStyle style) {
-    
-    Map<String, AnnotationStyle> styleMap = annotationStyleMap.get(
-        getTypeSystemId((CorpusServerCasEditorInput) element));
-    
-    if (styleMap == null) {
-      styleMap = new HashMap<String, AnnotationStyle>();
-      annotationStyleMap.put(getTypeSystemId((CorpusServerCasEditorInput) element), styleMap);
-    }
-    
-    styleMap.put(style.getAnnotation(), style);
-  }
-
-  @Override
-  protected Collection<String> getShownTypes(Object element) {
-    Set<String> shownTypes = shownTypesMap.get(element);
-    
-    if (shownTypes != null) {
-      return Collections.unmodifiableCollection(shownTypes);
-    }
-    else {
-      return new ArrayList<String>();
-    }
-  }
   
-  @Override
-  protected void addShownType(Object element, Type type) {
-    Set<String> shownTypes = shownTypesMap.get(element);
-    
-    if (shownTypes == null) {
-      shownTypes = new HashSet<String>();
-      shownTypesMap.put(element, shownTypes);
-    }
-    
-    shownTypes.add(type.getName());
-  }
+  // TODO: Where to save annotation styles?!
+  // Best option would be on the server itself, but then it must be extended
+  // so it can "host" resource file per corpus.
+  // Question, how can that be done in a team? Will everyone just always update
+  // the file on the server?
   
-  @Override
-  protected void removeShownType(Object element, Type type) {
-    Set<String> shownTypes = shownTypesMap.get(element);
-    
-    if (shownTypes == null) {
-      shownTypes = new HashSet<String>();
-      shownTypesMap.put(element, shownTypes);
-    }
-    
-    shownTypes.remove(type.getName());
-  }
-  
+  // When an annotation style is changed, push a new pref file onto the server!
 
   
   @Override
@@ -344,5 +285,19 @@ public class DefaultCasDocumentProvider extends
       EditorAnnotationStatus editorStatus) {
     sharedEditorStatus.put(getTypeSystemId(
         (CorpusServerCasEditorInput) element), editorStatus);
+  }
+
+  @Override
+  public IPreferenceStore getTypeSystemPreferenceStore(Object element) {
+    // TODO: Keep preference store in memory ...
+    return new PreferenceStore("Test");
+  }
+
+  @Override
+  public void saveTypeSystemPreferenceStore(Object element) {
+    // Currently it is in memory only, all settings are lost after closing
+    // the Cas Editor
+    
+    // TODO: Figure out where these settings should be stored!
   }
 }
