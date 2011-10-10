@@ -20,10 +20,12 @@
 package org.apache.opennlp.corpus_server.caseditor;
 
 import java.awt.Color;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -54,6 +56,7 @@ import org.apache.uima.util.CasCreationUtils;
 import org.apache.uima.util.InvalidXMLException;
 import org.apache.uima.util.XMLInputSource;
 import org.apache.uima.util.XMLParser;
+import org.eclipse.core.internal.preferences.Base64;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -68,10 +71,8 @@ import com.sun.jersey.api.client.WebResource;
 public class DefaultCasDocumentProvider extends
         org.apache.uima.caseditor.editor.CasDocumentProvider {
 
-  private Map<Object, Set<String>> shownTypesMap = new HashMap<Object, Set<String>>();
-  
-  private Map<Object, Map<String, AnnotationStyle>> annotationStyleMap =
-      new HashMap<Object, Map<String, AnnotationStyle>>();
+  private Map<Object, PreferenceStore> tsPreferenceStores =
+      new HashMap<Object, PreferenceStore>();
   
   private Map<String, EditorAnnotationStatus> sharedEditorStatus = new HashMap<String, EditorAnnotationStatus>();
   
@@ -289,15 +290,52 @@ public class DefaultCasDocumentProvider extends
 
   @Override
   public IPreferenceStore getTypeSystemPreferenceStore(Object element) {
-    // TODO: Keep preference store in memory ...
-    return new PreferenceStore("Test");
+    
+    PreferenceStore tsStore = tsPreferenceStores.get(element);
+    
+    if (tsStore == null) {
+      
+      IPreferenceStore store = Activator.getDefault().getPreferenceStore();
+      
+      String tsStoreString = store.getString(getTypeSystemId((CorpusServerCasEditorInput) element));
+      
+      tsStore = new PreferenceStore();
+      
+      if (tsStoreString.length() != 0) { 
+        InputStream tsStoreIn = new ByteArrayInputStream(tsStoreString.getBytes(Charset.forName("UTF-8")));
+        
+        try {
+          tsStore.load(tsStoreIn);
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      }
+      
+      tsPreferenceStores.put(element, tsStore);
+    }
+    
+    
+    return tsStore;
   }
 
   @Override
   public void saveTypeSystemPreferenceStore(Object element) {
-    // Currently it is in memory only, all settings are lost after closing
-    // the Cas Editor
     
-    // TODO: Figure out where these settings should be stored!
+    PreferenceStore tsStore = tsPreferenceStores.get(element);
+    
+    if (tsStore != null) {
+      ByteArrayOutputStream tsStoreBytes = new ByteArrayOutputStream();
+      try {
+        tsStore.save(tsStoreBytes, "");
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+      
+      IPreferenceStore store = Activator.getDefault().getPreferenceStore();
+      store.putValue(getTypeSystemId((CorpusServerCasEditorInput) element), 
+          new String(tsStoreBytes.toByteArray(), Charset.forName("UTF-8")));
+    }
+    
   }
 }
