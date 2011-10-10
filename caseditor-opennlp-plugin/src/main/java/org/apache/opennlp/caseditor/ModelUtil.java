@@ -41,8 +41,8 @@ public class ModelUtil {
       try {
         modelIn = modelFile.getContents();
       } catch (CoreException e) {
-        // TODO: Handle this exception correctly ...
-        e.printStackTrace();
+        // TODO: Improve error handling here ...
+        OpenNLPPlugin.log(e);      
       }
     }
     

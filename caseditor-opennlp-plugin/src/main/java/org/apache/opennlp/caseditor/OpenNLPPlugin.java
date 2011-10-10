@@ -17,6 +17,8 @@
 
 package org.apache.opennlp.caseditor;
 
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
@@ -41,5 +43,18 @@ public class OpenNLPPlugin extends AbstractUIPlugin {
 	public static OpenNLPPlugin getDefault() {
 		return instance;
 	}
-	
+
+  public static void log(Throwable t) {
+    getDefault().getLog().log(
+        new Status(IStatus.ERROR, ID, IStatus.OK, t.getMessage(), t));
+  }
+
+  public static void log(String message, Throwable t) {
+    getDefault().getLog().log(
+        new Status(IStatus.ERROR, ID, IStatus.OK, message, t));
+  }
+
+  public static void logError(String message) {
+    getDefault().getLog().log(new Status(IStatus.ERROR, ID, message));
+  }
 }
