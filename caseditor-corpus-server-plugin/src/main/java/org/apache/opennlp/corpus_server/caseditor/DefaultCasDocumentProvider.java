@@ -19,32 +19,22 @@
 
 package org.apache.opennlp.corpus_server.caseditor;
 
-import java.awt.Color;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import javax.ws.rs.core.MediaType;
 
 import org.apache.uima.ResourceSpecifierFactory;
 import org.apache.uima.UIMAFramework;
 import org.apache.uima.cas.CAS;
-import org.apache.uima.cas.Type;
-import org.apache.uima.caseditor.editor.AnnotationStyle;
-import org.apache.uima.caseditor.editor.AnnotationStyle.Style;
 import org.apache.uima.caseditor.editor.DocumentFormat;
 import org.apache.uima.caseditor.editor.DocumentUimaImpl;
-import org.apache.uima.caseditor.editor.EditorAnnotationStatus;
 import org.apache.uima.caseditor.editor.ICasDocument;
 import org.apache.uima.caseditor.editor.ICasEditor;
 import org.apache.uima.resource.ResourceInitializationException;
@@ -56,7 +46,6 @@ import org.apache.uima.util.CasCreationUtils;
 import org.apache.uima.util.InvalidXMLException;
 import org.apache.uima.util.XMLInputSource;
 import org.apache.uima.util.XMLParser;
-import org.eclipse.core.internal.preferences.Base64;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -74,7 +63,7 @@ public class DefaultCasDocumentProvider extends
   private Map<Object, PreferenceStore> tsPreferenceStores =
       new HashMap<Object, PreferenceStore>();
   
-  private Map<String, EditorAnnotationStatus> sharedEditorStatus = new HashMap<String, EditorAnnotationStatus>();
+  private Map<String, IPreferenceStore> sessionPreferenceStores = new HashMap<String, IPreferenceStore>();
   
   private static TypeSystemDescription createTypeSystemDescription(InputStream in) throws IOException {
 
@@ -244,27 +233,18 @@ public class DefaultCasDocumentProvider extends
   }
   
   
-  // TODO: Where to save annotation styles?!
-  // Best option would be on the server itself, but then it must be extended
-  // so it can "host" resource file per corpus.
-  // Question, how can that be done in a team? Will everyone just always update
-  // the file on the server?
-  
-  // When an annotation style is changed, push a new pref file onto the server!
-
-  
   @Override
-  protected EditorAnnotationStatus getEditorAnnotationStatus(Object element) {
-    
-    EditorAnnotationStatus editorStatus = sharedEditorStatus.get(getTypeSystemId(
-        (CorpusServerCasEditorInput) element));
-    
-    if (editorStatus == null) {
-      editorStatus = new EditorAnnotationStatus(CAS.TYPE_NAME_ANNOTATION,
-          null, CAS.NAME_DEFAULT_SOFA);
+  public IPreferenceStore getSessionPreferenceStore(Object element) {
+      
+    // lookup one, and if it does not exist create a new one, and put it!
+    IPreferenceStore store = sessionPreferenceStores.get(getTypeSystemId((CorpusServerCasEditorInput) element));
+      
+    if (store == null) {
+      store = new PreferenceStore();
+      sessionPreferenceStores.put(getTypeSystemId((CorpusServerCasEditorInput) element), store);
     }
-    
-    return editorStatus;
+
+    return store;
   }
 
   @Override
@@ -279,13 +259,6 @@ public class DefaultCasDocumentProvider extends
     // if not, we can only show an error message!
     
     return null;
-  }
-
-  @Override
-  protected void setEditorAnnotationStatus(Object element,
-      EditorAnnotationStatus editorStatus) {
-    sharedEditorStatus.put(getTypeSystemId(
-        (CorpusServerCasEditorInput) element), editorStatus);
   }
 
   @Override
