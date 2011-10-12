@@ -94,7 +94,7 @@ public class MultiModelNameFinder implements TokenNameFinder {
   // TODO: We need one per name finder instance ...
   private RestrictedSequencesValidator sequenceValidators[];
   
-  MultiModelNameFinder(String modelPathes[], String modelTypes[]) {
+  MultiModelNameFinder(String modelPathes[], String modelTypes[]) throws IOException {
     
     this.modelTypes = modelTypes;
     

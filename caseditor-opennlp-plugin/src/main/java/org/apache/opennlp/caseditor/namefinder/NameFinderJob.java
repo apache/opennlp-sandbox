@@ -17,6 +17,7 @@
 
 package org.apache.opennlp.caseditor.namefinder;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -83,12 +84,20 @@ public class NameFinderJob extends Job {
 
   // maybe report result, through an interface?!
   // Note: Concurrency issue ... here! Editor might already be closed after model is loaded!
+  // The job change listener in the Entity Content Provider must handle that!
   @Override
   protected synchronized IStatus run(IProgressMonitor monitor) {
 
-    // lazy load model on first run ... how to lazy initialize multiple name finders?
+    
+    // TODO: Check if model path changed, compared to last run, if so reload
+    // TODO: Check if the model itself changed, compared to last run, if so reload
     if (nameFinder == null) {
-      nameFinder = new MultiModelNameFinder(modelPath, modelTypes);
+      try {
+        nameFinder = new MultiModelNameFinder(modelPath, modelTypes);
+      } catch (IOException e) {
+        return new Status(IStatus.CANCEL, OpenNLPPlugin.ID, 
+            "Failed to load model(s): " + e.getMessage());
+      }
     }
 
     if (nameFinder != null) {

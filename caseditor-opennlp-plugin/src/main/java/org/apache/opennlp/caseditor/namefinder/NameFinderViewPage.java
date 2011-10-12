@@ -36,6 +36,7 @@ import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.ui.IActionBars;
@@ -43,6 +44,7 @@ import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.actions.BaseSelectionListenerAction;
 import org.eclipse.ui.part.Page;
+import org.eclipse.ui.part.PageBook;
 
 
 // TODO: Selected entities should be highlighted in the annotation editor!
@@ -56,6 +58,9 @@ class NameFinderViewPage extends Page implements ISelectionListener {
   
   private ICasEditor editor;
 
+  private PageBook book;
+
+  private Label messageLabel;
   private TableViewer entityList;
 
   NameFinderViewPage(ICasEditor editor, ICasDocument document) {
@@ -64,9 +69,12 @@ class NameFinderViewPage extends Page implements ISelectionListener {
 
   public void createControl(Composite parent) {
     
-    getSite().getPage().addSelectionListener(this);
+    book = new PageBook(parent, SWT.NONE);
     
-    entityList = new TableViewer(parent, SWT.NONE);
+    messageLabel = new Label(book, SWT.NONE);
+    messageLabel.setText("Loading name finder models ...");
+    
+    entityList = new TableViewer(book, SWT.NONE);
     
     Table entityTable = entityList.getTable();
     entityTable.setHeaderVisible(true);
@@ -88,7 +96,7 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     typeColumn.setWidth(40);
     
     entityList.setLabelProvider(new EntityLabelProvider());
-    entityList.setContentProvider(new EntityContentProvider((AnnotationEditor) editor, new NameFinderJob(), entityList));
+    entityList.setContentProvider(new EntityContentProvider(this, (AnnotationEditor) editor, new NameFinderJob(), entityList));
     getSite().setSelectionProvider(entityList);
     
     entityList.setComparator(new EntityComperator());
@@ -122,6 +130,11 @@ class NameFinderViewPage extends Page implements ISelectionListener {
 			}
 		}
 	});
+    
+    // Display the messageLabel after start up
+    book.showPage(messageLabel);
+    
+    getSite().getPage().addSelectionListener(this);
   }
 
   public void selectionChanged(IWorkbenchPart part, ISelection selection) {
@@ -149,13 +162,25 @@ class NameFinderViewPage extends Page implements ISelectionListener {
   }
 
   public Control getControl() {
-    return entityList.getControl();
+    return book;
   }
 
   public void setFocus() {
-    entityList.getControl().setFocus();
+    getControl().setFocus();
   }
 
+  void setMessage(String message) {
+    
+    if (message != null) {
+      messageLabel.setText(message);
+      book.showPage(messageLabel);
+    }
+    else {
+      messageLabel.setText("");
+      book.showPage(entityList.getControl());
+    }
+  }
+  
   @Override
   public void setActionBars(IActionBars actionBars) {
     super.setActionBars(actionBars);

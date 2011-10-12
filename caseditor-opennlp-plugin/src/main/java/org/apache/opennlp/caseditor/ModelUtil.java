@@ -17,6 +17,7 @@
 
 package org.apache.opennlp.caseditor;
 
+import java.io.IOException;
 import java.io.InputStream;
 
 import org.eclipse.core.resources.IFile;
@@ -31,7 +32,7 @@ public class ModelUtil {
   //       used to detect an updated model, if model is updated,
   //       load it and replace the old one!
   
-  public static InputStream openModelIn(String modelPath) {
+  public static InputStream openModelIn(String modelPath) throws IOException {
     InputStream modelIn = null;
     IResource modelResource = ResourcesPlugin.getWorkspace().
         getRoot().findMember(modelPath);
@@ -41,9 +42,12 @@ public class ModelUtil {
       try {
         modelIn = modelFile.getContents();
       } catch (CoreException e) {
-        // TODO: Improve error handling here ...
-        OpenNLPPlugin.log(e);      
+        throw new IOException(e.getMessage());
       }
+    }
+    
+    if (modelIn == null) {
+      throw new IOException("Model path is incorrect!");
     }
     
     return modelIn;

@@ -73,7 +73,12 @@ public class TokenizerJob extends Job {
       tokenizer = SimpleTokenizer.INSTANCE;
     } else if (OpenNLPPreferenceConstants.TOKENIZER_ALGO_STATISTICAL.equals(algorithm)) {
       if (tokenizer == null) {
-        InputStream modelIn = ModelUtil.openModelIn(modelPath);
+        InputStream modelIn;
+        try {
+          modelIn = ModelUtil.openModelIn(modelPath);
+        } catch (IOException e1) {
+          return new Status(IStatus.ERROR, OpenNLPPlugin.ID, "Failed to load tokenizer model!");
+        }
         
         try {
           TokenizerModel model = new TokenizerModel(modelIn);

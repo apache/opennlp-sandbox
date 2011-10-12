@@ -73,7 +73,12 @@ public class SentenceDetectorJob extends Job {
     
     // lazy load model
     if (sentenceDetector == null) {
-      InputStream modelIn = ModelUtil.openModelIn(modelPath);
+      InputStream modelIn;
+      try {
+        modelIn = ModelUtil.openModelIn(modelPath);
+      } catch (IOException e1) {
+        return new Status(IStatus.ERROR, OpenNLPPlugin.ID, "Failed to load sentence detector model!");
+      }
       
       try {
         SentenceModel model = new SentenceModel(modelIn);

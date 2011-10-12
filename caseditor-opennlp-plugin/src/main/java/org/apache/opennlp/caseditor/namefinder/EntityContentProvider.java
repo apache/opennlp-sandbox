@@ -220,11 +220,14 @@ public class EntityContentProvider implements IStructuredContentProvider {
   private List<Entity> confirmedEntities = new ArrayList<Entity>();
   
   private String nameTypeNames[];
+
+  private NameFinderViewPage nameFinderView;
   
-  EntityContentProvider(AnnotationEditor editor, NameFinderJob nameFinder, TableViewer entityList) {
+  EntityContentProvider(NameFinderViewPage nameFinderView, AnnotationEditor editor, NameFinderJob nameFinder, TableViewer entityList) {
     this.nameFinder = nameFinder;
     this.entityListViewer = entityList;
     this.editor = editor;
+    this.nameFinderView = nameFinderView;
     
     IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
     nameTypeNames = store.getString(OpenNLPPreferenceConstants.NAME_TYPE).split(",");
@@ -242,7 +245,8 @@ public class EntityContentProvider implements IStructuredContentProvider {
           public void run() {
             IStatus status = event.getResult();
             
-            if (status.getSeverity() == IStatus.OK) {
+            if (status.isOK()) {
+              EntityContentProvider.this.nameFinderView.setMessage(null);
               
               List<Entity> detectedEntities = EntityContentProvider.this.nameFinder.getNames();
               
@@ -297,6 +301,9 @@ public class EntityContentProvider implements IStructuredContentProvider {
                   }
                 }
               }
+            }
+            else {
+              EntityContentProvider.this.nameFinderView.setMessage(status.getMessage());
             }
           }
         });
@@ -358,10 +365,11 @@ public class EntityContentProvider implements IStructuredContentProvider {
     String sentenceTypeName = store.getString(OpenNLPPreferenceConstants.SENTENCE_TYPE);
     
     // TODO: Add check for sentence type name
-    if (sentenceTypeName.isEmpty())
+    if (sentenceTypeName.isEmpty()) {
+      nameFinderView.setMessage("Sentence type is not set!");
       return;
+    }
     
-    String additionalSentenceTypes = store.getString(OpenNLPPreferenceConstants.ADDITIONAL_SENTENCE_TYPE);
 
     // TODO: Add check for additional sentence type names
     
@@ -370,16 +378,15 @@ public class EntityContentProvider implements IStructuredContentProvider {
     for (int i = 0; i < modelPathes.length; i++) {
       modelPathes[i] = modelPathes[i].trim();
       
-      // TODO: Add checks for model path names
-      if (modelPathes[i].isEmpty())
+      if (modelPathes[i].isEmpty()) {
+        nameFinderView.setMessage("Model path is not set!");
         return;
+      }
     }
-
     
     CAS cas = input.getCAS();
     
-    // just get it from preference store?!
-    // Should have a good way to display an error when the type is incorrect ...
+    String additionalSentenceTypes = store.getString(OpenNLPPreferenceConstants.ADDITIONAL_SENTENCE_TYPE);
     
     String text = cas.getDocumentText();
 
@@ -391,8 +398,11 @@ public class EntityContentProvider implements IStructuredContentProvider {
       
       for (String typeName : sentenceTypeNames) {
         Type sentenceType = cas.getTypeSystem().getType(typeName.trim()); 
-      
-        // TODO: If type cannot be mapped, it throws a null pointer exception ...
+        
+        if (sentenceType == null) {
+          nameFinderView.setMessage("Sentence type does not exist in type system!");
+          return;
+        }
         
         FSIndex<AnnotationFS> sentenceAnnotations = cas
             .getAnnotationIndex(sentenceType);
@@ -434,6 +444,11 @@ public class EntityContentProvider implements IStructuredContentProvider {
         
         Type nameType = cas.getTypeSystem().getType(nameTypeName); 
   
+        if (nameType == null) {
+          nameFinderView.setMessage("Name type " + nameTypeName + " does not exist in type system!");
+          return;
+        }
+        
         FSIndex<AnnotationFS> nameAnnotations = cas
             .getAnnotationIndex(nameType);
   
@@ -453,7 +468,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
       nameFinder.setTokens(tokens.toArray(new Span[tokens.size()]));
       nameFinder.setVerifiedNames(nameSpans.toArray(new Span[nameSpans.size()]));
       nameFinder.setModelPath(modelPathes, nameTypeNames);
-      
+      nameFinder.setSystem(true);
       nameFinder.schedule();
     }
   }
