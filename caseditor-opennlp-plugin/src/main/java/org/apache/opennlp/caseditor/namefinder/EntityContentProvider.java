@@ -40,6 +40,7 @@ import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.widgets.Display;
@@ -131,20 +132,36 @@ public class EntityContentProvider implements IStructuredContentProvider {
           entity.setLinkedAnnotation(annotation);
           entity.setConfidence(null);
           
-          EntityContentProvider.this.entityListViewer.remove(entity);
-          EntityContentProvider.this.candidateEntities.remove(entity);
+          int selectionIndex = EntityContentProvider.this.entityListViewer.
+              getTable().getSelectionIndex();
+          entityListViewer.remove(entity);
+          candidateEntities.remove(entity);
           
-          EntityContentProvider.this.confirmedEntities.add(entity);
+          confirmedEntities.add(entity);
 
           // Delete all other entities which match
           for (int i = 1; i < entityList.size(); i++) {
             Entity removeEntity = entityList.get(i);
             
             if (!removeEntity.isConfirmed()) {
-              EntityContentProvider.this.entityListViewer.remove(removeEntity);
-              EntityContentProvider.this.candidateEntities.remove(removeEntity);
+              entityListViewer.remove(removeEntity);
+              candidateEntities.remove(removeEntity);
             }
           }
+          
+          if (selectionIndex < entityListViewer.
+              getTable().getItemCount()) {
+                  entityListViewer.setSelection(
+                      new StructuredSelection(entityListViewer.getElementAt(selectionIndex)));
+          }
+          else {
+            if (entityListViewer.getTable().getItemCount() > 0) {
+              entityListViewer.setSelection(new StructuredSelection(
+                      entityListViewer.getElementAt(
+                      entityListViewer.getTable().getItemCount() - 1)));
+            }
+          }
+          
         }
         else {
           Entity newEntity = new Entity(annotation.getBegin(), annotation.getEnd(),
