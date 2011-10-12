@@ -96,7 +96,7 @@ public class NameFinderJob extends Job {
         nameFinder = new MultiModelNameFinder(modelPath, modelTypes);
       } catch (IOException e) {
         return new Status(IStatus.CANCEL, OpenNLPPlugin.ID, 
-            "Failed to load model(s): " + e.getMessage());
+            "Failed to load model(s):\n" + e.getMessage());
       }
     }
 

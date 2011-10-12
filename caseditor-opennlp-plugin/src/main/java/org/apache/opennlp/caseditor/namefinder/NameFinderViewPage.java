@@ -39,6 +39,7 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IWorkbenchPart;
@@ -60,7 +61,7 @@ class NameFinderViewPage extends Page implements ISelectionListener {
 
   private PageBook book;
 
-  private Label messageLabel;
+  private Text messageText;
   private TableViewer entityList;
 
   NameFinderViewPage(ICasEditor editor, ICasDocument document) {
@@ -71,8 +72,8 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     
     book = new PageBook(parent, SWT.NONE);
     
-    messageLabel = new Label(book, SWT.NONE);
-    messageLabel.setText("Loading name finder models ...");
+    messageText = new Text(book, SWT.WRAP | SWT.READ_ONLY);
+    messageText.setText("Loading name finder models ...");
     
     entityList = new TableViewer(book, SWT.NONE);
     
@@ -132,7 +133,7 @@ class NameFinderViewPage extends Page implements ISelectionListener {
 	});
     
     // Display the messageLabel after start up
-    book.showPage(messageLabel);
+    book.showPage(messageText);
     
     getSite().getPage().addSelectionListener(this);
   }
@@ -172,11 +173,11 @@ class NameFinderViewPage extends Page implements ISelectionListener {
   void setMessage(String message) {
     
     if (message != null) {
-      messageLabel.setText(message);
-      book.showPage(messageLabel);
+      messageText.setText(message);
+      book.showPage(messageText);
     }
     else {
-      messageLabel.setText("");
+      messageText.setText("");
       book.showPage(entityList.getControl());
     }
   }

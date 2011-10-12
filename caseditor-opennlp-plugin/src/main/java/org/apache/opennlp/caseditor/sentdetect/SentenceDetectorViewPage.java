@@ -40,9 +40,11 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.actions.BaseSelectionListenerAction;
 import org.eclipse.ui.part.Page;
+import org.eclipse.ui.part.PageBook;
 
 public class SentenceDetectorViewPage extends Page {
   
@@ -50,24 +52,27 @@ public class SentenceDetectorViewPage extends Page {
 
   private ICasEditor editor;
   
+  private PageBook book;
+    
+  private Text messageText;
+  
   private TableViewer sentenceList; 
   
   private SentenceContentProvider contentProvider;
   
-  private String modelPath;
-  private String sentenceTypeName;
-  
   public SentenceDetectorViewPage(ICasEditor editor) {
     this.editor = editor;
-   
-    IPreferenceStore store = OpenNLPPlugin.getDefault().getPreferenceStore();
-    modelPath = store.getString(OpenNLPPreferenceConstants.SENTENCE_DETECTOR_MODEL_PATH);
-    sentenceTypeName = store.getString(OpenNLPPreferenceConstants.SENTENCE_TYPE);
   }
 
   @Override
   public void createControl(Composite parent) {
-    sentenceList = new TableViewer(parent, SWT.NONE);
+    
+    book = new PageBook(parent, SWT.NONE);
+    
+    messageText = new Text(book, SWT.WRAP | SWT.READ_ONLY);
+    messageText.setText("Loading tokenizer model ...");
+    
+    sentenceList = new TableViewer(book, SWT.NONE);
     
     Table entityTable = sentenceList.getTable();
     entityTable.setHeaderVisible(true);
@@ -89,9 +94,8 @@ public class SentenceDetectorViewPage extends Page {
     
     SentenceDetectorJob sentenceDetector = new SentenceDetectorJob();
     
-    sentenceDetector.setModelPath(modelPath);
-    
-    contentProvider = new SentenceContentProvider(sentenceDetector, sentenceList);
+    contentProvider = new SentenceContentProvider(this, (AnnotationEditor) editor,
+        sentenceDetector, sentenceList);
     
     sentenceList.setContentProvider(contentProvider);
     getSite().setSelectionProvider(sentenceList);
@@ -121,16 +125,30 @@ public class SentenceDetectorViewPage extends Page {
         }
       }
     });
+    
+    book.showPage(messageText);
   }
 
+  void setMessage(String message) {
+    
+    if (message != null) {
+      messageText.setText(message);
+      book.showPage(messageText);
+    }
+    else {
+      messageText.setText("");
+      book.showPage(sentenceList.getControl());
+    }
+  }
+  
   @Override
   public Control getControl() {
-    return sentenceList.getTable();
+    return book;
   }
 
   @Override
   public void setFocus() {
-    sentenceList.getTable().setFocus();
+    getControl().setFocus();
   }
   
   @Override

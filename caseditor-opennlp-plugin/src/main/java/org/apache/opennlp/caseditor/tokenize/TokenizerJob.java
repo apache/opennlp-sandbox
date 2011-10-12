@@ -77,7 +77,7 @@ public class TokenizerJob extends Job {
         try {
           modelIn = ModelUtil.openModelIn(modelPath);
         } catch (IOException e1) {
-          return new Status(IStatus.ERROR, OpenNLPPlugin.ID, "Failed to load tokenizer model!");
+          return new Status(IStatus.CANCEL, OpenNLPPlugin.ID, "Failed to load tokenizer model!");
         }
         
         try {

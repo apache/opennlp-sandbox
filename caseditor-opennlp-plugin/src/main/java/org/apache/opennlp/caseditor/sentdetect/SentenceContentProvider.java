@@ -30,8 +30,8 @@ import org.apache.uima.cas.CAS;
 import org.apache.uima.cas.FSIndex;
 import org.apache.uima.cas.Type;
 import org.apache.uima.cas.text.AnnotationFS;
+import org.apache.uima.caseditor.editor.AnnotationEditor;
 import org.apache.uima.caseditor.editor.ICasDocument;
-import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.jface.preference.IPreferenceStore;
@@ -42,13 +42,22 @@ import org.eclipse.swt.widgets.Display;
 
 public class SentenceContentProvider implements IStructuredContentProvider {
 
+  private SentenceDetectorViewPage sentenceDetectorView;
+  
+  private AnnotationEditor editor;
+  
   private ICasDocument document;
   
   private SentenceDetectorJob sentenceDetector;
   
   private TableViewer sentenceList;
+
+
   
-  public SentenceContentProvider(SentenceDetectorJob sentenceDetector, TableViewer sentenceList) {
+  public SentenceContentProvider(SentenceDetectorViewPage sentenceDetectorView, AnnotationEditor editor,
+      SentenceDetectorJob sentenceDetector, TableViewer sentenceList) {
+    this.sentenceDetectorView = sentenceDetectorView;
+    this.editor = editor;
     this.sentenceDetector = sentenceDetector;
     this.sentenceList = sentenceList;
     
@@ -58,9 +67,9 @@ public class SentenceContentProvider implements IStructuredContentProvider {
           
           @Override
           public void run() {
-            IStatus status = event.getResult();
-            
-            if (status.getSeverity() == IStatus.OK) {
+            if (event.getResult().isOK()) {
+              
+              SentenceContentProvider.this.sentenceDetectorView.setMessage(null);
               
               Entity sentences[] = SentenceContentProvider.this.
                   sentenceDetector.getDetectedSentences();
@@ -68,12 +77,13 @@ public class SentenceContentProvider implements IStructuredContentProvider {
               SentenceContentProvider.this.sentenceList.refresh();
               SentenceContentProvider.this.sentenceList.add(sentences);
             }
+            else {
+              SentenceContentProvider.this.sentenceDetectorView.setMessage(event.getResult().getMessage());
+            }
           }
         });
       }
     });
-    
-    
   }
   
   @Override
@@ -89,7 +99,7 @@ public class SentenceContentProvider implements IStructuredContentProvider {
   }
   
   void triggerSentenceDetector() {
-    IPreferenceStore store = OpenNLPPlugin.getDefault().getPreferenceStore();
+    IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
     
     String paragraphTypeName = store.getString(OpenNLPPreferenceConstants.PARAGRAPH_TYPE);
     
@@ -118,8 +128,14 @@ public class SentenceContentProvider implements IStructuredContentProvider {
       paragraphSpans.add(new Span(0, cas.getDocumentText().length()));
     }
     
+    String modelPath = store.getString(OpenNLPPreferenceConstants.SENTENCE_DETECTOR_MODEL_PATH);
+    
+    sentenceDetector.setModelPath(modelPath);
     sentenceDetector.setParagraphs(paragraphSpans);
     sentenceDetector.setText(document.getCAS().getDocumentText());
+    
+    // TODO: Check if sentence type is valid and set!
+    
     sentenceDetector.setSentenceType(store.getString(OpenNLPPreferenceConstants.SENTENCE_TYPE));
     
     sentenceDetector.schedule();
