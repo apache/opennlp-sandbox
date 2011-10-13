@@ -27,6 +27,8 @@ import opennlp.tools.tokenize.SimpleTokenizer;
 import opennlp.tools.util.Span;
 
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
+import org.apache.opennlp.caseditor.util.ContainingConstraint;
+import org.apache.opennlp.caseditor.util.UIMAUtil;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.cas.FSIndex;
 import org.apache.uima.cas.FeatureStructure;
@@ -260,6 +262,9 @@ public class EntityContentProvider implements IStructuredContentProvider {
           
           @Override
           public void run() {
+            
+            // TODO: Check if view is still available, that might be called after view is disposed.
+            
             IStatus status = event.getResult();
             
             if (status.isOK()) {
@@ -378,17 +383,14 @@ public class EntityContentProvider implements IStructuredContentProvider {
   }
   
   void runNameFinder() {
+    
     IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
     String sentenceTypeName = store.getString(OpenNLPPreferenceConstants.SENTENCE_TYPE);
     
-    // TODO: Add check for sentence type name
     if (sentenceTypeName.isEmpty()) {
       nameFinderView.setMessage("Sentence type is not set!");
       return;
     }
-    
-
-    // TODO: Add check for additional sentence type names
     
     String modelPathes[] = store.getString(OpenNLPPreferenceConstants.NAME_FINDER_MODEL_PATH).split(",");
     
@@ -409,50 +411,59 @@ public class EntityContentProvider implements IStructuredContentProvider {
 
     if (text != null) {
 
-      List<Span> sentences = new ArrayList<Span>();
-
-      String sentenceTypeNames[] = (sentenceTypeName + "," +  additionalSentenceTypes).split(",");
+      Type sentenceTypes[] = UIMAUtil.splitTypes(
+          sentenceTypeName + "," +  additionalSentenceTypes, ',', cas.getTypeSystem());
       
-      for (String typeName : sentenceTypeNames) {
-        Type sentenceType = cas.getTypeSystem().getType(typeName.trim()); 
-        
-        if (sentenceType == null) {
-          nameFinderView.setMessage("Sentence type does not exist in type system!");
-          return;
-        }
-        
-        FSIndex<AnnotationFS> sentenceAnnotations = cas
-            .getAnnotationIndex(sentenceType);
-        
-        for (Iterator<AnnotationFS> sentenceIterator = sentenceAnnotations
-            .iterator(); sentenceIterator.hasNext();) {
-          
-          AnnotationFS sentenceAnnotation = (AnnotationFS) sentenceIterator
-              .next();
-          
-          sentences.add(new Span(sentenceAnnotation.getBegin(), sentenceAnnotation.getEnd()));
-        }
+      if (sentenceTypes == null) {
+        nameFinderView.setMessage("Sentence type does not exist in type system!");
+        return;
       }
-
-      // sort sentences list ... ascending
-      Collections.sort(sentences);
       
-      // iterate again and create tokens ...
+      String tokenName = store.getString(OpenNLPPreferenceConstants.TOKEN_TYPE);
+      
+      if (tokenName.isEmpty()) {
+        nameFinderView.setMessage("Token type name is not set!");
+        return;
+      }
+      
+      Type tokenType = cas.getTypeSystem().getType(tokenName);
+      
+      if (tokenType == null) {
+        nameFinderView.setMessage("Token type does not exist in type system!");
+        return;
+      }
+      
+      List<Span> sentences = new ArrayList<Span>();
       List<Span> tokens = new ArrayList<Span>();
       
-      for (Span sentence : sentences) {
-          String sentText = sentence.getCoveredText(text).toString();
+      for (Iterator<AnnotationFS> sentenceIterator = 
+          UIMAUtil.createMultiTypeIterator(cas, sentenceTypes);
+          sentenceIterator.hasNext();) {
+        
+        AnnotationFS sentenceAnnotation = (AnnotationFS) sentenceIterator
+            .next();
+        
+        // TODO: Add code to detect overlapping sentences ... not allowed!
+        
+        sentences.add(new Span(sentenceAnnotation.getBegin(), sentenceAnnotation.getEnd()));
+        
+        // Performance Note: 
+        // The following code has O(n^2) complexity, can be optimized
+        // by using a token iterate over all tokens and manual weaving.                  
+        
+        FSIndex<AnnotationFS> allTokens = cas.getAnnotationIndex(tokenType);
+        
+        ContainingConstraint containingConstraint = 
+            new ContainingConstraint(sentenceAnnotation);
+        
+        Iterator<AnnotationFS> containingTokens = cas.createFilteredIterator(
+            allTokens.iterator(), containingConstraint);
+        
+        while (containingTokens.hasNext()) {
+          AnnotationFS token = (AnnotationFS) containingTokens.next();
           
-          // TODO: Extract tokens here! Instead of using the simple tokenizer!
-          
-          Span tokenSpans[] = SimpleTokenizer.INSTANCE.tokenizePos(sentText);
-
-          int sentenceOffset = sentence.getStart();
-
-          for (Span token : tokenSpans) {
-            tokens.add(new Span(sentenceOffset + token.getStart(),
-                sentenceOffset + token.getEnd()));
-          }
+          tokens.add(new Span(token.getBegin(), token.getEnd()));
+        }
       }
       
       List<Span> nameSpans = new ArrayList<Span>();
@@ -479,9 +490,22 @@ public class EntityContentProvider implements IStructuredContentProvider {
         }
       }
       
-      // This will cause issues when it is done while it is running!
+      // Bug: Changing the data of the name finder will cause an issue if it is already running!
+      
       nameFinder.setText(text);
+      
+      if (sentences.size() == 0) {
+        nameFinderView.setMessage("CAS must at least contain one sentence!");
+        return;
+      }
+      
       nameFinder.setSentences(sentences.toArray(new Span[sentences.size()]));
+      
+      if (tokens.size() == 0) {
+        nameFinderView.setMessage("CAS must at least contain one token within a sentence!");
+        return;
+      }
+      
       nameFinder.setTokens(tokens.toArray(new Span[tokens.size()]));
       nameFinder.setVerifiedNames(nameSpans.toArray(new Span[nameSpans.size()]));
       nameFinder.setModelPath(modelPathes, nameTypeNames);
