@@ -19,13 +19,12 @@ package org.apache.opennlp.caseditor.namefinder;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import opennlp.tools.tokenize.SimpleTokenizer;
 import opennlp.tools.util.Span;
 
+import org.apache.opennlp.caseditor.OpenNLPPlugin;
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
 import org.apache.opennlp.caseditor.util.ContainingConstraint;
 import org.apache.opennlp.caseditor.util.UIMAUtil;
@@ -41,6 +40,8 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jface.util.IPropertyChangeListener;
+import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
@@ -51,9 +52,14 @@ import org.eclipse.swt.widgets.Display;
 // Maybe we should create again, a "View" map of indexes to its annotations?!
 public class EntityContentProvider implements IStructuredContentProvider {
 
-  // TODO: Triggering should be more refined, and only happen if
-  // Sentences, Tokens, or entities change ..
-  class NameFinderTrigger implements ICasDocumentListener {
+  /**
+   * Listener which triggers a run of the name finder if something in the CAS changed.
+   * <p>
+   * TODO: Listener should only trigger a run if something changed which might change the results
+   * of the name finder run.
+   */
+  // TODO: Rename it ...
+  private class CasChangeNameFinderTrigger implements ICasDocumentListener {
 
     @Override
     public void added(FeatureStructure fs) {
@@ -98,14 +104,18 @@ public class EntityContentProvider implements IStructuredContentProvider {
     
   }
   
-  private static boolean contains(String array[], String element) {
-    
-    for (String arrayElement : array) {
-      if (element.equals(arrayElement))
-        return true;
+  /**
+   * Listeners which triggers a run of the name finder when a related preferences changed.
+   */
+  private class PreferenceChangeNameFinderTrigger implements IPropertyChangeListener{
+
+    @Override
+    public void propertyChange(PropertyChangeEvent event) {
+      // Filter all changes of preferences which do not belong to this plugin
+      if (event.getProperty().startsWith(OpenNLPPlugin.ID)) {
+        runNameFinder();
+      }
     }
-    
-    return false;
   }
   
   class ConfirmedEntityListener implements ICasDocumentListener {
@@ -224,7 +234,8 @@ public class EntityContentProvider implements IStructuredContentProvider {
   
   private NameFinderJob nameFinder;
   
-  private NameFinderTrigger nameFinderTrigger = new NameFinderTrigger();
+  private CasChangeNameFinderTrigger casChangeTrigger = new CasChangeNameFinderTrigger();
+  private PreferenceChangeNameFinderTrigger preferenceChangeTrigger = new PreferenceChangeNameFinderTrigger();
   private ConfirmedEntityListener casChangeListener = new ConfirmedEntityListener();
   
   private TableViewer entityListViewer;
@@ -242,17 +253,92 @@ public class EntityContentProvider implements IStructuredContentProvider {
 
   private NameFinderViewPage nameFinderView;
   
-  EntityContentProvider(NameFinderViewPage nameFinderView, AnnotationEditor editor, NameFinderJob nameFinder, TableViewer entityList) {
-    this.nameFinder = nameFinder;
+  EntityContentProvider(NameFinderViewPage nameFinderView, AnnotationEditor editor, TableViewer entityList) {
+    this.nameFinder = new NameFinderJob();
     this.entityListViewer = entityList;
     this.editor = editor;
     this.nameFinderView = nameFinderView;
     
     IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
+    
+    store.addPropertyChangeListener(preferenceChangeTrigger);
+  }
+  
+  private static boolean contains(String array[], String element) {
+    
+    for (String arrayElement : array) {
+      if (element.equals(arrayElement))
+        return true;
+    }
+    
+    return false;
+  }
+  
+  public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
+
+    // Problem: "The viewer should not be updated during this call, as it might be in 
+   //           the process of being disposed." (Javadoc)
+    // Does it mean that the name finder listener must check if the viewer is still alive?
+    
+    if (oldInput != null) {
+      ICasDocument oldDocument = (ICasDocument) oldInput;
+      oldDocument.removeChangeListener(casChangeListener);
+      oldDocument.removeChangeListener(casChangeTrigger);      
+    }
+    
+    if (newInput != null) {
+      input = (ICasDocument) newInput;
+      
+      // Note: Name Finder might run to often ... 
+      input.addChangeListener(casChangeListener);
+      input.addChangeListener(casChangeTrigger);
+      
+      runNameFinder();
+    }
+  }
+  
+  void runNameFinder() {
+    
+    IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
+    
+    
+    // TODO: All preferences should be retrieved when the name finder executed!
+    // Just move it down the run method ...
     nameTypeNames = store.getString(OpenNLPPreferenceConstants.NAME_TYPE).split(",");
     
     for (int i = 0; i < nameTypeNames.length; i++) {
       nameTypeNames[i] = nameTypeNames[i].trim();
+      
+      if (nameTypeNames[i].isEmpty()) {
+        nameFinderView.setMessage("Name type name(s) must be set!");
+        return;
+      }
+    }
+    
+    confirmedEntities.clear();
+    
+    for (String nameTypeName : nameTypeNames) {
+      Type nameType = input.getCAS().getTypeSystem().getType(nameTypeName); 
+      
+      // TODO: Do error handling!
+      if (nameType == null)
+        return;
+      
+      FSIndex<AnnotationFS> nameAnnotations = input.getCAS()
+          .getAnnotationIndex(nameType);
+      
+      for (Iterator<AnnotationFS> nameIterator = nameAnnotations
+          .iterator(); nameIterator.hasNext();) {
+        
+        AnnotationFS nameAnnotation = (AnnotationFS) nameIterator.next();
+        
+        // TODO: Entity must have a type ...
+        Entity entity = new Entity(nameAnnotation.getBegin(),
+            nameAnnotation.getEnd(), nameAnnotation.getCoveredText(), null, true,
+            nameAnnotation.getType().getName());
+        entity.setLinkedAnnotation(nameAnnotation);
+        confirmedEntities.add(entity); // TODO: This needs to go into a second list!
+      }
     }
     
     nameFinder.addJobChangeListener(new JobChangeAdapter() {
@@ -331,60 +417,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
         });
       };
     });
-  }
-  
-  public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
-
-    // Problem: "The viewer should not be updated during this call, as it might be in 
-   //           the process of being disposed." (Javadoc)
-    // Does it mean that the name finder listener must check if the viewer is still alive?
     
-    if (oldInput != null) {
-      ICasDocument oldDocument = (ICasDocument) oldInput;
-      oldDocument.removeChangeListener(casChangeListener);
-      oldDocument.removeChangeListener(nameFinderTrigger);      
-    }
-    
-    if (newInput != null) {
-      input = (ICasDocument) newInput;
-      
-      // Note: Name Finder might run to often ... 
-      input.addChangeListener(casChangeListener);
-      input.addChangeListener(nameFinderTrigger);
-      
-      // Create initial list of confirmed entities ...
-      
-      for (String nameTypeName : nameTypeNames) {
-        Type nameType = input.getCAS().getTypeSystem().getType(nameTypeName); 
-        
-        // TODO: Do error handling!
-        if (nameType == null)
-          return;
-        
-        FSIndex<AnnotationFS> nameAnnotations = input.getCAS()
-            .getAnnotationIndex(nameType);
-        
-        for (Iterator<AnnotationFS> nameIterator = nameAnnotations
-            .iterator(); nameIterator.hasNext();) {
-          
-          AnnotationFS nameAnnotation = (AnnotationFS) nameIterator.next();
-          
-          // TODO: Entity must have a type ...
-          Entity entity = new Entity(nameAnnotation.getBegin(),
-              nameAnnotation.getEnd(), nameAnnotation.getCoveredText(), null, true,
-              nameAnnotation.getType().getName());
-          entity.setLinkedAnnotation(nameAnnotation);
-          confirmedEntities.add(entity); // TODO: This needs to go into a second list!
-        }
-      }
-      
-      runNameFinder();
-    }
-  }
-  
-  void runNameFinder() {
-    
-    IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
     String sentenceTypeName = store.getString(OpenNLPPreferenceConstants.SENTENCE_TYPE);
     
     if (sentenceTypeName.isEmpty()) {
@@ -527,6 +560,8 @@ public class EntityContentProvider implements IStructuredContentProvider {
   }
   
   public void dispose() {
+    IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
+    store.removePropertyChangeListener(preferenceChangeTrigger);
   }
   
   static List<Entity> searchEntities(List<Entity> entities, int begin, int end) {

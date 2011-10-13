@@ -36,7 +36,6 @@ import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Text;
@@ -97,7 +96,7 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     typeColumn.setWidth(40);
     
     entityList.setLabelProvider(new EntityLabelProvider());
-    entityList.setContentProvider(new EntityContentProvider(this, (AnnotationEditor) editor, new NameFinderJob(), entityList));
+    entityList.setContentProvider(new EntityContentProvider(this, (AnnotationEditor) editor, entityList));
     getSite().setSelectionProvider(entityList);
     
     entityList.setComparator(new EntityComperator());
