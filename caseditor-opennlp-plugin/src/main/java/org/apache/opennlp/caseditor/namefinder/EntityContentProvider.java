@@ -485,7 +485,11 @@ public class EntityContentProvider implements IStructuredContentProvider {
       nameFinder.setTokens(tokens.toArray(new Span[tokens.size()]));
       nameFinder.setVerifiedNames(nameSpans.toArray(new Span[nameSpans.size()]));
       nameFinder.setModelPath(modelPathes, nameTypeNames);
-      nameFinder.setSystem(true);
+      
+      if (!nameFinder.isSystem()) {
+        nameFinder.setSystem(true);
+      }
+      
       nameFinder.schedule();
     }
   }
