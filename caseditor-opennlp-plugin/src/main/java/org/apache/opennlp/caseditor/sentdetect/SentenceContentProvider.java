@@ -23,7 +23,6 @@ import java.util.List;
 
 import opennlp.tools.util.Span;
 
-import org.apache.opennlp.caseditor.OpenNLPPlugin;
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
 import org.apache.opennlp.caseditor.namefinder.Entity;
 import org.apache.uima.cas.CAS;
@@ -52,8 +51,6 @@ public class SentenceContentProvider implements IStructuredContentProvider {
   
   private TableViewer sentenceList;
 
-
-  
   public SentenceContentProvider(SentenceDetectorViewPage sentenceDetectorView, AnnotationEditor editor,
       SentenceDetectorJob sentenceDetector, TableViewer sentenceList) {
     this.sentenceDetectorView = sentenceDetectorView;
@@ -101,15 +98,19 @@ public class SentenceContentProvider implements IStructuredContentProvider {
   void triggerSentenceDetector() {
     IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
     
-    String paragraphTypeName = store.getString(OpenNLPPreferenceConstants.PARAGRAPH_TYPE);
-    
     CAS cas = document.getCAS();
     
+    String paragraphTypeName = store.getString(OpenNLPPreferenceConstants.PARAGRAPH_TYPE);
+
     List<Span> paragraphSpans = new ArrayList<Span>();
     
-    Type paragraphType = cas.getTypeSystem().getType(paragraphTypeName); 
-    
-    if (paragraphType != null) {
+    if (!paragraphTypeName.isEmpty()) {
+      Type paragraphType = cas.getTypeSystem().getType(paragraphTypeName);
+      
+      if (paragraphType == null) {
+        sentenceDetectorView.setMessage("Paragraph type cannot be found in type system!");
+        return;
+      }
       
       FSIndex<AnnotationFS> paragraphAnnotations = cas
           .getAnnotationIndex(paragraphType);
@@ -128,15 +129,28 @@ public class SentenceContentProvider implements IStructuredContentProvider {
       paragraphSpans.add(new Span(0, cas.getDocumentText().length()));
     }
     
+    
     String modelPath = store.getString(OpenNLPPreferenceConstants.SENTENCE_DETECTOR_MODEL_PATH);
     
     sentenceDetector.setModelPath(modelPath);
     sentenceDetector.setParagraphs(paragraphSpans);
     sentenceDetector.setText(document.getCAS().getDocumentText());
     
-    // TODO: Check if sentence type is valid and set!
+    String sentenceTypeName = store.getString(OpenNLPPreferenceConstants.SENTENCE_TYPE);
     
-    sentenceDetector.setSentenceType(store.getString(OpenNLPPreferenceConstants.SENTENCE_TYPE));
+    if (sentenceTypeName.isEmpty()) {
+      sentenceDetectorView.setMessage("Sentence type name is not set!");
+      return;
+    }
+      
+    Type sentenceType = cas.getTypeSystem().getType(sentenceTypeName);
+    
+    if (sentenceType == null) {
+      sentenceDetectorView.setMessage("Type system does not contain sentence type!");
+      return;
+    }
+    
+    sentenceDetector.setSentenceType(sentenceType.getName());
     
     sentenceDetector.schedule();
   }
