@@ -19,16 +19,22 @@ package org.apache.opennlp.caseditor;
 
 public class OpenNLPPreferenceConstants {
 
-  public static final String SENTENCE_DETECTOR_MODEL_PATH = OpenNLPPlugin.ID + ".SENTENCE_DETECTOR_MODEL_PATH";
-  public static final String NAME_FINDER_MODEL_PATH = OpenNLPPlugin.ID + ".NAME_FINDER_MODEL_PATH";
-  
-  public static final String PARAGRAPH_TYPE = OpenNLPPlugin.ID + ".PARAGRAPH_TYPE";
+  // General settings
   public static final String SENTENCE_TYPE = OpenNLPPlugin.ID + ".SENTENCE_TYPE";
-  public static final String ADDITIONAL_SENTENCE_TYPE = OpenNLPPlugin.ID + ".ADDITIONAL_SENTENCE_TYPE";
   public static final String TOKEN_TYPE = OpenNLPPlugin.ID + ".TOKEN_TYPE";
-  public static final String NAME_TYPE = OpenNLPPlugin.ID + ".NAME_TYPE";
-  public static final String TOKENIZER_MODEL_PATH = OpenNLPPlugin.ID + ".TOKENIZER_MODEL_PATH";
   
+  // Sentence detector
+  public static final String PARAGRAPH_TYPE = OpenNLPPlugin.ID + ".PARAGRAPH_TYPE";
+  public static final String SENTENCE_DETECTOR_MODEL_PATH = OpenNLPPlugin.ID + ".SENTENCE_DETECTOR_MODEL_PATH";
+  
+  // Name Finder  
+  public static final String ADDITIONAL_SENTENCE_TYPE = OpenNLPPlugin.ID + ".ADDITIONAL_SENTENCE_TYPE";
+  public static final String NAME_TYPE = OpenNLPPlugin.ID + ".NAME_TYPE";
+  public static final String NAME_FINDER_MODEL_PATH = OpenNLPPlugin.ID + ".NAME_FINDER_MODEL_PATH";
+  public static final String ENABLE_CONFIRMED_NAME_DETECTION = OpenNLPPlugin.ID + ".ENABLE_RECALL_BOOSTING";
+
+  // Tokenizer
+  public static final String TOKENIZER_MODEL_PATH = OpenNLPPlugin.ID + ".TOKENIZER_MODEL_PATH";
   public static final String TOKENIZER_ALGO_STATISTICAL = OpenNLPPlugin.ID + ".TOKENIZER_ALGO_STATISTICAL";
   public static final String TOKENIZER_ALGO_WHITESPACE = OpenNLPPlugin.ID + ".TOKENIZER_ALGO_WHITESPACE";
   public static final String TOKENIZER_ALGO_SIMPLE = OpenNLPPlugin.ID + ".TOKENIZER_ALGO_SIMPLE";

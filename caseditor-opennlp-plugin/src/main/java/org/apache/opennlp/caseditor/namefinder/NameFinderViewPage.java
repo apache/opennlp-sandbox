@@ -27,6 +27,7 @@ import org.apache.uima.caseditor.editor.ICasEditor;
 import org.apache.uima.caseditor.editor.util.AnnotationSelection;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IToolBarManager;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
@@ -65,6 +66,9 @@ class NameFinderViewPage extends Page implements ISelectionListener {
 
   NameFinderViewPage(ICasEditor editor, ICasDocument document) {
     this.editor = editor;
+    
+    IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
+    NameFinderPreferenceInitializer.initializeDefaultPreferences(store);
   }
 
   public void createControl(Composite parent) {

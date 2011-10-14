@@ -17,8 +17,8 @@
 
 package org.apache.opennlp.caseditor.namefinder;
 
-import org.apache.opennlp.caseditor.OpenNLPPlugin;
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
+import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.StringFieldEditor;
 import org.eclipse.ui.IWorkbench;
@@ -28,7 +28,6 @@ public class NameFinderPreferencePage extends FieldEditorPreferencePage
     implements IWorkbenchPreferencePage {
 
   public NameFinderPreferencePage() {
-//    setPreferenceStore();
     setDescription("Name Finder Preferences.");
   }
 
@@ -52,5 +51,10 @@ public class NameFinderPreferencePage extends FieldEditorPreferencePage
         OpenNLPPreferenceConstants.NAME_TYPE,
         "Name Type(s)", getFieldEditorParent());
     addField(nameType);
+    
+    BooleanFieldEditor enableRecallBoosting = new BooleanFieldEditor(
+        OpenNLPPreferenceConstants.ENABLE_CONFIRMED_NAME_DETECTION,
+        "Enable the detection of confirmed names", getFieldEditorParent());
+    addField(enableRecallBoosting);
   }
 }

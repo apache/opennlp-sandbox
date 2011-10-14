@@ -131,44 +131,42 @@ public class NameFinderJob extends Job {
         
         // Note: This is slow!
         // iterate over names, to find token indexes
-        
-        // TODO: This must work with multiple types ...
-        for (Span verifiedName : verifiedNames) {
-          boolean isStart = true;
-        	
-          for (int i = 0; i < sentenceTokens.size(); i++) {
-            if (verifiedName.contains(sentenceTokens.get(i))) {
-              
-              String outcome;
-              
-              // Need better mechanism here, first token in entity should be start!
-              if (isStart) {
-                outcome = NameFinderME.START;
-                isStart = false;
-              }
-              else {
-                outcome = NameFinderME.CONTINUE;
-              }
-              
-              
-              // TODO: Overlapping names are dangerous here!
-              
-              // TODO: We could use type information here ... 
-              // as part of the outcome!
-              verifiedNameTokens.put(i, verifiedName.getType() + "-" + outcome);
-              
-              // TODO: Do not put stop word
-              // Only put, if char length is two
-              // Only put only letters in token
-              StringPattern pattern = StringPattern.recognize(tokenStrings[i]);
-              
-              if (pattern.isAllLetter() && tokenStrings[i].length() > 1) {
-            	  nameTokens.add(verifiedName.getType() + "-" + tokenStrings[i]);
+        if (verifiedNames != null) {
+          for (Span verifiedName : verifiedNames) {
+            boolean isStart = true;
+          	
+            for (int i = 0; i < sentenceTokens.size(); i++) {
+              if (verifiedName.contains(sentenceTokens.get(i))) {
+                
+                String outcome;
+                
+                // Need better mechanism here, first token in entity should be start!
+                if (isStart) {
+                  outcome = NameFinderME.START;
+                  isStart = false;
+                }
+                else {
+                  outcome = NameFinderME.CONTINUE;
+                }
+                
+                // TODO: Overlapping names are dangerous here!
+                
+                // TODO: We could use type information here ... 
+                // as part of the outcome!
+                verifiedNameTokens.put(i, verifiedName.getType() + "-" + outcome);
+                
+                // TODO: Do not put stop word
+                // Only put, if char length is two
+                // Only put only letters in token
+                StringPattern pattern = StringPattern.recognize(tokenStrings[i]);
+                
+                if (pattern.isAllLetter() && tokenStrings[i].length() > 1) {
+              	  nameTokens.add(verifiedName.getType() + "-" + tokenStrings[i]);
+                }
               }
             }
           }
         }
-        
         nameFinder.setRestriction(verifiedNameTokens);
         nameFinder.setNameOnlyTokens(nameTokens);
         

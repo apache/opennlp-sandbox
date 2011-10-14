@@ -232,6 +232,83 @@ public class EntityContentProvider implements IStructuredContentProvider {
     }
   }
   
+  private class NameFinderJobListener extends JobChangeAdapter {
+    public void done(final IJobChangeEvent event) {
+      
+      Display.getDefault().asyncExec(new Runnable() {
+        
+        @Override
+        public void run() {
+          
+          // TODO: Check if view is still available, that might be called after view is disposed.
+          
+          IStatus status = event.getResult();
+          
+          if (status.isOK()) {
+            EntityContentProvider.this.nameFinderView.setMessage(null);
+            
+            List<Entity> detectedEntities = EntityContentProvider.this.nameFinder.getNames();
+            
+            // Remove all detected entities from the last run which are not detected anymore
+            for (Iterator<Entity> it = candidateEntities.iterator(); it.hasNext();) {
+              Entity entity = it.next();
+              if (searchEntity(detectedEntities, entity.getBeginIndex(),
+                  entity.getEndIndex(), entity.getType()) == null)  {
+                
+                // TODO: Create an array of entities that should be removed, much faster ...
+                EntityContentProvider.this.entityListViewer.remove(entity);
+                
+                // Can safely be removed, since it can only be an un-confirmed entity
+                it.remove();
+              }
+            }
+            
+            // Update if entity already exist, or add it
+            for (Entity detectedEntity : detectedEntities) {
+              
+              // Bug: 
+              // There can be multiple entities in this span!
+              // In this case we want to keep the first, update it, and discard the others!
+              
+              // Case: One entity spanning two tokens replaces 
+              
+              Entity entity = searchEntity(candidateEntities, detectedEntity.getBeginIndex(),
+                  detectedEntity.getEndIndex(), detectedEntity.getType());
+              
+              // A confirmed entity already exists, update its confidence score
+              if (entity != null) {
+                if (entity.isConfirmed()) {
+                  entity.setConfidence(detectedEntity.getConfidence());
+                  EntityContentProvider.this.entityListViewer.refresh(entity);
+                  continue;
+                }
+                else {
+                  entity.setBeginIndex(detectedEntity.getBeginIndex());
+                  entity.setEndIndex(detectedEntity.getEndIndex());
+                  entity.setEntityText(detectedEntity.getEntityText());
+                  entity.setConfidence(detectedEntity.getConfidence());
+                  
+                  EntityContentProvider.this.entityListViewer.refresh(entity);
+                }
+              }
+              else {
+                // Only add if it is not a confirmed entity!
+                if (searchEntity(confirmedEntities, detectedEntity.getBeginIndex(),
+                  detectedEntity.getEndIndex(), detectedEntity.getType()) == null) {
+                  EntityContentProvider.this.entityListViewer.add(detectedEntity);
+                  candidateEntities.add(detectedEntity);
+                }
+              }
+            }
+          }
+          else {
+            EntityContentProvider.this.nameFinderView.setMessage(status.getMessage());
+          }
+        }
+      });
+    };
+  }
+  
   private NameFinderJob nameFinder;
   
   private CasChangeNameFinderTrigger casChangeTrigger = new CasChangeNameFinderTrigger();
@@ -341,82 +418,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
       }
     }
     
-    nameFinder.addJobChangeListener(new JobChangeAdapter() {
-      public void done(final IJobChangeEvent event) {
-        
-        Display.getDefault().asyncExec(new Runnable() {
-          
-          @Override
-          public void run() {
-            
-            // TODO: Check if view is still available, that might be called after view is disposed.
-            
-            IStatus status = event.getResult();
-            
-            if (status.isOK()) {
-              EntityContentProvider.this.nameFinderView.setMessage(null);
-              
-              List<Entity> detectedEntities = EntityContentProvider.this.nameFinder.getNames();
-              
-              // Remove all detected entities from the last run which are not detected anymore
-              for (Iterator<Entity> it = candidateEntities.iterator(); it.hasNext();) {
-                Entity entity = it.next();
-                if (searchEntity(detectedEntities, entity.getBeginIndex(),
-                    entity.getEndIndex(), entity.getType()) == null)  {
-                  
-                  // TODO: Create an array of entities that should be removed, much faster ...
-                  EntityContentProvider.this.entityListViewer.remove(entity);
-                  
-                  // Can safely be removed, since it can only be an un-confirmed entity
-                  it.remove();
-                }
-              }
-              
-              // Update if entity already exist, or add it
-              for (Entity detectedEntity : detectedEntities) {
-                
-                // Bug: 
-                // There can be multiple entities in this span!
-                // In this case we want to keep the first, update it, and discard the others!
-                
-                // Case: One entity spanning two tokens replaces 
-                
-                Entity entity = searchEntity(candidateEntities, detectedEntity.getBeginIndex(),
-                    detectedEntity.getEndIndex(), detectedEntity.getType());
-                
-                // A confirmed entity already exists, update its confidence score
-                if (entity != null) {
-                  if (entity.isConfirmed()) {
-                    entity.setConfidence(detectedEntity.getConfidence());
-                    EntityContentProvider.this.entityListViewer.refresh(entity);
-                    continue;
-                  }
-                  else {
-                    entity.setBeginIndex(detectedEntity.getBeginIndex());
-                    entity.setEndIndex(detectedEntity.getEndIndex());
-                    entity.setEntityText(detectedEntity.getEntityText());
-                    entity.setConfidence(detectedEntity.getConfidence());
-                    
-                    EntityContentProvider.this.entityListViewer.refresh(entity);
-                  }
-                }
-                else {
-                  // Only add if it is not a confirmed entity!
-                  if (searchEntity(confirmedEntities, detectedEntity.getBeginIndex(),
-                    detectedEntity.getEndIndex(), detectedEntity.getType()) == null) {
-                    EntityContentProvider.this.entityListViewer.add(detectedEntity);
-                    candidateEntities.add(detectedEntity);
-                  }
-                }
-              }
-            }
-            else {
-              EntityContentProvider.this.nameFinderView.setMessage(status.getMessage());
-            }
-          }
-        });
-      };
-    });
+    nameFinder.addJobChangeListener(new NameFinderJobListener());
     
     String sentenceTypeName = store.getString(OpenNLPPreferenceConstants.SENTENCE_TYPE);
     
@@ -540,11 +542,20 @@ public class EntityContentProvider implements IStructuredContentProvider {
       }
       
       nameFinder.setTokens(tokens.toArray(new Span[tokens.size()]));
-      nameFinder.setVerifiedNames(nameSpans.toArray(new Span[nameSpans.size()]));
       nameFinder.setModelPath(modelPathes, nameTypeNames);
       
       if (!nameFinder.isSystem()) {
         nameFinder.setSystem(true);
+      }
+      
+      boolean isRecallBoostingEnabled = 
+          store.getBoolean(OpenNLPPreferenceConstants.ENABLE_CONFIRMED_NAME_DETECTION);
+      
+      if (isRecallBoostingEnabled) {
+        nameFinder.setVerifiedNames(nameSpans.toArray(new Span[nameSpans.size()]));
+      }
+      else {
+        nameFinder.setVerifiedNames(null);
       }
       
       nameFinder.schedule();
