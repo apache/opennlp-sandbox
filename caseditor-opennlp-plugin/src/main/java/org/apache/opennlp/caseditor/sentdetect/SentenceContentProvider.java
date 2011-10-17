@@ -25,8 +25,8 @@ import opennlp.tools.util.Span;
 
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
 import org.apache.opennlp.caseditor.namefinder.Entity;
+import org.apache.opennlp.caseditor.util.UIMAUtil;
 import org.apache.uima.cas.CAS;
-import org.apache.uima.cas.FSIndex;
 import org.apache.uima.cas.Type;
 import org.apache.uima.cas.text.AnnotationFS;
 import org.apache.uima.caseditor.editor.AnnotationEditor;
@@ -100,33 +100,30 @@ public class SentenceContentProvider implements IStructuredContentProvider {
     
     CAS cas = document.getCAS();
     
-    String paragraphTypeName = store.getString(OpenNLPPreferenceConstants.PARAGRAPH_TYPE);
-
+    String paragraphTypeNames = store.getString(OpenNLPPreferenceConstants.PARAGRAPH_TYPE);
+    Type paragraphTypes[] = UIMAUtil.splitTypes(paragraphTypeNames, ',', cas.getTypeSystem());
+    
     List<Span> paragraphSpans = new ArrayList<Span>();
     
-    if (!paragraphTypeName.isEmpty()) {
-      Type paragraphType = cas.getTypeSystem().getType(paragraphTypeName);
+    if (paragraphTypes != null) {
       
-      if (paragraphType == null) {
-        sentenceDetectorView.setMessage("Paragraph type cannot be found in type system!");
-        return;
-      }
-      
-      FSIndex<AnnotationFS> paragraphAnnotations = cas
-          .getAnnotationIndex(paragraphType);
-      
-      for (Iterator<AnnotationFS> sentenceIterator = paragraphAnnotations
-          .iterator(); sentenceIterator.hasNext();) {
+      for (Iterator<AnnotationFS> sentenceIterator = UIMAUtil.createMultiTypeIterator(cas, paragraphTypes);
+            sentenceIterator.hasNext();) {
 
-        AnnotationFS paragraphAnnotation = (AnnotationFS) sentenceIterator
-            .next();
+        AnnotationFS paragraphAnnotation = sentenceIterator.next();
         
         paragraphSpans.add(
             new Span(paragraphAnnotation.getBegin(), paragraphAnnotation.getEnd()));
       }
     }
     else {
-      paragraphSpans.add(new Span(0, cas.getDocumentText().length()));
+      if (paragraphTypeNames.trim().isEmpty()) {
+        paragraphSpans.add(new Span(0, cas.getDocumentText().length()));
+      }
+      else {
+        sentenceDetectorView.setMessage("A paragraph type cannot be found in the type system!");
+        return;
+      }
     }
     
     
