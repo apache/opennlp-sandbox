@@ -21,9 +21,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import org.springframework.stereotype.Component;
-
-@Component
 public class GeneralizationListReducer {
   public List<ParseTreeChunk> applyFilteringBySubsumption_OLD(
       List<ParseTreeChunk> result) {

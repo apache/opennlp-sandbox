@@ -20,9 +20,6 @@ package opennlp.tools.similarity.apps.utils;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.stereotype.Component;
-
-@Component
 public class StringDistanceMeasurer {
   // external tools
   private PorterStemmer ps; // stemmer

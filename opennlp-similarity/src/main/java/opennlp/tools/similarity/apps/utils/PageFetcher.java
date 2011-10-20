@@ -28,9 +28,8 @@ import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
-@Component
+
 public class PageFetcher {
   private static final Logger LOG = LoggerFactory.getLogger(PageFetcher.class);
 

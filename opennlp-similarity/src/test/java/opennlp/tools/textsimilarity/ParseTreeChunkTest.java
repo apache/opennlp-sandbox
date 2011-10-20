@@ -23,17 +23,12 @@ import java.util.List;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 public class ParseTreeChunkTest {
   private ParseTreeMatcherDeterministic parseTreeMatcher = new ParseTreeMatcherDeterministic();
   private ParseTreeChunk parseTreeChunk = new ParseTreeChunk();
   private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
 
-  @Test
   public void test() {
     ParseTreeChunk ch1, ch2;
     List<List<ParseTreeChunk>> chRes;

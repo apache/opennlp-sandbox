@@ -19,20 +19,11 @@ package opennlp.tools.textsimilarity;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "/applicationContext-dedupe-test.xml" })
-@ActiveProfiles("UnitTest")
 public class ParseTreeMatcherDeterministicTest {
 
-  @Autowired
   private ParseTreeMatcherDeterministic parseTreeMatcherDeterministic;
 
-  @Test
   public void test() {
 
     ParseTreeChunk ch1 = new ParseTreeChunk("NP", new String[] { "love", "to",

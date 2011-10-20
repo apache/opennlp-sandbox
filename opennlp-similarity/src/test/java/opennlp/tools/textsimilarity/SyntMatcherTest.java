@@ -22,30 +22,33 @@ import static org.junit.Assert.assertNotNull;
 
 import java.util.List;
 
+import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 public class SyntMatcherTest {
 
-  private SyntMatcher syntMatcher;
+  private ParserChunker2MatcherProcessor parserChunker2MatcherOlderOpenNLP;
 
   private ParseTreeChunk parseTreeChunk = new ParseTreeChunk();
 
-  @Test
   public void notNullTest() {
-    syntMatcher = SyntMatcher.getInstance();
-    assertNotNull(syntMatcher);
+    parserChunker2MatcherOlderOpenNLP = ParserChunker2MatcherProcessor.getInstance();
+    assertNotNull(parserChunker2MatcherOlderOpenNLP);
   }
 
-  @Test
   public void matchTest() {
-    syntMatcher = SyntMatcher.getInstance();
-    List<List<ParseTreeChunk>> matchResult = syntMatcher
-        .matchOrigSentencesCache(
+    parserChunker2MatcherOlderOpenNLP = ParserChunker2MatcherProcessor.getInstance();
+    List<List<ParseTreeChunk>> matchResult = parserChunker2MatcherOlderOpenNLP
+        .assessRelevance(
             // "Can I get auto focus lens for digital camera",
             // "How can I get short focus zoom lens for digital camera"
             "Pulitzer Prize-Winning Reporter is an Illegal Immigrant",
-            "Gay Pulitzer Prize-Winning Reporter Jose Antonio Vargas Comes Out as Undocumented Immigrant Jose Antonio Vargas, a gay journalist who won a Pulitzer Prize for his coverage of the Virginia Tech shootings in the Washington Post");
+            "Gay Pulitzer Prize-Winning Reporter Jose Antonio Vargas Comes Out as Undocumented " +
+            "Immigrant Jose Antonio Vargas, a gay journalist who won a Pulitzer Prize " +
+            "for his coverage of the Virginia Tech shootings in the Washington Post")
+           .getMatchResult();
 
     System.out.println(matchResult);
     assertEquals(
@@ -56,10 +59,11 @@ public class SyntMatcherTest {
         parseTreeChunk.listToString(matchResult),
         " np [ [NNP-pulitzer JJ-prize-winning NN-reporter ],  [NNP-* ],  [JJ-* NN-immigrant ]] vp [ [JJ-* NN-immigrant ]]");
 
-    matchResult = syntMatcher
-        .matchOrigSentencesCache(
+    matchResult = parserChunker2MatcherOlderOpenNLP
+        .assessRelevance(
             "Sounds too good to be true but it actually is, the world's first flying car is finally here. ",
-            "While it may seem like something straight out of a sci-fi movie, the  flying  car  might soon become a reality. ");
+            "While it may seem like something straight out of a sci-fi " +
+            "movie, the  flying  car  might soon become a reality. ").getMatchResult();
 
     System.out.println(matchResult);
     assertEquals(matchResult.toString(),
@@ -72,11 +76,10 @@ public class SyntMatcherTest {
 
   @Test
   public void matchTestDigitalCamera() {
-    syntMatcher = SyntMatcher.getInstance();
-    List<List<ParseTreeChunk>> matchResult = syntMatcher
-        .matchOrigSentencesCache(
+    parserChunker2MatcherOlderOpenNLP = ParserChunker2MatcherProcessor.getInstance();
+    List<List<ParseTreeChunk>> matchResult = parserChunker2MatcherOlderOpenNLP.assessRelevance(       
             "I am curious how to use the digital zoom of this camera for filming insects",
-            "How can I get short focus zoom lens for digital camera");
+            "How can I get short focus zoom lens for digital camera").getMatchResult();
 
     System.out.println(matchResult);
     assertEquals(
@@ -87,9 +90,9 @@ public class SyntMatcherTest {
         parseTreeChunk.listToString(matchResult),
         " np [ [NN-zoom ],  [JJ-digital NN-* ],  [NN-camera ]] vp [ [JJ-digital NN-* ],  [NN-zoom NN-camera ],  [NN-* IN-for ]]");
 
-    matchResult = syntMatcher.matchOrigSentencesCache(
+    matchResult = parserChunker2MatcherOlderOpenNLP.assessRelevance(
         "Can I get auto focus lens for digital camera",
-        "How can I get short focus zoom lens for digital camera");
+        "How can I get short focus zoom lens for digital camera").getMatchResult();
 
     System.out.println(matchResult);
     assertEquals(

@@ -21,26 +21,18 @@ import static junit.framework.Assert.assertNotNull;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "/applicationContext-dedupe-test.xml" })
-@ActiveProfiles("UnitTest")
 public class LemmaFormManagerTest {
 
-  @Autowired
   private LemmaFormManager lemmaFormManager;
 
-  @Test
-  public void notNull() {
+
+  public void notNullTest() {
     assertNotNull(lemmaFormManager);
   }
 
-  @Test
-  public void matches() {
+
+  public void matchesTest() {
 
     String res = lemmaFormManager.matchLemmas(null, "loud", "loudness", "NN");
     res = lemmaFormManager.matchLemmas(null, "24", "12", "CD");

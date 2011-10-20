@@ -19,9 +19,6 @@ package opennlp.tools.textsimilarity;
 
 import java.util.List;
 
-import org.springframework.stereotype.Component;
-
-@Component
 public class LemmaFormManager {
 
   public String matchLemmas(PorterStemmer ps, String lemma1, String lemma2,

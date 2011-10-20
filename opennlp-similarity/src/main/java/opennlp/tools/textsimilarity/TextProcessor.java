@@ -31,11 +31,12 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import opennlp.tools.similarity.apps.utils.Pair;
+
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.zvents.ce.common.util.Pair;
 
 public class TextProcessor {
 
@@ -279,7 +280,12 @@ public class TextProcessor {
 
     return retVal;
   }
-
+  
+  public static String removePunctuation(String sentence){
+	  List<String> toks = fastTokenize( sentence, false);
+	  return toks.toString().replace('[', ' ').replace(']', ' ').replace(',', ' ').replace("  ", " ");
+  }
+  
   public static ArrayList<String> fastTokenize(String txt, boolean retainPunc) {
     ArrayList<String> tokens = new ArrayList<String>();
     if (StringUtils.isEmpty(txt)) {
@@ -484,10 +490,7 @@ public class TextProcessor {
       }
     }
 
-    Stemmer st = new Stemmer();
-    st.add(token.toCharArray(), token.length());
-    st.stem();
-    return st.toString();
+    return new PorterStemmer().stem(token);
   }
 
   public static String cleanToken(String token) {
@@ -532,10 +535,9 @@ public class TextProcessor {
 
   public static String stemTerm(String term) {
     term = stripToken(term);
-    Stemmer st = new Stemmer();
-    st.add(term.toCharArray(), term.length());
-    st.stem();
-    return st.toString();
+    PorterStemmer st = new PorterStemmer();
+    
+    return st.stem(term);
   }
 
   public static String generateFingerPrint(String s) {

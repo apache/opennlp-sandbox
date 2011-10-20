@@ -27,23 +27,20 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
+import opennlp.tools.similarity.apps.utils.StringDistanceMeasurer;
+
 import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Component;
-
-import com.zvents.ce.common.util.StringDistanceMeasurer;
-import com.zvents.recommend.event_event.utils.CSVWriter;
 
 public class BingWebQueryRunner {
   private static final Logger LOG = LoggerFactory
       .getLogger(BingWebQueryRunner.class);
 
-  private String constructBingWebUrl(String query, String domainWeb,
-      String lang, int numbOfHits) throws Exception {
+  private String constructBingWebUrl(String query, int numbOfHits) throws Exception {
     String codedQuery = URLEncoder.encode(query, "UTF-8");
 
     String yahooRequest = "http://api.search.live.net/json.aspx?Appid="
@@ -60,10 +57,7 @@ public class BingWebQueryRunner {
     return yahooRequest;
   }
 
-  /*
-     *  
-     */
-
+  
   public BingResponse populateBingHit(String response) throws Exception {
     BingResponse resp = new BingResponse();
     JSONObject rootObject = new JSONObject(response);
@@ -103,7 +97,7 @@ public class BingWebQueryRunner {
 
   public ArrayList<String> search(String query, String domainWeb, String lang,
       int numbOfHits) throws Exception {
-    URL url = new URL(constructBingWebUrl(query, domainWeb, lang, numbOfHits));
+    URL url = new URL(constructBingWebUrl(query, numbOfHits));
     URLConnection connection = url.openConnection();
 
     String line;
@@ -136,24 +130,10 @@ public class BingWebQueryRunner {
 
     hits = removeDuplicates(hits, 0.9);
 
-    writeHitsToCsv(query, hits);
-
     return hits;
   }
 
-  protected void writeHitsToCsv(String query, List<HitBase> hits) {
-    try {
-      CSVWriter writer = new CSVWriter(new FileWriter("bingSearchResults.csv",
-          true));
-      for (HitBase hit : hits) {
-        writer.writeNext(new String[] { query, hit.getTitle(), hit.getUrl() });
-      }
-      writer.close();
-    } catch (IOException e) {
-      LOG.error(e.getMessage(), e);
-    }
-  }
-
+  
   public List<HitBase> runSearch(String query, int num) {
     BingResponse resp = null;
     try {

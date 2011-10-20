@@ -21,14 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-/**
- * Created by IntelliJ IDEA. User: boris Date: Feb 13, 2009 Time: 2:18:47 PM To
- * change this template use File | Settings | File Templates.
- */
-@Component
 public class ParseTreeMatcher {
 
   private static final int NUMBER_OF_ITERATIONS = 2;

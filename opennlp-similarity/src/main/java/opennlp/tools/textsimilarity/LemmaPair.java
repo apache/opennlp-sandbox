@@ -29,7 +29,7 @@ public class LemmaPair {
 
   private int startPos;
 
-  int endPos;
+  private int endPos;
 
   public LemmaPair(String POS, String lemma, int startPos) {
 

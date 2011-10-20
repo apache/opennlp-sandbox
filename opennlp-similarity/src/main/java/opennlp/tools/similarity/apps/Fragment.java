@@ -17,7 +17,7 @@
 
 package opennlp.tools.similarity.apps;
 
-import com.zvents.ce.common.util.StringDistanceMeasurer;
+import opennlp.tools.similarity.apps.utils.StringDistanceMeasurer;
 
 public class Fragment {
 

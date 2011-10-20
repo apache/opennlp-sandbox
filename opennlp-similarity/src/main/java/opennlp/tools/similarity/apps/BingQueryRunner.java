@@ -26,18 +26,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class BingQueryRunner {
-  protected static final String APP_ID = "XXX";
+  protected static final String APP_ID = "DD4E2A5DF8B7E5801ED443E47DC600D5F3E62713";
+  //TODO user needs to have own APP_ID from Bing API
 
   private float snapshotSimilarityThreshold = 0.4f;
 
-  private static final Logger LOG = LoggerFactory
-      .getLogger(BingQueryRunner.class);
+  private static final Logger LOG = Logger.getLogger(BingQueryRunner.class);
 
   public void setSnapshotSimilarityThreshold(float thr) {
     snapshotSimilarityThreshold = thr;
@@ -54,7 +53,6 @@ public class BingQueryRunner {
   private String constructBingUrl(String query, String domainWeb, String lang,
       int numbOfHits) throws Exception {
     String codedQuery = URLEncoder.encode(query, "UTF-8");
-    // http://boss.yahooapis.com/ysearch/news/v1/{query}?appid=xyz[&param1=val1&param2=val2&etc
     String yahooRequest = "http://api.search.live.net/json.aspx?Appid="
         + APP_ID + "&query=" + codedQuery // +
         // "&sources=web"+
@@ -92,7 +90,6 @@ public class BingQueryRunner {
   public BingResponse populateBingHit(String response) throws Exception {
     BingResponse resp = new BingResponse();
     JSONObject rootObject = new JSONObject(response);
-    // each response is object that under the key of "ysearchresponse"
     JSONObject responseObject = rootObject.getJSONObject("SearchResponse");
     JSONObject web = responseObject.getJSONObject("News");
 

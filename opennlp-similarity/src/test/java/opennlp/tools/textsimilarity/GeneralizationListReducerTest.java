@@ -22,26 +22,18 @@ import static junit.framework.Assert.assertNotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+import junit.framework.TestCase;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "/applicationContext-dedupe-test.xml" })
-@ActiveProfiles("UnitTest")
-public class GeneralizationListReducerTest {
-  @Autowired
-  private GeneralizationListReducer generalizationListReducer;
+public class GeneralizationListReducerTest extends TestCase{
+  private GeneralizationListReducer generalizationListReducer = new  GeneralizationListReducer();
 
-  @Test
   public void notNull() {
     assertNotNull(generalizationListReducer);
   }
 
-  @Test
   public void test() {
     ParseTreeChunk ch1 = new ParseTreeChunk("VP", new String[] { "run",
         "around", "tigers", "zoo" }, new String[] { "VB", "IN", "NP", "NP" });
@@ -70,13 +62,14 @@ public class GeneralizationListReducerTest {
     inp.add(ch3);
     inp.add(ch4);
 
-    Boolean b = ch1.isASubChunk(ch2);
-    b = ch2.isASubChunk(ch1);
-    b = ch5.isASubChunk(ch4);
-    b = ch4.isASubChunk(ch5);
+    assertTrue(ch1.isASubChunk(ch2));
+    assertTrue(ch2.isASubChunk(ch1));
+    assertTrue(ch5.isASubChunk(ch4));
+    assertTrue(ch4.isASubChunk(ch5));
 
     List<ParseTreeChunk> res = generalizationListReducer
         .applyFilteringBySubsumption(inp);
+    assertEquals(res.toString(), "[VP [VB-run IN-around NP-tigers NP-zoo ], NP [DT-the NP-tigers ], NP [DT-the NN-* VBG-flying NN-car ]]");
     System.out.println(res);
 
   }

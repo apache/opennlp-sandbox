@@ -35,13 +35,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class SyntMatcher {
+public class ParserChunker2MatcherOlderOpenNLP {
   public static final String resourcesDir = (System.getProperty("os.name")
       .toLowerCase().indexOf("win") > -1 ? "C:/workspace/ZSearch/resources_external"
       : "/var/search/solr-1.2/resources");
-  static private SyntMatcher m_SyntMatcher = null;
+  static private ParserChunker2MatcherOlderOpenNLP m_SyntMatcher = null;
 
-  private static final Logger LOG = LoggerFactory.getLogger(SyntMatcher.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ParserChunker2MatcherOlderOpenNLP.class);
 
   private SentenceDetectorME sentenceDetectorME = null;
 
@@ -68,10 +68,10 @@ public class SyntMatcher {
    * 
    * @return The StopList
    */
-  static public SyntMatcher getInstance() {
+  static public ParserChunker2MatcherOlderOpenNLP getInstance() {
     String dir = resourcesDir + "/models";
     if (m_SyntMatcher == null) {
-      m_SyntMatcher = new SyntMatcher();
+      m_SyntMatcher = new ParserChunker2MatcherOlderOpenNLP();
 
       try {
         m_SyntMatcher.loadOpenNLP(dir);
@@ -82,10 +82,10 @@ public class SyntMatcher {
     return m_SyntMatcher;
   }
 
-  static public SyntMatcher getInstance(String resourceDirSpec) {
+  static public ParserChunker2MatcherOlderOpenNLP getInstance(String resourceDirSpec) {
     String dir = resourceDirSpec + "/models";
     if (m_SyntMatcher == null) {
-      m_SyntMatcher = new SyntMatcher();
+      m_SyntMatcher = new ParserChunker2MatcherOlderOpenNLP();
 
       try {
         m_SyntMatcher.loadOpenNLP(dir);
@@ -97,14 +97,14 @@ public class SyntMatcher {
     return m_SyntMatcher;
   }
 
-  public SyntMatcher() {
+  public ParserChunker2MatcherOlderOpenNLP() {
     /*
      * try { loadOpenNLP(resourcesDir); } catch (IOException e) {
      * LOG.error("Problem loading openNLP! ", e); }
      */
   }
 
-  public SyntMatcher(String resourcesDir) {
+  public ParserChunker2MatcherOlderOpenNLP(String resourcesDir) {
     try {
       loadOpenNLP(resourcesDir);
     } catch (IOException e) {
@@ -112,7 +112,7 @@ public class SyntMatcher {
     }
   }
 
-  public SyntMatcher(String resourcesDir, String language) {
+  public ParserChunker2MatcherOlderOpenNLP(String resourcesDir, String language) {
     try {
       loadOpenNLP(resourcesDir, language);
     } catch (IOException e) {

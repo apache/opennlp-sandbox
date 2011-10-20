@@ -17,9 +17,6 @@
 
 package opennlp.tools.textsimilarity;
 
-import org.springframework.stereotype.Component;
-
-@Component
 public class POSManager {
   public POSManager() {
 
