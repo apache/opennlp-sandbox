@@ -17,15 +17,10 @@
 
 package opennlp.tools.textsimilarity;
 
-import static junit.framework.Assert.assertNotNull;
-
 import java.util.ArrayList;
 import java.util.List;
 
 import junit.framework.TestCase;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
 public class GeneralizationListReducerTest extends TestCase{
   private GeneralizationListReducer generalizationListReducer = new  GeneralizationListReducer();
@@ -63,9 +58,15 @@ public class GeneralizationListReducerTest extends TestCase{
     inp.add(ch4);
 
     assertTrue(ch1.isASubChunk(ch2));
-    assertTrue(ch2.isASubChunk(ch1));
-    assertTrue(ch5.isASubChunk(ch4));
+    assertFalse(ch2.isASubChunk(ch1));
+    assertFalse(ch5.isASubChunk(ch4));
     assertTrue(ch4.isASubChunk(ch5));
+    
+    assertFalse(ch2.isASubChunk(ch3));
+    assertFalse(ch3.isASubChunk(ch2));
+    
+    assertFalse(ch5.isASubChunk(ch3));
+    assertFalse(ch3.isASubChunk(ch5));
 
     List<ParseTreeChunk> res = generalizationListReducer
         .applyFilteringBySubsumption(inp);
