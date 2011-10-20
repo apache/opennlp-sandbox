@@ -23,15 +23,13 @@ import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.logging.Logger;
 
 import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 
 public class PageFetcher {
-  private static final Logger LOG = LoggerFactory.getLogger(PageFetcher.class);
+  private static final Logger LOG = Logger.getLogger("opennlp.tools.similarity.apps.utils.PageFetcher");
 
   private static int DEFAULT_TIMEOUT = 15000;
 
@@ -53,11 +51,11 @@ public class PageFetcher {
       pageContent = tika.parseToString(connection.getInputStream())
           .replace('\n', ' ').replace('\t', ' ');
     } catch (MalformedURLException e) {
-      LOG.error(e.getMessage(), e);
+    	LOG.severe(e.getMessage() + "\n"+ e);
     } catch (IOException e) {
-      LOG.error(e.getMessage(), e);
+    	 LOG.severe(e.getMessage() + "\n"+ e);
     } catch (TikaException e) {
-      LOG.error(e.getMessage(), e);
+    	 LOG.severe(e.getMessage() + "\n"+ e);
     }
     return pageContent;
   }

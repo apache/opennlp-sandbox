@@ -19,16 +19,15 @@ package opennlp.tools.similarity.apps;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import opennlp.tools.similarity.apps.utils.StringDistanceMeasurer;
 
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class HitBase
 {
-	private static final Logger LOG = LoggerFactory.getLogger(HitBase.class);
+	private static final Logger LOG = Logger.getLogger("opennlp.tools.similarity.apps.HitBase");
 
 	private String abstractText;
 
@@ -264,18 +263,14 @@ public class HitBase
 					hitsDedup.add(hits.get(i));
 			if (hitsDedup.size() < hits.size())
 			{
-				LOG.debug("Removed duplicates from relevant search results, including "
+				LOG.info("Removed duplicates from relevant search results, including "
 					+ hits.get(idsToRemove.get(0)).getTitle());
 			}
 		}
 		catch (Exception e)
 		{
-			LOG.error("Problem removing duplicates from relevant images", e);
+			LOG.severe("Problem removing duplicates from relevant images: " + e);
 		}
-
-		
-		
 		return hitsDedup;
-
 	}
 }

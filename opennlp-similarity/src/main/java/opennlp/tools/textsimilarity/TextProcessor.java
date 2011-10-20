@@ -28,20 +28,18 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import opennlp.tools.similarity.apps.utils.Pair;
 
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 public class TextProcessor {
 
-  private static final Logger LOG = LoggerFactory
-      .getLogger(TextProcessor.class);
+  private static final Logger LOG = Logger.getLogger("opennlp.tools.textsimilarity.TextProcessor");
 
   static final String[] abbrevs = { "mr.", "mrs.", "sen.", "rep.", "gov.",
       "miss.", "dr.", "oct.", "nov.", "jan.", "feb.", "mar.", "apr.", "may",
@@ -394,7 +392,7 @@ public class TextProcessor {
         bGramCandidates.put(b, freq);
       }
     } catch (Exception e) {
-      LOG.error("Problem getting stoplist");
+      LOG.severe("Problem getting stoplist");
     }
 
     return bGramCandidates;
@@ -428,7 +426,7 @@ public class TextProcessor {
 
       return text.substring(start, end + 1);
     } catch (RuntimeException e) {
-      LOG.error("RuntimeException ", e);
+      LOG.severe("RuntimeException "+ e);
       e.printStackTrace();
       return "";
     }
@@ -456,7 +454,7 @@ public class TextProcessor {
 
       return text.substring(start, end + 1);
     } catch (RuntimeException e) {
-      LOG.error("RuntimeException ", e);
+      LOG.severe("RuntimeException "+ e);
       return "";
     }
   }
@@ -548,12 +546,12 @@ public class TextProcessor {
       try {
         md = MessageDigest.getInstance("SHA"); // step 2
       } catch (NoSuchAlgorithmException e) {
-        LOG.error("NoSuchAlgorithmException", 2);
+        LOG.severe("NoSuchAlgorithmException " +  2);
       }
       try {
         md.update(s.getBytes("UTF-8")); // step 3
       } catch (UnsupportedEncodingException e) {
-        LOG.error("UnsupportedEncodingException", e);
+        LOG.severe("UnsupportedEncodingException "+ e);
       }
       byte raw[] = md.digest();
       hash = null; // (new BASE64Encoder()).encode(raw);
@@ -613,13 +611,13 @@ public class TextProcessor {
       try {
         md = MessageDigest.getInstance("SHA"); // step 2
       } catch (NoSuchAlgorithmException e) {
-        LOG.error("NoSuchAlgorithmException", e);
+        LOG.severe("NoSuchAlgorithmException " + e);
         throw new Exception(e.getMessage());
       }
       try {
         md.update(hashString.getBytes("UTF-8")); // step 3
       } catch (UnsupportedEncodingException e) {
-        LOG.error("UnsupportedEncodingException", e);
+        LOG.severe("UnsupportedEncodingException "+ e);
         throw new Exception(e.getMessage());
       }
       byte raw[] = md.digest();
@@ -747,8 +745,8 @@ public class TextProcessor {
       }
 
     } catch (Exception e) {
-      LOG.error("Problem forming summary for: " + txt);
-      LOG.error("Using full text for the summary", e);
+      LOG.severe("Problem forming summary for: " + txt);
+      LOG.severe("Using full text for the summary" + e);
       finalSummary = txt;
     }
 

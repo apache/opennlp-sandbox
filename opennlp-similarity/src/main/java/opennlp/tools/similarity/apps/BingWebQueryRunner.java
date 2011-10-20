@@ -26,6 +26,7 @@ import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import opennlp.tools.similarity.apps.utils.StringDistanceMeasurer;
 
@@ -33,12 +34,8 @@ import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class BingWebQueryRunner {
-  private static final Logger LOG = LoggerFactory
-      .getLogger(BingWebQueryRunner.class);
+  private static final Logger LOG = Logger.getLogger("opennlp.tools.similarity.apps.BingWebQueryRunner");
 
   private String constructBingWebUrl(String query, int numbOfHits) throws Exception {
     String codedQuery = URLEncoder.encode(query, "UTF-8");
@@ -73,14 +70,12 @@ public class BingWebQueryRunner {
       resp.setTotalHits(new Integer(count));
     } catch (Exception e) {
       e.printStackTrace();
-      LOG.error("\nNo search results", e);
-      LOG.error(response);
-      LOG.error("---------------------");
-
+      LOG.severe("\nNo search results " +  e);
+      
     }
     if (resultSet != null) {
       for (int i = 0; i < resultSet.length(); i++) {
-        BingHit hit = new BingHit();
+        HitBase hit = new HitBase();
         JSONObject singleResult = resultSet.getJSONObject(i);
         hit.setAbstractText(singleResult.getString("Description"));
         hit.setDate(singleResult.getString("DateTime"));
@@ -120,7 +115,7 @@ public class BingWebQueryRunner {
 
     } catch (Exception e) {
       // e.printStackTrace();
-      LOG.debug("No news search results for query " + query);
+      LOG.info("No news search results for query " + query);
       return null;
     }
     // cast to super class
@@ -142,7 +137,7 @@ public class BingWebQueryRunner {
 
     } catch (Exception e) {
       // e.printStackTrace();
-      LOG.debug("No news search results for query " + query);
+      LOG.info("No news search results for query " + query);
       return null;
     }
     // cast to super class
@@ -176,11 +171,11 @@ public class BingWebQueryRunner {
         if (!idsToRemove.contains(i))
           hitsDedup.add(hits.get(i));
       if (hitsDedup.size() < hits.size()) {
-        LOG.debug("Removed duplicates from relevant search results, including "
+        LOG.info("Removed duplicates from relevant search results, including "
             + hits.get(idsToRemove.get(0)).getTitle());
       }
     } catch (Exception e) {
-      LOG.error("Problem removing duplicates from relevant images");
+      LOG.severe("Problem removing duplicates from relevant images");
     }
 
     return hitsDedup;
@@ -195,7 +190,7 @@ public class BingWebQueryRunner {
 
     } catch (Exception e) {
       // e.printStackTrace();
-      LOG.debug("No news search results for query = 'site:" + site);
+      LOG.info("No news search results for query = 'site:" + site);
       return 0;
     }
 
