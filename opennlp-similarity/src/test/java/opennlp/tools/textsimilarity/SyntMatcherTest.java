@@ -22,12 +22,14 @@ import static org.junit.Assert.assertNotNull;
 
 import java.util.List;
 
+import junit.framework.TestCase;
+
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-public class SyntMatcherTest {
+public class SyntMatcherTest extends TestCase {
 
   private ParserChunker2MatcherProcessor parserChunker2MatcherOlderOpenNLP;
 
@@ -38,7 +40,7 @@ public class SyntMatcherTest {
     assertNotNull(parserChunker2MatcherOlderOpenNLP);
   }
 
-  public void matchTest() {
+  public void testMatch() {
     parserChunker2MatcherOlderOpenNLP = ParserChunker2MatcherProcessor.getInstance();
     List<List<ParseTreeChunk>> matchResult = parserChunker2MatcherOlderOpenNLP
         .assessRelevance(
@@ -51,13 +53,11 @@ public class SyntMatcherTest {
            .getMatchResult();
 
     System.out.println(matchResult);
-    assertEquals(
-        matchResult.toString(),
-        "[[ [NNP-pulitzer JJ-prize-winning NN-reporter ],  [NNP-* ],  [JJ-* NN-immigrant ]], [ [JJ-* NN-immigrant ]]]");
+    assertEquals( "[[ [NNP-pulitzer NNP-prize NNP-winning NNP-reporter ],  [NNP-immigrant ]], []]",
+        matchResult.toString());
     System.out.println(parseTreeChunk.listToString(matchResult));
-    assertEquals(
-        parseTreeChunk.listToString(matchResult),
-        " np [ [NNP-pulitzer JJ-prize-winning NN-reporter ],  [NNP-* ],  [JJ-* NN-immigrant ]] vp [ [JJ-* NN-immigrant ]]");
+    assertEquals(" np [ [NNP-pulitzer NNP-prize NNP-winning NNP-reporter ],  [NNP-immigrant ]]",
+        parseTreeChunk.listToString(matchResult));
 
     matchResult = parserChunker2MatcherOlderOpenNLP
         .assessRelevance(
@@ -66,43 +66,40 @@ public class SyntMatcherTest {
             "movie, the  flying  car  might soon become a reality. ").getMatchResult();
 
     System.out.println(matchResult);
-    assertEquals(matchResult.toString(),
-        "[[ [DT-the NN-* VBG-flying NN-car ]], []]");
+    // was  "[[ [DT-the NN-* VBG-flying NN-car ]], []]"
+    assertEquals("[[ [PRP-it ],  [DT-the NN-* ],  [NN-flying NN-car ]], [ [DT-the NN-* ],  [NN-* ]]]",
+    		matchResult.toString()
+       );
     System.out.println(parseTreeChunk.listToString(matchResult));
-    assertEquals(parseTreeChunk.listToString(matchResult),
-        " np [ [DT-the NN-* VBG-flying NN-car ]]");
+    assertEquals( " np [ [PRP-it ],  [DT-the NN-* ],  [NN-flying NN-car ]] vp [ [DT-the NN-* ],  [NN-* ]]",
+    		parseTreeChunk.listToString(matchResult));
 
   }
 
-  @Test
-  public void matchTestDigitalCamera() {
+
+  public void testMatchDigitalCamera() {
     parserChunker2MatcherOlderOpenNLP = ParserChunker2MatcherProcessor.getInstance();
     List<List<ParseTreeChunk>> matchResult = parserChunker2MatcherOlderOpenNLP.assessRelevance(       
             "I am curious how to use the digital zoom of this camera for filming insects",
             "How can I get short focus zoom lens for digital camera").getMatchResult();
 
     System.out.println(matchResult);
-    assertEquals(
-        matchResult.toString(),
-        "[[ [NN-zoom ],  [JJ-digital NN-* ],  [NN-camera ]], [ [JJ-digital NN-* ],  [NN-zoom NN-camera ],  [NN-* IN-for ]]]");
+    assertEquals("[[ [PRP-i ],  [JJ-digital NN-* ],  [NN-* IN-for ],  [NN-camera ]], [ [JJ-digital NN-* ],  [NN-* IN-for ]]]",
+        matchResult.toString());
     System.out.println(parseTreeChunk.listToString(matchResult));
-    assertEquals(
-        parseTreeChunk.listToString(matchResult),
-        " np [ [NN-zoom ],  [JJ-digital NN-* ],  [NN-camera ]] vp [ [JJ-digital NN-* ],  [NN-zoom NN-camera ],  [NN-* IN-for ]]");
+    assertEquals(" np [ [PRP-i ],  [JJ-digital NN-* ],  [NN-* IN-for ],  [NN-camera ]] vp [ [JJ-digital NN-* ],  [NN-* IN-for ]]",
+        parseTreeChunk.listToString(matchResult));
 
     matchResult = parserChunker2MatcherOlderOpenNLP.assessRelevance(
         "Can I get auto focus lens for digital camera",
         "How can I get short focus zoom lens for digital camera").getMatchResult();
 
     System.out.println(matchResult);
-    assertEquals(
-        matchResult.toString(),
-        "[[ [NN-focus NN-* ],  [JJ-digital NN-camera ]], [ [VB-get NN-focus NN-* NN-lens IN-for JJ-digital NN-camera ]]]");
+    assertEquals( "[[ [PRP-i ],  [NN-focus ],  [NN-lens IN-for JJ-digital NN-camera ],  [JJ-digital NN-camera ]], [ [VB-get NN-focus ],  [NN-lens IN-for JJ-digital NN-camera ]]]",
+        matchResult.toString());
     System.out.println(parseTreeChunk.listToString(matchResult));
-    assertEquals(
-        parseTreeChunk.listToString(matchResult),
-        " np [ [NN-focus NN-* ],  [JJ-digital NN-camera ]] vp [ [VB-get NN-focus NN-* NN-lens IN-for JJ-digital NN-camera ]]");
-
+    assertEquals(" np [ [PRP-i ],  [NN-focus ],  [NN-lens IN-for JJ-digital NN-camera ],  [JJ-digital NN-camera ]] vp [ [VB-get NN-focus ],  [NN-lens IN-for JJ-digital NN-camera ]]",
+        parseTreeChunk.listToString(matchResult) );
   }
 
 }

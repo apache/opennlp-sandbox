@@ -21,10 +21,12 @@ import static org.junit.Assert.*;
 
 import java.util.List;
 
+import junit.framework.TestCase;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-public class ParseTreeChunkTest {
+public class ParseTreeChunkTest extends TestCase{
   private ParseTreeMatcherDeterministic parseTreeMatcher = new ParseTreeMatcherDeterministic();
   private ParseTreeChunk parseTreeChunk = new ParseTreeChunk();
   private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
