@@ -24,9 +24,9 @@ import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -36,7 +36,7 @@ public class BingQueryRunner {
 
   private float snapshotSimilarityThreshold = 0.4f;
 
-  private static final Logger LOG = Logger.getLogger(BingQueryRunner.class);
+  private static final Logger LOG = Logger.getLogger("opennlp.tools.similarity.apps.BingQueryRunner");
 
   public void setSnapshotSimilarityThreshold(float thr) {
     snapshotSimilarityThreshold = thr;
@@ -99,7 +99,7 @@ public class BingQueryRunner {
       resultSet = web.getJSONArray("Results");
     } catch (Exception e) {
       System.err.print("\n!!!!!!!");
-      LOG.error("\nNo search results");
+      LOG.severe("\nNo search results");
 
     }
     if (resultSet != null) {
@@ -128,7 +128,7 @@ public class BingQueryRunner {
 
     } catch (Exception e) {
       // e.printStackTrace();
-      LOG.debug("No news search results for query " + query);
+      LOG.severe("No news search results for query " + query);
       return null;
     }
     // cast to super class
