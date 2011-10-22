@@ -96,7 +96,7 @@ public class ParserChunker2MatcherProcessor {
 		initializePosTagger();
 		initializeParser();
 		initializeChunker();
-		
+
 	}
 
 	public synchronized static ParserChunker2MatcherProcessor getInstance() {
@@ -214,17 +214,22 @@ public class ParserChunker2MatcherProcessor {
 		sentence = TextProcessor.removePunctuation(sentence);
 
 		String[] toks = tokenizer.tokenize(sentence);
-		String[] tags = posTagger.tag(toks);
+		String[] tags = new String[toks.length]; //posTagger.tag(toks);
+		int t=0;
+		SentenceNode node  = parseSentenceNode(sentence);
+		List<String> POSlist = node.getOrderedPOSList();
+		tags = POSlist.toArray(new String[0]);
+
 		String[] res = chunker.chunk(toks, tags);
 		Span[] span =  chunker.chunkAsSpans(toks, tags);
 		Sequence[] seq = chunker.topKSequences(toks, tags);
 
-		// correction for chunking tags
+		/* correction for chunking tags
 		for(int i=0; i< toks.length; i++){
 			if (toks[i].equalsIgnoreCase("is")){
 				res[i] = "B-VP";
 			}
-		}
+		} */
 
 		List<List<ParseTreeChunk>> listOfChunks = new ArrayList<List<ParseTreeChunk>>();
 		List<ParseTreeChunk> nounPhr = new ArrayList<ParseTreeChunk>(), 
@@ -636,6 +641,16 @@ public class ParserChunker2MatcherProcessor {
 		return results;
 	}
 
+	public void printParseTree(String phrase1){
+		ParserChunker2MatcherProcessor p = ParserChunker2MatcherProcessor.getInstance();
+		List<List<SentenceNode>> nodeListList = p.parseTextNode(phrase1);
+		for (List<SentenceNode> nodeList : nodeListList) {
+			for (SentenceNode node : nodeList) {
+				System.out.println(node);
+			}
+		}
+	}
+
 	public static void main(String[] args) throws Exception {
 
 
@@ -658,6 +673,12 @@ public class ParserChunker2MatcherProcessor {
 		 */
 		// String sentence = "I love Fresh body styling";
 		// String phrase = "I captures way more detail in high contrast scenes";
+		ParserChunker2MatcherProcessor parser = ParserChunker2MatcherProcessor.getInstance();
+		parser.printParseTree("How can I get short focus zoom lens for digital camera");
+		parser.formGroupedPhrasesFromChunksForSentence("How can I get short focus zoom lens for digital camera");
+
+		System.exit(0);
+
 		String phrase1 = "Its classy design and the Mercedes name make it a very cool vehicle to drive. "
 			+ "The engine makes it a powerful car. "
 			+ "The strong engine gives it enough power. "
@@ -666,7 +687,7 @@ public class ParserChunker2MatcherProcessor {
 			+ "This car has an amazingly good engine. "
 			+ "This car provides you a very good mileage.";
 		String sentence = "Not to worry with the 2cv.";
-		ParserChunker2MatcherProcessor parser = ParserChunker2MatcherProcessor.getInstance();
+
 
 		System.out.println(parser.assessRelevance(phrase1, phrase2));
 
@@ -675,11 +696,6 @@ public class ParserChunker2MatcherProcessor {
 		parser.formGroupedPhrasesFromChunksForSentence("Sounds too good to be true but it actually is, the world's first flying car is finally here. ");
 		parser.formGroupedPhrasesFromChunksForSentence("UN Ambassador Ron Prosor repeated the Israeli position that the only way the Palestinians will get UN membership and statehood is through direct negotiations with the Israelis on a comprehensive peace agreement");
 
-		List<List<SentenceNode>> nodeListList = parser.parseTextNode(phrase1);
-		for (List<SentenceNode> nodeList : nodeListList) {
-			for (SentenceNode node : nodeList) {
-				System.out.println(node);
-			}
-		}
+
 	}
 }

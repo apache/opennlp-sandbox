@@ -116,4 +116,16 @@ public class PhraseNode extends SyntacticTreeNode {
 
 		return builder.toString();
 	}
+	
+	@Override
+	public List<String> getOrderedPOSList(){
+		List<String> types = new ArrayList<String>(); 
+		if (children != null && children.size() > 0) {
+			for (SyntacticTreeNode child : children) {
+				types.addAll(child.getOrderedPOSList());
+			}
+		} else
+			types.add(getType());
+		return types;
+	}
 }

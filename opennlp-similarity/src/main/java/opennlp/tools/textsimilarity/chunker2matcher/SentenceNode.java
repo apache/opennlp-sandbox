@@ -17,6 +17,7 @@
 
 package opennlp.tools.textsimilarity.chunker2matcher;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -55,5 +56,16 @@ public class SentenceNode extends PhraseNode {
 		builder.append(super.toStringIndented(numTabs));
 
 		return builder.toString();
+	}
+	
+	@Override
+	public List<String> getOrderedPOSList(){
+		List<String> types = new ArrayList<String>(); 
+		if (this.getChildren()!= null && this.getChildren().size() > 0) {
+			for (SyntacticTreeNode child : this.getChildren()) {
+				types.addAll(child.getOrderedPOSList());
+			}
+		}
+		return types;
 	}
 }

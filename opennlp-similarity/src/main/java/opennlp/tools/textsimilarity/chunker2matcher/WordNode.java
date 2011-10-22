@@ -17,6 +17,7 @@
 
 package opennlp.tools.textsimilarity.chunker2matcher;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class WordNode extends SyntacticTreeNode {
@@ -73,5 +74,12 @@ public class WordNode extends SyntacticTreeNode {
 	}
 
 	public static void main(String[] args) {
+	}
+
+	@Override
+	public List<String> getOrderedPOSList() {
+		List<String> types = new ArrayList<String>();
+		types.add(getType());
+		return types;
 	}
 }
