@@ -17,7 +17,6 @@
 
 package org.apache.opennlp.caseditor.tokenize;
 
-import org.apache.opennlp.caseditor.OpenNLPPlugin;
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
 import org.eclipse.jface.preference.ComboFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
@@ -29,7 +28,6 @@ public class TokenizerPreferencePage extends FieldEditorPreferencePage
     implements IWorkbenchPreferencePage {
 
   public TokenizerPreferencePage() {
-    setPreferenceStore(OpenNLPPlugin.getDefault().getPreferenceStore());
     setDescription("Tokenizer Preferences.");
   }
   
@@ -50,7 +48,7 @@ public class TokenizerPreferencePage extends FieldEditorPreferencePage
         new String[]{"Simple", OpenNLPPreferenceConstants.TOKENIZER_ALGO_SIMPLE}
     };
     
-    ComboFieldEditor algorithmCombo = new ComboFieldEditor("TOKENIZER_ALGORITHM", 
+    ComboFieldEditor algorithmCombo = new ComboFieldEditor(OpenNLPPreferenceConstants.TOKENIZER_ALGORITHM, 
         "Algorithm", namesAndValues, getFieldEditorParent());
     addField(algorithmCombo);
 

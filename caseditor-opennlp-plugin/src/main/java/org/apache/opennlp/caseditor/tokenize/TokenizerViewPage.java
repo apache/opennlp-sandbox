@@ -17,8 +17,18 @@
 
 package org.apache.opennlp.caseditor.tokenize;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
+import opennlp.tools.util.Span;
+
+import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
+import org.apache.uima.cas.CAS;
+import org.apache.uima.cas.Type;
+import org.apache.uima.cas.text.AnnotationFS;
 import org.apache.uima.caseditor.editor.ICasEditor;
 import org.eclipse.jface.action.IToolBarManager;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -31,7 +41,7 @@ public class TokenizerViewPage extends Page {
   
   private ICasEditor editor;
 
-  private Label testLabel;
+  private Label workInProgress;
   
   TokenizerViewPage(ICasEditor editor) {
     this.editor = editor;
@@ -39,8 +49,8 @@ public class TokenizerViewPage extends Page {
 
   @Override
   public void createControl(Composite parent) {
-    testLabel = new Label(parent, SWT.NONE);
-    testLabel.setText("This is a test :)");
+    workInProgress = new Label(parent, SWT.NONE);
+    workInProgress.setText("Click on the detect button.");
   }
 
   // Add action to trigger detection, just add all tokens to CAS
@@ -54,20 +64,51 @@ public class TokenizerViewPage extends Page {
     BaseSelectionListenerAction detectAction = new BaseSelectionListenerAction("Detect") {
       @Override
       public void run() {
-        super.run();
         
-        System.out.println("Test");
+        IPreferenceStore prefStore = 
+            editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
+        
+        TokenizerJob tokenizerJob = new TokenizerJob();
+        
+        tokenizerJob.setModelPath(prefStore.getString(OpenNLPPreferenceConstants.TOKENIZER_MODEL_PATH));
+        tokenizerJob.setTokenizerAlgorithm(prefStore.getString(OpenNLPPreferenceConstants.TOKENIZER_ALGORITHM));
+        
+        tokenizerJob.setText(editor.getDocument().getCAS().getDocumentText());
+        
+        tokenizerJob.schedule();
+        
+        try {
+          tokenizerJob.join();
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+        
+        Span tokens[] = tokenizerJob.getTokens();
+        
+        CAS cas = editor.getDocument().getCAS();
+        
+        Type tokenType = cas.getTypeSystem().getType(prefStore.getString(OpenNLPPreferenceConstants.TOKEN_TYPE));
+        
+        Collection<AnnotationFS> tokenAnnotations = new ArrayList<AnnotationFS>(tokens.length);
+        
+        for (Span token : tokens) {
+          tokenAnnotations.add(cas.createAnnotation(tokenType, token.getStart(), token.getEnd()));
+        }
+        
+        editor.getDocument().addFeatureStructures(tokenAnnotations);
       }
     };
+    
+    toolBarManager.add(detectAction);
   }
   
   @Override
   public Control getControl() {
-    return testLabel;
+    return workInProgress;
   }
 
   @Override
   public void setFocus() {
-    testLabel.setFocus();
+    workInProgress.setFocus();
   }
 }

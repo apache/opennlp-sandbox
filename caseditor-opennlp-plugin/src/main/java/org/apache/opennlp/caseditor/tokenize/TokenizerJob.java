@@ -95,6 +95,9 @@ public class TokenizerJob extends Job {
         }
       }
     }
+    else {
+      // TODO: Report an error!
+    }
     
     tokens = tokenizer.tokenizePos(text);
     

@@ -35,6 +35,7 @@ public class OpenNLPPreferenceConstants {
 
   // Tokenizer
   public static final String TOKENIZER_MODEL_PATH = OpenNLPPlugin.ID + ".TOKENIZER_MODEL_PATH";
+  public static final String TOKENIZER_ALGORITHM = OpenNLPPlugin.ID + ".TOKENIZER_ALGORITHM";
   public static final String TOKENIZER_ALGO_STATISTICAL = OpenNLPPlugin.ID + ".TOKENIZER_ALGO_STATISTICAL";
   public static final String TOKENIZER_ALGO_WHITESPACE = OpenNLPPlugin.ID + ".TOKENIZER_ALGO_WHITESPACE";
   public static final String TOKENIZER_ALGO_SIMPLE = OpenNLPPlugin.ID + ".TOKENIZER_ALGO_SIMPLE";
