@@ -19,4 +19,5 @@ package org.apache.opennlp.corpus_server.caseditor;
 
 public class CorpusServerPreferenceConstants {
   static final String LAST_USED_SERVER_ADDRESS = CorpusServerPlugin.PLUGIN_ID + ".LAST_USED_SERVER_ADDRESS";
+  public static final String LAST_USED_SEARCH_QUERIES = CorpusServerPlugin.PLUGIN_ID + ".SEARCH_QUERIES";
 }

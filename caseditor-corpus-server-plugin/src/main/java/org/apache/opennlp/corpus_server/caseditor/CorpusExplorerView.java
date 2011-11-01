@@ -37,6 +37,7 @@ import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
@@ -51,9 +52,11 @@ import com.sun.jersey.api.client.WebResource;
 
 public class CorpusExplorerView extends ViewPart {
 
+  private static final String LUCENE_QUERY_DELIMITER = ":::";
+  
   private Composite explorerComposite;
   private Text serverUrl;
-  private Text queryText;
+  private Combo queryText;
   
   private TableViewer searchResultViewer;
   
@@ -91,20 +94,33 @@ public class CorpusExplorerView extends ViewPart {
       }
     });
     
-    // Search field to view content of corpus, default initialized to hit
-    // everything
-    // create label
+    // Search field to view content of corpus
     Label queryLabel = new Label(explorerComposite, SWT.NONE);
     queryLabel.setText("Query");
-
-    queryText = new Text(explorerComposite, SWT.BORDER);
+    
+    queryText = new Combo(explorerComposite, SWT.BORDER);
+    
     GridDataFactory.swtDefaults().align(SWT.FILL, SWT.CENTER).grab(true, false)
         .applyTo(queryText);
 
-    queryText.setText("*:*");
     
-    // For testing:
-    // Add a button for retrieval of cas ids ...
+    String lastUsedSearchQueriesString = 
+        store.getString(CorpusServerPreferenceConstants.LAST_USED_SEARCH_QUERIES);
+    
+    // TODO: Set default via preference initializer
+    if (lastUsedSearchQueriesString.isEmpty()) {
+      lastUsedSearchQueriesString = "*:*";
+    }
+    
+    String lastUsedQueries[] = lastUsedSearchQueriesString.split(LUCENE_QUERY_DELIMITER);
+    
+    if (lastUsedQueries.length > 0)
+      queryText.setText(lastUsedQueries[0]);
+    
+    for (int i = 0; i < lastUsedQueries.length; i++) {
+      queryText.add(lastUsedQueries[i]);
+    }
+    
     Button queryServer = new Button(explorerComposite, SWT.BORDER);
     queryServer.setText("Query");
     GridDataFactory.swtDefaults().span(2, 1).align(SWT.FILL, SWT.CENTER)
@@ -114,6 +130,30 @@ public class CorpusExplorerView extends ViewPart {
 
       @Override
       public void widgetSelected(SelectionEvent event) {
+        
+        int queryIndex = queryText.indexOf(queryText.getText());
+        
+        if (queryIndex != -1) {
+          queryText.remove(queryIndex);
+        }
+        
+        queryText.add(queryText.getText(), 0);
+        
+        if (queryText.getItemCount() > 10) {
+          queryText.remove(queryText.getItemCount() - 1);
+        }
+        
+        // TODO: Serialize history to lastUsedQueries settings ...
+        StringBuilder lastUsedQueriesString = new StringBuilder();
+        
+        for (int i = 0; i < queryText.getItemCount(); i++) {
+          lastUsedQueriesString.append(queryText.getItem(i));
+          lastUsedQueriesString.append(LUCENE_QUERY_DELIMITER);
+        }
+        
+        store.setValue(CorpusServerPreferenceConstants.LAST_USED_SEARCH_QUERIES,
+            lastUsedQueriesString.toString());
+        
         // get server url
         String serverPath = serverUrl.getText();
         
