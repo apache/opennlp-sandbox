@@ -19,6 +19,7 @@ package org.apache.opennlp.caseditor;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
@@ -34,15 +35,23 @@ public class ModelUtil {
   
   public static InputStream openModelIn(String modelPath) throws IOException {
     InputStream modelIn = null;
-    IResource modelResource = ResourcesPlugin.getWorkspace().
-        getRoot().findMember(modelPath);
     
-    if (modelResource instanceof IFile) {
-      IFile modelFile = (IFile) modelResource;
-      try {
-        modelIn = modelFile.getContents();
-      } catch (CoreException e) {
-        throw new IOException(e.getMessage());
+    if (modelPath.startsWith("http://")) {
+      URL modelURL = new URL(modelPath);
+      
+      modelIn = modelURL.openStream();
+    }
+    else {
+      IResource modelResource = ResourcesPlugin.getWorkspace().
+          getRoot().findMember(modelPath);
+      
+      if (modelResource instanceof IFile) {
+        IFile modelFile = (IFile) modelResource;
+        try {
+          modelIn = modelFile.getContents();
+        } catch (CoreException e) {
+          throw new IOException(e.getMessage());
+        }
       }
     }
     
