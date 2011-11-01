@@ -23,7 +23,9 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.ILabelProviderListener;
+import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ITableLabelProvider;
+import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
@@ -138,57 +140,6 @@ public class CorpusExplorerView extends ViewPart {
 
       }
     });
-
-    
-    // TODO: Transform this button into an action for the context menu ...
-    
-    Button openDocument = new Button(explorerComposite, SWT.BORDER);
-    openDocument.setText("Open");
-    GridDataFactory.swtDefaults().span(2, 1).align(SWT.FILL, SWT.CENTER)
-        .grab(true, false).applyTo(queryServer);
-    
-    openDocument.addSelectionListener(new SelectionListener(){
-
-      @Override
-      public void widgetSelected(SelectionEvent event) {
-    	  
-    	  // open an editor
-    	  // need an editor input for that
-    	  // document provider can be choosen based on editor input? or how?
-    	  
-    	  IWorkbenchPage page = CorpusExplorerView.this.getSite().getPage();
-    	  
-    	  StructuredSelection selection = (StructuredSelection) searchResultViewer.getSelection();
-    	  
-    	  if (selection.isEmpty())
-    	    return;
-    	  
-    	  String selectedCAS = (String) selection.getFirstElement();
-    	  
-    	  // Hard code it for now, lets work on retrieval code first ...
-    	  IEditorInput input = new CorpusServerCasEditorInput(serverUrl.getText(), selectedCAS);
-    	  
-    	  try {
-    	    page.openEditor(input, "org.apache.uima.caseditor.editor");
-          } catch (PartInitException e) {
-            e.printStackTrace();
-          }
-    	  
-    	  // Need to register our content provider, should be possible to have multiple,
-    	  // selection could be done based on editor input class ...
-    	  
-    	  // the editor has multiple content providers, and can choose one based
-    	  // on the editor input ...
-    	  // how to add all cas editors to an open with menu?
-    	  
-    	  // Document Provider ?!
-    	  // url based input
-    	  
-      }
-      
-      @Override
-      public void widgetDefaultSelected(SelectionEvent event) {
-      }});
     
     // List with casIds in the corpus ... (might be later replaced with a title)
     // The table should later be virtual, and be able to scroll through very huge
@@ -234,6 +185,45 @@ public class CorpusExplorerView extends ViewPart {
       public String getColumnText(Object arg0, int arg1) {
         return arg0.toString();
       }});
+    
+    searchResultViewer.addOpenListener(new IOpenListener() {
+      
+      @Override
+      public void open(OpenEvent event) {
+        
+        // open an editor
+        // need an editor input for that
+        // document provider can be choosen based on editor input? or how?
+        
+        IWorkbenchPage page = CorpusExplorerView.this.getSite().getPage();
+        
+        StructuredSelection selection = (StructuredSelection) searchResultViewer.getSelection();
+        
+        if (selection.isEmpty())
+          return;
+        
+        String selectedCAS = (String) selection.getFirstElement();
+        
+        // Hard code it for now, lets work on retrieval code first ...
+        IEditorInput input = new CorpusServerCasEditorInput(serverUrl.getText(), selectedCAS);
+        
+        try {
+          page.openEditor(input, "org.apache.uima.caseditor.editor");
+        } catch (PartInitException e) {
+          e.printStackTrace();
+        }
+        
+        // Need to register our content provider, should be possible to have multiple,
+        // selection could be done based on editor input class ...
+        
+        // the editor has multiple content providers, and can choose one based
+        // on the editor input ...
+        // how to add all cas editors to an open with menu?
+        
+        // Document Provider ?!
+        // url based input
+      }
+    });
     
     // Need an action which can take a CAS id, as editor input ...
     // Write document provider, which can download as CAS, open it, and upload
