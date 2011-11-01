@@ -144,8 +144,6 @@ public class EntityContentProvider implements IStructuredContentProvider {
           entity.setLinkedAnnotation(annotation);
           entity.setConfidence(null);
           
-          int selectionIndex = EntityContentProvider.this.entityListViewer.
-              getTable().getSelectionIndex();
           entityListViewer.remove(entity);
           candidateEntities.remove(entity);
           
@@ -161,16 +159,21 @@ public class EntityContentProvider implements IStructuredContentProvider {
             }
           }
           
-          if (selectionIndex < entityListViewer.
-              getTable().getItemCount()) {
-                  entityListViewer.setSelection(
-                      new StructuredSelection(entityListViewer.getElementAt(selectionIndex)));
-          }
-          else {
-            if (entityListViewer.getTable().getItemCount() > 0) {
-              entityListViewer.setSelection(new StructuredSelection(
-                      entityListViewer.getElementAt(
-                      entityListViewer.getTable().getItemCount() - 1)));
+          int selectionIndex = EntityContentProvider.this.entityListViewer.
+              getTable().getSelectionIndex();
+          
+          if (selectionIndex != -1) {
+            if (selectionIndex < entityListViewer.
+                getTable().getItemCount()) {
+                    entityListViewer.setSelection(
+                        new StructuredSelection(entityListViewer.getElementAt(selectionIndex)));
+            }
+            else {
+              if (entityListViewer.getTable().getItemCount() > 0) {
+                entityListViewer.setSelection(new StructuredSelection(
+                        entityListViewer.getElementAt(
+                        entityListViewer.getTable().getItemCount() - 1)));
+              }
             }
           }
           
@@ -595,7 +598,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
   }
   
   // Could pass null, means any type
-  static Entity searchEntity(List<Entity> entities, int begin, int end, String type) {
+  public static Entity searchEntity(List<Entity> entities, int begin, int end, String type) {
     
     Span testSpan = new Span(begin, end);
     
