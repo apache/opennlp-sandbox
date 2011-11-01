@@ -268,7 +268,7 @@ public class DefaultCasDocumentProvider extends
     
     if (tsStore == null) {
       
-      IPreferenceStore store = Activator.getDefault().getPreferenceStore();
+      IPreferenceStore store = CorpusServerPlugin.getDefault().getPreferenceStore();
       
       String tsStoreString = store.getString(getTypeSystemId((CorpusServerCasEditorInput) element));
       
@@ -305,7 +305,7 @@ public class DefaultCasDocumentProvider extends
         e.printStackTrace();
       }
       
-      IPreferenceStore store = Activator.getDefault().getPreferenceStore();
+      IPreferenceStore store = CorpusServerPlugin.getDefault().getPreferenceStore();
       store.putValue(getTypeSystemId((CorpusServerCasEditorInput) element), 
           new String(tsStoreBytes.toByteArray(), Charset.forName("UTF-8")));
     }

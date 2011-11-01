@@ -22,6 +22,7 @@ import javax.ws.rs.core.MediaType;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.eclipse.jface.layout.GridDataFactory;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ITableLabelProvider;
@@ -29,6 +30,8 @@ import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Image;
@@ -70,7 +73,23 @@ public class CorpusExplorerView extends ViewPart {
     GridDataFactory.swtDefaults().align(SWT.FILL, SWT.CENTER).grab(true, false)
         .applyTo(serverUrl);
 
-    serverUrl.setText("http://localhost:8080/corpus-server/rest/corpora/wikinews");
+    final IPreferenceStore store = CorpusServerPlugin.getDefault().getPreferenceStore();
+    
+    String lastUsedServer = store.getString(CorpusServerPreferenceConstants.LAST_USED_SERVER_ADDRESS);
+    
+    if (lastUsedServer.isEmpty()) {
+      lastUsedServer = "http://localhost:8080/corpus-server/rest/corpora/wikinews";
+    }
+    
+    serverUrl.setText(lastUsedServer);
+    
+    serverUrl.addModifyListener(new ModifyListener() {
+      
+      @Override
+      public void modifyText(ModifyEvent event) {
+        store.setValue(CorpusServerPreferenceConstants.LAST_USED_SERVER_ADDRESS, serverUrl.getText());
+      }
+    });
     
     // Search field to view content of corpus, default initialized to hit
     // everything
@@ -153,31 +172,23 @@ public class CorpusExplorerView extends ViewPart {
 
       @Override
       public void addListener(ILabelProviderListener arg0) {
-        // TODO Auto-generated method stub
-        
       }
 
       @Override
       public void dispose() {
-        // TODO Auto-generated method stub
-        
       }
 
       @Override
       public boolean isLabelProperty(Object arg0, String arg1) {
-        // TODO Auto-generated method stub
         return false;
       }
 
       @Override
       public void removeListener(ILabelProviderListener arg0) {
-        // TODO Auto-generated method stub
-        
       }
 
       @Override
       public Image getColumnImage(Object arg0, int arg1) {
-        // TODO Auto-generated method stub
         return null;
       }
 
@@ -190,10 +201,6 @@ public class CorpusExplorerView extends ViewPart {
       
       @Override
       public void open(OpenEvent event) {
-        
-        // open an editor
-        // need an editor input for that
-        // document provider can be choosen based on editor input? or how?
         
         IWorkbenchPage page = CorpusExplorerView.this.getSite().getPage();
         

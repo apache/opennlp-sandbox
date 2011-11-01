@@ -23,15 +23,15 @@ import org.osgi.framework.BundleContext;
 /**
  * The activator class controls the plug-in life cycle
  */
-public class Activator extends AbstractUIPlugin {
+public class CorpusServerPlugin extends AbstractUIPlugin {
 
   // The plug-in ID
   public static final String PLUGIN_ID = "CorpusServerPlugin"; //$NON-NLS-1$
 
   // The shared instance
-  private static Activator plugin;
+  private static CorpusServerPlugin plugin;
 
-  public Activator() {
+  public CorpusServerPlugin() {
   }
 
   public void start(BundleContext context) throws Exception {
@@ -49,7 +49,7 @@ public class Activator extends AbstractUIPlugin {
    * 
    * @return the shared instance
    */
-  public static Activator getDefault() {
+  public static CorpusServerPlugin getDefault() {
     return plugin;
   }
 }
