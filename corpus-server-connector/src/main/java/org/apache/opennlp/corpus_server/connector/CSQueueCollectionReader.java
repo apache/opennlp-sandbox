@@ -41,29 +41,56 @@ import com.sun.jersey.api.client.WebResource;
  */
 public class CSQueueCollectionReader extends CollectionReader_ImplBase {
 
-  private static final String CORPUS_ADDRESS = "CorpusAddress";
-
-  private static final String QUEUE_ADDRESS = "QueueAddress";
+  private static final String SERVER_ADDRESS = "ServerAddress";
   
-  private String corpusAddress;
+  private static final String CORPUS_NAME = "CorpusName";
+
+  private static final String SEARCH_QUERY = "SearchQuery";
+  
+  private static final String QUEUE_NAME = "QueueName";
+  
+  private String serverAddress;
+  
+  private String corpusName;
   
   private Iterator<String> casIds;
+
 
   @Override
   public void initialize() throws ResourceInitializationException {
     super.initialize();
     
+    serverAddress = (String) getConfigParameterValue(SERVER_ADDRESS);
+    
     // Retrieve corpus address ...
-    corpusAddress = (String) getConfigParameterValue(CORPUS_ADDRESS);
+    corpusName = (String) getConfigParameterValue(CORPUS_NAME);
     
-    // Retrieve queue link ...
-    String queueAddress = (String) getConfigParameterValue(QUEUE_ADDRESS);
+    String queueName = (String) getConfigParameterValue(QUEUE_NAME);
     
-    List<String> casIdList = new ArrayList<String>();
+    String searchQuery = (String) getConfigParameterValue(SEARCH_QUERY);
     
     Client client = Client.create();
     
-    WebResource r = client.resource(queueAddress);
+    // Create a queue if the search query is specified
+    if (searchQuery != null) {
+      WebResource r = client.resource(serverAddress + "/queues/");
+
+      ClientResponse response = r.path("_createTaskQueue")
+          .queryParam("corpusId", corpusName)
+          .queryParam("queueId", queueName)
+          .queryParam("q", searchQuery)
+          .accept(MediaType.TEXT_XML)
+          // TODO: How to fix this? Shouldn't accept do it?
+          .header("Content-Type", MediaType.TEXT_XML)
+          .post(ClientResponse.class);
+    }
+    
+    // Retrieve queue link ...
+    
+    List<String> casIdList = new ArrayList<String>();
+    
+    
+    WebResource r = client.resource(serverAddress +  "/queues/" + queueName);
     
     while (true) {
       // TODO: Make query configurable ...
@@ -77,9 +104,9 @@ public class CSQueueCollectionReader extends CollectionReader_ImplBase {
         System.out.println("##### FINISHED #####");
         break;
       }
-      
+      else {
       // TODO: Check if response was ok ...
-      
+      }
       String casId = response.getEntity(String.class);
       casIdList.add(casId);
     }
@@ -94,7 +121,7 @@ public class CSQueueCollectionReader extends CollectionReader_ImplBase {
 	
     Client client = Client.create();
     
-    WebResource corpusWebResource = client.resource(corpusAddress);
+    WebResource corpusWebResource = client.resource(serverAddress + "/corpora/" + corpusName);
     
     ClientResponse casResponse = corpusWebResource
         .path(casId)
