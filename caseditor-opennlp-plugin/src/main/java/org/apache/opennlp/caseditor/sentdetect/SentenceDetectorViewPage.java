@@ -17,19 +17,15 @@
 
 package org.apache.opennlp.caseditor.sentdetect;
 
-import org.apache.opennlp.caseditor.OpenNLPPlugin;
-import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
 import org.apache.opennlp.caseditor.OpenPreferenceDialog;
 import org.apache.opennlp.caseditor.namefinder.ConfirmAnnotationAction;
 import org.apache.opennlp.caseditor.namefinder.Entity;
-import org.apache.opennlp.caseditor.namefinder.EntityLabelProvider;
 import org.apache.uima.caseditor.CasEditorPlugin;
 import org.apache.uima.caseditor.Images;
 import org.apache.uima.caseditor.editor.AnnotationEditor;
 import org.apache.uima.caseditor.editor.ICasEditor;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IToolBarManager;
-import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
@@ -90,7 +86,7 @@ public class SentenceDetectorViewPage extends Page {
     
     // TODO: Label provider needs support to display being and end of long texts ...
     //       text in-between can be replaced by three dots.
-    sentenceList.setLabelProvider(new EntityLabelProvider());
+    sentenceList.setLabelProvider(new SentenceLabelProvider());
     
     SentenceDetectorJob sentenceDetector = new SentenceDetectorJob();
     
