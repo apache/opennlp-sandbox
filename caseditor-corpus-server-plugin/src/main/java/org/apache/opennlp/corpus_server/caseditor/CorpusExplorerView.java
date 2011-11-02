@@ -21,6 +21,8 @@ import javax.ws.rs.core.MediaType;
 
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
+import org.eclipse.core.runtime.jobs.IJobChangeEvent;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.viewers.ILabelProviderListener;
@@ -39,20 +41,22 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.part.PageBook;
 import org.eclipse.ui.part.ViewPart;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
 
 public class CorpusExplorerView extends ViewPart {
 
   private static final String LUCENE_QUERY_DELIMITER = ":::";
+  
+  private PageBook book;
+  
+  private Text messageText;
   
   private Composite explorerComposite;
   private Text serverUrl;
@@ -131,6 +135,7 @@ public class CorpusExplorerView extends ViewPart {
       @Override
       public void widgetSelected(SelectionEvent event) {
         
+        // Remember query and save last queries to the preference store
         int queryIndex = queryText.indexOf(queryText.getText());
         
         if (queryIndex != -1) {
@@ -160,53 +165,66 @@ public class CorpusExplorerView extends ViewPart {
         // get query
         String query = queryText.getText();
         
-        // execute query
-        Client c = Client.create();
+        final SearchCorpusServerJob searchJob = new SearchCorpusServerJob();
         
-        WebResource r = c.resource(serverPath);
+        searchJob.setServerAddress(serverPath);
+        searchJob.setQuery(query);
         
-        ClientResponse response = r
-                .path("_search")
-                .queryParam("q", query)
-                .accept(MediaType.APPLICATION_JSON)
-                .get(ClientResponse.class);
+        searchJob.schedule();
         
-        JSONArray searchResult = response.getEntity(JSONArray.class);
+        setMessage("Fetching results ...");
         
-        System.out.println("Status: " + response.getStatus());
-        
-        searchResultViewer.setItemCount(0);
-        
-        for (int i = 0; i < searchResult.length(); i++) {
-            try {
-//              System.out.println("Hit: " + searchResult.getString(i));
-              
-              searchResultViewer.add(searchResult.getString(i));
-              // Write result into table ...
-              
-            } catch (JSONException e) {
-              // TODO Auto-generated catch block
-              e.printStackTrace();
-            }
-        }
-        
-        // add result to list ...
+        searchJob.addJobChangeListener(new JobChangeAdapter(){
+          @Override
+          public void done(final IJobChangeEvent event) {
+            
+            Display.getDefault().asyncExec(new Runnable() {
+
+              @Override
+              public void run() {
+                if (event.getResult().isOK()) {
+                  
+                  setMessage(null);
+                  
+                  searchResultViewer.setItemCount(0);
+                  JSONArray searchResult = searchJob.getSearchResult();
+                  
+                  for (int i = 0; i < searchResult.length(); i++) {
+                    try {
+                      searchResultViewer.add(searchResult.getString(i));
+                    } catch (JSONException e) {
+                      setMessage("Error, failed to parse results.");
+                    }
+                  }
+                }
+                else {
+                  setMessage("Fetching search results from server failed!");
+                }
+              }
+            });
+          }
+        }); 
       }
 
       @Override
       public void widgetDefaultSelected(SelectionEvent event) {
-        // TODO Auto-generated method stub
-
       }
     });
     
+    book = new PageBook(explorerComposite, SWT.NONE);
+    
+    GridDataFactory.swtDefaults().align(SWT.FILL, SWT.FILL).grab(true, true)
+            .span(2, 1).applyTo(book);
+    
+    messageText = new Text(book, SWT.WRAP | SWT.READ_ONLY);
+    messageText.setText("Enter the server address and a query to search a corpus on the Corpus Server.");
+
     // List with casIds in the corpus ... (might be later replaced with a title)
     // The table should later be virtual, and be able to scroll through very huge
     // lits of CASes ... might be connected to a repository with million of documents
-    searchResultViewer = new TableViewer(explorerComposite);
-
+    searchResultViewer = new TableViewer(book);
     GridDataFactory.swtDefaults().align(SWT.FILL, SWT.FILL).grab(true, true)
-        .span(2, 1).applyTo(searchResultViewer.getTable());
+        .span(2, 1).applyTo(searchResultViewer.getControl());
 
     searchResultViewer.setLabelProvider(new ITableLabelProvider() {
 
@@ -259,26 +277,25 @@ public class CorpusExplorerView extends ViewPart {
         } catch (PartInitException e) {
           e.printStackTrace();
         }
-        
-        // Need to register our content provider, should be possible to have multiple,
-        // selection could be done based on editor input class ...
-        
-        // the editor has multiple content providers, and can choose one based
-        // on the editor input ...
-        // how to add all cas editors to an open with menu?
-        
-        // Document Provider ?!
-        // url based input
       }
     });
-    
-    // Need an action which can take a CAS id, as editor input ...
-    // Write document provider, which can download as CAS, open it, and upload
-    // it on save!
 
-    // Context menu should have open action ...
+    book.showPage(messageText);
+    
+    // TODO: Context menu should have open action
   }
 
+  void setMessage(String message) {
+    if (message != null) {
+      messageText.setText(message);
+      book.showPage(messageText);
+    }
+    else {
+      messageText.setText("");
+      book.showPage(searchResultViewer.getControl());
+    }
+  }
+  
   @Override
   public void setFocus() {
     explorerComposite.setFocus();
