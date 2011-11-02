@@ -18,6 +18,7 @@
 package org.apache.opennlp.caseditor.sentdetect;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -25,12 +26,15 @@ import opennlp.tools.util.Span;
 
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
 import org.apache.opennlp.caseditor.namefinder.Entity;
+import org.apache.opennlp.caseditor.namefinder.EntityContentProvider;
 import org.apache.opennlp.caseditor.util.UIMAUtil;
 import org.apache.uima.cas.CAS;
+import org.apache.uima.cas.FeatureStructure;
 import org.apache.uima.cas.Type;
 import org.apache.uima.cas.text.AnnotationFS;
 import org.apache.uima.caseditor.editor.AnnotationEditor;
 import org.apache.uima.caseditor.editor.ICasDocument;
+import org.apache.uima.caseditor.editor.ICasDocumentListener;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.jface.preference.IPreferenceStore;
@@ -41,11 +45,58 @@ import org.eclipse.swt.widgets.Display;
 
 public class SentenceContentProvider implements IStructuredContentProvider {
 
+  private class CasChangeSDTrigger implements ICasDocumentListener {
+
+    @Override
+    public void added(FeatureStructure fs) {
+      triggerSentenceDetector();
+    }
+
+    @Override
+    public void added(Collection<FeatureStructure> featureStructures) {
+      triggerSentenceDetector();
+    }
+
+    @Override
+    public void changed() {
+      triggerSentenceDetector();
+    }
+
+    @Override
+    public void removed(FeatureStructure fs) {
+      triggerSentenceDetector();
+    }
+
+    @Override
+    public void removed(Collection<FeatureStructure> featureStructures) {
+      triggerSentenceDetector();
+    }
+
+    @Override
+    public void updated(FeatureStructure fs) {
+      triggerSentenceDetector();
+    }
+
+    @Override
+    public void updated(Collection<FeatureStructure> featureStructures) {
+      triggerSentenceDetector();
+      
+    }
+
+    @Override
+    public void viewChanged(String oldView, String newView) {
+      triggerSentenceDetector();
+    }
+    
+  }
+  
   private SentenceDetectorViewPage sentenceDetectorView;
   
   private AnnotationEditor editor;
   
   private ICasDocument document;
+  
+  private ICasDocumentListener casChangedTrigger;
   
   private SentenceDetectorJob sentenceDetector;
   
@@ -61,18 +112,54 @@ public class SentenceContentProvider implements IStructuredContentProvider {
     sentenceDetector.addJobChangeListener(new JobChangeAdapter() {
       public void done(final IJobChangeEvent event) {
         Display.getDefault().asyncExec(new Runnable() {
-          
+
           @Override
           public void run() {
             if (event.getResult().isOK()) {
               
               SentenceContentProvider.this.sentenceDetectorView.setMessage(null);
               
+              List<Entity> confirmedSentences = new ArrayList<Entity>();
+              // TODO: Create a list of existing sentence annotations.
+              
+              // get sentence annotation index ...
+              CAS cas = SentenceContentProvider.this.editor.getDocument().getCAS();
+              
+              IPreferenceStore store = SentenceContentProvider.this.editor.
+                  getCasDocumentProvider().getTypeSystemPreferenceStore(
+                  SentenceContentProvider.this.editor.getEditorInput());
+              
+              String sentenceTypeName = store.getString(OpenNLPPreferenceConstants.SENTENCE_TYPE);;
+              Type sentenceType = cas.getTypeSystem().getType(sentenceTypeName);
+              
+              for (Iterator<AnnotationFS> it = cas.getAnnotationIndex(sentenceType).iterator();
+                  it.hasNext(); ) {
+                AnnotationFS sentenceAnnotation = it.next();
+                confirmedSentences.add(new Entity(sentenceAnnotation.getBegin(),
+                    sentenceAnnotation.getEnd(), sentenceAnnotation.getCoveredText(), 1d, true, sentenceTypeName));
+              }
+             
+              
               Entity sentences[] = SentenceContentProvider.this.
                   sentenceDetector.getDetectedSentences();
               
+              // TODO:
+              // Remove all detected sentences from the last run which are not detected anymore
+              
               SentenceContentProvider.this.sentenceList.refresh();
-              SentenceContentProvider.this.sentenceList.add(sentences);
+              
+              // TODO: Update sentence if it already exist
+              
+              // Add a new potential sentence
+              // Only add if it is not a confirmed sentence yet!
+              // for each anotation, search confirmed sentence array above ...
+              for (Entity sentence : sentences) {
+                if (EntityContentProvider.searchEntity(confirmedSentences,
+                    sentence.getBeginIndex(), sentence.getEndIndex(),
+                    sentence.getType()) == null) {
+                  SentenceContentProvider.this.sentenceList.add(sentence);
+                }
+              }
             }
             else {
               SentenceContentProvider.this.sentenceDetectorView.setMessage(event.getResult().getMessage());
@@ -87,15 +174,21 @@ public class SentenceContentProvider implements IStructuredContentProvider {
   public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
     
     if (oldInput != null) {
-      // Remove listeners ...
+      ((ICasDocument) oldInput).removeChangeListener(casChangedTrigger);
     }
     
     if (newInput != null) {
       document = (ICasDocument) newInput;
+      casChangedTrigger = new CasChangeSDTrigger();
+      
+      document.addChangeListener(casChangedTrigger);
+      
+      triggerSentenceDetector();
     }
   }
   
   void triggerSentenceDetector() {
+    
     IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
     
     CAS cas = document.getCAS();

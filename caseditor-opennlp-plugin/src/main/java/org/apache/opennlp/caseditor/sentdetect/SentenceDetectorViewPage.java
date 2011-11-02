@@ -157,15 +157,6 @@ public class SentenceDetectorViewPage extends Page {
     
     IToolBarManager toolBarManager = actionBars.getToolBarManager();
     
-    BaseSelectionListenerAction detectAction = new BaseSelectionListenerAction("Detect") {
-      @Override
-      public void run() {
-        contentProvider.triggerSentenceDetector();
-      }
-    };
-    
-    toolBarManager.add(detectAction);
-    
     BaseSelectionListenerAction confirmAction =
         new ConfirmAnnotationAction(sentenceList, editor.getDocument());
     confirmAction.setActionDefinitionId(QUICK_ANNOTATE_ACTION_ID);
