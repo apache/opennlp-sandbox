@@ -17,8 +17,6 @@
 
 package org.apache.opennlp.corpus_server.caseditor;
 
-import javax.ws.rs.core.MediaType;
-
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
@@ -32,10 +30,14 @@ import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.KeyEvent;
+import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.events.VerifyEvent;
+import org.eclipse.swt.events.VerifyListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -63,6 +65,80 @@ public class CorpusExplorerView extends ViewPart {
   private Combo queryText;
   
   private TableViewer searchResultViewer;
+  
+  private void doSearch() {
+    // Remember query and save last queries to the preference store
+    int queryIndex = queryText.indexOf(queryText.getText());
+    
+    if (queryIndex != -1) {
+      queryText.remove(queryIndex);
+    }
+    
+    queryText.add(queryText.getText(), 0);
+    
+    if (queryText.getItemCount() > 10) {
+      queryText.remove(queryText.getItemCount() - 1);
+    }
+    
+    // TODO: Serialize history to lastUsedQueries settings ...
+    StringBuilder lastUsedQueriesString = new StringBuilder();
+    
+    for (int i = 0; i < queryText.getItemCount(); i++) {
+      lastUsedQueriesString.append(queryText.getItem(i));
+      lastUsedQueriesString.append(LUCENE_QUERY_DELIMITER);
+    }
+    
+    IPreferenceStore store = CorpusServerPlugin.getDefault().getPreferenceStore();
+    
+    store.setValue(CorpusServerPreferenceConstants.LAST_USED_SEARCH_QUERIES,
+        lastUsedQueriesString.toString());
+    
+    // get server url
+    String serverPath = serverUrl.getText();
+    
+    // get query
+    String query = queryText.getText();
+    
+    final SearchCorpusServerJob searchJob = new SearchCorpusServerJob();
+    
+    searchJob.setServerAddress(serverPath);
+    searchJob.setQuery(query);
+    
+    searchJob.schedule();
+    
+    setMessage("Fetching results ...");
+    
+    searchJob.addJobChangeListener(new JobChangeAdapter(){
+      @Override
+      public void done(final IJobChangeEvent event) {
+        
+        Display.getDefault().asyncExec(new Runnable() {
+
+          @Override
+          public void run() {
+            if (event.getResult().isOK()) {
+              
+              setMessage(null);
+              
+              searchResultViewer.setItemCount(0);
+              JSONArray searchResult = searchJob.getSearchResult();
+              
+              for (int i = 0; i < searchResult.length(); i++) {
+                try {
+                  searchResultViewer.add(searchResult.getString(i));
+                } catch (JSONException e) {
+                  setMessage("Error, failed to parse results.");
+                }
+              }
+            }
+            else {
+              setMessage("Fetching search results from server failed!");
+            }
+          }
+        });
+      }
+    }); 
+  }
   
   @Override
   public void createPartControl(Composite parent) {
@@ -125,6 +201,32 @@ public class CorpusExplorerView extends ViewPart {
       queryText.add(lastUsedQueries[i]);
     }
     
+    
+    queryText.addSelectionListener(new SelectionListener() {
+      
+      @Override
+      public void widgetSelected(SelectionEvent event) {
+        doSearch();
+      }
+      
+      @Override
+      public void widgetDefaultSelected(SelectionEvent event) {
+      }
+    });
+    
+    queryText.addKeyListener(new KeyListener() {
+      
+      @Override
+      public void keyReleased(KeyEvent event) {
+        if (event.character ==SWT.CR)
+          doSearch();
+      }
+      
+      @Override
+      public void keyPressed(KeyEvent event) {
+      }
+    });
+    
     Button queryServer = new Button(explorerComposite, SWT.BORDER);
     queryServer.setText("Query");
     GridDataFactory.swtDefaults().span(2, 1).align(SWT.FILL, SWT.CENTER)
@@ -134,76 +236,7 @@ public class CorpusExplorerView extends ViewPart {
 
       @Override
       public void widgetSelected(SelectionEvent event) {
-        
-        // Remember query and save last queries to the preference store
-        int queryIndex = queryText.indexOf(queryText.getText());
-        
-        if (queryIndex != -1) {
-          queryText.remove(queryIndex);
-        }
-        
-        queryText.add(queryText.getText(), 0);
-        
-        if (queryText.getItemCount() > 10) {
-          queryText.remove(queryText.getItemCount() - 1);
-        }
-        
-        // TODO: Serialize history to lastUsedQueries settings ...
-        StringBuilder lastUsedQueriesString = new StringBuilder();
-        
-        for (int i = 0; i < queryText.getItemCount(); i++) {
-          lastUsedQueriesString.append(queryText.getItem(i));
-          lastUsedQueriesString.append(LUCENE_QUERY_DELIMITER);
-        }
-        
-        store.setValue(CorpusServerPreferenceConstants.LAST_USED_SEARCH_QUERIES,
-            lastUsedQueriesString.toString());
-        
-        // get server url
-        String serverPath = serverUrl.getText();
-        
-        // get query
-        String query = queryText.getText();
-        
-        final SearchCorpusServerJob searchJob = new SearchCorpusServerJob();
-        
-        searchJob.setServerAddress(serverPath);
-        searchJob.setQuery(query);
-        
-        searchJob.schedule();
-        
-        setMessage("Fetching results ...");
-        
-        searchJob.addJobChangeListener(new JobChangeAdapter(){
-          @Override
-          public void done(final IJobChangeEvent event) {
-            
-            Display.getDefault().asyncExec(new Runnable() {
-
-              @Override
-              public void run() {
-                if (event.getResult().isOK()) {
-                  
-                  setMessage(null);
-                  
-                  searchResultViewer.setItemCount(0);
-                  JSONArray searchResult = searchJob.getSearchResult();
-                  
-                  for (int i = 0; i < searchResult.length(); i++) {
-                    try {
-                      searchResultViewer.add(searchResult.getString(i));
-                    } catch (JSONException e) {
-                      setMessage("Error, failed to parse results.");
-                    }
-                  }
-                }
-                else {
-                  setMessage("Fetching search results from server failed!");
-                }
-              }
-            });
-          }
-        }); 
+        doSearch();
       }
 
       @Override
