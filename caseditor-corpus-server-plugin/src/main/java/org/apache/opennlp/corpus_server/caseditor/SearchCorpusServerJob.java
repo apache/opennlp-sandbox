@@ -54,17 +54,24 @@ public class SearchCorpusServerJob extends Job {
   protected IStatus run(IProgressMonitor monitor) {
     
     Client c = Client.create();
-    
+    c.setConnectTimeout(10000);
     WebResource r = c.resource(serverAddress);
     
-    ClientResponse response = r
-        .path("_search")
-        .queryParam("q", searchQuery)
-        .accept(MediaType.APPLICATION_JSON)
-        .get(ClientResponse.class);
-
+    ClientResponse response;
+    
+    try {
+      response = r
+          .path("_search")
+          .queryParam("q", searchQuery)
+          .accept(MediaType.APPLICATION_JSON)
+          .get(ClientResponse.class);
+    }
+    catch (com.sun.jersey.api.client.ClientHandlerException e) {
+      return new Status(IStatus.WARNING, CorpusServerPlugin.PLUGIN_ID, "Failed to connect to server!");
+    }
+    
     if (response.getClientResponseStatus().getStatusCode() != 200) {
-      return new Status(IStatus.OK, CorpusServerPlugin.PLUGIN_ID, "Failed to retrieve results from server!");
+      return new Status(IStatus.WARNING, CorpusServerPlugin.PLUGIN_ID, "Failed to retrieve results from server!");
     }
     
     searchResult = response.getEntity(JSONArray.class);
