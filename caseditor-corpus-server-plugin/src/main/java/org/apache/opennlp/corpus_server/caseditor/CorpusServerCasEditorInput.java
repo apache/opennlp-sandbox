@@ -33,7 +33,7 @@ public class CorpusServerCasEditorInput implements IEditorInput {
   }
   
   @Override
-  public Object getAdapter(Class clazz) {
+  public Object getAdapter(@SuppressWarnings("rawtypes") Class clazz) {
     return null;
   }
 
