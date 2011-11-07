@@ -23,7 +23,9 @@ import org.apache.opennlp.caseditor.namefinder.Entity;
 import org.apache.uima.caseditor.CasEditorPlugin;
 import org.apache.uima.caseditor.Images;
 import org.apache.uima.caseditor.editor.AnnotationEditor;
+import org.apache.uima.caseditor.editor.ICasDocument;
 import org.apache.uima.caseditor.editor.ICasEditor;
+import org.apache.uima.caseditor.editor.ICasEditorInputListener;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
@@ -42,7 +44,7 @@ import org.eclipse.ui.actions.BaseSelectionListenerAction;
 import org.eclipse.ui.part.Page;
 import org.eclipse.ui.part.PageBook;
 
-public class SentenceDetectorViewPage extends Page {
+public class SentenceDetectorViewPage extends Page implements ICasEditorInputListener {
   
   private static final String QUICK_ANNOTATE_ACTION_ID = "QuickAnnotate";
 
@@ -58,6 +60,7 @@ public class SentenceDetectorViewPage extends Page {
   
   public SentenceDetectorViewPage(ICasEditor editor) {
     this.editor = editor;
+    editor.addCasEditorInputListener(this);
   }
 
   @Override
@@ -166,6 +169,27 @@ public class SentenceDetectorViewPage extends Page {
         .getTaeImageDescriptor(Images.MODEL_PROCESSOR_FOLDER));
     
     toolBarManager.add(action);
-  }
     
+    // TODO: Add an action which can move editor selection to the right based on EOS chars like
+    //       sentence detector would do.
+    
+    // TODO: Write the same action which can move editor selection to the left based on EOS chars
+    //       like the sentence detector would do.
+    
+    // TODO: Confirm action should use selection bounds in the editor!
+    
+    // Note: The same mechanism could be used in the name finder view, to change token bounds of an annotation!
+  }
+
+  @Override
+  public void dispose() {
+    super.dispose();
+    
+    editor.removeCasEditorInputListener(this);
+  }
+  
+  @Override
+  public void casDocumentChanged(ICasDocument oldDoc, ICasDocument newDoc) {
+    sentenceList.setInput(newDoc);
+  }
 }

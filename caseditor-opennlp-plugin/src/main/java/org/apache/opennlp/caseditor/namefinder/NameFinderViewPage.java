@@ -24,6 +24,7 @@ import org.apache.uima.caseditor.Images;
 import org.apache.uima.caseditor.editor.AnnotationEditor;
 import org.apache.uima.caseditor.editor.ICasDocument;
 import org.apache.uima.caseditor.editor.ICasEditor;
+import org.apache.uima.caseditor.editor.ICasEditorInputListener;
 import org.apache.uima.caseditor.editor.util.AnnotationSelection;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IToolBarManager;
@@ -53,7 +54,7 @@ import org.eclipse.ui.part.PageBook;
 
 // TODO: There should be a way to display error messages in this view, e.g.
 //       when no names are detected. -> give an indication what could be wrong!
-class NameFinderViewPage extends Page implements ISelectionListener {
+class NameFinderViewPage extends Page implements ISelectionListener, ICasEditorInputListener {
 
   private static final String QUICK_ANNOTATE_ACTION_ID = "QuickAnnotate";
   
@@ -69,6 +70,8 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     
     IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
     NameFinderPreferenceInitializer.initializeDefaultPreferences(store);
+    
+    editor.addCasEditorInputListener(this);
   }
 
   public void createControl(Composite parent) {
@@ -213,5 +216,16 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     
     toolBarManager.add(action);
     
+  }
+
+  @Override
+  public void dispose() {
+    super.dispose();
+    editor.addCasEditorInputListener(this);
+  }
+  
+  @Override
+  public void casDocumentChanged(ICasDocument oldDoc, ICasDocument newDoc) {
+    entityList.setInput(newDoc);
   }
 }
