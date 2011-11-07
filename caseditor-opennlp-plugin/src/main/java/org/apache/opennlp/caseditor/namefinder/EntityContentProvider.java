@@ -24,6 +24,7 @@ import java.util.List;
 
 import opennlp.tools.util.Span;
 
+import org.apache.opennlp.caseditor.AbstractCasChangeTrigger;
 import org.apache.opennlp.caseditor.OpenNLPPlugin;
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
 import org.apache.opennlp.caseditor.util.ContainingConstraint;
@@ -58,50 +59,12 @@ public class EntityContentProvider implements IStructuredContentProvider {
    * TODO: Listener should only trigger a run if something changed which might change the results
    * of the name finder run.
    */
-  // TODO: Rename it ...
-  private class CasChangeNameFinderTrigger implements ICasDocumentListener {
+  private class CasChangeNameFinderTrigger extends AbstractCasChangeTrigger {
 
     @Override
-    public void added(FeatureStructure fs) {
+    protected void trigger() {
       runNameFinder();
     }
-
-    @Override
-    public void added(Collection<FeatureStructure> featureStructures) {
-      runNameFinder();
-    }
-
-    @Override
-    public void changed() {
-      runNameFinder();
-    }
-
-    @Override
-    public void removed(FeatureStructure fs) {
-      runNameFinder();
-    }
-
-    @Override
-    public void removed(Collection<FeatureStructure> featureStructures) {
-      runNameFinder();
-    }
-
-    @Override
-    public void updated(FeatureStructure fs) {
-      runNameFinder();
-    }
-
-    @Override
-    public void updated(Collection<FeatureStructure> featureStructures) {
-      runNameFinder();
-      
-    }
-
-    @Override
-    public void viewChanged(String oldView, String newView) {
-      runNameFinder();
-    }
-    
   }
   
   /**

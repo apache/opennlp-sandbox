@@ -18,18 +18,17 @@
 package org.apache.opennlp.caseditor.sentdetect;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
 import opennlp.tools.util.Span;
 
+import org.apache.opennlp.caseditor.AbstractCasChangeTrigger;
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
 import org.apache.opennlp.caseditor.namefinder.Entity;
 import org.apache.opennlp.caseditor.namefinder.EntityContentProvider;
 import org.apache.opennlp.caseditor.util.UIMAUtil;
 import org.apache.uima.cas.CAS;
-import org.apache.uima.cas.FeatureStructure;
 import org.apache.uima.cas.Type;
 import org.apache.uima.cas.text.AnnotationFS;
 import org.apache.uima.caseditor.editor.AnnotationEditor;
@@ -45,49 +44,11 @@ import org.eclipse.swt.widgets.Display;
 
 public class SentenceContentProvider implements IStructuredContentProvider {
 
-  private class CasChangeSDTrigger implements ICasDocumentListener {
-
+  private class CasChangeSDTrigger extends AbstractCasChangeTrigger {
     @Override
-    public void added(FeatureStructure fs) {
+    protected void trigger() {
       triggerSentenceDetector();
     }
-
-    @Override
-    public void added(Collection<FeatureStructure> featureStructures) {
-      triggerSentenceDetector();
-    }
-
-    @Override
-    public void changed() {
-      triggerSentenceDetector();
-    }
-
-    @Override
-    public void removed(FeatureStructure fs) {
-      triggerSentenceDetector();
-    }
-
-    @Override
-    public void removed(Collection<FeatureStructure> featureStructures) {
-      triggerSentenceDetector();
-    }
-
-    @Override
-    public void updated(FeatureStructure fs) {
-      triggerSentenceDetector();
-    }
-
-    @Override
-    public void updated(Collection<FeatureStructure> featureStructures) {
-      triggerSentenceDetector();
-      
-    }
-
-    @Override
-    public void viewChanged(String oldView, String newView) {
-      triggerSentenceDetector();
-    }
-    
   }
   
   private SentenceDetectorViewPage sentenceDetectorView;
