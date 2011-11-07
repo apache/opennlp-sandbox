@@ -42,6 +42,7 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IActionBars;
+import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.actions.BaseSelectionListenerAction;
@@ -225,7 +226,8 @@ class NameFinderViewPage extends Page implements ISelectionListener, ICasEditorI
   }
   
   @Override
-  public void casDocumentChanged(ICasDocument oldDoc, ICasDocument newDoc) {
+  public void casDocumentChanged(IEditorInput oldInput, ICasDocument oldDoc,
+      IEditorInput newsInput, ICasDocument newDoc) {
     entityList.setInput(newDoc);
   }
 }
