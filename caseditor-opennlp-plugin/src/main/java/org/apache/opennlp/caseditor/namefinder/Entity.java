@@ -132,7 +132,7 @@ public class Entity implements IAdaptable {
     return getBeginIndex() + getEndIndex() + type.hashCode();
   }
   
-  public Object getAdapter(Class adapter) {
+  public Object getAdapter(@SuppressWarnings("rawtypes") Class adapter) {
     if (AnnotationFS.class.equals(adapter) || FeatureStructure.class.equals(adapter)) {
       return linkedAnnotationFS;
     }
