@@ -197,7 +197,7 @@ class NameFinderViewPage extends Page implements ISelectionListener, ICasEditorI
     
     IToolBarManager toolBarManager = actionBars.getToolBarManager();
     
-    BaseSelectionListenerAction confirmAction = new ConfirmAnnotationAction(entityList, editor.getDocument());
+    BaseSelectionListenerAction confirmAction = new ConfirmAnnotationAction(entityList, editor);
     confirmAction.setActionDefinitionId(QUICK_ANNOTATE_ACTION_ID);
     actionBars.setGlobalActionHandler(QUICK_ANNOTATE_ACTION_ID, confirmAction);
     getSite().getSelectionProvider().addSelectionChangedListener(confirmAction); // need also to unregister!!!!

@@ -158,7 +158,7 @@ public class SentenceDetectorViewPage extends Page implements ICasEditorInputLis
     IToolBarManager toolBarManager = actionBars.getToolBarManager();
     
     BaseSelectionListenerAction confirmAction =
-        new ConfirmAnnotationAction(sentenceList, editor.getDocument());
+        new ConfirmAnnotationAction(sentenceList, editor);
     confirmAction.setActionDefinitionId(QUICK_ANNOTATE_ACTION_ID);
     actionBars.setGlobalActionHandler(QUICK_ANNOTATE_ACTION_ID, confirmAction);
     getSite().getSelectionProvider().addSelectionChangedListener(confirmAction); // need also to unregister!!!!

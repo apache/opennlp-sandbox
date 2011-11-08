@@ -55,8 +55,6 @@ public class SentenceContentProvider implements IStructuredContentProvider {
   
   private AnnotationEditor editor;
   
-  private ICasDocument document;
-  
   private ICasDocumentListener casChangedTrigger;
   
   private SentenceDetectorJob sentenceDetector;
@@ -134,12 +132,15 @@ public class SentenceContentProvider implements IStructuredContentProvider {
   @Override
   public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
     
+    // Clears the sentence list
+    sentenceList.refresh();
+    
     if (oldInput != null) {
       ((ICasDocument) oldInput).removeChangeListener(casChangedTrigger);
     }
     
     if (newInput != null) {
-      document = (ICasDocument) newInput;
+      ICasDocument document = (ICasDocument) newInput;
       casChangedTrigger = new CasChangeSDTrigger();
       
       document.addChangeListener(casChangedTrigger);
@@ -152,7 +153,7 @@ public class SentenceContentProvider implements IStructuredContentProvider {
     
     IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
     
-    CAS cas = document.getCAS();
+    CAS cas = editor.getDocument().getCAS();
     
     String paragraphTypeNames = store.getString(OpenNLPPreferenceConstants.PARAGRAPH_TYPE);
     Type paragraphTypes[] = UIMAUtil.splitTypes(paragraphTypeNames, ',', cas.getTypeSystem());
@@ -180,12 +181,11 @@ public class SentenceContentProvider implements IStructuredContentProvider {
       }
     }
     
-    
     String modelPath = store.getString(OpenNLPPreferenceConstants.SENTENCE_DETECTOR_MODEL_PATH);
     
     sentenceDetector.setModelPath(modelPath);
     sentenceDetector.setParagraphs(paragraphSpans);
-    sentenceDetector.setText(document.getCAS().getDocumentText());
+    sentenceDetector.setText(editor.getDocument().getCAS().getDocumentText());
     
     String sentenceTypeName = store.getString(OpenNLPPreferenceConstants.SENTENCE_TYPE);
     

@@ -18,7 +18,7 @@
 package org.apache.opennlp.caseditor.namefinder;
 
 import org.apache.uima.cas.FeatureStructure;
-import org.apache.uima.caseditor.editor.ICasDocument;
+import org.apache.uima.caseditor.editor.ICasEditor;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.ui.actions.BaseSelectionListenerAction;
@@ -26,16 +26,17 @@ import org.eclipse.ui.actions.BaseSelectionListenerAction;
 public class ConfirmAnnotationAction extends BaseSelectionListenerAction {
   
   private TableViewer entityList;
-  private ICasDocument document;
   
-  public ConfirmAnnotationAction(TableViewer entityList, ICasDocument document) {
+  private ICasEditor editor;
+  
+  public ConfirmAnnotationAction(TableViewer entityList, ICasEditor editor) {
     super("Confirm");
     
-    if (entityList == null || document == null)
+    if (entityList == null || editor == null)
       throw new IllegalArgumentException("null values are not allowed!");
     
     this.entityList = entityList;
-    this.document = document;
+    this.editor = editor;
   }
   
   @Override
@@ -67,11 +68,10 @@ public class ConfirmAnnotationAction extends BaseSelectionListenerAction {
       Entity selectedEntity = (Entity) elements[0];
       if (!selectedEntity.isConfirmed()) {
         
-        FeatureStructure nameAnnotation = document.getCAS().createAnnotation(
-            document.getCAS().getTypeSystem().getType(selectedEntity.getType()),
+        FeatureStructure nameAnnotation = editor.getDocument().getCAS().createAnnotation(
+            editor.getDocument().getCAS().getTypeSystem().getType(selectedEntity.getType()),
             selectedEntity.getBeginIndex(), selectedEntity.getEndIndex());
-//        document.getCAS().addFsToIndexes(nameAnnotation);
-        document.addFeatureStructure(nameAnnotation);
+        editor.getDocument().addFeatureStructure(nameAnnotation);
       }
     }
   }
