@@ -20,6 +20,8 @@ package opennlp.tools.similarity.apps.utils;
 import java.util.ArrayList;
 import java.util.List;
 
+import opennlp.tools.stemmer.PorterStemmer;
+
 public class StringDistanceMeasurer {
   // external tools
   private PorterStemmer ps; // stemmer
@@ -56,7 +58,7 @@ public class StringDistanceMeasurer {
         // string like preposition is uninteresting
         continue;
       try {
-        w = ps.stem(w.toLowerCase());
+        w = ps.stem(w.toLowerCase()).toString();
       } catch (Exception e) {
         // do nothing, just have original term
       }

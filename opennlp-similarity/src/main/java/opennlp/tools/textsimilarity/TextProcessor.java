@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
+import opennlp.tools.stemmer.PorterStemmer;
 import opennlp.tools.similarity.apps.utils.Pair;
 
 import org.apache.commons.lang.StringUtils;
@@ -488,7 +488,7 @@ public class TextProcessor {
       }
     }
 
-    return new PorterStemmer().stem(token);
+    return new PorterStemmer().stem(token).toString();
   }
 
   public static String cleanToken(String token) {
@@ -535,7 +535,7 @@ public class TextProcessor {
     term = stripToken(term);
     PorterStemmer st = new PorterStemmer();
     
-    return st.stem(term);
+    return st.stem(term).toString();
   }
 
   public static String generateFingerPrint(String s) {

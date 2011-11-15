@@ -19,20 +19,23 @@ package opennlp.tools.textsimilarity;
 
 import java.util.List;
 
+import opennlp.tools.parser.Parse;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import junit.framework.TestCase;
 
-public class ParseTreeChunkListScorerTest {
-  private ParseTreeChunkListScorer parseTreeChunkListScorer;
-  private ParseTreeChunk parseTreeChunk;
+public class ParseTreeChunkListScorerTest extends TestCase{
+  private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
+  private ParseTreeChunk parseTreeChunk = new ParseTreeChunk();
 
-  @Test
   public void test() {
     List<List<ParseTreeChunk>> chs = parseTreeChunk
         .obtainParseTreeChunkListByParsingList("[[ [NN-* IN-in NP-israel ],  [NP-* IN-in NP-israel ],  [NP-* IN-* TO-* NN-* ],  [NN-visa IN-* NN-* IN-in ]],"
             + " [ [VB-get NN-visa IN-* NN-* IN-in .-* ],  [VBD-* IN-* NN-* NN-* .-* ],  [VB-* NP-* ]]]");
 
     double sc = parseTreeChunkListScorer.getParseTreeChunkListScore(chs);
-
+    assertTrue(sc>1.90);
+    
   }
 }
