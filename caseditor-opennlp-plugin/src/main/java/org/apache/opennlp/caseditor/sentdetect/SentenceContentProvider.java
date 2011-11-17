@@ -38,9 +38,11 @@ import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Table;
 
 public class SentenceContentProvider implements IStructuredContentProvider {
 
@@ -104,6 +106,9 @@ public class SentenceContentProvider implements IStructuredContentProvider {
               
               // TODO:
               // Remove all detected sentences from the last run which are not detected anymore
+              Table sentenceTable = SentenceContentProvider.this.sentenceList.getTable();
+              
+              int selectionIndex = sentenceTable.getSelectionIndex();
               
               SentenceContentProvider.this.sentenceList.refresh();
               
@@ -118,6 +123,21 @@ public class SentenceContentProvider implements IStructuredContentProvider {
                     sentence.getType()) == null) {
                   SentenceContentProvider.this.sentenceList.add(sentence);
                 }
+              }
+              
+              int newSelectionIndex = -1;
+              
+              if (sentenceTable.getSelectionIndex() == -1 && sentenceTable.getItemCount() > 0) {
+                newSelectionIndex = 0;
+              }
+              
+              if (selectionIndex < sentenceTable.getItemCount()) {
+                newSelectionIndex = selectionIndex;
+              }
+              
+              if (newSelectionIndex != -1) {
+                SentenceContentProvider.this.sentenceList.setSelection(
+                    new StructuredSelection(SentenceContentProvider.this.sentenceList.getElementAt(selectionIndex)));
               }
             }
             else {
