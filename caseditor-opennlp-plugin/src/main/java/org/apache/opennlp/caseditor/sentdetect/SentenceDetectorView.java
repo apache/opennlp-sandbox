@@ -18,16 +18,18 @@
 package org.apache.opennlp.caseditor.sentdetect;
 
 import org.apache.uima.caseditor.editor.AnnotationEditorView;
+import org.apache.uima.caseditor.editor.CasEditorView;
 import org.apache.uima.caseditor.editor.ICasDocument;
 import org.apache.uima.caseditor.editor.ICasEditor;
+import org.eclipse.ui.part.IPageBookViewPage;
 
-public class SentenceDetectorView extends AnnotationEditorView {
+public class SentenceDetectorView extends CasEditorView {
 
   public SentenceDetectorView() {
     super("The Sentence Detector View is currently not available.");
   }
 
-  protected PageRec doCreatePage(ICasEditor editor) {
+  protected PageRec doCreatePages(ICasEditor editor) {
     PageRec result = null;
 
     ICasDocument document = editor.getDocument();
@@ -43,4 +45,16 @@ public class SentenceDetectorView extends AnnotationEditorView {
 
     return result;
   }
+
+  @Override
+  protected IPageBookViewPage doCreatePage(ICasEditor editor) {
+    ICasDocument document = editor.getDocument();
+
+    if (document != null) {
+      return new SentenceDetectorViewPage(editor);
+    }
+
+    return null;
+  }
+  
 }

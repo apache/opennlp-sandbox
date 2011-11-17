@@ -17,11 +17,12 @@
 
 package org.apache.opennlp.caseditor.namefinder;
 
-import org.apache.uima.caseditor.editor.AnnotationEditorView;
+import org.apache.uima.caseditor.editor.CasEditorView;
 import org.apache.uima.caseditor.editor.ICasDocument;
 import org.apache.uima.caseditor.editor.ICasEditor;
+import org.eclipse.ui.part.IPageBookViewPage;
 
-public class NameFinderView extends AnnotationEditorView {
+public class NameFinderView extends CasEditorView {
 
   public static final String ID = "org.apache.opennlp.caseditor.NameFinderView";
 
@@ -29,21 +30,14 @@ public class NameFinderView extends AnnotationEditorView {
     super("The Name Finder View is currently not available.");
   }
 
-  protected PageRec doCreatePage(ICasEditor editor) {
-    PageRec result = null;
-
+  @Override
+  protected IPageBookViewPage doCreatePage(ICasEditor editor) {
     ICasDocument document = editor.getDocument();
 
     if (document != null) {
-
-      NameFinderViewPage page = new NameFinderViewPage(editor, document);
-      initPage(page);
-      page.createControl(getPageBook());
-
-      result = new PageRec(editor, page);
+      return new NameFinderViewPage(editor, document);
     }
 
-    return result;
+    return null;
   }
-
 }

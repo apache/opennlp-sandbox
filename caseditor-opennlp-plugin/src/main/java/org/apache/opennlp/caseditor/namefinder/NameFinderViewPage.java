@@ -55,7 +55,7 @@ import org.eclipse.ui.part.PageBook;
 
 // TODO: There should be a way to display error messages in this view, e.g.
 //       when no names are detected. -> give an indication what could be wrong!
-class NameFinderViewPage extends Page implements ISelectionListener, ICasEditorInputListener {
+class NameFinderViewPage extends Page implements ISelectionListener {
 
   private static final String QUICK_ANNOTATE_ACTION_ID = "QuickAnnotate";
   
@@ -71,8 +71,6 @@ class NameFinderViewPage extends Page implements ISelectionListener, ICasEditorI
     
     IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
     NameFinderPreferenceInitializer.initializeDefaultPreferences(store);
-    
-    editor.addCasEditorInputListener(this);
   }
 
   public void createControl(Composite parent) {
@@ -217,17 +215,5 @@ class NameFinderViewPage extends Page implements ISelectionListener, ICasEditorI
     
     toolBarManager.add(action);
     
-  }
-
-  @Override
-  public void dispose() {
-    super.dispose();
-    editor.addCasEditorInputListener(this);
-  }
-  
-  @Override
-  public void casDocumentChanged(IEditorInput oldInput, ICasDocument oldDoc,
-      IEditorInput newsInput, ICasDocument newDoc) {
-    entityList.setInput(newDoc);
   }
 }

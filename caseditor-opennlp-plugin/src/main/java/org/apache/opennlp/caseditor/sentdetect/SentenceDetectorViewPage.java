@@ -45,7 +45,7 @@ import org.eclipse.ui.actions.BaseSelectionListenerAction;
 import org.eclipse.ui.part.Page;
 import org.eclipse.ui.part.PageBook;
 
-public class SentenceDetectorViewPage extends Page implements ICasEditorInputListener {
+public class SentenceDetectorViewPage extends Page {
   
   private static final String QUICK_ANNOTATE_ACTION_ID = "QuickAnnotate";
 
@@ -61,7 +61,6 @@ public class SentenceDetectorViewPage extends Page implements ICasEditorInputLis
   
   public SentenceDetectorViewPage(ICasEditor editor) {
     this.editor = editor;
-    editor.addCasEditorInputListener(this);
   }
 
   @Override
@@ -180,18 +179,5 @@ public class SentenceDetectorViewPage extends Page implements ICasEditorInputLis
     // TODO: Confirm action should use selection bounds in the editor!
     
     // Note: The same mechanism could be used in the name finder view, to change token bounds of an annotation!
-  }
-
-  @Override
-  public void dispose() {
-    super.dispose();
-    
-    editor.removeCasEditorInputListener(this);
-  }
-  
-  @Override
-  public void casDocumentChanged(IEditorInput oldInput, ICasDocument oldDoc,
-      IEditorInput newsInput, ICasDocument newDoc) {
-    sentenceList.setInput(newDoc);
   }
 }
