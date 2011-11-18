@@ -75,16 +75,20 @@ public class BingWebQueryRunner {
     }
     if (resultSet != null) {
       for (int i = 0; i < resultSet.length(); i++) {
-        HitBase hit = new HitBase();
-        JSONObject singleResult = resultSet.getJSONObject(i);
-        hit.setAbstractText(singleResult.getString("Description"));
-        hit.setDate(singleResult.getString("DateTime"));
-        String title = StringUtils.replace(singleResult.getString("Title"),
-            "", " ");
-        hit.setTitle(title);
-        hit.setUrl(singleResult.getString("Url"));
+        try {
+			HitBase hit = new HitBase();
+			JSONObject singleResult = resultSet.getJSONObject(i);
+			hit.setAbstractText(singleResult.getString("Description"));
+			hit.setDate(singleResult.getString("DateTime"));
+			String title = StringUtils.replace(singleResult.getString("Title"),
+			    "", " ");
+			hit.setTitle(title);
+			hit.setUrl(singleResult.getString("Url"));
 
-        resp.appendHits(hit);
+			resp.appendHits(hit);
+		} catch (Exception e) {
+			// incomplete search result: do not through exception
+		}
       }
     }
     return resp;

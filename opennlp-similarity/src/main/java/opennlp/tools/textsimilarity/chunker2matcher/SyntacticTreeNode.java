@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import opennlp.tools.parser.AbstractBottomUpParser;
+import opennlp.tools.parser.Parse;
 
 public abstract class SyntacticTreeNode {
 	// the POS type
@@ -87,7 +88,7 @@ public abstract class SyntacticTreeNode {
 		return builder.toString();
 	}
 
-	public static boolean isJunkType(String type) {
+	public static boolean isJunkType(String type, Parse parse) {
 		if (type == null)
 			return true;
 
@@ -96,8 +97,11 @@ public abstract class SyntacticTreeNode {
 			return true;
 
 		// the punctuation nodes are not useful, '.', '.', '?', '!', ';', etc
-		if (type.equals(",") || type.equals(".") || type.equals("?")
-				|| type.equals("!") || type.equals(";"))
+		if ((type.equals(",") || type.equals(".") || type.equals("?")
+				|| type.equals("!") || type.equals(";")) 
+				// TODO : Parser gives type = '.' instead of VB
+				//&& ( parse.getHead().toString().length()<2 
+				)
 			return true;
 
 		return false;

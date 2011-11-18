@@ -83,7 +83,7 @@ public class ParserChunker2MatcherProcessor {
 	private Parser parser;
 	private ChunkerME chunker;
 	private final int NUMBER_OF_SECTIONS_IN_SENTENCE_CHUNKS = 5;
-	Logger logger = Logger.getLogger("opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor");
+	private static Logger LOG = Logger.getLogger("opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor");
 
 	static {
 		//TODO config
@@ -172,7 +172,7 @@ public class ParserChunker2MatcherProcessor {
 		try {
 			parseArray = ParserTool.parseLine(sentence, parser, 1);
 		} catch (Throwable t) {
-			logger.log(Level.WARNING, "failed to parse the sentence : '"+sentence, t);
+			LOG.log(Level.WARNING, "failed to parse the sentence : '"+sentence, t);
 			return null;
 		}
 
@@ -189,12 +189,14 @@ public class ParserChunker2MatcherProcessor {
 		String[] sentences = splitSentences(para);
 		for(String sent: sentences){
 			List<List<ParseTreeChunk>> singleSentChunks = formGroupedPhrasesFromChunksForSentence(sent); 
+			if (singleSentChunks==null)
+				continue;
 			if (listOfChunksAccum.size()<1 ){
 				listOfChunksAccum = new ArrayList<List<ParseTreeChunk>>(singleSentChunks);
 			} else 
 				for(int i= 0; i<NUMBER_OF_SECTIONS_IN_SENTENCE_CHUNKS; i++){
 					//make sure not null
-					if (singleSentChunks.size()!=NUMBER_OF_SECTIONS_IN_SENTENCE_CHUNKS)
+					if (singleSentChunks == null || singleSentChunks.size()!=NUMBER_OF_SECTIONS_IN_SENTENCE_CHUNKS)
 						break;
 					List<ParseTreeChunk> phraseI = singleSentChunks.get(i);
 					List<ParseTreeChunk> phraseIaccum  = listOfChunksAccum.get(i);
@@ -202,7 +204,6 @@ public class ParserChunker2MatcherProcessor {
 					listOfChunksAccum.set(i, phraseIaccum);
 				}
 		}
-
 		return listOfChunksAccum;
 	}
 
@@ -215,21 +216,40 @@ public class ParserChunker2MatcherProcessor {
 
 		String[] toks = tokenizer.tokenize(sentence);
 		String[] tags = new String[toks.length]; //posTagger.tag(toks);
-		int t=0;
 		SentenceNode node  = parseSentenceNode(sentence);
+		if (node==null){
+			LOG.info("Problem parsing sentence '"+sentence);
+			return null;
+		}
 		List<String> POSlist = node.getOrderedPOSList();
 		tags = POSlist.toArray(new String[0]);
-
+		if (toks.length != tags.length){
+			LOG.info("disagreement between toks and tags; sent =  '"+sentence + "'\n tags = "+tags + 
+					"\n will now try this sentence in lower case" );
+			node  = parseSentenceNode(sentence.toLowerCase());
+			if (node==null){
+				LOG.info("Problem parsing sentence '"+sentence);
+				return null;
+			}
+			POSlist = node.getOrderedPOSList();
+			tags = POSlist.toArray(new String[0]);
+			if (toks.length != tags.length){
+				LOG.info("AGAIN: disagreement between toks and tags for lower case! ");
+				if (toks.length>tags.length){
+					String[] newToks = new String[tags.length];
+					for(int i = 0; i<tags.length; i++ ){
+						newToks[i] = toks[i];
+					}
+					toks = newToks;
+					
+				} else
+					return null;
+			}
+			
+		}
 		String[] res = chunker.chunk(toks, tags);
 		Span[] span =  chunker.chunkAsSpans(toks, tags);
 		Sequence[] seq = chunker.topKSequences(toks, tags);
-
-		/* correction for chunking tags
-		for(int i=0; i< toks.length; i++){
-			if (toks[i].equalsIgnoreCase("is")){
-				res[i] = "B-VP";
-			}
-		} */
 
 		List<List<ParseTreeChunk>> listOfChunks = new ArrayList<List<ParseTreeChunk>>();
 		List<ParseTreeChunk> nounPhr = new ArrayList<ParseTreeChunk>(), 
@@ -258,7 +278,7 @@ public class ParserChunker2MatcherProcessor {
 				for(int j=i+1; j<res.length; j++){
 					if (res[j].startsWith("B-VP")){
 						nounPhr.add(new ParseTreeChunk("NP", lemmas, pOSs));
-						logger.info(i + " => " +lemmas);
+						LOG.info(i + " => " +lemmas);
 						currPhraseClosed = true;
 						break;
 					} else {
@@ -268,7 +288,7 @@ public class ParserChunker2MatcherProcessor {
 				}
 				if (!currPhraseClosed){
 					nounPhr.add(new ParseTreeChunk("NP", lemmas, pOSs));
-					logger.info(i + " => " + lemmas);
+					LOG.fine(i + " => " + lemmas);
 				}
 
 			} else if (bi_POS.startsWith("B-PP")){// beginning of a phrase
@@ -279,7 +299,7 @@ public class ParserChunker2MatcherProcessor {
 				for(int j=i+1; j<res.length; j++){
 					if (res[j].startsWith("B-VP")){
 						prepPhr.add(new ParseTreeChunk("PP", lemmas, pOSs));
-						logger.info(i + " => " + lemmas);
+						LOG.fine(i + " => " + lemmas);
 						currPhraseClosed = true;
 						break;
 					} else {
@@ -289,7 +309,7 @@ public class ParserChunker2MatcherProcessor {
 				}
 				if (!currPhraseClosed){
 					prepPhr.add(new ParseTreeChunk("PP", lemmas, pOSs));
-					logger.info(i + " => " + lemmas);
+					LOG.fine(i + " => " + lemmas);
 				}
 			} else
 				if (bi_POS.startsWith("B-VP")){// beginning of a phrase
@@ -300,7 +320,7 @@ public class ParserChunker2MatcherProcessor {
 					for(int j=i+1; j<res.length; j++){
 						if (res[j].startsWith("B-VP")){
 							verbPhr.add(new ParseTreeChunk("VP", lemmas, pOSs));
-							logger.info(i + " => " +lemmas);
+							LOG.fine(i + " => " +lemmas);
 							currPhraseClosed = true;
 							break;
 						} else {
@@ -310,7 +330,7 @@ public class ParserChunker2MatcherProcessor {
 					}
 					if (!currPhraseClosed){
 						verbPhr.add(new ParseTreeChunk("VP", lemmas, pOSs));
-						logger.info(i + " => " + lemmas);
+						LOG.fine(i + " => " + lemmas);
 					}
 				} else
 					if (bi_POS.startsWith("B-ADJP") ){// beginning of a phrase
@@ -321,7 +341,7 @@ public class ParserChunker2MatcherProcessor {
 						for(int j=i+1; j<res.length; j++){
 							if (res[j].startsWith("B-VP")){
 								adjPhr.add(new ParseTreeChunk("ADJP", lemmas, pOSs));
-								logger.info(i + " => " +lemmas);
+								LOG.fine(i + " => " +lemmas);
 								currPhraseClosed = true;
 								break;
 							} else {
@@ -331,7 +351,7 @@ public class ParserChunker2MatcherProcessor {
 						}
 						if (!currPhraseClosed){
 							adjPhr.add(new ParseTreeChunk("ADJP", lemmas, pOSs));
-							logger.info(i + " => " + lemmas);
+							LOG.fine(i + " => " + lemmas);
 						}
 					}
 		}
@@ -378,7 +398,7 @@ public class ParserChunker2MatcherProcessor {
 				sentenceNode = sentenceToSentenceNode(sentenceParse);
 			} catch (Exception e) {
 				// don't fail the whole paragraph when a single sentence fails
-				System.err.println("Faile to convert sentence to node. error: " + e);
+				LOG.severe("Failed to convert sentence to node. error: " + e);
 				sentenceNode = null;
 			}
 
@@ -398,15 +418,14 @@ public class ParserChunker2MatcherProcessor {
 
 		// convert the OpenNLP Parse to our own tree nodes
 		SyntacticTreeNode node = toSyntacticTreeNode(sentenceParse);
-		if ((node == null) || !(node instanceof SentenceNode))
+		if ((node == null)) 			
 			return null;
-
-		SentenceNode sentenceNode = (SentenceNode) node;
-
-		// fix the parsing tree
-		fixParsingTree(sentenceNode);
-
-		return sentenceNode;
+		if (node instanceof SentenceNode)
+			return (SentenceNode)node;
+		else if (node instanceof PhraseNode){
+			SentenceNode sn = new SentenceNode("sentence", node.getChildren()) ;
+			return sn;
+		} else return null;
 	}
 
 	public List<List<SentenceNode>> parseTextNode(String text) {
@@ -563,7 +582,7 @@ public class ParserChunker2MatcherProcessor {
 
 		// check for junk types
 		String type = parse.getType();
-		if (SyntacticTreeNode.isJunkType(type))
+		if (SyntacticTreeNode.isJunkType(type, parse) )
 			return null;
 
 		String text = parse.getText();
@@ -606,14 +625,7 @@ public class ParserChunker2MatcherProcessor {
 		return childrenNodeList;
 	}
 
-	private static void fixParsingTree(SentenceNode sentenceNode) {
-		// logger.finest("before = " + sentenceNode);
-		//	for (ParsingTreeFixer fixer : FIXER_LIST) {
-		//		fixer.fix(sentenceNode);
-		//	}
-		// logger.finest("after = " + sentenceNode);
-	}
-
+	
 	public SentencePairMatchResult assessRelevance(String para1, String para2)
 	{
 		ParserChunker2MatcherProcessor parser = ParserChunker2MatcherProcessor.getInstance();
@@ -630,8 +642,11 @@ public class ParserChunker2MatcherProcessor {
 	}
 	private List<LemmaPair> listListParseTreeChunk2ListLemmaPairs(
 			List<List<ParseTreeChunk>> sent1GrpLst) {
-		List<ParseTreeChunk> wholeSentence = sent1GrpLst.get(sent1GrpLst.size()-1); // whole sentence is last list in the list of lists
 		List<LemmaPair>  results = new ArrayList<LemmaPair>();
+		if (sent1GrpLst==null || sent1GrpLst.size() <1)
+			return  results;
+		List<ParseTreeChunk> wholeSentence = sent1GrpLst.get(sent1GrpLst.size()-1); // whole sentence is last list in the list of lists
+		
 		List<String> pOSs = wholeSentence.get(0).getPOSs();
 		List<String> lemmas = wholeSentence.get(0).getLemmas();
 		for(int i= 0; i< lemmas.size(); i++){
@@ -653,7 +668,7 @@ public class ParserChunker2MatcherProcessor {
 
 	public static void main(String[] args) throws Exception {
 
-
+		String text = "Where do I apply? Go to your town office or city hall. If your town doesn't have an office, ask the town clerk or a Selectman. Tell them that you need a 1040 tax form . I Can 't Pay the Taxes on my House: What Can I Do?. Pine Tree Legal";
 
 		/*
 		 * String text =
@@ -674,8 +689,11 @@ public class ParserChunker2MatcherProcessor {
 		// String sentence = "I love Fresh body styling";
 		// String phrase = "I captures way more detail in high contrast scenes";
 		ParserChunker2MatcherProcessor parser = ParserChunker2MatcherProcessor.getInstance();
-		parser.printParseTree("How can I get short focus zoom lens for digital camera");
-		parser.formGroupedPhrasesFromChunksForSentence("How can I get short focus zoom lens for digital camera");
+		List<List<ParseTreeChunk>> res = parser.formGroupedPhrasesFromChunksForPara(text);
+		System.out.println(res);
+		
+		//parser.printParseTree("How can I get short focus zoom lens for digital camera");
+		//parser.formGroupedPhrasesFromChunksForSentence("How can I get short focus zoom lens for digital camera");
 
 		System.exit(0);
 

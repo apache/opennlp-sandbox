@@ -68,4 +68,6 @@ public class SentenceNode extends PhraseNode {
 		}
 		return types;
 	}
+	
+	
 }
