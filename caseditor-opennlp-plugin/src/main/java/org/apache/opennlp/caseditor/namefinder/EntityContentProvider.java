@@ -139,7 +139,11 @@ public class EntityContentProvider implements IStructuredContentProvider {
               }
             }
           }
-          
+          else {
+            if (entityListViewer.getTable().getItemCount() > 0) {
+              entityListViewer.setSelection(new StructuredSelection(entityListViewer.getElementAt(0)));
+            }
+          }
         }
         else {
           Entity newEntity = new Entity(annotation.getBegin(), annotation.getEnd(),
