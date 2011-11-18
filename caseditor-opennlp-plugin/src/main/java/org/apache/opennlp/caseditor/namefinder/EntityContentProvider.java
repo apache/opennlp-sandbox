@@ -98,6 +98,10 @@ public class EntityContentProvider implements IStructuredContentProvider {
         // TODO: Refactor this code branch ...
         //       Now it only needs to remove all intersecting entites from the
         //       candidate list and add the entity itself to the confirmed list
+        
+        int selectionIndex = EntityContentProvider.this.entityListViewer.
+            getTable().getSelectionIndex();
+        
         if (!entityList.isEmpty()) {
           Entity entity = entityList.get(0);
           entity.setBeginIndex(annotation.getBegin());
@@ -121,9 +125,6 @@ public class EntityContentProvider implements IStructuredContentProvider {
               candidateEntities.remove(removeEntity);
             }
           }
-          
-          int selectionIndex = EntityContentProvider.this.entityListViewer.
-              getTable().getSelectionIndex();
           
           if (selectionIndex != -1) {
             if (selectionIndex < entityListViewer.
