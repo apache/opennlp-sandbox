@@ -59,6 +59,8 @@ class NameFinderViewPage extends Page implements ISelectionListener {
 
   private static final String QUICK_ANNOTATE_ACTION_ID = "QuickAnnotate";
   
+  private NameFinderView nameFinderView;
+  
   private ICasEditor editor;
 
   private PageBook book;
@@ -66,7 +68,8 @@ class NameFinderViewPage extends Page implements ISelectionListener {
   private Text messageText;
   private TableViewer entityList;
 
-  NameFinderViewPage(ICasEditor editor, ICasDocument document) {
+  NameFinderViewPage(NameFinderView nameFinderView, ICasEditor editor, ICasDocument document) {
+    this.nameFinderView = nameFinderView;
     this.editor = editor;
     
     IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
@@ -215,5 +218,12 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     
     toolBarManager.add(action);
     
+  }
+  
+  
+  boolean isActive() {
+    IWorkbenchPart activePart = getSite().getPage().getActivePart();
+    
+    return nameFinderView == activePart;
   }
 }

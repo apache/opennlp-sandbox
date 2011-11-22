@@ -48,6 +48,7 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.IWorkbenchPart;
 
 // Need its own list (or map), otherwise it is complicated to compute updates ...
 // Maybe we should create again, a "View" map of indexes to its annotations?!
@@ -126,23 +127,25 @@ public class EntityContentProvider implements IStructuredContentProvider {
             }
           }
           
-          if (selectionIndex != -1) {
-            if (selectionIndex < entityListViewer.
-                getTable().getItemCount()) {
-                    entityListViewer.setSelection(
-                        new StructuredSelection(entityListViewer.getElementAt(selectionIndex)));
+          if (nameFinderView.isActive()) {
+            if (selectionIndex != -1) {
+              if (selectionIndex < entityListViewer.
+                  getTable().getItemCount()) {
+                      entityListViewer.setSelection(
+                          new StructuredSelection(entityListViewer.getElementAt(selectionIndex)));
+              }
+              else {
+                if (entityListViewer.getTable().getItemCount() > 0) {
+                  entityListViewer.setSelection(new StructuredSelection(
+                          entityListViewer.getElementAt(
+                          entityListViewer.getTable().getItemCount() - 1)));
+                }
+              }
             }
             else {
               if (entityListViewer.getTable().getItemCount() > 0) {
-                entityListViewer.setSelection(new StructuredSelection(
-                        entityListViewer.getElementAt(
-                        entityListViewer.getTable().getItemCount() - 1)));
+                entityListViewer.setSelection(new StructuredSelection(entityListViewer.getElementAt(0)));
               }
-            }
-          }
-          else {
-            if (entityListViewer.getTable().getItemCount() > 0) {
-              entityListViewer.setSelection(new StructuredSelection(entityListViewer.getElementAt(0)));
             }
           }
         }
