@@ -20,6 +20,11 @@ package org.apache.opennlp.caseditor.namefinder;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 
+/**
+ * Compares two entities. Entities which have a smaller begin index are ordered first.
+ * If entities have an identical begin index the one with the higher confidence score
+ * is ordered first.
+ */
 public class EntityComperator extends ViewerComparator {
 
   @Override
@@ -28,6 +33,17 @@ public class EntityComperator extends ViewerComparator {
     Entity e1 = (Entity) o1;
     Entity e2 = (Entity) o2;
     
-    return e1.getBeginIndex() - e2.getBeginIndex();
+    int diff = e1.getBeginIndex() - e2.getBeginIndex();
+    
+    if (diff == 0) {
+      if (e1.getConfidence() - e2.getConfidence() < 0) {
+        return -1;
+      }
+      else {
+        return 1;
+      }
+    }
+    
+    return diff;
   }
 }
