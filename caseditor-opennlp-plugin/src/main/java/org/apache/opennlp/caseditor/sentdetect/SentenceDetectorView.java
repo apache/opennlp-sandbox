@@ -17,7 +17,6 @@
 
 package org.apache.opennlp.caseditor.sentdetect;
 
-import org.apache.uima.caseditor.editor.AnnotationEditorView;
 import org.apache.uima.caseditor.editor.CasEditorView;
 import org.apache.uima.caseditor.editor.ICasDocument;
 import org.apache.uima.caseditor.editor.ICasEditor;
@@ -36,7 +35,7 @@ public class SentenceDetectorView extends CasEditorView {
 
     if (document != null) {
 
-      SentenceDetectorViewPage page = new SentenceDetectorViewPage(editor);
+      SentenceDetectorViewPage page = new SentenceDetectorViewPage(this, editor);
       initPage(page);
       page.createControl(getPageBook());
 
@@ -51,7 +50,7 @@ public class SentenceDetectorView extends CasEditorView {
     ICasDocument document = editor.getDocument();
 
     if (document != null) {
-      return new SentenceDetectorViewPage(editor);
+      return new SentenceDetectorViewPage(this, editor);
     }
 
     return null;

@@ -23,9 +23,7 @@ import org.apache.opennlp.caseditor.namefinder.Entity;
 import org.apache.uima.caseditor.CasEditorPlugin;
 import org.apache.uima.caseditor.Images;
 import org.apache.uima.caseditor.editor.AnnotationEditor;
-import org.apache.uima.caseditor.editor.ICasDocument;
 import org.apache.uima.caseditor.editor.ICasEditor;
-import org.apache.uima.caseditor.editor.ICasEditorInputListener;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
@@ -40,7 +38,7 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IActionBars;
-import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.actions.BaseSelectionListenerAction;
 import org.eclipse.ui.part.Page;
 import org.eclipse.ui.part.PageBook;
@@ -58,8 +56,11 @@ public class SentenceDetectorViewPage extends Page {
   private TableViewer sentenceList; 
   
   private SentenceContentProvider contentProvider;
+
+  private SentenceDetectorView sentenceDetectorView;
   
-  public SentenceDetectorViewPage(ICasEditor editor) {
+  public SentenceDetectorViewPage(SentenceDetectorView sentenceDetectorView, ICasEditor editor) {
+    this.sentenceDetectorView = sentenceDetectorView;
     this.editor = editor;
   }
 
@@ -179,5 +180,11 @@ public class SentenceDetectorViewPage extends Page {
     // TODO: Confirm action should use selection bounds in the editor!
     
     // Note: The same mechanism could be used in the name finder view, to change token bounds of an annotation!
+  }
+  
+  boolean isActive() {
+    IWorkbenchPart activePart = getSite().getPage().getActivePart();
+    
+    return sentenceDetectorView == activePart;
   }
 }

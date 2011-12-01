@@ -125,19 +125,22 @@ public class SentenceContentProvider implements IStructuredContentProvider {
                 }
               }
               
-              int newSelectionIndex = -1;
-              
-              if (sentenceTable.getSelectionIndex() == -1 && sentenceTable.getItemCount() > 0) {
-                newSelectionIndex = 0;
-              }
-              
-              if (selectionIndex < sentenceTable.getItemCount()) {
-                newSelectionIndex = selectionIndex;
-              }
-              
-              if (newSelectionIndex != -1) {
-                SentenceContentProvider.this.sentenceList.setSelection(
-                    new StructuredSelection(SentenceContentProvider.this.sentenceList.getElementAt(selectionIndex)));
+              // is sentence detector view active ?!
+              if (SentenceContentProvider.this.sentenceDetectorView.isActive()) {
+                int newSelectionIndex = -1;
+                
+                if (sentenceTable.getSelectionIndex() == -1 && sentenceTable.getItemCount() > 0) {
+                  newSelectionIndex = 0;
+                }
+                
+                if (selectionIndex < sentenceTable.getItemCount()) {
+                  newSelectionIndex = selectionIndex;
+                }
+                
+                if (newSelectionIndex != -1) {
+                  SentenceContentProvider.this.sentenceList.setSelection(
+                      new StructuredSelection(SentenceContentProvider.this.sentenceList.getElementAt(selectionIndex)));
+                }
               }
             }
             else {
