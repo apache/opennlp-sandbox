@@ -17,9 +17,9 @@
 
 package org.apache.opennlp.caseditor.sentdetect;
 
+import org.apache.opennlp.caseditor.ConfirmAnnotationAction;
 import org.apache.opennlp.caseditor.OpenPreferenceDialog;
-import org.apache.opennlp.caseditor.namefinder.ConfirmAnnotationAction;
-import org.apache.opennlp.caseditor.namefinder.Entity;
+import org.apache.opennlp.caseditor.PotentialAnnotation;
 import org.apache.uima.caseditor.CasEditorPlugin;
 import org.apache.uima.caseditor.Images;
 import org.apache.uima.caseditor.editor.AnnotationEditor;
@@ -111,16 +111,12 @@ public class SentenceDetectorViewPage extends Page {
             .getSelection();
 
         if (!selection.isEmpty()) {
-          Entity entity = (Entity) selection.getFirstElement();
+          PotentialAnnotation entity = (PotentialAnnotation) selection.getFirstElement();
 
-          if (entity.isConfirmed()) {
-            // TODO: Send corresponding annotation selection event ...
-          } else {
-            if (editor instanceof AnnotationEditor) {
-              ((AnnotationEditor) editor).selectAndReveal(
-                  entity.getBeginIndex(),
-                  entity.getEndIndex() - entity.getBeginIndex());
-            }
+          if (editor instanceof AnnotationEditor) {
+            ((AnnotationEditor) editor).selectAndReveal(
+                entity.getBeginIndex(),
+                entity.getEndIndex() - entity.getBeginIndex());
           }
         }
       }

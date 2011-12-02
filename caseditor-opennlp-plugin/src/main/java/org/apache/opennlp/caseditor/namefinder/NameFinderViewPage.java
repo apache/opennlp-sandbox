@@ -17,7 +17,10 @@
 
 package org.apache.opennlp.caseditor.namefinder;
 
+import org.apache.opennlp.caseditor.ConfirmAnnotationAction;
 import org.apache.opennlp.caseditor.OpenPreferenceDialog;
+import org.apache.opennlp.caseditor.PotentialAnnotation;
+import org.apache.opennlp.caseditor.PotentialAnnotationComperator;
 import org.apache.uima.cas.text.AnnotationFS;
 import org.apache.uima.caseditor.CasEditorPlugin;
 import org.apache.uima.caseditor.Images;
@@ -104,11 +107,11 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     typeColumn.setText("Type");
     typeColumn.setWidth(40);
     
-    entityList.setLabelProvider(new EntityLabelProvider());
+    entityList.setLabelProvider(new PotentialEntityAnnotationLabelProvider());
     entityList.setContentProvider(new EntityContentProvider(this, (AnnotationEditor) editor, entityList));
     getSite().setSelectionProvider(entityList);
     
-    entityList.setComparator(new EntityComperator());
+    entityList.setComparator(new PotentialAnnotationComperator());
     
     entityList.setInput(editor.getDocument());
     
@@ -128,14 +131,12 @@ class NameFinderViewPage extends Page implements ISelectionListener {
 			// is highlighted and revealed in the Annotation Editor.
 			
 			if (!selection.isEmpty()) {
-				Entity entity = (Entity) selection.getFirstElement();
+			  PotentialAnnotation entity = (PotentialAnnotation) selection.getFirstElement();
 				
-				if (!entity.isConfirmed()) {
-				  if (editor instanceof AnnotationEditor) {
-				    ((AnnotationEditor) editor).selectAndReveal(entity.getBeginIndex(),
-				        entity.getEndIndex() - entity.getBeginIndex());
-				  }
-				}
+			  if (editor instanceof AnnotationEditor) {
+			    ((AnnotationEditor) editor).selectAndReveal(entity.getBeginIndex(),
+			        entity.getEndIndex() - entity.getBeginIndex());
+			  }
 			}
 		}
 	});
@@ -160,8 +161,8 @@ class NameFinderViewPage extends Page implements ISelectionListener {
           
           // If that annotation exist, then match it.
           // Bug: Need to check the type also ...
-          Entity entity = new Entity(firstAnnotation.getBegin(), firstAnnotation.getEnd(),
-              firstAnnotation.getCoveredText(), null, true, firstAnnotation.getType().getName());
+          PotentialAnnotation entity = new PotentialAnnotation(firstAnnotation.getBegin(), firstAnnotation.getEnd(),
+              firstAnnotation.getCoveredText(), null, firstAnnotation.getType().getName());
           
           ISelection tableSelection = new StructuredSelection(entity);
           entityList.setSelection(tableSelection, true);
@@ -217,6 +218,13 @@ class NameFinderViewPage extends Page implements ISelectionListener {
         .getTaeImageDescriptor(Images.MODEL_PROCESSOR_FOLDER));
     
     toolBarManager.add(action);
+    
+    // TODO:
+    // How to make an action which changes the selection in the editor? Must be possible to make
+    // it large smaller on both sides, like the actions we already have, but not for an annotation!
+    // Key short cuts
+    // alt + left/right key for right annotation side
+    // ctrl + left/right key for left annotation side
     
   }
   

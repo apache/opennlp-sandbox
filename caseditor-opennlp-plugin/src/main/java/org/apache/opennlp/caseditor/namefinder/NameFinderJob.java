@@ -30,6 +30,7 @@ import opennlp.tools.util.Span;
 import opennlp.tools.util.featuregen.StringPattern;
 
 import org.apache.opennlp.caseditor.OpenNLPPlugin;
+import org.apache.opennlp.caseditor.PotentialAnnotation;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -52,7 +53,7 @@ public class NameFinderJob extends Job {
   private Span tokens[];
   private Span verifiedNames[] = new Span[0];
   
-  private List<Entity> nameList;
+  private List<PotentialAnnotation> nameList;
   
   NameFinderJob() {
     super("Name Finder Job");
@@ -103,7 +104,7 @@ public class NameFinderJob extends Job {
     if (nameFinder != null) {
       nameFinder.clearAdaptiveData();
     
-      nameList = new ArrayList<Entity>();
+      nameList = new ArrayList<PotentialAnnotation>();
       
       // TODO: Name tokens, should be for the entire text,
       // not just the prev sentences ...
@@ -182,8 +183,8 @@ public class NameFinderJob extends Job {
           
           String coveredText = text.substring(beginIndex, endIndex);
           
-          nameList.add(new Entity(beginIndex, endIndex, coveredText,
-              names[i].getConfidence(), false, names[i].getType()));
+          nameList.add(new PotentialAnnotation(beginIndex, endIndex, coveredText,
+              names[i].getConfidence(), names[i].getType()));
         }
       }
     }
@@ -194,8 +195,8 @@ public class NameFinderJob extends Job {
     return new Status(IStatus.OK, OpenNLPPlugin.ID, "OK");
   }
 
-  public List<Entity> getNames() {
-    List<Entity> names = new ArrayList<Entity>();
+  public List<PotentialAnnotation> getNames() {
+    List<PotentialAnnotation> names = new ArrayList<PotentialAnnotation>();
     names.addAll(nameList);
     return names;
   }

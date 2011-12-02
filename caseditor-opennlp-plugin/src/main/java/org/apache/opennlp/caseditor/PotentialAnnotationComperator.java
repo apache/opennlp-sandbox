@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.opennlp.caseditor.namefinder;
+package org.apache.opennlp.caseditor;
 
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
@@ -25,13 +25,13 @@ import org.eclipse.jface.viewers.ViewerComparator;
  * If entities have an identical begin index the one with the higher confidence score
  * is ordered first.
  */
-public class EntityComperator extends ViewerComparator {
+public class PotentialAnnotationComperator extends ViewerComparator {
 
   @Override
   public int compare(Viewer viewer, Object o1, Object o2) {
     
-    Entity e1 = (Entity) o1;
-    Entity e2 = (Entity) o2;
+    PotentialAnnotation e1 = (PotentialAnnotation) o1;
+    PotentialAnnotation e2 = (PotentialAnnotation) o2;
     
     int diff = e1.getBeginIndex() - e2.getBeginIndex();
     

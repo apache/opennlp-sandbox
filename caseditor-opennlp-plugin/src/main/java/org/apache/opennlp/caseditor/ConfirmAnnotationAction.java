@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.opennlp.caseditor.namefinder;
+package org.apache.opennlp.caseditor;
 
 import org.apache.uima.cas.FeatureStructure;
 import org.apache.uima.caseditor.editor.ICasEditor;
@@ -41,15 +41,7 @@ public class ConfirmAnnotationAction extends BaseSelectionListenerAction {
   
   @Override
   protected boolean updateSelection(IStructuredSelection selection) {
-    
-    boolean result = false;
-    
-    if (!selection.isEmpty()) {
-      Entity entity = (Entity) selection.getFirstElement();
-      return !entity.isConfirmed();
-    }
-    
-    return result;
+    return !selection.isEmpty();
   }
   
   // Note: Action can only handle one element.
@@ -65,14 +57,12 @@ public class ConfirmAnnotationAction extends BaseSelectionListenerAction {
     Object elements[] = selection.toArray();
 
     if (elements.length > 0) {
-      Entity selectedEntity = (Entity) elements[0];
-      if (!selectedEntity.isConfirmed()) {
+      PotentialAnnotation selectedEntity = (PotentialAnnotation) elements[0];
         
-        FeatureStructure nameAnnotation = editor.getDocument().getCAS().createAnnotation(
-            editor.getDocument().getCAS().getTypeSystem().getType(selectedEntity.getType()),
-            selectedEntity.getBeginIndex(), selectedEntity.getEndIndex());
-        editor.getDocument().addFeatureStructure(nameAnnotation);
-      }
+      FeatureStructure nameAnnotation = editor.getDocument().getCAS().createAnnotation(
+          editor.getDocument().getCAS().getTypeSystem().getType(selectedEntity.getType()),
+          selectedEntity.getBeginIndex(), selectedEntity.getEndIndex());
+      editor.getDocument().addFeatureStructure(nameAnnotation);
     }
   }
 }

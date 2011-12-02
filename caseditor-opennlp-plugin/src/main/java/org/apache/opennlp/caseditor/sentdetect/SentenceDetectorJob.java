@@ -28,7 +28,7 @@ import opennlp.tools.util.Span;
 
 import org.apache.opennlp.caseditor.ModelUtil;
 import org.apache.opennlp.caseditor.OpenNLPPlugin;
-import org.apache.opennlp.caseditor.namefinder.Entity;
+import org.apache.opennlp.caseditor.PotentialAnnotation;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -46,7 +46,7 @@ public class SentenceDetectorJob extends Job {
   
   private List<Span> paragraphs;
   
-  private List<Entity> detectedSentences;
+  private List<PotentialAnnotation> detectedSentences;
   
   public SentenceDetectorJob() {
     super("Sentence Detector Job");
@@ -91,7 +91,7 @@ public class SentenceDetectorJob extends Job {
       }
     }
     
-    detectedSentences = new ArrayList<Entity>();
+    detectedSentences = new ArrayList<PotentialAnnotation>();
     for (Span para : paragraphs) {
     
       Span sentenceSpans[] = sentenceDetector.sentPosDetect(para.getCoveredText(text).toString());
@@ -101,16 +101,16 @@ public class SentenceDetectorJob extends Job {
       for (int i = 0; i < sentenceSpans.length; i++) {
         Span sentenceSpan = sentenceSpans[i];
         String sentenceText = text.substring(para.getStart() + sentenceSpan.getStart(), para.getStart() + sentenceSpan.getEnd());
-        detectedSentences.add(new Entity(para.getStart() + sentenceSpan.getStart(), 
+        detectedSentences.add(new PotentialAnnotation(para.getStart() + sentenceSpan.getStart(), 
             para.getStart() + sentenceSpan.getEnd(), sentenceText,
-            confidence[i], false, sentenceType));
+            confidence[i], sentenceType));
       }
     }
     
     return new Status(IStatus.OK, OpenNLPPlugin.ID, "OK");
   }
 
-  Entity[] getDetectedSentences() {
-    return detectedSentences.toArray(new Entity[detectedSentences.size()]);
+  PotentialAnnotation[] getDetectedSentences() {
+    return detectedSentences.toArray(new PotentialAnnotation[detectedSentences.size()]);
   }
 }

@@ -20,7 +20,6 @@ package org.apache.opennlp.caseditor.namefinder;
 import org.apache.uima.caseditor.editor.CasEditorView;
 import org.apache.uima.caseditor.editor.ICasDocument;
 import org.apache.uima.caseditor.editor.ICasEditor;
-import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.part.IPageBookViewPage;
 
 public class NameFinderView extends CasEditorView {

@@ -25,7 +25,7 @@ import opennlp.tools.util.Span;
 
 import org.apache.opennlp.caseditor.AbstractCasChangeTrigger;
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
-import org.apache.opennlp.caseditor.namefinder.Entity;
+import org.apache.opennlp.caseditor.PotentialAnnotation;
 import org.apache.opennlp.caseditor.namefinder.EntityContentProvider;
 import org.apache.opennlp.caseditor.util.UIMAUtil;
 import org.apache.uima.cas.CAS;
@@ -80,7 +80,7 @@ public class SentenceContentProvider implements IStructuredContentProvider {
               
               SentenceContentProvider.this.sentenceDetectorView.setMessage(null);
               
-              List<Entity> confirmedSentences = new ArrayList<Entity>();
+              List<PotentialAnnotation> confirmedSentences = new ArrayList<PotentialAnnotation>();
               // TODO: Create a list of existing sentence annotations.
               
               // get sentence annotation index ...
@@ -96,12 +96,12 @@ public class SentenceContentProvider implements IStructuredContentProvider {
               for (Iterator<AnnotationFS> it = cas.getAnnotationIndex(sentenceType).iterator();
                   it.hasNext(); ) {
                 AnnotationFS sentenceAnnotation = it.next();
-                confirmedSentences.add(new Entity(sentenceAnnotation.getBegin(),
-                    sentenceAnnotation.getEnd(), sentenceAnnotation.getCoveredText(), 1d, true, sentenceTypeName));
+                confirmedSentences.add(new PotentialAnnotation(sentenceAnnotation.getBegin(),
+                    sentenceAnnotation.getEnd(), sentenceAnnotation.getCoveredText(), 1d, sentenceTypeName));
               }
              
               
-              Entity sentences[] = SentenceContentProvider.this.
+              PotentialAnnotation sentences[] = SentenceContentProvider.this.
                   sentenceDetector.getDetectedSentences();
               
               // TODO:
@@ -117,7 +117,7 @@ public class SentenceContentProvider implements IStructuredContentProvider {
               // Add a new potential sentence
               // Only add if it is not a confirmed sentence yet!
               // for each anotation, search confirmed sentence array above ...
-              for (Entity sentence : sentences) {
+              for (PotentialAnnotation sentence : sentences) {
                 if (EntityContentProvider.searchEntity(confirmedSentences,
                     sentence.getBeginIndex(), sentence.getEndIndex(),
                     sentence.getType()) == null) {

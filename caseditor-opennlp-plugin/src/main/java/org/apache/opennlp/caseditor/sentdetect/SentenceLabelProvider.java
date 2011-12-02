@@ -19,7 +19,7 @@ package org.apache.opennlp.caseditor.sentdetect;
 
 import java.text.DecimalFormat;
 
-import org.apache.opennlp.caseditor.namefinder.Entity;
+import org.apache.opennlp.caseditor.PotentialAnnotation;
 import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.swt.graphics.Image;
@@ -44,7 +44,7 @@ public class SentenceLabelProvider implements ITableLabelProvider {
   public String getColumnText(Object element, int columnIndex) {
     String result = null;
     
-    Entity entity = (Entity) element;
+    PotentialAnnotation entity = (PotentialAnnotation) element;
     
     if (columnIndex == 0) {
       if (entity.getConfidence() != null)

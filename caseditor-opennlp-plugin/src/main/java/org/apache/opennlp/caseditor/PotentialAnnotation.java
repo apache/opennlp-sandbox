@@ -15,31 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.opennlp.caseditor.namefinder;
-
-import org.apache.uima.cas.FeatureStructure;
-import org.apache.uima.cas.text.AnnotationFS;
-import org.eclipse.core.runtime.IAdaptable;
+package org.apache.opennlp.caseditor;
 
 // TODO: Rename to PotentialAnnotation, should also contain a type, then we can use
 //       reuse the code to create an annotation for it.
-public class Entity implements IAdaptable {
+public class PotentialAnnotation {
 
   private int beginIndex;
   private int endIndex;
 
   private String entityText;
 
-  private boolean isConfirmed;
-
   private Double confidence;
   
   private String type;
 
-  private AnnotationFS linkedAnnotationFS;
-  
-  public Entity(int beginIndex, int endIndex, String entityText, Double confidence,
-      boolean isConfirmed, String type) {
+  public PotentialAnnotation(int beginIndex, int endIndex, String entityText,
+      Double confidence, String type) {
     this.beginIndex = beginIndex;
     this.endIndex = endIndex;
     
@@ -47,13 +39,7 @@ public class Entity implements IAdaptable {
     
     this.confidence = confidence;
     
-    this.isConfirmed = isConfirmed;
-    
     this.type = type;
-  }
-  
-  public Entity(int beginIndex, int endIndex, String entityText, Double confidence, boolean isConfirmed) {
-    this(beginIndex, endIndex, entityText, confidence, isConfirmed, null);
   }
   
   public void setBeginIndex(int beginIndex) {
@@ -92,18 +78,6 @@ public class Entity implements IAdaptable {
     return confidence;
   }
   
-  public void setConfirmed(boolean isConfirmed) {
-    this.isConfirmed = isConfirmed;
-  }
-  
-  public boolean isConfirmed() {
-    return isConfirmed;
-  }
-  
-  public void setLinkedAnnotation(AnnotationFS linkedAnnotationFS) {
-    this.linkedAnnotationFS = linkedAnnotationFS;
-  }
-  
   @Override
   public String toString() {
     return entityText;
@@ -116,8 +90,8 @@ public class Entity implements IAdaptable {
     if (obj == this) {
       return true;
     }
-    else if (obj instanceof Entity) {
-      Entity entity = (Entity) obj;
+    else if (obj instanceof PotentialAnnotation) {
+      PotentialAnnotation entity = (PotentialAnnotation) obj;
       return entity.getBeginIndex() == getBeginIndex() &&
           entity.getEndIndex() == getEndIndex() && 
           entity.getType().equals(type);
@@ -131,14 +105,4 @@ public class Entity implements IAdaptable {
   public int hashCode() {
     return getBeginIndex() + getEndIndex() + type.hashCode();
   }
-  
-  public Object getAdapter(@SuppressWarnings("rawtypes") Class adapter) {
-    if (AnnotationFS.class.equals(adapter) || FeatureStructure.class.equals(adapter)) {
-      return linkedAnnotationFS;
-    }
-    else {
-      return null;
-    }
-  }
-  
 }
