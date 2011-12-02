@@ -17,8 +17,10 @@
 
 package org.apache.opennlp.caseditor;
 
-// TODO: Rename to PotentialAnnotation, should also contain a type, then we can use
-//       reuse the code to create an annotation for it.
+/**
+ * The Potential Annotation is a proposed annotation which needs to be confirmed by a human. Usually
+ * it is created by a natural language processing tool.
+ */
 public class PotentialAnnotation {
 
   private int beginIndex;
