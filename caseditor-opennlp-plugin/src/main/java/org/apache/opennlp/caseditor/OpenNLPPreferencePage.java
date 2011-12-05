@@ -17,17 +17,20 @@
 
 package org.apache.opennlp.caseditor;
 
+import org.apache.uima.cas.TypeSystem;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
-import org.eclipse.jface.preference.StringFieldEditor;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 
 public class OpenNLPPreferencePage extends FieldEditorPreferencePage
     implements IWorkbenchPreferencePage {
 
-  public OpenNLPPreferencePage() {
-//    setPreferenceStore(OpenNLPPlugin.getDefault().getPreferenceStore());
-    setDescription("OpenNLP Common Preferences.");  }
+  private TypeSystem ts;
+
+  public OpenNLPPreferencePage(TypeSystem ts) {
+    this.ts = ts;  
+    setDescription("OpenNLP Common Preferences."); 
+  }
   
   @Override
   public void init(IWorkbench workbench) {
@@ -35,14 +38,14 @@ public class OpenNLPPreferencePage extends FieldEditorPreferencePage
 
   @Override
   protected void createFieldEditors() {
-    StringFieldEditor sentenceType = new StringFieldEditor(
+    TypeFieldEditor sentenceType = new TypeFieldEditor(
         OpenNLPPreferenceConstants.SENTENCE_TYPE,
-        "Sentence Type", getFieldEditorParent());
+        "Sentence Type", ts, getFieldEditorParent());
     addField(sentenceType);
     
-    StringFieldEditor tokenType = new StringFieldEditor(
+    TypeFieldEditor tokenType = new TypeFieldEditor(
         OpenNLPPreferenceConstants.TOKEN_TYPE,
-        "Token Type", getFieldEditorParent());
+        "Token Type", ts, getFieldEditorParent());
     addField(tokenType);
   }
 }

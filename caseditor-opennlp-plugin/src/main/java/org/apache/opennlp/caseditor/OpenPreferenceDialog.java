@@ -45,7 +45,8 @@ public class OpenPreferenceDialog extends Action {
     
     PreferenceManager mgr = new PreferenceManager();
     
-    IPreferencePage opennlpPage = new OpenNLPPreferencePage();
+    IPreferencePage opennlpPage = new OpenNLPPreferencePage(
+        editor.getDocument().getCAS().getTypeSystem());
     opennlpPage.setTitle("General");
     mgr.addToRoot(new PreferenceNode("1", opennlpPage));
     
