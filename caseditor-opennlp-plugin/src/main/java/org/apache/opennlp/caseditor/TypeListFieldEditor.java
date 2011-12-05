@@ -23,6 +23,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
@@ -51,7 +52,9 @@ public class TypeListFieldEditor extends FieldEditor {
       int numColumns) {
     Label messageLabel = getLabelControl(parent);
     
-    // TODO: Should be on top of list control .. then it has more space!
+    GridData messageGridDate = new GridData();
+    messageGridDate.horizontalSpan = numColumns;
+    messageLabel.setLayoutData(messageGridDate);
     
     typeList = new List(parent, SWT.BORDER | SWT.SINGLE
         | SWT.V_SCROLL | SWT.H_SCROLL);
@@ -63,9 +66,11 @@ public class TypeListFieldEditor extends FieldEditor {
     
     typeList.setLayoutData(gd);
     
-    // TODO: The buttons should be moved to the right next to the control ...
+    Composite buttonGroup = new Composite(parent, SWT.NONE);
+    GridLayout buttonLayout = new GridLayout();
+    buttonGroup.setLayout(buttonLayout);
     
-    Button addButton = new Button(parent, SWT.PUSH);
+    Button addButton = new Button(buttonGroup, SWT.PUSH);
     addButton.setText("Add");
     addButton.addSelectionListener(new SelectionListener() {
       
@@ -90,7 +95,7 @@ public class TypeListFieldEditor extends FieldEditor {
     });
     
     // TODO: only enabled when an item in the list is selected
-    Button removeButton = new Button(parent, SWT.PUSH);
+    Button removeButton = new Button(buttonGroup, SWT.PUSH);
     removeButton.setText("Remove");
     removeButton.addSelectionListener(new SelectionListener() {
       
@@ -148,7 +153,7 @@ public class TypeListFieldEditor extends FieldEditor {
 
   @Override
   public int getNumberOfControls() {
-    return 4;
+    return 3;
   }
   
   public static String[] getTypeList(String typeListString) {
