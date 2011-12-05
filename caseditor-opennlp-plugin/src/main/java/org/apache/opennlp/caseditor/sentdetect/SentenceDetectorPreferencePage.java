@@ -18,6 +18,8 @@
 package org.apache.opennlp.caseditor.sentdetect;
 
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
+import org.apache.opennlp.caseditor.TypeListFieldEditor;
+import org.apache.uima.cas.TypeSystem;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.StringFieldEditor;
 import org.eclipse.ui.IWorkbench;
@@ -26,8 +28,11 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 public class SentenceDetectorPreferencePage extends FieldEditorPreferencePage
     implements IWorkbenchPreferencePage {
 
-  public SentenceDetectorPreferencePage() {
+  private TypeSystem ts;
+
+  public SentenceDetectorPreferencePage(TypeSystem ts) {
     setDescription("Sentence Detector Preferences.");
+    this.ts = ts;
   }
   
   @Override
@@ -41,9 +46,9 @@ public class SentenceDetectorPreferencePage extends FieldEditorPreferencePage
         "Model Path", getFieldEditorParent());
     addField(modelPath);
     
-    StringFieldEditor paragraphType = new StringFieldEditor(
+    TypeListFieldEditor paragraphType = new TypeListFieldEditor(
         OpenNLPPreferenceConstants.PARAGRAPH_TYPE,
-        "Paragraph Type", getFieldEditorParent());
+        "Paragraph Type", ts, getFieldEditorParent());
     addField(paragraphType);
   }
 }

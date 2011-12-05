@@ -49,7 +49,8 @@ public class OpenPreferenceDialog extends Action {
     opennlpPage.setTitle("General");
     mgr.addToRoot(new PreferenceNode("1", opennlpPage));
     
-    IPreferencePage sentenceDetectorPage = new SentenceDetectorPreferencePage();
+    IPreferencePage sentenceDetectorPage = new SentenceDetectorPreferencePage(
+        editor.getDocument().getCAS().getTypeSystem());
     sentenceDetectorPage.setTitle("Sentence Detector");
     mgr.addToRoot(new PreferenceNode("1", sentenceDetectorPage));
     
@@ -57,7 +58,8 @@ public class OpenPreferenceDialog extends Action {
     tokenizerPage.setTitle("Tokenizer");
     mgr.addToRoot(new PreferenceNode("1", tokenizerPage));
     
-    IPreferencePage nameFinderPage = new NameFinderPreferencePage();
+    IPreferencePage nameFinderPage = new NameFinderPreferencePage(
+        editor.getDocument().getCAS().getTypeSystem());
     nameFinderPage.setTitle("Name Finder");
     mgr.addToRoot(new PreferenceNode("1", nameFinderPage));
     

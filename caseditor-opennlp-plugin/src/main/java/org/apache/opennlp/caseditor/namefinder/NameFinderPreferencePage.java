@@ -18,6 +18,8 @@
 package org.apache.opennlp.caseditor.namefinder;
 
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
+import org.apache.opennlp.caseditor.TypeListFieldEditor;
+import org.apache.uima.cas.TypeSystem;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.StringFieldEditor;
@@ -27,8 +29,11 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 public class NameFinderPreferencePage extends FieldEditorPreferencePage
     implements IWorkbenchPreferencePage {
 
-  public NameFinderPreferencePage() {
+  private TypeSystem ts;
+
+  public NameFinderPreferencePage(TypeSystem ts) {
     setDescription("Name Finder Preferences.");
+    this.ts = ts;
   }
 
   @Override
@@ -37,9 +42,9 @@ public class NameFinderPreferencePage extends FieldEditorPreferencePage
 
   @Override
   protected void createFieldEditors() {
-    StringFieldEditor additionalSentenceTypes = new StringFieldEditor(
+    TypeListFieldEditor additionalSentenceTypes = new TypeListFieldEditor(
         OpenNLPPreferenceConstants.ADDITIONAL_SENTENCE_TYPE,
-        "Additional Sentence Types", getFieldEditorParent());
+        "Additional Sentence Types", ts, getFieldEditorParent());
     addField(additionalSentenceTypes);
     
     StringFieldEditor modelPath = new StringFieldEditor(
@@ -52,6 +57,7 @@ public class NameFinderPreferencePage extends FieldEditorPreferencePage
         "Name Type(s)", getFieldEditorParent());
     addField(nameType);
     
+    // TODO: We need a view settings which are enabled/disabled based on this one
     BooleanFieldEditor enableRecallBoosting = new BooleanFieldEditor(
         OpenNLPPreferenceConstants.ENABLE_CONFIRMED_NAME_DETECTION,
         "Enable the detection of confirmed names", getFieldEditorParent());
