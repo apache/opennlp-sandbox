@@ -50,6 +50,10 @@ import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.widgets.Display;
 
+/**
+ * The EntityContentProvider is responsible to trigger the detection of entities
+ * and turn these into potential entity annotations.
+ */
 // Need its own list (or map), otherwise it is complicated to compute updates ...
 // Maybe we should create again, a "View" map of indexes to its annotations?!
 public class EntityContentProvider implements IStructuredContentProvider {
@@ -97,7 +101,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
         
         // Remove all entities from the view and candidate list
         // TODO: Refactor this code branch ...
-        //       Now it only needs to remove all intersecting entites from the
+        //       Now it only needs to remove all intersecting entities from the
         //       candidate list and add the entity itself to the confirmed list
         
         int selectionIndex = EntityContentProvider.this.entityListViewer.
@@ -108,7 +112,6 @@ public class EntityContentProvider implements IStructuredContentProvider {
           entity.setBeginIndex(annotation.getBegin());
           entity.setEndIndex(annotation.getEnd());
           entity.setEntityText(annotation.getCoveredText());
-//          entity.setConfirmed(true);
           entity.setConfidence(null);
           
           entityListViewer.remove(entity);
@@ -340,8 +343,11 @@ public class EntityContentProvider implements IStructuredContentProvider {
   
   void runNameFinder() {
     
-    IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
+    // TODO: Check if sentences do overlap
+    // TODO: Check if tokens do overlap
+    // TODO: Check that tokens do not intersect with sentence span
     
+    IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
     
     // TODO: All preferences should be retrieved when the name finder executed!
     // Just move it down the run method ...
@@ -520,6 +526,15 @@ public class EntityContentProvider implements IStructuredContentProvider {
       else {
         nameFinder.setVerifiedNames(null);
       }
+      
+      nameFinder.setIgnoreShortTokens(store.getBoolean(
+          OpenNLPPreferenceConstants.IGNORE_SHORT_TOKENS));
+      
+      nameFinder.setOnlyConsiderAllLetterTokens(store.getBoolean(
+          OpenNLPPreferenceConstants.ONLY_CONSIDER_ALL_LETTER_TOKENS));
+      
+      nameFinder.setOnlyConsiderInitialCapitalLetterTokens(store.getBoolean(
+          OpenNLPPreferenceConstants.ONLY_CONSIDER_INITIAL_CAPITAL_TOKENS));
       
       nameFinder.schedule();
     }

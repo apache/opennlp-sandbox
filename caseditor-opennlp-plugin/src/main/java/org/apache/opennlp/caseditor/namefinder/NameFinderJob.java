@@ -54,6 +54,12 @@ public class NameFinderJob extends Job {
   private Span verifiedNames[] = new Span[0];
   
   private List<PotentialAnnotation> nameList;
+
+  private boolean ignoreShortTokens;
+
+  private boolean onlyConsiderAllLetterTokens;
+
+  private boolean onlyConsiderInitialLetterTokens;
   
   NameFinderJob() {
     super("Name Finder Job");
@@ -83,6 +89,18 @@ public class NameFinderJob extends Job {
     this.verifiedNames = verifiedNames;
   }
 
+  synchronized void setIgnoreShortTokens(boolean ignoreShortTokens) {
+    this.ignoreShortTokens = ignoreShortTokens;
+  }
+  
+  synchronized void setOnlyConsiderAllLetterTokens(boolean onlyConsiderAllLetterTokens) {
+    this.onlyConsiderAllLetterTokens = onlyConsiderAllLetterTokens; 
+  }
+  
+  synchronized void setOnlyConsiderInitialCapitalLetterTokens(boolean onlyConsiderInitialLetterTokens) {
+    this.onlyConsiderInitialLetterTokens = onlyConsiderInitialLetterTokens;
+  }
+  
   // maybe report result, through an interface?!
   // Note: Concurrency issue ... here! Editor might already be closed after model is loaded!
   // The job change listener in the Entity Content Provider must handle that!
@@ -156,12 +174,21 @@ public class NameFinderJob extends Job {
                 // as part of the outcome!
                 verifiedNameTokens.put(i, verifiedName.getType() + "-" + outcome);
                 
-                // TODO: Do not put stop word
-                // Only put, if char length is two
-                // Only put only letters in token
                 StringPattern pattern = StringPattern.recognize(tokenStrings[i]);
                 
-                if (pattern.isAllLetter() && tokenStrings[i].length() > 1) {
+                boolean useToken = true;
+                
+                if (ignoreShortTokens && tokenStrings[i].length() < 4) {
+                  useToken = false;
+                }
+                else if (onlyConsiderAllLetterTokens && !pattern.isAllLetter()) {
+                  useToken = false;
+                }
+                else if (onlyConsiderInitialLetterTokens && !pattern.isInitialCapitalLetter()) {
+                  useToken = false;
+                }
+                  
+                if (useToken) {
               	  nameTokens.add(verifiedName.getType() + "-" + tokenStrings[i]);
                 }
               }
