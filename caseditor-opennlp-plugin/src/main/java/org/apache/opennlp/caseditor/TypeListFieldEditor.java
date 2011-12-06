@@ -18,24 +18,27 @@
 package org.apache.opennlp.caseditor;
 
 import org.apache.uima.cas.TypeSystem;
+import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.FieldEditor;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.List;
+import org.eclipse.swt.widgets.Listener;
 
 /**
  * Field Editor for a list of UIMA type names.
  */
+// TODO: Enforce that no duplicate entries can be created
 public class TypeListFieldEditor extends FieldEditor {
   
   private List typeList;
   private TypeSystem ts;
+  private Button removeButton;
   
   public TypeListFieldEditor(String name, String labelText,
       TypeSystem ts, Composite parent) {
@@ -47,6 +50,10 @@ public class TypeListFieldEditor extends FieldEditor {
   protected void adjustForNumColumns(int numColumns) {
   }
 
+  private void checkState() {
+    removeButton.setEnabled(typeList.getSelectionCount() > 0);
+  }
+  
   @Override
   protected void doFillIntoGrid(final Composite parent,
       int numColumns) {
@@ -65,6 +72,12 @@ public class TypeListFieldEditor extends FieldEditor {
     gd.verticalAlignment = GridData.FILL;
     
     typeList.setLayoutData(gd);
+    typeList.addListener(SWT.Selection, new Listener(){
+
+      @Override
+      public void handleEvent(Event event) {
+        checkState();
+      }});
     
     Composite buttonGroup = new Composite(parent, SWT.NONE);
     GridLayout buttonLayout = new GridLayout();
@@ -72,10 +85,10 @@ public class TypeListFieldEditor extends FieldEditor {
     
     Button addButton = new Button(buttonGroup, SWT.PUSH);
     addButton.setText("Add");
-    addButton.addSelectionListener(new SelectionListener() {
-      
+    addButton.addListener(SWT.Selection, new Listener() {
+
       @Override
-      public void widgetSelected(SelectionEvent event) {
+      public void handleEvent(Event event) {
         // We need a reference to the type system here ...
         // open dialog to ask for new type ...
         // dialog should contain a list of existing types ...
@@ -85,34 +98,32 @@ public class TypeListFieldEditor extends FieldEditor {
         
         if (typeName != null) {
           typeList.add(typeName);
-        }
-      }
-      
-      @Override
-      public void widgetDefaultSelected(SelectionEvent event) {
-        // will never be called
+        }        
       }
     });
     
+    addButton.setLayoutData(GridDataFactory.fillDefaults().create());
+    
     // TODO: only enabled when an item in the list is selected
-    Button removeButton = new Button(buttonGroup, SWT.PUSH);
+    removeButton = new Button(buttonGroup, SWT.PUSH);
     removeButton.setText("Remove");
-    removeButton.addSelectionListener(new SelectionListener() {
-      
+    removeButton.addListener(SWT.Selection, new Listener() {
+
       @Override
-      public void widgetSelected(SelectionEvent event) {
+      public void handleEvent(Event event) {
         int selectedItem = typeList.getSelectionIndex();
         if (selectedItem != -1) {
           typeList.remove(selectedItem);
         }
-      }
-      
-      @Override
-      public void widgetDefaultSelected(SelectionEvent arg0) {
-        // will never be called
+        
+        checkState();
+        
       }
     });
     
+    removeButton.setLayoutData(GridDataFactory.fillDefaults().create());
+    
+    checkState();
   }
 
   @Override
@@ -135,10 +146,18 @@ public class TypeListFieldEditor extends FieldEditor {
 
   @Override
   protected void doStore() {
-    
+    getPreferenceStore().setValue(getPreferenceName(), listToString(typeList.getItems()));
+  }
+
+  @Override
+  public int getNumberOfControls() {
+    return 3;
+  }
+  
+  public static String listToString(String types[]) {
     StringBuilder typeListString = new StringBuilder();
     
-    for (String type : typeList.getItems()) {
+    for (String type : types) {
       typeListString.append(type);
       typeListString.append(",");
     }
@@ -147,13 +166,7 @@ public class TypeListFieldEditor extends FieldEditor {
       typeListString.setLength(typeListString.length() - 1);
     }
     
-    // create string value ...
-    getPreferenceStore().setValue(getPreferenceName(), typeListString.toString());
-  }
-
-  @Override
-  public int getNumberOfControls() {
-    return 3;
+    return typeListString.toString();
   }
   
   public static String[] getTypeList(String typeListString) {

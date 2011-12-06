@@ -20,9 +20,7 @@ package org.apache.opennlp.caseditor.namefinder;
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
 import org.apache.opennlp.caseditor.TypeListFieldEditor;
 import org.apache.uima.cas.TypeSystem;
-import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
-import org.eclipse.jface.preference.StringFieldEditor;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 
@@ -47,20 +45,25 @@ public class NameFinderPreferencePage extends FieldEditorPreferencePage
         "Additional Sentence Types", ts, getFieldEditorParent());
     addField(additionalSentenceTypes);
     
-    StringFieldEditor modelPath = new StringFieldEditor(
-            OpenNLPPreferenceConstants.NAME_FINDER_MODEL_PATH,
-            "Model Path(es)", getFieldEditorParent());
+    // TODO: We need a new input control for this one
+    // user needs to enter model path
+    // and type at the same time 
+    
+    NameFinderModelFieldEditor modelPath = new NameFinderModelFieldEditor(
+            OpenNLPPreferenceConstants.NAME_FINDER_MODEL_PATH, 
+            "Model paths and types", ts, getFieldEditorParent());
     addField(modelPath);
     
-    StringFieldEditor nameType = new StringFieldEditor(
-        OpenNLPPreferenceConstants.NAME_TYPE,
-        "Name Type(s)", getFieldEditorParent());
-    addField(nameType);
-    
     // TODO: We need a view settings which are enabled/disabled based on this one
-    BooleanFieldEditor enableRecallBoosting = new BooleanFieldEditor(
-        OpenNLPPreferenceConstants.ENABLE_CONFIRMED_NAME_DETECTION,
-        "Enable the detection of confirmed names", getFieldEditorParent());
-    addField(enableRecallBoosting);
+//    BooleanFieldEditor enableRecallBoosting = new BooleanFieldEditor(
+//        OpenNLPPreferenceConstants.ENABLE_CONFIRMED_NAME_DETECTION,
+//        "Force the detection of confirmed names", getFieldEditorParent());
+//    addField(enableRecallBoosting);
+    
+    ConfirmedNameDetectionFieldEditor forceNameDetection =
+        new ConfirmedNameDetectionFieldEditor(getFieldEditorParent());
+    addField(forceNameDetection);
+    // Add a group
+    // Other options should be have an indent ...
   }
 }
