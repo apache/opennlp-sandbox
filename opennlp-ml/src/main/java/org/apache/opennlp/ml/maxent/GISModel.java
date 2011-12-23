@@ -17,18 +17,19 @@
  * under the License.
  */
 
-package opennlp.maxent;
+package org.apache.opennlp.ml.maxent;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.text.DecimalFormat;
 
-import opennlp.model.AbstractModel;
-import opennlp.model.Context;
-import opennlp.model.EvalParameters;
-import opennlp.model.Prior;
-import opennlp.model.UniformPrior;
+import org.apache.opennlp.ml.model.Context;
+
+import org.apache.opennlp.ml.model.AbstractModel;
+import org.apache.opennlp.ml.model.EvalParameters;
+import org.apache.opennlp.ml.model.Prior;
+import org.apache.opennlp.ml.model.UniformPrior;
 
 /**
  * A maximum entropy model which has been trained using the Generalized
@@ -218,7 +219,7 @@ public final class GISModel extends AbstractModel {
       System.err.println("Usage: GISModel modelname < contexts");
       System.exit(1);
     }
-    AbstractModel m = new opennlp.maxent.io.SuffixSensitiveGISModelReader(
+    AbstractModel m = new org.apache.opennlp.ml.maxent.io.SuffixSensitiveGISModelReader(
         new File(args[0])).getModel();
     BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
     DecimalFormat df = new java.text.DecimalFormat(".###");

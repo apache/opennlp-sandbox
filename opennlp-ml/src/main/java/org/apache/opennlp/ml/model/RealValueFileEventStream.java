@@ -17,13 +17,13 @@
  * under the License.
  */
 
-package opennlp.model;
+package org.apache.opennlp.ml.model;
 
 import java.io.File;
 import java.io.IOException;
 
-import opennlp.maxent.GIS;
-import opennlp.maxent.io.SuffixSensitiveGISModelWriter;
+import org.apache.opennlp.ml.maxent.GIS;
+import org.apache.opennlp.ml.maxent.io.SuffixSensitiveGISModelWriter;
 
 public class RealValueFileEventStream extends FileEventStream {
 

@@ -17,10 +17,10 @@
  * under the License.
  */
 
-package opennlp.maxent;
+package org.apache.opennlp.ml.maxent;
 
-import opennlp.model.AbstractEventStream;
-import opennlp.model.Event;
+import org.apache.opennlp.ml.model.AbstractEventStream;
+import org.apache.opennlp.ml.model.Event;
 
 /**
  * A object which can deliver a stream of training events assuming

@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package opennlp.perceptron;
+package org.apache.opennlp.ml.perceptron;
 
 import java.io.BufferedWriter;
 import java.io.DataOutputStream;
@@ -28,8 +28,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.zip.GZIPOutputStream;
 
-import opennlp.model.AbstractModel;
-import opennlp.model.AbstractModelWriter;
+import org.apache.opennlp.ml.model.AbstractModel;
+import org.apache.opennlp.ml.model.AbstractModelWriter;
 
 /**
  * A writer for GIS models which inspects the filename and invokes the

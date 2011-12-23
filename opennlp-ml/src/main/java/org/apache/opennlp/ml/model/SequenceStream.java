@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package opennlp.model;
+package org.apache.opennlp.ml.model;
 
 /**
  *  Interface for streams of sequences used to train sequence models. 

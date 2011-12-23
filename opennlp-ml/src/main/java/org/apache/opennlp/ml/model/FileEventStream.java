@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package opennlp.model;
+package org.apache.opennlp.ml.model;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -27,8 +27,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.StringTokenizer;
 
-import opennlp.maxent.GIS;
-import opennlp.maxent.io.SuffixSensitiveGISModelWriter;
+import org.apache.opennlp.ml.maxent.GIS;
+import org.apache.opennlp.ml.maxent.io.SuffixSensitiveGISModelWriter;
 
 /** 
  * Class for using a file of events as an event stream.  The format of the file is one event perline with

@@ -17,12 +17,12 @@
  * under the License.
  */
 
-package opennlp.maxent.io;
+package org.apache.opennlp.ml.maxent.io;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 
-import opennlp.model.AbstractModel;
+import org.apache.opennlp.ml.model.AbstractModel;
 
 public class ObjectGISModelWriter extends GISModelWriter {
 

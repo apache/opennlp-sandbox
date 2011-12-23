@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package opennlp.model;
+package org.apache.opennlp.ml.model;
 
 /**
  * Class which associates a real valued parameter or expected value with a particular contextual

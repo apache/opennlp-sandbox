@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package opennlp.maxent;
+package org.apache.opennlp.ml.maxent;
 
 /**
  * A interface for objects which can deliver a stream of training data to be

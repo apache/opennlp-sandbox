@@ -17,12 +17,12 @@
  * under the License.
  */
 
-package opennlp.maxent;
+package org.apache.opennlp.ml.maxent;
 
-import opennlp.model.AbstractEventStream;
-import opennlp.model.Event;
-import opennlp.model.EventStream;
-import opennlp.model.RealValueFileEventStream;
+import org.apache.opennlp.ml.model.AbstractEventStream;
+import org.apache.opennlp.ml.model.Event;
+import org.apache.opennlp.ml.model.EventStream;
+import org.apache.opennlp.ml.model.RealValueFileEventStream;
 
 public class RealBasicEventStream extends  AbstractEventStream {
   ContextGenerator cg = new BasicContextGenerator();

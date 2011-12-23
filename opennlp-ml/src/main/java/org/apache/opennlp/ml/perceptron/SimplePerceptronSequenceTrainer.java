@@ -17,22 +17,22 @@
  * under the License.
  */
 
-package opennlp.perceptron;
+package org.apache.opennlp.ml.perceptron;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import opennlp.model.AbstractModel;
-import opennlp.model.DataIndexer;
-import opennlp.model.Event;
-import opennlp.model.IndexHashTable;
-import opennlp.model.MutableContext;
-import opennlp.model.OnePassDataIndexer;
-import opennlp.model.Sequence;
-import opennlp.model.SequenceStream;
-import opennlp.model.SequenceStreamEventStream;
-import opennlp.model.TwoPassDataIndexer;
+import org.apache.opennlp.ml.model.AbstractModel;
+import org.apache.opennlp.ml.model.DataIndexer;
+import org.apache.opennlp.ml.model.Event;
+import org.apache.opennlp.ml.model.IndexHashTable;
+import org.apache.opennlp.ml.model.MutableContext;
+import org.apache.opennlp.ml.model.OnePassDataIndexer;
+import org.apache.opennlp.ml.model.Sequence;
+import org.apache.opennlp.ml.model.SequenceStream;
+import org.apache.opennlp.ml.model.SequenceStreamEventStream;
+import org.apache.opennlp.ml.model.TwoPassDataIndexer;
 
 /**
  * Trains models for sequences using the perceptron algorithm.  Each outcome is represented as

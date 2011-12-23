@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package opennlp.maxent.io;
+package org.apache.opennlp.ml.maxent.io;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -25,8 +25,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.zip.GZIPInputStream;
 
-import opennlp.model.AbstractModelReader;
-import opennlp.model.Context;
+import org.apache.opennlp.ml.model.Context;
+
+import org.apache.opennlp.ml.model.AbstractModelReader;
 
 /**
  * A reader for GIS models stored in the format used in v1.0 of Maxent. It

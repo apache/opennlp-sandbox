@@ -17,12 +17,12 @@
  * under the License.
  */
 
-package opennlp.perceptron;
+package org.apache.opennlp.ml.perceptron;
 
-import opennlp.model.AbstractModel;
-import opennlp.model.DataIndexer;
-import opennlp.model.EvalParameters;
-import opennlp.model.MutableContext;
+import org.apache.opennlp.ml.model.AbstractModel;
+import org.apache.opennlp.ml.model.DataIndexer;
+import org.apache.opennlp.ml.model.EvalParameters;
+import org.apache.opennlp.ml.model.MutableContext;
 
 /**
  * Trains models using the perceptron algorithm.  Each outcome is represented as

@@ -17,16 +17,17 @@
  * under the License.
  */
 
-package opennlp.maxent.io;
+package org.apache.opennlp.ml.maxent.io;
 
 import java.io.File;
 import java.io.IOException;
 
-import opennlp.maxent.GISModel;
-import opennlp.model.AbstractModel;
-import opennlp.model.AbstractModelReader;
-import opennlp.model.Context;
-import opennlp.model.DataReader;
+import org.apache.opennlp.ml.model.Context;
+
+import org.apache.opennlp.ml.maxent.GISModel;
+import org.apache.opennlp.ml.model.AbstractModel;
+import org.apache.opennlp.ml.model.AbstractModelReader;
+import org.apache.opennlp.ml.model.DataReader;
 
 /**
  * Abstract parent class for readers of GISModels.

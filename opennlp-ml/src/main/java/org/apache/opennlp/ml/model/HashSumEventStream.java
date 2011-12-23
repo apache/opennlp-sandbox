@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package opennlp.model;
+package org.apache.opennlp.ml.model;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -23,8 +23,8 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import opennlp.model.Event;
-import opennlp.model.EventStream;
+import org.apache.opennlp.ml.model.Event;
+import org.apache.opennlp.ml.model.EventStream;
 
 public class HashSumEventStream implements EventStream {
 

@@ -17,13 +17,13 @@
  * under the License.
  */
 
-package opennlp.model;
+package org.apache.opennlp.ml.model;
 
 import java.io.File;
 import java.io.IOException;
 
-import opennlp.maxent.io.GISModelReader;
-import opennlp.perceptron.PerceptronModelReader;
+import org.apache.opennlp.ml.maxent.io.GISModelReader;
+import org.apache.opennlp.ml.perceptron.PerceptronModelReader;
 
 public class GenericModelReader extends AbstractModelReader {
 

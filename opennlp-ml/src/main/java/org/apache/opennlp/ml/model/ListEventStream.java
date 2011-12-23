@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package opennlp.model;
+package org.apache.opennlp.ml.model;
 
 import java.util.List;
 

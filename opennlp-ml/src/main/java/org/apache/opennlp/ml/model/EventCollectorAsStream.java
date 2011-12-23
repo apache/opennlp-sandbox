@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package opennlp.model;
+package org.apache.opennlp.ml.model;
 
 /**
  * A wrapper to turn EventCollectors created for Maxent 1.0 into EventStreams

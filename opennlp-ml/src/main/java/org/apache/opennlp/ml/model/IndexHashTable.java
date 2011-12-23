@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package opennlp.model;
+package org.apache.opennlp.ml.model;
 
 /**
  * The {@link IndexHashTable} is a hash table which maps entries

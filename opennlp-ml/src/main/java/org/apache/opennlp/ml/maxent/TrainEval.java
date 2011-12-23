@@ -17,14 +17,14 @@
  * under the License.
  */
 
-package opennlp.maxent;
+package org.apache.opennlp.ml.maxent;
 
 import java.io.IOException;
 import java.io.Reader;
 
-import opennlp.model.Event;
-import opennlp.model.EventStream;
-import opennlp.model.MaxentModel;
+import org.apache.opennlp.ml.model.Event;
+import org.apache.opennlp.ml.model.EventStream;
+import org.apache.opennlp.ml.model.MaxentModel;
 
 /**
  * Trains or evaluates maxent components which have implemented the Evalable

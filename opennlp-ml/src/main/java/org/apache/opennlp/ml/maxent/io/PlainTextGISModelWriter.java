@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package opennlp.maxent.io;
+package org.apache.opennlp.ml.maxent.io;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.zip.GZIPOutputStream;
 
-import opennlp.model.AbstractModel;
+import org.apache.opennlp.ml.model.AbstractModel;
 
 /**
  * Model writer that saves models in plain text format.

@@ -17,9 +17,9 @@
  * under the License.
  */
 
-package opennlp.maxent;
+package org.apache.opennlp.ml.maxent;
 
-import opennlp.model.MaxentModel;
+import org.apache.opennlp.ml.model.MaxentModel;
 
 /**
  * A object to facilitate the resetting of a MaxentModel variable to a

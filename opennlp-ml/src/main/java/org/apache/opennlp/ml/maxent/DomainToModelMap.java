@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package opennlp.maxent;
+package org.apache.opennlp.ml.maxent;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-import opennlp.model.MaxentModel;
+import org.apache.opennlp.ml.model.MaxentModel;
 
 /**
  * A class which stores a mapping from ModelDomain objects to MaxentModels.

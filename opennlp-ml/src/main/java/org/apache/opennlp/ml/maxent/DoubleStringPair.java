@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package opennlp.maxent;
+package org.apache.opennlp.ml.maxent;
 
 public class DoubleStringPair implements Comparable<DoubleStringPair> {
 

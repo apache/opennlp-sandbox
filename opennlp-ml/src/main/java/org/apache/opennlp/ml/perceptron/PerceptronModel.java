@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package opennlp.perceptron;
+package org.apache.opennlp.ml.perceptron;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -25,10 +25,10 @@ import java.io.InputStreamReader;
 import java.text.DecimalFormat;
 import java.util.Map;
 
-import opennlp.model.AbstractModel;
-import opennlp.model.Context;
-import opennlp.model.EvalParameters;
-import opennlp.model.IndexHashTable;
+import org.apache.opennlp.ml.model.AbstractModel;
+import org.apache.opennlp.ml.model.Context;
+import org.apache.opennlp.ml.model.EvalParameters;
+import org.apache.opennlp.ml.model.IndexHashTable;
 
 public class PerceptronModel extends AbstractModel {
 

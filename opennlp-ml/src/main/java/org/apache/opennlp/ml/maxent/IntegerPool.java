@@ -18,7 +18,7 @@
  */
 
 
-package opennlp.maxent;
+package org.apache.opennlp.ml.maxent;
 
 /**
  * A pool of read-only, unsigned Integer objects within a fixed,

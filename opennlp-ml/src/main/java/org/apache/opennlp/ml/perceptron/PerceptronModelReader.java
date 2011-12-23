@@ -17,15 +17,15 @@
  * under the License.
  */
 
-package opennlp.perceptron;
+package org.apache.opennlp.ml.perceptron;
 
 import java.io.File;
 import java.io.IOException;
 
-import opennlp.model.AbstractModel;
-import opennlp.model.AbstractModelReader;
-import opennlp.model.Context;
-import opennlp.model.DataReader;
+import org.apache.opennlp.ml.model.AbstractModel;
+import org.apache.opennlp.ml.model.AbstractModelReader;
+import org.apache.opennlp.ml.model.Context;
+import org.apache.opennlp.ml.model.DataReader;
 
 /**
  * Abstract parent class for readers of Perceptron.

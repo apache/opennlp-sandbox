@@ -17,17 +17,17 @@
  * under the License.
  */
 
-package opennlp.maxent;
+package org.apache.opennlp.ml.maxent;
 
 import java.io.File;
 import java.io.FileReader;
 import java.text.DecimalFormat;
 
-import opennlp.model.Event;
-import opennlp.model.EventStream;
-import opennlp.model.GenericModelReader;
-import opennlp.model.MaxentModel;
-import opennlp.model.RealValueFileEventStream;
+import org.apache.opennlp.ml.model.Event;
+import org.apache.opennlp.ml.model.EventStream;
+import org.apache.opennlp.ml.model.GenericModelReader;
+import org.apache.opennlp.ml.model.MaxentModel;
+import org.apache.opennlp.ml.model.RealValueFileEventStream;
 
 /**
  * Test the model on some input.

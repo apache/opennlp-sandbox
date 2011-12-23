@@ -16,9 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package opennlp.maxent;
+package org.apache.opennlp.ml.maxent;
 
-import opennlp.model.MaxentModel;
+import org.apache.opennlp.ml.model.MaxentModel;
 
 /**
  * A object which can be used to ensure that a Maxent application can swap the

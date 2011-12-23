@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package opennlp.maxent;
+package org.apache.opennlp.ml.maxent;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,13 +28,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import opennlp.model.DataIndexer;
-import opennlp.model.EvalParameters;
-import opennlp.model.EventStream;
-import opennlp.model.MutableContext;
-import opennlp.model.OnePassDataIndexer;
-import opennlp.model.Prior;
-import opennlp.model.UniformPrior;
+import org.apache.opennlp.ml.model.DataIndexer;
+import org.apache.opennlp.ml.model.EvalParameters;
+import org.apache.opennlp.ml.model.EventStream;
+import org.apache.opennlp.ml.model.MutableContext;
+import org.apache.opennlp.ml.model.OnePassDataIndexer;
+import org.apache.opennlp.ml.model.Prior;
+import org.apache.opennlp.ml.model.UniformPrior;
 
 
 /**

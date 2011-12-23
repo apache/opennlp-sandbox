@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package opennlp.maxent;
+package org.apache.opennlp.ml.maxent;
 
 /**
  * A simple class which is essentially an Integer which is mutable via

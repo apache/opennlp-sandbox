@@ -17,20 +17,20 @@
  * under the License.
  */
 
-package opennlp.maxent;
+package org.apache.opennlp.ml.maxent;
 
 import java.io.File;
 import java.io.FileReader;
 
-import opennlp.maxent.io.GISModelWriter;
-import opennlp.maxent.io.SuffixSensitiveGISModelWriter;
-import opennlp.model.AbstractModel;
-import opennlp.model.AbstractModelWriter;
-import opennlp.model.EventStream;
-import opennlp.model.OnePassDataIndexer;
-import opennlp.model.OnePassRealValueDataIndexer;
-import opennlp.perceptron.PerceptronTrainer;
-import opennlp.perceptron.SuffixSensitivePerceptronModelWriter;
+import org.apache.opennlp.ml.maxent.io.GISModelWriter;
+import org.apache.opennlp.ml.maxent.io.SuffixSensitiveGISModelWriter;
+import org.apache.opennlp.ml.model.AbstractModel;
+import org.apache.opennlp.ml.model.AbstractModelWriter;
+import org.apache.opennlp.ml.model.EventStream;
+import org.apache.opennlp.ml.model.OnePassDataIndexer;
+import org.apache.opennlp.ml.model.OnePassRealValueDataIndexer;
+import org.apache.opennlp.ml.perceptron.PerceptronTrainer;
+import org.apache.opennlp.ml.perceptron.SuffixSensitivePerceptronModelWriter;
 
 /**
  * Main class which calls the GIS procedure after building the EventStream from

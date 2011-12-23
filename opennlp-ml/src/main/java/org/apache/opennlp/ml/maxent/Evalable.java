@@ -17,12 +17,12 @@
  * under the License.
  */
 
-package opennlp.maxent;
+package org.apache.opennlp.ml.maxent;
 
 import java.io.Reader;
 
-import opennlp.model.EventCollector;
-import opennlp.model.MaxentModel;
+import org.apache.opennlp.ml.model.EventCollector;
+import org.apache.opennlp.ml.model.MaxentModel;
 
 /**
  * Interface for components which use maximum entropy models and can evaluate

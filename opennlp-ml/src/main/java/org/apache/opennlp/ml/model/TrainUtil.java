@@ -17,14 +17,14 @@
  * under the License.
  */
 
-package opennlp.model;
+package org.apache.opennlp.ml.model;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import opennlp.perceptron.PerceptronTrainer;
-import opennlp.perceptron.SimplePerceptronSequenceTrainer;
+import org.apache.opennlp.ml.perceptron.PerceptronTrainer;
+import org.apache.opennlp.ml.perceptron.SimplePerceptronSequenceTrainer;
 
 public class TrainUtil {
 
@@ -179,7 +179,7 @@ public class TrainUtil {
       
       int threads = getIntParam(trainParams, "Threads", 1, reportMap);
       
-      model = opennlp.maxent.GIS.trainModel(iterations, indexer,
+      model = org.apache.opennlp.ml.maxent.GIS.trainModel(iterations, indexer,
           true, false, null, 0, threads);
     }
     else if (PERCEPTRON_VALUE.equals(algorithmName)) {
@@ -195,7 +195,8 @@ public class TrainUtil {
       
       double tolerance = getDoubleParam(trainParams, "Tolerance", PerceptronTrainer.TOLERANCE_DEFAULT, reportMap);
       
-      opennlp.perceptron.PerceptronTrainer perceptronTrainer = new opennlp.perceptron.PerceptronTrainer();
+      org.apache.opennlp.ml.perceptron.PerceptronTrainer perceptronTrainer =
+    		  new org.apache.opennlp.ml.perceptron.PerceptronTrainer();
       perceptronTrainer.setSkippedAveraging(useSkippedAveraging);
       
       if (stepSizeDecrease > 0)

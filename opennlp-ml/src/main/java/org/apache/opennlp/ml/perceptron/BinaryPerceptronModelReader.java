@@ -17,13 +17,13 @@
  * under the License.
  */
 
-package opennlp.perceptron;
+package org.apache.opennlp.ml.perceptron;
 
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
 
-import opennlp.model.BinaryFileDataReader;
+import org.apache.opennlp.ml.model.BinaryFileDataReader;
 
 public class BinaryPerceptronModelReader extends PerceptronModelReader {
   

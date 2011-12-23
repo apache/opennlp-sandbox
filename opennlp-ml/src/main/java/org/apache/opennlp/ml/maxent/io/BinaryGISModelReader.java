@@ -17,11 +17,11 @@
  * under the License.
  */
 
-package opennlp.maxent.io;
+package org.apache.opennlp.ml.maxent.io;
 
 import java.io.DataInputStream;
 
-import opennlp.model.BinaryFileDataReader;
+import org.apache.opennlp.ml.model.BinaryFileDataReader;
 
 /**
  * A reader for GIS models stored in binary format.

@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package opennlp.maxent.io;
+package org.apache.opennlp.ml.maxent.io;
 
 import java.io.File;
 import java.io.IOException;

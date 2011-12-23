@@ -17,11 +17,11 @@
  * under the License.
  */
 
-package opennlp.maxent.io;
+package org.apache.opennlp.ml.maxent.io;
 
 import java.io.ObjectInputStream;
 
-import opennlp.model.ObjectDataReader;
+import org.apache.opennlp.ml.model.ObjectDataReader;
 
 public class ObjectGISModelReader extends GISModelReader {
 

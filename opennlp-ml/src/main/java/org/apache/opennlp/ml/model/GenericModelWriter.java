@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package opennlp.model;
+package org.apache.opennlp.ml.model;
 
 import java.io.BufferedWriter;
 import java.io.DataOutputStream;
@@ -28,11 +28,11 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.zip.GZIPOutputStream;
 
-import opennlp.maxent.io.BinaryGISModelWriter;
-import opennlp.maxent.io.PlainTextGISModelWriter;
-import opennlp.model.AbstractModel.ModelType;
-import opennlp.perceptron.BinaryPerceptronModelWriter;
-import opennlp.perceptron.PlainTextPerceptronModelWriter;
+import org.apache.opennlp.ml.maxent.io.BinaryGISModelWriter;
+import org.apache.opennlp.ml.maxent.io.PlainTextGISModelWriter;
+import org.apache.opennlp.ml.model.AbstractModel.ModelType;
+import org.apache.opennlp.ml.perceptron.BinaryPerceptronModelWriter;
+import org.apache.opennlp.ml.perceptron.PlainTextPerceptronModelWriter;
 
 public class GenericModelWriter extends AbstractModelWriter {
 

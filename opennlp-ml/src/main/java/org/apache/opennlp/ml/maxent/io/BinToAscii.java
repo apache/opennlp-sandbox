@@ -18,7 +18,7 @@
  */
 
 
-package opennlp.maxent.io;
+package org.apache.opennlp.ml.maxent.io;
 
 import java.io.DataInputStream;
 import java.io.FileInputStream;

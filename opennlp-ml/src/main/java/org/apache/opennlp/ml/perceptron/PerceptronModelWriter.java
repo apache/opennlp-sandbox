@@ -17,18 +17,18 @@
  * under the License.
  */
 
-package opennlp.perceptron;
+package org.apache.opennlp.ml.perceptron;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import opennlp.model.AbstractModel;
-import opennlp.model.AbstractModelWriter;
-import opennlp.model.ComparablePredicate;
-import opennlp.model.Context;
-import opennlp.model.IndexHashTable;
+import org.apache.opennlp.ml.model.AbstractModel;
+import org.apache.opennlp.ml.model.AbstractModelWriter;
+import org.apache.opennlp.ml.model.ComparablePredicate;
+import org.apache.opennlp.ml.model.Context;
+import org.apache.opennlp.ml.model.IndexHashTable;
 
 /**
  * Abstract parent class for Perceptron writers.  It provides the persist method

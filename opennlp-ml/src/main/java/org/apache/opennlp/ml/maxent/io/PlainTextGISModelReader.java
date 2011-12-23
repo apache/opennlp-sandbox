@@ -17,13 +17,13 @@
  * under the License.
  */
 
-package opennlp.maxent.io;
+package org.apache.opennlp.ml.maxent.io;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 
-import opennlp.model.PlainTextFileDataReader;
+import org.apache.opennlp.ml.model.PlainTextFileDataReader;
 
 /**
  * A reader for GIS models stored in plain text format.

@@ -17,14 +17,14 @@
  * under the License.
  */
 
-package opennlp.maxent;
+package org.apache.opennlp.ml.maxent;
 
 import java.io.IOException;
 
-import opennlp.model.DataIndexer;
-import opennlp.model.EventStream;
-import opennlp.model.Prior;
-import opennlp.model.UniformPrior;
+import org.apache.opennlp.ml.model.DataIndexer;
+import org.apache.opennlp.ml.model.EventStream;
+import org.apache.opennlp.ml.model.Prior;
+import org.apache.opennlp.ml.model.UniformPrior;
 
 /**
  * A Factory class which uses instances of GISTrainer to create and train
