@@ -15,19 +15,19 @@
  * limitations under the License.
  */
 
-package opennlp.perceptron;
+package org.apache.opennlp.ml.perceptron;
 
-import static opennlp.PrepAttachDataUtil.createTrainingStream;
-import static opennlp.PrepAttachDataUtil.testModel;
+import static org.apache.opennlp.ml.PrepAttachDataUtil.createTrainingStream;
+import static org.apache.opennlp.ml.PrepAttachDataUtil.testModel;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import opennlp.model.AbstractModel;
-import opennlp.model.TrainUtil;
-import opennlp.model.TwoPassDataIndexer;
 
+import org.apache.opennlp.ml.model.AbstractModel;
+import org.apache.opennlp.ml.model.TrainUtil;
+import org.apache.opennlp.ml.model.TwoPassDataIndexer;
 import org.junit.Test;
 
 /**

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package opennlp.model;
+package org.apache.opennlp.ml.model;
 
 import junit.framework.TestCase;
 

@@ -19,69 +19,47 @@
    under the License.    
 -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	
-	<parent>
-	    <groupId>org.apache.opennlp</groupId>
-	    <artifactId>opennlp</artifactId>
-	    <version>1.5.3-incubating-SNAPSHOT</version>
-	    <relativePath>../opennlp/pom.xml</relativePath>
-    </parent>
-  
-	<artifactId>opennlp-maxent</artifactId>
-	<packaging>bundle</packaging>
-	<version>3.0.3-incubating-SNAPSHOT</version>
-	<name>Apache OpenNLP Maxent</name>
 
-	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-	</properties>
-	
+	<parent>
+		<groupId>org.apache</groupId>
+		<artifactId>apache</artifactId>
+		<version>9</version>
+		<relativePath />
+	</parent>
+
+	<groupId>org.apache.opennlp</groupId>
+	<artifactId>ml</artifactId>
+	<version>4.0.0-incubating-SNAPSHOT</version>
+	<packaging>jar</packaging>
+
+	<name>Apache OpenNLP Machine Learning Toolkit</name>
+
+	<prerequisites>
+		<maven>3.0</maven>
+	</prerequisites>
+
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
+			<version>4.8.1</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
-
+	
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>org.apache.felix</groupId>
-				<artifactId>maven-bundle-plugin</artifactId>
-				<extensions>true</extensions>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
-					<instructions>
-					<Export-Package>
-						opennlp.maxent,
-						opennlp.maxent.io,
-						opennlp.model,
-						opennlp.perceptron
-					</Export-Package>
-					</instructions>
+					<source>1.5</source>
+					<target>1.5</target>
+          			<compilerArgument>-Xlint</compilerArgument>
 				</configuration>
 			</plugin>
-      
-			<plugin>
-				<groupId>org.apache.rat</groupId>
-				<artifactId>apache-rat-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>default-cli</id>
-						<configuration>
-							<excludes>
-								<exclude>META-INF/MANIFEST.MF</exclude>
-								<exclude>samples/sports/*.test</exclude> <!-- sample data -->
-								<exclude>src/main/java/opennlp/maxent/AllEnglishAffixes.txt</exclude> <!-- test data -->
-								<exclude>src/test/resources/data/opennlp/maxent/io/*.txt</exclude> <!-- test data -->
-								<exclude>src/test/resources/data/opennlp/maxent/*.txt</exclude> <!-- test data -->
-								<exclude>src/test/resources/data/ppa/*</exclude> <!-- sample data -->
-							</excludes>              
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>		
 		</plugins>
 	</build>
 </project>

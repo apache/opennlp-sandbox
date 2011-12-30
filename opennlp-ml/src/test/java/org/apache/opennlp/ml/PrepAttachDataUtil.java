@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package opennlp;
+package org.apache.opennlp.ml;
 
 import static org.junit.Assert.assertEquals;
 
@@ -26,11 +26,12 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
-import opennlp.model.AbstractModel;
-import opennlp.model.Event;
-import opennlp.model.EventStream;
-import opennlp.model.ListEventStream;
-import opennlp.perceptron.PerceptronPrepAttachTest;
+import org.apache.opennlp.ml.model.AbstractModel;
+import org.apache.opennlp.ml.model.Event;
+import org.apache.opennlp.ml.model.EventStream;
+import org.apache.opennlp.ml.model.ListEventStream;
+import org.apache.opennlp.ml.perceptron.PerceptronPrepAttachTest;
+
 
 public class PrepAttachDataUtil {
 

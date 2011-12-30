@@ -1,1 +1,1 @@
-Main-Class: opennlp.maxent.Main
+Main-Class: org.apache.opennlp.ml.maxent.Main

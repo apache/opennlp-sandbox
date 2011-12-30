@@ -15,20 +15,20 @@
  * limitations under the License.
  */
 
-package opennlp.maxent;
+package org.apache.opennlp.ml.maxent;
 
-import static opennlp.PrepAttachDataUtil.createTrainingStream;
-import static opennlp.PrepAttachDataUtil.testModel;
+import static org.apache.opennlp.ml.PrepAttachDataUtil.createTrainingStream;
+import static org.apache.opennlp.ml.PrepAttachDataUtil.testModel;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import opennlp.model.AbstractModel;
-import opennlp.model.TrainUtil;
-import opennlp.model.TwoPassDataIndexer;
-import opennlp.model.UniformPrior;
 
+import org.apache.opennlp.ml.model.AbstractModel;
+import org.apache.opennlp.ml.model.TrainUtil;
+import org.apache.opennlp.ml.model.TwoPassDataIndexer;
+import org.apache.opennlp.ml.model.UniformPrior;
 import org.junit.Test;
 
 public class MaxentPrepAttachTest {

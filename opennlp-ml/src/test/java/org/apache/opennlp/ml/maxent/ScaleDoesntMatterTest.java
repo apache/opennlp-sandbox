@@ -15,15 +15,17 @@
  * limitations under the License.
  */
 
-package opennlp.maxent;
+package org.apache.opennlp.ml.maxent;
 
 import java.io.StringReader;
+
+import org.apache.opennlp.ml.model.EventStream;
+import org.apache.opennlp.ml.model.MaxentModel;
+import org.apache.opennlp.ml.model.OnePassRealValueDataIndexer;
+import org.apache.opennlp.ml.model.RealValueFileEventStream;
+
 import junit.framework.TestCase;
 
-import opennlp.model.EventStream;
-import opennlp.model.MaxentModel;
-import opennlp.model.OnePassRealValueDataIndexer;
-import opennlp.model.RealValueFileEventStream;
 
 public class ScaleDoesntMatterTest extends TestCase {
 

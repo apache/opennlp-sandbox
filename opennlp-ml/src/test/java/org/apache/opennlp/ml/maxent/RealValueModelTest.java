@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
-package opennlp.maxent;
+package org.apache.opennlp.ml.maxent;
 
 import java.io.IOException;
 
-import opennlp.model.FileEventStream;
-import opennlp.model.OnePassRealValueDataIndexer;
-import opennlp.model.RealValueFileEventStream;
+import org.apache.opennlp.ml.model.FileEventStream;
+import org.apache.opennlp.ml.model.OnePassRealValueDataIndexer;
+import org.apache.opennlp.ml.model.RealValueFileEventStream;
+
 
 import junit.framework.TestCase;
 
