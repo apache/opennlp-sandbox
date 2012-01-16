@@ -81,7 +81,7 @@ public class NameFinderModelInputDialog extends Dialog {
     modelText.setLayoutData(GridDataFactory.swtDefaults().
         align(SWT.FILL, SWT.CENTER).grab(true,  false).create());
     modelText.setText(modelTextValue);
-    modelText.addListener(SWT.Selection, new Listener(){
+    modelText.addListener(SWT.Modify, new Listener(){
 
       @Override
       public void handleEvent(Event event) {
