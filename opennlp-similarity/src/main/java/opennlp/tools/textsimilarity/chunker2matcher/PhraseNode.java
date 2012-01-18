@@ -128,4 +128,16 @@ public class PhraseNode extends SyntacticTreeNode {
 			types.add(getType());
 		return types;
 	}
+	
+	@Override
+	public List<String> getOrderedLemmaList(){
+		List<String> types = new ArrayList<String>(); 
+		if (children != null && children.size() > 0) {
+			for (SyntacticTreeNode child : children) {
+				types.addAll(child.getOrderedLemmaList());
+			}
+		} else
+			types.add(getType());
+		return types;
+	}
 }

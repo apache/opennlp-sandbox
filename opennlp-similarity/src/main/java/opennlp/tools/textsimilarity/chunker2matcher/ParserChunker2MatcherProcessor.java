@@ -33,16 +33,14 @@
 
 package opennlp.tools.textsimilarity.chunker2matcher;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.apache.commons.lang.StringUtils;
 
 import opennlp.tools.chunker.ChunkerME;
 import opennlp.tools.chunker.ChunkerModel;
@@ -66,16 +64,16 @@ import opennlp.tools.textsimilarity.TextProcessor;
 import opennlp.tools.tokenize.Tokenizer;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.tokenize.TokenizerModel;
-import opennlp.tools.util.Sequence;
 import opennlp.tools.util.Span;
-import opennlp.tools.util.StringUtil;
 
 
 public class ParserChunker2MatcherProcessor {
-	private static final int MIN_SENTENCE_LENGTH = 10;
+	protected static final int MIN_SENTENCE_LENGTH = 10;
 	private static final String MODEL_DIR_KEY = "nlp.models.dir";
-	private static final String MODEL_DIR ;
-	private static ParserChunker2MatcherProcessor instance;
+	// TODO config
+	// this is where resources shoudl live
+	private static String MODEL_DIR = "resources/models";
+	protected static ParserChunker2MatcherProcessor instance;
 
 	private SentenceDetector sentenceDetector;
 	private Tokenizer tokenizer;
@@ -85,18 +83,13 @@ public class ParserChunker2MatcherProcessor {
 	private final int NUMBER_OF_SECTIONS_IN_SENTENCE_CHUNKS = 5;
 	private static Logger LOG = Logger.getLogger("opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor");
 
-	static {
-		//TODO config
-		MODEL_DIR = "C:\\workspace\\similarity\\src\\main\\resources";
-	}
-
-	private ParserChunker2MatcherProcessor() {
+	protected ParserChunker2MatcherProcessor() {
+		MODEL_DIR = new File(".").getAbsolutePath().replace(".", "")+MODEL_DIR;
 		initializeSentenceDetector();
 		initializeTokenizer();
 		initializePosTagger();
 		initializeParser();
 		initializeChunker();
-
 	}
 
 	public synchronized static ParserChunker2MatcherProcessor getInstance() {
@@ -175,6 +168,8 @@ public class ParserChunker2MatcherProcessor {
 			LOG.log(Level.WARNING, "failed to parse the sentence : '"+sentence, t);
 			return null;
 		}
+		
+		//	Parse[] chunks = ChunkSampleStream.getInitialChunks(parseArray[0]) ;
 
 		// there should be only one result parse
 		if (parseArray != null && parseArray.length > 0)
@@ -222,6 +217,7 @@ public class ParserChunker2MatcherProcessor {
 			return null;
 		}
 		List<String> POSlist = node.getOrderedPOSList();
+		
 		tags = POSlist.toArray(new String[0]);
 		if (toks.length != tags.length){
 			LOG.info("disagreement between toks and tags; sent =  '"+sentence + "'\n tags = "+tags + 
@@ -245,19 +241,15 @@ public class ParserChunker2MatcherProcessor {
 				} else
 					return null;
 			}
-			
 		}
 		String[] res = chunker.chunk(toks, tags);
-		Span[] span =  chunker.chunkAsSpans(toks, tags);
-		Sequence[] seq = chunker.topKSequences(toks, tags);
-
+	
 		List<List<ParseTreeChunk>> listOfChunks = new ArrayList<List<ParseTreeChunk>>();
 		List<ParseTreeChunk> nounPhr = new ArrayList<ParseTreeChunk>(), 
 		prepPhr = new ArrayList<ParseTreeChunk>(), verbPhr  = new ArrayList<ParseTreeChunk>(), 
 		adjPhr  = new ArrayList<ParseTreeChunk>(), 
 		// to store the whole sentence
 		wholeSentence = new ArrayList<ParseTreeChunk>();
-
 		List<String> pOSsAll = new ArrayList<String>(), lemmasAll = new ArrayList<String>();
 
 		for(int i = 0; i< toks.length; i++){
@@ -278,7 +270,7 @@ public class ParserChunker2MatcherProcessor {
 				for(int j=i+1; j<res.length; j++){
 					if (res[j].startsWith("B-VP")){
 						nounPhr.add(new ParseTreeChunk("NP", lemmas, pOSs));
-						LOG.info(i + " => " +lemmas);
+						//LOG.info(i + " => " +lemmas);
 						currPhraseClosed = true;
 						break;
 					} else {
@@ -288,7 +280,7 @@ public class ParserChunker2MatcherProcessor {
 				}
 				if (!currPhraseClosed){
 					nounPhr.add(new ParseTreeChunk("NP", lemmas, pOSs));
-					LOG.fine(i + " => " + lemmas);
+					//LOG.fine(i + " => " + lemmas);
 				}
 
 			} else if (bi_POS.startsWith("B-PP")){// beginning of a phrase
@@ -299,7 +291,7 @@ public class ParserChunker2MatcherProcessor {
 				for(int j=i+1; j<res.length; j++){
 					if (res[j].startsWith("B-VP")){
 						prepPhr.add(new ParseTreeChunk("PP", lemmas, pOSs));
-						LOG.fine(i + " => " + lemmas);
+						//LOG.fine(i + " => " + lemmas);
 						currPhraseClosed = true;
 						break;
 					} else {
@@ -309,7 +301,7 @@ public class ParserChunker2MatcherProcessor {
 				}
 				if (!currPhraseClosed){
 					prepPhr.add(new ParseTreeChunk("PP", lemmas, pOSs));
-					LOG.fine(i + " => " + lemmas);
+					//LOG.fine(i + " => " + lemmas);
 				}
 			} else
 				if (bi_POS.startsWith("B-VP")){// beginning of a phrase
@@ -320,7 +312,7 @@ public class ParserChunker2MatcherProcessor {
 					for(int j=i+1; j<res.length; j++){
 						if (res[j].startsWith("B-VP")){
 							verbPhr.add(new ParseTreeChunk("VP", lemmas, pOSs));
-							LOG.fine(i + " => " +lemmas);
+							//LOG.fine(i + " => " +lemmas);
 							currPhraseClosed = true;
 							break;
 						} else {
@@ -330,7 +322,7 @@ public class ParserChunker2MatcherProcessor {
 					}
 					if (!currPhraseClosed){
 						verbPhr.add(new ParseTreeChunk("VP", lemmas, pOSs));
-						LOG.fine(i + " => " + lemmas);
+						//LOG.fine(i + " => " + lemmas);
 					}
 				} else
 					if (bi_POS.startsWith("B-ADJP") ){// beginning of a phrase
@@ -341,7 +333,7 @@ public class ParserChunker2MatcherProcessor {
 						for(int j=i+1; j<res.length; j++){
 							if (res[j].startsWith("B-VP")){
 								adjPhr.add(new ParseTreeChunk("ADJP", lemmas, pOSs));
-								LOG.fine(i + " => " +lemmas);
+								//LOG.fine(i + " => " +lemmas);
 								currPhraseClosed = true;
 								break;
 							} else {
@@ -351,7 +343,7 @@ public class ParserChunker2MatcherProcessor {
 						}
 						if (!currPhraseClosed){
 							adjPhr.add(new ParseTreeChunk("ADJP", lemmas, pOSs));
-							LOG.fine(i + " => " + lemmas);
+							//LOG.fine(i + " => " + lemmas);
 						}
 					}
 		}
@@ -471,7 +463,7 @@ public class ParserChunker2MatcherProcessor {
 		return tokenizer.tokenize(sentence);
 	}
 
-	private void initializeSentenceDetector() {
+	protected void initializeSentenceDetector() {
 		InputStream is = null;
 		try {
 			is = new FileInputStream(
@@ -493,7 +485,7 @@ public class ParserChunker2MatcherProcessor {
 		}
 	}
 
-	private void initializeTokenizer() {
+	protected void initializeTokenizer() {
 		InputStream is = null;
 		try {
 			is = new FileInputStream(
@@ -513,7 +505,7 @@ public class ParserChunker2MatcherProcessor {
 		}
 	}
 
-	private void initializePosTagger() {
+	protected void initializePosTagger() {
 		InputStream is = null;
 		try {
 			is = new FileInputStream(MODEL_DIR
@@ -532,7 +524,7 @@ public class ParserChunker2MatcherProcessor {
 		}
 	}
 
-	private void initializeParser() {
+	protected void initializeParser() {
 		InputStream is = null;
 		try {
 			is = new FileInputStream(MODEL_DIR
@@ -597,7 +589,9 @@ public class ParserChunker2MatcherProcessor {
 
 		// if this node contains children nodes, then it is a phrase node
 		if (childrenNodeList != null && childrenNodeList.size() > 0) {
+			//System.out.println("Found "+ type + " phrase = "+ childrenNodeList);
 			return new PhraseNode(type, childrenNodeList);
+			
 		}
 
 		// otherwise, it is a word node
@@ -628,11 +622,10 @@ public class ParserChunker2MatcherProcessor {
 	
 	public SentencePairMatchResult assessRelevance(String para1, String para2)
 	{
-		ParserChunker2MatcherProcessor parser = ParserChunker2MatcherProcessor.getInstance();
-		List<List<ParseTreeChunk>> sent1GrpLst = parser.formGroupedPhrasesFromChunksForPara(para1), 
-		sent2GrpLst = parser.formGroupedPhrasesFromChunksForPara(para2);
+		List<List<ParseTreeChunk>> sent1GrpLst = formGroupedPhrasesFromChunksForPara(para1), 
+		sent2GrpLst = formGroupedPhrasesFromChunksForPara(para2);
 
-		List<LemmaPair> origChunks1 = listListParseTreeChunk2ListLemmaPairs(sent1GrpLst); //TODO  need to populate it!
+		List<LemmaPair> origChunks1 = listListParseTreeChunk2ListLemmaPairs(sent1GrpLst); 
 
 
 		ParseTreeMatcherDeterministic md = new ParseTreeMatcherDeterministic();
@@ -640,7 +633,7 @@ public class ParserChunker2MatcherProcessor {
 		return new SentencePairMatchResult(res, origChunks1);
 
 	}
-	private List<LemmaPair> listListParseTreeChunk2ListLemmaPairs(
+	protected List<LemmaPair> listListParseTreeChunk2ListLemmaPairs(
 			List<List<ParseTreeChunk>> sent1GrpLst) {
 		List<LemmaPair>  results = new ArrayList<LemmaPair>();
 		if (sent1GrpLst==null || sent1GrpLst.size() <1)
@@ -664,56 +657,5 @@ public class ParserChunker2MatcherProcessor {
 				System.out.println(node);
 			}
 		}
-	}
-
-	public static void main(String[] args) throws Exception {
-
-		String text = "Where do I apply? Go to your town office or city hall. If your town doesn't have an office, ask the town clerk or a Selectman. Tell them that you need a 1040 tax form . I Can 't Pay the Taxes on my House: What Can I Do?. Pine Tree Legal";
-
-		/*
-		 * String text =
-		 * "I have been driving a 96 accord to death for 10 years.  " +
-		 * "Lately it has been costing to much in repairs.  " +
-		 * "I am looking for something 8,000-13,000.  " +
-		 * "My last three vehicles have been Accords.  " +
-		 * "I like them but I would like something different this time.";
-		 */
-		/*
-		 * String text = "I love Fresh body styling. " + "I love lots of grip. "
-		 * + "I love strong engine and grippy tires. " + "I like Head turner. "
-		 * + "I like Right and left rearward blind spots. " +
-		 * "I like Great acceleration. " + "I like great noise. " +
-		 * "I like great brakes. " + "I like cheap feeling interior. " +
-		 * "I like uncomfortable seats. " + "I like nav system hard to read.";
-		 */
-		// String sentence = "I love Fresh body styling";
-		// String phrase = "I captures way more detail in high contrast scenes";
-		ParserChunker2MatcherProcessor parser = ParserChunker2MatcherProcessor.getInstance();
-		List<List<ParseTreeChunk>> res = parser.formGroupedPhrasesFromChunksForPara(text);
-		System.out.println(res);
-		
-		//parser.printParseTree("How can I get short focus zoom lens for digital camera");
-		//parser.formGroupedPhrasesFromChunksForSentence("How can I get short focus zoom lens for digital camera");
-
-		System.exit(0);
-
-		String phrase1 = "Its classy design and the Mercedes name make it a very cool vehicle to drive. "
-			+ "The engine makes it a powerful car. "
-			+ "The strong engine gives it enough power. "
-			+ "The strong engine gives the car a lot of power.";
-		String phrase2 = "This car has a great engine. "
-			+ "This car has an amazingly good engine. "
-			+ "This car provides you a very good mileage.";
-		String sentence = "Not to worry with the 2cv.";
-
-
-		System.out.println(parser.assessRelevance(phrase1, phrase2));
-
-
-		parser.formGroupedPhrasesFromChunksForSentence("Its classy design and the Mercedes name make it a very cool vehicle to drive. ");
-		parser.formGroupedPhrasesFromChunksForSentence("Sounds too good to be true but it actually is, the world's first flying car is finally here. ");
-		parser.formGroupedPhrasesFromChunksForSentence("UN Ambassador Ron Prosor repeated the Israeli position that the only way the Palestinians will get UN membership and statehood is through direct negotiations with the Israelis on a comprehensive peace agreement");
-
-
 	}
 }

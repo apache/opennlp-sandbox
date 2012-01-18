@@ -39,6 +39,8 @@ public abstract class SyntacticTreeNode {
 	public abstract String toStringIndented(int numTabs);
 	
 	public abstract List<String> getOrderedPOSList(); 
+	
+	public abstract List<String> getOrderedLemmaList(); 
 
 	public SyntacticTreeNode(String type) {
 		this.type = type;
@@ -152,6 +154,8 @@ public abstract class SyntacticTreeNode {
 			}
 		}
 	}
+
+
 
 	
 }

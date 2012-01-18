@@ -19,6 +19,7 @@ package opennlp.tools.textsimilarity;
 
 import java.util.List;
 
+
 import opennlp.tools.stemmer.PorterStemmer;
 
 public class LemmaFormManager {

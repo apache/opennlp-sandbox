@@ -82,4 +82,10 @@ public class WordNode extends SyntacticTreeNode {
 		types.add(getType());
 		return types;
 	}
+	@Override
+	public List<String> getOrderedLemmaList() {
+		List<String> types = new ArrayList<String>();
+		types.add(this.getWord());
+		return types;
+	}
 }
