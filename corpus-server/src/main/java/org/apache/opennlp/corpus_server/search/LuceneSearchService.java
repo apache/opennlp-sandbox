@@ -32,6 +32,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryParser.ParseException;
@@ -40,6 +41,9 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Version;
 import org.apache.opennlp.corpus_server.CorpusServer;
 import org.apache.opennlp.corpus_server.UimaUtil;
 import org.apache.opennlp.corpus_server.store.CorporaStore;
@@ -68,6 +72,8 @@ public class LuceneSearchService implements SearchService {
       LuceneSearchService.class .getName());
   
   private Map<String, AnalysisEngine> corpusIndexerMap = new HashMap<String, AnalysisEngine>();
+  
+  private IndexSearcher searcher;
   
   // create a map with corpus name and indexer ae ...
   // indexer ae is a pair of ae and descriptor (maybe that can be done nicer)
@@ -254,24 +260,40 @@ public class LuceneSearchService implements SearchService {
     } catch (AnalysisEngineProcessException e) {
       LOGGER.log(Level.SEVERE, "Failed to index CAS: " + casId, e);
     }
-    
-//    System.out.println("Index: " + casId);
   }
 
   @Override
-  public List<String> search(CorpusStore store, String q)
+  public synchronized List<String> search(CorpusStore store, String q)
       throws IOException {
     
-    // TODO:
-    // Creating a reader per query is can only be done for testing this ... 
-    // Open/Reopen index once in a while to see updates, can this be done automatically?!
+    // PERFORMANCE: This method can only be executed by one thread at a time
+    //              when there are concurrent search requests this will result
+    //              in longer than necessary delays to answer them.
     
-    File indexLocation = getIndexDirectory(store.getCorpusId());
     
-    QueryParser parser = null;
+    // Opening or reopening an index might fail,
+    // in this case every search request fails as well.
     
-    final IndexSearcher searcher = new IndexSearcher(indexLocation.getAbsolutePath());
-    parser = new QueryParser("text", new WhitespaceAnalyzer());
+    if (searcher == null) {
+      
+      File indexLocation = getIndexDirectory(store.getCorpusId());
+      
+      Directory indexDirectory = FSDirectory.open(indexLocation);
+      
+      IndexReader indexReader = IndexReader.open(indexDirectory, false);
+      
+      searcher = new IndexSearcher(indexReader);
+    }
+    
+    if (!searcher.getIndexReader().isCurrent()) {
+      IndexReader freshIndexReader = searcher.getIndexReader().reopen();
+      
+      searcher.close();
+      
+      searcher = new IndexSearcher(freshIndexReader);
+    }
+    
+    QueryParser parser = new QueryParser(Version.LUCENE_29, "text", new StandardAnalyzer(Version.LUCENE_29));
     
     Query query;
     try {
