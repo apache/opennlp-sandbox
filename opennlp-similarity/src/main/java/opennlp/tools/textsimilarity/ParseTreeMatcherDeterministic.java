@@ -28,6 +28,12 @@ public class ParseTreeMatcherDeterministic {
   private LemmaFormManager lemmaFormManager = new LemmaFormManager();
 
   private POSManager posManager = new POSManager();
+  /**
+   * key matching function which takes two phrases, aligns them and finds a set of maximum common sub-phrase
+   * @param chunk1
+   * @param chunk2
+   * @return
+   */
 
   public List<ParseTreeChunk> generalizeTwoGroupedPhrasesDeterministic(
       ParseTreeChunk chunk1, ParseTreeChunk chunk2) {
@@ -196,13 +202,18 @@ public class ParseTreeMatcherDeterministic {
     return results;
   }
 
-  // main function to generalize two expressions grouped by phrase types
-  // returns a list of generalizations for each phrase type with filtered
-  // sub-expressions
+  /** main function to generalize two expressions grouped by phrase types
+   * returns a list of generalizations for each phrase type with filtered
+   * sub-expressions
+   * 
+   * @param sent1
+   * @param sent2
+   * @return  List<List<ParseTreeChunk>> list of list of POS-words pairs for each resultant matched / overlapped phrase
+   */
   public List<List<ParseTreeChunk>> matchTwoSentencesGroupedChunksDeterministic(
       List<List<ParseTreeChunk>> sent1, List<List<ParseTreeChunk>> sent2) {
     List<List<ParseTreeChunk>> results = new ArrayList<List<ParseTreeChunk>>();
-    // first irerate through component
+    // first iterate through component
     for (int comp = 0; comp < 2 && // just np & vp
         comp < sent1.size() && comp < sent2.size(); comp++) {
       List<ParseTreeChunk> resultComps = new ArrayList<ParseTreeChunk>();

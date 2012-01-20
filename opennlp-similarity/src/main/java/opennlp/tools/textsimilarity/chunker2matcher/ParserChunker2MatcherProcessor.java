@@ -92,6 +92,10 @@ public class ParserChunker2MatcherProcessor {
 		initializeChunker();
 	}
 
+	/**
+	 * singleton method of instantiating the processor
+	 * @return the instance
+	 */
 	public synchronized static ParserChunker2MatcherProcessor getInstance() {
 		if (instance == null)
 			instance = new ParserChunker2MatcherProcessor();
@@ -99,6 +103,11 @@ public class ParserChunker2MatcherProcessor {
 		return instance;
 	}
 
+	/**
+	 * General parsing function, which returns lists of parses for a portion of text
+	 * @param text to be parsed
+	 * @return lists of parses
+	 */
 	public List<List<Parse>> parseTextNlp(String text) {
 		if (text == null || text.trim().length() == 0)
 			return null;
@@ -178,6 +187,11 @@ public class ParserChunker2MatcherProcessor {
 			return null;
 	}
 
+	/**
+	 * 
+	 * @param para input text string which is assumed to be a paragraph and is split into sentences
+	 * @return a list of lists of phrases with their POS tags for each phrase type (noun, verb etc.)
+	 */
 
 	public synchronized List<List<ParseTreeChunk>> formGroupedPhrasesFromChunksForPara(String para){
 		List<List<ParseTreeChunk>> listOfChunksAccum = new ArrayList<List<ParseTreeChunk>>();
@@ -202,7 +216,11 @@ public class ParserChunker2MatcherProcessor {
 		return listOfChunksAccum;
 	}
 
-
+	/**
+	 * 
+	 * @param para input text string which is assumed to be a sentence
+	 * @return a list of lists of phrases with their POS tags for each phrase type (noun, verb etc.)
+	 */
 	public synchronized List<List<ParseTreeChunk>> formGroupedPhrasesFromChunksForSentence(String sentence) {
 		if (sentence == null || sentence.trim().length() < MIN_SENTENCE_LENGTH)
 			return null;
@@ -619,7 +637,13 @@ public class ParserChunker2MatcherProcessor {
 		return childrenNodeList;
 	}
 
-	
+	/**
+	 * The key function of similarity component which takes two portions of text and does similarity assessment by finding the set of all maximum common subtrees
+	 * of the set of parse trees for each portion of text
+	 * @param input text 1
+	 * @param input text 2
+	 * @return the matching results structure, which includes the similarity score
+	 */
 	public SentencePairMatchResult assessRelevance(String para1, String para2)
 	{
 		List<List<ParseTreeChunk>> sent1GrpLst = formGroupedPhrasesFromChunksForPara(para1), 
@@ -633,6 +657,7 @@ public class ParserChunker2MatcherProcessor {
 		return new SentencePairMatchResult(res, origChunks1);
 
 	}
+	
 	protected List<LemmaPair> listListParseTreeChunk2ListLemmaPairs(
 			List<List<ParseTreeChunk>> sent1GrpLst) {
 		List<LemmaPair>  results = new ArrayList<LemmaPair>();

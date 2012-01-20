@@ -49,7 +49,10 @@ public class BingQueryRunner {
   public BingQueryRunner() {
 
   }
-
+  /*
+   * 
+   */
+  
   private String constructBingUrl(String query, String domainWeb, String lang,
       int numbOfHits) throws Exception {
     String codedQuery = URLEncoder.encode(query, "UTF-8");

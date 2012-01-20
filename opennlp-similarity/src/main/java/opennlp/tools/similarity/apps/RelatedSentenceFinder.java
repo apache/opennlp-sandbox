@@ -33,7 +33,15 @@ import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcess
 
 import org.apache.commons.lang.StringUtils;
 
-
+/*
+ * This class does content generation by using web mining and syntactic generalization to get sentences from the web, convert and combine them in the form 
+ * expected to be readable by humans.
+ * 
+ * These are examples of generated articles, given the article title
+ * http://www.allvoices.com/contributed-news/9423860/content/81937916-ichie-sings-jazz-blues-contemporary-tunes
+ * http://www.allvoices.com/contributed-news/9415063-britney-spears-femme-fatale-in-north-sf-bay-area
+ * 
+ */
 
 public class RelatedSentenceFinder
 {
@@ -95,12 +103,16 @@ public class RelatedSentenceFinder
 		opinionSentencesToAdd = removeDuplicatesFromResultantHits(opinionSentencesToAdd);
 		return opinionSentencesToAdd;
 	}
-	/*
-	 * Main content generation function which takes a seed as a rock group name and produce a list of text fragments by web mining for
-	 * this rock group (or other similar entity). 
-	 */
+	
+	/**
+	   * Main content generation function which takes a seed as a person, rock group, or other entity name and produce a list of text fragments by web mining for
+	   *  <br>
+	   * @param String entity name
+	   * @return List<HitBase> of text fragment structures which contain approved (in terms of relevance) mined sentences, as well as original search results objects
+	   * such as doc titles, abstracts, and urls.
+	   */
 
-	public List<HitBase> findActivityDetailsForEventGroupName(String sentence) throws Exception
+	public List<HitBase> generateContentAbout(String sentence) throws Exception
 	{
 		List<HitBase> opinionSentencesToAdd = new ArrayList<HitBase>();
 		System.out.println(" \n=== Entity to write about = " + sentence);
@@ -129,6 +141,13 @@ public class RelatedSentenceFinder
 		return opinionSentencesToAdd;
 	}
 
+	/**
+	   * Takes a sentence and extracts noun phrases and entity names to from search queries for finding relevant sentences on the web, which are 
+	   * then subject to relevance assessment by Similarity. Search queries should not be too general (irrelevant search results) or too specific (too few 
+	   * search results)
+	   * @param String input sentence to form queries
+	   * @return List<String> of search expressions 
+	   */
 	public static List<String> buildSearchEngineQueryFromSentence(String sentence)
 	{
 		ParseTreeChunk matcher = new ParseTreeChunk();
@@ -209,8 +228,12 @@ public class RelatedSentenceFinder
 
 	}
 
-	// remove dupes from queries to easy cleaning dupes and repetitive search
-	// afterwards
+	/** remove dupes from queries to easy cleaning dupes and repetitive search
+	 * afterwards
+	 * 
+	 * @param List<String> of sentences (search queries, or search results abstracts, or titles
+	 * @return List<String> of sentences where dupes are removed
+	 */
 	public static List<String> removeDuplicatesFromQueries(List<String> hits)
 	{
 		StringDistanceMeasurer meas = new StringDistanceMeasurer();
@@ -254,6 +277,11 @@ public class RelatedSentenceFinder
 
 	}
 
+	/** remove dupes from search results
+	 * 
+	 * @param List<HitBase> of search results objects 
+	 * @return List<String> of search results objects  where dupes are removed
+	 */
 	public static List<HitBase> removeDuplicatesFromResultantHits(List<HitBase> hits)
 	{
 		StringDistanceMeasurer meas = new StringDistanceMeasurer();
@@ -293,7 +321,15 @@ public class RelatedSentenceFinder
 		}
 		return hits;
 	}
-
+	/**
+	 * Takes single search result for an entity which is the subject of the essay to be written and forms essey sentences 
+	 * from the title, abstract, and possibly original page
+	 * @param HitBase item : search result
+	 * @param originalSentence : seed for the essay to be written 
+	 * @param sentsAll: list<String> of other sentences in the seed if it is multi-sentence
+	 * @return search result 
+	 */
+	
 	public HitBase augmentWithMinedSentencesAndVerifyRelevance(HitBase item, String originalSentence,
 			List<String> sentsAll)
 	{
@@ -551,7 +587,7 @@ public class RelatedSentenceFinder
 			// uncomment the sentence you would like to serve as a seed sentence for content generation for an event description
 
 			// uncomment the sentence you would like to serve as a seed sentence for content generation for an event description
-			hits = f.findActivityDetailsForEventGroupName(
+			hits = f.generateContentAbout(
 					"Albert Einstein"
 					//"Britney Spears - The Femme Fatale Tour"
 					// "Rush Time Machine",
