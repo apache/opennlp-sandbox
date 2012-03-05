@@ -17,9 +17,17 @@
 
 package org.apache.opennlp.corpus_server.tools;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 
 import javax.ws.rs.core.MediaType;
+
+import org.apache.uima.UIMAFramework;
+import org.apache.uima.resource.metadata.TypeSystemDescription;
+import org.apache.uima.util.XMLInputSource;
+import org.apache.uima.util.XMLParser;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -49,9 +57,24 @@ public class CreateCorpus {
 		WebResource r = c.resource(args[0]);
 		
 		byte[][] resources = new byte[2][];
-		byte typeSystemBytes[] = FileUtil.fileToBytes(new File(args[2]));
-		resources[0] = typeSystemBytes;
+
+		// Load and resolve type system before importing it
+		InputStream typeSystemIn = new FileInputStream(new File(args[2]));
 		
+	    XMLInputSource xmlTypeSystemSource = new XMLInputSource(typeSystemIn, new File(args[2]));
+
+	    XMLParser xmlParser = UIMAFramework.getXMLParser();
+
+	    TypeSystemDescription typeSystemDesciptor = (TypeSystemDescription) xmlParser
+		      .parse(xmlTypeSystemSource);
+		
+		typeSystemDesciptor.resolveImports();
+	    
+	    ByteArrayOutputStream typeSystemBytes = new ByteArrayOutputStream();
+	    typeSystemDesciptor.toXML(typeSystemBytes);
+	    
+		resources[0] = typeSystemBytes.toByteArray();
+	    
 		byte indexMappingBytes[] = FileUtil.fileToBytes(new File(args[3]));
 		resources[1] = indexMappingBytes;
 		
