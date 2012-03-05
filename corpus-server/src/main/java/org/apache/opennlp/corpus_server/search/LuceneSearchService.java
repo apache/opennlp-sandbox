@@ -357,5 +357,19 @@ public class LuceneSearchService implements SearchService {
         indexer.destroy();
       }
     }
+    
+    for (String corpusId : corpusSearcherMap.keySet()) {
+      IndexSearcher searcher = corpusSearcherMap.get(corpusId);
+      
+      if (searcher != null) {
+        try {
+          searcher.close();
+        }
+        catch (IOException e) {
+          LOGGER.log(Level.SEVERE, "Failed to shutdown searcher for "
+              + corpusId + " corpus!", e);
+        }
+      }
+    }
   }
 }
