@@ -35,7 +35,7 @@ public class CreateCorpus {
 	public static void main(String[] args) throws Exception {
 		
 		if (args.length != 4) {
-			System.out.println("CreateCorpus address corpusName typeSystemFile");
+			System.out.println("CreateCorpus address corpusName typeSystemFile mappingFile");
 			System.exit(-1);
 		}
 		
