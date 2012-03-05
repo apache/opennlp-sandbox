@@ -27,6 +27,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.opennlp.corpus_server.store.CorporaStore;
+import org.apache.opennlp.corpus_server.store.CorpusStore;
 import org.codehaus.jettison.json.JSONArray;
 
 @Path("/corpora")
@@ -58,11 +59,18 @@ public class CorporaResource {
 
   @Path("{corpus}")
 	public CorpusResource getCorpus(
-			@PathParam("corpus") String corpus) throws IOException {
+			@PathParam("corpus") String corpusId) throws IOException {
     
       CorpusServer corpusServer = CorpusServer.getInstance();
       CorporaStore store = corpusServer.getStore();
     
-      return new CorpusResource(store.getCorpus(corpus), corpusServer.getSearchService());
+      CorpusStore corpus = store.getCorpus(corpusId);
+      
+      if (corpus != null) {
+        return new CorpusResource(corpus, corpusServer.getSearchService());
+      }
+      else {
+        return null;
+      }
 	}
 }
