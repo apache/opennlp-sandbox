@@ -145,7 +145,40 @@ public class DerbyCorporaStore extends AbstractCorporaStore {
   
   @Override
   public CorpusStore getCorpus(String corpusId) {
-    return new DerbyCorpusStore(dataSource, this, corpusId);
+    
+    // It must be ensured that the table exist, otherwise
+    // null must be returned, because there is no corpus
+    // matching the provided id.
+    
+    // Note:
+    // A table might be deleted later on, that case must be handled well!
+    
+    DerbyCorpusStore corpusStore = null;
+    
+    try {
+      DatabaseMetaData metadata = null;
+      metadata = dataSource.getConnection().getMetaData();
+      String[] names = { "TABLE" };
+      ResultSet tableNames = metadata.getTables(null, null, null, names);
+
+      while (tableNames.next()) {
+        String tab = tableNames.getString("TABLE_NAME");
+        System.out.println("Table: " + tab);
+        if (tab.equalsIgnoreCase(corpusId)) {
+          corpusStore = new DerbyCorpusStore(dataSource, this, corpusId);
+          break;
+        }
+      }
+    } catch (SQLException e) {
+      
+      if (LOGGER.isLoggable(Level.SEVERE)) {
+        LOGGER.log(Level.SEVERE, "Failed to check if corpus exists!", e);
+      }
+      
+      return null;
+    }
+    
+    return corpusStore;
   }
 
   @Override
