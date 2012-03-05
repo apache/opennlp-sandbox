@@ -31,7 +31,6 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
@@ -71,13 +70,17 @@ public class LuceneSearchService implements SearchService {
   private final static Logger LOGGER = Logger.getLogger(
       LuceneSearchService.class .getName());
   
+  /**
+   * Maps the corpus id to the Lucas Indexer Analysis Engine.
+   */
   private Map<String, AnalysisEngine> corpusIndexerMap = new HashMap<String, AnalysisEngine>();
   
-  private IndexSearcher searcher;
+  /**
+   * Maps the corpus id to the Index Server instance, if one exists, otherwise
+   * it will be created on first access.
+   */
+  private Map<String, IndexSearcher> corpusSearcherMap = new HashMap<String, IndexSearcher>();
   
-  // create a map with corpus name and indexer ae ...
-  // indexer ae is a pair of ae and descriptor (maybe that can be done nicer)
-
   private static File getIndexDirectory(String corpusId) {
     return new File("index" + File.separator + corpusId);
   }
@@ -270,19 +273,23 @@ public class LuceneSearchService implements SearchService {
     //              when there are concurrent search requests this will result
     //              in longer than necessary delays to answer them.
     
+    IndexSearcher searcher = corpusSearcherMap.get(store.getCorpusId());
     
     // Opening or reopening an index might fail,
     // in this case every search request fails as well.
-    
-    if (searcher == null) {
-      
+    if (searcher == null) { 
       File indexLocation = getIndexDirectory(store.getCorpusId());
       
       Directory indexDirectory = FSDirectory.open(indexLocation);
       
       IndexReader indexReader = IndexReader.open(indexDirectory, false);
       
+      // Note: Reopening index for every request is slow,
+      // modify code again to keep indexes open!
+      
       searcher = new IndexSearcher(indexReader);
+      
+      corpusSearcherMap.put(store.getCorpusId(), searcher);
     }
     
     if (!searcher.getIndexReader().isCurrent()) {
@@ -291,6 +298,7 @@ public class LuceneSearchService implements SearchService {
       searcher.close();
       
       searcher = new IndexSearcher(freshIndexReader);
+      corpusSearcherMap.put(store.getCorpusId(), searcher);
     }
     
     QueryParser parser = new QueryParser(Version.LUCENE_29, "text", new StandardAnalyzer(Version.LUCENE_29));
@@ -303,6 +311,9 @@ public class LuceneSearchService implements SearchService {
     }
     
     final List<String> results = new ArrayList<String>();
+    
+    
+    final IndexSearcher finalSearcher = searcher;
     
     // query index ...
     searcher.search(query, new Collector() {
@@ -320,7 +331,7 @@ public class LuceneSearchService implements SearchService {
       
       @Override
       public void collect(int id) throws IOException {
-        Document doc = searcher.doc(docBase + id);
+        Document doc = finalSearcher.doc(docBase + id);
         String idString = doc.get("id");
         results.add(idString);
       }
