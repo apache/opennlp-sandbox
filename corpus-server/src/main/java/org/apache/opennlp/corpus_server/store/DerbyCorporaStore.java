@@ -163,7 +163,7 @@ public class DerbyCorporaStore extends AbstractCorporaStore {
 
       while (tableNames.next()) {
         String tab = tableNames.getString("TABLE_NAME");
-        System.out.println("Table: " + tab);
+        
         if (tab.equalsIgnoreCase(corpusId)) {
           corpusStore = new DerbyCorpusStore(dataSource, this, corpusId);
           break;
