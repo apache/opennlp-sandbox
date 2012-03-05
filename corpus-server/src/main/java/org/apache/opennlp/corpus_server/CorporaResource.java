@@ -28,7 +28,6 @@ import javax.ws.rs.core.MediaType;
 
 import org.apache.opennlp.corpus_server.store.CorporaStore;
 import org.apache.opennlp.corpus_server.store.CorpusStore;
-import org.codehaus.jettison.json.JSONArray;
 
 @Path("/corpora")
 public class CorporaResource {
