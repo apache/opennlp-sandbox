@@ -235,6 +235,10 @@ public class SentenceContentProvider implements IStructuredContentProvider {
     String exclusionSpanTypeNames = store.getString(OpenNLPPreferenceConstants.SENT_EXCLUSION_TYPE);
     
     Type exclusionSpanTypes[] = UIMAUtil.splitTypes(exclusionSpanTypeNames, ',', cas.getTypeSystem());
+
+    if (exclusionSpanTypes == null) {
+      exclusionSpanTypes = new Type[0];
+    }
     
     if (Arrays.binarySearch(exclusionSpanTypes, sentenceType) == -1) {
       exclusionSpanTypes = Arrays.copyOf(exclusionSpanTypes, exclusionSpanTypes.length + 1);
@@ -243,13 +247,11 @@ public class SentenceContentProvider implements IStructuredContentProvider {
     
     List<Span> exclusionSpans = new ArrayList<Span>();
     
-    if (exclusionSpanTypes != null) {
-      for (Iterator<AnnotationFS> exclusionAnnIterator = UIMAUtil.createMultiTypeIterator(cas, exclusionSpanTypes);
-          exclusionAnnIterator.hasNext();) {
-        
-        AnnotationFS exclusionAnnotation = exclusionAnnIterator.next();
-        exclusionSpans.add(new Span(exclusionAnnotation.getBegin(), exclusionAnnotation.getEnd()));
-      }
+    for (Iterator<AnnotationFS> exclusionAnnIterator = UIMAUtil.createMultiTypeIterator(cas, exclusionSpanTypes);
+        exclusionAnnIterator.hasNext();) {
+      
+      AnnotationFS exclusionAnnotation = exclusionAnnIterator.next();
+      exclusionSpans.add(new Span(exclusionAnnotation.getBegin(), exclusionAnnotation.getEnd()));
     }
     
     sentenceDetector.setExclusionSpans(exclusionSpans);
