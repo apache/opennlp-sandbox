@@ -25,6 +25,7 @@ import java.util.List;
 import opennlp.tools.util.Span;
 
 import org.apache.opennlp.caseditor.AbstractCasChangeTrigger;
+import org.apache.opennlp.caseditor.OpenNLPPlugin;
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
 import org.apache.opennlp.caseditor.PotentialAnnotation;
 import org.apache.opennlp.caseditor.namefinder.EntityContentProvider;
@@ -38,6 +39,8 @@ import org.apache.uima.caseditor.editor.ICasDocumentListener;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jface.util.IPropertyChangeListener;
+import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
@@ -54,11 +57,26 @@ public class SentenceContentProvider implements IStructuredContentProvider {
     }
   }
   
+  /**
+   * Listeners which triggers a run of the name finder when a related preferences changed.
+   */
+  private class PreferenceChangeTrigger implements IPropertyChangeListener{
+
+    @Override
+    public void propertyChange(PropertyChangeEvent event) {
+      // Filter all changes of preferences which do not belong to this plugin
+      if (event.getProperty().startsWith(OpenNLPPlugin.ID)) {
+        triggerSentenceDetector();
+      }
+    }
+  }
+  
   private SentenceDetectorViewPage sentenceDetectorView;
   
   private AnnotationEditor editor;
   
   private ICasDocumentListener casChangedTrigger;
+  private PreferenceChangeTrigger preferenceChangeTrigger = new PreferenceChangeTrigger();
   
   private SentenceDetectorJob sentenceDetector;
   
@@ -158,6 +176,10 @@ public class SentenceContentProvider implements IStructuredContentProvider {
         });
       }
     });
+    
+    IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
+    
+    store.addPropertyChangeListener(preferenceChangeTrigger);
   }
   
   @Override
@@ -272,5 +294,7 @@ public class SentenceContentProvider implements IStructuredContentProvider {
   
   @Override
   public void dispose() {
+    IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
+    store.removePropertyChangeListener(preferenceChangeTrigger);
   }
 }
