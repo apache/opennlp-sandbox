@@ -48,7 +48,12 @@ public class SentenceDetectorPreferencePage extends FieldEditorPreferencePage
     
     TypeListFieldEditor paragraphType = new TypeListFieldEditor(
         OpenNLPPreferenceConstants.PARAGRAPH_TYPE,
-        "Paragraph Type", ts, getFieldEditorParent());
+        "Paragraph Types", ts, getFieldEditorParent());
     addField(paragraphType);
+    
+    TypeListFieldEditor exclusionType = new TypeListFieldEditor(
+        OpenNLPPreferenceConstants.SENT_EXCLUSION_TYPE,
+        "Exclusion Types", ts, getFieldEditorParent());
+    addField(exclusionType);
   }
 }

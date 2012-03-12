@@ -18,6 +18,7 @@
 package org.apache.opennlp.caseditor.sentdetect;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -116,7 +117,7 @@ public class SentenceContentProvider implements IStructuredContentProvider {
               
               // Add a new potential sentence
               // Only add if it is not a confirmed sentence yet!
-              // for each anotation, search confirmed sentence array above ...
+              // for each annotation, search confirmed sentence array above ...
               for (PotentialAnnotation sentence : sentences) {
                 if (EntityContentProvider.searchEntity(confirmedSentences,
                     sentence.getBeginIndex(), sentence.getEndIndex(),
@@ -125,21 +126,28 @@ public class SentenceContentProvider implements IStructuredContentProvider {
                 }
               }
               
+              // TODO: Try to reuse selection computation code
+              
               // is sentence detector view active ?!
               if (SentenceContentProvider.this.sentenceDetectorView.isActive()) {
                 int newSelectionIndex = -1;
                 
-                if (sentenceTable.getSelectionIndex() == -1 && sentenceTable.getItemCount() > 0) {
-                  newSelectionIndex = 0;
-                }
-                
-                if (selectionIndex < sentenceTable.getItemCount()) {
-                  newSelectionIndex = selectionIndex;
+                if (sentenceTable.getItemCount() > 0) {
+                  if (sentenceTable.getSelectionIndex() == -1) {
+                    newSelectionIndex = 0;
+                  }
+                  
+                  if (selectionIndex < sentenceTable.getItemCount()) {
+                    newSelectionIndex = selectionIndex;
+                  }
+                  else if (selectionIndex >= sentenceTable.getItemCount()) {
+                    newSelectionIndex = sentenceTable.getItemCount() - 1;
+                  }
                 }
                 
                 if (newSelectionIndex != -1) {
                   SentenceContentProvider.this.sentenceList.setSelection(
-                      new StructuredSelection(SentenceContentProvider.this.sentenceList.getElementAt(selectionIndex)));
+                      new StructuredSelection(SentenceContentProvider.this.sentenceList.getElementAt(newSelectionIndex)));
                 }
               }
             }
@@ -204,11 +212,8 @@ public class SentenceContentProvider implements IStructuredContentProvider {
       }
     }
     
-    String modelPath = store.getString(OpenNLPPreferenceConstants.SENTENCE_DETECTOR_MODEL_PATH);
-    
-    sentenceDetector.setModelPath(modelPath);
     sentenceDetector.setParagraphs(paragraphSpans);
-    sentenceDetector.setText(editor.getDocument().getCAS().getDocumentText());
+
     
     String sentenceTypeName = store.getString(OpenNLPPreferenceConstants.SENTENCE_TYPE);
     
@@ -216,8 +221,9 @@ public class SentenceContentProvider implements IStructuredContentProvider {
       sentenceDetectorView.setMessage("Sentence type name is not set!");
       return;
     }
-      
+    
     Type sentenceType = cas.getTypeSystem().getType(sentenceTypeName);
+    // TODO: Add all existing sentences to the exclusion spans ...
     
     if (sentenceType == null) {
       sentenceDetectorView.setMessage("Type system does not contain sentence type!");
@@ -225,6 +231,33 @@ public class SentenceContentProvider implements IStructuredContentProvider {
     }
     
     sentenceDetector.setSentenceType(sentenceType.getName());
+    
+    String exclusionSpanTypeNames = store.getString(OpenNLPPreferenceConstants.SENT_EXCLUSION_TYPE);
+    
+    Type exclusionSpanTypes[] = UIMAUtil.splitTypes(exclusionSpanTypeNames, ',', cas.getTypeSystem());
+    
+    if (Arrays.binarySearch(exclusionSpanTypes, sentenceType) == -1) {
+      exclusionSpanTypes = Arrays.copyOf(exclusionSpanTypes, exclusionSpanTypes.length + 1);
+      exclusionSpanTypes[exclusionSpanTypes.length - 1] = sentenceType;
+    }
+    
+    List<Span> exclusionSpans = new ArrayList<Span>();
+    
+    if (exclusionSpanTypes != null) {
+      for (Iterator<AnnotationFS> exclusionAnnIterator = UIMAUtil.createMultiTypeIterator(cas, exclusionSpanTypes);
+          exclusionAnnIterator.hasNext();) {
+        
+        AnnotationFS exclusionAnnotation = exclusionAnnIterator.next();
+        exclusionSpans.add(new Span(exclusionAnnotation.getBegin(), exclusionAnnotation.getEnd()));
+      }
+    }
+    
+    sentenceDetector.setExclusionSpans(exclusionSpans);
+    
+    String modelPath = store.getString(OpenNLPPreferenceConstants.SENTENCE_DETECTOR_MODEL_PATH);
+    sentenceDetector.setModelPath(modelPath);
+    
+    sentenceDetector.setText(editor.getDocument().getCAS().getDocumentText());
     
     sentenceDetector.schedule();
   }
