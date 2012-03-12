@@ -114,13 +114,12 @@ public class NameFinderJob extends Job {
       try {
         nameFinder = new MultiModelNameFinder(modelPath, modelTypes);
       } catch (IOException e) {
-        return new Status(IStatus.CANCEL, OpenNLPPlugin.ID, 
-            "Failed to load model(s):\n" + e.getMessage());
+        return new Status(IStatus.CANCEL, OpenNLPPlugin.ID, e.getMessage());
       }
     }
 
     if (nameFinder != null) {
-      nameFinder.clearAdaptiveData();
+      nameFinder.clearAdaptiveData(); // TODO: If model loading fails we get a NPE here!
     
       nameList = new ArrayList<PotentialAnnotation>();
       

@@ -111,9 +111,13 @@ public class MultiModelNameFinder implements TokenNameFinder {
         TokenNameFinderModel model = new TokenNameFinderModel(modelIn);
         sequenceValidators[i] = new RestrictedSequencesValidator(modelTypes[i]);
         nameFinders[i] = new NameFinderME(model, null, 5, sequenceValidators[i]);
-      } catch (IOException e) {
-        e.printStackTrace();
-      } finally {
+      } 
+      catch (IOException e) {
+        // Error message should include model type
+        throw new IOException("Failed to load a model, path:\n" + modelPathes[i] +
+            "\nError Message:\n" + e.getMessage());
+      }
+      finally {
         if (modelIn != null) {
           try {
             modelIn.close();
