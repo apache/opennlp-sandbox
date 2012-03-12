@@ -262,7 +262,7 @@ public class SentenceContentProvider implements IStructuredContentProvider {
       exclusionSpanTypes = new Type[0];
     }
     
-    if (Arrays.binarySearch(exclusionSpanTypes, sentenceType) == -1) {
+    if (Arrays.binarySearch(exclusionSpanTypes, sentenceType) < 0) {
       exclusionSpanTypes = Arrays.copyOf(exclusionSpanTypes, exclusionSpanTypes.length + 1);
       exclusionSpanTypes[exclusionSpanTypes.length - 1] = sentenceType;
     }
