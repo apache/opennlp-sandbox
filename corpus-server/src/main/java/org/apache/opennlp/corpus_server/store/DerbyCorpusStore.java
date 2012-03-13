@@ -158,6 +158,37 @@ public class DerbyCorpusStore implements CorpusStore {
   }
   
   @Override
+  public void removeCAS(String casID) throws IOException {
+    
+    try {
+      Connection conn = dataSource.getConnection();
+      PreparedStatement ps = conn.prepareStatement("delete from " + 
+          corpusName + " where name = ?");
+      
+      ps.setString(1, casID);
+      
+      ps.executeUpdate();
+      
+      conn.commit();
+      
+      ps.close();
+      conn.close();
+    } catch (SQLException e) {
+      
+      if (LOGGER.isLoggable(Level.SEVERE)) {
+        LOGGER.log(Level.SEVERE, "Failed to remove CAS: " + 
+            casID, e);
+      }
+      
+      throw new IOException(e);
+    }
+    
+    for (CorporaChangeListener listener : store.getListeners()) {
+      listener.removedCAS(this, casID);
+    }
+  }
+  
+  @Override
   public TypeSystemDescription getTypeSystem() throws IOException {
     
     TypeSystemDescription tsDescription = null;

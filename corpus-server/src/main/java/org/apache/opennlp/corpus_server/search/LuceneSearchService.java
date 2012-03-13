@@ -34,12 +34,14 @@ import java.util.logging.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
@@ -224,7 +226,6 @@ public class LuceneSearchService implements SearchService {
     
     AnalysisEngine indexer = corpusIndexerMap.get(corpusId);
     
-    
     InputStream indexTsIn = LuceneSearchService.class.getResourceAsStream(
         "/org/apache/opennlp/corpus_server/search/TypeSystem.xml");
     
@@ -250,7 +251,12 @@ public class LuceneSearchService implements SearchService {
     
     byte[] casBytes = store.getCAS(casId);
     
-    UimaUtil.deserializeXmiCAS(cas, new ByteArrayInputStream(casBytes));
+    if (casBytes != null) {
+      UimaUtil.deserializeXmiCAS(cas, new ByteArrayInputStream(casBytes));
+    }
+    else {
+      cas.setDocumentText(null);
+    }
     
     // Inject id feature structure into the CAS
     Type casIdType = cas.getTypeSystem().getType(LuceneIndexer.CAS_ID_TYPE);
@@ -267,6 +273,12 @@ public class LuceneSearchService implements SearchService {
     }
   }
 
+  @Override
+  public void removeFromIndex(CorpusStore store, String casId)
+      throws IOException {
+    index(store, casId);
+  }
+  
   @Override
   public synchronized List<String> search(CorpusStore store, String q)
       throws IOException {

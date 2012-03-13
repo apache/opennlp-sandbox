@@ -15,36 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.opennlp.corpus_server.store;
+package org.apache.opennlp.corpus_server.tools;
+
+import javax.ws.rs.core.MediaType;
+
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
 
 /**
- * Change listener to notify about corpora changes.
+ * Command Line Tool to remove a CAS from a corpus.
  */
-public interface CorporaChangeListener {
+public class RemoveCAS {
 
-  void addedCorpus(CorpusStore store);
+  public static void main(String[] args) {
+    
+    if (args.length != 2) {
+      System.out.println("RemoveCAS corpusAddress casId");
+      System.exit(-1);
+    }
+    
+    Client c = Client.create();
+
+    WebResource r = c.resource(args[0]);
+    
+    ClientResponse response = r
+        .path(args[1])
+        .delete(ClientResponse.class);
+    
+    System.out.println("Result: " + response.getStatus());
+  }
   
-  /**
-   * Indicates that the CAS was added to the corpus.
-   * 
-   * @param store
-   * @param casId
-   */
-  void addedCAS(CorpusStore store, String casId);
-  
-  /**
-   * Indicates that a CAS was updated in the corpus.
-   * 
-   * @param store
-   * @param casId
-   */
-  void updatedCAS(CorpusStore store, String casId);
-  
-  /**
-   * Indicates that a CAS was removed from the corpus.
-   * 
-   * @param store
-   * @param casId
-   */
-  void removedCAS(CorpusStore store, String casId);
 }

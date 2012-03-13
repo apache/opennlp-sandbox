@@ -77,6 +77,11 @@ public class MemoryCorpusStore implements CorpusStore {
     addCAS(casID, content);
   }
 
+  @Override
+  public void removeCAS(String casID) throws IOException {
+    casStore.remove(casID);
+  }
+  
   public TypeSystemDescription getTypeSystem() {
     return typeSystem;
   }

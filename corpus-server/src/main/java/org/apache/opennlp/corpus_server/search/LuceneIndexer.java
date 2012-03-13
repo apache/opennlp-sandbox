@@ -92,14 +92,20 @@ public class LuceneIndexer extends LuceneDocumentAE {
       throw new AnalysisEngineProcessException(new Exception("Missing cas id feature structure!"));
     
     Query idQuery = new TermQuery(new Term(LuceneSearchService.LUCENE_ID_FIELD, casId));
-      
-    Document doc = createDocument(cas);
-    doc.add(new Field(LuceneSearchService.LUCENE_ID_FIELD,
-        casId, Field.Store.YES, Field.Index.NOT_ANALYZED));
+    
+    // Note: A CAS with a null document text is removed from the index.
+    // This is used to remove a CAS from an index!
     
     try {
       indexWriter.deleteDocuments(idQuery);
-      indexWriter.addDocument(doc);
+      
+      if (cas.getDocumentText() != null) {
+        Document doc = createDocument(cas);
+        doc.add(new Field(LuceneSearchService.LUCENE_ID_FIELD,
+            casId, Field.Store.YES, Field.Index.NOT_ANALYZED));
+        
+        indexWriter.addDocument(doc);
+      }
       
       // TODO: Commit handling might need to be changed
       indexWriter.commit();

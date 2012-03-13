@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.List;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -62,13 +63,20 @@ public class CorpusResource {
 	/**
 	 * Updates an existing CAS in the store.
 	 */
-	// TODO: Should fail is resource does not exist
+	// TODO: Should fail if resource does not exist
 	@PUT
 	@Consumes(MediaType.TEXT_XML)
 	@Path("{casId}")
 	public void updateCAS(@PathParam("casId") String casId, 
 			byte[] cas) throws IOException {
 		corpus.updateCAS(casId, cas);
+	}
+	
+	@DELETE
+	@Path("{casId}")
+	public void removeCAS(@PathParam("casId") String casId)
+	    throws IOException {
+	  corpus.removeCAS(casId);
 	}
 	
 	/**

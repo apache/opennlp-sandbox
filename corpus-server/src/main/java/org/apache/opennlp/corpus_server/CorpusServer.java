@@ -66,6 +66,16 @@ public class CorpusServer implements ServletContextListener {
         LOGGER.log(Level.WARNING, "Failed to create index: " + store.getCorpusId(), e);
       }
     }
+    
+    @Override
+    public void removedCAS(CorpusStore store, String casId) {
+      try {
+        searchService.removeFromIndex(store, casId);
+      } catch (IOException e) {
+        LOGGER.log(Level.WARNING, "Failed to remove cas " + casId + 
+            "from  index " + store.getCorpusId(), e);
+      }
+    }
   }
   
   private final static Logger LOGGER = Logger.getLogger(
