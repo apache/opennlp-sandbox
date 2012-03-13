@@ -67,6 +67,8 @@ import org.apache.uima.util.XMLInputSource;
 
 public class LuceneSearchService implements SearchService {
 
+  final static String LUCENE_ID_FIELD = "id";
+  
   private final static Logger LOGGER = Logger.getLogger(
       LuceneSearchService.class .getName());
   
@@ -332,7 +334,7 @@ public class LuceneSearchService implements SearchService {
       @Override
       public void collect(int id) throws IOException {
         Document doc = finalSearcher.doc(docBase + id);
-        String idString = doc.get("id");
+        String idString = doc.get(LUCENE_ID_FIELD);
         results.add(idString);
       }
       

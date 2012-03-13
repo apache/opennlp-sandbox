@@ -91,10 +91,11 @@ public class LuceneIndexer extends LuceneDocumentAE {
     if (casId == null)
       throw new AnalysisEngineProcessException(new Exception("Missing cas id feature structure!"));
     
-    Query idQuery = new TermQuery(new Term("id", casId));
+    Query idQuery = new TermQuery(new Term(LuceneSearchService.LUCENE_ID_FIELD, casId));
       
     Document doc = createDocument(cas);
-    doc.add(new Field("id", casId, Field.Store.YES, Field.Index.NOT_ANALYZED));
+    doc.add(new Field(LuceneSearchService.LUCENE_ID_FIELD,
+        casId, Field.Store.YES, Field.Index.NOT_ANALYZED));
     
     try {
       indexWriter.deleteDocuments(idQuery);
