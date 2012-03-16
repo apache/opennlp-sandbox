@@ -19,8 +19,6 @@ package org.apache.opennlp.corpus_server.store;
 
 import java.io.IOException;
 
-import org.apache.uima.resource.metadata.TypeSystemDescription;
-
 /**
  * A Corpus Store contains a set of CASes and is responsible to host them
  * together with a type system.
@@ -79,7 +77,7 @@ public interface CorpusStore {
    * @return
    * @throws IOException
    */
-  TypeSystemDescription getTypeSystem() throws IOException;
+  byte[] getTypeSystem() throws IOException;
   
   /**
    * Retrieves the index mapping for this corpus.

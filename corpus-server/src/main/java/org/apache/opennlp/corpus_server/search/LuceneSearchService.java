@@ -239,7 +239,9 @@ public class LuceneSearchService implements SearchService {
     
     List<MetaDataObject> specs = new ArrayList<MetaDataObject>();
     specs.add(indexTypeDesc);
-    specs.add(store.getTypeSystem());
+    TypeSystemDescription tsDescription = UimaUtil.createTypeSystemDescription(
+          new ByteArrayInputStream(store.getTypeSystem()));
+    specs.add(tsDescription);
     
     // Note: This might be a performance problem
     CAS cas;

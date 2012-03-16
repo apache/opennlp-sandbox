@@ -17,7 +17,6 @@
 
 package org.apache.opennlp.corpus_server.store;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.sql.Blob;
 import java.sql.Connection;
@@ -29,9 +28,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.sql.DataSource;
-
-import org.apache.opennlp.corpus_server.UimaUtil;
-import org.apache.uima.resource.metadata.TypeSystemDescription;
 
 public class DerbyCorpusStore implements CorpusStore {
 
@@ -189,9 +185,9 @@ public class DerbyCorpusStore implements CorpusStore {
   }
   
   @Override
-  public TypeSystemDescription getTypeSystem() throws IOException {
+  public byte[] getTypeSystem() throws IOException {
     
-    TypeSystemDescription tsDescription = null;
+    byte tsBytes[];
     
     try {
       Connection conn = dataSource.getConnection();
@@ -200,9 +196,10 @@ public class DerbyCorpusStore implements CorpusStore {
           " WHERE name='_typesystem'");
       
       if (tsResult.next()) {
-        byte tsBytes[] = tsResult.getBytes(2);
-        tsDescription = UimaUtil.createTypeSystemDescription(
-            new ByteArrayInputStream(tsBytes));
+        tsBytes = tsResult.getBytes(2);
+      }
+      else {
+        throw new IOException("Failed to retrieve type system!");
       }
       
       tsResult.close();
@@ -217,7 +214,7 @@ public class DerbyCorpusStore implements CorpusStore {
       throw new IOException(e);
     }
     
-    return tsDescription;
+    return tsBytes;
   }
   
   @Override

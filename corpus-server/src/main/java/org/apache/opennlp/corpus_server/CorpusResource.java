@@ -17,7 +17,6 @@
 
 package org.apache.opennlp.corpus_server;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 
@@ -34,8 +33,6 @@ import javax.ws.rs.core.MediaType;
 
 import org.apache.opennlp.corpus_server.search.SearchService;
 import org.apache.opennlp.corpus_server.store.CorpusStore;
-import org.apache.uima.resource.metadata.TypeSystemDescription;
-import org.xml.sax.SAXException;
 
 public class CorpusResource {
 
@@ -88,7 +85,7 @@ public class CorpusResource {
 	@Produces(MediaType.TEXT_XML)
 	@Path("{casId}")
 	public byte[] getCAS(@PathParam("casId") String casId) throws IOException{
-		return corpus.getCAS(casId);
+	  return corpus.getCAS(casId);
 	}
 
 	/**
@@ -99,19 +96,7 @@ public class CorpusResource {
 	@Produces(MediaType.TEXT_XML)
 	@Path("_typesystem")
 	public byte[] getTypeSystem() throws IOException {
-		TypeSystemDescription typeSystem = corpus.getTypeSystem();
-
-		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-		
-		try {
-			typeSystem.toXML(bytes);
-		} catch (SAXException e) {
-		  throw new IOException(e);
-		} catch (IOException e) {
-			throw new IllegalStateException("Writing to memory must not fail!");
-		}
-		
-		return bytes.toByteArray();
+	  return corpus.getTypeSystem();
 	}
 	
 	@GET

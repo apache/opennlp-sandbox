@@ -32,15 +32,15 @@ import org.apache.uima.resource.metadata.TypeSystemDescription;
 public class MemoryCorpusStore implements CorpusStore {
 
   private final String corpusName;
-  private final TypeSystemDescription typeSystem;
+  private final byte[] typeSystemBytes;
   private byte[] indexMapping;
 
   private Map<String, byte[]> casStore = new HashMap<String, byte[]>();
 
-  MemoryCorpusStore(String corpusName, TypeSystemDescription typeSystem,
+  MemoryCorpusStore(String corpusName, byte[] typeSystem,
       byte[] indexMapping) {
     this.corpusName = corpusName;
-    this.typeSystem = typeSystem;
+    this.typeSystemBytes = typeSystem;
     this.indexMapping = indexMapping;
   }
 
@@ -60,7 +60,10 @@ public class MemoryCorpusStore implements CorpusStore {
     // Directly store data as xmi, but deserialization is needed to index and
     // validate it!
 
-    CAS cas = UimaUtil.createEmptyCAS(typeSystem);
+    TypeSystemDescription tsDescription = UimaUtil.createTypeSystemDescription(
+        new ByteArrayInputStream(typeSystemBytes));
+    
+    CAS cas = UimaUtil.createEmptyCAS(tsDescription);
 
     try {
       UimaUtil.deserializeXmiCAS(cas, new ByteArrayInputStream(content));
@@ -82,8 +85,8 @@ public class MemoryCorpusStore implements CorpusStore {
     casStore.remove(casID);
   }
   
-  public TypeSystemDescription getTypeSystem() {
-    return typeSystem;
+  public byte[] getTypeSystem() {
+    return typeSystemBytes;
   }
 
   @Override

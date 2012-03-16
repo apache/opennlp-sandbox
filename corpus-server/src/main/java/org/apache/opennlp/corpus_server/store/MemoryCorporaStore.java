@@ -17,14 +17,11 @@
 
 package org.apache.opennlp.corpus_server.store;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
-import org.apache.opennlp.corpus_server.UimaUtil;
 
 public class MemoryCorporaStore extends AbstractCorporaStore {
 	
@@ -56,8 +53,7 @@ public class MemoryCorporaStore extends AbstractCorporaStore {
 	public void createCorpus(String corpusName,
 			byte typeSystemBytes[], byte indexMapping[]) {
 		corpora.put(corpusName, new MemoryCorpusStore(corpusName, 
-				UimaUtil.createTypeSystemDescription(
-				new ByteArrayInputStream(typeSystemBytes)), indexMapping));
+				typeSystemBytes, indexMapping));
 	}
 	
 	public MemoryCorpusStore getCorpus(String corpusId) {
