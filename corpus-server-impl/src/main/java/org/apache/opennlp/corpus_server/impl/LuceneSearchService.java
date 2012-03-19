@@ -34,18 +34,15 @@ import java.util.logging.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
-import org.apache.opennlp.corpus_server.CorpusServer;
 import org.apache.opennlp.corpus_server.search.SearchService;
 import org.apache.opennlp.corpus_server.store.CorporaStore;
 import org.apache.opennlp.corpus_server.store.CorpusStore;
@@ -73,6 +70,8 @@ public class LuceneSearchService implements SearchService {
   
   private final static Logger LOGGER = Logger.getLogger(
       LuceneSearchService.class .getName());
+
+  private CorporaStore store;
   
   /**
    * Maps the corpus id to the Lucas Indexer Analysis Engine.
@@ -92,10 +91,10 @@ public class LuceneSearchService implements SearchService {
   private void createIndexWriter(String corpusId, boolean createIndex) throws IOException {
     
     // Set the index mapping file for this corpus in the analysis engine descriptor
-    CorpusStore corpusStore = CorpusServer.getInstance().getStore().getCorpus(corpusId);
+    CorpusStore corpusStore = store.getCorpus(corpusId);
     
     XMLInputSource in = new XMLInputSource(LuceneSearchService.class.getResourceAsStream(
-        "/org/apache/opennlp/corpus_server/search/LuceneIndexer.xml"), new File(""));
+        "/org/apache/opennlp/corpus_server/impl/LuceneIndexer.xml"), new File(""));
     
     try {
       AnalysisEngineDescription specifier;
@@ -151,7 +150,7 @@ public class LuceneSearchService implements SearchService {
       try {
         // TODO: Retrieve file form somewhere for this corpus
         indexWriterPropertiesIn = LuceneSearchService.class.getResourceAsStream(
-            "/org/apache/opennlp/corpus_server/search/IndexWriter.properties");
+            "/org/apache/opennlp/corpus_server/impl/IndexWriter.properties");
       
         indexWriterProperties.load(indexWriterPropertiesIn);
       }
@@ -203,9 +202,11 @@ public class LuceneSearchService implements SearchService {
   }
   
   @Override
-  public synchronized void initialize(CorporaStore corporaStore) throws IOException {
+  public synchronized void initialize(CorporaStore store) throws IOException {
     
-    for (String corpusId : corporaStore.getCorpusIds()) {
+    this.store = store;
+    
+    for (String corpusId : store.getCorpusIds()) {
       createIndexWriter(corpusId, false);
       LOGGER.info("Created Index Writer for " + corpusId + "corpus.");
     }
@@ -227,7 +228,7 @@ public class LuceneSearchService implements SearchService {
     AnalysisEngine indexer = corpusIndexerMap.get(corpusId);
     
     InputStream indexTsIn = LuceneSearchService.class.getResourceAsStream(
-        "/org/apache/opennlp/corpus_server/search/TypeSystem.xml");
+        "/org/apache/opennlp/corpus_server/impl/TypeSystem.xml");
     
     TypeSystemDescription indexTypeDesc;
     try {

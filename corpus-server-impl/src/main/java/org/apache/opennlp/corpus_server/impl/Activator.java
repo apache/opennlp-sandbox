@@ -17,15 +17,27 @@
 
 package org.apache.opennlp.corpus_server.impl;
 
+import java.util.Hashtable;
+
+import org.apache.opennlp.corpus_server.CorpusServer;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
 public class Activator implements BundleActivator {
+  
+  private CorpusServerImpl corpusServer;
+
   @Override
   public void start(BundleContext context) throws Exception {
+    corpusServer = new CorpusServerImpl();
+    
+    corpusServer.start();
+    
+    context.registerService(CorpusServer.class.getName(), corpusServer, new Hashtable());
   }
 
   @Override
   public void stop(BundleContext context) throws Exception {
+    corpusServer.stop();
   }
 }
