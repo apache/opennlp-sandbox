@@ -50,7 +50,8 @@ public class CorporaResource {
 	    // TODO: throw exception
 	  }
 	  
-	  CorpusServer corpusServer = CorpusServer.getInstance();
+	  CorpusServer corpusServer = CorpusServerBundle.getInstance().getCorpusServer();
+	  
 	  CorporaStore store = corpusServer.getStore();
 	  
 	  store.createCorpus(corpusName, resources[0], resources[1]);
@@ -60,7 +61,7 @@ public class CorporaResource {
 	public CorpusResource getCorpus(
 			@PathParam("corpus") String corpusId) throws IOException {
     
-      CorpusServer corpusServer = CorpusServer.getInstance();
+      CorpusServer corpusServer = CorpusServerBundle.getInstance().getCorpusServer();
       CorporaStore store = corpusServer.getStore();
     
       CorpusStore corpus = store.getCorpus(corpusId);

@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-abstract class AbstractCorporaStore implements CorporaStore {
+public abstract class AbstractCorporaStore implements CorporaStore {
 
   private Set<CorporaChangeListener> listeners = new HashSet<CorporaChangeListener>();
   
@@ -41,7 +41,7 @@ abstract class AbstractCorporaStore implements CorporaStore {
     listeners.remove(listener);
   }
   
-  Set<CorporaChangeListener> getListeners() {
+  public Set<CorporaChangeListener> getListeners() {
     return Collections.unmodifiableSet(listeners);
   }
 }

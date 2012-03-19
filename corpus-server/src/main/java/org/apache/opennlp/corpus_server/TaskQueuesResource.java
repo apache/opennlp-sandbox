@@ -33,14 +33,14 @@ public class TaskQueuesResource {
   @Consumes(MediaType.TEXT_XML)
   @Path("_createTaskQueue")
   public void createTaskQueue(@QueryParam("queueId") String queueId, @QueryParam("corpusId")String corpusId, @QueryParam("q") String q) {
-    TaskQueueService taskQueueService = CorpusServer.getInstance().getTaskQueueService();
+    TaskQueueService taskQueueService = CorpusServerBundle.getInstance().getCorpusServer().getTaskQueueService();
 
     taskQueueService.createTaskQueue(queueId, corpusId, q);
   }
   
   @Path("{queue}")
   public TaskQueueResource getTaskQueue(@PathParam("queue") String queueId) {
-    TaskQueueService taskQueueService = CorpusServer.getInstance().getTaskQueueService();
+    TaskQueueService taskQueueService = CorpusServerBundle.getInstance().getCorpusServer().getTaskQueueService();
     
     return new TaskQueueResource(taskQueueService.getTaskQeue(queueId));
   }

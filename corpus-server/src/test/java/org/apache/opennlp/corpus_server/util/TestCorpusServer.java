@@ -22,8 +22,8 @@ import org.apache.opennlp.corpus_server.CorpusServer;
 /**
  * Utility CorpusServer extension class that can be used for test purposes.
  */
-public class TestCorpusServer extends CorpusServer {
+public class TestCorpusServer {
   public TestCorpusServer() {
-    super.contextInitialized(null);
+//    super.contextInitialized(null);
   }
 }

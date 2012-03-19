@@ -17,14 +17,9 @@
 
 package org.apache.opennlp.corpus_server.store;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.apache.opennlp.corpus_server.UimaUtil;
-import org.apache.uima.cas.CAS;
-import org.apache.uima.resource.metadata.TypeSystemDescription;
 
 /**
  * Dummy in memory corpus store.
@@ -60,17 +55,17 @@ public class MemoryCorpusStore implements CorpusStore {
     // Directly store data as xmi, but deserialization is needed to index and
     // validate it!
 
-    TypeSystemDescription tsDescription = UimaUtil.createTypeSystemDescription(
-        new ByteArrayInputStream(typeSystemBytes));
-    
-    CAS cas = UimaUtil.createEmptyCAS(tsDescription);
-
-    try {
-      UimaUtil.deserializeXmiCAS(cas, new ByteArrayInputStream(content));
-    } catch (IOException e) {
-      // TODO: Send error back to client ...
-      e.printStackTrace();
-    }
+//    TypeSystemDescription tsDescription = UimaUtil.createTypeSystemDescription(
+//        new ByteArrayInputStream(typeSystemBytes));
+//    
+//    CAS cas = UimaUtil.createEmptyCAS(tsDescription);
+//
+//    try {
+//      UimaUtil.deserializeXmiCAS(cas, new ByteArrayInputStream(content));
+//    } catch (IOException e) {
+//      // TODO: Send error back to client ...
+//      e.printStackTrace();
+//    }
 
     casStore.put(casID, content);
   }

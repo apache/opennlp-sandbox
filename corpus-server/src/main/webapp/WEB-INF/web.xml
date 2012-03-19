@@ -33,10 +33,18 @@
 	<servlet>
 		<servlet-name>Jersey REST Service</servlet-name>
 		<servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
-		<init-param>
+		<!-- init-param>
 			<param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
 			<param-value>true</param-value>
-		</init-param>
+		</init-param-->
+		<init-param>
+            <param-name>com.sun.jersey.config.property.resourceConfigClass</param-name>
+            <param-value>com.sun.jersey.api.core.ClassNamesResourceConfig</param-value>
+        </init-param>
+        <init-param>
+            <param-name>com.sun.jersey.config.property.classnames</param-name>
+            <param-value>org.apache.opennlp.corpus_server.CorporaResource;org.apache.opennlp.corpus_server.CorpusResource;org.apache.opennlp.corpus_server.TaskQueueResource;org.apache.opennlp.corpus_server.TaskQueuesResource</param-value>
+        </init-param>
 		<load-on-startup>1</load-on-startup>
 	</servlet>
 	<servlet-mapping>

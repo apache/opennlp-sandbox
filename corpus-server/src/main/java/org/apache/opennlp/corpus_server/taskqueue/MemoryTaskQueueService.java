@@ -41,19 +41,19 @@ public class MemoryTaskQueueService implements TaskQueueService {
   @Override
   public void createTaskQueue(String queueId, String corpusId, String query) {
 
-    try {
-      CorpusStore store = CorpusServer.getInstance().getStore().getCorpus(corpusId);
-      List<String> hits = CorpusServer.getInstance().getSearchService().search(store, query);
-
-      queues.put(queueId, new MemoryTaskQueue(hits));
-
-      if (LOGGER.isLoggable(Level.INFO)) {
-        LOGGER.log(Level.INFO, "Created queue " + queueId +
-            " with " + hits.size() + "CASes.");
-      }
-    } catch (IOException e) {
-      LOGGER.log(Level.SEVERE, "Failed to create task queue: " + queueId, e);
-    }
+//    try {
+//      CorpusStore store = CorpusServer.getInstance().getStore().getCorpus(corpusId);
+//      List<String> hits = CorpusServer.getInstance().getSearchService().search(store, query);
+//
+//      queues.put(queueId, new MemoryTaskQueue(hits));
+//
+//      if (LOGGER.isLoggable(Level.INFO)) {
+//        LOGGER.log(Level.INFO, "Created queue " + queueId +
+//            " with " + hits.size() + "CASes.");
+//      }
+//    } catch (IOException e) {
+//      LOGGER.log(Level.SEVERE, "Failed to create task queue: " + queueId, e);
+//    }
   }
 
   @Override
