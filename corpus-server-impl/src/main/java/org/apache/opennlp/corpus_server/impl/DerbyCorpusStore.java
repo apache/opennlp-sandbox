@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.opennlp.corpus_server.store;
+package org.apache.opennlp.corpus_server.impl;
 
 import java.io.IOException;
 import java.sql.Blob;

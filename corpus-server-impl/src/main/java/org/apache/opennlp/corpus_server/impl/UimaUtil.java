@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.opennlp.corpus_server;
+package org.apache.opennlp.corpus_server.impl;
 
 import java.io.File;
 import java.io.IOException;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.opennlp.corpus_server.search;
+package org.apache.opennlp.corpus_server.impl;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
