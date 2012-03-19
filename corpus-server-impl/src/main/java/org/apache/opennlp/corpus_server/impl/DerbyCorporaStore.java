@@ -35,6 +35,9 @@ import java.util.logging.Logger;
 import javax.sql.DataSource;
 
 import org.apache.derby.jdbc.EmbeddedDataSource40;
+import org.apache.opennlp.corpus_server.store.AbstractCorporaStore;
+import org.apache.opennlp.corpus_server.store.CorporaChangeListener;
+import org.apache.opennlp.corpus_server.store.CorpusStore;
 
 public class DerbyCorporaStore extends AbstractCorporaStore {
 

@@ -29,6 +29,9 @@ import java.util.logging.Logger;
 
 import javax.sql.DataSource;
 
+import org.apache.opennlp.corpus_server.store.CorporaChangeListener;
+import org.apache.opennlp.corpus_server.store.CorpusStore;
+
 public class DerbyCorpusStore implements CorpusStore {
 
   private final static Logger LOGGER = Logger.getLogger(

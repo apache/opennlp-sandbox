@@ -46,7 +46,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 import org.apache.opennlp.corpus_server.CorpusServer;
-import org.apache.opennlp.corpus_server.UimaUtil;
+import org.apache.opennlp.corpus_server.search.SearchService;
 import org.apache.opennlp.corpus_server.store.CorporaStore;
 import org.apache.opennlp.corpus_server.store.CorpusStore;
 import org.apache.uima.UIMAFramework;
