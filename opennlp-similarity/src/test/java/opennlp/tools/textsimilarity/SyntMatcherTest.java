@@ -75,6 +75,8 @@ public class SyntMatcherTest extends TestCase {
 		System.out.println(parseTreeChunk.listToString(matchResult));
 		assertEquals( " np [ [PRP-it ],  [DT-the NN-* NNS-* ]] vp [ [DT-the NN-* NNS-* ]]",
 				parseTreeChunk.listToString(matchResult));
+		
+		parserChunker2Matcher.close();
 
 	}
 
@@ -91,6 +93,7 @@ public class SyntMatcherTest extends TestCase {
 		System.out.println(parseTreeChunk.listToString(matchResult));
 		assertEquals(" np [ [PRP-i ],  [NN-zoom NN-camera ],  [JJ-digital NN-* ],  [NN-* IN-for ],  [NN-camera ]] vp [ [JJ-digital NN-* ],  [NN-zoom NN-camera ],  [NN-* IN-for ]]",
 				parseTreeChunk.listToString(matchResult));
+		parserChunker2Matcher.close();
 	}
 	
 	
@@ -106,6 +109,11 @@ public class SyntMatcherTest extends TestCase {
 		System.out.println(parseTreeChunk.listToString(matchResult));
 		assertEquals(" np [ [PRP-i ],  [NN-focus NNS-* NNS-lens IN-for JJ-digital NN-camera ],  [JJ-digital NN-camera ]] vp [ [VB-get NN-focus NNS-* NNS-lens IN-for JJ-digital NN-camera ]]",
 				parseTreeChunk.listToString(matchResult) );
-	}
+		parserChunker2Matcher.close();
+		}
+	
+	 public void testZClose(){
+		 ParserChunker2MatcherProcessor.getInstance().close();
+	 }
 
 }

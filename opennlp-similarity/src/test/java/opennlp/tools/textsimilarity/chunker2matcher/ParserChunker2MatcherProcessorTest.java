@@ -9,12 +9,12 @@ import opennlp.tools.textsimilarity.ParseTreeChunkListScorer;
 import opennlp.tools.textsimilarity.TextSimilarityBagOfWords;
 
 public class ParserChunker2MatcherProcessorTest extends TestCase{
-	private ParserChunker2MatcherProcessor parser = ParserChunker2MatcherProcessor.getInstance();
+	private ParserChunker2MatcherProcessor parser;
 	private TextSimilarityBagOfWords parserBOW = new TextSimilarityBagOfWords ();
 	private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
 
 	public void testGroupedPhrasesFormer(){
-
+		parser = ParserChunker2MatcherProcessor.getInstance();
 		String text = "Where do I apply? Go to your town office or city hall. If your town doesn't have an office, ask the town clerk or a Selectman. Tell them that you need a 1040 tax form . I Can 't Pay the Taxes on my House: What Can I Do?. Pine Tree Legal";
 
 
@@ -22,7 +22,8 @@ public class ParserChunker2MatcherProcessorTest extends TestCase{
 		List<List<ParseTreeChunk>> res = parser.formGroupedPhrasesFromChunksForPara(text);
 		System.out.println(res);
 		assertEquals(
-				"[[NP [PRP$-your NN-town NN-office CC-or NN-city NN-hall ], NP [PRP$-your NN-town NN-doesn NN-t ], NP [DT-an NN-office ], NP [DT-the NN-town NN-clerk CC-or DT-a NNP-Selectman ], NP [DT-a NNP-Selectman ], NP [PRP-them IN-that PRP-you ], NP [PRP-you ], NP [DT-a CD-1040 NN-tax NN-form ], NP [PRP-I ], NP [DT-the NNS-Taxes IN-on PRP$-my NNP-House WP-What MD-Can PRP-I ], NP [PRP$-my NNP-House WP-What MD-Can PRP-I ], NP [WP-What MD-Can PRP-I ], NP [PRP-I ], NP [NNP-Pine NNP-Tree NNP-Legal ]], [VP [VBP-do RB-I VB-apply ], VP [VB-Go TO-to PRP$-your NN-town NN-office CC-or NN-city NN-hall ], VP [VBP-have DT-an NN-office ], VP [VB-ask DT-the NN-town NN-clerk CC-or DT-a NNP-Selectman ], VP [VB-Tell PRP-them IN-that PRP-you ], VP [VBP-need DT-a CD-1040 NN-tax NN-form ], VP [MD-Can VB-t VB-Pay DT-the NNS-Taxes IN-on PRP$-my NNP-House WP-What MD-Can PRP-I ], VP [VB-Do NNP-Pine NNP-Tree NNP-Legal ]], [PP [TO-to PRP$-your NN-town NN-office CC-or NN-city NN-hall ], PP [IN-on PRP$-my NNP-House WP-What MD-Can PRP-I ]], [], [SENTENCE [WRB-Where VBP-do RB-I VB-apply ], SENTENCE [VB-Go TO-to PRP$-your NN-town NN-office CC-or NN-city NN-hall ], SENTENCE [IN-If PRP$-your NN-town NN-doesn NN-t VBP-have DT-an NN-office VB-ask DT-the NN-town NN-clerk CC-or DT-a NNP-Selectman ], SENTENCE [VB-Tell PRP-them IN-that PRP-you VBP-need DT-a CD-1040 NN-tax NN-form ], SENTENCE [PRP-I MD-Can VB-t VB-Pay DT-the NNS-Taxes IN-on PRP$-my NNP-House WP-What MD-Can PRP-I VB-Do NNP-Pine NNP-Tree NNP-Legal ]]]",
+			"[[NP [PRP$-your NN-town NN-office CC-or NN-city NN-hall ], NP [PRP$-your NN-town NN-doesn NN-t ], NP [DT-an NN-office ], NP [DT-the NN-town NN-clerk CC-or DT-a NNP-Selectman ], NP [DT-a NNP-Selectman ], NP [PRP-them IN-that PRP-you ], NP [PRP-you ], NP [DT-a CD-1040 NN-tax NN-form ], NP [PRP-I ], NP [DT-the NNS-Taxes IN-on PRP$-my NNP-House WP-What MD-Can PRP-I ], NP [PRP$-my NNP-House WP-What MD-Can PRP-I ], NP [WP-What MD-Can PRP-I ], NP [PRP-I ], NP [NNP-Pine NNP-Tree NNP-Legal ]], [VP [VBP-do RB-I VB-apply ], VP [VB-Go TO-to PRP$-your NN-town NN-office CC-or NN-city NN-hall ], VP [VBP-have DT-an NN-office ], VP [VB-ask DT-the NN-town NN-clerk CC-or DT-a NNP-Selectman ], VP [VB-Tell PRP-them IN-that PRP-you ], VP [VBP-need DT-a CD-1040 NN-tax NN-form ], VP [MD-Can VB-t VB-Pay DT-the NNS-Taxes IN-on PRP$-my NNP-House WP-What MD-Can PRP-I ], VP [VB-Do ]], [PP [TO-to PRP$-your NN-town NN-office CC-or NN-city NN-hall ], PP [IN-on PRP$-my NNP-House WP-What MD-Can PRP-I ]], [], [SENTENCE [WRB-Where VBP-do RB-I VB-apply ], SENTENCE [VB-Go TO-to PRP$-your NN-town NN-office CC-or NN-city NN-hall ], SENTENCE [IN-If PRP$-your NN-town NN-doesn NN-t VBP-have DT-an NN-office VB-ask DT-the NN-town NN-clerk CC-or DT-a NNP-Selectman ], SENTENCE [VB-Tell PRP-them IN-that PRP-you VBP-need DT-a CD-1040 NN-tax NN-form ], SENTENCE [PRP-I MD-Can VB-t VB-Pay DT-the NNS-Taxes IN-on PRP$-my NNP-House WP-What MD-Can PRP-I VB-Do ], SENTENCE [NNP-Pine NNP-Tree NNP-Legal ]]]",
+				//	"[[NP [PRP$-your NN-town NN-office CC-or NN-city NN-hall ], NP [PRP$-your NN-town NN-doesn NN-t ], NP [DT-an NN-office ], NP [DT-the NN-town NN-clerk CC-or DT-a NNP-Selectman ], NP [DT-a NNP-Selectman ], NP [PRP-them IN-that PRP-you ], NP [PRP-you ], NP [DT-a CD-1040 NN-tax NN-form ], NP [PRP-I ], NP [DT-the NNS-Taxes IN-on PRP$-my NNP-House WP-What MD-Can PRP-I ], NP [PRP$-my NNP-House WP-What MD-Can PRP-I ], NP [WP-What MD-Can PRP-I ], NP [PRP-I ], NP [NNP-Pine NNP-Tree NNP-Legal ]], [VP [VBP-do RB-I VB-apply ], VP [VB-Go TO-to PRP$-your NN-town NN-office CC-or NN-city NN-hall ], VP [VBP-have DT-an NN-office ], VP [VB-ask DT-the NN-town NN-clerk CC-or DT-a NNP-Selectman ], VP [VB-Tell PRP-them IN-that PRP-you ], VP [VBP-need DT-a CD-1040 NN-tax NN-form ], VP [MD-Can VB-t VB-Pay DT-the NNS-Taxes IN-on PRP$-my NNP-House WP-What MD-Can PRP-I ], VP [VB-Do NNP-Pine NNP-Tree NNP-Legal ]], [PP [TO-to PRP$-your NN-town NN-office CC-or NN-city NN-hall ], PP [IN-on PRP$-my NNP-House WP-What MD-Can PRP-I ]], [], [SENTENCE [WRB-Where VBP-do RB-I VB-apply ], SENTENCE [VB-Go TO-to PRP$-your NN-town NN-office CC-or NN-city NN-hall ], SENTENCE [IN-If PRP$-your NN-town NN-doesn NN-t VBP-have DT-an NN-office VB-ask DT-the NN-town NN-clerk CC-or DT-a NNP-Selectman ], SENTENCE [VB-Tell PRP-them IN-that PRP-you VBP-need DT-a CD-1040 NN-tax NN-form ], SENTENCE [PRP-I MD-Can VB-t VB-Pay DT-the NNS-Taxes IN-on PRP$-my NNP-House WP-What MD-Can PRP-I VB-Do NNP-Pine NNP-Tree NNP-Legal ]]]",
 				res.toString());
 
 		res = parser.formGroupedPhrasesFromChunksForSentence("How can I get short focus zoom lens for digital camera");
@@ -42,13 +43,21 @@ public class ParserChunker2MatcherProcessorTest extends TestCase{
 		assertEquals(
 				"[[NP [NNP-UN NNP-Ambassador NNP-Ron NNP-Prosor ], NP [DT-the JJ-Israeli NN-position IN-that DT-the JJ-only NN-way DT-the NNPS-Palestinians ], NP [DT-the JJ-only NN-way DT-the NNPS-Palestinians ], NP [DT-the NNPS-Palestinians ], NP [NN-membership CC-and NN-statehood VBZ-is IN-through JJ-direct NNS-negotiations IN-with DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ], NP [JJ-direct NNS-negotiations IN-with DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ], NP [DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ], NP [DT-a JJ-comprehensive NN-peace NN-agreement ]], [VP [VBD-repeated DT-the JJ-Israeli NN-position IN-that DT-the JJ-only NN-way DT-the NNPS-Palestinians ], VP [MD-will VB-get IN-UN NN-membership CC-and NN-statehood VBZ-is IN-through JJ-direct NNS-negotiations IN-with DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ]], [PP [IN-that DT-the JJ-only NN-way DT-the NNPS-Palestinians ], PP [IN-UN NN-membership CC-and NN-statehood VBZ-is IN-through JJ-direct NNS-negotiations IN-with DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ], PP [IN-through JJ-direct NNS-negotiations IN-with DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ], PP [IN-with DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ], PP [IN-on DT-a JJ-comprehensive NN-peace NN-agreement ]], [], [SENTENCE [NNP-UN NNP-Ambassador NNP-Ron NNP-Prosor VBD-repeated DT-the JJ-Israeli NN-position IN-that DT-the JJ-only NN-way DT-the NNPS-Palestinians MD-will VB-get IN-UN NN-membership CC-and NN-statehood VBZ-is IN-through JJ-direct NNS-negotiations IN-with DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ]]]",
 				res.toString());
+		parser.close();
 	}
 
 	public void testPrintParseTree(){
-		parser.printParseTree("How can I get short focus zoom lens for digital camera");
+		parser = ParserChunker2MatcherProcessor.getInstance();
+		try {
+			parser.printParseTree("How can I get short focus zoom lens for digital camera");
+		} catch (Exception e) {
+			// when models does not read
+		}
+		parser.close();
 	}
 
 	public void testRelevanceAssessm(){
+		parser = ParserChunker2MatcherProcessor.getInstance();
 		String phrase1 = "Its classy design and the Mercedes name make it a very cool vehicle to drive. "
 			+ "The engine makes it a powerful car. "
 			+ "The strong engine gives it enough power. "
@@ -58,10 +67,12 @@ public class ParserChunker2MatcherProcessorTest extends TestCase{
 			+ "This car provides you a very good mileage.";
 
 		System.out.println(parser.assessRelevance(phrase1, phrase2).getMatchResult());
+		parser.close();
 
 	}
 
 	public void testCompareRelevanceAssessmWithBagOfWords(){
+		parser = ParserChunker2MatcherProcessor.getInstance();
 		// we first demonstrate how similarity expression for DIFFERENT cases have too high score for bagOfWords
 		String phrase1 = "How to deduct rental expense from income ";
 		String phrase2 = "How to deduct repair expense from rental income.";
@@ -85,6 +96,7 @@ public class ParserChunker2MatcherProcessorTest extends TestCase{
 		bagOfWordsScore = parserBOW.assessRelevanceAndGetScore(phrase1, phrase2);
 		assertTrue(matchScore > 2*bagOfWordsScore);
 		System.out.println("MatchScore is adequate ( = "+matchScore + ") and bagOfWordsScore = "+bagOfWordsScore+" is too low");
+		parser.close();
 
 	}
 }

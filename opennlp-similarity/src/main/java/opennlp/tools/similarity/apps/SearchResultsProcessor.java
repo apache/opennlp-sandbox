@@ -30,6 +30,7 @@ import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcess
 public class SearchResultsProcessor extends BingWebQueryRunner {
 	private static Logger LOG = Logger.getLogger("opennlp.tools.similarity.apps.SearchResultsProcessor");
 	private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
+	ParserChunker2MatcherProcessor sm ;
 
 	/*
 	 * Takes Bing API search results and calculates the parse tree similarity between the question and each snippet.
@@ -44,7 +45,7 @@ public class SearchResultsProcessor extends BingWebQueryRunner {
 			return ans.calculateMatchScoreResortHits(resp, searchQuery);		
 		} */
 		List<HitBase> newHitList =	new ArrayList<HitBase>();
-		ParserChunker2MatcherProcessor sm = ParserChunker2MatcherProcessor.getInstance();
+		sm = ParserChunker2MatcherProcessor.getInstance();
 
 		for(HitBase hit: resp.getHits()){
 			String snapshot = hit.getAbstractText().replace("<b>...</b>", ". ").replace("<b>", "").replace("</b>","");
@@ -73,6 +74,10 @@ public class SearchResultsProcessor extends BingWebQueryRunner {
 
 
 		return resp; 
+	}
+	
+	public void close(){
+		sm.close();
 	}
 
 	public List<HitBase> runSearch(String query) {

@@ -20,6 +20,7 @@ public class SearchResultsProcessorTest extends TestCase{
 		HitBase second = res.get(1);
 		assertTrue( second.getGenerWithQueryScore()>1.9);
 		//assertTrue(second.getTitle().indexOf("living abroad")>-1);
+		proc.close();
 				
 	}
 	
@@ -33,6 +34,6 @@ public class SearchResultsProcessorTest extends TestCase{
 		
 		HitBase second = res.get(1);
 		assertTrue( second.getGenerWithQueryScore()>1.9);
-				
+		proc.close();	
 	}
 }

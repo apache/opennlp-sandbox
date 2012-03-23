@@ -31,6 +31,7 @@ import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcess
 public class SpeechRecognitionResultsProcessor extends BingWebQueryRunner {
 	private static Logger LOG = Logger.getLogger("opennlp.tools.similarity.apps.SpeechRecognitionResultsProcessor");
 	private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
+	ParserChunker2MatcherProcessor sm;
 
 	/**
 	 * Gets an expression and tries to find it on the web. If search results are syntactically similar to this phrase, then 
@@ -42,7 +43,7 @@ public class SpeechRecognitionResultsProcessor extends BingWebQueryRunner {
 	 */
 	private	double calculateTotalMatchScoreForHits(BingResponse resp, String searchQuery){
 		
-		ParserChunker2MatcherProcessor sm = ParserChunker2MatcherProcessor.getInstance();
+		sm = ParserChunker2MatcherProcessor.getInstance();
 		double totalMatchScore = 0;
 		for(HitBase hit: resp.getHits()){
 			String snapshot = hit.getAbstractText().replace("<b>...</b>", ". ").replace("<b>", "").replace("</b>","");
@@ -64,7 +65,12 @@ public class SpeechRecognitionResultsProcessor extends BingWebQueryRunner {
 			 totalMatchScore+=score;
 			
 		}
+		
 		return  totalMatchScore; 
+	}
+	
+	public void close(){
+		sm.close();
 	}
 	
 	/**

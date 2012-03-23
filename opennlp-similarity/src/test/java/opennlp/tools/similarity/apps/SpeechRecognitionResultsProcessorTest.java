@@ -42,6 +42,7 @@ public class SpeechRecognitionResultsProcessorTest extends TestCase {
 				 res.get(1).getScore()> res.get(3).getScore()  && res.get(1).getScore()> res.get(4).getScore()  &&
 				 res.get(1).getScore()> res.get(5).getScore()  && res.get(1).getScore()> res.get(6).getScore()  
 				 );
+		 proc.close();
 		 
 	 }
 
