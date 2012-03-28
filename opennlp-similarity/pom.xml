@@ -70,6 +70,11 @@
 			<artifactId>tika-core</artifactId>
 			<version>0.7</version>
 		</dependency>
+		<dependency>
+			<groupId>xstream.codehaus.org</groupId>
+			<artifactId>xstream</artifactId>
+			<version>1.4.2</version>
+		</dependency>
 	</dependencies>
 	
 	<build>

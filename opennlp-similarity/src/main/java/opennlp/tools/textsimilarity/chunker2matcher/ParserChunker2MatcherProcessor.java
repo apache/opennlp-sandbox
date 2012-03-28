@@ -74,12 +74,36 @@ public class ParserChunker2MatcherProcessor {
 	private static final String MODEL_DIR_KEY = "nlp.models.dir";
 	// TODO config
 	// this is where resources should live
-	private static String MODEL_DIR, MODEL_DIR_REL = "resources/models111";
+	private static String MODEL_DIR, MODEL_DIR_REL = "resources/models";
 	protected static ParserChunker2MatcherProcessor instance;
 
 	private SentenceDetector sentenceDetector;
 	private Tokenizer tokenizer;
 	private POSTagger posTagger;
+	public SentenceDetector getSentenceDetector() {
+		return sentenceDetector;
+	}
+
+	public void setSentenceDetector(SentenceDetector sentenceDetector) {
+		this.sentenceDetector = sentenceDetector;
+	}
+
+	public Tokenizer getTokenizer() {
+		return tokenizer;
+	}
+
+	public void setTokenizer(Tokenizer tokenizer) {
+		this.tokenizer = tokenizer;
+	}
+
+	public ChunkerME getChunker() {
+		return chunker;
+	}
+
+	public void setChunker(ChunkerME chunker) {
+		this.chunker = chunker;
+	}
+
 	private Parser parser;
 	private ChunkerME chunker;
 	private final int NUMBER_OF_SECTIONS_IN_SENTENCE_CHUNKS = 5;
@@ -261,17 +285,17 @@ public class ParserChunker2MatcherProcessor {
 		
 		tags = POSlist.toArray(new String[0]);
 		if (toks.length != tags.length){
-			LOG.info("disagreement between toks and tags; sent =  '"+sentence + "'\n tags = "+tags + 
+			LOG.finest("disagreement between toks and tags; sent =  '"+sentence + "'\n tags = "+tags + 
 					"\n will now try this sentence in lower case" );
 			node  = parseSentenceNode(sentence.toLowerCase());
 			if (node==null){
-				LOG.info("Problem parsing sentence '"+sentence);
+				LOG.finest("Problem parsing sentence '"+sentence);
 				return null;
 			}
 			POSlist = node.getOrderedPOSList();
 			tags = POSlist.toArray(new String[0]);
 			if (toks.length != tags.length){
-				LOG.info("AGAIN: disagreement between toks and tags for lower case! ");
+				LOG.finest("AGAIN: disagreement between toks and tags for lower case! ");
 				if (toks.length>tags.length){
 					String[] newToks = new String[tags.length];
 					for(int i = 0; i<tags.length; i++ ){
