@@ -87,21 +87,19 @@ public class WikinewsConverter {
           
           String pageText = page.getText();
           
-          int cutIndex = -1;
-          
+
+          int cutIndex = pageText.length();
+
           for (String endMarker : endOfArtilceMarkers) {
-            
             int endMarkerIndex = pageText.indexOf(endMarker);
-            if (endMarkerIndex != -1) {
-              cutIndex = endMarkerIndex;
-              break;
-            }
+              if (endMarkerIndex != -1 && endMarkerIndex < cutIndex) {
+                cutIndex = endMarkerIndex;
+              }
           }
           
-          if (cutIndex == -1)
-            cutIndex = pageText.length();
-          
-          pageText = pageText.substring(0, cutIndex);
+          if (cutIndex < pageText.length()) {
+            pageText = pageText.substring(0, cutIndex);
+          }
           
           WikinewsWikiModel wikiModel = new WikinewsWikiModel("http://en.wikinews.org/wiki/${image}", 
               "http://en.wikinews.org/wiki/${title}");
