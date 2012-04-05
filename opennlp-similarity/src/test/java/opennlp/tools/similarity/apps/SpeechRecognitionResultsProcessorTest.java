@@ -26,24 +26,26 @@ import opennlp.tools.similarity.apps.SpeechRecognitionResultsProcessor.SentenceM
 
 public class SpeechRecognitionResultsProcessorTest extends TestCase {
 
-	public void testRestaurantEntityInSpeechRecognitionResults(){
-		 SpeechRecognitionResultsProcessor proc = new  SpeechRecognitionResultsProcessor();
-		 List<SentenceMeaningfullnessScore> res = proc.runSearchAndScoreMeaningfulness( Arrays.asList(new String[]{
-				 "remember to buy milk tomorrow for details",
-				 "remember to buy milk tomorrow from trader joes",
-				 "remember to buy milk tomorrow from 3 to jones",
-				 "remember to buy milk tomorrow for for details",
-				 "remember to buy milk tomorrow from third to joes",
-				 "remember to buy milk tomorrow from third to jones",
-				 "remember to buy milk tomorrow from for d jones"
-		 }));
-		 
-		 assertTrue(res.get(1).getScore()> res.get(0).getScore()  && res.get(1).getScore()> res.get(2).getScore()  &&
-				 res.get(1).getScore()> res.get(3).getScore()  && res.get(1).getScore()> res.get(4).getScore()  &&
-				 res.get(1).getScore()> res.get(5).getScore()  && res.get(1).getScore()> res.get(6).getScore()  
-				 );
-		 proc.close();
-		 
-	 }
+  public void testRestaurantEntityInSpeechRecognitionResults() {
+    SpeechRecognitionResultsProcessor proc = new SpeechRecognitionResultsProcessor();
+    List<SentenceMeaningfullnessScore> res = proc
+        .runSearchAndScoreMeaningfulness(Arrays.asList(new String[] {
+            "remember to buy milk tomorrow for details",
+            "remember to buy milk tomorrow from trader joes",
+            "remember to buy milk tomorrow from 3 to jones",
+            "remember to buy milk tomorrow for for details",
+            "remember to buy milk tomorrow from third to joes",
+            "remember to buy milk tomorrow from third to jones",
+            "remember to buy milk tomorrow from for d jones" }));
+
+    assertTrue(res.get(1).getScore() > res.get(0).getScore()
+        && res.get(1).getScore() > res.get(2).getScore()
+        && res.get(1).getScore() > res.get(3).getScore()
+        && res.get(1).getScore() > res.get(4).getScore()
+        && res.get(1).getScore() > res.get(5).getScore()
+        && res.get(1).getScore() > res.get(6).getScore());
+    proc.close();
+
+  }
 
 }

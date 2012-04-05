@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import junit.framework.TestCase;
 
-public class ParseTreeChunkListScorerTest extends TestCase{
+public class ParseTreeChunkListScorerTest extends TestCase {
   private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
   private ParseTreeChunk parseTreeChunk = new ParseTreeChunk();
 
@@ -35,7 +35,7 @@ public class ParseTreeChunkListScorerTest extends TestCase{
             + " [ [VB-get NN-visa IN-* NN-* IN-in .-* ],  [VBD-* IN-* NN-* NN-* .-* ],  [VB-* NP-* ]]]");
 
     double sc = parseTreeChunkListScorer.getParseTreeChunkListScore(chs);
-    assertTrue(sc>1.90);
-    
+    assertTrue(sc > 1.90);
+
   }
 }

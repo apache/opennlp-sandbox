@@ -29,7 +29,8 @@ import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
 
 public class PageFetcher {
-  private static final Logger LOG = Logger.getLogger("opennlp.tools.similarity.apps.utils.PageFetcher");
+  private static final Logger LOG = Logger
+      .getLogger("opennlp.tools.similarity.apps.utils.PageFetcher");
 
   private static int DEFAULT_TIMEOUT = 15000;
 
@@ -51,11 +52,11 @@ public class PageFetcher {
       pageContent = tika.parseToString(connection.getInputStream())
           .replace('\n', ' ').replace('\t', ' ');
     } catch (MalformedURLException e) {
-    	LOG.severe(e.getMessage() + "\n"+ e);
+      LOG.severe(e.getMessage() + "\n" + e);
     } catch (IOException e) {
-    	 LOG.severe(e.getMessage() + "\n"+ e);
+      LOG.severe(e.getMessage() + "\n" + e);
     } catch (TikaException e) {
-    	 LOG.severe(e.getMessage() + "\n"+ e);
+      LOG.severe(e.getMessage() + "\n" + e);
     }
     return pageContent;
   }

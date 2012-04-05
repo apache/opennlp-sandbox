@@ -51,7 +51,8 @@ import au.com.bytecode.opencsv.CSVReader;
 import au.com.bytecode.opencsv.CSVWriter;
 
 public class ParserCacheSerializer {
-  private static Logger LOG = Logger.getLogger("opennlp.tools.textsimilarity.chunker2matcher.ParserCacheSerializer");
+  private static Logger LOG = Logger
+      .getLogger("opennlp.tools.textsimilarity.chunker2matcher.ParserCacheSerializer");
   private static boolean javaObjectSerialization = false;
   private static String RESOURCE_DIR = "src/test/resources/";
   public static String parseCacheFileName = "sentence_parseObject.dat";
@@ -115,8 +116,8 @@ public class ParserCacheSerializer {
       List<String[]> lines = null;
 
       try {
-        reader = new CSVReader(
-            new FileReader(RESOURCE_DIR + parseCacheFileNameCSV), ',');
+        reader = new CSVReader(new FileReader(RESOURCE_DIR
+            + parseCacheFileNameCSV), ',');
         lines = reader.readAll();
       } catch (FileNotFoundException e) {
         e.printStackTrace();

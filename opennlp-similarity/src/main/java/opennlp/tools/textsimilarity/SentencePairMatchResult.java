@@ -24,7 +24,8 @@ import org.apache.commons.lang.StringUtils;
 
 public class SentencePairMatchResult {
   public List<List<ParseTreeChunk>> matchResult;
-  private static Logger LOG = Logger.getLogger("opennlp.tools.textsimilarity.SentencePairMatchResult");
+  private static Logger LOG = Logger
+      .getLogger("opennlp.tools.textsimilarity.SentencePairMatchResult");
 
   public List<List<ParseTreeChunk>> getMatchResult() {
     return matchResult;
@@ -69,7 +70,7 @@ public class SentencePairMatchResult {
     super();
     verbExists = false;
     imperativeVerb = false;
-    //LOG.info("Assessing sentence for inclusion " + resForMinedSent1);
+    // LOG.info("Assessing sentence for inclusion " + resForMinedSent1);
     this.matchResult = matchResult;
     this.resForMinedSent1 = resForMinedSent1;
     for (LemmaPair word : resForMinedSent1) {
@@ -77,19 +78,20 @@ public class SentencePairMatchResult {
           && StringUtils.isAlpha(word.getLemma())) {// ||
                                                     // word.getPOS().startsWith("VP"))
         verbExists = true;
-        //LOG.info("Found verb=" + word);
+        // LOG.info("Found verb=" + word);
       }
     }
     // various form of sales pitch: 'get something', or 'we offer'
-    if (resForMinedSent1.size()>2 && (resForMinedSent1.get(1).getLemma().startsWith("We")
-        || resForMinedSent1.get(2).getLemma().startsWith("We")))
+    if (resForMinedSent1.size() > 2
+        && (resForMinedSent1.get(1).getLemma().startsWith("We") || resForMinedSent1
+            .get(2).getLemma().startsWith("We")))
       imperativeVerb = true;
-    
+
     for (LemmaPair word : resForMinedSent1) {
       if (word.getPOS().startsWith("VB") && word.getStartPos() < 1
           && word.getEndPos() < 1) {
         imperativeVerb = true;
-        //LOG.info("Found imperative verb=" + word);
+        // LOG.info("Found imperative verb=" + word);
       }
     }
 

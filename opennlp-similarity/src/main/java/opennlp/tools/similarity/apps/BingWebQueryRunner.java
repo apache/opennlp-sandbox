@@ -35,26 +35,24 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class BingWebQueryRunner {
-  private static final Logger LOG = Logger.getLogger("opennlp.tools.similarity.apps.BingWebQueryRunner");
+  private static final Logger LOG = Logger
+      .getLogger("opennlp.tools.similarity.apps.BingWebQueryRunner");
 
-  private String constructBingWebUrl(String query, int numbOfHits) throws Exception {
+  private String constructBingWebUrl(String query, int numbOfHits)
+      throws Exception {
     String codedQuery = URLEncoder.encode(query, "UTF-8");
 
     String yahooRequest = "http://api.search.live.net/json.aspx?Appid="
-        + BingQueryRunner.APP_ID + "&query=" + codedQuery // +
-        // "&sources=web"+
+        + BingQueryRunner.APP_ID + "&query=" + codedQuery 
         + "&Sources=Web"
         // Common request fields (optional)
         + "&Version=2.0" + "&Market=en-us&web.count=" + numbOfHits
-        // + "&Options=EnableHighlighting"
-
-        // News-specific request fields (optional)
+         // News-specific request fields (optional)
         + "&News.Offset=0";
 
     return yahooRequest;
   }
 
-  
   public BingResponse populateBingHit(String response) throws Exception {
     BingResponse resp = new BingResponse();
     JSONObject rootObject = new JSONObject(response);
@@ -70,25 +68,25 @@ public class BingWebQueryRunner {
       resp.setTotalHits(new Integer(count));
     } catch (Exception e) {
       e.printStackTrace();
-      LOG.severe("\nNo search results " +  e);
-      
+      LOG.severe("\nNo search results " + e);
+
     }
     if (resultSet != null) {
       for (int i = 0; i < resultSet.length(); i++) {
         try {
-			HitBase hit = new HitBase();
-			JSONObject singleResult = resultSet.getJSONObject(i);
-			hit.setAbstractText(singleResult.getString("Description"));
-			hit.setDate(singleResult.getString("DateTime"));
-			String title = StringUtils.replace(singleResult.getString("Title"),
-			    "", " ");
-			hit.setTitle(title);
-			hit.setUrl(singleResult.getString("Url"));
+          HitBase hit = new HitBase();
+          JSONObject singleResult = resultSet.getJSONObject(i);
+          hit.setAbstractText(singleResult.getString("Description"));
+          hit.setDate(singleResult.getString("DateTime"));
+          String title = StringUtils.replace(singleResult.getString("Title"),
+              "", " ");
+          hit.setTitle(title);
+          hit.setUrl(singleResult.getString("Url"));
 
-			resp.appendHits(hit);
-		} catch (Exception e) {
-			// incomplete search result: do not through exception
-		}
+          resp.appendHits(hit);
+        } catch (Exception e) {
+          // incomplete search result: do not through exception
+        }
       }
     }
     return resp;
@@ -132,7 +130,6 @@ public class BingWebQueryRunner {
     return hits;
   }
 
-  
   public List<HitBase> runSearch(String query, int num) {
     BingResponse resp = null;
     try {

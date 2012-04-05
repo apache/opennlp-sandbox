@@ -24,138 +24,135 @@ import opennlp.tools.parser.AbstractBottomUpParser;
 import opennlp.tools.parser.Parse;
 
 public abstract class SyntacticTreeNode {
-	// the POS type
-	private String type;
+  // the POS type
+  private String type;
 
-	// parent node, it is null for the root node
-	private PhraseNode parentNode;
+  // parent node, it is null for the root node
+  private PhraseNode parentNode;
 
-	public abstract List<SyntacticTreeNode> getChildren();
+  public abstract List<SyntacticTreeNode> getChildren();
 
-	public abstract String getText();
+  public abstract String getText();
 
-	public abstract String getLemma(boolean removeStopWord);
+  public abstract String getLemma(boolean removeStopWord);
 
-	public abstract String toStringIndented(int numTabs);
-	
-	public abstract List<String> getOrderedPOSList(); 
-	
-	public abstract List<String> getOrderedLemmaList(); 
+  public abstract String toStringIndented(int numTabs);
 
-	public SyntacticTreeNode(String type) {
-		this.type = type;
-	}
+  public abstract List<String> getOrderedPOSList();
 
-	public String getType() {
-		return type;
-	}
+  public abstract List<String> getOrderedLemmaList();
 
-	public void setType(String type) {
-		this.type = type;
-	}
+  public SyntacticTreeNode(String type) {
+    this.type = type;
+  }
 
-	public String getLemma() {
-		return getLemma(false);
-	}
+  public String getType() {
+    return type;
+  }
 
-	public PhraseNode getParentNode() {
-		return parentNode;
-	}
+  public void setType(String type) {
+    this.type = type;
+  }
 
-	public void setParentNode(PhraseNode parentNode) {
-		this.parentNode = parentNode;
-	}
+  public String getLemma() {
+    return getLemma(false);
+  }
 
-	public int getChildrenCount() {
-		List<SyntacticTreeNode> childrenList = getChildren();
-		if (childrenList == null)
-			return 0;
+  public PhraseNode getParentNode() {
+    return parentNode;
+  }
 
-		return childrenList.size();
-	}
+  public void setParentNode(PhraseNode parentNode) {
+    this.parentNode = parentNode;
+  }
 
-	public String toString() {
-		return toStringIndented(0);
-	}
+  public int getChildrenCount() {
+    List<SyntacticTreeNode> childrenList = getChildren();
+    if (childrenList == null)
+      return 0;
 
-	public static String getIndent(int numTabs) {
-		if (numTabs <= 0)
-			return "";
+    return childrenList.size();
+  }
 
-		StringBuilder builder = new StringBuilder();
-		for (int i = 0; i < numTabs; i++) {
-			builder.append("\t");
-		}
+  public String toString() {
+    return toStringIndented(0);
+  }
 
-		return builder.toString();
-	}
+  public static String getIndent(int numTabs) {
+    if (numTabs <= 0)
+      return "";
 
-	public static boolean isJunkType(String type, Parse parse) {
-		if (type == null)
-			return true;
+    StringBuilder builder = new StringBuilder();
+    for (int i = 0; i < numTabs; i++) {
+      builder.append("\t");
+    }
 
-		// the token node is useless
-		if (type.equals(AbstractBottomUpParser.TOK_NODE))
-			return true;
+    return builder.toString();
+  }
 
-		// the punctuation nodes are not useful, '.', '.', '?', '!', ';', etc
-		if ((type.equals(",") || type.equals(".") || type.equals("?")
-				|| type.equals("!") || type.equals(";")) 
-				// TODO : Parser gives type = '.' instead of VB
-				//&& ( parse.getHead().toString().length()<2 
-				)
-			return true;
+  public static boolean isJunkType(String type, Parse parse) {
+    if (type == null)
+      return true;
 
-		return false;
-	}
+    // the token node is useless
+    if (type.equals(AbstractBottomUpParser.TOK_NODE))
+      return true;
 
-	public static void replaceNode(SyntacticTreeNode nodeToReplace,
-			SyntacticTreeNode newNode) {
-		List<SyntacticTreeNode> newNodeList = null;
-		if (newNode != null) {
-			newNodeList = new ArrayList<SyntacticTreeNode>(1);
-			newNodeList.add(newNode);
-		}
+    // the punctuation nodes are not useful, '.', '.', '?', '!', ';', etc
+    if ((type.equals(",") || type.equals(".") || type.equals("?")
+        || type.equals("!") || type.equals(";"))
+    // TODO : Parser gives type = '.' instead of VB
+    // && ( parse.getHead().toString().length()<2
+    )
+      return true;
 
-		replaceNode(nodeToReplace, newNodeList);
-	}
+    return false;
+  }
 
-	public static void replaceNode(SyntacticTreeNode nodeToReplace,
-			List<SyntacticTreeNode> newNodeList) {
-		if (nodeToReplace == null)
-			throw new NullPointerException("The node to replace cannot be null");
+  public static void replaceNode(SyntacticTreeNode nodeToReplace,
+      SyntacticTreeNode newNode) {
+    List<SyntacticTreeNode> newNodeList = null;
+    if (newNode != null) {
+      newNodeList = new ArrayList<SyntacticTreeNode>(1);
+      newNodeList.add(newNode);
+    }
 
-		PhraseNode parentNode = nodeToReplace.getParentNode();
+    replaceNode(nodeToReplace, newNodeList);
+  }
 
-		if (parentNode == null) {
-			// the node to replace is the root node
-			// clear all children of the existing root node and use it as the
-			// new root node
-			if (nodeToReplace instanceof PhraseNode)
-				((PhraseNode) nodeToReplace).setChildren(newNodeList);
-			return;
-		}
+  public static void replaceNode(SyntacticTreeNode nodeToReplace,
+      List<SyntacticTreeNode> newNodeList) {
+    if (nodeToReplace == null)
+      throw new NullPointerException("The node to replace cannot be null");
 
-		List<SyntacticTreeNode> childrenNodes = parentNode.getChildren();
-		int index = childrenNodes.indexOf(nodeToReplace);
-		if (index >= 0) {
-			// remove the old node
-			childrenNodes.remove(index);
+    PhraseNode parentNode = nodeToReplace.getParentNode();
 
-			// put the new node list at the place of the old node if there are
-			// any
-			if (newNodeList != null && newNodeList.size() > 0) {
-				childrenNodes.addAll(index, newNodeList);
+    if (parentNode == null) {
+      // the node to replace is the root node
+      // clear all children of the existing root node and use it as the
+      // new root node
+      if (nodeToReplace instanceof PhraseNode)
+        ((PhraseNode) nodeToReplace).setChildren(newNodeList);
+      return;
+    }
 
-				// set the parent node of the new children
-				for (SyntacticTreeNode newNode : newNodeList) {
-					newNode.setParentNode(parentNode);
-				}
-			}
-		}
-	}
+    List<SyntacticTreeNode> childrenNodes = parentNode.getChildren();
+    int index = childrenNodes.indexOf(nodeToReplace);
+    if (index >= 0) {
+      // remove the old node
+      childrenNodes.remove(index);
 
+      // put the new node list at the place of the old node if there are
+      // any
+      if (newNodeList != null && newNodeList.size() > 0) {
+        childrenNodes.addAll(index, newNodeList);
 
+        // set the parent node of the new children
+        for (SyntacticTreeNode newNode : newNodeList) {
+          newNode.setParentNode(parentNode);
+        }
+      }
+    }
+  }
 
-	
 }

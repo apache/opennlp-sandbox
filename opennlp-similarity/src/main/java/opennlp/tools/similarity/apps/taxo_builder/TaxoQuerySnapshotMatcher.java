@@ -120,11 +120,13 @@ public class TaxoQuerySnapshotMatcher {
 
   }
 
-  public void xmlWork (){
-    TaxoQuerySnapshotMatcher matcher = new TaxoQuerySnapshotMatcher("src/test/resources/taxonomies/irs_domTaxo.dat");
+  public void xmlWork() {
+    TaxoQuerySnapshotMatcher matcher = new TaxoQuerySnapshotMatcher(
+        "src/test/resources/taxonomies/irs_domTaxo.dat");
     XStream xStream = new XStream();
     FileHandler fileHandler = new FileHandler();
-    matcher.taxo = (TaxonomySerializer)xStream.fromXML(fileHandler.readFromTextFile("src/test/resources/taxo_English.xml"));
+    matcher.taxo = (TaxonomySerializer) xStream.fromXML(fileHandler
+        .readFromTextFile("src/test/resources/taxo_English.xml"));
   }
 
   public void close() {

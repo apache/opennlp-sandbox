@@ -32,11 +32,12 @@ import org.json.JSONObject;
 
 public class BingQueryRunner {
   protected static final String APP_ID = "DD4E2A5DF8B7E5801ED443E47DC600D5F3E62713";
-  //TODO user needs to have own APP_ID from Bing API
+  // TODO user needs to have own APP_ID from Bing API
 
   private float snapshotSimilarityThreshold = 0.4f;
 
-  private static final Logger LOG = Logger.getLogger("opennlp.tools.similarity.apps.BingQueryRunner");
+  private static final Logger LOG = Logger
+      .getLogger("opennlp.tools.similarity.apps.BingQueryRunner");
 
   public void setSnapshotSimilarityThreshold(float thr) {
     snapshotSimilarityThreshold = thr;
@@ -49,10 +50,11 @@ public class BingQueryRunner {
   public BingQueryRunner() {
 
   }
+
   /*
    * 
    */
-  
+
   private String constructBingUrl(String query, String domainWeb, String lang,
       int numbOfHits) throws Exception {
     String codedQuery = URLEncoder.encode(query, "UTF-8");

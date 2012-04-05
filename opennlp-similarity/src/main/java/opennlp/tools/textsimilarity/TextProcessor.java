@@ -36,10 +36,10 @@ import opennlp.tools.similarity.apps.utils.Pair;
 
 import org.apache.commons.lang.StringUtils;
 
-
 public class TextProcessor {
 
-  private static final Logger LOG = Logger.getLogger("opennlp.tools.textsimilarity.TextProcessor");
+  private static final Logger LOG = Logger
+      .getLogger("opennlp.tools.textsimilarity.TextProcessor");
 
   static final String[] abbrevs = { "mr.", "mrs.", "sen.", "rep.", "gov.",
       "miss.", "dr.", "oct.", "nov.", "jan.", "feb.", "mar.", "apr.", "may",
@@ -278,12 +278,13 @@ public class TextProcessor {
 
     return retVal;
   }
-  
-  public static String removePunctuation(String sentence){
-	  List<String> toks = fastTokenize( sentence, false);
-	  return toks.toString().replace('[', ' ').replace(']', ' ').replace(',', ' ').replace("  ", " ");
+
+  public static String removePunctuation(String sentence) {
+    List<String> toks = fastTokenize(sentence, false);
+    return toks.toString().replace('[', ' ').replace(']', ' ')
+        .replace(',', ' ').replace("  ", " ");
   }
-  
+
   public static ArrayList<String> fastTokenize(String txt, boolean retainPunc) {
     ArrayList<String> tokens = new ArrayList<String>();
     if (StringUtils.isEmpty(txt)) {
@@ -426,7 +427,7 @@ public class TextProcessor {
 
       return text.substring(start, end + 1);
     } catch (RuntimeException e) {
-      LOG.severe("RuntimeException "+ e);
+      LOG.severe("RuntimeException " + e);
       e.printStackTrace();
       return "";
     }
@@ -454,7 +455,7 @@ public class TextProcessor {
 
       return text.substring(start, end + 1);
     } catch (RuntimeException e) {
-      LOG.severe("RuntimeException "+ e);
+      LOG.severe("RuntimeException " + e);
       return "";
     }
   }
@@ -534,7 +535,7 @@ public class TextProcessor {
   public static String stemTerm(String term) {
     term = stripToken(term);
     PorterStemmer st = new PorterStemmer();
-    
+
     return st.stem(term).toString();
   }
 
@@ -546,12 +547,12 @@ public class TextProcessor {
       try {
         md = MessageDigest.getInstance("SHA"); // step 2
       } catch (NoSuchAlgorithmException e) {
-        LOG.severe("NoSuchAlgorithmException " +  2);
+        LOG.severe("NoSuchAlgorithmException " + 2);
       }
       try {
         md.update(s.getBytes("UTF-8")); // step 3
       } catch (UnsupportedEncodingException e) {
-        LOG.severe("UnsupportedEncodingException "+ e);
+        LOG.severe("UnsupportedEncodingException " + e);
       }
       byte raw[] = md.digest();
       hash = null; // (new BASE64Encoder()).encode(raw);
@@ -617,7 +618,7 @@ public class TextProcessor {
       try {
         md.update(hashString.getBytes("UTF-8")); // step 3
       } catch (UnsupportedEncodingException e) {
-        LOG.severe("UnsupportedEncodingException "+ e);
+        LOG.severe("UnsupportedEncodingException " + e);
         throw new Exception(e.getMessage());
       }
       byte raw[] = md.digest();
