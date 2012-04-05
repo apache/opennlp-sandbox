@@ -74,42 +74,41 @@ public class ParserChunker2MatcherProcessor {
 	private static final String MODEL_DIR_KEY = "nlp.models.dir";
 	// TODO config
 	// this is where resources should live
-	private static String MODEL_DIR, MODEL_DIR_REL = "resources/models";
+	private static String MODEL_DIR, MODEL_DIR_REL = "src/test/resources/models111";
 	protected static ParserChunker2MatcherProcessor instance;
 
 	private SentenceDetector sentenceDetector;
 	private Tokenizer tokenizer;
 	private POSTagger posTagger;
-	public SentenceDetector getSentenceDetector() {
-		return sentenceDetector;
-	}
-
-	public void setSentenceDetector(SentenceDetector sentenceDetector) {
-		this.sentenceDetector = sentenceDetector;
-	}
-
-	public Tokenizer getTokenizer() {
-		return tokenizer;
-	}
-
-	public void setTokenizer(Tokenizer tokenizer) {
-		this.tokenizer = tokenizer;
-	}
-
-	public ChunkerME getChunker() {
-		return chunker;
-	}
-
-	public void setChunker(ChunkerME chunker) {
-		this.chunker = chunker;
-	}
-
 	private Parser parser;
 	private ChunkerME chunker;
 	private final int NUMBER_OF_SECTIONS_IN_SENTENCE_CHUNKS = 5;
 	private static Logger LOG = Logger.getLogger("opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor");
 	private Map<String,String[][]> sentence_parseObject = new HashMap<String,String[][]>();
 
+	   public SentenceDetector getSentenceDetector() {
+	        return sentenceDetector;
+	    }
+
+	    public void setSentenceDetector(SentenceDetector sentenceDetector) {
+	        this.sentenceDetector = sentenceDetector;
+	    }
+
+	    public Tokenizer getTokenizer() {
+	        return tokenizer;
+	    }
+
+	    public void setTokenizer(Tokenizer tokenizer) {
+	        this.tokenizer = tokenizer;
+	    }
+
+	    public ChunkerME getChunker() {
+	        return chunker;
+	    }
+
+	    public void setChunker(ChunkerME chunker) {
+	        this.chunker = chunker;
+	    }
 	@SuppressWarnings("unchecked")
 	protected ParserChunker2MatcherProcessor() {
 		try {
