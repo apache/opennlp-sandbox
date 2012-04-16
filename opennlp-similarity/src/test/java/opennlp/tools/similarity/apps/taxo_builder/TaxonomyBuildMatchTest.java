@@ -28,7 +28,7 @@ public class TaxonomyBuildMatchTest extends TestCase {
     System.out.println(ad.lemma_AssocWords);
     assertTrue(ad.lemma_AssocWords.size() > 0);
   }
-
+/*
   public void testTaxonomyBuild() {
     TaxonomyExtenderViaMebMining self = new TaxonomyExtenderViaMebMining();
     self.extendTaxonomy("src/test/resources/taxonomies/irs_dom.ari", "tax",
@@ -36,7 +36,7 @@ public class TaxonomyBuildMatchTest extends TestCase {
     self.close();
     assertTrue(self.getAssocWords_ExtendedAssocWords().size() > 0);
   }
-
+*/
   public void testTaxonomyMatch() {
     TaxoQuerySnapshotMatcher matcher = new TaxoQuerySnapshotMatcher(
         "src/test/resources/taxonomies/irs_domTaxo.dat");

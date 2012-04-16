@@ -34,7 +34,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import org.apache.log4j.Logger;
+import java.util.logging.Logger;
 
 /**
  * This class responsible to save data to files as well as read out! It is
@@ -52,7 +52,7 @@ public class FileHandler {
       out.write(data + "\n");
       out.close();
     } catch (IOException e) {
-      LOG.error(e);
+      LOG.severe(e.toString());
       e.printStackTrace();
     }
   }
@@ -99,7 +99,7 @@ public class FileHandler {
       outputStream = new ObjectOutputStream(new FileOutputStream(filepath));
       outputStream.writeObject(obj);
     } catch (IOException e) {
-      LOG.error(e);
+      LOG.severe(e.toString());
     }
   }
 
@@ -114,13 +114,13 @@ public class FileHandler {
       }
     } catch (EOFException ex) { // This exception will be caught when EOF is
                                 // reached
-      LOG.error("End of file reached.", ex);
+      LOG.severe("End of file reached.\n" + ex.toString());
     } catch (ClassNotFoundException ex) {
-      LOG.error(ex);
+      LOG.severe(ex.toString());
     } catch (FileNotFoundException ex) {
-      LOG.error(ex);
+      LOG.severe(ex.toString());
     } catch (IOException ex) {
-      LOG.error(ex);
+      LOG.severe(ex.toString());
     } finally {
       // Close the ObjectInputStream
       try {
@@ -128,7 +128,7 @@ public class FileHandler {
           inputStream.close();
         }
       } catch (IOException ex) {
-        LOG.error(ex);
+        LOG.severe(ex.toString());
       }
     }
     return null;
@@ -187,7 +187,7 @@ public class FileHandler {
         input.close();
       }
     } catch (IOException ex) {
-      LOG.error("fileName: " + filePath, ex);
+      LOG.severe("fileName: " + filePath +"\n " + ex);
     }
     return contents.toString();
   }
@@ -224,7 +224,7 @@ public class FileHandler {
         input.close();
       }
     } catch (IOException ex) {
-      LOG.error(ex);
+      LOG.severe(ex.toString());
     }
     return lines;
   }
@@ -244,7 +244,7 @@ public class FileHandler {
       try {
         file.mkdirs();
       } catch (Exception e) {
-        LOG.error("Directory already exists or the file-system is read only", e);
+        LOG.severe("Directory already exists or the file-system is read only");
       }
     }
   }
@@ -300,7 +300,7 @@ public class FileHandler {
         try {
           deleteFile(dirName + fileNameList.get(i));
         } catch (IllegalArgumentException e) {
-          LOG.error("No way to delete file: " + dirName + fileNameList.get(i),
+          LOG.severe("No way to delete file: " + dirName + fileNameList.get(i) + "\n"+
               e);
         }
       }

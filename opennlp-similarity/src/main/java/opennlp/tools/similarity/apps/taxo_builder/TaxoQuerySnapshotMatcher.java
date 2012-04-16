@@ -28,7 +28,7 @@ import java.util.logging.Logger;
 import opennlp.tools.similarity.apps.utils.FileHandler;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
-import com.thoughtworks.xstream.XStream;
+//import com.thoughtworks.xstream.XStream;
 
 /**
  * This class can be used to generate scores based on the overlapping between a
@@ -106,7 +106,7 @@ public class TaxoQuerySnapshotMatcher {
    * 
    * @param taxonomyPath
    * @param taxonomyXML_Path
-   * */
+   * 
 
   public void convertDatToXML(String taxonomyXML_Path, TaxonomySerializer taxo) {
     XStream xStream = new XStream();
@@ -128,7 +128,7 @@ public class TaxoQuerySnapshotMatcher {
     matcher.taxo = (TaxonomySerializer) xStream.fromXML(fileHandler
         .readFromTextFile("src/test/resources/taxo_English.xml"));
   }
-
+*/
   public void close() {
     sm.close();
   }
