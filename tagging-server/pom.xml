@@ -51,39 +51,40 @@
 	
 	<dependencies>
 	
+		<dependency>
+		  <groupId>org.apache.opennlp</groupId>
+		  <artifactId>opennlp-tools</artifactId>
+		  <version>1.5.2-incubating</version>
+		</dependency>
+		
 	    <dependency>
       		<groupId>javax.servlet</groupId>
       		<artifactId>servlet-api</artifactId>
       		<version>2.5</version>
-      		<scope>provided</scope>
     	</dependency>
     
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>org.osgi.core</artifactId>
             <version>4.2.0</version>
-            <scope>provided</scope>
         </dependency>
         
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>org.osgi.compendium</artifactId>
             <version>4.2.0</version>
-            <scope>provided</scope>
         </dependency>
 
 		<dependency>
 			<groupId>com.sun.jersey</groupId>
 			<artifactId>jersey-servlet</artifactId>
 			<version>1.12</version>
-			<scope>provided</scope>
 		</dependency>
 		
 		<dependency>
 		    <groupId>com.sun.jersey</groupId>
 		    <artifactId>jersey-json</artifactId>
 		    <version>1.12</version>
-		    <scope>provided</scope>
 		</dependency>
 
 		<dependency>
@@ -131,7 +132,7 @@
                 <configuration>
                     <manifestLocation>${project.build.directory}/META-INF</manifestLocation>
                     <instructions>
-                        <Bundle-SymbolicName>${pom.artifactId}</Bundle-SymbolicName>
+                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Import-Package>
                         	!javax.persistence.*,
                         	!javax.servlet.annotation,
@@ -157,8 +158,6 @@
                         	com.sun.jersey.json.*,
                         	org.codehaus.jackson.*,
                         	org.codehaus.jackson.xc,
-                        	org.apache.opennlp.corpus_server,
-                        	org.apache.derby.jdbc,
                         	com.sun.jersey.api.core,
                         	com.sun.jersey.spi.container.servlet</Import-Package>
                         <!-- Import-Package>!com.ibm.jvm,!com.sun.jdmk.comm,!com.sun.net.httpserver,*,com.sun.jersey.api.core,com.sun.jersey.spi.container.servlet</Import-Package-->
@@ -169,6 +168,6 @@
                     </instructions>
                 </configuration>
             </plugin>
-		</plugins>
+	      </plugins>
 	</build>
 </project>
