@@ -22,8 +22,6 @@ import java.util.Hashtable;
 
 import javax.servlet.ServletException;
 
-import opennlp.tools.postag.POSModel;
-
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -32,8 +30,6 @@ import org.osgi.service.http.NamespaceException;
 import org.osgi.util.tracker.ServiceTracker;
 
 import com.sun.jersey.spi.container.servlet.ServletContainer;
-
-//import com.sun.jersey.spi.container.servlet.ServletContainer;
 
 public class TaggingServerBundle implements BundleActivator {
 
@@ -44,11 +40,6 @@ public class TaggingServerBundle implements BundleActivator {
   @Override
   public void start(BundleContext context) throws Exception {
     this.context = context;
-    
-    // For testing register some models here ... !
-    // Load them from class path ...
-    context.registerService(POSModel.class.getName(), 
-        new POSModel(TaggingServerBundle.class.getResourceAsStream("/en-pos-maxent.bin")),null);
     
     // Register the Jersey servlet
     this.tracker = new ServiceTracker(context, HttpService.class.getName(), null) {
@@ -65,6 +56,7 @@ public class TaggingServerBundle implements BundleActivator {
         
         try {
           httpService.registerServlet("/rest", new ServletContainer(), jerseyServletParams, null);
+          httpService.registerResources("/","/htmls",null);
         } catch (ServletException e) {
           throw new RuntimeException(e);
         } catch (NamespaceException e) {
@@ -93,7 +85,6 @@ public class TaggingServerBundle implements BundleActivator {
   @Override
   public void stop(BundleContext context) throws Exception {
     this.context = null;
-
     tracker.close();
   }
 }

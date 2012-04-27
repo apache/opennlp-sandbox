@@ -15,23 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.opennlp.tagging_server;
+package org.apache.opennlp.tagging_server.namefind;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 
-import javax.ws.rs.core.Application;
+import opennlp.tools.namefind.TokenNameFinderModel;
 
-import org.apache.opennlp.tagging_server.namefind.NameFinderResource;
-import org.apache.opennlp.tagging_server.postag.POSTaggerResource;
+public class TokenNameFinderModelFactory {
 
-public class TaggingServerApplication extends Application {
-  
-  @Override
-  public Set<Class<?>> getClasses() {
-    Set<Class<?>> result = new HashSet<Class<?>>();
-    result.add(POSTaggerResource.class);
-    result.add(NameFinderResource.class);
-    return result;
+  public static TokenNameFinderModel createModel(URL modelURL) throws IOException {
+    
+    InputStream modelIn = modelURL.openStream();
+    
+    try {
+      return new TokenNameFinderModel(modelIn);
+    }
+    finally {
+      modelIn.close();
+    }
   }
 }

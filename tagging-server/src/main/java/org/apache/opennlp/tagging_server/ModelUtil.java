@@ -27,15 +27,15 @@ public class ModelUtil {
   private ModelUtil() {
   }
   
-  static ServiceReference getModelService(Class<?> modelClazz) {
+  public static ServiceReference getService(Class<?> serviceClazz) {
     Bundle bundle = FrameworkUtil.getBundle(ModelUtil.class);
     BundleContext context = bundle.getBundleContext();
 
-    return context.getServiceReference(modelClazz.getName());
+    return context.getServiceReference(serviceClazz.getName());
   }
   
   @SuppressWarnings("unchecked")
-  static <T> T getModel(ServiceReference modelService, Class<T> modelClazz) {
+  public static <T> T getModel(ServiceReference modelService, Class<T> modelClazz) {
     
     T model;
     if (modelService != null) {
@@ -49,10 +49,10 @@ public class ModelUtil {
     return model;
   }
 
-  public static void releaseModel(ServiceReference modelService) {
-    if (modelService != null) {
-      BundleContext context = modelService.getBundle().getBundleContext();
-      context.ungetService(modelService);
+  public static void releaseService(ServiceReference service) {
+    if (service != null) {
+      BundleContext context = service.getBundle().getBundleContext();
+      context.ungetService(service);
     }
   }
 }

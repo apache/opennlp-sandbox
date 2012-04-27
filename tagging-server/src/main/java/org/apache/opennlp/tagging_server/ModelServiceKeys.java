@@ -17,21 +17,11 @@
 
 package org.apache.opennlp.tagging_server;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.ws.rs.core.Application;
-
-import org.apache.opennlp.tagging_server.namefind.NameFinderResource;
-import org.apache.opennlp.tagging_server.postag.POSTaggerResource;
-
-public class TaggingServerApplication extends Application {
-  
-  @Override
-  public Set<Class<?>> getClasses() {
-    Set<Class<?>> result = new HashSet<Class<?>>();
-    result.add(POSTaggerResource.class);
-    result.add(NameFinderResource.class);
-    return result;
-  }
+/**
+ * Keys for model services to expose further information about the model.
+ * This information will be used to select a suitable model.
+ */
+public class ModelServiceKeys {
+  public static final String MODEL_LANGUAGE_KEY = "MODEL_LANGUAGE";
+  public static final String MODEL_NAME_KEY = "MODEL_NAME";
 }
