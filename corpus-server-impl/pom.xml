@@ -155,9 +155,8 @@
                         	!sun.misc,
                         	*,
                         	org.apache.opennlp.corpus_server,
-                        	org.apache.derby.jdbc,
-                        	com.sun.jersey.api.core,
-                        	com.sun.jersey.spi.container.servlet</Import-Package>
+                        	org.apache.derby.jdbc
+                        	</Import-Package>
                         <!-- Import-Package>!com.ibm.jvm,!com.sun.jdmk.comm,!com.sun.net.httpserver,*,com.sun.jersey.api.core,com.sun.jersey.spi.container.servlet</Import-Package-->
                         <Export-Package>org.apache.opennlp.corpus_server.impl</Export-Package>
                         <Bundle-Activator>org.apache.opennlp.corpus_server.impl.Activator</Bundle-Activator>
