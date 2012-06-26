@@ -24,6 +24,8 @@ public interface CorporaChangeListener {
 
   void addedCorpus(CorpusStore store);
   
+  void droppedCorpus(CorpusStore store);
+  
   /**
    * Indicates that the CAS was added to the corpus.
    * 

@@ -25,6 +25,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.opennlp.corpus_server.CorpusServer;
+import org.apache.opennlp.corpus_server.CorpusServerBundle;
 import org.apache.opennlp.corpus_server.store.CorpusStore;
 
 /**
@@ -41,19 +42,21 @@ public class MemoryTaskQueueService implements TaskQueueService {
   @Override
   public void createTaskQueue(String queueId, String corpusId, String query) {
 
-//    try {
-//      CorpusStore store = CorpusServer.getInstance().getStore().getCorpus(corpusId);
-//      List<String> hits = CorpusServer.getInstance().getSearchService().search(store, query);
-//
-//      queues.put(queueId, new MemoryTaskQueue(hits));
-//
-//      if (LOGGER.isLoggable(Level.INFO)) {
-//        LOGGER.log(Level.INFO, "Created queue " + queueId +
-//            " with " + hits.size() + "CASes.");
-//      }
-//    } catch (IOException e) {
-//      LOGGER.log(Level.SEVERE, "Failed to create task queue: " + queueId, e);
-//    }
+    try {
+      CorpusServer corpusServer = CorpusServerBundle.getInstance().getCorpusServer();
+      
+      CorpusStore store = corpusServer.getStore().getCorpus(corpusId);
+      List<String> hits = corpusServer.getSearchService().search(store, query);
+
+      queues.put(queueId, new MemoryTaskQueue(hits));
+
+      if (LOGGER.isLoggable(Level.INFO)) {
+        LOGGER.log(Level.INFO, "Created queue " + queueId +
+            " with " + hits.size() + "CASes.");
+      }
+    } catch (IOException e) {
+      LOGGER.log(Level.SEVERE, "Failed to create task queue: " + queueId, e);
+    }
   }
 
   @Override

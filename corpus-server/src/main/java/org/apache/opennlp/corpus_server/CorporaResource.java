@@ -73,4 +73,14 @@ public class CorporaResource {
         return null;
       }
 	}
+  
+  @POST
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Path("_dropCorpus")
+  public void dropCorpus(@QueryParam("corpusName") String corpusName) throws IOException {
+    CorpusServer corpusServer = CorpusServerBundle.getInstance().getCorpusServer();
+    
+    CorporaStore store = corpusServer.getStore();
+    store.dropCorpus(corpusName);
+  }
 }

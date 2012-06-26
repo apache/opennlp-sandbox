@@ -207,8 +207,13 @@ public class LuceneSearchService implements SearchService {
     this.store = store;
     
     for (String corpusId : store.getCorpusIds()) {
-      createIndexWriter(corpusId, false);
-      LOGGER.info("Created Index Writer for " + corpusId + "corpus.");
+      try {
+        createIndexWriter(corpusId, false);
+        LOGGER.info("Created Index Writer for " + corpusId + "corpus.");
+      }
+      catch (IOException e) {
+        LOGGER.warning("Failed to open Index Writer for " + corpusId + "corpus.");
+      }
     }
   }
   
@@ -216,6 +221,10 @@ public class LuceneSearchService implements SearchService {
   public synchronized void createIndex(CorpusStore store) throws IOException {
     createIndexWriter(store.getCorpusId(), true);
     LOGGER.info("Created Index Writer for " + store.getCorpusId() + " corpus.");
+  }
+  
+  public synchronized void dropIndex(CorpusStore store) throws IOException {
+    
   }
   
   @Override

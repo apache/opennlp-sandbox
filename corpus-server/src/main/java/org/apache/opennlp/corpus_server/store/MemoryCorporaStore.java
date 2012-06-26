@@ -59,4 +59,9 @@ public class MemoryCorporaStore extends AbstractCorporaStore {
 	public MemoryCorpusStore getCorpus(String corpusId) {
 		return corpora.get(corpusId);
 	}
+	
+	@Override
+	public void dropCorpus(String corpusId) throws IOException {
+	  corpora.remove(corpusId);
+	}
 }

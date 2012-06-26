@@ -41,6 +41,8 @@ public interface SearchService {
    */
   void createIndex(CorpusStore store) throws IOException;
   
+  void dropIndex(CorpusStore store) throws IOException;
+  
   /**
    * Indexes or re-indexes a CAS.
    * 

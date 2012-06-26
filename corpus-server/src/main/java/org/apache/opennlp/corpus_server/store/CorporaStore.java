@@ -53,11 +53,19 @@ public interface CorporaStore {
   /**
    * Retrieves a corpus of the given name from the store.
    * 
-   * @param corpusId the name of the coprus to retrieve
+   * @param corpusId the name of the corpus to retrieve
    * 
    * @return the corpus or null if it does not exist
    */
   CorpusStore getCorpus(String corpusId) throws IOException;
+  
+  /**
+   * Drops the corpus. All data will be removed permanently.
+   * 
+   * @param corpusId
+   * @throws IOException
+   */
+  void dropCorpus(String corpusId) throws IOException;
   
   /**
    * Indicates that the store will no longer be used and no more

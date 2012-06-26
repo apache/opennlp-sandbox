@@ -50,6 +50,16 @@ public class CorpusServerImpl implements CorpusServer {
     }
 
     @Override
+    public void droppedCorpus(CorpusStore store) {
+      try {
+        searchService.dropIndex(store);
+      } catch (IOException e) {
+        // TODO: Also log store name!
+        LOGGER.log(Level.WARNING, "Failed to index cas: " + store.getCorpusId(), e);
+      }
+    }
+    
+    @Override
     public void updatedCAS(CorpusStore store, String casId) {
       addedCAS(store, casId);
     }

@@ -147,6 +147,29 @@ public class DerbyCorporaStore extends AbstractCorporaStore {
   }
   
   @Override
+  public void dropCorpus(String corpusName) throws IOException {
+
+    try {
+      Connection conn = dataSource.getConnection();
+      Statement s = conn.createStatement();
+      s.execute("drop table " + corpusName);
+      s.close();
+
+      conn.commit();
+      conn.close();
+    } catch (SQLException e) {
+      if (LOGGER.isLoggable(Level.SEVERE)) {
+        LOGGER.log(Level.SEVERE, "Failed to create corpus: " + corpusName, e);
+      }
+      throw new IOException(e);
+    }
+
+    for (CorporaChangeListener listener : getListeners()) {
+      listener.droppedCorpus(getCorpus(corpusName));
+    }
+  }
+  
+  @Override
   public CorpusStore getCorpus(String corpusId) {
     
     // It must be ensured that the table exist, otherwise
