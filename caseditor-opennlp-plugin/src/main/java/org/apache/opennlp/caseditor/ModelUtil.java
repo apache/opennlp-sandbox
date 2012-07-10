@@ -36,7 +36,7 @@ public class ModelUtil {
   public static InputStream openModelIn(String modelPath) throws IOException {
     InputStream modelIn = null;
     
-    if (modelPath.startsWith("http://")) {
+    if (modelPath.startsWith("http://") || modelPath.startsWith("file://")) {
       URL modelURL = new URL(modelPath);
       
       modelIn = modelURL.openStream();
