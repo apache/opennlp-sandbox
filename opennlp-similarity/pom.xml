@@ -31,10 +31,10 @@
 
 	<groupId>org.apache.opennlp</groupId>
 	<artifactId>tools-similarity</artifactId>
-	<version>0.0.1-incubating-SNAPSHOT</version>
+	<version>0.0.1-incubating</version>
 	<packaging>jar</packaging>
 
-	<name>OpenNLP Tool Similarity</name>
+	<name>OpenNLP Tool Similarity distribution</name>
 
 	<prerequisites>
 		<maven>3.0</maven>
@@ -92,6 +92,19 @@
 					<target>1.5</target>
           			<compilerArgument>-Xlint</compilerArgument>
 				</configuration>
+			</plugin>
+			
+			<plugin>
+				<artifactId>maven-source-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>create-source-jar</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+						<phase>package</phase>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
