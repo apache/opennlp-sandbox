@@ -15,7 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.opennlp.tagging_server.postag;
+package org.apache.opennlp.tagging_server.sentdetect;
+
+import java.util.Arrays;
+import java.util.List;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -23,36 +26,30 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import opennlp.tools.postag.POSModel;
-import opennlp.tools.postag.POSTagger;
-import opennlp.tools.postag.POSTaggerME;
+import opennlp.tools.sentdetect.SentenceDetector;
+import opennlp.tools.sentdetect.SentenceDetectorME;
+import opennlp.tools.sentdetect.SentenceModel;
+import opennlp.tools.util.Span;
 
 import org.apache.opennlp.tagging_server.ServiceUtil;
 import org.osgi.framework.ServiceReference;
 
-@Path("/postagger")
-public class POSTaggerResource {
+@Path("/sentdetect")
+public class SentenceDetectorResource {
 
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  @Path("_tag")
-  // @QueryParam("lang") String lang,
-  // @QueryParam("model") String modelName
-  public String[][] tag(String document[][]) {
+  @Path("_sentPosDetect")
+  public List<Span> sentPosDetect(String document) {
     
-    ServiceReference modelService = ServiceUtil.getServiceReference(POSModel.class);
-    
+    ServiceReference modelService = ServiceUtil.getServiceReference(SentenceModel.class);
+      
     try {
-      POSTagger tagger = new POSTaggerME(ServiceUtil.getService(modelService, POSModel.class));
+      SentenceDetector sentDetector = new SentenceDetectorME(
+              ServiceUtil.getService(modelService, SentenceModel.class));
       
-      String[][] tags = new String[document.length][];
-      
-      for (int i = 0; i < document.length; i++) {
-        tags[i] = tagger.tag(document[i]);
-      }
-      
-      return tags;
+      return Arrays.asList(sentDetector.sentPosDetect(document));
     }
     finally {
       ServiceUtil.releaseService(modelService);

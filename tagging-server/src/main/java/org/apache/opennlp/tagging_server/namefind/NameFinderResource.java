@@ -18,23 +18,22 @@
 package org.apache.opennlp.tagging_server.namefind;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.ws.rs.Consumes;
-import javax.ws.rs.OPTIONS;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import opennlp.tools.namefind.NameFinderME;
+import opennlp.tools.namefind.TokenNameFinder;
 import opennlp.tools.namefind.TokenNameFinderModel;
-import opennlp.tools.tokenize.SimpleTokenizer;
+import opennlp.tools.sentdetect.SentenceDetector;
+import opennlp.tools.tokenize.Tokenizer;
 import opennlp.tools.util.Span;
 
-import org.apache.opennlp.tagging_server.ModelUtil;
+import org.apache.opennlp.tagging_server.ServiceUtil;
 import org.osgi.framework.ServiceReference;
 
 
@@ -42,10 +41,10 @@ import org.osgi.framework.ServiceReference;
 public class NameFinderResource {
 
   public static class NameFinderDocument {
-    private String document[][];
+    private List<Span[]> document;
     private List<Span[]> names;
     
-    NameFinderDocument(String document[][], List<Span[]> names) {
+    NameFinderDocument(List<Span[]> document, List<Span[]> names) {
       this.document = document;
       this.names = names;
     }
@@ -54,77 +53,88 @@ public class NameFinderResource {
       return names;
     }
     
-    public String[][] getDocument() {
+    public List<Span[]> getDocument() {
       return document;
     }
+  }
+  
+  private List<Span[]> find(TokenNameFinder nameFinder, String[][] document) {
+
+    List<Span[]> names = new ArrayList<Span[]>();
+
+    for (String sentence[] : document) {
+      names.add(nameFinder.find(sentence));
+    }
+
+    return names;
   }
   
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   @Path("_find")
-  public List<Span> find(String[][] document) {
+  public List<Span[]> find(String[][] document) {
     
-    ServiceReference modelService = ModelUtil.getService(TokenNameFinderModel.class);
+    ServiceReference modelService = ServiceUtil.getServiceReference(TokenNameFinderModel.class);
     
     try {
       NameFinderME nameFinder = new NameFinderME(
-          ModelUtil.getModel(modelService, TokenNameFinderModel.class));
+          ServiceUtil.getService(modelService, TokenNameFinderModel.class));
       
-      List<Span> names = new ArrayList<Span>();
+      List<Span[]> names = new ArrayList<Span[]>();
       
       for (String sentence[] : document) {
-        names.addAll(Arrays.asList(nameFinder.find(sentence)));
+        names.add(nameFinder.find(sentence));
       }
       
       return names;
     }
     finally {
-      ModelUtil.releaseService(modelService);
+      ServiceUtil.releaseService(modelService);
     }
   }
-  
-  // Just a hack to get arround cross domain issues in my test environment!
-  // Need to investigate how this should be done!
-  @OPTIONS
-  @Path("_findRawText")
-  public Response findRawTextOptions() {
-    System.out.println("Called options ...");
-    return Response.ok()
-        .header("Access-Control-Allow-Origin", "*")
-        .header("Access-Control-Allow-Headers", "Content-Type")
-        .header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-        .build();
-  }
 
+  // TODO:
+  // User should pass a key for the models (e.g. default_eng)
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   @Path("_findRawText")
-  public NameFinderDocument findRawText(String document) { // input could be a single string ... return contains everything!
-    
-    
-    System.out.println("Request: " + document);
-    String[][] tokenizedSentences = new String[][]{SimpleTokenizer.INSTANCE.tokenize(document)};
-    
-    // TODO: Fix this. User should be able to define this in blueprint!
-    
-    ServiceReference modelService = ModelUtil.getService(TokenNameFinderModel.class);
-      
-    try {
-      NameFinderME nameFinder = new NameFinderME(
-              ModelUtil.getModel(modelService, TokenNameFinderModel.class));
+  public NameFinderDocument findRawText(String document) {
 
-      List<Span[]> names = new ArrayList<Span[]>();
+    ServiceReference preprocessFactoryService = ServiceUtil.getServiceReference(RawTextNameFinderFactory.class);
+    
+    try {
+      // TODO: Pass a key here!
+      RawTextNameFinderFactory factory =
+              ServiceUtil.getService(preprocessFactoryService, RawTextNameFinderFactory.class);
       
-      for (String sentence[] : tokenizedSentences) {
-        names.add(nameFinder.find(sentence));
+      SentenceDetector sentDetect = factory.createSentenceDetector();
+      Tokenizer tokenizer = factory.createTokenizer();
+      
+      Span sentenceSpans[] = sentDetect.sentPosDetect(document);
+      
+      List<Span[]> tokenizedSentencesSpan = new ArrayList<Span[]>();
+      String[][] tokenizedSentences = new String[sentenceSpans.length][];
+      
+      for (int i = 0; i < sentenceSpans.length; i++) {
+        Span tokenSpans[] = tokenizer.tokenizePos(sentenceSpans[i].getCoveredText(document).toString());
+        tokenizedSentencesSpan.add(tokenSpans);
+        
+        String tokens[] = new String[tokenSpans.length];
+        for (int ti = 0; ti < tokenSpans.length; ti++) {
+          tokens[ti] = tokenSpans[ti].getCoveredText(document).toString();
+        }
+        
+        tokenizedSentences[i] = tokens;
       }
       
-      return new NameFinderDocument(tokenizedSentences, names);
+      TokenNameFinder nameFinder = factory.createNameFinder();
+      
+      return new NameFinderDocument(tokenizedSentencesSpan, find(nameFinder, tokenizedSentences));
     }
     finally {
-      ModelUtil.releaseService(modelService);
+      ServiceUtil.releaseService(preprocessFactoryService);
     }
   }
 }
