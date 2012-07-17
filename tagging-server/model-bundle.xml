@@ -20,18 +20,54 @@
 -->
 
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0">
+
+	<bean id="en-sentence-model"
+		 class="opennlp.tools.sentdetect.SentenceModel">
+		<argument type="java.net.URL" value="file:///home/xyz/models/en-sent.bin"/>
+	</bean>
+
+	<service id="en-sentence-model-service" ref="en-sentence-model"
+		interface="opennlp.tools.sentdetect.SentenceModel">
+		<service-properties>
+			<entry key="MODEL_NAME" value="en-sentence"/>
+		</service-properties>
+	</service>
 	
+	<bean id="en-token-model"
+		 class="opennlp.tools.tokenize.TokenizerModel">
+		<argument type="java.net.URL" value="file:///home/xyz/models/en-token.bin"/>
+	</bean>
+
+	<service id="en-token-model-service" ref="en-token-model"
+		interface="opennlp.tools.tokenize.TokenizerModel">
+		<service-properties>
+			<entry key="MODEL_NAME" value="en-token"/>
+		</service-properties>
+	</service>
+
 	<bean id="en-ner-person-model"
-		 class="org.apache.opennlp.tagging_server.namefind.TokenNameFinderModelFactory"
-		 factory-method="createModel">
-		<argument value="file:///home/xyz/models/en-ner-person.bin"/>
+		 class="opennlp.tools.namefind.TokenNameFinderModel">
+		<argument type="java.net.URL" value="file:///home/xyz/models/en-ner-person.bin"/>
 	</bean>
 
 	<service id="en-ner-person-model-service" ref="en-ner-person-model"
 		interface="opennlp.tools.namefind.TokenNameFinderModel">
 		<service-properties>
-			<entry key="MODEL_LANG" value="en"/>
-			<entry key="MODEL_NAME" value="person"/>
+			<entry key="MODEL_NAME" value="en-person"/>
+		</service-properties>
+	</service>
+
+	<bean id="en-ner-rawtext-person-model"
+		 class="org.apache.opennlp.tagging_server.namefind.DefaultRawTextNameFinderFactory">
+		<argument ref="en-sentence-model"/>
+		<argument ref="en-token-model"/>
+		<argument ref="en-ner-person-model"/>
+	</bean>
+	
+	<service id="en-ner-rawtext-person-model-service" ref="en-ner-rawtext-person-model"
+		interface="org.apache.opennlp.tagging_server.namefind.RawTextNameFinderFactory">
+		<service-properties>
+			<entry key="MODEL_NAME" value="en-rawtext-person"/>
 		</service-properties>
 	</service>
 </blueprint>
