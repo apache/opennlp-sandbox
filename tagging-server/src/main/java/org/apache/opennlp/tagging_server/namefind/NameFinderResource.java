@@ -118,7 +118,11 @@ public class NameFinderResource {
       String[][] tokenizedSentences = new String[sentenceSpans.length][];
       
       for (int i = 0; i < sentenceSpans.length; i++) {
+        // offset of sentence gets lost here!
         Span tokenSpans[] = tokenizer.tokenizePos(sentenceSpans[i].getCoveredText(document).toString());
+        // all spans need to be sentence offset adjusted!
+        tokenSpans = offsetSpans(tokenSpans, sentenceSpans[i].getStart());
+        
         tokenizedSentencesSpan.add(tokenSpans);
         
         String tokens[] = new String[tokenSpans.length];
@@ -136,5 +140,18 @@ public class NameFinderResource {
     finally {
       ServiceUtil.releaseService(preprocessFactoryService);
     }
+  }
+
+  private Span[] offsetSpans(
+      Span[] tokenSpans, int offset) {
+    
+    Span spans[] = new Span[tokenSpans.length];
+    
+    for (int i = 0; i < tokenSpans.length; i++) {
+      spans[i] = new Span(tokenSpans[i].getStart() + offset,
+          tokenSpans[i].getEnd() + offset);
+    }
+    
+    return spans;
   }
 }
