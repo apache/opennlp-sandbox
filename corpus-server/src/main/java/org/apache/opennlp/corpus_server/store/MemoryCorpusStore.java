@@ -27,7 +27,7 @@ import java.util.Map;
 public class MemoryCorpusStore implements CorpusStore {
 
   private final String corpusName;
-  private final byte[] typeSystemBytes;
+  private byte[] typeSystemBytes;
   private byte[] indexMapping;
 
   private Map<String, byte[]> casStore = new HashMap<String, byte[]>();
@@ -78,6 +78,11 @@ public class MemoryCorpusStore implements CorpusStore {
   @Override
   public void removeCAS(String casID) throws IOException {
     casStore.remove(casID);
+  }
+  
+  @Override
+  public void replaceTypeSystem(byte[] newTypeSystem) throws IOException {
+    typeSystemBytes = newTypeSystem;
   }
   
   public byte[] getTypeSystem() {
