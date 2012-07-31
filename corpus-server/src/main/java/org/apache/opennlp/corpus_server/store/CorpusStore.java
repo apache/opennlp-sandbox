@@ -72,6 +72,14 @@ public interface CorpusStore {
   void removeCAS(String casID) throws IOException;
   
   /**
+   * Replaces the existing Type System with a new one.
+   * 
+   * @param newTypeSystem
+   * @throws IOException
+   */
+  void replaceTypeSystem(byte[] newTypeSystem) throws IOException;
+  
+  /**
    * Retrieves the type system description of this corpus.
    * 
    * @return

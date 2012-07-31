@@ -188,6 +188,36 @@ public class DerbyCorpusStore implements CorpusStore {
   }
   
   @Override
+  public void replaceTypeSystem(byte[] newTypeSystem) throws IOException {
+    try {
+      Connection conn = dataSource.getConnection();
+      // Replace the type system
+      PreparedStatement typeSystemPS = conn.prepareStatement("update " + 
+          corpusName + " set cas = ? where name = ?");
+
+      typeSystemPS.setString(2, "_typesystem");
+
+      Blob typeSystemBlob = conn.createBlob();
+      typeSystemBlob.setBytes(1, newTypeSystem);
+      typeSystemPS.setBlob(1, typeSystemBlob);
+
+      typeSystemPS.executeUpdate();
+      
+      conn.commit();
+      
+      typeSystemPS.close();
+      conn.close();
+    } catch (SQLException e) {
+      
+      if (LOGGER.isLoggable(Level.SEVERE)) {
+        LOGGER.log(Level.SEVERE, "Failed to replace the Type System!", e);
+      }
+      
+      throw new IOException(e);
+    }
+  }
+  
+  @Override
   public byte[] getTypeSystem() throws IOException {
     
     byte tsBytes[];

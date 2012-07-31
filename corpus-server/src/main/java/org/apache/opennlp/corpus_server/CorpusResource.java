@@ -87,7 +87,24 @@ public class CorpusResource {
   public byte[] getCAS(@PathParam("casId") String casId) throws IOException {
     return corpus.getCAS(casId);
   }
-
+  
+  /**
+   * Note:
+   * The Type System is not checked for compatibility, if it does not work anymore
+   * the user needs to diagnose the problem himself and provide a new Type System to
+   * fix this.
+   * 
+   * @param newTypeSystem
+   * 
+   * @throws IOException
+   */
+  @PUT
+  @Consumes(MediaType.TEXT_XML)
+  @Path("_replaceTypeSystem")
+  public void replaceTypeSystem(byte[] newTypeSystem) throws IOException {
+    corpus.replaceTypeSystem(newTypeSystem);
+  }
+  
   /**
    * Retrieves the type system for this corpus.
    * 
