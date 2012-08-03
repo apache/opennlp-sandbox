@@ -80,5 +80,27 @@
 				</featureDescription>
 			</features>
 		</typeDescription>
+		<typeDescription>
+			<name>bumblebee.annotations.AnnotationStatus</name>
+			<supertypeName>uima.tcas.Annotation</supertypeName>
+			<features>
+				<featureDescription>
+					<name>sentence</name>
+					<rangeTypeName>uima.cas.Boolean</rangeTypeName>
+				</featureDescription>
+				<featureDescription>
+					<name>token</name>
+					<rangeTypeName>uima.cas.Boolean</rangeTypeName>
+				</featureDescription>
+				<featureDescription>
+					<name>person</name>
+					<rangeTypeName>uima.cas.Boolean</rangeTypeName>
+				</featureDescription>
+				<featureDescription>
+					<name>organization</name>
+					<rangeTypeName>uima.cas.Boolean</rangeTypeName>
+				</featureDescription>
+			</features>
+		</typeDescription>		
 	</types>
 </typeSystemDescription>
