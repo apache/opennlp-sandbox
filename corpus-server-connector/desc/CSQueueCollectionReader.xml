@@ -63,13 +63,13 @@
 		    <nameValuePair>
 		        <name>ServerAddress</name>
 		        <value>
-		            <string>http://localhost:8080/corpus-server/rest</string>
+		            <string>http://localhost:8080/rest</string>
 		        </value>
 		    </nameValuePair>
 		    <nameValuePair>
 		        <name>CorpusName</name>
 		        <value>
-		            <string>wikinews</string>
+		            <string>enwikinews</string>
 		        </value>
 		    </nameValuePair>
 		    <nameValuePair>

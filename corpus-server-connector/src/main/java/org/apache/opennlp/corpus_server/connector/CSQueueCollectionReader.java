@@ -26,9 +26,15 @@ import java.util.List;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.uima.cas.CAS;
+import org.apache.uima.cas.Feature;
+import org.apache.uima.cas.FeatureStructure;
+import org.apache.uima.cas.Type;
+import org.apache.uima.cas.TypeSystem;
 import org.apache.uima.collection.CollectionException;
 import org.apache.uima.collection.CollectionReader_ImplBase;
 import org.apache.uima.resource.ResourceInitializationException;
+import org.apache.uima.util.Level;
+import org.apache.uima.util.Logger;
 import org.apache.uima.util.Progress;
 
 import com.sun.jersey.api.client.Client;
@@ -41,9 +47,9 @@ import com.sun.jersey.api.client.WebResource;
  */
 public class CSQueueCollectionReader extends CollectionReader_ImplBase {
 
-  private static final String SERVER_ADDRESS = "ServerAddress";
+  static final String SERVER_ADDRESS = "ServerAddress";
   
-  private static final String CORPUS_NAME = "CorpusName";
+  static final String CORPUS_NAME = "CorpusName";
 
   private static final String SEARCH_QUERY = "SearchQuery";
   
@@ -53,12 +59,19 @@ public class CSQueueCollectionReader extends CollectionReader_ImplBase {
   
   private String corpusName;
   
+  private Type idType;
+  private Feature idFeature;
+  
   private Iterator<String> casIds;
+
+  private Logger logger;
 
 
   @Override
   public void initialize() throws ResourceInitializationException {
     super.initialize();
+    
+    logger = getLogger();
     
     serverAddress = (String) getConfigParameterValue(SERVER_ADDRESS);
     
@@ -83,6 +96,15 @@ public class CSQueueCollectionReader extends CollectionReader_ImplBase {
           // TODO: How to fix this? Shouldn't accept do it?
           .header("Content-Type", MediaType.TEXT_XML)
           .post(ClientResponse.class);
+      
+      if (response.getStatus() != 204) {
+    	  throw new ResourceInitializationException(
+    			  new Exception("Failed to create queue: " + response.getStatus()));
+      }
+      
+      if (logger.isLoggable(Level.INFO)) {
+        logger.log(Level.INFO, "Sucessfully created queue: " + queueName + " for corpus: " + corpusName);
+      }
     }
     
     // Retrieve queue link ...
@@ -93,6 +115,8 @@ public class CSQueueCollectionReader extends CollectionReader_ImplBase {
     WebResource r = client.resource(serverAddress +  "/queues/" + queueName);
     
     while (true) {
+      System.out.println("Requesting next CAS ID!");
+    	
       // TODO: Make query configurable ...
       ClientResponse response = r
               .path("_nextTask")
@@ -109,9 +133,22 @@ public class CSQueueCollectionReader extends CollectionReader_ImplBase {
       }
       String casId = response.getEntity(String.class);
       casIdList.add(casId);
+      
+      System.out.println("Received CAS ID: " + casId);
     }
     
     casIds = casIdList.iterator();
+  }
+  
+  @Override
+  public void typeSystemInit(TypeSystem ts)
+      throws ResourceInitializationException {
+    super.typeSystemInit(ts);
+    
+    String idTypeName = (String) getConfigParameterValue("IdFSTypeName");
+    idType = ts.getType(idTypeName);
+    String idFeatureName = (String) getConfigParameterValue("IdFeatureName");
+    idFeature = idType.getFeatureByBaseName(idFeatureName);
   }
   
   @Override
@@ -119,6 +156,7 @@ public class CSQueueCollectionReader extends CollectionReader_ImplBase {
 	  
     String casId = casIds.next();
 	
+    
     Client client = Client.create();
     
     WebResource corpusWebResource = client.resource(serverAddress + "/corpora/" + corpusName);
@@ -130,10 +168,26 @@ public class CSQueueCollectionReader extends CollectionReader_ImplBase {
         .get(ClientResponse.class);
     
     InputStream casIn = casResponse.getEntityInputStream();
-	  
-    UimaUtil.deserializeXmiCAS(cas, casIn);
     
-    casIn.close();
+    try {
+      UimaUtil.deserializeXmiCAS(cas, casIn);
+    }
+    catch (IOException e) {
+      if (logger.isLoggable(Level.SEVERE)) {
+        logger.log(Level.SEVERE, "Failed to load CAS: " +  casId + " code: " + casResponse.getStatus());
+      }
+      
+      throw e;
+    }
+    finally {
+      casIn.close();
+    }
+    
+    if (idType != null && idFeature != null) {
+      FeatureStructure idFS = cas.createFS(idType);
+      idFS.setStringValue(idFeature, casId);
+      cas.addFsToIndexes(idFS);
+    }
   }
 
   @Override
