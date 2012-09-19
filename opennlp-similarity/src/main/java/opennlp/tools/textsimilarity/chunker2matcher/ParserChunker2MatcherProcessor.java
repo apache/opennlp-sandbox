@@ -117,8 +117,9 @@ public class ParserChunker2MatcherProcessor {
       initializePosTagger();
       initializeParser();
       initializeChunker();
-    } catch (Exception e) {
-      LOG.fine("model cant be read and we rely on cache");
+    } catch (Exception e) { // a typical error when 'model' is not installed
+      System.err.println("Please install OpenNLP model files in 'src/test/resources' (folder 'model'");
+      LOG.fine("The model can't be read and we rely on cache");
     }
   }
 

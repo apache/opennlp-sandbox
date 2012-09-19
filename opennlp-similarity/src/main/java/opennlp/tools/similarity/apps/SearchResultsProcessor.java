@@ -33,25 +33,20 @@ public class SearchResultsProcessor extends BingWebQueryRunner {
   ParserChunker2MatcherProcessor sm;
 
   /*
-   * Takes Bing API search results and calculates the parse tree similarity
+   * Takes a search engine API (or scraped) search results and calculates the parse tree similarity
    * between the question and each snippet. Ranks those snippets with higher
    * similarity score up
    */
-  private BingResponse calculateMatchScoreResortHits(BingResponse resp,
+  
+  
+  private List<HitBase> calculateMatchScoreResortHits(List<HitBase> hits,
       String searchQuery) {
-    // TODO
-    /*
-     * if query is multi-sentence, special handling int indexDot =
-     * searchQuery.indexOf("."); if (indexDot>0 &&
-     * indexDot<searchQuery.length()-1){ MultipleSentenceQueryAnswerer ans = new
-     * MultipleSentenceQueryAnswerer(); return
-     * ans.calculateMatchScoreResortHits(resp, searchQuery); }
-     */
+
     List<HitBase> newHitList = new ArrayList<HitBase>();
     sm = ParserChunker2MatcherProcessor.getInstance();
 
-    for (HitBase hit : resp.getHits()) {
-      String snapshot = hit.getAbstractText().replace("<b>...</b>", ". ")
+    for (HitBase hit : hits) {
+      String snapshot = hit.getAbstractText().replace("<b>...</b>", ". ").replace("<span class='best-phrase'>", " ").replace("<span>", " ").replace("<span>", " ")
           .replace("<b>", "").replace("</b>", "");
       snapshot = snapshot.replace("</B>", "").replace("<B>", "")
           .replace("<br>", "").replace("</br>", "").replace("...", ". ")
@@ -72,13 +67,13 @@ public class SearchResultsProcessor extends BingWebQueryRunner {
       newHitList.add(hit);
     }
     Collections.sort(newHitList, new HitBaseComparable());
-    resp.setHits(newHitList);
+   
     LOG.info("\n\n ============= NEW ORDER ================= ");
     for (HitBase hit : newHitList) {
       LOG.info(hit.toString());
     }
 
-    return resp;
+    return newHitList;
   }
 
   public void close() {
@@ -86,13 +81,21 @@ public class SearchResultsProcessor extends BingWebQueryRunner {
   }
 
   public List<HitBase> runSearch(String query) {
+    
+    WebSearchEngineResultsScraper scraper = new WebSearchEngineResultsScraper();
+    List<HitBase> hits = scraper.runSearch(query);
+    hits = calculateMatchScoreResortHits(hits, query);
+    return hits;
+  }
+  
+  public List<HitBase> runSearchViaAPI(String query) {
     BingResponse resp = null, // obtained from bing
     newResp = null; // re-sorted based on similarity
     try {
       List<String> resultList = search(query, "", "", 30);
       resp = populateBingHit(resultList.get(0));
       // now we apply our own relevance filter
-      newResp = calculateMatchScoreResortHits(resp, query);
+      newResp.setHits(calculateMatchScoreResortHits(resp.getHits(), query));
 
     } catch (Exception e) {
       // e.printStackTrace();

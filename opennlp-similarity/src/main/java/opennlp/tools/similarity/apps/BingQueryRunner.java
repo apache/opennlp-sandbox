@@ -31,7 +31,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class BingQueryRunner {
-  protected static final String APP_ID = "DD4E2A5DF8B7E5801ED443E47DC600D5F3E62713";
+  protected static final String APP_ID = "e8ADxIjn9YyHx36EihdjH/tMqJJItUrrbPTUpKahiU0=";
+    //"DD4E2A5DF8B7E5801ED443E47DC600D5F3E62713";
   // TODO user needs to have own APP_ID from Bing API
 
   private float snapshotSimilarityThreshold = 0.4f;

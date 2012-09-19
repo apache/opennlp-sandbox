@@ -120,7 +120,8 @@ public class ParserCacheSerializer {
             + parseCacheFileNameCSV), ',');
         lines = reader.readAll();
       } catch (FileNotFoundException e) {
-        e.printStackTrace();
+        //e.printStackTrace();
+        System.err.println("Cannot find cache file");
         return null;
       } catch (IOException ioe) {
         ioe.printStackTrace();

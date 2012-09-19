@@ -42,13 +42,14 @@ public class BingWebQueryRunner {
       throws Exception {
     String codedQuery = URLEncoder.encode(query, "UTF-8");
 
-    String yahooRequest = "http://api.search.live.net/json.aspx?Appid="
-        + BingQueryRunner.APP_ID + "&query=" + codedQuery 
-        + "&Sources=Web"
+    String yahooRequest = "https://api.datamarket.azure.com/Bing/SearchWeb"
+     // "http://api.search.live.net/json.aspx?Appid="
+        + BingQueryRunner.APP_ID + "&Query=" + codedQuery ;
+      //  + "&Sources=Web"
         // Common request fields (optional)
-        + "&Version=2.0" + "&Market=en-us&web.count=" + numbOfHits
+       // + "&Version=2.0" + "&Market=en-us&web.count=" + numbOfHits
          // News-specific request fields (optional)
-        + "&News.Offset=0";
+      //  + "&News.Offset=0";
 
     return yahooRequest;
   }

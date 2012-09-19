@@ -28,9 +28,9 @@ import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 
-public class BingSearchResultsScraper {
+public class WebSearchEngineResultsScraper {
 
-  protected static String fetchPageBing(String url) {
+  protected static String fetchPageSearchEngine(String url) {
     System.out.println("fetch url " + url);
     String pageContent = null;
     StringBuffer buf = new StringBuffer();
@@ -62,7 +62,7 @@ public class BingSearchResultsScraper {
     return buf.toString();
   }
 
-  private static List<String> extractURLesFromPage(String content, String domain) {
+  private static List<String> extractURLsFromPage(String content, String domain) {
     List<String> results = new ArrayList<String>();
     if (content == null)
       return results;
@@ -87,29 +87,77 @@ public class BingSearchResultsScraper {
     return results;
   }
 
-  private static String formRequestURL(String seedURL) {
-    String requestUrl = "http://www.bing.com/search?q=site:" + seedURL;
+  private static List<HitBase> extractSearchResultFromPage(String content) {
+    List<HitBase> results = new ArrayList<HitBase>();
+    if (content == null)
+      return results;
+    content = StringUtils.substringBetween(content, "<div id=\"results",
+        "class=\"pagination");
+    if (content == null)
+      return results;
+    String[] srchResArea = content.split("</p>");
+    if (srchResArea == null)
+      return results;
+    for (String u : srchResArea) {
+      try {
+        u = u.substring(5);
+        HitBase hit = new HitBase();
+        String url = StringUtils.substringBetween(u, "class=\"url", "</span>");
+        if (url!=null)
+            url = url.substring(2);
+        String title = StringUtils.substringBetween(u, "\">", "</a><br />");
+        title = title.substring(title.indexOf("\">")+2);
+        String abstr = StringUtils.substringBetween(u, "\"body\">", "</span><br /");
+        hit.setUrl(url);
+        hit.setAbstractText(abstr);
+        hit.setTitle(title);
+        results.add(hit);
+      } catch (Exception e) {
+        //problem parsing SERP page; source - specific problem so we swallow exceptions here
+      }
+    }
+
+    return results;
+  }
+  
+  private static String formRequestURL(String query) {
+    String requestUrl = "http://www.hakia.com/search/web?q=" + query.replace(' ','+');
 
     return requestUrl;
   }
 
   public List<String> getURLsForWebDomain(String domain) {
-    return extractURLesFromPage(fetchPageBing(formRequestURL(domain)), domain);
+    return extractURLsFromPage(fetchPageSearchEngine(formRequestURL(domain)), domain);
   }
 
   public Set<String> getURLsForWebDomainIterations(String domain) {
     List<String> results = new ArrayList<String>();
-    List<String> res = extractURLesFromPage(
-        fetchPageBing(formRequestURL(domain)), domain);
+    List<String> res = extractURLsFromPage(
+        fetchPageSearchEngine(formRequestURL(domain)), domain);
     for (String r : res)
-      results.addAll(extractURLesFromPage(fetchPageBing(formRequestURL(r)), r));
+      results.addAll(extractURLsFromPage(fetchPageSearchEngine(formRequestURL(r)), r));
 
     return new HashSet<String>(results);
   }
+  
+  public List<HitBase> runSearch(String query) {
+    List<HitBase> hits = new ArrayList<HitBase>();
+    try {
+      String serp = fetchPageSearchEngine(formRequestURL(query));
+      hits = extractSearchResultFromPage(serp);
+
+    } catch (Exception e) {
+     
+      return hits;
+    }
+ 
+    hits = HitBase.removeDuplicates(hits);
+    return hits;
+  }
 
   public static void main(String[] args) {
-    System.out.println(new BingSearchResultsScraper()
-        .getURLsForWebDomainIterations("www.sfgate.com/entertainment/"));
+    WebSearchEngineResultsScraper scraper = new WebSearchEngineResultsScraper();
+    System.out.println(scraper.runSearch("lady gaga in san francisco"));        
   }
 
 }

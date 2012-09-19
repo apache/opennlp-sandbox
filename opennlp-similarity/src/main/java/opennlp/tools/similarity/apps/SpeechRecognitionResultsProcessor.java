@@ -27,11 +27,12 @@ import opennlp.tools.textsimilarity.ParseTreeChunkListScorer;
 import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
-public class SpeechRecognitionResultsProcessor extends BingWebQueryRunner {
+public class SpeechRecognitionResultsProcessor /*extends BingWebQueryRunner*/ {
   private static Logger LOG = Logger
       .getLogger("opennlp.tools.similarity.apps.SpeechRecognitionResultsProcessor");
   private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
   ParserChunker2MatcherProcessor sm;
+  WebSearchEngineResultsScraper scraper = new WebSearchEngineResultsScraper();
 
   /**
    * Gets an expression and tries to find it on the web. If search results are
@@ -40,19 +41,19 @@ public class SpeechRecognitionResultsProcessor extends BingWebQueryRunner {
    * results ate not similar to this phrase, we conclude that the phrase is
    * meaningless (does not make sense, nobody has ever said something like that)
    * 
-   * @param resp
-   *          BingResponse, search results for a phrase being assesses with
+   * @param  hits
+   *          list of search results for a phrase being assesses with
    *          respect to meaningfulness
    * @param searchQuery
    *          the phrase we are assessing
    * @return total similarity score for all search results
    */
-  private double calculateTotalMatchScoreForHits(BingResponse resp,
+  private double calculateTotalMatchScoreForHits(List<HitBase> hits,
       String searchQuery) {
 
     sm = ParserChunker2MatcherProcessor.getInstance();
     double totalMatchScore = 0;
-    for (HitBase hit : resp.getHits()) {
+    for (HitBase hit : hits) {
       String snapshot = hit.getAbstractText().replace("<b>...</b>", ". ")
           .replace("<b>", "").replace("</b>", "");
       snapshot = snapshot.replace("</B>", "").replace("<B>", "")
@@ -103,9 +104,8 @@ public class SpeechRecognitionResultsProcessor extends BingWebQueryRunner {
       BingResponse resp = null, // obtained from bing
       newResp = null; // re-sorted based on similarity
       try {
-        List<String> resultList = search(sentence, "", "", 10);
-        resp = populateBingHit(resultList.get(0));
-        double scoreForSentence = calculateTotalMatchScoreForHits(resp,
+        List<HitBase> resultList = scraper.runSearch(sentence);
+        double scoreForSentence = calculateTotalMatchScoreForHits(resultList,
             sentence);
         System.out.println("Total meaningfulness score = " + scoreForSentence
             + " for sentence = " + sentence);
