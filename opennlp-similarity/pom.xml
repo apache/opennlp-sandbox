@@ -78,8 +78,15 @@
 		<dependency>
 			<groupId>org.apache.lucene</groupId>
 			<artifactId>lucene-core</artifactId>
-			<version>3.5.0</version>
+			<version>4.0.0-BETA</version>
 		</dependency>
+            
+		<dependency>
+			<groupId>org.apache.solr</groupId>
+			<artifactId>solr-core</artifactId>
+			<version>4.0.0-BETA</version>
+		</dependency>
+            
 	</dependencies>
 	
 	<build>
@@ -106,6 +113,50 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>create-javadoc-jar</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+						<phase>package</phase>
+						<configuration>
+							<show>public</show>
+							<quiet>true</quiet>
+							<use>false</use> <!-- Speeds up the build of the javadocs -->
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin> 
+	        <artifactId>maven-antrun-plugin</artifactId> 
+	        <version>1.6</version> 
+	        <executions> 
+	          <execution> 
+	            <id>generate checksums for binary artifacts</id> 
+	            <goals><goal>run</goal></goals> 
+	            <phase>verify</phase> 
+	            <configuration> 
+	              <target> 
+	                <checksum algorithm="sha1" format="MD5SUM"> 
+	                  <fileset dir="${project.build.directory}"> 
+	                    <include name="*.zip" /> 
+	                    <include name="*.gz" /> 
+	                  </fileset> 
+	                </checksum> 
+	                <checksum algorithm="md5" format="MD5SUM"> 
+	                  <fileset dir="${project.build.directory}"> 
+	                    <include name="*.zip" /> 
+	                    <include name="*.gz" /> 
+	                  </fileset> 
+	                </checksum> 
+	              </target> 
+	            </configuration> 
+	          </execution> 
+	        </executions> 
+	      </plugin>
 		</plugins>
 	</build>
 </project>
