@@ -178,8 +178,6 @@ public class ParserChunker2MatcherProcessor {
     // be
     // separated correctly
 
-    // paragraph = TextNormalizer.normalizeText(paragraph);
-
     // parse sentence by sentence
     String[] sentences = splitSentences(paragraph);
     List<Parse> parseList = new ArrayList<Parse>(sentences.length);
@@ -209,19 +207,13 @@ public class ParserChunker2MatcherProcessor {
     if (sentence == null || sentence.trim().length() < MIN_SENTENCE_LENGTH)
       return null;
 
-    // if (normalizeText)
-    // sentence = TextNormalizer.normalizeText(sentence);
-
     Parse[] parseArray = null;
     try {
       parseArray = ParserTool.parseLine(sentence, parser, 1);
     } catch (Throwable t) {
-      LOG.log(Level.WARNING, "failed to parse the sentence : '" + sentence, t);
+      LOG.log(Level.WARNING, "failed to parse the sentence : '" + sentence); //, t);
       return null;
     }
-
-    // Parse[] chunks = ChunkSampleStream.getInitialChunks(parseArray[0]) ;
-
     // there should be only one result parse
     if (parseArray != null && parseArray.length > 0)
       return parseArray[0];
@@ -586,13 +578,13 @@ public class ParserChunker2MatcherProcessor {
       SentenceModel model = new SentenceModel(is);
       sentenceDetector = new SentenceDetectorME(model);
     } catch (IOException e) {
-      e.printStackTrace();
+      //e.printStackTrace();
     } finally {
       if (is != null) {
         try {
           is.close();
         } catch (IOException e) {
-          e.printStackTrace();
+           // we swallow exception to support the cached run
         }
       }
     }
@@ -605,12 +597,12 @@ public class ParserChunker2MatcherProcessor {
       TokenizerModel model = new TokenizerModel(is);
       tokenizer = new TokenizerME(model);
     } catch (IOException e) {
-      e.printStackTrace();
+         // we swallow exception to support the cached run
     } finally {
       if (is != null) {
         try {
           is.close();
-        } catch (IOException e) {
+        } catch (IOException e) { // we swallow exception to support the cached run
         }
       }
     }
@@ -623,7 +615,7 @@ public class ParserChunker2MatcherProcessor {
       POSModel model = new POSModel(is);
       posTagger = new POSTaggerME(model);
     } catch (IOException e) {
-      e.printStackTrace();
+   // we swallow exception to support the cached run
     } finally {
       if (is != null) {
         try {
@@ -641,12 +633,12 @@ public class ParserChunker2MatcherProcessor {
       ParserModel model = new ParserModel(is);
       parser = ParserFactory.create(model);
     } catch (IOException e) {
-      e.printStackTrace();
+      //e.printStackTrace();
     } finally {
       if (is != null) {
         try {
           is.close();
-        } catch (IOException e) {
+        } catch (IOException e) { // we swallow exception to support the cached run
         }
       }
     }
@@ -659,12 +651,12 @@ public class ParserChunker2MatcherProcessor {
       ChunkerModel model = new ChunkerModel(is);
       chunker = new ChunkerME(model);
     } catch (IOException e) {
-      e.printStackTrace();
+      //e.printStackTrace();
     } finally {
       if (is != null) {
         try {
           is.close();
-        } catch (IOException e) {
+        } catch (IOException e) { // we swallow exception to support the cached run
         }
       }
     }

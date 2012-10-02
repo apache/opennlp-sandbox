@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import opennlp.tools.similarity.apps.utils.FileHandler;
+import opennlp.tools.textsimilarity.TextProcessor;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
 //import com.thoughtworks.xstream.XStream;
@@ -66,8 +67,14 @@ public class TaxoQuerySnapshotMatcher {
 
     query = query.toLowerCase();
     snapshot = snapshot.toLowerCase();
-    String[] queryWords = sm.getTokenizer().tokenize(query);
-    String[] snapshotWords = sm.getTokenizer().tokenize(snapshot);
+    String[] queryWords = null, snapshotWords = null;
+    try {
+      queryWords = sm.getTokenizer().tokenize(query);
+      snapshotWords = sm.getTokenizer().tokenize(snapshot);
+    } catch (Exception e) { // if OpenNLP model is unavailable, use different tokenizer
+      queryWords = TextProcessor.fastTokenize(query, false).toArray(new String[0]);
+      snapshotWords = TextProcessor.fastTokenize(snapshot, false).toArray(new String[0]);
+    }
 
     List<String> queryList = Arrays.asList(queryWords);
     List<String> snapshotList = Arrays.asList(snapshotWords);
