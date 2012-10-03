@@ -31,6 +31,7 @@ public class SearchResultsProcessor extends BingWebQueryRunner {
       .getLogger("opennlp.tools.similarity.apps.SearchResultsProcessor");
   private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
   ParserChunker2MatcherProcessor sm;
+  WebSearchEngineResultsScraper scraper = new WebSearchEngineResultsScraper();
 
   /*
    * Takes a search engine API (or scraped) search results and calculates the parse tree similarity
@@ -82,7 +83,7 @@ public class SearchResultsProcessor extends BingWebQueryRunner {
 
   public List<HitBase> runSearch(String query) {
     
-    WebSearchEngineResultsScraper scraper = new WebSearchEngineResultsScraper();
+    
     List<HitBase> hits = scraper.runSearch(query);
     hits = calculateMatchScoreResortHits(hits, query);
     return hits;
