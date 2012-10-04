@@ -152,13 +152,14 @@ public class WebSearchEngineResultsScraper {
   
   public List<HitBase> runSearch(String query) {
     List<HitBase> hits = new ArrayList<HitBase>();
+    /*  Actual external web search is commented out
     try {
       String serp = fetchPageSearchEngine(formRequestURL(query));
       hits = extractSearchResultFromPage(serp);
 
     } catch (Exception e) {
     
-    }
+    } */
     // if there is a problem, we use cached search results
     if (hits.size()<1) {
       String[][] cachedHits = cachedSearchEngineData.get(query.replace(' ','+'));
