@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package opennlp.tools.nl2code;
 
 import java.util.ArrayList;
@@ -51,8 +67,6 @@ public class NL2ObjCreateAssign extends NL2Obj {
     System.out.println("      === "+actionWithObject);
 
     for(ParseTreeChunk verbChunk: actionWithObject){
-      ObjectPhrase oPhrase = new ObjectPhrase();
-
       List<String> lems = verbChunk.getLemmas();
       String declarativeAction = verbChunk.getLemmas().get(0).toLowerCase();
       if (declarativeAction.equals("define")){
@@ -207,8 +221,8 @@ public class NL2ObjCreateAssign extends NL2Obj {
         "Define text attribute and name it m_name. ",
         "Define double attribute and name it m_salary.",
         "Create array of objects of class Employee for 10 elements, name the object as workforce.",
-        "Assign the first element in array workforce: m_name=”Boss”",
-        "Assign the second element in array workforce: m_name=”His wife”",
+        "Assign the first element in array workforce: m_name=\"Boss\"",
+        "Assign the second element in array workforce: m_name=\"His wife\"",
        //  "Comment: We just started our small business company and expect to hire 8 more people soon.",
         "Set for all elements in array workforce: m_salary=0 ",
         "Print the list of all m_name attributes for workforce."
