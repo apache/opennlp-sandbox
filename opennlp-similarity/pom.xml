@@ -30,7 +30,7 @@
 	</parent>
 
 	<groupId>org.apache.opennlp</groupId>
-	<artifactId>tools-similarity</artifactId>
+	<artifactId>opennlp-similarity</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
