@@ -15,26 +15,18 @@
  limitations under the License.
 -->
 <assembly>
-  <id>standalone</id>
+  <id>src</id>
   <formats>
-    <format>jar</format>
+    <format>zip</format>
   </formats>
-  <includeBaseDirectory>false</includeBaseDirectory>
-  <dependencySets>
-    <dependencySet>
+  <fileSets>
+    <fileSet>
+      <directory>${project.basedir}</directory>
       <outputDirectory></outputDirectory>
-      <unpack>true</unpack>
-      <unpackOptions>
-        <excludes>
-          <exclude>META-INF/MANIFEST.MF</exclude>
-          <exclude>META-INF/README*</exclude>
-          <exclude>META-INF/NOTICE*</exclude>
-          <exclude>META-INF/LICENSE*</exclude>
-          <exclude>README*</exclude>
-          <exclude>NOTICE*</exclude>
-          <exclude>LICENSE*</exclude>
-        </excludes>
-      </unpackOptions>
-    </dependencySet>
-  </dependencySets>
+      <excludes>
+        <exclude>**/target/**</exclude>
+        <exclude>**/.*/**</exclude>
+      </excludes>
+    </fileSet>
+  </fileSets>
 </assembly>
