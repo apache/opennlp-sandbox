@@ -36,6 +36,11 @@
 
 	<name>OpenNLP Tool Similarity distribution</name>
 
+	<scm>
+  		<connection>scm:svn:http://svn.apache.org/repos/asf/opennlp/sandbox/opennlp-similarity/</connection> 
+  		<developerConnection>scm:svn:https://svn.apache.org/repos/asf/opennlp/sandbox/opennlp-similarity/</developerConnection> 
+  		<url>http://svn.apache.org/viewvc/opennlp/tags/opennlp-1.5.2-incubating-rc6/opennlp/</url> 
+	</scm>
 	<prerequisites>
 		<maven>3.0</maven>
 	</prerequisites>
