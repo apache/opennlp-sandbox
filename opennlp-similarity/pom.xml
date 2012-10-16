@@ -181,6 +181,7 @@
 					  <id>source-release-assembly</id> 
 					 <configuration>
 					  <skipAssembly>true</skipAssembly> 
+					  <mavenExecutorId>forked-path</mavenExecutorId>
 					  </configuration>
 					  </execution>
 				  </executions>
