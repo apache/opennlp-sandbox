@@ -58,8 +58,7 @@ public class ParserChunker2MatcherProcessor {
   private static final String MODEL_DIR_KEY = "nlp.models.dir";
   // TODO config
   // this is where resources should live
-  private static String MODEL_DIR;
-  public static String MODEL_DIR_REL = "src/test/resources/models";
+  private static String MODEL_DIR=null, MODEL_DIR_REL = "src/test/resources/models";
   protected static ParserChunker2MatcherProcessor instance;
 
   private SentenceDetector sentenceDetector;
@@ -110,8 +109,10 @@ public class ParserChunker2MatcherProcessor {
       sentence_parseObject = new HashMap<String, String[][]>();
 
     try {
-      MODEL_DIR = new File(".").getAbsolutePath().replace(".", "")
-          + MODEL_DIR_REL;
+    	if (MODEL_DIR==null) 
+    		MODEL_DIR = new File(".").getAbsolutePath().replace(".", "") + MODEL_DIR_REL;
+    	//get full path from constructor
+    		
       initializeSentenceDetector();
       initializeTokenizer();
       initializePosTagger();
@@ -141,6 +142,14 @@ public class ParserChunker2MatcherProcessor {
 
     return instance;
   }
+  
+  public synchronized static ParserChunker2MatcherProcessor getInstance(String fullPathToResources) {
+	    MODEL_DIR = fullPathToResources+"/models";
+	    if (instance == null)
+	      instance = new ParserChunker2MatcherProcessor();
+
+	    return instance;
+	  }
 
   /**
    * General parsing function, which returns lists of parses for a portion of

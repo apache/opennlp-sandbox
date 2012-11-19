@@ -59,27 +59,35 @@ public class GeneratedSentenceProcessor {
         || sentTry.indexOf("clicking here") > -1
         || sentTry.indexOf("skip to") > -1 || sentTry.indexOf("sidebar") > -1
         || sentTry.indexOf("Tags:") > -1 || sentTry.startsWith("Posted by")
-        || sentTry.indexOf("available online") > 0
-        || sentTry.indexOf("get online") > 0
-        || sentTry.indexOf("buy online") > 0
-        || sentTry.indexOf("not valid") > 0 || sentTry.indexOf("discount") > 0
-        || sentTry.indexOf("official site") > 0
-        || sentTry.indexOf("this video") > 0
-        || sentTry.indexOf("this book") > 0
-        || sentTry.indexOf("this product") > 0
-        || sentTry.indexOf("paperback") > 0 || sentTry.indexOf("hardcover") > 0
-        || sentTry.indexOf("audio cd") > 0
-        || sentTry.indexOf("related searches") > 0
-        || sentTry.indexOf("permission is granted") > 0
-        || sentTry.indexOf("[edit") > 0
-        || sentTry.indexOf("edit categories") > 0
-        || sentTry.indexOf("free license") > 0
-        || sentTry.indexOf("permission is granted") > 0
-        || sentTry.indexOf("under the terms") > 0
-        || sentTry.indexOf("rights reserved") > 0
-        || sentTry.indexOf("wikipedia") > 0 || sentTry.endsWith("the")
-        || sentTry.endsWith("the.") || sentTry.startsWith("below")
-
+        || sentTry.indexOf("available online") > -1
+        || sentTry.indexOf("get online") > -1
+        || sentTry.indexOf("buy online") > -1
+        || sentTry.indexOf("not valid") > -1 || sentTry.indexOf("discount") > -1
+        || sentTry.indexOf("official site") > -1
+        || sentTry.indexOf("this video") > -1
+        || sentTry.indexOf("this book") > -1
+        || sentTry.indexOf("this product") > -1
+        || sentTry.indexOf("paperback") > -1 || sentTry.indexOf("hardcover") > -1
+        || sentTry.indexOf("audio cd") > -1
+        || sentTry.indexOf("related searches") > -1
+        || sentTry.indexOf("permission is granted") > -1
+        || sentTry.indexOf("[edit") > -1
+        || sentTry.indexOf("edit categories") > -1
+        || sentTry.indexOf("free license") > -1
+        || sentTry.indexOf("permission is granted") > -1
+        || sentTry.indexOf("under the terms") > -1
+        || sentTry.indexOf("rights reserved") > -1
+        || sentTry.indexOf("wikipedia") > -1 || sentTry.endsWith("the")
+        || sentTry.endsWith("the.") || sentTry.startsWith("below") 
+        || sentTry.indexOf("recipient of")>-1 || sentTry.indexOf("this message")>-1 
+        ||sentTry.indexOf( "mailing list")>-1 ||sentTry.indexOf( "purchase order")>-1
+        ||sentTry.indexOf( "mon-fri")>-1 ||sentTry.indexOf( "email us")>-1 ||sentTry.indexOf( "privacy pol")>-1 ||sentTry.indexOf( "back to top")>-1 
+        ||sentTry.indexOf( "click here")>-1 ||sentTry.indexOf( "for details")>-1 ||sentTry.indexOf( "assistance?")>-1 ||sentTry.indexOf( "chat live")>-1
+        ||sentTry.indexOf( "free shipping")>-1 ||sentTry.indexOf( "company info")>-1 ||sentTry.indexOf( "satisfaction g")>-1 ||sentTry.indexOf( "contact us")>-1
+        
+        ||sentTry.startsWith( "fax") ||sentTry.startsWith( "write") || sentTry.startsWith( "email")||sentTry.indexOf( "conditions")>-1 ||sentTry.indexOf( "chat live")>-1
+        ||sentTry.indexOf( "free shipping")>-1 ||sentTry.indexOf( "company info")>-1 ||sentTry.indexOf( "satisfaction g")>-1 ||sentTry.indexOf( "contact us")>-1
+     
     )
       return null;
 
