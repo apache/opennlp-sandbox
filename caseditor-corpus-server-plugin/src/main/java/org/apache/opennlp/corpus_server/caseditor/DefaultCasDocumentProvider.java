@@ -24,6 +24,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
@@ -49,6 +51,7 @@ import org.apache.uima.util.XMLParser;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.PreferenceStore;
 import org.eclipse.swt.widgets.Composite;
@@ -60,6 +63,8 @@ import com.sun.jersey.api.client.WebResource;
 public class DefaultCasDocumentProvider extends
         org.apache.uima.caseditor.editor.CasDocumentProvider {
 
+  private static final int READ_TIMEOUT = 30000;
+  
   private Map<Object, PreferenceStore> tsPreferenceStores =
       new HashMap<Object, PreferenceStore>();
   
@@ -123,7 +128,7 @@ public class DefaultCasDocumentProvider extends
       CorpusServerCasEditorInput casInput = (CorpusServerCasEditorInput) element;
       
       Client client = Client.create();
-      
+      client.setReadTimeout(READ_TIMEOUT);
       WebResource webResource = client.resource(casInput.getServerUrl());
       
       // Note: The type system could be cached to avoid downloading it
@@ -159,12 +164,17 @@ public class DefaultCasDocumentProvider extends
       // create an empty cas ..
       CAS cas = createEmptyCAS(tsDesc);
       
-      ClientResponse casResponse = webResource
-          .path(casInput.getName())
-          .accept(MediaType.TEXT_XML)
-          // TODO: How to fix this? Shouldn't accept do it?
-          .header("Content-Type", MediaType.TEXT_XML)
-          .get(ClientResponse.class);
+      ClientResponse casResponse;
+      try {
+        casResponse = webResource
+            .path(URLEncoder.encode(casInput.getName(), "UTF-8"))
+            .accept(MediaType.TEXT_XML)
+            // TODO: How to fix this? Shouldn't accept do it?
+            .header("Content-Type", MediaType.TEXT_XML)
+            .get(ClientResponse.class);
+      } catch (UnsupportedEncodingException e) {
+        throw new RuntimeException("Should never fail, UTF-8 encoding is available on every JRE!", e);
+      }
       
       InputStream casIn = casResponse.getEntityInputStream();
       
@@ -206,25 +216,34 @@ public class DefaultCasDocumentProvider extends
         documentImpl.serialize(outStream);
         
         Client client = Client.create();
+        client.setReadTimeout(READ_TIMEOUT);
         WebResource webResource = client.resource(casInput.getServerUrl());
         
         byte xmiBytes[] = outStream.toByteArray();
         
+        String encodedCasId;
+        try {
+          encodedCasId = URLEncoder.encode(casInput.getName(), "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+          throw new CoreException(new Status(Status.ERROR, CorpusServerPlugin.PLUGIN_ID,
+              "Severe error, should never happen, UTF-8 encoding is not supported!"));
+        }
+        
         ClientResponse response = webResource
-                .path(casInput.getName())
+                .path(encodedCasId)
                 .accept(MediaType.TEXT_XML)
                 // TODO: How to fix this? Shouldn't accept do it?
                 .header("Content-Type", MediaType.TEXT_XML)
                 .put(ClientResponse.class, xmiBytes);
         
-        // TODO: Check resposne for error
-        
-        // TODO: Is it writing in the UI thread?
+        if (response.getStatus() != 204) {
+          throw new CoreException(new Status(Status.ERROR, CorpusServerPlugin.PLUGIN_ID,
+              "Failed to save document, http error code: " + response.getStatus()));
+        }
       }
     }
 
-    // tell everyone that the element changed and is not
-    // dirty any longer
+    // tell everyone that the element changed and is not dirty any longer
     fireElementDirtyStateChanged(element, false);
   }
 
