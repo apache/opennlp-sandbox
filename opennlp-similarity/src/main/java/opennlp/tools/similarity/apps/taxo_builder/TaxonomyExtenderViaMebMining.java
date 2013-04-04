@@ -147,15 +147,13 @@ public class TaxonomyExtenderViaMebMining extends BingWebQueryRunner {
       String domain, String lang, int numbOfHits) {
     List<List<ParseTreeChunk>> genResult = new ArrayList<List<ParseTreeChunk>>();
     try {
-      List<String> resultList = search(query, domain, lang, numbOfHits);
+      List<HitBase> resultList = runSearch(query, numbOfHits);
 
-      BingResponse resp = populateBingHit(resultList.get(0));
-      // printSearchResult(resultList.get(0));
-      for (int i = 0; i < resp.getHits().size(); i++) {
+      for (int i = 0; i < resultList.size(); i++) {
         {
-          for (int j = i + 1; j < resp.getHits().size(); j++) {
-            HitBase h1 = resp.getHits().get(i);
-            HitBase h2 = resp.getHits().get(j);
+          for (int j = i + 1; j < resultList.size(); j++) {
+            HitBase h1 = resultList.get(i);
+            HitBase h2 = resultList.get(j);
             String snapshot1 = StringCleaner.processSnapshotForMatching(h1
                 .getTitle() + " . " + h1.getAbstractText());
             String snapshot2 = StringCleaner.processSnapshotForMatching(h2
