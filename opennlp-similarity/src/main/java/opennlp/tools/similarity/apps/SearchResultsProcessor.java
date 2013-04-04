@@ -90,24 +90,17 @@ public class SearchResultsProcessor extends BingWebQueryRunner {
   }
   
   public List<HitBase> runSearchViaAPI(String query) {
-    BingResponse resp = null, // obtained from bing
-    newResp = null; // re-sorted based on similarity
+	List<HitBase> hits = null;
     try {
-      List<String> resultList = search(query, "", "", 30);
-      resp = populateBingHit(resultList.get(0));
+      List<HitBase> resultList = runSearch(query, 30);
       // now we apply our own relevance filter
-      newResp.setHits(calculateMatchScoreResortHits(resp.getHits(), query));
+      hits = calculateMatchScoreResortHits(resultList, query);
 
     } catch (Exception e) {
       // e.printStackTrace();
       LOG.info("No search results for query '" + query);
-      e.printStackTrace();
       return null;
     }
-    // cast to super class
-    List<HitBase> hits = new ArrayList<HitBase>();
-    for (HitBase h : resp.getHits())
-      hits.add((HitBase) h);
 
     hits = removeDuplicates(hits, 0.9);
 

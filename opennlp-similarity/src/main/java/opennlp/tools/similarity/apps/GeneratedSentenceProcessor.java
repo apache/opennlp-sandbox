@@ -84,10 +84,12 @@ public class GeneratedSentenceProcessor {
         ||sentTry.indexOf( "mon-fri")>-1 ||sentTry.indexOf( "email us")>-1 ||sentTry.indexOf( "privacy pol")>-1 ||sentTry.indexOf( "back to top")>-1 
         ||sentTry.indexOf( "click here")>-1 ||sentTry.indexOf( "for details")>-1 ||sentTry.indexOf( "assistance?")>-1 ||sentTry.indexOf( "chat live")>-1
         ||sentTry.indexOf( "free shipping")>-1 ||sentTry.indexOf( "company info")>-1 ||sentTry.indexOf( "satisfaction g")>-1 ||sentTry.indexOf( "contact us")>-1
-        
         ||sentTry.startsWith( "fax") ||sentTry.startsWith( "write") || sentTry.startsWith( "email")||sentTry.indexOf( "conditions")>-1 ||sentTry.indexOf( "chat live")>-1
-        ||sentTry.indexOf( "free shipping")>-1 ||sentTry.indexOf( "company info")>-1 ||sentTry.indexOf( "satisfaction g")>-1 ||sentTry.indexOf( "contact us")>-1
-     
+        ||sentTry.startsWith( "we ") ||sentTry.indexOf( "the recipient")>-1 ||sentTry.indexOf( "day return")>-1 ||sentTry.indexOf( "days return")>-1
+        
+        ||sentTry.startsWith( "fax") ||sentTry.indexOf( "refund it")>-1 || sentTry.indexOf( "your money")>-1
+        ||sentTry.indexOf( "cond???")>-1 ||sentTry.indexOf( "purchase orders")>-1
+        ||sentTry.startsWith( "exchange it ") ||sentTry.indexOf( "return it")>-1 ||sentTry.indexOf( "day return")>-1 ||sentTry.indexOf( "days return")>-1
     )
       return null;
 
