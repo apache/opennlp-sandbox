@@ -20,11 +20,39 @@ package org.apache.opennlp.tagging_server;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 
 public class ServiceUtil {
 
   private ServiceUtil() {
+  }
+  
+  
+  
+
+  public static ServiceReference getModelServiceReference(
+      Class<?> serviceClazz, String modelName) {
+
+    String filter = "(&(objectClass=" + serviceClazz.getName() + ")(MODEL_NAME=" + modelName + "))";
+
+    Bundle bundle = FrameworkUtil.getBundle(ServiceUtil.class);
+    BundleContext context = bundle.getBundleContext();
+
+    ServiceReference[] serviceReferences;
+    try {
+      serviceReferences = context.getServiceReferences(
+          null, filter);
+    } catch (InvalidSyntaxException e) {
+      throw new IllegalArgumentException("modelName can't be used as value in filter!", e);
+    }
+    
+    if (serviceReferences != null && serviceReferences.length > 0) {
+      return serviceReferences[0];
+    }
+    else {
+      return null;
+    }
   }
   
   public static ServiceReference getServiceReference(Class<?> serviceClazz) {

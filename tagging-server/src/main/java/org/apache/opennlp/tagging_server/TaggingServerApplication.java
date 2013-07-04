@@ -22,6 +22,7 @@ import java.util.Set;
 
 import javax.ws.rs.core.Application;
 
+import org.apache.opennlp.tagging_server.namefind.BratNameFinderResource;
 import org.apache.opennlp.tagging_server.namefind.NameFinderResource;
 import org.apache.opennlp.tagging_server.postag.POSTaggerResource;
 
@@ -32,6 +33,7 @@ public class TaggingServerApplication extends Application {
     Set<Class<?>> result = new HashSet<Class<?>>();
     result.add(POSTaggerResource.class);
     result.add(NameFinderResource.class);
+    result.add(BratNameFinderResource.class);
     return result;
   }
 }
