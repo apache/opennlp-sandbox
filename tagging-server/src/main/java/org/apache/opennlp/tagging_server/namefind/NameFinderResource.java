@@ -58,12 +58,14 @@ public class NameFinderResource {
     }
   }
   
-  private List<Span[]> find(TokenNameFinder nameFinder, String[][] document) {
+  private List<Span[]> find(TokenNameFinder nameFinders[], String[][] document) {
 
     List<Span[]> names = new ArrayList<Span[]>();
 
     for (String sentence[] : document) {
-      names.add(nameFinder.find(sentence));
+      for (TokenNameFinder nameFinder : nameFinders) {
+        names.add(nameFinder.find(sentence));
+      }
     }
 
     return names;
@@ -99,7 +101,7 @@ public class NameFinderResource {
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  @Path("_findRawText")
+  @Path("   ")
   public NameFinderDocument findRawText(String document) {
 
     ServiceReference preprocessFactoryService = ServiceUtil.getServiceReference(RawTextNameFinderFactory.class);
@@ -133,9 +135,9 @@ public class NameFinderResource {
         tokenizedSentences[i] = tokens;
       }
       
-      TokenNameFinder nameFinder = factory.createNameFinder();
+      TokenNameFinder nameFinders[] = factory.createNameFinders();
       
-      return new NameFinderDocument(tokenizedSentencesSpan, find(nameFinder, tokenizedSentences));
+      return new NameFinderDocument(tokenizedSentencesSpan, find(nameFinders, tokenizedSentences));
     }
     finally {
       ServiceUtil.releaseService(preprocessFactoryService);

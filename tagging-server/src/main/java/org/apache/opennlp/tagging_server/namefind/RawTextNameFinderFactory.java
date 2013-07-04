@@ -28,5 +28,5 @@ import opennlp.tools.tokenize.Tokenizer;
 public interface RawTextNameFinderFactory {
   SentenceDetector createSentenceDetector();
   Tokenizer createTokenizer();
-  TokenNameFinder createNameFinder();
+  TokenNameFinder[] createNameFinders();
 }
