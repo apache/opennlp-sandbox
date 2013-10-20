@@ -19,7 +19,7 @@ public class Example {
 
   public static void main(String[] args) {
 
-    GenericModelGenerator modelGenerator = new GenericModelGenerator();
+    SemiSupervisedModelGenerator modelGenerator = new GenericModelGenerator();
     //every component has a map as a place to recieve params
     //these are required for the current file-based impls
     Map<String, String> params = new HashMap<String, String>();
