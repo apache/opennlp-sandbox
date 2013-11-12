@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import opennlp.tools.entitylinker.EntityLinkerProperties;
 import opennlp.tools.entitylinker.domain.BaseLink;
 import opennlp.tools.entitylinker.domain.LinkedSpan;
 import opennlp.tools.util.Span;
@@ -34,7 +35,7 @@ import opennlp.tools.util.Span;
 public class GeoHashBinningScorer implements LinkedEntityScorer<CountryContext> {
 
   @Override
-  public void score(List<LinkedSpan> linkedSpans, String docText, Span[] sentenceSpans, CountryContext additionalContext) {
+  public void score(List<LinkedSpan> linkedSpans, String docText, Span[] sentenceSpans,EntityLinkerProperties properties, CountryContext additionalContext) {
      score( linkedSpans);
   }
 

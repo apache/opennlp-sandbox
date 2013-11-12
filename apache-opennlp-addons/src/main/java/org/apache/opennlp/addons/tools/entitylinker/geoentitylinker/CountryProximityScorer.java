@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import opennlp.tools.entitylinker.EntityLinkerProperties;
 import opennlp.tools.entitylinker.domain.BaseLink;
 import opennlp.tools.entitylinker.domain.LinkedSpan;
 import opennlp.tools.util.Span;
@@ -35,7 +36,7 @@ public class CountryProximityScorer implements LinkedEntityScorer<CountryContext
   String dominantCode = "";
 
   @Override
-  public void score(List<LinkedSpan> linkedSpans, String docText, Span[] sentenceSpans, CountryContext additionalContext) {
+  public void score(List<LinkedSpan> linkedSpans, String docText, Span[] sentenceSpans,EntityLinkerProperties properties, CountryContext additionalContext) {
 
     score(linkedSpans, additionalContext.getCountryMentions(), additionalContext.getNameCodesMap(), docText, sentenceSpans, 1000);
 
@@ -191,8 +192,12 @@ public class CountryProximityScorer implements LinkedEntityScorer<CountryContext
       all.addAll(distanceMap.get(key));
     }
     //get min max for normalization, this could be more efficient
+
     Integer min = all.first();
     Integer max = all.last();
+    if(min==max){
+      min=0;
+    }
     for (String key : distanceMap.keySet()) {
 
       TreeSet<Double> normalizedDistances = new TreeSet<Double>();

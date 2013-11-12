@@ -82,7 +82,7 @@ public class CountryContext {
      //   countrydata = getCountryData(properties);
       }
       for (CountryContextEntry entry : countrydata) {
-        Pattern regex = Pattern.compile(entry.getFull_name_nd_ro(), Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+        Pattern regex = Pattern.compile(entry.getFull_name_nd_ro().trim(), Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
         Matcher rs = regex.matcher(docText);
         String code = entry.getCc1().toLowerCase();
 

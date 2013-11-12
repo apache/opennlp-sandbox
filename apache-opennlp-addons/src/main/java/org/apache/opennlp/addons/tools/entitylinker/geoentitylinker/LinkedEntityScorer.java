@@ -16,6 +16,7 @@
 package org.apache.opennlp.addons.tools.entitylinker.geoentitylinker;
 
 import java.util.List;
+import opennlp.tools.entitylinker.EntityLinkerProperties;
 import opennlp.tools.entitylinker.domain.LinkedSpan;
 import opennlp.tools.util.Span;
 
@@ -33,5 +34,5 @@ public interface LinkedEntityScorer<T> {
  * @param additionalContext any additional data required to perform the scoring operation
  * @return void
  */
-  void score(List<LinkedSpan> linkedSpans, String docText, Span[] sentenceSpans, T additionalContext);
+  void score(List<LinkedSpan> linkedSpans, String docText, Span[] sentenceSpans, EntityLinkerProperties properties, T additionalContext);
 }

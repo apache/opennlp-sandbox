@@ -18,6 +18,7 @@ package org.apache.opennlp.addons.tools.entitylinker.geoentitylinker;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import opennlp.tools.entitylinker.EntityLinkerProperties;
 import opennlp.tools.entitylinker.domain.BaseLink;
 import opennlp.tools.entitylinker.domain.LinkedSpan;
 import opennlp.tools.ngram.NGramGenerator;
@@ -30,7 +31,7 @@ import opennlp.tools.util.Span;
 public class FuzzyStringMatchScorer implements LinkedEntityScorer<CountryContext> {
 
   @Override
-  public void score(List<LinkedSpan> linkedSpans, String docText, Span[] sentenceSpans, CountryContext additionalContext) {
+  public void score(List<LinkedSpan> linkedSpans, String docText, Span[] sentenceSpans, EntityLinkerProperties properties, CountryContext additionalContext) {
     for (LinkedSpan<BaseLink> linkedSpan : linkedSpans) {
       for (BaseLink link : linkedSpan.getLinkedEntries()) {
         Double dice = getDiceCoefficient(linkedSpan.getSearchTerm().toLowerCase().replace(" ", ""), link.getItemName().toLowerCase().replace(" ", ""), 2);

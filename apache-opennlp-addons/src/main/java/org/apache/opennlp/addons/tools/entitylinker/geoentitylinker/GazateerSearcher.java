@@ -42,7 +42,7 @@ import opennlp.tools.entitylinker.EntityLinkerProperties;
  */
 public class GazateerSearcher {
 
-  private FuzzyStringMatchScorer diceScorer = new FuzzyStringMatchScorer();
+  //private FuzzyStringMatchScorer diceScorer = new FuzzyStringMatchScorer();
   private double scoreCutoff = .75;
   private Directory geonamesIndex;//= new MMapDirectory(new File(indexloc));
   private IndexReader geonamesReader;// = DirectoryReader.open(geonamesIndex);
@@ -72,7 +72,7 @@ public class GazateerSearcher {
         geonamesAnalyzer = new StandardAnalyzer(Version.LUCENE_45);
       }
 
-      String luceneQueryString = "FULL_NAME_ND_RO:" + searchString + " & CC1:" + code.toUpperCase();// + "~1.0";
+      String luceneQueryString = "FULL_NAME_ND_RO:" + searchString + " AND CC1:" + code.toLowerCase() + "^100";
       QueryParser parser = new QueryParser(Version.LUCENE_45, luceneQueryString, geonamesAnalyzer);
       Query q = parser.parse(luceneQueryString);
 

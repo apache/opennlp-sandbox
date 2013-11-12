@@ -24,6 +24,7 @@ import opennlp.tools.entitylinker.domain.LinkedSpan;
 import opennlp.tools.util.Span;
 import opennlp.tools.entitylinker.EntityLinkerProperties;
 import opennlp.tools.entitylinker.EntityLinker;
+
 /**
  * Links location entities to gazatteers. Currently supports gazateers in a
  * MySql database (NGA and USGS)
@@ -71,7 +72,7 @@ public class GeoEntityLinker implements EntityLinker<LinkedSpan> {
           // geoNamesEntries = geoNamesGaz.find(matches[i], names[i], countryMentions, linkerProperties);
           for (String code : countryMentions.keySet()) {
             if (!code.equals("us")) {
-              geoNamesEntries.addAll(gazateerSearcher.geonamesFind(matches[i], 5, code, linkerProperties));
+              geoNamesEntries.addAll(gazateerSearcher.geonamesFind(matches[i], 10, code, linkerProperties));
             }
           }
 
@@ -100,9 +101,9 @@ public class GeoEntityLinker implements EntityLinker<LinkedSpan> {
     scorers.add(new FuzzyStringMatchScorer());
     scorers.add(new GeoHashBinningScorer());
     scorers.add(new CountryProximityScorer());
-
+    scorers.add(new ModelBasedScorer());
     for (LinkedEntityScorer scorer : scorers) {
-      scorer.score(spans, doctext, sentences, countryContext);
+      scorer.score(spans, doctext, sentences, linkerProperties, countryContext);
     }
     return spans;
   }
