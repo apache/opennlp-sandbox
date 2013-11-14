@@ -33,13 +33,11 @@ import opennlp.tools.entitylinker.EntityLinker;
  */
 public class GeoEntityLinker implements EntityLinker<LinkedSpan> {
 
-  // CountryProximityScorer scorer = new CountryProximityScorer();
-//  private MySQLGeoNamesGazLinkable geoNamesGaz;// = new MySQLGeoNamesGazLinkable();
-//  private MySQLUSGSGazLinkable usgsGaz;//= new MySQLUSGSGazLinkable();
   private CountryContext countryContext;
   private Map<String, Set<Integer>> countryMentions;
   private EntityLinkerProperties linkerProperties;
   private GazateerSearcher gazateerSearcher = new GazateerSearcher();
+  private List<LinkedEntityScorer> scorers = new ArrayList<>();
   /**
    * Flag for deciding whether to search gaz only for toponyms within countries
    * that are mentioned in the document
@@ -97,11 +95,12 @@ public class GeoEntityLinker implements EntityLinker<LinkedSpan> {
       }
     }
 
-    List<LinkedEntityScorer<CountryContext>> scorers = new ArrayList<>();
-    scorers.add(new FuzzyStringMatchScorer());
-    scorers.add(new GeoHashBinningScorer());
-    scorers.add(new CountryProximityScorer());
-    scorers.add(new ModelBasedScorer());
+    if (scorers.isEmpty()) {
+      scorers.add(new FuzzyStringMatchScorer());
+      scorers.add(new GeoHashBinningScorer());
+      scorers.add(new CountryProximityScorer());
+      scorers.add(new ModelBasedScorer());
+    }
     for (LinkedEntityScorer scorer : scorers) {
       scorer.score(spans, doctext, sentences, linkerProperties, countryContext);
     }

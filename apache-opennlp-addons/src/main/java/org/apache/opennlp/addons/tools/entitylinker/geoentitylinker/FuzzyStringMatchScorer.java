@@ -41,7 +41,7 @@ public class FuzzyStringMatchScorer implements LinkedEntityScorer<CountryContext
       }
     }
 
-  
+
   }
 
   /**
