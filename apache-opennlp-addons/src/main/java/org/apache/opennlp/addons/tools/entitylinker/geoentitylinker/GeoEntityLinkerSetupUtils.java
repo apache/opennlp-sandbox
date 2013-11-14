@@ -83,7 +83,7 @@ public class GeoEntityLinkerSetupUtils {
         }
       }
     }
-    System.out.println("Document processing complete. Writing traininf data to file");
+    System.out.println("Document processing complete. Writing training data to "+ annotationOutFile.getAbsolutePath());
     writer.close();
     System.out.println("Building Doccat model...");
     DoccatModel model = null;
@@ -116,7 +116,7 @@ public class GeoEntityLinkerSetupUtils {
    * @param radius
    * @return
    */
-  public static Map<String, ArrayList<String>> modelCountryContext(String docText, CountryContext additionalContext, int radius) {
+  private static Map<String, ArrayList<String>> modelCountryContext(String docText, CountryContext additionalContext, int radius) {
     Map<String, ArrayList< String>> featureBags = new HashMap<>();
     Map<String, Set<Integer>> countryMentions = additionalContext.getCountryMentions();
     /**

@@ -70,9 +70,10 @@ public class GazateerSearcher {
         geonamesReader = DirectoryReader.open(geonamesIndex);
         geonamesSearcher = new IndexSearcher(geonamesReader);
         geonamesAnalyzer = new StandardAnalyzer(Version.LUCENE_45);
+
       }
 
-      String luceneQueryString = "FULL_NAME_ND_RO:" + searchString + " AND CC1:" + code.toLowerCase() + "^100";
+      String luceneQueryString = "FULL_NAME_ND_RO:" + searchString + " AND CC1:" + code.toLowerCase() + "^10000";
       QueryParser parser = new QueryParser(Version.LUCENE_45, luceneQueryString, geonamesAnalyzer);
       Query q = parser.parse(luceneQueryString);
 

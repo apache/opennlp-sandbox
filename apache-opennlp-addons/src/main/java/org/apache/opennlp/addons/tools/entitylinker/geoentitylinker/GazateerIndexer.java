@@ -38,18 +38,33 @@ import org.apache.lucene.util.Version;
  */
 public class GazateerIndexer {
 
-  public enum GazType {
+  public static interface Separable {
+
+    String getSeparator();
+  }
+
+  public enum GazType implements Separable {
 
     GEONAMES {
       @Override
       public String toString() {
-        return "/opennlp_geoentitylinker_usgsgaz_idx";
+        return "/opennlp_geoentitylinker_geonames_idx";
+      }
+
+      @Override
+      public String getSeparator() {
+        return "\t";
       }
     },
     USGS {
       @Override
       public String toString() {
         return "/opennlp_geoentitylinker_usgsgaz_idx";
+      }
+
+      @Override
+      public String getSeparator() {
+        return "\\|";
       }
     }
   }
@@ -67,24 +82,24 @@ public class GazateerIndexer {
 
     IndexWriter w = new IndexWriter(index, config);
 
-    readFile(gazateerInputData, w);
+    readFile(gazateerInputData, w, type);
     w.commit();
     w.close();
 
   }
 
-  public void readFile(File gazateerInputData, IndexWriter w) throws Exception {
+  public void readFile(File gazateerInputData, IndexWriter w, GazType type) throws Exception {
     BufferedReader reader = new BufferedReader(new FileReader(gazateerInputData));
     List<String> fields = new ArrayList<String>();
     int counter = 0;
     System.out.println("reading gazateer data from file...........");
     while (reader.read() != -1) {
       String line = reader.readLine();
-      String[] values = line.split("\\|");//nga format
+      String[] values = line.split(type.getSeparator());
       if (counter == 0) {
         // build fields
         for (String columnName : values) {
-          fields.add(columnName.replace("»¿", ""));
+          fields.add(columnName.replace("»¿", "").trim());
         }
 
 
@@ -102,6 +117,7 @@ public class GazateerIndexer {
       }
 
     }
-
+    w.commit();
+    System.out.println("Completed indexing gaz! index name is: " + type.toString());
   }
 }
