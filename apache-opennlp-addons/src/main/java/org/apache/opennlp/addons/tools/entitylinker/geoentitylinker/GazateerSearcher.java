@@ -36,13 +36,13 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.Version;
 import opennlp.tools.entitylinker.EntityLinkerProperties;
+
 /**
  *
  * Searches Gazateers stored in a MMapDirectory lucene index
  */
 public class GazateerSearcher {
 
-  //private FuzzyStringMatchScorer diceScorer = new FuzzyStringMatchScorer();
   private double scoreCutoff = .75;
   private Directory geonamesIndex;//= new MMapDirectory(new File(indexloc));
   private IndexReader geonamesReader;// = DirectoryReader.open(geonamesIndex);
@@ -57,11 +57,29 @@ public class GazateerSearcher {
   public GazateerSearcher() {
   }
 
+  /**
+   *
+   * @param searchString the nameed entity to look up in the lucene index
+   * @param rowsReturned how many rows to allow lucene to return
+   * @param code         the country code
+   * @param properties   properties file that states where the lucene indexes
+   *                     are
+   * @return
+   */
   public ArrayList<GazateerEntry> geonamesFind(String searchString, int rowsReturned, String code, EntityLinkerProperties properties) {
     ArrayList<GazateerEntry> linkedData = new ArrayList<>();
     try {
-
-
+      /**
+       * build the search string
+       */
+      String luceneQueryString = "FULL_NAME_ND_RO:" + searchString.toLowerCase().trim() + " AND CC1:" + code.toLowerCase() + "^10000";
+      /**
+       * check the cache and go no further if the records already exist
+       */
+      ArrayList<GazateerEntry> get = GazateerSearchCache.get(searchString);
+      if (get != null) {
+        return get;
+      }
       if (geonamesIndex == null) {
         String indexloc = properties.getProperty("opennlp.geoentitylinker.gaz.geonames", "");
         String cutoff = properties.getProperty("opennlp.geoentitylinker.gaz.lucenescore.min", ".75");
@@ -73,7 +91,8 @@ public class GazateerSearcher {
 
       }
 
-      String luceneQueryString = "FULL_NAME_ND_RO:" + searchString + " AND CC1:" + code.toLowerCase() + "^10000";
+
+
       QueryParser parser = new QueryParser(Version.LUCENE_45, luceneQueryString, geonamesAnalyzer);
       Query q = parser.parse(luceneQueryString);
 
@@ -87,7 +106,7 @@ public class GazateerSearcher {
         double sc = search.scoreDocs[i].score;
 
         entry.getScoreMap().put("lucene", sc);
-       
+
         entry.getScoreMap().put("rawlucene", sc);
         entry.setIndexID(docId + "");
         entry.setSource("geonames");
@@ -130,14 +149,35 @@ public class GazateerSearcher {
     } catch (IOException | ParseException ex) {
       System.err.println(ex);
     }
+    /**
+     * add the records to the cache for this query
+     */
+    GazateerSearchCache.put(searchString, linkedData);
     return linkedData;
   }
 
+  /**
+   * Looks up the name in the USGS gazateer, after checking the cache
+   *
+   * @param searchString the nameed entity to look up in the lucene index
+   * @param rowsReturned how many rows to allow lucene to return
+   *
+   * @param properties   properties file that states where the lucene indexes
+   * @return
+   */
   public ArrayList<GazateerEntry> usgsFind(String searchString, int rowsReturned, EntityLinkerProperties properties) {
     ArrayList<GazateerEntry> linkedData = new ArrayList<>();
     try {
 
-
+      String luceneQueryString = "FEATURE_NAME:" + searchString.toLowerCase().trim() + " OR MAP_NAME: " + searchString.toLowerCase().trim();
+      /**
+       * hit the cache
+       */
+      ArrayList<GazateerEntry> get = GazateerSearchCache.get(searchString);
+      if (get != null) {
+        //if the name is already there, return the list of cavhed results
+        return get;
+      }
       if (usgsIndex == null) {
         String indexloc = properties.getProperty("opennlp.geoentitylinker.gaz.usgs", "");
         String cutoff = properties.getProperty("opennlp.geoentitylinker.gaz.lucenescore.min", ".75");
@@ -148,7 +188,7 @@ public class GazateerSearcher {
         usgsAnalyzer = new StandardAnalyzer(Version.LUCENE_45);
       }
 
-      String luceneQueryString = "FEATURE_NAME:" + searchString + " OR MAP_NAME: " + searchString;
+
       QueryParser parser = new QueryParser(Version.LUCENE_45, luceneQueryString, usgsAnalyzer);
       Query q = parser.parse(luceneQueryString);
 
@@ -204,7 +244,10 @@ public class GazateerSearcher {
     } catch (IOException | ParseException ex) {
       System.err.println(ex);
     }
-
+    /**
+     * add the records to the cache for this query
+     */
+    GazateerSearchCache.put(searchString, linkedData);
     return linkedData;
   }
 
