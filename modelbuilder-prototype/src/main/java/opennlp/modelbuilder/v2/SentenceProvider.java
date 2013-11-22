@@ -19,7 +19,6 @@ import java.util.Set;
 
 /**
  *
- * @author Owner
  */
 public interface SentenceProvider extends ModelParameter {
 

@@ -23,7 +23,6 @@ import opennlp.modelbuilder.v2.KnownEntityProvider;
 
 /**
  *
- * @author Owner
  */
 public class PersonKnownEntityProviderImpl implements KnownEntityProvider {
 

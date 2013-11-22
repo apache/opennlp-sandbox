@@ -21,7 +21,7 @@ import java.util.Set;
 
 /**
  *
- * @author Owner
+Supplies a list of known entities (a list of names or locations)
  */
 public interface KnownEntityProvider extends ModelParameter{
   /**

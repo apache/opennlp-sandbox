@@ -22,7 +22,7 @@ import opennlp.tools.util.Span;
 
 /**
  *
- *
+ *Generic impl
  */
 public class GenericModelGenerator implements SemiSupervisedModelGenerator{
  private Map<String, String> params = new HashMap<String, String>();

@@ -32,7 +32,6 @@ import opennlp.modelbuilder.v2.KnownEntityProvider;
 
 /**
  *
- * @author Owner
  */
 public class FileKnownEntityProvider implements KnownEntityProvider {
   private Map<String, String> params = new HashMap<String, String>();
@@ -49,7 +48,7 @@ public class FileKnownEntityProvider implements KnownEntityProvider {
         fis = new FileInputStream(params.get("knownentityfile"));
         br = new BufferedReader(new InputStreamReader(fis, Charset.forName("UTF-8")));
         while ((line = br.readLine()) != null) {
-          knownEntities.add(line);
+          knownEntities.add(line.split("\t")[2]);
         }
 
         // Done with the file

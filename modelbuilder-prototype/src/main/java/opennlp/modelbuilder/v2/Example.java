@@ -34,11 +34,11 @@ public class Example {
     //every component has a map as a place to recieve params
     //these are required for the current file-based impls
     Map<String, String> params = new HashMap<String, String>();
-    params.put("sentencesfile", "/the/file");
-    params.put("knownentityfile", "/the/file");
-    params.put("knownentitytype", "person");
-    params.put("blacklistfile", "/the/file");
-    params.put("modelablepath", "/the/file");
+    params.put("knownentityfile", "C:\\apache\\entitylinker\\opennlp.geoentitylinker.countrycontext.txt");
+    params.put("sentencesfile", "C:\\apache\\modelbuilder\\sentences.txt");
+    params.put("knownentitytype", "location");
+    params.put("blacklistfile", "C:\\apache\\modelbuilder\\blacklist.txt");
+    params.put("modelablepath", "C:\\apache\\modelbuilder");
 
     /**
      * sentence providers feed this process with user data derived sentences
@@ -72,7 +72,7 @@ public class Example {
      * the modelGenerator actually runs the process with a set number of iterations... could be better by actually calculating the
      * diff between runs and stopping based on a thresh, but for extrememly large sentence sets this may be too much.
      */
-    modelGenerator.build(sentenceProvider, knownEntityProvider, validator, modelable, 3);
+    modelGenerator.build(sentenceProvider, knownEntityProvider, validator, modelable, 2);
 
   }
 }

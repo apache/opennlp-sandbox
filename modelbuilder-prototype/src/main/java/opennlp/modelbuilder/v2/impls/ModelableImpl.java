@@ -41,20 +41,23 @@ import opennlp.tools.util.PlainTextByLineStream;
 
 /**
  *
- * @author Owner
  */
 public class ModelableImpl implements Modelable {
 
   private TokenizerModel tm;
   private TokenizerME wordBreaker;
   private String path = "c:\\temp\\opennlpmodels\\";
+  private String trainingDataPath = "";
+  private String modelOutPath = "";
   private Set<String> annotatedSentences = new HashSet<String>();
   private Map<String, String> params = new HashMap<String, String>();
 
   @Override
   public void setParameters(Map<String, String> params) {
     this.params = params;
-    path=params.get("modelablepath");
+    path = params.get("modelablepath");
+    trainingDataPath = path + "\\" + params.get("knownentitytype") + ".train";
+    modelOutPath = path + "\\" + params.get("knownentitytype")+".model";
   }
 
   @Override
@@ -67,13 +70,15 @@ public class ModelableImpl implements Modelable {
   @Override
   public void writeAnnotatedSentences() {
     try {
-      FileWriter writer = new FileWriter(path + "en-ner-person.train", false);
+
+      FileWriter writer = new FileWriter(trainingDataPath, false);
 
       for (String s : annotatedSentences) {
-        writer.write(s.replace("\n", "").trim() + "\n");
+        writer.write(s.replace("\n", " ").trim() + "\n");
       }
       writer.close();
     } catch (IOException ex) {
+      ex.printStackTrace();
     }
   }
 
@@ -89,12 +94,7 @@ public class ModelableImpl implements Modelable {
 
   @Override
   public void addAnnotatedSentence(String annotatedSentence) {
-    if (annotatedSentence != null) {
-      int before = annotatedSentences.size();
-      annotatedSentences.add(annotatedSentence);
-      if (annotatedSentences.size() > before) {
-      }
-    }
+    annotatedSentences.add(annotatedSentence);
   }
 
   @Override
@@ -104,13 +104,13 @@ public class ModelableImpl implements Modelable {
       System.out.println("\t\treading training data...");
       Charset charset = Charset.forName("UTF-8");
       ObjectStream<String> lineStream =
-              new PlainTextByLineStream(new FileInputStream(path + "en-ner-person.train"), charset);
+              new PlainTextByLineStream(new FileInputStream(trainingDataPath), charset);
       ObjectStream<NameSample> sampleStream = new NameSampleDataStream(lineStream);
 
       TokenNameFinderModel model;
-      model = NameFinderME.train("en", "person", sampleStream, null);
+      model = NameFinderME.train("en", entityType, sampleStream, null);
       sampleStream.close();
-      OutputStream modelOut = new BufferedOutputStream(new FileOutputStream(new File(path + "en-ner-person.train.model")));
+      OutputStream modelOut = new BufferedOutputStream(new FileOutputStream(new File(modelOutPath)));
       model.serialize(modelOut);
       if (modelOut != null) {
         modelOut.close();
@@ -126,7 +126,7 @@ public class ModelableImpl implements Modelable {
 
     TokenNameFinderModel nerModel = null;
     try {
-      nerModel = new TokenNameFinderModel(new FileInputStream(new File(path + "en-ner-person.train.model")));
+      nerModel = new TokenNameFinderModel(new FileInputStream(new File(modelOutPath)));
     } catch (IOException ex) {
       Logger.getLogger(ModelableImpl.class.getName()).log(Level.SEVERE, null, ex);
     }
@@ -136,13 +136,6 @@ public class ModelableImpl implements Modelable {
   @Override
   public String[] tokenizeSentenceToWords(String sentence) {
     return sentence.split(" ");
-//    try {
-//      if (tm == null || wordBreaker == null) {
-//        tm = new TokenizerModel(new FileInputStream(new File(path + "en-token.zip")));
-//        wordBreaker = new TokenizerME(tm);
-//      }
-//    } catch (IOException ex) {
-//    }
-//    return wordBreaker.tokenize(sentence);
+
   }
 }

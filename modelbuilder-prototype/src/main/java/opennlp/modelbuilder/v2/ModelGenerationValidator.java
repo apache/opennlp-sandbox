@@ -19,7 +19,7 @@ import java.util.Collection;
 
 /**
  *
- * @author Owner
+Validates results from the iterative namefinding
  */
 public interface ModelGenerationValidator extends ModelParameter {
 

@@ -24,7 +24,6 @@ import opennlp.modelbuilder.v2.SentenceProvider;
 
 /**
  *
- * @author Owner
  */
 public class MySQLSentenceProviderImpl implements SentenceProvider {
 

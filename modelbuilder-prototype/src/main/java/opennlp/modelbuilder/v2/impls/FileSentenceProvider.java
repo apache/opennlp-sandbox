@@ -32,7 +32,6 @@ import opennlp.modelbuilder.v2.SentenceProvider;
 
 /**
  *
- * @author Owner
  */
 public class FileSentenceProvider implements SentenceProvider {
 
@@ -48,7 +47,9 @@ public class FileSentenceProvider implements SentenceProvider {
 
         fis = new FileInputStream(params.get("sentencesfile"));
         br = new BufferedReader(new InputStreamReader(fis, Charset.forName("UTF-8")));
+        int i=0;
         while ((line = br.readLine()) != null) {
+         
           sentences.add(line);
         }
 

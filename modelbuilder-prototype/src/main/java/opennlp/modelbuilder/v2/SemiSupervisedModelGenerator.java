@@ -17,7 +17,7 @@ package opennlp.modelbuilder.v2;
 
 /**
  *
- * @author Owner
+
  */
 public interface SemiSupervisedModelGenerator extends ModelParameter {
 

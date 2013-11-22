@@ -20,7 +20,6 @@ import opennlp.tools.namefind.TokenNameFinderModel;
 
 /**
  *
- * @author Owner
  */
 public interface Modelable extends ModelParameter{
 

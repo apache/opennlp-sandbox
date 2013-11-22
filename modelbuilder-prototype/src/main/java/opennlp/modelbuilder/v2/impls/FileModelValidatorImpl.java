@@ -34,7 +34,6 @@ import opennlp.modelbuilder.v2.ModelGenerationValidator;
 
 /**
  *
- * @author Owner
  */
 public class FileModelValidatorImpl implements ModelGenerationValidator {
 

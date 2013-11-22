@@ -19,7 +19,6 @@ import java.util.Map;
 
 /**
  *
- * @author Owner
  */
 public interface ModelParameter {
    
