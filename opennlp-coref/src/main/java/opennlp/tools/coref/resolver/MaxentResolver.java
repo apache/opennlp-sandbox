@@ -24,15 +24,28 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import opennlp.maxent.GIS;
-import opennlp.maxent.io.SuffixSensitiveGISModelReader;
-import opennlp.maxent.io.SuffixSensitiveGISModelWriter;
-import opennlp.model.Event;
-import opennlp.model.MaxentModel;
+//import opennlp.maxent.GIS;
+//import opennlp.maxent.io.SuffixSensitiveGISModelReader;
+//import opennlp.maxent.io.SuffixSensitiveGISModelWriter;
+//import opennlp.model.EventStream;
+//import opennlp.model.MaxentModel;
+
+
+import opennlp.tools.ml.maxent.GIS;
+import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelWriter;
+import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelReader;
+//import opennlp.maxent.GIS;
+//import opennlp.maxent.io.SuffixSensitiveGISModelReader;
+//import opennlp.maxent.io.SuffixSensitiveGISModelWriter;
+//import opennlp.model.Event;
+//import opennlp.model.MaxentModel;
+import opennlp.tools.ml.model.MaxentModel;
+import opennlp.tools.ml.model.EventStream;
 import opennlp.tools.coref.DiscourseEntity;
 import opennlp.tools.coref.DiscourseModel;
 import opennlp.tools.coref.mention.MentionContext;
 import opennlp.tools.coref.sim.TestSimilarityModel;
+import opennlp.tools.ml.model.Event;
 import opennlp.tools.util.CollectionEventStream;
 
 /**
@@ -55,7 +68,7 @@ public abstract class MaxentResolver extends AbstractResolver {
   private double[] candProbs;
   private int sameIndex;
   private ResolverMode mode;
-  private List<Event> events;
+  private List<opennlp.tools.ml.model.Event> events;
 
   /** When true, this designates that the resolver should use the first referent encountered which it
    * more preferable than non-reference.  When false all non-excluded referents within this resolvers range
@@ -314,7 +327,7 @@ public abstract class MaxentResolver extends AbstractResolver {
         }
         writer.close();
       }
-      (new SuffixSensitiveGISModelWriter(GIS.trainModel(new CollectionEventStream(events),100,10),new File(modelName+modelExtension))).persist();
+      (new SuffixSensitiveGISModelWriter(GIS.trainModel((EventStream)new CollectionEventStream(events),100,10),new File(modelName+modelExtension))).persist();
       nonReferentialResolver.train();
     }
   }

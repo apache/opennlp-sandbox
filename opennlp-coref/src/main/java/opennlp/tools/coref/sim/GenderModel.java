@@ -25,17 +25,26 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import opennlp.maxent.GIS;
-import opennlp.maxent.io.SuffixSensitiveGISModelReader;
-import opennlp.maxent.io.SuffixSensitiveGISModelWriter;
-import opennlp.model.Event;
-import opennlp.model.MaxentModel;
+//import opennlp.maxent.GIS;
+import opennlp.tools.ml.maxent.GIS;
+import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelWriter;
+import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelReader;
+//import opennlp.maxent.io.SuffixSensitiveGISModelReader;
+//import opennlp.maxent.io.SuffixSensitiveGISModelWriter;
+//import opennlp.model.Event;
+import opennlp.tools.ml.model.Event;
+import opennlp.tools.ml.model.MaxentModel;
+//import opennlp.model.MaxentModel;
 import opennlp.tools.coref.resolver.ResolverUtils;
+import opennlp.tools.ml.model.AbstractModel;
+
+import opennlp.tools.ml.model.EventStream;
 import opennlp.tools.util.CollectionEventStream;
 import opennlp.tools.util.HashList;
 
@@ -51,7 +60,7 @@ public class GenderModel implements TestGenderModel, TrainSimilarityModel {
   private String modelName;
   private String modelExtension = ".bin.gz";
   private MaxentModel testModel;
-  private List<Event> events;
+  private Collection<Event> events;
   private boolean debugOn = true;
 
   private Set<String> maleNames;
@@ -267,9 +276,8 @@ public class GenderModel implements TestGenderModel, TrainSimilarityModel {
       writer.close();
     }
     new SuffixSensitiveGISModelWriter(
-        GIS.trainModel(
-        new CollectionEventStream(events), true),
-        new File(modelName+modelExtension)).persist();
+           // GIS.trainModel((EventStream)new CollectionEventStream(events), true)).persist();
+            (AbstractModel) GIS.trainModel((EventStream)new CollectionEventStream(events), true), new File(modelName+modelExtension)).persist();
   }
 
   public int getFemaleIndex() {
