@@ -68,10 +68,15 @@ public class GeoEntityLinker implements EntityLinker<LinkedSpan> {
         ArrayList<BaseLink> geoNamesEntries = new ArrayList<BaseLink>();
         if (!(countryMentions.keySet().contains("us") && countryMentions.keySet().size() == 1) || countryMentions.keySet().size() > 1 || countryMentions.keySet().isEmpty()) {
           // geoNamesEntries = geoNamesGaz.find(matches[i], names[i], countryMentions, linkerProperties);
-          for (String code : countryMentions.keySet()) {
-            if (!code.equals("us")) {
-              geoNamesEntries.addAll(gazateerSearcher.geonamesFind(matches[i], 10, code, linkerProperties));
+          if (!countryMentions.keySet().isEmpty()) {
+            for (String code : countryMentions.keySet()) {
+              if (!code.equals("us")) {
+                geoNamesEntries.addAll(gazateerSearcher.geonamesFind(matches[i], 10, code, linkerProperties));
+              }
             }
+          } else {
+            geoNamesEntries.addAll(gazateerSearcher.geonamesFind(matches[i], 10, "", linkerProperties));
+
           }
 
         }

@@ -72,7 +72,9 @@ public class GazateerSearcher {
       /**
        * build the search string
        */
-      String luceneQueryString = "FULL_NAME_ND_RO:" + searchString.toLowerCase().trim() + " AND CC1:" + code.toLowerCase() + "^10000";
+      String luceneQueryString = !code.equals("")
+              ? "FULL_NAME_ND_RO:" + searchString.toLowerCase().trim() + " AND CC1:" + code.toLowerCase() + "^1000"
+              : "FULL_NAME_ND_RO:" + searchString.toLowerCase().trim();
       /**
        * check the cache and go no further if the records already exist
        */
@@ -82,7 +84,7 @@ public class GazateerSearcher {
       }
       if (geonamesIndex == null) {
         String indexloc = properties.getProperty("opennlp.geoentitylinker.gaz.geonames", "");
-        String cutoff = properties.getProperty("opennlp.geoentitylinker.gaz.lucenescore.min", ".75");
+        String cutoff = properties.getProperty("opennlp.geoentitylinker.gaz.lucenescore.min", ".60");
         scoreCutoff = Double.valueOf(cutoff);
         geonamesIndex = new MMapDirectory(new File(indexloc));
         geonamesReader = DirectoryReader.open(geonamesIndex);

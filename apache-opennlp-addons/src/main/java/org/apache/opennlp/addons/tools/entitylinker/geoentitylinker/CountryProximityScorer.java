@@ -36,7 +36,7 @@ public class CountryProximityScorer implements LinkedEntityScorer<CountryContext
   String dominantCode = "";
 
   @Override
-  public void score(List<LinkedSpan> linkedSpans, String docText, Span[] sentenceSpans,EntityLinkerProperties properties, CountryContext additionalContext) {
+  public void score(List<LinkedSpan> linkedSpans, String docText, Span[] sentenceSpans, EntityLinkerProperties properties, CountryContext additionalContext) {
 
     score(linkedSpans, additionalContext.getCountryMentions(), additionalContext.getNameCodesMap(), docText, sentenceSpans, 1000);
 
@@ -134,10 +134,10 @@ public class CountryProximityScorer implements LinkedEntityScorer<CountryContext
 
     /**
      * the gaz matches that have a country code that have mentions in the doc
-     * that are closest to the Named Entity should return the best score Analyze
-     * map generates a likelihood score that the toponym from the gaz is
-     * referring to one of the countries Map<countrycode, prob that this span is
-     * referring to the toponym form this code key>
+     * that are closest to the Named Entity should return the best score.
+     * Analyzemap generates a likelihood score that the toponym from the gaz is
+     * referring to one of the countries, i.e, Map<countrycode, prob that this
+     * span is referring to the toponym form this code key>
      */
     Map<String, Double> scoreMap = analyzeMap(distancesFromCodeMap, sentences, span);
     for (BaseLink link : span.getLinkedEntries()) {
@@ -148,21 +148,16 @@ public class CountryProximityScorer implements LinkedEntityScorer<CountryContext
         score = scoreMap.get(spanCountryCode);
         ///does the name extracted match a country name?
         if (nameCodesMap.containsKey(link.getItemName().toLowerCase())) {
-          //if so, is it the correct country code for that name
+          //if so, is it the correct country code for that name?
           if (nameCodesMap.get(link.getItemName().toLowerCase()).contains(link.getItemParentID())) {
             //boost the score becuase it is likely that this is the location in the text, so add 50% to the score or set to 1
             //TODO: make this multiplier configurable
-            //TODO: improve this with a geographic/geometry based clustering (linear binning to be more precise) of points returned from the gaz
             score = (score + .75) > 1.0 ? 1d : (score + .75);
-            //boost the score if the hit is from the dominant country context
 
             if (link.getItemParentID().equals(dominantCode)) {
               score = (score + .25) > 1.0 ? 1d : (score + .25);
             }
-
-
           }
-
         }
       }
       link.getScoreMap().put("countrycontext", score);
@@ -184,7 +179,7 @@ public class CountryProximityScorer implements LinkedEntityScorer<CountryContext
   private Map<String, Double> analyzeMap(Map<String, Set<Integer>> distanceMap, Span[] sentences, LinkedSpan<BaseLink> span) {
 
     Map<String, Double> scoreMap = new HashMap<String, Double>();
-    if(distanceMap.isEmpty()){
+    if (distanceMap.isEmpty()) {
       return scoreMap;
     }
     TreeSet<Integer> all = new TreeSet<Integer>();
@@ -195,8 +190,8 @@ public class CountryProximityScorer implements LinkedEntityScorer<CountryContext
 
     Integer min = all.first();
     Integer max = all.last();
-    if(min==max){
-      min=0;
+    if (min == max) {
+      min = 0;
     }
     for (String key : distanceMap.keySet()) {
 

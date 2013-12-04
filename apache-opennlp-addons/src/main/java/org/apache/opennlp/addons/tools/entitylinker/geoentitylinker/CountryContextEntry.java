@@ -30,7 +30,7 @@ public class CountryContextEntry {
   private String cc1;
   private String full_name_nd_ro;
   private String dsg;
-
+  private String provCode;
   public CountryContextEntry() {
   }
 
@@ -39,6 +39,14 @@ public class CountryContextEntry {
     this.cc1 = cc1;
     this.full_name_nd_ro = full_name_nd_ro;
     this.dsg = dsg;
+  }
+
+  public String getProvCode() {
+    return provCode;
+  }
+
+  public void setProvCode(String provCode) {
+    this.provCode = provCode;
   }
 
   public String getRc() {

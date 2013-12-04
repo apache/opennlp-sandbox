@@ -18,11 +18,6 @@ package org.apache.opennlp.addons.tools.entitylinker.geoentitylinker;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.sql.CallableStatement;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,11 +37,22 @@ import opennlp.tools.entitylinker.EntityLinkerProperties;
  */
 public class CountryContext {
 
-  private Connection con;
+ 
   private List<CountryContextEntry> countrydata;
   private Map<String, Set<String>> nameCodesMap = new HashMap<String, Set<String>>();
   private Map<String, Set<Integer>> countryMentions = new HashMap<String, Set<Integer>>();
   private Set<CountryContextEntry> countryHits = new HashSet<>();
+
+  public CountryContext() {
+  }
+
+  public Map<String, Set<Integer>> getCountryMentions() {
+    return countryMentions;
+  }
+
+  public Set<CountryContextEntry> getCountryHits() {
+    return countryHits;
+  }
 
   public Map<String, Set<String>> getNameCodesMap() {
     return nameCodesMap;
@@ -55,10 +61,6 @@ public class CountryContext {
   public void setNameCodesMap(Map<String, Set<String>> nameCodesMap) {
     this.nameCodesMap = nameCodesMap;
   }
-
-  public CountryContext() {
-  }
-
 
   /**
    * Finds mentions of countries based on a list from MySQL stored procedure
@@ -71,15 +73,13 @@ public class CountryContext {
    * @return
    */
   public Map<String, Set<Integer>> regexfind(String docText, EntityLinkerProperties properties) {
-    countryMentions = new HashMap<String, Set<Integer>>();
+    countryMentions = new HashMap<>();
     nameCodesMap.clear();
     try {
-//      if (con == null) {
-//        con = getMySqlConnection(properties);
-//      }
+
       if (countrydata == null) {
-         countrydata = getCountryContextFromFile(properties);
-     //   countrydata = getCountryData(properties);
+        countrydata = getCountryContextFromFile(properties);
+        //   countrydata = getCountryData(properties);
       }
       for (CountryContextEntry entry : countrydata) {
         Pattern regex = Pattern.compile(entry.getFull_name_nd_ro().trim(), Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
@@ -120,95 +120,6 @@ public class CountryContext {
 
 
     return countryMentions;
-  }
-
-  /**
-   * returns a unique list of country codes
-   *
-   * @param countryMentions the countryMentions discovered
-   * @return
-   */
-  public static Set<String> getCountryCodes(List<CountryContextHit> hits) {
-    Set<String> ccs = new HashSet<String>();
-    for (CountryContextHit hit : hits) {
-      ccs.add(hit.getCountryCode().toLowerCase());
-    }
-    return ccs;
-  }
-
-  public static String getCountryCodeCSV(Set<String> hits) {
-    String csv = "";
-    if (hits.isEmpty()) {
-      return csv;
-    }
-
-    for (String code : hits) {
-      csv += "," + code;
-    }
-    return csv.substring(1);
-  }
-
-  private Connection getMySqlConnection(EntityLinkerProperties properties) throws Exception {
-
-    String driver = properties.getProperty("db.driver", "org.gjt.mm.mysql.Driver");
-    String url = properties.getProperty("db.url", "jdbc:mysql://localhost:3306/world");
-    String username = properties.getProperty("db.username", "root");
-    String password = properties.getProperty("db.password", "?");
-
-    Class.forName(driver);
-    Connection conn = DriverManager.getConnection(url, username, password);
-    return conn;
-  }
-
-  /**
-   * reads the list from the database by calling a stored procedure
-   * getCountryList
-   *
-   * @param properties
-   * @return
-   * @throws SQLException
-   */
-  private List<CountryContextEntry> getCountryData(EntityLinkerProperties properties) throws SQLException {
-    List<CountryContextEntry> entries = new ArrayList<CountryContextEntry>();
-    try {
-      if (con == null) {
-        con = getMySqlConnection(properties);
-      }
-      CallableStatement cs;
-      cs = con.prepareCall("CALL `getCountryList`()");
-      ResultSet rs;
-      rs = cs.executeQuery();
-      if (rs == null) {
-        return entries;
-      }
-      while (rs.next()) {
-        CountryContextEntry s = new CountryContextEntry();
-        //rc,cc1, full_name_nd_ro,dsg
-        s.setRc(rs.getString(1));
-        s.setCc1(rs.getString(2));
-//a.district, 
-        s.setFull_name_nd_ro(rs.getString(3));
-//b.name as countryname, 
-        s.setDsg(rs.getString(4));
-        entries.add(s);
-      }
-
-    } catch (SQLException ex) {
-      System.err.println(ex);
-    } catch (Exception e) {
-      System.err.println(e);
-    } finally {
-      con.close();
-    }
-    return entries;
-  }
-
-  public Map<String, Set<Integer>> getCountryMentions() {
-    return countryMentions;
-  }
-
-  public Set<CountryContextEntry> getCountryHits() {
-    return countryHits;
   }
 
   private List<CountryContextEntry> getCountryContextFromFile(EntityLinkerProperties properties) {
