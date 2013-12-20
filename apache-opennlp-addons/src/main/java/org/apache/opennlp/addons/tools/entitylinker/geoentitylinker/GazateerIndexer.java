@@ -19,10 +19,16 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.ar.ArabicAnalyzer;
+import org.apache.lucene.analysis.fa.PersianAnalyzer;
+import org.apache.lucene.analysis.ru.RussianAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.th.ThaiAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
@@ -37,6 +43,11 @@ import org.apache.lucene.util.Version;
  * Creates two lucene indexes, geonames and usgs for use in GeoEntityLinker
  */
 public class GazateerIndexer {
+
+  public GazateerIndexer() {
+    loadAnalyzerMap();
+  }
+  Map<String, Analyzer> languageAnalyzerMap = new HashMap<>();
 
   public static interface Separable {
 
@@ -92,14 +103,19 @@ public class GazateerIndexer {
     BufferedReader reader = new BufferedReader(new FileReader(gazateerInputData));
     List<String> fields = new ArrayList<String>();
     int counter = 0;
+    int langCodeIndex = 0;
     System.out.println("reading gazateer data from file...........");
     while (reader.read() != -1) {
       String line = reader.readLine();
       String[] values = line.split(type.getSeparator());
       if (counter == 0) {
         // build fields
-        for (String columnName : values) {
+        for (int i = 0; i < values.length; i++) {
+          String columnName = values[i];
           fields.add(columnName.replace("»¿", "").trim());
+          if (columnName.toLowerCase().equals("lc")) {
+            langCodeIndex = i;
+          }
         }
 
 
@@ -108,7 +124,25 @@ public class GazateerIndexer {
         for (int i = 0; i < fields.size() - 1; i++) {
           doc.add(new TextField(fields.get(i), values[i], Field.Store.YES));
         }
-        w.addDocument(doc);
+        if (type == GazType.GEONAMES) {
+          /**
+           * see if the map contains a language specific analyzer
+           */
+          if (languageAnalyzerMap.containsKey(values[langCodeIndex])) {
+            /*
+             * if so retrieve it from the map
+             */
+            Analyzer analyzer = languageAnalyzerMap.get(values[langCodeIndex]);
+            /**
+             * index the doc using the specified analyzer
+             */
+            w.addDocument(doc, analyzer);
+          } else {
+            w.addDocument(doc);
+          }
+        } else {
+          w.addDocument(doc);
+        }
       }
       counter++;
       if (counter % 10000 == 0) {
@@ -119,5 +153,15 @@ public class GazateerIndexer {
     }
     w.commit();
     System.out.println("Completed indexing gaz! index name is: " + type.toString());
+  }
+/**
+ * TODO: make these analyzers configurable
+ */
+  private void loadAnalyzerMap() {
+    languageAnalyzerMap.put("ara", new ArabicAnalyzer(Version.LUCENE_45));
+    languageAnalyzerMap.put("tha", new ThaiAnalyzer(Version.LUCENE_45));
+    languageAnalyzerMap.put("rus", new RussianAnalyzer(Version.LUCENE_45));
+    languageAnalyzerMap.put("fas", new PersianAnalyzer(Version.LUCENE_45));
+ 
   }
 }
