@@ -23,8 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import opennlp.tools.similarity.apps.BingResponse;
-import opennlp.tools.similarity.apps.BingWebQueryRunner;
+import opennlp.tools.similarity.apps.BingQueryRunner;
 import opennlp.tools.similarity.apps.HitBase;
 import opennlp.tools.similarity.apps.utils.StringCleaner;
 import opennlp.tools.stemmer.PorterStemmer;
@@ -44,7 +43,7 @@ import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcess
  * 
  */
 
-public class TaxonomyExtenderViaMebMining extends BingWebQueryRunner {
+public class TaxonomyExtenderViaMebMining extends BingQueryRunner {
   private static Logger LOG = Logger
       .getLogger("opennlp.tools.similarity.apps.taxo_builder.TaxonomyExtenderSearchResultFromYahoo");
   private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();

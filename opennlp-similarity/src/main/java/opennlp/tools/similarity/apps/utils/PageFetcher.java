@@ -100,11 +100,11 @@ public class PageFetcher {
       // LOG.error(e.getMessage(), e);
       // System.err.println("error fetching url " + url);
     }
-    try {
+/*    try {
       Thread.sleep(50); // do nothing 4 sec
     } catch (InterruptedException e) {
       e.printStackTrace();
-    }
+    } */
     return buf.toString();
   }
 

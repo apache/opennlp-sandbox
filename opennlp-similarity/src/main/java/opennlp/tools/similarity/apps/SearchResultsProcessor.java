@@ -26,7 +26,7 @@ import opennlp.tools.textsimilarity.ParseTreeChunkListScorer;
 import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
-public class SearchResultsProcessor extends BingWebQueryRunner {
+public class SearchResultsProcessor extends BingQueryRunner {
   private static Logger LOG = Logger
       .getLogger("opennlp.tools.similarity.apps.SearchResultsProcessor");
   private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
@@ -92,7 +92,7 @@ public class SearchResultsProcessor extends BingWebQueryRunner {
   public List<HitBase> runSearchViaAPI(String query) {
 	List<HitBase> hits = null;
     try {
-      List<HitBase> resultList = runSearch(query, 30);
+      List<HitBase> resultList = runSearch(query);
       // now we apply our own relevance filter
       hits = calculateMatchScoreResortHits(resultList, query);
 
@@ -102,7 +102,6 @@ public class SearchResultsProcessor extends BingWebQueryRunner {
       return null;
     }
 
-    hits = removeDuplicates(hits, 0.9);
 
     return hits;
   }

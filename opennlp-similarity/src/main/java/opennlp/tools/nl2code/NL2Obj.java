@@ -16,6 +16,7 @@
  */
 package opennlp.tools.nl2code;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -28,11 +29,19 @@ import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcess
 public class NL2Obj {
   ObjectControlOp prevOp;
 
-  public NL2Obj() {
+  public NL2Obj(String path) {
     prevOp = new ObjectControlOp();
     prevOp.setOperatorIf("");
     prevOp.setOperatorFor("");
+    parser = ParserChunker2MatcherProcessor.getInstance(path);
   }
+  
+  public NL2Obj() {
+	    prevOp = new ObjectControlOp();
+	    prevOp.setOperatorIf("");
+	    prevOp.setOperatorFor("");
+	    parser = ParserChunker2MatcherProcessor.getInstance();
+	  }
 
   public static String[] epistemicStatesList = new String[] {
     "select", "verify", "find", "start", "stop", "go", "check"
@@ -268,6 +277,9 @@ public class NL2Obj {
 
 
   public static void main(String[] args){
+	  
+	String cDir = new File(".").getAbsolutePath();
+	
     String[] text = new String[]{
         "Randomly select a pixel at an image.",
         "Find a convex area this pixel belongs, so that all pixels are less than 128",      //area->REGION

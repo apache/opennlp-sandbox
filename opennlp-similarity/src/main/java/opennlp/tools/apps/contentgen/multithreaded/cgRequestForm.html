@@ -1,0 +1,37 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+ 
+<html xmlns='http://www.w3.org/1999/xhtml'>
+   <head >
+      <meta http-equiv='Content-Type' content='text/html; charset=utf-8'/>
+      <title >Submit Your Essay Writing request here</title>
+   </head>
+<body>
+<h1>Submit Your Essay Writing request here / Envie su solicitud ensayo escrito aqui</h1>
+ 
+<form id='sampleform' method='post' action='http://173.255.254.250:8983/solr/contentgen/?resourceDir=/home/solr/solr-4.4.0/example/src/test/resources&workDir=/home/solr/solr-4.4.0/example/solr-webapp/webapp/WEB-INF/lib&relevanceThreshold=0.5&bingKey=e8ADxIjn9YyHx36EihdjH/tMqJJItUrrbPTUpKahiU0=' >
+   <p>
+   Topic for your essay/Tema de su ensayo: <input type='text' name='q' value='albert einstein' size='35' maxlength='100'/>
+   </p>
+   <p>
+   Email to receive your essay/para recibir su ensayo: <input type='text' name='email' />
+   </p>
+   
+   <p>
+   Select language/seleccionar el idioma: <select name="lang" >
+   		<option value="en-US"> English</option>
+ 		<option value="es-US"> Espaniol</option>
+ 		<option value="de-DE"> German</option>
+	</select>
+	</p>
+	<p>
+   Number of Bing calls to write a this essay: <input type='text' name='stepsNum' value='20' size='5' maxlength='10'/>
+   Number of Bing search results for each call to use for writing: <input type='text' name='searchResultsNum' value='100' size='5' maxlength='10'/>
+   </p>
+<p>
+   <input type='submit' name='Submit' value='Submit/presentar' />
+   </p>
+</form>
+ 
+</body>
+</html>

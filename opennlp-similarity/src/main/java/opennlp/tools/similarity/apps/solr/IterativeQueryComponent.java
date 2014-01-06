@@ -1,19 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package opennlp.tools.similarity.apps.solr;
 
 import java.io.IOException;
@@ -21,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
-
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -35,11 +18,9 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.DocList;
-
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryParsing;
-
 
 
 public class IterativeQueryComponent extends QueryComponent{
@@ -75,6 +56,36 @@ public class IterativeQueryComponent extends QueryComponent{
 				}
 			}
 		}
+/*
+		nameValuePairs = rb.rsp.getValues();
+		c = (ResultContext) nameValuePairs.get("response");
+		if (c!=null){
+			DocList dList = c.docs;
+			if (dList.size()<1){
+				nameValuePairs.remove("response");
+				rb.rsp.setAllValues(nameValuePairs);
+				rb = substituteField(rb, fieldSequence[2] );
+				super.process(rb);
+			}
+			else {
+				return;
+			}
+		}
+		nameValuePairs = rb.rsp.getValues();
+		c = (ResultContext) nameValuePairs.get("response");
+		if (c!=null){
+			DocList dList = c.docs;
+			if (dList.size()<1){
+				nameValuePairs.remove("response");
+				rb.rsp.setAllValues(nameValuePairs);
+				rb = substituteField(rb, fieldSequence[3] );
+				super.process(rb);
+			}
+			else {
+				return;
+			}
+		}
+*/
 	}
 
 	private ResponseBuilder substituteField(ResponseBuilder rb, String newFieldName) {
@@ -90,6 +101,7 @@ public class IterativeQueryComponent extends QueryComponent{
 		rb.req.setParams(params);
 		rb.setQueryString(query);
 
+
 		String defType = params.get(QueryParsing.DEFTYPE,QParserPlugin.DEFAULT_QTYPE);
 
 		// get it from the response builder to give a different component a chance
@@ -101,21 +113,71 @@ public class IterativeQueryComponent extends QueryComponent{
 			rb.setQueryString(queryString);
 		}
 
+		QParser parser = null;
 		try {
-			QParser parser = QParser.getParser(rb.getQueryString(), defType, rb.req);
-			Query q = parser.getQuery();
-			if (q == null) {
-				// normalize a null query to a query that matches nothing
-				q = new BooleanQuery();        
-			}
-			rb.setQuery( q );
-			rb.setSortSpec( parser.getSort(true) );
-			rb.setQparser(parser);
-			rb.setScoreDoc(parser.getPaging());
-
-		} catch (ParseException e) {
-			throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+			parser = QParser.getParser(rb.getQueryString(), defType, rb.req);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
+		Query q = null;
+		try {
+			q = parser.getQuery();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if (q == null) {
+			// normalize a null query to a query that matches nothing
+			q = new BooleanQuery();        
+		}
+		rb.setQuery( q );
+		try {
+			rb.setSortSpec( parser.getSort(true) );
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		rb.setQparser(parser);
+		try {
+			rb.setScoreDoc(parser.getPaging());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		String[] fqs = rb.req.getParams().getParams(CommonParams.FQ);
+		if (fqs!=null && fqs.length!=0) {
+			List<Query> filters = rb.getFilters();
+			if (filters==null) {
+				filters = new ArrayList<Query>(fqs.length);
+			}
+			for (String fq : fqs) {
+				if (fq != null && fq.trim().length()!=0) {
+					QParser fqp = null;
+					try {
+						fqp = QParser.getParser(fq, null, rb.req);
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					try {
+						filters.add(fqp.getQuery());
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}
+			// only set the filters if they are not empty otherwise
+			// fq=&someotherParam= will trigger all docs filter for every request 
+			// if filter cache is disabled
+			if (!filters.isEmpty()) {
+				rb.setFilters( filters );
+			}
+		}
+
+
 		return rb;
 	}
 

@@ -101,8 +101,6 @@ public class SpeechRecognitionResultsProcessor /*extends BingWebQueryRunner*/ {
     double bestSentScore = -1;
     String bestSent = null;
     for (String sentence : sents) {
-      BingResponse resp = null, // obtained from bing
-      newResp = null; // re-sorted based on similarity
       try {
         List<HitBase> resultList = scraper.runSearch(sentence);
         double scoreForSentence = calculateTotalMatchScoreForHits(resultList,

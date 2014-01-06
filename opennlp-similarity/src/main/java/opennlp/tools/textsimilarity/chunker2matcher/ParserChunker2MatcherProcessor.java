@@ -109,8 +109,11 @@ public class ParserChunker2MatcherProcessor {
       sentence_parseObject = new HashMap<String, String[][]>();
 
     try {
-    	if (MODEL_DIR==null) 
-    		MODEL_DIR = new File(".").getAbsolutePath().replace(".", "") + MODEL_DIR_REL;
+    	if (MODEL_DIR==null || MODEL_DIR.equals("/models")) {
+    		String absPath = new File(".").getAbsolutePath();
+    		absPath = absPath.substring(0, absPath.length()-1);
+    		MODEL_DIR = absPath + MODEL_DIR_REL;
+    	}
     	//get full path from constructor
     		
       initializeSentenceDetector();
@@ -587,13 +590,14 @@ public class ParserChunker2MatcherProcessor {
       SentenceModel model = new SentenceModel(is);
       sentenceDetector = new SentenceDetectorME(model);
     } catch (IOException e) {
-      //e.printStackTrace();
+      e.printStackTrace();
     } finally {
       if (is != null) {
         try {
           is.close();
         } catch (IOException e) {
            // we swallow exception to support the cached run
+        	e.printStackTrace();
         }
       }
     }
@@ -692,7 +696,12 @@ public class ParserChunker2MatcherProcessor {
     // check sentence node, the node contained in the top node
     if (type.equals(AbstractBottomUpParser.TOP_NODE)
         && childrenNodeList != null && childrenNodeList.size() > 0) {
-      PhraseNode rootNode = (PhraseNode) childrenNodeList.get(0);
+      PhraseNode rootNode;
+	try {
+		rootNode = (PhraseNode) childrenNodeList.get(0);
+	} catch (Exception e) {
+		return null;
+	}
       return new SentenceNode(text, rootNode.getChildren());
     }
 
@@ -780,3 +789,19 @@ public class ParserChunker2MatcherProcessor {
     }
   }
 }
+
+/*
+ * 
+ * java.lang.ClassCastException: opennlp.tools.textsimilarity.chunker2matcher.WordNode cannot be cast to opennlp.tools.textsimilarity.chunker2matcher.PhraseNode
+	at opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor.toSyntacticTreeNode(ParserChunker2MatcherProcessor.java:699)
+	at opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor.sentenceToSentenceNode(ParserChunker2MatcherProcessor.java:525)
+	at opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor.parseSentenceNode(ParserChunker2MatcherProcessor.java:554)
+	at opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor.parseSentenceNode(ParserChunker2MatcherProcessor.java:548)
+	at opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor.parseChunkSentence(ParserChunker2MatcherProcessor.java:282)
+	at opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor.formGroupedPhrasesFromChunksForSentence(ParserChunker2MatcherProcessor.java:355)
+	at opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor.formGroupedPhrasesFromChunksForPara(ParserChunker2MatcherProcessor.java:250)
+	at opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor.assessRelevance(ParserChunker2MatcherProcessor.java:747)
+	at opennlp.tools.similarity.apps.RelatedSentenceFinder.augmentWithMinedSentencesAndVerifyRelevance(RelatedSentenceFinder.java:458)
+	at opennlp.tools.similarity.apps.RelatedSentenceFinder.generateContentAbout(RelatedSentenceFinder.java:156)
+	at 
+	*/
