@@ -31,7 +31,6 @@ public class PassiveAggressiveTrainer extends AbstractOnlineLearnerTrainer {
   
   public PassiveAggressiveTrainer(Map<String, String> trainParams,
       Map<String, String> reportMap) {
-    super(trainParams, reportMap);
   }
 
   @Override

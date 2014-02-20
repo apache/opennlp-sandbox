@@ -38,7 +38,6 @@ public class LogisticRegressionTrainer extends AbstractOnlineLearnerTrainer {
   
   public LogisticRegressionTrainer(Map<String, String> trainParams,
       Map<String, String> reportMap) {
-    super(trainParams, reportMap);
   }
 
   @Override

@@ -34,24 +34,23 @@ import org.apache.mahout.math.Vector;
 
 abstract class AbstractOnlineLearnerTrainer extends AbstractEventTrainer {
 
-  protected final int iterations;
+  protected int iterations;
   
-  public AbstractOnlineLearnerTrainer(Map<String, String> trainParams,
-      Map<String, String> reportMap) {
-    super(trainParams, reportMap);
-    
-    // TODO: Extract parameters here, used by all implementations, e.g. learningRate
-    
-    String iterationsValue = trainParams.get("Iterations");
-    
-    if (iterationsValue != null) {
-      iterations = Integer.parseInt(iterationsValue);
-    }
-    else {
-      iterations = 20;
-    }
+  public AbstractOnlineLearnerTrainer() {
   }
 
+  public void init(Map<String, String> trainParams,
+	      Map<String, String> reportMap) {
+	  String iterationsValue = trainParams.get("Iterations");
+	  
+	  if (iterationsValue != null) {
+		  iterations = Integer.parseInt(iterationsValue);
+	  }
+	  else {
+		  iterations = 20;
+	  }
+  }
+  
   protected void trainOnlineLearner(DataIndexer indexer, org.apache.mahout.classifier.OnlineLearner pa) {
     int cardinality = indexer.getPredLabels().length;
     int outcomes[] = indexer.getOutcomeList();
