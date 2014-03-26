@@ -28,20 +28,25 @@ import java.util.Set;
  * A context free grammar
  */
 public class ContextFreeGrammar {
-  private Set<String> nonTerminalSymbols;
-  private Set<String> terminalSymbols;
-  private Set<Rule> rules;
-  private String startSymbol;
+  private final Collection<String> nonTerminalSymbols;
+  private final Collection<String> terminalSymbols;
+  private final Collection<Rule> rules;
+  private final String startSymbol;
+  private final boolean randomExpansion;
 
-  public ContextFreeGrammar(Set<String> nonTerminalSymbols, Set<String> terminalSymbols, Set<Rule> rules, String startSymbol) {
+  public ContextFreeGrammar(Collection<String> nonTerminalSymbols, Collection<String> terminalSymbols, Collection<Rule> rules, String startSymbol, boolean randomExpansion) {
     assert nonTerminalSymbols.contains(startSymbol) : "start symbol doesn't belong to non-terminal symbols set";
 
     this.nonTerminalSymbols = nonTerminalSymbols;
     this.terminalSymbols = terminalSymbols;
     this.rules = rules;
     this.startSymbol = startSymbol;
+    this.randomExpansion = randomExpansion;
   }
 
+  public ContextFreeGrammar(Collection<String> nonTerminalSymbols, Collection<String> terminalSymbols, Collection<Rule> rules, String startSymbol) {
+    this(nonTerminalSymbols, terminalSymbols, rules, startSymbol, false);
+  }
 
   public String[] leftMostDerivation(String... words) {
     ArrayList<String> expansion = new ArrayList<String>(words.length);
@@ -81,6 +86,9 @@ public class ContextFreeGrammar {
     ArrayList<Rule> possibleRules = new ArrayList<Rule>();
     for (Rule r : rules) {
       if (word.equals(r.getEntry())) {
+        if (randomExpansion) {
+          return r;
+        }
         possibleRules.add(r);
       }
     }

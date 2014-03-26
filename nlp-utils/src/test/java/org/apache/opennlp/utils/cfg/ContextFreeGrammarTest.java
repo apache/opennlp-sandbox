@@ -19,9 +19,13 @@
 package org.apache.opennlp.utils.cfg;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Set;
+import java.util.TreeSet;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertNotNull;
@@ -32,13 +36,14 @@ import static org.junit.Assert.assertTrue;
  */
 public class ContextFreeGrammarTest {
 
-  private ContextFreeGrammar contextFreeGrammar;
-  private Set<String> terminals;
+  private static Collection<String> terminals;
+  private static Collection<String> nonTerminals; // PoS + Parse tags
+  private static String startSymbol;
+  private static Collection<Rule> rules;
 
-  @Before
-  public void setUp() throws Exception {
-
-    Set<String> nonTerminals = new HashSet<String>(); // PoS + Parse tags
+  @BeforeClass
+  public static void setUp() throws Exception {
+    nonTerminals = new LinkedList<String>();
     nonTerminals.add("S");
     nonTerminals.add("NP");
     nonTerminals.add("VP");
@@ -53,22 +58,22 @@ public class ContextFreeGrammarTest {
     nonTerminals.add("DJ");
     nonTerminals.add("P");
 
-    String startSymbol = "S";
+    startSymbol = "S";
 
-    terminals = new HashSet<String>();
-    terminals.add("sleeps");
+    terminals = new LinkedList<String>();
+    terminals.add("works");
     terminals.add("saw");
     terminals.add("man");
     terminals.add("woman");
-    terminals.add("telescope");
+    terminals.add("car");
     terminals.add("the");
     terminals.add("with");
     terminals.add("in");
-    terminals.add("tommaso");
-    terminals.add("simone");
-    terminals.add("joao");
-    terminals.add("tigro");
-    terminals.add("michele");
+    terminals.add("joe");
+    terminals.add("john");
+    terminals.add("sam");
+    terminals.add("michael");
+    terminals.add("michelle");
     terminals.add("scarlett");
     terminals.add("and");
     terminals.add("but");
@@ -76,7 +81,7 @@ public class ContextFreeGrammarTest {
     terminals.add("of");
     terminals.add("for");
 
-    Set<Rule> rules = new HashSet<Rule>();
+    rules = new LinkedList<Rule>();
     rules.add(new Rule("S", "NP", "VP"));
     rules.add(new Rule("P", "S", "CJ", "S"));
     rules.add(new Rule("P", "S", "DJ", "S"));
@@ -87,31 +92,37 @@ public class ContextFreeGrammarTest {
     rules.add(new Rule("NP", "NP", "PP"));
     rules.add(new Rule("NP", "NNP"));
     rules.add(new Rule("PP", "IN", "NP"));
-    rules.add(new Rule("Vi", "sleeps"));
+    rules.add(new Rule("Vi", "works"));
     rules.add(new Rule("Vt", "saw"));
     rules.add(new Rule("NN", "man"));
     rules.add(new Rule("NN", "woman"));
-    rules.add(new Rule("NN", "telescope"));
+    rules.add(new Rule("NN", "car"));
     rules.add(new Rule("DT", "the"));
     rules.add(new Rule("IN", "with"));
     rules.add(new Rule("IN", "in"));
     rules.add(new Rule("IN", "for"));
     rules.add(new Rule("IN", "of"));
-    rules.add(new Rule("NNP", "tommaso"));
-    rules.add(new Rule("NNP", "simone"));
-    rules.add(new Rule("NNP", "joao"));
-    rules.add(new Rule("NNP", "tigro"));
-    rules.add(new Rule("NNP", "michele"));
+    rules.add(new Rule("NNP", "joe"));
+    rules.add(new Rule("NNP", "john"));
+    rules.add(new Rule("NNP", "sam"));
+    rules.add(new Rule("NNP", "michael"));
+    rules.add(new Rule("NNP", "michelle"));
     rules.add(new Rule("NNP", "scarlett"));
     rules.add(new Rule("CJ", "and"));
     rules.add(new Rule("DJ", "but"));
     rules.add(new Rule("DJ", "while"));
-
-    contextFreeGrammar = new ContextFreeGrammar(nonTerminals, terminals, rules, startSymbol);
   }
 
   @Test
-  public void testSingleExpansion() throws Exception {
+  public void testSingleSentenceExpansion() throws Exception {
+    ContextFreeGrammar contextFreeGrammar = new ContextFreeGrammar(nonTerminals, terminals, rules, startSymbol);
+    String[] expansion = contextFreeGrammar.leftMostDerivation("S");
+    checkExpansion(expansion);
+  }
+
+  @Test
+  public void testSingleSentenceRandomExpansion() throws Exception {
+    ContextFreeGrammar contextFreeGrammar = new ContextFreeGrammar(nonTerminals, terminals, rules, startSymbol, true);
     String[] expansion = contextFreeGrammar.leftMostDerivation("S");
     checkExpansion(expansion);
   }
@@ -119,6 +130,17 @@ public class ContextFreeGrammarTest {
 
   @Test
   public void testMultipleSentencesExpansion() throws Exception {
+    ContextFreeGrammar contextFreeGrammar = new ContextFreeGrammar(nonTerminals, terminals, rules, startSymbol);
+    String[] expansion = contextFreeGrammar.leftMostDerivation("S", "CJ", "S");
+    checkExpansion(expansion);
+
+    expansion = contextFreeGrammar.leftMostDerivation("S", "DJ", "S", "CJ", "P");
+    checkExpansion(expansion);
+  }
+
+  @Test
+  public void testMultipleSentencesRandomExpansion() throws Exception {
+    ContextFreeGrammar contextFreeGrammar = new ContextFreeGrammar(nonTerminals, terminals, rules, startSymbol, true);
     String[] expansion = contextFreeGrammar.leftMostDerivation("S", "CJ", "S");
     checkExpansion(expansion);
 
@@ -132,6 +154,5 @@ public class ContextFreeGrammarTest {
     for (String t : expansion) {
       assertTrue("term " + t + " is not a terminal symbol", terminals.contains(t));
     }
-    System.err.println(Arrays.toString(expansion));
   }
 }

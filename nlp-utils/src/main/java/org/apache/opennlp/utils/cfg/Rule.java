@@ -18,6 +18,8 @@
  */
 package org.apache.opennlp.utils.cfg;
 
+import java.util.Arrays;
+
 /**
  * A rule for context free grammars
  */
@@ -40,6 +42,27 @@ public class Rule implements Comparable<Rule> {
 
   @Override
   public int compareTo(Rule o) {
-    return entry.compareTo(o.getEntry());
+      int c = entry.compareTo(o.getEntry());
+      return c != 0 ? c : Arrays.toString(expansion).compareTo(Arrays.toString(o.getExpansion()));
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    Rule rule = (Rule) o;
+
+    if (entry != null ? !entry.equals(rule.entry) : rule.entry != null) return false;
+    if (!Arrays.equals(expansion, rule.expansion)) return false;
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = entry != null ? entry.hashCode() : 0;
+    result = 31 * result + (expansion != null ? Arrays.hashCode(expansion) : 0);
+    return result;
   }
 }

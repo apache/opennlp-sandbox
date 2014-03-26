@@ -18,33 +18,34 @@
  */
 package org.apache.opennlp.utils.cfg;
 
-import java.util.Set;
+import java.util.Collection;
 
 /**
  * A builder for {@link ContextFreeGrammar}s
  */
 public class CFGBuilder {
 
-    private Set<String> nonTerminalSymbols;
-    private Set<String> terminalSymbols;
-    private Set<Rule> rules;
+    private Collection<String> nonTerminalSymbols;
+    private Collection<String> terminalSymbols;
+    private Collection<Rule> rules;
     private String startSymbol;
+    private boolean randomExpansion;
 
     public static CFGBuilder createCFG() {
         return new CFGBuilder();
     }
 
-    public CFGBuilder withTerminals(Set<String> terminalSymbols) {
+    public CFGBuilder withTerminals(Collection<String> terminalSymbols) {
         this.terminalSymbols = terminalSymbols;
         return this;
     }
 
-    public CFGBuilder withNonTerminals(Set<String> nonTerminalSymbols) {
+    public CFGBuilder withNonTerminals(Collection<String> nonTerminalSymbols) {
         this.nonTerminalSymbols = nonTerminalSymbols;
         return this;
     }
 
-    public CFGBuilder withRules(Set<Rule> rules) {
+    public CFGBuilder withRules(Collection<Rule> rules) {
         this.rules = rules;
         return this;
     }
@@ -54,7 +55,13 @@ public class CFGBuilder {
         return this;
     }
 
+    public CFGBuilder withRandomExpansion(boolean randomExpansion) {
+        this.randomExpansion = randomExpansion;
+        return this;
+    }
+
     public ContextFreeGrammar build() {
-        return new ContextFreeGrammar(nonTerminalSymbols, terminalSymbols, rules, startSymbol);
+        assert nonTerminalSymbols != null && terminalSymbols != null && rules != null && startSymbol != null;
+        return new ContextFreeGrammar(nonTerminalSymbols, terminalSymbols, rules, startSymbol, randomExpansion);
     }
 }
