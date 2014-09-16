@@ -26,8 +26,10 @@ import java.util.Collections;
  * a sentence over the no. of sentences in the vocabulary.
  */
 public class NaiveSentenceLanguageModel<T> implements LanguageModel<T[]> {
+
   @Override
   public double calculateProbability(Collection<T[]> vocabulary, T[] sentence) {
-    return Collections.frequency(vocabulary, sentence) / vocabulary.size();
+    return vocabulary.isEmpty() ? 0 : Collections.frequency(vocabulary, sentence) / vocabulary.size();
   }
+
 }

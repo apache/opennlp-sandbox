@@ -23,5 +23,5 @@ package org.apache.opennlp.utils.classification;
  */
 public interface NaiveBayesClassifier<I, O> {
 
-  public O calculateClass(I inputDocument) throws Exception;
+  O calculateClass(I inputDocument) throws Exception;
 }

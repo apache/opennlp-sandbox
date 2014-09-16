@@ -18,13 +18,8 @@
  */
 package org.apache.opennlp.utils.cfg;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.Set;
-import java.util.TreeSet;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

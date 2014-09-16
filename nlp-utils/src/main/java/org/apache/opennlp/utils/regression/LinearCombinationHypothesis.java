@@ -19,7 +19,7 @@
 package org.apache.opennlp.utils.regression;
 
 /**
- * Simplest {@link Hypothesis} which just linear combines inputs with weights
+ * Simplest {@link Hypothesis} which just linearly combines inputs with weights
  */
 public class LinearCombinationHypothesis implements Hypothesis {
   private double[] weights;

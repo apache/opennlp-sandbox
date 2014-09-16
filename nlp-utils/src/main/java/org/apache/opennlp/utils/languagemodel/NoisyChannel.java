@@ -44,6 +44,6 @@ public abstract class NoisyChannel {
 
   public abstract Double calculatePrior(String word);
 
-  public abstract Double calculateLikelihood(String mispelledWord, String word);
+  public abstract Double calculateLikelihood(String misspelledWord, String word);
 
 }

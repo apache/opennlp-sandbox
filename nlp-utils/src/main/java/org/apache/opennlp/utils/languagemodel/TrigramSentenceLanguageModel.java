@@ -21,70 +21,77 @@ package org.apache.opennlp.utils.languagemodel;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.opennlp.utils.ngram.NGramUtils;
 
 /**
  * A simple trigram language model for sentences made of <code>String</code> arrays
  */
-public class TrigramSentenceLanguageModel implements LanguageModel<String[]> {
+public class TrigramSentenceLanguageModel<T> implements LanguageModel<T[]> {
+
   @Override
-  public double calculateProbability(Collection<String[]> vocabulary, String[] sample) {
-    double probability = 1d;
-    for (Trigram trigram : getTrigrams(sample)) {
-      if (trigram.getX0() != null && trigram.getX1() != null) {
-        // default
-        probability *= NGramUtils.calculateTrigramMLProbability(trigram.getX0(), trigram.getX1(), trigram.getX2(), vocabulary);
-      } else if (trigram.getX0() == null && trigram.getX1() != null) {
-        // bigram
-        probability *= NGramUtils.calculateBigramMLProbability(trigram.getX2(), trigram.getX1(), vocabulary);
-      } else if (trigram.getX0() == null && trigram.getX1() == null) {
-        // unigram
-        probability *= NGramUtils.calculateUnigramMLProbability(trigram.getX2(), vocabulary);
-      } else {
-        // unexpected
+  public double calculateProbability(Collection<T[]> vocabulary, T[] sample) {
+    double probability = 0d;
+    if (!vocabulary.isEmpty()) {
+      for (Trigram trigram : getTrigrams(sample)) {
+        if (trigram.getX0() != null && trigram.getX1() != null) {
+          // default
+          probability += Math.log(NGramUtils.calculateTrigramMLProbability(trigram.getX0(), trigram.getX1(), trigram.getX2(), vocabulary));
+        } else if (trigram.getX0() == null && trigram.getX1() != null) {
+          // bigram
+          probability += Math.log(NGramUtils.calculateBigramMLProbability(trigram.getX2(), trigram.getX1(), vocabulary));
+        } else if (trigram.getX0() == null) {
+          // unigram
+          probability += Math.log(NGramUtils.calculateUnigramMLProbability(trigram.getX2(), vocabulary));
+        } else {
+          throw new RuntimeException("unexpected");
+        }
+      }
+      if (!Double.isNaN(probability)) {
+        probability = Math.exp(probability);
       }
     }
     return probability;
   }
 
-  private Set<Trigram> getTrigrams(String[] sample) {
+  private Set<Trigram> getTrigrams(T[] sample) {
     Set<Trigram> trigrams = new HashSet<Trigram>();
-    for (int i = 0; i < sample.length - 2; i++) {
-      String x0 = null;
-      String x1 = null;
-      String x2 = sample[i];
-      if (i > 1) {
+    for (int i = 0; i < sample.length; i++) {
+      T x0 = null;
+      T x1 = null;
+      T x2 = sample[i];
+      if (i > 0) {
         x1 = sample[i - 1];
       }
-      if (i > 2) {
+      if (i > 1) {
         x0 = sample[i - 2];
       }
-      trigrams.add(new Trigram(x0, x1, x2));
+      if (x0 != null && x1 != null && x2 != null) {
+        trigrams.add(new Trigram(x0, x1, x2));
+      }
     }
     return trigrams;
   }
 
   private class Trigram {
-    private final String x0;
-    private final String x1;
-    private final String x2;
+    private final T x0;
+    private final T x1;
+    private final T x2;
 
-    private Trigram(String x0, String x1, String x2) {
+    private Trigram(T x0, T x1, T x2) {
       this.x0 = x0;
       this.x1 = x1;
       this.x2 = x2;
     }
 
-    public String getX0() {
+    public T getX0() {
       return x0;
     }
 
-    public String getX1() {
+    public T getX1() {
       return x1;
     }
 
-    public String getX2() {
+    public T getX2() {
       return x2;
     }
   }

@@ -28,6 +28,7 @@ import java.util.Set;
  * A context free grammar
  */
 public class ContextFreeGrammar {
+
   private final Collection<String> nonTerminalSymbols;
   private final Collection<String> terminalSymbols;
   private final Collection<Rule> rules;

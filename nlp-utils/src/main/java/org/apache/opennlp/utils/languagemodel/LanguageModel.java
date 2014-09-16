@@ -21,18 +21,20 @@ package org.apache.opennlp.utils.languagemodel;
 import java.util.Collection;
 
 /**
- * A language model calculate the probability <i>p</i> (between 0 and 1) of a
+ * A language model can calculate the probability <i>p</i> (between 0 and 1) of a
  * certain set of <code>T</code> objects, given a vocabulary.
+ * <code>T</code> is usually an {@link java.lang.Iterable} or an array as language models are very commonly used for
+ * sentences, so that T is e.g. an array of <code>String</code>s.
  */
 public interface LanguageModel<T> {
 
   /**
-   * Calculate the probability of a sentence given a vocabulary
+   * Calculate the probability of a sample, given a vocabulary
    *
    * @param vocabulary a {@link Collection} of objects of type <code>T</code>
    * @param sample     the sample to evaluate the probability for
    * @return a <code>double</code> between <code>0</code> and <code>1</code>
    */
-  public double calculateProbability(Collection<T> vocabulary, T sample);
+  double calculateProbability(Collection<T> vocabulary, T sample);
 
 }

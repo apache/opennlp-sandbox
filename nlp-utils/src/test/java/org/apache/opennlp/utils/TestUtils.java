@@ -18,8 +18,9 @@
  */
 package org.apache.opennlp.utils;
 
-import org.apache.opennlp.utils.TrainingExample;
-import org.apache.opennlp.utils.TrainingSet;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Random;
 import org.junit.Ignore;
 
 /**
@@ -27,6 +28,8 @@ import org.junit.Ignore;
  */
 @Ignore
 public class TestUtils {
+
+  private static Random r = new Random();
 
   public static void fillTrainingSet(TrainingSet trainingSet, int size, int dimension) {
     for (int i = 0; i < size; i++) {
@@ -37,5 +40,25 @@ public class TestUtils {
       double out = Math.random();
       trainingSet.add(new TrainingExample(inputs, out));
     }
+  }
+
+  public static Collection<String[]> generateRandomVocabulary() {
+    int size = r.nextInt(1000);
+    Collection<String[]> vocabulary = new ArrayList<String[]>(size);
+    for (int i = 0; i < size; i++) {
+      String[] sentence = generateRandomSentence();
+      vocabulary.add(sentence);
+    }
+    return vocabulary;
+  }
+
+  public static String[] generateRandomSentence() {
+    int dimension = r.nextInt(10);
+    String[] sentence = new String[dimension];
+    for (int j = 0; j < dimension; j++) {
+      char c = (char) r.nextInt(10);
+      sentence[j] = c + "-" + c + "-" + c;
+    }
+    return sentence;
   }
 }

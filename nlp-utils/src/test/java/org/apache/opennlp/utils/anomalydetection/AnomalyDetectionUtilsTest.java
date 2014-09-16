@@ -31,8 +31,9 @@ import static org.junit.Assert.assertTrue;
  * Testcase for {@link org.apache.opennlp.utils.anomalydetection.AnomalyDetectionUtils}
  */
 public class AnomalyDetectionUtilsTest {
+
   @Test
-  public void testGaussianDistributionProbability() throws Exception {
+  public void testGaussianDistributionProbabilityFromFitParameters() throws Exception {
     TrainingSet trainingSet = new TrainingSet();
     TestUtils.fillTrainingSet(trainingSet, 100, 5);
     double[] mus = AnomalyDetectionUtils.fitMus(trainingSet);
@@ -46,7 +47,7 @@ public class AnomalyDetectionUtilsTest {
   }
 
   @Test
-  public void testGaussianDistributionProbability2() throws Exception {
+  public void testGaussianDistributionProbabilityFromTrainingSet() throws Exception {
     TrainingSet trainingSet = new TrainingSet();
     TestUtils.fillTrainingSet(trainingSet, 100, 5);
     TrainingExample newInput = new TrainingExample(new double[]{1d, 2d, 1000d, 123d, 0.1d}, 0d);
