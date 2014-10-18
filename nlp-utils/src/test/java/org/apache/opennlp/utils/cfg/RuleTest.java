@@ -28,8 +28,16 @@ import static org.junit.Assert.assertNotEquals;
  * Testcase for {@link Rule}
  */
 public class RuleTest {
+
   @Test
   public void testEquals() throws Exception {
+    Rule r1 = new Rule("NP", "NP", "PP");
+    Rule r2 = new Rule("NP", "NP", "PP");
+    assertEquals(r1, r2);
+  }
+
+  @Test
+  public void testNotEquals() throws Exception {
     Rule r1 = new Rule("NP", "DT", "NN");
     Rule r2 = new Rule("NP", "NP", "PP");
     assertNotEquals(r1, r2);

@@ -35,6 +35,22 @@ public class ContextFreeGrammar {
   private final String startSymbol;
   private final boolean randomExpansion;
 
+  public Collection<String> getNonTerminalSymbols() {
+    return nonTerminalSymbols;
+  }
+
+  public Collection<String> getTerminalSymbols() {
+    return terminalSymbols;
+  }
+
+  public Collection<Rule> getRules() {
+    return rules;
+  }
+
+  public String getStartSymbol() {
+    return startSymbol;
+  }
+
   public ContextFreeGrammar(Collection<String> nonTerminalSymbols, Collection<String> terminalSymbols, Collection<Rule> rules, String startSymbol, boolean randomExpansion) {
     assert nonTerminalSymbols.contains(startSymbol) : "start symbol doesn't belong to non-terminal symbols set";
 
@@ -62,7 +78,6 @@ public class ContextFreeGrammar {
   }
 
   private Collection<String> getTerminals(String word) {
-
     if (terminalSymbols.contains(word)) {
       Collection<String> c = new LinkedList<String>();
       c.add(word);
@@ -87,7 +102,7 @@ public class ContextFreeGrammar {
     ArrayList<Rule> possibleRules = new ArrayList<Rule>();
     for (Rule r : rules) {
       if (word.equals(r.getEntry())) {
-        if (randomExpansion) {
+        if (!randomExpansion) {
           return r;
         }
         possibleRules.add(r);

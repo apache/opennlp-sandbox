@@ -42,8 +42,8 @@ public class Rule implements Comparable<Rule> {
 
   @Override
   public int compareTo(Rule o) {
-      int c = entry.compareTo(o.getEntry());
-      return c != 0 ? c : Arrays.toString(expansion).compareTo(Arrays.toString(o.getExpansion()));
+    int c = entry.compareTo(o.getEntry());
+    return c != 0 ? c : Arrays.toString(expansion).compareTo(Arrays.toString(o.getExpansion()));
   }
 
   @Override
@@ -53,10 +53,8 @@ public class Rule implements Comparable<Rule> {
 
     Rule rule = (Rule) o;
 
-    if (entry != null ? !entry.equals(rule.entry) : rule.entry != null) return false;
-    if (!Arrays.equals(expansion, rule.expansion)) return false;
+    return !(entry != null ? !entry.equals(rule.entry) : rule.entry != null) && Arrays.equals(expansion, rule.expansion);
 
-    return true;
   }
 
   @Override
@@ -64,5 +62,13 @@ public class Rule implements Comparable<Rule> {
     int result = entry != null ? entry.hashCode() : 0;
     result = 31 * result + (expansion != null ? Arrays.hashCode(expansion) : 0);
     return result;
+  }
+
+  @Override
+  public String toString() {
+    return "{" +
+            "'" + entry + '\'' +
+            " -> " + Arrays.toString(expansion) +
+            '}';
   }
 }
