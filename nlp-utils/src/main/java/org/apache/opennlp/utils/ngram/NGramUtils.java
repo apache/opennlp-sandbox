@@ -32,7 +32,7 @@ public class NGramUtils {
     for (T[] sentence : sentences) {
       int idx0 = contains(sentence, x0);
       if (idx0 >= 0) {
-        if (idx0 + 2 < sentence.length && x1.equals(sentence[idx0+1]) && x2.equals(sentence[idx0+2])) {
+        if (idx0 + 2 < sentence.length && x1.equals(sentence[idx0 + 1]) && x2.equals(sentence[idx0 + 2])) {
           count++;
         }
       }
@@ -42,7 +42,7 @@ public class NGramUtils {
 
   private static <T> int contains(T[] sentence, T word) {
     for (int i = 0; i < sentence.length; i++) {
-      if (word.equals(sentence[i])){
+      if (word.equals(sentence[i])) {
         return i;
       }
     }
@@ -61,8 +61,7 @@ public class NGramUtils {
         if (foundPreceding && sequentWord.equals(w)) {
           foundPreceding = false;
           result++;
-        }
-        else
+        } else
           foundPreceding = false;
       }
     }
@@ -85,11 +84,11 @@ public class NGramUtils {
   }
 
   public static <T> Double calculateBigramMLProbability(T sequentWord, T precedingWord, Collection<T[]> set) {
-    return count(sequentWord, precedingWord, set)/ count(precedingWord, set);
+    return count(sequentWord, precedingWord, set) / count(precedingWord, set);
   }
 
   public static <T> Double calculateTrigramMLProbability(T x0, T x1, T x2, Collection<T[]> sentences) {
-    return count(x0, x1, x2, sentences)/ count(x1, x0, sentences);
+    return count(x0, x1, x2, sentences) / count(x1, x0, sentences);
   }
 
   public static Double calculateBigramPriorSmoothingProbability(String sequentWord, String precedingWord, Collection<String[]> set, Double k) {
@@ -99,17 +98,17 @@ public class NGramUtils {
   public static <T> Double calculateUnigramMLProbability(T word, Collection<T[]> set) {
     double vocSize = 0d;
     for (T[] s : set) {
-      vocSize+= s.length;
+      vocSize += s.length;
     }
     return count(word, set) / vocSize;
   }
 
   public static <T> Double calculateLinearInterpolationProbability(T x0, T x1, T x2, Collection<T[]> sentences,
-                                                               Double lambda1, Double lambda2, Double lambda3) {
+                                                                   Double lambda1, Double lambda2, Double lambda3) {
     assert lambda1 + lambda2 + lambda3 == 1 : "lambdas sum should be equals to 1";
     assert lambda1 > 0 && lambda2 > 0 && lambda3 > 0 : "lambdas should all be greater than 0";
 
-    return  lambda1 * calculateTrigramMLProbability(x0, x1, x2, sentences) +
+    return lambda1 * calculateTrigramMLProbability(x0, x1, x2, sentences) +
             lambda2 * calculateBigramMLProbability(x2, x1, sentences) +
             lambda3 * calculateUnigramMLProbability(x2, sentences);
 
@@ -117,7 +116,7 @@ public class NGramUtils {
 
   private static <T> Collection<T> flatSet(Collection<T[]> set) {
     Collection<T> flatSet = new HashSet<T>();
-    for (T[] sentence : set){
+    for (T[] sentence : set) {
       flatSet.addAll(Arrays.asList(sentence));
     }
     return flatSet;
@@ -127,7 +126,7 @@ public class NGramUtils {
     Double missingMass = 0d;
     Double countWord = count(x1, set);
     for (T word : flatSet(set)) {
-      missingMass += (count(word, x1, set) - discount)/ countWord;
+      missingMass += (count(word, x1, set) - discount) / countWord;
     }
     return 1 - missingMass;
   }

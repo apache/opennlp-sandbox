@@ -19,7 +19,6 @@
 package org.apache.opennlp.utils.anomalydetection;
 
 import java.math.BigDecimal;
-
 import org.apache.opennlp.utils.TrainingExample;
 import org.apache.opennlp.utils.TrainingSet;
 
@@ -33,7 +32,6 @@ public class AnomalyDetectionUtils {
    *
    * @param inputs the {@link org.apache.opennlp.utils.TrainingSet} to fit
    * @return the <code>double[]</code> containing the Mu parameters for each feature
-   * @throws Exception
    */
   public static double[] fitMus(TrainingSet inputs) {
     assert inputs != null && inputs.size() > 0 : "empty dataset";
@@ -54,7 +52,6 @@ public class AnomalyDetectionUtils {
    * @param mus    mean parameters
    * @param inputs the {@link TrainingSet} to fit
    * @return the <code>double[]</code> containing the standard deviations
-   * @throws Exception
    */
   public static double[] fitSigmas(double[] mus, TrainingSet inputs) {
     assert inputs != null && inputs.size() > 0 : "empty dataset";
@@ -84,10 +81,10 @@ public class AnomalyDetectionUtils {
   /**
    * calculate the probability of a certain input in a certain training set
    *
-   * @param x      the input
-   * @param set    the training set
+   * @param x   the input
+   * @param set the training set
    * @return the probability of the given input
-   * @throws Exception 
+   * @throws Exception
    */
   public static double getGaussianProbability(TrainingExample x, TrainingSet set) throws Exception {
     double[] mus = fitMus(set);
@@ -96,7 +93,7 @@ public class AnomalyDetectionUtils {
   }
 
   private static double calculateGaussianProbability(TrainingExample x, double[] mus,
-          double[] sigmas) {
+                                                     double[] sigmas) {
     assert mus.length == sigmas.length : "parameters not aligned";
     BigDecimal px = new BigDecimal(1d);
     for (int i = 0; i < mus.length; i++) {

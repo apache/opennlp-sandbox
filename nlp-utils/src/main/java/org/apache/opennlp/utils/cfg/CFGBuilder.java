@@ -25,44 +25,44 @@ import java.util.Collection;
  */
 public class CFGBuilder {
 
-    private Collection<String> nonTerminalSymbols;
-    private Collection<String> terminalSymbols;
-    private Collection<Rule> rules;
-    private String startSymbol;
-    private boolean randomExpansion;
+  private Collection<String> nonTerminalSymbols;
+  private Collection<String> terminalSymbols;
+  private Collection<Rule> rules;
+  private String startSymbol;
+  private boolean randomExpansion;
 
-    public static CFGBuilder createCFG() {
-        return new CFGBuilder();
-    }
+  public static CFGBuilder createCFG() {
+    return new CFGBuilder();
+  }
 
-    public CFGBuilder withTerminals(Collection<String> terminalSymbols) {
-        this.terminalSymbols = terminalSymbols;
-        return this;
-    }
+  public CFGBuilder withTerminals(Collection<String> terminalSymbols) {
+    this.terminalSymbols = terminalSymbols;
+    return this;
+  }
 
-    public CFGBuilder withNonTerminals(Collection<String> nonTerminalSymbols) {
-        this.nonTerminalSymbols = nonTerminalSymbols;
-        return this;
-    }
+  public CFGBuilder withNonTerminals(Collection<String> nonTerminalSymbols) {
+    this.nonTerminalSymbols = nonTerminalSymbols;
+    return this;
+  }
 
-    public CFGBuilder withRules(Collection<Rule> rules) {
-        this.rules = rules;
-        return this;
-    }
+  public CFGBuilder withRules(Collection<Rule> rules) {
+    this.rules = rules;
+    return this;
+  }
 
-    public CFGBuilder withStartSymbol(String startSymbol) {
-        this.startSymbol = startSymbol;
-        return this;
-    }
+  public CFGBuilder withStartSymbol(String startSymbol) {
+    this.startSymbol = startSymbol;
+    return this;
+  }
 
-    public CFGBuilder withRandomExpansion(boolean randomExpansion) {
-        this.randomExpansion = randomExpansion;
-        return this;
-    }
+  public CFGBuilder withRandomExpansion(boolean randomExpansion) {
+    this.randomExpansion = randomExpansion;
+    return this;
+  }
 
-    public ContextFreeGrammar build() {
-      assert nonTerminalSymbols != null && terminalSymbols != null && rules != null && startSymbol != null :
-              "missing definitions { V : " + nonTerminalSymbols + ", ∑ : " + terminalSymbols + ", R : " + rules + ", S : " + startSymbol + "}";
-        return new ContextFreeGrammar(nonTerminalSymbols, terminalSymbols, rules, startSymbol, randomExpansion);
-    }
+  public ContextFreeGrammar build() {
+    assert nonTerminalSymbols != null && terminalSymbols != null && rules != null && startSymbol != null :
+            "missing definitions { V : " + nonTerminalSymbols + ", ∑ : " + terminalSymbols + ", R : " + rules + ", S : " + startSymbol + "}";
+    return new ContextFreeGrammar(nonTerminalSymbols, terminalSymbols, rules, startSymbol, randomExpansion);
+  }
 }

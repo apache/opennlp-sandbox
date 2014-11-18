@@ -143,7 +143,7 @@ public class ProbabilisticContextFreeGrammar {
     return backPointer;
   }
 
-  public BackPointer cky(List<String> sentence, ProbabilisticContextFreeGrammar pcfg) {
+  public BackPointer cky(List<String> sentence) {
     BackPointer backPointer = null;
 
     int n = sentence.size();
@@ -151,7 +151,7 @@ public class ProbabilisticContextFreeGrammar {
       for (int i = 0; i < n - l; i++) {
         int j = i + l;
         double max = 0;
-        for (String x : pcfg.getNonTerminalSymbols()) {
+        for (String x : getNonTerminalSymbols()) {
           for (Rule r : getRulesForNonTerminal(x)) {
             for (int s = i; s < j - 1; s++) {
               double q = q(r);

@@ -18,11 +18,10 @@
  */
 package org.apache.opennlp.utils.anomalydetection;
 
-import org.junit.Test;
-
 import org.apache.opennlp.utils.TestUtils;
 import org.apache.opennlp.utils.TrainingExample;
 import org.apache.opennlp.utils.TrainingSet;
+import org.junit.Test;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;

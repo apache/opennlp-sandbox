@@ -19,7 +19,6 @@
 package org.apache.opennlp.utils.regression;
 
 import java.util.Arrays;
-
 import org.apache.opennlp.utils.TrainingSet;
 
 /**
