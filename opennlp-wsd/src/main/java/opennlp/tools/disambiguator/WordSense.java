@@ -1,75 +1,62 @@
 package opennlp.tools.disambiguator;
 
-import java.util.ArrayList;
-import java.util.concurrent.Semaphore;
-
 import opennlp.tools.disambiguator.lesk.WTDLesk;
 
-public class WordSense implements Comparable{ 
-	
-	protected WTDLesk WTDLesk;
-	protected Node node;
-	protected int id;
-	protected double score;
-	
-	
-	public WordSense(WTDLesk WTDLesk, Node node) {
-		super();
-		this.WTDLesk = WTDLesk;
-		this.node = node;
-	}
+public class WordSense implements Comparable {
 
-	public WordSense() {
-		super();
-	}
+  protected WTDLesk WTDLesk;
+  protected Node node;
+  protected int id;
+  protected double score;
 
-	
-	public WTDLesk getWTDLesk() {
-		return WTDLesk;
-	}
+  public WordSense(WTDLesk WTDLesk, Node node) {
+    super();
+    this.WTDLesk = WTDLesk;
+    this.node = node;
+  }
 
-	public void setWTDLesk(WTDLesk WTDLesk) {
-		this.WTDLesk = WTDLesk;
-	}
+  public WordSense() {
+    super();
+  }
 
-	
-	public Node getNode() {
-		return node;
-	}
+  public WTDLesk getWTDLesk() {
+    return WTDLesk;
+  }
 
-	public void setNode(Node node) {
-		this.node = node;
-	}
+  public void setWTDLesk(WTDLesk WTDLesk) {
+    this.WTDLesk = WTDLesk;
+  }
 
-	
-	public double getScore() {
-		return score;
-	}
+  public Node getNode() {
+    return node;
+  }
 
-	public void setScore(double score) {
-		this.score = score;
-	}
+  public void setNode(Node node) {
+    this.node = node;
+  }
 
-	public int getId() {
-		return id;
-	}
+  public double getScore() {
+    return score;
+  }
 
-	public void setId(int id) {
-		this.id = id;
-	}
+  public void setScore(double score) {
+    this.score = score;
+  }
 
+  public int getId() {
+    return id;
+  }
 
-	public int compareTo(Object o) {
-		return (this.score-((WordSense)o).score)<0?1:-1;
-	}
-	
-	
-	public String getSense() {
-		return node.getSense();
-	}
-	
+  public void setId(int id) {
+    this.id = id;
+  }
 
+  public int compareTo(Object o) {
+    return (this.score - ((WordSense) o).score) < 0 ? 1 : -1;
+  }
+
+  public String getSense() {
+    return node.getSense();
+  }
 
 }
-
-
