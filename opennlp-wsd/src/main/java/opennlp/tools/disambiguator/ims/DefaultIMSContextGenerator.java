@@ -34,8 +34,8 @@ public class DefaultIMSContextGenerator implements IMSContextGenerator {
   /**
    * Default context generator for IMS.
    */
-  public DefaultIMSContextGenerator() {
 
+  public DefaultIMSContextGenerator() {
   }
 
   /**

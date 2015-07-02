@@ -35,6 +35,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.zip.GZIPInputStream;
@@ -51,6 +52,7 @@ import opennlp.tools.disambiguator.Constants;
 import opennlp.tools.disambiguator.DataExtractor;
 import opennlp.tools.disambiguator.FeaturesExtractor;
 import opennlp.tools.disambiguator.PreProcessor;
+import opennlp.tools.disambiguator.WSDParameters;
 import opennlp.tools.disambiguator.WordPOS;
 import opennlp.tools.disambiguator.WSDisambiguator;
 
@@ -64,16 +66,10 @@ public class IMS implements WSDisambiguator {
   private FeaturesExtractor fExtractor = new FeaturesExtractor();
   private DataExtractor dExtractor = new DataExtractor();
 
-  /**
-   * PARAMETERS
-   */
 
   private int windowSize;
+  private int word;
   private int ngram;
-
-  /**
-   * Constructors
-   */
 
   public IMS() {
     super();
@@ -95,11 +91,7 @@ public class IMS implements WSDisambiguator {
     this.cg = factory.createContextGenerator();
   }
 
-  /**
-   * INTERNAL METHODS
-   */
-
-  protected HashMap<Integer, WTDIMS> extractTrainingData(
+  protected ArrayList<WTDIMS> extractTrainingData(
       String wordTrainingxmlFile,
       HashMap<String, ArrayList<DictionaryInstance>> senses) {
 
@@ -108,18 +100,18 @@ public class IMS implements WSDisambiguator {
      * etc.)
      */
 
-    HashMap<Integer, WTDIMS> trainingData = dExtractor
+    ArrayList<WTDIMS> trainingData = dExtractor
         .extractWSDInstances(wordTrainingxmlFile);
 
     // HashMap<Integer, WTDIMS> trainingData =
     // dExtractor.extractWSDInstances(wordTrainingxmlFile);
 
-    for (Integer key : trainingData.keySet()) {
-      for (String senseId : trainingData.get(key).getSenseID()) {
+    for (WTDIMS data : trainingData) {
+      for (String senseId : data.getSenseIDs()) {
         for (String dictKey : senses.keySet()) {
           for (DictionaryInstance instance : senses.get(dictKey)) {
             if (senseId.equals(instance.getId())) {
-              trainingData.get(key).setSense(
+              data.setSense(
                   Integer.parseInt(dictKey.split("_")[1]));
               break;
             }
@@ -131,11 +123,11 @@ public class IMS implements WSDisambiguator {
     return trainingData;
   }
 
-  protected void extractFeature(HashMap<Integer, WTDIMS> words) {
+  protected void extractFeature(ArrayList<WTDIMS> words) {
 
-    for (Integer key : words.keySet()) {
+    for (WTDIMS word : words) {
 
-      fExtractor.extractIMSFeatures(words.get(key), windowSize, ngram);
+      fExtractor.extractIMSFeatures(word, windowSize, ngram);
 
     }
 
@@ -217,18 +209,18 @@ public class IMS implements WSDisambiguator {
       HashMap<String, ArrayList<DictionaryInstance>> senses = dExtractor
           .extractWordSenses(dict, map, wordTag);
 
-      HashMap<Integer, WTDIMS> instances = extractTrainingData(
+      ArrayList<WTDIMS> instances = extractTrainingData(
           wordTrainingxmlFile, senses);
 
       extractFeature(instances);
 
       ArrayList<Event> events = new ArrayList<Event>();
 
-      for (int key : instances.keySet()) {
+      for (WTDIMS instance : instances) {
 
-        int sense = instances.get(key).getSense();
+        int sense = instance.getSense();
 
-        String[] context = cg.getContext(instances.get(key));
+        String[] context = cg.getContext(instance);
 
         Event ev = new Event(sense + "", context);
 
@@ -338,9 +330,16 @@ public class IMS implements WSDisambiguator {
   }
 
   @Override
-  public String[] disambiguate(String[] inputText, Span[] inputWordSpans) {
-    // TODO Auto-generated method stub
+  public String[][] disambiguate(String[] inputText, Span[] inputWordSpans) {
     return null;
   }
 
+  @Override
+  public WSDParameters getParams() {
+    return null;
+  }
+
+  @Override
+  public void setParams(WSDParameters params) throws InvalidParameterException {
+  }
 }

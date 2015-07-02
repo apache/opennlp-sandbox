@@ -20,8 +20,6 @@
 package opennlp.tools.disambiguator;
 
 
-
-
 import java.util.ArrayList;
 
 import opennlp.tools.disambiguator.ims.WTDIMS;
@@ -44,8 +42,6 @@ public class FeaturesExtractor {
    *             Collocations: it requires one parameter: "the n-gram"
    * 
    */
-
-  // private methods
   private String[] extractPosOfSurroundingWords(String[] sentence,
       int wordIndex, int windowSize) {
 
@@ -94,7 +90,7 @@ public class FeaturesExtractor {
 
   private String[] extractLocalCollocations(String[] sentence, int wordIndex,
       int ngram) {
-    /*
+    /**
      * Here the author used only 11 features of this type. the range was set to
      * 3 (bigrams extracted in a way that they are at max separated by 1 word).
      */
@@ -124,6 +120,7 @@ public class FeaturesExtractor {
     return res;
   }
 
+  // public method
   /**
    * This method generates the different set of features related to the IMS
    * approach and store them in the corresponding attributes of the WTDIMS

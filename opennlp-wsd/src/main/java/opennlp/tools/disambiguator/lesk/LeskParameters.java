@@ -19,11 +19,23 @@
 
 package opennlp.tools.disambiguator.lesk;
 
-public class LeskParameters {
+import opennlp.tools.disambiguator.WSDParameters;
 
-  // VARIATIONS
+/**
+ * Lesk specific parameter set
+ *
+ */
+public class LeskParameters extends WSDParameters {
+
+  
+  /**
+   * Enum of all types of implemented variations of Lesk
+   *
+   */
   public static enum LESK_TYPE {
-    LESK_BASIC, LESK_BASIC_CTXT, LESK_BASIC_CTXT_WIN, LESK_BASIC_CTXT_WIN_BF, LESK_EXT, LESK_EXT_CTXT, LESK_EXT_CTXT_WIN, LESK_EXT_CTXT_WIN_BF, LESK_EXT_EXP, LESK_EXT_EXP_CTXT, LESK_EXT_EXP_CTXT_WIN, LESK_EXT_EXP_CTXT_WIN_BF,
+    LESK_BASIC, LESK_BASIC_CTXT, LESK_BASIC_CTXT_WIN, LESK_BASIC_CTXT_WIN_BF,
+    LESK_EXT, LESK_EXT_CTXT, LESK_EXT_CTXT_WIN, LESK_EXT_CTXT_WIN_BF, LESK_EXT_EXP,
+    LESK_EXT_EXP_CTXT, LESK_EXT_EXP_CTXT_WIN, LESK_EXT_EXP_CTXT_WIN_BF,
   }
 
   // DEFAULTS
@@ -33,25 +45,124 @@ public class LeskParameters {
   protected static final double DFLT_IEXP = 0.3;
   protected static final double DFLT_DEXP = 0.3;
 
-  public LESK_TYPE leskType;
-  public int win_f_size;
-  public int win_b_size;
-  public int depth;
+  protected LESK_TYPE leskType;
+  protected int win_f_size;
+  protected int win_b_size;
+  protected int depth;
 
-  public boolean fathom_synonyms;
-  public boolean fathom_hypernyms;
-  public boolean fathom_hyponyms;
-  public boolean fathom_meronyms;
-  public boolean fathom_holonyms;
+  protected boolean fathom_synonyms;
+  protected boolean fathom_hypernyms;
+  protected boolean fathom_hyponyms;
+  protected boolean fathom_meronyms;
+  protected boolean fathom_holonyms;
 
-  public double depth_weight;
-  public double iexp;
-  public double dexp;
+  protected double depth_weight;
+  protected double iexp;
+  protected double dexp;
+
+  public LESK_TYPE getLeskType() {
+    return leskType;
+  }
+
+  public void setLeskType(LESK_TYPE leskType) {
+    this.leskType = leskType;
+  }
+
+  public int getWin_f_size() {
+    return win_f_size;
+  }
+
+  public void setWin_f_size(int win_f_size) {
+    this.win_f_size = win_f_size;
+  }
+
+  public int getWin_b_size() {
+    return win_b_size;
+  }
+
+  public void setWin_b_size(int win_b_size) {
+    this.win_b_size = win_b_size;
+  }
+
+  public int getDepth() {
+    return depth;
+  }
+
+  public void setDepth(int depth) {
+    this.depth = depth;
+  }
+
+  public boolean isFathom_synonyms() {
+    return fathom_synonyms;
+  }
+
+  public void setFathom_synonyms(boolean fathom_synonyms) {
+    this.fathom_synonyms = fathom_synonyms;
+  }
+
+  public boolean isFathom_hypernyms() {
+    return fathom_hypernyms;
+  }
+
+  public void setFathom_hypernyms(boolean fathom_hypernyms) {
+    this.fathom_hypernyms = fathom_hypernyms;
+  }
+
+  public boolean isFathom_hyponyms() {
+    return fathom_hyponyms;
+  }
+
+  public void setFathom_hyponyms(boolean fathom_hyponyms) {
+    this.fathom_hyponyms = fathom_hyponyms;
+  }
+
+  public boolean isFathom_meronyms() {
+    return fathom_meronyms;
+  }
+
+  public void setFathom_meronyms(boolean fathom_meronyms) {
+    this.fathom_meronyms = fathom_meronyms;
+  }
+
+  public boolean isFathom_holonyms() {
+    return fathom_holonyms;
+  }
+
+  public void setFathom_holonyms(boolean fathom_holonyms) {
+    this.fathom_holonyms = fathom_holonyms;
+  }
+
+  public double getDepth_weight() {
+    return depth_weight;
+  }
+
+  public void setDepth_weight(double depth_weight) {
+    this.depth_weight = depth_weight;
+  }
+
+  public double getIexp() {
+    return iexp;
+  }
+
+  public void setIexp(double iexp) {
+    this.iexp = iexp;
+  }
+
+  public double getDexp() {
+    return dexp;
+  }
+
+  public void setDexp(double dexp) {
+    this.dexp = dexp;
+  }
 
   public LeskParameters() {
     this.setDefaults();
   }
 
+  /**
+   * Sets default parameters
+   */
   public void setDefaults() {
     this.leskType = LeskParameters.DFLT_LESK_TYPE;
     this.win_f_size = LeskParameters.DFLT_WIN_SIZE;
@@ -66,8 +177,10 @@ public class LeskParameters {
     this.fathom_synonyms = true;
   }
 
-  // Parameter Validation
-  // TODO make isSet for semantic feature booleans
+  
+  /* (non-Javadoc)
+   * @see opennlp.tools.disambiguator.WSDParameters#isValid()
+   */
   public boolean isValid() {
 
     switch (this.leskType) {
@@ -81,16 +194,13 @@ public class LeskParameters {
     case LESK_EXT:
     case LESK_EXT_CTXT:
       return (this.depth >= 0) && (this.depth_weight >= 0);
-
     case LESK_EXT_CTXT_WIN:
     case LESK_EXT_CTXT_WIN_BF:
       return (this.depth >= 0) && (this.depth_weight >= 0)
           && (this.win_b_size >= 0) && (this.win_f_size >= 0);
-
     case LESK_EXT_EXP:
     case LESK_EXT_EXP_CTXT:
       return (this.depth >= 0) && (this.dexp >= 0) && (this.iexp >= 0);
-
     case LESK_EXT_EXP_CTXT_WIN:
     case LESK_EXT_EXP_CTXT_WIN_BF:
       return (this.depth >= 0) && (this.dexp >= 0) && (this.iexp >= 0)

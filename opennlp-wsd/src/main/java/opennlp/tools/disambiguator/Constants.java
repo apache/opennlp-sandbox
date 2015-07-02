@@ -22,6 +22,8 @@ package opennlp.tools.disambiguator;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import opennlp.tools.disambiguator.lesk.Lesk;
+import net.sf.extjwnl.JWNLException;
 import net.sf.extjwnl.data.POS;
 
 public class Constants {
@@ -125,22 +127,62 @@ public class Constants {
           "you're", "yours", "yourself", "yourselves", "you've", "zero"));
 
   // Print a text in the console
+  public static void printResults(WSDisambiguator disambiguator,
+      String[] results) {
+
+    if (results != null) {
+
+      if (disambiguator instanceof Lesk) {
+        POS pos;
+        long offset;
+        double score;
+        String[] parts;
+
+        for (String result : results) {
+          parts = result.split("@");
+          pos = POS.getPOSForKey(parts[0]);
+          offset = Long.parseLong(parts[1]);
+          score = Double.parseDouble(parts[2]);
+          try {
+            Constants.print("score : " + score + " for : "
+                + Loader.getDictionary().getSynsetAt(pos, offset).getGloss());
+          } catch (JWNLException e) {
+            e.printStackTrace();
+          }
+        }
+      }
+    }
+
+  }
+
   public static void print(Object in) {
-    System.out.println(in);
+    if (in == null) {
+      System.out.println("object is null");
+    } else {
+      System.out.println(in);
+    }
   }
 
   public static void print(Object[] array) {
-    System.out.println(Arrays.asList(array));
+    if (array == null) {
+      System.out.println("object is null");
+    } else {
+      System.out.println(Arrays.asList(array));
+    }
   }
 
   public static void print(Object[][] array) {
-    System.out.print("[");
-    for (int i = 0; i < array.length; i++) {
-      print(array[i]);
-      if (i != array.length - 1) {
-        System.out.print("\n");
+    if (array == null) {
+      System.out.println("object is null");
+    } else {
+      System.out.print("[");
+      for (int i = 0; i < array.length; i++) {
+        print(array[i]);
+        if (i != array.length - 1) {
+          System.out.print("\n");
+        }
+        print("]");
       }
-      print("]");
     }
   }
 
@@ -167,6 +209,15 @@ public class Constants {
     else
       return null;
 
+  }
+
+  public static boolean isRelevant(String posTag) {
+    return getPOS(posTag) != null;
+  }
+
+  public static boolean isRelevant(POS pos) {
+    return pos.equals(POS.ADJECTIVE) || pos.equals(POS.ADVERB)
+        || pos.equals(POS.NOUN) || pos.equals(POS.VERB);
   }
 
   // Check whether a list of arrays contains an array
@@ -196,5 +247,4 @@ public class Constants {
     return true;
 
   }
-
 }

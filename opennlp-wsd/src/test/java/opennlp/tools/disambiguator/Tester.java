@@ -45,40 +45,47 @@ public class Tester {
 
     try {
       TokenizerModel = new TokenizerModel(new FileInputStream(
-          "src\\test\\resources\\opennlp\\tools\\disambiguator\\en-token.bin"));
+          "src\\test\\resources\\models\\en-token.bin"));
       Tokenizer tokenizer = new TokenizerME(TokenizerModel);
 
       String[] words = tokenizer.tokenize(sentence);
-
-      POSModel posTaggerModel = new POSModelLoader()
-          .load(new File(
-              "src\\test\\resources\\opennlp\\tools\\disambiguator\\en-pos-maxent.bin"));
-      POSTagger tagger = new POSTaggerME(posTaggerModel);
-
-      Constants.print("\ntokens :");
+//
+//      POSModel posTaggerModel = new POSModelLoader()
+//          .load(new File(
+//              "src\\test\\resources\\models\\en-pos-maxent.bin"));
+////      POSTagger tagger = new POSTaggerME(posTaggerModel);
+//
+//      Constants.print("\ntokens :");
       Constants.print(words);
-      Constants.print(tagger.tag(words));
+      
+      int wordIndex= 6;
+//      Constants.print(tagger.tag(words));
 
       Constants.print("\ntesting default lesk :");
       Lesk lesk = new Lesk();
-      Constants.print(lesk.disambiguate(words, 6));
+      Constants.print(lesk.disambiguate(words, wordIndex));
+      Constants.printResults(lesk,lesk.disambiguate(words, wordIndex));
+      
 
       Constants.print("\ntesting with null params :");
       lesk.setParams(null);
-      Constants.print(lesk.disambiguate(words, 6));
+      Constants.print(lesk.disambiguate(words, wordIndex));
+      Constants.printResults(lesk,lesk.disambiguate(words, wordIndex));
 
       Constants.print("\ntesting with default params");
       lesk.setParams(new LeskParameters());
-      Constants.print(lesk.disambiguate(words, 6));
+      Constants.print(lesk.disambiguate(words, wordIndex));
+      Constants.printResults(lesk,lesk.disambiguate(words, wordIndex));
 
       Constants.print("\ntesting with custom params :");
       LeskParameters leskParams = new LeskParameters();
-      leskParams.leskType = LeskParameters.LESK_TYPE.LESK_BASIC_CTXT_WIN_BF;
-      leskParams.win_b_size = 4;
-      leskParams.depth = 3;
+      leskParams.setLeskType(LeskParameters.LESK_TYPE.LESK_BASIC_CTXT_WIN_BF);
+      leskParams.setWin_b_size(4);
+      leskParams.setDepth(3);
       lesk.setParams(leskParams);
-      Constants.print(lesk.disambiguate(words, 6));
-
+      Constants.print(lesk.disambiguate(words, wordIndex));
+      Constants.printResults(lesk,lesk.disambiguate(words, wordIndex));
+     
       /*
        * Constants.print("\ntesting with wrong params should throw exception :");
        * LeskParameters leskWrongParams = new LeskParameters();

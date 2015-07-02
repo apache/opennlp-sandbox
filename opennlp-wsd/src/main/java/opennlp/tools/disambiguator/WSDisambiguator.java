@@ -19,14 +19,49 @@
 
 package opennlp.tools.disambiguator;
 
+import java.security.InvalidParameterException;
 import opennlp.tools.util.Span;
 
+
 /**
- * The interface for word sense disambiguators.
+ * A word sense disambiguator that determines which sense of a word is meant in a particular context.
+ * It is a classification task, where the classes are the different senses of the ambiguous word.
+ * Disambiguation can be achieved in either supervised or un-supervised approaches.
+ * For the moment this component relies on WordNet to retrieve sense definitions.
+ * It returns an array of WordNet sense IDs ordered by their disambiguation score. 
+ * The sense with highest score is the most likely sense of the word.
+ * 
+ * Please see {@link Lesk} for an un-supervised approach.
+ * Please see {@link IMS} for a supervised approach.
+ * 
+ * @see Lesk
+ * @see IMS
  */
 public interface WSDisambiguator {
 
-  public String[] disambiguate(String[] inputText, int inputWordIndex);
+  
+  /**
+   * @return the parameters of the disambiguation algorithm
+   */
+  public WSDParameters getParams();
+  
+  /**
+   * @param the disambiguation implementation specific parameters.
+   * @throws InvalidParameterException
+   */
+  public void setParams(WSDParameters params) throws InvalidParameterException;
+  
+  /**
+   * @param tokenizedContext
+   * @param ambiguousTokenIndex
+   * @return result as an array of WordNet IDs
+   */
+  public String[] disambiguate(String[] tokenizedContext, int ambiguousTokenIndex);
 
-  public String[] disambiguate(String[] inputText, Span[] inputWordSpans);
+  /**
+   * @param tokenizedContext
+   * @param ambiguousTokenIndexSpans
+   * @return result as an array of WordNet IDs
+   */
+  public String[][] disambiguate(String[] tokenizedContext, Span[] ambiguousTokenIndexSpans);
 }

@@ -19,8 +19,6 @@
 
 package opennlp.tools.disambiguator.ims;
 
-
-
 import java.util.ArrayList;
 
 import opennlp.tools.disambiguator.PreProcessor;
@@ -34,7 +32,6 @@ public class WTDIMS extends WordToDisambiguate {
 
   public WTDIMS(String[] sentence, int word, int sense) {
     super(sentence, word, sense);
-
   }
 
   public WTDIMS(String[] sentence, int word) {
@@ -57,8 +54,7 @@ public class WTDIMS extends WordToDisambiguate {
       }
     }
 
-    this.senseID = xmlAnswers;
-
+    this.senseIDs = xmlAnswers;
   }
 
   public String[] getPosOfSurroundingWords() {
@@ -85,4 +81,3 @@ public class WTDIMS extends WordToDisambiguate {
     this.localCollocations = localCollocations;
   }
 }
-

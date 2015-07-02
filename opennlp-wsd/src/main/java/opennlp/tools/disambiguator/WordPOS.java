@@ -28,13 +28,13 @@ import net.sf.extjwnl.data.IndexWord;
 import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.data.Synset;
 
+// TODO extend Word instead
 public class WordPOS {
 
   private String word;
   private List stems;
   private POS pos;
 
-  // Constructor
   public WordPOS(String word, POS pos) throws IllegalArgumentException {
     if (word == null || pos == null) {
       throw new IllegalArgumentException("Args are null");
@@ -106,5 +106,4 @@ public class WordPOS {
     }
     return false;
   }
-
 }

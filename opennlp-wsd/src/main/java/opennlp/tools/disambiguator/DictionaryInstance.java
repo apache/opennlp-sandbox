@@ -20,8 +20,7 @@
 package opennlp.tools.disambiguator;
 
 public class DictionaryInstance {
-
-
+	
   protected int index;
 
   protected String word;
@@ -30,7 +29,6 @@ public class DictionaryInstance {
   protected String source;
   protected String[] synset;
   protected String gloss;
-
 
   public DictionaryInstance(int index, String word, String id, String source,
       String[] synset, String gloss) {
@@ -42,6 +40,10 @@ public class DictionaryInstance {
     this.synset = synset;
     this.gloss = gloss;
   }
+
+  /**
+   * Getters and Setters
+   */
 
   public int getIndex() {
     return index;

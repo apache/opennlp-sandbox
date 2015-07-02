@@ -41,10 +41,6 @@ import opennlp.tools.disambiguator.ims.WTDIMS;
 
 public class DataExtractor {
 
-  /**
-   * Constructor
-   */
-
   public DataExtractor() {
     super();
   }
@@ -52,7 +48,6 @@ public class DataExtractor {
   /**
    * Extract the dictionary from the dictionary XML file and map the senses
    */
-
   private ArrayList<DictionaryInstance> extractDictionary(String xmlLocation) {
 
     ArrayList<DictionaryInstance> dictionary = new ArrayList<DictionaryInstance>();
@@ -283,9 +278,9 @@ public class DataExtractor {
    * Extract the training instances from the training/test set File
    */
 
-  public HashMap<Integer, WTDIMS> extractWSDInstances(String xmlDataSet) {
+  public ArrayList<WTDIMS> extractWSDInstances(String xmlDataSet) {
 
-    HashMap<Integer, WTDIMS> setInstances = new HashMap<Integer, WTDIMS>();
+    ArrayList<WTDIMS> setInstances = new ArrayList<WTDIMS>();
 
     try {
 
@@ -297,8 +292,6 @@ public class DataExtractor {
       doc.getDocumentElement().normalize();
 
       NodeList lexelts = doc.getElementsByTagName("lexelt");
-
-      int index = 0;
 
       for (int i = 0; i < lexelts.getLength(); i++) {
 
@@ -371,16 +364,12 @@ public class DataExtractor {
 
               WTDIMS wordToDisambiguate = new WTDIMS(word, answers, sentence,
                   rawWord);
-              setInstances.put(index, wordToDisambiguate);
-              index++;
+              setInstances.add(wordToDisambiguate);
               // System.out.print(index + "\t");
               // System.out.println(wordToDisambiguate.toString());
             }
-
           }
-
         }
-
       }
 
     } catch (Exception e) {
@@ -390,5 +379,4 @@ public class DataExtractor {
     return setInstances;
 
   }
-
 }

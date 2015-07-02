@@ -25,160 +25,141 @@ import net.sf.extjwnl.data.POS;
 
 
 
-
 public class WordToDisambiguate {
-	
-	// TODO Check if it is necessary to add an attribute [word] since the word in the sentence is not necessarily in the base form ??
-		
-	protected String [] sentence;
-	protected String [] posTags;
-	
-	protected int wordIndex;
 
-	protected int sense;
-	
-	protected ArrayList<String> senseID;
-	
-	
-	
-	/**
-	 * Constructor
-	 */
-	
-	
-	public WordToDisambiguate(String[] sentence, int wordIndex, int sense) throws IllegalArgumentException{
-		super();
-		
-		if (wordIndex>sentence.length){
-			throw new IllegalArgumentException("The index is out of bounds !");
-		}
-		
-		this.sentence = sentence;
-		this.posTags = PreProcessor.tag(sentence);
-		
-		this.wordIndex = wordIndex;
-		
-		this.sense = sense;
-	}
-	
-	public WordToDisambiguate(String[] sentence, int wordIndex) {
-		this(sentence,wordIndex,-1);
-	}
-	
-	public WordToDisambiguate() {
-		String[] emptyString = {};
-		int emptyInteger = 0;
-		
-		this.sentence = emptyString;
-		this.wordIndex = emptyInteger;
-		this.sense = -1;
-		
-	}
+  // TODO Check if it is necessary to add an attribute [word] since the word in
+  // the sentence is not necessarily in the base form ??
 
-	
-	/**
-	 * Getters and Setters
-	 */
-	
-	// Sentence
-	public String[] getSentence() {
-		return sentence;
-	}
+  protected String[] sentence;
+  protected String[] posTags;
 
-	public void setSentence(String[] sentence) {
-		this.sentence = sentence;
-	}
+  protected int wordIndex;
 
-	
-	// Sentence Pos-Tags
-	public String[] getPosTags() {
-		return posTags;
-	}
+  protected int sense;
 
-	public void setPosTags(String[] posTags) {
-		this.posTags = posTags;
-	}
+  protected ArrayList<String> senseIDs;
 
-	
-	// Word to disambiguate
-	public int getWordIndex() {
-		return wordIndex;
-	}
+  /**
+   * Constructor
+   */
 
-	public String getRawWord() {
-		
-		/**
-		 * For example, from the word "running" it returns "run.v"
-		 */
-		
-		String wordBaseForm = Loader.getLemmatizer().lemmatize(this.sentence[wordIndex], this.posTags[wordIndex]);
-		
-		String ref = "";
-		
-		if (Constants.getPOS(this.posTags[wordIndex]).equals(POS.VERB)) {
-			ref = wordBaseForm + ".v";
-		} else 	if (Constants.getPOS(this.posTags[wordIndex]).equals(POS.NOUN)) {
-			ref = wordBaseForm + ".n";
-		} else 	if (Constants.getPOS(this.posTags[wordIndex]).equals(POS.ADJECTIVE)) {
-			ref = wordBaseForm + ".a";
-		} else 	if (Constants.getPOS(this.posTags[wordIndex]).equals(POS.ADVERB)) {
-			ref = wordBaseForm + ".r";
-		} else {
-			
-		}
-		
-		return ref;
-		
-	}
-	
-	public String getWord() {
-		return this.sentence[this.wordIndex];
-	}
-	
-	public String getPosTag() {
-		return this.posTags[this.wordIndex];
-	}
-	
-	public void setWordIndex(int wordIndex) {
-		this.wordIndex = wordIndex;
-	}
-	
+  public WordToDisambiguate(String[] sentence, int wordIndex, int sense)
+      throws IllegalArgumentException {
+    super();
 
-	
-	
-	// Word to disambiguate sense
-	public int getSense() {
-		return sense;
-	}
+    if (wordIndex > sentence.length) {
+      throw new IllegalArgumentException("The index is out of bounds !");
+    }
 
-	public void setSense(int sense) {
-		this.sense = sense;
-	}
+    this.sentence = sentence;
+    this.posTags = PreProcessor.tag(sentence);
 
-	
-	
-	// Sense as in the source
-	// TODO fix the conflict between this ID of the sense and that in the attribute [sense]
-	public ArrayList<String> getSenseID() {
-		return senseID;
-	}
+    this.wordIndex = wordIndex;
 
-	public void setSenseID(ArrayList<String> senseID) {
-		this.senseID = senseID;
-	}
-	
-	
+    this.sense = sense;
+  }
 
+  public WordToDisambiguate(String[] sentence, int wordIndex) {
+    this(sentence, wordIndex, -1);
+  }
 
-	/**
-	 * toString
-	 */
-			
-	public String toString() {
-		return (wordIndex + "\t" + getWord() + "\n" + sentence);
-	}
-	
+  public WordToDisambiguate() {
+    String[] emptyString = {};
+    int emptyInteger = 0;
 
-	
+    this.sentence = emptyString;
+    this.wordIndex = emptyInteger;
+    this.sense = -1;
 
+  }
+
+  /**
+   * Getters and Setters
+   */
+
+  // Sentence
+  public String[] getSentence() {
+    return sentence;
+  }
+
+  public void setSentence(String[] sentence) {
+    this.sentence = sentence;
+  }
+
+  // Sentence Pos-Tags
+  public String[] getPosTags() {
+    return posTags;
+  }
+
+  public void setPosTags(String[] posTags) {
+    this.posTags = posTags;
+  }
+
+  // Word to disambiguate
+  public int getWordIndex() {
+    return wordIndex;
+  }
+
+  public String getRawWord() {
+
+    /**
+     * For example, from the word "running" it returns "run.v"
+     */
+
+    String wordBaseForm = Loader.getLemmatizer().lemmatize(
+        this.sentence[wordIndex], this.posTags[wordIndex]);
+
+    String ref = "";
+
+    if (Constants.getPOS(this.posTags[wordIndex]).equals(POS.VERB)) {
+      ref = wordBaseForm + ".v";
+    } else if (Constants.getPOS(this.posTags[wordIndex]).equals(POS.NOUN)) {
+      ref = wordBaseForm + ".n";
+    } else if (Constants.getPOS(this.posTags[wordIndex]).equals(POS.ADJECTIVE)) {
+      ref = wordBaseForm + ".a";
+    } else if (Constants.getPOS(this.posTags[wordIndex]).equals(POS.ADVERB)) {
+      ref = wordBaseForm + ".r";
+    } else {
+
+    }
+
+    return ref;
+
+  }
+
+  public String getWord() {
+    return this.sentence[this.wordIndex];
+  }
+
+  public String getPosTag() {
+    return this.posTags[this.wordIndex];
+  }
+
+  public void setWordIndex(int wordIndex) {
+    this.wordIndex = wordIndex;
+  }
+
+  // Word to disambiguate sense
+  public int getSense() {
+    return sense;
+  }
+
+  public void setSense(int sense) {
+    this.sense = sense;
+  }
+
+  // Sense as in the source
+  // TODO fix the conflict between this ID of the sense and that in the
+  // attribute [sense]
+  public ArrayList<String> getSenseIDs() {
+    return senseIDs;
+  }
+
+  public void setSenseIDs(ArrayList<String> senseIDs) {
+    this.senseIDs = senseIDs;
+  }
+
+  public String toString() {
+    return (wordIndex + "\t" + getWord() + "\n" + sentence);
+  }
 }

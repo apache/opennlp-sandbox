@@ -99,4 +99,3 @@ public class IMSFactory extends BaseToolFactory {
   public void validateArtifactMap() throws InvalidFormatException {
   }
 }
-

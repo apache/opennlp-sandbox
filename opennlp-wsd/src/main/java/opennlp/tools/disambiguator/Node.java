@@ -31,7 +31,6 @@ import net.sf.extjwnl.data.list.PointerTargetNodeList;
 /**
  * Convenience class to access some features.
  */
-
 public class Node {
 
   public Synset parent;
@@ -68,6 +67,10 @@ public class Node {
 
   public String getSense() {
     return this.synset.getGloss().toString();
+  }
+  
+  public long getSenseID() {
+    return this.synset.getOffset();
   }
 
   public void setHypernyms() {
@@ -168,5 +171,4 @@ public class Node {
   public ArrayList<WordPOS> getSynonyms() {
     return synonyms;
   }
-
 }
