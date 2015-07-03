@@ -26,6 +26,9 @@ public class DistributionInstance {
   protected int trainingSetInstances;
   protected int testSetInstances;
 
+  /**
+   * Constructor
+   */
   public DistributionInstance(String word, String pos,
       int trainingSetInstances, int testSetInstances) {
     super();
@@ -66,4 +69,5 @@ public class DistributionInstance {
   public void setTestSetInstances(int testSetInstances) {
     this.testSetInstances = testSetInstances;
   }
+
 }

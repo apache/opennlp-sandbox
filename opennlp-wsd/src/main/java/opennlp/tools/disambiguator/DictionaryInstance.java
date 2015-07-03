@@ -19,8 +19,20 @@
 
 package opennlp.tools.disambiguator;
 
+/**
+ * An instance of the dictionary. A dictionary instance has:
+ * <ul>
+ * <li>index: an index for the current instance of the dictionary</li>
+ * <li>word: the word to disambiguate</li>
+ * <li>id: its id in the source (e.g., in WordNet, Wordsmyth, etc.)</li>
+ * <li>source: the source of the instance (e.g., WordNet, Wordsmyth, etc.)</li>
+ * <li>synset: the list of synonyms (i.e., the words that share the same current
+ * meaning)</li>
+ * <li>gloss: the sense of the word</li>
+ * </ul>
+ */
 public class DictionaryInstance {
-	
+
   protected int index;
 
   protected String word;
@@ -30,6 +42,9 @@ public class DictionaryInstance {
   protected String[] synset;
   protected String gloss;
 
+  /**
+   * Constructor
+   */
   public DictionaryInstance(int index, String word, String id, String source,
       String[] synset, String gloss) {
     super();
@@ -40,10 +55,6 @@ public class DictionaryInstance {
     this.synset = synset;
     this.gloss = gloss;
   }
-
-  /**
-   * Getters and Setters
-   */
 
   public int getIndex() {
     return index;
@@ -92,4 +103,5 @@ public class DictionaryInstance {
   public void setGloss(String gloss) {
     this.gloss = gloss;
   }
+
 }

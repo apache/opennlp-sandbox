@@ -25,4 +25,5 @@ package opennlp.tools.disambiguator.ims;
 public interface IMSContextGenerator {
 
   public String[] getContext(WTDIMS word);
+
 }

@@ -30,9 +30,13 @@ import opennlp.tools.ml.model.Event;
 import opennlp.tools.ml.model.OnePassDataIndexer;
 import opennlp.tools.ml.model.PlainTextFileDataReader;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.InvalidParameterException;
@@ -56,84 +60,43 @@ import opennlp.tools.disambiguator.WSDParameters;
 import opennlp.tools.disambiguator.WordPOS;
 import opennlp.tools.disambiguator.WSDisambiguator;
 
+/**
+ * Implementation of the <b>It Makes Sense</b> approach originally proposed in
+ * Senseval-3. The approach relies on the extraction of textual and
+ * PoS-tag-based features from the sentences surrounding the word to
+ * disambiguate. 3 main families of features are extracted:
+ * <ul>
+ * <li>PoS-tags of the surrounding words</li>
+ * <li>Local collocations</li>
+ * <li>Surrounding words</li>
+ * </ul>
+ * check {@link https://www.comp.nus.edu.sg/~nght/pubs/ims.pdf} for details
+ * about this approach
+ */
 public class IMS implements WSDisambiguator {
 
-  // private MaxentModel model;
-  private IMSFactory factory;
+  public IMSParameters parameters;
 
   private final IMSContextGenerator cg;
 
   private FeaturesExtractor fExtractor = new FeaturesExtractor();
   private DataExtractor dExtractor = new DataExtractor();
 
-
-  private int windowSize;
-  private int word;
-  private int ngram;
-
   public IMS() {
     super();
-    windowSize = 3;
-    ngram = 2;
-
-    IMSFactory factory = new IMSFactory();
-    this.factory = factory;
-    this.cg = factory.createContextGenerator();
+    this.parameters = new IMSParameters();
+    ;
+    this.cg = parameters.createContextGenerator();
   }
 
-  public IMS(int windowSize, int ngram) {
+  public IMS(IMSParameters parameters) {
     super();
-    this.windowSize = windowSize;
-    this.ngram = ngram;
-
-    IMSFactory factory = new IMSFactory();
-    this.factory = factory;
-    this.cg = factory.createContextGenerator();
+    this.parameters = parameters;
+    this.cg = this.parameters.createContextGenerator();
   }
 
-  protected ArrayList<WTDIMS> extractTrainingData(
-      String wordTrainingxmlFile,
-      HashMap<String, ArrayList<DictionaryInstance>> senses) {
-
-    /**
-     * word tag has to be in the format "word.t" (e.g., "activate.v", "smart.a",
-     * etc.)
-     */
-
-    ArrayList<WTDIMS> trainingData = dExtractor
-        .extractWSDInstances(wordTrainingxmlFile);
-
-    // HashMap<Integer, WTDIMS> trainingData =
-    // dExtractor.extractWSDInstances(wordTrainingxmlFile);
-
-    for (WTDIMS data : trainingData) {
-      for (String senseId : data.getSenseIDs()) {
-        for (String dictKey : senses.keySet()) {
-          for (DictionaryInstance instance : senses.get(dictKey)) {
-            if (senseId.equals(instance.getId())) {
-              data.setSense(
-                  Integer.parseInt(dictKey.split("_")[1]));
-              break;
-            }
-          }
-        }
-      }
-    }
-
-    return trainingData;
-  }
-
-  protected void extractFeature(ArrayList<WTDIMS> words) {
-
-    for (WTDIMS word : words) {
-
-      fExtractor.extractIMSFeatures(word, windowSize, ngram);
-
-    }
-
-  }
-
-  protected String getTrainingFile(WTDIMS wtd) {
+  // Internal Methods
+  private String getTrainingFileName(WTDIMS wtd) {
 
     String wordBaseForm = PreProcessor
         .lemmatize(wtd.getWord(), wtd.getPosTag());
@@ -155,17 +118,124 @@ public class IMS implements WSDisambiguator {
     return ref;
   }
 
-  protected HashMap<String, String> getWordDictionaryInstance(WTDIMS wtd) {
+  private void saveAllSurroundingWords(ArrayList<WTDIMS> trainingData,
+      String wordTag) {
 
-    String dict = factory.getDict();
-    String map = factory.getMap();
+    ArrayList<String> surrWords = fExtractor
+        .extractTrainingSurroundingWords(trainingData);
 
-    return dExtractor.getDictionaryInstance(dict, map,
-        this.getTrainingFile(wtd));
+    File file = new File(parameters.getTrainingDataDirectory() + wordTag
+        + ".sw");
+    if (!file.exists()) {
+      try {
+
+        file.createNewFile();
+
+        FileWriter fw = new FileWriter(file.getAbsoluteFile());
+        BufferedWriter bw = new BufferedWriter(fw);
+
+        for (String surrWord : surrWords) {
+          bw.write(surrWord);
+          bw.newLine();
+        }
+
+        bw.close();
+
+        System.out.println("Done");
+
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+
+    }
 
   }
 
-  protected String[] getMostFrequentSense(WTDIMS wordToDisambiguate) {
+  private ArrayList<String> getAllSurroundingWords(String wordTag) {
+
+    ArrayList<String> surrWords = new ArrayList<String>();
+
+    BufferedReader br = null;
+
+    File file = new File(parameters.getTrainingDataDirectory() + wordTag
+        + ".sw");
+
+    if (file.exists()) {
+
+      try {
+        br = new BufferedReader(new FileReader(file));
+
+        String line = br.readLine();
+        while (line != null) {
+          line = br.readLine();
+          if (!surrWords.contains(line)) {
+            surrWords.add(line);
+          }
+        }
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
+      } finally {
+        if (br != null) {
+          try {
+            br.close();
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        }
+      }
+    }
+
+    return surrWords;
+
+  }
+
+  private ArrayList<WTDIMS> extractTrainingData(String wordTrainingXmlFile,
+      HashMap<String, ArrayList<DictionaryInstance>> senses) {
+
+    /**
+     * word tag has to be in the format "word.t" (e.g., "activate.v", "smart.a",
+     * etc.)
+     */
+
+    ArrayList<WTDIMS> trainingData = dExtractor
+        .extractWSDInstances(wordTrainingXmlFile);
+
+    for (WTDIMS word : trainingData) {
+      for (String senseId : word.getSenseIDs()) {
+        for (String dictKey : senses.keySet()) {
+          for (DictionaryInstance instance : senses.get(dictKey)) {
+            if (senseId.equals(instance.getId())) {
+              word.setSense(Integer.parseInt(dictKey.split("_")[1]));
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    return trainingData;
+  }
+
+  private void extractFeature(WTDIMS word) {
+
+    fExtractor.extractIMSFeatures(word, this.parameters.getWindowSize(),
+        this.parameters.getNgram());
+
+  }
+
+  private HashMap<String, String> getWordDictionaryInstance(WTDIMS wtd) {
+
+    String dict = parameters.getDict();
+    String map = parameters.getMap();
+
+    return dExtractor.getDictionaryInstance(dict, map,
+        this.getTrainingFileName(wtd));
+
+  }
+
+  private String[] getMostFrequentSense(WTDIMS wordToDisambiguate) {
 
     String word = wordToDisambiguate.getRawWord();
     POS pos = Constants.getPOS(wordToDisambiguate.getPosTag());
@@ -187,46 +257,63 @@ public class IMS implements WSDisambiguator {
   }
 
   /**
-   * PUBLIC METHODS
+   * Method for training a model
+   * 
+   * @param wordTag
+   *          : the word to disambiguate. It should be written in the format
+   *          "word.p" (Exp: "write.v", "well.r", "smart.a", "go.v"
+   * @param trainParams
+   *          : the parameters used for training
    */
-
   public void train(String wordTag, TrainingParameters trainParams) {
 
-    String rawDataDirectory = factory.getRawDataDirectory();
-    String trainingDataDirectory = factory.getTrainingDataDirectory();
-    String dict = factory.getDict();
-    String map = factory.getMap();
+    String dict = parameters.getDict();
+    String map = parameters.getMap();
 
-    String wordTrainingxmlFile = rawDataDirectory + wordTag + ".xml";
-    String wordTrainingbinFile = trainingDataDirectory + wordTag + ".gz";
+    String wordTrainingxmlFile = parameters.getRawDataDirectory() + wordTag
+        + ".xml";
+    String wordTrainingbinFile = parameters.getTrainingDataDirectory()
+        + wordTag + ".gz";
 
     File bf = new File(wordTrainingxmlFile);
 
-    ObjectStream IMSes = null;
+    ObjectStream<Event> IMSes = null;
 
     if (bf.exists() && !bf.isDirectory()) {
 
       HashMap<String, ArrayList<DictionaryInstance>> senses = dExtractor
           .extractWordSenses(dict, map, wordTag);
 
-      ArrayList<WTDIMS> instances = extractTrainingData(
-          wordTrainingxmlFile, senses);
+      ArrayList<WTDIMS> instances = extractTrainingData(wordTrainingxmlFile,
+          senses);
 
-      extractFeature(instances);
+      for (WTDIMS wtd : instances) {
+        extractFeature(wtd);
+      }
+
+      saveAllSurroundingWords(instances, wordTag);
+
+      for (WTDIMS wtd : instances) {
+        extractFeature(wtd);
+      }
+
+      ArrayList<String> surrWords = getAllSurroundingWords(wordTag);
+
+      for (WTDIMS wtd : instances) {
+        fExtractor.serializeIMSFeatures(wtd, surrWords);
+      }
 
       ArrayList<Event> events = new ArrayList<Event>();
 
-      for (WTDIMS instance : instances) {
+      for (WTDIMS wtd : instances) {
 
-        int sense = instance.getSense();
+        int sense = wtd.getSense();
 
-        String[] context = cg.getContext(instance);
+        String[] context = cg.getContext(wtd);
 
         Event ev = new Event(sense + "", context);
 
         events.add(ev);
-
-        // Collection collEvents = events;
 
         IMSes = ObjectStreamUtils.createObjectStream(events);
 
@@ -235,7 +322,7 @@ public class IMS implements WSDisambiguator {
       DataIndexer indexer;
       try {
         indexer = new OnePassDataIndexer((ObjectStream<Event>) IMSes);
-        MaxentModel trainedMaxentModel = GIS.trainModel(100, indexer);
+        MaxentModel trainedMaxentModel = GIS.trainModel(200, indexer);
         File outFile = new File(wordTrainingbinFile);
         AbstractModelWriter writer = new SuffixSensitiveGISModelWriter(
             (AbstractModel) trainedMaxentModel, outFile);
@@ -249,6 +336,13 @@ public class IMS implements WSDisambiguator {
 
   }
 
+  /**
+   * Load an existing model
+   * 
+   * @param binFile
+   *          : Location of the already trained model
+   * @return the model trained
+   */
   public MaxentModel load(String binFile) {
 
     MaxentModel loadedMaxentModel = null;
@@ -268,16 +362,25 @@ public class IMS implements WSDisambiguator {
     return loadedMaxentModel;
   }
 
+  /**
+   * The disambiguation method for a single word
+   * 
+   * @param inputText
+   *          : the text containing the word to disambiguate
+   * @param inputWordIndex
+   *          : the index of the word to disambiguate
+   */
   @Override
   public String[] disambiguate(String[] inputText, int inputWordIndex) {
 
-    String rawDataDirectory = factory.getRawDataDirectory();
-    String trainingDataDirectory = factory.getTrainingDataDirectory();
+    String rawDataDirectory = this.parameters.getRawDataDirectory();
+    String trainingDataDirectory = this.parameters.getTrainingDataDirectory();
 
     WTDIMS word = new WTDIMS(inputText, inputWordIndex);
-    fExtractor.extractIMSFeatures(word, windowSize, ngram);
+    fExtractor.extractIMSFeatures(word, this.parameters.getWindowSize(),
+        this.parameters.getNgram());
 
-    String wordTag = getTrainingFile(word);
+    String wordTag = getTrainingFileName(word);
 
     String wordTrainingxmlFile = rawDataDirectory + wordTag + ".xml";
     String wordTrainingbinFile = trainingDataDirectory + wordTag + ".gz";
@@ -289,6 +392,9 @@ public class IMS implements WSDisambiguator {
     if (bf.exists() && !bf.isDirectory()) {
       // if the model file exists already
       // System.out.println("the model file was found !");
+      ArrayList<String> surrWords = getAllSurroundingWords(wordTag);
+      fExtractor.serializeIMSFeatures(word, surrWords);
+
       loadedMaxentModel = load(wordTrainingbinFile);
       String[] context = cg.getContext(word);
 
@@ -301,6 +407,10 @@ public class IMS implements WSDisambiguator {
         // if the xml file exists already
         // System.out.println("the xml file was found !");
         train(wordTag, null);
+        ArrayList<String> surrWords = getAllSurroundingWords(wordTag);
+
+        fExtractor.serializeIMSFeatures(word, surrWords);
+
         bf = new File(wordTrainingbinFile);
         loadedMaxentModel = load(wordTrainingbinFile);
         String[] context = cg.getContext(word);
@@ -329,17 +439,32 @@ public class IMS implements WSDisambiguator {
 
   }
 
+  /**
+   * The disambiguation method for a span of words
+   * 
+   * @param inputText
+   *          : the text containing the word to disambiguate
+   * @param inputWordSpans
+   *          : the span of words to disambiguate
+   */
   @Override
-  public String[][] disambiguate(String[] inputText, Span[] inputWordSpans) {
+  public String[][] disambiguate(String[] tokenizedContext,
+      Span[] ambiguousTokenIndexSpans) {
+    // TODO Auto-generated method stub
     return null;
   }
 
+  // TODO fix the conflicts in parameters with Anthony's code
   @Override
   public WSDParameters getParams() {
+    // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public void setParams(WSDParameters params) throws InvalidParameterException {
+    // TODO Auto-generated method stub
+
   }
+
 }

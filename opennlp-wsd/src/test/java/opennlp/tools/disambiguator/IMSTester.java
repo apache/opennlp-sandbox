@@ -21,27 +21,33 @@ package opennlp.tools.disambiguator;
 
 import opennlp.tools.disambiguator.ims.IMS;
 
+/**
+ * This is a typical example of how to call the disambiguation function in the
+ * IMS class.
+ * <ul>
+ * <li>In the 2 first examples, the training data exist, therefore the IMS
+ * approach is used.</li>
+ * <li>In the 3rd example, the training data for the word to disambiguate are
+ * absent, therefore the Most Frequent Sents (MFS) is returend</li>
+ * </ul>
+ */
 public class IMSTester {
 
   public static void main(String[] args) {
 
     IMS ims = new IMS();
 
-    String test = "You have to write an essay without using a dictionary!";
-    String[] sentence = Loader.getTokenizer().tokenize(test);
-    Constants.print(ims.disambiguate(sentence, 3));
+    String test1 = "Please write to me soon.";
+    String[] sentence1 = Loader.getTokenizer().tokenize(test1);
+    Constants.print(ims.disambiguate(sentence1, 1));
 
-    String test2 = "Please write to me soon.";
+    String test2 = "it was a strong argument that his hypothesis was true";
     String[] sentence2 = Loader.getTokenizer().tokenize(test2);
-    Constants.print(ims.disambiguate(sentence2, 1));
+    Constants.print(ims.disambiguate(sentence2, 3));
 
-    String test3 = "the argument over foreign aid goes on and on";
+    String test3 = "the component was highly radioactive to the point that it has been activated the second it touched water";
     String[] sentence3 = Loader.getTokenizer().tokenize(test3);
-    Constants.print(ims.disambiguate(sentence3, 1));
-
-    String test4 = "it was a strong argument that his hypothesis was true";
-    String[] sentence4 = Loader.getTokenizer().tokenize(test4);
-    Constants.print(ims.disambiguate(sentence4, 3));
+    Constants.print(ims.disambiguate(sentence3, 12));
 
   }
 

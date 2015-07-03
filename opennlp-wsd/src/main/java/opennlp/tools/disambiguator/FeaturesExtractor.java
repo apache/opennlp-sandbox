@@ -19,29 +19,43 @@
 
 package opennlp.tools.disambiguator;
 
-
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import opennlp.tools.disambiguator.ims.WTDIMS;
 
+/**
+ * Class for the extraction of features for the different Supervised
+ * Disambiguation apporaches.<br>
+ * Each set of methods refer to one approach
+ * <ul>
+ * <li>IMS (It Makes Sense): check {@link https
+ * ://www.comp.nus.edu.sg/~nght/pubs/ims.pdf} for details about this approach</li>
+ * <li>SST (SuperSense Tagging): check {@link http
+ * ://ttic.uchicago.edu/~altun/pubs/CiaAlt_EMNLP06.pdf} for details about this
+ * approach</li>
+ * </ul>
+ * 
+ * The first methods serve to extract the features for the algorithm IMS. Three
+ * families of features are to be extracted: - PoS of Surrounding Words: it
+ * requires one parameter: "Window size" - Surrounding Words: no parameters are
+ * required - Local Collocations: it requires one parameter: "the n-gram"
+ * 
+ * check {@link https://www.comp.nus.edu.sg/~nght/pubs/ims.pdf} for details
+ * about this approach
+ */
+
 public class FeaturesExtractor {
 
+  /**
+   * Constructor
+   */
   public FeaturesExtractor() {
     super();
   }
 
-  /**
-   * @Algorithm: IMS (It Makes Sense)
-   * 
-   *             The following methods serve to extract the features for the
-   *             algorithm IMS.
-   * 
-   *             Three families of features are to be extracted: - PoS of
-   *             Surrounding Words: it requires one parameter: "Window size" -
-   *             Surrounding Words: no parameters are required - Local
-   *             Collocations: it requires one parameter: "the n-gram"
-   * 
-   */
+  // IMS approach
+
   private String[] extractPosOfSurroundingWords(String[] sentence,
       int wordIndex, int windowSize) {
 
@@ -76,9 +90,9 @@ public class FeaturesExtractor {
 
         String word = sentence[i].toLowerCase().replaceAll("[^a-z]", "").trim();
 
-        if (!word.equals("")) {
-          String lemma = Loader.getLemmatizer().lemmatize(sentence[i],
-              posTags[i]);
+        // if (!word.equals("") /*&& Constants.isRelevant(posTags[i])*/) {
+        if (Loader.getEnglishWords().containsKey(word)) {
+          String lemma = Loader.getLemmatizer().lemmatize(word, posTags[i]);
           contextWords.add(lemma);
         }
 
@@ -120,7 +134,30 @@ public class FeaturesExtractor {
     return res;
   }
 
-  // public method
+  /**
+   * This methods generates the full list of Surrounding words, from the
+   * training data. These data will be later used for the generation of the
+   * features qualified of "Surrounding words
+   * 
+   * @param trainingData
+   *          list of the training samples (type {@link WTDIMS}
+   * @return the list of all the surrounding words from all the training data
+   */
+  public ArrayList<String> extractTrainingSurroundingWords(
+      ArrayList<WTDIMS> trainingData) {
+
+    ArrayList<String> list = new ArrayList<String>();
+
+    for (WTDIMS word : trainingData) {
+      for (String sWord : word.getSurroundingWords()) {
+        list.add(sWord);
+      }
+    }
+
+    return list;
+
+  }
+
   /**
    * This method generates the different set of features related to the IMS
    * approach and store them in the corresponding attributes of the WTDIMS
@@ -151,25 +188,24 @@ public class FeaturesExtractor {
    * doesn't require any parameters.
    * 
    * @param word
+   *          the word to disambiguate
+   * @param listSurrWords
+   *          the full list of surrounding words of the training data
    * @return the Context of the wordToDisambiguate
    */
-  public String[] serializeIMSFeatures(WTDIMS word) {
+  public void serializeIMSFeatures(WTDIMS word, ArrayList<String> listSurrWords) {
 
     String[] posOfSurroundingWords = word.getPosOfSurroundingWords();
-    String[] surroundingWords = word.getSurroundingWords();
+    ArrayList<String> surroundingWords = new ArrayList<String>(
+        Arrays.asList((word.getSurroundingWords())));
     String[] localCollocations = word.getLocalCollocations();
 
     String[] serializedFeatures = new String[posOfSurroundingWords.length
-        + surroundingWords.length + localCollocations.length];
+        + localCollocations.length + listSurrWords.size()];
 
     int i = 0;
 
     for (String feature : posOfSurroundingWords) {
-      serializedFeatures[i] = "F" + i + "=" + feature;
-      i++;
-    }
-
-    for (String feature : surroundingWords) {
       serializedFeatures[i] = "F" + i + "=" + feature;
       i++;
     }
@@ -179,7 +215,19 @@ public class FeaturesExtractor {
       i++;
     }
 
-    return serializedFeatures;
+    for (String feature : listSurrWords) {
+      serializedFeatures[i] = "F" + i + "=0";
+      if (surroundingWords.contains(feature)) {
+        serializedFeatures[i] = "F" + i + "=1";
+      }
+      i++;
+
+    }
+
+    word.setFeatures(serializedFeatures);
 
   }
+
+  // SST approach
+
 }

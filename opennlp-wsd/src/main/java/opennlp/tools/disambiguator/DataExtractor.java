@@ -21,9 +21,9 @@ package opennlp.tools.disambiguator;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -36,24 +36,27 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import opennlp.tools.disambiguator.DictionaryInstance;
-import opennlp.tools.disambiguator.DistributionInstance;
 import opennlp.tools.disambiguator.ims.WTDIMS;
+
+/**
+ * This class handles the extraction of data from the different files (training
+ * data, dictionary instances, etc.)
+ */
 
 public class DataExtractor {
 
+  private static String englishDict = "src\\test\\resources\\models\\en-lemmatizer.dict";
+
+  /**
+   * Constructor
+   */
   public DataExtractor() {
     super();
   }
 
-  /**
-   * Extract the dictionary from the dictionary XML file and map the senses
-   */
   private ArrayList<DictionaryInstance> extractDictionary(String xmlLocation) {
 
     ArrayList<DictionaryInstance> dictionary = new ArrayList<DictionaryInstance>();
-
-    // HashMap<Integer, DictionaryInstance> dictionary = new HashMap<Integer,
-    // DictionaryInstance>();
 
     try {
 
@@ -149,7 +152,7 @@ public class DataExtractor {
 
   }
 
-  private HashMap<String, ArrayList<DictionaryInstance>> extractOptimalDictionary(
+  private HashMap<String, ArrayList<DictionaryInstance>> extractCoarseGrainedDictionary(
       String xmlLocation, String sensemapFile) {
 
     HashMap<String, ArrayList<DictionaryInstance>> optimizedDictionary = new HashMap<String, ArrayList<DictionaryInstance>>();
@@ -182,6 +185,20 @@ public class DataExtractor {
     return optimizedDictionary;
   }
 
+  /**
+   * Extract the different senses (those which are equivalent are put together)
+   * of a word
+   * 
+   * @param xmlLocation
+   *          : location of the file containing the dictionary instances
+   * @param sensemapFile
+   *          : location of the file containing the equivalent senses in the
+   *          case of Coarse-grained disambiguation
+   * @param wordTag
+   *          : the word to disambiguate. It should be written in the format
+   *          "word.p" (Exp: "write.v", "well.r", "smart.a", "go.v"
+   * @return a {@link HashMap} of {@link DictionaryInstance} with their IDs
+   */
   public HashMap<String, ArrayList<DictionaryInstance>> extractWordSenses(
       String xmlLocation, String sensemapFile, String wordTag) {
 
@@ -192,7 +209,7 @@ public class DataExtractor {
 
     HashMap<String, ArrayList<DictionaryInstance>> wordSenses = new HashMap<String, ArrayList<DictionaryInstance>>();
 
-    HashMap<String, ArrayList<DictionaryInstance>> optimalDictionary = extractOptimalDictionary(
+    HashMap<String, ArrayList<DictionaryInstance>> optimalDictionary = extractCoarseGrainedDictionary(
         xmlLocation, sensemapFile);
 
     int i = 0;
@@ -207,6 +224,20 @@ public class DataExtractor {
     return wordSenses;
   }
 
+  /**
+   * Extract the different senses. This class returns only the ID of the sense
+   * and the gloss. the synsets and other information are omitted.
+   * 
+   * @param xmlLocation
+   *          : location of the file containing the dictionary instances
+   * @param sensemapFile
+   *          : location of the file containing the equivalent senses in the
+   *          case of Coarse-grained disambiguation
+   * @param wordTag
+   *          the word to disambiguate. It should be written in the format
+   *          "word.p" (Exp: "write.v", "well.r", "smart.a", "go.v"
+   * @return a {@link HashMap} of word senses with their IDs
+   */
   public HashMap<String, String> getDictionaryInstance(String xmlLocation,
       String sensemapFile, String wordTag) {
 
@@ -225,59 +256,12 @@ public class DataExtractor {
   }
 
   /**
-   * Extract the Dictionary Map [USELESS UNLESS USED FOR STATISTICS LATER !!!]
-   */
-
-  public HashMap<Integer, DistributionInstance> extractWords(String listOfWords) {
-
-    HashMap<Integer, DistributionInstance> instances = new HashMap<Integer, DistributionInstance>();
-
-    try (BufferedReader wordsList = new BufferedReader(new FileReader(
-        listOfWords))) {
-
-      String line;
-
-      int index = 0;
-
-      // Read the file
-      while ((line = wordsList.readLine()) != null) {
-
-        String[] temp = line.split("\\t");
-
-        String[] wordPos = temp[0].split("\\.");
-
-        String tag;
-
-        if (wordPos[1].equals("n")) {
-          tag = "noun";
-        } else if (wordPos[1].equals("v")) {
-          tag = "verb";
-        } else if (wordPos[1].equals("a")) {
-          tag = "adjective";
-        } else {
-          tag = "adverb";
-        }
-
-        DistributionInstance word = new DistributionInstance(wordPos[0], tag,
-            Integer.parseInt(temp[1]), Integer.parseInt(temp[2]));
-
-        instances.put(index, word);
-
-        index++;
-
-      }
-
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
-    return instances;
-  }
-
-  /**
    * Extract the training instances from the training/test set File
+   * 
+   * @param xmlDataSet
+   *          : the file from which the data are to be extracted
+   * @return {@link ArrayList} of Word To Disambiguate (WTDIMS) instances
    */
-
   public ArrayList<WTDIMS> extractWSDInstances(String xmlDataSet) {
 
     ArrayList<WTDIMS> setInstances = new ArrayList<WTDIMS>();
@@ -356,7 +340,6 @@ public class DataExtractor {
                     rawWord = nChild.getChildNodes().item(1).getTextContent();
                     // textAfter =
                     // nChild.getChildNodes().item(2).getTextContent();
-                    // System.out.println(rawWord);
                   }
                 }
 
@@ -365,11 +348,12 @@ public class DataExtractor {
               WTDIMS wordToDisambiguate = new WTDIMS(word, answers, sentence,
                   rawWord);
               setInstances.add(wordToDisambiguate);
-              // System.out.print(index + "\t");
-              // System.out.println(wordToDisambiguate.toString());
             }
+
           }
+
         }
+
       }
 
     } catch (Exception e) {
@@ -379,4 +363,52 @@ public class DataExtractor {
     return setInstances;
 
   }
+
+  /**
+   * Extract the list of ALL English words
+   * 
+   * @param dict
+   *          : this file is the same that is used in the simple lemmatizer
+   *          (i.e.,"en-lemmatizer.dict")
+   * 
+   * @return a list of all the english words
+   */
+  public HashMap<String, Object> getEnglishWords(String dict) {
+
+    HashMap<String, Object> words = new HashMap<String, Object>();
+
+    BufferedReader br = null;
+
+    File file = new File(englishDict);
+
+    if (file.exists()) {
+
+      try {
+        br = new BufferedReader(new FileReader(file));
+        String line = br.readLine();
+        while (line != null) {
+          line = br.readLine();
+          if (line != null) {
+            String word = line.split("\\t")[0];
+            words.put(word, null);
+          }
+        }
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
+      } finally {
+        if (br != null) {
+          try {
+            br.close();
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        }
+      }
+    }
+
+    return words;
+  }
+
 }

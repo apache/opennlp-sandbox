@@ -23,31 +23,33 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-
 import opennlp.tools.disambiguator.FeaturesExtractor;
 import opennlp.tools.disambiguator.ims.WTDIMS;
 
+/**
+ * The default Context Generator of IMS
+ */
 public class DefaultIMSContextGenerator implements IMSContextGenerator {
 
   FeaturesExtractor fExtractor = new FeaturesExtractor();
-
-  /**
-   * Default context generator for IMS.
-   */
 
   public DefaultIMSContextGenerator() {
   }
 
   /**
    * Get Context of a word To disambiguate
+   * 
+   * @param word
+   *          : the word to disambiguate in the format {@link WTDIMS}
+   * @return The IMS context of the word to disambiguate
    */
   @Override
   public String[] getContext(WTDIMS word) {
-    return fExtractor.serializeIMSFeatures(word);
+    return word.getFeatures();
   }
 
   /**
-   * Returns an {@link ArrayList} of features for the object of type WTDIMS
+   * This methods gives the list of features for the object of type WTDIMS
    * Extensions of this class can override this method to create a customized
    * {@link IMSContextGenerator}
    *
@@ -63,8 +65,8 @@ public class DefaultIMSContextGenerator implements IMSContextGenerator {
    * 
    * @return an {@link ArrayList} of features
    */
-
   protected List<String> createContext(WTDIMS word) {
     return Arrays.asList(getContext(word));
   }
+
 }

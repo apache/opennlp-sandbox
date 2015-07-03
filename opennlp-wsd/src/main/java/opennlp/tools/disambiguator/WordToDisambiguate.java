@@ -23,8 +23,6 @@ import java.util.ArrayList;
 
 import net.sf.extjwnl.data.POS;
 
-
-
 public class WordToDisambiguate {
 
   // TODO Check if it is necessary to add an attribute [word] since the word in
@@ -101,10 +99,6 @@ public class WordToDisambiguate {
   }
 
   public String getRawWord() {
-
-    /**
-     * For example, from the word "running" it returns "run.v"
-     */
 
     String wordBaseForm = Loader.getLemmatizer().lemmatize(
         this.sentence[wordIndex], this.posTags[wordIndex]);

@@ -68,7 +68,7 @@ public class Node {
   public String getSense() {
     return this.synset.getGloss().toString();
   }
-  
+
   public long getSenseID() {
     return this.synset.getOffset();
   }

@@ -30,8 +30,11 @@ public class WTDIMS extends WordToDisambiguate {
   protected String[] surroundingWords;
   protected String[] localCollocations;
 
+  protected String[] features;
+
   public WTDIMS(String[] sentence, int word, int sense) {
     super(sentence, word, sense);
+
   }
 
   public WTDIMS(String[] sentence, int word) {
@@ -55,6 +58,7 @@ public class WTDIMS extends WordToDisambiguate {
     }
 
     this.senseIDs = xmlAnswers;
+
   }
 
   public String[] getPosOfSurroundingWords() {
@@ -80,4 +84,13 @@ public class WTDIMS extends WordToDisambiguate {
   public void setLocalCollocations(String[] localCollocations) {
     this.localCollocations = localCollocations;
   }
+
+  public String[] getFeatures() {
+    return this.features;
+  }
+
+  public void setFeatures(String[] features) {
+    this.features = features;
+  }
+
 }

@@ -44,6 +44,8 @@ import opennlp.tools.util.InvalidFormatException;
 
 public class Loader {
 
+  private static DataExtractor dExtractor = new DataExtractor();
+
   private static String modelsDir = "src\\test\\resources\\models\\";
 
   private static SentenceDetectorME sdetector;
@@ -54,12 +56,13 @@ public class Loader {
 
   private static Dictionary dictionary;
   private static MorphologicalProcessor morph;
-  private static boolean IsInitialized = false;
 
   // local caches for faster lookup
   private static HashMap<String, Object> stemCache;
   private static HashMap<String, Object> stopCache;
   private static HashMap<String, Object> relvCache;
+
+  private static HashMap<String, Object> englishWords;
 
   // Constructor
   public Loader() {
@@ -95,6 +98,14 @@ public class Loader {
       }
     }
     return stemCache;
+  }
+
+  public static HashMap<String, Object> getEnglishWords() {
+    if (englishWords == null || englishWords.keySet().isEmpty()) {
+      englishWords = dExtractor.getEnglishWords(modelsDir
+          + "en-lemmatizer.dict");
+    }
+    return englishWords;
   }
 
   public static MorphologicalProcessor getMorph() {
@@ -217,10 +228,13 @@ public class Loader {
       for (String s : Constants.stopWords) {
         stopCache.put(s, null);
       }
+
       relvCache = new HashMap<String, Object>();
       for (String t : Constants.relevantPOS) {
         relvCache.put(t, null);
       }
+
+      englishWords = new HashMap<String, Object>();
 
       if (isInitialized()) {
         Constants.print("loading was succesfull");
