@@ -31,7 +31,7 @@ import net.sf.extjwnl.data.list.PointerTargetNodeList;
 /**
  * Convenience class to access some features.
  */
-public class Node {
+public class SynNode {
 
   public Synset parent;
   public Synset synset;
@@ -45,14 +45,14 @@ public class Node {
 
   public ArrayList<WordPOS> synonyms = new ArrayList<WordPOS>();
 
-  public Node(Synset parent, Synset synSet,
+  public SynNode(Synset parent, Synset synSet,
       ArrayList<WordPOS> senseRelevantWords) {
     this.parent = parent;
     this.synset = synSet;
     this.senseRelevantWords = senseRelevantWords;
   }
 
-  public Node(Synset synSet, ArrayList<WordPOS> senseRelevantWords) {
+  public SynNode(Synset synSet, ArrayList<WordPOS> senseRelevantWords) {
     this.synset = synSet;
     this.senseRelevantWords = senseRelevantWords;
   }
@@ -63,14 +63,6 @@ public class Node {
 
   public void setSenseRelevantWords(ArrayList<WordPOS> senseRelevantWords) {
     this.senseRelevantWords = senseRelevantWords;
-  }
-
-  public String getSense() {
-    return this.synset.getGloss().toString();
-  }
-
-  public long getSenseID() {
-    return this.synset.getOffset();
   }
 
   public void setHypernyms() {
@@ -170,5 +162,13 @@ public class Node {
 
   public ArrayList<WordPOS> getSynonyms() {
     return synonyms;
+  }
+  
+  public String getGloss() {
+    return this.synset.getGloss().toString();
+  }
+  
+  public long getSynsetID() {
+    return this.synset.getOffset();
   }
 }

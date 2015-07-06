@@ -16,30 +16,32 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package opennlp.tools.disambiguator.lesk;
 
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import opennlp.tools.disambiguator.Constants;
 import opennlp.tools.disambiguator.Loader;
-import opennlp.tools.disambiguator.Node;
+import opennlp.tools.disambiguator.SynNode;
 import opennlp.tools.disambiguator.PreProcessor;
 import opennlp.tools.disambiguator.WSDParameters;
 import opennlp.tools.disambiguator.WSDisambiguator;
 import opennlp.tools.disambiguator.WordPOS;
 import opennlp.tools.disambiguator.WordSense;
 import opennlp.tools.util.Span;
+import net.sf.extjwnl.JWNLException;
 import net.sf.extjwnl.data.Synset;
+import net.sf.extjwnl.data.Word;
 
 /**
- * Implementation of the <b>Overlap Of Senses</b> approach originally proposed by Lesk.
- * The main idea is to check for word overlaps in the sense definitions of the surrounding context. 
- * An overlap is when two words have similar stems.
- * The more overlaps a word has the higher its score.
- * Different variations of the approach are included in this class.
+ * Implementation of the <b>Overlap Of Senses</b> approach originally proposed
+ * by Lesk. The main idea is to check for word overlaps in the sense definitions
+ * of the surrounding context. An overlap is when two words have similar stems.
+ * The more overlaps a word has the higher its score. Different variations of
+ * the approach are included in this class.
  * 
  */
 public class Lesk implements WSDisambiguator {
@@ -48,27 +50,29 @@ public class Lesk implements WSDisambiguator {
    * The lesk specific parameters
    */
   protected LeskParameters params;
-  
+
   public Lesk() {
     this(null);
   }
 
   /**
    * Initializes the loader object and sets the input parameters
-   * @param Input Parameters
+   * 
+   * @param Input
+   *          Parameters
    * @throws InvalidParameterException
    */
   public Lesk(LeskParameters params) throws InvalidParameterException {
     Loader loader = new Loader();
     this.setParams(params);
   }
-  
 
   /**
-   * If the parameters are null set the default ones, else only set them if they valid.
-   * Invalid parameters will return a exception
+   * If the parameters are null set the default ones, else only set them if they
+   * valid. Invalid parameters will return a exception
    * 
-   * @param Input parameters
+   * @param Input
+   *          parameters
    * @throws InvalidParameterException
    */
   @Override
@@ -84,7 +88,7 @@ public class Lesk implements WSDisambiguator {
     }
   }
 
-  /** 
+  /**
    * @return the parameter settings
    */
   public LeskParameters getParams() {
@@ -94,7 +98,8 @@ public class Lesk implements WSDisambiguator {
   /**
    * The basic Lesk method where the entire context is considered for overlaps
    * 
-   * @param The word to disambiguate 
+   * @param The
+   *          word to disambiguate
    * @return The array of WordSenses with their scores
    */
   public ArrayList<WordSense> basic(WTDLesk wtd) {
@@ -103,10 +108,10 @@ public class Lesk implements WSDisambiguator {
     WordPOS word = new WordPOS(wtd.getWord(), Constants.getPOS(wtd.getPosTag()));
 
     ArrayList<Synset> synsets = word.getSynsets();
-    ArrayList<Node> nodes = new ArrayList<Node>();
+    ArrayList<SynNode> nodes = new ArrayList<SynNode>();
 
     for (Synset synset : synsets) {
-      Node node = new Node(synset, relvWords);
+      SynNode node = new SynNode(synset, relvWords);
       nodes.add(node);
     }
 
@@ -132,7 +137,9 @@ public class Lesk implements WSDisambiguator {
 
   /**
    * The basic Lesk method but applied to a default context windows
-   * @param The word to disambiguate 
+   * 
+   * @param The
+   *          word to disambiguate
    * @return The array of WordSenses with their scores
    */
   public ArrayList<WordSense> basicContextual(WTDLesk wtd) {
@@ -141,7 +148,9 @@ public class Lesk implements WSDisambiguator {
 
   /**
    * The basic Lesk method but applied to a custom context windows
-   * @param The word to disambiguate 
+   * 
+   * @param The
+   *          word to disambiguate
    * @param windowSize
    * @return The array of WordSenses with their scores
    */
@@ -150,9 +159,12 @@ public class Lesk implements WSDisambiguator {
   }
 
   /**
-   * The basic Lesk method but applied to a context windows set by custom backward and forward window lengths
-   * @param wtd the word to disambiguate 
-   * @param windowBackward 
+   * The basic Lesk method but applied to a context windows set by custom
+   * backward and forward window lengths
+   * 
+   * @param wtd
+   *          the word to disambiguate
+   * @param windowBackward
    * @return the array of WordSenses with their scores
    */
   public ArrayList<WordSense> basicContextual(WTDLesk wtd, int windowBackward,
@@ -163,10 +175,10 @@ public class Lesk implements WSDisambiguator {
     WordPOS word = new WordPOS(wtd.getWord(), Constants.getPOS(wtd.getPosTag()));
 
     ArrayList<Synset> synsets = word.getSynsets();
-    ArrayList<Node> nodes = new ArrayList<Node>();
+    ArrayList<SynNode> nodes = new ArrayList<SynNode>();
 
     for (Synset synset : synsets) {
-      Node node = new Node(synset, relvWords);
+      SynNode node = new SynNode(synset, relvWords);
       nodes.add(node);
     }
 
@@ -196,11 +208,16 @@ public class Lesk implements WSDisambiguator {
   }
 
   /**
-   * An extended version of the Lesk approach that takes into consideration semantically related feature overlaps across the entire context
-   * The scoring function uses linear weights.
-   * @param wtd the word to disambiguate
-   * @param depth how deep to go into each feature tree
-   * @param depthScoreWeight the weighing per depth level
+   * An extended version of the Lesk approach that takes into consideration
+   * semantically related feature overlaps across the entire context The scoring
+   * function uses linear weights.
+   * 
+   * @param wtd
+   *          the word to disambiguate
+   * @param depth
+   *          how deep to go into each feature tree
+   * @param depthScoreWeight
+   *          the weighing per depth level
    * @param includeSynonyms
    * @param includeHypernyms
    * @param includeHyponyms
@@ -219,11 +236,16 @@ public class Lesk implements WSDisambiguator {
   }
 
   /**
-   * An extended version of the Lesk approach that takes into consideration semantically related feature overlaps in a default context window
-   * The scoring function uses linear weights.
-   * @param wtd the word to disambiguate 
-   * @param depth how deep to go into each feature tree
-   * @param depthScoreWeight the weighing per depth level
+   * An extended version of the Lesk approach that takes into consideration
+   * semantically related feature overlaps in a default context window The
+   * scoring function uses linear weights.
+   * 
+   * @param wtd
+   *          the word to disambiguate
+   * @param depth
+   *          how deep to go into each feature tree
+   * @param depthScoreWeight
+   *          the weighing per depth level
    * @param includeSynonyms
    * @param includeHypernyms
    * @param includeHyponyms
@@ -243,12 +265,18 @@ public class Lesk implements WSDisambiguator {
   }
 
   /**
-   * An extended version of the Lesk approach that takes into consideration semantically related feature overlaps in a custom context window
-   * The scoring function uses linear weights.
-   * @param wtd the word to disambiguate 
-   * @param windowSize the custom context window size
-   * @param depth how deep to go into each feature tree
-   * @param depthScoreWeight the weighing per depth level
+   * An extended version of the Lesk approach that takes into consideration
+   * semantically related feature overlaps in a custom context window The
+   * scoring function uses linear weights.
+   * 
+   * @param wtd
+   *          the word to disambiguate
+   * @param windowSize
+   *          the custom context window size
+   * @param depth
+   *          how deep to go into each feature tree
+   * @param depthScoreWeight
+   *          the weighing per depth level
    * @param includeSynonyms
    * @param includeHypernyms
    * @param includeHyponyms
@@ -266,15 +294,21 @@ public class Lesk implements WSDisambiguator {
         includeMeronyms, includeHolonyms);
   }
 
-
   /**
-   * An extended version of the Lesk approach that takes into consideration semantically related feature overlaps in a custom context window
-   * The scoring function uses linear weights.
-   * @param wtd the word to disambiguate 
-   * @param windowBackward the custom context backward window size
-   * @param windowForward the custom context forward window size
-   * @param depth how deep to go into each feature tree
-   * @param depthScoreWeight the weighing per depth level
+   * An extended version of the Lesk approach that takes into consideration
+   * semantically related feature overlaps in a custom context window The
+   * scoring function uses linear weights.
+   * 
+   * @param wtd
+   *          the word to disambiguate
+   * @param windowBackward
+   *          the custom context backward window size
+   * @param windowForward
+   *          the custom context forward window size
+   * @param depth
+   *          how deep to go into each feature tree
+   * @param depthScoreWeight
+   *          the weighing per depth level
    * @param includeSynonyms
    * @param includeHypernyms
    * @param includeHyponyms
@@ -293,10 +327,10 @@ public class Lesk implements WSDisambiguator {
     WordPOS word = new WordPOS(wtd.getWord(), Constants.getPOS(wtd.getPosTag()));
 
     ArrayList<Synset> synsets = word.getSynsets();
-    ArrayList<Node> nodes = new ArrayList<Node>();
+    ArrayList<SynNode> nodes = new ArrayList<SynNode>();
 
     for (Synset synset : synsets) {
-      Node node = new Node(synset, relvWords);
+      SynNode node = new SynNode(synset, relvWords);
       nodes.add(node);
     }
 
@@ -341,12 +375,15 @@ public class Lesk implements WSDisambiguator {
 
   }
 
-  
   /**
-   * An extended version of the Lesk approach that takes into consideration semantically related feature overlaps in all the context.
-   * The scoring function uses exponential weights.
-   * @param wtd the word to disambiguate 
-   * @param depth how deep to go into each feature tree
+   * An extended version of the Lesk approach that takes into consideration
+   * semantically related feature overlaps in all the context. The scoring
+   * function uses exponential weights.
+   * 
+   * @param wtd
+   *          the word to disambiguate
+   * @param depth
+   *          how deep to go into each feature tree
    * @param intersectionExponent
    * @param depthExponent
    * @param includeSynonyms
@@ -366,12 +403,16 @@ public class Lesk implements WSDisambiguator {
         includeMeronyms, includeHolonyms);
 
   }
-  
+
   /**
-   * An extended version of the Lesk approach that takes into consideration semantically related feature overlaps in a default window in the context.
+   * An extended version of the Lesk approach that takes into consideration
+   * semantically related feature overlaps in a default window in the context.
    * The scoring function uses exponential weights.
-   * @param wtd the word to disambiguate 
-   * @param depth how deep to go into each feature tree
+   * 
+   * @param wtd
+   *          the word to disambiguate
+   * @param depth
+   *          how deep to go into each feature tree
    * @param intersectionExponent
    * @param depthExponent
    * @param includeSynonyms
@@ -390,13 +431,17 @@ public class Lesk implements WSDisambiguator {
         depth, intersectionExponent, depthExponent, includeSynonyms,
         includeHypernyms, includeHyponyms, includeMeronyms, includeHolonyms);
   }
-  
+
   /**
-   * An extended version of the Lesk approach that takes into consideration semantically related feature overlaps in a custom window in the context.
+   * An extended version of the Lesk approach that takes into consideration
+   * semantically related feature overlaps in a custom window in the context.
    * The scoring function uses exponential weights.
-   * @param wtd the word to disambiguate 
-   * @param windowSize 
-   * @param depth how deep to go into each feature tree
+   * 
+   * @param wtd
+   *          the word to disambiguate
+   * @param windowSize
+   * @param depth
+   *          how deep to go into each feature tree
    * @param intersectionExponent
    * @param depthExponent
    * @param includeSynonyms
@@ -417,9 +462,12 @@ public class Lesk implements WSDisambiguator {
   }
 
   /**
-   * An extended version of the Lesk approach that takes into consideration semantically related feature overlaps in a custom window in the context.
+   * An extended version of the Lesk approach that takes into consideration
+   * semantically related feature overlaps in a custom window in the context.
    * The scoring function uses exponential weights.
-   * @param wtd the word to disambiguate 
+   * 
+   * @param wtd
+   *          the word to disambiguate
    * @param windowBackward
    * @param windowForward
    * @param depth
@@ -442,10 +490,10 @@ public class Lesk implements WSDisambiguator {
     WordPOS word = new WordPOS(wtd.getWord(), Constants.getPOS(wtd.getPosTag()));
 
     ArrayList<Synset> synsets = word.getSynsets();
-    ArrayList<Node> nodes = new ArrayList<Node>();
+    ArrayList<SynNode> nodes = new ArrayList<SynNode>();
 
     for (Synset synset : synsets) {
-      Node node = new Node(synset, relvWords);
+      SynNode node = new SynNode(synset, relvWords);
       nodes.add(node);
     }
 
@@ -494,6 +542,7 @@ public class Lesk implements WSDisambiguator {
 
   /**
    * Recursively score the hypernym tree linearly
+   * 
    * @param wordSense
    * @param child
    * @param relvWords
@@ -512,7 +561,7 @@ public class Lesk implements WSDisambiguator {
     ArrayList<WordPOS> relvGlossWords = PreProcessor
         .getAllRelevantWords(tokenizedGloss);
 
-    Node childNode = new Node(child, relvGlossWords);
+    SynNode childNode = new SynNode(child, relvGlossWords);
 
     childNode.setHypernyms();
     wordSense.setScore(wordSense.getScore()
@@ -525,7 +574,8 @@ public class Lesk implements WSDisambiguator {
   }
 
   /**
-   * Recursively score the hypernym tree exponentially 
+   * Recursively score the hypernym tree exponentially
+   * 
    * @param wordSense
    * @param child
    * @param relvWords
@@ -545,7 +595,7 @@ public class Lesk implements WSDisambiguator {
     ArrayList<WordPOS> relvGlossWords = PreProcessor
         .getAllRelevantWords(tokenizedGloss);
 
-    Node childNode = new Node(child, relvGlossWords);
+    SynNode childNode = new SynNode(child, relvGlossWords);
 
     childNode.setHypernyms();
     wordSense.setScore(wordSense.getScore()
@@ -560,6 +610,7 @@ public class Lesk implements WSDisambiguator {
 
   /**
    * Recursively score the hyponym tree linearly
+   * 
    * @param wordSense
    * @param child
    * @param relvWords
@@ -578,7 +629,7 @@ public class Lesk implements WSDisambiguator {
     ArrayList<WordPOS> relvGlossWords = PreProcessor
         .getAllRelevantWords(tokenizedGloss);
 
-    Node childNode = new Node(child, relvGlossWords);
+    SynNode childNode = new SynNode(child, relvGlossWords);
 
     childNode.setHyponyms();
     wordSense.setScore(wordSense.getScore()
@@ -593,6 +644,7 @@ public class Lesk implements WSDisambiguator {
 
   /**
    * Recursively score the hyponym tree exponentially
+   * 
    * @param wordSense
    * @param child
    * @param relvWords
@@ -612,7 +664,7 @@ public class Lesk implements WSDisambiguator {
     ArrayList<WordPOS> relvGlossWords = PreProcessor
         .getAllRelevantWords(tokenizedGloss);
 
-    Node childNode = new Node(child, relvGlossWords);
+    SynNode childNode = new SynNode(child, relvGlossWords);
 
     childNode.setHyponyms();
     wordSense.setScore(wordSense.getScore()
@@ -627,6 +679,7 @@ public class Lesk implements WSDisambiguator {
 
   /**
    * Recursively score the meronym tree linearly
+   * 
    * @param wordSense
    * @param child
    * @param relvWords
@@ -645,7 +698,7 @@ public class Lesk implements WSDisambiguator {
     ArrayList<WordPOS> relvGlossWords = PreProcessor
         .getAllRelevantWords(tokenizedGloss);
 
-    Node childNode = new Node(child, relvGlossWords);
+    SynNode childNode = new SynNode(child, relvGlossWords);
 
     childNode.setMeronyms();
     wordSense.setScore(wordSense.getScore()
@@ -660,6 +713,7 @@ public class Lesk implements WSDisambiguator {
 
   /**
    * Recursively score the meronym tree exponentially
+   * 
    * @param wordSense
    * @param child
    * @param relvWords
@@ -679,7 +733,7 @@ public class Lesk implements WSDisambiguator {
     ArrayList<WordPOS> relvGlossWords = PreProcessor
         .getAllRelevantWords(tokenizedGloss);
 
-    Node childNode = new Node(child, relvGlossWords);
+    SynNode childNode = new SynNode(child, relvGlossWords);
 
     childNode.setMeronyms();
     wordSense.setScore(wordSense.getScore()
@@ -694,6 +748,7 @@ public class Lesk implements WSDisambiguator {
 
   /**
    * Recursively score the holonym tree linearly
+   * 
    * @param wordSense
    * @param child
    * @param relvWords
@@ -712,7 +767,7 @@ public class Lesk implements WSDisambiguator {
     ArrayList<WordPOS> relvGlossWords = PreProcessor
         .getAllRelevantWords(tokenizedGloss);
 
-    Node childNode = new Node(child, relvGlossWords);
+    SynNode childNode = new SynNode(child, relvGlossWords);
 
     childNode.setHolonyms();
     wordSense.setScore(wordSense.getScore()
@@ -727,6 +782,7 @@ public class Lesk implements WSDisambiguator {
 
   /**
    * Recursively score the holonym tree exponentially
+   * 
    * @param wordSense
    * @param child
    * @param relvWords
@@ -746,7 +802,7 @@ public class Lesk implements WSDisambiguator {
     ArrayList<WordPOS> relvGlossWords = PreProcessor
         .getAllRelevantWords(tokenizedGloss);
 
-    Node childNode = new Node(child, relvGlossWords);
+    SynNode childNode = new SynNode(child, relvGlossWords);
 
     childNode.setHolonyms();
     wordSense.setScore(wordSense.getScore()
@@ -761,6 +817,7 @@ public class Lesk implements WSDisambiguator {
 
   /**
    * Checks if the feature should be counted in the score
+   * 
    * @param featureSynsets
    * @param relevantWords
    * @return count of features to consider
@@ -769,10 +826,10 @@ public class Lesk implements WSDisambiguator {
       ArrayList<WordPOS> relevantWords) {
     int count = 0;
     for (Synset synset : featureSynsets) {
-      Node subNode = new Node(synset, relevantWords);
+      SynNode subNode = new SynNode(synset, relevantWords);
 
       String[] tokenizedSense = Loader.getTokenizer().tokenize(
-          subNode.getSense());
+          subNode.getGloss());
       ArrayList<WordPOS> relvSenseWords = PreProcessor
           .getAllRelevantWords(tokenizedSense);
 
@@ -789,6 +846,7 @@ public class Lesk implements WSDisambiguator {
 
   /**
    * Checks if the synonyms should be counted in the score
+   * 
    * @param synonyms
    * @param relevantWords
    * @return count of synonyms to consider
@@ -809,15 +867,16 @@ public class Lesk implements WSDisambiguator {
 
   /**
    * Gets the senses of the nodes
+   * 
    * @param nodes
    * @return senses from the nodes
    */
-  public ArrayList<WordSense> updateSenses(ArrayList<Node> nodes) {
+  public ArrayList<WordSense> updateSenses(ArrayList<SynNode> nodes) {
     ArrayList<WordSense> scoredSenses = new ArrayList<WordSense>();
 
     for (int i = 0; i < nodes.size(); i++) {
       ArrayList<WordPOS> sensesComponents = PreProcessor
-          .getAllRelevantWords(PreProcessor.tokenize(nodes.get(i).getSense()));
+          .getAllRelevantWords(PreProcessor.tokenize(nodes.get(i).getGloss()));
       WordSense wordSense = new WordSense();
       nodes.get(i).setSenseRelevantWords(sensesComponents);
       wordSense.setNode(nodes.get(i));
@@ -827,25 +886,26 @@ public class Lesk implements WSDisambiguator {
     return scoredSenses;
 
   }
-  
+
   /**
    * Disambiguates an ambiguous word in its context
    * 
    * @param tokenizedContext
    * @param ambiguousTokenIndex
-   * @return array of sense indexes from WordNet ordered by their score.
-   * The result format is <b>POS</b>@<b>SenseID</b>@<b>Sense Score</b> 
-   * If the input token is non relevant a null is returned.
+   * @return array of sense indexes from WordNet ordered by their score. The
+   *         result format is <b>POS</b>@<b>SenseID</b>@<b>Sense Score</b> If
+   *         the input token is non relevant a null is returned.
    */
   @Override
-  public String[] disambiguate(String[] tokenizedContext, int ambiguousTokenIndex) {
-    
+  public String[] disambiguate(String[] tokenizedContext,
+      int ambiguousTokenIndex) {
+
     WTDLesk wtd = new WTDLesk(tokenizedContext, ambiguousTokenIndex);
     // if the word is not relevant return null
-    if (!Constants.isRelevant(wtd.getPosTag())){
-      return null ;
+    if (!Constants.isRelevant(wtd.getPosTag())) {
+      return null;
     }
-    
+
     ArrayList<WordSense> wsenses = null;
 
     switch (this.params.leskType) {
@@ -921,32 +981,46 @@ public class Lesk implements WSDisambiguator {
         LeskParameters.DFLT_DEXP, true, true, true, true, true);
     Collections.sort(wsenses);
 
-    // TODO modify to longs but for now we have strings in the data for coarsing
+    List<Word> synsetWords;
     String[] senses = new String[wsenses.size()];
+    String senseKey = "?";
     for (int i = 0; i < wsenses.size(); i++) {
+      synsetWords = wsenses.get(i).getNode().synset.getWords();
+      for (Word synWord : synsetWords) {
+        if (synWord.getLemma().equals(wtd.getWord())) {
+          try {
+            senseKey = synWord.getSenseKey();
+          } catch (JWNLException e) {
+            e.printStackTrace();
+          }
+          break;
+        }
+      }
       senses[i] = Constants.getPOS(wsenses.get(i).getWTDLesk().getPosTag())
           .getKey()
           + "@"
-          + Long.toString(wsenses.get(i).getNode().getSenseID())
+          + Long.toString(wsenses.get(i).getNode().getSynsetID())
           + "@"
-          + wsenses.get(i).getScore();
+          + senseKey + "@" + wsenses.get(i).getScore();
+
+      Collections.sort(wsenses);
     }
     return senses;
   }
 
-  
   /**
-   * Disambiguates an ambiguous word in its context
-   * The user can set a span of inputWords from the tokenized input
-   *  
+   * Disambiguates an ambiguous word in its context The user can set a span of
+   * inputWords from the tokenized input
+   * 
    * @param inputText
    * @param inputWordSpans
-   * @return array of array of sense indexes from WordNet ordered by their score.
-   * The result format is <b>POS</b>@<b>SenseID</b>@<b>Sense Score</b> 
-   * If the input token is non relevant a null is returned.
+   * @return array of array of sense indexes from WordNet ordered by their
+   *         score. The result format is <b>POS</b>@<b>SenseID</b>@<b>Sense
+   *         Score</b> If the input token is non relevant a null is returned.
    */
-  @Override 
-  public String[][] disambiguate(String[] tokenizedContext, Span[] ambiguousTokenSpans) {
+  @Override
+  public String[][] disambiguate(String[] tokenizedContext,
+      Span[] ambiguousTokenSpans) {
     // TODO need to work on spans
     return null;
   }

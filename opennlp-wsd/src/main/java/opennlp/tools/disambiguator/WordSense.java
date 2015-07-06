@@ -24,11 +24,11 @@ import opennlp.tools.disambiguator.lesk.WTDLesk;
 public class WordSense implements Comparable {
 
   protected WTDLesk WTDLesk;
-  protected Node node;
+  protected SynNode node;
   protected int id;
   protected double score;
 
-  public WordSense(WTDLesk WTDLesk, Node node) {
+  public WordSense(WTDLesk WTDLesk, SynNode node) {
     super();
     this.WTDLesk = WTDLesk;
     this.node = node;
@@ -46,11 +46,11 @@ public class WordSense implements Comparable {
     this.WTDLesk = WTDLesk;
   }
 
-  public Node getNode() {
+  public SynNode getNode() {
     return node;
   }
 
-  public void setNode(Node node) {
+  public void setNode(SynNode node) {
     this.node = node;
   }
 
@@ -74,8 +74,8 @@ public class WordSense implements Comparable {
     return (this.score - ((WordSense) o).score) < 0 ? 1 : -1;
   }
 
-  public String getSense() {
-    return node.getSense();
+  public String getGloss() {
+    return node.getGloss();
   }
 
 }

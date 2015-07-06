@@ -37,10 +37,6 @@ public class WordToDisambiguate {
 
   protected ArrayList<String> senseIDs;
 
-  /**
-   * Constructor
-   */
-
   public WordToDisambiguate(String[] sentence, int wordIndex, int sense)
       throws IllegalArgumentException {
     super();
@@ -70,11 +66,7 @@ public class WordToDisambiguate {
     this.sense = -1;
 
   }
-
-  /**
-   * Getters and Setters
-   */
-
+   
   // Sentence
   public String[] getSentence() {
     return sentence;
@@ -118,7 +110,6 @@ public class WordToDisambiguate {
     }
 
     return ref;
-
   }
 
   public String getWord() {
@@ -157,3 +148,4 @@ public class WordToDisambiguate {
     return (wordIndex + "\t" + getWord() + "\n" + sentence);
   }
 }
+

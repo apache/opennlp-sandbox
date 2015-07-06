@@ -65,6 +65,12 @@ public class WordPOS {
     IndexWord indexWord;
     try {
       indexWord = Loader.getDictionary().lookupIndexWord(pos, word);
+      if (indexWord == null) {
+        Constants
+            .print("NULL synset probably a POS tagger mistake ! :: [POS] : "
+                + pos.getLabel() + " [word] : " + word);
+        return null;
+      }
       List<Synset> synsets = indexWord.getSenses();
       return (new ArrayList<Synset>(synsets));
     } catch (JWNLException e) {
@@ -79,11 +85,6 @@ public class WordPOS {
     List originalList = this.getStems();
     List listToCompare = wordToCompare.getStems();
 
-    // Constants.print("+++++++++++++++++++++  ::: "+ this.getWord());
-    // Constants.print("+++++++++++++++++++++  ::: "+ wordToCompare.getWord());
-    // Constants.print("the first list is \n"+originalList.toString());
-    // Constants.print("the second list is \n"+listToCompare.toString());
-
     if (originalList == null || listToCompare == null) { // any of the two
                                                          // requested words do
                                                          // not exist
@@ -96,7 +97,7 @@ public class WordPOS {
 
   // uses Lemma to check if two words are equivalent
   public boolean isLemmaEquivalent(WordPOS wordToCompare) {
-    // TODO use lemmatizer to compare with lemmas
+    // TODO try using lemmatizer to compare with lemmas
 
     ArrayList<String> lemmas_word = new ArrayList();
     ArrayList<String> lemmas_wordToCompare = new ArrayList();

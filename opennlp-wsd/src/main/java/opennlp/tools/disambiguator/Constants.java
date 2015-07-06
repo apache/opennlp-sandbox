@@ -142,7 +142,7 @@ public class Constants {
           parts = result.split("@");
           pos = POS.getPOSForKey(parts[0]);
           offset = Long.parseLong(parts[1]);
-          score = Double.parseDouble(parts[2]);
+          score = Double.parseDouble(parts[3]);
           try {
             Constants.print("score : " + score + " for : "
                 + Loader.getDictionary().getSynsetAt(pos, offset).getGloss());
