@@ -123,7 +123,6 @@ public class Lesk implements WSDisambiguator {
       for (WordPOS senseWordPOS : wordSense.getNode().getSenseRelevantWords()) {
         ArrayList stems = (ArrayList) PreProcessor.Stem(senseWordPOS);
         for (WordPOS sentenceWordPOS : relvWords) {
-          // TODO change to lemma check
           if (sentenceWordPOS.isStemEquivalent(senseWordPOS)) {
             count = count + 1;
           }
@@ -201,9 +200,6 @@ public class Lesk implements WSDisambiguator {
       wordSense.setScore(count);
 
     }
-
-    Collections.sort(scoredSenses);
-
     return scoredSenses;
   }
 
@@ -893,8 +889,8 @@ public class Lesk implements WSDisambiguator {
    * @param tokenizedContext
    * @param ambiguousTokenIndex
    * @return array of sense indexes from WordNet ordered by their score. The
-   *         result format is <b>POS</b>@<b>SenseID</b>@<b>Sense Score</b> If
-   *         the input token is non relevant a null is returned.
+   *         result format is <b>Source</b> <b>SenseID</b> If the input token is
+   *         non relevant a null is returned.
    */
   @Override
   public String[] disambiguate(String[] tokenizedContext,
@@ -974,11 +970,14 @@ public class Lesk implements WSDisambiguator {
           this.params.fathom_hypernyms, this.params.fathom_hyponyms,
           this.params.fathom_meronyms, this.params.fathom_holonyms);
       break;
+    default:
+      wsenses = extendedExponentialContextual(wtd,
+          LeskParameters.DFLT_WIN_SIZE, LeskParameters.DFLT_DEPTH,
+          LeskParameters.DFLT_IEXP, LeskParameters.DFLT_DEXP, true, true, true,
+          true, true);
+      break;
     }
 
-    wsenses = extendedExponentialContextual(wtd, LeskParameters.DFLT_WIN_SIZE,
-        LeskParameters.DFLT_DEPTH, LeskParameters.DFLT_IEXP,
-        LeskParameters.DFLT_DEXP, true, true, true, true, true);
     Collections.sort(wsenses);
 
     List<Word> synsetWords;
@@ -996,14 +995,8 @@ public class Lesk implements WSDisambiguator {
           break;
         }
       }
-      senses[i] = Constants.getPOS(wsenses.get(i).getWTDLesk().getPosTag())
-          .getKey()
-          + "@"
-          + Long.toString(wsenses.get(i).getNode().getSynsetID())
-          + "@"
-          + senseKey + "@" + wsenses.get(i).getScore();
+      senses[i] = "WordNet" + " " + senseKey + " " + wsenses.get(i).getScore();
 
-      Collections.sort(wsenses);
     }
     return senses;
   }
@@ -1015,8 +1008,8 @@ public class Lesk implements WSDisambiguator {
    * @param inputText
    * @param inputWordSpans
    * @return array of array of sense indexes from WordNet ordered by their
-   *         score. The result format is <b>POS</b>@<b>SenseID</b>@<b>Sense
-   *         Score</b> If the input token is non relevant a null is returned.
+   *         score. The result format is <b>Source</b> <b>SenseID</b> If the
+   *         input token is non relevant a null is returned.
    */
   @Override
   public String[][] disambiguate(String[] tokenizedContext,

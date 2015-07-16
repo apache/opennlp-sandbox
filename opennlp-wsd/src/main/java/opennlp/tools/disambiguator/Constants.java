@@ -133,19 +133,16 @@ public class Constants {
     if (results != null) {
 
       if (disambiguator instanceof Lesk) {
-        POS pos;
-        long offset;
-        double score;
         String[] parts;
 
         for (String result : results) {
-          parts = result.split("@");
-          pos = POS.getPOSForKey(parts[0]);
-          offset = Long.parseLong(parts[1]);
-          score = Double.parseDouble(parts[3]);
+          parts = result.split(" ");
           try {
-            Constants.print("score : " + score + " for : "
-                + Loader.getDictionary().getSynsetAt(pos, offset).getGloss());
+            Constants.print("score : "
+                + parts[2]
+                + " for : "
+                + Loader.getDictionary().getWordBySenseKey(parts[1])
+                    .getSynset().getGloss());
           } catch (JWNLException e) {
             e.printStackTrace();
           }

@@ -26,13 +26,20 @@ import opennlp.tools.util.Span;
  * A word sense disambiguator that determines which sense of a word is meant in
  * a particular context. It is a classification task, where the classes are the
  * different senses of the ambiguous word. Disambiguation can be achieved in
- * either supervised or un-supervised approaches. For the moment this component
- * relies on WordNet to retrieve sense definitions. It returns an array of
- * WordNet sense IDs ordered by their disambiguation score. The sense with
- * highest score is the most likely sense of the word.
+ * either supervised or un-supervised approaches. A disambiguator returns an
+ * array of sense IDs ordered by their disambiguation score as well their
+ * source. The first sense ID is the most probable sense in the set context. The
+ * context is a sentence or a chunk of text where the target word exists.
  * 
+ * <b>How it works :<b> Just supply the context as an array of tokens and the
+ * index of the target word to the disambiguate method.
+ * 
+ * Otherwise for multiple words, you can set a word span instead of simply one
+ * index. For the moment the source of sense definitions is from WordNet. *
  * Please see {@link Lesk} for an un-supervised approach. Please see {@link IMS}
  * for a supervised approach.
+ * 
+ * Examples on how to use each approach are provided in the test section.
  * 
  * @see Lesk
  * @see IMS

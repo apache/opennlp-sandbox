@@ -17,8 +17,6 @@
 
 package opennlp.tools.disambiguator;
 
-import net.sf.extjwnl.data.POS;
-import opennlp.tools.disambiguator.lesk.Lesk;
 import opennlp.tools.util.eval.Evaluator;
 import opennlp.tools.util.eval.Mean;
 
@@ -64,52 +62,61 @@ public class WSDEvaluator extends Evaluator<WordToDisambiguate> {
     String predictedSense = disambiguator.disambiguate(reference.sentence,
         reference.getWordIndex())[0];
 
-    // TODO review this pattern
-    String[] parts = predictedSense.split("@");
-    POS pos = POS.getPOSForKey(parts[0]);
-    long offset = Long.parseLong(parts[1]);
-    String senseKey = parts[2];
-    double score = Double.parseDouble(parts[3]);
+    String senseKey = predictedSense.split(" ")[1];
 
     // if we have multiple senses mapped to one sense
     if (disambiguator.getParams().isCoarseSense()) {
-
       // if we find the sense in one of the coarse senses
       int found = -1;
       for (int i = 0; i < referenceSenses.length; i++) {
         if (referenceSenses[i].equals(senseKey)) {
-          // Constants.print("++++++++++++++++++++++++ YES");
           accuracy.add(1);
           found = i;
           break;
         }
       }
       if (found < 0) {
-        // Constants.print("NO : "+referenceSenses[0]+"+++" + senseKey);
         accuracy.add(0);
       }
-
     } // else we have fine grained senses (only one mapped sense)
     else {
       if (referenceSenses[0].equals(senseKey)) {
-        // Constants.print("++++++++++++++++++++++++ YES");
         accuracy.add(1);
       } else {
-        // Constants.print("NO : "+referenceSenses[0]+"+++" + senseKey);
         accuracy.add(0);
       }
     }
+
     return new WordToDisambiguate(reference.getSentence(),
         reference.getWordIndex());
   }
 
+  /**
+   * Retrieves the WSD accuracy.
+   *
+   * This is defined as: WSD accuracy = correctly disambiguated / total words
+   *
+   * @return the WSD accuracy
+   */
   public double getAccuracy() {
     return accuracy.mean();
   }
 
+  /**
+   * Retrieves the total number of words considered in the evaluation.
+   *
+   * @return the word count
+   */
   public long getWordCount() {
     return accuracy.count();
   }
 
+  /**
+   * Represents this objects as human readable {@link String}.
+   */
+  @Override
+  public String toString() {
+    return "Accuracy: " + (accuracy.mean() * 100) + "%"
+        + "\tNumber of Samples: " + accuracy.count();
+  }
 }
-

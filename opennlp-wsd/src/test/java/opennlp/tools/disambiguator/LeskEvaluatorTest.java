@@ -18,6 +18,7 @@
  */
 
 package opennlp.tools.disambiguator;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -48,7 +49,7 @@ public class LeskEvaluatorTest {
 
     Lesk lesk = new Lesk();
     LeskParameters leskParams = new LeskParameters();
-    leskParams.setLeskType(LeskParameters.LESK_TYPE.LESK_BASIC);
+    leskParams.setLeskType(LeskParameters.LESK_TYPE.LESK_EXT_EXP_CTXT_WIN);
     lesk.setParams(leskParams);
 
     if (testFolder.isDirectory()) {
@@ -66,13 +67,11 @@ public class LeskEvaluatorTest {
             if (instances != null) {
               Constants.print("------------------" + file.getName()
                   + "------------------");
-              Constants.print("there are " + instances.size() + " instances");
               for (WordToDisambiguate instance : instances) {
                 // Constants.print("sense IDs : " + instance.senseIDs);
                 evaluator.evaluateSample(instance);
               }
-              Constants.print("the accuracy " + evaluator.getAccuracy() * 100
-                  + "%");
+              Constants.print(evaluator.toString());
             } else {
               Constants.print("null instances");
             }
