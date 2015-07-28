@@ -30,6 +30,7 @@ import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.dictionary.Dictionary;
 import net.sf.extjwnl.dictionary.MorphologicalProcessor;
 import opennlp.tools.cmdline.postag.POSModelLoader;
+import opennlp.tools.disambiguator.DatasetsReader.SensevalReader;
 import opennlp.tools.lemmatizer.SimpleLemmatizer;
 import opennlp.tools.namefind.NameFinderME;
 import opennlp.tools.namefind.TokenNameFinderModel;
@@ -44,7 +45,7 @@ import opennlp.tools.util.InvalidFormatException;
 
 public class Loader {
 
-  private static DataExtractor dExtractor = new DataExtractor();
+  private static SensevalReader dExtractor = new SensevalReader();
 
   private static String modelsDir = "src\\test\\resources\\models\\";
 
@@ -64,7 +65,6 @@ public class Loader {
 
   private static HashMap<String, Object> englishWords;
 
-  // Constructor
   public Loader() {
     super();
     load();
@@ -102,8 +102,8 @@ public class Loader {
 
   public static HashMap<String, Object> getEnglishWords() {
     if (englishWords == null || englishWords.keySet().isEmpty()) {
-      englishWords = dExtractor.getEnglishWords(modelsDir
-          + "en-lemmatizer.dict");
+      englishWords = Constants
+          .getEnglishWords(modelsDir + "en-lemmatizer.dict");
     }
     return englishWords;
   }

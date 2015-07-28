@@ -19,14 +19,25 @@
 
 package opennlp.tools.disambiguator;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 
 import opennlp.tools.disambiguator.lesk.Lesk;
 import net.sf.extjwnl.JWNLException;
 import net.sf.extjwnl.data.POS;
 
 public class Constants {
+
+  private static String resourcesFolder = "src\\test\\resources\\";
+
+  private static String englishDict = resourcesFolder
+      + "models\\en-lemmatizer.dict";
 
   public static String osPathChar = "\\";
 
@@ -133,16 +144,19 @@ public class Constants {
     if (results != null) {
 
       if (disambiguator instanceof Lesk) {
+        POS pos;
+        long offset;
+        double score;
         String[] parts;
 
         for (String result : results) {
-          parts = result.split(" ");
+          parts = result.split("@");
+          pos = POS.getPOSForKey(parts[0]);
+          offset = Long.parseLong(parts[1]);
+          score = Double.parseDouble(parts[3]);
           try {
-            Constants.print("score : "
-                + parts[2]
-                + " for : "
-                + Loader.getDictionary().getWordBySenseKey(parts[1])
-                    .getSynset().getGloss());
+            Constants.print("score : " + score + " for : "
+                + Loader.getDictionary().getSynsetAt(pos, offset).getGloss());
           } catch (JWNLException e) {
             e.printStackTrace();
           }
@@ -183,7 +197,60 @@ public class Constants {
     }
   }
 
-  // return the PoS (Class POS) out of the PoS-tag
+  /**
+   * Extract the list of ALL English words
+   * 
+   * @param dict
+   *          this file is the same that is used in the simple Lemmatizer
+   *          (i.e.,"en-lemmatizer.dict")
+   * 
+   * @return a list of all the English words
+   */
+  public static HashMap<String, Object> getEnglishWords(String dict) {
+
+    HashMap<String, Object> words = new HashMap<String, Object>();
+
+    BufferedReader br = null;
+
+    File file = new File(englishDict);
+
+    if (file.exists()) {
+
+      try {
+        br = new BufferedReader(new FileReader(file));
+        String line = br.readLine();
+        while (line != null) {
+          line = br.readLine();
+          if (line != null) {
+            String word = line.split("\\t")[0];
+            words.put(word, null);
+          }
+        }
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
+      } finally {
+        if (br != null) {
+          try {
+            br.close();
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        }
+      }
+    }
+
+    return words;
+  }
+
+  /**
+   * return the PoS (Class POS) out of the PoS-tag
+   * 
+   * @param posTag
+   *          PoS tag (e.g., "JJS", "NNP", etc.)
+   * @return the Part of Speech (type {@link POS})
+   */
   public static POS getPOS(String posTag) {
 
     ArrayList<String> adjective = new ArrayList<String>(Arrays.asList("JJ",
@@ -208,16 +275,73 @@ public class Constants {
 
   }
 
+  /**
+   * Check whether a PoS Tag is relevant of not. A PoS Tag is considered
+   * relevant when it corresponds to:
+   * <ul>
+   * <li>VERB</li>
+   * <li>ADJECTIVE</li>
+   * <li>ADVERB</li>
+   * <li>NOUN</li>
+   * </ul>
+   * 
+   * @param posTag
+   *          the PoS Tag to verify the relevance.
+   * @return whether a PoS Tag corresponds to a relevant Part of Speech (type
+   *         {@link POS}) or not ( true} if it is, false} otherwise)
+   */
   public static boolean isRelevant(String posTag) {
     return getPOS(posTag) != null;
   }
 
+  /**
+   * Check whether a PoS Tag is relevant of not. A PoS Tag is considered
+   * relevant when it is:
+   * <ul>
+   * <li>VERB</li>
+   * <li>ADJECTIVE</li>
+   * <li>ADVERB</li>
+   * <li>NOUN</li>
+   * </ul>
+   * 
+   * @param pos
+   *          The Part of Speech of Type {@link POS}
+   * @return whether a Part of Speech is relevant (true) or not (false)
+   */
   public static boolean isRelevant(POS pos) {
     return pos.equals(POS.ADJECTIVE) || pos.equals(POS.ADVERB)
         || pos.equals(POS.NOUN) || pos.equals(POS.VERB);
   }
 
-  // Check whether a list of arrays contains an array
+  public static String getPOSabbreviation(String posTag) {
+
+    if (posTag == null) {
+      return null;
+    }
+    if (posTag.startsWith("JJ")) {
+      return "a";
+    } else if (posTag.startsWith("RB")) {
+      return "r";
+    } else if (posTag.startsWith("VB") || posTag.equals("MD")) {
+      return "v";
+    } else if (posTag.startsWith("NN")) {
+      return "n";
+    }
+
+    return null;
+
+  }
+
+  /**
+   * Check whether a list of arrays contains an array
+   * 
+   * @param array
+   *          The array To check
+   * @param fullList
+   *          The full list of Arrays
+   * @return whether the {@link ArrayList} of arrays contains the array (true)
+   *         or not (false)
+   */
   public static boolean belongsTo(String[] array, ArrayList<String[]> fullList) {
     for (String[] refArray : fullList) {
       if (areStringArraysEqual(array, refArray))
@@ -226,7 +350,15 @@ public class Constants {
     return false;
   }
 
-  // Check whether two arrays of strings are equal
+  /**
+   * Check whether two arrays of strings are equal
+   * 
+   * @param array1
+   *          first array
+   * @param array2
+   *          second array
+   * @return whether the two arrays are identical (true) or not (false)
+   */
   public static boolean areStringArraysEqual(String[] array1, String[] array2) {
 
     if (array1.equals(null) || array2.equals(null))
@@ -244,4 +376,5 @@ public class Constants {
     return true;
 
   }
+
 }

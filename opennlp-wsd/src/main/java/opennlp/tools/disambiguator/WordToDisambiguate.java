@@ -20,6 +20,7 @@
 package opennlp.tools.disambiguator;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import net.sf.extjwnl.data.POS;
 
@@ -53,6 +54,22 @@ public class WordToDisambiguate {
     this.sense = sense;
   }
 
+  public WordToDisambiguate(String[] sentence, int wordIndex,
+      ArrayList<String> senseIDs) throws IllegalArgumentException {
+    super();
+
+    if (wordIndex > sentence.length) {
+      throw new IllegalArgumentException("The index is out of bounds !");
+    }
+
+    this.sentence = sentence;
+    this.posTags = PreProcessor.tag(sentence);
+
+    this.wordIndex = wordIndex;
+
+    this.senseIDs = senseIDs;
+  }
+
   public WordToDisambiguate(String[] sentence, int wordIndex) {
     this(sentence, wordIndex, -1);
   }
@@ -66,7 +83,7 @@ public class WordToDisambiguate {
     this.sense = -1;
 
   }
-   
+
   // Sentence
   public String[] getSentence() {
     return sentence;
@@ -97,15 +114,17 @@ public class WordToDisambiguate {
 
     String ref = "";
 
-    if (Constants.getPOS(this.posTags[wordIndex]).equals(POS.VERB)) {
-      ref = wordBaseForm + ".v";
-    } else if (Constants.getPOS(this.posTags[wordIndex]).equals(POS.NOUN)) {
-      ref = wordBaseForm + ".n";
-    } else if (Constants.getPOS(this.posTags[wordIndex]).equals(POS.ADJECTIVE)) {
-      ref = wordBaseForm + ".a";
-    } else if (Constants.getPOS(this.posTags[wordIndex]).equals(POS.ADVERB)) {
-      ref = wordBaseForm + ".r";
-    } else {
+    if ((Constants.getPOS(this.posTags[wordIndex]) != null)) {
+      if (Constants.getPOS(this.posTags[wordIndex]).equals(POS.VERB)) {
+        ref = wordBaseForm + ".v";
+      } else if (Constants.getPOS(this.posTags[wordIndex]).equals(POS.NOUN)) {
+        ref = wordBaseForm + ".n";
+      } else if (Constants.getPOS(this.posTags[wordIndex])
+          .equals(POS.ADJECTIVE)) {
+        ref = wordBaseForm + ".a";
+      } else if (Constants.getPOS(this.posTags[wordIndex]).equals(POS.ADVERB)) {
+        ref = wordBaseForm + ".r";
+      }
 
     }
 
@@ -147,5 +166,11 @@ public class WordToDisambiguate {
   public String toString() {
     return (wordIndex + "\t" + getWord() + "\n" + sentence);
   }
+  
+  public void print() {
+    Constants.print("Sentence:  " + Arrays.asList(sentence) + "\n" + 
+        "Index: " + wordIndex + "\n" + 
+        "Word: "+ getWord() + "\n" +
+        "Sense ID: " + senseIDs.get(0));
+  }
 }
-

@@ -19,6 +19,8 @@
 
 package opennlp.tools.disambiguator.ims;
 
+import java.io.File;
+
 import opennlp.tools.disambiguator.WSDParameters;
 
 /**
@@ -27,40 +29,63 @@ import opennlp.tools.disambiguator.WSDParameters;
  */
 public class IMSParameters extends WSDParameters {
 
+  public static enum Source {
+    SEMCOR(1, "semcor"), SEMEVAL(2, "semeval"), OTHER(3, "other");
+
+    public int code;
+    public String src;
+
+    private Source(int code, String src) {
+      this.code = code;
+      this.src = src;
+    }
+  }
+
   protected String languageCode;
   protected int windowSize;
   protected int ngram;
+  protected Source source;
 
-  protected String resourcesFolder = "src\\test\\resources\\supervised\\";
-
-  protected String rawDataDirectory = resourcesFolder + "raw\\";
-  protected String trainingDataDirectory = resourcesFolder + "models\\";
-  protected String dictionaryDirectory = resourcesFolder + "dictionary\\";
-
-  protected String dict = dictionaryDirectory + "EnglishLS.dictionary.xml";
-  protected String map = dictionaryDirectory + "EnglishLS.sensemap";
-
-  public IMSParameters() {
-    super();
-    this.languageCode = "En";
-    this.windowSize = 3;
-    this.ngram = 2;
-  }
+  public static final String resourcesFolder = "src\\test\\resources\\";
+  public static final String trainingDataDirectory = resourcesFolder
+      + "supervised\\models\\";
 
   /**
+   * This constructor takes only two parameters. The default language used is
+   * <i>English</i>
    * 
    * @param windowSize
-   *          : the size of the window used for the extraction of the features
+   *          the size of the window used for the extraction of the features
    *          qualified of Surrounding Words
    * @param ngram
-   *          : the number words used for the extraction of features qualified
-   *          of Local Collocations
+   *          the number words used for the extraction of features qualified of
+   *          Local Collocations
+   * @param source
+   *          the source of the training data
    */
-  public IMSParameters(int windowSize, int ngram) {
+  public IMSParameters(int windowSize, int ngram, Source source) {
     super();
     this.languageCode = "En";
     this.windowSize = windowSize;
     this.ngram = ngram;
+    this.source = source;
+    this.isCoarseSense = false;
+
+    File folder = new File(trainingDataDirectory);
+    if (!folder.exists())
+      folder.mkdirs();
+  }
+
+  public IMSParameters() {
+    this(3, 2, Source.SEMCOR);
+  }
+
+  public IMSParameters(Source source) {
+    this(3, 2, source);
+  }
+
+  public IMSParameters(int windowSize, int ngram) {
+    this(windowSize, ngram, Source.SEMCOR);
   }
 
   public String getLanguageCode() {
@@ -87,52 +112,12 @@ public class IMSParameters extends WSDParameters {
     this.ngram = ngram;
   }
 
-  public String getRawDataDirectory() {
-    return rawDataDirectory;
+  public Source getSource() {
+    return source;
   }
 
-  public void setRawDataDirectory(String rawDataDirectory) {
-    this.rawDataDirectory = rawDataDirectory;
-  }
-
-  public String getTrainingDataDirectory() {
-    return trainingDataDirectory;
-  }
-
-  public void setTrainingDataDirectory(String trainingDataDirectory) {
-    this.trainingDataDirectory = trainingDataDirectory;
-  }
-
-  public String getDictionaryDirectory() {
-    return dictionaryDirectory;
-  }
-
-  public void setDictionaryDirectory(String dictionaryDirectory) {
-    this.dictionaryDirectory = dictionaryDirectory;
-  }
-
-  public String getDict() {
-    return dict;
-  }
-
-  public void setDict(String dict) {
-    this.dict = dict;
-  }
-
-  public String getMap() {
-    return map;
-  }
-
-  public void setMap(String map) {
-    this.map = map;
-  }
-
-  public String getResourcesFolder() {
-    return resourcesFolder;
-  }
-
-  public void setResourcesFolder(String resourcesFolder) {
-    this.resourcesFolder = resourcesFolder;
+  public void setSource(Source source) {
+    this.source = source;
   }
 
   void init() {
@@ -149,7 +134,7 @@ public class IMSParameters extends WSDParameters {
   @Override
   public boolean isValid() {
     // TODO Auto-generated method stub
-    return false;
+    return true;
   }
 
 }

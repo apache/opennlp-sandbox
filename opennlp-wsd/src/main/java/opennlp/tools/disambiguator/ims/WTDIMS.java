@@ -21,6 +21,8 @@ package opennlp.tools.disambiguator.ims;
 
 import java.util.ArrayList;
 
+import net.sf.extjwnl.data.POS;
+import opennlp.tools.disambiguator.Constants;
 import opennlp.tools.disambiguator.PreProcessor;
 import opennlp.tools.disambiguator.WordToDisambiguate;
 
@@ -41,8 +43,8 @@ public class WTDIMS extends WordToDisambiguate {
     super(sentence, word);
   }
 
-  public WTDIMS(String xmlWord, ArrayList<String> xmlAnswers,
-      String xmlSentence, String xmlrawWord) {
+  public WTDIMS(String xmlWord, ArrayList<String> senseIDs, String xmlSentence,
+      String xmlrawWord) {
     super();
 
     // this.word = xmlWord;
@@ -57,8 +59,13 @@ public class WTDIMS extends WordToDisambiguate {
       }
     }
 
-    this.senseIDs = xmlAnswers;
+    this.senseIDs = senseIDs;
 
+  }
+
+  public WTDIMS(WordToDisambiguate wtd) {
+    super(wtd.getSentence(), wtd.getWordIndex(), wtd.getSense());
+    this.senseIDs = wtd.getSenseIDs();
   }
 
   public String[] getPosOfSurroundingWords() {
@@ -93,4 +100,25 @@ public class WTDIMS extends WordToDisambiguate {
     this.features = features;
   }
 
+  public String getWordTag() {
+
+    String wordBaseForm = PreProcessor.lemmatize(this.getWord(),
+        this.getPosTag());
+
+    String ref = "";
+
+    if ((Constants.getPOS(this.getPosTag()) != null)) {
+      if (Constants.getPOS(this.getPosTag()).equals(POS.VERB)) {
+        ref = wordBaseForm + ".v";
+      } else if (Constants.getPOS(this.getPosTag()).equals(POS.NOUN)) {
+        ref = wordBaseForm + ".n";
+      } else if (Constants.getPOS(this.getPosTag()).equals(POS.ADJECTIVE)) {
+        ref = wordBaseForm + ".a";
+      } else if (Constants.getPOS(this.getPosTag()).equals(POS.ADVERB)) {
+        ref = wordBaseForm + ".r";
+      }
+    }
+
+    return ref;
+  }
 }

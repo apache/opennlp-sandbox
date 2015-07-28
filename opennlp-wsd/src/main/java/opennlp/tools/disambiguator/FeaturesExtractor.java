@@ -44,17 +44,13 @@ import opennlp.tools.disambiguator.ims.WTDIMS;
  * check {@link https://www.comp.nus.edu.sg/~nght/pubs/ims.pdf} for details
  * about this approach
  */
-
 public class FeaturesExtractor {
 
-  /**
-   * Constructor
-   */
   public FeaturesExtractor() {
     super();
   }
 
-  // IMS approach
+  // IMS
 
   private String[] extractPosOfSurroundingWords(String[] sentence,
       int wordIndex, int windowSize) {
