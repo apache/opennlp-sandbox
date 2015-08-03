@@ -67,6 +67,11 @@ public class WTDIMS extends WordToDisambiguate {
     super(wtd.getSentence(), wtd.getWordIndex(), wtd.getSense());
     this.senseIDs = wtd.getSenseIDs();
   }
+  
+  public WTDIMS(String[] sentence, int wordIndex, ArrayList<String> senseIDs) {
+    super(sentence, wordIndex);
+    this.senseIDs = senseIDs;
+  }
 
   public String[] getPosOfSurroundingWords() {
     return posOfSurroundingWords;

@@ -25,6 +25,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Collections;
+import java.util.Arrays;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -209,6 +211,8 @@ public class SensevalReader {
                 ArrayList<String> answers = new ArrayList<String>();
                 String sentence = "";
                 String rawWord = "";
+                String[] finalText = null;
+                int index = 0;
 
                 NodeList nChildren = nInstance.getChildNodes();
 
@@ -230,18 +234,46 @@ public class SensevalReader {
                     sentence = ((Element) nChild).getTextContent();
 
                     if (nChild.hasChildNodes()) {
-                      // textbefore =
-                      // nChild.getChildNodes().item(0).getTextContent();
+                      String textBefore = nChild.getChildNodes().item(0)
+                          .getTextContent();
                       rawWord = nChild.getChildNodes().item(1).getTextContent();
-                      // textAfter =
-                      // nChild.getChildNodes().item(2).getTextContent();
+                      String textAfter = nChild.getChildNodes().item(2)
+                          .getTextContent();
+
+                      ArrayList<String> textBeforeTokenzed = new ArrayList<String>(
+                          Arrays.asList(textBefore.split("\\s")));
+                      ArrayList<String> textAfterTokenzed = new ArrayList<String>(
+                          Arrays.asList(textAfter.split("\\s")));
+
+                      textBeforeTokenzed.removeAll(Collections.singleton(null));
+                      textBeforeTokenzed.removeAll(Collections.singleton(""));
+
+                      textAfterTokenzed.removeAll(Collections.singleton(null));
+                      textAfterTokenzed.removeAll(Collections.singleton(""));
+
+                      finalText = new String[textBeforeTokenzed.size() + 1
+                          + textAfterTokenzed.size()];
+
+                      int l = 0;
+                      for (String tempWord : textBeforeTokenzed) {
+                        finalText[l] = tempWord;
+                        l++;
+                      }
+                      index = l;
+                      finalText[l] = rawWord.toLowerCase();
+                      l++;
+                      for (String tempWord : textAfterTokenzed) {
+                        finalText[l] = tempWord;
+                        l++;
+                      }
+
                     }
                   }
 
                 }
 
-                WTDIMS wordToDisambiguate = new WTDIMS(word, answers, sentence,
-                    rawWord);
+                WTDIMS wordToDisambiguate = new WTDIMS(finalText, index,
+                    answers);
                 setInstances.add(wordToDisambiguate);
               }
             }
