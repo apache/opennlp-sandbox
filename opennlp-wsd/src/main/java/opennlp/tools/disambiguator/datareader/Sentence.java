@@ -17,29 +17,29 @@
  * under the License.
  */
 
-package opennlp.tools.disambiguator.DatasetsReader;
+package opennlp.tools.disambiguator.datareader;
 
 import java.util.ArrayList;
 
-public class ISentence {
+public class Sentence {
 
   protected int pnum;
   protected int snum;
-  protected ArrayList<IWord> iwords;
+  protected ArrayList<Word> iwords;
 
-  public ISentence() {
+  public Sentence() {
     super();
-    this.iwords = new ArrayList<IWord>();
+    this.iwords = new ArrayList<Word>();
   }
 
-  public ISentence(int pnum, int snum) {
+  public Sentence(int pnum, int snum) {
     super();
     this.pnum = pnum;
     this.snum = snum;
-    this.iwords = new ArrayList<IWord>();
+    this.iwords = new ArrayList<Word>();
   }
 
-  public ISentence(int pnum, int snum, ArrayList<IWord> iwords) {
+  public Sentence(int pnum, int snum, ArrayList<Word> iwords) {
     super();
     this.pnum = pnum;
     this.snum = snum;
@@ -62,15 +62,15 @@ public class ISentence {
     this.snum = snum;
   }
 
-  public ArrayList<IWord> getIwords() {
+  public ArrayList<Word> getIwords() {
     return iwords;
   }
 
-  public void setIwords(ArrayList<IWord> iwords) {
+  public void setIwords(ArrayList<Word> iwords) {
     this.iwords = iwords;
   }
 
-  public void addIword(IWord iword) {
+  public void addIword(Word iword) {
     this.iwords.add(iword);
   }
 

@@ -17,11 +17,11 @@
  * under the License.
  */
 
-package opennlp.tools.disambiguator.DatasetsReader;
+package opennlp.tools.disambiguator.datareader;
 
 import opennlp.tools.disambiguator.Constants;
 
-public class IWord {
+public class Word {
 
   public static enum Type {
     WORD(1, "word"), PUNCTUATIONMARK(2, "pm");
@@ -49,11 +49,11 @@ public class IWord {
   protected String wnsn;
   protected String lexsn;
 
-  public IWord() {
+  public Word() {
     super();
   }
 
-  public IWord(String lemma, String pos) {
+  public Word(String lemma, String pos) {
     super();
     this.word = lemma;
     this.lemma = lemma;
@@ -88,7 +88,7 @@ public class IWord {
    *          should be linked
    * 
    */
-  public IWord(int pnum, int snum, int wnum, Type type, String word,
+  public Word(int pnum, int snum, int wnum, Type type, String word,
       String cmd, String pos, String lemma, String wnsn, String lexsn) {
     super();
     this.pnum = pnum;
@@ -121,7 +121,7 @@ public class IWord {
    *          The PoS Tag of the word
    * 
    */
-  public IWord(int pnum, int snum, int wnum, Type type, String word,
+  public Word(int pnum, int snum, int wnum, Type type, String word,
       String cmd, String pos) {
     super();
     this.wnum = wnum;
@@ -141,7 +141,7 @@ public class IWord {
    * @param word
    *          The punctuation mark, as it appears in the sentence
    */
-  public IWord(int pnum, int snum, int wnum, Type type, String word) {
+  public Word(int pnum, int snum, int wnum, Type type, String word) {
     super();
     this.pnum = pnum;
     this.snum = snum;
@@ -236,12 +236,12 @@ public class IWord {
 
   public boolean equals(Object oword) {
 
-    if (!(oword instanceof IWord))
+    if (!(oword instanceof Word))
       return false;
     if (oword == this)
       return true;
 
-    IWord iword = (IWord) oword;
+    Word iword = (Word) oword;
 
     if (this.lemma != null && iword.getLemma() != null) {
       if (iword.getLemma().equals(this.getLemma())
@@ -278,12 +278,12 @@ public class IWord {
 
   public boolean senseEquals(Object oword) {
 
-    if (!(oword instanceof IWord))
+    if (!(oword instanceof Word))
       return false;
     if (oword == this)
       return true;
 
-    IWord iword = (IWord) oword;
+    Word iword = (Word) oword;
 
     if (iword.getLemma().equals(this.getLemma())
         && Constants.getPOS(iword.getPos()).equals(

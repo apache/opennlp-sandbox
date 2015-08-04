@@ -58,8 +58,8 @@ import opennlp.tools.disambiguator.WSDParameters;
 import opennlp.tools.disambiguator.WordPOS;
 import opennlp.tools.disambiguator.WSDisambiguator;
 import opennlp.tools.disambiguator.WordToDisambiguate;
-import opennlp.tools.disambiguator.DatasetsReader.SemcorReaderExtended;
-import opennlp.tools.disambiguator.DatasetsReader.SensevalReader;
+import opennlp.tools.disambiguator.datareader.SemcorReaderExtended;
+import opennlp.tools.disambiguator.datareader.SensevalReader;
 
 /**
  * Implementation of the <b>It Makes Sense</b> approach originally proposed in

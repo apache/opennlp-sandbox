@@ -17,27 +17,27 @@
  * under the License.
  */
 
-package opennlp.tools.disambiguator.DatasetsReader;
+package opennlp.tools.disambiguator.datareader;
 
 import java.util.ArrayList;
 
-public class IParagraph {
+public class Paragraph {
 
   protected int pnum;
-  protected ArrayList<ISentence> isentences;
+  protected ArrayList<Sentence> isentences;
 
-  public IParagraph() {
+  public Paragraph() {
     super();
-    this.isentences = new ArrayList<ISentence>();
+    this.isentences = new ArrayList<Sentence>();
   }
 
-  public IParagraph(int pnum) {
+  public Paragraph(int pnum) {
     super();
     this.pnum = pnum;
-    this.isentences = new ArrayList<ISentence>();
+    this.isentences = new ArrayList<Sentence>();
   }
 
-  public IParagraph(int pnum, ArrayList<ISentence> sentences) {
+  public Paragraph(int pnum, ArrayList<Sentence> sentences) {
     super();
     this.pnum = pnum;
     this.isentences = sentences;
@@ -51,15 +51,15 @@ public class IParagraph {
     this.pnum = pnum;
   }
 
-  public ArrayList<ISentence> getSsentences() {
+  public ArrayList<Sentence> getSsentences() {
     return isentences;
   }
 
-  public void setIsentences(ArrayList<ISentence> isentences) {
+  public void setIsentences(ArrayList<Sentence> isentences) {
     this.isentences = isentences;
   }
 
-  public void addIsentence(ISentence isentence) {
+  public void addIsentence(Sentence isentence) {
     this.isentences.add(isentence);
   }
 
@@ -84,8 +84,8 @@ public class IParagraph {
    */
   public boolean contains(String wordTag) {
 
-    for (ISentence isentence : this.getSsentences()) {
-      for (IWord iword : isentence.getIwords()) {
+    for (Sentence isentence : this.getSsentences()) {
+      for (Word iword : isentence.getIwords()) {
         if (iword.equals(iword))
           return true;
       }

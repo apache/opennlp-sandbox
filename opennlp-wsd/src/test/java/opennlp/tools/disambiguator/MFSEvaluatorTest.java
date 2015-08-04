@@ -21,7 +21,7 @@ package opennlp.tools.disambiguator;
 
 import java.util.ArrayList;
 
-import opennlp.tools.disambiguator.DatasetsReader.SensevalReader;
+import opennlp.tools.disambiguator.datareader.SensevalReader;
 import opennlp.tools.disambiguator.ims.WTDIMS;
 import opennlp.tools.disambiguator.mfs.MFS;
 import opennlp.tools.disambiguator.mfs.MFSParameters;

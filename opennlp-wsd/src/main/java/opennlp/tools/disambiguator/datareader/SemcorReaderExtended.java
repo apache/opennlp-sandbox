@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package opennlp.tools.disambiguator.DatasetsReader;
+package opennlp.tools.disambiguator.datareader;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -72,9 +72,9 @@ public class SemcorReaderExtended {
   /**
    * This serves to read one Semcor XML file
    */
-  public ArrayList<ISentence> readFile(String file) {
+  public ArrayList<Sentence> readFile(String file) {
 
-    ArrayList<ISentence> result = new ArrayList<ISentence>();
+    ArrayList<Sentence> result = new ArrayList<Sentence>();
 
     try {
 
@@ -109,7 +109,7 @@ public class SemcorReaderExtended {
               // THE SENTENCE ID
               int sentenceID = Integer.parseInt(eSentence
                   .getAttribute(ATTRIBUTE_SENTENCENUM));
-              ISentence isentence = new ISentence(paragraphID, sentenceID);
+              Sentence isentence = new Sentence(paragraphID, sentenceID);
 
               NodeList nWords = nSentence.getChildNodes();
 
@@ -132,8 +132,8 @@ public class SemcorReaderExtended {
                       String wnsn = eWord.getAttribute(ATTRIBUTE_WNSN);
                       String lexsn = eWord.getAttribute(ATTRIBUTE_LEXSN);
 
-                      IWord iword = new IWord(paragraphID, sentenceID, wnum,
-                          IWord.Type.WORD, word, cmd, pos, lemma, wnsn, lexsn);
+                      Word iword = new Word(paragraphID, sentenceID, wnum,
+                          Word.Type.WORD, word, cmd, pos, lemma, wnsn, lexsn);
                       isentence.addIword(iword);
                       wnum++;
 
@@ -145,8 +145,8 @@ public class SemcorReaderExtended {
                       String cmd = eWord.getAttribute(ATTRIBUTE_CMD);
                       String pos = eWord.getAttribute(ATTRIBUTE_POS);
 
-                      IWord iword = new IWord(paragraphID, sentenceID, wnum,
-                          IWord.Type.WORD, word, cmd, pos);
+                      Word iword = new Word(paragraphID, sentenceID, wnum,
+                          Word.Type.WORD, word, cmd, pos);
                       isentence.addIword(iword);
                       wnum++;
                     }
@@ -154,8 +154,8 @@ public class SemcorReaderExtended {
                   } else if (nWord.getNodeName().equals(ELEMENT_PUNCTUATION)) {
                     Element eWord = (Element) nWord;
                     String word = eWord.getTextContent();
-                    IWord iword = new IWord(paragraphID, sentenceID, wnum,
-                        IWord.Type.PUNCTUATIONMARK, word);
+                    Word iword = new Word(paragraphID, sentenceID, wnum,
+                        Word.Type.PUNCTUATIONMARK, word);
                     isentence.addIword(iword);
                     wnum++;
                   }
@@ -182,12 +182,12 @@ public class SemcorReaderExtended {
 
     try {
 
-      ArrayList<ISentence> isentences = readFile(file);
+      ArrayList<Sentence> isentences = readFile(file);
       for (int j = 0; j < isentences.size(); j++) {
-        ISentence isentence = isentences.get(j);
-        ArrayList<IWord> iwords = isentence.getIwords();
+        Sentence isentence = isentences.get(j);
+        ArrayList<Word> iwords = isentence.getIwords();
         for (int k = 0; k < iwords.size(); k++) {
-          IWord iword = iwords.get(k);
+          Word iword = iwords.get(k);
           if (iword.isInstanceOf(wordTag)) {
 
             String sentence;

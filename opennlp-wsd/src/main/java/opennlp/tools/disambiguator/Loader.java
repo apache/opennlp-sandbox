@@ -30,7 +30,7 @@ import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.dictionary.Dictionary;
 import net.sf.extjwnl.dictionary.MorphologicalProcessor;
 import opennlp.tools.cmdline.postag.POSModelLoader;
-import opennlp.tools.disambiguator.DatasetsReader.SensevalReader;
+import opennlp.tools.disambiguator.datareader.SensevalReader;
 import opennlp.tools.lemmatizer.SimpleLemmatizer;
 import opennlp.tools.namefind.NameFinderME;
 import opennlp.tools.namefind.TokenNameFinderModel;

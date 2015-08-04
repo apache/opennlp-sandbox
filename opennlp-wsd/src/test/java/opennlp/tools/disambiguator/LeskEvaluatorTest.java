@@ -19,10 +19,9 @@
 
 package opennlp.tools.disambiguator;
 
-import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 
+import opennlp.tools.disambiguator.datareader.SensevalReader;
 import opennlp.tools.disambiguator.ims.WTDIMS;
 import opennlp.tools.disambiguator.lesk.Lesk;
 import opennlp.tools.disambiguator.lesk.LeskParameters;
@@ -31,80 +30,58 @@ import org.junit.Test;
 
 public class LeskEvaluatorTest {
 
-  static DataExtractor dExtractor = new DataExtractor();
+  static SensevalReader seReader = new SensevalReader();
 
   @Test
   public static void main(String[] args) {
     Constants.print("Evaluation Started");
-
-    String testDataLoc = "src\\test\\resources\\data\\";
-    String helpersLoc = "src\\test\\resources\\helpers\\";
-
-    File[] listOfFiles;
-    File testFolder = new File(testDataLoc);
-
-    // these are needed for mapping the sense IDs from the current data
-    String dict = helpersLoc + "EnglishLS.dictionary.xml";
-    String map = helpersLoc + "EnglishLS.sensemap";
 
     Lesk lesk = new Lesk();
     LeskParameters leskParams = new LeskParameters();
     leskParams.setLeskType(LeskParameters.LESK_TYPE.LESK_EXT_EXP_CTXT_WIN);
     lesk.setParams(leskParams);
 
-    if (testFolder.isDirectory()) {
-      listOfFiles = testFolder.listFiles();
-      for (File file : listOfFiles) {
-        WSDEvaluator evaluator = new WSDEvaluator(lesk);
-        if (file.isFile()) {
-          // don't take verbs because they are not from WordNet
-          if (!file.getName().split("\\.")[1].equals("v")) {
-            HashMap<String, ArrayList<DictionaryInstance>> senses = dExtractor
-                .extractWordSenses(dict, map, file.getName());
-            ArrayList<WTDIMS> instances = getTestData(file.getAbsolutePath(),
-                senses);
+    ArrayList<String> words = seReader.getSensevalWords();
 
-            if (instances != null) {
-              Constants.print("------------------" + file.getName()
-                  + "------------------");
-              for (WordToDisambiguate instance : instances) {
-                // Constants.print("sense IDs : " + instance.senseIDs);
-                evaluator.evaluateSample(instance);
-              }
-              Constants.print(evaluator.toString());
-            } else {
-              Constants.print("null instances");
+    for (String word : words) {
+      WSDEvaluator evaluator = new WSDEvaluator(lesk);
+
+      // don't take verbs because they are not from WordNet
+      if (!word.split("\\.")[1].equals("v")) {
+
+        ArrayList<WTDIMS> instances = getTestData(word);
+
+        if (instances != null) {
+          Constants.print("------------------" + word + "------------------");
+          for (WordToDisambiguate instance : instances) {
+
+            if (instance.getSenseIDs() != null
+                && !instance.getSenseIDs().get(0).equals("null")) {
+              evaluator.evaluateSample(instance);
             }
           }
+          Constants.print(evaluator.toString());
+        } else {
+          Constants.print("null instances");
         }
       }
+
     }
   }
 
-  protected static ArrayList<WTDIMS> getTestData(String testFile,
-      HashMap<String, ArrayList<DictionaryInstance>> senses) {
-    /**
-     * word tag has to be in the format "word.POS" (e.g., "activate.v",
-     * "smart.a", etc.)
-     */
-    ArrayList<WTDIMS> trainingData = dExtractor.extractWSDInstances(testFile);
+  protected static ArrayList<WTDIMS> getTestData(String wordTag) {
 
-    // HashMap<Integer, WTDIMS> trainingData =
-    // dExtractor.extractWSDInstances(wordTrainingxmlFile);
-    for (WTDIMS data : trainingData) {
-      for (String senseId : data.getSenseIDs()) {
-        for (String dictKey : senses.keySet()) {
-          for (DictionaryInstance instance : senses.get(dictKey)) {
-            if (senseId.equals(instance.getId())) {
-              data.setSense(Integer.parseInt(dictKey.split("_")[1]));
-              break;
-            }
-          }
+    ArrayList<WTDIMS> instances = new ArrayList<WTDIMS>();
+    for (WordToDisambiguate wtd : seReader.getSensevalData(wordTag)) {
+      WTDIMS wtdims = new WTDIMS(wtd);
+      if (wtdims != null) {
+        if (wtdims.getSenseIDs().get(0) != null
+            && !wtdims.getSenseIDs().get(0).equalsIgnoreCase("U")) {
+          instances.add(wtdims);
         }
       }
     }
-
-    return trainingData;
+    return instances;
   }
 
 }

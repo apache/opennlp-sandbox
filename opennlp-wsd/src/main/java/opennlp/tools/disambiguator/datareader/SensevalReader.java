@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package opennlp.tools.disambiguator.DatasetsReader;
+package opennlp.tools.disambiguator.datareader;
 
 import java.io.BufferedReader;
 import java.io.File;

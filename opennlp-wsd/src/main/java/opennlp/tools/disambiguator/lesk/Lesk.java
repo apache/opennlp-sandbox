@@ -33,6 +33,7 @@ import opennlp.tools.disambiguator.WordPOS;
 import opennlp.tools.disambiguator.WordSense;
 import opennlp.tools.util.Span;
 import net.sf.extjwnl.JWNLException;
+import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.data.Synset;
 import net.sf.extjwnl.data.Word;
 
@@ -93,6 +94,36 @@ public class Lesk implements WSDisambiguator {
    */
   public LeskParameters getParams() {
     return params;
+  }
+
+  /*
+   * @return the most frequent senses from wordnet
+   */
+  protected String getMostFrequentSenseKey(WTDLesk wtd) {
+
+    String word = wtd.getRawWord().toLowerCase();
+    POS pos = Constants.getPOS(wtd.getPosTag());
+    String senseKey = null;
+
+    if (pos != null) {
+
+      WordPOS wordPOS = new WordPOS(word, pos);
+
+      ArrayList<Synset> synsets = wordPOS.getSynsets();
+
+      for (Word wd : synsets.get(0).getWords()) {
+        if (wd.getLemma().equals(wtd.getRawWord().split("\\.")[0])) {
+          try {
+            senseKey = wd.getSenseKey();
+            break;
+          } catch (JWNLException e) {
+            e.printStackTrace();
+          }
+          break;
+        }
+      }
+    }
+    return senseKey;
   }
 
   /**
@@ -980,23 +1011,30 @@ public class Lesk implements WSDisambiguator {
 
     Collections.sort(wsenses);
 
-    List<Word> synsetWords;
-    String[] senses = new String[wsenses.size()];
-    String senseKey = "?";
-    for (int i = 0; i < wsenses.size(); i++) {
-      synsetWords = wsenses.get(i).getNode().synset.getWords();
-      for (Word synWord : synsetWords) {
-        if (synWord.getLemma().equals(wtd.getWord())) {
-          try {
-            senseKey = synWord.getSenseKey();
-          } catch (JWNLException e) {
-            e.printStackTrace();
+    String[] senses;
+    if (wsenses.get(0).getScore() > 0) { // if at least one overlap
+      List<Word> synsetWords;
+      senses = new String[wsenses.size()];
+      String senseKey = "?";
+      for (int i = 0; i < wsenses.size(); i++) {
+        synsetWords = wsenses.get(i).getNode().synset.getWords();
+        for (Word synWord : synsetWords) {
+          if (synWord.getLemma().equals(wtd.getWord())) {
+            try {
+              senseKey = synWord.getSenseKey();
+            } catch (JWNLException e) {
+              e.printStackTrace();
+            }
+            break;
           }
-          break;
         }
-      }
-      senses[i] = "WordNet" + " " + senseKey + " " + wsenses.get(i).getScore();
+        senses[i] = "WordNet" + " " + senseKey + " "
+            + wsenses.get(i).getScore();
 
+      }
+    } else { // get the MFS if no overlaps
+      senses = new String[1];
+      senses[0] = "WordNet" + " " + this.getMostFrequentSenseKey(wtd) + " -1";
     }
     return senses;
   }

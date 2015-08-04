@@ -22,7 +22,7 @@ package opennlp.tools.disambiguator;
 import java.io.File;
 import java.util.ArrayList;
 
-import opennlp.tools.disambiguator.DatasetsReader.SensevalReader;
+import opennlp.tools.disambiguator.datareader.SensevalReader;
 import opennlp.tools.disambiguator.ims.IMS;
 import opennlp.tools.disambiguator.ims.IMSParameters;
 import opennlp.tools.disambiguator.ims.WTDIMS;
