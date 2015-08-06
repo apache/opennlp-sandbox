@@ -19,25 +19,15 @@
 
 package opennlp.tools.disambiguator.mfs;
 
+import org.apache.commons.lang3.EnumUtils;
+
 import opennlp.tools.disambiguator.WSDParameters;
 
 public class MFSParameters extends WSDParameters {
 
-  public MFSParameters(){
+  public MFSParameters() {
     this.isCoarseSense = false;
     this.source = Source.WORDNET;
-  }
-  
-  public static enum Source {
-    WORDNET(1, "wordnet");
-
-    public int code;
-    public String src;
-
-    private Source(int code, String src) {
-      this.code = code;
-      this.src = src;
-    }
   }
 
   protected Source source;
@@ -52,10 +42,7 @@ public class MFSParameters extends WSDParameters {
 
   @Override
   public boolean isValid() {
-    if (this.source.code == 1) {
-      return true;
-    }
-    return false;
+    return EnumUtils.isValidEnum(Source.class, source.name());
   }
 
 }

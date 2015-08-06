@@ -31,35 +31,61 @@ import opennlp.tools.disambiguator.WSDParameters;
 import opennlp.tools.disambiguator.WSDisambiguator;
 import opennlp.tools.disambiguator.WordPOS;
 import opennlp.tools.disambiguator.WordToDisambiguate;
+import opennlp.tools.disambiguator.lesk.LeskParameters;
+import opennlp.tools.disambiguator.lesk.WTDLesk;
 import opennlp.tools.util.Span;
 
 /**
  * Implementation of the <b>Most Frequent Sense</b> baseline approach. This
- * approach returns the first sense retreived in WordNet which is supposed to be
- * the most frequent sense:
- * <ul>
- * <li>PoS-tags of the surrounding words</li>
- * <li>Local collocations</li>
- * <li>Surrounding words</li>
- * </ul>
- * check {@link https://www.comp.nus.edu.sg/~nght/pubs/ims.pdf} for details
- * about this approach
+ * approach returns the senses in order of frequency in WordNet. The first sense
+ * is the most frequent.
  */
 public class MFS implements WSDisambiguator {
 
-  public MFS(WSDParameters parameters) {
-    super();
+  public MFSParameters parameters;
+
+  public MFS(MFSParameters parameters) {
     this.parameters = parameters;
   }
 
   public MFS() {
-    super();
     this.parameters = new MFSParameters();
   }
 
-  public WSDParameters parameters;
+  /*
+   * @return the most frequent senses from wordnet
+   */
+  public static String getMostFrequentSense(
+      WordToDisambiguate wordToDisambiguate) {
 
-  private String[] getMostFrequentSense(WordToDisambiguate wordToDisambiguate) {
+    String word = wordToDisambiguate.getRawWord().toLowerCase();
+    POS pos = Constants.getPOS(wordToDisambiguate.getPosTag());
+    String senseKey = null;
+
+    if (pos != null) {
+
+      WordPOS wordPOS = new WordPOS(word, pos);
+
+      ArrayList<Synset> synsets = wordPOS.getSynsets();
+
+      for (Word wd : synsets.get(0).getWords()) {
+        if (wd.getLemma().equals(
+            wordToDisambiguate.getRawWord().split("\\.")[0])) {
+          try {
+            senseKey = wd.getSenseKey();
+            break;
+          } catch (JWNLException e) {
+            e.printStackTrace();
+          }
+          break;
+        }
+      }
+    }
+    return senseKey;
+  }
+
+  public static String[] getMostFrequentSenses(
+      WordToDisambiguate wordToDisambiguate) {
 
     String word = wordToDisambiguate.getRawWord().toLowerCase();
     POS pos = Constants.getPOS(wordToDisambiguate.getPosTag());
@@ -84,7 +110,7 @@ public class MFS implements WSDisambiguator {
             } catch (JWNLException e) {
               e.printStackTrace();
             }
-            senses[i] = "WordNet " + senseKey;
+            senses[i] = "wordnet " + senseKey;
             break;
           }
         }
@@ -166,7 +192,15 @@ public class MFS implements WSDisambiguator {
 
   @Override
   public void setParams(WSDParameters params) throws InvalidParameterException {
-    this.parameters = params;
+    if (params == null) {
+      this.parameters = new MFSParameters();
+    } else {
+      if (params.isValid()) {
+        this.parameters = (MFSParameters) params;
+      } else {
+        throw new InvalidParameterException("wrong parameters");
+      }
+    }
 
   }
 
@@ -177,7 +211,7 @@ public class MFS implements WSDisambiguator {
     WordToDisambiguate wtd = new WordToDisambiguate(tokenizedContext,
         ambiguousTokenIndex);
     // System.out.println(wtd.getPosTags()[ambiguousTokenIndex]);
-    return getMostFrequentSense(wtd);
+    return getMostFrequentSenses(wtd);
   }
 
   @Override

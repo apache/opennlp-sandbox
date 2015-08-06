@@ -26,6 +26,10 @@ package opennlp.tools.disambiguator;
 public abstract class WSDParameters {
   
   protected boolean isCoarseSense;
+  
+  public static enum Source {
+    WORDNET
+  }
 
   /**
    * @return if the disambiguation type is coarse grained or fine grained
