@@ -31,9 +31,9 @@ import opennlp.tools.disambiguator.WSDParameters;
 import opennlp.tools.disambiguator.WSDisambiguator;
 import opennlp.tools.disambiguator.WordPOS;
 import opennlp.tools.disambiguator.WordSense;
+import opennlp.tools.disambiguator.mfs.MFS;
 import opennlp.tools.util.Span;
 import net.sf.extjwnl.JWNLException;
-import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.data.Synset;
 import net.sf.extjwnl.data.Word;
 
@@ -54,6 +54,7 @@ public class Lesk implements WSDisambiguator {
 
   public Lesk() {
     this(null);
+    
   }
 
   /**
@@ -96,36 +97,6 @@ public class Lesk implements WSDisambiguator {
     return params;
   }
 
-  /*
-   * @return the most frequent senses from wordnet
-   */
-  protected String getMostFrequentSenseKey(WTDLesk wtd) {
-
-    String word = wtd.getRawWord().toLowerCase();
-    POS pos = Constants.getPOS(wtd.getPosTag());
-    String senseKey = null;
-
-    if (pos != null) {
-
-      WordPOS wordPOS = new WordPOS(word, pos);
-
-      ArrayList<Synset> synsets = wordPOS.getSynsets();
-
-      for (Word wd : synsets.get(0).getWords()) {
-        if (wd.getLemma().equals(wtd.getRawWord().split("\\.")[0])) {
-          try {
-            senseKey = wd.getSenseKey();
-            break;
-          } catch (JWNLException e) {
-            e.printStackTrace();
-          }
-          break;
-        }
-      }
-    }
-    return senseKey;
-  }
-
   /**
    * The basic Lesk method where the entire context is considered for overlaps
    * 
@@ -146,7 +117,7 @@ public class Lesk implements WSDisambiguator {
       nodes.add(node);
     }
 
-    ArrayList<WordSense> scoredSenses = updateSenses(nodes);
+    ArrayList<WordSense> scoredSenses = SynNode.updateSenses(nodes);
 
     for (WordSense wordSense : scoredSenses) {
       wordSense.setWTDLesk(wtd);
@@ -212,7 +183,7 @@ public class Lesk implements WSDisambiguator {
       nodes.add(node);
     }
 
-    ArrayList<WordSense> scoredSenses = updateSenses(nodes);
+    ArrayList<WordSense> scoredSenses = SynNode.updateSenses(nodes);
 
     for (WordSense wordSense : scoredSenses) {
       wordSense.setWTDLesk(wtd);
@@ -892,27 +863,7 @@ public class Lesk implements WSDisambiguator {
     return count;
   }
 
-  /**
-   * Gets the senses of the nodes
-   * 
-   * @param nodes
-   * @return senses from the nodes
-   */
-  public ArrayList<WordSense> updateSenses(ArrayList<SynNode> nodes) {
-    ArrayList<WordSense> scoredSenses = new ArrayList<WordSense>();
-
-    for (int i = 0; i < nodes.size(); i++) {
-      ArrayList<WordPOS> sensesComponents = PreProcessor
-          .getAllRelevantWords(PreProcessor.tokenize(nodes.get(i).getGloss()));
-      WordSense wordSense = new WordSense();
-      nodes.get(i).setSenseRelevantWords(sensesComponents);
-      wordSense.setNode(nodes.get(i));
-      wordSense.setId(i);
-      scoredSenses.add(wordSense);
-    }
-    return scoredSenses;
-
-  }
+  
 
   /**
    * Disambiguates an ambiguous word in its context
@@ -1028,13 +979,13 @@ public class Lesk implements WSDisambiguator {
             break;
           }
         }
-        senses[i] = "WordNet" + " " + senseKey + " "
+        senses[i] = params.source.name() + " " + senseKey + " "
             + wsenses.get(i).getScore();
 
       }
     } else { // get the MFS if no overlaps
       senses = new String[1];
-      senses[0] = "WordNet" + " " + this.getMostFrequentSenseKey(wtd) + " -1";
+      senses[0] = params.source.name() + " " + MFS.getMostFrequentSense(wtd) + " -1";
     }
     return senses;
   }

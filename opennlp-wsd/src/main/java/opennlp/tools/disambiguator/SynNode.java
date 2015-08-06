@@ -171,4 +171,26 @@ public class SynNode {
   public long getSynsetID() {
     return this.synset.getOffset();
   }
+  
+  /**
+   * Gets the senses of the nodes
+   * 
+   * @param nodes
+   * @return senses from the nodes
+   */
+  public static ArrayList<WordSense> updateSenses(ArrayList<SynNode> nodes) {
+    ArrayList<WordSense> scoredSenses = new ArrayList<WordSense>();
+
+    for (int i = 0; i < nodes.size(); i++) {
+      ArrayList<WordPOS> sensesComponents = PreProcessor
+          .getAllRelevantWords(PreProcessor.tokenize(nodes.get(i).getGloss()));
+      WordSense wordSense = new WordSense();
+      nodes.get(i).setSenseRelevantWords(sensesComponents);
+      wordSense.setNode(nodes.get(i));
+      wordSense.setId(i);
+      scoredSenses.add(wordSense);
+    }
+    return scoredSenses;
+
+  }
 }

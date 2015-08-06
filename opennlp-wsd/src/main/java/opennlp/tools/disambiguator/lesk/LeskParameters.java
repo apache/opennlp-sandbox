@@ -27,25 +27,25 @@ import opennlp.tools.disambiguator.WSDParameters;
  */
 public class LeskParameters extends WSDParameters {
 
-  
   /**
    * Enum of all types of implemented variations of Lesk
    *
    */
   public static enum LESK_TYPE {
-    LESK_BASIC, LESK_BASIC_CTXT, LESK_BASIC_CTXT_WIN, LESK_BASIC_CTXT_WIN_BF,
-    LESK_EXT, LESK_EXT_CTXT, LESK_EXT_CTXT_WIN, LESK_EXT_CTXT_WIN_BF, LESK_EXT_EXP,
-    LESK_EXT_EXP_CTXT, LESK_EXT_EXP_CTXT_WIN, LESK_EXT_EXP_CTXT_WIN_BF,
+    LESK_BASIC, LESK_BASIC_CTXT, LESK_BASIC_CTXT_WIN, LESK_BASIC_CTXT_WIN_BF, LESK_EXT, LESK_EXT_CTXT, LESK_EXT_CTXT_WIN, LESK_EXT_CTXT_WIN_BF, LESK_EXT_EXP, LESK_EXT_EXP_CTXT, LESK_EXT_EXP_CTXT_WIN, LESK_EXT_EXP_CTXT_WIN_BF,
   }
-
+  
   // DEFAULTS
   protected static final LESK_TYPE DFLT_LESK_TYPE = LESK_TYPE.LESK_EXT_EXP_CTXT_WIN;
+  protected static final Source DFLT_SOURCE = Source.WORDNET;
   protected static final int DFLT_WIN_SIZE = 5;
   protected static final int DFLT_DEPTH = 2;
   protected static final double DFLT_IEXP = 0.4;
   protected static final double DFLT_DEXP = 0.4;
 
   protected LESK_TYPE leskType;
+
+  protected Source source;
   protected int win_f_size;
   protected int win_b_size;
   protected int depth;
@@ -165,6 +165,7 @@ public class LeskParameters extends WSDParameters {
    */
   public void setDefaults() {
     this.leskType = LeskParameters.DFLT_LESK_TYPE;
+    this.source = LeskParameters.DFLT_SOURCE;
     this.win_f_size = LeskParameters.DFLT_WIN_SIZE;
     this.win_b_size = LeskParameters.DFLT_WIN_SIZE;
     this.depth = LeskParameters.DFLT_DEPTH;
@@ -177,8 +178,9 @@ public class LeskParameters extends WSDParameters {
     this.fathom_synonyms = true;
   }
 
-  
-  /* (non-Javadoc)
+  /*
+   * (non-Javadoc)
+   * 
    * @see opennlp.tools.disambiguator.WSDParameters#isValid()
    */
   public boolean isValid() {
