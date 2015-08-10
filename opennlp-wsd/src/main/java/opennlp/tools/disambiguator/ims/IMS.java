@@ -43,23 +43,19 @@ import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.zip.GZIPInputStream;
 
-import net.sf.extjwnl.JWNLException;
-import net.sf.extjwnl.data.POS;
-import net.sf.extjwnl.data.Synset;
-import net.sf.extjwnl.data.Word;
 import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.ObjectStreamUtils;
 import opennlp.tools.util.Span;
 import opennlp.tools.util.TrainingParameters;
-import opennlp.tools.disambiguator.Constants;
 import opennlp.tools.disambiguator.FeaturesExtractor;
 import opennlp.tools.disambiguator.WSDParameters;
-import opennlp.tools.disambiguator.WordPOS;
+import opennlp.tools.disambiguator.WSDSample;
 import opennlp.tools.disambiguator.WSDisambiguator;
 import opennlp.tools.disambiguator.WordToDisambiguate;
 import opennlp.tools.disambiguator.datareader.SemcorReaderExtended;
 import opennlp.tools.disambiguator.datareader.SensevalReader;
+import opennlp.tools.disambiguator.mfs.MFS;
 
 /**
  * Implementation of the <b>It Makes Sense</b> approach originally proposed in
@@ -259,45 +255,6 @@ public class IMS implements WSDisambiguator {
 
   }
 
-  private String[] getMostFrequentSense(WTDIMS wordToDisambiguate) {
-
-    String word = wordToDisambiguate.getRawWord();
-    POS pos = Constants.getPOS(wordToDisambiguate.getPosTag());
-
-    if (pos != null) {
-
-      WordPOS wordPOS = new WordPOS(word, pos);
-
-      ArrayList<Synset> synsets = wordPOS.getSynsets();
-
-      int size = synsets.size();
-
-      String[] senses = new String[size];
-
-      for (int i = 0; i < size; i++) {
-        String senseKey = null;
-        for (Word wd : synsets.get(i).getWords()) {
-          if (wd.getLemma().equals(
-              wordToDisambiguate.getRawWord().split("\\.")[0])) {
-            try {
-              senseKey = wd.getSenseKey();
-            } catch (JWNLException e) {
-              e.printStackTrace();
-            }
-            senses[i] = senseKey;
-            break;
-          }
-        }
-
-      }
-      return senses;
-    } else {
-      System.out.println("The word has no definitions in WordNet !");
-      return null;
-    }
-
-  }
-
   /**
    * Method for training a model
    * 
@@ -483,7 +440,8 @@ public class IMS implements WSDisambiguator {
       // System.out.println("The sense is [" + outcome + "] : " /*+
       // Loader.getDictionary().getWordBySenseKey(outcome.split("%")[1]).getSynset().getGloss()*/);
 
-      outcome = "WordNet " + wordTag.split("\\.")[0] + "%" + outcome;
+      outcome = parameters.source.name() + " " + wordTag.split("\\.")[0] + "%"
+          + outcome;
 
       String[] s = { outcome };
 
@@ -491,24 +449,28 @@ public class IMS implements WSDisambiguator {
 
     } else {
       // if no training data exist
-      String[] s = getMostFrequentSense(word);
-      return s;
+      return MFS.getMostFrequentSense(word);
     }
 
   }
 
-  /**
-   * The disambiguation method for a span of words
-   * 
-   * @param inputText
-   *          : the text containing the word to disambiguate
-   * @param inputWordSpans
-   *          : the span of words to disambiguate
-   */
   @Override
-  public String[][] disambiguate(String[] tokenizedContext,
-      Span[] ambiguousTokenIndexSpans) {
-    // TODO Auto-generated method stub
+  public String[] disambiguate(String[] tokenizedContext, String[] tokenTags,
+      int ambiguousTokenIndex, String ambiguousTokenLemma) {
+    // TODO Update
+    return null;
+  }
+
+  @Override
+  public String[][] disambiguate(String[] tokenizedContext, String[] tokenTags,
+      Span ambiguousTokenIndexSpan, String ambiguousTokenLemma) {
+    // TODO Update
+    return null;
+  }
+
+  @Override
+  public String[] disambiguate(WSDSample sample) {
+    // TODO Update
     return null;
   }
 

@@ -19,18 +19,18 @@
 
 package opennlp.tools.disambiguator;
 
-import opennlp.tools.disambiguator.lesk.WTDLesk;
+import opennlp.tools.disambiguator.WSDSample;;
 
 public class WordSense implements Comparable {
 
-  protected WTDLesk WTDLesk;
+  protected WSDSample sample;
   protected SynNode node;
   protected int id;
   protected double score;
 
-  public WordSense(WTDLesk WTDLesk, SynNode node) {
+  public WordSense(WSDSample sample, SynNode node) {
     super();
-    this.WTDLesk = WTDLesk;
+    this.sample = sample;
     this.node = node;
   }
 
@@ -38,12 +38,12 @@ public class WordSense implements Comparable {
     super();
   }
 
-  public WTDLesk getWTDLesk() {
-    return WTDLesk;
+  public WSDSample getWSDSample() {
+    return sample;
   }
 
-  public void setWTDLesk(WTDLesk WTDLesk) {
-    this.WTDLesk = WTDLesk;
+  public void setWSDSample(WSDSample sample) {
+    this.sample = sample;
   }
 
   public SynNode getNode() {

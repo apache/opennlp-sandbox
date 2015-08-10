@@ -20,6 +20,7 @@
 package opennlp.tools.disambiguator;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import opennlp.tools.disambiguator.datareader.SensevalReader;
 import opennlp.tools.disambiguator.ims.WTDIMS;
@@ -49,12 +50,10 @@ public class LeskEvaluatorTest {
       // don't take verbs because they are not from WordNet
       if (!word.split("\\.")[1].equals("v")) {
 
-        ArrayList<WTDIMS> instances = getTestData(word);
-
+        ArrayList<WSDSample> instances = getTestData(word);
         if (instances != null) {
           Constants.print("------------------" + word + "------------------");
-          for (WordToDisambiguate instance : instances) {
-
+          for (WSDSample instance : instances) {
             if (instance.getSenseIDs() != null
                 && !instance.getSenseIDs().get(0).equals("null")) {
               evaluator.evaluateSample(instance);
@@ -65,19 +64,35 @@ public class LeskEvaluatorTest {
           Constants.print("null instances");
         }
       }
-
     }
   }
 
-  protected static ArrayList<WTDIMS> getTestData(String wordTag) {
+  protected static ArrayList<WSDSample> getTestData(String wordTag) {
 
-    ArrayList<WTDIMS> instances = new ArrayList<WTDIMS>();
+    ArrayList<WSDSample> instances = new ArrayList<WSDSample>();
     for (WordToDisambiguate wtd : seReader.getSensevalData(wordTag)) {
-      WTDIMS wtdims = new WTDIMS(wtd);
-      if (wtdims != null) {
-        if (wtdims.getSenseIDs().get(0) != null
-            && !wtdims.getSenseIDs().get(0).equalsIgnoreCase("U")) {
-          instances.add(wtdims);
+      List<WordPOS> words = PreProcessor.getAllRelevantWords(wtd);
+      int targetWordIndex=0;
+      for (int i=0; i<words.size();i++){
+        if(words.get(i).isTarget){
+          targetWordIndex = i;
+        }   
+      }
+      String[] tags = new String[words.size()];
+      String[] tokens = new String[words.size()];
+      for (int i=0;i<words.size();i++){
+        tags[i] = words.get(i).getPosTag();
+        tokens[i] = words.get(i).getWord();
+      }
+      String targetLemma = Loader.getLemmatizer().lemmatize(
+          tokens[targetWordIndex], tags[targetWordIndex]);
+      
+      WSDSample sample = new WSDSample(tokens,tags,targetWordIndex,targetLemma);
+      sample.setSenseIDs(wtd.getSenseIDs());
+      if (sample != null) {
+        if (sample.getSenseIDs().get(0) != null
+            && !sample.getSenseIDs().get(0).equalsIgnoreCase("U")) {
+          instances.add(sample);
         }
       }
     }

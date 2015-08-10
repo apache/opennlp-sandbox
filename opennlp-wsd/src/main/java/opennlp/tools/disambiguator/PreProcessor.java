@@ -64,7 +64,7 @@ public class PreProcessor {
       if (!Loader.getStopCache().containsKey(sentence[i])) {
         if (Loader.getRelvCache().containsKey(tags[i])) {
           relevantWords
-              .add(new WordPOS(sentence[i], Constants.getPOS(tags[i])));
+              .add(new WordPOS(sentence[i],tags[i]));
         }
 
       }
@@ -73,7 +73,24 @@ public class PreProcessor {
   }
 
   public static ArrayList<WordPOS> getAllRelevantWords(WordToDisambiguate word) {
-    return getAllRelevantWords(word.getSentence());
+    ArrayList<WordPOS> relevantWords = new ArrayList<WordPOS>();
+
+    String[] tags = tag(word.getSentence());
+
+    for (int i = 0; i < word.getSentence().length; i++) {
+      if (!Loader.getStopCache().containsKey(word.getSentence()[i])) {
+        if (Loader.getRelvCache().containsKey(tags[i])) {
+          WordPOS wordpos = new WordPOS(word.getSentence()[i],tags[i]);
+          if(i == word.getWordIndex()){
+            wordpos.isTarget = true;
+          }
+          relevantWords
+              .add(wordpos);
+        }
+
+      }
+    }
+    return relevantWords;
   }
 
   public static ArrayList<WordPOS> getRelevantWords(WordToDisambiguate word,
@@ -92,8 +109,7 @@ public class PreProcessor {
         if (!Loader.getStopCache().containsKey(sentence[i])) {
 
           if (Loader.getRelvCache().containsKey(tags[i])) {
-            relevantWords.add(new WordPOS(sentence[i], Constants
-                .getPOS(tags[i])));
+            relevantWords.add(new WordPOS(sentence[i], tags[i]));
           }
 
         }
@@ -110,7 +126,7 @@ public class PreProcessor {
    * @return stemmed list of words
    */
   public static List StemWordWithWordNet(WordPOS wordToStem) {
-    if (!Loader.isInitialized() || wordToStem == null)
+    if (wordToStem == null)
       return null;
     ArrayList<String> stems = new ArrayList();
     try {

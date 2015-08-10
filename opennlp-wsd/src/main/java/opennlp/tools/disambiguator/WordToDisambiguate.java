@@ -37,6 +37,22 @@ public class WordToDisambiguate {
   protected int sense;
 
   protected ArrayList<String> senseIDs;
+  
+  public WordToDisambiguate(String[] sentence, int wordIndex)
+      throws IllegalArgumentException {
+    super();
+
+    if (wordIndex > sentence.length) {
+      throw new IllegalArgumentException("The index is out of bounds !");
+    }
+
+    this.sentence = sentence;
+    this.posTags = PreProcessor.tag(sentence);
+
+    this.wordIndex = wordIndex;
+
+    this.sense = -1;
+  }
 
   public WordToDisambiguate(String[] sentence, int wordIndex, int sense)
       throws IllegalArgumentException {
@@ -70,7 +86,7 @@ public class WordToDisambiguate {
     this.senseIDs = senseIDs;
   }
 
-  public WordToDisambiguate(String[] sentence, int wordIndex) {
+  public WordToDisambiguate(String[] sentence,  String[] tokenTags, int wordIndex) {
     this(sentence, wordIndex, -1);
   }
 

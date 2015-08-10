@@ -22,6 +22,7 @@ package opennlp.tools.disambiguator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 
 import net.sf.extjwnl.JWNLException;
 import net.sf.extjwnl.data.IndexWord;
@@ -34,7 +35,19 @@ public class WordPOS {
   private String word;
   private List stems;
   private POS pos;
+  private String posTag;
+  private int wordIndex;
+  public boolean isTarget=false;
 
+  public WordPOS(String word, String tag) throws IllegalArgumentException {
+    if (word == null || tag == null) {
+      throw new IllegalArgumentException("Args are null");
+    }
+    this.word = word;
+    this.posTag = tag;
+    this.pos = Constants.getPOS(tag);
+  }
+  
   public WordPOS(String word, POS pos) throws IllegalArgumentException {
     if (word == null || pos == null) {
       throw new IllegalArgumentException("Args are null");
@@ -49,6 +62,10 @@ public class WordPOS {
 
   public POS getPOS() {
     return pos;
+  }
+
+  public String getPosTag() {
+    return posTag;
   }
 
   public List getStems() {
@@ -84,12 +101,21 @@ public class WordPOS {
     // check if there is intersection in the stems;
     List originalList = this.getStems();
     List listToCompare = wordToCompare.getStems();
-
-    if (originalList == null || listToCompare == null) { // any of the two
-                                                         // requested words do
-                                                         // not exist
+    
+    
+    if (originalList == null || listToCompare == null) { 
       return false;
     } else {
+      ListIterator<String> iterator = originalList.listIterator();
+      while (iterator.hasNext())
+      {
+          iterator.set(iterator.next().toLowerCase());
+      }
+      iterator = listToCompare.listIterator();
+      while (iterator.hasNext())
+      {
+          iterator.set(iterator.next().toLowerCase());
+      }
       return !Collections.disjoint(originalList, listToCompare);
     }
 
@@ -97,7 +123,6 @@ public class WordPOS {
 
   // uses Lemma to check if two words are equivalent
   public boolean isLemmaEquivalent(WordPOS wordToCompare) {
-    // TODO try using lemmatizer to compare with lemmas
 
     ArrayList<String> lemmas_word = new ArrayList();
     ArrayList<String> lemmas_wordToCompare = new ArrayList();
@@ -107,4 +132,5 @@ public class WordPOS {
     }
     return false;
   }
+  
 }

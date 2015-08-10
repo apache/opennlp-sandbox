@@ -38,7 +38,7 @@ public class LeskParameters extends WSDParameters {
   // DEFAULTS
   protected static final LESK_TYPE DFLT_LESK_TYPE = LESK_TYPE.LESK_EXT_EXP_CTXT_WIN;
   protected static final Source DFLT_SOURCE = Source.WORDNET;
-  protected static final int DFLT_WIN_SIZE = 5;
+  protected static final int DFLT_WIN_SIZE = 3;
   protected static final int DFLT_DEPTH = 2;
   protected static final double DFLT_IEXP = 0.4;
   protected static final double DFLT_DEXP = 0.4;

@@ -20,6 +20,7 @@
 package opennlp.tools.disambiguator;
 
 import java.security.InvalidParameterException;
+
 import opennlp.tools.util.Span;
 
 /**
@@ -60,17 +61,30 @@ public interface WSDisambiguator {
 
   /**
    * @param tokenizedContext
+   * @param tokenTags 
    * @param ambiguousTokenIndex
+   * @param ambiguousTokenLemma
    * @return result as an array of WordNet IDs
    */
-  public String[] disambiguate(String[] tokenizedContext,
-      int ambiguousTokenIndex);
+  public String[] disambiguate(String[] tokenizedContext, String[] tokenTags,
+      int ambiguousTokenIndex, String ambiguousTokenLemma);
 
   /**
    * @param tokenizedContext
-   * @param ambiguousTokenIndexSpans
+   * @param tokenTags
+   * @param ambiguousTokenIndexSpan
+   * @param ambiguousTokenLemma
    * @return result as an array of WordNet IDs
    */
-  public String[][] disambiguate(String[] tokenizedContext,
-      Span[] ambiguousTokenIndexSpans);
+  public String[][] disambiguate(String[] tokenizedContext, String[] tokenTags,
+      Span ambiguousTokenIndexSpan, String ambiguousTokenLemma);
+  
+  /**
+   * @param WSDSample
+   * @return result as an array of WordNet IDs
+   */
+  public String[] disambiguate(WSDSample sample);
+  
+  @Deprecated
+  public String[] disambiguate(String[] inputText, int inputWordIndex);
 }

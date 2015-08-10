@@ -26,6 +26,7 @@ package opennlp.tools.disambiguator;
 public abstract class WSDParameters {
   
   protected boolean isCoarseSense;
+  public static boolean isStemCompare;
   
   public static enum Source {
     WORDNET

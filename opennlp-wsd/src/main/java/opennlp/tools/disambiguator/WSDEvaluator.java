@@ -29,7 +29,7 @@ import opennlp.tools.util.eval.Mean;
  * @see WSDisambiguator
  * @see WordToDisambiguate
  */
-public class WSDEvaluator extends Evaluator<WordToDisambiguate> {
+public class WSDEvaluator extends Evaluator<WSDSample> {
 
   private Mean accuracy = new Mean();
 
@@ -53,15 +53,22 @@ public class WSDEvaluator extends Evaluator<WordToDisambiguate> {
   }
 
   // @Override
-  protected WordToDisambiguate processSample(WordToDisambiguate reference) {
+  protected WSDSample processSample(WSDSample reference) {
 
     String[] referenceSenses = reference.getSenseIDs().toArray(
         new String[reference.getSenseIDs().size()]);
 
     // get the best predicted sense
-    String predictedSense = disambiguator.disambiguate(reference.sentence,
-        reference.getWordIndex())[0];
+    String predictedSense = disambiguator.disambiguate(reference.getSentence(),
+        reference.getTags(), reference.getTargetPosition(),
+        reference.getTargetLemma())[0];
 
+    if (predictedSense == null) {
+      System.out.println("There was no sense for : " + reference.getTargetWord());
+      accuracy.add(0);
+      return null;
+    }
+    // get the senseKey from the result
     String senseKey = predictedSense.split(" ")[1];
 
     // if we have multiple senses mapped to one sense
@@ -87,8 +94,8 @@ public class WSDEvaluator extends Evaluator<WordToDisambiguate> {
       }
     }
 
-    return new WordToDisambiguate(reference.getSentence(),
-        reference.getWordIndex());
+    return new WSDSample(reference.getSentence(), reference.getTags(),
+        reference.getTargetPosition(), reference.getTargetLemma());
   }
 
   /**

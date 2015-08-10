@@ -28,6 +28,7 @@ import opennlp.tools.disambiguator.Loader;
 import opennlp.tools.disambiguator.SynNode;
 import opennlp.tools.disambiguator.PreProcessor;
 import opennlp.tools.disambiguator.WSDParameters;
+import opennlp.tools.disambiguator.WSDSample;
 import opennlp.tools.disambiguator.WSDisambiguator;
 import opennlp.tools.disambiguator.WordPOS;
 import opennlp.tools.disambiguator.WordSense;
@@ -51,10 +52,13 @@ public class Lesk implements WSDisambiguator {
    * The lesk specific parameters
    */
   protected LeskParameters params;
+  /**
+   * List of filtered context words
+   */
+  ArrayList<WordPOS> contextWords = new ArrayList<WordPOS>();
 
   public Lesk() {
     this(null);
-    
   }
 
   /**
@@ -65,7 +69,6 @@ public class Lesk implements WSDisambiguator {
    * @throws InvalidParameterException
    */
   public Lesk(LeskParameters params) throws InvalidParameterException {
-    Loader loader = new Loader();
     this.setParams(params);
   }
 
@@ -104,27 +107,29 @@ public class Lesk implements WSDisambiguator {
    *          word to disambiguate
    * @return The array of WordSenses with their scores
    */
-  public ArrayList<WordSense> basic(WTDLesk wtd) {
+  public ArrayList<WordSense> basic(WSDSample sample) {
 
-    ArrayList<WordPOS> relvWords = PreProcessor.getAllRelevantWords(wtd);
-    WordPOS word = new WordPOS(wtd.getWord(), Constants.getPOS(wtd.getPosTag()));
+    WordPOS word = new WordPOS(sample.getTargetWord(), sample.getTargetTag());
 
     ArrayList<Synset> synsets = word.getSynsets();
     ArrayList<SynNode> nodes = new ArrayList<SynNode>();
 
+    for (int i = 0; i < sample.getSentence().length; i++) {
+      contextWords
+          .add(new WordPOS(sample.getSentence()[i], sample.getTags()[i]));
+    }
     for (Synset synset : synsets) {
-      SynNode node = new SynNode(synset, relvWords);
+      SynNode node = new SynNode(synset, contextWords);
       nodes.add(node);
     }
 
     ArrayList<WordSense> scoredSenses = SynNode.updateSenses(nodes);
 
     for (WordSense wordSense : scoredSenses) {
-      wordSense.setWTDLesk(wtd);
+      wordSense.setWSDSample(sample);
       int count = 0;
       for (WordPOS senseWordPOS : wordSense.getNode().getSenseRelevantWords()) {
-        ArrayList stems = (ArrayList) PreProcessor.Stem(senseWordPOS);
-        for (WordPOS sentenceWordPOS : relvWords) {
+        for (WordPOS sentenceWordPOS : contextWords) {
           if (sentenceWordPOS.isStemEquivalent(senseWordPOS)) {
             count = count + 1;
           }
@@ -143,8 +148,8 @@ public class Lesk implements WSDisambiguator {
    *          word to disambiguate
    * @return The array of WordSenses with their scores
    */
-  public ArrayList<WordSense> basicContextual(WTDLesk wtd) {
-    return this.basicContextual(wtd, LeskParameters.DFLT_WIN_SIZE);
+  public ArrayList<WordSense> basicContextual(WSDSample sample) {
+    return this.basicContextual(sample, LeskParameters.DFLT_WIN_SIZE);
   }
 
   /**
@@ -155,8 +160,8 @@ public class Lesk implements WSDisambiguator {
    * @param windowSize
    * @return The array of WordSenses with their scores
    */
-  public ArrayList<WordSense> basicContextual(WTDLesk wtd, int windowSize) {
-    return this.basicContextual(wtd, windowSize, windowSize);
+  public ArrayList<WordSense> basicContextual(WSDSample sample, int windowSize) {
+    return this.basicContextual(sample, windowSize, windowSize);
   }
 
   /**
@@ -168,30 +173,37 @@ public class Lesk implements WSDisambiguator {
    * @param windowBackward
    * @return the array of WordSenses with their scores
    */
-  public ArrayList<WordSense> basicContextual(WTDLesk wtd, int windowBackward,
-      int windowForward) {
+  public ArrayList<WordSense> basicContextual(WSDSample sample,
+      int windowBackward, int windowForward) {
 
-    ArrayList<WordPOS> relvWords = PreProcessor.getRelevantWords(wtd,
-        windowBackward, windowForward);
-    WordPOS word = new WordPOS(wtd.getWord(), Constants.getPOS(wtd.getPosTag()));
+    WordPOS word = new WordPOS(sample.getTargetWord(), sample.getTargetTag());
 
     ArrayList<Synset> synsets = word.getSynsets();
     ArrayList<SynNode> nodes = new ArrayList<SynNode>();
 
+    int index = sample.getTargetPosition();
+
+    for (int i = index - windowBackward; i <= index + windowForward; i++) {
+      if (i >= 0 && i < sample.getSentence().length && i != index) {
+        contextWords.add(new WordPOS(sample.getSentence()[i],
+            sample.getTags()[i]));
+      }
+    }
+
     for (Synset synset : synsets) {
-      SynNode node = new SynNode(synset, relvWords);
+      SynNode node = new SynNode(synset, contextWords);
       nodes.add(node);
     }
 
     ArrayList<WordSense> scoredSenses = SynNode.updateSenses(nodes);
 
     for (WordSense wordSense : scoredSenses) {
-      wordSense.setWTDLesk(wtd);
+      wordSense.setWSDSample(sample);
 
       int count = 0;
       for (WordPOS senseWordPOS : wordSense.getNode().getSenseRelevantWords()) {
 
-        for (WordPOS sentenceWordPOS : relvWords) {
+        for (WordPOS sentenceWordPOS : contextWords) {
           // TODO change to lemma check
           if (sentenceWordPOS.isStemEquivalent(senseWordPOS)) {
             count = count + 1;
@@ -223,13 +235,14 @@ public class Lesk implements WSDisambiguator {
    * @param includeHolonyms
    * @return the array of WordSenses with their scores
    */
-  public ArrayList<WordSense> extended(WTDLesk wtd, int depth,
+  public ArrayList<WordSense> extended(WSDSample sample, int depth,
       double depthScoreWeight, boolean includeSynonyms,
       boolean includeHypernyms, boolean includeHyponyms,
       boolean includeMeronyms, boolean includeHolonyms) {
 
-    return extendedContextual(wtd, 0, depth, depthScoreWeight, includeSynonyms,
-        includeHypernyms, includeHyponyms, includeMeronyms, includeHolonyms);
+    return extendedContextual(sample, 0, depth, depthScoreWeight,
+        includeSynonyms, includeHypernyms, includeHyponyms, includeMeronyms,
+        includeHolonyms);
 
   }
 
@@ -251,12 +264,12 @@ public class Lesk implements WSDisambiguator {
    * @param includeHolonyms
    * @return the array of WordSenses with their scores
    */
-  public ArrayList<WordSense> extendedContextual(WTDLesk wtd, int depth,
+  public ArrayList<WordSense> extendedContextual(WSDSample sample, int depth,
       double depthScoreWeight, boolean includeSynonyms,
       boolean includeHypernyms, boolean includeHyponyms,
       boolean includeMeronyms, boolean includeHolonyms) {
 
-    return extendedContextual(wtd, LeskParameters.DFLT_WIN_SIZE, depth,
+    return extendedContextual(sample, LeskParameters.DFLT_WIN_SIZE, depth,
         depthScoreWeight, includeSynonyms, includeHypernyms, includeHyponyms,
         includeMeronyms, includeHolonyms);
 
@@ -282,12 +295,12 @@ public class Lesk implements WSDisambiguator {
    * @param includeHolonyms
    * @return the array of WordSenses with their scores
    */
-  public ArrayList<WordSense> extendedContextual(WTDLesk wtd, int windowSize,
-      int depth, double depthScoreWeight, boolean includeSynonyms,
-      boolean includeHypernyms, boolean includeHyponyms,
-      boolean includeMeronyms, boolean includeHolonyms) {
+  public ArrayList<WordSense> extendedContextual(WSDSample sample,
+      int windowSize, int depth, double depthScoreWeight,
+      boolean includeSynonyms, boolean includeHypernyms,
+      boolean includeHyponyms, boolean includeMeronyms, boolean includeHolonyms) {
 
-    return extendedContextual(wtd, windowSize, windowSize, depth,
+    return extendedContextual(sample, windowSize, windowSize, depth,
         depthScoreWeight, includeSynonyms, includeHypernyms, includeHyponyms,
         includeMeronyms, includeHolonyms);
   }
@@ -314,56 +327,41 @@ public class Lesk implements WSDisambiguator {
    * @param includeHolonyms
    * @return the array of WordSenses with their scores
    */
-  public ArrayList<WordSense> extendedContextual(WTDLesk wtd,
+  public ArrayList<WordSense> extendedContextual(WSDSample sample,
       int windowBackward, int windowForward, int depth,
       double depthScoreWeight, boolean includeSynonyms,
       boolean includeHypernyms, boolean includeHyponyms,
       boolean includeMeronyms, boolean includeHolonyms) {
 
-    ArrayList<WordPOS> relvWords = PreProcessor.getRelevantWords(wtd,
-        windowBackward, windowForward);
-    WordPOS word = new WordPOS(wtd.getWord(), Constants.getPOS(wtd.getPosTag()));
-
-    ArrayList<Synset> synsets = word.getSynsets();
-    ArrayList<SynNode> nodes = new ArrayList<SynNode>();
-
-    for (Synset synset : synsets) {
-      SynNode node = new SynNode(synset, relvWords);
-      nodes.add(node);
-    }
-
-    ArrayList<WordSense> scoredSenses = basicContextual(wtd, windowBackward,
+    ArrayList<WordSense> scoredSenses = basicContextual(sample, windowBackward,
         windowForward);
 
     for (WordSense wordSense : scoredSenses) {
 
       if (includeSynonyms) {
         wordSense.setScore(wordSense.getScore() + depthScoreWeight
-            * assessSynonyms(wordSense.getNode().getSynonyms(), relvWords));
+            * assessSynonyms(wordSense.getNode().getSynonyms(), contextWords));
       }
 
       if (includeHypernyms) {
-        fathomHypernyms(wordSense, wordSense.getNode().synset, relvWords,
+        fathomHypernyms(wordSense, wordSense.getNode().synset, contextWords,
             depth, depth, depthScoreWeight);
       }
 
       if (includeHyponyms) {
-
-        fathomHyponyms(wordSense, wordSense.getNode().synset, relvWords, depth,
-            depth, depthScoreWeight);
+        fathomHyponyms(wordSense, wordSense.getNode().synset, contextWords,
+            depth, depth, depthScoreWeight);
       }
 
       if (includeMeronyms) {
-
-        fathomMeronyms(wordSense, wordSense.getNode().synset, relvWords, depth,
-            depth, depthScoreWeight);
+        fathomMeronyms(wordSense, wordSense.getNode().synset, contextWords,
+            depth, depth, depthScoreWeight);
 
       }
 
       if (includeHolonyms) {
-
-        fathomHolonyms(wordSense, wordSense.getNode().synset, relvWords, depth,
-            depth, depthScoreWeight);
+        fathomHolonyms(wordSense, wordSense.getNode().synset, contextWords,
+            depth, depth, depthScoreWeight);
 
       }
 
@@ -391,14 +389,14 @@ public class Lesk implements WSDisambiguator {
    * @param includeHolonyms
    * @return the array of WordSenses with their scores
    */
-  public ArrayList<WordSense> extendedExponential(WTDLesk wtd, int depth,
+  public ArrayList<WordSense> extendedExponential(WSDSample sample, int depth,
       double intersectionExponent, double depthExponent,
       boolean includeSynonyms, boolean includeHypernyms,
       boolean includeHyponyms, boolean includeMeronyms, boolean includeHolonyms) {
 
-    return extendedExponentialContextual(wtd, 0, depth, intersectionExponent,
-        depthExponent, includeSynonyms, includeHypernyms, includeHyponyms,
-        includeMeronyms, includeHolonyms);
+    return extendedExponentialContextual(sample, 0, depth,
+        intersectionExponent, depthExponent, includeSynonyms, includeHypernyms,
+        includeHyponyms, includeMeronyms, includeHolonyms);
 
   }
 
@@ -420,12 +418,12 @@ public class Lesk implements WSDisambiguator {
    * @param includeHolonyms
    * @return the array of WordSenses with their scores
    */
-  public ArrayList<WordSense> extendedExponentialContextual(WTDLesk wtd,
+  public ArrayList<WordSense> extendedExponentialContextual(WSDSample sample,
       int depth, double intersectionExponent, double depthExponent,
       boolean includeSynonyms, boolean includeHypernyms,
       boolean includeHyponyms, boolean includeMeronyms, boolean includeHolonyms) {
 
-    return extendedExponentialContextual(wtd, LeskParameters.DFLT_WIN_SIZE,
+    return extendedExponentialContextual(sample, LeskParameters.DFLT_WIN_SIZE,
         depth, intersectionExponent, depthExponent, includeSynonyms,
         includeHypernyms, includeHyponyms, includeMeronyms, includeHolonyms);
   }
@@ -449,12 +447,12 @@ public class Lesk implements WSDisambiguator {
    * @param includeHolonyms
    * @return the array of WordSenses with their scores
    */
-  public ArrayList<WordSense> extendedExponentialContextual(WTDLesk wtd,
+  public ArrayList<WordSense> extendedExponentialContextual(WSDSample sample,
       int windowSize, int depth, double intersectionExponent,
       double depthExponent, boolean includeSynonyms, boolean includeHypernyms,
       boolean includeHyponyms, boolean includeMeronyms, boolean includeHolonyms) {
 
-    return extendedExponentialContextual(wtd, windowSize, windowSize, depth,
+    return extendedExponentialContextual(sample, windowSize, windowSize, depth,
         intersectionExponent, depthExponent, includeSynonyms, includeHypernyms,
         includeHyponyms, includeMeronyms, includeHolonyms);
   }
@@ -478,57 +476,44 @@ public class Lesk implements WSDisambiguator {
    * @param includeHolonyms
    * @return the array of WordSenses with their scores
    */
-  public ArrayList<WordSense> extendedExponentialContextual(WTDLesk wtd,
+  public ArrayList<WordSense> extendedExponentialContextual(WSDSample sample,
       int windowBackward, int windowForward, int depth,
       double intersectionExponent, double depthExponent,
       boolean includeSynonyms, boolean includeHypernyms,
       boolean includeHyponyms, boolean includeMeronyms, boolean includeHolonyms) {
-    ArrayList<WordPOS> relvWords = PreProcessor.getRelevantWords(wtd,
-        windowBackward, windowForward);
-    WordPOS word = new WordPOS(wtd.getWord(), Constants.getPOS(wtd.getPosTag()));
 
-    ArrayList<Synset> synsets = word.getSynsets();
-    ArrayList<SynNode> nodes = new ArrayList<SynNode>();
-
-    for (Synset synset : synsets) {
-      SynNode node = new SynNode(synset, relvWords);
-      nodes.add(node);
-    }
-
-    ArrayList<WordSense> scoredSenses = basicContextual(wtd, windowForward,
+    ArrayList<WordSense> scoredSenses = basicContextual(sample, windowForward,
         windowBackward);
 
     for (WordSense wordSense : scoredSenses) {
 
       if (includeSynonyms) {
         wordSense.setScore(wordSense.getScore()
-            + Math.pow(
-                assessSynonyms(wordSense.getNode().getSynonyms(), relvWords),
-                intersectionExponent));
+            + Math
+                .pow(
+                    assessSynonyms(wordSense.getNode().getSynonyms(),
+                        contextWords), intersectionExponent));
       }
 
       if (includeHypernyms) {
         fathomHypernymsExponential(wordSense, wordSense.getNode().synset,
-            relvWords, depth, depth, intersectionExponent, depthExponent);
+            contextWords, depth, depth, intersectionExponent, depthExponent);
       }
 
       if (includeHyponyms) {
-
         fathomHyponymsExponential(wordSense, wordSense.getNode().synset,
-            relvWords, depth, depth, intersectionExponent, depthExponent);
+            contextWords, depth, depth, intersectionExponent, depthExponent);
       }
 
       if (includeMeronyms) {
-
         fathomMeronymsExponential(wordSense, wordSense.getNode().synset,
-            relvWords, depth, depth, intersectionExponent, depthExponent);
+            contextWords, depth, depth, intersectionExponent, depthExponent);
 
       }
 
       if (includeHolonyms) {
-
         fathomHolonymsExponential(wordSense, wordSense.getNode().synset,
-            relvWords, depth, depth, intersectionExponent, depthExponent);
+            contextWords, depth, depth, intersectionExponent, depthExponent);
 
       }
 
@@ -600,7 +585,6 @@ public class Lesk implements WSDisambiguator {
         + Math.pow(assessFeature(childNode.getHypernyms(), relvWords),
             intersectionExponent) / Math.pow(depth, depthScoreExponent));
     for (Synset hypernym : childNode.getHypernyms()) {
-
       fathomHypernymsExponential(wordSense, hypernym, relvGlossWords,
           depth - 1, maxDepth, intersectionExponent, depthScoreExponent);
     }
@@ -863,8 +847,6 @@ public class Lesk implements WSDisambiguator {
     return count;
   }
 
-  
-
   /**
    * Disambiguates an ambiguous word in its context
    * 
@@ -875,12 +857,33 @@ public class Lesk implements WSDisambiguator {
    *         non relevant a null is returned.
    */
   @Override
-  public String[] disambiguate(String[] tokenizedContext,
-      int ambiguousTokenIndex) {
+  public String[] disambiguate(String[] tokenizedContext, String[] tokenTags,
+      int ambiguousTokenIndex, String ambiguousTokenLemma) {
+    return disambiguate(new WSDSample(tokenizedContext, tokenTags,
+        ambiguousTokenIndex, ambiguousTokenLemma));
+  }
 
-    WTDLesk wtd = new WTDLesk(tokenizedContext, ambiguousTokenIndex);
+  /**
+   * Disambiguates an ambiguous word in its context The user can set a span of
+   * inputWords from the tokenized input
+   * 
+   * @param inputText
+   * @param inputWordSpans
+   * @return array of array of sense indexes from WordNet ordered by their
+   *         score. The result format is <b>Source</b> <b>SenseID</b> If the
+   *         input token is non relevant a null is returned.
+   */
+  @Override
+  public String[][] disambiguate(String[] tokenizedContext, String[] tokenTags,
+      Span ambiguousTokenSpan, String ambiguousTokenLemma) {
+    // TODO need to work on spans
+    return null;
+  }
+
+  @Override
+  public String[] disambiguate(WSDSample sample) {
     // if the word is not relevant return null
-    if (!Constants.isRelevant(wtd.getPosTag())) {
+    if (!Constants.isRelevant(sample.getTargetTag())) {
       return null;
     }
 
@@ -888,72 +891,72 @@ public class Lesk implements WSDisambiguator {
 
     switch (this.params.leskType) {
     case LESK_BASIC:
-      wsenses = basic(wtd);
+      wsenses = basic(sample);
       break;
     case LESK_BASIC_CTXT:
-      wsenses = basicContextual(wtd);
+      wsenses = basicContextual(sample);
       break;
     case LESK_BASIC_CTXT_WIN:
-      wsenses = basicContextual(wtd, this.params.win_b_size);
+      wsenses = basicContextual(sample, this.params.win_b_size);
       break;
     case LESK_BASIC_CTXT_WIN_BF:
-      wsenses = basicContextual(wtd, this.params.win_b_size,
+      wsenses = basicContextual(sample, this.params.win_b_size,
           this.params.win_f_size);
       break;
     case LESK_EXT:
-      wsenses = extended(wtd, this.params.depth, this.params.depth_weight,
+      wsenses = extended(sample, this.params.depth, this.params.depth_weight,
           this.params.fathom_synonyms, this.params.fathom_hypernyms,
           this.params.fathom_hyponyms, this.params.fathom_meronyms,
           this.params.fathom_holonyms);
       break;
     case LESK_EXT_CTXT:
-      wsenses = extendedContextual(wtd, this.params.depth,
+      wsenses = extendedContextual(sample, this.params.depth,
           this.params.depth_weight, this.params.fathom_synonyms,
           this.params.fathom_hypernyms, this.params.fathom_hyponyms,
           this.params.fathom_meronyms, this.params.fathom_holonyms);
       break;
     case LESK_EXT_CTXT_WIN:
-      wsenses = extendedContextual(wtd, this.params.win_b_size,
+      wsenses = extendedContextual(sample, this.params.win_b_size,
           this.params.depth, this.params.depth_weight,
           this.params.fathom_synonyms, this.params.fathom_hypernyms,
           this.params.fathom_hyponyms, this.params.fathom_meronyms,
           this.params.fathom_holonyms);
       break;
     case LESK_EXT_CTXT_WIN_BF:
-      wsenses = extendedContextual(wtd, this.params.win_b_size,
+      wsenses = extendedContextual(sample, this.params.win_b_size,
           this.params.win_f_size, this.params.depth, this.params.depth_weight,
           this.params.fathom_synonyms, this.params.fathom_hypernyms,
           this.params.fathom_hyponyms, this.params.fathom_meronyms,
           this.params.fathom_holonyms);
       break;
     case LESK_EXT_EXP:
-      wsenses = extendedExponential(wtd, this.params.depth, this.params.iexp,
-          this.params.dexp, this.params.fathom_synonyms,
+      wsenses = extendedExponential(sample, this.params.depth,
+          this.params.iexp, this.params.dexp, this.params.fathom_synonyms,
           this.params.fathom_hypernyms, this.params.fathom_hyponyms,
           this.params.fathom_meronyms, this.params.fathom_holonyms);
       break;
     case LESK_EXT_EXP_CTXT:
-      wsenses = extendedExponentialContextual(wtd, this.params.depth,
+      wsenses = extendedExponentialContextual(sample, this.params.depth,
           this.params.iexp, this.params.dexp, this.params.fathom_synonyms,
           this.params.fathom_hypernyms, this.params.fathom_hyponyms,
           this.params.fathom_meronyms, this.params.fathom_holonyms);
       break;
     case LESK_EXT_EXP_CTXT_WIN:
-      wsenses = extendedExponentialContextual(wtd, this.params.win_b_size,
+      wsenses = extendedExponentialContextual(sample, this.params.win_b_size,
           this.params.depth, this.params.iexp, this.params.dexp,
           this.params.fathom_synonyms, this.params.fathom_hypernyms,
           this.params.fathom_hyponyms, this.params.fathom_meronyms,
           this.params.fathom_holonyms);
       break;
     case LESK_EXT_EXP_CTXT_WIN_BF:
-      wsenses = extendedExponentialContextual(wtd, this.params.win_b_size,
+      wsenses = extendedExponentialContextual(sample, this.params.win_b_size,
           this.params.win_f_size, this.params.depth, this.params.iexp,
           this.params.dexp, this.params.fathom_synonyms,
           this.params.fathom_hypernyms, this.params.fathom_hyponyms,
           this.params.fathom_meronyms, this.params.fathom_holonyms);
       break;
     default:
-      wsenses = extendedExponentialContextual(wtd,
+      wsenses = extendedExponentialContextual(sample,
           LeskParameters.DFLT_WIN_SIZE, LeskParameters.DFLT_DEPTH,
           LeskParameters.DFLT_IEXP, LeskParameters.DFLT_DEXP, true, true, true,
           true, true);
@@ -970,7 +973,7 @@ public class Lesk implements WSDisambiguator {
       for (int i = 0; i < wsenses.size(); i++) {
         synsetWords = wsenses.get(i).getNode().synset.getWords();
         for (Word synWord : synsetWords) {
-          if (synWord.getLemma().equals(wtd.getWord())) {
+          if (synWord.getLemma().equals(sample.getTargetLemma())) {
             try {
               senseKey = synWord.getSenseKey();
             } catch (JWNLException e) {
@@ -985,25 +988,14 @@ public class Lesk implements WSDisambiguator {
       }
     } else { // get the MFS if no overlaps
       senses = new String[1];
-      senses[0] = params.source.name() + " " + MFS.getMostFrequentSense(wtd) + " -1";
+      senses[0] = MFS.getMostFrequentSense(sample) + " -1";
     }
     return senses;
   }
 
-  /**
-   * Disambiguates an ambiguous word in its context The user can set a span of
-   * inputWords from the tokenized input
-   * 
-   * @param inputText
-   * @param inputWordSpans
-   * @return array of array of sense indexes from WordNet ordered by their
-   *         score. The result format is <b>Source</b> <b>SenseID</b> If the
-   *         input token is non relevant a null is returned.
-   */
   @Override
-  public String[][] disambiguate(String[] tokenizedContext,
-      Span[] ambiguousTokenSpans) {
-    // TODO need to work on spans
+  public String[] disambiguate(String[] inputText, int inputWordIndex) {
+    // TODO Deprecate
     return null;
   }
 

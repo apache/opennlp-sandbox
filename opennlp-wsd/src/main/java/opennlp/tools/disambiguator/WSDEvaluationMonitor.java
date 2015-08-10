@@ -20,7 +20,7 @@ package opennlp.tools.disambiguator;
 import opennlp.tools.util.eval.EvaluationMonitor;
 
 public interface WSDEvaluationMonitor extends
-    EvaluationMonitor<WordToDisambiguate> {
+    EvaluationMonitor<WSDSample> {
 
 }
 

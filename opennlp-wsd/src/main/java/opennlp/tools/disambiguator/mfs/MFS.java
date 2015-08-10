@@ -21,6 +21,7 @@ package opennlp.tools.disambiguator.mfs;
 
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
+import java.util.List;
 
 import net.sf.extjwnl.JWNLException;
 import net.sf.extjwnl.data.POS;
@@ -28,11 +29,10 @@ import net.sf.extjwnl.data.Synset;
 import net.sf.extjwnl.data.Word;
 import opennlp.tools.disambiguator.Constants;
 import opennlp.tools.disambiguator.WSDParameters;
+import opennlp.tools.disambiguator.WSDSample;
 import opennlp.tools.disambiguator.WSDisambiguator;
 import opennlp.tools.disambiguator.WordPOS;
 import opennlp.tools.disambiguator.WordToDisambiguate;
-import opennlp.tools.disambiguator.lesk.LeskParameters;
-import opennlp.tools.disambiguator.lesk.WTDLesk;
 import opennlp.tools.util.Span;
 
 /**
@@ -52,40 +52,8 @@ public class MFS implements WSDisambiguator {
     this.parameters = new MFSParameters();
   }
 
-  /*
-   * @return the most frequent senses from wordnet
-   */
-  public static String getMostFrequentSense(
-      WordToDisambiguate wordToDisambiguate) {
-
-    String word = wordToDisambiguate.getRawWord().toLowerCase();
-    POS pos = Constants.getPOS(wordToDisambiguate.getPosTag());
-    String senseKey = null;
-
-    if (pos != null) {
-
-      WordPOS wordPOS = new WordPOS(word, pos);
-
-      ArrayList<Synset> synsets = wordPOS.getSynsets();
-
-      for (Word wd : synsets.get(0).getWords()) {
-        if (wd.getLemma().equals(
-            wordToDisambiguate.getRawWord().split("\\.")[0])) {
-          try {
-            senseKey = wd.getSenseKey();
-            break;
-          } catch (JWNLException e) {
-            e.printStackTrace();
-          }
-          break;
-        }
-      }
-    }
-    return senseKey;
-  }
-
-  public static String[] getMostFrequentSenses(
-      WordToDisambiguate wordToDisambiguate) {
+  @Deprecated
+  public static String[] getMostFrequentSense(WordToDisambiguate wordToDisambiguate) {
 
     String word = wordToDisambiguate.getRawWord().toLowerCase();
     POS pos = Constants.getPOS(wordToDisambiguate.getPosTag());
@@ -110,7 +78,7 @@ public class MFS implements WSDisambiguator {
             } catch (JWNLException e) {
               e.printStackTrace();
             }
-            senses[i] = "wordnet " + senseKey;
+            senses[i] = "WordNet " + senseKey;
             break;
           }
         }
@@ -123,65 +91,75 @@ public class MFS implements WSDisambiguator {
     }
 
   }
-
-  /**
-   * This method returns the most frequent sense out of a wordTag. It serves for
-   * quick check of the most frequent sense without any need to create a
-   * {@link WordToDisambiguate} instance
-   * 
-   * @param wordTag
-   *          the word to disambiguate. It should be written in the format
-   *          "word.p" (Exp: "write.v", "well.r", "smart.a", "go.v"
-   * @return The most frequent sense if it exists in WordNet, null} otherwise
+  
+  /*
+   * @return the most frequent senses from wordnet
    */
-  public String[] getMostFrequentSense(String wordTag) {
+  public static String getMostFrequentSense(WSDSample sample) {
 
-    String word = wordTag.split("\\.")[0];
-    String tag = wordTag.split("\\.")[1];
+    List<Synset> synsets = sample.getSynsets();
+    for (Word wd : synsets.get(0).getWords()) {
+      if (WSDParameters.isStemCompare) {
+        WordPOS wdPOS = new WordPOS(wd.getLemma(), wd.getPOS());
+        WordPOS samplePOS = new WordPOS(sample.getTargetLemma(),
+            Constants.getPOS(sample.getTargetTag()));
+        if (wdPOS.isStemEquivalent(samplePOS)) {
+          try {
+            return WSDParameters.Source.WORDNET.name() + " " + wd.getSenseKey();
+          } catch (JWNLException e) {
+            e.printStackTrace();
+          }
+        }
+      } else {
+        if (wd.getLemma().equalsIgnoreCase((sample.getTargetLemma()))) {
+          try {
+            return WSDParameters.Source.WORDNET.name() + " " + wd.getSenseKey();
+          } catch (JWNLException e) {
+            e.printStackTrace();
+          }
+        }
+      }
+    }
+    return "nonesense";
 
-    POS pos;
+  }
 
-    if (tag.equalsIgnoreCase("a")) {
-      pos = POS.ADJECTIVE;
-    } else if (tag.equalsIgnoreCase("r")) {
-      pos = POS.ADVERB;
-    } else if (tag.equalsIgnoreCase("n")) {
-      pos = POS.NOUN;
-    } else if (tag.equalsIgnoreCase("a")) {
-      pos = POS.VERB;
-    } else
-      pos = null;
+  public static String[] getMostFrequentSenses(WSDSample sample) {
 
-    if (pos != null) {
+    List<Synset> synsets = sample.getSynsets();
+    String[] senseKeys = new String[synsets.size()];
 
-      WordPOS wordPOS = new WordPOS(word, pos);
-
-      ArrayList<Synset> synsets = wordPOS.getSynsets();
-
-      int size = synsets.size();
-
-      String[] senses = new String[size];
-
-      for (int i = 0; i < size; i++) {
-        String senseKey = null;
-        for (Word wd : synsets.get(i).getWords()) {
-          if (wd.getLemma().equals(word)) {
+    for (int i = 0; i < synsets.size(); i++) {
+      for (Word wd : synsets.get(i).getWords()) {
+        if (WSDParameters.isStemCompare) {
+          WordPOS wdPOS = new WordPOS(wd.getLemma(), wd.getPOS());
+          WordPOS samplePOS = new WordPOS(sample.getTargetLemma(),
+              Constants.getPOS(sample.getTargetTag()));
+          if (wdPOS.isStemEquivalent(samplePOS)) {
             try {
-              senseKey = wd.getSenseKey();
+              senseKeys[i] = WSDParameters.Source.WORDNET.name() + " "
+                  + wd.getSenseKey();
+              break;
             } catch (JWNLException e) {
               e.printStackTrace();
             }
-            senses[i] = senseKey;
+            break;
+          }
+        }else{
+          if (wd.getLemma().equalsIgnoreCase((sample.getTargetLemma()))) {
+            try {
+              senseKeys[i] = WSDParameters.Source.WORDNET.name() + " "
+                  + wd.getSenseKey();
+              break;
+            } catch (JWNLException e) {
+              e.printStackTrace();
+            }
             break;
           }
         }
-
       }
-      return senses;
-    } else {
-      System.out.println("The word has no definitions in WordNet !");
-      return null;
     }
+    return senseKeys;
 
   }
 
@@ -205,20 +183,27 @@ public class MFS implements WSDisambiguator {
   }
 
   @Override
-  public String[] disambiguate(String[] tokenizedContext,
-      int ambiguousTokenIndex) {
-    // System.out.println(tokenizedContext[ambiguousTokenIndex]);
-    WordToDisambiguate wtd = new WordToDisambiguate(tokenizedContext,
-        ambiguousTokenIndex);
-    // System.out.println(wtd.getPosTags()[ambiguousTokenIndex]);
-    return getMostFrequentSenses(wtd);
+  public String[] disambiguate(WSDSample sample) {
+    return getMostFrequentSenses(sample);
   }
 
   @Override
-  public String[][] disambiguate(String[] tokenizedContext,
-      Span[] ambiguousTokenIndexSpans) {
+  public String[] disambiguate(String[] tokenizedContext, String[] tokenTags,
+      int ambiguousTokenIndex, String lemma) {
+    return disambiguate(new WSDSample(tokenizedContext, tokenTags,
+        ambiguousTokenIndex, lemma));
+  }
 
-    // TODO Auto-generated method stub
+  @Override
+  public String[][] disambiguate(String[] tokenizedContext, String[] tokenTags,
+      Span ambiguousTokenIndexSpan, String ambiguousTokenLemma) {
+    // TODO A iterate over span
+    return null;
+  }
+
+  @Override
+  public String[] disambiguate(String[] inputText, int inputWordIndex) {
+    // TODO Deprecate
     return null;
   }
 

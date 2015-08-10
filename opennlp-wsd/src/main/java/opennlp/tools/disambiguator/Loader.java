@@ -110,6 +110,7 @@ public class Loader {
 
   public static MorphologicalProcessor getMorph() {
     if (morph == null) {
+      getDictionary();
       morph = dictionary.getMorphologicalProcessor();
     }
     return morph;

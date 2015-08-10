@@ -23,19 +23,45 @@ import opennlp.tools.disambiguator.WSDParameters;
 
 public class ContextClustererParameters extends WSDParameters {
 
-  protected int ngram;
-
-  public int getNgram() {
-    return ngram;
+  protected int window;
+  protected Source source;
+  
+  /**
+   * Enum of all types of implemented variations of the Context Clustering 
+   * For now only WordNet is supported as a source
+   */
+  public static enum Source {
+    WORDNET
   }
 
-  public void setNgram(int ngram) {
-    this.ngram = ngram;
+  // DEFAULTS
+  protected static final Source DFLT_SOURCE = Source.WORDNET;
+  protected static final int DFLT_WINDOW = 3;
+
+  public int getWindow() {
+    return window;
+  }
+
+  public void setWindow(int window) {
+    this.window = window;
   }
 
   @Override
   public boolean isValid() {
-    return ngram > 0;
+    return window > 0;
+  }
+  
+  
+  public ContextClustererParameters() {
+    this.setDefaults();
+  }
+
+  /**
+   * Sets default parameters
+   */
+  public void setDefaults() {
+    this.source = ContextClustererParameters.DFLT_SOURCE;
+    this.window = ContextClustererParameters.DFLT_WINDOW;
   }
 
 }

@@ -37,8 +37,7 @@ public class MFSEvaluatorTest {
     Constants.print("Evaluation Started");
 
     MFS mfs = new MFS();
-    MFSParameters mfsParams = new MFSParameters();
-    mfs.setParams(mfsParams);
+    WSDParameters.isStemCompare = true;
 
     ArrayList<String> words = seReader.getSensevalWords();
 
@@ -48,15 +47,13 @@ public class MFSEvaluatorTest {
       // don't take verbs because they are not from WordNet
       if (!word.split("\\.")[1].equals("v")) {
 
-        ArrayList<WTDIMS> instances = getTestData(word);
+        ArrayList<WSDSample> instances = getTestData(word);
 
         if (instances != null) {
           Constants.print("------------------" + word + "------------------");
-          for (WordToDisambiguate instance : instances) {
-
+          for (WSDSample instance : instances) {
             if (instance.getSenseIDs() != null
                 && !instance.getSenseIDs().get(0).equals("null")) {
-              // Constants.print("sense IDs : " + instance.senseIDs);
               evaluator.evaluateSample(instance);
             }
           }
@@ -72,25 +69,30 @@ public class MFSEvaluatorTest {
 
   /**
    * For a specific word, return the Semeval3 corresponding instances in form of
-   * {@link WSDIMS}
+   * {@link WSDSample}
    * 
    * @param wordTag
    *          the word of which the instances are to be collected. wordTag has
    *          to be in the format "word.POS" (e.g., "activate.v", "smart.a",
    *          etc.)
-   * @return list of {@link WSDIMS} instances of the wordTag
+   * @return list of {@link WSDSample} instances of the wordTag
    */
-  protected static ArrayList<WTDIMS> getTestData(String wordTag) {
+  protected static ArrayList<WSDSample> getTestData(String wordTag) {
 
-    ArrayList<WTDIMS> instances = new ArrayList<WTDIMS>();
+    ArrayList<WSDSample> instances = new ArrayList<WSDSample>();
     for (WordToDisambiguate wtd : seReader.getSensevalData(wordTag)) {
-      WTDIMS wtdims = new WTDIMS(wtd);
-      if (wtdims != null) {
-        if (wtdims.getSenseIDs().get(0) != null
-            && !wtdims.getSenseIDs().get(0).equalsIgnoreCase("U")) {
-          // System.out.println(wtdims.getRawWord() + " - " +
-          // wtdims.getPosTags() + " - " + wtdims.getSenseIDs().get(0));
-          instances.add(wtdims);
+
+      String targetLemma = Loader.getLemmatizer().lemmatize(wtd.getWord(),
+          wtd.getPosTag());
+
+      WSDSample sample = new WSDSample(wtd.getSentence(), wtd.getPosTags(),
+          wtd.getWordIndex(), targetLemma);
+      sample.setSenseIDs(wtd.getSenseIDs());
+      
+      if (sample != null) {
+        if (sample.getSenseIDs().get(0) != null
+            && !sample.getSenseIDs().get(0).equalsIgnoreCase("U")) {
+          instances.add(sample);
         }
       }
 

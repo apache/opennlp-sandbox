@@ -19,6 +19,8 @@
 
 package opennlp.tools.disambiguator;
 
+import java.util.List;
+
 import opennlp.tools.disambiguator.mfs.MFS;
 
 /**
@@ -28,21 +30,71 @@ import opennlp.tools.disambiguator.mfs.MFS;
 public class MFSTester {
 
   public static void main(String[] args) {
-
     MFS mfs = new MFS();
 
-    String test1 = "Please write to me soon.";
-    String[] sentence1 = Loader.getTokenizer().tokenize(test1);
-    Constants.print(mfs.disambiguate(sentence1, 1));
-
+    String test1 = "I went fishing for some sea bass.";
+    String[] sentence = Loader.getTokenizer().tokenize(test1);
+    List<WordPOS> words = PreProcessor.getAllRelevantWords(sentence);
+    int targetWordIndex = 2;
+    String[] tags = new String[words.size()];
+    String[] tokens = new String[words.size()];
+    for (int i=0;i<words.size();i++){
+      tags[i] = words.get(i).getPosTag();
+      tokens[i] = words.get(i).getWord();
+      
+     // Constants.print("token : "+ tokens[i]  + "_" + tags[i]);
+    }
+    String targetLemma = Loader.getLemmatizer().lemmatize(
+        tokens[targetWordIndex], tags[targetWordIndex]);
+   // Constants.print("lemma  : "+ targetLemma);
+    
+    Constants.print(mfs.disambiguate(tokens, tags, targetWordIndex,targetLemma));
+    Constants.printResults(mfs,
+        mfs.disambiguate(tokens, tags, targetWordIndex, targetLemma));
+    Constants.print("----------------------------------------");
+    
     String test2 = "it was a strong argument that his hypothesis was true";
-    String[] sentence2 = Loader.getTokenizer().tokenize(test2);
-    Constants.print(mfs.disambiguate(sentence2, 3));
-
+    sentence = Loader.getTokenizer().tokenize(test2);
+    words = PreProcessor.getAllRelevantWords(sentence);
+    targetWordIndex = 1;
+    tags = new String[words.size()];
+    tokens = new String[words.size()];
+    for (int i=0;i<words.size();i++){
+      tags[i] = words.get(i).getPosTag();
+      tokens[i] = words.get(i).getWord();
+      
+      //Constants.print("token : "+ tokens[i]  + "_" + tags[i]);
+    }
+    targetLemma = Loader.getLemmatizer().lemmatize(
+        tokens[targetWordIndex], tags[targetWordIndex]);
+    //Constants.print("lemma  : "+ targetLemma);
+    
+    Constants.print(mfs.disambiguate(tokens, tags, targetWordIndex,targetLemma));
+    Constants.printResults(mfs,
+        mfs.disambiguate(tokens, tags, targetWordIndex, targetLemma));
+    Constants.print("----------------------------------------");
+    
     String test3 = "the component was highly radioactive to the point that it has been activated the second it touched water";
-    String[] sentence3 = Loader.getTokenizer().tokenize(test3);
-    Constants.print(mfs.disambiguate(sentence3, 12));
-
+   
+    sentence = Loader.getTokenizer().tokenize(test3);
+    words = PreProcessor.getAllRelevantWords(sentence);
+    targetWordIndex = 4;
+    tags = new String[words.size()];
+    tokens = new String[words.size()];
+    for (int i=0;i<words.size();i++){
+      tags[i] = words.get(i).getPosTag();
+      tokens[i] = words.get(i).getWord();
+      
+      //Constants.print("token : "+ tokens[i]  + "_" + tags[i]);
+    }
+    targetLemma = Loader.getLemmatizer().lemmatize(
+        tokens[targetWordIndex], tags[targetWordIndex]);
+    //Constants.print("lemma  : "+ targetLemma);
+    
+    Constants.print(mfs.disambiguate(tokens, tags, targetWordIndex,targetLemma));
+    Constants.printResults(mfs,
+        mfs.disambiguate(tokens, tags, targetWordIndex, targetLemma));
+    Constants.print("----------------------------------------");
   }
 
 }
