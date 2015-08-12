@@ -136,7 +136,7 @@ public class WSDSample {
   public String getTargetLemma() {
     return targetLemma;
   }
-  
+
   public void setSentence(List<String> sentence) {
     this.sentence = sentence;
   }
@@ -183,6 +183,9 @@ public class WSDSample {
     return result.toString();
   }
 
+  /*
+   * Parses a sample of format : TargetIndex TargetLemma Token Tag Token Tag ...
+   */
   public static WSDSample parse(String sentenceString)
       throws InvalidFormatException {
 

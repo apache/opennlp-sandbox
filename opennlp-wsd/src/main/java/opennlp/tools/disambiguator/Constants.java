@@ -138,48 +138,56 @@ public class Constants {
           "you're", "yours", "yourself", "yourselves", "you've", "zero"));
 
   // Print a text in the console
-//Print a text in the console
- public static void printResults(WSDisambiguator disambiguator,
-     String[] results) {
+  // Print a text in the console
+  public static void printResults(WSDisambiguator disambiguator,
+      String[] results) {
 
-   if (results != null) {
+    if (results != null) {
 
-     String[] parts;
-     String sensekey;
-     if (disambiguator instanceof Lesk) {
+      String[] parts;
+      String sensekey;
+      if (disambiguator instanceof Lesk) {
 
-       Double score;
+        Double score;
+     
+        for (int i = 0; i < results.length; i++) {
+          parts = results[i].split(" ");
+          sensekey = parts[1];
+          score = Double.parseDouble(parts[2]);
+          try {
+            Constants.print("score : "
+                + score
+                + " for sense "
+                + i
+                + " : "
+                + sensekey
+                + " : "
+                + Loader.getDictionary().getWordBySenseKey(sensekey)
+                    .getSynset().getGloss());
+          } catch (JWNLException e) {
+            e.printStackTrace();
+          }
+        }
+      } else {
+        for (int i = 0; i < results.length; i++) {
+          parts = results[i].split(" ");
+          sensekey = parts[1];
+          try {
+            Constants.print("sense "
+                + i
+                + " : "
+                + sensekey
+                + " : "
+                + Loader.getDictionary().getWordBySenseKey(sensekey)
+                    .getSynset().getGloss());
+          } catch (JWNLException e) {
+            e.printStackTrace();
+          }
+        }
+      }
+    }
 
-       for (String result : results) {
-         parts = result.split(" ");
-         sensekey = parts[1];
-         score = Double.parseDouble(parts[2]);
-         try {
-           Constants.print("score : "
-               + score
-               + " for : "
-               + Loader.getDictionary().getWordBySenseKey(sensekey)
-                   .getSynset().getGloss());
-         } catch (JWNLException e) {
-           e.printStackTrace();
-         }
-       }
-     } else {
-       for (String result : results) {
-         parts = result.split(" ");
-         sensekey = parts[1];
-         try {
-           Constants.print("sense : "
-               + Loader.getDictionary().getWordBySenseKey(sensekey)
-                   .getSynset().getGloss());
-         } catch (JWNLException e) {
-           e.printStackTrace();
-         }
-       }
-     }
-   }
-
- }
+  }
 
   public static void print(Object in) {
     if (in == null) {
