@@ -230,7 +230,7 @@ public class WSDSample {
     try {
       return Dictionary
           .getDefaultResourceInstance()
-          .lookupIndexWord(Constants.getPOS(this.getTargetTag()),
+          .lookupIndexWord(WSDHelper.getPOS(this.getTargetTag()),
               this.getTargetWord()).getSenses();
     } catch (JWNLException e) {
       e.printStackTrace();

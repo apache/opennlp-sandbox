@@ -37,7 +37,7 @@ public class WordPOS {
   private POS pos;
   private String posTag;
   private int wordIndex;
-  public boolean isTarget=false;
+  public boolean isTarget = false;
 
   public WordPOS(String word, String tag) throws IllegalArgumentException {
     if (word == null || tag == null) {
@@ -45,9 +45,9 @@ public class WordPOS {
     }
     this.word = word;
     this.posTag = tag;
-    this.pos = Constants.getPOS(tag);
+    this.pos = WSDHelper.getPOS(tag);
   }
-  
+
   public WordPOS(String word, POS pos) throws IllegalArgumentException {
     if (word == null || pos == null) {
       throw new IllegalArgumentException("Args are null");
@@ -70,7 +70,7 @@ public class WordPOS {
 
   public List getStems() {
     if (stems == null) {
-      return PreProcessor.Stem(this);
+      return WSDHelper.Stem(this);
     } else {
       return stems;
     }
@@ -81,9 +81,9 @@ public class WordPOS {
 
     IndexWord indexWord;
     try {
-      indexWord = Loader.getDictionary().lookupIndexWord(pos, word);
+      indexWord = WSDHelper.getDictionary().lookupIndexWord(pos, word);
       if (indexWord == null) {
-        Constants
+        WSDHelper
             .print("NULL synset probably a POS tagger mistake ! :: [POS] : "
                 + pos.getLabel() + " [word] : " + word);
         return null;
@@ -101,20 +101,17 @@ public class WordPOS {
     // check if there is intersection in the stems;
     List originalList = this.getStems();
     List listToCompare = wordToCompare.getStems();
-    
-    
-    if (originalList == null || listToCompare == null) { 
+
+    if (originalList == null || listToCompare == null) {
       return false;
     } else {
       ListIterator<String> iterator = originalList.listIterator();
-      while (iterator.hasNext())
-      {
-          iterator.set(iterator.next().toLowerCase());
+      while (iterator.hasNext()) {
+        iterator.set(iterator.next().toLowerCase());
       }
       iterator = listToCompare.listIterator();
-      while (iterator.hasNext())
-      {
-          iterator.set(iterator.next().toLowerCase());
+      while (iterator.hasNext()) {
+        iterator.set(iterator.next().toLowerCase());
       }
       return !Collections.disjoint(originalList, listToCompare);
     }
@@ -127,10 +124,10 @@ public class WordPOS {
     ArrayList<String> lemmas_word = new ArrayList();
     ArrayList<String> lemmas_wordToCompare = new ArrayList();
 
-    for (String pos : Constants.allPOS) {
-      Loader.getLemmatizer().lemmatize(wordToCompare.getWord(), pos);
+    for (String pos : WSDHelper.allPOS) {
+      WSDHelper.getLemmatizer().lemmatize(wordToCompare.getWord(), pos);
     }
     return false;
   }
-  
+
 }

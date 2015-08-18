@@ -32,16 +32,17 @@ public class LeskParameters extends WSDParameters {
    *
    */
   public static enum LESK_TYPE {
-    LESK_BASIC, LESK_BASIC_CTXT, LESK_BASIC_CTXT_WIN, LESK_BASIC_CTXT_WIN_BF, LESK_EXT, LESK_EXT_CTXT, LESK_EXT_CTXT_WIN, LESK_EXT_CTXT_WIN_BF, LESK_EXT_EXP, LESK_EXT_EXP_CTXT, LESK_EXT_EXP_CTXT_WIN, LESK_EXT_EXP_CTXT_WIN_BF,
+    LESK_BASIC, LESK_BASIC_CTXT, LESK_EXT, LESK_EXT_CTXT, LESK_EXT_EXP, LESK_EXT_EXP_CTXT
   }
-  
+
   // DEFAULTS
-  protected static final LESK_TYPE DFLT_LESK_TYPE = LESK_TYPE.LESK_EXT_EXP_CTXT_WIN;
+  protected static final LESK_TYPE DFLT_LESK_TYPE = LESK_TYPE.LESK_EXT_EXP_CTXT;
   protected static final Source DFLT_SOURCE = Source.WORDNET;
-  protected static final int DFLT_WIN_SIZE = 3;
-  protected static final int DFLT_DEPTH = 2;
-  protected static final double DFLT_IEXP = 0.4;
-  protected static final double DFLT_DEXP = 0.4;
+  protected static final int DFLT_WIN_SIZE = 10;
+  protected static final int DFLT_DEPTH = 1;
+  protected static final double DFLT_DEPTH_WEIGHT = 0.8;
+  protected static final double DFLT_IEXP = 0.3;
+  protected static final double DFLT_DEXP = 0.3;
 
   protected LESK_TYPE leskType;
 
@@ -49,16 +50,16 @@ public class LeskParameters extends WSDParameters {
   protected int win_f_size;
   protected int win_b_size;
   protected int depth;
-
-  protected boolean fathom_synonyms;
-  protected boolean fathom_hypernyms;
-  protected boolean fathom_hyponyms;
-  protected boolean fathom_meronyms;
-  protected boolean fathom_holonyms;
-
   protected double depth_weight;
   protected double iexp;
   protected double dexp;
+
+  /*
+   * 10 possible features for lesk 0 : Synonyms 1 : Hypernyms 2 : Hyponyms 3 :
+   * Meronyms 4 : Holonyms 5 : Entailments 6 : Coordinate Terms 7 : Causes 8 :
+   * Attributes 9 : Pertainyms
+   */
+  protected boolean features[];
 
   public LESK_TYPE getLeskType() {
     return leskType;
@@ -92,46 +93,6 @@ public class LeskParameters extends WSDParameters {
     this.depth = depth;
   }
 
-  public boolean isFathom_synonyms() {
-    return fathom_synonyms;
-  }
-
-  public void setFathom_synonyms(boolean fathom_synonyms) {
-    this.fathom_synonyms = fathom_synonyms;
-  }
-
-  public boolean isFathom_hypernyms() {
-    return fathom_hypernyms;
-  }
-
-  public void setFathom_hypernyms(boolean fathom_hypernyms) {
-    this.fathom_hypernyms = fathom_hypernyms;
-  }
-
-  public boolean isFathom_hyponyms() {
-    return fathom_hyponyms;
-  }
-
-  public void setFathom_hyponyms(boolean fathom_hyponyms) {
-    this.fathom_hyponyms = fathom_hyponyms;
-  }
-
-  public boolean isFathom_meronyms() {
-    return fathom_meronyms;
-  }
-
-  public void setFathom_meronyms(boolean fathom_meronyms) {
-    this.fathom_meronyms = fathom_meronyms;
-  }
-
-  public boolean isFathom_holonyms() {
-    return fathom_holonyms;
-  }
-
-  public void setFathom_holonyms(boolean fathom_holonyms) {
-    this.fathom_holonyms = fathom_holonyms;
-  }
-
   public double getDepth_weight() {
     return depth_weight;
   }
@@ -156,6 +117,14 @@ public class LeskParameters extends WSDParameters {
     this.dexp = dexp;
   }
 
+  public boolean[] getFeatures() {
+    return features;
+  }
+
+  public void setFeatures(boolean[] features) {
+    this.features = features;
+  }
+
   public LeskParameters() {
     this.setDefaults();
   }
@@ -169,13 +138,11 @@ public class LeskParameters extends WSDParameters {
     this.win_f_size = LeskParameters.DFLT_WIN_SIZE;
     this.win_b_size = LeskParameters.DFLT_WIN_SIZE;
     this.depth = LeskParameters.DFLT_DEPTH;
+    this.depth_weight = LeskParameters.DFLT_DEPTH_WEIGHT;
     this.iexp = LeskParameters.DFLT_IEXP;
     this.dexp = LeskParameters.DFLT_DEXP;
-    this.fathom_holonyms = true;
-    this.fathom_hypernyms = true;
-    this.fathom_hyponyms = true;
-    this.fathom_meronyms = true;
-    this.fathom_synonyms = true;
+    boolean[] a = { true, true, true, true, true, true, true, true, true, true };
+    this.features = a;
   }
 
   /*
@@ -188,23 +155,13 @@ public class LeskParameters extends WSDParameters {
     switch (this.leskType) {
     case LESK_BASIC:
     case LESK_BASIC_CTXT:
-      return true;
-    case LESK_BASIC_CTXT_WIN:
       return (this.win_b_size == this.win_f_size) && this.win_b_size >= 0;
-    case LESK_BASIC_CTXT_WIN_BF:
-      return (this.win_b_size >= 0) && (this.win_f_size >= 0);
     case LESK_EXT:
     case LESK_EXT_CTXT:
-      return (this.depth >= 0) && (this.depth_weight >= 0);
-    case LESK_EXT_CTXT_WIN:
-    case LESK_EXT_CTXT_WIN_BF:
       return (this.depth >= 0) && (this.depth_weight >= 0)
           && (this.win_b_size >= 0) && (this.win_f_size >= 0);
     case LESK_EXT_EXP:
     case LESK_EXT_EXP_CTXT:
-      return (this.depth >= 0) && (this.dexp >= 0) && (this.iexp >= 0);
-    case LESK_EXT_EXP_CTXT_WIN:
-    case LESK_EXT_EXP_CTXT_WIN_BF:
       return (this.depth >= 0) && (this.dexp >= 0) && (this.iexp >= 0)
           && (this.win_b_size >= 0) && (this.win_f_size >= 0);
     default:

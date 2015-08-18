@@ -22,8 +22,7 @@ package opennlp.tools.disambiguator.ims;
 import java.util.ArrayList;
 
 import net.sf.extjwnl.data.POS;
-import opennlp.tools.disambiguator.Constants;
-import opennlp.tools.disambiguator.PreProcessor;
+import opennlp.tools.disambiguator.WSDHelper;
 import opennlp.tools.disambiguator.WordToDisambiguate;
 
 public class WTDIMS extends WordToDisambiguate {
@@ -49,8 +48,8 @@ public class WTDIMS extends WordToDisambiguate {
 
     // this.word = xmlWord;
 
-    this.sentence = PreProcessor.tokenize(xmlSentence);
-    this.posTags = PreProcessor.tag(this.sentence);
+    this.sentence = WSDHelper.getTokenizer().tokenize(xmlSentence);
+    this.posTags = WSDHelper.getTagger().tag(this.sentence);
 
     for (int i = 0; i < sentence.length; i++) {
       if (xmlrawWord.equals(sentence[i])) {
@@ -67,7 +66,7 @@ public class WTDIMS extends WordToDisambiguate {
     super(wtd.getSentence(), wtd.getWordIndex(), wtd.getSense());
     this.senseIDs = wtd.getSenseIDs();
   }
-  
+
   public WTDIMS(String[] sentence, int wordIndex, ArrayList<String> senseIDs) {
     super(sentence, wordIndex);
     this.senseIDs = senseIDs;
@@ -107,19 +106,19 @@ public class WTDIMS extends WordToDisambiguate {
 
   public String getWordTag() {
 
-    String wordBaseForm = PreProcessor.lemmatize(this.getWord(),
+    String wordBaseForm = WSDHelper.getLemmatizer().lemmatize(this.getWord(),
         this.getPosTag());
 
     String ref = "";
 
-    if ((Constants.getPOS(this.getPosTag()) != null)) {
-      if (Constants.getPOS(this.getPosTag()).equals(POS.VERB)) {
+    if ((WSDHelper.getPOS(this.getPosTag()) != null)) {
+      if (WSDHelper.getPOS(this.getPosTag()).equals(POS.VERB)) {
         ref = wordBaseForm + ".v";
-      } else if (Constants.getPOS(this.getPosTag()).equals(POS.NOUN)) {
+      } else if (WSDHelper.getPOS(this.getPosTag()).equals(POS.NOUN)) {
         ref = wordBaseForm + ".n";
-      } else if (Constants.getPOS(this.getPosTag()).equals(POS.ADJECTIVE)) {
+      } else if (WSDHelper.getPOS(this.getPosTag()).equals(POS.ADJECTIVE)) {
         ref = wordBaseForm + ".a";
-      } else if (Constants.getPOS(this.getPosTag()).equals(POS.ADVERB)) {
+      } else if (WSDHelper.getPOS(this.getPosTag()).equals(POS.ADVERB)) {
         ref = wordBaseForm + ".r";
       }
     }

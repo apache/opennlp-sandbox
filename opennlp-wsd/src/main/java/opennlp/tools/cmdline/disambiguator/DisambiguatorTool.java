@@ -31,10 +31,12 @@ import opennlp.tools.cmdline.CmdLineTool;
 import opennlp.tools.cmdline.CmdLineUtil;
 import opennlp.tools.cmdline.PerformanceMonitor;
 import opennlp.tools.cmdline.TerminateToolException;
-import opennlp.tools.disambiguator.Constants;
+import opennlp.tools.disambiguator.WSDHelper;
 import opennlp.tools.disambiguator.WSDSample;
 import opennlp.tools.disambiguator.WSDSampleStream;
 import opennlp.tools.disambiguator.WSDisambiguator;
+import opennlp.tools.disambiguator.ims.IMS;
+import opennlp.tools.disambiguator.lesk.Lesk;
 import opennlp.tools.disambiguator.mfs.MFS;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.PlainTextByLineStream;
@@ -85,7 +87,7 @@ public class DisambiguatorTool extends CmdLineTool {
 
         WSDSample sample = WSDSample.parse(line);
 
-        Constants.printResults(disambiguator,
+        WSDHelper.printResults(disambiguator,
             disambiguator.disambiguate(sample));
 
         perfMon.incrementCounter();
@@ -105,7 +107,9 @@ public class DisambiguatorTool extends CmdLineTool {
     if (params.getType().equalsIgnoreCase("mfs")) {
       wsd = new MFS();
     } else if (params.getType().equalsIgnoreCase("lesk")) {
+      wsd = new Lesk();
     } else if (params.getType().equalsIgnoreCase("ims")) {
+      wsd = new IMS();
     }
     return wsd;
 

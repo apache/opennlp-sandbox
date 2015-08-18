@@ -25,44 +25,49 @@ import java.util.List;
 import opennlp.tools.disambiguator.lesk.Lesk;
 import opennlp.tools.disambiguator.lesk.LeskParameters;
 import opennlp.tools.disambiguator.lesk.LeskParameters.LESK_TYPE;
-import opennlp.tools.disambiguator.mfs.MFS;
 
 import org.junit.Test;
 
 public class LeskTester {
-
   @Test
   public static void main(String[] args) {
 
+    
     Lesk lesk = new Lesk();
     LeskParameters params = new LeskParameters();
-    params.setLeskType(LESK_TYPE.LESK_EXT_EXP_CTXT_WIN);
+    params.setLeskType(LESK_TYPE.LESK_EXT);
+    boolean a[] = { true, true, true, true, true, true, true, true, true, true };
+    params.setFeatures(a);
     lesk.setParams(params);
-
-    String test1 = "I went fishing for some sea bass.";
-    String[] sentence = Loader.getTokenizer().tokenize(test1);
-    List<WordPOS> words = PreProcessor.getAllRelevantWords(sentence);
-    int targetWordIndex = 2;
+    String modelsDir = "src\\test\\resources\\models\\";
+    WSDHelper.loadTokenizer(modelsDir+"en-token.bin");
+    WSDHelper.loadLemmatizer(modelsDir+"en-lemmatizer.dict");
+    WSDHelper.loadTagger(modelsDir+"en-pos-maxent.bin");
+    
+    String test1 = "I went to the bank to deposit money.";
+    String[] sentence = WSDHelper.getTokenizer().tokenize(test1);
+    List<WordPOS> words = WSDHelper.getAllRelevantWords(sentence);
+    int targetWordIndex = 0;
     String[] tags = new String[words.size()];
     String[] tokens = new String[words.size()];
     for (int i=0;i<words.size();i++){
       tags[i] = words.get(i).getPosTag();
       tokens[i] = words.get(i).getWord();
       
-     // Constants.print("token : "+ tokens[i]  + "_" + tags[i]);
+      WSDHelper.print("token : "+ tokens[i]  + "_" + tags[i]);
     }
-    String targetLemma = Loader.getLemmatizer().lemmatize(
+    String targetLemma = WSDHelper.getLemmatizer().lemmatize(
         tokens[targetWordIndex], tags[targetWordIndex]);
    // Constants.print("lemma  : "+ targetLemma);
-    Constants.print(lesk.disambiguate(tokens, tags, targetWordIndex,targetLemma));
-    Constants.printResults(lesk,
+    WSDHelper.print(lesk.disambiguate(tokens, tags, targetWordIndex,targetLemma));
+    WSDHelper.printResults(lesk,
         lesk.disambiguate(tokens, tags, targetWordIndex, targetLemma));
     
-    Constants.print("----------------------------------------");
+    WSDHelper.print("----------------------------------------");
     
     String test2 = "it was a strong argument that his hypothesis was true";
-    sentence = Loader.getTokenizer().tokenize(test2);
-    words = PreProcessor.getAllRelevantWords(sentence);
+    sentence = WSDHelper.getTokenizer().tokenize(test2);
+    words = WSDHelper.getAllRelevantWords(sentence);
     targetWordIndex = 1;
     tags = new String[words.size()];
     tokens = new String[words.size()];
@@ -72,19 +77,19 @@ public class LeskTester {
       
       //Constants.print("token : "+ tokens[i]  + "_" + tags[i]);
     }
-    targetLemma = Loader.getLemmatizer().lemmatize(
+    targetLemma = WSDHelper.getLemmatizer().lemmatize(
         tokens[targetWordIndex], tags[targetWordIndex]);
     //Constants.print("lemma  : "+ targetLemma);
     
-    Constants.print(lesk.disambiguate(tokens, tags, targetWordIndex,targetLemma));
-    Constants.printResults(lesk,
+    WSDHelper.print(lesk.disambiguate(tokens, tags, targetWordIndex,targetLemma));
+    WSDHelper.printResults(lesk,
         lesk.disambiguate(tokens, tags, targetWordIndex, targetLemma));
-    Constants.print("----------------------------------------");
+    WSDHelper.print("----------------------------------------");
     
     String test3 = "the component was highly radioactive to the point that it has been activated the second it touched water";
     
-    sentence = Loader.getTokenizer().tokenize(test3);
-    words = PreProcessor.getAllRelevantWords(sentence);
+    sentence = WSDHelper.getTokenizer().tokenize(test3);
+    words = WSDHelper.getAllRelevantWords(sentence);
     targetWordIndex = 4;
     tags = new String[words.size()];
     tokens = new String[words.size()];
@@ -94,14 +99,14 @@ public class LeskTester {
       
       //Constants.print("token : "+ tokens[i]  + "_" + tags[i]);
     }
-    targetLemma = Loader.getLemmatizer().lemmatize(
+    targetLemma = WSDHelper.getLemmatizer().lemmatize(
         tokens[targetWordIndex], tags[targetWordIndex]);
     //Constants.print("lemma  : "+ targetLemma);
     
-    Constants.print(lesk.disambiguate(tokens, tags, targetWordIndex,targetLemma));
-    Constants.printResults(lesk,
+    WSDHelper.print(lesk.disambiguate(tokens, tags, targetWordIndex,targetLemma));
+    WSDHelper.printResults(lesk,
         lesk.disambiguate(tokens, tags, targetWordIndex, targetLemma));
-    Constants.print("----------------------------------------");
+    WSDHelper.print("----------------------------------------");
   }
 
 }

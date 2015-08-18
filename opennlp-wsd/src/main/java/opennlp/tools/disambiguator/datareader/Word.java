@@ -19,7 +19,7 @@
 
 package opennlp.tools.disambiguator.datareader;
 
-import opennlp.tools.disambiguator.Constants;
+import opennlp.tools.disambiguator.WSDHelper;
 
 public class Word {
 
@@ -245,14 +245,14 @@ public class Word {
 
     if (this.lemma != null && iword.getLemma() != null) {
       if (iword.getLemma().equals(this.getLemma())
-          && Constants.getPOS(iword.getPos()).equals(
-              Constants.getPOS(this.getPos()))) {
+          && WSDHelper.getPOS(iword.getPos()).equals(
+              WSDHelper.getPOS(this.getPos()))) {
         return true;
       }
     } else {
       if (this.word.equals(iword.getWord())
-          && Constants.getPOSabbreviation(this.getPos()).equals(
-              Constants.getPOSabbreviation(iword.getPos()))) {
+          && WSDHelper.getPOSabbreviation(this.getPos()).equals(
+              WSDHelper.getPOSabbreviation(iword.getPos()))) {
         return true;
       }
     }
@@ -261,7 +261,7 @@ public class Word {
 
   public boolean isInstanceOf(String wordTag) {
 
-    String tag = Constants.getPOSabbreviation(this.getPos());
+    String tag = WSDHelper.getPOSabbreviation(this.getPos());
 
     String oword = wordTag.split("\\.")[0];
     String otag = wordTag.split("\\.")[1];
@@ -286,8 +286,8 @@ public class Word {
     Word iword = (Word) oword;
 
     if (iword.getLemma().equals(this.getLemma())
-        && Constants.getPOS(iword.getPos()).equals(
-            Constants.getPOS(this.getPos()))
+        && WSDHelper.getPOS(iword.getPos()).equals(
+            WSDHelper.getPOS(this.getPos()))
         && iword.getLexsn().equals(this.getLexsn())) {
       return true;
     }

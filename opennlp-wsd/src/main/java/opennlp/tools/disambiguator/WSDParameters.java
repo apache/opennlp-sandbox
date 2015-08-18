@@ -24,10 +24,10 @@ package opennlp.tools.disambiguator;
  *
  */
 public abstract class WSDParameters {
-  
+
   protected boolean isCoarseSense;
   public static boolean isStemCompare;
-  
+
   public static enum Source {
     WORDNET
   }
@@ -42,14 +42,14 @@ public abstract class WSDParameters {
   public void setCoarseSense(boolean isCoarseSense) {
     this.isCoarseSense = isCoarseSense;
   }
-  
-  public WSDParameters(){
+
+  public WSDParameters() {
     this.isCoarseSense = true;
   }
-  
+
   /**
    * @return checks if the parameters are valid or not
    */
   public abstract boolean isValid();
-  
+
 }

@@ -35,19 +35,24 @@ public class IMSTester {
 
   public static void main(String[] args) {
 
+    String modelsDir = "src\\test\\resources\\models\\";
+    WSDHelper.loadTokenizer(modelsDir+"en-token.bin");
+    WSDHelper.loadLemmatizer(modelsDir+"en-lemmatizer.dict");
+    WSDHelper.loadTagger(modelsDir+"en-pos-maxent.bin");
+    
     IMS ims = new IMS();
 
     String test1 = "Please write to me soon.";
-    String[] sentence1 = Loader.getTokenizer().tokenize(test1);
-    Constants.print(ims.disambiguate(sentence1, 1));
+    String[] sentence1 = WSDHelper.getTokenizer().tokenize(test1);
+    WSDHelper.print(ims.disambiguate(sentence1, 1));
 
     String test2 = "it was a strong argument that his hypothesis was true";
-    String[] sentence2 = Loader.getTokenizer().tokenize(test2);
-    Constants.print(ims.disambiguate(sentence2, 3));
+    String[] sentence2 = WSDHelper.getTokenizer().tokenize(test2);
+    WSDHelper.print(ims.disambiguate(sentence2, 3));
 
     String test3 = "the component was highly radioactive to the point that it has been activated the second it touched water";
-    String[] sentence3 = Loader.getTokenizer().tokenize(test3);
-    Constants.print(ims.disambiguate(sentence3, 12));
+    String[] sentence3 = WSDHelper.getTokenizer().tokenize(test3);
+    WSDHelper.print(ims.disambiguate(sentence3, 12));
 
   }
 

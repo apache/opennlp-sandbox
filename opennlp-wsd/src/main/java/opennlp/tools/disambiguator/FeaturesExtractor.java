@@ -55,7 +55,7 @@ public class FeaturesExtractor {
   private String[] extractPosOfSurroundingWords(String[] sentence,
       int wordIndex, int windowSize) {
 
-    String[] taggedSentence = Loader.getTagger().tag(sentence);
+    String[] taggedSentence = WSDHelper.getTagger().tag(sentence);
 
     String[] tags = new String[2 * windowSize + 1];
 
@@ -75,20 +75,20 @@ public class FeaturesExtractor {
 
   private String[] extractSurroundingWords(String[] sentence, int wordIndex) {
 
-    String[] posTags = Loader.getTagger().tag(sentence);
+    String[] posTags = WSDHelper.getTagger().tag(sentence);
 
     ArrayList<String> contextWords = new ArrayList<String>();
 
     for (int i = 0; i < sentence.length; i++) {
 
-      if (!Constants.stopWords.contains(sentence[i].toLowerCase())
+      if (!WSDHelper.stopWords.contains(sentence[i].toLowerCase())
           && (wordIndex != i)) {
 
         String word = sentence[i].toLowerCase().replaceAll("[^a-z]", "").trim();
 
         // if (!word.equals("") /*&& Constants.isRelevant(posTags[i])*/) {
-        if (Loader.getEnglishWords().containsKey(word)) {
-          String lemma = Loader.getLemmatizer().lemmatize(word, posTags[i]);
+        if (WSDHelper.getEnglishWords().containsKey(word)) {
+          String lemma = WSDHelper.getLemmatizer().lemmatize(word, posTags[i]);
           contextWords.add(lemma);
         }
 

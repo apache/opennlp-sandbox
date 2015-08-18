@@ -37,7 +37,7 @@ public class WordToDisambiguate {
   protected int sense;
 
   protected ArrayList<String> senseIDs;
-  
+
   public WordToDisambiguate(String[] sentence, int wordIndex)
       throws IllegalArgumentException {
     super();
@@ -47,7 +47,7 @@ public class WordToDisambiguate {
     }
 
     this.sentence = sentence;
-    this.posTags = PreProcessor.tag(sentence);
+    this.posTags = WSDHelper.getTagger().tag(sentence);
 
     this.wordIndex = wordIndex;
 
@@ -63,7 +63,7 @@ public class WordToDisambiguate {
     }
 
     this.sentence = sentence;
-    this.posTags = PreProcessor.tag(sentence);
+    this.posTags = WSDHelper.getTagger().tag(sentence);
 
     this.wordIndex = wordIndex;
 
@@ -79,14 +79,14 @@ public class WordToDisambiguate {
     }
 
     this.sentence = sentence;
-    this.posTags = PreProcessor.tag(sentence);
+    this.posTags = WSDHelper.getTagger().tag(sentence);
 
     this.wordIndex = wordIndex;
 
     this.senseIDs = senseIDs;
   }
 
-  public WordToDisambiguate(String[] sentence,  String[] tokenTags, int wordIndex) {
+  public WordToDisambiguate(String[] sentence, String[] tokenTags, int wordIndex) {
     this(sentence, wordIndex, -1);
   }
 
@@ -125,20 +125,20 @@ public class WordToDisambiguate {
 
   public String getRawWord() {
 
-    String wordBaseForm = Loader.getLemmatizer().lemmatize(
+    String wordBaseForm = WSDHelper.getLemmatizer().lemmatize(
         this.sentence[wordIndex], this.posTags[wordIndex]);
 
     String ref = "";
 
-    if ((Constants.getPOS(this.posTags[wordIndex]) != null)) {
-      if (Constants.getPOS(this.posTags[wordIndex]).equals(POS.VERB)) {
+    if ((WSDHelper.getPOS(this.posTags[wordIndex]) != null)) {
+      if (WSDHelper.getPOS(this.posTags[wordIndex]).equals(POS.VERB)) {
         ref = wordBaseForm + ".v";
-      } else if (Constants.getPOS(this.posTags[wordIndex]).equals(POS.NOUN)) {
+      } else if (WSDHelper.getPOS(this.posTags[wordIndex]).equals(POS.NOUN)) {
         ref = wordBaseForm + ".n";
-      } else if (Constants.getPOS(this.posTags[wordIndex])
+      } else if (WSDHelper.getPOS(this.posTags[wordIndex])
           .equals(POS.ADJECTIVE)) {
         ref = wordBaseForm + ".a";
-      } else if (Constants.getPOS(this.posTags[wordIndex]).equals(POS.ADVERB)) {
+      } else if (WSDHelper.getPOS(this.posTags[wordIndex]).equals(POS.ADVERB)) {
         ref = wordBaseForm + ".r";
       }
 
@@ -182,11 +182,10 @@ public class WordToDisambiguate {
   public String toString() {
     return (wordIndex + "\t" + getWord() + "\n" + sentence);
   }
-  
+
   public void print() {
-    Constants.print("Sentence:  " + Arrays.asList(sentence) + "\n" + 
-        "Index: " + wordIndex + "\n" + 
-        "Word: "+ getWord() + "\n" +
-        "Sense ID: " + senseIDs.get(0));
+    WSDHelper.print("Sentence:  " + Arrays.asList(sentence) + "\n" + "Index: "
+        + wordIndex + "\n" + "Word: " + getWord() + "\n" + "Sense ID: "
+        + senseIDs.get(0));
   }
 }

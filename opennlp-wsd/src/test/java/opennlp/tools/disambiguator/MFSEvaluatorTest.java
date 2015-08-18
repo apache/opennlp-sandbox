@@ -34,8 +34,11 @@ public class MFSEvaluatorTest {
 
   @Test
   public static void main(String[] args) {
-    Constants.print("Evaluation Started");
-
+    WSDHelper.print("Evaluation Started");
+    String modelsDir = "src\\test\\resources\\models\\";
+    WSDHelper.loadTokenizer(modelsDir+"en-token.bin");
+    WSDHelper.loadLemmatizer(modelsDir+"en-lemmatizer.dict");
+    WSDHelper.loadTagger(modelsDir+"en-pos-maxent.bin");
     MFS mfs = new MFS();
     WSDParameters.isStemCompare = true;
 
@@ -50,16 +53,16 @@ public class MFSEvaluatorTest {
         ArrayList<WSDSample> instances = getTestData(word);
 
         if (instances != null) {
-          Constants.print("------------------" + word + "------------------");
+          WSDHelper.print("------------------" + word + "------------------");
           for (WSDSample instance : instances) {
             if (instance.getSenseIDs() != null
                 && !instance.getSenseIDs().get(0).equals("null")) {
               evaluator.evaluateSample(instance);
             }
           }
-          Constants.print(evaluator.toString());
+          WSDHelper.print(evaluator.toString());
         } else {
-          Constants.print("null instances");
+          WSDHelper.print("null instances");
         }
       }
 
@@ -82,7 +85,7 @@ public class MFSEvaluatorTest {
     ArrayList<WSDSample> instances = new ArrayList<WSDSample>();
     for (WordToDisambiguate wtd : seReader.getSensevalData(wordTag)) {
 
-      String targetLemma = Loader.getLemmatizer().lemmatize(wtd.getWord(),
+      String targetLemma = WSDHelper.getLemmatizer().lemmatize(wtd.getWord(),
           wtd.getPosTag());
 
       WSDSample sample = new WSDSample(wtd.getSentence(), wtd.getPosTags(),

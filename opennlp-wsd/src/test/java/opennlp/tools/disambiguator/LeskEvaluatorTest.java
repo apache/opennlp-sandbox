@@ -35,11 +35,17 @@ public class LeskEvaluatorTest {
 
   @Test
   public static void main(String[] args) {
-    Constants.print("Evaluation Started");
-
+    WSDHelper.print("Evaluation Started");
+    String modelsDir = "src\\test\\resources\\models\\";
+    WSDHelper.loadTokenizer(modelsDir + "en-token.bin");
+    WSDHelper.loadLemmatizer(modelsDir + "en-lemmatizer.dict");
+    WSDHelper.loadTagger(modelsDir + "en-pos-maxent.bin");
     Lesk lesk = new Lesk();
     LeskParameters leskParams = new LeskParameters();
-    leskParams.setLeskType(LeskParameters.LESK_TYPE.LESK_EXT_EXP_CTXT_WIN);
+    boolean a[] = { true, true, true, true, true, false, false, false, false,
+        false };
+    leskParams.setFeatures(a);
+    leskParams.setLeskType(LeskParameters.LESK_TYPE.LESK_EXT_CTXT);
     lesk.setParams(leskParams);
 
     ArrayList<String> words = seReader.getSensevalWords();
@@ -52,16 +58,16 @@ public class LeskEvaluatorTest {
 
         ArrayList<WSDSample> instances = getTestData(word);
         if (instances != null) {
-          Constants.print("------------------" + word + "------------------");
+          WSDHelper.print("------------------" + word + "------------------");
           for (WSDSample instance : instances) {
             if (instance.getSenseIDs() != null
                 && !instance.getSenseIDs().get(0).equals("null")) {
               evaluator.evaluateSample(instance);
             }
           }
-          Constants.print(evaluator.toString());
+          WSDHelper.print(evaluator.toString());
         } else {
-          Constants.print("null instances");
+          WSDHelper.print("null instances");
         }
       }
     }
@@ -71,23 +77,24 @@ public class LeskEvaluatorTest {
 
     ArrayList<WSDSample> instances = new ArrayList<WSDSample>();
     for (WordToDisambiguate wtd : seReader.getSensevalData(wordTag)) {
-      List<WordPOS> words = PreProcessor.getAllRelevantWords(wtd);
-      int targetWordIndex=0;
-      for (int i=0; i<words.size();i++){
-        if(words.get(i).isTarget){
+      List<WordPOS> words = WSDHelper.getAllRelevantWords(wtd);
+      int targetWordIndex = 0;
+      for (int i = 0; i < words.size(); i++) {
+        if (words.get(i).isTarget) {
           targetWordIndex = i;
-        }   
+        }
       }
       String[] tags = new String[words.size()];
       String[] tokens = new String[words.size()];
-      for (int i=0;i<words.size();i++){
+      for (int i = 0; i < words.size(); i++) {
         tags[i] = words.get(i).getPosTag();
         tokens[i] = words.get(i).getWord();
       }
-      String targetLemma = Loader.getLemmatizer().lemmatize(
+      String targetLemma = WSDHelper.getLemmatizer().lemmatize(
           tokens[targetWordIndex], tags[targetWordIndex]);
-      
-      WSDSample sample = new WSDSample(tokens,tags,targetWordIndex,targetLemma);
+
+      WSDSample sample = new WSDSample(tokens, tags, targetWordIndex,
+          targetLemma);
       sample.setSenseIDs(wtd.getSenseIDs());
       if (sample != null) {
         if (sample.getSenseIDs().get(0) != null

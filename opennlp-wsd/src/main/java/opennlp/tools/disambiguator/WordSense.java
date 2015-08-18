@@ -19,7 +19,8 @@
 
 package opennlp.tools.disambiguator;
 
-import opennlp.tools.disambiguator.WSDSample;;
+import opennlp.tools.disambiguator.WSDSample;
+import opennlp.tools.disambiguator.SynNode;
 
 public class WordSense implements Comparable {
 

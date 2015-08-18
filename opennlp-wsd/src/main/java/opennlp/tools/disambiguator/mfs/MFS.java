@@ -27,7 +27,7 @@ import net.sf.extjwnl.JWNLException;
 import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.data.Synset;
 import net.sf.extjwnl.data.Word;
-import opennlp.tools.disambiguator.Constants;
+import opennlp.tools.disambiguator.WSDHelper;
 import opennlp.tools.disambiguator.WSDParameters;
 import opennlp.tools.disambiguator.WSDSample;
 import opennlp.tools.disambiguator.WSDisambiguator;
@@ -53,10 +53,11 @@ public class MFS implements WSDisambiguator {
   }
 
   @Deprecated
-  public static String[] getMostFrequentSense(WordToDisambiguate wordToDisambiguate) {
+  public static String[] getMostFrequentSense(
+      WordToDisambiguate wordToDisambiguate) {
 
     String word = wordToDisambiguate.getRawWord().toLowerCase();
-    POS pos = Constants.getPOS(wordToDisambiguate.getPosTag());
+    POS pos = WSDHelper.getPOS(wordToDisambiguate.getPosTag());
 
     if (pos != null) {
 
@@ -91,7 +92,7 @@ public class MFS implements WSDisambiguator {
     }
 
   }
-  
+
   /*
    * @return the most frequent senses from wordnet
    */
@@ -102,7 +103,7 @@ public class MFS implements WSDisambiguator {
       if (WSDParameters.isStemCompare) {
         WordPOS wdPOS = new WordPOS(wd.getLemma(), wd.getPOS());
         WordPOS samplePOS = new WordPOS(sample.getTargetLemma(),
-            Constants.getPOS(sample.getTargetTag()));
+            WSDHelper.getPOS(sample.getTargetTag()));
         if (wdPOS.isStemEquivalent(samplePOS)) {
           try {
             return WSDParameters.Source.WORDNET.name() + " " + wd.getSenseKey();
@@ -134,7 +135,7 @@ public class MFS implements WSDisambiguator {
         if (WSDParameters.isStemCompare) {
           WordPOS wdPOS = new WordPOS(wd.getLemma(), wd.getPOS());
           WordPOS samplePOS = new WordPOS(sample.getTargetLemma(),
-              Constants.getPOS(sample.getTargetTag()));
+              WSDHelper.getPOS(sample.getTargetTag()));
           if (wdPOS.isStemEquivalent(samplePOS)) {
             try {
               senseKeys[i] = WSDParameters.Source.WORDNET.name() + " "
@@ -145,7 +146,7 @@ public class MFS implements WSDisambiguator {
             }
             break;
           }
-        }else{
+        } else {
           if (wd.getLemma().equalsIgnoreCase((sample.getTargetLemma()))) {
             try {
               senseKeys[i] = WSDParameters.Source.WORDNET.name() + " "
