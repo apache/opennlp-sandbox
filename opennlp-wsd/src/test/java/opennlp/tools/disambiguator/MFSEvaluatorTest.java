@@ -36,9 +36,9 @@ public class MFSEvaluatorTest {
   public static void main(String[] args) {
     WSDHelper.print("Evaluation Started");
     String modelsDir = "src\\test\\resources\\models\\";
-    WSDHelper.loadTokenizer(modelsDir+"en-token.bin");
-    WSDHelper.loadLemmatizer(modelsDir+"en-lemmatizer.dict");
-    WSDHelper.loadTagger(modelsDir+"en-pos-maxent.bin");
+    WSDHelper.loadTokenizer(modelsDir + "en-token.bin");
+    WSDHelper.loadLemmatizer(modelsDir + "en-lemmatizer.dict");
+    WSDHelper.loadTagger(modelsDir + "en-pos-maxent.bin");
     MFS mfs = new MFS();
     WSDParameters.isStemCompare = true;
 
@@ -50,7 +50,7 @@ public class MFSEvaluatorTest {
       // don't take verbs because they are not from WordNet
       if (!word.split("\\.")[1].equals("v")) {
 
-        ArrayList<WSDSample> instances = getTestData(word);
+        ArrayList<WSDSample> instances = seReader.getSensevalData(word);
 
         if (instances != null) {
           WSDHelper.print("------------------" + word + "------------------");
@@ -68,40 +68,6 @@ public class MFSEvaluatorTest {
 
     }
 
-  }
-
-  /**
-   * For a specific word, return the Semeval3 corresponding instances in form of
-   * {@link WSDSample}
-   * 
-   * @param wordTag
-   *          the word of which the instances are to be collected. wordTag has
-   *          to be in the format "word.POS" (e.g., "activate.v", "smart.a",
-   *          etc.)
-   * @return list of {@link WSDSample} instances of the wordTag
-   */
-  protected static ArrayList<WSDSample> getTestData(String wordTag) {
-
-    ArrayList<WSDSample> instances = new ArrayList<WSDSample>();
-    for (WordToDisambiguate wtd : seReader.getSensevalData(wordTag)) {
-
-      String targetLemma = WSDHelper.getLemmatizer().lemmatize(wtd.getWord(),
-          wtd.getPosTag());
-
-      WSDSample sample = new WSDSample(wtd.getSentence(), wtd.getPosTags(),
-          wtd.getWordIndex(), targetLemma);
-      sample.setSenseIDs(wtd.getSenseIDs());
-      
-      if (sample != null) {
-        if (sample.getSenseIDs().get(0) != null
-            && !sample.getSenseIDs().get(0).equalsIgnoreCase("U")) {
-          instances.add(sample);
-        }
-      }
-
-    }
-
-    return instances;
   }
 
 }

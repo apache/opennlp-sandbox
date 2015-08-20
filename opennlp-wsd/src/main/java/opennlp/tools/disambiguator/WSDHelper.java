@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 
 import net.sf.extjwnl.JWNLException;
 import net.sf.extjwnl.data.POS;
@@ -57,6 +56,7 @@ public class WSDHelper {
   private static HashMap<String, Object> relvCache;
 
   private static HashMap<String, Object> englishWords;
+  private static HashMap<String, Object> nonRelevWordsDef;
 
   // List of all the PoS tags
   public static String[] allPOS = { "CC", "CD", "DT", "EX", "FW", "IN", "JJ",
@@ -191,6 +191,59 @@ public class WSDHelper {
     return englishWords;
   }
 
+  /**
+   * This initializes the Hashmap of non relevant words definitions, and returns
+   * the definition of the non relevant word based on its pos-tag
+   * 
+   * @param posTag
+   *          the pos-tag of the non relevant word
+   * @return the definition of the word
+   */
+  public static String getNonRelevWordsDef(String posTag) {
+    if (nonRelevWordsDef == null || nonRelevWordsDef.keySet().isEmpty()) {
+      nonRelevWordsDef = new HashMap<String, Object>();
+
+      nonRelevWordsDef.put("CC", "coordinating conjunction");
+      nonRelevWordsDef.put("CD", "cardinal number");
+      nonRelevWordsDef.put("DT", "determiner");
+      nonRelevWordsDef.put("EX", "existential there");
+      nonRelevWordsDef.put("FW", "foreign word");
+      nonRelevWordsDef.put("IN", "preposition / subordinating conjunction");
+      nonRelevWordsDef.put("JJ", "adjective");
+      nonRelevWordsDef.put("JJR", "adjective, comparative");
+      nonRelevWordsDef.put("JJS", "adjective, superlative");
+      nonRelevWordsDef.put("LS", "list marker");
+      nonRelevWordsDef.put("MD", "modal");
+      nonRelevWordsDef.put("NN", "noun, singular or mass");
+      nonRelevWordsDef.put("NNS", "noun plural");
+      nonRelevWordsDef.put("NNP", "proper noun, singular");
+      nonRelevWordsDef.put("NNPS", "proper noun, plural");
+      nonRelevWordsDef.put("PDT", "predeterminer");
+      nonRelevWordsDef.put("POS", "possessive ending");
+      nonRelevWordsDef.put("PRP", "personal pronoun");
+      nonRelevWordsDef.put("PRP$", "possessive pronoun");
+      nonRelevWordsDef.put("RB", "adverb");
+      nonRelevWordsDef.put("RBR", "adverb, comparative");
+      nonRelevWordsDef.put("RBS", "adverb, superlative");
+      nonRelevWordsDef.put("RP", "particle");
+      nonRelevWordsDef.put("SYM", "Symbol");
+      nonRelevWordsDef.put("TO", "to");
+      nonRelevWordsDef.put("UH", "interjection");
+      nonRelevWordsDef.put("VB", "verb, base form");
+      nonRelevWordsDef.put("VBD", "verb, past tense");
+      nonRelevWordsDef.put("VBG", "verb, gerund/present participle");
+      nonRelevWordsDef.put("VBN", "verb, past participle");
+      nonRelevWordsDef.put("VBP", "verb, sing. present, non-3d");
+      nonRelevWordsDef.put("VBZ", "verb, 3rd person sing. present");
+      nonRelevWordsDef.put("WDT", "wh-determiner");
+      nonRelevWordsDef.put("WP", "wh-pronoun");
+      nonRelevWordsDef.put("WP$", "possessive wh-pronoun");
+      nonRelevWordsDef.put("WRB", "wh-adverb");
+
+    }
+    return (String) nonRelevWordsDef.get(posTag);
+  }
+
   public static MorphologicalProcessor getMorph() {
     if (morph == null) {
       getDictionary();
@@ -281,35 +334,63 @@ public class WSDHelper {
         for (int i = 0; i < results.length; i++) {
           parts = results[i].split(" ");
           sensekey = parts[1];
-          score = Double.parseDouble(parts[2]);
-          try {
-            print("score : "
-                + score
-                + " for sense "
-                + i
-                + " : "
-                + sensekey
-                + " : "
-                + getDictionary().getWordBySenseKey(sensekey).getSynset()
-                    .getGloss());
-          } catch (JWNLException e) {
-            e.printStackTrace();
+          if (parts.length != 3) {
+            score = -1.0;
+          } else {
+            score = Double.parseDouble(parts[2]);
+          }
+          if (parts[0].equalsIgnoreCase(WSDParameters.SenseSource.WORDNET
+              .name())) {
+
+            try {
+              print("score : "
+                  + score
+                  + " for sense "
+                  + i
+                  + " : "
+                  + sensekey
+                  + " : "
+                  + getDictionary().getWordBySenseKey(sensekey).getSynset()
+                      .getGloss());
+
+            } catch (JWNLException e) {
+              e.printStackTrace();
+            }
+          } else {
+            if (parts[0].equalsIgnoreCase(WSDParameters.SenseSource.WSDHELPER
+                .name())) {
+
+              print("This word is a " + sensekey + " : "
+                  + WSDHelper.getNonRelevWordsDef(sensekey));
+
+            }
           }
         }
       } else {
         for (int i = 0; i < results.length; i++) {
           parts = results[i].split(" ");
           sensekey = parts[1];
-          try {
-            print("sense "
-                + i
-                + " : "
-                + sensekey
-                + " : "
-                + getDictionary().getWordBySenseKey(sensekey).getSynset()
-                    .getGloss());
-          } catch (JWNLException e) {
-            e.printStackTrace();
+
+          if (parts[0].equalsIgnoreCase(WSDParameters.SenseSource.WORDNET
+              .name())) {
+
+            try {
+              print("sense "
+                  + i
+                  + " : "
+                  + sensekey
+                  + " : "
+                  + getDictionary().getWordBySenseKey(sensekey).getSynset()
+                      .getGloss());
+            } catch (JWNLException e) {
+              e.printStackTrace();
+            }
+          } else if (parts[0]
+              .equalsIgnoreCase(WSDParameters.SenseSource.WSDHELPER.name())) {
+
+            print("This word is a " + sensekey + " : "
+                + WSDHelper.getNonRelevWordsDef(sensekey));
+
           }
         }
       }
@@ -443,7 +524,7 @@ public class WSDHelper {
    * @return whether a PoS Tag corresponds to a relevant Part of Speech (type
    *         {@link POS}) or not ( true} if it is, false} otherwise)
    */
-  public static boolean isRelevant(String posTag) {
+  public static boolean isRelevantPOSTag(String posTag) {
     return getPOS(posTag) != null;
   }
 
@@ -461,7 +542,7 @@ public class WSDHelper {
    *          The Part of Speech of Type {@link POS}
    * @return whether a Part of Speech is relevant (true) or not (false)
    */
-  public static boolean isRelevant(POS pos) {
+  public static boolean isRelevantPOS(POS pos) {
     return pos.equals(POS.ADJECTIVE) || pos.equals(POS.ADVERB)
         || pos.equals(POS.NOUN) || pos.equals(POS.VERB);
   }
@@ -547,51 +628,6 @@ public class WSDHelper {
     return relevantWords;
   }
 
-  public static ArrayList<WordPOS> getAllRelevantWords(WordToDisambiguate word) {
-    ArrayList<WordPOS> relevantWords = new ArrayList<WordPOS>();
-
-    String[] tags = WSDHelper.getTagger().tag(word.getSentence());
-
-    for (int i = 0; i < word.getSentence().length; i++) {
-      if (!WSDHelper.getStopCache().containsKey(word.getSentence()[i])) {
-        if (WSDHelper.getRelvCache().containsKey(tags[i])) {
-          WordPOS wordpos = new WordPOS(word.getSentence()[i], tags[i]);
-          if (i == word.getWordIndex()) {
-            wordpos.isTarget = true;
-          }
-          relevantWords.add(wordpos);
-        }
-
-      }
-    }
-    return relevantWords;
-  }
-
-  public static ArrayList<WordPOS> getRelevantWords(WordToDisambiguate word,
-      int winBackward, int winForward) {
-
-    ArrayList<WordPOS> relevantWords = new ArrayList<WordPOS>();
-
-    String[] sentence = word.getSentence();
-    String[] tags = WSDHelper.getTagger().tag(sentence);
-
-    int index = word.getWordIndex();
-
-    for (int i = index - winBackward; i <= index + winForward; i++) {
-
-      if (i >= 0 && i < sentence.length && i != index) {
-        if (!WSDHelper.getStopCache().containsKey(sentence[i])) {
-
-          if (WSDHelper.getRelvCache().containsKey(tags[i])) {
-            relevantWords.add(new WordPOS(sentence[i], tags[i]));
-          }
-
-        }
-      }
-    }
-    return relevantWords;
-  }
-
   /**
    * Stem a single word with WordNet dictionnary
    * 
@@ -630,7 +666,9 @@ public class WSDHelper {
    * @return stemmed word list, null means the word is incorrect
    */
   public static ArrayList<String> Stem(WordPOS wordToStem) {
-
+    if (wordToStem.getPOS() == null) {
+      WSDHelper.print("the word is " + wordToStem.getWord());
+    }
     // check if we already cached the stem map
     HashMap posMap = (HashMap) WSDHelper.getStemCache().get(
         wordToStem.getPOS().getKey());
@@ -653,9 +691,10 @@ public class WSDHelper {
         posMap.put(wordToStem.getWord(), stemList);
         WSDHelper.getStemCache().put(wordToStem.getPOS().getKey(), posMap);
         return stemList;
-      } else { // could not be stemmed add it anyway (as incorrect with null
-               // list)
-        posMap.put(wordToStem.getWord(), null);
+      } else { // could not be stemmed add it anyway (as it is)
+        stemList = new ArrayList<String>();
+        stemList.add(wordToStem.getWord());
+        posMap.put(wordToStem.getWord(), stemList);
         WSDHelper.getStemCache().put(wordToStem.getPOS().getKey(), posMap);
         return null;
       }

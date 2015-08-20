@@ -19,9 +19,11 @@
 
 package opennlp.tools.disambiguator;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import opennlp.tools.disambiguator.mfs.MFS;
+import opennlp.tools.util.Span;
 
 /**
  * This is a typical example of how to call the disambiguation function in the
@@ -30,78 +32,83 @@ import opennlp.tools.disambiguator.mfs.MFS;
 public class MFSTester {
 
   public static void main(String[] args) {
-    
     String modelsDir = "src\\test\\resources\\models\\";
-    WSDHelper.loadTokenizer(modelsDir+"en-token.bin");
-    WSDHelper.loadLemmatizer(modelsDir+"en-lemmatizer.dict");
-    WSDHelper.loadTagger(modelsDir+"en-pos-maxent.bin");
-    
-    
+    WSDHelper.loadTokenizer(modelsDir + "en-token.bin");
+    WSDHelper.loadLemmatizer(modelsDir + "en-lemmatizer.dict");
+    WSDHelper.loadTagger(modelsDir + "en-pos-maxent.bin");
+
     MFS mfs = new MFS();
 
-    String test1 = "I went fishing for some sea bass.";
-    String[] sentence = WSDHelper.getTokenizer().tokenize(test1);
-    List<WordPOS> words = WSDHelper.getAllRelevantWords(sentence);
-    int targetWordIndex = 2;
-    String[] tags = new String[words.size()];
-    String[] tokens = new String[words.size()];
-    for (int i=0;i<words.size();i++){
-      tags[i] = words.get(i).getPosTag();
-      tokens[i] = words.get(i).getWord();
-      
-     // Constants.print("token : "+ tokens[i]  + "_" + tags[i]);
+    /**
+     * This is how to make the context for one-word-disambiguation using IMS
+     */
+    String test1 = "We need to discuss important topic, please write to me soon.";
+    String[] sentence1 = WSDHelper.getTokenizer().tokenize(test1);
+    String[] tags1 = WSDHelper.getTagger().tag(sentence1);
+    List<String> tempLemmas1 = new ArrayList<String>();
+    for (int i = 0; i < sentence1.length; i++) {
+      String lemma = WSDHelper.getLemmatizer()
+          .lemmatize(sentence1[i], tags1[i]);
+      tempLemmas1.add(lemma);
     }
-    String targetLemma = WSDHelper.getLemmatizer().lemmatize(
-        tokens[targetWordIndex], tags[targetWordIndex]);
-   // Constants.print("lemma  : "+ targetLemma);
-    
-    WSDHelper.print(mfs.disambiguate(tokens, tags, targetWordIndex,targetLemma));
-    WSDHelper.printResults(mfs,
-        mfs.disambiguate(tokens, tags, targetWordIndex, targetLemma));
-    WSDHelper.print("----------------------------------------");
-    
-    String test2 = "it was a strong argument that his hypothesis was true";
-    sentence = WSDHelper.getTokenizer().tokenize(test2);
-    words = WSDHelper.getAllRelevantWords(sentence);
-    targetWordIndex = 1;
-    tags = new String[words.size()];
-    tokens = new String[words.size()];
-    for (int i=0;i<words.size();i++){
-      tags[i] = words.get(i).getPosTag();
-      tokens[i] = words.get(i).getWord();
-      
-      //Constants.print("token : "+ tokens[i]  + "_" + tags[i]);
+    String[] lemmas1 = tempLemmas1.toArray(new String[tempLemmas1.size()]);
+
+    // output
+    String[] senses1 = mfs.disambiguate(sentence1, tags1, lemmas1, 8);
+    System.out.print(lemmas1[8] + " :\t");
+    WSDHelper.print(senses1);
+    WSDHelper.print("*****************************");
+
+    /**
+     * This is how to make the context for disambiguation of span of words
+     */
+    String test2 = "The component was highly radioactive to the point that"
+        + " it has been activated the second it touched water";
+    String[] sentence2 = WSDHelper.getTokenizer().tokenize(test2);
+    String[] tags2 = WSDHelper.getTagger().tag(sentence2);
+    List<String> tempLemmas2 = new ArrayList<String>();
+    for (int i = 0; i < sentence2.length; i++) {
+      String lemma = WSDHelper.getLemmatizer()
+          .lemmatize(sentence2[i], tags2[i]);
+      tempLemmas2.add(lemma);
     }
-    targetLemma = WSDHelper.getLemmatizer().lemmatize(
-        tokens[targetWordIndex], tags[targetWordIndex]);
-    //Constants.print("lemma  : "+ targetLemma);
-    
-    WSDHelper.print(mfs.disambiguate(tokens, tags, targetWordIndex,targetLemma));
-    WSDHelper.printResults(mfs,
-        mfs.disambiguate(tokens, tags, targetWordIndex, targetLemma));
-    WSDHelper.print("----------------------------------------");
-    
-    String test3 = "the component was highly radioactive to the point that it has been activated the second it touched water";
-   
-    sentence = WSDHelper.getTokenizer().tokenize(test3);
-    words = WSDHelper.getAllRelevantWords(sentence);
-    targetWordIndex = 4;
-    tags = new String[words.size()];
-    tokens = new String[words.size()];
-    for (int i=0;i<words.size();i++){
-      tags[i] = words.get(i).getPosTag();
-      tokens[i] = words.get(i).getWord();
-      
-      //Constants.print("token : "+ tokens[i]  + "_" + tags[i]);
+    String[] lemmas2 = tempLemmas2.toArray(new String[tempLemmas2.size()]);
+    Span span = new Span(3, 7);
+
+    // output
+    List<String[]> senses2 = mfs.disambiguate(sentence2, tags2, lemmas2, span);
+    for (int i = span.getStart(); i < span.getEnd() + 1; i++) {
+      String[] senses = senses2.get(i - span.getStart());
+      System.out.print(lemmas2[i] + " :\t");
+      WSDHelper.print(senses);
+      WSDHelper.print("----------");
     }
-    targetLemma = WSDHelper.getLemmatizer().lemmatize(
-        tokens[targetWordIndex], tags[targetWordIndex]);
-    //Constants.print("lemma  : "+ targetLemma);
-    
-    WSDHelper.print(mfs.disambiguate(tokens, tags, targetWordIndex,targetLemma));
-    WSDHelper.printResults(mfs,
-        mfs.disambiguate(tokens, tags, targetWordIndex, targetLemma));
-    WSDHelper.print("----------------------------------------");
+
+    WSDHelper.print("*****************************");
+
+    /**
+     * This is how to make the context for all-words-disambiguation
+     */
+    String test3 = "The summer is almost over and I have not been to the beach even once";
+    String[] sentence3 = WSDHelper.getTokenizer().tokenize(test3);
+    String[] tags3 = WSDHelper.getTagger().tag(sentence3);
+    List<String> tempLemmas3 = new ArrayList<String>();
+    for (int i = 0; i < sentence3.length; i++) {
+      String lemma = WSDHelper.getLemmatizer()
+          .lemmatize(sentence3[i], tags3[i]);
+      tempLemmas3.add(lemma);
+    }
+    String[] lemmas3 = tempLemmas3.toArray(new String[tempLemmas3.size()]);
+
+    // output
+    List<String[]> senses3 = mfs.disambiguate(sentence3, tags3, lemmas3);
+    for (int i = 0; i < sentence3.length; i++) {
+      String[] senses = senses3.get(i);
+      System.out.print(lemmas3[i] + " :\t");
+      WSDHelper.print(senses);
+      WSDHelper.print("----------");
+    }
+
   }
 
 }

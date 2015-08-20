@@ -20,39 +20,56 @@
 package opennlp.tools.disambiguator.ims;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import net.sf.extjwnl.data.POS;
 import opennlp.tools.disambiguator.WSDHelper;
-import opennlp.tools.disambiguator.WordToDisambiguate;
+import opennlp.tools.disambiguator.WSDSample;
 
-public class WTDIMS extends WordToDisambiguate {
+public class WTDIMS {
 
+  // Attributes related to the context
+  protected String[] sentence;
+  protected String[] posTags;
+  protected String[] lemmas;
+  protected int wordIndex;
+  protected int sense;
+  protected List<String> senseIDs;
+
+  // Attributes related to IMS features
   protected String[] posOfSurroundingWords;
   protected String[] surroundingWords;
   protected String[] localCollocations;
-
   protected String[] features;
 
-  public WTDIMS(String[] sentence, int word, int sense) {
-    super(sentence, word, sense);
+  public WTDIMS(String[] sentence, String[] posTags, String[] lemmas,
+      int wordIndex) {
+    this.sentence = sentence;
+    this.posTags = posTags;
+    this.wordIndex = wordIndex;
+    this.lemmas = lemmas;
+  }
+
+  public WTDIMS(String[] sentence, String[] posTags, String[] lemmas,
+      int wordIndex, List<String> senseIDs) {
+    this.sentence = sentence;
+    this.posTags = posTags;
+    this.wordIndex = wordIndex;
+    this.lemmas = lemmas;
+    this.senseIDs = senseIDs;
 
   }
 
-  public WTDIMS(String[] sentence, int word) {
-    super(sentence, word);
-  }
-
-  public WTDIMS(String xmlWord, ArrayList<String> senseIDs, String xmlSentence,
-      String xmlrawWord) {
+  public WTDIMS(String[] sentence, String[] posTags, String[] lemmas,
+      String word, List<String> senseIDs) {
     super();
 
-    // this.word = xmlWord;
-
-    this.sentence = WSDHelper.getTokenizer().tokenize(xmlSentence);
-    this.posTags = WSDHelper.getTagger().tag(this.sentence);
+    this.sentence = sentence;
+    this.posTags = posTags;
+    this.lemmas = lemmas;
 
     for (int i = 0; i < sentence.length; i++) {
-      if (xmlrawWord.equals(sentence[i])) {
+      if (word.equals(sentence[i])) {
         this.wordIndex = i;
         break;
       }
@@ -62,16 +79,93 @@ public class WTDIMS extends WordToDisambiguate {
 
   }
 
-  public WTDIMS(WordToDisambiguate wtd) {
-    super(wtd.getSentence(), wtd.getWordIndex(), wtd.getSense());
-    this.senseIDs = wtd.getSenseIDs();
+  public WTDIMS(WSDSample sample) {
+    this.sentence = sample.getSentence();
+    this.posTags = sample.getTags();
+    this.lemmas = sample.getLemmas();
+    this.wordIndex = sample.getTargetPosition();
+    this.senseIDs = sample.getSenseIDs();
+
+  }
+  
+  public String[] getSentence() {
+    return sentence;
   }
 
-  public WTDIMS(String[] sentence, int wordIndex, ArrayList<String> senseIDs) {
-    super(sentence, wordIndex);
+  public void setSentence(String[] sentence) {
+    this.sentence = sentence;
+  }
+
+  public String[] getPosTags() {
+    return posTags;
+  }
+
+  public void setPosTags(String[] posTags) {
+    this.posTags = posTags;
+  }
+
+  public int getWordIndex() {
+    return wordIndex;
+  }
+
+  public void setWordIndex(int wordIndex) {
+    this.wordIndex = wordIndex;
+  }
+
+  public String[] getLemmas() {
+    return lemmas;
+  }
+
+  public void setLemmas(String[] lemmas) {
+    this.lemmas = lemmas;
+  }
+
+  public int getSense() {
+    return sense;
+  }
+
+  public void setSense(int sense) {
+    this.sense = sense;
+  }
+
+  public List<String> getSenseIDs() {
+    return senseIDs;
+  }
+
+  public void setSenseIDs(ArrayList<String> senseIDs) {
     this.senseIDs = senseIDs;
   }
 
+  public String getWord() {
+    return this.getSentence()[this.getWordIndex()];
+  }
+
+  public String getWordTag() {
+
+    String wordBaseForm = this.getLemmas()[this.getWordIndex()];
+
+    String ref = "";
+
+    if ((WSDHelper.getPOS(this.getPosTags()[this.getWordIndex()]) != null)) {
+      if (WSDHelper.getPOS(this.getPosTags()[this.getWordIndex()]).equals(
+          POS.VERB)) {
+        ref = wordBaseForm + ".v";
+      } else if (WSDHelper.getPOS(this.getPosTags()[this.getWordIndex()])
+          .equals(POS.NOUN)) {
+        ref = wordBaseForm + ".n";
+      } else if (WSDHelper.getPOS(this.getPosTags()[this.getWordIndex()])
+          .equals(POS.ADJECTIVE)) {
+        ref = wordBaseForm + ".a";
+      } else if (WSDHelper.getPOS(this.getPosTags()[this.getWordIndex()])
+          .equals(POS.ADVERB)) {
+        ref = wordBaseForm + ".r";
+      }
+    }
+
+    return ref;
+  }
+
+  
   public String[] getPosOfSurroundingWords() {
     return posOfSurroundingWords;
   }
@@ -104,25 +198,4 @@ public class WTDIMS extends WordToDisambiguate {
     this.features = features;
   }
 
-  public String getWordTag() {
-
-    String wordBaseForm = WSDHelper.getLemmatizer().lemmatize(this.getWord(),
-        this.getPosTag());
-
-    String ref = "";
-
-    if ((WSDHelper.getPOS(this.getPosTag()) != null)) {
-      if (WSDHelper.getPOS(this.getPosTag()).equals(POS.VERB)) {
-        ref = wordBaseForm + ".v";
-      } else if (WSDHelper.getPOS(this.getPosTag()).equals(POS.NOUN)) {
-        ref = wordBaseForm + ".n";
-      } else if (WSDHelper.getPOS(this.getPosTag()).equals(POS.ADJECTIVE)) {
-        ref = wordBaseForm + ".a";
-      } else if (WSDHelper.getPOS(this.getPosTag()).equals(POS.ADVERB)) {
-        ref = wordBaseForm + ".r";
-      }
-    }
-
-    return ref;
-  }
 }

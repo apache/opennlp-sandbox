@@ -31,7 +31,6 @@ import opennlp.tools.disambiguator.WSDisambiguator;
 import opennlp.tools.disambiguator.WordPOS;
 import opennlp.tools.disambiguator.WordSense;
 import opennlp.tools.disambiguator.mfs.MFS;
-import opennlp.tools.util.Span;
 import net.sf.extjwnl.JWNLException;
 import net.sf.extjwnl.data.Synset;
 import net.sf.extjwnl.data.Word;
@@ -44,7 +43,7 @@ import net.sf.extjwnl.data.Word;
  * the approach are included in this class.
  * 
  */
-public class Lesk implements WSDisambiguator {
+public class Lesk extends WSDisambiguator {
 
   /**
    * The lesk specific parameters
@@ -113,8 +112,12 @@ public class Lesk implements WSDisambiguator {
     ArrayList<SynNode> nodes = new ArrayList<SynNode>();
 
     for (int i = 0; i < sample.getSentence().length; i++) {
-      contextWords
-          .add(new WordPOS(sample.getSentence()[i], sample.getTags()[i]));
+      if (!WSDHelper.getStopCache().containsKey(sample.getSentence()[i])) {
+        if (WSDHelper.getRelvCache().containsKey(sample.getTags()[i])) {
+          contextWords.add(new WordPOS(sample.getSentence()[i], sample
+              .getTags()[i]));
+        }
+      }
     }
     for (Synset synset : synsets) {
       SynNode node = new SynNode(synset, contextWords);
@@ -158,8 +161,12 @@ public class Lesk implements WSDisambiguator {
     for (int i = index - getParams().win_b_size; i <= index
         + getParams().win_f_size; i++) {
       if (i >= 0 && i < sample.getSentence().length && i != index) {
-        contextWords.add(new WordPOS(sample.getSentence()[i],
-            sample.getTags()[i]));
+        if (!WSDHelper.getStopCache().containsKey(sample.getSentence()[i])) {
+          if (WSDHelper.getRelvCache().containsKey(sample.getTags()[i])) {
+            contextWords.add(new WordPOS(sample.getSentence()[i], sample
+                .getTags()[i]));
+          }
+        }
       }
     }
 
@@ -944,44 +951,18 @@ public class Lesk implements WSDisambiguator {
     return count;
   }
 
-  /**
-   * Disambiguates an ambiguous word in its context
-   * 
-   * @param tokenizedContext
-   * @param ambiguousTokenIndex
-   * @return array of sense indexes from WordNet ordered by their score. The
-   *         result format is <b>Source</b> <b>SenseID</b> If the input token is
-   *         non relevant a null is returned.
-   */
-  @Override
-  public String[] disambiguate(String[] tokenizedContext, String[] tokenTags,
-      int ambiguousTokenIndex, String ambiguousTokenLemma) {
-    return disambiguate(new WSDSample(tokenizedContext, tokenTags,
-        ambiguousTokenIndex, ambiguousTokenLemma));
-  }
-
-  /**
-   * Disambiguates an ambiguous word in its context The user can set a span of
-   * inputWords from the tokenized input
-   * 
-   * @param inputText
-   * @param inputWordSpans
-   * @return array of array of sense indexes from WordNet ordered by their
-   *         score. The result format is <b>Source</b> <b>SenseID</b> If the
-   *         input token is non relevant a null is returned.
-   */
-  @Override
-  public String[][] disambiguate(String[] tokenizedContext, String[] tokenTags,
-      Span ambiguousTokenSpan, String ambiguousTokenLemma) {
-    // TODO need to work on spans
-    return null;
-  }
-
   @Override
   public String[] disambiguate(WSDSample sample) {
-    // if the word is not relevant return null
-    if (!WSDHelper.isRelevant(sample.getTargetTag())) {
-      return null;
+    // if not relevant POS tag
+    if (!WSDHelper.isRelevantPOSTag(sample.getTargetTag())) {
+      if (WSDHelper.getNonRelevWordsDef(sample.getTargetTag()) != null) {
+        String s = WSDParameters.SenseSource.WSDHELPER.name() + " "
+            + sample.getTargetTag();
+        String[] sense = { s };
+        return sense;
+      } else {
+        return null;
+      }
     }
 
     ArrayList<WordSense> wsenses = null;
@@ -1020,7 +1001,8 @@ public class Lesk implements WSDisambiguator {
       for (int i = 0; i < wsenses.size(); i++) {
         synsetWords = wsenses.get(i).getNode().synset.getWords();
         for (Word synWord : synsetWords) {
-          if (synWord.getLemma().equals(sample.getTargetLemma())) {
+          if (synWord.getLemma().equals(
+              sample.getLemmas()[sample.getTargetPosition()])) {
             try {
               senseKey = synWord.getSenseKey();
             } catch (JWNLException e) {
@@ -1041,9 +1023,10 @@ public class Lesk implements WSDisambiguator {
   }
 
   @Override
-  public String[] disambiguate(String[] inputText, int inputWordIndex) {
-    // TODO Deprecate
-    return null;
+  public String[] disambiguate(String[] tokenizedContext, String[] tokenTags,
+      String[] lemmas, int ambiguousTokenIndex) {
+    return disambiguate(new WSDSample(tokenizedContext, tokenTags, lemmas,
+        ambiguousTokenIndex));
   }
 
 }

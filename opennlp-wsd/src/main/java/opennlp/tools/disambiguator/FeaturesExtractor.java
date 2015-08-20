@@ -21,12 +21,13 @@ package opennlp.tools.disambiguator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 
 import opennlp.tools.disambiguator.ims.WTDIMS;
 
 /**
  * Class for the extraction of features for the different Supervised
- * Disambiguation apporaches.<br>
+ * Disambiguation approaches.<br>
  * Each set of methods refer to one approach
  * <ul>
  * <li>IMS (It Makes Sense): check {@link https
@@ -52,17 +53,18 @@ public class FeaturesExtractor {
 
   // IMS
 
-  private String[] extractPosOfSurroundingWords(String[] sentence,
-      int wordIndex, int windowSize) {
+  private String[] extractPosOfSurroundingWords(WTDIMS wordToDisambiguate,
+      int windowSize) {
 
-    String[] taggedSentence = WSDHelper.getTagger().tag(sentence);
+    String[] taggedSentence = wordToDisambiguate.getPosTags();
 
     String[] tags = new String[2 * windowSize + 1];
 
     int j = 0;
 
-    for (int i = wordIndex - windowSize; i < wordIndex + windowSize; i++) {
-      if (i < 0 || i >= sentence.length) {
+    for (int i = wordToDisambiguate.getWordIndex() - windowSize; i < wordToDisambiguate
+        .getWordIndex() + windowSize; i++) {
+      if (i < 0 || i >= wordToDisambiguate.getSentence().length) {
         tags[j] = "null";
       } else {
         tags[j] = taggedSentence[i].toLowerCase();
@@ -73,33 +75,30 @@ public class FeaturesExtractor {
     return tags;
   }
 
-  private String[] extractSurroundingWords(String[] sentence, int wordIndex) {
-
-    String[] posTags = WSDHelper.getTagger().tag(sentence);
+  private String[] extractSurroundingWords(WTDIMS wordToDisambiguate) {
 
     ArrayList<String> contextWords = new ArrayList<String>();
 
-    for (int i = 0; i < sentence.length; i++) {
+    for (int i = 0; i < wordToDisambiguate.getSentence().length; i++) {
+      if (wordToDisambiguate.getLemmas() != null) {
+        if (!WSDHelper.stopWords.contains(wordToDisambiguate.getSentence()[i]
+            .toLowerCase()) && (wordToDisambiguate.getWordIndex() != i)) {
 
-      if (!WSDHelper.stopWords.contains(sentence[i].toLowerCase())
-          && (wordIndex != i)) {
+          String lemma = wordToDisambiguate.getLemmas()[i].toLowerCase()
+              .replaceAll("[^a-z_]", "").trim();
 
-        String word = sentence[i].toLowerCase().replaceAll("[^a-z]", "").trim();
+          if (lemma.length() > 1) {
+            contextWords.add(lemma);
+          }
 
-        // if (!word.equals("") /*&& Constants.isRelevant(posTags[i])*/) {
-        if (WSDHelper.getEnglishWords().containsKey(word)) {
-          String lemma = WSDHelper.getLemmatizer().lemmatize(word, posTags[i]);
-          contextWords.add(lemma);
         }
-
       }
     }
 
     return contextWords.toArray(new String[contextWords.size()]);
   }
 
-  private String[] extractLocalCollocations(String[] sentence, int wordIndex,
-      int ngram) {
+  private String[] extractLocalCollocations(WTDIMS wordToDisambiguate, int ngram) {
     /**
      * Here the author used only 11 features of this type. the range was set to
      * 3 (bigrams extracted in a way that they are at max separated by 1 word).
@@ -107,17 +106,22 @@ public class FeaturesExtractor {
 
     ArrayList<String> localCollocations = new ArrayList<String>();
 
-    for (int i = wordIndex - ngram; i <= wordIndex + ngram; i++) {
+    for (int i = wordToDisambiguate.getWordIndex() - ngram; i <= wordToDisambiguate
+        .getWordIndex() + ngram; i++) {
 
-      if (!(i < 0 || i > sentence.length - 3)) {
-        if ((i != wordIndex) && (i + 1 != wordIndex)
-            && (i + 1 < wordIndex + ngram)) {
-          String lc = (sentence[i] + " " + sentence[i + 1]).toLowerCase();
+      if (!(i < 0 || i > wordToDisambiguate.getSentence().length - 3)) {
+        if ((i != wordToDisambiguate.getWordIndex())
+            && (i + 1 != wordToDisambiguate.getWordIndex())
+            && (i + 1 < wordToDisambiguate.getWordIndex() + ngram)) {
+          String lc = (wordToDisambiguate.getSentence()[i] + " " + wordToDisambiguate
+              .getSentence()[i + 1]).toLowerCase();
           localCollocations.add(lc);
         }
-        if ((i != wordIndex) && (i + 2 != wordIndex)
-            && (i + 2 < wordIndex + ngram)) {
-          String lc = (sentence[i] + " " + sentence[i + 2]).toLowerCase();
+        if ((i != wordToDisambiguate.getWordIndex())
+            && (i + 2 != wordToDisambiguate.getWordIndex())
+            && (i + 2 < wordToDisambiguate.getWordIndex() + ngram)) {
+          String lc = (wordToDisambiguate.getSentence()[i] + " " + wordToDisambiguate
+              .getSentence()[i + 2]).toLowerCase();
           localCollocations.add(lc);
         }
       }
@@ -141,13 +145,20 @@ public class FeaturesExtractor {
    */
   public ArrayList<String> extractTrainingSurroundingWords(
       ArrayList<WTDIMS> trainingData) {
+    
+    HashMap<String, Object> words = new HashMap<String, Object>();
+    
+    for (WTDIMS word : trainingData) {
+      for (String sWord : word.getSurroundingWords()) {
+        if (!words.containsKey(sWord.toLowerCase()));
+        words.put(sWord.toLowerCase(), null);
+      }
+    }
 
     ArrayList<String> list = new ArrayList<String>();
 
-    for (WTDIMS word : trainingData) {
-      for (String sWord : word.getSurroundingWords()) {
-        list.add(sWord);
-      }
+    for (String word : words.keySet()) {
+        list.add(word);
     }
 
     return list;
@@ -158,7 +169,7 @@ public class FeaturesExtractor {
    * This method generates the different set of features related to the IMS
    * approach and store them in the corresponding attributes of the WTDIMS
    * 
-   * @param word
+   * @param wordToDisambiguate
    *          the word to disambiguate [object: WTDIMS]
    * @param windowSize
    *          the parameter required to generate the features qualified of
@@ -167,14 +178,15 @@ public class FeaturesExtractor {
    *          the parameter required to generate the features qualified of
    *          "Local Collocations"
    */
-  public void extractIMSFeatures(WTDIMS word, int windowSize, int ngram) {
+  public void extractIMSFeatures(WTDIMS wordToDisambiguate, int windowSize,
+      int ngram) {
 
-    word.setPosOfSurroundingWords(extractPosOfSurroundingWords(
-        word.getSentence(), word.getWordIndex(), windowSize));
-    word.setSurroundingWords(extractSurroundingWords(word.getSentence(),
-        word.getWordIndex()));
-    word.setLocalCollocations(extractLocalCollocations(word.getSentence(),
-        word.getWordIndex(), ngram));
+    wordToDisambiguate.setPosOfSurroundingWords(extractPosOfSurroundingWords(
+        wordToDisambiguate, windowSize));
+    wordToDisambiguate
+        .setSurroundingWords(extractSurroundingWords(wordToDisambiguate));
+    wordToDisambiguate.setLocalCollocations(extractLocalCollocations(
+        wordToDisambiguate, ngram));
 
   }
 

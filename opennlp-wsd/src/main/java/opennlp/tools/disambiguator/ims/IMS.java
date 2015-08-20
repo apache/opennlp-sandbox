@@ -46,13 +46,12 @@ import java.util.zip.GZIPInputStream;
 import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.ObjectStreamUtils;
-import opennlp.tools.util.Span;
 import opennlp.tools.util.TrainingParameters;
 import opennlp.tools.disambiguator.FeaturesExtractor;
+import opennlp.tools.disambiguator.WSDHelper;
 import opennlp.tools.disambiguator.WSDParameters;
 import opennlp.tools.disambiguator.WSDSample;
 import opennlp.tools.disambiguator.WSDisambiguator;
-import opennlp.tools.disambiguator.WordToDisambiguate;
 import opennlp.tools.disambiguator.datareader.SemcorReaderExtended;
 import opennlp.tools.disambiguator.datareader.SensevalReader;
 import opennlp.tools.disambiguator.mfs.MFS;
@@ -70,7 +69,7 @@ import opennlp.tools.disambiguator.mfs.MFS;
  * check {@link https://www.comp.nus.edu.sg/~nght/pubs/ims.pdf} for details
  * about this approach
  */
-public class IMS implements WSDisambiguator {
+public class IMS extends WSDisambiguator {
 
   public IMSParameters parameters;
 
@@ -244,8 +243,6 @@ public class IMS implements WSDisambiguator {
       e.printStackTrace();
     }
 
-    System.out.println("Done");
-
   }
 
   private void extractFeature(WTDIMS word) {
@@ -344,15 +341,15 @@ public class IMS implements WSDisambiguator {
   }
 
   /**
-   * The disambiguation method for a single word
+   * The disambiguation method for a single word, it requires as input one
+   * object of type WTDIMS
    * 
    * @param inputText
    *          : the text containing the word to disambiguate
    * @param inputWordIndex
    *          : the index of the word to disambiguate
    */
-  @Override
-  public String[] disambiguate(String[] inputText, int inputWordIndex) {
+  public String[] disambiguate(WTDIMS wordToDisambiguate) {
 
     String trainingDataDirectory = IMSParameters.trainingDataDirectory;
 
@@ -362,11 +359,10 @@ public class IMS implements WSDisambiguator {
       file.mkdirs();
     }
 
-    WTDIMS word = new WTDIMS(inputText, inputWordIndex);
-    fExtractor.extractIMSFeatures(word, this.parameters.getWindowSize(),
-        this.parameters.getNgram());
+    fExtractor.extractIMSFeatures(wordToDisambiguate,
+        this.parameters.getWindowSize(), this.parameters.getNgram());
 
-    String wordTag = word.getWordTag();
+    String wordTag = wordToDisambiguate.getWordTag();
 
     String wordTrainingbinFile = trainingDataDirectory + wordTag + ".gz";
 
@@ -378,10 +374,10 @@ public class IMS implements WSDisambiguator {
     if (bf.exists() && !bf.isDirectory()) {
       // If the trained model exists
       ArrayList<String> surrWords = getAllSurroundingWords(wordTag);
-      fExtractor.serializeIMSFeatures(word, surrWords);
+      fExtractor.serializeIMSFeatures(wordToDisambiguate, surrWords);
 
       loadedMaxentModel = load(wordTrainingbinFile);
-      String[] context = cg.getContext(word);
+      String[] context = cg.getContext(wordToDisambiguate);
 
       double[] outcomeProbs = loadedMaxentModel.eval(context);
       outcome = loadedMaxentModel.getBestOutcome(outcomeProbs);
@@ -389,10 +385,10 @@ public class IMS implements WSDisambiguator {
     } else {
       // Depending on the source, go fetch the training data
       ArrayList<WTDIMS> trainingInstances = new ArrayList<WTDIMS>();
-      switch (this.parameters.getSource().code) {
-      case 1: {
+      switch (this.parameters.getTrainingSource()) {
+      case SEMCOR: {
         SemcorReaderExtended sReader = new SemcorReaderExtended();
-        for (WordToDisambiguate ti : sReader.getSemcorData(wordTag)) {
+        for (WSDSample ti : sReader.getSemcorData(wordTag)) {
           WTDIMS imsIT = new WTDIMS(ti);
           extractFeature(imsIT);
           trainingInstances.add(imsIT);
@@ -400,17 +396,17 @@ public class IMS implements WSDisambiguator {
         break;
       }
 
-      case 2: {
+      case SEMEVAL: {
         SensevalReader sReader = new SensevalReader();
-        for (WordToDisambiguate ti : sReader.getSensevalData(wordTag)) {
-          WTDIMS imsIT = (WTDIMS) ti;
+        for (WSDSample ti : sReader.getSensevalData(wordTag)) {
+          WTDIMS imsIT = new WTDIMS(ti);
           extractFeature(imsIT);
           trainingInstances.add(imsIT);
         }
         break;
       }
 
-      case 3: {
+      case OTHER: {
         // TODO check the case when the user selects his own data set (make an
         // interface to collect training data)
         break;
@@ -423,11 +419,11 @@ public class IMS implements WSDisambiguator {
 
         ArrayList<String> surrWords = getAllSurroundingWords(wordTag);
 
-        fExtractor.serializeIMSFeatures(word, surrWords);
+        fExtractor.serializeIMSFeatures(wordToDisambiguate, surrWords);
 
         bf = new File(wordTrainingbinFile);
         loadedMaxentModel = load(wordTrainingbinFile);
-        String[] context = cg.getContext(word);
+        String[] context = cg.getContext(wordToDisambiguate);
 
         double[] outcomeProbs = loadedMaxentModel.eval(context);
         outcome = loadedMaxentModel.getBestOutcome(outcomeProbs);
@@ -437,11 +433,8 @@ public class IMS implements WSDisambiguator {
 
     if (!outcome.equals("")) {
 
-      // System.out.println("The sense is [" + outcome + "] : " /*+
-      // Loader.getDictionary().getWordBySenseKey(outcome.split("%")[1]).getSynset().getGloss()*/);
-
-      outcome = parameters.source.name() + " " + wordTag.split("\\.")[0] + "%"
-          + outcome;
+      outcome = parameters.getSenseSource().name() + " "
+          + wordTag.split("\\.")[0] + "%" + outcome;
 
       String[] s = { outcome };
 
@@ -449,29 +442,63 @@ public class IMS implements WSDisambiguator {
 
     } else {
       // if no training data exist
-      return MFS.getMostFrequentSense(word);
+      MFS mfs = new MFS();
+      return mfs.disambiguate(wordTag);
     }
 
   }
 
   @Override
-  public String[] disambiguate(String[] tokenizedContext, String[] tokenTags,
-      int ambiguousTokenIndex, String ambiguousTokenLemma) {
-    // TODO Update
-    return null;
-  }
-
-  @Override
-  public String[][] disambiguate(String[] tokenizedContext, String[] tokenTags,
-      Span ambiguousTokenIndexSpan, String ambiguousTokenLemma) {
-    // TODO Update
-    return null;
-  }
-
-  @Override
   public String[] disambiguate(WSDSample sample) {
-    // TODO Update
-    return null;
+    if (WSDHelper.isRelevantPOSTag(sample.getTargetTag())) {
+      WTDIMS wordToDisambiguate = new WTDIMS(sample);
+      return disambiguate(wordToDisambiguate);
+
+    } else {
+      if (WSDHelper.getNonRelevWordsDef(sample.getTargetTag()) != null) {
+        String s = IMSParameters.SenseSource.WSDHELPER.name() + " "
+            + sample.getTargetTag();
+        String[] sense = { s };
+        return sense;
+      } else {
+        return null;
+      }
+    }
+
+  }
+
+  /**
+   * The IMS disambiguation method for a single word
+   * 
+   * @param tokenizedContext
+   *          : the text containing the word to disambiguate
+   * @param tokenTags
+   *          : the tags corresponding to the context
+   * @param lemmas
+   *          : the lemmas of ALL the words in the context
+   * @param index
+   *          : the index of the word to disambiguate
+   * @return an array of the senses of the word to disambiguate
+   */
+  public String[] disambiguate(String[] tokenizedContext, String[] tokenTags,
+      String[] lemmas, int index) {
+
+    if (WSDHelper.isRelevantPOSTag(tokenTags[index])) {
+      WTDIMS wordToDisambiguate = new WTDIMS(tokenizedContext, tokenTags,
+          lemmas, index);
+      return disambiguate(wordToDisambiguate);
+
+    } else {
+      if (WSDHelper.getNonRelevWordsDef(tokenTags[index]) != null) {
+        String s = IMSParameters.SenseSource.WSDHELPER.name() + " "
+            + tokenTags[index];
+        String[] sense = { s };
+        return sense;
+      } else {
+        return null;
+      }
+    }
+
   }
 
 }

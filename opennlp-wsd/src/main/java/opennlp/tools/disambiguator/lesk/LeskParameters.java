@@ -37,7 +37,7 @@ public class LeskParameters extends WSDParameters {
 
   // DEFAULTS
   protected static final LESK_TYPE DFLT_LESK_TYPE = LESK_TYPE.LESK_EXT_EXP_CTXT;
-  protected static final Source DFLT_SOURCE = Source.WORDNET;
+  protected static final SenseSource DFLT_SOURCE = SenseSource.WORDNET;
   protected static final int DFLT_WIN_SIZE = 10;
   protected static final int DFLT_DEPTH = 1;
   protected static final double DFLT_DEPTH_WEIGHT = 0.8;
@@ -46,7 +46,7 @@ public class LeskParameters extends WSDParameters {
 
   protected LESK_TYPE leskType;
 
-  protected Source source;
+  protected SenseSource source;
   protected int win_f_size;
   protected int win_b_size;
   protected int depth;

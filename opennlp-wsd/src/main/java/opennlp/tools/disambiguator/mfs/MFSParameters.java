@@ -27,22 +27,22 @@ public class MFSParameters extends WSDParameters {
 
   public MFSParameters() {
     this.isCoarseSense = false;
-    this.source = Source.WORDNET;
+    this.source = SenseSource.WORDNET;
   }
 
-  protected Source source;
+  protected SenseSource source;
 
-  public Source getSource() {
+  public SenseSource getSource() {
     return source;
   }
 
-  public void setSource(Source source) {
+  public void setSource(SenseSource source) {
     this.source = source;
   }
 
   @Override
   public boolean isValid() {
-    return EnumUtils.isValidEnum(Source.class, source.name());
+    return EnumUtils.isValidEnum(SenseSource.class, source.name());
   }
 
 }

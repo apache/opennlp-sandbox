@@ -20,6 +20,7 @@
 package opennlp.tools.disambiguator.contextclustering;
 
 import java.security.InvalidParameterException;
+import java.util.List;
 
 import opennlp.tools.disambiguator.WSDParameters;
 import opennlp.tools.disambiguator.WSDSample;
@@ -32,7 +33,7 @@ import opennlp.tools.util.Span;
  * 
  * This implementation is based on {@link http://nlp.cs.rpi.edu/paper/wsd.pdf}
  */
-public class ContextClusterer implements WSDisambiguator {
+public class ContextClusterer extends WSDisambiguator {
 
   protected ContextClustererParameters params;
 
@@ -56,14 +57,7 @@ public class ContextClusterer implements WSDisambiguator {
 
   @Override
   public String[] disambiguate(String[] tokenizedContext, String[] tokenTags,
-      int ambiguousTokenIndex, String ambiguousTokenLemma) {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public String[][] disambiguate(String[] tokenizedContext, String[] tokenTags,
-      Span ambiguousTokenIndexSpan, String ambiguousTokenLemma) {
+      String[] lemmas, int ambiguousTokenIndex) {
     // TODO Auto-generated method stub
     return null;
   }
@@ -74,10 +68,6 @@ public class ContextClusterer implements WSDisambiguator {
     return null;
   }
 
-  @Override
-  public String[] disambiguate(String[] inputText, int inputWordIndex) {
-    // TODO Auto-generated method stub
-    return null;
-  }
+
 
 }

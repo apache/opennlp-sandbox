@@ -33,10 +33,9 @@ import net.sf.extjwnl.data.Synset;
 public class WordPOS {
 
   private String word;
-  private List stems;
+  private List<String> stems;
   private POS pos;
   private String posTag;
-  private int wordIndex;
   public boolean isTarget = false;
 
   public WordPOS(String word, String tag) throws IllegalArgumentException {
@@ -68,7 +67,7 @@ public class WordPOS {
     return posTag;
   }
 
-  public List getStems() {
+  public List<String> getStems() {
     if (stems == null) {
       return WSDHelper.Stem(this);
     } else {
@@ -99,8 +98,8 @@ public class WordPOS {
   // uses Stemming to check if two words are equivalent
   public boolean isStemEquivalent(WordPOS wordToCompare) {
     // check if there is intersection in the stems;
-    List originalList = this.getStems();
-    List listToCompare = wordToCompare.getStems();
+    List<String> originalList = this.getStems();
+    List<String> listToCompare = wordToCompare.getStems();
 
     if (originalList == null || listToCompare == null) {
       return false;
@@ -116,18 +115,6 @@ public class WordPOS {
       return !Collections.disjoint(originalList, listToCompare);
     }
 
-  }
-
-  // uses Lemma to check if two words are equivalent
-  public boolean isLemmaEquivalent(WordPOS wordToCompare) {
-
-    ArrayList<String> lemmas_word = new ArrayList();
-    ArrayList<String> lemmas_wordToCompare = new ArrayList();
-
-    for (String pos : WSDHelper.allPOS) {
-      WSDHelper.getLemmatizer().lemmatize(wordToCompare.getWord(), pos);
-    }
-    return false;
   }
 
 }

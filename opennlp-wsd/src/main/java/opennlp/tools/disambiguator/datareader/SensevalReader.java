@@ -36,8 +36,8 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import opennlp.tools.disambiguator.WordToDisambiguate;
-import opennlp.tools.disambiguator.ims.WTDIMS;
+import opennlp.tools.disambiguator.WSDHelper;
+import opennlp.tools.disambiguator.WSDSample;
 
 /**
  * This class handles the extraction of Senseval-3 data from the different files
@@ -51,19 +51,6 @@ public class SensevalReader {
   protected String data = sensevalDirectory + "EnglishLS.train";
   protected String sensemapFile = sensevalDirectory + "EnglishLS.sensemap";
   protected String wordList = sensevalDirectory + "EnglishLS.train.key";
-
-  // protected String dict = sensevalDirectory + "EnglishLS.dictionary.xml";
-  // protected String map = sensevalDirectory + "EnglishLS.sensemap";
-
-  /**
-   * The XML file of Senseval presents some issues that need to be fixed first
-   */
-  private String fixXmlFile() {
-
-    // TODO fix this !
-
-    return null;
-  }
 
   public SensevalReader() {
     super();
@@ -157,9 +144,9 @@ public class SensevalReader {
    * @return the list of the {@link WordToDisambiguate} instances of the word to
    *         disambiguate
    */
-  public ArrayList<WordToDisambiguate> getSensevalData(String wordTag) {
+  public ArrayList<WSDSample> getSensevalData(String wordTag) {
 
-    ArrayList<WordToDisambiguate> setInstances = new ArrayList<WordToDisambiguate>();
+    ArrayList<WSDSample> setInstances = new ArrayList<WSDSample>();
 
     try {
 
@@ -188,28 +175,7 @@ public class SensevalReader {
               Node nInstance = nInstances.item(j);
 
               if (nInstance.getNodeType() == Node.ELEMENT_NODE) {
-
-                Element eInstance = (Element) nInstance;
-
-                String[] wordPos = eLexelt.getAttribute("item").split("\\.");
-                String word = wordPos[0]; // Word
-                String tag; // Part of Speech
-
-                if (wordPos[1].equals("n")) {
-                  tag = "noun";
-                } else if (wordPos[1].equals("v")) {
-                  tag = "verb";
-                } else if (wordPos[1].equals("a")) {
-                  tag = "adjective";
-                } else {
-                  tag = "adverb";
-                }
-
-                String id = eInstance.getAttribute("id");
-                String source = eInstance.getAttribute("docsrc");
-
-                ArrayList<String> answers = new ArrayList<String>();
-                String sentence = "";
+                ArrayList<String> senseIDs = new ArrayList<String>();
                 String rawWord = "";
                 String[] finalText = null;
                 int index = 0;
@@ -227,11 +193,10 @@ public class SensevalReader {
 
                     String temp = senseid;
                     // String[] temp = { answer, senseid };
-                    answers.add(temp);
+                    senseIDs.add(temp);
                   }
 
                   if (nChild.getNodeName().equals("context")) {
-                    sentence = ((Element) nChild).getTextContent();
 
                     if (nChild.hasChildNodes()) {
                       String textBefore = nChild.getChildNodes().item(0)
@@ -272,9 +237,19 @@ public class SensevalReader {
 
                 }
 
-                WTDIMS wordToDisambiguate = new WTDIMS(finalText, index,
-                    answers);
-                setInstances.add(wordToDisambiguate);
+                String[] words = finalText;
+                String[] tags = WSDHelper.getTagger().tag(words);
+                String[] lemmas = new String[words.length];
+
+                for (int k = 0; k < words.length; k++) {
+                  lemmas[k] = WSDHelper.getLemmatizer().lemmatize(words[k],
+                      tags[k]);
+                }
+
+                WSDSample wtd = new WSDSample(words, tags, lemmas, index,
+                    senseIDs);
+                setInstances.add(wtd);
+
               }
             }
 

@@ -32,67 +32,49 @@ public class WSDSample {
 
   private List<String> sentence;
   private List<String> tags;
+  private List<String> lemmas;
   private int senseID;
   private List<String> senseIDs;
   private int targetPosition;
-  private String targetLemma;
 
-  public WSDSample(String sentence[], String tags[], int targetPosition,
-      String targetLemma, int senseID) {
+  public WSDSample(String sentence[], String tags[], String[] lemmas,
+      int targetPosition, int senseID) {
     this.sentence = Collections.unmodifiableList(new ArrayList<String>(Arrays
         .asList(sentence)));
     this.tags = Collections.unmodifiableList(new ArrayList<String>(Arrays
         .asList(tags)));
     this.targetPosition = targetPosition;
-    this.targetLemma = targetLemma;
+    this.lemmas = Collections.unmodifiableList(new ArrayList<String>(Arrays
+        .asList(lemmas)));
+    ;
     this.senseID = senseID;
     checkArguments();
   }
 
-  public WSDSample(String sentence[], String tags[], int targetPosition,
-      String targetLemma, String senseIDs[]) {
+  public WSDSample(String sentence[], String tags[], String[] lemmas,
+      int targetPosition) {
     this.sentence = Collections.unmodifiableList(new ArrayList<String>(Arrays
         .asList(sentence)));
     this.tags = Collections.unmodifiableList(new ArrayList<String>(Arrays
         .asList(tags)));
     this.targetPosition = targetPosition;
-    this.targetLemma = targetLemma;
-    this.senseIDs = Collections.unmodifiableList(new ArrayList<String>(Arrays
-        .asList(senseIDs)));
+    this.lemmas = Collections.unmodifiableList(new ArrayList<String>(Arrays
+        .asList(lemmas)));
     ;
     checkArguments();
   }
-
-  public WSDSample(List<String> sentence, List<String> tags,
-      int targetPosition, String targetLemma, int senseID) {
-    this.sentence = Collections
-        .unmodifiableList(new ArrayList<String>(sentence));
-    this.tags = Collections.unmodifiableList(new ArrayList<String>(tags));
+  
+  public WSDSample(String sentence[], String tags[], String[] lemmas,
+      int targetPosition, List<String> senseIDs) {
+    this.sentence = Collections.unmodifiableList(new ArrayList<String>(Arrays
+        .asList(sentence)));
+    this.tags = Collections.unmodifiableList(new ArrayList<String>(Arrays
+        .asList(tags)));
     this.targetPosition = targetPosition;
-    this.targetLemma = targetLemma;
-    this.senseID = senseID;
-    checkArguments();
-  }
-
-  public WSDSample(List<String> sentence, List<String> tags,
-      int targetPosition, String targetLemma, List<String> senseIDs) {
-    this.sentence = Collections
-        .unmodifiableList(new ArrayList<String>(sentence));
-    this.tags = Collections.unmodifiableList(new ArrayList<String>(tags));
-    this.targetPosition = targetPosition;
-    this.targetLemma = targetLemma;
+    this.lemmas = Collections.unmodifiableList(new ArrayList<String>(Arrays
+        .asList(lemmas)));
     this.senseIDs = senseIDs;
     checkArguments();
-  }
-
-  public WSDSample(String sentence[], String tags[], int targetPosition,
-      String targetLemma) {
-    this(sentence, tags, targetPosition, targetLemma, -1);
-  }
-
-  public WSDSample(List<String> sentence, List<String> tags,
-      int targetPosition, String targetLemma) {
-    this(sentence, tags, targetPosition, targetLemma, -1);
   }
 
   private void checkArguments() {
@@ -111,6 +93,10 @@ public class WSDSample {
 
   public String[] getTags() {
     return tags.toArray(new String[tags.size()]);
+  }
+
+  public String[] getLemmas() {
+    return lemmas.toArray(new String[lemmas.size()]);
   }
 
   public int getTargetPosition() {
@@ -133,16 +119,16 @@ public class WSDSample {
     return tags.get(targetPosition);
   }
 
-  public String getTargetLemma() {
-    return targetLemma;
-  }
-
   public void setSentence(List<String> sentence) {
     this.sentence = sentence;
   }
 
   public void setTags(List<String> tags) {
     this.tags = tags;
+  }
+
+  public void setLemmas(List<String> lemmas) {
+    this.lemmas = lemmas;
   }
 
   public void setSenseID(int senseID) {
@@ -155,10 +141,6 @@ public class WSDSample {
 
   public void setTargetPosition(int targetPosition) {
     this.targetPosition = targetPosition;
-  }
-
-  public void setTargetLemma(String targetLemma) {
-    this.targetLemma = targetLemma;
   }
 
   @Override
@@ -192,11 +174,11 @@ public class WSDSample {
     String tokenTags[] = WhitespaceTokenizer.INSTANCE.tokenize(sentenceString);
 
     int position = Integer.parseInt(tokenTags[0]);
-    String lemma = tokenTags[1];
-    String sentence[] = new String[tokenTags.length - 2];
-    String tags[] = new String[tokenTags.length - 2];
+    String sentence[] = new String[tokenTags.length - 1];
+    String tags[] = new String[tokenTags.length - 1];
+    String lemmas[] = new String[tokenTags.length - 1];
 
-    for (int i = 2; i < tokenTags.length; i++) {
+    for (int i = 1; i < tokenTags.length; i++) {
       int split = tokenTags[i].lastIndexOf("_");
 
       if (split == -1) {
@@ -205,9 +187,10 @@ public class WSDSample {
 
       sentence[i] = tokenTags[i].substring(0, split);
       tags[i] = tokenTags[i].substring(split + 1);
+      lemmas[i] = tokenTags[i].substring(split + 2);
     }
 
-    return new WSDSample(sentence, tags, position, lemma);
+    return new WSDSample(sentence, tags, lemmas, position);
   }
 
   @Override

@@ -29,22 +29,9 @@ import opennlp.tools.disambiguator.WSDParameters;
  */
 public class IMSParameters extends WSDParameters {
 
-  public static enum Source {
-    SEMCOR(1, "semcor"), SEMEVAL(2, "semeval"), OTHER(3, "other");
-
-    public int code;
-    public String src;
-
-    private Source(int code, String src) {
-      this.code = code;
-      this.src = src;
-    }
-  }
-
   protected String languageCode;
   protected int windowSize;
   protected int ngram;
-  protected Source source;
 
   public static final String resourcesFolder = "src\\test\\resources\\";
   public static final String trainingDataDirectory = resourcesFolder
@@ -63,12 +50,13 @@ public class IMSParameters extends WSDParameters {
    * @param source
    *          the source of the training data
    */
-  public IMSParameters(int windowSize, int ngram, Source source) {
-    super();
+  public IMSParameters(int windowSize, int ngram,
+      TrainingSource trainingSource, SenseSource senseSource) {
     this.languageCode = "En";
     this.windowSize = windowSize;
     this.ngram = ngram;
-    this.source = source;
+    this.trainingSource = trainingSource;
+    this.senseSource = senseSource;
     this.isCoarseSense = false;
 
     File folder = new File(trainingDataDirectory);
@@ -77,15 +65,15 @@ public class IMSParameters extends WSDParameters {
   }
 
   public IMSParameters() {
-    this(3, 2, Source.SEMCOR);
+    this(3, 2, TrainingSource.SEMCOR, SenseSource.WORDNET);
   }
 
-  public IMSParameters(Source source) {
-    this(3, 2, source);
+  public IMSParameters(TrainingSource source) {
+    this(3, 2, source, SenseSource.WORDNET);
   }
 
   public IMSParameters(int windowSize, int ngram) {
-    this(windowSize, ngram, Source.SEMCOR);
+    this(windowSize, ngram, TrainingSource.SEMCOR, SenseSource.WORDNET);
   }
 
   public String getLanguageCode() {
@@ -110,14 +98,6 @@ public class IMSParameters extends WSDParameters {
 
   public void setNgram(int ngram) {
     this.ngram = ngram;
-  }
-
-  public Source getSource() {
-    return source;
-  }
-
-  public void setSource(Source source) {
-    this.source = source;
   }
 
   void init() {

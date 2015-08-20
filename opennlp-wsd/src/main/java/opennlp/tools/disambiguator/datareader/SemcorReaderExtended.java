@@ -25,7 +25,8 @@ import java.util.ArrayList;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import opennlp.tools.disambiguator.WordToDisambiguate;
+import opennlp.tools.disambiguator.WSDHelper;
+import opennlp.tools.disambiguator.WSDSample;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -175,10 +176,10 @@ public class SemcorReaderExtended {
     return result;
   }
 
-  public ArrayList<WordToDisambiguate> getSemcorOneFileData(String file,
+  public ArrayList<WSDSample> getSemcorOneFileData(String file,
       String wordTag) {
 
-    ArrayList<WordToDisambiguate> setInstances = new ArrayList<WordToDisambiguate>();
+    ArrayList<WSDSample> setInstances = new ArrayList<WSDSample>();
 
     try {
 
@@ -223,8 +224,15 @@ public class SemcorReaderExtended {
             }
 
             if (!senses.isEmpty()) {
-              WordToDisambiguate wtd = new WordToDisambiguate(
-                  sentence.split("\\s"), index, senses);
+              String[] words = sentence.split("\\s");
+              String[] tags = WSDHelper.getTagger().tag(words);
+              String[] lemmas = new String[words.length];
+              
+              for (int i = 0; i < words.length; i++) {
+                lemmas[i] = WSDHelper.getLemmatizer().lemmatize(words[i], tags[i]);
+              }
+              
+              WSDSample wtd = new WSDSample(words, tags, lemmas, index, senses);
               setInstances.add(wtd);
             }
 
@@ -253,10 +261,9 @@ public class SemcorReaderExtended {
    *          The word, of which we are looking for the instances
    * @return the list of the {@link WordToDisambiguate} instances
    */
-  public ArrayList<WordToDisambiguate> getSemcorFolderData(String folder,
-      String wordTag) {
+  public ArrayList<WSDSample> getSemcorFolderData(String folder, String wordTag) {
 
-    ArrayList<WordToDisambiguate> result = new ArrayList<WordToDisambiguate>();
+    ArrayList<WSDSample> result = new ArrayList<WSDSample>();
 
     String directory = path + folder + tagfiles;
     File tempFolder = new File(directory);
@@ -266,7 +273,7 @@ public class SemcorReaderExtended {
       listOfFiles = tempFolder.listFiles();
       for (File file : listOfFiles) {
 
-        ArrayList<WordToDisambiguate> list = getSemcorOneFileData(directory
+        ArrayList<WSDSample> list = getSemcorOneFileData(directory
             + file.getName(), wordTag);
         result.addAll(list);
       }
@@ -285,12 +292,12 @@ public class SemcorReaderExtended {
    * @return the list of the {@link WordToDisambiguate} instances of the word to
    *         disambiguate
    */
-  public ArrayList<WordToDisambiguate> getSemcorData(String wordTag) {
+  public ArrayList<WSDSample> getSemcorData(String wordTag) {
 
-    ArrayList<WordToDisambiguate> result = new ArrayList<WordToDisambiguate>();
+    ArrayList<WSDSample> result = new ArrayList<WSDSample>();
 
     for (String folder : folders) {
-      ArrayList<WordToDisambiguate> list = getSemcorFolderData(folder, wordTag);
+      ArrayList<WSDSample> list = getSemcorFolderData(folder, wordTag);
       result.addAll(list);
     }
 

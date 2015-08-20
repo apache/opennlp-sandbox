@@ -39,11 +39,10 @@ public class IMSEvaluatorTest {
     WSDHelper.print("Evaluation Started");
 
     String modelsDir = "src\\test\\resources\\models\\";
-    WSDHelper.loadTokenizer(modelsDir+"en-token.bin");
-    WSDHelper.loadLemmatizer(modelsDir+"en-lemmatizer.dict");
-    WSDHelper.loadTagger(modelsDir+"en-pos-maxent.bin");
-    
-    
+    WSDHelper.loadTokenizer(modelsDir + "en-token.bin");
+    WSDHelper.loadLemmatizer(modelsDir + "en-lemmatizer.dict");
+    WSDHelper.loadTagger(modelsDir + "en-pos-maxent.bin");
+
     IMS ims = new IMS();
     IMSParameters imsParams = new IMSParameters();
     ims.setParams(imsParams);
@@ -56,7 +55,7 @@ public class IMSEvaluatorTest {
       // don't take verbs because they are not from WordNet
       if (!word.split("\\.")[1].equals("v")) {
 
-        ArrayList<WSDSample> instances = getTestData(word);
+        ArrayList<WSDSample> instances = seReader.getSensevalData(word);
         if (instances != null) {
           WSDHelper.print("------------------" + word + "------------------");
           for (WSDSample instance : instances) {
@@ -74,59 +73,4 @@ public class IMSEvaluatorTest {
     }
 
   }
-
-  /**
-   * For a specific word, return the Semeval3 corresponding instances in form of
-   * {@link WSDIMS}
-   * 
-   * @param wordTag
-   *          the word of which the instances are to be collected. wordTag has
-   *          to be in the format "word.POS" (e.g., "activate.v", "smart.a",
-   *          etc.)
-   * @return list of {@link WSDIMS} instances of the wordTag
-   */
-  @Deprecated
-  protected static ArrayList<WTDIMS> getTestDataOld(String wordTag) {
-
-    ArrayList<WTDIMS> instances = new ArrayList<WTDIMS>();
-    for (WordToDisambiguate wtd : seReader.getSensevalData(wordTag)) {
-      WTDIMS wtdims = new WTDIMS(wtd);
-      instances.add(wtdims);
-    }
-
-    return instances;
-  }
-  
-  protected static ArrayList<WSDSample> getTestData(String wordTag) {
-
-    ArrayList<WSDSample> instances = new ArrayList<WSDSample>();
-    for (WordToDisambiguate wtd : seReader.getSensevalData(wordTag)) {
-      List<WordPOS> words = WSDHelper.getAllRelevantWords(wtd);
-      int targetWordIndex=0;
-      for (int i=0; i<words.size();i++){
-        if(words.get(i).isTarget){
-          targetWordIndex = i;
-        }   
-      }
-      String[] tags = new String[words.size()];
-      String[] tokens = new String[words.size()];
-      for (int i=0;i<words.size();i++){
-        tags[i] = words.get(i).getPosTag();
-        tokens[i] = words.get(i).getWord();
-      }
-      String targetLemma = WSDHelper.getLemmatizer().lemmatize(
-          tokens[targetWordIndex], tags[targetWordIndex]);
-      
-      WSDSample sample = new WSDSample(tokens,tags,targetWordIndex,targetLemma);
-      sample.setSenseIDs(wtd.getSenseIDs());
-      if (sample != null) {
-        if (sample.getSenseIDs().get(0) != null
-            && !sample.getSenseIDs().get(0).equalsIgnoreCase("U")) {
-          instances.add(sample);
-        }
-      }
-    }
-    return instances;
-  }
-
 }
