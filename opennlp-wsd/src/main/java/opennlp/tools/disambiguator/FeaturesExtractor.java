@@ -145,12 +145,13 @@ public class FeaturesExtractor {
    */
   public ArrayList<String> extractTrainingSurroundingWords(
       ArrayList<WTDIMS> trainingData) {
-    
+
     HashMap<String, Object> words = new HashMap<String, Object>();
-    
+
     for (WTDIMS word : trainingData) {
       for (String sWord : word.getSurroundingWords()) {
-        if (!words.containsKey(sWord.toLowerCase()));
+        if (!words.containsKey(sWord.toLowerCase()))
+          ;
         words.put(sWord.toLowerCase(), null);
       }
     }
@@ -158,7 +159,7 @@ public class FeaturesExtractor {
     ArrayList<String> list = new ArrayList<String>();
 
     for (String word : words.keySet()) {
-        list.add(word);
+      list.add(word);
     }
 
     return list;

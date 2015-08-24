@@ -60,12 +60,12 @@ public class WSDEvaluator extends Evaluator<WSDSample> {
 
     // get the best predicted sense
     String predictedSense = disambiguator.disambiguate(reference.getSentence(),
-        reference.getTags(),
-        reference.getLemmas(), reference.getTargetPosition())[0];
+        reference.getTags(), reference.getLemmas(),
+        reference.getTargetPosition())[0];
 
     if (predictedSense == null) {
-      System.out.println("There was no sense for : " + reference.getTargetWord());
-      accuracy.add(0);
+      System.out.println("There was no sense for : "
+          + reference.getTargetWord());
       return null;
     }
     // get the senseKey from the result
@@ -94,8 +94,8 @@ public class WSDEvaluator extends Evaluator<WSDSample> {
       }
     }
 
-    return new WSDSample(reference.getSentence(), reference.getTags(), reference.getLemmas(),
-        reference.getTargetPosition());
+    return new WSDSample(reference.getSentence(), reference.getTags(),
+        reference.getLemmas(), reference.getTargetPosition());
   }
 
   /**

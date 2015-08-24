@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 
 import net.sf.extjwnl.JWNLException;
+import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.data.Synset;
 import net.sf.extjwnl.dictionary.Dictionary;
 import opennlp.tools.tokenize.WhitespaceTokenizer;
@@ -63,7 +64,7 @@ public class WSDSample {
     ;
     checkArguments();
   }
-  
+
   public WSDSample(String sentence[], String tags[], String[] lemmas,
       int targetPosition, List<String> senseIDs) {
     this.sentence = Collections.unmodifiableList(new ArrayList<String>(Arrays
@@ -220,4 +221,26 @@ public class WSDSample {
     }
     return null;
   }
+
+  public String getTargetWordTag() {
+
+    String wordBaseForm = this.getLemmas()[this.getTargetPosition()];
+
+    String ref = "";
+
+    if ((WSDHelper.getPOS(this.getTargetTag()) != null)) {
+      if (WSDHelper.getPOS(this.getTargetTag()).equals(POS.VERB)) {
+        ref = wordBaseForm + ".v";
+      } else if (WSDHelper.getPOS(this.getTargetTag()).equals(POS.NOUN)) {
+        ref = wordBaseForm + ".n";
+      } else if (WSDHelper.getPOS(this.getTargetTag()).equals(POS.ADJECTIVE)) {
+        ref = wordBaseForm + ".a";
+      } else if (WSDHelper.getPOS(this.getTargetTag()).equals(POS.ADVERB)) {
+        ref = wordBaseForm + ".r";
+      }
+    }
+
+    return ref;
+  }
+
 }

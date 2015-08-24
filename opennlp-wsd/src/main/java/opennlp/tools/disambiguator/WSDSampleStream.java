@@ -29,13 +29,16 @@ import opennlp.tools.util.PlainTextByLineStream;
 
 public class WSDSampleStream extends FilterObjectStream<String, WSDSample> {
 
-  private static Logger logger = Logger.getLogger(WSDSampleStream.class.getName());
+  private static Logger logger = Logger.getLogger(WSDSampleStream.class
+      .getName());
 
   /**
    * Initializes the current instance.
    *
-   * @param sentences reader with sentences
-   * @throws IOException IOException
+   * @param sentences
+   *          reader with sentences
+   * @throws IOException
+   *           IOException
    */
   public WSDSampleStream(Reader sentences) throws IOException {
     super(new PlainTextByLineStream(sentences));
@@ -46,12 +49,11 @@ public class WSDSampleStream extends FilterObjectStream<String, WSDSample> {
   }
 
   /**
-   * Parses the next sentence and return the next
-   * {@link WSDSample} object.
+   * Parses the next sentence and return the next {@link WSDSample} object.
    *
-   * If an error occurs an empty {@link WSDSample} object is returned
-   * and an warning message is logged. Usually it does not matter if one
-   * of many sentences is ignored.
+   * If an error occurs an empty {@link WSDSample} object is returned and an
+   * warning message is logged. Usually it does not matter if one of many
+   * sentences is ignored.
    *
    * TODO: An exception in error case should be thrown.
    */
@@ -66,15 +68,15 @@ public class WSDSampleStream extends FilterObjectStream<String, WSDSample> {
       } catch (InvalidFormatException e) {
 
         if (logger.isLoggable(Level.WARNING)) {
-          logger.warning("Error during parsing, ignoring sentence: " + sentence);
+          logger
+              .warning("Error during parsing, ignoring sentence: " + sentence);
         }
 
         sample = null;// new WSDSample(new String[]{}, new String[]{},0);
       }
 
       return sample;
-    }
-    else {
+    } else {
       // sentences stream is exhausted
       return null;
     }

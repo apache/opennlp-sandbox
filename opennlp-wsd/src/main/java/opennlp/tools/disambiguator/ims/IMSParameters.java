@@ -33,9 +33,7 @@ public class IMSParameters extends WSDParameters {
   protected int windowSize;
   protected int ngram;
 
-  public static final String resourcesFolder = "src\\test\\resources\\";
-  public static final String trainingDataDirectory = resourcesFolder
-      + "supervised\\models\\";
+  protected String trainingDataDirectory;
 
   /**
    * This constructor takes only two parameters. The default language used is
@@ -50,13 +48,13 @@ public class IMSParameters extends WSDParameters {
    * @param source
    *          the source of the training data
    */
-  public IMSParameters(int windowSize, int ngram,
-      TrainingSource trainingSource, SenseSource senseSource) {
+  public IMSParameters(int windowSize, int ngram, SenseSource senseSource,
+      String trainingDataDirectory) {
     this.languageCode = "En";
     this.windowSize = windowSize;
     this.ngram = ngram;
-    this.trainingSource = trainingSource;
     this.senseSource = senseSource;
+    this.trainingDataDirectory = trainingDataDirectory;
     this.isCoarseSense = false;
 
     File folder = new File(trainingDataDirectory);
@@ -64,16 +62,20 @@ public class IMSParameters extends WSDParameters {
       folder.mkdirs();
   }
 
-  public IMSParameters() {
-    this(3, 2, TrainingSource.SEMCOR, SenseSource.WORDNET);
+  public IMSParameters(String trainingDataDirectory) {
+    this(3, 2, SenseSource.WORDNET, trainingDataDirectory);
+
+    File folder = new File(trainingDataDirectory);
+    if (!folder.exists())
+      folder.mkdirs();
   }
 
-  public IMSParameters(TrainingSource source) {
-    this(3, 2, source, SenseSource.WORDNET);
+  public IMSParameters() {
+    this(3, 2, SenseSource.WORDNET, null);
   }
 
   public IMSParameters(int windowSize, int ngram) {
-    this(windowSize, ngram, TrainingSource.SEMCOR, SenseSource.WORDNET);
+    this(windowSize, ngram, SenseSource.WORDNET, null);
   }
 
   public String getLanguageCode() {
@@ -109,6 +111,14 @@ public class IMSParameters extends WSDParameters {
   public IMSContextGenerator createContextGenerator() {
 
     return new DefaultIMSContextGenerator();
+  }
+
+  public String getTrainingDataDirectory() {
+    return trainingDataDirectory;
+  }
+
+  public void setTrainingDataDirectory(String trainingDataDirectory) {
+    this.trainingDataDirectory = trainingDataDirectory;
   }
 
   @Override

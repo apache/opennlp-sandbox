@@ -28,16 +28,11 @@ public abstract class WSDParameters {
   protected boolean isCoarseSense;
   public static boolean isStemCompare;
 
-  public static enum TrainingSource {
-    SEMCOR, SEMEVAL, OTHER
-  }
-
   public static enum SenseSource {
     WORDNET, WSDHELPER, OTHER;
   }
 
   protected SenseSource senseSource;
-  protected TrainingSource trainingSource;
 
   /**
    * @return if the disambiguation type is coarse grained or fine grained
@@ -64,14 +59,6 @@ public abstract class WSDParameters {
 
   public void setSenseSource(SenseSource senseSource) {
     this.senseSource = senseSource;
-  }
-
-  public TrainingSource getTrainingSource() {
-    return trainingSource;
-  }
-
-  public void setTrainingSource(TrainingSource trainingSource) {
-    this.trainingSource = trainingSource;
   }
 
   public WSDParameters() {

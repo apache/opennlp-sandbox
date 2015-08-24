@@ -21,9 +21,10 @@ package opennlp.tools.disambiguator.ims;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.HashSet;
 
-import opennlp.tools.disambiguator.FeaturesExtractor;
+import opennlp.tools.disambiguator.WSDHelper;
+import opennlp.tools.disambiguator.WSDSample;
 import opennlp.tools.disambiguator.ims.WTDIMS;
 
 /**
@@ -31,9 +32,79 @@ import opennlp.tools.disambiguator.ims.WTDIMS;
  */
 public class DefaultIMSContextGenerator implements IMSContextGenerator {
 
-  FeaturesExtractor fExtractor = new FeaturesExtractor();
-
   public DefaultIMSContextGenerator() {
+  }
+
+  private String[] extractPosOfSurroundingWords(int index, String[] tags,
+      int windowSize) {
+
+    String[] windowTags = new String[2 * windowSize + 1];
+
+    int j = 0;
+
+    for (int i = index - windowSize; i < index + windowSize; i++) {
+      if (i < 0 || i >= tags.length) {
+        windowTags[j] = "null";
+      } else {
+        windowTags[j] = tags[i].toLowerCase();
+      }
+      j++;
+    }
+
+    return windowTags;
+  }
+
+  public String[] extractSurroundingWords(int index, String[] toks,
+      String[] lemmas) {
+
+    ArrayList<String> contextWords = new ArrayList<String>();
+
+    for (int i = 0; i < toks.length; i++) {
+      if (lemmas != null) {
+        if (!WSDHelper.stopWords.contains(toks[i].toLowerCase())
+            && (index != i)) {
+
+          String lemma = lemmas[i].toLowerCase().replaceAll("[^a-z_]", "")
+              .trim();
+
+          if (lemma.length() > 1) {
+            contextWords.add(lemma);
+          }
+
+        }
+      }
+    }
+
+    return contextWords.toArray(new String[contextWords.size()]);
+  }
+
+  private String[] extractLocalCollocations(int index, String[] sentence,
+      int ngram) {
+    /**
+     * Here the author used only 11 features of this type. the range was set to
+     * 3 (bigrams extracted in a way that they are at max separated by 1 word).
+     */
+
+    ArrayList<String> localCollocations = new ArrayList<String>();
+
+    for (int i = index - ngram; i <= index + ngram; i++) {
+
+      if (!(i < 0 || i > sentence.length - 2)) {
+        if ((i != index) && (i + 1 != index) && (i + 1 < index + ngram)) {
+          String lc = sentence[i] + " " + sentence[i + 1];
+          localCollocations.add(lc);
+        }
+        if ((i != index) && (i + 2 != index) && (i + 2 < index + ngram)) {
+          String lc = sentence[i] + " " + sentence[i + 2];
+          localCollocations.add(lc);
+        }
+      }
+
+    }
+    String[] res = new String[localCollocations.size()];
+    res = localCollocations.toArray(new String[localCollocations.size()]);
+
+    return res;
   }
 
   /**
@@ -44,29 +115,52 @@ public class DefaultIMSContextGenerator implements IMSContextGenerator {
    * @return The IMS context of the word to disambiguate
    */
   @Override
-  public String[] getContext(WTDIMS word) {
-    return word.getFeatures();
+  public String[] getContext(int index, String[] toks, String[] tags,
+      String[] lemmas, int ngram, int windowSize, ArrayList<String> model) {
+
+    String[] posOfSurroundingWords = extractPosOfSurroundingWords(index, toks,
+        windowSize);
+
+    HashSet<String> surroundingWords = new HashSet<>();
+    surroundingWords.addAll(Arrays.asList(extractSurroundingWords(index, toks,
+        lemmas)));
+
+    String[] localCollocations = extractLocalCollocations(index, toks, ngram);
+
+    String[] serializedFeatures = new String[posOfSurroundingWords.length
+        + localCollocations.length + model.size()];
+
+    int i = 0;
+
+    for (String feature : posOfSurroundingWords) {
+      serializedFeatures[i] = "F" + i + "=" + feature;
+      i++;
+    }
+
+    for (String feature : localCollocations) {
+      serializedFeatures[i] = "F" + i + "=" + feature;
+      i++;
+    }
+    for (String word : model) {
+
+      if (surroundingWords.contains(word.toString())) {
+        serializedFeatures[i] = "F" + i + "=1";
+      } else {
+        serializedFeatures[i] = "F" + i + "=0";
+      }
+      i++;
+
+    }
+
+    return serializedFeatures;
+
   }
 
-  /**
-   * This methods gives the list of features for the object of type WTDIMS
-   * Extensions of this class can override this method to create a customized
-   * {@link IMSContextGenerator}
-   *
-   * @param word
-   *          : the word to disambiguate {@link WTDIMS} along with its sentence
-   *          [Check the Class WTDIMS]
-   * @param numberOfSurroundingWords
-   *          : the number of surrounding words used in the feature
-   *          "POS Tags of Surrounding Words" Default value is 3
-   * @param ngram
-   *          : the number of words used to extract the feature
-   *          "Local Collocations" Default value is 2
-   * 
-   * @return an {@link ArrayList} of features
-   */
-  protected List<String> createContext(WTDIMS word) {
-    return Arrays.asList(getContext(word));
+  public String[] getContext(WSDSample sample, int ngram, int windowSize,
+      ArrayList<String> model) {
+
+    return getContext(sample.getTargetPosition(), sample.getSentence(),
+        sample.getTags(), sample.getLemmas(), ngram, windowSize, model);
   }
 
 }

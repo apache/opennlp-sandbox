@@ -19,11 +19,18 @@
 
 package opennlp.tools.disambiguator.ims;
 
+import java.util.ArrayList;
+
+import opennlp.tools.disambiguator.WSDSample;
+
 /**
  * Interface for {@link IMSME} context generators.
  */
 public interface IMSContextGenerator {
 
-  public String[] getContext(WTDIMS word);
+  String[] getContext(int index, String[] toks, String[] tags, String[] lemmas,
+      int ngram, int windowSize, ArrayList<String> model);
 
+  String[] getContext(WSDSample sample, int ngram, int windowSize,
+      ArrayList<String> model);
 }

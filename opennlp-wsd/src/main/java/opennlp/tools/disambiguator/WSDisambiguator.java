@@ -50,43 +50,51 @@ import opennlp.tools.util.Span;
  */
 public abstract class WSDisambiguator {
 
+  protected WSDParameters params;
+
   /**
    * @return the parameters of the disambiguation algorithm
    */
-  public abstract WSDParameters getParams();
+  public WSDParameters getParams() {
+    return params;
+  }
 
   /**
    * @param the
    *          disambiguation implementation specific parameters.
    * @throws InvalidParameterException
    */
-  public abstract void setParams(WSDParameters params) throws InvalidParameterException;
+  public void setParams(WSDParameters params) throws InvalidParameterException {
+    this.params = params;
+  }
 
   /**
    * @param tokenizedContext
-   * @param tokenTags 
+   * @param tokenTags
    * @param lemmas
    * @param ambiguousTokenIndex
    * @return result as an array of WordNet IDs
    */
-  public abstract String[] disambiguate(String[] tokenizedContext, String[] tokenTags, String[] lemmas,
-      int ambiguousTokenIndex);
+  public abstract String[] disambiguate(String[] tokenizedContext,
+      String[] tokenTags, String[] lemmas, int ambiguousTokenIndex);
 
-  /** The disambiguation method for all the words in a Span
+  /**
+   * The disambiguation method for all the words in a Span
+   * 
    * @param tokenizedContext
    * @param tokenTags
    * @param ambiguousTokenIndexSpan
    * @param ambiguousTokenLemma
    * @return result as an array of WordNet IDs
    */
-  public List<String[]> disambiguate(String[] tokenizedContext, String[] tokenTags, String[] lemmas,
-      Span ambiguousTokenIndexSpan){
+  public List<String[]> disambiguate(String[] tokenizedContext,
+      String[] tokenTags, String[] lemmas, Span ambiguousTokenIndexSpan) {
     List<String[]> senses = new ArrayList<String[]>();
 
     int start = Math.max(0, ambiguousTokenIndexSpan.getStart());
-    
-    int end = Math.max(start,Math.min(tokenizedContext.length, ambiguousTokenIndexSpan.getEnd()));
 
+    int end = Math.max(start,
+        Math.min(tokenizedContext.length, ambiguousTokenIndexSpan.getEnd()));
 
     for (int i = start; i < end + 1; i++) {
 
@@ -97,7 +105,7 @@ public abstract class WSDisambiguator {
       } else {
 
         if (WSDHelper.getNonRelevWordsDef(tokenTags[i]) != null) {
-          String s = WSDParameters.SenseSource.WSDHELPER.name() + " " 
+          String s = WSDParameters.SenseSource.WSDHELPER.name() + " "
               + WSDHelper.getNonRelevWordsDef(tokenTags[i]);
           String[] sense = { s };
 
@@ -111,7 +119,7 @@ public abstract class WSDisambiguator {
 
     return senses;
   }
-  
+
   /**
    * The disambiguation method for all the words of the context
    * 
@@ -138,7 +146,8 @@ public abstract class WSDisambiguator {
       } else {
 
         if (WSDHelper.getNonRelevWordsDef(tokenTags[i]) != null) {
-          String s = IMSParameters.SenseSource.WSDHELPER.name() + " " + tokenTags[i];
+          String s = IMSParameters.SenseSource.WSDHELPER.name() + " "
+              + tokenTags[i];
           String[] sense = { s };
 
           senses.add(sense);
@@ -151,11 +160,11 @@ public abstract class WSDisambiguator {
 
     return senses;
   }
-  
+
   /**
    * @param WSDSample
    * @return result as an array of WordNet IDs
    */
   public abstract String[] disambiguate(WSDSample sample);
-  
+
 }

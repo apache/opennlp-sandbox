@@ -50,7 +50,6 @@ public class MFS extends WSDisambiguator {
     this.parameters = new MFSParameters();
   }
 
- 
   /*
    * @return the most frequent senses from wordnet
    */
@@ -151,7 +150,7 @@ public class MFS extends WSDisambiguator {
   public String[] disambiguate(WSDSample sample) {
 
     if (WSDHelper.isRelevantPOSTag(sample.getTargetTag())) {
-      return getMostFrequentSenses(sample);
+      return disambiguate(sample.getTargetWordTag());
 
     } else {
       if (WSDHelper.getNonRelevWordsDef(sample.getTargetTag()) != null) {
@@ -185,7 +184,7 @@ public class MFS extends WSDisambiguator {
       pos = POS.ADVERB;
     } else if (tag.equalsIgnoreCase("n")) {
       pos = POS.NOUN;
-    } else if (tag.equalsIgnoreCase("a")) {
+    } else if (tag.equalsIgnoreCase("v")) {
       pos = POS.VERB;
     } else
       pos = null;
@@ -209,7 +208,8 @@ public class MFS extends WSDisambiguator {
             } catch (JWNLException e) {
               e.printStackTrace();
             }
-            senses[i] = senseKey;
+            senses[i] = WSDParameters.SenseSource.WORDNET.name() + " "
+                + senseKey;
             break;
           }
         }
@@ -217,6 +217,7 @@ public class MFS extends WSDisambiguator {
       }
       return senses;
     } else {
+      WSDHelper.print(word + "    " + pos);
       System.out.println("The word has no definitions in WordNet !");
       return null;
     }

@@ -22,7 +22,8 @@ package opennlp.tools.disambiguator;
 import java.util.ArrayList;
 import java.util.List;
 
-import opennlp.tools.disambiguator.ims.IMS;
+import opennlp.tools.disambiguator.ims.IMSME;
+import opennlp.tools.disambiguator.ims.IMSParameters;
 import opennlp.tools.util.Span;
 
 /**
@@ -38,24 +39,30 @@ import opennlp.tools.util.Span;
 public class IMSTester {
 
   public static void main(String[] args) {
+
+    // TODO write unit test
     
     String modelsDir = "src\\test\\resources\\models\\";
-    WSDHelper.loadTokenizer(modelsDir+"en-token.bin");
-    WSDHelper.loadLemmatizer(modelsDir+"en-lemmatizer.dict");
-    WSDHelper.loadTagger(modelsDir+"en-pos-maxent.bin");
+    WSDHelper.loadTokenizer(modelsDir + "en-token.bin");
+    WSDHelper.loadLemmatizer(modelsDir + "en-lemmatizer.dict");
+    WSDHelper.loadTagger(modelsDir + "en-pos-maxent.bin");
 
-    IMS ims = new IMS();
+    IMSParameters params = new IMSParameters("");
 
-    
-    /**
-     * This is how to make the context for one-word-disambiguation using IMS
-     */
+    WSDHelper.print(params.getTrainingDataDirectory());
+
+    IMSME ims = new IMSME(params);
+
+  
+    // This is how to make the context for one-word-disambiguation using IMS
+     
     String test1 = "We need to discuss important topic, please write to me soon.";
     String[] sentence1 = WSDHelper.getTokenizer().tokenize(test1);
     String[] tags1 = WSDHelper.getTagger().tag(sentence1);
     List<String> tempLemmas1 = new ArrayList<String>();
     for (int i = 0; i < sentence1.length; i++) {
-      String lemma = WSDHelper.getLemmatizer().lemmatize(sentence1[i], tags1[i]);
+      String lemma = WSDHelper.getLemmatizer()
+          .lemmatize(sentence1[i], tags1[i]);
       tempLemmas1.add(lemma);
     }
     String[] lemmas1 = tempLemmas1.toArray(new String[tempLemmas1.size()]);
@@ -66,17 +73,16 @@ public class IMSTester {
     WSDHelper.print(senses1);
     WSDHelper.print("*****************************");
 
+    // This is how to make the context for disambiguation of span of words
     
-    /**
-     * This is how to make the context for disambiguation of span of words
-     */
     String test2 = "The component was highly radioactive to the point that"
         + " it has been activated the second it touched water";
     String[] sentence2 = WSDHelper.getTokenizer().tokenize(test2);
     String[] tags2 = WSDHelper.getTagger().tag(sentence2);
     List<String> tempLemmas2 = new ArrayList<String>();
     for (int i = 0; i < sentence2.length; i++) {
-      String lemma = WSDHelper.getLemmatizer().lemmatize(sentence2[i], tags2[i]);
+      String lemma = WSDHelper.getLemmatizer()
+          .lemmatize(sentence2[i], tags2[i]);
       tempLemmas2.add(lemma);
     }
     String[] lemmas2 = tempLemmas2.toArray(new String[tempLemmas2.size()]);
@@ -85,7 +91,7 @@ public class IMSTester {
     // output
     List<String[]> senses2 = ims.disambiguate(sentence2, tags2, lemmas2, span);
     for (int i = span.getStart(); i < span.getEnd() + 1; i++) {
-      String[] senses = senses2.get(i-span.getStart());
+      String[] senses = senses2.get(i - span.getStart());
       System.out.print(lemmas2[i] + " :\t");
       WSDHelper.print(senses);
       WSDHelper.print("----------");
@@ -93,16 +99,15 @@ public class IMSTester {
 
     WSDHelper.print("*****************************");
 
+    // This is how to make the context for all-words-disambiguation
     
-    /**
-     * This is how to make the context for all-words-disambiguation
-     */
     String test3 = "The summer almost over and I not to the beach even once";
     String[] sentence3 = WSDHelper.getTokenizer().tokenize(test3);
     String[] tags3 = WSDHelper.getTagger().tag(sentence3);
     List<String> tempLemmas3 = new ArrayList<String>();
     for (int i = 0; i < sentence3.length; i++) {
-      String lemma = WSDHelper.getLemmatizer().lemmatize(sentence3[i], tags3[i]);
+      String lemma = WSDHelper.getLemmatizer()
+          .lemmatize(sentence3[i], tags3[i]);
       tempLemmas3.add(lemma);
     }
     String[] lemmas3 = tempLemmas3.toArray(new String[tempLemmas3.size()]);

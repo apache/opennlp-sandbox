@@ -19,14 +19,11 @@
 
 package opennlp.tools.disambiguator;
 
-import java.io.File;
 import java.util.ArrayList;
-import java.util.List;
 
 import opennlp.tools.disambiguator.datareader.SensevalReader;
-import opennlp.tools.disambiguator.ims.IMS;
+import opennlp.tools.disambiguator.ims.IMSME;
 import opennlp.tools.disambiguator.ims.IMSParameters;
-import opennlp.tools.disambiguator.ims.WTDIMS;
 
 import org.junit.Test;
 
@@ -36,16 +33,18 @@ public class IMSEvaluatorTest {
 
   @Test
   public static void main(String[] args) {
+    
+    
     WSDHelper.print("Evaluation Started");
-
+    
+    // TODO write unit test
     String modelsDir = "src\\test\\resources\\models\\";
     WSDHelper.loadTokenizer(modelsDir + "en-token.bin");
     WSDHelper.loadLemmatizer(modelsDir + "en-lemmatizer.dict");
     WSDHelper.loadTagger(modelsDir + "en-pos-maxent.bin");
 
-    IMS ims = new IMS();
-    IMSParameters imsParams = new IMSParameters();
-    ims.setParams(imsParams);
+    IMSParameters imsParams = new IMSParameters("");
+    IMSME ims = new IMSME(imsParams);
 
     ArrayList<String> words = seReader.getSensevalWords();
 

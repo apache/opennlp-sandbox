@@ -35,7 +35,7 @@ import opennlp.tools.disambiguator.WSDHelper;
 import opennlp.tools.disambiguator.WSDSample;
 import opennlp.tools.disambiguator.WSDSampleStream;
 import opennlp.tools.disambiguator.WSDisambiguator;
-import opennlp.tools.disambiguator.ims.IMS;
+import opennlp.tools.disambiguator.ims.IMSME;
 import opennlp.tools.disambiguator.lesk.Lesk;
 import opennlp.tools.disambiguator.mfs.MFS;
 import opennlp.tools.util.ObjectStream;
@@ -109,7 +109,6 @@ public class DisambiguatorTool extends CmdLineTool {
     } else if (params.getType().equalsIgnoreCase("lesk")) {
       wsd = new Lesk();
     } else if (params.getType().equalsIgnoreCase("ims")) {
-      wsd = new IMS();
     }
     return wsd;
 
