@@ -27,6 +27,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 import opennlp.tools.disambiguator.WSDHelper;
 import opennlp.tools.disambiguator.WSDSample;
+import opennlp.tools.util.ObjectStream;
+import opennlp.tools.util.ObjectStreamUtils;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -34,7 +36,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
- * This reads one semcor file. It requires the
+ * This class reads Semcor data.
  *
  */
 public class SemcorReaderExtended {
@@ -62,9 +64,18 @@ public class SemcorReaderExtended {
 
   private static final String ELEMENT_PUNCTUATION = "punc";
 
-  private static String path = "src\\test\\resources\\semcor3.0\\";
+  private static String semcorDirectory = "src\\test\\resources\\semcor3.0\\";
   private static String[] folders = { "brown1", "brown2", "brownv" };
   private static String tagfiles = "\\tagfiles\\";
+
+  
+  public static String getSemcorDirectory() {
+    return semcorDirectory;
+  }
+
+  public static void setSemcorDirectory(String semcorDirectory) {
+    SemcorReaderExtended.semcorDirectory = semcorDirectory;
+  }
 
   public SemcorReaderExtended() {
     super();
@@ -73,7 +84,7 @@ public class SemcorReaderExtended {
   /**
    * This serves to read one Semcor XML file
    */
-  public ArrayList<Sentence> readFile(String file) {
+  private ArrayList<Sentence> readFile(String file) {
 
     ArrayList<Sentence> result = new ArrayList<Sentence>();
 
@@ -176,8 +187,18 @@ public class SemcorReaderExtended {
     return result;
   }
 
-  public ArrayList<WSDSample> getSemcorOneFileData(String file,
-      String wordTag) {
+  /**
+   * One Semcor folder reader: This reads all the files in one semcor folder,
+   * and return all the instances in the format {@link WSDSample} of a
+   * specific word
+   * 
+   * @param file
+   *          the name of the file to read
+   * @param wordTag
+   *          The word, of which we are looking for the instances
+   * @return the list of the {@link WSDSample} instances
+   */
+  private ArrayList<WSDSample> getSemcorOneFileData(String file, String wordTag) {
 
     ArrayList<WSDSample> setInstances = new ArrayList<WSDSample>();
 
@@ -227,11 +248,12 @@ public class SemcorReaderExtended {
               String[] words = sentence.split("\\s");
               String[] tags = WSDHelper.getTagger().tag(words);
               String[] lemmas = new String[words.length];
-              
+
               for (int i = 0; i < words.length; i++) {
-                lemmas[i] = WSDHelper.getLemmatizer().lemmatize(words[i], tags[i]);
+                lemmas[i] = WSDHelper.getLemmatizer().lemmatize(words[i],
+                    tags[i]);
               }
-              
+
               WSDSample wtd = new WSDSample(words, tags, lemmas, index, senses);
               setInstances.add(wtd);
             }
@@ -251,7 +273,7 @@ public class SemcorReaderExtended {
 
   /**
    * One Semcor folder reader: This reads all the files in one semcor folder,
-   * and return all the instances in the format {@link WordToDisambiguate} of a
+   * and return all the instances in the format {@link WSDSample} of a
    * specific word
    * 
    * @param folder
@@ -259,13 +281,13 @@ public class SemcorReaderExtended {
    *          are ["brown1", "brown2", "brownv"]
    * @param wordTag
    *          The word, of which we are looking for the instances
-   * @return the list of the {@link WordToDisambiguate} instances
+   * @return the list of the {@link WSDSample} instances
    */
-  public ArrayList<WSDSample> getSemcorFolderData(String folder, String wordTag) {
+  private ArrayList<WSDSample> getSemcorFolderData(String folder, String wordTag) {
 
     ArrayList<WSDSample> result = new ArrayList<WSDSample>();
 
-    String directory = path + folder + tagfiles;
+    String directory = semcorDirectory + folder + tagfiles;
     File tempFolder = new File(directory);
     File[] listOfFiles;
 
@@ -273,8 +295,8 @@ public class SemcorReaderExtended {
       listOfFiles = tempFolder.listFiles();
       for (File file : listOfFiles) {
 
-        ArrayList<WSDSample> list = getSemcorOneFileData(directory
-            + file.getName(), wordTag);
+        ArrayList<WSDSample> list = getSemcorOneFileData(
+            directory + file.getName(), wordTag);
         result.addAll(list);
       }
     }
@@ -285,11 +307,11 @@ public class SemcorReaderExtended {
 
   /**
    * Semcor reader: This reads all the files in semcor, and return all the
-   * instances in the format {@link WordToDisambiguate} of a specific word
+   * instances in the format {@link WSDSample} of a specific word
    * 
    * @param wordTag
    *          The word, of which we are looking for the instances
-   * @return the list of the {@link WordToDisambiguate} instances of the word to
+   * @return the list of the {@link WSDSample} instances of the word to
    *         disambiguate
    */
   public ArrayList<WSDSample> getSemcorData(String wordTag) {
@@ -303,6 +325,18 @@ public class SemcorReaderExtended {
 
     return result;
 
+  }
+
+  /**
+   * Semcor reader: This reads all the files in semcor, and return all the
+   * instances in the format {@link WSDSample} of a specific word
+   * 
+   * @param wordTag
+   *          The word, of which we are looking for the instances
+   * @return the stream of {@link WSDSample} of the word to disambiguate
+   */
+  public ObjectStream<WSDSample> getSemcorDataStream(String wordTag) {
+    return ObjectStreamUtils.createObjectStream(getSemcorData(wordTag));
   }
 
 }

@@ -38,6 +38,8 @@ import org.w3c.dom.NodeList;
 
 import opennlp.tools.disambiguator.WSDHelper;
 import opennlp.tools.disambiguator.WSDSample;
+import opennlp.tools.util.ObjectStream;
+import opennlp.tools.util.ObjectStreamUtils;
 
 /**
  * This class handles the extraction of Senseval-3 data from the different files
@@ -45,12 +47,23 @@ import opennlp.tools.disambiguator.WSDSample;
  */
 public class SensevalReader {
 
-  private String resourcesFolder = "src\\test\\resources\\";
-  protected String sensevalDirectory = resourcesFolder + "senseval3\\";
+  protected String sensevalDirectory = "src\\test\\resources\\senseval3\\";
 
   protected String data = sensevalDirectory + "EnglishLS.train";
   protected String sensemapFile = sensevalDirectory + "EnglishLS.sensemap";
   protected String wordList = sensevalDirectory + "EnglishLS.train.key";
+
+  public String getSensevalDirectory() {
+    return sensevalDirectory;
+  }
+
+  public void setSensevalDirectory(String sensevalDirectory) {
+    this.sensevalDirectory = sensevalDirectory;
+
+    this.data = sensevalDirectory + "EnglishLS.train";
+    this.sensemapFile = sensevalDirectory + "EnglishLS.sensemap";
+    this.wordList = sensevalDirectory + "EnglishLS.train.key";
+  }
 
   public SensevalReader() {
     super();
@@ -136,12 +149,12 @@ public class SensevalReader {
 
   /**
    * Main Senseval Reader: This checks if the data corresponding to the words to
-   * disambiguate exist in the folder, and extract the
-   * {@link WordToDisambiguate} instances
+   * disambiguate exist in the folder, and extract the {@link WSDSample}
+   * instances
    * 
    * @param wordTag
    *          The word, of which we are looking for the instances
-   * @return the list of the {@link WordToDisambiguate} instances of the word to
+   * @return the list of the {@link WSDSample} instances of the word to
    *         disambiguate
    */
   public ArrayList<WSDSample> getSensevalData(String wordTag) {
@@ -265,6 +278,18 @@ public class SensevalReader {
 
     return setInstances;
 
+  }
+
+  /**
+   * Main Senseval Reader: This checks if the data corresponding to the words to
+   * disambiguate exist in the folder, and extract the
+   * 
+   * @param wordTag
+   *          The word, of which we are looking for the instances
+   * @return the stream of {@link WSDSample} of the word to disambiguate
+   */
+  public ObjectStream<WSDSample> getSemcorDataStream(String wordTag) {
+    return ObjectStreamUtils.createObjectStream(getSensevalData(wordTag));
   }
 
 }
