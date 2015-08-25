@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import junit.framework.Assert;
 import opennlp.tools.disambiguator.WSDHelper;
 import opennlp.tools.disambiguator.WSDSample;
 import opennlp.tools.disambiguator.WSDisambiguator;
@@ -50,8 +49,8 @@ public class IMSME extends WSDisambiguator {
     this.imsModel = model;
     this.params = params;
     
-    Assert.assertEquals(model.getWindowSize(),params.getWindowSize());
-    Assert.assertEquals(model.getNgram(),params.getNgram());
+//    Assert.assertEquals(model.getWindowSize(),params.getWindowSize());
+//    Assert.assertEquals(model.getNgram(),params.getNgram());
   }
 
   public void setModel(IMSModel model) {
