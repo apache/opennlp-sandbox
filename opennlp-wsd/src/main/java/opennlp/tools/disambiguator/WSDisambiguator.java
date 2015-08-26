@@ -75,8 +75,11 @@ public abstract class WSDisambiguator {
    * @param ambiguousTokenIndex
    * @return result as an array of WordNet IDs
    */
-  public abstract String[] disambiguate(String[] tokenizedContext,
-      String[] tokenTags, String[] lemmas, int ambiguousTokenIndex);
+  public String[] disambiguate(String[] tokenizedContext,
+      String[] tokenTags, String[] lemmas, int ambiguousTokenIndex){
+	  return disambiguate(new WSDSample(tokenizedContext, tokenTags, lemmas,
+		        ambiguousTokenIndex));
+  }
 
   /**
    * The disambiguation method for all the words in a Span

@@ -62,7 +62,7 @@ public abstract class WSDParameters {
   }
 
   public WSDParameters() {
-    this.isCoarseSense = true;
+    this.isCoarseSense = false;
   }
 
   /**
