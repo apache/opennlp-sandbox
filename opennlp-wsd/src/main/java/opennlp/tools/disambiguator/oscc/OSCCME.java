@@ -36,6 +36,28 @@ import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.ObjectStreamUtils;
 import opennlp.tools.util.TrainingParameters;
 
+/**
+ * Maximum Entropy version of the <b>one sence per cluster</b> approach in
+ * 
+ * http://nlp.cs.rpi.edu/paper/wsd.pdf
+ * 
+ * The approach is a hybrid approach using unsupervised context clustering to
+ * enhance disambiguation using a typical classifier.
+ * 
+ * The context clusters are considered a group of words representing an enriched
+ * context of a target word.
+ * 
+ * The clusters can be formed by clustering techniques like K-means, or a
+ * simpler version can use WordNet to get clusters simply from SynSets.
+ * 
+ * Please see {@link DefaultOSCCContextGenerator}
+ * 
+ * The approach finds the context clusters surrounding the target and uses a
+ * classifier to judge on the best case. 
+ * 
+ * Here an ME classifier is used.
+ * 
+*/
 public class OSCCME extends WSDisambiguator {
 
   protected OSCCModel osccModel;
