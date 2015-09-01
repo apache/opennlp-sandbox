@@ -23,6 +23,7 @@ import org.apache.opennlp.utils.TrainingExample;
 import org.apache.opennlp.utils.TrainingSet;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -39,19 +40,17 @@ public class AnomalyDetectionUtilsTest {
     assertNotNull(mus);
     double[] sigmas = AnomalyDetectionUtils.fitSigmas(mus, trainingSet);
     assertNotNull(sigmas);
-    TrainingExample newInput = new TrainingExample(new double[]{1d, 2d, 1000d, 123d, 0.1d}, 0d);
+    TrainingExample newInput = new TrainingExample(new double[]{0.4d,0.5d,0.5d,0.5d,0.2d}, 0d);
     double probability = AnomalyDetectionUtils.getGaussianProbability(newInput, mus, sigmas);
-    assertTrue("negative probability " + probability, 0 <= probability);
-    assertTrue("probability bigger than 1 " + probability, 1 >= probability);
+    assertEquals(0.5d, probability, 0.5d);
   }
 
   @Test
   public void testGaussianDistributionProbabilityFromTrainingSet() throws Exception {
     TrainingSet trainingSet = new TrainingSet();
     TestUtils.fillTrainingSet(trainingSet, 100, 5);
-    TrainingExample newInput = new TrainingExample(new double[]{1d, 2d, 1000d, 123d, 0.1d}, 0d);
+    TrainingExample newInput = new TrainingExample(new double[]{0.4d,0.5d,0.5d,0.5d,0.2d}, 0d);
     double probability = AnomalyDetectionUtils.getGaussianProbability(newInput, trainingSet);
-    assertTrue("negative probability " + probability, 0 <= probability);
-    assertTrue("probability bigger than 1 " + probability, 1 >= probability);
+    assertEquals(0.5d, probability, 0.5d);
   }
 }

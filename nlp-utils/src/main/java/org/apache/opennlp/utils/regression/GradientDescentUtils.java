@@ -33,14 +33,13 @@ public class GradientDescentUtils {
    * Calculates batch gradient descent on the give hypothesis, training set and learning rate alpha.
    * The algorithms iteratively adjusts the hypothesis parameters
    *
-   * @param hypothesis  the hypothesis representing the model used
    * @param trainingSet the training set used to fit the parameters
    * @param alpha       the learning rate alpha used to define how big the descent steps are
    */
-  public static void batchGradientDescent(Hypothesis hypothesis, TrainingSet trainingSet, double alpha) {
+  public static void batchGradientDescent(TrainingSet trainingSet, double alpha) {
     // set initial random weights
     double[] parameters = initializeRandomWeights(trainingSet.iterator().next().getInputs().length);
-    hypothesis.updateParameters(parameters);
+    Hypothesis hypothesis = new LinearCombinationHypothesis(parameters);
 
     int iterations = 0;
 
@@ -52,7 +51,7 @@ public class GradientDescentUtils {
       if (newCost > cost) {
         throw new RuntimeException("failed to converge at iteration " + iterations + " with cost going from " + cost + " to " + newCost);
       } else if (cost == newCost || newCost < THRESHOLD || iterations > MAX_ITERATIONS) {
-        System.out.println(cost + " with parameters " + Arrays.toString(parameters));
+        System.out.println(cost + " with parameters " + Arrays.toString(parameters) + "(" + iterations + " iterations)");
         break;
       }
 
@@ -63,7 +62,7 @@ public class GradientDescentUtils {
       parameters = RegressionModelUtils.batchLeastMeanSquareUpdate(parameters, alpha, trainingSet, hypothesis);
 
       // update weights in the hypothesis
-      hypothesis.updateParameters(parameters);
+      hypothesis = new LinearCombinationHypothesis(parameters);
 
       iterations++;
     }

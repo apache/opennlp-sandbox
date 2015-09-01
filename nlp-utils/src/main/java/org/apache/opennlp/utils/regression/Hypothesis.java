@@ -31,10 +31,4 @@ public interface Hypothesis {
    */
   double calculateOutput(double[] inputs);
 
-  /**
-   * update the internal model's parameters.
-   *
-   * @param parameters an array of <code>double</code> containing the updated parameters
-   */
-  void updateParameters(double[] parameters);
 }

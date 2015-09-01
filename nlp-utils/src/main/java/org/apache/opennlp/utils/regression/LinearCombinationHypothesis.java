@@ -22,7 +22,11 @@ package org.apache.opennlp.utils.regression;
  * Simplest {@link Hypothesis} which just linearly combines inputs with weights
  */
 public class LinearCombinationHypothesis implements Hypothesis {
-  private double[] weights;
+  private final double[] weights;
+
+  public LinearCombinationHypothesis(double... weights) {
+    this.weights = weights;
+  }
 
   @Override
   public double calculateOutput(double[] inputs) {
@@ -33,8 +37,4 @@ public class LinearCombinationHypothesis implements Hypothesis {
     return output;
   }
 
-  @Override
-  public void updateParameters(double[] parameters) {
-    weights = parameters;
-  }
-}
+ }
