@@ -23,8 +23,7 @@ import java.util.LinkedList;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Testcase for {@link org.apache.opennlp.utils.cfg.ContextFreeGrammar}
@@ -112,6 +111,7 @@ public class ContextFreeGrammarTest {
   public void testSingleSentenceExpansion() throws Exception {
     ContextFreeGrammar contextFreeGrammar = new ContextFreeGrammar(nonTerminals, terminals, rules, startSymbol);
     String[] expansion = contextFreeGrammar.leftMostDerivation("S");
+    assertArrayEquals(new String[]{"the", "man", "works"}, expansion);
     checkExpansion(expansion);
   }
 
@@ -127,9 +127,11 @@ public class ContextFreeGrammarTest {
   public void testMultipleSentencesExpansion() throws Exception {
     ContextFreeGrammar contextFreeGrammar = new ContextFreeGrammar(nonTerminals, terminals, rules, startSymbol);
     String[] expansion = contextFreeGrammar.leftMostDerivation("S", "CJ", "S");
+    assertArrayEquals(new String[]{"the", "man", "works", "and", "the", "man", "works"}, expansion);
     checkExpansion(expansion);
-
     expansion = contextFreeGrammar.leftMostDerivation("S", "DJ", "S", "CJ", "P");
+    assertArrayEquals(new String[]{"the", "man", "works", "but", "the", "man", "works", "and", "the", "man", "works",
+            "and", "the", "man", "works"}, expansion);
     checkExpansion(expansion);
   }
 
@@ -138,7 +140,6 @@ public class ContextFreeGrammarTest {
     ContextFreeGrammar contextFreeGrammar = new ContextFreeGrammar(nonTerminals, terminals, rules, startSymbol, true);
     String[] expansion = contextFreeGrammar.leftMostDerivation("S", "CJ", "S");
     checkExpansion(expansion);
-
     expansion = contextFreeGrammar.leftMostDerivation("S", "DJ", "S", "CJ", "P");
     checkExpansion(expansion);
   }

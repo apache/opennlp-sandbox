@@ -120,10 +120,10 @@ public class ProbabilisticContextFreeGrammarTest {
     ProbabilisticContextFreeGrammar pcfg = new ProbabilisticContextFreeGrammar(nonTerminals, terminals, rules, startSymbol);
 
     double pi = pcfg.pi(sentence, 0, 1, pcfg.getStartSymbol()).getProbability();
-    assertTrue(pi <= 1 && pi >= 0);
+    assertEquals(0.3d, pi, 0d);
 
-    pi = pcfg.pi(sentence, 2, 7, "VP").getProbability();
-    assertTrue(pi <= 1 && pi >= 0);
+    pi = pcfg.pi(sentence, 2, 4, "VP").getProbability();
+    assertEquals(0.35d, pi, 0d);
   }
 
   @Test
