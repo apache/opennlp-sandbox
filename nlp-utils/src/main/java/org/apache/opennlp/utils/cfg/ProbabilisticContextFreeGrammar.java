@@ -238,13 +238,13 @@ public class ProbabilisticContextFreeGrammar {
 
     @Override
     public String toString() {
-      return "BackPointer{" +
-              "probability=" + probability +
-              ", splitPoint=" + splitPoint +
-              ", rule=" + rule +
-              ", leftTree=" + leftTree +
-              ", rightTree=" + rightTree +
-              '}';
+      return "(" +
+              rule.getEntry() + " " +
+              (leftTree != null && rightTree != null ?
+                      leftTree.toString() + " " + rightTree.toString() :
+                      rule.getExpansion()[0]
+              ) +
+              ')';
     }
   }
 
