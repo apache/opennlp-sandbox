@@ -194,7 +194,7 @@ public class ProbabilisticContextFreeGrammarTest {
     String string = "(S (VP (Adv last) (Vb tidy)) (NP (Adj biogenic) (NN Gainesville)))";
     Map<Rule, Double> rules = ProbabilisticContextFreeGrammar.parseRules(string);
     assertNotNull(rules);
-    assertEquals(7, rules.size());
+    assertEquals(8, rules.size());
   }
 
   @Test
@@ -231,6 +231,11 @@ public class ProbabilisticContextFreeGrammarTest {
     ProbabilisticContextFreeGrammar.parseRules(rules3, true, newsSample, newsSample2);
     assertNotNull(rules3);
 
+    ProbabilisticContextFreeGrammar contextFreeGrammar = ProbabilisticContextFreeGrammar.parseGrammar(newsSample, newsSample2);
+    assertNotNull(contextFreeGrammar);
+    String[] derivation = contextFreeGrammar.leftMostDerivation("S");
+    assertNotNull(derivation);
+    assertTrue(derivation.length > 1);
   }
 
   @Ignore
@@ -244,9 +249,14 @@ public class ProbabilisticContextFreeGrammarTest {
     String[] derivation = cfg.leftMostDerivation("S");
     assertNotNull(derivation);
     System.err.println(Arrays.toString(derivation));
-    String sentence = "Il governo di Berisha pare in difficolta'";
-    ProbabilisticContextFreeGrammar.ParseTree parseTree = cfg.cky(Arrays.asList(sentence.split(" ")));
-    assertNotNull(parseTree);
+    ProbabilisticContextFreeGrammar.ParseTree parseTree1 = cfg.cky(Arrays.asList(derivation));
+    assertNotNull(parseTree1);
+    System.err.println(parseTree1);
+
+    String sentence = "Il Governo di Berisha appare in difficolta'";
+    List<String> fixedSentence = Arrays.asList(sentence.split(" "));
+    ProbabilisticContextFreeGrammar.ParseTree parseTree2 = cfg.cky(fixedSentence);
+    assertNotNull(parseTree2);
   }
 
   private Collection<String> parseSentences(BufferedReader bufferedReader) throws IOException {

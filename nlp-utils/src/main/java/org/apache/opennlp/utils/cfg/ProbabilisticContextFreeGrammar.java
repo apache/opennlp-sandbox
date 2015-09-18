@@ -41,15 +41,15 @@ public class ProbabilisticContextFreeGrammar {
   private final String startSymbol;
   private boolean randomExpansion;
 
-  private static final Rule emptyRule = new Rule("E", "");
+  private static final Rule emptyRule = new Rule("EMPTY~", "");
 
   private static final String nonTerminalMatcher = "[\\w\\~\\*\\-\\.\\,\\'\\:\\_\\\"]";
-  private static final String terminalMatcher = "[òàùìèé\\|\\w\\'\\.\\,\\:\\_Ù\\?È\\%\\;À\\-\\\"]";
+  private static final String terminalMatcher = "[\\*òàùìèé\\|\\w\\'\\.\\,\\:\\_Ù\\?È\\%\\;À\\-\\\"]";
 
   private static final Pattern terminalPattern = Pattern.compile("\\(("+nonTerminalMatcher+"+)\\s("+terminalMatcher+"+)\\)");
   private static final Pattern nonTerminalPattern = Pattern.compile(
           "\\(("+nonTerminalMatcher+"+)" + // source NT
-                  "\\s("+nonTerminalMatcher+"+)(\\s("+nonTerminalMatcher+"+))*\\)" // expansion NTs
+                  "\\s("+nonTerminalMatcher+"+)((\\s"+nonTerminalMatcher+"+)*)\\)" // expansion NTs
   );
 
   public ProbabilisticContextFreeGrammar(Collection<String> nonTerminalSymbols, Collection<String> terminalSymbols,
@@ -94,7 +94,6 @@ public class ProbabilisticContextFreeGrammar {
       expansion.addAll(getTerminals(word));
     }
     return expansion.toArray(new String[expansion.size()]);
-
   }
 
   private Collection<String> getTerminals(String word) {
@@ -258,10 +257,10 @@ public class ProbabilisticContextFreeGrammar {
     public String toString() {
       if (getRule() != emptyRule) {
         return "(" +
-                rule.getEntry() + " " +
+                (rule != null ? rule.getEntry() : null) + " " +
                 (leftTree != null && rightTree != null ?
                         leftTree.toString() + " " + rightTree.toString() :
-                        rule.getExpansion()[0]
+                        (rule != null ? rule.getExpansion()[0] : null)
                 ) +
                 ')';
       } else {
@@ -296,6 +295,11 @@ public class ProbabilisticContextFreeGrammar {
     Collection<String> nonTerminals = new HashSet<>();
     Collection<String> terminals = new HashSet<>();
 
+    rules.put(emptyRule, 1d);
+    rulesMap.put(emptyRule, 1d);
+    nonTerminals.add(emptyRule.getEntry());
+    terminals.add(emptyRule.getExpansion()[0]);
+
     for (String parseTreeString : parseStrings) {
 
       if (trim) {
@@ -312,7 +316,6 @@ public class ProbabilisticContextFreeGrammar {
         if (!rules.containsKey(key)) {
           rules.put(key, 1d);
           terminals.add(t);
-//          System.err.println(key);
         }
         toConsume = toConsume.replace(m.group(), nt);
       }
@@ -340,16 +343,12 @@ public class ProbabilisticContextFreeGrammar {
 
           if (!rules.containsKey(key)) {
             rules.put(key, 1d);
-//            startSymbol = key.getEntry();
-//            System.err.println(key);
           }
           toConsume = toConsume.replace(m2.group(), nt);
         }
       }
     }
 
-    // TODO : check/adjust rules to make them respect CNF
-    // TODO : adjust probabilities based on term frequencies
     for (Map.Entry<Rule, Double> entry : rules.entrySet()) {
       normalize(entry.getKey(), nonTerminals, terminals, rulesMap);
     }
@@ -357,35 +356,55 @@ public class ProbabilisticContextFreeGrammar {
     return new ProbabilisticContextFreeGrammar(nonTerminals, terminals, rulesMap, startSymbol, true);
   }
 
+  /**
+   * Normalize (check and eventually adjust) rules to make them respect CNF
+   * @param rule
+   * @param nonTerminals
+   * @param terminals
+   * @param rulesMap
+   */
   private static void normalize(Rule rule, Collection<String> nonTerminals, Collection<String> terminals, Map<Rule, Double> rulesMap) {
     String[] expansion = rule.getExpansion();
+    String firstExpansion = expansion[0];
     if (expansion.length == 1) {
-      if (!terminals.contains(expansion[0])) {
-        if (nonTerminals.contains(expansion[0])) {
+      if (!terminals.contains(firstExpansion)) {
+        if (nonTerminals.contains(firstExpansion)) {
           // nt1 -> nt2 should be expanded in nt1 -> nt2,E
-          rulesMap.put(new Rule(rule.getEntry(), expansion[0], emptyRule.getEntry()), 1d);
-          if (rulesMap.containsKey(emptyRule)) {
-            rulesMap.put(emptyRule, 1d);
-          }
+          Rule newRule = new Rule(rule.getEntry(), firstExpansion, emptyRule.getEntry());
+          addRule(newRule, rulesMap);
         } else {
           throw new RuntimeException("rule "+rule+" expands to neither a terminal or non terminal");
         }
       } else {
-        rulesMap.put(rule, 1d);
+        addRule(rule, rulesMap);
       }
     } else if (expansion.length > 2){
       // nt1 -> nt2,nt3,...,ntn should be collapsed to a hierarchy of ntX -> ntY,ntZ rules
-      String nt2 = expansion[0];
       int seed = nonTerminals.size();
       String generatedNT = "GEN~" + seed;
       nonTerminals.add(generatedNT);
-      Rule newRule = new Rule(rule.getEntry(), nt2, generatedNT);
+      Rule newRule = new Rule(rule.getEntry(), firstExpansion, generatedNT);
       rulesMap.put(newRule, 1d);
-      Rule chainedRule = new Rule(generatedNT, Arrays.copyOfRange(expansion, 1, expansion.length - 1));
+      Rule chainedRule = new Rule(generatedNT, Arrays.copyOfRange(expansion, 1, expansion.length));
       rulesMap.put(chainedRule, 1d);
       normalize(chainedRule, nonTerminals, terminals, rulesMap);
     } else {
-      rulesMap.put(rule, 1d);
+      addRule(rule, rulesMap);
     }
+  }
+
+  private static void addRule(Rule rule, Map<Rule, Double> rulesMap) {
+    Double prob = rulesMap.get(rule);
+    if (prob != null && prob > 0d) {
+      if (prob > 0.9d) {
+        prob += 1d - prob - 0.01d;
+      } else {
+        prob += 0.01;
+      }
+    } else {
+      prob = 0.3d;
+    }
+
+    rulesMap.put(rule, prob);
   }
 }
