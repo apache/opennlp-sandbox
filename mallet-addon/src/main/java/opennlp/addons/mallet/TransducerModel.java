@@ -27,7 +27,6 @@ import opennlp.tools.ml.model.SequenceClassificationModel;
 import opennlp.tools.util.BeamSearchContextGenerator;
 import opennlp.tools.util.SequenceValidator;
 import opennlp.tools.util.model.SerializableArtifact;
-import cc.mallet.fst.CRF;
 import cc.mallet.fst.MaxLatticeDefault;
 import cc.mallet.fst.Transducer;
 import cc.mallet.types.Alphabet;
@@ -53,6 +52,14 @@ public class TransducerModel<T> implements SequenceClassificationModel<T>, Seria
     return bestSequences(1, sequence, additionalContext, cg, validator)[0];
   }
 
+  @Override
+  public opennlp.tools.util.Sequence[] bestSequences(int numSequences,
+      T[] sequence, Object[] additionalContext, double minSequenceScore,
+      BeamSearchContextGenerator<T> cg, SequenceValidator<T> validator) {
+    // TODO: How to implement min score filtering here? 
+    return bestSequences(numSequences, sequence, additionalContext, cg, validator);
+  }
+  
   public opennlp.tools.util.Sequence[] bestSequences(int numSequences,
       T[] sequence, Object[] additionalContext,
       BeamSearchContextGenerator<T> cg, SequenceValidator<T> validator) {
@@ -120,5 +127,21 @@ public class TransducerModel<T> implements SequenceClassificationModel<T>, Seria
   @Override
   public Class<?> getArtifactSerializerClass() {
     return TransducerModelSerializer.class;
+  }
+
+
+
+  @Override
+  public String[] getOutcomes() {
+    
+    Alphabet targetAlphabet = model.getInputPipe().getTargetAlphabet();
+    
+    String outcomes[] = new String[targetAlphabet.size()];
+    
+    for (int i = 0; i < targetAlphabet.size(); i++) {
+      outcomes[i] = targetAlphabet.lookupObject(i).toString();
+    }
+    
+    return outcomes;
   }
 }

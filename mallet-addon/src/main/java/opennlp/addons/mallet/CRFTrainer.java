@@ -29,8 +29,11 @@ import opennlp.tools.ml.model.Sequence;
 import opennlp.tools.ml.model.SequenceClassificationModel;
 import opennlp.tools.ml.model.SequenceStream;
 import cc.mallet.fst.CRF;
+import cc.mallet.fst.CRFOptimizableByLabelLikelihood;
 import cc.mallet.fst.CRFTrainerByLabelLikelihood;
+import cc.mallet.fst.CRFTrainerByValueGradients;
 import cc.mallet.fst.Transducer;
+import cc.mallet.optimize.Optimizable;
 import cc.mallet.types.Alphabet;
 import cc.mallet.types.FeatureVector;
 import cc.mallet.types.FeatureVectorSequence;
@@ -44,11 +47,6 @@ import cc.mallet.types.LabelSequence;
 // For HMM we don't need to generate any features (how to do that nicely?!)
 // Dummy feature generator ?!
 public class CRFTrainer extends AbstractSequenceTrainer {
-
-  public CRFTrainer(Map<String, String> trainParams,
-      Map<String, String> reportMap) {
-    super(trainParams, reportMap);
-  }
 
   private int[] getOrders() {
     String[] ordersString = "0,1".split(",");
@@ -71,7 +69,8 @@ public class CRFTrainer extends AbstractSequenceTrainer {
     InstanceList trainingData = new InstanceList(dataAlphabet, targetAlphabet);
 
     int nameIndex = 0;
-    for (Sequence sequence : sequences) {
+    Sequence sequence;
+    while ((sequence = sequences.read()) != null) {
       FeatureVector featureVectors[] = new FeatureVector[sequence.getEvents().length];
       Label malletOutcomes[] = new Label[sequence.getEvents().length];
 
@@ -132,23 +131,22 @@ public class CRFTrainer extends AbstractSequenceTrainer {
         crf);
     crfTrainer.setGaussianPriorVariance(1.0);
 
-    // CRFOptimizableByLabelLikelihood optLabel = new
-    // CRFOptimizableByLabelLikelihood(
-    // crf, trainingData);
-
-    // CRF trainer
-    // Optimizable.ByGradientValue[] opts = new Optimizable.ByGradientValue[] {
-    // optLabel };
+//    CRFOptimizableByLabelLikelihood optLabel = new
+//        CRFOptimizableByLabelLikelihood(crf, trainingData);
+//
+//    // CRF trainer
+//     Optimizable.ByGradientValue[] opts = new Optimizable.ByGradientValue[] {
+//     optLabel };
 
     // by default, use L-BFGS as the optimizer
-    // CRFTrainerByValueGradients crfTrainer = new CRFTrainerByValueGradients(
-    // crf, opts);
-    // crfTrainer.setMaxResets(0);
+//     CRFTrainerByValueGradients crfTrainer = new CRFTrainerByValueGradients(
+//     crf, opts);
+//     crfTrainer.setMaxResets(0);
 
     // SNIP
 
     crfTrainer.train(trainingData, Integer.MAX_VALUE);
-
+    
     // can be very similar to the other model
     // one important difference is that the feature gen needs to be integrated
     // ...

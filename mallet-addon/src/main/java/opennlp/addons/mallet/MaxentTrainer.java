@@ -37,11 +37,6 @@ import cc.mallet.types.LabelAlphabet;
 
 public class MaxentTrainer extends AbstractEventTrainer {
 
-  public MaxentTrainer(Map<String, String> trainParams,
-      Map<String, String> reportMap) {
-    super(trainParams, reportMap);
-  }
-
   @Override
   public boolean isSortAndMerge() {
     return true;
