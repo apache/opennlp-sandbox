@@ -150,7 +150,7 @@ public abstract class WSDisambiguator {
 
         if (WSDHelper.getNonRelevWordsDef(tokenTags[i]) != null) {
           String s = IMSParameters.SenseSource.WSDHELPER.name() + " "
-              + tokenTags[i];
+              + WSDHelper.getNonRelevWordsDef(tokenTags[i]);
           String[] sense = { s };
 
           senses.add(sense);

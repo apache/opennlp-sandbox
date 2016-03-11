@@ -19,6 +19,8 @@
 
 package opennlp.tools.disambiguator.oscc;
 
+import java.util.ArrayList;
+
 import opennlp.tools.disambiguator.WSDSample;
 
 /**
@@ -27,7 +29,7 @@ import opennlp.tools.disambiguator.WSDSample;
 public interface OSCCContextGenerator {
 
   String[] getContext(int index, String[] toks, String[] tags, String[] lemmas,
-    int windowSize);
+    int windowSize, ArrayList<String> model);
 
-  String[] getContext(WSDSample sample, int windowSize);
+  String[] getContext(WSDSample sample, int windowSize, ArrayList<String> model);
 }

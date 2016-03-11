@@ -41,16 +41,17 @@ public class IMSME extends WSDisambiguator {
 
   protected static IMSContextGenerator cg = new DefaultIMSContextGenerator();
 
-  public IMSME(IMSParameters params){
+  public IMSME(IMSParameters params) {
     this.params = params;
   }
-  
+
   public IMSME(IMSModel model, IMSParameters params) {
     this.imsModel = model;
     this.params = params;
-    
-//    Assert.assertEquals(model.getWindowSize(),params.getWindowSize());
-//    Assert.assertEquals(model.getNgram(),params.getNgram());
+  }
+
+  public IMSModel getModel() {
+    return imsModel;
   }
 
   public void setModel(IMSModel model) {
@@ -65,7 +66,7 @@ public class IMSME extends WSDisambiguator {
       TrainingParameters mlParams, IMSParameters imsParams,
       IMSFactory imsfactory) throws IOException {
 
-    ArrayList<String> surroundingWordModel = buildSurroundingWords(samples);
+    ArrayList<String> surroundingWordModel = buildSurroundingWords(samples, imsParams.getWindowSize());
 
     HashMap<String, String> manifestInfoEntries = new HashMap<String, String>();
 
@@ -88,13 +89,13 @@ public class IMSME extends WSDisambiguator {
 
         events.add(ev);
 
-        es = ObjectStreamUtils.createObjectStream(events);
-
       } while ((sample = samples.read()) != null);
     }
 
-    EventTrainer trainer = TrainerFactory.getEventTrainer(
-        mlParams.getSettings(), manifestInfoEntries);
+    es = ObjectStreamUtils.createObjectStream(events);
+
+    EventTrainer trainer = TrainerFactory
+        .getEventTrainer(mlParams.getSettings(), manifestInfoEntries);
     imsModel = trainer.train(es);
 
     return new IMSModel(lang, wordTag, imsParams.windowSize, imsParams.ngram,
@@ -102,13 +103,13 @@ public class IMSME extends WSDisambiguator {
   }
 
   public static ArrayList<String> buildSurroundingWords(
-      ObjectStream<WSDSample> samples) throws IOException {
+      ObjectStream<WSDSample> samples, int windowSize) throws IOException {
     DefaultIMSContextGenerator imsCG = new DefaultIMSContextGenerator();
     ArrayList<String> surroundingWordsModel = new ArrayList<String>();
     WSDSample sample;
     while ((sample = samples.read()) != null) {
-      String[] words = imsCG.extractSurroundingWords(
-          sample.getTargetPosition(), sample.getSentence(), sample.getLemmas());
+      String[] words = imsCG.extractSurroundingWords(sample.getTargetPosition(),
+          sample.getSentence(), sample.getLemmas(), windowSize);
 
       if (words.length > 0) {
         for (String word : words) {
@@ -125,10 +126,11 @@ public class IMSME extends WSDisambiguator {
     if (WSDHelper.isRelevantPOSTag(sample.getTargetTag())) {
       String wordTag = sample.getTargetWordTag();
 
-      String trainingFile = ((IMSParameters) this.getParams())
-          .getTrainingDataDirectory() + sample.getTargetWordTag();
+      if (imsModel == null
+          || !imsModel.getWordTag().equals(sample.getTargetWordTag())) {
 
-      if (imsModel==null || !imsModel.getWordTag().equals(sample.getTargetWordTag())) {
+        String trainingFile = ((IMSParameters) this.getParams())
+            .getTrainingDataDirectory() + sample.getTargetWordTag();
 
         File file = new File(trainingFile + ".ims.model");
         if (file.exists() && !file.isDirectory()) {
@@ -167,11 +169,11 @@ public class IMSME extends WSDisambiguator {
           }
 
         } else {
-
           MFS mfs = new MFS();
           return mfs.disambiguate(wordTag);
         }
       } else {
+
         String outcome = "";
 
         String[] context = cg.getContext(sample,
@@ -226,8 +228,8 @@ public class IMSME extends WSDisambiguator {
    */
   public String[] disambiguate(String[] tokenizedContext, String[] tokenTags,
       String[] lemmas, int index) {
-    return disambiguate(new WSDSample(tokenizedContext, tokenTags, lemmas,
-        index));
+    return disambiguate(
+        new WSDSample(tokenizedContext, tokenTags, lemmas, index));
   }
 
 }

@@ -70,13 +70,11 @@ public class OSCCParameters extends WSDParameters {
   }
 
   public OSCCParameters() {
-    // TODO change the "" into null ??
-    this(DFLT_WIN_SIZE, DFLT_SOURCE, "");
+    this(DFLT_WIN_SIZE, DFLT_SOURCE, null);
   }
 
   public OSCCParameters(int windowSize) {
-    // TODO change the "" into null ??
-    this(windowSize, DFLT_SOURCE, "");
+    this(windowSize, DFLT_SOURCE, null);
   }
 
   public String getLanguageCode() {

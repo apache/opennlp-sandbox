@@ -20,6 +20,7 @@
 package opennlp.tools.disambiguator.ims;
 
 import java.io.File;
+import java.security.InvalidParameterException;
 
 import opennlp.tools.disambiguator.WSDParameters;
 
@@ -34,6 +35,11 @@ public class IMSParameters extends WSDParameters {
   protected int ngram;
 
   protected String trainingDataDirectory;
+  
+  protected static final int DFLT_WIN_SIZE = 3;
+  protected static final int DFLT_NGRAM = 2;
+  protected static final String DFLT_LANG_CODE = "En";
+  protected static final SenseSource DFLT_SOURCE = SenseSource.WORDNET;
 
   /**
    * This constructor takes only two parameters. The default language used is
@@ -49,8 +55,9 @@ public class IMSParameters extends WSDParameters {
    *          the source of the training data
    */
   public IMSParameters(int windowSize, int ngram, SenseSource senseSource,
-      String trainingDataDirectory) {
-    this.languageCode = "En";
+      String trainingDataDirectory){
+   
+    this.languageCode = DFLT_LANG_CODE;
     this.windowSize = windowSize;
     this.ngram = ngram;
     this.senseSource = senseSource;
@@ -63,19 +70,7 @@ public class IMSParameters extends WSDParameters {
   }
 
   public IMSParameters(String trainingDataDirectory) {
-    this(3, 2, SenseSource.WORDNET, trainingDataDirectory);
-
-    File folder = new File(trainingDataDirectory);
-    if (!folder.exists())
-      folder.mkdirs();
-  }
-
-  public IMSParameters() {
-    this(3, 2, SenseSource.WORDNET, null);
-  }
-
-  public IMSParameters(int windowSize, int ngram) {
-    this(windowSize, ngram, SenseSource.WORDNET, null);
+    this(DFLT_WIN_SIZE, DFLT_NGRAM, DFLT_SOURCE, trainingDataDirectory);
   }
 
   public String getLanguageCode() {
@@ -109,7 +104,6 @@ public class IMSParameters extends WSDParameters {
    * Creates the context generator of IMS
    */
   public IMSContextGenerator createContextGenerator() {
-
     return new DefaultIMSContextGenerator();
   }
 
@@ -123,7 +117,7 @@ public class IMSParameters extends WSDParameters {
 
   @Override
   public boolean isValid() {
-    // TODO Auto-generated method stub
+    // TODO recheck this pattern switch to maps
     return true;
   }
 

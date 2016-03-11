@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import junit.framework.Assert;
 import opennlp.tools.disambiguator.WSDHelper;
 import opennlp.tools.disambiguator.WSDSample;
 import opennlp.tools.disambiguator.WSDisambiguator;
@@ -53,11 +52,11 @@ import opennlp.tools.util.TrainingParameters;
  * Please see {@link DefaultOSCCContextGenerator}
  * 
  * The approach finds the context clusters surrounding the target and uses a
- * classifier to judge on the best case. 
+ * classifier to judge on the best case.
  * 
  * Here an ME classifier is used.
  * 
-*/
+ */
 public class OSCCME extends WSDisambiguator {
 
   protected OSCCModel osccModel;
@@ -69,10 +68,12 @@ public class OSCCME extends WSDisambiguator {
   }
 
   public OSCCME(OSCCModel model, OSCCParameters params) {
-    this.osccModel = osccModel;
+    this.osccModel = model;
     this.params = params;
+  }
 
-    Assert.assertEquals(model.getWindowSize(), params.getWindowSize());
+  public OSCCModel getModel() {
+    return osccModel;
   }
 
   public void setModel(OSCCModel model) {
@@ -85,7 +86,10 @@ public class OSCCME extends WSDisambiguator {
 
   public static OSCCModel train(String lang, ObjectStream<WSDSample> samples,
       TrainingParameters mlParams, OSCCParameters osccParams,
-      OSCCFactory imsfactory) throws IOException {
+      OSCCFactory osccFactory) throws IOException {
+
+    ArrayList<String> surroundingClusterModel = buildSurroundingClusters(
+        samples, osccParams.getWindowSize());
 
     HashMap<String, String> manifestInfoEntries = new HashMap<String, String>();
 
@@ -99,39 +103,57 @@ public class OSCCME extends WSDisambiguator {
     if (sample != null) {
       wordTag = sample.getTargetWordTag();
       do {
-
         String sense = sample.getSenseIDs().get(0);
-
-        String[] context = cg.getContext(sample, osccParams.windowSize);
+        String[] context = cg.getContext(sample, osccParams.windowSize,
+            surroundingClusterModel);
         Event ev = new Event(sense + "", context);
-
         events.add(ev);
-
-        es = ObjectStreamUtils.createObjectStream(events);
-
       } while ((sample = samples.read()) != null);
     }
 
-    EventTrainer trainer = TrainerFactory.getEventTrainer(
-        mlParams.getSettings(), manifestInfoEntries);
+    es = ObjectStreamUtils.createObjectStream(events);
+    EventTrainer trainer = TrainerFactory
+        .getEventTrainer(mlParams.getSettings(), manifestInfoEntries);
+
     osccModel = trainer.train(es);
 
-    return new OSCCModel(lang, wordTag, osccParams.windowSize, osccModel, manifestInfoEntries, imsfactory);
+    return new OSCCModel(lang, wordTag, osccParams.windowSize, osccModel,
+        surroundingClusterModel, manifestInfoEntries, osccFactory);
   }
 
+  public static ArrayList<String> buildSurroundingClusters(
+      ObjectStream<WSDSample> samples, int windowSize) throws IOException {
+    // TODO modify to clusters
+    DefaultOSCCContextGenerator osccCG = new DefaultOSCCContextGenerator();
+    ArrayList<String> surroundingWordsModel = new ArrayList<String>();
+    WSDSample sample;
+    while ((sample = samples.read()) != null) {
+      String[] words = osccCG.extractSurroundingContextClusters(
+          sample.getTargetPosition(), sample.getSentence(), sample.getTags(),
+          sample.getLemmas(), windowSize);
+
+      if (words.length > 0) {
+        for (String word : words) {
+          surroundingWordsModel.add(word);
+        }
+      }
+    }
+    samples.reset();
+    return surroundingWordsModel;
+  }
 
   @Override
   public String[] disambiguate(WSDSample sample) {
     if (WSDHelper.isRelevantPOSTag(sample.getTargetTag())) {
       String wordTag = sample.getTargetWordTag();
 
-      String trainingFile = ((OSCCParameters) this.getParams())
-          .getTrainingDataDirectory() + sample.getTargetWordTag();
-
       if (osccModel == null
           || !osccModel.getWordTag().equals(sample.getTargetWordTag())) {
 
-        File file = new File(trainingFile + ".ims.model");
+        String trainingFile = ((OSCCParameters) this.getParams())
+            .getTrainingDataDirectory() + sample.getTargetWordTag();
+
+        File file = new File(trainingFile + ".oscc.model");
         if (file.exists() && !file.isDirectory()) {
           try {
             setModel(new OSCCModel(file));
@@ -147,7 +169,8 @@ public class OSCCME extends WSDisambiguator {
           String outcome = "";
 
           String[] context = cg.getContext(sample,
-              ((OSCCParameters) this.params).windowSize);
+              ((OSCCParameters) this.params).windowSize,
+              osccModel.getContextClusters());
 
           double[] outcomeProbs = osccModel.getOSCCMaxentModel().eval(context);
           outcome = osccModel.getOSCCMaxentModel().getBestOutcome(outcomeProbs);
@@ -174,7 +197,8 @@ public class OSCCME extends WSDisambiguator {
         String outcome = "";
 
         String[] context = cg.getContext(sample,
-            ((OSCCParameters) this.params).windowSize);
+            ((OSCCParameters) this.params).windowSize,
+            osccModel.getContextClusters());
 
         double[] outcomeProbs = osccModel.getOSCCMaxentModel().eval(context);
         outcome = osccModel.getOSCCMaxentModel().getBestOutcome(outcomeProbs);
@@ -223,8 +247,8 @@ public class OSCCME extends WSDisambiguator {
    */
   public String[] disambiguate(String[] tokenizedContext, String[] tokenTags,
       String[] lemmas, int index) {
-    return disambiguate(new WSDSample(tokenizedContext, tokenTags, lemmas,
-        index));
+    return disambiguate(
+        new WSDSample(tokenizedContext, tokenTags, lemmas, index));
   }
 
 }

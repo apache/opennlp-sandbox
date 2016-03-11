@@ -55,8 +55,9 @@ public class DefaultIMSContextGenerator implements IMSContextGenerator {
   }
 
   public String[] extractSurroundingWords(int index, String[] toks,
-      String[] lemmas) {
+      String[] lemmas, int windowSize) {
 
+    // TODO consider the windowSize 
     ArrayList<String> contextWords = new ArrayList<String>();
 
     for (int i = 0; i < toks.length; i++) {
@@ -123,7 +124,7 @@ public class DefaultIMSContextGenerator implements IMSContextGenerator {
 
     HashSet<String> surroundingWords = new HashSet<>();
     surroundingWords.addAll(Arrays.asList(extractSurroundingWords(index, toks,
-        lemmas)));
+        lemmas, windowSize)));
 
     String[] localCollocations = extractLocalCollocations(index, toks, ngram);
 

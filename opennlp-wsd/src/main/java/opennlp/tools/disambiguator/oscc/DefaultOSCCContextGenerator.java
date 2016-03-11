@@ -39,6 +39,7 @@ public class DefaultOSCCContextGenerator implements OSCCContextGenerator {
   public String[] extractSurroundingContextClusters(int index, String[] toks,
       String[] tags, String[] lemmas, int windowSize) {
 
+    // TODO consider windowSize
     ArrayList<String> contextClusters = new ArrayList<String>();
 
     for (int i = 0; i < toks.length; i++) {
@@ -49,19 +50,19 @@ public class DefaultOSCCContextGenerator implements OSCCContextGenerator {
 
           String lemma = lemmas[i].toLowerCase().replaceAll("[^a-z_]", "")
               .trim();
-          
-          WordPOS word = new WordPOS(lemma, tags[i]);
 
-          // TODO check fix for "_" and null pointers
-          if (lemma.length() > 1 && !lemma.contains("_")) {
-            try{
-            ArrayList<Synset> synsets = word.getSynsets();
-            if (synsets!=null && synsets.size() > 0 ){
-              contextClusters.add(synsets.get(0).getOffset() + "");
-            }
-            }catch(NullPointerException ex)
-            {
-              //TODO tagger mistake add proper exception
+          WordPOS word = new WordPOS(lemma, tags[i]);
+      
+          if (lemma.length() > 1) {
+            try {
+              ArrayList<Synset> synsets = word.getSynsets();
+              if (synsets != null && synsets.size() > 0) {
+                for (Synset syn : synsets){
+                  contextClusters.add(syn.getOffset() + "");
+                }
+              }
+            } catch (NullPointerException ex) {
+              // TODO tagger mistake add proper exception
             }
           }
 
@@ -80,30 +81,32 @@ public class DefaultOSCCContextGenerator implements OSCCContextGenerator {
    */
   @Override
   public String[] getContext(int index, String[] toks, String[] tags,
-      String[] lemmas, int windowSize) {
+      String[] lemmas, int windowSize, ArrayList<String> model) {
 
     HashSet<String> surroundingContextClusters = new HashSet<>();
-    surroundingContextClusters.addAll(Arrays
-        .asList(extractSurroundingContextClusters(index, toks, tags, lemmas,
-            windowSize)));
+    surroundingContextClusters
+        .addAll(Arrays.asList(extractSurroundingContextClusters(index, toks,
+            tags, lemmas, windowSize)));
 
-    String[] serializedFeatures = new String[surroundingContextClusters.size()];
+    String[] serializedFeatures = new String[model.size()];
 
     int i = 0;
-
-    for (String feature : surroundingContextClusters) {
-      serializedFeatures[i] = "F" + i + "=" + feature;
+    for (String word : model) {
+      if (surroundingContextClusters.contains(word.toString())) {
+        serializedFeatures[i] = "F" + i + "=1";
+      } else {
+        serializedFeatures[i] = "F" + i + "=0";
+      }
       i++;
     }
 
     return serializedFeatures;
-
   }
 
-  public String[] getContext(WSDSample sample, int windowSize) {
+  public String[] getContext(WSDSample sample, int windowSize, ArrayList<String> model) {
 
     return getContext(sample.getTargetPosition(), sample.getSentence(),
-        sample.getTags(), sample.getLemmas(), windowSize);
+        sample.getTags(), sample.getLemmas(), windowSize, model);
   }
 
 }

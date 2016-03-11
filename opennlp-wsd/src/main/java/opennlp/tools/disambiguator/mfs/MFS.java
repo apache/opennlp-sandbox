@@ -194,9 +194,12 @@ public class MFS extends WSDisambiguator {
       WordPOS wordPOS = new WordPOS(word, pos);
 
       ArrayList<Synset> synsets = wordPOS.getSynsets();
-
-      int size = synsets.size();
-
+      int size;
+      if (this.parameters.isReturnMultiple()) {
+        size = synsets.size();
+      } else {
+        size = 1;
+      }
       String[] senses = new String[size];
 
       for (int i = 0; i < size; i++) {

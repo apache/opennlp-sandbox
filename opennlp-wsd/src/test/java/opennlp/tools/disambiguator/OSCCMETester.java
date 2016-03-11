@@ -20,30 +20,51 @@
 package opennlp.tools.disambiguator;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import opennlp.tools.disambiguator.mfs.MFS;
+import opennlp.tools.disambiguator.datareader.SemcorReaderExtended;
+import opennlp.tools.disambiguator.oscc.OSCCFactory;
+import opennlp.tools.disambiguator.oscc.OSCCME;
+import opennlp.tools.disambiguator.oscc.OSCCModel;
+import opennlp.tools.disambiguator.oscc.OSCCParameters;
+import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.Span;
+import opennlp.tools.util.TrainingParameters;
 
 /**
- * This is the test class for {@link MFS}.
+ * This is the test class for {@link OSCCME}.
  * 
- * The scope of this test is to make sure that the MFS disambiguator code can be
- * executed. This test can not detect mistakes which lead to incorrect feature
- * generation or other mistakes which decrease the disambiguation performance of the
- * disambiguator.
+ * The scope of this test is to make sure that the OSCC disambiguator code can
+ * be executed. This test can not detect mistakes which lead to incorrect
+ * feature generation or other mistakes which decrease the disambiguation
+ * performance of the disambiguator.
+ * 
+ * In this test the {@link OSCCME} is trained with Semcor and then the computed
+ * model is used to predict sentences from the training sentences.
  */
-public class MFSTester {
+public class OSCCMETester {
   // TODO write more tests
   // TODO modify when we fix the parameter model
 
   static String modelsDir = "src\\test\\resources\\models\\";
+  static String trainingDataDirectory = "src\\test\\resources\\supervised\\models\\";
 
-  static MFS mfs;
+  static OSCCParameters OSCCParams;
+  static OSCCME oscc;
+  static OSCCFactory osccFactory;
+  static OSCCModel model;
+
+  static String test = "please.v";
+  static File outFile;
 
   static String test1 = "We need to discuss an important topic, please write to me soon.";
   static String test2 = "The component was highly radioactive to the point that"
@@ -63,11 +84,10 @@ public class MFSTester {
   static String[] lemmas3;
 
   /*
-   * Setup the testing variables and the training files
+   * Setup the testing variables
    */
   @BeforeClass
   public static void setUpAndTraining() {
-
     WSDHelper.loadTokenizer(modelsDir + "en-token.bin");
     WSDHelper.loadLemmatizer(modelsDir + "en-lemmatizer.dict");
     WSDHelper.loadTagger(modelsDir + "en-pos-maxent.bin");
@@ -101,8 +121,34 @@ public class MFSTester {
     }
     lemmas3 = tempLemmas3.toArray(new String[tempLemmas3.size()]);
 
-    mfs = new MFS();
+    OSCCParams = new OSCCParameters("");
+    OSCCParams.setTrainingDataDirectory(trainingDataDirectory);
+    osccFactory = new OSCCFactory();
+    TrainingParameters trainingParams = new TrainingParameters();
+    SemcorReaderExtended sr = new SemcorReaderExtended();
+    ObjectStream<WSDSample> sampleStream = sr.getSemcorDataStream(test);
 
+    OSCCModel writeModel = null;
+    /*
+     * Tests training the disambiguator We test both writing and reading a model
+     * file trained by semcor
+     */
+
+    try {
+      writeModel = OSCCME.train("en", sampleStream, trainingParams, OSCCParams,
+          osccFactory);
+      assertNotNull("Checking the model to be written", writeModel);
+      writeModel.writeModel(OSCCParams.getTrainingDataDirectory() + test);
+      outFile = new File(
+          OSCCParams.getTrainingDataDirectory() + test + ".oscc.model");
+      model = new OSCCModel(outFile);
+      assertNotNull("Checking the read model", model);
+      oscc = new OSCCME(model, OSCCParams);
+      assertNotNull("Checking the disambiguator", oscc);
+    } catch (IOException e1) {
+      e1.printStackTrace();
+      fail("Exception in training");
+    }
   }
 
   /*
@@ -110,7 +156,7 @@ public class MFSTester {
    */
   @Test
   public void testOneWordDisambiguation() {
-    String[] senses = mfs.disambiguate(sentence1, tags1, lemmas1, 8);
+    String[] senses = oscc.disambiguate(sentence1, tags1, lemmas1, 8);
 
     assertEquals("Check number of senses", 1, senses.length);
   }
@@ -123,7 +169,7 @@ public class MFSTester {
   @Test
   public void testWordSpanDisambiguation() {
     Span span = new Span(3, 7);
-    List<String[]> senses = mfs.disambiguate(sentence2, tags2, lemmas2, span);
+    List<String[]> senses = oscc.disambiguate(sentence2, tags2, lemmas2, span);
 
     assertEquals("Check number of returned words", 5, senses.size());
     assertEquals("Check number of senses", 1, senses.get(0).length);
@@ -137,10 +183,11 @@ public class MFSTester {
    */
   @Test
   public void testAllWordsDisambiguation() {
-    List<String[]> senses = mfs.disambiguate(sentence3, tags3, lemmas3);
+    List<String[]> senses = oscc.disambiguate(sentence3, tags3, lemmas3);
 
     assertEquals("Check number of returned words", 15, senses.size());
     assertEquals("Check preposition", "WSDHELPER personal pronoun",
         senses.get(6)[0]);
   }
+
 }

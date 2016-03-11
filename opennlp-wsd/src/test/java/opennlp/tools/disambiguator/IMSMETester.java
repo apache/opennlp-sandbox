@@ -19,33 +19,50 @@
 
 package opennlp.tools.disambiguator;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import opennlp.tools.disambiguator.lesk.Lesk;
-import opennlp.tools.disambiguator.lesk.LeskParameters;
-import opennlp.tools.disambiguator.lesk.LeskParameters.LESK_TYPE;
-import opennlp.tools.util.Span;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import opennlp.tools.disambiguator.datareader.SemcorReaderExtended;
+import opennlp.tools.disambiguator.ims.IMSFactory;
+import opennlp.tools.disambiguator.ims.IMSME;
+import opennlp.tools.disambiguator.ims.IMSModel;
+import opennlp.tools.disambiguator.ims.IMSParameters;
+import opennlp.tools.util.ObjectStream;
+import opennlp.tools.util.Span;
+import opennlp.tools.util.TrainingParameters;
+
 /**
- * This is the test class for {@link Lesk}.
+ * This is the test class for {@link IMSME}.
  * 
- * The scope of this test is to make sure that the Lesk disambiguator code can be
+ * The scope of this test is to make sure that the IMS disambiguator code can be
  * executed. This test can not detect mistakes which lead to incorrect feature
  * generation or other mistakes which decrease the disambiguation performance of the
  * disambiguator.
+ * 
+ * In this test the {@link IMSME} is trained with Semcor and then the computed
+ * model is used to predict sentences from the training sentences.
  */
-public class LeskTester {
+public class IMSMETester {
   // TODO write more tests
+  // TODO modify when we fix the parameter model
 
   static String modelsDir = "src\\test\\resources\\models\\";
+  static String trainingDataDirectory = "src\\test\\resources\\supervised\\models\\";
 
-  static Lesk lesk;
+  static IMSParameters IMSParams;
+  static IMSME ims;
+  static IMSFactory IMSFactory;
+  static IMSModel model;
+
+  static String test = "please.v";
+  static File outFile;
 
   static String test1 = "We need to discuss an important topic, please write to me soon.";
   static String test2 = "The component was highly radioactive to the point that"
@@ -68,8 +85,7 @@ public class LeskTester {
    * Setup the testing variables
    */
   @BeforeClass
-  public static void setUp() {
-
+  public static void setUpAndTraining() {
     WSDHelper.loadTokenizer(modelsDir + "en-token.bin");
     WSDHelper.loadLemmatizer(modelsDir + "en-lemmatizer.dict");
     WSDHelper.loadTagger(modelsDir + "en-pos-maxent.bin");
@@ -103,14 +119,34 @@ public class LeskTester {
     }
     lemmas3 = tempLemmas3.toArray(new String[tempLemmas3.size()]);
 
-    lesk = new Lesk();
+    IMSParams = new IMSParameters("");
+    IMSParams.setTrainingDataDirectory(trainingDataDirectory);
+    IMSFactory = new IMSFactory();
+    TrainingParameters trainingParams = new TrainingParameters();
+    SemcorReaderExtended sr = new SemcorReaderExtended();
+    ObjectStream<WSDSample> sampleStream = sr.getSemcorDataStream(test);
 
-    LeskParameters params = new LeskParameters();
-    params.setLeskType(LESK_TYPE.LESK_EXT);
-    boolean a[] = { true, true, true, true, true, true, true, true, true,
-        true };
-    params.setFeatures(a);
-    lesk.setParams(params);
+    IMSModel writeModel = null;
+    /*
+     * Tests training the disambiguator We test both writing and reading a model
+     * file trained by semcor
+     */
+
+    try {
+      writeModel = IMSME.train("en", sampleStream, trainingParams, IMSParams,
+          IMSFactory);
+      assertNotNull("Checking the model to be written", writeModel);
+      writeModel.writeModel(IMSParams.getTrainingDataDirectory() + test);
+      outFile = new File(
+          IMSParams.getTrainingDataDirectory() + test + ".ims.model");
+      model = new IMSModel(outFile);
+      assertNotNull("Checking the read model", model);
+      ims = new IMSME(model, IMSParams);
+      assertNotNull("Checking the disambiguator", ims);
+    } catch (IOException e1) {
+      e1.printStackTrace();
+      fail("Exception in training");
+    }
   }
 
   /*
@@ -118,7 +154,7 @@ public class LeskTester {
    */
   @Test
   public void testOneWordDisambiguation() {
-    String[] senses = lesk.disambiguate(sentence1, tags1, lemmas1, 8);
+    String[] senses = ims.disambiguate(sentence1, tags1, lemmas1, 8);
 
     assertEquals("Check number of senses", 1, senses.length);
   }
@@ -131,10 +167,10 @@ public class LeskTester {
   @Test
   public void testWordSpanDisambiguation() {
     Span span = new Span(3, 7);
-    List<String[]> senses = lesk.disambiguate(sentence2, tags2, lemmas2, span);
+    List<String[]> senses = ims.disambiguate(sentence2, tags2, lemmas2, span);
 
     assertEquals("Check number of returned words", 5, senses.size());
-    assertEquals("Check number of senses", 3, senses.get(0).length);
+    assertEquals("Check number of senses", 1, senses.get(0).length);
     assertEquals("Check monosemous word", 1, senses.get(1).length);
     assertEquals("Check preposition", "WSDHELPER to", senses.get(2)[0]);
     assertEquals("Check determiner", "WSDHELPER determiner", senses.get(3)[0]);
@@ -145,7 +181,7 @@ public class LeskTester {
    */
   @Test
   public void testAllWordsDisambiguation() {
-    List<String[]> senses = lesk.disambiguate(sentence3, tags3, lemmas3);
+    List<String[]> senses = ims.disambiguate(sentence3, tags3, lemmas3);
 
     assertEquals("Check number of returned words", 15, senses.size());
     assertEquals("Check preposition", "WSDHELPER personal pronoun",

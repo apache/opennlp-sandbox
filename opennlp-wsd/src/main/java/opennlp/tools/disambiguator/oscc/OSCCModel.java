@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 import java.net.URL;
@@ -43,13 +44,13 @@ public class OSCCModel extends BaseModel {
   private static final String WINSIZE = "winsize";
   private static final String CONTEXTCLUSTERS = "contextclusters";
 
-  //private ArrayList<String> contextClusters = new ArrayList<String>();
+  private ArrayList<String> contextClusters = new ArrayList<String>();
   private String wordTag;
   private int windowSize;
 
-  /*public ArrayList<String> getContextClusters() {
+  public ArrayList<String> getContextClusters() {
     return contextClusters;
-  }*/
+  }
 
   public int getWindowSize() {
     return windowSize;
@@ -59,9 +60,9 @@ public class OSCCModel extends BaseModel {
     this.windowSize = windowSize;
   }
 
- /* public void setContextClusters(ArrayList<String> contextClusters) {
+  public void setContextClusters(ArrayList<String> contextClusters) {
     this.contextClusters = contextClusters;
-  }*/
+  }
 
   public String getWordTag() {
     return wordTag;
@@ -72,7 +73,7 @@ public class OSCCModel extends BaseModel {
   }
 
    public OSCCModel(String languageCode, String wordTag, int windowSize,
-   MaxentModel osccModel,
+   MaxentModel osccModel, ArrayList<String> contextClusters,
       Map<String, String> manifestInfoEntries, OSCCFactory factory) {
     super(COMPONENT_NAME, languageCode, manifestInfoEntries, factory);
 
@@ -80,17 +81,17 @@ public class OSCCModel extends BaseModel {
     this.setManifestProperty(WORDTAG, wordTag);
     this.setManifestProperty(WINSIZE, windowSize + "");
     
-//    this.setManifestProperty(CONTEXTCLUSTERS,
-//        StringUtils.join(contextClusters, ","));
+    this.setManifestProperty(CONTEXTCLUSTERS,
+        StringUtils.join(contextClusters, ","));
 
-    //this.contextClusters = contextClusters;
+    this.contextClusters = contextClusters;
     checkArtifactMap();
   }
 
   public OSCCModel(String languageCode, String wordTag, int windowSize,
-      int ngram, MaxentModel osccModel, 
+      int ngram, MaxentModel osccModel, ArrayList<String> contextClusters,
       OSCCFactory factory) {
-    this(languageCode, wordTag, windowSize, osccModel,
+    this(languageCode, wordTag, windowSize, osccModel, contextClusters,
         null, factory);
   }
 
@@ -135,10 +136,10 @@ public class OSCCModel extends BaseModel {
 
   public void updateAttributes() {
     Properties manifest = (Properties) artifactMap.get(MANIFEST_ENTRY);
-    //String contextClusters = (String) manifest.get(CONTEXTCLUSTERS);
+    String contextClusters = (String) manifest.get(CONTEXTCLUSTERS);
 
-   /* this.contextClusters = new ArrayList(
-        Arrays.asList(contextClusters.split(",")));*/
+    this.contextClusters = new ArrayList(
+        Arrays.asList(contextClusters.split(",")));
     this.wordTag = (String) manifest.get(WORDTAG);
     this.windowSize = Integer.parseInt((String) manifest.get(WINSIZE));
   }
