@@ -288,7 +288,7 @@ public class SensevalReader {
    *          The word, of which we are looking for the instances
    * @return the stream of {@link WSDSample} of the word to disambiguate
    */
-  public ObjectStream<WSDSample> getSemcorDataStream(String wordTag) {
+  public ObjectStream<WSDSample> getSensevalDataStream(String wordTag) {
     return ObjectStreamUtils.createObjectStream(getSensevalData(wordTag));
   }
 
