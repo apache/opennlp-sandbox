@@ -30,10 +30,8 @@ import opennlp.tools.util.Span;
  * A word sense disambiguator that determines which sense of a word is meant in
  * a particular context. It is a classification task, where the classes are the
  * different senses of the ambiguous word. Disambiguation can be achieved in
- * either supervised or un-supervised approaches. A disambiguator returns an
- * array of sense IDs ordered by their disambiguation score as well their
- * source. The first sense ID is the most probable sense in the set context. The
- * context is a sentence or a chunk of text where the target word exists.
+ * either supervised or un-supervised approaches. A disambiguator returns a
+ * sense ID.
  * 
  * <b>How it works :<b> Just supply the context as an array of tokens and the
  * index of the target word to the disambiguate method.
@@ -41,12 +39,13 @@ import opennlp.tools.util.Span;
  * Otherwise for multiple words, you can set a word span instead of simply one
  * index. For the moment the source of sense definitions is from WordNet. *
  * Please see {@link Lesk} for an un-supervised approach. Please see {@link IMS}
- * for a supervised approach.
+ * {@link OSCC} for a supervised approach.
  * 
  * Examples on how to use each approach are provided in the test section.
  * 
  * @see Lesk
  * @see IMS
+ * @see OSCC
  */
 public abstract class WSDisambiguator {
 
@@ -75,10 +74,10 @@ public abstract class WSDisambiguator {
    * @param ambiguousTokenIndex
    * @return result as an array of WordNet IDs
    */
-  public String[] disambiguate(String[] tokenizedContext,
-      String[] tokenTags, String[] lemmas, int ambiguousTokenIndex){
-	  return disambiguate(new WSDSample(tokenizedContext, tokenTags, lemmas,
-		        ambiguousTokenIndex));
+  public String disambiguate(String[] tokenizedContext, String[] tokenTags,
+      String[] lemmas, int ambiguousTokenIndex) {
+    return disambiguate(new WSDSample(tokenizedContext, tokenTags, lemmas,
+        ambiguousTokenIndex));
   }
 
   /**
@@ -90,9 +89,9 @@ public abstract class WSDisambiguator {
    * @param ambiguousTokenLemma
    * @return result as an array of WordNet IDs
    */
-  public List<String[]> disambiguate(String[] tokenizedContext,
+  public List<String> disambiguate(String[] tokenizedContext,
       String[] tokenTags, String[] lemmas, Span ambiguousTokenIndexSpan) {
-    List<String[]> senses = new ArrayList<String[]>();
+    List<String> senses = new ArrayList<String>();
 
     int start = Math.max(0, ambiguousTokenIndexSpan.getStart());
 
@@ -102,16 +101,15 @@ public abstract class WSDisambiguator {
     for (int i = start; i < end + 1; i++) {
 
       if (WSDHelper.isRelevantPOSTag(tokenTags[i])) {
-        WSDSample sample = new WSDSample(tokenizedContext, tokenTags, lemmas, i);
-        String[] sense = disambiguate(sample);
+        WSDSample sample = new WSDSample(tokenizedContext, tokenTags, lemmas,
+            i);
+        String sense = disambiguate(sample);
         senses.add(sense);
       } else {
 
         if (WSDHelper.getNonRelevWordsDef(tokenTags[i]) != null) {
-          String s = WSDParameters.SenseSource.WSDHELPER.name() + " "
+          String sense = WSDParameters.SenseSource.WSDHELPER.name() + " "
               + WSDHelper.getNonRelevWordsDef(tokenTags[i]);
-          String[] sense = { s };
-
           senses.add(sense);
         } else {
           senses.add(null);
@@ -135,24 +133,22 @@ public abstract class WSDisambiguator {
    * @return a List of arrays, each corresponding to the senses of each word of
    *         the context which are to be disambiguated
    */
-  public List<String[]> disambiguate(String[] tokenizedContext,
+  public List<String> disambiguate(String[] tokenizedContext,
       String[] tokenTags, String[] lemmas) {
 
-    List<String[]> senses = new ArrayList<String[]>();
+    List<String> senses = new ArrayList<String>();
 
     for (int i = 0; i < tokenizedContext.length; i++) {
 
       if (WSDHelper.isRelevantPOSTag(tokenTags[i])) {
-        WSDSample sample = new WSDSample(tokenizedContext, tokenTags, lemmas, i);
-        String[] sense = disambiguate(sample);
-        senses.add(sense);
+        WSDSample sample = new WSDSample(tokenizedContext, tokenTags, lemmas,
+            i);
+        senses.add(disambiguate(sample));
       } else {
 
         if (WSDHelper.getNonRelevWordsDef(tokenTags[i]) != null) {
-          String s = IMSParameters.SenseSource.WSDHELPER.name() + " "
+          String sense = IMSParameters.SenseSource.WSDHELPER.name() + " "
               + WSDHelper.getNonRelevWordsDef(tokenTags[i]);
-          String[] sense = { s };
-
           senses.add(sense);
         } else {
           senses.add(null);
@@ -168,6 +164,6 @@ public abstract class WSDisambiguator {
    * @param WSDSample
    * @return result as an array of WordNet IDs
    */
-  public abstract String[] disambiguate(WSDSample sample);
+  public abstract String disambiguate(WSDSample sample);
 
 }

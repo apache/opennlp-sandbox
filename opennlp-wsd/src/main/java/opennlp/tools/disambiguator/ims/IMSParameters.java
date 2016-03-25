@@ -62,7 +62,6 @@ public class IMSParameters extends WSDParameters {
     this.ngram = ngram;
     this.senseSource = senseSource;
     this.trainingDataDirectory = trainingDataDirectory;
-    this.isCoarseSense = false;
 
     File folder = new File(trainingDataDirectory);
     if (!folder.exists())

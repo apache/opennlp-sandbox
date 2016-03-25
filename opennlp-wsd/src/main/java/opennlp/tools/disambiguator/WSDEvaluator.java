@@ -55,43 +55,25 @@ public class WSDEvaluator extends Evaluator<WSDSample> {
   // @Override
   protected WSDSample processSample(WSDSample reference) {
 
-    String[] referenceSenses = reference.getSenseIDs().toArray(
-        new String[reference.getSenseIDs().size()]);
+    String[] referenceSenses = reference.getSenseIDs();
 
     // get the best predicted sense
     String predictedSense = disambiguator.disambiguate(reference.getSentence(),
         reference.getTags(), reference.getLemmas(),
-        reference.getTargetPosition())[0];
+        reference.getTargetPosition());
 
     if (predictedSense == null) {
-      System.out.println("There was no sense for : "
-          + reference.getTargetWord());
+      System.out
+          .println("There was no sense for : " + reference.getTargetWord());
       return null;
     }
     // get the senseKey from the result
     String senseKey = predictedSense.split(" ")[1];
 
-    // if we have multiple senses mapped to one sense
-    if (disambiguator.getParams().isCoarseSense()) {
-      // if we find the sense in one of the coarse senses
-      int found = -1;
-      for (int i = 0; i < referenceSenses.length; i++) {
-        if (referenceSenses[i].equals(senseKey)) {
-          accuracy.add(1);
-          found = i;
-          break;
-        }
-      }
-      if (found < 0) {
-        accuracy.add(0);
-      }
-    } // else we have fine grained senses (only one mapped sense)
-    else {
-      if (referenceSenses[0].equals(senseKey)) {
-        accuracy.add(1);
-      } else {
-        accuracy.add(0);
-      }
+    if (referenceSenses[0].equals(senseKey)) {
+      accuracy.add(1);
+    } else {
+      accuracy.add(0);
     }
 
     return new WSDSample(reference.getSentence(), reference.getTags(),

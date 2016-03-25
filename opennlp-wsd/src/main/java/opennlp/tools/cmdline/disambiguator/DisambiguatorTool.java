@@ -31,13 +31,12 @@ import opennlp.tools.cmdline.CmdLineTool;
 import opennlp.tools.cmdline.CmdLineUtil;
 import opennlp.tools.cmdline.PerformanceMonitor;
 import opennlp.tools.cmdline.TerminateToolException;
+import opennlp.tools.disambiguator.Lesk;
 import opennlp.tools.disambiguator.WSDHelper;
 import opennlp.tools.disambiguator.WSDSample;
 import opennlp.tools.disambiguator.WSDSampleStream;
 import opennlp.tools.disambiguator.WSDisambiguator;
-import opennlp.tools.disambiguator.ims.IMSME;
-import opennlp.tools.disambiguator.lesk.Lesk;
-import opennlp.tools.disambiguator.mfs.MFS;
+import opennlp.tools.disambiguator.MFS;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.PlainTextByLineStream;
 

@@ -34,7 +34,7 @@ public class WTDIMS {
   protected String[] lemmas;
   protected int wordIndex;
   protected int sense;
-  protected List<String> senseIDs;
+  protected String[] senseIDs;
 
   // Attributes related to IMS features
   protected String[] posOfSurroundingWords;
@@ -51,7 +51,7 @@ public class WTDIMS {
   }
 
   public WTDIMS(String[] sentence, String[] posTags, String[] lemmas,
-      int wordIndex, List<String> senseIDs) {
+      int wordIndex, String[] senseIDs) {
     this.sentence = sentence;
     this.posTags = posTags;
     this.wordIndex = wordIndex;
@@ -61,7 +61,7 @@ public class WTDIMS {
   }
 
   public WTDIMS(String[] sentence, String[] posTags, String[] lemmas,
-      String word, List<String> senseIDs) {
+      String word, String[] senseIDs) {
     super();
 
     this.sentence = sentence;
@@ -87,7 +87,7 @@ public class WTDIMS {
     this.senseIDs = sample.getSenseIDs();
 
   }
-  
+
   public String[] getSentence() {
     return sentence;
   }
@@ -128,11 +128,11 @@ public class WTDIMS {
     this.sense = sense;
   }
 
-  public List<String> getSenseIDs() {
+  public String[] getSenseIDs() {
     return senseIDs;
   }
 
-  public void setSenseIDs(ArrayList<String> senseIDs) {
+  public void setSenseIDs(String[] senseIDs) {
     this.senseIDs = senseIDs;
   }
 
@@ -147,8 +147,8 @@ public class WTDIMS {
     String ref = "";
 
     if ((WSDHelper.getPOS(this.getPosTags()[this.getWordIndex()]) != null)) {
-      if (WSDHelper.getPOS(this.getPosTags()[this.getWordIndex()]).equals(
-          POS.VERB)) {
+      if (WSDHelper.getPOS(this.getPosTags()[this.getWordIndex()])
+          .equals(POS.VERB)) {
         ref = wordBaseForm + ".v";
       } else if (WSDHelper.getPOS(this.getPosTags()[this.getWordIndex()])
           .equals(POS.NOUN)) {
@@ -165,7 +165,6 @@ public class WTDIMS {
     return ref;
   }
 
-  
   public String[] getPosOfSurroundingWords() {
     return posOfSurroundingWords;
   }

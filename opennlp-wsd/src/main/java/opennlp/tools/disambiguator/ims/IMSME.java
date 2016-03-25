@@ -25,7 +25,7 @@ import java.util.HashMap;
 import opennlp.tools.disambiguator.WSDHelper;
 import opennlp.tools.disambiguator.WSDSample;
 import opennlp.tools.disambiguator.WSDisambiguator;
-import opennlp.tools.disambiguator.mfs.MFS;
+import opennlp.tools.disambiguator.MFS;
 import opennlp.tools.ml.EventTrainer;
 import opennlp.tools.ml.TrainerFactory;
 import opennlp.tools.ml.model.MaxentModel;
@@ -66,7 +66,8 @@ public class IMSME extends WSDisambiguator {
       TrainingParameters mlParams, IMSParameters imsParams,
       IMSFactory imsfactory) throws IOException {
 
-    ArrayList<String> surroundingWordModel = buildSurroundingWords(samples, imsParams.getWindowSize());
+    ArrayList<String> surroundingWordModel = buildSurroundingWords(samples,
+        imsParams.getWindowSize());
 
     HashMap<String, String> manifestInfoEntries = new HashMap<String, String>();
 
@@ -81,7 +82,7 @@ public class IMSME extends WSDisambiguator {
       wordTag = sample.getTargetWordTag();
       do {
 
-        String sense = sample.getSenseIDs().get(0);
+        String sense = sample.getSenseIDs()[0];
 
         String[] context = cg.getContext(sample, imsParams.ngram,
             imsParams.windowSize, surroundingWordModel);
@@ -122,7 +123,7 @@ public class IMSME extends WSDisambiguator {
   }
 
   @Override
-  public String[] disambiguate(WSDSample sample) {
+  public String disambiguate(WSDSample sample) {
     if (WSDHelper.isRelevantPOSTag(sample.getTargetTag())) {
       String wordTag = sample.getTargetWordTag();
 
@@ -157,12 +158,9 @@ public class IMSME extends WSDisambiguator {
 
           if (outcome != null && !outcome.equals("")) {
 
-            outcome = this.getParams().getSenseSource().name() + " "
+            return this.getParams().getSenseSource().name() + " "
                 + wordTag.split("\\.")[0] + "%" + outcome;
 
-            String[] s = { outcome };
-
-            return s;
           } else {
             MFS mfs = new MFS();
             return mfs.disambiguate(wordTag);
@@ -186,12 +184,9 @@ public class IMSME extends WSDisambiguator {
 
         if (outcome != null && !outcome.equals("")) {
 
-          outcome = this.getParams().getSenseSource().name() + " "
+          return this.getParams().getSenseSource().name() + " "
               + wordTag.split("\\.")[0] + "%" + outcome;
 
-          String[] s = { outcome };
-
-          return s;
         } else {
 
           MFS mfs = new MFS();
@@ -201,10 +196,8 @@ public class IMSME extends WSDisambiguator {
     } else {
 
       if (WSDHelper.getNonRelevWordsDef(sample.getTargetTag()) != null) {
-        String s = IMSParameters.SenseSource.WSDHELPER.name() + " "
+        return IMSParameters.SenseSource.WSDHELPER.name() + " "
             + sample.getTargetTag();
-        String[] sense = { s };
-        return sense;
       } else {
         return null;
       }
@@ -226,7 +219,7 @@ public class IMSME extends WSDisambiguator {
    *          : the index of the word to disambiguate
    * @return an array of the senses of the word to disambiguate
    */
-  public String[] disambiguate(String[] tokenizedContext, String[] tokenTags,
+  public String disambiguate(String[] tokenizedContext, String[] tokenTags,
       String[] lemmas, int index) {
     return disambiguate(
         new WSDSample(tokenizedContext, tokenTags, lemmas, index));

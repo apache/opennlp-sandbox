@@ -25,7 +25,7 @@ import java.util.HashMap;
 import opennlp.tools.disambiguator.WSDHelper;
 import opennlp.tools.disambiguator.WSDSample;
 import opennlp.tools.disambiguator.WSDisambiguator;
-import opennlp.tools.disambiguator.mfs.MFS;
+import opennlp.tools.disambiguator.MFS;
 import opennlp.tools.ml.EventTrainer;
 import opennlp.tools.ml.TrainerFactory;
 import opennlp.tools.ml.model.MaxentModel;
@@ -103,7 +103,7 @@ public class OSCCME extends WSDisambiguator {
     if (sample != null) {
       wordTag = sample.getTargetWordTag();
       do {
-        String sense = sample.getSenseIDs().get(0);
+        String sense = sample.getSenseIDs()[0];
         String[] context = cg.getContext(sample, osccParams.windowSize,
             surroundingClusterModel);
         Event ev = new Event(sense + "", context);
@@ -143,7 +143,7 @@ public class OSCCME extends WSDisambiguator {
   }
 
   @Override
-  public String[] disambiguate(WSDSample sample) {
+  public String disambiguate(WSDSample sample) {
     if (WSDHelper.isRelevantPOSTag(sample.getTargetTag())) {
       String wordTag = sample.getTargetWordTag();
 
@@ -177,12 +177,9 @@ public class OSCCME extends WSDisambiguator {
 
           if (outcome != null && !outcome.equals("")) {
 
-            outcome = this.getParams().getSenseSource().name() + " "
+            return this.getParams().getSenseSource().name() + " "
                 + wordTag.split("\\.")[0] + "%" + outcome;
 
-            String[] s = { outcome };
-
-            return s;
           } else {
             MFS mfs = new MFS();
             return mfs.disambiguate(wordTag);
@@ -205,12 +202,8 @@ public class OSCCME extends WSDisambiguator {
 
         if (outcome != null && !outcome.equals("")) {
 
-          outcome = this.getParams().getSenseSource().name() + " "
+          return this.getParams().getSenseSource().name() + " "
               + wordTag.split("\\.")[0] + "%" + outcome;
-
-          String[] s = { outcome };
-
-          return s;
         } else {
 
           MFS mfs = new MFS();
@@ -220,10 +213,8 @@ public class OSCCME extends WSDisambiguator {
     } else {
 
       if (WSDHelper.getNonRelevWordsDef(sample.getTargetTag()) != null) {
-        String s = OSCCParameters.SenseSource.WSDHELPER.name() + " "
+        return OSCCParameters.SenseSource.WSDHELPER.name() + " "
             + sample.getTargetTag();
-        String[] sense = { s };
-        return sense;
       } else {
         return null;
       }
@@ -245,7 +236,7 @@ public class OSCCME extends WSDisambiguator {
    *          : the index of the word to disambiguate
    * @return an array of the senses of the word to disambiguate
    */
-  public String[] disambiguate(String[] tokenizedContext, String[] tokenTags,
+  public String disambiguate(String[] tokenizedContext, String[] tokenTags,
       String[] lemmas, int index) {
     return disambiguate(
         new WSDSample(tokenizedContext, tokenTags, lemmas, index));

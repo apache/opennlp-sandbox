@@ -16,21 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package opennlp.tools.disambiguator.lesk;
+package opennlp.tools.disambiguator;
 
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import opennlp.tools.disambiguator.WSDHelper;
-import opennlp.tools.disambiguator.SynNode;
-import opennlp.tools.disambiguator.WSDParameters;
-import opennlp.tools.disambiguator.WSDSample;
-import opennlp.tools.disambiguator.WSDisambiguator;
-import opennlp.tools.disambiguator.WordPOS;
-import opennlp.tools.disambiguator.WordSense;
-import opennlp.tools.disambiguator.mfs.MFS;
+import opennlp.tools.disambiguator.MFS;
 import net.sf.extjwnl.JWNLException;
 import net.sf.extjwnl.data.Synset;
 import net.sf.extjwnl.data.Word;
@@ -114,8 +107,8 @@ public class Lesk extends WSDisambiguator {
     for (int i = 0; i < sample.getSentence().length; i++) {
       if (!WSDHelper.getStopCache().containsKey(sample.getSentence()[i])) {
         if (WSDHelper.getRelvCache().containsKey(sample.getTags()[i])) {
-          contextWords.add(new WordPOS(sample.getSentence()[i], sample
-              .getTags()[i]));
+          contextWords
+              .add(new WordPOS(sample.getSentence()[i], sample.getTags()[i]));
         }
       }
     }
@@ -163,8 +156,8 @@ public class Lesk extends WSDisambiguator {
       if (i >= 0 && i < sample.getSentence().length && i != index) {
         if (!WSDHelper.getStopCache().containsKey(sample.getSentence()[i])) {
           if (WSDHelper.getRelvCache().containsKey(sample.getTags()[i])) {
-            contextWords.add(new WordPOS(sample.getSentence()[i], sample
-                .getTags()[i]));
+            contextWords
+                .add(new WordPOS(sample.getSentence()[i], sample.getTags()[i]));
           }
         }
       }
@@ -326,11 +319,9 @@ public class Lesk extends WSDisambiguator {
     for (WordSense wordSense : scoredSenses) {
 
       if (params.features[0]) {
-        wordSense.setScore(wordSense.getScore()
-            + Math
-                .pow(
-                    assessSynonyms(wordSense.getNode().getSynonyms(),
-                        contextWords), params.iexp));
+        wordSense.setScore(wordSense.getScore() + Math.pow(
+            assessSynonyms(wordSense.getNode().getSynonyms(), contextWords),
+            params.iexp));
       }
 
       if (params.features[1]) {
@@ -403,17 +394,17 @@ public class Lesk extends WSDisambiguator {
     if (depth == 0)
       return;
 
-    String[] tokenizedGloss = WSDHelper.getTokenizer().tokenize(
-        child.getGloss().toString());
+    String[] tokenizedGloss = WSDHelper.getTokenizer()
+        .tokenize(child.getGloss().toString());
     ArrayList<WordPOS> relvGlossWords = WSDHelper
         .getAllRelevantWords(tokenizedGloss);
 
     SynNode childNode = new SynNode(child, relvGlossWords);
 
     childNode.setHypernyms();
-    wordSense.setScore(wordSense.getScore()
-        + Math.pow(depthScoreWeight, maxDepth - depth + 1)
-        * assessFeature(childNode.getHypernyms(), relvWords));
+    wordSense.setScore(
+        wordSense.getScore() + Math.pow(depthScoreWeight, maxDepth - depth + 1)
+            * assessFeature(childNode.getHypernyms(), relvWords));
     for (Synset hypernym : childNode.getHypernyms()) {
       fathomHypernyms(wordSense, hypernym, relvGlossWords, depth - 1, maxDepth,
           depthScoreWeight);
@@ -437,8 +428,8 @@ public class Lesk extends WSDisambiguator {
     if (depth == 0)
       return;
 
-    String[] tokenizedGloss = WSDHelper.getTokenizer().tokenize(
-        child.getGloss().toString());
+    String[] tokenizedGloss = WSDHelper.getTokenizer()
+        .tokenize(child.getGloss().toString());
     ArrayList<WordPOS> relvGlossWords = WSDHelper
         .getAllRelevantWords(tokenizedGloss);
 
@@ -449,8 +440,8 @@ public class Lesk extends WSDisambiguator {
         + Math.pow(assessFeature(childNode.getHypernyms(), relvWords),
             intersectionExponent) / Math.pow(depth, depthScoreExponent));
     for (Synset hypernym : childNode.getHypernyms()) {
-      fathomHypernymsExponential(wordSense, hypernym, relvGlossWords,
-          depth - 1, maxDepth, intersectionExponent, depthScoreExponent);
+      fathomHypernymsExponential(wordSense, hypernym, relvGlossWords, depth - 1,
+          maxDepth, intersectionExponent, depthScoreExponent);
     }
   }
 
@@ -470,17 +461,17 @@ public class Lesk extends WSDisambiguator {
     if (depth == 0)
       return;
 
-    String[] tokenizedGloss = WSDHelper.getTokenizer().tokenize(
-        child.getGloss().toString());
+    String[] tokenizedGloss = WSDHelper.getTokenizer()
+        .tokenize(child.getGloss().toString());
     ArrayList<WordPOS> relvGlossWords = WSDHelper
         .getAllRelevantWords(tokenizedGloss);
 
     SynNode childNode = new SynNode(child, relvGlossWords);
 
     childNode.setHyponyms();
-    wordSense.setScore(wordSense.getScore()
-        + Math.pow(depthScoreWeight, maxDepth - depth + 1)
-        * assessFeature(childNode.getHyponyms(), relvWords));
+    wordSense.setScore(
+        wordSense.getScore() + Math.pow(depthScoreWeight, maxDepth - depth + 1)
+            * assessFeature(childNode.getHyponyms(), relvWords));
     for (Synset hyponym : childNode.getHyponyms()) {
 
       fathomHyponyms(wordSense, hyponym, relvGlossWords, depth - 1, maxDepth,
@@ -505,8 +496,8 @@ public class Lesk extends WSDisambiguator {
     if (depth == 0)
       return;
 
-    String[] tokenizedGloss = WSDHelper.getTokenizer().tokenize(
-        child.getGloss().toString());
+    String[] tokenizedGloss = WSDHelper.getTokenizer()
+        .tokenize(child.getGloss().toString());
     ArrayList<WordPOS> relvGlossWords = WSDHelper
         .getAllRelevantWords(tokenizedGloss);
 
@@ -539,17 +530,17 @@ public class Lesk extends WSDisambiguator {
     if (depth == 0)
       return;
 
-    String[] tokenizedGloss = WSDHelper.getTokenizer().tokenize(
-        child.getGloss().toString());
+    String[] tokenizedGloss = WSDHelper.getTokenizer()
+        .tokenize(child.getGloss().toString());
     ArrayList<WordPOS> relvGlossWords = WSDHelper
         .getAllRelevantWords(tokenizedGloss);
 
     SynNode childNode = new SynNode(child, relvGlossWords);
 
     childNode.setMeronyms();
-    wordSense.setScore(wordSense.getScore()
-        + Math.pow(depthScoreWeight, maxDepth - depth + 1)
-        * assessFeature(childNode.getMeronyms(), relvWords));
+    wordSense.setScore(
+        wordSense.getScore() + Math.pow(depthScoreWeight, maxDepth - depth + 1)
+            * assessFeature(childNode.getMeronyms(), relvWords));
     for (Synset meronym : childNode.getMeronyms()) {
 
       fathomMeronyms(wordSense, meronym, relvGlossWords, depth - 1, maxDepth,
@@ -574,8 +565,8 @@ public class Lesk extends WSDisambiguator {
     if (depth == 0)
       return;
 
-    String[] tokenizedGloss = WSDHelper.getTokenizer().tokenize(
-        child.getGloss().toString());
+    String[] tokenizedGloss = WSDHelper.getTokenizer()
+        .tokenize(child.getGloss().toString());
     ArrayList<WordPOS> relvGlossWords = WSDHelper
         .getAllRelevantWords(tokenizedGloss);
 
@@ -608,17 +599,17 @@ public class Lesk extends WSDisambiguator {
     if (depth == 0)
       return;
 
-    String[] tokenizedGloss = WSDHelper.getTokenizer().tokenize(
-        child.getGloss().toString());
+    String[] tokenizedGloss = WSDHelper.getTokenizer()
+        .tokenize(child.getGloss().toString());
     ArrayList<WordPOS> relvGlossWords = WSDHelper
         .getAllRelevantWords(tokenizedGloss);
 
     SynNode childNode = new SynNode(child, relvGlossWords);
 
     childNode.setHolonyms();
-    wordSense.setScore(wordSense.getScore()
-        + Math.pow(depthScoreWeight, maxDepth - depth + 1)
-        * assessFeature(childNode.getHolonyms(), relvWords));
+    wordSense.setScore(
+        wordSense.getScore() + Math.pow(depthScoreWeight, maxDepth - depth + 1)
+            * assessFeature(childNode.getHolonyms(), relvWords));
     for (Synset holonym : childNode.getHolonyms()) {
 
       fathomHolonyms(wordSense, holonym, relvGlossWords, depth - 1, maxDepth,
@@ -643,8 +634,8 @@ public class Lesk extends WSDisambiguator {
     if (depth == 0)
       return;
 
-    String[] tokenizedGloss = WSDHelper.getTokenizer().tokenize(
-        child.getGloss().toString());
+    String[] tokenizedGloss = WSDHelper.getTokenizer()
+        .tokenize(child.getGloss().toString());
     ArrayList<WordPOS> relvGlossWords = WSDHelper
         .getAllRelevantWords(tokenizedGloss);
 
@@ -667,17 +658,17 @@ public class Lesk extends WSDisambiguator {
     if (depth == 0)
       return;
 
-    String[] tokenizedGloss = WSDHelper.getTokenizer().tokenize(
-        child.getGloss().toString());
+    String[] tokenizedGloss = WSDHelper.getTokenizer()
+        .tokenize(child.getGloss().toString());
     ArrayList<WordPOS> relvGlossWords = WSDHelper
         .getAllRelevantWords(tokenizedGloss);
 
     SynNode childNode = new SynNode(child, relvGlossWords);
 
     childNode.setEntailements();
-    wordSense.setScore(wordSense.getScore()
-        + Math.pow(depthScoreWeight, maxDepth - depth + 1)
-        * assessFeature(childNode.getEntailments(), relvWords));
+    wordSense.setScore(
+        wordSense.getScore() + Math.pow(depthScoreWeight, maxDepth - depth + 1)
+            * assessFeature(childNode.getEntailments(), relvWords));
     for (Synset entailment : childNode.getEntailments()) {
       fathomEntailments(wordSense, entailment, relvGlossWords, depth - 1,
           maxDepth, depthScoreWeight);
@@ -691,8 +682,8 @@ public class Lesk extends WSDisambiguator {
     if (depth == 0)
       return;
 
-    String[] tokenizedGloss = WSDHelper.getTokenizer().tokenize(
-        child.getGloss().toString());
+    String[] tokenizedGloss = WSDHelper.getTokenizer()
+        .tokenize(child.getGloss().toString());
     ArrayList<WordPOS> relvGlossWords = WSDHelper
         .getAllRelevantWords(tokenizedGloss);
 
@@ -715,17 +706,17 @@ public class Lesk extends WSDisambiguator {
     if (depth == 0)
       return;
 
-    String[] tokenizedGloss = WSDHelper.getTokenizer().tokenize(
-        child.getGloss().toString());
+    String[] tokenizedGloss = WSDHelper.getTokenizer()
+        .tokenize(child.getGloss().toString());
     ArrayList<WordPOS> relvGlossWords = WSDHelper
         .getAllRelevantWords(tokenizedGloss);
 
     SynNode childNode = new SynNode(child, relvGlossWords);
 
     childNode.setCoordinateTerms();
-    wordSense.setScore(wordSense.getScore()
-        + Math.pow(depthScoreWeight, maxDepth - depth + 1)
-        * assessFeature(childNode.getCoordinateTerms(), relvWords));
+    wordSense.setScore(
+        wordSense.getScore() + Math.pow(depthScoreWeight, maxDepth - depth + 1)
+            * assessFeature(childNode.getCoordinateTerms(), relvWords));
     for (Synset coordinate : childNode.getCoordinateTerms()) {
       fathomCoordinateTerms(wordSense, coordinate, relvGlossWords, depth - 1,
           maxDepth, depthScoreWeight);
@@ -739,8 +730,8 @@ public class Lesk extends WSDisambiguator {
     if (depth == 0)
       return;
 
-    String[] tokenizedGloss = WSDHelper.getTokenizer().tokenize(
-        child.getGloss().toString());
+    String[] tokenizedGloss = WSDHelper.getTokenizer()
+        .tokenize(child.getGloss().toString());
     ArrayList<WordPOS> relvGlossWords = WSDHelper
         .getAllRelevantWords(tokenizedGloss);
 
@@ -763,17 +754,17 @@ public class Lesk extends WSDisambiguator {
     if (depth == 0)
       return;
 
-    String[] tokenizedGloss = WSDHelper.getTokenizer().tokenize(
-        child.getGloss().toString());
+    String[] tokenizedGloss = WSDHelper.getTokenizer()
+        .tokenize(child.getGloss().toString());
     ArrayList<WordPOS> relvGlossWords = WSDHelper
         .getAllRelevantWords(tokenizedGloss);
 
     SynNode childNode = new SynNode(child, relvGlossWords);
 
     childNode.setCauses();
-    wordSense.setScore(wordSense.getScore()
-        + Math.pow(depthScoreWeight, maxDepth - depth + 1)
-        * assessFeature(childNode.getCauses(), relvWords));
+    wordSense.setScore(
+        wordSense.getScore() + Math.pow(depthScoreWeight, maxDepth - depth + 1)
+            * assessFeature(childNode.getCauses(), relvWords));
     for (Synset cause : childNode.getCauses()) {
       fathomEntailments(wordSense, cause, relvGlossWords, depth - 1, maxDepth,
           depthScoreWeight);
@@ -787,8 +778,8 @@ public class Lesk extends WSDisambiguator {
     if (depth == 0)
       return;
 
-    String[] tokenizedGloss = WSDHelper.getTokenizer().tokenize(
-        child.getGloss().toString());
+    String[] tokenizedGloss = WSDHelper.getTokenizer()
+        .tokenize(child.getGloss().toString());
     ArrayList<WordPOS> relvGlossWords = WSDHelper
         .getAllRelevantWords(tokenizedGloss);
 
@@ -811,17 +802,17 @@ public class Lesk extends WSDisambiguator {
     if (depth == 0)
       return;
 
-    String[] tokenizedGloss = WSDHelper.getTokenizer().tokenize(
-        child.getGloss().toString());
+    String[] tokenizedGloss = WSDHelper.getTokenizer()
+        .tokenize(child.getGloss().toString());
     ArrayList<WordPOS> relvGlossWords = WSDHelper
         .getAllRelevantWords(tokenizedGloss);
 
     SynNode childNode = new SynNode(child, relvGlossWords);
 
     childNode.setAttributes();
-    wordSense.setScore(wordSense.getScore()
-        + Math.pow(depthScoreWeight, maxDepth - depth + 1)
-        * assessFeature(childNode.getAttributes(), relvWords));
+    wordSense.setScore(
+        wordSense.getScore() + Math.pow(depthScoreWeight, maxDepth - depth + 1)
+            * assessFeature(childNode.getAttributes(), relvWords));
     for (Synset attribute : childNode.getAttributes()) {
       fathomAttributes(wordSense, attribute, relvGlossWords, depth - 1,
           maxDepth, depthScoreWeight);
@@ -835,8 +826,8 @@ public class Lesk extends WSDisambiguator {
     if (depth == 0)
       return;
 
-    String[] tokenizedGloss = WSDHelper.getTokenizer().tokenize(
-        child.getGloss().toString());
+    String[] tokenizedGloss = WSDHelper.getTokenizer()
+        .tokenize(child.getGloss().toString());
     ArrayList<WordPOS> relvGlossWords = WSDHelper
         .getAllRelevantWords(tokenizedGloss);
 
@@ -859,17 +850,17 @@ public class Lesk extends WSDisambiguator {
     if (depth == 0)
       return;
 
-    String[] tokenizedGloss = WSDHelper.getTokenizer().tokenize(
-        child.getGloss().toString());
+    String[] tokenizedGloss = WSDHelper.getTokenizer()
+        .tokenize(child.getGloss().toString());
     ArrayList<WordPOS> relvGlossWords = WSDHelper
         .getAllRelevantWords(tokenizedGloss);
 
     SynNode childNode = new SynNode(child, relvGlossWords);
 
     childNode.setPertainyms();
-    wordSense.setScore(wordSense.getScore()
-        + Math.pow(depthScoreWeight, maxDepth - depth + 1)
-        * assessFeature(childNode.getPertainyms(), relvWords));
+    wordSense.setScore(
+        wordSense.getScore() + Math.pow(depthScoreWeight, maxDepth - depth + 1)
+            * assessFeature(childNode.getPertainyms(), relvWords));
     for (Synset pertainym : childNode.getPertainyms()) {
       fathomPertainyms(wordSense, pertainym, relvGlossWords, depth - 1,
           maxDepth, depthScoreWeight);
@@ -883,8 +874,8 @@ public class Lesk extends WSDisambiguator {
     if (depth == 0)
       return;
 
-    String[] tokenizedGloss = WSDHelper.getTokenizer().tokenize(
-        child.getGloss().toString());
+    String[] tokenizedGloss = WSDHelper.getTokenizer()
+        .tokenize(child.getGloss().toString());
     ArrayList<WordPOS> relvGlossWords = WSDHelper
         .getAllRelevantWords(tokenizedGloss);
 
@@ -914,8 +905,8 @@ public class Lesk extends WSDisambiguator {
     for (Synset synset : featureSynsets) {
       SynNode subNode = new SynNode(synset, relevantWords);
 
-      String[] tokenizedSense = WSDHelper.getTokenizer().tokenize(
-          subNode.getGloss());
+      String[] tokenizedSense = WSDHelper.getTokenizer()
+          .tokenize(subNode.getGloss());
       ArrayList<WordPOS> relvSenseWords = WSDHelper
           .getAllRelevantWords(tokenizedSense);
 
@@ -952,14 +943,12 @@ public class Lesk extends WSDisambiguator {
   }
 
   @Override
-  public String[] disambiguate(WSDSample sample) {
+  public String disambiguate(WSDSample sample) {
     // if not relevant POS tag
     if (!WSDHelper.isRelevantPOSTag(sample.getTargetTag())) {
       if (WSDHelper.getNonRelevWordsDef(sample.getTargetTag()) != null) {
-        String s = WSDParameters.SenseSource.WSDHELPER.name() + " "
+        return WSDParameters.SenseSource.WSDHELPER.name() + " "
             + sample.getTargetTag();
-        String[] sense = { s };
-        return sense;
       } else {
         return null;
       }
@@ -993,37 +982,32 @@ public class Lesk extends WSDisambiguator {
 
     Collections.sort(wsenses);
 
-    String[] senses;
+    String sense;
     if (wsenses.get(0).getScore() > 0) { // if at least one overlap
       List<Word> synsetWords;
-      senses = new String[wsenses.size()];
       String senseKey = "?";
-      for (int i = 0; i < wsenses.size(); i++) {
-        synsetWords = wsenses.get(i).getNode().synset.getWords();
-        for (Word synWord : synsetWords) {
-          if (synWord.getLemma().equals(
-              sample.getLemmas()[sample.getTargetPosition()])) {
-            try {
-              senseKey = synWord.getSenseKey();
-            } catch (JWNLException e) {
-              e.printStackTrace();
-            }
-            break;
+      synsetWords = wsenses.get(0).getNode().synset.getWords();
+      for (Word synWord : synsetWords) {
+        if (synWord.getLemma()
+            .equals(sample.getLemmas()[sample.getTargetPosition()])) {
+          try {
+            senseKey = synWord.getSenseKey();
+          } catch (JWNLException e) {
+            e.printStackTrace();
           }
+          break;
         }
-        senses[i] = params.source.name() + " " + senseKey + " "
-            + wsenses.get(i).getScore();
-
       }
+      sense = params.source.name() + " " + senseKey + " "
+          + wsenses.get(0).getScore();
     } else { // get the MFS if no overlaps
-      senses = new String[1];
-      senses[0] = MFS.getMostFrequentSense(sample) + " -1";
+      sense = MFS.getMostFrequentSense(sample) + " -1";
     }
-    return senses;
+    return sense;
   }
 
   @Override
-  public String[] disambiguate(String[] tokenizedContext, String[] tokenTags,
+  public String disambiguate(String[] tokenizedContext, String[] tokenTags,
       String[] lemmas, int ambiguousTokenIndex) {
     return disambiguate(new WSDSample(tokenizedContext, tokenTags, lemmas,
         ambiguousTokenIndex));

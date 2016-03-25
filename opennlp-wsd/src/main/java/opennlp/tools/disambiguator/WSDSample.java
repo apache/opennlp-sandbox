@@ -31,73 +31,54 @@ import opennlp.tools.util.InvalidFormatException;
 
 public class WSDSample {
 
-  private List<String> sentence;
-  private List<String> tags;
-  private List<String> lemmas;
+  private String[] sentence;
+  private String[] tags;
+  private String[] lemmas;
   private int senseID;
-  private List<String> senseIDs;
+  private String[] senseIDs;
   private int targetPosition;
 
-  public WSDSample(String sentence[], String tags[], String[] lemmas,
+  public WSDSample(String[] sentence, String[] tags, String[] lemmas,
       int targetPosition, int senseID) {
-    this.sentence = Collections.unmodifiableList(new ArrayList<String>(Arrays
-        .asList(sentence)));
-    this.tags = Collections.unmodifiableList(new ArrayList<String>(Arrays
-        .asList(tags)));
+    this.sentence = sentence;
+    this.tags = tags;
     this.targetPosition = targetPosition;
-    this.lemmas = Collections.unmodifiableList(new ArrayList<String>(Arrays
-        .asList(lemmas)));
-    ;
+    this.lemmas = lemmas;
     this.senseID = senseID;
     checkArguments();
   }
 
-  public WSDSample(String sentence[], String tags[], String[] lemmas,
+  public WSDSample(String[] sentence, String[] tags, String[] lemmas,
       int targetPosition) {
-    this.sentence = Collections.unmodifiableList(new ArrayList<String>(Arrays
-        .asList(sentence)));
-    this.tags = Collections.unmodifiableList(new ArrayList<String>(Arrays
-        .asList(tags)));
-    this.targetPosition = targetPosition;
-    this.lemmas = Collections.unmodifiableList(new ArrayList<String>(Arrays
-        .asList(lemmas)));
-    ;
-    checkArguments();
+    this(sentence, tags, lemmas, targetPosition, null);
   }
 
-  public WSDSample(String sentence[], String tags[], String[] lemmas,
-      int targetPosition, List<String> senseIDs) {
-    this.sentence = Collections.unmodifiableList(new ArrayList<String>(Arrays
-        .asList(sentence)));
-    this.tags = Collections.unmodifiableList(new ArrayList<String>(Arrays
-        .asList(tags)));
+  public WSDSample(String[] sentence, String[] tags, String[] lemmas,
+      int targetPosition, String[] senseIDs) {
+    this.sentence = sentence;
+    this.tags = tags;
     this.targetPosition = targetPosition;
-    this.lemmas = Collections.unmodifiableList(new ArrayList<String>(Arrays
-        .asList(lemmas)));
+    this.lemmas = lemmas;
     this.senseIDs = senseIDs;
     checkArguments();
   }
 
   private void checkArguments() {
-    if (sentence.size() != tags.size() || targetPosition < 0
-        || targetPosition >= tags.size())
-      throw new IllegalArgumentException(
-          "There must be exactly one tag for each token!");
-
-    if (sentence.contains(null) || tags.contains(null))
-      throw new IllegalArgumentException("null elements are not allowed!");
+    if (sentence.length != tags.length || tags.length != lemmas.length
+        || targetPosition < 0 || targetPosition >= tags.length)
+      throw new IllegalArgumentException("Some inputs are not correct");
   }
 
   public String[] getSentence() {
-    return sentence.toArray(new String[sentence.size()]);
+    return sentence;
   }
 
   public String[] getTags() {
-    return tags.toArray(new String[tags.size()]);
+    return tags;
   }
 
   public String[] getLemmas() {
-    return lemmas.toArray(new String[lemmas.size()]);
+    return lemmas;
   }
 
   public int getTargetPosition() {
@@ -108,27 +89,27 @@ public class WSDSample {
     return senseID;
   }
 
-  public List<String> getSenseIDs() {
+  public String[] getSenseIDs() {
     return senseIDs;
   }
 
   public String getTargetWord() {
-    return sentence.get(targetPosition);
+    return sentence[targetPosition];
   }
 
   public String getTargetTag() {
-    return tags.get(targetPosition);
+    return tags[targetPosition];
   }
 
-  public void setSentence(List<String> sentence) {
+  public void setSentence(String[] sentence) {
     this.sentence = sentence;
   }
 
-  public void setTags(List<String> tags) {
+  public void setTags(String[] tags) {
     this.tags = tags;
   }
 
-  public void setLemmas(List<String> lemmas) {
+  public void setLemmas(String[] lemmas) {
     this.lemmas = lemmas;
   }
 
@@ -136,7 +117,7 @@ public class WSDSample {
     this.senseID = senseID;
   }
 
-  public void setSenseIDs(List<String> senseIDs) {
+  public void setSenseIDs(String[] senseIDs) {
     this.senseIDs = senseIDs;
   }
 
@@ -212,10 +193,10 @@ public class WSDSample {
   // Return the synsets (thus the senses) of the current target word
   public List<Synset> getSynsets() {
     try {
-      return Dictionary
-          .getDefaultResourceInstance()
+      return Dictionary.getDefaultResourceInstance()
           .lookupIndexWord(WSDHelper.getPOS(this.getTargetTag()),
-              this.getTargetWord()).getSenses();
+              this.getTargetWord())
+          .getSenses();
     } catch (JWNLException e) {
       e.printStackTrace();
     }

@@ -254,7 +254,7 @@ public class SemcorReaderExtended {
                     tags[i]);
               }
 
-              WSDSample wtd = new WSDSample(words, tags, lemmas, index, senses);
+              WSDSample wtd = new WSDSample(words, tags, lemmas, index, senses.toArray(new String[0]));
               setInstances.add(wtd);
             }
 

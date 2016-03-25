@@ -25,10 +25,6 @@ package opennlp.tools.disambiguator;
  */
 public abstract class WSDParameters {
 
-  protected boolean isCoarseSense;
-  public static boolean isStemCompare;
-  protected boolean returnMultiple;
-
   public static enum SenseSource {
     WORDNET, WSDHELPER, OTHER;
   }
@@ -38,21 +34,6 @@ public abstract class WSDParameters {
   /**
    * @return if the disambiguation type is coarse grained or fine grained
    */
-  public boolean isCoarseSense() {
-    return isCoarseSense;
-  }
-
-  public void setCoarseSense(boolean isCoarseSense) {
-    this.isCoarseSense = isCoarseSense;
-  }
-
-  public static boolean isStemCompare() {
-    return isStemCompare;
-  }
-
-  public static void setStemCompare(boolean isStemCompare) {
-    WSDParameters.isStemCompare = isStemCompare;
-  }
 
   public SenseSource getSenseSource() {
     return senseSource;
@@ -62,20 +43,11 @@ public abstract class WSDParameters {
     this.senseSource = senseSource;
   }
 
-  public boolean isReturnMultiple() {
-    return returnMultiple;
-  }
-
-  public void setReturnMultiple(boolean returnMultiple) {
-    this.returnMultiple = returnMultiple;
-  }
-
   public WSDParameters() {
-    this.isCoarseSense = false;
-    this.returnMultiple = false;
+    this.senseSource = SenseSource.WORDNET;
   }
 
-  /**
+  /*
    * @return checks if the parameters are valid or not
    */
   public abstract boolean isValid();

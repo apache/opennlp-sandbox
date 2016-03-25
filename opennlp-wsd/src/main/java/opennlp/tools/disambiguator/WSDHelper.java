@@ -32,7 +32,6 @@ import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.dictionary.Dictionary;
 import net.sf.extjwnl.dictionary.MorphologicalProcessor;
 import opennlp.tools.cmdline.postag.POSModelLoader;
-import opennlp.tools.disambiguator.lesk.Lesk;
 import opennlp.tools.lemmatizer.SimpleLemmatizer;
 import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.tokenize.TokenizerME;
@@ -321,9 +320,9 @@ public class WSDHelper {
 
   // Print a text in the console
   public static void printResults(WSDisambiguator disambiguator,
-      String[] results) {
+      String result) {
 
-    if (results != null) {
+    if (result != null) {
 
       String[] parts;
       String sensekey;
@@ -331,8 +330,7 @@ public class WSDHelper {
 
         Double score;
 
-        for (int i = 0; i < results.length; i++) {
-          parts = results[i].split(" ");
+          parts = result.split(" ");
           sensekey = parts[1];
           if (parts.length != 3) {
             score = -1.0;
@@ -346,7 +344,6 @@ public class WSDHelper {
               print("score : "
                   + score
                   + " for sense "
-                  + i
                   + " : "
                   + sensekey
                   + " : "
@@ -365,10 +362,8 @@ public class WSDHelper {
 
             }
           }
-        }
       } else {
-        for (int i = 0; i < results.length; i++) {
-          parts = results[i].split(" ");
+          parts = result.split(" ");
           sensekey = parts[1];
 
           if (parts[0].equalsIgnoreCase(WSDParameters.SenseSource.WORDNET
@@ -376,7 +371,6 @@ public class WSDHelper {
 
             try {
               print("sense "
-                  + i
                   + " : "
                   + sensekey
                   + " : "
@@ -392,7 +386,6 @@ public class WSDHelper {
                 + WSDHelper.getNonRelevWordsDef(sensekey));
 
           }
-        }
       }
     }
 

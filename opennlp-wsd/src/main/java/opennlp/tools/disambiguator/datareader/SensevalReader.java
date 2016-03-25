@@ -260,7 +260,7 @@ public class SensevalReader {
                 }
 
                 WSDSample wtd = new WSDSample(words, tags, lemmas, index,
-                    senseIDs);
+                    senseIDs.toArray(new String[0]));
                 setInstances.add(wtd);
 
               }

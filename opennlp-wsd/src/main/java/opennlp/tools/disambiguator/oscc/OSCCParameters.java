@@ -54,7 +54,6 @@ public class OSCCParameters extends WSDParameters {
     this.windowSize = windowSize;
     this.senseSource = senseSource;
     this.trainingDataDirectory = trainingDataDirectory;
-    this.isCoarseSense = false;
 
     File folder = new File(trainingDataDirectory);
     if (!folder.exists())

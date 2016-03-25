@@ -17,9 +17,7 @@
  * under the License.
  */
 
-package opennlp.tools.disambiguator.lesk;
-
-import opennlp.tools.disambiguator.WSDParameters;
+package opennlp.tools.disambiguator;
 
 /**
  * Lesk specific parameter set
