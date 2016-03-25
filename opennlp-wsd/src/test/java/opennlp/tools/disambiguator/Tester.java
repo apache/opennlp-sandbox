@@ -29,7 +29,7 @@ public class Tester {
     String[] lemmas3 = tempLemmas3.toArray(new String[tempLemmas3.size()]);
 
     // output
-    List<String[]> senses3 = ims.disambiguate(sentence3, tags3, lemmas3);
+    List<String> senses3 = ims.disambiguate(sentence3, tags3, lemmas3);
     for (int i = 0; i < sentence3.length; i++) {
       System.out.print(sentence3[i] + " : ");
       WSDHelper.printResults(ims, senses3.get(i));

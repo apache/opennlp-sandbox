@@ -43,8 +43,8 @@ import opennlp.tools.util.TrainingParameters;
  * 
  * The scope of this test is to make sure that the IMS disambiguator code can be
  * executed. This test can not detect mistakes which lead to incorrect feature
- * generation or other mistakes which decrease the disambiguation performance of the
- * disambiguator.
+ * generation or other mistakes which decrease the disambiguation performance of
+ * the disambiguator.
  * 
  * In this test the {@link IMSME} is trained with Semcor and then the computed
  * model is used to predict sentences from the training sentences.
@@ -154,9 +154,8 @@ public class IMSMETester {
    */
   @Test
   public void testOneWordDisambiguation() {
-    String[] senses = ims.disambiguate(sentence1, tags1, lemmas1, 8);
-
-    assertEquals("Check number of senses", 1, senses.length);
+    String sense = ims.disambiguate(sentence1, tags1, lemmas1, 8);
+    assertEquals("Check 'please' sense ID", "WORDNET please%2:37:00::", sense);
   }
 
   /*
@@ -167,13 +166,15 @@ public class IMSMETester {
   @Test
   public void testWordSpanDisambiguation() {
     Span span = new Span(3, 7);
-    List<String[]> senses = ims.disambiguate(sentence2, tags2, lemmas2, span);
+    List<String> senses = ims.disambiguate(sentence2, tags2, lemmas2, span);
 
     assertEquals("Check number of returned words", 5, senses.size());
-    assertEquals("Check number of senses", 1, senses.get(0).length);
-    assertEquals("Check monosemous word", 1, senses.get(1).length);
-    assertEquals("Check preposition", "WSDHELPER to", senses.get(2)[0]);
-    assertEquals("Check determiner", "WSDHELPER determiner", senses.get(3)[0]);
+    assertEquals("Check 'highly' sense ID", "WORDNET highly%4:02:01::",
+        senses.get(0));
+    assertEquals("Check 'radioactive' sense ID",
+        "WORDNET radioactive%3:00:00::", senses.get(1));
+    assertEquals("Check preposition", "WSDHELPER to", senses.get(2));
+    assertEquals("Check determiner", "WSDHELPER determiner", senses.get(3));
   }
 
   /*
@@ -181,11 +182,11 @@ public class IMSMETester {
    */
   @Test
   public void testAllWordsDisambiguation() {
-    List<String[]> senses = ims.disambiguate(sentence3, tags3, lemmas3);
+    List<String> senses = ims.disambiguate(sentence3, tags3, lemmas3);
 
     assertEquals("Check number of returned words", 15, senses.size());
     assertEquals("Check preposition", "WSDHELPER personal pronoun",
-        senses.get(6)[0]);
+        senses.get(6));
   }
 
 }

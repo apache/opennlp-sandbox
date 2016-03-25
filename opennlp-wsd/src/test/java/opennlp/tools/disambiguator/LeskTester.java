@@ -24,9 +24,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.ArrayList;
 import java.util.List;
 
-import opennlp.tools.disambiguator.lesk.Lesk;
-import opennlp.tools.disambiguator.lesk.LeskParameters;
-import opennlp.tools.disambiguator.lesk.LeskParameters.LESK_TYPE;
+import opennlp.tools.disambiguator.LeskParameters.LESK_TYPE;
 import opennlp.tools.util.Span;
 
 import org.junit.BeforeClass;
@@ -35,10 +33,10 @@ import org.junit.Test;
 /**
  * This is the test class for {@link Lesk}.
  * 
- * The scope of this test is to make sure that the Lesk disambiguator code can be
- * executed. This test can not detect mistakes which lead to incorrect feature
- * generation or other mistakes which decrease the disambiguation performance of the
- * disambiguator.
+ * The scope of this test is to make sure that the Lesk disambiguator code can
+ * be executed. This test can not detect mistakes which lead to incorrect
+ * feature generation or other mistakes which decrease the disambiguation
+ * performance of the disambiguator.
  */
 public class LeskTester {
   // TODO write more tests
@@ -118,9 +116,8 @@ public class LeskTester {
    */
   @Test
   public void testOneWordDisambiguation() {
-    String[] senses = lesk.disambiguate(sentence1, tags1, lemmas1, 8);
-
-    assertEquals("Check number of senses", 1, senses.length);
+    String sense = lesk.disambiguate(sentence1, tags1, lemmas1, 8);
+    assertEquals("Check 'please' sense ID", "WORDNET please%2:37:00:: -1", sense);
   }
 
   /*
@@ -131,13 +128,15 @@ public class LeskTester {
   @Test
   public void testWordSpanDisambiguation() {
     Span span = new Span(3, 7);
-    List<String[]> senses = lesk.disambiguate(sentence2, tags2, lemmas2, span);
+    List<String> senses = lesk.disambiguate(sentence2, tags2, lemmas2, span);
 
     assertEquals("Check number of returned words", 5, senses.size());
-    assertEquals("Check number of senses", 3, senses.get(0).length);
-    assertEquals("Check monosemous word", 1, senses.get(1).length);
-    assertEquals("Check preposition", "WSDHELPER to", senses.get(2)[0]);
-    assertEquals("Check determiner", "WSDHELPER determiner", senses.get(3)[0]);
+    assertEquals("Check 'highly' sense ID", "WORDNET highly%4:02:01:: 4.8",
+        senses.get(0));
+    assertEquals("Check 'radioactive' sense ID",
+        "WORDNET radioactive%3:00:00:: 6.0", senses.get(1));
+    assertEquals("Check preposition", "WSDHELPER to", senses.get(2));
+    assertEquals("Check determiner", "WSDHELPER determiner", senses.get(3));
   }
 
   /*
@@ -145,11 +144,11 @@ public class LeskTester {
    */
   @Test
   public void testAllWordsDisambiguation() {
-    List<String[]> senses = lesk.disambiguate(sentence3, tags3, lemmas3);
+    List<String> senses = lesk.disambiguate(sentence3, tags3, lemmas3);
 
     assertEquals("Check number of returned words", 15, senses.size());
     assertEquals("Check preposition", "WSDHELPER personal pronoun",
-        senses.get(6)[0]);
+        senses.get(6));
   }
 
 }

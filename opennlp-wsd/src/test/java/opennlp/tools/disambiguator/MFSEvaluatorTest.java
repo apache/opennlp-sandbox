@@ -22,9 +22,7 @@ package opennlp.tools.disambiguator;
 import java.util.ArrayList;
 
 import opennlp.tools.disambiguator.datareader.SensevalReader;
-import opennlp.tools.disambiguator.ims.WTDIMS;
-import opennlp.tools.disambiguator.mfs.MFS;
-import opennlp.tools.disambiguator.mfs.MFSParameters;
+import opennlp.tools.disambiguator.MFS;
 
 import org.junit.Test;
 
@@ -40,7 +38,6 @@ public class MFSEvaluatorTest {
     WSDHelper.loadLemmatizer(modelsDir + "en-lemmatizer.dict");
     WSDHelper.loadTagger(modelsDir + "en-pos-maxent.bin");
     MFS mfs = new MFS();
-    WSDParameters.isStemCompare = true;
 
     ArrayList<String> words = seReader.getSensevalWords();
 
@@ -56,7 +53,7 @@ public class MFSEvaluatorTest {
           WSDHelper.print("------------------" + word + "------------------");
           for (WSDSample instance : instances) {
             if (instance.getSenseIDs() != null
-                && !instance.getSenseIDs().get(0).equals("null")) {
+                && !instance.getSenseIDs()[0].equals("null")) {
               evaluator.evaluateSample(instance);
             }
           }

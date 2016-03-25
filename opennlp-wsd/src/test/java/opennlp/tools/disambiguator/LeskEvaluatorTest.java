@@ -22,8 +22,6 @@ package opennlp.tools.disambiguator;
 import java.util.ArrayList;
 
 import opennlp.tools.disambiguator.datareader.SensevalReader;
-import opennlp.tools.disambiguator.lesk.Lesk;
-import opennlp.tools.disambiguator.lesk.LeskParameters;
 
 import org.junit.Test;
 
@@ -59,7 +57,7 @@ public class LeskEvaluatorTest {
           WSDHelper.print("------------------" + word + "------------------");
           for (WSDSample instance : instances) {
             if (instance.getSenseIDs() != null
-                && !instance.getSenseIDs().get(0).equals("null")) {
+                && !instance.getSenseIDs()[0].equals("null")) {
               evaluator.evaluateSample(instance);
             }
           }

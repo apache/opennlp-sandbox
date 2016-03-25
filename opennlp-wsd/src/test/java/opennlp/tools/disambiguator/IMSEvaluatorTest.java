@@ -59,7 +59,7 @@ public class IMSEvaluatorTest {
           WSDHelper.print("------------------" + word + "------------------");
           for (WSDSample instance : instances) {
             if (instance.getSenseIDs() != null
-                && !instance.getSenseIDs().get(0).equals("null")) {
+                && !instance.getSenseIDs()[0].equals("null")) {
               evaluator.evaluateSample(instance);
             }
           }

@@ -19,11 +19,15 @@
 
 package opennlp.tools.disambiguator;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 import opennlp.tools.disambiguator.datareader.SensevalReader;
+import opennlp.tools.disambiguator.oscc.OSCCFactory;
 import opennlp.tools.disambiguator.oscc.OSCCME;
+import opennlp.tools.disambiguator.oscc.OSCCModel;
 import opennlp.tools.disambiguator.oscc.OSCCParameters;
+import opennlp.tools.util.TrainingParameters;
 
 import org.junit.Test;
 
@@ -39,28 +43,41 @@ public class OSCCEvaluatorTest {
     
     // TODO write unit test
     String modelsDir = "src\\test\\resources\\models\\";
+    String trainingDataDirectory = "src\\test\\resources\\supervised\\models\\";
     WSDHelper.loadTokenizer(modelsDir + "en-token.bin");
     WSDHelper.loadLemmatizer(modelsDir + "en-lemmatizer.dict");
     WSDHelper.loadTagger(modelsDir + "en-pos-maxent.bin");
 
     OSCCParameters OSCCParams = new OSCCParameters("");
+    OSCCParams.setTrainingDataDirectory(trainingDataDirectory);
     OSCCME oscc = new OSCCME(OSCCParams);
-
+    OSCCModel model = null;
     ArrayList<String> words = seReader.getSensevalWords();
 
     for (String word : words) {
-      WSDEvaluator evaluator = new WSDEvaluator(oscc);
-
       // don't take verbs because they are not from WordNet
       if (!word.split("\\.")[1].equals("v")) {
-
+      try {
+        model = OSCCME.train("en", seReader.getSensevalDataStream(word), new TrainingParameters(), OSCCParams,
+            new OSCCFactory());
+        model.writeModel(OSCCParams.getTrainingDataDirectory() + word);
+        oscc = new OSCCME(model, OSCCParams);
+        
+      } catch (IOException e) {
+        e.printStackTrace();
+        WSDHelper.print("skipped sample");
+      }
+      
+      WSDEvaluator evaluator = new WSDEvaluator(oscc);
         ArrayList<WSDSample> instances = seReader.getSensevalData(word);
         if (instances != null) {
           WSDHelper.print("------------------" + word + "------------------");
           for (WSDSample instance : instances) {
             if (instance.getSenseIDs() != null
-                && !instance.getSenseIDs().get(0).equals("null")) {
+                && !instance.getSenseIDs()[0].equals("null")) {
               evaluator.evaluateSample(instance);
+            }else{
+              WSDHelper.print("skipped sample");
             }
           }
           WSDHelper.print(evaluator.toString());
