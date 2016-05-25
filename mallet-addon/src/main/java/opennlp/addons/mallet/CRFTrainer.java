@@ -127,21 +127,20 @@ public class CRFTrainer extends AbstractSequenceTrainer {
     // CRFOptimizableBy* objects (terms in the objective function)
     // objective 1: label likelihood objective
 
-    CRFTrainerByLabelLikelihood crfTrainer = new CRFTrainerByLabelLikelihood(
-        crf);
-    crfTrainer.setGaussianPriorVariance(1.0);
+//    CRFTrainerByLabelLikelihood crfTrainer = new CRFTrainerByLabelLikelihood(crf);
+//    crfTrainer.setGaussianPriorVariance(1.0);
 
-//    CRFOptimizableByLabelLikelihood optLabel = new
-//        CRFOptimizableByLabelLikelihood(crf, trainingData);
-//
+    CRFOptimizableByLabelLikelihood optLabel = new
+        CRFOptimizableByLabelLikelihood(crf, trainingData);
+
 //    // CRF trainer
-//     Optimizable.ByGradientValue[] opts = new Optimizable.ByGradientValue[] {
-//     optLabel };
+     Optimizable.ByGradientValue[] opts = new Optimizable.ByGradientValue[] {
+     optLabel };
 
-    // by default, use L-BFGS as the optimizer
-//     CRFTrainerByValueGradients crfTrainer = new CRFTrainerByValueGradients(
-//     crf, opts);
-//     crfTrainer.setMaxResets(0);
+//     by default, use L-BFGS as the optimizer
+     CRFTrainerByValueGradients crfTrainer = new CRFTrainerByValueGradients(
+     crf, opts);
+     crfTrainer.setMaxResets(0);
 
     // SNIP
 

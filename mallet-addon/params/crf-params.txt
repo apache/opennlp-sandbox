@@ -15,6 +15,6 @@
 
 # Sample machine learning properties file
 Algorithm=opennlp.addons.mallet.CRFTrainer
-Cutoff=0
+Cutoff=2
 Iterations=100
 

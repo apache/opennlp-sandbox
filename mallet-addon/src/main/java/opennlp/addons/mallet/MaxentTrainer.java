@@ -27,8 +27,17 @@ import java.util.Map;
 import opennlp.tools.ml.AbstractEventTrainer;
 import opennlp.tools.ml.model.DataIndexer;
 import opennlp.tools.ml.model.MaxentModel;
+import cc.mallet.classify.C45Trainer;
 import cc.mallet.classify.Classifier;
+import cc.mallet.classify.MaxEntGETrainer;
+import cc.mallet.classify.MaxEntL1Trainer;
+import cc.mallet.classify.MaxEntPRTrainer;
 import cc.mallet.classify.MaxEntTrainer;
+import cc.mallet.classify.NaiveBayes;
+import cc.mallet.classify.NaiveBayesEMTrainer;
+import cc.mallet.classify.NaiveBayesTrainer;
+import cc.mallet.optimize.LimitedMemoryBFGS;
+import cc.mallet.optimize.Optimizer;
 import cc.mallet.types.Alphabet;
 import cc.mallet.types.FeatureVector;
 import cc.mallet.types.Instance;
@@ -67,22 +76,21 @@ public class MaxentTrainer extends AbstractEventTrainer {
         weights[featureIndex] = indexer.getNumTimesEventsSeen()[contextIndex];
       }
 
-      FeatureVector fv = new FeatureVector(dataAlphabet, malletFeatures,
-          weights);
+      FeatureVector fv = new FeatureVector(dataAlphabet, malletFeatures, weights);
       Instance inst = new Instance(fv, targetAlphabet.lookupLabel(
-          indexer.getOutcomeLabels()[outcomes[contextIndex]], true), "name",
+          indexer.getOutcomeLabels()[outcomes[contextIndex]], true), "fid:" + contextIndex,
           "data-indexer");
       instances.add(inst);
     }
 
     InstanceList trainingData = new InstanceList(dataAlphabet, targetAlphabet);
-    Instance inst = instances.iterator().next();
-
-    Alphabet.alphabetsMatch(trainingData, inst);
+    
     trainingData.addAll(instances);
 
     MaxEntTrainer trainer = new MaxEntTrainer();
-    
+//    trainer.setGaussianPriorVariance(1d);
+//    trainer.setNumIterations(100);
+
     Classifier classifier = trainer.train(trainingData);
 
     return new ClassifierModel(classifier);

@@ -14,7 +14,8 @@
 # limitations under the License.
 
 # Sample machine learning properties file
-Algorithm=opennlp.addons.mallet.MaxentTrainer
+#Algorithm=opennlp.addons.mallet.MaxentTrainer
+Algorithm=PERCEPTRON
 Cutoff=0
 Iterations=100
-
+#BeamSize=5
