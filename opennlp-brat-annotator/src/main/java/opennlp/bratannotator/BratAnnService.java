@@ -75,7 +75,7 @@ public class BratAnnService {
         tokenizer = SimpleTokenizer.INSTANCE;
       } 
       else {
-        System.out.println("unkown sentence detector");
+        System.out.println("unkown tokenizer");
         return;
       }
 
