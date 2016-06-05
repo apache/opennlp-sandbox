@@ -22,37 +22,37 @@ import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.SequenceValidator;
 import opennlp.tools.util.ext.ExtensionLoader;
 
-public class IMSFactory extends BaseToolFactory {  
-  
-  /**   
-   * Creates a {@link IMSFactory} that provides the default implementation of   
-   * the resources.   
-   * */  
-  public IMSFactory() { 
-    
-  }  
+// TODO remove this class later
+public class IMSFactory extends BaseToolFactory {
+
+  /**
+   * Creates a {@link IMSFactory} that provides the default implementation of
+   * the resources.
+   */
+  public IMSFactory() {
+
+  }
 
   public static IMSFactory create(String subclassName)
-      throws InvalidFormatException {
+    throws InvalidFormatException {
     if (subclassName == null) {
       // will create the default factory
       return new IMSFactory();
     }
     try {
-      IMSFactory theFactory = ExtensionLoader.instantiateExtension(
-          IMSFactory.class, subclassName);
+      IMSFactory theFactory = ExtensionLoader
+        .instantiateExtension(IMSFactory.class, subclassName);
       return theFactory;
     } catch (Exception e) {
       String msg = "Could not instantiate the " + subclassName
-          + ". The initialization throw an exception.";
+        + ". The initialization throw an exception.";
       System.err.println(msg);
       e.printStackTrace();
       throw new InvalidFormatException(msg, e);
     }
   }
 
-  @Override
-  public void validateArtifactMap() throws InvalidFormatException {
+  @Override public void validateArtifactMap() throws InvalidFormatException {
     // no additional artifacts
   }
 

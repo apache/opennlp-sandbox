@@ -31,33 +31,33 @@ import opennlp.tools.disambiguator.WordPOS;
 /**
  * The default Context Generator of IMS
  */
+// TODO remove this class later
 public class DefaultOSCCContextGenerator implements OSCCContextGenerator {
 
   public DefaultOSCCContextGenerator() {
   }
 
   public String[] extractSurroundingContextClusters(int index, String[] toks,
-      String[] tags, String[] lemmas, int windowSize) {
+    String[] tags, String[] lemmas, int windowSize) {
 
-    // TODO consider windowSize
     ArrayList<String> contextClusters = new ArrayList<String>();
 
     for (int i = 0; i < toks.length; i++) {
       if (lemmas != null) {
 
-        if (!WSDHelper.stopWords.contains(toks[i].toLowerCase())
-            && (index != i)) {
+        if (!WSDHelper.stopWords.contains(toks[i].toLowerCase()) && (index
+          != i)) {
 
           String lemma = lemmas[i].toLowerCase().replaceAll("[^a-z_]", "")
-              .trim();
+            .trim();
 
           WordPOS word = new WordPOS(lemma, tags[i]);
-      
+
           if (lemma.length() > 1) {
             try {
               ArrayList<Synset> synsets = word.getSynsets();
               if (synsets != null && synsets.size() > 0) {
-                for (Synset syn : synsets){
+                for (Synset syn : synsets) {
                   contextClusters.add(syn.getOffset() + "");
                 }
               }
@@ -76,17 +76,16 @@ public class DefaultOSCCContextGenerator implements OSCCContextGenerator {
 
   /**
    * Get Context of a word To disambiguate
-   * 
+   *
    * @return The OSCC context of the word to disambiguate
    */
-  @Override
-  public String[] getContext(int index, String[] toks, String[] tags,
-      String[] lemmas, int windowSize, ArrayList<String> model) {
+  @Override public String[] getContext(int index, String[] toks, String[] tags,
+    String[] lemmas, int windowSize, ArrayList<String> model) {
 
     HashSet<String> surroundingContextClusters = new HashSet<>();
-    surroundingContextClusters
-        .addAll(Arrays.asList(extractSurroundingContextClusters(index, toks,
-            tags, lemmas, windowSize)));
+    surroundingContextClusters.addAll(Arrays.asList(
+      extractSurroundingContextClusters(index, toks, tags, lemmas,
+        windowSize)));
 
     String[] serializedFeatures = new String[model.size()];
 
@@ -103,10 +102,11 @@ public class DefaultOSCCContextGenerator implements OSCCContextGenerator {
     return serializedFeatures;
   }
 
-  public String[] getContext(WSDSample sample, int windowSize, ArrayList<String> model) {
+  public String[] getContext(WSDSample sample, int windowSize,
+    ArrayList<String> model) {
 
     return getContext(sample.getTargetPosition(), sample.getSentence(),
-        sample.getTags(), sample.getLemmas(), windowSize, model);
+      sample.getTags(), sample.getLemmas(), windowSize, model);
   }
 
 }

@@ -34,6 +34,7 @@ import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.model.BaseModel;
 
+// TODO unify both supervised models
 public class WSDModel extends BaseModel {
 
   private static final String COMPONENT_NAME = "WSD";
@@ -82,8 +83,8 @@ public class WSDModel extends BaseModel {
   }
 
   public WSDModel(String languageCode, String wordTag, int windowSize,
-      int ngram, MaxentModel wsdModel, ArrayList<String> contextEntries,
-      Map<String, String> manifestInfoEntries) {
+    int ngram, MaxentModel wsdModel, ArrayList<String> contextEntries,
+    Map<String, String> manifestInfoEntries) {
     super(COMPONENT_NAME, languageCode, manifestInfoEntries);
 
     artifactMap.put(WSD_MODEL_ENTRY_NAME, wsdModel);
@@ -97,9 +98,9 @@ public class WSDModel extends BaseModel {
   }
 
   public WSDModel(String languageCode, String wordTag, int windowSize,
-      int ngram, MaxentModel wsdModel, ArrayList<String> surroundingWords) {
+    int ngram, MaxentModel wsdModel, ArrayList<String> surroundingWords) {
     this(languageCode, wordTag, windowSize, ngram, wsdModel, surroundingWords,
-        null);
+      null);
   }
 
   public WSDModel(InputStream in) throws IOException, InvalidFormatException {
@@ -124,8 +125,7 @@ public class WSDModel extends BaseModel {
     return true;
   }
 
-  @Override
-  protected void validateArtifactMap() throws InvalidFormatException {
+  @Override protected void validateArtifactMap() throws InvalidFormatException {
     super.validateArtifactMap();
 
     if (!(artifactMap.get(WSD_MODEL_ENTRY_NAME) instanceof AbstractModel)) {

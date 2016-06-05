@@ -23,6 +23,7 @@ package opennlp.tools.disambiguator;
  * Disambiguation Parameters
  *
  */
+// TODO make default params for supervised approaches
 public abstract class WSDParameters {
 
   public static enum SenseSource {

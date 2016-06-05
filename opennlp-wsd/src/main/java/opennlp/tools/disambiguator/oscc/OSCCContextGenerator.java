@@ -26,10 +26,12 @@ import opennlp.tools.disambiguator.WSDSample;
 /**
  * Interface for {@link OSCCME} context generators.
  */
+// TODO remove this class later
 public interface OSCCContextGenerator {
 
   String[] getContext(int index, String[] toks, String[] tags, String[] lemmas,
     int windowSize, ArrayList<String> model);
 
-  String[] getContext(WSDSample sample, int windowSize, ArrayList<String> model);
+  String[] getContext(WSDSample sample, int windowSize,
+    ArrayList<String> model);
 }

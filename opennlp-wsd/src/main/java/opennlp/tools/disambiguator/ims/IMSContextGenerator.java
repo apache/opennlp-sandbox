@@ -26,11 +26,12 @@ import opennlp.tools.disambiguator.WSDSample;
 /**
  * Interface for {@link IMSME} context generators.
  */
+// TODO remove this class later
 public interface IMSContextGenerator {
 
   String[] getContext(int index, String[] toks, String[] tags, String[] lemmas,
-      int ngram, int windowSize, ArrayList<String> model);
+    int ngram, int windowSize, ArrayList<String> model);
 
   String[] getContext(WSDSample sample, int ngram, int windowSize,
-      ArrayList<String> model);
+    ArrayList<String> model);
 }

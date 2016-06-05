@@ -30,13 +30,14 @@ import opennlp.tools.disambiguator.ims.WTDIMS;
 /**
  * The default Context Generator of IMS
  */
+// TODO remove this class later
 public class DefaultIMSContextGenerator implements IMSContextGenerator {
 
   public DefaultIMSContextGenerator() {
   }
 
   private String[] extractPosOfSurroundingWords(int index, String[] tags,
-      int windowSize) {
+    int windowSize) {
 
     String[] windowTags = new String[2 * windowSize + 1];
 
@@ -55,18 +56,18 @@ public class DefaultIMSContextGenerator implements IMSContextGenerator {
   }
 
   public String[] extractSurroundingWords(int index, String[] toks,
-      String[] lemmas, int windowSize) {
+    String[] lemmas, int windowSize) {
 
-    // TODO consider the windowSize 
+    // TODO consider the windowSize
     ArrayList<String> contextWords = new ArrayList<String>();
 
     for (int i = 0; i < toks.length; i++) {
       if (lemmas != null) {
-        if (!WSDHelper.stopWords.contains(toks[i].toLowerCase())
-            && (index != i)) {
+        if (!WSDHelper.stopWords.contains(toks[i].toLowerCase()) && (index
+          != i)) {
 
           String lemma = lemmas[i].toLowerCase().replaceAll("[^a-z_]", "")
-              .trim();
+            .trim();
 
           if (lemma.length() > 1) {
             contextWords.add(lemma);
@@ -80,7 +81,7 @@ public class DefaultIMSContextGenerator implements IMSContextGenerator {
   }
 
   private String[] extractLocalCollocations(int index, String[] sentence,
-      int ngram) {
+    int ngram) {
     /**
      * Here the author used only 11 features of this type. the range was set to
      * 3 (bigrams extracted in a way that they are at max separated by 1 word).
@@ -110,26 +111,23 @@ public class DefaultIMSContextGenerator implements IMSContextGenerator {
 
   /**
    * Get Context of a word To disambiguate
-   * 
-   * @param word
-   *          : the word to disambiguate in the format {@link WTDIMS}
+   *
    * @return The IMS context of the word to disambiguate
    */
-  @Override
-  public String[] getContext(int index, String[] toks, String[] tags,
-      String[] lemmas, int ngram, int windowSize, ArrayList<String> model) {
+  @Override public String[] getContext(int index, String[] toks, String[] tags,
+    String[] lemmas, int ngram, int windowSize, ArrayList<String> model) {
 
     String[] posOfSurroundingWords = extractPosOfSurroundingWords(index, toks,
-        windowSize);
+      windowSize);
 
     HashSet<String> surroundingWords = new HashSet<>();
-    surroundingWords.addAll(Arrays.asList(extractSurroundingWords(index, toks,
-        lemmas, windowSize)));
+    surroundingWords.addAll(
+      Arrays.asList(extractSurroundingWords(index, toks, lemmas, windowSize)));
 
     String[] localCollocations = extractLocalCollocations(index, toks, ngram);
 
     String[] serializedFeatures = new String[posOfSurroundingWords.length
-        + localCollocations.length + model.size()];
+      + localCollocations.length + model.size()];
 
     int i = 0;
 
@@ -158,10 +156,10 @@ public class DefaultIMSContextGenerator implements IMSContextGenerator {
   }
 
   public String[] getContext(WSDSample sample, int ngram, int windowSize,
-      ArrayList<String> model) {
+    ArrayList<String> model) {
 
     return getContext(sample.getTargetPosition(), sample.getSentence(),
-        sample.getTags(), sample.getLemmas(), ngram, windowSize, model);
+      sample.getTags(), sample.getLemmas(), ngram, windowSize, model);
   }
 
 }

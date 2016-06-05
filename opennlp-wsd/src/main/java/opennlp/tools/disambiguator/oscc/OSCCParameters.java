@@ -27,6 +27,7 @@ import opennlp.tools.disambiguator.WSDParameters;
  * This class contains the parameters for the OSCC approach as well as the
  * directories containing the files used
  */
+// TODO remove this class later
 public class OSCCParameters extends WSDParameters {
 
   protected String languageCode;
@@ -40,16 +41,13 @@ public class OSCCParameters extends WSDParameters {
   /**
    * This constructor takes only two parameters. The default language used is
    * <i>English</i>
-   * 
-   * @param windowSize
-   *          the size of the window used for the extraction of the features
-   *          qualified of Surrounding Context Clusters
-   * 
-   * @param source
-   *          the source of the training data
+   *
+   * @param windowSize  the size of the window used for the extraction of the features
+   *                    qualified of Surrounding Context Clusters
+   * @param senseSource the source of the training data
    */
   public OSCCParameters(int windowSize, SenseSource senseSource,
-      String trainingDataDirectory) {
+    String trainingDataDirectory) {
     this.languageCode = DFLT_LANG_CODE;
     this.windowSize = windowSize;
     this.senseSource = senseSource;
@@ -105,8 +103,7 @@ public class OSCCParameters extends WSDParameters {
     this.trainingDataDirectory = trainingDataDirectory;
   }
 
-  @Override
-  public boolean isValid() {
+  @Override public boolean isValid() {
     // TODO make validity check
     return true;
   }

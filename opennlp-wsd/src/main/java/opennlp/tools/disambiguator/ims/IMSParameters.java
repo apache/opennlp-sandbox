@@ -28,6 +28,7 @@ import opennlp.tools.disambiguator.WSDParameters;
  * This class contains the parameters for the IMS approach as well as the
  * directories containing the files used
  */
+// TODO remove this class later
 public class IMSParameters extends WSDParameters {
 
   protected String languageCode;
@@ -35,7 +36,7 @@ public class IMSParameters extends WSDParameters {
   protected int ngram;
 
   protected String trainingDataDirectory;
-  
+
   protected static final int DFLT_WIN_SIZE = 3;
   protected static final int DFLT_NGRAM = 2;
   protected static final String DFLT_LANG_CODE = "En";
@@ -44,19 +45,16 @@ public class IMSParameters extends WSDParameters {
   /**
    * This constructor takes only two parameters. The default language used is
    * <i>English</i>
-   * 
-   * @param windowSize
-   *          the size of the window used for the extraction of the features
-   *          qualified of Surrounding Words
-   * @param ngram
-   *          the number words used for the extraction of features qualified of
-   *          Local Collocations
-   * @param source
-   *          the source of the training data
+   *
+   * @param windowSize  the size of the window used for the extraction of the features
+   *                    qualified of Surrounding Words
+   * @param ngram       the number words used for the extraction of features qualified of
+   *                    Local Collocations
+   * @param senseSource the source of the training data
    */
   public IMSParameters(int windowSize, int ngram, SenseSource senseSource,
-      String trainingDataDirectory){
-   
+    String trainingDataDirectory) {
+
     this.languageCode = DFLT_LANG_CODE;
     this.windowSize = windowSize;
     this.ngram = ngram;
@@ -114,8 +112,7 @@ public class IMSParameters extends WSDParameters {
     this.trainingDataDirectory = trainingDataDirectory;
   }
 
-  @Override
-  public boolean isValid() {
+  @Override public boolean isValid() {
     // TODO recheck this pattern switch to maps
     return true;
   }

@@ -19,6 +19,7 @@ package opennlp.tools.disambiguator.ims;
 
 import opennlp.tools.util.SequenceValidator;
 
+// TODO remove this class later
 public class DefaultIMSSequenceValidator implements SequenceValidator<String> {
 
   private boolean validOutcome(String outcome, String prevOutcome) {
@@ -46,7 +47,7 @@ public class DefaultIMSSequenceValidator implements SequenceValidator<String> {
   }
 
   public boolean validSequence(int i, String[] sequence, String[] s,
-      String outcome) {
+    String outcome) {
     return validOutcome(outcome, s);
   }
 

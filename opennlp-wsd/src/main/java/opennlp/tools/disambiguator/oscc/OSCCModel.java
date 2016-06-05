@@ -35,6 +35,7 @@ import opennlp.tools.util.BaseToolFactory;
 import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.model.BaseModel;
 
+// TODO remove this class later
 public class OSCCModel extends BaseModel {
 
   private static final String COMPONENT_NAME = "OSCCME";
@@ -72,27 +73,27 @@ public class OSCCModel extends BaseModel {
     this.wordTag = wordTag;
   }
 
-   public OSCCModel(String languageCode, String wordTag, int windowSize,
-   MaxentModel osccModel, ArrayList<String> contextClusters,
-      Map<String, String> manifestInfoEntries, OSCCFactory factory) {
+  public OSCCModel(String languageCode, String wordTag, int windowSize,
+    MaxentModel osccModel, ArrayList<String> contextClusters,
+    Map<String, String> manifestInfoEntries, OSCCFactory factory) {
     super(COMPONENT_NAME, languageCode, manifestInfoEntries, factory);
 
     artifactMap.put(OSCC_MODEL_ENTRY_NAME, osccModel);
     this.setManifestProperty(WORDTAG, wordTag);
     this.setManifestProperty(WINSIZE, windowSize + "");
-    
+
     this.setManifestProperty(CONTEXTCLUSTERS,
-        StringUtils.join(contextClusters, ","));
+      StringUtils.join(contextClusters, ","));
 
     this.contextClusters = contextClusters;
     checkArtifactMap();
   }
 
   public OSCCModel(String languageCode, String wordTag, int windowSize,
-      int ngram, MaxentModel osccModel, ArrayList<String> contextClusters,
-      OSCCFactory factory) {
-    this(languageCode, wordTag, windowSize, osccModel, contextClusters,
-        null, factory);
+    int ngram, MaxentModel osccModel, ArrayList<String> contextClusters,
+    OSCCFactory factory) {
+    this(languageCode, wordTag, windowSize, osccModel, contextClusters, null,
+      factory);
   }
 
   public OSCCModel(InputStream in) throws IOException, InvalidFormatException {
@@ -117,8 +118,7 @@ public class OSCCModel extends BaseModel {
     return true;
   }
 
-  @Override
-  protected void validateArtifactMap() throws InvalidFormatException {
+  @Override protected void validateArtifactMap() throws InvalidFormatException {
     super.validateArtifactMap();
 
     if (!(artifactMap.get(OSCC_MODEL_ENTRY_NAME) instanceof AbstractModel)) {
@@ -139,13 +139,12 @@ public class OSCCModel extends BaseModel {
     String contextClusters = (String) manifest.get(CONTEXTCLUSTERS);
 
     this.contextClusters = new ArrayList(
-        Arrays.asList(contextClusters.split(",")));
+      Arrays.asList(contextClusters.split(",")));
     this.wordTag = (String) manifest.get(WORDTAG);
     this.windowSize = Integer.parseInt((String) manifest.get(WINSIZE));
   }
 
-  @Override
-  protected Class<? extends BaseToolFactory> getDefaultFactory() {
+  @Override protected Class<? extends BaseToolFactory> getDefaultFactory() {
     return OSCCFactory.class;
   }
 

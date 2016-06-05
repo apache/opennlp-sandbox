@@ -36,6 +36,7 @@ import opennlp.tools.util.BaseToolFactory;
 import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.model.BaseModel;
 
+// TODO remove this class later
 public class IMSModel extends BaseModel {
 
   private static final String COMPONENT_NAME = "IMSME";
@@ -84,9 +85,9 @@ public class IMSModel extends BaseModel {
     this.wordTag = wordTag;
   }
 
-   public IMSModel(String languageCode, String wordTag, int windowSize,
-      int ngram, MaxentModel imsModel, ArrayList<String> surroundingWords,
-      Map<String, String> manifestInfoEntries, IMSFactory factory) {
+  public IMSModel(String languageCode, String wordTag, int windowSize,
+    int ngram, MaxentModel imsModel, ArrayList<String> surroundingWords,
+    Map<String, String> manifestInfoEntries, IMSFactory factory) {
     super(COMPONENT_NAME, languageCode, manifestInfoEntries, factory);
 
     artifactMap.put(IMS_MODEL_ENTRY_NAME, imsModel);
@@ -94,17 +95,17 @@ public class IMSModel extends BaseModel {
     this.setManifestProperty(WINSIZE, windowSize + "");
     this.setManifestProperty(NGRAM, ngram + "");
     this.setManifestProperty(SURROUNDINGS,
-        StringUtils.join(surroundingWords, ","));
+      StringUtils.join(surroundingWords, ","));
 
     this.surroundingWords = surroundingWords;
     checkArtifactMap();
   }
 
   public IMSModel(String languageCode, String wordTag, int windowSize,
-      int ngram, MaxentModel imsModel, ArrayList<String> surroundingWords,
-      IMSFactory factory) {
+    int ngram, MaxentModel imsModel, ArrayList<String> surroundingWords,
+    IMSFactory factory) {
     this(languageCode, wordTag, windowSize, ngram, imsModel, surroundingWords,
-        null, factory);
+      null, factory);
   }
 
   public IMSModel(InputStream in) throws IOException, InvalidFormatException {
@@ -139,8 +140,7 @@ public class IMSModel extends BaseModel {
     return true;
   }
 
-  @Override
-  protected void validateArtifactMap() throws InvalidFormatException {
+  @Override protected void validateArtifactMap() throws InvalidFormatException {
     super.validateArtifactMap();
 
     if (!(artifactMap.get(IMS_MODEL_ENTRY_NAME) instanceof AbstractModel)) {
@@ -161,14 +161,13 @@ public class IMSModel extends BaseModel {
     String surroundings = (String) manifest.get(SURROUNDINGS);
 
     this.surroundingWords = new ArrayList(
-        Arrays.asList(surroundings.split(",")));
+      Arrays.asList(surroundings.split(",")));
     this.wordTag = (String) manifest.get(WORDTAG);
     this.windowSize = Integer.parseInt((String) manifest.get(WINSIZE));
     this.ngram = Integer.parseInt((String) manifest.get(NGRAM));
   }
 
-  @Override
-  protected Class<? extends BaseToolFactory> getDefaultFactory() {
+  @Override protected Class<? extends BaseToolFactory> getDefaultFactory() {
     return IMSFactory.class;
   }
 

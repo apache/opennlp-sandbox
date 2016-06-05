@@ -26,15 +26,10 @@ import java.util.ArrayList;
  */
 public interface WSDContextGenerator {
 
-  String[] getIMSContext(int index, String[] toks, String[] tags, String[] lemmas,
-      int ngram, int windowSize, ArrayList<String> model);
+  public String[] getContext(int index, String[] toks, String[] tags,
+    String[] lemmas, int ngram, int windowSize, ArrayList<String> model);
 
-  String[] getIMSContext(WSDSample sample, int ngram, int windowSize,
-      ArrayList<String> model);
+  public String[] getContext(WSDSample sample, int ngram, int windowSize,
+    ArrayList<String> model);
 
-  String[] getOSCCContext(int index, String[] toks, String[] tags, String[] lemmas,
-      int windowSize, ArrayList<String> model);
-
-  String[] getOSCCContext(WSDSample sample, int windowSize,
-      ArrayList<String> model);
 }

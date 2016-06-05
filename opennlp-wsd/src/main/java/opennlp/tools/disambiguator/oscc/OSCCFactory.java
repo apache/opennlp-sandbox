@@ -21,37 +21,37 @@ import opennlp.tools.util.BaseToolFactory;
 import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.ext.ExtensionLoader;
 
+// TODO remove this class later
 public class OSCCFactory extends BaseToolFactory {
 
   /**
    * Creates a {@link OSCCFactory} that provides the default implementation of
    * the resources.
-   * */
+   */
   public OSCCFactory() {
 
   }
 
   public static OSCCFactory create(String subclassName)
-      throws InvalidFormatException {
+    throws InvalidFormatException {
     if (subclassName == null) {
       // will create the default factory
       return new OSCCFactory();
     }
     try {
-      OSCCFactory theFactory = ExtensionLoader.instantiateExtension(
-          OSCCFactory.class, subclassName);
+      OSCCFactory theFactory = ExtensionLoader
+        .instantiateExtension(OSCCFactory.class, subclassName);
       return theFactory;
     } catch (Exception e) {
       String msg = "Could not instantiate the " + subclassName
-          + ". The initialization throw an exception.";
+        + ". The initialization throw an exception.";
       System.err.println(msg);
       e.printStackTrace();
       throw new InvalidFormatException(msg, e);
     }
   }
 
-  @Override
-  public void validateArtifactMap() throws InvalidFormatException {
+  @Override public void validateArtifactMap() throws InvalidFormatException {
     // no additional artifacts
   }
 
