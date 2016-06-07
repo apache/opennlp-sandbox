@@ -49,7 +49,7 @@ public class MFSEvaluatorTest {
 
         ArrayList<WSDSample> instances = seReader.getSensevalData(word);
 
-        if (instances != null) {
+        if (instances != null && instances.size() > 1) {
           WSDHelper.print("------------------" + word + "------------------");
           for (WSDSample instance : instances) {
             if (instance.getSenseIDs() != null
