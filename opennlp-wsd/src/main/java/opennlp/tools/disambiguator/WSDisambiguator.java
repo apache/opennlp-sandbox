@@ -22,8 +22,6 @@ package opennlp.tools.disambiguator;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
-
-import opennlp.tools.disambiguator.ims.IMSParameters;
 import opennlp.tools.util.Span;
 
 /**
@@ -38,14 +36,9 @@ import opennlp.tools.util.Span;
  * 
  * Otherwise for multiple words, you can set a word span instead of simply one
  * index. For the moment the source of sense definitions is from WordNet. *
- * Please see {@link Lesk} for an un-supervised approach. Please see {@link IMS}
- * {@link OSCC} for a supervised approach.
  * 
  * Examples on how to use each approach are provided in the test section.
- * 
- * @see Lesk
- * @see IMS
- * @see OSCC
+ *
  */
 public abstract class WSDisambiguator {
 
@@ -59,8 +52,7 @@ public abstract class WSDisambiguator {
   }
 
   /**
-   * @param the
-   *          disambiguation implementation specific parameters.
+   * @param params disambiguation implementation specific parameters.
    * @throws InvalidParameterException
    */
   public void setParams(WSDParameters params) throws InvalidParameterException {
@@ -85,8 +77,8 @@ public abstract class WSDisambiguator {
    * 
    * @param tokenizedContext
    * @param tokenTags
+   * @param lemmas
    * @param ambiguousTokenIndexSpan
-   * @param ambiguousTokenLemma
    * @return result as an array of WordNet IDs
    */
   public List<String> disambiguate(String[] tokenizedContext,
@@ -147,7 +139,7 @@ public abstract class WSDisambiguator {
       } else {
 
         if (WSDHelper.getNonRelevWordsDef(tokenTags[i]) != null) {
-          String sense = IMSParameters.SenseSource.WSDHELPER.name() + " "
+          String sense = WSDParameters.SenseSource.WSDHELPER.name() + " "
               + WSDHelper.getNonRelevWordsDef(tokenTags[i]);
           senses.add(sense);
         } else {
@@ -161,7 +153,7 @@ public abstract class WSDisambiguator {
   }
 
   /**
-   * @param WSDSample
+   * @param sample
    * @return result as an array of WordNet IDs
    */
   public abstract String disambiguate(WSDSample sample);

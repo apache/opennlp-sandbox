@@ -19,35 +19,51 @@
 
 package opennlp.tools.disambiguator;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import opennlp.tools.disambiguator.LeskParameters.LESK_TYPE;
-import opennlp.tools.util.Span;
-
+import opennlp.tools.util.ObjectStream;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import opennlp.tools.disambiguator.datareader.SemcorReaderExtended;
+import opennlp.tools.util.Span;
+import opennlp.tools.util.TrainingParameters;
+
 /**
- * This is the test class for {@link Lesk}.
- * 
- * The scope of this test is to make sure that the Lesk disambiguator code can
- * be executed. This test can not detect mistakes which lead to incorrect
- * feature generation or other mistakes which decrease the disambiguation
- * performance of the disambiguator.
+ * This is the test class for {@link WSDisambiguatorME}.
+ * <p/>
+ * The scope of this test is to make sure that the WSDisambiguatorME code can be
+ * executed. This test can not detect mistakes which lead to incorrect feature
+ * generation or other mistakes which decrease the disambiguation performance of
+ * the disambiguator.
+ * <p/>
+ * In this test the {@link WSDisambiguatorME} is trained with Semcor
+ * and then the computed model is used to predict sentences
+ * from the training sentences.
  */
-public class LeskTester {
+
+public class WSDTester {
   // TODO write more tests
+  // TODO modify when we fix the parameter model
 
   static String modelsDir = "src/test/resources/models/";
+  static String trainingDataDirectory = "src/test/resources/supervised/models/";
 
-  static Lesk lesk;
+  static WSDDefaultParameters params;
+  static WSDisambiguatorME wsdME;
+  static WSDModel model;
+
+  static String test = "please.v";
+  static File outFile;
 
   static String test1 = "We need to discuss an important topic, please write to me soon.";
   static String test2 = "The component was highly radioactive to the point that"
-      + " it has been activated the second it touched water";
+    + " it has been activated the second it touched water";
   static String test3 = "The summer is almost over and I did not go to the beach even once";
 
   static String[] sentence1;
@@ -65,9 +81,7 @@ public class LeskTester {
   /*
    * Setup the testing variables
    */
-  @BeforeClass
-  public static void setUp() {
-
+  @BeforeClass public static void setUpAndTraining() {
     WSDHelper.loadTokenizer(modelsDir + "en-token.bin");
     WSDHelper.loadLemmatizer(modelsDir + "en-lemmatizer.dict");
     WSDHelper.loadTagger(modelsDir + "en-pos-maxent.bin");
@@ -83,41 +97,59 @@ public class LeskTester {
     List<String> tempLemmas1 = new ArrayList<String>();
     for (int i = 0; i < sentence1.length; i++) {
       tempLemmas1
-          .add(WSDHelper.getLemmatizer().lemmatize(sentence1[i], tags1[i]));
+        .add(WSDHelper.getLemmatizer().lemmatize(sentence1[i], tags1[i]));
     }
     lemmas1 = tempLemmas1.toArray(new String[tempLemmas1.size()]);
 
     List<String> tempLemmas2 = new ArrayList<String>();
     for (int i = 0; i < sentence2.length; i++) {
       tempLemmas2
-          .add(WSDHelper.getLemmatizer().lemmatize(sentence2[i], tags2[i]));
+        .add(WSDHelper.getLemmatizer().lemmatize(sentence2[i], tags2[i]));
     }
     lemmas2 = tempLemmas2.toArray(new String[tempLemmas2.size()]);
 
     List<String> tempLemmas3 = new ArrayList<String>();
     for (int i = 0; i < sentence3.length; i++) {
       tempLemmas3
-          .add(WSDHelper.getLemmatizer().lemmatize(sentence3[i], tags3[i]));
+        .add(WSDHelper.getLemmatizer().lemmatize(sentence3[i], tags3[i]));
     }
     lemmas3 = tempLemmas3.toArray(new String[tempLemmas3.size()]);
 
-    lesk = new Lesk();
+    params = new WSDDefaultParameters("");
+    params.setTrainingDataDirectory(trainingDataDirectory);
+    TrainingParameters trainingParams = new TrainingParameters();
+    SemcorReaderExtended sr = new SemcorReaderExtended();
+    ObjectStream<WSDSample> sampleStream = sr.getSemcorDataStream(test);
 
-    LeskParameters params = new LeskParameters();
-    params.setLeskType(LESK_TYPE.LESK_EXT);
-    boolean a[] = { true, true, true, true, true, true, true, true, true,
-        true };
-    params.setFeatures(a);
-    lesk.setParams(params);
+    WSDModel writeModel = null;
+    /*
+     * Tests training the disambiguator We test both writing and reading a model
+     * file trained by semcor
+     */
+
+    try {
+      writeModel = WSDisambiguatorME
+        .train("en", sampleStream, trainingParams, params);
+      assertNotNull("Checking the model to be written", writeModel);
+      writeModel.writeModel(params.getTrainingDataDirectory() + test);
+      outFile = new File(
+        params.getTrainingDataDirectory() + test + ".wsd.model");
+      model = new WSDModel(outFile);
+      assertNotNull("Checking the read model", model);
+      wsdME = new WSDisambiguatorME(model, params);
+      assertNotNull("Checking the disambiguator", wsdME);
+    } catch (IOException e1) {
+      e1.printStackTrace();
+      fail("Exception in training");
+    }
   }
 
   /*
    * Tests disambiguating only one word : The ambiguous word "please"
    */
-  @Test
-  public void testOneWordDisambiguation() {
-    String sense = lesk.disambiguate(sentence1, tags1, lemmas1, 8);
-    assertEquals("Check 'please' sense ID", "WORDNET please%2:37:00:: -1", sense);
+  @Test public void testOneWordDisambiguation() {
+    String sense = wsdME.disambiguate(sentence1, tags1, lemmas1, 8);
+    assertEquals("Check 'please' sense ID", "WORDNET please%2:37:00::", sense);
   }
 
   /*
@@ -125,16 +157,15 @@ public class LeskTester {
    * and polysemous words as well as words that do not need disambiguation such
    * as determiners
    */
-  @Test
-  public void testWordSpanDisambiguation() {
+  @Test public void testWordSpanDisambiguation() {
     Span span = new Span(3, 7);
-    List<String> senses = lesk.disambiguate(sentence2, tags2, lemmas2, span);
+    List<String> senses = wsdME.disambiguate(sentence2, tags2, lemmas2, span);
 
     assertEquals("Check number of returned words", 5, senses.size());
-    assertEquals("Check 'highly' sense ID", "WORDNET highly%4:02:01:: 3.8",
-        senses.get(0));
+    assertEquals("Check 'highly' sense ID", "WORDNET highly%4:02:01::",
+      senses.get(0));
     assertEquals("Check 'radioactive' sense ID",
-        "WORDNET radioactive%3:00:00:: 6.0", senses.get(1));
+      "WORDNET radioactive%3:00:00::", senses.get(1));
     assertEquals("Check preposition", "WSDHELPER to", senses.get(2));
     assertEquals("Check determiner", "WSDHELPER determiner", senses.get(3));
   }
@@ -142,13 +173,12 @@ public class LeskTester {
   /*
    * Tests disambiguating all the words
    */
-  @Test
-  public void testAllWordsDisambiguation() {
-    List<String> senses = lesk.disambiguate(sentence3, tags3, lemmas3);
+  @Test public void testAllWordsDisambiguation() {
+    List<String> senses = wsdME.disambiguate(sentence3, tags3, lemmas3);
 
     assertEquals("Check number of returned words", 15, senses.size());
     assertEquals("Check preposition", "WSDHELPER personal pronoun",
-        senses.get(6));
+      senses.get(6));
   }
 
 }

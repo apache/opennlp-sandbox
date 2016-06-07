@@ -148,7 +148,7 @@ public class LeskParameters extends WSDParameters {
    * 
    * @see opennlp.tools.disambiguator.WSDParameters#isValid()
    */
-  public boolean isValid() {
+  public boolean areValid() {
 
     switch (this.leskType) {
     case LESK_BASIC:

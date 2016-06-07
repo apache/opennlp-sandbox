@@ -30,7 +30,7 @@ import net.sf.extjwnl.data.Synset;
  */
 public class OSCCWSDContextGenerator implements WSDContextGenerator {
 
-  public String[] extractSurroundingContextClusters(int index, String[] toks,
+  public String[] extractSurroundingContext(int index, String[] toks,
     String[] tags, String[] lemmas, int windowSize) {
 
     // TODO consider windowSize
@@ -78,7 +78,7 @@ public class OSCCWSDContextGenerator implements WSDContextGenerator {
 
     HashSet<String> surroundingContextClusters = new HashSet<>();
     surroundingContextClusters.addAll(Arrays.asList(
-      extractSurroundingContextClusters(index, toks, tags, lemmas,
+      extractSurroundingContext(index, toks, tags, lemmas,
         windowSize)));
 
     String[] serializedFeatures = new String[model.size()];

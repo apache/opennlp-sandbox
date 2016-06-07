@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import opennlp.tools.disambiguator.ims.WTDIMS;
-
 /**
  * Class for the extraction of features for the different Supervised
  * Disambiguation approaches.<br>

@@ -41,7 +41,7 @@ public class MFSTester {
   // TODO write more tests
   // TODO modify when we fix the parameter model
 
-  static String modelsDir = "src\\test\\resources\\models\\";
+  static String modelsDir = "src/test/resources/models/";
 
   static MFS mfs;
 

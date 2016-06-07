@@ -42,7 +42,7 @@ public class IMSWSDContextGenerator implements WSDContextGenerator {
     return windowTags;
   }
 
-  public String[] extractSurroundingWords(int index, String[] toks,
+  public String[] extractSurroundingContext(int index, String[] toks,
     String[] lemmas, int windowSize) {
 
     // TODO consider the windowSize
@@ -117,7 +117,7 @@ public class IMSWSDContextGenerator implements WSDContextGenerator {
 
     HashSet<String> surroundingWords = new HashSet<>();
     surroundingWords.addAll(Arrays
-      .asList(extractSurroundingWords(index, tokens, lemmas, windowSize)));
+      .asList(extractSurroundingContext(index, tokens, lemmas, windowSize)));
 
     String[] localCollocations = extractLocalCollocations(index, tokens, ngram);
 

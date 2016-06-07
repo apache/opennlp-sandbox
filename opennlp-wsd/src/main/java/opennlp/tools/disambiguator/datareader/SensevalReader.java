@@ -47,7 +47,7 @@ import opennlp.tools.util.ObjectStreamUtils;
  */
 public class SensevalReader {
 
-  protected String sensevalDirectory = "src\\test\\resources\\senseval3\\";
+  protected String sensevalDirectory = "src/test/resources/senseval3/";
 
   protected String data = sensevalDirectory + "EnglishLS.train";
   protected String sensemapFile = sensevalDirectory + "EnglishLS.sensemap";
@@ -72,7 +72,7 @@ public class SensevalReader {
   /**
    * This extracts the equivalent senses. This serves in the case of the
    * coarse-grained disambiguation
-   * 
+   *
    * @param sensemapFile
    *          the file containing the equivalent senses, each set of equivalent
    *          senses per line

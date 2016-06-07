@@ -64,9 +64,9 @@ public class SemcorReaderExtended {
 
   private static final String ELEMENT_PUNCTUATION = "punc";
 
-  private static String semcorDirectory = "src\\test\\resources\\semcor3.0\\";
+  private static String semcorDirectory = "src/test/resources/semcor3.0/";
   private static String[] folders = { "brown1", "brown2", "brownv" };
-  private static String tagfiles = "\\tagfiles\\";
+  private static String tagfiles = "/tagfiles/";
 
   
   public static String getSemcorDirectory() {

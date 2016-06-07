@@ -53,8 +53,8 @@ public class Lesk extends WSDisambiguator {
 
   /**
    * Initializes the WSDParameters object and sets the input parameters
-   * 
-   * @param Input
+   *
+   * @param params
    *          Parameters
    * @throws InvalidParameterException
    */
@@ -65,8 +65,8 @@ public class Lesk extends WSDisambiguator {
   /**
    * If the parameters are null set the default ones, else only set them if they
    * valid. Invalid parameters will return a exception
-   * 
-   * @param Input
+   *
+   * @param params
    *          parameters
    * @throws InvalidParameterException
    */
@@ -75,7 +75,7 @@ public class Lesk extends WSDisambiguator {
     if (params == null) {
       this.params = new LeskParameters();
     } else {
-      if (params.isValid()) {
+      if (params.areValid()) {
         this.params = (LeskParameters) params;
       } else {
         throw new InvalidParameterException("wrong params");

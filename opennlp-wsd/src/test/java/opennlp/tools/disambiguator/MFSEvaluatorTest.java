@@ -33,7 +33,7 @@ public class MFSEvaluatorTest {
   @Test
   public static void main(String[] args) {
     WSDHelper.print("Evaluation Started");
-    String modelsDir = "src\\test\\resources\\models\\";
+    String modelsDir = "src/test/resources/models/";
     WSDHelper.loadTokenizer(modelsDir + "en-token.bin");
     WSDHelper.loadLemmatizer(modelsDir + "en-lemmatizer.dict");
     WSDHelper.loadTagger(modelsDir + "en-pos-maxent.bin");

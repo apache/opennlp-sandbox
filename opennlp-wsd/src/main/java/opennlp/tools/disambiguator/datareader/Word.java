@@ -21,6 +21,7 @@ package opennlp.tools.disambiguator.datareader;
 
 import opennlp.tools.disambiguator.WSDHelper;
 
+// TODO extend Word from Wordnet
 public class Word {
 
   public static enum Type {
