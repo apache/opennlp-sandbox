@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package opennlp.bratannotator;
+package opennlp.bratann;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,7 +35,7 @@ import opennlp.tools.tokenize.Tokenizer;
 import opennlp.tools.util.Span;
 
 @Path("/ner")
-public class BratNameFinderResource {
+public class NameFinderResource {
 
   public static class NameAnn {
     public int[][] offsets;
@@ -43,9 +43,9 @@ public class BratNameFinderResource {
     public String type;
   }
 
-  private SentenceDetector sentDetect = BratAnnService.sentenceDetector;
-  private Tokenizer tokenizer = BratAnnService.tokenizer;
-  private TokenNameFinder nameFinders[] = BratAnnService.nameFinders;
+  private SentenceDetector sentDetect = NameFinderAnnService.sentenceDetector;
+  private Tokenizer tokenizer = NameFinderAnnService.tokenizer;
+  private TokenNameFinder nameFinders[] = NameFinderAnnService.nameFinders;
 
   private static int findNextNonWhitespaceChar(CharSequence s, int beginOffset,
       int endOffset) {

@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package opennlp.bratannotator;
+package opennlp.bratann;
 
 import java.io.File;
-import java.net.URI;
-import java.net.URL;
+import java.util.Arrays;
+import java.util.List;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -38,54 +38,53 @@ import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.tokenize.TokenizerModel;
 import opennlp.tools.tokenize.WhitespaceTokenizer;
 
-public class BratAnnService {
-  
-  public static SentenceDetector sentenceDetector;
-  public static Tokenizer tokenizer;
+public class NameFinderAnnService {
+
+  public static SentenceDetector sentenceDetector = new NewlineSentenceDetector();;
+  public static Tokenizer tokenizer = WhitespaceTokenizer.INSTANCE;
   public static TokenNameFinder nameFinders[];
-  
+
   public static void main(String[] args) throws Exception {
-    
-    if (args.length < 3) {
-      System.out.println("sentenceDetectorURI tokenizerURI namefinderURI_1 ... nameFinderURI_n");
+
+    if (args.length == 0) {
+      System.out.println(
+          "[-tokenizerModel file] [-ruleBasedTokenizer whitespace|simple] [-sentenceDetectorModel file] "
+              + "namefinderFile|nameFinderURI");
       return;
     }
 
-    URI sentenceDetectorUri = URI.create(args[0]);
-    if ("sentenceDetector".equals(sentenceDetectorUri.getScheme())) {
-      
-      if ("newline".equals(sentenceDetectorUri.getSchemeSpecificPart())) {
-        sentenceDetector = new NewlineSentenceDetector();
-      }
-      else {
-        System.out.println("unkown sentence detector");
-        return;
-      }
-    }
-    else {
-      sentenceDetector = new SentenceDetectorME(new SentenceModel(new File(args[0])));
-    }
-    
-    URI tokenizerUri = URI.create(args[1]);
-    if ("tokenizer".equals(tokenizerUri.getScheme())) {
-      if ("whitespace".equals(tokenizerUri.getSchemeSpecificPart())) {
-        tokenizer = WhitespaceTokenizer.INSTANCE;
-      }
-      else if ("simple".equals(tokenizerUri.getSchemeSpecificPart())) {
-        tokenizer = SimpleTokenizer.INSTANCE;
-      } 
-      else {
-        System.out.println("unkown tokenizer");
-        return;
-      }
+    List<String> argList = Arrays.asList(args);
 
+    int sentenceModelIndex = argList.indexOf("-sentenceDetectorModel")
+        + 1;
+    if (sentenceModelIndex > 0 && sentenceModelIndex < args.length) {
+      sentenceDetector = new SentenceDetectorME(
+          new SentenceModel(new File(args[sentenceModelIndex])));
     }
-    else {
-      tokenizer = new TokenizerME(new TokenizerModel(new File(args[1])));
+
+    int ruleBasedTokenizerIndex = argList.indexOf("-ruleBasedTokenizer") + 1;
+
+    if (ruleBasedTokenizerIndex > 0 && ruleBasedTokenizerIndex < args.length) {
+      if ("whitespace".equals(args[ruleBasedTokenizerIndex])) {
+        tokenizer = WhitespaceTokenizer.INSTANCE;
+      } else if ("simple".equals(args[ruleBasedTokenizerIndex])) {
+        tokenizer = SimpleTokenizer.INSTANCE;
+      } else {
+        System.out
+            .println("unkown tokenizer: " + args[ruleBasedTokenizerIndex]);
+        return;
+      }
     }
-    
-    nameFinders = new TokenNameFinder[] {new NameFinderME(new TokenNameFinderModel(new URL(args[2])))};
-    
+
+    int tokenizerModelIndex = argList.indexOf("-tokenizerModel") + 1;
+    if (tokenizerModelIndex > 0 && tokenizerModelIndex < args.length) {
+      tokenizer = new TokenizerME(
+          new TokenizerModel(new File(args[tokenizerModelIndex])));
+    }
+
+    nameFinders = new TokenNameFinder[] { new NameFinderME(
+        new TokenNameFinderModel(new File(args[args.length - 1]))) };
+
     ServletContextHandler context = new ServletContextHandler(
         ServletContextHandler.SESSIONS);
     context.setContextPath("/");
@@ -95,12 +94,13 @@ public class BratAnnService {
 
     ServletHolder jerseyServlet = context
         .addServlet(com.sun.jersey.spi.container.servlet.ServletContainer.class, "/*");
-    jerseyServlet.setInitParameter("com.sun.jersey.config.property.packages", "opennlp.bratannotator");
+    jerseyServlet.setInitParameter("com.sun.jersey.config.property.packages",
+        "opennlp.bratann");
     jerseyServlet.setInitParameter("com.sun.jersey.api.json.POJOMappingFeature", "true");
     jerseyServlet.setInitOrder(0);
 
     jerseyServlet.setInitParameter("jersey.config.server.provider.classnames",
-        BratNameFinderResource.class.getCanonicalName());
+        NameFinderResource.class.getCanonicalName());
 
     try {
       jettyServer.start();
