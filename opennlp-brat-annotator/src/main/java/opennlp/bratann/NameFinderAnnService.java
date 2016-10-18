@@ -48,12 +48,19 @@ public class NameFinderAnnService {
 
     if (args.length == 0) {
       System.out.println(
-          "[-tokenizerModel file] [-ruleBasedTokenizer whitespace|simple] [-sentenceDetectorModel file] "
+          "[-serverPort port] [-tokenizerModel file] [-ruleBasedTokenizer whitespace|simple] [-sentenceDetectorModel file] "
               + "namefinderFile|nameFinderURI");
       return;
     }
 
     List<String> argList = Arrays.asList(args);
+
+    int serverPort = 8080;
+    int serverPortIndex = argList.indexOf("-serverPort") + 1;
+
+    if (serverPortIndex > 0 && serverPortIndex < args.length) {
+      serverPort = Integer.parseInt(args[serverPortIndex]);
+    }
 
     int sentenceModelIndex = argList.indexOf("-sentenceDetectorModel")
         + 1;
@@ -71,7 +78,7 @@ public class NameFinderAnnService {
         tokenizer = SimpleTokenizer.INSTANCE;
       } else {
         System.out
-            .println("unkown tokenizer: " + args[ruleBasedTokenizerIndex]);
+        .println("unkown tokenizer: " + args[ruleBasedTokenizerIndex]);
         return;
       }
     }
@@ -89,7 +96,7 @@ public class NameFinderAnnService {
         ServletContextHandler.SESSIONS);
     context.setContextPath("/");
 
-    Server jettyServer = new Server(8080);
+    Server jettyServer = new Server(serverPort);
     jettyServer.setHandler(context);
 
     ServletHolder jerseyServlet = context
