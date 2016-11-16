@@ -1,0 +1,212 @@
+package opennlp.tools.similarity.apps;
+
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.logging.Logger;
+
+import opennlp.tools.parse_thicket.ParseCorefsBuilder;
+import opennlp.tools.parse_thicket.ParseThicket;
+import opennlp.tools.parse_thicket.apps.SnippetToParagraph;
+import opennlp.tools.parse_thicket.matching.Matcher;
+import opennlp.tools.similarity.apps.BingQueryRunner;
+import opennlp.tools.similarity.apps.Fragment;
+import opennlp.tools.similarity.apps.GeneratedSentenceProcessor;
+import opennlp.tools.similarity.apps.HitBase;
+import opennlp.tools.similarity.apps.RelatedSentenceFinder;
+import opennlp.tools.similarity.apps.utils.PageFetcher;
+import opennlp.tools.similarity.apps.utils.Utils;
+import opennlp.tools.textsimilarity.ParseTreeChunk;
+import opennlp.tools.textsimilarity.ParseTreeChunkListScorer;
+import opennlp.tools.textsimilarity.SentencePairMatchResult;
+import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
+
+import com.memetix.mst.language.Language;
+import com.memetix.mst.translate.Translate;
+
+import edu.stanford.nlp.ling.Sentence;
+import edu.stanford.nlp.ling.TaggedWord;
+import edu.stanford.nlp.trees.Tree;
+import edu.stanford.nlp.trees.tregex.TregexMatcher;
+import edu.stanford.nlp.trees.tregex.TregexPattern;
+
+/**
+ * Class for sentence translation with improvement
+ * based on parse thickets.
+ * @author Alex Loptev
+ *
+ */
+public class SentenceTranslate {
+        private static String clientID = "ParseThicketsTranslation";
+        private static String clientSecret = "M4teDPWKv5xMTOZ/v6nJbwya4ilPE0cUCK4cCPGeRok=";
+
+        private static Logger LOG;
+        private static ParseTreeChunkListScorer parseTreeChunkListScorer; 
+        private static Matcher matcher;
+        private static BingQueryRunner searchRunner;
+        private static SnippetToParagraph sentenceRetriever; 
+        private static final int CONSIDERABLE_SEARCH_RESULTS_COUNT = 1;
+        private static final double MEANINGLESS_THRESHOLD = 3.0;
+        private static final int MINIMUM_WORDS_IN_PHRASE_FOR_TESTING = 5;
+        
+        /**
+         * Substitutes translation fragments by text fragments found on the Web with enough
+         * similarity score with original translation.
+         * @param translatedSentence sentence translated by some translator (e.g. Microsoft Translator)
+         * @return improvedTranslation
+         */
+        public static String improveSentenceTranslationBySimilartyAssessment(String translatedSentence) {
+                List<Tree> phraseNodesForTesting = formPhrasesForMeaningfulnessTesting(translatedSentence);
+                for (Tree phraseNode: phraseNodesForTesting) {
+                        String phrase = Sentence.listToString(phraseNode.yield());
+                        String quotedPhrase = "\"" + phrase + "\"";
+                        HitBase mostSimilarResult = null;
+                        double mostSimilarScore = 0.0;
+                        boolean meaningfull = false;
+                        String[] phrases = {quotedPhrase, phrase};
+                        for (String p: Arrays.asList(phrases)) {
+                                LOG.info(String.format("Meaningfulness testing for phrase: %s", p));
+                                List<HitBase> searchResults = searchRunner.runSearch(p, CONSIDERABLE_SEARCH_RESULTS_COUNT);
+                                for (HitBase searchResult: searchResults) {
+                                        double score = assessSimilarityWithHitBase(phrase, searchResult);
+                                        if (score > MEANINGLESS_THRESHOLD ) {
+                                                meaningfull = true;
+                                                LOG.info(String.format("Phrase %s is meaningful. Score is %f", phrase, score));
+                                                break;
+                                        }
+                                        if (mostSimilarScore < score) {
+                                                mostSimilarResult = searchResult;
+                                                mostSimilarScore = score;
+                                        }
+                                }
+                                if (meaningfull)
+                                        break;
+                        }
+                        if (!meaningfull) {
+                                LOG.info(String.format("Phrase %s is meaningless. Maximal score is %f", phrase, mostSimilarScore));
+                                // TODO: replacing meaningless phrase
+                        }
+                }
+                return "";
+        }
+        
+        public static double assessSimilarityScore(String s1, String s2) {
+                LOG.info(String.format("Assess similarity between: \"%s\" and \"%s\"", s1, s2));
+                List<List<ParseTreeChunk>> match = matcher.assessRelevance(s1, s2);
+                double sim = parseTreeChunkListScorer.getParseTreeChunkListScore(match);
+                LOG.info(String.format("Score: %f", sim));
+                return sim;
+        }
+        
+        /**
+         * Assesses similarity score for phrase and search result's:
+         * title, snippet and appropriate document sentence.
+         * @param sentence
+         * @param searchResult
+         * @return similarity score
+         */
+        private static double assessSimilarityWithHitBase(String phrase, HitBase searchResult) {
+                String title = searchResult.getTitle().replace("<b>", " ").replace("</b>", " ").replace("  ", " ").replace("  ", " ");
+                String snippet = searchResult.getAbstractText().replace("<b>", " ").replace("</b>", " ").replace("  ", " ").replace("  ", " ");
+                double score = Math.max(assessSimilarityScore(phrase, title), assessSimilarityScore(phrase, snippet));
+                searchResult = sentenceRetriever.formTextFromOriginalPageGivenSnippet(searchResult);
+                List<String> sentences = searchResult.getOriginalSentences();
+                for (String sentence: sentences) {
+                        score = Math.max(score, assessSimilarityScore(phrase, sentence));
+                }
+            return score;
+        }
+        
+        /**
+         * Creates list of phrases (L_op) from translated sentence for meaningfulness testing.
+         * Such list includes all the phrases which contain at least two sub-phrases. 
+         * @param sentence
+         * @return list of phrases containing at least two sub-phrases
+         */
+        private static List<Tree> formPhrasesForMeaningfulnessTesting(String sentence) {
+                List<Tree> results = new LinkedList<Tree>();
+                ParseCorefsBuilder ptBuilder = ParseCorefsBuilder.getInstance();
+                ParseThicket pt = ptBuilder.buildParseThicket(sentence);
+                Tree t = pt.getSentences().get(0);
+                // tregex pattern for all nodes with at least two phrasal children
+                TregexPattern pattern = TregexPattern.compile("__ < (__ [ !<: __ | < (__ < __) ] $ (__ !<: __ | < (__ < __)))");
+                TregexMatcher matcher = pattern.matcher(t);
+                while (matcher.findNextMatchingNode()) {
+                        Tree candidate = matcher.getMatch();
+                        int wordsCount = 0;
+                        // test if phrase is too short
+                        for (TaggedWord leaf: candidate.taggedYield()) {
+                                // if is not punctuation
+                                if (Character.isLetter(leaf.tag().charAt(0))) {
+                                        wordsCount++;
+                                }
+                        }
+                        if (wordsCount >= MINIMUM_WORDS_IN_PHRASE_FOR_TESTING) {
+                                results.add(candidate);
+                        }
+                }
+                // reversing phrases because the highest nodes in tree should 
+                // be tested for meaningfulness after the lowest nodes
+                Collections.reverse(results);
+                return results;
+        }
+        
+        
+        /**
+         * Execute simple sentence translation by Microsoft Translation API.
+         * 
+         * @param        sentence                sentence for translation
+         * @param        fromLanguage        sentence native language
+         * @param        fromLanguage        sentence destination language
+         * @return        translated                 sentence
+         * @throws Exception 
+         */
+        public static String executeByMicrosoftTranslator(String text, Language fromLanguage, Language toLanguage) throws Exception {
+                String result = Translate.execute(text, fromLanguage, toLanguage);
+                LOG.info(text + " -> " + result);
+            return result;
+        }
+        
+        /**
+         * Execute simple sentence translation to English by Microsoft Translation API
+         * with sentence native language auto detection.
+         * 
+         * @param        sentence                sentence for translation
+         * @return        translated                 sentence
+         * @throws Exception 
+         */
+        public static String executeByMicrosoftTranslator(String text) throws Exception {
+                return executeByMicrosoftTranslator(text, Language.AUTO_DETECT, Language.ENGLISH);
+        }
+        
+        public static void setMicrosoftTranslatorClientId(String clientId) {
+                Translate.setClientId(clientId);
+        }
+        
+        public static void setMicrosoftTranslatorClientSecret(String clientSecret) {
+                Translate.setClientSecret(clientSecret);
+        }
+        
+        /**
+         * Static initialization block.
+         */
+        static {
+                Translate.setClientId(clientID);
+            Translate.setClientSecret(clientSecret);
+            searchRunner = new BingQueryRunner();
+            sentenceRetriever = new SnippetToParagraph();
+            matcher = new Matcher();
+            parseTreeChunkListScorer = new ParseTreeChunkListScorer();
+            LOG = Logger.getLogger("opennlp.tools.parse_thicket.translation.SentenceTranslate");
+        }
+        
+        /**
+         * Dummy method for testing purposes.
+         * @param args
+         */
+        public static void main(String[] args) throws Exception {
+                SentenceTranslate.improveSentenceTranslationBySimilartyAssessment(SentenceTranslate.executeByMicrosoftTranslator("В воскресенье, 8 декабря, власти Южной Кореи объявили о расширении своей зоны противовоздушной обороны, включив в него свои южные острова."));
+        }}

@@ -1,0 +1,503 @@
+How do I change my username, password, and other login information?
+I am having trouble logging in. How do I reset my password or look up my username?
+I do not have a username or password. How do I get one?
+Do I use the same password and username for my employer-sponsored accounts, personal accounts, and all other Fidelity websites?
+How does "Remember me" work?
+What if I no longer want my username saved?
+My username was saved, but now it is not in the list of saved usernames. Why not?
+What if my username and the username of another user share the same last three characters?
+How do I use my username with the Fidelity telephone services?
+Where can I update my personal information, such as my name, phone number, email, or mailing address?
+Can I add or update beneficiaries for my accounts online?
+How do I set up and manage alerts for my personal accounts?
+Where can I find the amount I have taken year-to-date from my IRA?
+How do I transfer money online between my bank and my Fidelity account?
+How can I gift stock out of my brokerage account?
+How secure is my account information?
+What should I do if I notice unauthorized activity on my account?
+Why do I need cookies to log in to Fidelity?
+What are Extended Validation Certificates?
+What browsers work best with Fidelity.com?
+What plug-ins work best with Fidelity.com?
+When are balances and certain features unavailable on Fidelity.com?
+What should I do when images on a page do not display?
+What steps should I try if I experience difficulty in viewing or printing Adobe PDF forms?
+What kind of mobile devices can I use to access Fidelity Mobile®?
+How do I download my account information from Fidelity.com to Microsoft Excel®?
+How do I suppress Redemption and Purchase from Core transactions seen in Quicken®?
+What versions of Quicken® and QuickBooks® support the account download service?
+What are the system requirements for using the account download service?
+What is required to use the account download service?
+Must I enroll for the account download service?
+How much does the account download service cost?
+What types of accounts can I download information from, and what kind of account information can I download?
+How much transaction history can be downloaded? How often is account information updated?
+Where is my account information stored when I download it into Quicken® and QuickBooks®?
+Can I perform trades in my account using Quicken®?
+Can I perform transactions like Bill Payments and Money Transfers in my account using Quicken® and/or QuickBooks®?
+How secure is the account download service?
+Do I use my Fidelity.com password to download my account data, or do I need a new password?
+Can I download my Fidelity NetBenefits® accounts?
+Can I download my employer-sponsored account information?
+Are there any instances in which Fidelity data varies from the manner in which it is displayed by Fidelity?
+How do I change a Fidelity account in Quicken® to recognize cash transactions like a checking account?
+Can I export all of my account information?
+How can I receive further assistance with the account download service?
+How do I trade?
+Why did you change the Accounts & Trade section of Fidelity.com and what new features can I expect?
+What kind of accounts are displayed on the Summary tab?
+My account indicates I need to activate it. What is this account?
+How do I view the details of a personal investing account?
+How do I view the details of a workplace savings account?
+How do I view my employee benefits information?
+How can I hide an account?
+How can I name and group the accounts on my Summary tab?
+How can I create custom groups to organize my accounts?
+Why can I not nickname an account?
+Why can I not move an account to a new group?
+How do I increase the font size of text on the Summary tab?
+How do I view my Purchase History/Lots?
+What kind of information is displayed on Open Positions?
+What accounts are displayed on Open Positions?
+Why is some of the information on this page highlighted in yellow?
+How do I view additional information about how a value was calculated?
+How soon after I make a trade will it appear on Open Positions?
+How are distributions calculated and posted to an account?
+How often are prices updated on Open Positions?
+How often are prices updated on Open Positions?
+Can I customize how the information on this page is displayed?
+What transactions can affect my cost basis?
+Why is my cost basis unknown?
+What cost basis methods are approved by the IRS?
+How do I calculate cost basis for shares sold under the Taxpayer Relief Act of 1997?
+Can I use cost basis information and unrealized gain/loss information from my Open Positions page for tax reporting purposes?
+Can I enter or edit the cost basis information for a security?
+How does Fidelity report wash sale information?
+How can I view my cost basis without wash sale adjustments?
+What other types of accounts are included in the Open Positions page?
+What does Open Positions show for tax-deferred annuities?
+What is included in the cost amount for my retirement account or accounts?
+How do I increase the font size of text on the Positions tab?
+What do the Current and Change columns display?
+What do the Current and Change columns display?
+What real-time balances are available?
+How are real-time balances calculated?
+When are real-time balances available?
+What is intraday balance activity?
+What balance information is displayed for non-brokerage accounts?
+How do I increase the font size of text on the Balances tab?
+What history information can I view for brokerage, mutual fund, and college savings plan accounts?
+What history information can I view for annuity accounts?
+How can I sort transaction history information?
+How can I filter transaction history information?
+Can I see specific share information in my transaction history?
+What history information can I view for employee stock purchase plans?
+What stock option exercise history information can I view?
+What stock appreciation rights grant information can I view?
+How do I change a Fidelity Account® in Quicken® to recognize cash transactions like a checking account?
+What transaction detail will I see if my account is enabled for international trading?
+Will I see anything additional if I do a foreign currency exchange in my account?
+What is an ADR* (American Depositary Receipt) Fee?
+How do I increase the font size of text on the Activity tab?
+How does cash availability work in my account?
+What are the investment options for my core position?
+Where can I find my account number(s)?
+When are deposits credited?
+When do trades, checks, bill payments, and check card purchases clear my core position?
+How is interest calculated?
+Where can I see my balances online?
+What do the different account values mean?
+What is an interactive statement, and where can I see my interactive statement online?
+How do I add or change the features offered on my account?
+How do I give someone else the right to view or transact in my account?
+How is my account protected?
+Are all of Fidelity's products and services available to customers residing outside of the United States?
+I am not a resident of the US and I do not t have any existing accounts. Can I establish a relationship with Fidelity?
+I’ve recently moved outside the United States. What does that mean for me?
+What about my dividend and capital gain reinvestment?
+Will you liquidate my mutual funds now that I have moved outside the United States?
+How do I place an order?
+How do I preview an order?
+How is my order confirmed?
+How do I review orders I have placed?
+How do I cancel, or cancel and replace an order?
+Can I place orders when markets are closed?
+Can I trade in extended hours?
+How do I receive proceeds from sales?
+How do I pay for trades?
+How do I deposit securities to my Fidelity Account®?
+What are the order settlement dates?
+What are market-wide circuit breakers?
+What are individual stock price bands (Limit Up-Limit Down)?
+How do I buy, sell, or sell to buy mutual funds?
+Where is the mutual fund trading screen?
+How do I place a trade?
+How do I preview my order?
+Where is my order confirmation?
+How do I cancel an order?
+How are funds priced?
+Do I need to "sell" from my Core account to create cash for my mutual fund purchase?
+What is a fund family?
+Can I sell a non-Fidelity fund and buy a Fidelity fund with the proceeds?
+What is Fidelity's Excessive Trading Policy?
+How do I know at what price my order will get executed?
+What is price improvement?
+What types of orders are eligible for price improvement?
+How is the price improvement indication calculated?
+What does Fidelity do to ensure the best execution price on my orders?
+What is a market order?
+What is a limit order?
+What is a stop order?
+What time limitations can I place on an order?
+How are commissions assessed for good until canceled orders?
+How do dividend distributions affect open orders?
+What are the risks of trading in volatile markets?
+What is a Trailing Stop Order?
+What is a conditional order?
+What is short selling?
+What is a basket?
+What are the advantages of basket trading?
+What are the fees, minimums and commissions when trading in a basket?
+What types of orders can I place?
+How do I cancel a basket?
+What if an order in my basket cannot be executed?
+How can I track gain and loss of securities in my basket?
+How do I use watch baskets?
+How do I allocate my basket?
+Can I trade individual securities within the basket, or do I have to trade the basket as a whole?
+What about record keeping? How do I know what position is part of a basket?
+How do I view my orders and other recent account activity?
+What order information can I view online?
+How can I get information about  electronic funds transfer (EFT) transactions in brokerage and college savings plan accounts?
+How do I view recent updates to my orders?
+How can I cancel a pending order?
+What happens if I fail to cancel an order?
+What does it mean to cancel and replace an order?
+Can Fidelity cancel limit orders?
+Does placing a substitute order automatically cancel a previous order?
+What kinds of cancellations do I have to call a Fidelity rep to handle?
+How can I cancel, or cancel and replace, an annuity order?
+How do I view tax lot shares for a pending order?
+How do I change the quantity for a specific shares order?
+Can I specify tax lot shares when placing a cancel and replace order?
+Can I specify or change tax lots after a trade executes?
+How do mutual fund trades between two fund families price and execute?
+How do I sign up for average price trade reporting?
+Why does Fidelity offer average price trade reporting?
+What types of trades are eligible for average price trade reporting?
+Are there any stock or option orders that are not eligible for average price trade reporting?
+When does the average price update take place?
+How are Good 'til Canceled orders handled?
+How do Good 'til Canceled orders impact the records I see on Fidelity.com?
+How does this impact the records I see on trade confirmations, statements, and tax forms?
+Is there any rounding involved in the average price process?
+If I do not enroll in average price reporting, how are my executions handled?
+How do I increase the font size of text on the Activity tab?
+What securities are eligible for margin?
+How does margin work?
+What are the risks associated with margin?
+What is a margin call?
+What are the types of margin requirements?
+What are the requirements for equities?
+What are the requirements for mutual funds?
+What are the requirements for fixed income?
+What are the covered and uncovered option requirements?
+What is portfolio margin?
+What are the requirements for opening a portfolio margin account?
+How do I apply for portfolio margin?
+Are portfolio margin accounts subject to margin calls?
+What is limited margin?
+What account registrations are eligible for limited margin?
+What are the eligibility requirements for limited margin?
+How does it work?
+What is the difference between my cash account and a margin account?
+How do I view my balance?
+What do the different margin account values mean?
+Can I calculate hypothetical trades on margin?
+What is a customer ID or username?
+What is a cash account?
+What are the rules surrounding cash account trade settlements?
+What are possible cash account violations?
+How can I reduce mailbox clutter?
+What is my balance for cash available to trade?
+What is day trading?
+What is a pattern day trader?
+What is a pattern day trader?
+What is the difference between a pattern day trader and a non-pattern day trader?
+What is a day trade call?
+How do I find my pattern day trader balance?
+How is day trade buying power for options calculated?
+Why should I use Trade Armor(TM)?
+What information displays on the chart?
+How do I change the chart time frame?
+How do I change the support and resistance levels?
+Where can I see my positions for a particular symbol?
+How do I update the news feed?
+What information is available on the Research tab?
+How do I place a trade?
+How do I place an Option trade?
+Where can I see my Option positions?
+How can I add or change an email address on my account?
+How do I update the market and account data?
+How can I make changes to my account?
+How do I cancel an order?
+How do I replace an order?
+How do I increase the font size of text on Trade Armor(TM)?
+How often are my investment objectives reviewed?
+When should I consider making changes to my account investment strategy?
+Whom should I contact for assistance with my account?
+Whom should I contact to update account features or initiate monetary transactions?
+What mailing address should I use?
+How can I conduct monetary transactions online?
+How can I make deposits to my account?
+How can I withdraw from my account?
+How can I establish an additional Fidelity Portfolio Advisory Service  account?
+How can I track the quarterly advisory fee associated with my account?
+Are there any additional charges to my account?
+How can I lower my advisory fee?
+Where should I mail my advisory fee payment?
+How do I access help in My Oracle Support?
+How can I reduce mailbox clutter?
+How can I add or change an email address on my account?
+How can I make changes to my account?
+How often are my investment objectives reviewed?
+What sort of changes may require changes to my account investment strategy?
+Whom should I contact for assistance with my account?
+Whom should I contact to update account features or initiate monetary transactions?
+What mailing address should I use?
+How can I track the quarterly advisory fee associated with my account?
+Are there any additional charges to my account?
+What is a Customer ID?
+How can I reduce mailbox clutter?
+How can I add or change an email address on my account?
+How can I make changes to my account?
+How often are my investment objectives reviewed?
+Whom should I contact for assistance with my account?
+How can I conduct monetary transactions online?
+How can I make deposits to my account?
+How can I withdraw from my account?
+How do I receive cash from my account?
+What happens to the income my account generates?
+How frequently will my account generates dividends and interest?
+How can I establish an additional BlackRock Diversified Income Portfolio account?
+How can I track the quarterly advisory fee associated with my account?
+Are there any additional charges to my account?
+What is a Customer ID?
+How can I reduce mailbox clutter?
+How can I add or change an email address on my account?
+How can I make changes to my account?
+How often are my investment situation and my account preferences reviewed?
+Whom should I contact for assistance with my account?
+Whom should I contact to update account features or initiate monetary transactions?
+What mailing address should I use?
+How can I establish an additional Breckinridge Intermediate Municipal Separately Managed Account ?
+How can I track the quarterly advisory fee associated with my account?
+Are there any additional charges to my account?
+What is a customer ID or username?
+How can I reduce mailbox clutter?
+How can I add or change an email address on my account?
+How can I make changes to my account?
+How often are my investment situation and account preferences reviewed?
+Whom should I contact for assistance with my account?
+Whom should I contact to update account features or initiate monetary transactions?
+What mailing address should I use?
+What happens to the income my account generates?
+How frequently will my account generate dividends?
+How can I establish an additional Fidelity Equity-Income Strategy account?
+How can I track the quarterly advisory fee associated with my account?
+Are there any additional charges to my account?
+What is a customer ID or username?
+How can I reduce mailbox clutter?
+How can I add or change an email address on my account?
+How can I make changes to my account?
+How often are my investment situation and account preferences reviewed?
+Whom should I contact for assistance with my account?
+Whom should I contact to update account features or initiate monetary transactions?
+What mailing address should I use?
+How can I establish an additional Fidelity Tax-Managed U.S. Equity Index Strategy account?
+How can I track the quarterly advisory fee associated with my account?
+Are there any additional charges to my account?
+What types of Fidelity accounts are eligible?
+Can I use the service to deposit checks into an IRA?
+Can I use the service to fund a new account?
+Can I pay Portfolio Advisory Service® or other Fidelity managed account fees using mobile check deposit?
+What types of checks are accepted?
+Are there any types of checks that are not accepted?
+Do I need to endorse my check?
+Are there restrictions on the amount of money that can be deposited?
+Why am I required to enroll in the email alert for a rejected Mobile Check Deposit?
+What should I do with the check after I complete my deposit?
+When will I see my deposit posted to my account?
+When will I have access to my funds?
+I completed a deposit but I don’t see it in my account history. What should I do?
+I completed a deposit but I do not see it in my account history. What should I do?
+What if my check is not accepted?
+What should I do if my deposit is rejected?
+If I need to mail a deposit, what address should I use?
+Are the check photos stored anywhere on my mobile device?
+What is the Fidelity® Cash Management Account?
+I already have a Fidelity brokerage account. Should I still consider a Fidelity Cash Management Account?
+What spending and money movement features are included with the Fidelity® Cash Management Account?
+How do I open a Fidelity® Cash Management Account?
+What spending and money movement features are included with the Fidelity® Cash Management Account?
+How does the FDIC insurance coverage work?
+How does the FDIC Deposit Sweep Program help maximize my FDIC insurance eligibility?
+Who is responsible for monitoring my account to make sure it does not exceed FDIC coverage limits?
+What if my balance at an assigned bank exceeds the FDIC insurance coverage limits?
+How does the FDIC insurance coverage work if I hold investments in my Fidelity Cash Management Account?
+How is interest calculated?
+Can I designate a Fidelity® Cash Management Account as a checking account in Quicken®?
+Why should I set up Cash Manager?
+What is the difference between Cash Manager self-funded overdraft protection and a minimum target balance?
+How does Cash Manager's free self-funded overdraft protection differ from the overdraft protection I get at my bank?
+Will any stocks, bonds, or mutual funds be sold if I drop below my minimum balance or use Cash Manager overdraft protection?
+What types of accounts are eligible to be Cash Manager funding accounts?
+When I link my individual account to a joint account, will the joint owners be able to see my funding account balance?
+Why can I not draw from my bank to provide self-funded overdraft protection?
+Do I need to have more than one funding account?
+When will I be alerted about money movement for Fidelity® Cash Management Account?
+Can I suspend or remove the Cash Manager feature from my Fidelity® Cash Management Account?
+Can I use my current bank account as a Cash Manager funding account?
+Can the automatic investment (AI) service be a Cash Management Account feature, and used with the Cash Manager feature?
+Can the personal withdrawal service (PWS) be a Cash Management Account feature, and used with the Cash Manager feature?
+What is a Fidelity® Visa® Gold Check Card?
+Is the Fidelity® Visa® Gold Check Card chip-enabled?
+How does chip technology protect my information?
+How do I get a chip-enabled debit card?
+Are there any fees with the Fidelity® Visa® Gold Check Card?
+What accounts are eligible for a Fidelity® Visa® Gold Check Card?
+Can I set up my Fidelity® Visa® Gold Check Card to use Apple Pay TM?
+Once I apply for a Fidelity® Visa® Gold Check Card, how long will it take for me to receive the card?
+How do I create a new PIN if I do not have a PIN or forgot my current PIN?
+What do I do if my card is blocked?
+If my card is expiring, when should I expect to receive my new card?
+How can I order a replacement card?
+What should I do if my card is lost or stolen, or if I notice unauthorized card transactions?
+How do I obtain an additional card for a joint account owner?
+Are there transaction limits with my card for purchases and ATM transactions?
+Can I use my card to make purchases?
+How do I use my chip-enabled debit card?
+Can I still swipe my chip-enabled card to pay?
+Where can I use my card to withdraw cash, make a purchase, or authorize an automatic debit?
+Why is the pending debit card transaction different from my actual purchase amount?
+What is Fidelity BillPay®?
+What is the fee for Fidelity BillPay®?
+What are the requirements to establish Fidelity BillPay®?
+How do I establish Fidelity BillPay®?
+How do I contact Fidelity for help with Fidelity BillPay®?
+What accounts are eligible for checkwriting?
+Is there a minimum balance requirement for checkwriting?
+How can I reorder checks and deposit slips?
+Can I order custom style checks (i.e., duplicate checks) and accessories?
+How can I cancel a check order?
+How long will it take for me to receive my checks when I submit a new or reorder request?
+How can I obtain a check image?
+How can I place a stop payment on a check?
+How can I request a cancelled check?
+How long does it take to establish EFT?
+How long does it take to establish EFT?
+When will my funds be available?
+What types of bank accounts are eligible for EFT?
+What types of Fidelity accounts are eligible for EFT?
+Are there restrictions on the amount of money that can be transferred via EFT?
+How do I authorize billers to debit my eligible accounts directly?
+Who may apply for a Fidelity Rewards Credit Card?
+Who is Elan Financial Services?
+How do the Rewards Credit Cards work if I elect to deposit my rewards in a tax-advantaged IRA or a 529 plan at Fidelity?
+How do I make mobile payments with my Fidelity® Visa Signature® Card?
+How do I earn Fidelity Rewards points?
+How are points redeemed into a Fidelity account?
+What Fidelity accounts are eligible for a deposit?
+How many points do I need to earn in order to redeem them?
+What types of rewards are available?
+Where can I find out how many points I have earned?
+What is the cap on the amount of points I can earn or redeem?
+Can my points expire?
+Can I use my points to initially fund a newly opened Fidelity account?
+How are my points that are redeemed as a cash contribution into my Fidelity account going to be invested?
+Can I direct my rewards deposit into a friend or family member's eligible Fidelity account?
+Are Reward points earned taxable?
+What if I already have a Fidelity Rewards Credit Card issued by FIA Card Services®?
+What is Full View®?
+How does Full View® work?
+What information can I access?
+Can I pay my bills through Full View®?
+Is there a charge for Full View®?
+Which browsers support Full View®?
+Can I download Full View® data to another program?
+How secure and private is Full View®?
+How does an IRA benefit me?
+Should I save in my 401(k) or my IRA?
+Are there income limits to contribute to an IRA?
+How much can I contribute to my IRA?
+If I qualify to contribute to both a Traditional IRA and Roth IRA, which one should I save in?
+How much money do I need to open a Fidelity IRA?
+What does a Fidelity IRA have to offer?
+How do I open a Fidelity IRA?
+Where should I invest my money?
+Can someone help me with my investing?
+How can I contribute to my Fidelity IRA?
+Can I withdraw money from my IRA?
+Can I convert my existing Traditional IRA to a Roth IRA?
+Can I transfer my IRA from another institution?
+Can I roll over my old 401(k) from a previous employer to my Roth or Traditional IRA?
+What is a Rollover IRA?
+What do I need to do to roll over my retirement plan assets to a Fidelity IRA?
+Can I roll over assets into my Traditional IRA?
+Will I owe taxes on my rollover?
+Can I move an existing IRA from another institution to Fidelity?
+What should I do if my former employer's 401(k) was recordkept by Fidelity?
+Can I roll my money into a Roth IRA?
+I already received a check made payable to me, and 20% was withheld. If I roll over my money now, can I get that 20% back?
+How do I know if I am eligible for a rollover?
+Can I add more money to my IRA later?
+Can I leave my former employer-sponsored retirement plan assets in my current plan indefinitely?
+Can I leave a portion of my 401(k) in an old employer's plan and roll the remaining amount to an IRA?
+Can I roll over my existing 401(k) assets into an IRA while I am still working?
+Can I roll over an old 401(k) that has both pre-tax and after-tax money in it?
+If I leave my current employer, can my vested participation in a defined benefit plan be rolled into an IRA?
+What is Net Unrealized Appreciation (NUA)?
+When is a Net Unrealized Appreciation (NUA) strategy favorable?
+How is a Roth IRA different from a Traditional IRA?
+Should I consider converting to a Roth IRA?
+What if I am over 70 1/2 and need to take a minimum required distribution (MRD)?
+How much should I consider converting?
+How should I plan to pay for taxes resulting from converting to a Roth IRA?
+What can I convert or roll over to a Roth IRA?
+Can I roll over assets from my workplace retirement account at a former employer directly to a Roth IRA?
+Am I eligible to convert?
+What are the potential tax implications of converting?
+Can I change my mind?
+Are there any limitations on going back to a Roth IRA after I recharacterize?
+How do I convert to a Roth IRA?
+Who can convert to a Roth IRA?
+What account types can you convert?
+What are minimum required distributions (MRDs)?
+Are there any exceptions?
+How do I calculate my MRD?
+What if my spouse is more than 10 years younger?
+Will Fidelity calculate my MRD for me?
+I can not find my MRD estimates on my account statement. Where is it located?
+Where can I find the Retirement Distribution Center?
+Can I find my MRD estimates anywhere else?
+How should I handle year-end transfers or rollovers?
+Will Fidelity send me my MRD automatically?
+How are MRDs taxed?
+What if I made non-deductible contributions to my IRA?
+When should I take my first MRD?
+How should I time my first MRD when it comes to taxes?
+How should I take my MRDs if I have multiple non-Roth accounts?
+What are the deadlines for taking MRDs?
+What are the penalties if I miss a deadline?
+Do I have to take my MRD if I am still working?
+Can I still contribute to my IRAs while taking MRDs?
+Why is it so important to consider beneficiaries when taking MRDs?
+How do I name a beneficiary?
+Should I convert to a Roth IRA, since they do not have MRDs?
+Are Qualified Charitable Distributions (QCDs) available for IRAs in 2015?
+How do I know if I am qualified to make a QCD?
+How to do I request a QCD from my Fidelity IRA?
+How can I contact Fidelity?
+How can I contact Fidelity?
+Who are you
+What can you do
