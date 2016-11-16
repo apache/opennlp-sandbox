@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package opennlp.tools.parse_thicket.kernel_interface;
 
 import java.io.BufferedReader;
@@ -30,17 +47,31 @@ public class TreeKernelRunner {
 
 	public void runLearner(String dir, String learning_file, String  model_file)
 	{
+			if (!dir.endsWith("/"))
+				dir+="/";
+		String[] runString = new String[]{dir+"svm_learn","-t", "5","-j","2","-W","A", dir+learning_file,  dir+model_file};
+		runEXE(runString, dir);
+	}
+	public void runLearnerWin(String dir, String learning_file, String  model_file)
+	{
 		dir = dir.replace('/', '\\');
 		
 		if (!dir.endsWith("\\"))
 				dir+="\\";
-		String[] runString = new String[]{dir+"svm_learn.exe","-t", "5", dir+learning_file,  dir+model_file};
+		String[] runString = new String[]{dir+"svm_learn.exe","-t", "5","-j","2","-W","A", dir+learning_file,  dir+model_file};
 		runEXE(runString, dir);
 	}
 	
 	
 	//svm_classify example_file model_file predictions_file
 	public void runClassifier(String dir, String example_file, String  model_file, String predictions_file)
+	{
+		if (!dir.endsWith("/"))
+				dir+="/";
+		String[] runString = new String[]{dir+"svm_classify", dir+example_file,  dir+model_file, dir+predictions_file};
+		runEXE(runString, dir);
+	}
+	public void runClassifierWin(String dir, String example_file, String  model_file, String predictions_file)
 	{
 		dir = dir.replace('/', '\\');
 		

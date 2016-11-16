@@ -73,7 +73,7 @@ public class MultiSentenceSearchResultsProcessor  {
 					hit.setSource(match.toString());
 				}
 				if (score < 2){ // attempt to match with snippet, if not much luck with original text
-					match = matcher.assessRelevanceCache(pageSentsAndSnippet[0] ,
+					match = matcher.assessRelevanceCache(pageSentsAndSnippet[1] ,
 							searchQuery);
 					score = parseTreeChunkListScorer.getParseTreeChunkListScore(match);
 				}
@@ -161,7 +161,7 @@ public class MultiSentenceSearchResultsProcessor  {
 			LOG.info("No search results for query '" + query);
 			return null;
 		}
-		ProfileReaderWriter.writeReport(reportData, "resultsForQuery_"+query.replace(' ', '_')+".csv");
+		//ProfileReaderWriter.writeReport(reportData, "resultsForQuery_"+query.replace(' ', '_')+".csv");
 		return hits;
 	}
 	

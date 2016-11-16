@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package opennlp.tools.similarity.apps.solr;
 
 import java.io.IOException;
@@ -58,8 +74,8 @@ public class NLProgram2CodeRequestHandler extends SearchHandler {
 	private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
 	private ParserChunker2MatcherProcessor sm = null;
 	private int MAX_QUERY_LENGTH_NOT_TO_RERANK=3;
-	private static String resourceDir = "/home/solr/solr-4.4.0/example/src/test/resources";
-	//"C:/workspace/TestSolr/src/test/resources";
+	private static String resourceDir = //"/home/solr/solr-4.4.0/example/src/test/resources";
+	"C:/workspace/TestSolr/src/test/resources";
 
 	//"/data1/solr/example/src/test/resources";
 	

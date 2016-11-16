@@ -14,7 +14,7 @@ import javax.activation.*;
  */
 public class EmailSender {
 		private static final long serialVersionUID = 1L;
-		private static final String mailboxAddress="bgalitsky@hotmail.com";
+		private static final String mailboxAddress="boris_galitsky@rambler.ru";
 
 		public  boolean sendMail(String smtp, String user, String pass, InternetAddress from, InternetAddress[] to, InternetAddress[] cc, InternetAddress[] bcc, String subject, String body, String file) throws Exception
 		{
@@ -34,7 +34,7 @@ public class EmailSender {
 					Properties props = new Properties();
 					props.put("mail.smtp.host", smtp);
 					props.put("mail.smtp.auth", "true");
-					props.put("mail.smtp.port", "587");
+					props.put("mail.smtp.port", "465");
 					props.put("mail.smtp.starttls.enable", "true");
 					Authenticator auth = new SMTP_Authenticator	(user, pass);
 					Session session = Session.getInstance(props, auth);
@@ -158,7 +158,8 @@ public class EmailSender {
 		public static void main(String[] args){
 			EmailSender s = new EmailSender();
 			try {
-				s.sendMail("smtp.live.com", "bgalitsky@hotmail.com", "******", new InternetAddress("bgalitsky@hotmail.com"), new InternetAddress[]{new InternetAddress("bgalitsky@hotmail.com")}, new InternetAddress[]{}, new InternetAddress[]{}, 
+				s.sendMail("smtp.rambler.ru", "boris_galitsky@rambler.ru", "b06g93", 
+						new InternetAddress("bgalitsky@hotmail.com"), new InternetAddress[]{new InternetAddress("bgalitsky@hotmail.com")}, new InternetAddress[]{}, new InternetAddress[]{}, 
 						"Generated content for you", "body", null);
 			} catch (AddressException e) {
 				// TODO Auto-generated catch block

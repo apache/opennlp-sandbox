@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package opennlp.tools.apps.relevanceVocabs;
 
 import java.io.IOException;
@@ -12,50 +29,7 @@ import java.io.IOException;
    import java.util.TreeMap;
    import java.util.TreeSet;
    
-   /**
-    * Loads the <a target="_blank" 
-    * href="http://www.cogsci.princeton.edu/~wn/">WordNet </a> prolog file <a
-    * href="http://www.cogsci.princeton.edu/2.0/WNprolog-2.0.tar.gz">wn_s.pl </a>
-    * into a thread-safe main-memory hash map that can be used for fast
-    * high-frequency lookups of synonyms for any given (lowercase) word string.
-    * <p>
-    * There holds: If B is a synonym for A (A -> B) then A is also a synonym for B (B -> A).
-    * There does not necessarily hold: A -> B, B -> C then A -> C.
-    * <p>
-    * Loading typically takes some 1.5 secs, so should be done only once per
-    * (server) program execution, using a singleton pattern. Once loaded, a
-    * synonym lookup via {@link #getSynonyms(String)}takes constant time O(1).
-    * A loaded default synonym map consumes about 10 MB main memory.
-    * An instance is immutable, hence thread-safe.
-    * <p>
-    * This implementation borrows some ideas from the Lucene Syns2Index demo that 
-    * Dave Spencer originally contributed to Lucene. Dave's approach
-    * involved a persistent Lucene index which is suitable for occasional
-    * lookups or very large synonym tables, but considered unsuitable for 
-    * high-frequency lookups of medium size synonym tables.
-    * <p>
-    * Example Usage:
-    * <pre>
-    * String[] words = new String[] { "hard", "woods", "forest", "wolfish", "xxxx"};
-    * SynonymMap map = new SynonymMap(new FileInputStream("samples/fulltext/wn_s.pl"));
-    * for (int i = 0; i &lt; words.length; i++) {
-    *     String[] synonyms = map.getSynonyms(words[i]);
-    *     System.out.println(words[i] + ":" + java.util.Arrays.asList(synonyms).toString());
-    * }
-    * 
-    * Example output:
-    * hard:[arduous, backbreaking, difficult, fermented, firmly, grueling, gruelling, heavily, heavy, intemperately, knockout, laborious, punishing, severe, severely, strong, toilsome, tough]
-    * woods:[forest, wood]
-   * forest:[afforest, timber, timberland, wood, woodland, woods]
-    * wolfish:[edacious, esurient, rapacious, ravening, ravenous, voracious, wolflike]
-    * xxxx:[]
-    * </pre>
-    *
-    * @see <a target="_blank"
-    *      href="http://www.cogsci.princeton.edu/~wn/man/prologdb.5WN.html">prologdb
-    *      man page </a>
-    * @see <a target="_blank" href="http://www.hostmon.com/rfc/advanced.jsp">Dave's synonym demo site</a>
-    */
+   
    public class SynonymMap {
    
      /** the index data; Map<String word, String[] synonyms> */
@@ -73,7 +47,7 @@ import java.io.IOException;
       * @param input
       *            the stream to read from (null indicates an empty synonym map)
       * @throws IOException
-      *             if an error occured while reading the stream.
+      *             if an error occurred while reading the stream.
       */
      public SynonymMap(InputStream input) throws IOException {
        this.table = input == null ? new HashMap<String,String[]>(0) : read(toByteArray(input));

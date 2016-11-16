@@ -17,16 +17,10 @@
 
 package opennlp.tools.similarity.apps;
 
-import java.io.BufferedReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
+
 
 import net.billylieurance.azuresearch.AzureSearchResultSet;
 import net.billylieurance.azuresearch.AzureSearchWebQuery;
@@ -34,8 +28,7 @@ import net.billylieurance.azuresearch.AzureSearchWebResult;
 import opennlp.tools.similarity.apps.utils.StringDistanceMeasurer;
 
 import org.apache.commons.lang.StringUtils;
-import org.json.JSONArray;
-import org.json.JSONObject;
+
 
 
 public class BingWebQueryRunner {
@@ -110,6 +103,12 @@ public class BingWebQueryRunner {
     }
 
     return 0;
+  }
+  
+  public static void main(String[] args) {
+	    BingWebQueryRunner self = new BingWebQueryRunner();
+	    
+	    List<HitBase> res = self.runSearch ("albert einstein", 10);
   }
 
   

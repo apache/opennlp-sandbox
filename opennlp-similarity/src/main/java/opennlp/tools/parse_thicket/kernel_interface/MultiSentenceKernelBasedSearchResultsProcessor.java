@@ -90,7 +90,7 @@ public class MultiSentenceKernelBasedSearchResultsProcessor  extends MultiSenten
 	private List<HitBase> filterOutIrrelevantHitsByTreeKernelLearning(
 			List<HitBase> hits, String query) {
 		List<HitBase> newHitList = new ArrayList<HitBase>(), newHitListReRanked = new ArrayList<HitBase>();
-		// form the training set from original documets. Since search results are ranked, we set the first half as positive set,
+		// form the training set from original documents. Since search results are ranked, we set the first half as positive set,
 		//and the second half as negative set.
 		// after re-classification, being re-ranked, the search results might end up in a different set
 		List<String[]> treeBankBuffer = new ArrayList<String[]>();

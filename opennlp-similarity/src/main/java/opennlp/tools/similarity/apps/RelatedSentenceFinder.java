@@ -82,6 +82,8 @@ public class RelatedSentenceFinder {
 		this.RELEVANCE_THRESHOLD=thresh;
 		yrunner.setKey(key);
 	}
+	
+	int generateContentAboutIter = 0;
 
 	public RelatedSentenceFinder() {
 		// TODO Auto-generated constructor stub
@@ -170,6 +172,20 @@ public class RelatedSentenceFinder {
 			stepCount++;
 			if (stepCount>MAX_STEPS)
 				break;
+		}
+		 
+		// if nothing is written, then get first search result and try again
+		try {
+			if (generateContentAboutIter<4 && ContentGeneratorSupport.problematicHitList(opinionSentencesToAdd)){
+				List<HitBase> resultList = yrunner.runSearch(sentence, 10);
+				String discoveredSimilarTopic = resultList.get(generateContentAboutIter).getTitle();
+				discoveredSimilarTopic = ContentGeneratorSupport.getPortionOfTitleWithoutDelimiters(discoveredSimilarTopic);
+				generateContentAboutIter++;
+				opinionSentencesToAdd =  generateContentAbout(discoveredSimilarTopic);
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 
 		opinionSentencesToAdd = removeDuplicatesFromResultantHits(opinionSentencesToAdd);

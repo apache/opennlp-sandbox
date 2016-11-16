@@ -1,7 +1,24 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package opennlp.tools.similarity.apps.solr;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -61,6 +78,7 @@ public class ContentGeneratorRequestHandler extends SearchHandler {
 	private static Logger LOG = Logger
 			.getLogger("com.become.search.requestHandlers.SearchResultsReRankerRequestHandler");
 	private ParserChunker2MatcherProcessor sm = null;
+	WordDocBuilderEndNotes docBuilder = new WordDocBuilderEndNotes ();
 
 
 	public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp){
@@ -142,10 +160,9 @@ public class ContentGeneratorRequestHandler extends SearchHandler {
 	}
 
 	public String cgRunner(String[] args) {
-		ParserChunker2MatcherProcessor sm = null;
 		int count=0; 
 		for(String a: args){
-			System.out.print(count+" >> " + a);
+			System.out.print(count+">>" + a + " | ");
 			count++;
 		}
 		
@@ -164,13 +181,13 @@ public class ContentGeneratorRequestHandler extends SearchHandler {
 
 		String bingKey = args[7];
 		if (bingKey == null){
-			bingKey = //"e8ADxIjn9YyHx36EihdjH/tMqJJItUrrbPTUpKahiU0=";
-					"xdnRVcVf9m4vDvW1SkTAz5kS5DFYa19CrPYGelGJxnc";
+			bingKey = "e8ADxIjn9YyHx36EihdjH/tMqJJItUrrbPTUpKahiU0=";
+					//"xdnRVcVf9m4vDvW1SkTAz5kS5DFYa19CrPYGelGJxnc";
 		}
 
 		RelatedSentenceFinder f = null;
 		String lang = args[6];
-		if (lang.startsWith("es")){
+		if (lang.startsWith("es") || lang.startsWith("ru") || lang.startsWith("de")){
 			f = new RelatedSentenceFinderML(Integer.parseInt(args[3]), Integer.parseInt(args[4]), Float.parseFloat(args[5]), bingKey);
 			f.setLang(lang);
 		} else	    
@@ -184,14 +201,28 @@ public class ContentGeneratorRequestHandler extends SearchHandler {
 		try {
 
 			hits = f.generateContentAbout(args[0].replace('+', ' ').replace('"', ' ').trim());
+			
 			System.out.println(HitBase.toString(hits));
-			generatedContent = HitBase.toResultantString(hits);
+			generatedContent = HitBase.toResultantString(hits) + "\n REFERENCES \n" + HitBase.produceReferenceSection(hits) ;
 
+			try {
+				writeResultInAFile(args[0].replace('+', ' '), generatedContent);
+			} catch (Exception e2) {
+				e2.printStackTrace();
+			}
+			
+			String attachmentFileName = null;
+			try {
+				attachmentFileName = docBuilder.buildWordDoc(hits, args[0].replace('+', ' ').replace('"', ' '));
+			} catch (Exception e2) {
+				e2.printStackTrace();
+			}
+			
 			opennlp.tools.apps.utils.email.EmailSender s = new opennlp.tools.apps.utils.email.EmailSender();
 
 			try {
 				s.sendMail("smtp.rambler.ru", "bg7550@rambler.ru", "pill0693", new InternetAddress("bg7550@rambler.ru"), new InternetAddress[]{new InternetAddress(args[1])}, new InternetAddress[]{}, new InternetAddress[]{}, 
-						"Generated content for you on '"+args[0].replace('+', ' ')+"'", generatedContent, null);
+						"Generated content for you on '"+args[0].replace('+', ' ')+"'", generatedContent, attachmentFileName);
 			} catch (AddressException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -200,7 +231,7 @@ public class ContentGeneratorRequestHandler extends SearchHandler {
 				e.printStackTrace();
 				try {
 					s.sendMail("smtp.rambler.ru", "bg7550@rambler.ru", "pill0693", new InternetAddress("bg7550@rambler.ru"), new InternetAddress[]{new InternetAddress(args[1])}, new InternetAddress[]{}, new InternetAddress[]{}, 
-							"Generated content for you on '"+args[0].replace('+', ' ')+"'", generatedContent, null);
+							"Generated content for you on '"+args[0].replace('+', ' ')+"'", generatedContent, attachmentFileName);
 				} catch (Exception e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -214,6 +245,40 @@ public class ContentGeneratorRequestHandler extends SearchHandler {
 		return generatedContent;
 	}
 
+	private void writeResultInAFile(String title, String content){
+		FileOutputStream fop = null;
+		File file;
+		String absPath = new File(".").getAbsolutePath();
+		absPath = absPath.substring(0, absPath.length()-1);
+ 
+		try {
+ 
+			file = new File(absPath+"/written/"+ title.replace(' ','_').replace('\"', ' ').trim()+ ".txt");
+			// if file doesnt exists, then create it
+			if (!file.exists()) {
+				file.createNewFile();
+			}
+			fop = new FileOutputStream(file);
+  
+			// get the content in bytes
+			byte[] contentInBytes = content.getBytes();
+ 
+			fop.write(contentInBytes);
+			fop.flush();
+			fop.close(); 
+			 
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (fop != null) {
+					fop.close();
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
 	
 }
 

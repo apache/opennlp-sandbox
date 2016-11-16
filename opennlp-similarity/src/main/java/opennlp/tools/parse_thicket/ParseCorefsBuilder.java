@@ -19,8 +19,8 @@ import edu.stanford.nlp.util.*;
 
 public class ParseCorefsBuilder {
 	protected static ParseCorefsBuilder instance;
-	private Annotation annotation;
-	StanfordCoreNLP pipeline;
+	protected Annotation annotation;
+	protected StanfordCoreNLP pipeline;
 	CommunicativeActionsArcBuilder caFinder = new CommunicativeActionsArcBuilder();
 	
 	  /**
@@ -35,9 +35,9 @@ public class ParseCorefsBuilder {
 	    return instance;
 	  }
 	
-	ParseCorefsBuilder(){
+	protected ParseCorefsBuilder(){
 		Properties props = new Properties();
-		props.put("annotators", "tokenize, ssplit, pos, lemma, ner, parse, dcoref");
+		props.put("annotators", "tokenize, ssplit, pos, lemma, ner, parse, dcoref, sentiment");
 		pipeline = new StanfordCoreNLP(props);
 	}
 	
@@ -104,30 +104,18 @@ public class ParseCorefsBuilder {
 	    					  new Pair<Integer, Integer>(njSentence,njWord), mi.mentionSpan, mj.mentionSpan, 
 	    					  arcType);
 	    	  arcs.add(arc);
-	    	  
-	    	  /*
-	    	  System.out.println("animacy = "+m.animacy);
-	    	  System.out.println("mention span = "+m.mentionSpan);
-	    	  System.out.println(" id = "+m.mentionID);
-	    	  System.out.println(" position = "+m.position);
-	    	  System.out.println(" start index = "+m.startIndex);
-	    	  System.out.println(" end index = "+m.endIndex);   
-	    	  System.out.println(" mentionType = "+m.mentionType);   
-	    	  System.out.println(" number =  = "+m.number);  
-	    	  */
 	    	  }
 	      }
-	      
-	      
 	    }
 	    List<WordWordInterSentenceRelationArc> arcsCA = buildCAarcs(nodesThicket);
+	    arcs.addAll(arcsCA);
 	    
 	    ParseThicket result = new ParseThicket(ptTrees, arcs);
 	    result.setNodesThicket(nodesThicket);
 	    return result;
 	}
 
-  private List<WordWordInterSentenceRelationArc> buildCAarcs(
+  public List<WordWordInterSentenceRelationArc> buildCAarcs(
 			List<List<ParseTreeNode>> nodesThicket) {
 	  List<WordWordInterSentenceRelationArc> arcs = new ArrayList<WordWordInterSentenceRelationArc>();
 	  

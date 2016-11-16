@@ -61,7 +61,7 @@ public class WordWordInterSentenceRelationArc {
 		}
 	
 		public String toString(){
-			return "<sent="+codeFrom.getFirst()+"-word="+codeFrom.getSecond()+".."+lemmaFrom+"> ===> "+
+			return arcType.toString()+"&<sent="+codeFrom.getFirst()+"-word="+codeFrom.getSecond()+".."+lemmaFrom+"> ===> "+
 					"<sent="+codeTo.getFirst()+"-word="+codeTo.getSecond()+".."+lemmaTo+">";
 		}
 

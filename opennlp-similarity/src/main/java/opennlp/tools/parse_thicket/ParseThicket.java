@@ -13,6 +13,36 @@ public class ParseThicket {
 	// then list for all sentences
 	private List<List<ParseTreeNode>> sentenceNodes;
 	
+	private List<Float> sentimentProfile;
+	
+	private String origText;
+	private List<List<ParseTreeNode>> phrases;
+	
+	
+	public List<Tree> getSentenceTrees() {
+		return sentenceTrees;
+	}
+
+	public void setSentenceTrees(List<Tree> sentenceTrees) {
+		this.sentenceTrees = sentenceTrees;
+	}
+
+	public List<List<ParseTreeNode>> getSentenceNodes() {
+		return sentenceNodes;
+	}
+
+	public void setSentenceNodes(List<List<ParseTreeNode>> sentenceNodes) {
+		this.sentenceNodes = sentenceNodes;
+	}
+
+	public String getOrigText() {
+		return origText;
+	}
+
+	public void setOrigText(String origText) {
+		this.origText = origText;
+	}
+
 	public List<Tree> getSentences() {
 		return sentenceTrees;
 	}
@@ -52,6 +82,22 @@ public class ParseThicket {
 	
 	public String toString(){
 		return this.sentenceTrees+"\n"+this.arcs;
+	}
+
+	public void setPhrases(List<List<ParseTreeNode>> phrs) {
+		this.phrases = phrs;		
+	}
+
+	public List<List<ParseTreeNode>> getPhrases() {
+		return phrases;
+	}
+
+	public List<Float> getSentimentProfile() {
+		return sentimentProfile;
+	}
+
+	public void setSentimentProfile(List<Float> sentimentProfile) {
+		this.sentimentProfile = sentimentProfile;
 	}
 	
 	

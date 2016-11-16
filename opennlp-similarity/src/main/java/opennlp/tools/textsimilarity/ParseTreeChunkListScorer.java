@@ -19,6 +19,8 @@ package opennlp.tools.textsimilarity;
 
 import java.util.List;
 
+import opennlp.tools.parse_thicket.matching.LemmaGeneralizer;
+
 public class ParseTreeChunkListScorer {
   // find the single expression with the highest score
   public double getParseTreeChunkListScore(
@@ -72,7 +74,16 @@ public class ParseTreeChunkListScorer {
         } else {
           score += 0.1;
         }
-      } else {
+      } else if (l.startsWith(LemmaGeneralizer.w2vPrefix) ){
+    	  try {
+			float val = Float.parseFloat(l.substring(LemmaGeneralizer.w2vPrefix.length()));
+			  score+= 1- val;
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+		}
+      }
+      
+      else {
 
         if (pos.startsWith("NN") || pos.startsWith("NP")
             || pos.startsWith("CD") || pos.startsWith("RB")) {

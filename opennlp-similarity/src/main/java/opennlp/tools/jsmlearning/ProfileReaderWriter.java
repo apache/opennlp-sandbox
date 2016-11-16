@@ -123,6 +123,31 @@ public class ProfileReaderWriter {
 			e.printStackTrace();
 		}
 	}
+	public static void appendReport( List<String[]> allLines, String reportName){
+		List<String[]> previous;
+		try {
+			previous = readProfiles(reportName);
+			allLines.addAll(previous);
+		} catch (Exception e1) {
+			System.out.println("Creating file "+reportName);
+		}
+		
+		CSVWriter writer = null;
+		try {	
+			writer = new CSVWriter(new PrintWriter(reportName));			
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}	
+
+		writer.writeAll(allLines);
+
+		try {
+			writer.flush();
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	public static void writeReportListStr(List<String> res, String string) {
 		// TODO Auto-generated method stub

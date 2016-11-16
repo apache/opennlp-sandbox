@@ -66,7 +66,7 @@ public class MultiSentenceExtendedForestSearchResultsProcessorSetFormer  extends
 	private List<HitBase> formTreeForestDataSet(
 			List<HitBase> hits, String query, boolean isPositive) {
 		List<HitBase> newHitList = new ArrayList<HitBase>(), newHitListReRanked = new ArrayList<HitBase>();
-		// form the training set from original documets. Since search results are ranked, we set the first half as positive set,
+		// form the training set from original documents. Since search results are ranked, we set the first half as positive set,
 		//and the second half as negative set.
 		// after re-classification, being re-ranked, the search results might end up in a different set
 		List<String[]> treeBankBuffer = new ArrayList<String[]>();
@@ -117,7 +117,6 @@ public class MultiSentenceExtendedForestSearchResultsProcessorSetFormer  extends
 				treeBankBuffer.add(new String[] {posOrNeg+" |BT| "+t.toString()+ " |ET|"});
 			}
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return treeBankBuffer;

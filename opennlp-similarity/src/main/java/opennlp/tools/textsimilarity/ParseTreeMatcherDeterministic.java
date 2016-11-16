@@ -19,7 +19,7 @@ package opennlp.tools.textsimilarity;
 
 import java.util.ArrayList;
 import java.util.List;
-import opennlp.tools.stemmer.PorterStemmer;
+import opennlp.tools.stemmer.PStemmer;
 
 public class ParseTreeMatcherDeterministic {
 
@@ -48,7 +48,7 @@ public class ParseTreeMatcherDeterministic {
     List<String> lem1stem = new ArrayList<String>();
     List<String> lem2stem = new ArrayList<String>();
 
-    PorterStemmer ps = new PorterStemmer();
+    PStemmer ps = new PStemmer();
     for (String word : lem1) {
       try {
         lem1stem.add(ps.stem(word.toLowerCase()).toString());

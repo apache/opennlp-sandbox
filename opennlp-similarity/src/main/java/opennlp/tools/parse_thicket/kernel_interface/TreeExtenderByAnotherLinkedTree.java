@@ -1,29 +1,54 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package opennlp.tools.parse_thicket.kernel_interface;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import opennlp.tools.jsmlearning.ProfileReaderWriter;
 import opennlp.tools.parse_thicket.ParseThicket;
 import opennlp.tools.parse_thicket.ParseTreeNode;
+import opennlp.tools.parse_thicket.VerbNetProcessor;
 import opennlp.tools.parse_thicket.WordWordInterSentenceRelationArc;
 import opennlp.tools.parse_thicket.matching.Matcher;
 import opennlp.tools.parse_thicket.matching.PT2ThicketPhraseBuilder;
 import edu.stanford.nlp.trees.Tree;
 
 public class TreeExtenderByAnotherLinkedTree extends  PT2ThicketPhraseBuilder {
+	private static Logger log = Logger
+		      .getLogger("opennlp.tools.parse_thicket.kernel_interface.TreeExtenderByAnotherLinkedTree");
 
 	public List<String> buildForestForCorefArcs(ParseThicket pt){
 		List<String> results = new ArrayList<String>();
 		for(WordWordInterSentenceRelationArc arc: pt.getArcs()){
-			if (!arc.getArcType().getType().startsWith("coref"))
-				continue;
+			//if (!arc.getArcType().getType().startsWith("coref"))
+			//	continue;
 			int fromSent = arc.getCodeFrom().getFirst();
 			int toSent = arc.getCodeTo().getFirst();
+			if (fromSent <1 || toSent <1 ) // TODO problem in sentence enumeration => skip building extended trees
+				return results;
+			
 			String wordFrom = arc.getLemmaFrom();
 			String wordTo = arc.getLemmaTo();
 
-			List<Tree> trees = getASubtreeWithRootAsNodeForWord1(pt.getSentences().get(fromSent-1), pt.getSentences().get(fromSent-1), new String[]{ wordFrom});
+			List<Tree> trees = getASubtreeWithRootAsNodeForWord1(pt.getSentences().get(fromSent-1), 
+					pt.getSentences().get(fromSent-1), new String[]{ wordFrom});
 			if (trees==null || trees.size()<1)
 				continue;
 			System.out.println(trees);
@@ -32,13 +57,52 @@ public class TreeExtenderByAnotherLinkedTree extends  PT2ThicketPhraseBuilder {
 			System.out.println(sb.toString());
 			results.add(sb.toString());
 		}
-		/*
-		List<String[]> treeBankBuffer = new ArrayList<String[]>();
-		for(String t: results){
-			treeBankBuffer.add(new String[] {" 0 |BT|"+t.toString()+ "|ET|"});
+		// if no arcs then orig sentences
+		if (results.isEmpty()){
+			for(Tree t: pt.getSentences()){
+				results.add(t.toString());
+			}
 		}
-		ProfileReaderWriter.writeReport(treeBankBuffer, "C:\\stanford-corenlp\\tree_kernel\\unknownForest.txt", ' ');
-		*/
+		return results;
+	}
+	// sentences in pt are enumerarted starting from 0;
+	//this func works with Sista version of Stanford NLP and sentences are coded from 0
+	public List<String> buildForestForRSTArcs(ParseThicket pt){
+		List<String> results = new ArrayList<String>();
+		for(WordWordInterSentenceRelationArc arc: pt.getArcs()){
+			// TODO - uncomment
+			//if (!arc.getArcType().getType().startsWith("rst"))
+			//   continue;
+			int fromSent = arc.getCodeFrom().getFirst();
+			int toSent = arc.getCodeTo().getFirst();
+			
+			String wordFrom = arc.getLemmaFrom();
+			String wordTo = arc.getLemmaTo();
+			
+			if (wordFrom == null || wordFrom.length()<1 || wordTo == null || wordTo.length()<1) 
+				log.severe("Empty lemmas for RST arc "+ arc);
+
+			List<Tree> trees = getASubtreeWithRootAsNodeForWord1(pt.getSentences().get(fromSent), 
+					pt.getSentences().get(fromSent), new String[]{ wordFrom});
+			if (trees==null || trees.size()<1)
+				continue;
+			System.out.println(trees);
+			StringBuilder sb = new StringBuilder(10000);	
+			Tree tree = trees.get(0);
+			// instead of phrase type for the root of the tree, we want to put the RST relation name
+			if (arc.getArcType().getType().startsWith("rst"))
+				tree.setValue(arc.getArcType().getSubtype());
+			
+			toStringBuilderExtenderByAnotherLinkedTree1(sb, pt.getSentences().get(toSent), tree, new String[]{wordTo});
+			System.out.println(sb.toString());
+			results.add(sb.toString());
+		}
+		// if no arcs then orig sentences
+		if (results.isEmpty()){
+			for(Tree t: pt.getSentences()){
+				results.add(t.toString());
+			}
+		}
 		return results;
 	}
 
@@ -75,8 +139,6 @@ public class TreeExtenderByAnotherLinkedTree extends  PT2ThicketPhraseBuilder {
 					}
 					sb.append(' ');
 					toStringBuilderExtenderByAnotherLinkedTree1(sb, treeToInsert, null, null);
-					int z=0; z++;
-
 				} else {
 					for (Tree kid : kids) {
 						sb.append(' ');
@@ -90,6 +152,7 @@ public class TreeExtenderByAnotherLinkedTree extends  PT2ThicketPhraseBuilder {
 		}
 	}
 
+	// given a parse tree and a 
 	public List<Tree> getASubtreeWithRootAsNodeForWord1(Tree tree, Tree currentSubTree, String[] corefWords){
 		if (currentSubTree.isLeaf()){
 			return null;
@@ -97,26 +160,23 @@ public class TreeExtenderByAnotherLinkedTree extends  PT2ThicketPhraseBuilder {
 		List<Tree> result = null;
 		Tree[] kids = currentSubTree.children();
 		if (kids != null) {
-			boolean bInsert=false;
+			boolean bFound=false;
 			String word = corefWords[corefWords.length-1];
-
 			for (Tree kid : kids) {
-				if (bInsert){
+				if (bFound){
 					result.add(kid);
 				} else {
-
 					String phraseStr = kid.toString();
 					phraseStr=phraseStr.replace(")", "");
-					if (phraseStr.endsWith(word)){
-						bInsert=true;
+					if (phraseStr.endsWith(word)){ // found 
+						bFound=true;
 						result = new ArrayList<Tree>();
 					}
 				}
 			}
-			if (bInsert){
+			if (bFound){
 				return result;
 			}
-
 			// if not a selected node, proceed with iteration
 			for (Tree kid : kids) {
 				List<Tree> ts = getASubtreeWithRootAsNodeForWord1(tree, kid, corefWords);
@@ -128,7 +188,7 @@ public class TreeExtenderByAnotherLinkedTree extends  PT2ThicketPhraseBuilder {
 		return null;
 	}
 
-
+	// now obsolete
 	public Tree[] getASubtreeWithRootAsNodeForWord(Tree tree, Tree currentSubTree, String[] corefWords){
 		if (currentSubTree.isLeaf()){
 			return null;
@@ -238,7 +298,7 @@ public class TreeExtenderByAnotherLinkedTree extends  PT2ThicketPhraseBuilder {
 		}
 	}
 
-	private StringBuilder toStringBuilder(StringBuilder sb, Tree t) {
+	public StringBuilder toStringBuilder(StringBuilder sb, Tree t) {
 		if (t.isLeaf()) {
 			if (t.label() != null) {
 				sb.append(t.label().value());
@@ -263,22 +323,25 @@ public class TreeExtenderByAnotherLinkedTree extends  PT2ThicketPhraseBuilder {
 	}
 
 	public static void main(String[] args){
+		VerbNetProcessor p = VerbNetProcessor.
+				getInstance("/Users/borisgalitsky/Documents/workspace/deepContentInspection/src/test/resources"); 
+				
 		Matcher matcher = new Matcher();
 		TreeExtenderByAnotherLinkedTree extender = new TreeExtenderByAnotherLinkedTree();
 		
 		ParseThicket pt = matcher.buildParseThicketFromTextWithRST(//"I went to the forest to look for a tree. I found out that it was thick and green");
-				"Iran refuses to accept the UN proposal to end its dispute over its work on nuclear weapons."+
+				"Iran refuses to accept the UN proposal to end its dispute over its work on nuclear weapons. "+
 				"UN nuclear watchdog passes a resolution condemning Iran for developing its second uranium enrichment site in secret. " +
 				"A recent IAEA report presented diagrams that suggested Iran was secretly working on nuclear weapons. " +
 				"Iran envoy says its nuclear development is for peaceful purpose, and the material evidence against it has been fabricated by the US. ");
 
 		List<String> results = extender.buildForestForCorefArcs(pt);
 		System.out.println(results);
-		System.exit(0);
+		//System.exit(0);
 
 		List<Tree> forest = pt.getSentences();
 		
-		List<Tree> trees = extender.getASubtreeWithRootAsNodeForWord1(forest.get(1), forest.get(1), new String[]{"it"});
+		List<Tree> trees = extender.getASubtreeWithRootAsNodeForWord1(forest.get(1), forest.get(1), new String[]{"its"});
 		System.out.println(trees);
 		StringBuilder sb = new StringBuilder(10000);	
 		extender.toStringBuilderExtenderByAnotherLinkedTree1(sb, forest.get(0), trees.get(0), new String[]{"the", "forest"});

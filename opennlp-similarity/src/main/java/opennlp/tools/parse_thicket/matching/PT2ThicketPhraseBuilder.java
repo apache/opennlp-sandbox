@@ -1,26 +1,40 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package opennlp.tools.parse_thicket.matching;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import opennlp.tools.parse_thicket.ParseThicket;
 import opennlp.tools.parse_thicket.ParseTreeNode;
 import opennlp.tools.parse_thicket.WordWordInterSentenceRelationArc;
 import opennlp.tools.parse_thicket.rhetoric_structure.RhetoricStructureArcsBuilder;
-
-import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.SimpleGraph;
-
-
 import edu.stanford.nlp.trees.Tree;
 
 public class PT2ThicketPhraseBuilder {
-	
+
 	RhetoricStructureArcsBuilder rstBuilder = new RhetoricStructureArcsBuilder();
-	
+	private static Logger log = Logger
+		      .getLogger("opennlp.tools.parse_thicket.matching.PT2ThicketPhraseBuilder");
+
 	/*
 	 * Building phrases takes a Parse Thicket and forms phrases for each sentence individually
 	 * Then based on built phrases and obtained arcs, it builds arcs for RST
@@ -29,108 +43,111 @@ public class PT2ThicketPhraseBuilder {
 
 	public List<List<ParseTreeNode>> buildPT2ptPhrases(ParseThicket pt ) {
 		List<List<ParseTreeNode>> phrasesAllSent = new ArrayList<List<ParseTreeNode>> ();
+		if (pt ==null) // parsing failed, return empty
+			return phrasesAllSent;
 		Map<Integer, List<List<ParseTreeNode>>> sentNumPhrases = new HashMap<Integer, List<List<ParseTreeNode>>>();
 		// build regular phrases
 		for(int nSent=0; nSent<pt.getSentences().size(); nSent++){
-			
-			
 			List<ParseTreeNode> sentence = pt.getNodesThicket().get(nSent);
 			Tree ptree = pt.getSentences().get(nSent);
 			//ptree.pennPrint();
 			List<List<ParseTreeNode>> phrases = buildPT2ptPhrasesForASentence(ptree, sentence);
-			System.out.println(phrases);
+			log.info(phrases.toString());
 			phrasesAllSent.addAll(phrases);
 			sentNumPhrases.put(nSent, phrases);
 
 		}
-		
+
 		// discover and add RST arcs
 		List<WordWordInterSentenceRelationArc> arcsRST =
 				rstBuilder.buildRSTArcsFromMarkersAndCorefs(pt.getArcs(), sentNumPhrases, pt);
-		
+
 		List<WordWordInterSentenceRelationArc> arcs = pt.getArcs();
 		arcs.addAll(arcsRST);
 		pt.setArcs(arcs);
 		
-		
+		if (pt.getArcs().size()>20){
+			log.info(pt.toString());
+		}
+
 		List<List<ParseTreeNode>> expandedPhrases = expandTowardsThicketPhrases(phrasesAllSent, pt.getArcs(), sentNumPhrases, pt);
 		return expandedPhrases;
 	}
 
-/* Take all phrases, all arcs and merge phrases into Thicket phrases.
- * Then add the set of generalized (Thicket) phrases to the input set of phrases
- * phrasesAllSent - list of lists of phrases for each sentence
- * sentNumPhrase - map , gives for each sentence id, the above list
- * arcs - arcs formed so far
- * pt - the built Parse Thicket
- */
-	private List<List<ParseTreeNode>> expandTowardsThicketPhrases(
+	/* Take all phrases, all arcs and merge phrases into Thicket phrases.
+	 * Then add the set of generalized (Thicket) phrases to the input set of phrases
+	 * phrasesAllSent - list of lists of phrases for each sentence
+	 * sentNumPhrase - map , gives for each sentence id, the above list
+	 * arcs - arcs formed so far
+	 * pt - the built Parse Thicket
+	 */
+	protected List<List<ParseTreeNode>> expandTowardsThicketPhrases(
 			List<List<ParseTreeNode>> phrasesAllSent,
 			List<WordWordInterSentenceRelationArc> arcs,
 			Map<Integer, List<List<ParseTreeNode>>> sentNumPhrases, 
 			ParseThicket pt ) {
 		List<List<ParseTreeNode>> thicketPhrasesAllSent = new ArrayList<List<ParseTreeNode>>();
-		
-		
-			for(int nSent=0; nSent<pt.getSentences().size(); nSent++){
-				for(int mSent=nSent+1; mSent<pt.getSentences().size(); mSent++){
-					// for given arc, find phrases connected by this arc and add to the list of phrases
-					for(WordWordInterSentenceRelationArc arc: arcs){
-						List<List<ParseTreeNode>> phrasesFrom = sentNumPhrases.get(nSent);
-						List<List<ParseTreeNode>> phrasesTo = sentNumPhrases.get(mSent);
-						int fromIndex = arc.getCodeFrom().getFirst();
-						int toIndex = arc.getCodeTo().getFirst();
-						if (nSent==fromIndex && mSent==toIndex){
-							int sentPosFrom = arc.getCodeFrom().getSecond();
-							int sentPosTo = arc.getCodeTo().getSecond();
-							// for the given arc arc, find phrases which are connected by it
-							List<ParseTreeNode> lFromFound = null, lToFound = null;
-							for(List<ParseTreeNode> lFrom: phrasesFrom){
-								if (lToFound!=null)
+
+
+		for(int nSent=0; nSent<pt.getSentences().size(); nSent++){
+			for(int mSent=nSent+1; mSent<pt.getSentences().size(); mSent++){
+				// for given arc, find phrases connected by this arc and add to the list of phrases
+				for(WordWordInterSentenceRelationArc arc: arcs){
+					List<List<ParseTreeNode>> phrasesFrom = sentNumPhrases.get(nSent);
+					List<List<ParseTreeNode>> phrasesTo = sentNumPhrases.get(mSent);
+					int fromIndex = arc.getCodeFrom().getFirst();
+					int toIndex = arc.getCodeTo().getFirst();
+					if (nSent==fromIndex && mSent==toIndex){
+						int sentPosFrom = arc.getCodeFrom().getSecond();
+						int sentPosTo = arc.getCodeTo().getSecond();
+						// for the given arc arc, find phrases which are connected by it
+						List<ParseTreeNode> lFromFound = null, lToFound = null;
+						for(List<ParseTreeNode> lFrom: phrasesFrom){
+							if (lToFound!=null)
+								break;
+							for(ParseTreeNode lFromP: lFrom){
+								if (lFromP.getId()!=null &&  lFromP.getId()==sentPosFrom){
+									lFromFound = lFrom;
 									break;
-								for(ParseTreeNode lFromP: lFrom){
-									if (lFromP.getId()!=null &&  lFromP.getId()==sentPosFrom){
-											lFromFound = lFrom;
-											break;
-										}
 								}
 							}
-							for(List<ParseTreeNode> lTo: phrasesTo){
-								if (lToFound!=null)
-									break;
-								for(ParseTreeNode lToP: lTo)
-									if (lToP.getId()!=null && lToP.getId()==sentPosTo){
-										lToFound = lTo;
-										break;
-									}
-							}
-							// obtain a thicket phrase and add it to the list
-							if (lFromFound!=null && lToFound!=null){
-								
-								if (identicalSubPhrase(lFromFound, lToFound))
-									continue;
-								List<ParseTreeNode> appended = append(lFromFound, lToFound);
-								if (thicketPhrasesAllSent.contains(appended))
-									continue;
-								System.out.println("rel: "+arc);
-								System.out.println("From "+lFromFound);
-								System.out.println("TO "+lToFound);
-								thicketPhrasesAllSent.add(append(lFromFound, lToFound));	
-								//break;
-							}
 						}
-						
+						for(List<ParseTreeNode> lTo: phrasesTo){
+							if (lToFound!=null)
+								break;
+							for(ParseTreeNode lToP: lTo)
+								if (lToP.getId()!=null && lToP.getId()==sentPosTo){
+									lToFound = lTo;
+									break;
+								}
+						}
+						// obtain a thicket phrase and add it to the list
+						if (lFromFound!=null && lToFound!=null){
+
+							if (identicalSubPhrase(lFromFound, lToFound))
+								continue;
+							List<ParseTreeNode> appended = append(lFromFound, lToFound);
+							if (thicketPhrasesAllSent.contains(appended))
+								continue;
+							log.info("rel: "+arc);
+							log.info("From "+lFromFound);
+							System.out.println("TO "+lToFound);
+							thicketPhrasesAllSent.add(append(lFromFound, lToFound));	
+							//break;
+						}
 					}
+
 				}
 			}
-			phrasesAllSent.addAll(thicketPhrasesAllSent);
-			return phrasesAllSent;
+		}
+		phrasesAllSent.addAll(thicketPhrasesAllSent);
+		return phrasesAllSent;
 	}
 
-/* check that one phrase is subphrase of another by lemma (ignoring other node properties)
- * returns true if not found different word
- */
-	
+	/* check that one phrase is subphrase of another by lemma (ignoring other node properties)
+	 * returns true if not found different word
+	 */
+
 	private boolean identicalSubPhrase(List<ParseTreeNode> lFromFound,
 			List<ParseTreeNode> lToFound) {
 		for(int pos=0; pos<lFromFound.size()&& pos<lToFound.size(); pos++){
@@ -143,8 +160,17 @@ public class PT2ThicketPhraseBuilder {
 	private List<ParseTreeNode> append(List<ParseTreeNode> lFromFound,
 			List<ParseTreeNode> lToFound) {
 		List<ParseTreeNode> appendList = new ArrayList<ParseTreeNode>();
-		appendList.addAll(lFromFound);
-		appendList.addAll(lToFound);
+		if (lFromFound.get(0).getPhraseType().equals(lToFound.get(0).getPhraseType())){
+			appendList.addAll(lFromFound);
+			appendList.addAll(lToFound);
+		} else {
+			String pType = lFromFound.get(0).getPhraseType();
+			appendList.addAll(lFromFound);
+			for(ParseTreeNode p: lToFound){
+				p.setPhraseType(pType);
+				appendList.add(p);
+			}
+		}
 		return appendList;
 	}
 
@@ -159,10 +185,10 @@ public class PT2ThicketPhraseBuilder {
 	}
 
 
-	
 
-/*
- * 
+
+	/*
+	 * 
 [[<1>NP'Iran':NNP], [<2>VP'refuses':VBZ, <3>VP'to':TO, <4>VP'accept':VB, <5>VP'the':DT, <6>VP'UN':NNP, 
 <7>VP'proposal':NN, <8>VP'to':TO, <9>VP'end':VB, <10>VP'its':PRP$, <11>VP'dispute':NN, <12>VP'over':IN, <13>VP'its':PRP$,
  <14>VP'work':NN, <15>VP'on':IN, <16>VP'nuclear':JJ, <17>VP'weapons':NNS], [<3>VP'to':TO, <4>VP'accept':VB, <5>VP'the':DT,
@@ -177,9 +203,9 @@ public class PT2ThicketPhraseBuilder {
    <14>PP'work':NN, <15>PP'on':IN, <16>PP'nuclear':JJ, <17>PP'weapons':NNS], [<13>NP'its':PRP$, <14>NP'work':NN, 
    <15>NP'on':IN, <16>NP'nuclear':JJ, <17>NP'weapons':NNS], [<13>NP'its':PRP$, <14>NP'work':NN],
  [<15>PP'on':IN, <16>PP'nuclear':JJ, <17>PP'weapons':NNS], [<16>NP'nuclear':JJ, <17>NP'weapons':NNS]]
- *  
- * 
- */
+	 *  
+	 * 
+	 */
 	private void navigateR(Tree t, List<ParseTreeNode> sentence,
 			List<List<ParseTreeNode>> phrases) {
 		if (!t.isPreTerminal()) {
@@ -191,7 +217,17 @@ public class PT2ThicketPhraseBuilder {
 					if (!nodes.isEmpty())
 						phrases.add(nodes);
 					if (nodes.size()>0 && nodes.get(0).getId()==null){
-							System.err.println("Failed alignment:"+nodes);
+						if (nodes.size()>1 && nodes.get(1)!=null && nodes.get(1).getId()!=null){
+							try {
+								ParseTreeNode n = nodes.get(0);
+								n.setId(nodes.get(1).getId()-1);
+								nodes.set(0, n);
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+						} else {
+							log.severe("Failed alignment:"+nodes);
+						}
 					}
 				}
 			}
@@ -204,22 +240,22 @@ public class PT2ThicketPhraseBuilder {
 			return ;
 		}
 	}
-	
-	
+
+
 	/* alignment of phrases extracted from tree against the sentence as a list of lemma-pos */
-	
+
 	private List<ParseTreeNode> assignIndexToNodes(List<ParseTreeNode> node,
 			List<ParseTreeNode> sentence) {
 		if (sentence==null || sentence.size()<1)
 			return node;
-		
+
 		List<ParseTreeNode> results = new ArrayList<ParseTreeNode>();
-		
+
 		for(int i= 0; i<node.size(); i++){
 			String thisLemma = node.get(i).getWord();			
 			String thisPOS = node.get(i).getPos();
 			String nextLemma = null, nextPOS = null;
-			
+
 			if (i+1<node.size()){
 				nextLemma = node.get(i+1).getWord();
 				nextPOS = node.get(i+1).getPos();
@@ -231,20 +267,21 @@ public class PT2ThicketPhraseBuilder {
 					continue;
 				if (i+1<node.size() && j+1 < sentence.size() && nextLemma!=null 
 						&& ! (sentence.get(j+1).getWord().equals(nextLemma)
-					  && sentence.get(j+1).getPos().equals(nextPOS)))
+								&& sentence.get(j+1).getPos().equals(nextPOS)))
 					continue;
 				matchOccurred = true;
 				break;
 			}
-			
+
 			ParseTreeNode n = node.get(i);
 			if (matchOccurred){
 				n.setId(sentence.get(j).getId());
 				n.setNe(sentence.get(j).getNe());
+				n.setAttributes(sentence.get(j).getAttributes());
 			}
 			results.add(n);
 		}
-		
+
 		try {
 			if (results!=null && results.size()>1 && results.get(0)!=null && results.get(0).getId()!=null &&
 					results.get(1) !=null && results.get(1).getId()!=null &&  results.get(1).getId()>0){
@@ -313,53 +350,55 @@ public class PT2ThicketPhraseBuilder {
 			return nlist;
 		if (value.equals("ROOT")|| value.equals("S")) 
 			return nlist;
-		
+
 		String[] pos_value = value.split(" ");
 		ParseTreeNode node = null;
 		if (value.endsWith("P")){
 			node = new ParseTreeNode("", ""); 
-		    node.setPhraseType(value);
+			node.setPhraseType(value);
 		} else 
-		if (pos_value != null && pos_value.length==2){
-			node = new ParseTreeNode(pos_value[0], pos_value[1]);
-		} else {
-			node = new ParseTreeNode(value, "");
-		}
-			
+			if (pos_value != null && pos_value.length==2){
+				node = new ParseTreeNode(pos_value[0], pos_value[1]);
+			} else {
+				node = new ParseTreeNode(value, "");
+			}
+
 		nlist.add(node);
 		return nlist;
 	}
-	
+
 	private ParseTreeNode parsePhraseNode(String value) {
-		
+
 		if (value.equals("ROOT")|| value.equals("S")) 
 			return null;
-		
+
 		String[] pos_value = value.split(" ");
 		ParseTreeNode node = null;
 		if (value.endsWith("P")){
 			node = new ParseTreeNode("", ""); 
-		    node.setPhraseType(value);
+			node.setPhraseType(value);
 		} else 
-		if (pos_value != null && pos_value.length==2){
-			node = new ParseTreeNode(pos_value[0], pos_value[1]);
-		} else {
-			node = new ParseTreeNode(value, "");
-		}			
-		
+			if (pos_value != null && pos_value.length==2){
+				node = new ParseTreeNode(pos_value[0], pos_value[1]);
+			} else {
+				node = new ParseTreeNode(value, "");
+			}			
+
 		return node;
 	}
-	
+
 	public List<ParseTreeNode> parsePhrase(String value, String fullDump) {
-		
+
 		List<ParseTreeNode> nlist = new ArrayList<ParseTreeNode>(); 
 		if (value.equals("S")|| value.equals("ROOT"))
-				return nlist;
+			return nlist;
+		// first phrase type normalization
+		fullDump = fullDump.replace("NP-TMP", "NP");
 		
 		String flattened = fullDump.replace("(ROOT","").replace("(NP","").replace("(VP","").replace("(PP","")
 				.replace("(ADVP","").replace("(UCP","").replace("(ADJP","").replace("(SBAR","").
 				replace("(PRT", "").replace("(WHNP","").
-				 replace("))))",")").replace(")))",")").replace("))",")")
+				replace("))))",")").replace(")))",")").replace("))",")")
 				.replace("   ", " ").replace("  ", " ").replace("(S","")
 				.replace(") (","#").replace(")  (", "#");
 		String[] flattenedArr =  flattened.split("#");
@@ -373,9 +412,9 @@ public class PT2ThicketPhraseBuilder {
 		}
 		return nlist;
 	}
-	
-/* recursion example */
-	
+
+	/* recursion example */
+
 	private StringBuilder toStringBuilder(StringBuilder sb, Tree t) {
 		if (t.isLeaf()) {
 			if (t.label() != null) {
@@ -399,23 +438,40 @@ public class PT2ThicketPhraseBuilder {
 			return sb.append(')');
 		}
 	}
-	
+
 	public static void main(String[] args){
+		Matcher matcher = new Matcher();
+		String para = 
+				"Last Wednesday, world powers reached agreement with Iran on limiting Iranian nuclear activity in return for the lifting of sanctions. "
+		/*+
+						"The Israeli Prime Minister called the deal an historic mistake which would only make it easier for Iran to back its proxies in the Middle East. "+
+						"That position may have hardened after Iran's supreme leader Ayatollah Ali Khamenei said his country would continue its support for the people of Palestine after the deal. "+
+						"Saudi Arabia has officially said it supports the deal, although it is also thought to have similar concerns to Israel that the agreement legitimises Iran. "
+						*/
+						;
+		matcher.buildParseThicketFromTextWithRST(para);
+		
+		
 		PT2ThicketPhraseBuilder phraseBuilder = new PT2ThicketPhraseBuilder();
 		String line = "(NP (NNP Iran)) (VP (VBZ refuses) (S (VP (TO to) (VP (VB accept) (S (NP (DT the) " +
 				"(NNP UN) (NN proposal)) (VP (TO to) (VP (VB end) (NP (PRP$ its) (NN dispute))))))))";
-		
+
 		List<ParseTreeNode> res = phraseBuilder. parsePhrase("NP", line);
 		System.out.println(res);
-		
+
 
 		line = "(VP (VBP am) (NP (NP (DT a) (NNP US) (NN citizen)) (UCP (VP (VBG living) (ADVP (RB abroad))) (, ,) (CC and) (ADJP (JJ concerned) (PP (IN about) (NP (NP (DT the) (NN health) (NN reform) (NN regulation)) (PP (IN of) (NP (CD 2014)))))))))";
 		res = phraseBuilder. parsePhrase("VP", line);
 		System.out.println(res);
-				
+
 		line = "(VP (TO to) (VP (VB wait) (SBAR (IN till) (S (NP (PRP I)) (VP (VBP am) (ADJP (JJ sick) (S (VP (TO to) (VP (VB buy) (NP (NN health) (NN insurance)))))))))))";
 		res = phraseBuilder. parsePhrase("VP", line);
 		System.out.println(res);
 	}
-  
+
 }
+/*
+ * The Ukrainian government, Western leaders and Nato all say there is clear evidence that Russia is helping the rebels in the eastern Donetsk and Luhansk regions with heavy weapons and soldiers. Independent experts echo that accusation.
+Moscow denies it, insisting that any Russians serving with the rebels are volunteers.
+
+*/
