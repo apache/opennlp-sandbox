@@ -6,7 +6,7 @@ import java.util.List;
 import opennlp.tools.similarity.apps.BingQueryRunner;
 import opennlp.tools.similarity.apps.HitBase;
 
-public class BingWebQueryRunnerThread extends BingQueryRunner implements Runnable{
+ public class BingWebQueryRunnerThread extends BingQueryRunner implements Runnable{
 	
 	private String query;
 	private List<HitBase> results= new ArrayList<HitBase>();
