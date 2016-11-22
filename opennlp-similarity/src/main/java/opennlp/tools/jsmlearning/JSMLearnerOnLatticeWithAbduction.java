@@ -26,7 +26,6 @@ import java.util.Set;
 
 import org.apache.commons.collections.ListUtils;
 
-import edu.stanford.nlp.util.StringUtils;
 import opennlp.tools.fca.ConceptLattice;
 import opennlp.tools.fca.FcaWriter;
 import opennlp.tools.fca.FormalConcept;

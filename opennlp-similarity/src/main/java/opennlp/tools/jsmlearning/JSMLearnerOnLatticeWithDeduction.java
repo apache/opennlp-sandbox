@@ -25,10 +25,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.collections.ListUtils;
+import org.apache.commons.lang.StringUtils;
 
-import edu.stanford.nlp.util.StringUtils;
 import opennlp.tools.parse_thicket.pattern_structure.LinguisticPatternStructure;
-
 import opennlp.tools.similarity.apps.utils.Pair;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
 
@@ -183,7 +182,7 @@ public class JSMLearnerOnLatticeWithDeduction extends JSMLearnerOnLatticeBase{
 		for(String posText:posTexts){
 			Boolean multiwordOccurs = true;
 			for(String keyword: keywords){
-				if (!StringUtils.find(posText, keyword))
+				if (posText.indexOf(keyword)<0)
 					multiwordOccurs = false;
 				break;
 			}
@@ -195,7 +194,7 @@ public class JSMLearnerOnLatticeWithDeduction extends JSMLearnerOnLatticeBase{
 		for(String negText:negTexts){
 			Boolean multiwordOccurs = true;
 			for(String keyword: keywords){
-				if (!StringUtils.find(negText, keyword))
+				if (negText.indexOf(keyword)<0)
 					multiwordOccurs = false;
 				break;
 			}

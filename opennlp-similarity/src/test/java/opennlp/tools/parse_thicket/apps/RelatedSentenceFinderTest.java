@@ -43,7 +43,7 @@ public class RelatedSentenceFinderTest extends TestCase {
 		//assertTrue(result.getFragments().get(0).getFragment().indexOf("Swiss Patent Office")>-1);
 	}
 	
-	
+	/*
 	public void testBuildParagraphOfGeneratedTextTest(){
 		HitBase input = new HitBase();
 		input.setAbstractText("Albert Einstein was a German-born theoretical physicist who developed the general theory of relativity, one of the two pillars of modern physics (alongside ...");
@@ -57,7 +57,7 @@ public class RelatedSentenceFinderTest extends TestCase {
 		assertTrue(result.getFragments().size()>0);
 		assertTrue(result.getFragments().get(0).getFragment().indexOf("Albert Einstein")>-1);
 	} 
-
+*/
 	
 	public void testBuildParagraphOfGeneratedTextTestYearInTheEnd(){
 	    
@@ -74,6 +74,7 @@ public class RelatedSentenceFinderTest extends TestCase {
 		assertTrue(result.getFragments().get(0).getFragment().indexOf("Albert Einstein")>-1);
 	} 
 	
+	/*
 	public void testBuildParagraphOfGeneratedTextTestBio1(){
 		HitBase input = new HitBase();
 		input.setAbstractText("Today, the practical applications of Einstein�s theories ...");
@@ -87,7 +88,7 @@ public class RelatedSentenceFinderTest extends TestCase {
 		assertTrue(result.getFragments().size()>0);
 		assertTrue(result.getFragments().get(0).getFragment().indexOf("Einstein")>-1);
 	} 
-/*	
+	
 	public void testBuildParagraphOfGeneratedTextTestBio2(){
 		HitBase input = new HitBase();
 		input.setAbstractText("The theory of relativity is a beautiful example of  ...");

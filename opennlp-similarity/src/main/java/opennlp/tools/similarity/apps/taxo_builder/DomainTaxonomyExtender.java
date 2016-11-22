@@ -25,13 +25,11 @@ import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
 
-import opennlp.tools.parse_thicket.matching.Matcher;
 import opennlp.tools.similarity.apps.BingQueryRunner;
 import opennlp.tools.similarity.apps.HitBase;
 import opennlp.tools.similarity.apps.utils.StringCleaner;
 import opennlp.tools.stemmer.PStemmer;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
-import opennlp.tools.textsimilarity.ParseTreeChunkListScorer;
 import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.TextProcessor;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
@@ -46,9 +44,10 @@ public class DomainTaxonomyExtender {
 			.getLogger("opennlp.tools.similarity.apps.taxo_builder.DomainTaxonomyExtender");
 
 	private BingQueryRunner brunner = new BingQueryRunner();
+	private ParserChunker2MatcherProcessor matcher = ParserChunker2MatcherProcessor.getInstance();
 
 	protected static String BING_KEY = "WFoNMM706MMJ5JYfcHaSEDP+faHj3xAxt28CPljUAHA";
-	Matcher matcher = new Matcher(); 
+	
 
 	private final static String TAXO_FILENAME = "taxo_data.dat";
 
@@ -161,8 +160,8 @@ public class DomainTaxonomyExtender {
 								.getTitle() + " " + h1.getAbstractText());
 						String snapshot2 = StringCleaner.processSnapshotForMatching(h2
 								.getTitle() + " " + h2.getAbstractText());
-						List<List<ParseTreeChunk>> overlaps =matcher.assessRelevance(snapshot1, snapshot2);
-						genResult.addAll(overlaps);
+						 SentencePairMatchResult overlaps = matcher.assessRelevance(snapshot1, snapshot2);
+						genResult.addAll(overlaps.matchResult);
 					}
 				}
 			}

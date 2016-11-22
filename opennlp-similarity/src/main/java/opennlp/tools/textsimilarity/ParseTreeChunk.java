@@ -17,6 +17,7 @@
 
 package opennlp.tools.textsimilarity;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,7 +28,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import opennlp.tools.parse_thicket.ParseTreeNode;
 
-public class ParseTreeChunk {
+public class ParseTreeChunk implements Serializable{
 	private String mainPOS;
 
 	private List<String> lemmas;

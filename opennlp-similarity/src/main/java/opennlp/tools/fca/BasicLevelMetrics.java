@@ -26,7 +26,6 @@ import java.util.Set;
 
 import org.apache.commons.collections.ListUtils;
 
-import edu.stanford.nlp.io.EncodingPrintWriter.out;
 
 public class BasicLevelMetrics {
 

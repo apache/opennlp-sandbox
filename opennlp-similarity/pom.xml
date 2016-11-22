@@ -65,9 +65,9 @@
 			<version>1.6.4</version>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.opennlp</groupId>
-			<artifactId>opennlp-tools</artifactId>
-			<version>1.5.2-incubating</version>
+  			<groupId>org.apache.opennlp</groupId>
+  			<artifactId>opennlp-tools</artifactId>
+  			<version>1.6.0</version>
 		</dependency>
 
 		<dependency>
@@ -198,79 +198,27 @@
 			<systemPath>${project.basedir}/lib/edu.mit.jverbnet-1.2.0.jar</systemPath>
 			<scope>system</scope>
 		</dependency>
-		<dependency>
-			<groupId>edu.stanford.nlp</groupId>
-			<artifactId>stanford-corenlp</artifactId>
-			<version>3.5.2</version>
-		</dependency>
-		<dependency>
-			<groupId>edu.stanford.nlp</groupId>
-			<artifactId>stanford-corenlp-model</artifactId>
-			<version>3.5.2</version>
-			<systemPath>${project.basedir}/lib/stanford-corenlp-3.5.2-models.jar</systemPath>
-			<scope>system</scope>
-		</dependency>
-		<dependency>
-			<groupId>edu.stanford.nlp</groupId>
-			<artifactId>ejml</artifactId>
-			<version>0.23</version>
-			<systemPath>${project.basedir}/lib/ejml-0.23.jar</systemPath>
-			<scope>system</scope>
-		</dependency>
-		<dependency>
-			<groupId>edu.stanford.nlp</groupId>
-			<artifactId>joda-time</artifactId>
-			<version>0.23</version>
-			<systemPath>${project.basedir}/lib/joda-time.jar</systemPath>
-			<scope>system</scope>
-		</dependency>
-		<dependency>
-			<groupId>edu.stanford.nlp</groupId>
-			<artifactId>jollyday</artifactId>
-			<version>0.23</version>
-			<systemPath>${project.basedir}/lib/jollyday.jar</systemPath>
-			<scope>system</scope>
-		</dependency>
-		<dependency>
-			<groupId>edu.stanford.nlp</groupId>
-			<artifactId>xom</artifactId>
-			<version>0.23</version>
-			<systemPath>${project.basedir}/lib/xom.jar</systemPath>
-			<scope>system</scope>
-		</dependency>
+		
 		<dependency>
 			<groupId>org.docx4j</groupId>
 			<artifactId>docx4j</artifactId>
 			<version>2.7.1</version>
 		</dependency>
-
 		<dependency>
-			<groupId>org.clulab</groupId>
-			<artifactId>processors_2.11</artifactId>
-			<version>5.7.1</version>
-		</dependency>
-		<dependency>
-			<groupId>org.clulab</groupId>
-			<artifactId>processors_2.11</artifactId>
-			<version>5.7.1</version>
-			<classifier>models</classifier>
-		</dependency>
-		<dependency>
-                 <groupId>org.deeplearning4j</groupId>
-                 <artifactId>deeplearning4j-ui</artifactId>
-                 <version>${dl4j.version}</version>
-               </dependency>
-               <dependency>
-                 <groupId>org.deeplearning4j</groupId>
-                 <artifactId>deeplearning4j-nlp</artifactId>
-                 <version>${dl4j.version}</version>
-               </dependency>
-               <dependency>
-                 <groupId>org.nd4j</groupId>
-                 <artifactId>nd4j-jblas</artifactId> 
-                 <version>${nd4j.version}</version>
-               </dependency>
-
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-ui</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-nlp</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-jblas</artifactId> 
+            <version>${nd4j.version}</version>
+        </dependency>
 	</dependencies>
 
 	<build>
@@ -297,23 +245,7 @@
 					</execution>
 				</executions>
 			</plugin>
-			<plugin>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>create-javadoc-jar</id>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-						<phase>package</phase>
-						<configuration>
-							<show>public</show>
-							<quiet>true</quiet>
-							<use>false</use> <!-- Speeds up the build of the javadocs -->
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
+			
 			<plugin>
 				<artifactId>maven-antrun-plugin</artifactId>
 				<version>1.6</version>

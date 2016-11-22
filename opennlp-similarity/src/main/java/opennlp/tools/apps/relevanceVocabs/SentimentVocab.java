@@ -140,7 +140,7 @@ public class SentimentVocab {
 			return null;
 
 		// get the normalized form of the word
-		word = WordDictionary.getInstance().getLemmaOrWord(word, posType);
+		//word = WordDictionary.getInstance().getLemmaOrWord(word, posType);
 
 		return sentimentMap.get(word);
 	}
