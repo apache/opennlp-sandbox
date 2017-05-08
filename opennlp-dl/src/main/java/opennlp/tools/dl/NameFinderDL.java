@@ -1,4 +1,4 @@
-/*
+package opennlp.tools.dl;/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -185,7 +185,7 @@ public class NameFinderDL implements TokenNameFinder {
     for (int i = 0; i < epochs; i++) {
       net.fit(train);
       train.reset();
-      System.out.println(String.format("Finished epoche %d", i));
+      System.out.println(String.format("Finished epoch %d", i));
     }
 
     return net;
