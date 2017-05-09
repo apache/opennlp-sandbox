@@ -18,14 +18,6 @@
  */
 package opennlp.tools.dl;
 
-import org.apache.commons.math3.distribution.EnumeratedDistribution;
-import org.apache.commons.math3.util.Pair;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.SetRange;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.transforms.Transforms;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -33,6 +25,13 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+
+import org.apache.commons.math3.distribution.EnumeratedDistribution;
+import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
  * A basic char/word-level stacked RNN model (2 hidden recurrent layers), based on Stacked RNN architecture from ICLR 2014's
@@ -61,11 +60,11 @@ public class StackedRNN extends RNN {
   private INDArray hPrev2 = null; // memory state
 
   public StackedRNN(float learningRate, int seqLength, int hiddenLayerSize, int epochs, String text) {
-    this(learningRate, seqLength, hiddenLayerSize, epochs, text, true);
+    this(learningRate, seqLength, hiddenLayerSize, epochs, text, 1, true);
   }
 
-  public StackedRNN(float learningRate, int seqLength, int hiddenLayerSize, int epochs, String text, boolean useChars) {
-    super(learningRate, seqLength, hiddenLayerSize, epochs, text, useChars);
+  public StackedRNN(float learningRate, int seqLength, int hiddenLayerSize, int epochs, String text, int batch, boolean useChars) {
+    super(learningRate, seqLength, hiddenLayerSize, epochs, text, batch, useChars);
 
     wxh = Nd4j.randn(hiddenLayerSize, vocabSize).div(Math.sqrt(hiddenLayerSize));
     whh = Nd4j.randn(hiddenLayerSize, hiddenLayerSize).div(Math.sqrt(hiddenLayerSize));
@@ -141,30 +140,32 @@ public class StackedRNN extends RNN {
         System.out.printf("iter %d, loss: %f\n", n, smoothLoss); // print progress
       }
 
-      // perform parameter update with Adagrad
-      mWxh.addi(dWxh.mul(dWxh));
-      wxh.subi(dWxh.mul(learningRate).div(Transforms.sqrt(mWxh.add(reg))));
+      if (n % batch == 0) {
+        // perform parameter update with Adagrad
+        mWxh.addi(dWxh.mul(dWxh));
+        wxh.subi(dWxh.mul(learningRate).div(Transforms.sqrt(mWxh.add(reg))));
 
-      mWxh2.addi(dWxh2.mul(dWxh2));
-      wxh2.subi(dWxh2.mul(learningRate).div(Transforms.sqrt(mWxh2.add(reg))));
+        mWxh2.addi(dWxh2.mul(dWxh2));
+        wxh2.subi(dWxh2.mul(learningRate).div(Transforms.sqrt(mWxh2.add(reg))));
 
-      mWhh.addi(dWhh.mul(dWhh));
-      whh.subi(dWhh.mul(learningRate).div(Transforms.sqrt(mWhh.add(reg))));
+        mWhh.addi(dWhh.mul(dWhh));
+        whh.subi(dWhh.mul(learningRate).div(Transforms.sqrt(mWhh.add(reg))));
 
-      mWhh2.addi(dWhh2.mul(dWhh2));
-      whh2.subi(dWhh2.mul(learningRate).div(Transforms.sqrt(mWhh2.add(reg))));
+        mWhh2.addi(dWhh2.mul(dWhh2));
+        whh2.subi(dWhh2.mul(learningRate).div(Transforms.sqrt(mWhh2.add(reg))));
 
-      mbh2.addi(dbh2.mul(dbh2));
-      bh2.subi(dbh2.mul(learningRate).div(Transforms.sqrt(mbh2.add(reg))));
+        mbh2.addi(dbh2.mul(dbh2));
+        bh2.subi(dbh2.mul(learningRate).div(Transforms.sqrt(mbh2.add(reg))));
 
-      mWh2y.addi(dWh2y.mul(dWh2y));
-      wh2y.subi(dWh2y.mul(learningRate).div(Transforms.sqrt(mWh2y.add(reg))));
+        mWh2y.addi(dWh2y.mul(dWh2y));
+        wh2y.subi(dWh2y.mul(learningRate).div(Transforms.sqrt(mWh2y.add(reg))));
 
-      mbh.addi(dbh.mul(dbh));
-      bh.subi(dbh.mul(learningRate).div(Transforms.sqrt(mbh.add(reg))));
+        mbh.addi(dbh.mul(dbh));
+        bh.subi(dbh.mul(learningRate).div(Transforms.sqrt(mbh.add(reg))));
 
-      mby.addi(dby.mul(dby));
-      by.subi(dby.mul(learningRate).div(Transforms.sqrt(mby.add(reg))));
+        mby.addi(dby.mul(dby));
+        by.subi(dby.mul(learningRate).div(Transforms.sqrt(mby.add(reg))));
+      }
 
       p += seqLength; // move data pointer
       n++; // iteration counter
@@ -176,7 +177,7 @@ public class StackedRNN extends RNN {
    * hprev is Hx1 array of initial hidden state
    * returns the loss, gradients on model parameters and last hidden state
    */
-  private double lossFun(INDArray inputs, INDArray targets, INDArray dWxh, INDArray dWhh,  INDArray dWxh2, INDArray dWhh2, INDArray dWh2y,
+  private double lossFun(INDArray inputs, INDArray targets, INDArray dWxh, INDArray dWhh, INDArray dWxh2, INDArray dWhh2, INDArray dWh2y,
                          INDArray dbh, INDArray dbh2, INDArray dby) {
 
     INDArray xs = Nd4j.zeros(seqLength, vocabSize);
@@ -222,8 +223,9 @@ public class StackedRNN extends RNN {
     }
 
     // backward pass: compute gradients going backwards
-    INDArray dhNext = Nd4j.zerosLike(hs.getRow(0));
-    INDArray dh2Next = Nd4j.zerosLike(hs2.getRow(0));
+    INDArray dhNext = Nd4j.zerosLike(hPrev);
+    INDArray dh2Next = Nd4j.zerosLike(hPrev2);
+
     for (int t = seqLength - 1; t >= 0; t--) {
       INDArray dy = ps.getRow(t);
       dy.getRow(targets.getInt(t)).subi(1); // backprop into y
@@ -249,7 +251,6 @@ public class StackedRNN extends RNN {
       INDArray hsRow = t == 0 ? hPrev : hs.getRow(t - 1);
       dWhh.addi(dhraw.mmul(hsRow.transpose()));
       dhNext = whh.transpose().mmul(dhraw);
-
     }
 
     this.hPrev = hs.getRow(seqLength - 1);

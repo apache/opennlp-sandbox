@@ -55,6 +55,7 @@ public class RNN {
   protected final int hiddenLayerSize;
   protected final int epochs;
   protected final boolean useChars;
+  protected final int batch;
   protected final int vocabSize;
   protected final Map<String, Integer> charToIx;
   protected final Map<Integer, String> ixToChar;
@@ -71,14 +72,15 @@ public class RNN {
   private INDArray hPrev = null; // memory state
 
   public RNN(float learningRate, int seqLength, int hiddenLayerSize, int epochs, String text) {
-    this(learningRate, seqLength, hiddenLayerSize, epochs, text, true);
+    this(learningRate, seqLength, hiddenLayerSize, epochs, text, 1, true);
   }
 
-  public RNN(float learningRate, int seqLength, int hiddenLayerSize, int epochs, String text, boolean useChars) {
+  public RNN(float learningRate, int seqLength, int hiddenLayerSize, int epochs, String text, int batch, boolean useChars) {
     this.learningRate = learningRate;
     this.seqLength = seqLength;
     this.hiddenLayerSize = hiddenLayerSize;
     this.epochs = epochs;
+    this.batch = batch;
     this.useChars = useChars;
 
     String[] textTokens = useChars ? toStrings(text.toCharArray()) : text.split(" ");
@@ -169,21 +171,24 @@ public class RNN {
         System.out.printf("iter %d, loss: %f\n", n, smoothLoss); // print progress
       }
 
-      // perform parameter update with Adagrad
-      mWxh.addi(dWxh.mul(dWxh));
-      wxh.subi((dWxh.mul(learningRate)).div(Transforms.sqrt(mWxh.add(reg))));
+      if (n% batch == 0) {
 
-      mWhh.addi(dWhh.mul(dWhh));
-      whh.subi(dWhh.mul(learningRate).div(Transforms.sqrt(mWhh.add(reg))));
+        // perform parameter update with Adagrad
+        mWxh.addi(dWxh.mul(dWxh));
+        wxh.subi((dWxh.mul(learningRate)).div(Transforms.sqrt(mWxh.add(reg))));
 
-      mWhy.addi(dWhy.mul(dWhy));
-      why.subi(dWhy.mul(learningRate).div(Transforms.sqrt(mWhy.add(reg))));
+        mWhh.addi(dWhh.mul(dWhh));
+        whh.subi(dWhh.mul(learningRate).div(Transforms.sqrt(mWhh.add(reg))));
 
-      mbh.addi(dbh.mul(dbh));
-      bh.subi(dbh.mul(learningRate).div(Transforms.sqrt(mbh.add(reg))));
+        mWhy.addi(dWhy.mul(dWhy));
+        why.subi(dWhy.mul(learningRate).div(Transforms.sqrt(mWhy.add(reg))));
 
-      mby.addi(dby.mul(dby));
-      by.subi(dby.mul(learningRate).div(Transforms.sqrt(mby.add(reg))));
+        mbh.addi(dbh.mul(dbh));
+        bh.subi(dbh.mul(learningRate).div(Transforms.sqrt(mbh.add(reg))));
+
+        mby.addi(dby.mul(dby));
+        by.subi(dby.mul(learningRate).div(Transforms.sqrt(mby.add(reg))));
+      }
 
       p += seqLength; // move data pointer
       n++; // iteration counter
@@ -244,7 +249,7 @@ public class RNN {
     }
 
     // backward pass: compute gradients going backwards
-    INDArray dhNext = Nd4j.zerosLike(hs.getRow(0));
+    INDArray dhNext = Nd4j.zerosLike(hPrev);
     for (int t = inputs.length() - 1; t >= 0; t--) {
       INDArray dy = ps.getRow(t);
       dy.putRow(targets.getInt(t), dy.getRow(targets.getInt(t)).sub(1)); // backprop into y
@@ -334,17 +339,7 @@ public class RNN {
             ", epochs=" + epochs +
             ", vocabSize=" + vocabSize +
             ", useChars=" + useChars +
-            '}';
-  }
-
-
-  public String getHyperparamsString() {
-    return getClass().getName() + "{" +
-            "wxh=" + wxh +
-            ", whh=" + whh +
-            ", why=" + why +
-            ", bh=" + bh +
-            ", by=" + by +
+            ", batch=" + batch +
             '}';
   }
 

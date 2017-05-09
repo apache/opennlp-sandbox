@@ -39,44 +39,44 @@ public class StackedRNNTest {
   private float learningRate;
   private int seqLength;
   private int hiddenLayerSize;
+  private int epochs;
+
   private Random r = new Random();
   private String text;
-  private final int epochs = 20;
   private List<String> words;
 
-  public StackedRNNTest(float learningRate, int seqLength, int hiddenLayerSize) {
+  public StackedRNNTest(float learningRate, int seqLength, int hiddenLayerSize, int epochs) {
     this.learningRate = learningRate;
     this.seqLength = seqLength;
     this.hiddenLayerSize = hiddenLayerSize;
+    this.epochs = epochs;
   }
 
   @Before
   public void setUp() throws Exception {
     InputStream stream = getClass().getResourceAsStream("/text/sentences.txt");
     text = IOUtils.toString(stream);
-    words = Arrays.asList(text.split(" "));
+    words = Arrays.asList(text.split("\\s"));
     stream.close();
   }
 
   @Parameterized.Parameters
   public static Collection<Object[]> data() {
     return Arrays.asList(new Object[][] {
-        {1e-1f, 25, 20},
-        {1e-1f, 25, 40},
-        {1e-1f, 25, 60},
+        {1e-1f, 15, 20, 5},
     });
   }
 
   @Test
   public void testStackedCharRNNLearn() throws Exception {
-    RNN rnn = new StackedRNN(learningRate, seqLength, hiddenLayerSize, epochs, text);
+    RNN rnn = new StackedRNN(learningRate, seqLength, hiddenLayerSize, epochs, text, 5, true);
     evaluate(rnn, true);
     rnn.serialize("target/scrnn-weights-");
   }
 
   @Test
   public void testStackedWordRNNLearn() throws Exception {
-    RNN rnn = new StackedRNN(learningRate, seqLength, hiddenLayerSize, epochs, text, false);
+    RNN rnn = new StackedRNN(learningRate, seqLength, hiddenLayerSize, epochs, text, 1, false);
     evaluate(rnn, true);
     rnn.serialize("target/swrnn-weights-");
   }
@@ -88,7 +88,6 @@ public class StackedRNNTest {
     for (int i = 0; i < 2; i++) {
       int seed = r.nextInt(rnn.getVocabSize());
       String sample = rnn.sample(seed);
-      System.out.println(sample);
       if (checkRatio && rnn.useChars) {
         String[] sampleWords = sample.split(" ");
         for (String sw : sampleWords) {
