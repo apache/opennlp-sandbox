@@ -175,19 +175,19 @@ public class RNN {
 
         // perform parameter update with Adagrad
         mWxh.addi(dWxh.mul(dWxh));
-        wxh.subi((dWxh.mul(learningRate)).div(Transforms.sqrt(mWxh.add(reg))));
+        wxh.subi((dWxh.mul(learningRate)).div(Transforms.sqrt(mWxh).add(reg)));
 
         mWhh.addi(dWhh.mul(dWhh));
-        whh.subi(dWhh.mul(learningRate).div(Transforms.sqrt(mWhh.add(reg))));
+        whh.subi(dWhh.mul(learningRate).div(Transforms.sqrt(mWhh).add(reg)));
 
         mWhy.addi(dWhy.mul(dWhy));
-        why.subi(dWhy.mul(learningRate).div(Transforms.sqrt(mWhy.add(reg))));
+        why.subi(dWhy.mul(learningRate).div(Transforms.sqrt(mWhy).add(reg)));
 
         mbh.addi(dbh.mul(dbh));
-        bh.subi(dbh.mul(learningRate).div(Transforms.sqrt(mbh.add(reg))));
+        bh.subi(dbh.mul(learningRate).div(Transforms.sqrt(mbh).add(reg)));
 
         mby.addi(dby.mul(dby));
-        by.subi(dby.mul(learningRate).div(Transforms.sqrt(mby.add(reg))));
+        by.subi(dby.mul(learningRate).div(Transforms.sqrt(mby).add(reg)));
       }
 
       p += seqLength; // move data pointer

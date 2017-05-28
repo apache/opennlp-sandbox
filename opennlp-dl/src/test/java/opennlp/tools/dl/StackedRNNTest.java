@@ -18,6 +18,7 @@
  */
 package opennlp.tools.dl;
 
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
@@ -69,14 +70,14 @@ public class StackedRNNTest {
 
   @Test
   public void testStackedCharRNNLearn() throws Exception {
-    RNN rnn = new StackedRNN(learningRate, seqLength, hiddenLayerSize, epochs, text, 5, true);
+    RNN rnn = new StackedRNN(learningRate, seqLength, hiddenLayerSize, epochs, text, 5, true, true);
     evaluate(rnn, true);
     rnn.serialize("target/scrnn-weights-");
   }
 
   @Test
   public void testStackedWordRNNLearn() throws Exception {
-    RNN rnn = new StackedRNN(learningRate, seqLength, hiddenLayerSize, epochs, text, 1, false);
+    RNN rnn = new StackedRNN(learningRate, seqLength, hiddenLayerSize, epochs, text, 1, false, false);
     evaluate(rnn, true);
     rnn.serialize("target/swrnn-weights-");
   }

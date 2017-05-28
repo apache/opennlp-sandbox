@@ -54,18 +54,21 @@ public class StackedRNN extends RNN {
   private final INDArray bh2; // hidden2 bias
   private final INDArray by; // output bias
 
-  private final double reg = 1e-8;
+  private final double eps = 1e-4;
+  private final double decay = 0.9;
+  private final boolean rmsProp;
 
   private INDArray hPrev = null; // memory state
   private INDArray hPrev2 = null; // memory state
 
   public StackedRNN(float learningRate, int seqLength, int hiddenLayerSize, int epochs, String text) {
-    this(learningRate, seqLength, hiddenLayerSize, epochs, text, 1, true);
+    this(learningRate, seqLength, hiddenLayerSize, epochs, text, 1, true, false);
   }
 
-  public StackedRNN(float learningRate, int seqLength, int hiddenLayerSize, int epochs, String text, int batch, boolean useChars) {
+  public StackedRNN(float learningRate, int seqLength, int hiddenLayerSize, int epochs, String text, int batch, boolean useChars, boolean rmsProp) {
     super(learningRate, seqLength, hiddenLayerSize, epochs, text, batch, useChars);
 
+    this.rmsProp = rmsProp;
     wxh = Nd4j.randn(hiddenLayerSize, vocabSize).div(Math.sqrt(hiddenLayerSize));
     whh = Nd4j.randn(hiddenLayerSize, hiddenLayerSize).div(Math.sqrt(hiddenLayerSize));
     whh2 = Nd4j.randn(hiddenLayerSize, hiddenLayerSize).div(Math.sqrt(hiddenLayerSize));
@@ -141,30 +144,58 @@ public class StackedRNN extends RNN {
       }
 
       if (n % batch == 0) {
-        // perform parameter update with Adagrad
-        mWxh.addi(dWxh.mul(dWxh));
-        wxh.subi(dWxh.mul(learningRate).div(Transforms.sqrt(mWxh.add(reg))));
+        if (rmsProp) {
+          // perform parameter update with RMSprop
+          mWxh = mWxh.mul(decay).add(1 - decay).mul((dWxh).mul(dWxh));
+          wxh.subi(dWxh.mul(learningRate).div(Transforms.sqrt(mWxh).add(eps)));
 
-        mWxh2.addi(dWxh2.mul(dWxh2));
-        wxh2.subi(dWxh2.mul(learningRate).div(Transforms.sqrt(mWxh2.add(reg))));
+          mWxh2 = mWxh2.mul(decay).add(1 - decay).mul((dWxh2).mul(dWxh2));
+          wxh2.subi(dWxh2.mul(learningRate).div(Transforms.sqrt(mWxh2).add(eps)));
 
-        mWhh.addi(dWhh.mul(dWhh));
-        whh.subi(dWhh.mul(learningRate).div(Transforms.sqrt(mWhh.add(reg))));
+          mWhh = mWhh.mul(decay).add(1 - decay).mul((dWhh).mul(dWhh));
+          whh.subi(dWhh.mul(learningRate).div(Transforms.sqrt(mWhh).add(eps)));
 
-        mWhh2.addi(dWhh2.mul(dWhh2));
-        whh2.subi(dWhh2.mul(learningRate).div(Transforms.sqrt(mWhh2.add(reg))));
+          mWhh2 = mWhh2.mul(decay).add(1 - decay).mul((dWhh2).mul(dWhh2));
+          whh2.subi(dWhh2.mul(learningRate).div(Transforms.sqrt(mWhh2).add(eps)));
 
-        mbh2.addi(dbh2.mul(dbh2));
-        bh2.subi(dbh2.mul(learningRate).div(Transforms.sqrt(mbh2.add(reg))));
+          mbh2 = mbh2.mul(decay).add(1 - decay).mul((dbh2).mul(dbh2));
+          bh2.subi(dbh2.mul(learningRate).div(Transforms.sqrt(mbh2).add(eps)));
 
-        mWh2y.addi(dWh2y.mul(dWh2y));
-        wh2y.subi(dWh2y.mul(learningRate).div(Transforms.sqrt(mWh2y.add(reg))));
+          mWh2y = mWh2y.mul(decay).add(1 - decay).mul((dWh2y).mul(dWh2y));
+          wh2y.subi(dWh2y.mul(learningRate).div(Transforms.sqrt(mWh2y).add(eps)));
 
-        mbh.addi(dbh.mul(dbh));
-        bh.subi(dbh.mul(learningRate).div(Transforms.sqrt(mbh.add(reg))));
+          mbh = mbh.mul(decay).add(1 - decay).mul((dbh).mul(dbh));
+          bh.subi(dbh.mul(learningRate).div(Transforms.sqrt(mbh).add(eps)));
 
-        mby.addi(dby.mul(dby));
-        by.subi(dby.mul(learningRate).div(Transforms.sqrt(mby.add(reg))));
+          mby = mby.mul(decay).add(1 - decay).mul((dby).mul(dby));
+          by.subi(dby.mul(learningRate).div(Transforms.sqrt(mby).add(eps)));
+        } else {
+          // perform parameter update with Adagrad
+
+          mWxh.addi(dWxh.mul(dWxh));
+          wxh.subi(dWxh.mul(learningRate).div(Transforms.sqrt(mWxh).add(eps)));
+
+          mWxh2.addi(dWxh2.mul(dWxh2));
+          wxh2.subi(dWxh2.mul(learningRate).div(Transforms.sqrt(mWxh2).add(eps)));
+
+          mWhh.addi(dWhh.mul(dWhh));
+          whh.subi(dWhh.mul(learningRate).div(Transforms.sqrt(mWhh).add(eps)));
+
+          mWhh2.addi(dWhh2.mul(dWhh2));
+          whh2.subi(dWhh2.mul(learningRate).div(Transforms.sqrt(mWhh2).add(eps)));
+
+          mbh2.addi(dbh2.mul(dbh2));
+          bh2.subi(dbh2.mul(learningRate).div(Transforms.sqrt(mbh2).add(eps)));
+
+          mWh2y.addi(dWh2y.mul(dWh2y));
+          wh2y.subi(dWh2y.mul(learningRate).div(Transforms.sqrt(mWh2y).add(eps)));
+
+          mbh.addi(dbh.mul(dbh));
+          bh.subi(dbh.mul(learningRate).div(Transforms.sqrt(mbh).add(eps)));
+
+          mby.addi(dby.mul(dby));
+          by.subi(dby.mul(learningRate).div(Transforms.sqrt(mby).add(eps)));
+        }
       }
 
       p += seqLength; // move data pointer
