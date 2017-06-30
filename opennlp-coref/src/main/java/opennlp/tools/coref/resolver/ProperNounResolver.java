@@ -50,7 +50,8 @@ public class ProperNounResolver extends MaxentResolver {
     showExclusions = false;
   }
 
-  public ProperNounResolver(String projectName, ResolverMode m,NonReferentialResolver nonRefResolver) throws IOException {
+  public ProperNounResolver(String projectName, ResolverMode m,NonReferentialResolver nonRefResolver)
+      throws IOException {
     super(projectName,"pnmodel", m, 500,nonRefResolver);
     if (!acroMapLoaded) {
       initAcronyms(projectName + "/acronyms");
@@ -135,7 +136,8 @@ public class ProperNounResolver extends MaxentResolver {
 
     for (Iterator<MentionContext> ei = entity.getMentions(); ei.hasNext();) {
       MentionContext xec = ei.next();
-      if (xec.getHeadTokenTag().startsWith("NNP")) { // || initialCaps.matcher(xec.headToken.toString()).find()) {
+      if (xec.getHeadTokenTag().startsWith("NNP")) {
+        // || initialCaps.matcher(xec.headToken.toString()).find()) {
         //System.err.println("MaxentProperNounResolver.exclude: kept "+xec.toText()+" with "+xec.headTag);
         return false;
       }

@@ -37,10 +37,10 @@ public class DictionaryFactory {
       try {
         dictionary = new JWNLDictionary(System.getProperty("WNSEARCHDIR"));
       }
-      catch(IOException e) {
+      catch (IOException e) {
         System.err.println(e);
       }
-      catch(JWNLException e) {
+      catch (JWNLException e) {
         System.err.println(e);
       }
     }

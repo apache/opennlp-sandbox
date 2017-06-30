@@ -23,10 +23,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
+
 import java.util.List;
-import java.util.Map;
 
 import opennlp.tools.coref.DefaultLinker;
 import opennlp.tools.coref.DiscourseEntity;
@@ -34,11 +32,9 @@ import opennlp.tools.coref.Linker;
 import opennlp.tools.coref.LinkerMode;
 import opennlp.tools.coref.mention.DefaultParse;
 import opennlp.tools.coref.mention.Mention;
-import opennlp.tools.coref.mention.MentionContext;
 import opennlp.tools.coref.mention.PTBMentionFinder;
 import opennlp.tools.parser.Parse;
-import opennlp.tools.parser.chunking.Parser;
-import opennlp.tools.util.Span;
+
 
 /**
  * This class perform coreference for treebank style parses.
@@ -60,7 +56,8 @@ public class TreebankLinker extends DefaultLinker {
     super(project,mode,useDiscourseModel);
   }
 
-  public TreebankLinker(String project, LinkerMode mode, boolean useDiscourseModel, double fixedNonReferentialProbability) throws IOException {
+  public TreebankLinker(String project, LinkerMode mode, boolean useDiscourseModel,
+                        double fixedNonReferentialProbability) throws IOException {
     super(project,mode,useDiscourseModel,fixedNonReferentialProbability);
   }
 
@@ -70,8 +67,8 @@ public class TreebankLinker extends DefaultLinker {
   }
 
   private static void showEntities(DiscourseEntity[] entities) {
-    for (int ei=0,en=entities.length;ei<en;ei++) {
-     System.out.println(ei+" "+entities[ei]);
+    for (int ei = 0, en = entities.length; ei < en;ei++) {
+      System.out.println(ei + " " + entities[ei]);
     }
   }
 
@@ -86,7 +83,7 @@ public class TreebankLinker extends DefaultLinker {
       System.exit(1);
     }
     BufferedReader in;
-    int ai =0;
+    int ai = 0;
     String dataDir = args[ai++];
     if (ai == args.length) {
       in = new BufferedReader(new InputStreamReader(System.in));
@@ -98,12 +95,13 @@ public class TreebankLinker extends DefaultLinker {
     int sentenceNumber = 0;
     List<Mention> document = new ArrayList<Mention>();
     List<Parse> parses = new ArrayList<Parse>();
-    for (String line=in.readLine();null != line;line = in.readLine()) {
+    for (String line = in.readLine();null != line;line = in.readLine()) {
       if (line.equals("")) {
-        DiscourseEntity[] entities = treebankLinker.getEntities(document.toArray(new Mention[document.size()]));
+        DiscourseEntity[] entities =
+            treebankLinker.getEntities(document.toArray(new Mention[document.size()]));
         //showEntities(entities);
         new CorefParse(parses,entities).show();
-        sentenceNumber=0;
+        sentenceNumber = 0;
         document.clear();
         parses.clear();
       }
@@ -112,7 +110,7 @@ public class TreebankLinker extends DefaultLinker {
         parses.add(p);
         Mention[] extents = treebankLinker.getMentionFinder().getMentions(new DefaultParse(p,sentenceNumber));
         //construct new parses for mentions which don't have constituents.
-        for (int ei=0,en=extents.length;ei<en;ei++) {
+        for (int ei = 0, en = extents.length; ei < en; ei++) {
           //System.err.println("PennTreebankLiner.main: "+ei+" "+extents[ei]);
 
           if (extents[ei].getParse() == null) {
@@ -130,64 +128,9 @@ public class TreebankLinker extends DefaultLinker {
     if (document.size() > 0) {
       DiscourseEntity[] entities = treebankLinker.getEntities(document.toArray(new Mention[document.size()]));
       //showEntities(entities);
-      (new CorefParse(parses,entities)).show();
+      (new CorefParse(parses, entities)).show();
     }
   }
 }
 
-class CorefParse {
 
-  private Map<Parse, Integer> parseMap;
-  private List<Parse> parses;
-
-  public CorefParse(List<Parse> parses, DiscourseEntity[] entities) {
-    this.parses = parses;
-    parseMap = new HashMap<Parse, Integer>();
-    for (int ei=0,en=entities.length;ei<en;ei++) {
-      if (entities[ei].getNumMentions() > 1) {
-        for (Iterator<MentionContext> mi = entities[ei].getMentions(); mi.hasNext();) {
-          MentionContext mc = mi.next();
-          Parse mentionParse = ((DefaultParse) mc.getParse()).getParse();
-          parseMap.put(mentionParse,ei+1);
-          //System.err.println("CorefParse: "+mc.getParse().hashCode()+" -> "+ (ei+1));
-        }
-      }
-    }
-  }
-
-  public void show() {
-    for (int pi=0,pn=parses.size();pi<pn;pi++) {
-      Parse p = parses.get(pi);
-      show(p);
-      System.out.println();
-    }
-  }
-
-  private void show(Parse p) {
-    int start;
-    start = p.getSpan().getStart();
-    if (!p.getType().equals(Parser.TOK_NODE)) {
-      System.out.print("(");
-      System.out.print(p.getType());
-      if (parseMap.containsKey(p)) {
-        System.out.print("#"+parseMap.get(p));
-      }
-      //System.out.print(p.hashCode()+"-"+parseMap.containsKey(p));
-      System.out.print(" ");
-    }
-    Parse[] children = p.getChildren();
-    for (int pi=0,pn=children.length;pi<pn;pi++) {
-      Parse c = children[pi];
-      Span s = c.getSpan();
-      if (start < s.getStart()) {
-        System.out.print(p.getText().substring(start, s.getStart()));
-      }
-      show(c);
-      start = s.getEnd();
-    }
-    System.out.print(p.getText().substring(start, p.getSpan().getEnd()));
-    if (!p.getType().equals(Parser.TOK_NODE)) {
-      System.out.print(")");
-    }
-  }
-}

@@ -22,19 +22,21 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import opennlp.tools.coref.resolver.ResolverUtils;
 import opennlp.tools.ml.maxent.GIS;
-import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelWriter;
 import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelReader;
+import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelWriter;
+import opennlp.tools.ml.model.Event;
+import opennlp.tools.ml.model.MaxentModel;
+import opennlp.tools.util.HashList;
+import opennlp.tools.util.ObjectStreamUtils;
+
 //import opennlp.maxent.GIS;
 //import opennlp.maxent.io.SuffixSensitiveGISModelReader;
 //import opennlp.maxent.io.SuffixSensitiveGISModelWriter;
 //import opennlp.model.Event;
-import opennlp.tools.ml.model.Event;
 //import opennlp.model.MaxentModel;
-import opennlp.tools.ml.model.MaxentModel;
-import opennlp.tools.coref.resolver.ResolverUtils;
-import opennlp.tools.util.CollectionEventStream;
-import opennlp.tools.util.HashList;
 
 /**
  * Class which models the number of particular mentions and the entities made up of mentions.
@@ -66,9 +68,10 @@ public class NumberModel implements TestNumberModel, TrainSimilarityModel {
     }
     else {
       //if (MaxentResolver.loadAsResource()) {
-      //  testModel = (new PlainTextGISModelReader(new BufferedReader(new InputStreamReader(this.getClass().getResourceAsStream(modelName))))).getModel();
+      //  testModel = (new PlainTextGISModelReader(new BufferedReader(new InputStreamReader(
+      // this.getClass().getResourceAsStream(modelName))))).getModel();
       //}
-      testModel = (new SuffixSensitiveGISModelReader(new File(modelName+modelExtension))).getModel();
+      testModel = (new SuffixSensitiveGISModelReader(new File(modelName + modelExtension))).getModel();
       singularIndex = testModel.getIndex(NumberEnum.SINGULAR.toString());
       pluralIndex = testModel.getIndex(NumberEnum.PLURAL.toString());
     }
@@ -178,7 +181,8 @@ public class NumberModel implements TestNumberModel, TrainSimilarityModel {
   }
 
   public void trainModel() throws IOException {
-    (new SuffixSensitiveGISModelWriter(GIS.trainModel(new CollectionEventStream(events),100,10),new File(modelName+modelExtension))).persist();
+    new SuffixSensitiveGISModelWriter(GIS.trainModel(
+        ObjectStreamUtils.createObjectStream(events),100,10),
+        new File(modelName + modelExtension)).persist();
   }
-
 }

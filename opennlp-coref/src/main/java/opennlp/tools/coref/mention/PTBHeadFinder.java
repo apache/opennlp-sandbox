@@ -63,7 +63,8 @@ public final class PTBHeadFinder implements HeadFinder {
         Parse child0 = parts.get(0);
         Parse child1 = parts.get(1);
         Parse child2 = parts.get(2);
-        if (child1.isToken() && child1.getSyntacticType().equals("POS") && child0.isNounPhrase() && child2.isNounPhrase()) {
+        if (child1.isToken() && child1.getSyntacticType().equals("POS")
+            && child0.isNounPhrase() && child2.isNounPhrase()) {
           return child2;
         }
       }
@@ -73,7 +74,7 @@ public final class PTBHeadFinder implements HeadFinder {
         if (child0.isNounPhrase()) {
           List<Parse> ctoks = child0.getTokens();
           if (ctoks.size() == 0) {
-            System.err.println("PTBHeadFinder: NP "+child0+" with no tokens");
+            System.err.println("PTBHeadFinder: NP " + child0 + " with no tokens");
           }
           Parse tok = ctoks.get(ctoks.size() - 1);
           if (tok.getSyntacticType().equals("POS")) {
@@ -93,7 +94,8 @@ public final class PTBHeadFinder implements HeadFinder {
       //all other NPs
       for (int pi = 0; pi < parts.size(); pi++) {
         Parse child = parts.get(pi);
-        //System.err.println("PTBHeadFinder.getHead: "+p.getSyntacticType()+" "+p+" child "+pi+"="+child.getSyntacticType()+" "+child);
+        //System.err.println("PTBHeadFinder.getHead: "+p.getSyntacticType()+" "+p
+        // +" child "+pi+"="+child.getSyntacticType()+" "+child);
         if (child.isNounPhrase()) {
           return child;
         }
@@ -110,9 +112,10 @@ public final class PTBHeadFinder implements HeadFinder {
     boolean countTokens = false;
     int tokenCount = 0;
     //check for NP -> NN S type structures and return last token before S as head.
-    for (int sci=0,scn = sChildren.size();sci<scn;sci++) {
+    for (int sci = 0, scn = sChildren.size(); sci < scn;sci++) {
       Parse sc = sChildren.get(sci);
-      //System.err.println("PTBHeadFinder.getHeadIndex "+p+" "+p.getSyntacticType()+" sChild "+sci+" type = "+sc.getSyntacticType());
+      //System.err.println("PTBHeadFinder.getHeadIndex "+p+" "+p.getSyntacticType()
+      // +" sChild "+sci+" type = "+sc.getSyntacticType());
       if (sc.getSyntacticType().startsWith("S")) {
         if (sci != 0) {
           countTokens = true;
@@ -122,21 +125,22 @@ public final class PTBHeadFinder implements HeadFinder {
         }
       }
       if (countTokens) {
-        tokenCount+=sc.getTokens().size();
+        tokenCount += sc.getTokens().size();
       }
     }
     List<Parse> toks = p.getTokens();
     if (toks.size() == 0) {
-      System.err.println("PTBHeadFinder.getHeadIndex(): empty tok list for parse "+p);
+      System.err.println("PTBHeadFinder.getHeadIndex(): empty tok list for parse " + p);
     }
-    for (int ti = toks.size() - tokenCount -1; ti >= 0; ti--) {
+    for (int ti = toks.size() - tokenCount - 1; ti >= 0; ti--) {
       Parse tok = toks.get(ti);
       if (!skipSet.contains(tok.getSyntacticType())) {
         return ti;
       }
     }
-    //System.err.println("PTBHeadFinder.getHeadIndex: "+p+" hi="+toks.size()+"-"+tokenCount+" -1 = "+(toks.size()-tokenCount -1));
-    return toks.size() - tokenCount -1;
+    //System.err.println("PTBHeadFinder.getHeadIndex: "+p+" hi="+toks.size()+"-"+tokenCount
+    // +" -1 = "+(toks.size()-tokenCount -1));
+    return toks.size() - tokenCount - 1;
   }
 
   /** Returns the bottom-most head of a <code>Parse</code>.  If no
@@ -148,7 +152,9 @@ public final class PTBHeadFinder implements HeadFinder {
 
     while (null != (head = getHead(p))) {
       //System.err.print(" -> "+head);
-      //if (p.getEntityId() != -1 && head.getEntityId() != p.getEntityId()) {	System.err.println(p+" ("+p.getEntityId()+") -> "+head+" ("+head.getEntityId()+")");      }
+     //if (p.getEntityId() != -1 && head.getEntityId() != p.getEntityId()) {
+      // System.err.println(p+" ("+p.getEntityId()+") -> "+head+" ("+head.getEntityId()+")");
+      // }
       p = head;
     }
     //System.err.println(" -> null");

@@ -92,7 +92,8 @@ public abstract class AbstractMentionFinder implements MentionFinder {
       Parse child0 = parts.get(0);
       Parse child1 = parts.get(1);
       Parse child2 = parts.get(2);
-      if (child1.isToken() && child1.getSyntacticType().equals("POS") && child0.isNounPhrase() && child2.isNounPhrase()) {
+      if (child1.isToken() && child1.getSyntacticType().equals("POS")
+          && child0.isNounPhrase() && child2.isNounPhrase()) {
         return true;
       }
     }
@@ -155,10 +156,12 @@ public abstract class AbstractMentionFinder implements MentionFinder {
       if ((tokStr.equals("and") || tokStr.equals("or")) && !isPartOfName(tok)) {
         if (lastNpTokenIndex != ti) {
           if (ti - 1 >= 0 && (npTokens.get(ti - 1)).getSyntacticType().startsWith("NN")) {
-            Span npSpan = new Span((npTokens.get(ti + 1)).getSpan().getStart(), (npTokens.get(lastNpTokenIndex)).getSpan().getEnd());
+            Span npSpan = new Span((npTokens.get(ti + 1)).getSpan().getStart(),
+                npTokens.get(lastNpTokenIndex).getSpan().getEnd());
             Mention snpExtent = new Mention(npSpan, npSpan, tok.getEntityId(), null,"CNP");
             entities.add(snpExtent);
-            //System.err.println("adding extent for conjunction in: "+np+" preeceeded by "+((Parse) npTokens.get(ti-1)).getSyntacticType());
+            //System.err.println("adding extent for conjunction in: "+np+" preeceeded by "
+            // +((Parse) npTokens.get(ti-1)).getSyntacticType());
             inCoordinatedNounPhrase = true;
           }
           else {
@@ -169,7 +172,8 @@ public abstract class AbstractMentionFinder implements MentionFinder {
       }
       else if (inCoordinatedNounPhrase && tokStr.equals(",")) {
         if (lastNpTokenIndex != ti) {
-          Span npSpan = new Span((npTokens.get(ti + 1)).getSpan().getStart(), (npTokens.get(lastNpTokenIndex)).getSpan().getEnd());
+          Span npSpan = new Span((npTokens.get(ti + 1)).getSpan().getStart(),
+              npTokens.get(lastNpTokenIndex).getSpan().getEnd());
           Mention snpExtent = new Mention(npSpan, npSpan, tok.getEntityId(), null,"CNP");
           entities.add(snpExtent);
           //System.err.println("adding extent for comma in: "+np);
@@ -177,7 +181,8 @@ public abstract class AbstractMentionFinder implements MentionFinder {
         lastNpTokenIndex = ti - 1;
       }
       else if (inCoordinatedNounPhrase && ti == 0 && lastNpTokenIndex >= 0) {
-        Span npSpan = new Span((npTokens.get(ti)).getSpan().getStart(), (npTokens.get(lastNpTokenIndex)).getSpan().getEnd());
+        Span npSpan = new Span((npTokens.get(ti)).getSpan().getStart(),
+            npTokens.get(lastNpTokenIndex).getSpan().getEnd());
         Mention snpExtent = new Mention(npSpan, npSpan, tok.getEntityId(), null,"CNP");
         entities.add(snpExtent);
         //System.err.println("adding extent for start coord in: "+np);
@@ -192,14 +197,16 @@ public abstract class AbstractMentionFinder implements MentionFinder {
   }
 
   private void collectPossesivePronouns(Parse np, List<Mention> entities) {
-    //TODO: Look at how training is done and examine whether this is needed or can be accomidated in a different way.
+    //TODO: Look at how training is done and examine whether this is
+    // needed or can be accomidated in a different way.
     /*
     List snps = np.getSubNounPhrases();
     if (snps.size() != 0) {
       //System.err.println("AbstractMentionFinder: Found existing snps");
       for (int si = 0, sl = snps.size(); si < sl; si++) {
         Parse snp = (Parse) snps.get(si);
-        Extent ppExtent = new Extent(snp.getSpan(), snp.getSpan(), snp.getEntityId(), null,Linker.PRONOUN_MODIFIER);
+        Extent ppExtent = new Extent(snp.getSpan(), snp.getSpan(), snp.getEntityId(),
+            null,Linker.PRONOUN_MODIFIER);
         entities.add(ppExtent);
       }
     }
@@ -214,8 +221,10 @@ public abstract class AbstractMentionFinder implements MentionFinder {
           continue;
         }
         if (tok.getSyntacticType().startsWith("PRP") && handledPronoun(tok.toString())) {
-          Mention ppExtent = new Mention(tok.getSpan(), tok.getSpan(), tok.getEntityId(), null,Linker.PRONOUN_MODIFIER);
-          //System.err.println("AbstractEntityFinder.collectPossesivePronouns: adding possesive pronoun: "+tok+" "+tok.getEntityId());
+          Mention ppExtent = new Mention(tok.getSpan(), tok.getSpan(),
+              tok.getEntityId(), null,Linker.PRONOUN_MODIFIER);
+          //System.err.println("AbstractEntityFinder.collectPossesivePronouns: adding possesive pronoun: "
+          //    +tok+" "+tok.getEntityId());
           entities.add(ppExtent);
           //System.err.println("AbstractMentionFinder: adding pos-pro: "+ppExtent);
           break;
@@ -240,7 +249,7 @@ public abstract class AbstractMentionFinder implements MentionFinder {
   private boolean isHeadOfExistingMention(Parse np, Map<Parse, Parse> headMap,
       Set<Parse> mentions) {
     Parse head = headMap.get(np);
-    while(head != null){
+    while (head != null) {
       if (mentions.contains(head)) {
         return true;
       }
@@ -251,8 +260,8 @@ public abstract class AbstractMentionFinder implements MentionFinder {
 
 
   private void clearMentions(Set<Parse> mentions, Parse np) {
-    Span npSpan =np.getSpan();
-    for(Iterator<Parse> mi=mentions.iterator();mi.hasNext();) {
+    Span npSpan = np.getSpan();
+    for (Iterator<Parse> mi = mentions.iterator(); mi.hasNext();) {
       Parse mention = mi.next();
       if (!mention.getSpan().contains(npSpan)) {
         //System.err.println("clearing "+mention+" for "+np);
@@ -267,7 +276,8 @@ public abstract class AbstractMentionFinder implements MentionFinder {
     //System.err.println("AbtractMentionFinder.collectMentions: "+headMap);
     for (int npi = 0, npl = nps.size(); npi < npl; npi++) {
       Parse np = nps.get(npi);
-      //System.err.println("AbstractMentionFinder: collectMentions: np[" + npi + "]=" + np + " head=" + headMap.get(np));
+      //System.err.println("AbstractMentionFinder: collectMentions: np[" + npi + "]="
+      //    + np + " head=" + headMap.get(np));
       if (!isHeadOfExistingMention(np,headMap, recentMentions)) {
         clearMentions(recentMentions, np);
         if (!isPartOfName(np)) {
@@ -283,11 +293,13 @@ public abstract class AbstractMentionFinder implements MentionFinder {
           }
         }
         else {
-          //System.err.println("AbstractMentionFinder.collectMentions excluding np as part of name. np=" + np);
+          //System.err.println(
+          //    "AbstractMentionFinder.collectMentions excluding np as part of name. np=" + np);
         }
       }
-   	  else {
-        //System.err.println("AbstractMentionFinder.collectMentions excluding np as head of previous mention. np=" + np);
+      else {
+        //System.err.println(
+        //    "AbstractMentionFinder.collectMentions excluding np as head of previous mention. np=" + np);
       }
       if (isBasalNounPhrase(np)) {
         if (collectPrenominalNamedEntities) {
@@ -325,7 +337,8 @@ public abstract class AbstractMentionFinder implements MentionFinder {
 //          mentions.add(extent);
 //        }
 //        else {
-//          System.err.println("AbstractMentionFinder.addPossesiveMentions: odd parse structure: "+possesiveNounPhrase);
+//          System.err.println("AbstractMentionFinder.addPossesiveMentions: odd parse structure: "
+//              +possesiveNounPhrase);
 //        }
 //      }
 //    }
@@ -401,7 +414,8 @@ public abstract class AbstractMentionFinder implements MentionFinder {
     List<Parse> nps = p.getNounPhrases();
     Collections.sort(nps);
     Map<Parse, Parse> headMap = constructHeadMap(nps);
-    //System.err.println("AbstractMentionFinder.getMentions: got " + nps.size()); // + " nps, and " + nes.size() + " named entities");
+    //System.err.println("AbstractMentionFinder.getMentions: got " + nps.size()); // + " nps, and "
+    // + nes.size() + " named entities");
     Mention[] mentions = collectMentions(nps, headMap);
     return mentions;
   }

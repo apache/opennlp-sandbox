@@ -24,32 +24,20 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-//import opennlp.maxent.GIS;
-//import opennlp.maxent.io.SuffixSensitiveGISModelReader;
-//import opennlp.maxent.io.SuffixSensitiveGISModelWriter;
-//import opennlp.model.EventStream;
-//import opennlp.model.MaxentModel;
-
-
-import opennlp.tools.ml.maxent.GIS;
-import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelWriter;
-import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelReader;
-//import opennlp.maxent.GIS;
-//import opennlp.maxent.io.SuffixSensitiveGISModelReader;
-//import opennlp.maxent.io.SuffixSensitiveGISModelWriter;
-//import opennlp.model.Event;
-//import opennlp.model.MaxentModel;
-import opennlp.tools.ml.model.MaxentModel;
-import opennlp.tools.ml.model.EventStream;
 import opennlp.tools.coref.DiscourseEntity;
 import opennlp.tools.coref.DiscourseModel;
 import opennlp.tools.coref.mention.MentionContext;
 import opennlp.tools.coref.sim.TestSimilarityModel;
+import opennlp.tools.ml.maxent.GIS;
+import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelReader;
+import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelWriter;
 import opennlp.tools.ml.model.Event;
-import opennlp.tools.util.CollectionEventStream;
+import opennlp.tools.ml.model.MaxentModel;
+import opennlp.tools.util.ObjectStreamUtils;
 
 /**
- *  Provides common functionality used by classes which implement the {@link Resolver} class and use maximum entropy models to make resolution decisions.
+ *  Provides common functionality used by classes which implement the {@link Resolver} class
+ *  and use maximum entropy models to make resolution decisions.
  */
 public abstract class MaxentResolver extends AbstractResolver {
 
@@ -61,7 +49,7 @@ public abstract class MaxentResolver extends AbstractResolver {
   public static final String DEFAULT = "default";
 
 
-  private static boolean debugOn=false;
+  private static boolean debugOn = false;
 
   private String modelName;
   private MaxentModel model;
@@ -75,8 +63,10 @@ public abstract class MaxentResolver extends AbstractResolver {
    * are considered.
    */
   protected boolean preferFirstReferent;
-  /** When true, this designates that training should consist of a single positive and a single negative example
-   * (when possible) for each mention. */
+  /**
+   * When true, this designates that training should consist of a single
+   * positive and a single negative example (when possible) for each mention.
+   */
   protected boolean pairedSampleSelection;
   
   /** When true, this designates that the same maximum entropy model should be used non-reference
@@ -93,8 +83,9 @@ public abstract class MaxentResolver extends AbstractResolver {
   private static final String modelExtension = ".bin.gz";
 
   /**
-   * Creates a maximum-entropy-based resolver which will look the specified number of entities back for a referent.
-   * This constructor is only used for unit testing.
+   * Creates a maximum-entropy-based resolver which will look the specified number of
+   * entities back for a referent. This constructor is only used for unit testing.
+   *
    * @param numberOfEntitiesBack
    * @param preferFirstReferent
    */
@@ -118,14 +109,16 @@ public abstract class MaxentResolver extends AbstractResolver {
    * @param nonReferentialResolver Determines how likely it is that this entity is non-referential.
    * @throws IOException If the model file is not found or can not be written to.
    */
-  public MaxentResolver(String modelDirectory, String name, ResolverMode mode, int numberOfEntitiesBack, boolean preferFirstReferent, NonReferentialResolver nonReferentialResolver) throws IOException {
+  public MaxentResolver(String modelDirectory, String name, ResolverMode mode, int numberOfEntitiesBack,
+                        boolean preferFirstReferent, NonReferentialResolver nonReferentialResolver)
+      throws IOException {
     super(numberOfEntitiesBack);
     this.preferFirstReferent = preferFirstReferent;
     this.nonReferentialResolver = nonReferentialResolver;
     this.mode = mode;
-    this.modelName = modelDirectory+"/"+name;
+    this.modelName = modelDirectory + "/" + name;
     if (ResolverMode.TEST == this.mode) {
-      model = (new SuffixSensitiveGISModelReader(new File(modelName+modelExtension))).getModel();
+      model = (new SuffixSensitiveGISModelReader(new File(modelName + modelExtension))).getModel();
       sameIndex = model.getIndex(SAME);
     }
     else if (ResolverMode.TRAIN == this.mode) {
@@ -148,22 +141,32 @@ public abstract class MaxentResolver extends AbstractResolver {
    * for a referent.
    * @throws IOException If the model file is not found or can not be written to.
    */
-  public MaxentResolver(String modelDirectory, String modelName, ResolverMode mode, int numberEntitiesBack) throws IOException {
+  public MaxentResolver(String modelDirectory, String modelName, ResolverMode mode,
+                        int numberEntitiesBack) throws IOException {
     this(modelDirectory, modelName, mode, numberEntitiesBack, false);
   }
 
-  public MaxentResolver(String modelDirectory, String modelName, ResolverMode mode, int numberEntitiesBack, NonReferentialResolver nonReferentialResolver) throws IOException {
+  public MaxentResolver(String modelDirectory, String modelName, ResolverMode mode,
+                        int numberEntitiesBack, NonReferentialResolver nonReferentialResolver)
+      throws IOException {
     this(modelDirectory, modelName, mode, numberEntitiesBack, false,nonReferentialResolver);
   }
 
-  public MaxentResolver(String modelDirectory, String modelName, ResolverMode mode, int numberEntitiesBack, boolean preferFirstReferent) throws IOException {
-    //this(projectName, modelName, mode, numberEntitiesBack, preferFirstReferent, SingletonNonReferentialResolver.getInstance(projectName,mode));
-    this(modelDirectory, modelName, mode, numberEntitiesBack, preferFirstReferent, new DefaultNonReferentialResolver(modelDirectory, modelName, mode));
+  public MaxentResolver(String modelDirectory, String modelName, ResolverMode mode,
+                        int numberEntitiesBack, boolean preferFirstReferent) throws IOException {
+    //this(projectName, modelName, mode, numberEntitiesBack, preferFirstReferent,
+    // SingletonNonReferentialResolver.getInstance(projectName,mode));
+    this(modelDirectory, modelName, mode, numberEntitiesBack, preferFirstReferent,
+        new DefaultNonReferentialResolver(modelDirectory, modelName, mode));
   }
 
-  public MaxentResolver(String modelDirectory, String modelName, ResolverMode mode, int numberEntitiesBack, boolean preferFirstReferent, double nonReferentialProbability) throws IOException {
-    //this(projectName, modelName, mode, numberEntitiesBack, preferFirstReferent, SingletonNonReferentialResolver.getInstance(projectName,mode));
-    this(modelDirectory, modelName, mode, numberEntitiesBack, preferFirstReferent, new FixedNonReferentialResolver(nonReferentialProbability));
+  public MaxentResolver(String modelDirectory, String modelName, ResolverMode mode,
+                        int numberEntitiesBack, boolean preferFirstReferent,
+                        double nonReferentialProbability) throws IOException {
+    //this(projectName, modelName, mode, numberEntitiesBack, preferFirstReferent,
+    // SingletonNonReferentialResolver.getInstance(projectName,mode));
+    this(modelDirectory, modelName, mode, numberEntitiesBack, preferFirstReferent,
+        new FixedNonReferentialResolver(nonReferentialProbability));
   }
 
   public DiscourseEntity resolve(MentionContext ec, DiscourseModel dm) {
@@ -171,7 +174,7 @@ public abstract class MaxentResolver extends AbstractResolver {
     int ei = 0;
     double nonReferentialProbability = nonReferentialResolver.getNonReferentialProbability(ec);
     if (debugOn) {
-      System.err.println(this +".resolve: " + ec.toText() + " -> " +  "null "+nonReferentialProbability);
+      System.err.println(this + ".resolve: " + ec.toText() + " -> " +  "null " + nonReferentialProbability);
     }
     for (; ei < getNumEntities(dm); ei++) {
       de = dm.getEntity(ei);
@@ -181,7 +184,8 @@ public abstract class MaxentResolver extends AbstractResolver {
       if (excluded(ec, de)) {
         candProbs[ei] = 0;
         if (debugOn) {
-          System.err.println("excluded "+this +".resolve: " + ec.toText() + " -> " + de + " " + candProbs[ei]);
+          System.err.println("excluded " + this + ".resolve: " + ec.toText() + " -> " + de + " "
+              + candProbs[ei]);
         }
       }
       else {
@@ -195,7 +199,8 @@ public abstract class MaxentResolver extends AbstractResolver {
           candProbs[ei] = 0;
         }
         if (debugOn) {
-          System.err.println(this +".resolve: " + ec.toText() + " -> " + de + " ("+ec.getGender()+","+de.getGender()+") " + candProbs[ei] + " " + lfeatures);
+          System.err.println(this + ".resolve: " + ec.toText() + " -> " + de + " ("
+              + ec.getGender() + "," + de.getGender() + ") " + candProbs[ei] + " " + lfeatures);
         }
       }
       if (preferFirstReferent && candProbs[ei] > nonReferentialProbability) {
@@ -257,20 +262,25 @@ public abstract class MaxentResolver extends AbstractResolver {
         if (excluded(mention, cde)) {
           if (showExclusions) {
             if (mention.getId() != -1 && entityMention.getId() == mention.getId()) {
-              System.err.println(this +".retain: Referent excluded: (" + mention.getId() + ") " + mention.toText() + " " + mention.getIndexSpan() + " -> (" + entityMention.getId() + ") " + entityMention.toText() + " " + entityMention.getSpan() + " " + this);
+              System.err.println(this + ".retain: Referent excluded: (" + mention.getId() + ") "
+                  + mention.toText() + " " + mention.getIndexSpan() + " -> (" + entityMention.getId()
+                  + ") " + entityMention.toText() + " " + entityMention.getSpan() + " " + this);
             }
           }
         }
         else {
           hasReferentialCandidate = true;
           boolean useAsDifferentExample = defaultReferent(cde);
-          //if (!sampleSelection || (mention.getId() != -1 && entityMention.getId() == mention.getId()) || (!nonReferentFound && useAsDifferentExample)) {
+          //if (!sampleSelection || (mention.getId() != -1 && entityMention.getId() == mention.getId())
+          // || (!nonReferentFound && useAsDifferentExample)) {
             List<String> features = getFeatures(mention, cde);
 
             //add Event to Model
             if (debugOn) {
-              System.err.println(this +".retain: " + mention.getId() + " " + mention.toText() + " -> " + entityMention.getId() + " " + cde);
+              System.err.println(this + ".retain: " + mention.getId() + " " + mention.toText()
+                  + " -> " + entityMention.getId() + " " + cde);
             }
+
             if (mention.getId() != -1 && entityMention.getId() == mention.getId()) {
               referentFound = true;
               events.add(new Event(SAME, features.toArray(new String[features.size()])));
@@ -295,21 +305,23 @@ public abstract class MaxentResolver extends AbstractResolver {
       if (hasReferentialCandidate) {
         nonReferentialResolver.addEvent(mention);
       }
-      return (de);
+
+      return de;
     }
     else {
-      return (super.retain(mention, dm));
+      return super.retain(mention, dm);
     }
   }
 
   /**
-   * Returns a list of features for deciding whether the specified mention refers to the specified discourse entity.
+   * Returns a list of features for deciding whether the specified mention refers to the
+   * specified discourse entity.
    * @param mention the mention being considers as possibly referential.
    * @param entity The discourse entity with which the mention is being considered referential.
    * @return a list of features used to predict reference between the specified mention and entity.
    */
   protected List<String> getFeatures(MentionContext mention, DiscourseEntity entity) {
-    List<String> features = new ArrayList<String>();
+    List<String> features = new ArrayList<>();
     features.add(DEFAULT);
     features.addAll(ResolverUtils.getCompatibilityFeatures(mention, entity,simModel));
     return features;
@@ -319,15 +331,16 @@ public abstract class MaxentResolver extends AbstractResolver {
   public void train() throws IOException {
     if (ResolverMode.TRAIN == mode) {
       if (debugOn) {
-        System.err.println(this +" referential");
-        FileWriter writer = new FileWriter(modelName+".events");
-        for (Iterator<Event> ei=events.iterator();ei.hasNext();) {
+        System.err.println(this + " referential");
+        FileWriter writer = new FileWriter(modelName + ".events");
+        for (Iterator<Event> ei = events.iterator(); ei.hasNext();) {
           Event e = ei.next();
-          writer.write(e.toString()+"\n");
+          writer.write(e.toString() + "\n");
         }
         writer.close();
       }
-      (new SuffixSensitiveGISModelWriter(GIS.trainModel((EventStream)new CollectionEventStream(events),100,10),new File(modelName+modelExtension))).persist();
+      (new SuffixSensitiveGISModelWriter(GIS.trainModel(ObjectStreamUtils.createObjectStream(events),
+          100,10),new File(modelName + modelExtension))).persist();
       nonReferentialResolver.train();
     }
   }

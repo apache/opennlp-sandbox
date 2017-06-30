@@ -42,15 +42,16 @@ public class Context extends Mention {
   /** The token index in of the head word of this mention. */
   protected int headTokenIndex;
 
-  public Context(Span span, Span headSpan, int entityId, Parse parse, String extentType, String nameType, HeadFinder headFinder) {
+  public Context(Span span, Span headSpan, int entityId, Parse parse,
+                 String extentType, String nameType, HeadFinder headFinder) {
     super(span,headSpan,entityId,parse,extentType,nameType);
     init(headFinder);
   }
 
   public Context(Object[] tokens, String headToken, String headTag, String neType) {
     super(null,null,1,null,null,neType);
-    this.tokens =tokens;
-    this.headTokenIndex = tokens.length-1;
+    this.tokens = tokens;
+    this.headTokenIndex = tokens.length - 1;
     this.headTokenText = headToken;
     this.headTokenTag = headTag;
     this.synsets = getSynsetSet(this);
@@ -80,7 +81,7 @@ public class Context extends Mention {
 
   public static Context[] constructContexts(Mention[] mentions,HeadFinder headFinder) {
     Context[] contexts = new Context[mentions.length];
-    for (int mi=0;mi<mentions.length;mi++) {
+    for (int mi = 0; mi < mentions.length;mi++) {
       contexts[mi] = new Context(mentions[mi],headFinder);
     }
     return contexts;
@@ -90,7 +91,7 @@ public class Context extends Mention {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    for (int ti=0,tl=tokens.length;ti<tl;ti++){
+    for (int ti = 0, tl = tokens.length; ti < tl; ti++) {
       sb.append(tokens[ti]).append(" ");
     }
     return sb.toString();
@@ -113,17 +114,16 @@ public class Context extends Mention {
   }
 
   public static Context parseContext(String word) {
-      String[] parts = word.split("/");
-      if (parts.length == 2) {
-        String[] tokens = parts[0].split(" ");
-        return new Context(tokens,tokens[tokens.length-1], parts[1], null);
-      }
-      else if (parts.length == 3) {
-        String[] tokens = parts[0].split(" ");
-        return new Context(tokens,tokens[tokens.length-1], parts[1], parts[2]);
-      }
-      return null;
+    String[] parts = word.split("/");
+    if (parts.length == 2) {
+      String[] tokens = parts[0].split(" ");
+      return new Context(tokens, tokens[tokens.length - 1], parts[1], null);
+    } else if (parts.length == 3) {
+      String[] tokens = parts[0].split(" ");
+      return new Context(tokens, tokens[tokens.length - 1], parts[1], parts[2]);
     }
+    return null;
+  }
 
   private static Set<String> getSynsetSet(Context c) {
     Set<String> synsetSet = new HashSet<String>();
@@ -135,7 +135,7 @@ public class Context extends Mention {
       if (senseKey != null) {
         synsetSet.add(senseKey);
         String[] synsets = dict.getParentSenseKeys(lemmas[li],"NN",0);
-        for (int si=0,sn=synsets.length;si<sn;si++) {
+        for (int si = 0, sn = synsets.length; si < sn;si++) {
           synsetSet.add(synsets[si]);
         }
       }

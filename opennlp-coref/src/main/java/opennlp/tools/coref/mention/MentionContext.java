@@ -120,7 +120,9 @@ public class MentionContext extends Context {
    */
   private double numberProb;
 
-  public MentionContext(Span span, Span headSpan, int entityId, Parse parse, String extentType, String nameType, int mentionIndex, int mentionsInSentence, int mentionIndexInDocument, int sentenceIndex, HeadFinder headFinder) {
+  public MentionContext(Span span, Span headSpan, int entityId, Parse parse, String extentType,
+                        String nameType, int mentionIndex, int mentionsInSentence,
+                        int mentionIndexInDocument, int sentenceIndex, HeadFinder headFinder) {
     super(span,headSpan,entityId,parse,extentType,nameType,headFinder);
     nounLocation = mentionIndex;
     maxNounLocation = mentionsInSentence;
@@ -151,8 +153,11 @@ public class MentionContext extends Context {
    * @param sentenceIndex The index of the sentence which contains this mention.
    * @param headFinder An object which provides head information.
    */
-  public MentionContext(Mention mention, int mentionIndexInSentence, int mentionsInSentence, int mentionIndexInDocument, int sentenceIndex, HeadFinder headFinder) {
-    this(mention.getSpan(),mention.getHeadSpan(),mention.getId(),mention.getParse(),mention.type,mention.nameType, mentionIndexInSentence,mentionsInSentence,mentionIndexInDocument,sentenceIndex,headFinder);
+  public MentionContext(Mention mention, int mentionIndexInSentence, int mentionsInSentence,
+                        int mentionIndexInDocument, int sentenceIndex, HeadFinder headFinder) {
+    this(mention.getSpan(), mention.getHeadSpan(), mention.getId(), mention.getParse(),
+        mention.type, mention.nameType, mentionIndexInSentence, mentionsInSentence,
+        mentionIndexInDocument, sentenceIndex, headFinder);
   }
 
 
@@ -168,7 +173,8 @@ public class MentionContext extends Context {
    * @param headFinder Object which provides head information.
    */
   /*
-  public MentionContext(Parse mentionParse, int mentionIndex, int mentionsInSentence, int mentionsInDocument, int sentenceIndex, String nameType, HeadFinder headFinder) {
+  public MentionContext(Parse mentionParse, int mentionIndex, int mentionsInSentence,
+  int mentionsInDocument, int sentenceIndex, String nameType, HeadFinder headFinder) {
     nounLocation = mentionIndex;
     maxNounLocation = mentionsInDocument;
     sentenceNumber = sentenceIndex;
@@ -200,13 +206,13 @@ public class MentionContext extends Context {
   */
 
   private void initHeads(int headIndex) {
-    this.headTokenIndex=headIndex;
+    this.headTokenIndex = headIndex;
     this.headToken = (Parse) tokens[getHeadTokenIndex()];
     this.headTokenText = headToken.toString();
-    this.headTokenTag=headToken.getSyntacticType();
+    this.headTokenTag = headToken.getSyntacticType();
     this.firstToken = (Parse) tokens[0];
     this.firstTokenTag = firstToken.getSyntacticType();
-    this.firstTokenText=firstToken.toString();
+    this.firstTokenText = firstToken.toString();
   }
 
   /**

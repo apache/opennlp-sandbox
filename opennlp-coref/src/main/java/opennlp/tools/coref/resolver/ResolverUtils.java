@@ -42,31 +42,47 @@ public class ResolverUtils {
   private static final Pattern initialCaps = Pattern.compile("^[A-Z]");
 
   /** Regular expression for English singular third person pronouns. */
-  public static final Pattern singularThirdPersonPronounPattern = Pattern.compile("^(he|she|it|him|her|his|hers|its|himself|herself|itself)$",Pattern.CASE_INSENSITIVE);
+  public static final Pattern singularThirdPersonPronounPattern =
+      Pattern.compile("^(he|she|it|him|her|his|hers|its|himself|herself|itself)$",Pattern.CASE_INSENSITIVE);
   /** Regular expression for English plural third person pronouns. */
-  public static final Pattern pluralThirdPersonPronounPattern = Pattern.compile("^(they|their|theirs|them|themselves)$",Pattern.CASE_INSENSITIVE);
+  public static final Pattern pluralThirdPersonPronounPattern =
+      Pattern.compile("^(they|their|theirs|them|themselves)$",Pattern.CASE_INSENSITIVE);
   /** Regular expression for English speech pronouns. */
-  public static final Pattern speechPronounPattern = Pattern.compile("^(I|me|my|you|your|you|we|us|our|ours)$",Pattern.CASE_INSENSITIVE);
+  public static final Pattern speechPronounPattern =
+      Pattern.compile("^(I|me|my|you|your|you|we|us|our|ours)$",Pattern.CASE_INSENSITIVE);
   /** Regular expression for English female pronouns. */
-  public static final Pattern femalePronounPattern = Pattern.compile("^(she|her|hers|herself)$",Pattern.CASE_INSENSITIVE);
+  public static final Pattern femalePronounPattern =
+      Pattern.compile("^(she|her|hers|herself)$",Pattern.CASE_INSENSITIVE);
   /** Regular expression for English neuter pronouns. */
-  public static final Pattern neuterPronounPattern = Pattern.compile("^(it|its|itself)$",Pattern.CASE_INSENSITIVE);
+  public static final Pattern neuterPronounPattern =
+      Pattern.compile("^(it|its|itself)$",Pattern.CASE_INSENSITIVE);
   /** Regular expression for English first person pronouns. */
-  public static final Pattern firstPersonPronounPattern = Pattern.compile("^(I|me|my|we|our|us|ours)$",Pattern.CASE_INSENSITIVE);
+  public static final Pattern firstPersonPronounPattern =
+      Pattern.compile("^(I|me|my|we|our|us|ours)$",Pattern.CASE_INSENSITIVE);
   /** Regular expression for English singular second person pronouns. */
-  public static final Pattern secondPersonPronounPattern = Pattern.compile("^(you|your|yours)$",Pattern.CASE_INSENSITIVE);
+  public static final Pattern secondPersonPronounPattern =
+      Pattern.compile("^(you|your|yours)$",Pattern.CASE_INSENSITIVE);
   /** Regular expression for English third person pronouns. */
-  public static final Pattern thirdPersonPronounPattern = Pattern.compile("^(he|she|it|him|her|his|hers|its|himself|herself|itself|they|their|theirs|them|themselves)$",Pattern.CASE_INSENSITIVE);
+  public static final Pattern thirdPersonPronounPattern =
+      Pattern.compile("^(he|she|it|him|her|his|hers|its|himself|herself|itself|they|" +
+      "their|theirs|them|themselves)$",Pattern.CASE_INSENSITIVE);
   /** Regular expression for English singular pronouns. */
-  public static final Pattern singularPronounPattern = Pattern.compile("^(I|me|my|he|she|it|him|her|his|hers|its|himself|herself|itself)$",Pattern.CASE_INSENSITIVE);
+  public static final Pattern singularPronounPattern =
+      Pattern.compile("^(I|me|my|he|she|it|him|her|his|hers|its|himself|herself|itself)$",
+      Pattern.CASE_INSENSITIVE);
   /** Regular expression for English plural pronouns. */
-  public static final Pattern pluralPronounPattern = Pattern.compile("^(we|us|our|ours|they|their|theirs|them|themselves)$",Pattern.CASE_INSENSITIVE);
+  public static final Pattern pluralPronounPattern =
+      Pattern.compile("^(we|us|our|ours|they|their|theirs|them|themselves)$",
+      Pattern.CASE_INSENSITIVE);
   /** Regular expression for English male pronouns. */
-  public static final Pattern malePronounPattern = Pattern.compile("^(he|him|his|himself)$",Pattern.CASE_INSENSITIVE);
+  public static final Pattern malePronounPattern =
+      Pattern.compile("^(he|him|his|himself)$",Pattern.CASE_INSENSITIVE);
   /** Regular expression for English honorifics. */
-  public static final Pattern honorificsPattern = Pattern.compile("[A-Z][a-z]+\\.$|^[A-Z][b-df-hj-np-tv-xz]+$");
+  public static final Pattern honorificsPattern =
+      Pattern.compile("[A-Z][a-z]+\\.$|^[A-Z][b-df-hj-np-tv-xz]+$");
   /** Regular expression for English corporate designators. */
-  public static final Pattern designatorsPattern = Pattern.compile("[a-z]\\.$|^[A-Z][b-df-hj-np-tv-xz]+$|^Co(rp)?$");
+  public static final Pattern designatorsPattern =
+      Pattern.compile("[a-z]\\.$|^[A-Z][b-df-hj-np-tv-xz]+$|^Co(rp)?$");
 
   
   private static final String NUM_COMPATIBLE = "num.compatible";
@@ -237,7 +253,8 @@ public class ResolverUtils {
       if (exactMatchFeature != null) {
         featureSet.add(exactMatchFeature);
       }
-      else if (entityMention.getParse().isCoordinatedNounPhrase() && !mention.getParse().isCoordinatedNounPhrase()) {
+      else if (entityMention.getParse().isCoordinatedNounPhrase()
+          && !mention.getParse().isCoordinatedNounPhrase()) {
         featureSet.add("cmix");
       }
       else {
@@ -252,7 +269,8 @@ public class ResolverUtils {
       Parse[] xtoks = entityMention.getTokenParses();
       int headIndex = entityMention.getHeadTokenIndex();
       //if (!mention.getHeadTokenTag().equals(entityMention.getHeadTokenTag())) {
-      //  //System.err.println("skipping "+mention.headTokenText+" with "+xec.headTokenText+" because "+mention.headTokenTag+" != "+xec.headTokenTag);
+      //  //System.err.println("skipping "+mention.headTokenText+" with "+xec.headTokenText
+      // +" because "+mention.headTokenTag+" != "+xec.headTokenTag);
       //  continue;
       //}  want to match NN NNP
       String entityMentionHeadString = entityMention.getHeadTokenText().toLowerCase();
@@ -340,10 +358,10 @@ public class ResolverUtils {
    * @return a normalized string representation of the specified mention.
    */
   public static String stripNp(MentionContext mention) {
-    int start=mention.getNonDescriptorStart(); //start after descriptors
+    int start = mention.getNonDescriptorStart(); //start after descriptors
   
     Parse[] mtokens = mention.getTokenParses();
-    int end=mention.getHeadTokenIndex()+1;
+    int end = mention.getHeadTokenIndex() + 1;
     if (start == end) {
       //System.err.println("stripNp: return null 1");
       return null;
@@ -358,7 +376,7 @@ public class ResolverUtils {
     }
     //get to first NNP
     String type;
-    for (int i=start;i<end;i++) {
+    for (int i = start; i < end;i++) {
       type = mtokens[start].getSyntacticType();
       if (type.startsWith("NNP")) {
         break;
@@ -369,7 +387,7 @@ public class ResolverUtils {
       //System.err.println("stripNp: return null 3");
       return null;
     }
-    if (start+1 != end) { // don't do this on head words, to keep "U.S."
+    if (start + 1 != end) { // don't do this on head words, to keep "U.S."
       //strip off honorifics in begining
       if (honorificsPattern.matcher(mtokens[start].toString()).find()) {
         start++;
@@ -395,7 +413,8 @@ public class ResolverUtils {
   }
 
   public static MentionContext getProperNounExtent(DiscourseEntity de) {
-    for (Iterator<MentionContext> ei = de.getMentions(); ei.hasNext();) { //use first extent which is propername
+    //use first extent which is propername
+    for (Iterator<MentionContext> ei = de.getMentions(); ei.hasNext();) {
       MentionContext xec = ei.next();
       String xecHeadTag = xec.getHeadTokenTag();
       if (xecHeadTag.startsWith("NNP") || initialCaps.matcher(xec.getHeadTokenText()).find()) {
@@ -450,7 +469,7 @@ public class ResolverUtils {
     if (mention.getHeadTokenTag().startsWith("PRP")) {
       Map<String, String> pronounMap = getPronounFeatureMap(mention.getHeadTokenText());
       //System.err.println("getPronounMatchFeatures.pronounMap:"+pronounMap);
-      for (Iterator<MentionContext> mi=entity.getMentions();mi.hasNext();) {
+      for (Iterator<MentionContext> mi = entity.getMentions();mi.hasNext();) {
         MentionContext candidateMention = mi.next();
         if (candidateMention.getHeadTokenTag().startsWith("PRP")) {
           if (mention.getHeadTokenText().equalsIgnoreCase(candidateMention.getHeadTokenText())) {
@@ -458,7 +477,8 @@ public class ResolverUtils {
             break;
           }
           else {
-            Map<String, String> candidatePronounMap = getPronounFeatureMap(candidateMention.getHeadTokenText());
+            Map<String, String> candidatePronounMap =
+                getPronounFeatureMap(candidateMention.getHeadTokenText());
             //System.err.println("getPronounMatchFeatures.candidatePronounMap:"+candidatePronounMap);
             boolean allKeysMatch = true;
             for (Iterator<String> ki = pronounMap.keySet().iterator(); ki.hasNext();) {
@@ -500,16 +520,19 @@ public class ResolverUtils {
   public static List<String> getDistanceFeatures(MentionContext mention, DiscourseEntity entity) {
     List<String> features = new ArrayList<String>();
     MentionContext cec = entity.getLastExtent();
-    int entityDistance = mention.getNounPhraseDocumentIndex()- cec.getNounPhraseDocumentIndex();
+    int entityDistance = mention.getNounPhraseDocumentIndex() - cec.getNounPhraseDocumentIndex();
     int sentenceDistance = mention.getSentenceNumber() - cec.getSentenceNumber();
     int hobbsEntityDistance;
     if (sentenceDistance == 0) {
       hobbsEntityDistance = cec.getNounPhraseSentenceIndex();
     }
     else {
-      //hobbsEntityDistance = entityDistance - (entities within sentence from mention to end) + (entities within sentence form start to mention)
-      //hobbsEntityDistance = entityDistance - (cec.maxNounLocation - cec.getNounPhraseSentenceIndex) + cec.getNounPhraseSentenceIndex;
-      hobbsEntityDistance = entityDistance + (2 * cec.getNounPhraseSentenceIndex()) - cec.getMaxNounPhraseSentenceIndex();
+      //hobbsEntityDistance = entityDistance - (entities within sentence from mention to end)
+      // + (entities within sentence form start to mention)
+      //hobbsEntityDistance = entityDistance - (cec.maxNounLocation - cec.getNounPhraseSentenceIndex)
+      // + cec.getNounPhraseSentenceIndex;
+      hobbsEntityDistance = entityDistance +
+          (2 * cec.getNounPhraseSentenceIndex()) - cec.getMaxNounPhraseSentenceIndex();
     }
     features.add("hd=" + hobbsEntityDistance);
     features.add("de=" + entityDistance);
@@ -553,9 +576,11 @@ public class ResolverUtils {
    * Returns features indicating whether the specified mention and the specified entity are compatible.
    * @param mention The mention.
    * @param entity The entity.
-   * @return list of features indicating whether the specified mention and the specified entity are compatible.
+   * @return list of features indicating whether the specified mention and the specified
+   *         entity are compatible.
    */
-  public static List<String> getCompatibilityFeatures(MentionContext mention, DiscourseEntity entity, TestSimilarityModel simModel) {
+  public static List<String> getCompatibilityFeatures(MentionContext mention,
+                                                      DiscourseEntity entity, TestSimilarityModel simModel) {
     List<String> compatFeatures = new ArrayList<String>();
     String semCompatible = getSemanticCompatibilityFeature(mention, entity, simModel);
     compatFeatures.add(semCompatible);
@@ -563,10 +588,12 @@ public class ResolverUtils {
     compatFeatures.add(genCompatible);
     String numCompatible = ResolverUtils.getNumberCompatibilityFeature(mention, entity);
     compatFeatures.add(numCompatible);
-    if (semCompatible.equals(SIM_COMPATIBLE) && genCompatible.equals(GEN_COMPATIBLE) && numCompatible.equals(ResolverUtils.NUM_COMPATIBLE)) {
+    if (semCompatible.equals(SIM_COMPATIBLE) && genCompatible.equals(GEN_COMPATIBLE)
+        && numCompatible.equals(ResolverUtils.NUM_COMPATIBLE)) {
       compatFeatures.add("all.compatible");
     }
-    else if (semCompatible.equals(SIM_INCOMPATIBLE) || genCompatible.equals(GEN_INCOMPATIBLE) || numCompatible.equals(ResolverUtils.NUM_INCOMPATIBLE)) {
+    else if (semCompatible.equals(SIM_INCOMPATIBLE) || genCompatible.equals(GEN_INCOMPATIBLE)
+        || numCompatible.equals(ResolverUtils.NUM_INCOMPATIBLE)) {
       compatFeatures.add("some.incompatible");
     }
     return compatFeatures;
@@ -586,7 +613,8 @@ public class ResolverUtils {
     }
   }
 
-  public static String getSemanticCompatibilityFeature(MentionContext ec, DiscourseEntity de, TestSimilarityModel simModel) {
+  public static String getSemanticCompatibilityFeature(MentionContext ec, DiscourseEntity de,
+                                                       TestSimilarityModel simModel) {
     if (simModel != null) {
       double best = 0;
       for (Iterator<MentionContext> xi = de.getMentions(); xi.hasNext();) {
@@ -640,7 +668,4 @@ public class ResolverUtils {
       return "u";
     }
   }
-  
-  
-
 }

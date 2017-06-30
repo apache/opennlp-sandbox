@@ -44,8 +44,7 @@ public class NumberEnum {
   }
 
   @Override
-  public String toString(){
+  public String toString() {
     return name;
   }
-
 }

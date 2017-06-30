@@ -37,10 +37,10 @@ public class FullParseCorefEnhancerStream extends FilterObjectStream<RawCorefSam
     this.parser = parser;
   }
   
-  static Parse createIncompleteParse(String tokens[]) {
+  static Parse createIncompleteParse(String[] tokens) {
     
     // produce text
-    Span tokenSpans[] = new Span[tokens.length];
+    Span[] tokenSpans = new Span[tokens.length];
     StringBuilder textBuilder = new StringBuilder();
     
     for (int i = 0; i < tokens.length; i++) {
@@ -60,7 +60,8 @@ public class FullParseCorefEnhancerStream extends FilterObjectStream<RawCorefSam
     
     for (int i = 0; i < tokenSpans.length; i++) {
       Span tokenSpan = tokenSpans[i];
-      p.insert(new Parse(text, new Span(tokenSpan.getStart(), tokenSpan.getEnd()), AbstractBottomUpParser.TOK_NODE, 0, i));
+      p.insert(new Parse(text, new Span(tokenSpan.getStart(), tokenSpan.getEnd()),
+          AbstractBottomUpParser.TOK_NODE, 0, i));
     }
     
     return p;
@@ -78,7 +79,7 @@ public class FullParseCorefEnhancerStream extends FilterObjectStream<RawCorefSam
       
       for (int i = 0; i < sentences.size(); i++) {
         
-        String sentence[] = sentences.get(i);
+        String[] sentence = sentences.get(i);
         
         Parse incompleteParse = createIncompleteParse(sentence);
         Parse p = parser.parse(incompleteParse);

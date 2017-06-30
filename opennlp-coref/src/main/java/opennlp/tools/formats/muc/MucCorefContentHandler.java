@@ -130,7 +130,7 @@ class MucCorefContentHandler extends SgmlParser.ContentHandler {
   public void characters(CharSequence chars) {
     if (isInsideContentElement) {
       
-      String tokens [] = tokenizer.tokenize(chars.toString());
+      String[] tokens = tokenizer.tokenize(chars.toString());
       
       text.addAll(Arrays.asList(tokens));
     }
@@ -157,7 +157,7 @@ class MucCorefContentHandler extends SgmlParser.ContentHandler {
     
     if (MucElementNames.DOC_ELEMENT.equals(name)) {
       
-      for (CorefMention mentions[] : sample.getMentions()) {
+      for (CorefMention[] mentions : sample.getMentions()) {
         for (int i = 0; i < mentions.length; i++) {
           mentions[i].id = resolveId(mentions[i].id);
         }

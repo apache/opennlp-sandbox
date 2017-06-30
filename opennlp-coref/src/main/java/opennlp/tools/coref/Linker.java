@@ -83,7 +83,9 @@ public interface Linker {
   public DiscourseEntity[] getEntities(Mention[] mentions);
 
   /**
-   * Creates mention contexts for the specified mention exents.  These are used to compute coreference features over.
+   * Creates mention contexts for the specified mention exents.
+   * These are used to compute coreference features over.
+   *
    * @param mentions The mention of a document.
    * 
    * @return mention contexts for the specified mention exents.

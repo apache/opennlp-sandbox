@@ -41,10 +41,10 @@ public abstract class AbstractParse implements Parse {
 
   public List<Parse> getNounPhrases() {
     List<Parse> parts = getSyntacticChildren();
-    List<Parse> nps = new ArrayList<Parse>();
+    List<Parse> nps = new ArrayList<>();
     while (parts.size() > 0) {
-      List<Parse> newParts = new ArrayList<Parse>();
-      for (int pi=0,pn=parts.size();pi<pn;pi++) {
+      List<Parse> newParts = new ArrayList<>();
+      for (int pi = 0, pn = parts.size(); pi < pn;pi++) {
         //System.err.println("AbstractParse.getNounPhrases "+parts.get(pi).getClass());
         Parse cp = parts.get(pi);
         if (cp.isNounPhrase()) {
@@ -58,4 +58,4 @@ public abstract class AbstractParse implements Parse {
     }
     return nps;
   }
- }
+}

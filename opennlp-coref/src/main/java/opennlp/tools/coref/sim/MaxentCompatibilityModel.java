@@ -41,7 +41,9 @@ public class MaxentCompatibilityModel {
     Gender gender;
     double[] gdist = genModel.genderDistribution(c);
     if (debugOn) {
-      System.err.println("MaxentCompatibilityModel.computeGender: "+c.toString()+" m="+gdist[genModel.getMaleIndex()]+" f="+gdist[genModel.getFemaleIndex()]+" n="+gdist[genModel.getNeuterIndex()]);
+      System.err.println("MaxentCompatibilityModel.computeGender: "
+          + c.toString() + " m=" + gdist[genModel.getMaleIndex()] + " f="
+          + gdist[genModel.getFemaleIndex()] + " n=" + gdist[genModel.getNeuterIndex()]);
     }
     if (genModel.getMaleIndex() >= 0 && gdist[genModel.getMaleIndex()] > minGenderProb) {
       gender = new Gender(GenderEnum.MALE,gdist[genModel.getMaleIndex()]);
@@ -61,7 +63,8 @@ public class MaxentCompatibilityModel {
   public Number computeNumber(Context c) {
     double[] dist = numModel.numberDist(c);
     Number number;
-    //System.err.println("MaxentCompatibiltyResolver.computeNumber: "+c+" sing="+dist[numModel.getSingularIndex()]+" plural="+dist[numModel.getPluralIndex()]);
+    //System.err.println("MaxentCompatibiltyResolver.computeNumber: "+c+" sing="
+    // +dist[numModel.getSingularIndex()]+" plural="+dist[numModel.getPluralIndex()]);
     if (dist[numModel.getSingularIndex()] > minNumberProb) {
       number = new Number(NumberEnum.SINGULAR,dist[numModel.getSingularIndex()]);
     }

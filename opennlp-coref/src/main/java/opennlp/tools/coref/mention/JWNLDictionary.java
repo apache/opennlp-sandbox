@@ -19,6 +19,7 @@ package opennlp.tools.coref.mention;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,21 +57,27 @@ public class JWNLDictionary implements Dictionary {
 
   public JWNLDictionary(String searchDirectory) throws IOException, JWNLException {
     PointerType.initialize();
-	Adjective.initialize();
-	VerbFrame.initialize();
+    Adjective.initialize();
+    VerbFrame.initialize();
     Map<POS, String[][]> suffixMap = new HashMap<POS, String[][]>();
-    suffixMap.put(POS.NOUN,new String[][] {{"s",""},{"ses","s"},{"xes","x"},{"zes","z"},{"ches","ch"},{"shes","sh"},{"men","man"},{"ies","y"}});
-    suffixMap.put(POS.VERB,new String[][] {{"s",""},{"ies","y"},{"es","e"},{"es",""},{"ed","e"},{"ed",""},{"ing","e"},{"ing",""}});
+    suffixMap.put(POS.NOUN,new String[][] {{"s",""},{"ses","s"},{"xes","x"},{"zes","z"},
+        {"ches","ch"},{"shes","sh"},{"men","man"},{"ies","y"}});
+    suffixMap.put(POS.VERB,new String[][] {{"s",""},{"ies","y"},{"es","e"},{"es",""},{"ed","e"},
+        {"ed",""},{"ing","e"},{"ing",""}});
     suffixMap.put(POS.ADJECTIVE,new String[][] {{"er",""},{"est",""},{"er","e"},{"est","e"}});
     DetachSuffixesOperation tokDso = new DetachSuffixesOperation(suffixMap);
-    tokDso.addDelegate(DetachSuffixesOperation.OPERATIONS,new Operation[] {new LookupIndexWordOperation(),new LookupExceptionsOperation()});
+    tokDso.addDelegate(DetachSuffixesOperation.OPERATIONS,new Operation[] {
+        new LookupIndexWordOperation(),new LookupExceptionsOperation()});
     TokenizerOperation tokOp = new TokenizerOperation(new String[] {" ","-"});
-    tokOp.addDelegate(TokenizerOperation.TOKEN_OPERATIONS,new Operation[] {new LookupIndexWordOperation(),new LookupExceptionsOperation(),tokDso});
+    tokOp.addDelegate(TokenizerOperation.TOKEN_OPERATIONS,new Operation[] {
+        new LookupIndexWordOperation(),new LookupExceptionsOperation(),tokDso});
     DetachSuffixesOperation morphDso = new DetachSuffixesOperation(suffixMap);
-    morphDso.addDelegate(DetachSuffixesOperation.OPERATIONS,new Operation[] {new LookupIndexWordOperation(),new LookupExceptionsOperation()});
+    morphDso.addDelegate(DetachSuffixesOperation.OPERATIONS,new Operation[] {
+        new LookupIndexWordOperation(),new LookupExceptionsOperation()});
     Operation[] operations = {new LookupExceptionsOperation(), morphDso , tokOp};
     morphy = new DefaultMorphologicalProcessor(operations);
-    FileManager manager = new FileManagerImpl(searchDirectory,PrincetonRandomAccessDictionaryFile.class);
+    FileManager manager = new FileManagerImpl(searchDirectory,
+        PrincetonRandomAccessDictionaryFile.class);
     FileDictionaryElementFactory factory = new PrincetonWN17FileDictionaryElementFactory();
     FileBackedDictionary.install(manager, morphy,factory,true);
     dict = net.didion.jwnl.dictionary.Dictionary.getInstance();
@@ -123,7 +130,7 @@ public class JWNLDictionary implements Dictionary {
   public int getNumSenses(String lemma, String pos) {
     try {
       IndexWord iw = dict.getIndexWord(POS.NOUN,lemma);
-      if (iw == null){
+      if (iw == null) {
         return 0;
       }
       return iw.getSenseCount();
@@ -135,7 +142,7 @@ public class JWNLDictionary implements Dictionary {
 
   private void getParents(Synset synset, List<String> parents) throws JWNLException {
     Pointer[] pointers = synset.getPointers();
-    for (int pi=0,pn=pointers.length;pi<pn;pi++) {
+    for (int pi = 0, pn = pointers.length; pi < pn;pi++) {
       if (pointers[pi].getType() == PointerType.HYPERNYM) {
         Synset parent = pointers[pi].getTargetSynset();
         parents.add(String.valueOf(parent.getOffset()));
@@ -149,8 +156,8 @@ public class JWNLDictionary implements Dictionary {
     try {
       IndexWord iw = dict.getIndexWord(POS.NOUN,lemma);
       if (iw != null) {
-        Synset synset = iw.getSense(sense+1);
-        List<String> parents = new ArrayList<String>();
+        Synset synset = iw.getSense(sense + 1);
+        List<String> parents = new ArrayList<>();
         getParents(synset,parents);
         return parents.toArray(new String[parents.size()]);
       }
@@ -166,14 +173,15 @@ public class JWNLDictionary implements Dictionary {
 
   public static void main(String[] args) throws IOException, JWNLException {
     String searchDir = System.getProperty("WNSEARCHDIR");
-    System.err.println("searchDir="+searchDir);
+    System.err.println("searchDir=" + searchDir);
     if (searchDir != null) {
       Dictionary dict = new JWNLDictionary(System.getProperty("WNSEARCHDIR"));
       String word = args[0];
       String[] lemmas = dict.getLemmas(word,"NN");
-      for (int li=0,ln=lemmas.length;li<ln;li++) {
-        for (int si=0,sn=dict.getNumSenses(lemmas[li],"NN");si<sn;si++) {
-          System.out.println(lemmas[li]+" ("+si+")\t"+java.util.Arrays.asList(dict.getParentSenseKeys(lemmas[li],"NN",si)));
+      for (int li = 0,ln = lemmas.length; li < ln;li++) {
+        for (int si = 0, sn = dict.getNumSenses(lemmas[li],"NN"); si < sn;si++) {
+          System.out.println(lemmas[li] + " (" + si + ")\t" +
+              Arrays.asList(dict.getParentSenseKeys(lemmas[li],"NN",si)));
         }
       }
     }

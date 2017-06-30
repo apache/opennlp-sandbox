@@ -33,7 +33,8 @@ public class SingletonNonReferentialResolver extends DefaultNonReferentialResolv
     super(projectName, "nonref", mode);
   }
 
-  public static SingletonNonReferentialResolver getInstance(String modelName, ResolverMode mode) throws IOException {
+  public static SingletonNonReferentialResolver getInstance(String modelName, ResolverMode mode)
+      throws IOException {
     if (resolver == null) {
       resolver = new SingletonNonReferentialResolver(modelName, mode);
     }
