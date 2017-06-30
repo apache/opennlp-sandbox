@@ -34,7 +34,8 @@ public class DefiniteNounResolver extends MaxentResolver {
     //preferFirstReferent = true;
   }
 
-  public DefiniteNounResolver(String projectName, ResolverMode m, NonReferentialResolver nrr) throws IOException {
+  public DefiniteNounResolver(String projectName, ResolverMode m, NonReferentialResolver nrr)
+      throws IOException {
     super(projectName, "defmodel", m, 80,nrr);
     //preferFirstReferent = true;
   }
@@ -44,7 +45,8 @@ public class DefiniteNounResolver extends MaxentResolver {
     Object[] mtokens = mention.getTokens();
 
     String firstTok = mention.getFirstTokenText().toLowerCase();
-    boolean rv = mtokens.length > 1 && !mention.getHeadTokenTag().startsWith("NNP") && ResolverUtils.definiteArticle(firstTok, mention.getFirstTokenTag());
+    boolean rv = mtokens.length > 1 && !mention.getHeadTokenTag().startsWith("NNP")
+        && ResolverUtils.definiteArticle(firstTok, mention.getFirstTokenTag());
     //if (rv) {
     //  System.err.println("defNp "+ec);
     //}

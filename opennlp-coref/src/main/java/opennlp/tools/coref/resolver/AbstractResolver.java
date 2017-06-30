@@ -54,7 +54,7 @@ public abstract class AbstractResolver implements Resolver {
   protected int numSentencesBack;
 
   public AbstractResolver(int neb) {
-    numEntitiesBack=neb;
+    numEntitiesBack = neb;
     showExclusions = true;
     distances = new CountedSet<Integer>();
   }
@@ -108,14 +108,14 @@ public abstract class AbstractResolver implements Resolver {
    */
   protected int getHeadIndex(MentionContext mention) {
     Parse[] mtokens = mention.getTokenParses();
-    for (int ti=mtokens.length-1;ti>=0;ti--) {
+    for (int ti = mtokens.length - 1; ti >= 0; ti--) {
       Parse tok = mtokens[ti];
       if (!tok.getSyntacticType().equals("POS") && !tok.getSyntacticType().equals(",") &&
           !tok.getSyntacticType().equals(".")) {
         return ti;
       }
     }
-    return mtokens.length-1;
+    return mtokens.length - 1;
   }
 
   /**
@@ -157,7 +157,7 @@ public abstract class AbstractResolver implements Resolver {
   protected boolean excluded(MentionContext mention, DiscourseEntity entity) {
     MentionContext cec = entity.getLastExtent();
     return mention.getSentenceNumber() == cec.getSentenceNumber() &&
-	   mention.getIndexSpan().getEnd() <= cec.getIndexSpan().getEnd();
+        mention.getIndexSpan().getEnd() <= cec.getIndexSpan().getEnd();
   }
 
   public DiscourseEntity retain(MentionContext mention, DiscourseModel dm) {
@@ -184,11 +184,11 @@ public abstract class AbstractResolver implements Resolver {
    * 
    * @return the string of "_" delimited tokens for the specified mention.
    */
-  protected String featureString(MentionContext mention){
+  protected String featureString(MentionContext mention) {
     StringBuilder fs = new StringBuilder();
-    Object[] mtokens =mention.getTokens();
+    Object[] mtokens = mention.getTokens();
     fs.append(mtokens[0].toString());
-    for (int ti=1,tl=mtokens.length;ti<tl;ti++) {
+    for (int ti = 1, tl = mtokens.length; ti < tl; ti++) {
       fs.append("_").append(mtokens[ti].toString());
     }
     return fs.toString();

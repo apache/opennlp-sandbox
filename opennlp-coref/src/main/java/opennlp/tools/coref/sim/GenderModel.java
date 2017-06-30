@@ -31,22 +31,21 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-//import opennlp.maxent.GIS;
+import opennlp.tools.coref.resolver.ResolverUtils;
 import opennlp.tools.ml.maxent.GIS;
-import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelWriter;
 import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelReader;
+import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelWriter;
+import opennlp.tools.ml.model.AbstractModel;
+import opennlp.tools.ml.model.Event;
+import opennlp.tools.ml.model.MaxentModel;
+import opennlp.tools.util.HashList;
+import opennlp.tools.util.ObjectStreamUtils;
+
+//import opennlp.maxent.GIS;
 //import opennlp.maxent.io.SuffixSensitiveGISModelReader;
 //import opennlp.maxent.io.SuffixSensitiveGISModelWriter;
 //import opennlp.model.Event;
-import opennlp.tools.ml.model.Event;
-import opennlp.tools.ml.model.MaxentModel;
 //import opennlp.model.MaxentModel;
-import opennlp.tools.coref.resolver.ResolverUtils;
-import opennlp.tools.ml.model.AbstractModel;
-
-import opennlp.tools.ml.model.EventStream;
-import opennlp.tools.util.CollectionEventStream;
-import opennlp.tools.util.HashList;
 
 /**
  * Class which models the gender of a particular mentions and entities made up of mentions.
@@ -87,16 +86,17 @@ public class GenderModel implements TestGenderModel, TrainSimilarityModel {
 
   private GenderModel(String modelName, boolean train) throws IOException {
     this.modelName = modelName;
-    maleNames = readNames(modelName+".mas");
-    femaleNames = readNames(modelName+".fem");
+    maleNames = readNames(modelName + ".mas");
+    femaleNames = readNames(modelName + ".fem");
     if (train) {
       events = new ArrayList<Event>();
     }
     else {
       //if (MaxentResolver.loadAsResource()) {
-      //  testModel = (new BinaryGISModelReader(new DataInputStream(this.getClass().getResourceAsStream(modelName)))).getModel();
+      //  testModel = (new BinaryGISModelReader(new DataInputStream(
+      //      this.getClass().getResourceAsStream(modelName)))).getModel();
       //}
-      testModel = (new SuffixSensitiveGISModelReader(new File(modelName+modelExtension))).getModel();
+      testModel = (new SuffixSensitiveGISModelReader(new File(modelName + modelExtension))).getModel();
       maleIndex = testModel.getIndex(GenderEnum.MALE.toString());
       femaleIndex = testModel.getIndex(GenderEnum.FEMALE.toString());
       neuterIndex = testModel.getIndex(GenderEnum.NEUTER.toString());
@@ -104,17 +104,17 @@ public class GenderModel implements TestGenderModel, TrainSimilarityModel {
   }
 
   private List<String> getFeatures(Context np1) {
-    List<String> features = new ArrayList<String>();
+    List<String> features = new ArrayList<>();
     features.add("default");
     for (int ti = 0, tl = np1.getHeadTokenIndex(); ti < tl; ti++) {
       features.add("mw=" + np1.getTokens()[ti].toString());
     }
     features.add("hw=" + np1.getHeadTokenText());
-    features.add("n="+np1.getNameType());
+    features.add("n=" + np1.getNameType());
     if (np1.getNameType() != null && np1.getNameType().equals("person")) {
       Object[] tokens = np1.getTokens();
       //System.err.println("GenderModel.getFeatures: person name="+np1);
-      for (int ti=0;ti<np1.getHeadTokenIndex() || ti==0;ti++) {
+      for (int ti = 0; ti < np1.getHeadTokenIndex() || ti == 0; ti++) {
         String name = tokens[ti].toString().toLowerCase();
         if (femaleNames.contains(name)) {
           features.add("fem");
@@ -254,7 +254,8 @@ public class GenderModel implements TestGenderModel, TrainSimilarityModel {
     for (String line = in.readLine(); line != null; line = in.readLine()) {
       String[] words = line.split(" ");
       double[] dist = model.genderDistribution(Context.parseContext(words[0]));
-      System.out.println("m="+dist[model.getMaleIndex()] + " f=" +dist[model.getFemaleIndex()]+" n="+dist[model.getNeuterIndex()]+" "+model.getFeatures(Context.parseContext(words[0])));
+      System.out.println("m=" + dist[model.getMaleIndex()] + " f=" + dist[model.getFemaleIndex()]
+          + " n=" + dist[model.getNeuterIndex()] + " " + model.getFeatures(Context.parseContext(words[0])));
     }
   }
 
@@ -268,16 +269,18 @@ public class GenderModel implements TestGenderModel, TrainSimilarityModel {
 
   public void trainModel() throws IOException {
     if (debugOn) {
-      FileWriter writer = new FileWriter(modelName+".events");
-      for (Iterator<Event> ei=events.iterator();ei.hasNext();) {
+      FileWriter writer = new FileWriter(modelName + ".events");
+      for (Iterator<Event> ei = events.iterator();ei.hasNext();) {
         Event e = ei.next();
-        writer.write(e.toString()+"\n");
+        writer.write(e.toString() + "\n");
       }
       writer.close();
     }
+
     new SuffixSensitiveGISModelWriter(
            // GIS.trainModel((EventStream)new CollectionEventStream(events), true)).persist();
-            (AbstractModel) GIS.trainModel((EventStream)new CollectionEventStream(events), true), new File(modelName+modelExtension)).persist();
+            (AbstractModel) GIS.trainModel(ObjectStreamUtils.createObjectStream(events), true),
+            new File(modelName + modelExtension)).persist();
   }
 
   public int getFemaleIndex() {

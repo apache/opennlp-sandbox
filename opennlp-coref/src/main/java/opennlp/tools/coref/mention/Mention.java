@@ -57,18 +57,18 @@ public class Mention implements Comparable<Mention> {
   protected String nameType;
 
   public Mention(Span span, Span headSpan, int entityId, Parse parse, String extentType) {
-    this.span=span;
-    this.headSpan=headSpan;
-    this.id=entityId;
-    this.type=extentType;
+    this.span = span;
+    this.headSpan = headSpan;
+    this.id = entityId;
+    this.type = extentType;
     this.parse = parse;
   }
 
   public Mention(Span span, Span headSpan, int entityId, Parse parse, String extentType, String nameType) {
-    this.span=span;
-    this.headSpan=headSpan;
-    this.id=entityId;
-    this.type=extentType;
+    this.span = span;
+    this.headSpan = headSpan;
+    this.id = entityId;
+    this.type = extentType;
     this.parse = parse;
     this.nameType = nameType;
   }
@@ -140,7 +140,7 @@ public class Mention implements Comparable<Mention> {
    * @param i The id for this mention.
    */
   public void setId(int i) {
-    id=i;
+    id = i;
   }
 
   /**
@@ -154,6 +154,7 @@ public class Mention implements Comparable<Mention> {
 
   @Override
   public String toString() {
-    return "mention(span="+span+",hs="+headSpan+", type="+type+", id="+id+" "+parse+" )";
+    return "mention(span=" + span + ",hs=" + headSpan + ", type="
+        + type + ", id=" + id + " " + parse + " )";
   }
 }

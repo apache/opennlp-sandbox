@@ -40,7 +40,8 @@ public class TreebankLinker extends DefaultLinker {
     super(project,mode,useDiscourseModel);
   }
 
-  public TreebankLinker(String project, LinkerMode mode, boolean useDiscourseModel, double fixedNonReferentialProbability) throws IOException {
+  public TreebankLinker(String project, LinkerMode mode, boolean useDiscourseModel,
+                        double fixedNonReferentialProbability) throws IOException {
     super(project,mode,useDiscourseModel,fixedNonReferentialProbability);
   }
 

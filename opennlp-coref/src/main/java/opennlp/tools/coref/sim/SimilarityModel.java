@@ -29,20 +29,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import opennlp.tools.ml.maxent.GIS;
-import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelWriter;
-import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelReader;
-//import opennlp.maxent.GIS;
-//import opennlp.maxent.io.SuffixSensitiveGISModelReader;
-//import opennlp.maxent.io.SuffixSensitiveGISModelWriter;
-import opennlp.tools.ml.model.Event;
-//import opennlp.model.MaxentModel;
-import opennlp.tools.ml.model.MaxentModel;
-//import opennlp.model.Event;
-//import opennlp.model.MaxentModel;
+
 import opennlp.tools.coref.resolver.ResolverUtils;
-import opennlp.tools.util.CollectionEventStream;
+import opennlp.tools.ml.maxent.GIS;
+import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelReader;
+import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelWriter;
+import opennlp.tools.ml.model.Event;
+import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.util.HashList;
+import opennlp.tools.util.ObjectStreamUtils;
 
 /**
  * Models semantic similarity between two mentions and returns a score based on
@@ -74,7 +69,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
       events = new ArrayList<Event>();
     }
     else {
-      testModel = (new SuffixSensitiveGISModelReader(new File(modelName+modelExtension))).getModel();
+      testModel = (new SuffixSensitiveGISModelReader(new File(modelName + modelExtension))).getModel();
       SAME_INDEX = testModel.getIndex(SAME);
     }
   }
@@ -82,12 +77,14 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
   private void addEvent(boolean same, Context np1, Context np2) {
     if (same) {
       List<String> feats = getFeatures(np1, np2);
-      //System.err.println(SAME+" "+np1.headTokenText+" ("+np1.id+") -> "+np2.headTokenText+" ("+np2.id+") "+feats);
+      //System.err.println(SAME+" "+np1.headTokenText+" ("+np1.id+") -> "+np2.headTokenText+"
+      // ("+np2.id+") "+feats);
       events.add(new Event(SAME, feats.toArray(new String[feats.size()])));
     }
     else {
       List<String> feats = getFeatures(np1, np2);
-      //System.err.println(DIFF+" "+np1.headTokenText+" ("+np1.id+") -> "+np2.headTokenText+" ("+np2.id+") "+feats);
+      //System.err.println(DIFF+" "+np1.headTokenText+" ("+np1.id+") -> "+np2.headTokenText+"
+      // ("+np2.id+") "+feats);
       events.add(new Event(DIFF, feats.toArray(new String[feats.size()])));
     }
   }
@@ -152,7 +149,8 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
    * with entity indicated by the specified key.
    */
   @SuppressWarnings("unchecked")
-  private Set<Context> constructExclusionSet(Integer entityKey, HashList entities, Map<Integer, Set<String>> headSets, Map<Integer, Set<String>> nameSets, List<Context> singletons) {
+  private Set<Context> constructExclusionSet(Integer entityKey, HashList entities, Map<Integer,
+      Set<String>> headSets, Map<Integer, Set<String>> nameSets, List<Context> singletons) {
     Set<Context> exclusionSet = new HashSet<Context>();
     Set<String> entityHeadSet = headSets.get(entityKey);
     Set<String> entityNameSet = nameSets.get(entityKey);
@@ -241,7 +239,8 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
    *
    * @param entities A mapping between a key and a list of mentions.
    *
-   * @return a mapping between each key in the specified entity map and the name types associated with the each mention of that entity.
+   * @return a mapping between each key in the specified entity map and the name types associated
+   *         with the each mention of that entity.
    */
   @SuppressWarnings("unchecked")
   private Map<Integer, Set<String>> constructNameSets(HashList entities) {
@@ -333,7 +332,8 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
             Context sec1 = allExtents.get(axi);
             axi = (axi + 1) % allExtents.size();
             if (!exclusionSet.contains(sec1)) {
-              if (debugOn) System.err.println(ec1.toString()+" "+entityNameSet+" "+sec1.toString()+" "+nameSets.get(sec1.getId()));
+              if (debugOn) System.err.println(ec1.toString() + " " + entityNameSet + " "
+                  + sec1.toString() + " " + nameSets.get(sec1.getId()));
               addEvent(false, ec1, sec1);
               break;
             }
@@ -345,15 +345,18 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
   }
 
   /**
-   * Returns a number between 0 and 1 which represents the models belief that the specified mentions are compatible.
-   * Value closer to 1 are more compatible, while values closer to 0 are less compatible.
+   * Returns a number between 0 and 1 which represents the models belief that the specified
+   * mentions are compatible. Value closer to 1 are more compatible, while values closer
+   * to 0 are less compatible.
+   *
    * @param mention1 The first mention to be considered.
    * @param mention2 The second mention to be considered.
-   * @return a number between 0 and 1 which represents the models belief that the specified mentions are compatible.
+   * @return a number between 0 and 1 which represents the models belief that the specified
+   *         mentions are compatible.
    */
   public double compatible(Context mention1, Context mention2) {
     List<String> feats = getFeatures(mention1, mention2);
-    if (debugOn) System.err.println("SimilarityModel.compatible: feats="+feats);
+    if (debugOn) System.err.println("SimilarityModel.compatible: feats=" + feats);
     return (testModel.eval(feats.toArray(new String[feats.size()]))[SAME_INDEX]);
   }
 
@@ -363,16 +366,16 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
    */
   public void trainModel() throws IOException {
     if (debugOn) {
-      FileWriter writer = new FileWriter(modelName+".events");
-      for (Iterator<Event> ei=events.iterator();ei.hasNext();) {
+      FileWriter writer = new FileWriter(modelName + ".events");
+      for (Iterator<Event> ei = events.iterator();ei.hasNext();) {
         Event e = ei.next();
-        writer.write(e.toString()+"\n");
+        writer.write(e.toString() + "\n");
       }
       writer.close();
     }
-    (new SuffixSensitiveGISModelWriter(GIS.trainModel(
-        new CollectionEventStream(events),100,10),
-        new File(modelName+modelExtension))).persist();
+    new SuffixSensitiveGISModelWriter(GIS.trainModel(
+        ObjectStreamUtils.createObjectStream(events),100,10),
+        new File(modelName + modelExtension)).persist();
   }
 
   private boolean isName(Context np) {
@@ -393,7 +396,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
 
   private List<String> getNameCommonFeatures(Context name, Context common) {
     Set<String> synsets = common.getSynsets();
-    List<String> features = new ArrayList<String>(2 + synsets.size());
+    List<String> features = new ArrayList<>(2 + synsets.size());
     features.add("nn=" + name.getNameType() + "," + common.getNameType());
     features.add("nw=" + name.getNameType() + "," + common.getHeadTokenText().toLowerCase());
     for (Iterator<String> si = synsets.iterator(); si.hasNext();) {
@@ -610,7 +613,8 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
       else if (isPronoun(np2)) {
         features.addAll(getNumberPronounFeatures(np1, np2));
       }
-      else if (isNumber(np2)) {}
+      else if (isNumber(np2)) {
+      }
       else {
         //System.err.println("unknown group for " + np1.headTokenText + " -> " + np2.headTokenText);
       }
@@ -634,7 +638,8 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
     for (String line = in.readLine(); line != null; line = in.readLine()) {
       String[] words = line.split(" ");
       double p = model.compatible(Context.parseContext(words[0]), Context.parseContext(words[1]));
-      System.out.println(p + " " + model.getFeatures(Context.parseContext(words[0]), Context.parseContext(words[1])));
+      System.out.println(p + " " + model.getFeatures(Context.parseContext(words[0]),
+          Context.parseContext(words[1])));
     }
   }
 }

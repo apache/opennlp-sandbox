@@ -60,7 +60,7 @@ public class MucMentionInserterStream extends FilterObjectStream<RawCorefSample,
       int startOffset = p.toString().indexOf(min);
       int endOffset = startOffset + min.length();
       
-      Parse tokens[] = p.getTagNodes();
+      Parse[] tokens = p.getTagNodes();
       
       int beginToken = -1;
       int endToken = -1;
@@ -86,7 +86,7 @@ public class MucMentionInserterStream extends FilterObjectStream<RawCorefSample,
   
   public static boolean addMention(int id, Span mention, Parse[] tokens) {
 
-	boolean failed = false;
+    boolean failed = false;
     
     Parse startToken = tokens[mention.getStart()];
     Parse endToken = tokens[mention.getEnd() - 1];
@@ -128,7 +128,7 @@ public class MucMentionInserterStream extends FilterObjectStream<RawCorefSample,
       List<Parse> allParses = sample.getParses();
       
       for (int si = 0; si < allMentions.size(); si++) {
-        CorefMention mentions[] = allMentions.get(si);
+        CorefMention[] mentions = allMentions.get(si);
         Parse p = allParses.get(si);
         
         for (Mention extent : mentionFinder.getMentions(new DefaultParse(p, si))) {
@@ -139,7 +139,7 @@ public class MucMentionInserterStream extends FilterObjectStream<RawCorefSample,
           }
         }
         
-        Parse tokens[] = p.getTagNodes();
+        Parse[] tokens = p.getTagNodes();
         
         for (CorefMention mention : mentions) {
           Span min = getMinSpan(p, mention);

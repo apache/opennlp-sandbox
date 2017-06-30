@@ -27,7 +27,8 @@ public interface MentionFinder {
   /**
    * Specifies whether pre-nominal named-entities should be collected as mentions.
    *
-   * @param collectPrenominalNamedEntities true if pre-nominal named-entities should be collected; false otherwise.
+   * @param collectPrenominalNamedEntities true if pre-nominal named-entities
+   *                                       should be collected; false otherwise.
    */
   public void setPrenominalNamedEntityCollection(boolean collectPrenominalNamedEntities);
 
@@ -48,7 +49,8 @@ public interface MentionFinder {
   /**
    * Specifies whether coordinated noun phrases should be collected as mentions.
    *
-   * @param collectCoordinatedNounPhrases true if coordinated noun phrases should be collected; false otherwise.
+   * @param collectCoordinatedNounPhrases true if coordinated noun phrases should be collected;
+   *                                      false otherwise.
    */
   public void setCoordinatedNounPhraseCollection(boolean collectCoordinatedNounPhrases);
 

@@ -41,7 +41,8 @@ public class DiscourseEntity extends DiscourseElement {
    * @param number The number for this entity.
    * @param numberProb The probability that the specified number is correct.
    */
-  public DiscourseEntity(MentionContext mention, GenderEnum gender, double genderProb, NumberEnum number, double numberProb) {
+  public DiscourseEntity(MentionContext mention, GenderEnum gender, double genderProb,
+                         NumberEnum number, double numberProb) {
     super(mention);
     this.gender = gender;
     this.genderProb = genderProb;

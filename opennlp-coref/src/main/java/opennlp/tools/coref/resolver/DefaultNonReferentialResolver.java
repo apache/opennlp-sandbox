@@ -25,27 +25,15 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-//import opennlp.maxent.GIS;
-//import opennlp.maxent.io.BinaryGISModelReader;
-//import opennlp.maxent.io.SuffixSensitiveGISModelReader;
-//import opennlp.maxent.io.SuffixSensitiveGISModelWriter;
-//import opennlp.maxent.GIS;
-import opennlp.tools.ml.maxent.io.BinaryGISModelReader;
-import opennlp.tools.ml.maxent.GIS;
-import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelWriter;
-import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelReader;
-//import opennlp.maxent.io.SuffixSensitiveGISModelReader;
-//import opennlp.maxent.io.SuffixSensitiveGISModelWriter;
-//import opennlp.model.Event;
-import opennlp.tools.ml.model.MaxentModel;
-//import opennlp.model.MaxentModel;
-
-import opennlp.tools.ml.model.EventStream;
-//import opennlp.model.MaxentModel;
 import opennlp.tools.coref.mention.MentionContext;
 import opennlp.tools.coref.mention.Parse;
+import opennlp.tools.ml.maxent.GIS;
+import opennlp.tools.ml.maxent.io.BinaryGISModelReader;
+import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelReader;
+import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelWriter;
 import opennlp.tools.ml.model.Event;
-import opennlp.tools.util.CollectionEventStream;
+import opennlp.tools.ml.model.MaxentModel;
+import opennlp.tools.util.ObjectStreamUtils;
 
 /**
  * Default implementation of the {@link NonReferentialResolver} interface.
@@ -61,30 +49,32 @@ public class DefaultNonReferentialResolver implements NonReferentialResolver {
   private String modelExtension = ".bin.gz";
   private int nonRefIndex;
 
-  public DefaultNonReferentialResolver(String projectName, String name, ResolverMode mode) throws IOException {
+  public DefaultNonReferentialResolver(String projectName, String name, ResolverMode mode)
+      throws IOException {
     this.mode = mode;
-    this.modelName = projectName+"/"+name+".nr";
+    this.modelName = projectName + "/" + name + ".nr";
     if (mode == ResolverMode.TRAIN) {
       events = new ArrayList<Event>();
     }
     else if (mode == ResolverMode.TEST) {
       if (loadAsResource) {
-        model = (new BinaryGISModelReader(new DataInputStream(this.getClass().getResourceAsStream(modelName)))).getModel();
+        model = new BinaryGISModelReader(new DataInputStream(
+            this.getClass().getResourceAsStream(modelName))).getModel();
       }
       else {
-        model = (new SuffixSensitiveGISModelReader(new File(modelName+modelExtension))).getModel();
+        model = (new SuffixSensitiveGISModelReader(new File(modelName + modelExtension))).getModel();
       }
       nonRefIndex = model.getIndex(MaxentResolver.SAME);
     }
     else {
-      throw new RuntimeException("unexpected mode "+mode);
+      throw new RuntimeException("unexpected mode " + mode);
     }
   }
 
   public double getNonReferentialProbability(MentionContext mention) {
     List<String> features = getFeatures(mention);
     double r = model.eval(features.toArray(new String[features.size()]))[nonRefIndex];
-    if (debugOn) System.err.println(this +" " + mention.toText() + " ->  null " + r + " " + features);
+    if (debugOn) System.err.println(this + " " + mention.toText() + " ->  null " + r + " " + features);
     return r;
   }
 
@@ -127,16 +117,18 @@ public class DefaultNonReferentialResolver implements NonReferentialResolver {
 
   public void train() throws IOException {
     if (ResolverMode.TRAIN == mode) {
-      System.err.println(this +" referential");
+      System.err.println(this + " referential");
       if (debugOn) {
-        FileWriter writer = new FileWriter(modelName+".events");
-        for (Iterator<Event> ei=events.iterator();ei.hasNext();) {
+        FileWriter writer = new FileWriter(modelName + ".events");
+        for (Iterator<Event> ei = events.iterator(); ei.hasNext();) {
           Event e = ei.next();
-          writer.write(e.toString()+"\n");
+          writer.write(e.toString() + "\n");
         }
         writer.close();
       }
-      (new SuffixSensitiveGISModelWriter(GIS.trainModel((EventStream)new CollectionEventStream(events),100,10),new File(modelName+modelExtension))).persist();
+      new SuffixSensitiveGISModelWriter(GIS.trainModel(
+          ObjectStreamUtils.createObjectStream(events),100,10),
+          new File(modelName + modelExtension)).persist();
     }
   }
 }

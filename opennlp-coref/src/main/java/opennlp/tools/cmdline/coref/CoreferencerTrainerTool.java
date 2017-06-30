@@ -21,8 +21,8 @@ import java.io.IOException;
 
 import opennlp.tools.cmdline.AbstractTrainerTool;
 import opennlp.tools.cmdline.TerminateToolException;
-import opennlp.tools.cmdline.params.TrainingToolParams;
 import opennlp.tools.cmdline.coref.CoreferencerTrainerTool.TrainerToolParams;
+import opennlp.tools.cmdline.params.TrainingToolParams;
 import opennlp.tools.coref.CorefSample;
 import opennlp.tools.coref.CorefTrainer;
 

@@ -40,7 +40,8 @@ public class SingularPronounResolver extends MaxentResolver {
     this.numSentencesBack = 2;
   }
 
-  public SingularPronounResolver(String projectName, ResolverMode m, NonReferentialResolver nonReferentialResolver) throws IOException {
+  public SingularPronounResolver(String projectName, ResolverMode m,
+                                 NonReferentialResolver nonReferentialResolver) throws IOException {
     super(projectName, "pmodel", m, 30,nonReferentialResolver);
     this.numSentencesBack = 2;
   }
@@ -48,7 +49,8 @@ public class SingularPronounResolver extends MaxentResolver {
   public boolean canResolve(MentionContext mention) {
     //System.err.println("MaxentSingularPronounResolver.canResolve: ec= ("+mention.id+") "+ mention.toText());
     String tag = mention.getHeadTokenTag();
-    return (tag != null && tag.startsWith("PRP") && ResolverUtils.singularThirdPersonPronounPattern.matcher(mention.getHeadTokenText()).matches());
+    return tag != null && tag.startsWith("PRP")
+        && ResolverUtils.singularThirdPersonPronounPattern.matcher(mention.getHeadTokenText()).matches();
   }
 
   @Override
@@ -109,7 +111,8 @@ public class SingularPronounResolver extends MaxentResolver {
     for (Iterator<MentionContext> ei = entity.getMentions(); ei.hasNext();) {
       MentionContext entityMention = ei.next();
       String tag = entityMention.getHeadTokenTag();
-      if (tag != null && tag.startsWith("PRP") && ResolverUtils.singularThirdPersonPronounPattern.matcher(mention.getHeadTokenText()).matches()) {
+      if (tag != null && tag.startsWith("PRP")
+          && ResolverUtils.singularThirdPersonPronounPattern.matcher(mention.getHeadTokenText()).matches()) {
         if (mentionGender == null) { //lazy initialization
           mentionGender = ResolverUtils.getPronounGender(mention.getHeadTokenText());
         }
@@ -125,7 +128,10 @@ public class SingularPronounResolver extends MaxentResolver {
   @Override
   protected boolean outOfRange(MentionContext mention, DiscourseEntity entity) {
     MentionContext cec = entity.getLastExtent();
-    //System.err.println("MaxentSingularPronounresolve.outOfRange: ["+entity.getLastExtent().toText()+" ("+entity.getId()+")] ["+mention.toText()+" ("+mention.getId()+")] entity.sentenceNumber=("+entity.getLastExtent().getSentenceNumber()+")-mention.sentenceNumber=("+mention.getSentenceNumber()+") > "+numSentencesBack);
+    //System.err.println("MaxentSingularPronounresolve.outOfRange: ["+entity.getLastExtent().toText()
+    // +" ("+entity.getId()+")] ["+mention.toText()+" ("+mention.getId()+")] entity.sentenceNumber=("
+    // +entity.getLastExtent().getSentenceNumber()+")-mention.sentenceNumber=("
+    // +mention.getSentenceNumber()+") > "+numSentencesBack);
     return (mention.getSentenceNumber() - cec.getSentenceNumber() > numSentencesBack);
   }
 }

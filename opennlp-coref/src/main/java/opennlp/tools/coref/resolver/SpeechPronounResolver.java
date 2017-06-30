@@ -36,7 +36,8 @@ public class SpeechPronounResolver extends MaxentResolver {
     preferFirstReferent = true;
   }
 
-  public SpeechPronounResolver(String projectName, ResolverMode m, NonReferentialResolver nrr) throws IOException {
+  public SpeechPronounResolver(String projectName, ResolverMode m, NonReferentialResolver nrr)
+      throws IOException {
     super(projectName,"fmodel", m, 30,nrr);
     showExclusions = false;
     preferFirstReferent = true;
@@ -79,7 +80,8 @@ public class SpeechPronounResolver extends MaxentResolver {
 
   public boolean canResolve(MentionContext mention) {
     String tag = mention.getHeadTokenTag();
-    boolean fpp = tag != null && tag.startsWith("PRP") && ResolverUtils.speechPronounPattern.matcher(mention.getHeadTokenText()).matches();
+    boolean fpp = tag != null && tag.startsWith("PRP")
+        && ResolverUtils.speechPronounPattern.matcher(mention.getHeadTokenText()).matches();
     boolean pn = tag != null && tag.startsWith("NNP");
     return (fpp || pn);
   }
@@ -104,22 +106,22 @@ public class SpeechPronounResolver extends MaxentResolver {
         return !canResolve(cec);
       }
     }
-    else if (mention.getHeadTokenTag().startsWith("PRP")){ // mention is a speech pronoun
+    else if (mention.getHeadTokenTag().startsWith("PRP")) { // mention is a speech pronoun
       // cec can be either a speech pronoun or a propernoun
       if (cec.getHeadTokenTag().startsWith("NNP")) {
         //exclude antecedents not in the same sentence when they are not pronoun
         return (mention.getSentenceNumber() - cec.getSentenceNumber() != 0);
       }
-      else if (cec.getHeadTokenTag().startsWith("PRP")){
+      else if (cec.getHeadTokenTag().startsWith("PRP")) {
         return false;
       }
       else {
-        System.err.println("Unexpected candidate exluded: "+cec.toText());
+        System.err.println("Unexpected candidate exluded: " + cec.toText());
         return true;
       }
     }
     else {
-      System.err.println("Unexpected mention exluded: "+mention.toText());
+      System.err.println("Unexpected mention exluded: " + mention.toText());
       return true;
     }
   }

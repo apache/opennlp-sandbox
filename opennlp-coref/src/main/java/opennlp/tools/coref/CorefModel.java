@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package opennlp.tools.coref;
 
 import java.io.BufferedReader;
@@ -26,11 +25,10 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.zip.GZIPInputStream;
-import opennlp.tools.ml.maxent.io.BinaryGISModelReader;
-//import opennlp.maxent.io.BinaryGISModelReader;
-//import opennlp.model.AbstractModel;
-import opennlp.tools.ml.model.AbstractModel;
+
 import opennlp.tools.dictionary.Dictionary;
+import opennlp.tools.ml.maxent.io.BinaryGISModelReader;
+import opennlp.tools.ml.model.AbstractModel;
 import opennlp.tools.util.StringList;
 import opennlp.tools.util.model.BaseModel;
 
