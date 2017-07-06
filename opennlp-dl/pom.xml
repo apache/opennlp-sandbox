@@ -26,7 +26,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <nd4j.version>0.7.2</nd4j.version>
+    <nd4j.version>0.8.1-SNAPSHOT</nd4j.version>
   </properties>
 
   <dependencies>
@@ -37,17 +37,24 @@
       </dependency>
 
       <dependency>
+          <groupId>org.nd4j</groupId>
+          <!-- artifactId>nd4j-native-platform</artifactId -->
+          <artifactId>nd4j-cuda-8.0-platform</artifactId>
+          <version>${nd4j.version}</version>
+      </dependency>
+
+      <dependency>
           <groupId>org.deeplearning4j</groupId>
           <artifactId>deeplearning4j-core</artifactId>
           <version>${nd4j.version}</version>
       </dependency>
-
 
       <dependency>
           <groupId>org.deeplearning4j</groupId>
           <artifactId>deeplearning4j-nlp</artifactId>
           <version>${nd4j.version}</version>
       </dependency>
+
       <dependency>
           <groupId>org.slf4j</groupId>
           <artifactId>slf4j-simple</artifactId>

@@ -15,17 +15,21 @@ package opennlp.tools.dl;/*
  * limitations under the License.
  */
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -58,11 +62,11 @@ import opennlp.tools.util.Span;
 public class NameFinderDL implements TokenNameFinder {
 
   private final MultiLayerNetwork network;
-  private final WordVectors wordVectors;
+  private final Map<String, double[]> wordVectors;
   private int windowSize;
   private String[] labels;
 
-  public NameFinderDL(MultiLayerNetwork network, WordVectors wordVectors, int windowSize,
+  public NameFinderDL(MultiLayerNetwork network, Map<String, double[]> wordVectors, int windowSize,
                       String[] labels) {
     this.network = network;
     this.wordVectors = wordVectors;
@@ -70,27 +74,28 @@ public class NameFinderDL implements TokenNameFinder {
     this.labels = labels;
   }
 
-  static List<INDArray> mapToFeatureMatrices(WordVectors wordVectors, String[] tokens, int windowSize) {
+  static List<INDArray> mapToFeatureMatrices(Map<String, double[]> wordVectors, String[] tokens, int windowSize) {
 
     List<INDArray> matrices = new ArrayList<>();
 
-    // TODO: Dont' hard code word vector dimension ...
-
     for (int i = 0; i < tokens.length; i++) {
-      INDArray features = Nd4j.create(1, 300, windowSize);
+      double[][] vectorMatrix = new double[5][300];
       for (int vectorIndex = 0; vectorIndex < windowSize; vectorIndex++) {
         int tokenIndex = i + vectorIndex - ((windowSize - 1) / 2);
         if (tokenIndex >= 0 && tokenIndex < tokens.length) {
           String token = tokens[tokenIndex];
-          double[] wv = wordVectors.getWordVector(token);
+          double[] wv = wordVectors.get(token);
           if (wv != null) {
-            INDArray vector = wordVectors.getWordVectorMatrix(token);
-            features.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.all(),
-                NDArrayIndex.point(vectorIndex)}, vector);
+            vectorMatrix[vectorIndex] = wv;
           }
         }
       }
-      matrices.add(features);
+
+      INDArray features2 = Nd4j.create(1, 300, windowSize);
+      features2.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.all()},
+          Nd4j.create(vectorMatrix).transpose());
+
+      matrices.add(features2);
     }
 
     return matrices;
@@ -153,7 +158,7 @@ public class NameFinderDL implements TokenNameFinder {
   public void clearAdaptiveData() {
   }
 
-  public static MultiLayerNetwork train(WordVectors wordVectors, ObjectStream<NameSample> samples,
+  public static MultiLayerNetwork train(Map<String, double[]> wordVectors, ObjectStream<NameSample> samples,
                                         int epochs, int windowSize, String[] labels) throws IOException {
     int vectorSize = 300;
     int layerSize = 256;
@@ -191,6 +196,27 @@ public class NameFinderDL implements TokenNameFinder {
     return net;
   }
 
+  public static Map<String, double[]> loadGloveVectors(InputStream in) throws IOException {
+    Map<String, double[]> wordVectors = new HashMap<>();
+
+    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+
+    String line;
+    while ((line = reader.readLine()) != null) {
+      String[] parts = line.split(" ");
+
+      double[] vector = new double[parts.length - 1];
+
+      for (int i = 1; i < parts.length; i++) {
+        vector[i - 1] = Double.parseDouble(parts[i]);
+      }
+
+      wordVectors.put(parts[0], vector);
+    }
+
+    return wordVectors;
+  }
+
   public static void main(String[] args) throws Exception {
     if (args.length != 3) {
       System.out.println("Usage: trainFile testFile gloveTxt");
@@ -202,8 +228,9 @@ public class NameFinderDL implements TokenNameFinder {
     };
 
     System.out.print("Loading vectors ... ");
-    WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(
-        new File(args[2]));
+    Map<String, double[]> wordVectors = loadGloveVectors(new FileInputStream(
+        new File(args[2])));
+
     System.out.println("Done");
 
     int windowSize = 5;

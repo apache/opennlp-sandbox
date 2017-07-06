@@ -21,9 +21,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
-import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -40,13 +40,14 @@ public class NameSampleDataSetIterator implements DataSetIterator {
 
   private static class NameSampleToDataSetStream extends FilterObjectStream<NameSample, DataSet> {
 
-    private final WordVectors wordVectors;
+    private final Map<String, double[]> wordVectors;
     private final String[] labels;
     private int windowSize;
 
     private Iterator<DataSet> dataSets = Collections.emptyListIterator();
 
-    NameSampleToDataSetStream(ObjectStream<NameSample> samples, WordVectors wordVectors, int windowSize, String[] labels) {
+    NameSampleToDataSetStream(ObjectStream<NameSample> samples, Map<String, double[]> wordVectors,
+                              int windowSize, String[] labels) {
       super(samples);
       this.wordVectors = wordVectors;
       this.windowSize = windowSize;
@@ -101,7 +102,7 @@ public class NameSampleDataSetIterator implements DataSetIterator {
 
   private final ObjectStream<DataSet> samples;
 
-  NameSampleDataSetIterator(ObjectStream<NameSample> samples, WordVectors wordVectors, int windowSize,
+  NameSampleDataSetIterator(ObjectStream<NameSample> samples, Map<String, double[]> wordVectors, int windowSize,
                             String labels[]) throws IOException {
     this.windowSize = windowSize;
     this.labels = labels;
@@ -109,9 +110,7 @@ public class NameSampleDataSetIterator implements DataSetIterator {
     this.samples = new NameSampleToDataSetStream(samples, wordVectors, windowSize, labels);
 
     int total = 0;
-
-    DataSet sample;
-    while ((sample = this.samples.read()) != null) {
+    while (samples.read() != null) {
       total++;
     }
 
