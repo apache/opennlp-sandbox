@@ -18,6 +18,7 @@
  */
 package opennlp.tools.dl;
 
+import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -26,11 +27,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -52,6 +49,8 @@ import java.util.Map;
  *    glove = new GlobalVectors(stream, vocabSize);
  * }
  * </pre>
+ *
+ * @author Thamme Gowda (thammegowda@apache.org)
  *
  */
 public class GlobalVectors {
@@ -168,5 +167,33 @@ public class GlobalVectors {
             features.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.point(j)}, vector);
         }
         return features;
+    }
+
+    public void writeOut(OutputStream stream, boolean closeStream) throws IOException {
+        writeOut(stream, "%.5f", closeStream);
+    }
+
+    public void writeOut(OutputStream stream,
+                         String floatPrecisionFormatString, boolean closeStream) throws IOException {
+        if (!Character.isWhitespace(floatPrecisionFormatString.charAt(0))) {
+            floatPrecisionFormatString = " " + floatPrecisionFormatString;
+        }
+        LOG.info("Writing {} vectors out, float precision {}", idToWord.size(), floatPrecisionFormatString);
+
+        PrintWriter out = new PrintWriter(stream);
+        try {
+            for (int i = 0; i < idToWord.size(); i++) {
+                out.printf("%s", idToWord.get(i));
+                INDArray row = embeddings.getRow(i);
+                for (int j = 0; j < vectorSize; j++) {
+                    out.printf(floatPrecisionFormatString, row.getDouble(j));
+                }
+                out.println();
+            }
+        } finally {
+            if (closeStream){
+                IOUtils.closeQuietly(out);
+            } // else dont close because, closing the print writer also closes the inner stream
+        }
     }
 }

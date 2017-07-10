@@ -82,9 +82,9 @@ import java.util.function.Function;
  * </code>
  *
  * @see GlobalVectors
- * @see GloveRNNTextClassifier
+ * @see NeuralDocCat
  * <br/>
- * Contributors: Thamme Gowda (thammegowda@apache.org)
+ * @author Thamme Gowda (thammegowda@apache.org)
  *
  */
 public class DataReader implements DataSetIterator {
