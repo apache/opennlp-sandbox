@@ -236,11 +236,6 @@ public class NeuralDocCatTrainer {
      * </pre>
      */
     public static void main(String[] argss) throws CmdLineException, IOException {
-        argss = ("-trainDir /Users/tg/work/datasets/aclImdb-tiny/train " +
-                "-glovesPath /Users/tg/work/datasets/glove.6B/glove.6B.50d.txt " +
-                "-labels pos neg " +
-                "-lr 0.1 -nEpochs 1 " +
-                "-modelPath neural-doc-cat.zip").split(" ");
         Args args = new Args();
         CmdLineParser parser = new CmdLineParser(args);
         try {
