@@ -1,11 +1,11 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "Stack for running OpenNLP testing.",
+  "Description": "Stack for running OpenNLP testing. Licensed under the ASLv2.",
   "Parameters": {
     "InstanceType": {
       "Description": "EC2 instance type.",
       "Type": "String",
-      "Default": "r4.xlarge"
+      "Default": "m4.xlarge"
     },
     "Image": {
       "Description": "The base AMI.",
@@ -16,6 +16,20 @@
       "Description": "An existing EC2 keypair.",
       "Type": "AWS::EC2::KeyPair::KeyName",
       "ConstraintDescription": "Must be the name of an existing EC2 keypair."
+    },
+    "OpenNLPDataOnS3": {
+      "Description": "The location of the OpenNLP evaluation test data on S3.",
+      "Type": "String",
+      "ConstraintDescription": "s3://bucket-name/opennlp-data.zip"
+    },
+    "NotificationsEmail": {
+      "Description": "Email address to receive notifications.",
+      "Type": "String"
+    },
+    "SSHCIDR": {
+      "Description": "IP to allow SSH.",
+      "Type": "String",
+      "Default": "0.0.0.0/0"
     }
   },
   "Resources": {
@@ -23,6 +37,8 @@
       "Type": "AWS::EC2::VPC",
       "Properties": {
         "CidrBlock": "10.0.0.0/16",
+        "EnableDnsSupport": true,
+        "EnableDnsHostnames": true,
         "Tags": [
           {
             "Key": "Application",
@@ -36,10 +52,8 @@
     "Subnet": {
       "Type": "AWS::EC2::Subnet",
       "Properties": {
-        "VpcId": {
-          "Ref": "VPC"
-        },
         "CidrBlock": "10.0.0.0/24",
+        "MapPublicIpOnLaunch": true,
         "Tags": [
           {
             "Key": "Application",
@@ -47,7 +61,10 @@
               "Ref": "AWS::StackId"
             }
           }
-        ]
+        ],
+        "VpcId": {
+          "Ref": "VPC"
+        }
       }
     },
     "InternetGateway": {
@@ -114,43 +131,107 @@
         }
       }
     },
-    "NetworkAcl": {
-      "Type": "AWS::EC2::NetworkAcl",
-      "Properties": {
-        "VpcId": {
-          "Ref": "VPC"
-        },
-        "Tags": [
-          {
-            "Key": "Application",
-            "Value": {
-              "Ref": "AWS::StackId"
-            }
-          }
-        ]
-      }
-    },
     "InstanceSecurityGroup": {
       "Type": "AWS::EC2::SecurityGroup",
       "Properties": {
-        "VpcId": {
-          "Ref": "VPC"
-        },
         "GroupDescription": "Enable SSH access via port 22",
         "SecurityGroupIngress": [
           {
             "IpProtocol": "tcp",
             "FromPort": "22",
             "ToPort": "22",
-            "CidrIp": "0.0.0.0/0"
+            "CidrIp": {
+              "Ref": "SSHCIDR"
+            }
+          }
+        ],
+        "VpcId": {
+          "Ref": "VPC"
+        }
+      }
+    },
+    "RolePolicies": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "root",
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "s3:*",
+              "Resource": "*"
+            },
+            {
+              "Action": [
+                "sns:*"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            }
+          ]
+        },
+        "Roles": [
+          {
+            "Ref": "InstanceRole"
           }
         ]
+      }
+    },
+    "InstanceRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "ec2.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Path": "/"
+      }
+    },
+    "InstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          {
+            "Ref": "InstanceRole"
+          }
+        ]
+      }
+    },
+    "SNSTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "Subscription": [
+          {
+            "Endpoint": {
+              "Ref": "NotificationsEmail"
+            },
+            "Protocol": "email"
+          }
+        ],
+        "TopicName": "OpenNLP-Notification"
       }
     },
     "OpenNLPInstance": {
       "Type": "AWS::EC2::Instance",
       "DependsOn": "AttachGateway",
       "Properties": {
+        "IamInstanceProfile": {
+          "Ref": "InstanceProfile"
+        },
         "ImageId": {
           "Ref": "Image"
         },
@@ -159,6 +240,14 @@
         },
         "KeyName": {
           "Ref": "KeyName"
+        },
+        "SecurityGroupIds": [
+          {
+            "Ref": "InstanceSecurityGroup"
+          }
+        ],
+        "SubnetId": {
+          "Ref": "Subnet"
         },
         "Tags": [
           {
@@ -186,8 +275,13 @@
                 "# Get OpenNLP\n",
                 "git clone https://github.com/apache/opennlp.git\n",
                 "mv opennlp /opt/\n",
+                "sed -i 's/TOPICARNPARAM/", {"Ref": "SNSTopic"}, "/g' /opt/notify.sh\n",
                 "mkdir /opt/opennlp-data\n",
-                "aws s3 cp s3://bucket/opennlp-data /opt/opennlp-data --recursive\n"
+                "aws s3 cp ",
+                {
+                  "Ref": "OpenNLPDataOnS3"
+                },
+                " /opt/opennlp-data --recursive\n"
               ]
             ]
           }
@@ -195,5 +289,15 @@
       }
     }
   },
-  "Outputs": {}
+  "Outputs": {
+    "Instance": {
+      "Description": "The instance public IP.",
+      "Value": {
+        "Fn::GetAtt": [
+          "OpenNLPInstance",
+          "PublicDnsName"
+        ]
+      }
+    }
+  }
 }

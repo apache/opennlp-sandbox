@@ -18,11 +18,8 @@
 # Configure these values as desired.
 
 # Notifications via SNS.
-TOPIC_ARN="arn:aws:sns:us-east-1:XXXXXXXXXXXX:opennlp-notification"
+TOPIC_ARN="TOPICARNPARAM"
 SUBJECT="OpenNLP Notification"
-
-# Upload of build output to S3. (Uncomment below to enable.)
-BUCKET=""
 
 # Received from the training scripts.
 MESSAGE=$1
@@ -30,7 +27,3 @@ ACTION=$2
 
 # Publish the message to SNS.
 aws sns publish --topic-arn "$TOPIC_ARN" --message "$MESSAGE" --subject "$SUBJECT"
-
-# Upload the build output to S3.
-TIMESTAMP=`date +"%T"`
-#aws s3 cp nohup.out s3://$BUCKET/$2-output-$TIMESTAMP.txt
