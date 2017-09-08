@@ -1,0 +1,60 @@
+{
+  "variables": {},
+  "builders": [
+    {
+      "type": "amazon-ebs",
+      "region": "us-east-1",
+      "source_ami": "ami-cd0f5cb6",
+      "instance_type": "m3.medium",
+      "ssh_username": "ubuntu",
+      "ami_name": "OpenNLP Testing {{timestamp}}",
+      "tags": {
+        "Name": "OpenNLP Testing"
+      }
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "notify.sh",
+      "destination": "/tmp/"
+    },
+    {
+      "type": "file",
+      "source": "run-eval-tests.sh",
+      "destination": "/tmp/"
+    },
+    {
+      "type": "file",
+      "source": "run-high-memory-tests.sh",
+      "destination": "/tmp/"
+    },
+    {
+      "type": "file",
+      "source": "opennlp-data.zip",
+      "destination": "/tmp/"
+    },
+    {
+      "type": "shell",
+      "inline": [
+        "sudo apt-get update",
+        "sudo apt-get install -y openjdk-8-jdk maven git awscli unzip",
+        "sudo mv /tmp/*.sh /opt/",
+        "sudo chown ubuntu:ubuntu /opt/*.sh",
+        "sudo chmod +x /opt/*.sh",
+        "sudo mkdir /opt/opennlp-data",
+        "sudo chown ubuntu:ubuntu /opt/opennlp-data",
+        "unzip /tmp/opennlp-data.zip -d /opt/opennlp-data",
+        "tar -xzf /opt/opennlp-data/ontonotes4/data.tar.gz -C /opt/opennlp-data/ontonotes4/",
+        "sudo sed -i 's/PermitRootLogin without-password/PermitRootLogin forced-commands-only/g' /etc/ssh/sshd_config",
+        "sudo passwd -l root",
+        "sudo shred -n 50 -fuzv /etc/ssh/*_key /etc/ssh/*_key.pub",
+        "sudo find /root/.ssh -type f -exec shred -n 30 -z -u {} \\;",
+        "sudo find /home/ubuntu/.ssh -type f -exec shred -n 30 -z -u {} \\;",
+        "sudo shred -n 50 -fuzv /var/log/wtmp",
+        "sudo shred -n 50 -fuzv /var/log/btmp",
+        "sudo shred -n 50 -fuzv /var/log/lastlog"
+      ]
+    }
+  ]
+}
