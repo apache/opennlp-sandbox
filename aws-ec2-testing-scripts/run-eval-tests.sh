@@ -15,5 +15,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-rm -f ./nohup.out
-nohup sh -c 'cd opennlp && mvn clean install -Peval-tests -DOPENNLP_DATA_DIR=/opt/opennlp-data/ && /opt/notify.sh "eval-tests complete" "eval-tests"' &
+nohup sh -c 'cd /opt/opennlp && mvn clean install -l /opt/build.log -Peval-tests -DOPENNLP_DATA_DIR=/opt/opennlp-data/  && /opt/notify.sh "OpenNLP eval-tests complete"' &

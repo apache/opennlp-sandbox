@@ -8,19 +8,14 @@
       "Default": "m4.xlarge"
     },
     "Image": {
-      "Description": "The base AMI.",
+      "Description": "The OpenNLP testing AMI made with the Packer script.",
       "Type": "String",
-      "Default": "ami-80861296"
+      "Default": "ami-6191821a"
     },
     "KeyName": {
       "Description": "An existing EC2 keypair.",
       "Type": "AWS::EC2::KeyPair::KeyName",
       "ConstraintDescription": "Must be the name of an existing EC2 keypair."
-    },
-    "OpenNLPDataOnS3": {
-      "Description": "The location of the OpenNLP evaluation test data on S3.",
-      "Type": "String",
-      "ConstraintDescription": "s3://bucket-name/opennlp-data.zip"
     },
     "NotificationsEmail": {
       "Description": "Email address to receive notifications.",
@@ -30,6 +25,17 @@
       "Description": "IP to allow SSH.",
       "Type": "String",
       "Default": "0.0.0.0/0"
+    },
+    "Branch": {
+      "Description": "The OpenNLP git branch or tag to test.",
+      "Type": "String",
+      "Default": "opennlp-1.8.2"
+    },
+    "Tests": {
+      "Description": "The OpenNLP tests to run.",
+      "Type": "String",
+      "AllowedValues": ["run-eval-tests.sh", "run-high-memory-tests.sh"],
+      "Default": "run-eval-tests.sh"
     }
   },
   "Resources": {
@@ -221,6 +227,19 @@
             },
             "Protocol": "email"
           }
+        ]
+      }
+    },
+    "SNSTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "Subscription": [
+          {
+            "Endpoint": {
+              "Ref": "NotificationsEmail"
+            },
+            "Protocol": "email"
+          }
         ],
         "TopicName": "OpenNLP-Notification"
       }
@@ -267,21 +286,17 @@
               "",
               [
                 "#!/bin/bash -xe\n",
-                "apt-get update && sudo apt-get -y dist-upgrade\n",
-                "apt-get install -y openjdk-8-jdk git maven awscli\n",
-                "# Get the scripts\n",
-                "git clone https://github.com/apache/opennlp-sandbox.git\n",
-                "mv opennlp-sandbox/aws-ec2-testing-scripts/* /opt/\n",
-                "# Get OpenNLP\n",
+                "# Clone OpenNLP.\n",
                 "git clone https://github.com/apache/opennlp.git\n",
                 "mv opennlp /opt/\n",
+                "chown ubuntu:ubuntu /opt/ -R\n",
+                "# Checkout the branch or tag that we want to test.\n",
+                "cd /opt/opennlp\n",
+                "git checkout ", {"Ref": "Branch"}, "\n",
                 "sed -i 's/TOPICARNPARAM/", {"Ref": "SNSTopic"}, "/g' /opt/notify.sh\n",
-                "mkdir /opt/opennlp-data\n",
-                "aws s3 cp ",
-                {
-                  "Ref": "OpenNLPDataOnS3"
-                },
-                " /opt/opennlp-data --recursive\n"
+                "# Start the tests\n",
+                "cd /opt\n",
+                "./", {"Ref": "Tests"}, "\n"
               ]
             ]
           }

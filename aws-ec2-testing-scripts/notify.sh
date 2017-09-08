@@ -15,15 +15,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Configure these values as desired.
-
-# Notifications via SNS.
+SUBJECT=$1
 TOPIC_ARN="TOPICARNPARAM"
-SUBJECT="OpenNLP Notification"
+LOG_FILE="/opt/build.log"
 
-# Received from the training scripts.
-MESSAGE=$1
-ACTION=$2
+# The max size for a SNS body is 256KB.
+# We'll round down a bit to safely stay under that limit.
+tail -c 200000 $LOG_FILE > /tmp/subset.log
+
+OUTCOME="SUCCESS"
+
+# Look to see if the build failed.
+if grep -q 'BUILD FAILURE' "$LOG_FILE"; then
+  OUTCOME="FAILURE"
+fi
 
 # Publish the message to SNS.
-aws sns publish --topic-arn "$TOPIC_ARN" --message "$MESSAGE" --subject "$SUBJECT"
+aws sns publish \
+  --region us-east-1 \
+  --topic-arn "$TOPIC_ARN" \
+  --subject "$OUTCOME - $SUBJECT" \
+  --message file:///tmp/subset.log
