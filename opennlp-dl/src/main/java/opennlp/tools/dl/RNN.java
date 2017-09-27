@@ -50,7 +50,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 public class RNN {
 
   // hyperparameters
-  protected final float learningRate; // size of hidden layer of neurons
+  protected float learningRate;
   protected final int seqLength; // no. of steps to unroll the RNN for
   protected final int hiddenLayerSize;
   protected final int epochs;
@@ -60,7 +60,8 @@ public class RNN {
   protected final Map<String, Integer> charToIx;
   protected final Map<Integer, String> ixToChar;
   protected final List<String> data;
-  private final static double reg = 1e-8;
+  private final static double eps = 1e-8;
+  private final static double decay = 0.9;
 
   // model parameters
   private final INDArray wxh; // input to hidden
@@ -171,23 +172,23 @@ public class RNN {
         System.out.printf("iter %d, loss: %f\n", n, smoothLoss); // print progress
       }
 
-      if (n% batch == 0) {
+      if (n % batch == 0) {
 
-        // perform parameter update with Adagrad
-        mWxh.addi(dWxh.mul(dWxh));
-        wxh.subi((dWxh.mul(learningRate)).div(Transforms.sqrt(mWxh).add(reg)));
+        // perform parameter update with RMSprop
+        mWxh = mWxh.mul(decay).add(1 - decay).mul((dWxh).mul(dWxh));
+        wxh.subi(dWxh.mul(learningRate).div(Transforms.sqrt(mWxh).add(eps)));
 
-        mWhh.addi(dWhh.mul(dWhh));
-        whh.subi(dWhh.mul(learningRate).div(Transforms.sqrt(mWhh).add(reg)));
+        mWhh = mWhh.mul(decay).add(1 - decay).mul((dWhh).mul(dWhh));
+        whh.subi(dWhh.mul(learningRate).div(Transforms.sqrt(mWhh).add(eps)));
 
-        mWhy.addi(dWhy.mul(dWhy));
-        why.subi(dWhy.mul(learningRate).div(Transforms.sqrt(mWhy).add(reg)));
+        mWhy = mWhy.mul(decay).add(1 - decay).mul((dWhy).mul(dWhy));
+        why.subi(dWhy.mul(learningRate).div(Transforms.sqrt(mWhy).add(eps)));
 
-        mbh.addi(dbh.mul(dbh));
-        bh.subi(dbh.mul(learningRate).div(Transforms.sqrt(mbh).add(reg)));
+        mbh = mbh.mul(decay).add(1 - decay).mul((dbh).mul(dbh));
+        bh.subi(dbh.mul(learningRate).div(Transforms.sqrt(mbh).add(eps)));
 
-        mby.addi(dby.mul(dby));
-        by.subi(dby.mul(learningRate).div(Transforms.sqrt(mby).add(reg)));
+        mby = mby.mul(decay).add(1 - decay).mul((dby).mul(dby));
+        by.subi(dby.mul(learningRate).div(Transforms.sqrt(mby).add(eps)));
       }
 
       p += seqLength; // move data pointer
@@ -245,7 +246,7 @@ public class RNN {
         ps = init(inputs.length(), pst.shape());
       }
       ps.putRow(t, pst);
-      loss += -Math.log(pst.getDouble(targets.getInt(t))); // softmax (cross-entropy loss)
+      loss += -Math.log(pst.getDouble(targets.getInt(t),0)); // softmax (cross-entropy loss)
     }
 
     // backward pass: compute gradients going backwards
@@ -286,7 +287,7 @@ public class RNN {
 
     INDArray x = Nd4j.zeros(vocabSize, 1);
     x.putScalar(seedIx, 1);
-    int sampleSize = 2 * seqLength;
+    int sampleSize = 144;
     INDArray ixes = Nd4j.create(sampleSize);
 
     INDArray h = hPrev.dup();
@@ -300,13 +301,16 @@ public class RNN {
       for (int pi = 0; pi < vocabSize; pi++) {
         d.add(new Pair<>(pi, pm.getDouble(0, pi)));
       }
-      EnumeratedDistribution<Integer> distribution = new EnumeratedDistribution<>(d);
+      try {
+        EnumeratedDistribution<Integer> distribution = new EnumeratedDistribution<>(d);
 
-      int ix = distribution.sample();
+        int ix = distribution.sample();
 
-      x = Nd4j.zeros(vocabSize, 1);
-      x.putScalar(ix, 1);
-      ixes.putScalar(t, ix);
+        x = Nd4j.zeros(vocabSize, 1);
+        x.putScalar(ix, 1);
+        ixes.putScalar(t, ix);
+      } catch (Exception e) {
+      }
     }
 
     return getSampleString(ixes);
@@ -333,14 +337,14 @@ public class RNN {
   @Override
   public String toString() {
     return getClass().getName() + "{" +
-            "learningRate=" + learningRate +
-            ", seqLength=" + seqLength +
-            ", hiddenLayerSize=" + hiddenLayerSize +
-            ", epochs=" + epochs +
-            ", vocabSize=" + vocabSize +
-            ", useChars=" + useChars +
-            ", batch=" + batch +
-            '}';
+        "learningRate=" + learningRate +
+        ", seqLength=" + seqLength +
+        ", hiddenLayerSize=" + hiddenLayerSize +
+        ", epochs=" + epochs +
+        ", vocabSize=" + vocabSize +
+        ", useChars=" + useChars +
+        ", batch=" + batch +
+        '}';
   }
 
   public void serialize(String prefix) throws IOException {

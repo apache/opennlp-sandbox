@@ -18,7 +18,6 @@
  */
 package opennlp.tools.dl;
 
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
@@ -64,22 +63,15 @@ public class RNNTest {
   @Parameterized.Parameters
   public static Collection<Object[]> data() {
     return Arrays.asList(new Object[][] {
-        {1e-1f, 15, 20, 5},
+        {1e-3f, 100, 300, 500},
     });
   }
 
   @Test
   public void testVanillaCharRNNLearn() throws Exception {
-    RNN rnn = new RNN(learningRate, seqLength, hiddenLayerSize, epochs, text, 5, true);
+    RNN rnn = new RNN(learningRate, seqLength, hiddenLayerSize, epochs, text, 10, true);
     evaluate(rnn, true);
     rnn.serialize("target/crnn-weights-");
-  }
-
-  @Test
-  public void testVanillaWordRNNLearn() throws Exception {
-    RNN rnn = new RNN(learningRate, seqLength, hiddenLayerSize, epochs, text, 1, false);
-    evaluate(rnn, true);
-    rnn.serialize("target/wrnn-weights-");
   }
 
   private void evaluate(RNN rnn, boolean checkRatio) {

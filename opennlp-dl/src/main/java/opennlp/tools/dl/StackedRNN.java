@@ -55,8 +55,8 @@ public class StackedRNN extends RNN {
   private final INDArray bh2; // hidden2 bias
   private final INDArray by; // output bias
 
-  private final double eps = 1e-4;
-  private final double decay = 0.9;
+  private final double eps = 1e-8;
+  private final double decay = 0.95;
   private final boolean rmsProp;
 
   private INDArray hPrev = null; // memory state
@@ -137,9 +137,14 @@ public class StackedRNN extends RNN {
 
       // forward seqLength characters through the net and fetch gradient
       double loss = lossFun(inputs, targets, dWxh, dWhh, dWxh2, dWhh2, dWh2y, dbh, dbh2, dby);
-      smoothLoss = smoothLoss * 0.999 + loss * 0.001;
+      double newLoss = smoothLoss * 0.999 + loss * 0.001;
+
+      if (newLoss > smoothLoss) {
+        learningRate *= 0.999 ;
+      }
+      smoothLoss = newLoss;
       if (Double.isNaN(smoothLoss) || Double.isInfinite(smoothLoss)) {
-        System.out.println("loss is " + smoothLoss + " (over/underflow occured, try adjusting hyperparameters)");
+        System.out.println("loss is " + smoothLoss + "(" + loss + ") (over/underflow occurred, try adjusting hyperparameters)");
         break;
       }
       if (n % 100 == 0) {
@@ -252,7 +257,7 @@ public class StackedRNN extends RNN {
       }
       ps.putRow(t, pst);
 
-      loss += -Math.log(pst.getDouble(targets.getInt(t),0)); // softmax (cross-entropy loss)
+      loss += -Math.log(pst.getDouble(targets.getInt(t), 0)); // softmax (cross-entropy loss)
     }
 
     // backward pass: compute gradients going backwards

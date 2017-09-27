@@ -18,7 +18,6 @@
  */
 package opennlp.tools.dl;
 
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
@@ -55,7 +54,7 @@ public class StackedRNNTest {
 
   @Before
   public void setUp() throws Exception {
-    InputStream stream = getClass().getResourceAsStream("/text/sentences.txt");
+    InputStream stream = getClass().getResourceAsStream("/text/queries.txt");
     text = IOUtils.toString(stream);
     words = Arrays.asList(text.split("\\s"));
     stream.close();
@@ -64,22 +63,15 @@ public class StackedRNNTest {
   @Parameterized.Parameters
   public static Collection<Object[]> data() {
     return Arrays.asList(new Object[][] {
-        {1e-1f, 15, 20, 5},
+        {1e-3f, 100, 300, 500},
     });
   }
 
   @Test
   public void testStackedCharRNNLearn() throws Exception {
-    RNN rnn = new StackedRNN(learningRate, seqLength, hiddenLayerSize, epochs, text, 5, true, true);
+    RNN rnn = new StackedRNN(learningRate, seqLength, hiddenLayerSize, epochs, text, 20, true, true);
     evaluate(rnn, true);
     rnn.serialize("target/scrnn-weights-");
-  }
-
-  @Test
-  public void testStackedWordRNNLearn() throws Exception {
-    RNN rnn = new StackedRNN(learningRate, seqLength, hiddenLayerSize, epochs, text, 1, false, false);
-    evaluate(rnn, true);
-    rnn.serialize("target/swrnn-weights-");
   }
 
   private void evaluate(RNN rnn, boolean checkRatio) {
