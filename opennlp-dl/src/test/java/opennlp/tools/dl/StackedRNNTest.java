@@ -54,7 +54,7 @@ public class StackedRNNTest {
 
   @Before
   public void setUp() throws Exception {
-    InputStream stream = getClass().getResourceAsStream("/text/queries.txt");
+    InputStream stream = getClass().getResourceAsStream("/text/sentences.txt");
     text = IOUtils.toString(stream);
     words = Arrays.asList(text.split("\\s"));
     stream.close();
