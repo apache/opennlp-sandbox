@@ -63,7 +63,7 @@ public class RNNTest {
   @Parameterized.Parameters
   public static Collection<Object[]> data() {
     return Arrays.asList(new Object[][] {
-        {1e-3f, 100, 300, 500},
+        {1e-3f, 25, 50, 5},
     });
   }
 

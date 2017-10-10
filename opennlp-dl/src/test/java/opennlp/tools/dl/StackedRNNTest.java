@@ -63,13 +63,13 @@ public class StackedRNNTest {
   @Parameterized.Parameters
   public static Collection<Object[]> data() {
     return Arrays.asList(new Object[][] {
-        {1e-3f, 100, 300, 500},
+        {1e-2f, 25, 50, 4},
     });
   }
 
   @Test
   public void testStackedCharRNNLearn() throws Exception {
-    RNN rnn = new StackedRNN(learningRate, seqLength, hiddenLayerSize, epochs, text, 20, true, true);
+    RNN rnn = new StackedRNN(learningRate, seqLength, hiddenLayerSize, epochs, text, 10, true, true);
     evaluate(rnn, true);
     rnn.serialize("target/scrnn-weights-");
   }
