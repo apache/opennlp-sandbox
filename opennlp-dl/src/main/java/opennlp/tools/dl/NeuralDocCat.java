@@ -122,30 +122,6 @@ public class NeuralDocCat implements DocumentCategorizer {
         throw new NotImplementedException("Not implemented");
     }
 
-    @Override
-    @Deprecated
-    public double[] categorize(String documentText) {
-        throw new UnsupportedOperationException("Use the other categorize(..) method that accepts tokenized text");
-    }
-
-    @Override
-    @Deprecated
-    public Map<String, Double> scoreMap(String text) {
-        throw new UnsupportedOperationException("Use the other scoreMap(..) method that accepts tokenized text");
-    }
-
-    @Override
-    @Deprecated
-    public SortedMap<Double, Set<String>> sortedScoreMap(String text) {
-        throw new UnsupportedOperationException("Use the other sortedScoreMap(..) method that accepts tokenized text");
-    }
-    @Override
-    @Deprecated
-    public double[] categorize(String documentText, Map<String, Object> extraInformation) {
-        throw new UnsupportedOperationException("Use the other categorize(..) method that accepts tokenized text");
-    }
-
-
     public static void main(String[] argss) throws CmdLineException, IOException {
         class Args {
 

@@ -17,6 +17,7 @@ import org.kohsuke.args4j.spi.StringArrayOptionHandler;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -134,8 +135,7 @@ public class NeuralDocCatTrainer {
         //TODO: the below network params should be configurable from CLI or settings file
         //Set up network configuration
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .updater(Updater.RMSPROP) // ADAM .adamMeanDecay(0.9).adamVarDecay(0.999)
-                .rmsDecay(0.9)
+                .updater(new RmsProp(0.9)) // ADAM .adamMeanDecay(0.9).adamVarDecay(0.999)
                 .regularization(true).l2(1e-5)
                 .weightInit(WeightInit.XAVIER)
                 .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)

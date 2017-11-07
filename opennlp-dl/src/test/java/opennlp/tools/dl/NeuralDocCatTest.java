@@ -43,13 +43,14 @@ public class NeuralDocCatTest {
     args.trainDir = getClass().getResource("/ltweets").getFile();
     NeuralDocCatTrainer trainer = new NeuralDocCatTrainer(args);
     trainer.train();
-    trainer.saveModel(modelPathPrefix + ".zip");
+    String modelPath = modelPathPrefix + ".zip";
+    trainer.saveModel(modelPath);
 
     /* TODO : this fails with:
      * java.lang.AssertionError
      * at opennlp.tools.dl.GlobalVectors.<init>(GlobalVectors.java:92)
      */
-    NeuralDocCatModel neuralDocCatModel = NeuralDocCatModel.loadModel(modelPathPrefix + ".zip");
+    NeuralDocCatModel neuralDocCatModel = NeuralDocCatModel.loadModel(modelPath);
     assertNotNull(neuralDocCatModel);
 
     NeuralDocCat neuralDocCat = new NeuralDocCat(NeuralDocCatModel.loadModel(modelPathPrefix));
