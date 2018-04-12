@@ -54,10 +54,6 @@ public class SequenceTagging implements AutoCloseable {
     float[][] trans_params = new float[indexTagger.getNumberOfTags()][indexTagger.getNumberOfTags()];
     run.get(1).copyTo(trans_params);
 
-    //# iterate over the sentences because no batching in vitervi_decode
-    //for logit, sequence_length in zip(logits, sequence_lengths):
-    //List<List<Integer>> viterbi_sequences = new ArrayList<>();
-
     String[][] returnValue = new String[fd.getNumberOfSentences()][];
     for (int i=0; i < logits.length; i++) {
       //logit = logit[:sequence_length] # keep only the valid steps

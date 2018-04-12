@@ -112,45 +112,29 @@ public class Viterbi {
   }
 
   public static List<Integer> decode(float[][] score, float[][] transition_params) {
-    // trellis = np.zeros_like(score)
+
     float[][] trellis = zeros_like(score);
 
-    // backpointers = np.zeros_like(score, dtype=np.int32)
     int[][] backpointers = zeros_like(shape(score));
 
-    // trellis[0] = score[0]
     trellis[0] = score[0];
 
-    // for t in range(1, score.shape[0]):
     for (int t=1; t < score.length; t++) {
-      //v = np.expand_dims(trellis[t - 1], 1) + transition_params
       float[][] v = expand_dims_axis_one_plus_array(trellis[t - 1], transition_params);
-
-      //trellis[t] = score[t] + np.max(v, 0)
       trellis[t] = plus(score[t], max_columnwise(v));
-
-      //backpointers[t] = np.argmax(v, 0)
       backpointers[t] = argmax_columnwise(v);
     }
 
-    // viterbi = [np.argmax(trellis[-1])]
     List<Integer> viterbi = new ArrayList();
     viterbi.add(argmax(trellis[trellis.length - 1]));
 
-    // for bp in reversed(backpointers[1:]):
     for (int i=backpointers.length - 1; i >= 1; i--) {
-      // viterbi.append(bp[viterbi[-1]])
       int[] bp = backpointers[i];
       viterbi.add(bp[viterbi.get(viterbi.size() - 1)]);
     }
 
-    // viterbi.reverse()
     Collections.reverse(viterbi);
 
-    // viterbi_score = np.max(trellis[-1])
-    // float viterbi_score = max(trellis[trellis.length - 1])) not used!
-
-    // return viterbi, viterbi_score
     return viterbi;
   }
 
