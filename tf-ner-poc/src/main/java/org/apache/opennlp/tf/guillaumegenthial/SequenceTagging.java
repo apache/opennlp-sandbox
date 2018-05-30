@@ -61,14 +61,14 @@ public class SequenceTagging implements AutoCloseable {
     FeedDictionary fd = FeedDictionary.create(tokenIds);
 
     List<Tensor<?>> run = session.runner()
-            .feed("char_ids:0", fd.getCharIdsTensor())
-            .feed("dropout:0", fd.getDropoutTensor())
-            .feed("sequence_lengths:0", fd.getSentenceLengthsTensor())
-            .feed("word_ids:0", fd.getWordIdsTensor())
-            .feed("word_lengths:0", fd.getWordLengthsTensor())
-            .fetch("proj/logits", 0)
+            .feed("chars/char_ids:0", fd.getCharIdsTensor())
+            // TODO: missing in the python code ...
+            //.feed("dropout:0", fd.getDropoutTensor())
+            .feed("words/sequence_lengths:0", fd.getSentenceLengthsTensor())
+            .feed("words/word_ids:0", fd.getWordIdsTensor())
+            .feed("chars/word_lengths:0", fd.getWordLengthsTensor())
+            .fetch("logits", 0)
             .fetch("trans_params", 0).run();
-
 
     float[][][] logits = new float[fd.getNumberOfSentences()][fd.getMaxSentenceLength()][indexTagger.getNumberOfTags()];
     run.get(0).copyTo(logits);
