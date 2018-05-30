@@ -347,7 +347,7 @@ def main():
 
     write_mapping(word_dict, 'word_dict.txt')
     write_mapping(name_finder.label_dict, "label_dict.txt")
-    write_mapping(name_finder.label_dict, "char_dict.txt")
+    write_mapping(char_dict, "char_dict.txt")
 
     sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True,
                                             log_device_placement=True))
