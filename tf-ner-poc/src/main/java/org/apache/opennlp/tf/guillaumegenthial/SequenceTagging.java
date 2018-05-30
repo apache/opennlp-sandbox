@@ -62,8 +62,7 @@ public class SequenceTagging implements TokenNameFinder, AutoCloseable {
 
     List<Tensor<?>> run = session.runner()
             .feed("chars/char_ids:0", fd.getCharIdsTensor())
-            // TODO: missing in the python code ...
-            //.feed("dropout:0", fd.getDropoutTensor())
+            .feed("dropout_keep_prop:0", fd.getDropoutTensor())
             .feed("words/sequence_lengths:0", fd.getSentenceLengthsTensor())
             .feed("words/word_ids:0", fd.getWordIdsTensor())
             .feed("chars/word_lengths:0", fd.getWordLengthsTensor())
