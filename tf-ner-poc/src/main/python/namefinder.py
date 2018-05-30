@@ -174,10 +174,10 @@ class NameFinder:
 
         with tf.variable_scope("chars"):
             # shape = (batch size, max length of sentence, max length of word)
-            char_ids = tf.placeholder(tf.int32, shape=[None, None, None])
+            char_ids = tf.placeholder(tf.int32, shape=[None, None, None], name="char_ids")
 
             # shape = (batch_size, max_length of sentence)
-            word_lengths_ph = tf.placeholder(tf.int32, shape=[None, None])
+            word_lengths_ph = tf.placeholder(tf.int32, shape=[None, None], name="word_lengths")
 
             dim_char = 100
 
@@ -211,8 +211,8 @@ class NameFinder:
             char_rep = tf.reshape(output, shape=[-1, s[1], 2*char_hidden_size])
 
         with tf.variable_scope("words"):
-            token_ids = tf.placeholder(tf.int32, shape=[None, None])
-            sequence_lengths = tf.placeholder(tf.int32, shape=[None])
+            token_ids = tf.placeholder(tf.int32, shape=[None, None], name="word_ids")
+            sequence_lengths = tf.placeholder(tf.int32, shape=[None], name="sequence_lengths")
 
             # This is a hack to make it load an embedding matrix larger than 2GB
             # Don't hardcode this 300
@@ -252,12 +252,12 @@ class NameFinder:
         ntime_steps = tf.shape(context_rep)[1]
         context_rep_flat = tf.reshape(context_rep, [-1, 2*hidden_size])
         pred = tf.matmul(context_rep_flat, W) + b
-        self.logits = tf.reshape(pred, [-1, ntime_steps, ntags])
+        self.logits = tf.reshape(pred, [-1, ntime_steps, ntags], name="logits")
 
         log_likelihood, transition_params = tf.contrib.crf.crf_log_likelihood(
             self.logits, labels, sequence_lengths)
 
-        self.transition_params = transition_params
+        self.transition_params = tf.identity(transition_params, name="trans_params")
 
         loss = tf.reduce_mean(-log_likelihood)
 
