@@ -118,7 +118,7 @@ class NameFinder:
         return label_ids
 
 
-    def mini_batch(self, rev_word_dict, sentences, labels, batch_size, batch_index):
+    def mini_batch(self, rev_word_dict, char_dict, sentences, labels, batch_size, batch_index):
         begin = batch_size * batch_index
         end = min(batch_size * (batch_index + 1), len(labels))
 
@@ -154,7 +154,7 @@ class NameFinder:
 
                 word_chars = []
                 for c in rev_word_dict[word]:
-                    word_chars.append(ord(c))
+                    word_chars.append(char_dict[c]) # TODO: This fails if c is not present
 
                 sentence_word_length.append(len(word_chars))
                 word_chars = word_chars + [0] * max(max_word_length - len(word_chars), 0)
@@ -335,6 +335,7 @@ def main():
     sentences, labels, char_set = name_finder.load_data(word_dict, sys.argv[2])
     sentences_dev, labels_dev, char_set_dev = name_finder.load_data(word_dict, sys.argv[3])
 
+    char_dict = {k: v for v, k in enumerate(char_set | char_set_dev)}
 
     embedding_ph, token_ids_ph, char_ids_ph, word_lengths_ph, sequence_lengths_ph, labels_ph, train_op \
         = name_finder.create_graph(len(char_set | char_set_dev), embeddings)
@@ -356,7 +357,7 @@ def main():
 
                 # mini_batch should also return char_ids and word length ...
                 sentences_batch, chars_batch, word_length_batch, labels_batch, lengths = \
-                    name_finder.mini_batch(rev_word_dict, sentences, labels, batch_size, batch_index)
+                    name_finder.mini_batch(rev_word_dict, char_dict, sentences, labels, batch_size, batch_index)
 
                 feed_dict = {token_ids_ph:  sentences_batch, char_ids_ph: chars_batch, word_lengths_ph: word_length_batch, sequence_lengths_ph: lengths,
                              labels_ph: labels_batch}
@@ -369,6 +370,7 @@ def main():
             for batch_index in range(floor(len(sentences_dev) / batch_size)):
                 sentences_test_batch, chars_batch_test, word_length_batch_test, \
                 labels_test_batch, length_test = name_finder.mini_batch(rev_word_dict,
+                                                                        char_dict,
                                                                         sentences_dev,
                                                                         labels_dev,
                                                                         batch_size,
