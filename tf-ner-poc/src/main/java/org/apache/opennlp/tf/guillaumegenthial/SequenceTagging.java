@@ -17,18 +17,20 @@
 
 package org.apache.opennlp.tf.guillaumegenthial;
 
-import org.tensorflow.SavedModelBundle;
-import org.tensorflow.Session;
-import org.tensorflow.Tensor;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.zip.GZIPInputStream;
 
-public class SequenceTagging implements AutoCloseable {
+import org.tensorflow.SavedModelBundle;
+import org.tensorflow.Session;
+import org.tensorflow.Tensor;
 
+import opennlp.tools.namefind.BioCodec;
+import opennlp.tools.namefind.TokenNameFinder;
+import opennlp.tools.util.Span;
+
+public class SequenceTagging implements TokenNameFinder, AutoCloseable {
   private final SavedModelBundle model;
   private final Session session;
   private final WordIndexer wordIndexer;
@@ -38,18 +40,16 @@ public class SequenceTagging implements AutoCloseable {
     model = SavedModelBundle.load(config.getSavedModel(), "serve");
     session = model.session();
 
-
-    Iterator<Operation> opit = model.graph().operations();
-
     this.wordIndexer = new WordIndexer(new FileInputStream(config.getVocabWords()),
             new FileInputStream(config.getVocabChars()));
 
     this.indexTagger = new IndexTagger((new FileInputStream(config.getVocabTags())));
   }
 
-  public String[] predict(String[] sentence) {
+  @Override
+  public Span[] find(String[] sentence) {
     TokenIds tokenIds = wordIndexer.toTokenIds(sentence);
-    return predict(tokenIds)[0];
+    return new BioCodec().decode(Arrays.asList(predict(tokenIds)[0]));
   }
 
   public String[][] predict(String[][] sentences) {
@@ -87,7 +87,11 @@ public class SequenceTagging implements AutoCloseable {
   }
 
   @Override
-  public void close() throws Exception {
+  public void clearAdaptiveData() {
+  }
+
+  @Override
+  public void close() {
     session.close();
   }
 }
