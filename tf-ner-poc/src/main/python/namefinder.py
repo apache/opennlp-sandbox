@@ -410,7 +410,10 @@ def main():
             print("ACC " + str(acc))
             print("F1  " + str(f1) + "  P " + str(p) + "  R " + str(r))
 
-            # TODO: Store the model, load it with java ...
+        saver = tf.train.Saver()
+        builder = tf.saved_model.builder.SavedModelBuilder("./savedmodel")
+        builder.add_meta_graph_and_variables(sess, [tf.saved_model.tag_constants.SERVING])
+        builder.save()
 
 if __name__ == "__main__":
     main()
