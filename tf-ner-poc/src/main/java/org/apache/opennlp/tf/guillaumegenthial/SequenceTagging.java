@@ -35,11 +35,16 @@ public class SequenceTagging implements AutoCloseable {
   private final IndexTagger indexTagger;
 
   public SequenceTagging(PredictionConfiguration config) throws IOException {
-    this.model = SavedModelBundle.load(config.getSavedModel(), "serve");
-    this.session = model.session();
-    this.wordIndexer = new WordIndexer(new GZIPInputStream(new FileInputStream(config.getVocabWords())),
-            new GZIPInputStream(new FileInputStream(config.getVocabChars())));
-    this.indexTagger = new IndexTagger(new GZIPInputStream(new FileInputStream(config.getVocabTags())));
+    model = SavedModelBundle.load(config.getSavedModel(), "serve");
+    session = model.session();
+
+
+    Iterator<Operation> opit = model.graph().operations();
+
+    this.wordIndexer = new WordIndexer(new FileInputStream(config.getVocabWords()),
+            new FileInputStream(config.getVocabChars()));
+
+    this.indexTagger = new IndexTagger((new FileInputStream(config.getVocabTags())));
   }
 
   public String[] predict(String[] sentence) {
