@@ -98,9 +98,9 @@ class NameFinder:
 
             label = ["other"] * len(name_sample.tokens)
             for name in name_sample.names:
-                label[name[0]] = "B-" + name[2]
+                label[name[0]] = name[2] + "-start"
                 for i in range(name[0] + 1, name[1]):
-                    label[i] = "I-" + name[2]
+                    label[i] = name[2] + "-cont"
             sentences.append(sentence)
             labels.append(label)
 
