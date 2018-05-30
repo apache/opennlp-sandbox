@@ -323,6 +323,11 @@ def get_chunks(seq, tags):
 
     return chunks
 
+def write_mapping(tags, output_filename):
+    with open(output_filename, 'w', encoding='utf-8') as f:
+        for i, tag in enumerate(tags):
+            f.write('{}\n'.format(tag))
+
 def main():
 
     if len(sys.argv) != 5:
@@ -339,6 +344,10 @@ def main():
 
     embedding_ph, token_ids_ph, char_ids_ph, word_lengths_ph, sequence_lengths_ph, labels_ph, train_op \
         = name_finder.create_graph(len(char_set | char_set_dev), embeddings)
+
+    write_mapping(word_dict, 'word_dict.txt')
+    write_mapping(name_finder.label_dict, "label_dict.txt")
+    write_mapping(name_finder.label_dict, "char_dict.txt")
 
     sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True,
                                             log_device_placement=True))
