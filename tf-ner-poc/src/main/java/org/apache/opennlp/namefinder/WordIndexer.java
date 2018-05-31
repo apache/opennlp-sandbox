@@ -17,8 +17,6 @@
 
 package org.apache.opennlp.namefinder;
 
-import opennlp.tools.util.StringUtil;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,6 +26,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import opennlp.tools.util.StringUtil;
+
 public class WordIndexer {
 
   private final Map<Character, Integer> char2idx;
@@ -35,11 +35,9 @@ public class WordIndexer {
 
   public static String UNK = "$UNK$";
   public static String NUM = "$NUM$";
-  public static String NONE = "O";
 
-  //private boolean useChars = true;
-  private boolean lowerCase = true;
-  private boolean allowUnk = true;
+  private boolean lowerCase = false;
+  private boolean allowUnk = false;
 
   private Pattern digitPattern = Pattern.compile("\\d+(,\\d+)*(\\.\\d+)?");
 
@@ -114,8 +112,9 @@ public class WordIndexer {
     if (lowerCase) {
       word = StringUtil.toLowerCase(word);
     }
-    if (digitPattern.matcher(word).find())
-      word = NUM;
+
+    // if (digitPattern.matcher(word).find())
+    //  word = NUM;
 
     // 2. get id of word
     Integer wordId;
@@ -140,7 +139,6 @@ public class WordIndexer {
     return tokenIds;
   }
 
-
   public class Ids {
 
     private int[] chars;
@@ -162,5 +160,4 @@ public class WordIndexer {
       this.word = word;
     }
   }
-
 }
