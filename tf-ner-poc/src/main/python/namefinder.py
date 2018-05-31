@@ -343,7 +343,7 @@ def main():
 
     char_dict = {k: v for v, k in enumerate(char_set | char_set_dev)}
 
-    embedding_ph, token_ids_ph, char_ids_ph, word_lengths_ph, sequence_lengths_ph, labels_ph, train_op \
+    embedding_ph, token_ids_ph, char_ids_ph, word_lengths_ph, sequence_lengths_ph, labels_ph, dropout_keep_prob, train_op \
         = name_finder.create_graph(len(char_set | char_set_dev), embeddings)
 
     write_mapping(word_dict, 'word_dict.txt')
