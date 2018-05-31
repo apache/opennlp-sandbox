@@ -19,15 +19,22 @@ package org.apache.opennlp.namefinder;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import org.tensorflow.SavedModelBundle;
 import org.tensorflow.Session;
 import org.tensorflow.Tensor;
 
 import opennlp.tools.namefind.BioCodec;
+import opennlp.tools.namefind.NameSample;
 import opennlp.tools.namefind.TokenNameFinder;
+import opennlp.tools.tokenize.SimpleTokenizer;
 import opennlp.tools.util.Span;
 
 public class SequenceTagging implements TokenNameFinder, AutoCloseable {
@@ -44,6 +51,38 @@ public class SequenceTagging implements TokenNameFinder, AutoCloseable {
             new FileInputStream(config.getVocabChars()));
 
     this.indexTagger = new IndexTagger((new FileInputStream(config.getVocabTags())));
+  }
+
+  public SequenceTagging(InputStream vocabWords, InputStream vocabChars,
+                         InputStream vocabTags, InputStream modelZipPackage) throws IOException {
+
+    wordIndexer = new WordIndexer(vocabWords, vocabChars);
+    indexTagger = new IndexTagger(vocabTags);
+
+    Path tmpDir = Files.createTempDirectory("opennlp2_namefinder");
+
+    // Unzip the model to a temp directory
+    ZipInputStream zis = new ZipInputStream(modelZipPackage);
+    ZipEntry zipEntry = zis.getNextEntry();
+    while(zipEntry != null){
+      Path newFile = tmpDir.resolve(zipEntry.getName());
+
+      if (zipEntry.isDirectory()) {
+        Files.createDirectories(newFile);
+      }
+      else {
+        Files.copy(zis, newFile);
+        // This is a bit of hack, but should work fine for now ...
+        newFile.toFile().deleteOnExit();
+      }
+
+      zipEntry = zis.getNextEntry();
+    }
+    zis.closeEntry();
+    zis.close();
+
+    model = SavedModelBundle.load(tmpDir.toString(), "serve");
+    session = model.session();
   }
 
   @Override
