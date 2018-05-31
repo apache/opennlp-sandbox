@@ -1,9 +1,8 @@
-package com.apache.opennlp.tf;
-
-import org.apache.opennlp.tf.guillaumegenthial.PredictionConfiguration;
-import org.apache.opennlp.tf.guillaumegenthial.SequenceTagging;
+package org.apache.opennlp.namefinder;
 
 import java.io.IOException;
+
+import opennlp.tools.util.Span;
 
 public class PredictTest {
 
@@ -22,7 +21,7 @@ public class PredictTest {
     SequenceTagging tagger = new SequenceTagging(config);
 
     String[] tokens = "Stormy Cars ' friend says she also plans to sue Michael Cohen .".split("\\s+");
-    String[] pred = tagger.predict(tokens);
+    Span[] pred = tagger.find(tokens);
 
     for (int i=0; i<tokens.length; i++) {
       System.out.print(tokens[i] + "/" + pred[i] + " ");

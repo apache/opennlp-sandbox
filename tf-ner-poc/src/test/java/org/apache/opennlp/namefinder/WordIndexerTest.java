@@ -1,17 +1,15 @@
-package com.apache.opennlp.tf.guillaumegenthial;
-
-import org.apache.opennlp.tf.guillaumegenthial.TokenIds;
-import org.apache.opennlp.tf.guillaumegenthial.WordIndexer;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Test;
+package org.apache.opennlp.namefinder;
 
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
+
+import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class WordIndexerTest {
 

@@ -1,7 +1,5 @@
-package com.apache.opennlp.tf.guillaumegenthial;
+package org.apache.opennlp.namefinder;
 
-import org.apache.opennlp.tf.guillaumegenthial.TokenIds;
-import org.apache.opennlp.tf.guillaumegenthial.WordIndexer;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 

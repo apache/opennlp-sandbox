@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.opennlp.tf.guillaumegenthial;
+package org.apache.opennlp.namefinder;
 
 public final class TokenIds {
 

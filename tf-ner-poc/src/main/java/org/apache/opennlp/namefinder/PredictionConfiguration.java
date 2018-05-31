@@ -15,44 +15,43 @@
  * limitations under the License.
  */
 
-package org.apache.opennlp.tf.guillaumegenthial;
+package org.apache.opennlp.namefinder;
 
-import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
-public class IndexTagger {
+public class PredictionConfiguration {
 
-  private Map<Integer, String> idx2Tag = new HashMap<>();
+  private String vocabWords;
+  private String vocabChars;
+  private String vocabTags;
+  private String savedModel;
 
-  public IndexTagger(InputStream vocabTags) throws IOException {
-    try(BufferedReader in = new BufferedReader(
-            new InputStreamReader(
-                    vocabTags, "UTF8"))) {
-      String tag;
-      int idx = 0;
-      while ((tag = in.readLine()) != null) {
-        idx2Tag.put(idx, tag);
-        idx += 1;
-      }
-    }
-
+  public PredictionConfiguration(String vocabWords, String vocabChars, String vocabTags, String savedModel) {
+    this.vocabWords = vocabWords;
+    this.vocabChars = vocabChars;
+    this.vocabTags = vocabTags;
+    this.savedModel = savedModel;
   }
 
-  public String getTag(Integer idx) {
-    return idx2Tag.get(idx);
+  public String getVocabWords() {
+    return vocabWords;
   }
 
-  public Map<Integer, String> getIdx2Tag() {
-    return Collections.unmodifiableMap(idx2Tag);
+  public String getVocabChars() {
+    return vocabChars;
   }
 
-  public int getNumberOfTags() {
-    return idx2Tag.size();
+  public String getVocabTags() {
+    return vocabTags;
   }
 
+  public String getSavedModel() {
+    return savedModel;
+  }
+
+  public InputStream getVocabWordsInputStream() throws IOException{
+    return new FileInputStream(getVocabWords());
+  }
 }

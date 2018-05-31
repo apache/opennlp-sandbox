@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.opennlp.tf.guillaumegenthial;
+package org.apache.opennlp.namefinder;
 
 import org.tensorflow.Tensor;
 
