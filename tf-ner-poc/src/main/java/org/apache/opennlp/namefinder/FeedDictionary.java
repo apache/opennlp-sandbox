@@ -17,39 +17,24 @@
 
 package org.apache.opennlp.namefinder;
 
-import org.tensorflow.Tensor;
-
 import java.util.Arrays;
 
-public class FeedDictionary {
+import org.tensorflow.Tensor;
+
+public class FeedDictionary implements AutoCloseable  {
 
   static int PAD_VALUE = 0;
 
 
-  private final float dropout;
-  private final int[][][] charIds;
-  private final int[][] wordLengths;
-  private final int[][] wordIds;
+  private final Tensor<Float> dropoutTensor;
+  private final Tensor<Integer> charIdsTensor;
+  private final Tensor<Integer> wordLengthsTensor;
+  private final Tensor<Integer> wordIdsTensor;
   private final int[] sentenceLengths;
+  private final Tensor<Integer> sentenceLengthsTensor;
   private final int maxSentenceLength;
   private final int maxCharLength;
   private final int numberOfSentences;
-
-  public float getDropout() {
-    return dropout;
-  }
-
-  public int[][][] getCharIds() {
-    return charIds;
-  }
-
-  public int[][] getWordLengths() {
-    return wordLengths;
-  }
-
-  public int[][] getWordIds() {
-    return wordIds;
-  }
 
   public int[] getSentenceLengths() {
     return sentenceLengths;
@@ -59,32 +44,29 @@ public class FeedDictionary {
     return maxSentenceLength;
   }
 
-  public int getMaxCharLength() {
-    return maxCharLength;
-  }
-
   public int getNumberOfSentences() {
     return numberOfSentences;
   }
 
-  public Tensor<Integer> getSentenceLengthsTensor() {
-    return Tensor.create(sentenceLengths, Integer.class);
-  }
-
   public Tensor<Float> getDropoutTensor() {
-    return Tensor.create(dropout, Float.class);
+    return dropoutTensor;
   }
 
   public Tensor<Integer> getCharIdsTensor() {
-    return Tensor.create(charIds, Integer.class);
+    return charIdsTensor;
   }
 
+  public Tensor<Integer> getSentenceLengthsTensor() {
+    return sentenceLengthsTensor;
+  }
+
+
   public Tensor<Integer> getWordLengthsTensor() {
-    return Tensor.create(wordLengths, Integer.class);
+    return wordLengthsTensor;
   }
 
   public Tensor<Integer> getWordIdsTensor() {
-    return Tensor.create(wordIds, Integer.class);
+    return wordIdsTensor;
   }
 
   private FeedDictionary(final float dropout,
@@ -96,15 +78,24 @@ public class FeedDictionary {
                          final int maxCharLength,
                          final int numberOfSentences) {
 
-    this.dropout = dropout;
-    this.charIds = charIds;
-    this.wordLengths = wordLengths;
-    this.wordIds = wordIds;
+    dropoutTensor = Tensor.create(dropout, Float.class);
+    charIdsTensor = Tensor.create(charIds, Integer.class);
+    wordLengthsTensor = Tensor.create(wordLengths, Integer.class);
+    wordIdsTensor = Tensor.create(wordIds, Integer.class);
     this.sentenceLengths = sentenceLengths;
+    sentenceLengthsTensor = Tensor.create(sentenceLengths, Integer.class);
     this.maxSentenceLength = maxSentenceLength;
     this.maxCharLength = maxCharLength;
     this.numberOfSentences = numberOfSentences;
 
+  }
+
+  public void close() {
+    dropoutTensor.close();
+    charIdsTensor.close();
+    wordLengthsTensor.close();
+    wordIdsTensor.close();
+    sentenceLengthsTensor.close();
   }
 
   // multi sentences
