@@ -32,9 +32,7 @@ import org.tensorflow.Session;
 import org.tensorflow.Tensor;
 
 import opennlp.tools.namefind.BioCodec;
-import opennlp.tools.namefind.NameSample;
 import opennlp.tools.namefind.TokenNameFinder;
-import opennlp.tools.tokenize.SimpleTokenizer;
 import opennlp.tools.util.Span;
 
 public class SequenceTagging implements TokenNameFinder, AutoCloseable {
@@ -87,8 +85,13 @@ public class SequenceTagging implements TokenNameFinder, AutoCloseable {
 
   @Override
   public Span[] find(String[] sentence) {
-    TokenIds tokenIds = wordIndexer.toTokenIds(sentence);
-    return new BioCodec().decode(Arrays.asList(predict(tokenIds)[0]));
+    if (sentence.length > 0) {
+      TokenIds tokenIds = wordIndexer.toTokenIds(sentence);
+      return new BioCodec().decode(Arrays.asList(predict(tokenIds)[0]));
+    }
+    else {
+      return new Span[0];
+    }
   }
 
   public String[][] predict(String[][] sentences) {
@@ -97,31 +100,42 @@ public class SequenceTagging implements TokenNameFinder, AutoCloseable {
   }
 
   private String[][] predict(TokenIds tokenIds) {
-    FeedDictionary fd = FeedDictionary.create(tokenIds);
 
-    List<Tensor<?>> run = session.runner()
-            .feed("chars/char_ids:0", fd.getCharIdsTensor())
-            .feed("dropout_keep_prop:0", fd.getDropoutTensor())
-            .feed("words/sequence_lengths:0", fd.getSentenceLengthsTensor())
-            .feed("words/word_ids:0", fd.getWordIdsTensor())
-            .feed("chars/word_lengths:0", fd.getWordLengthsTensor())
-            .fetch("logits", 0)
-            .fetch("trans_params", 0).run();
+    try (FeedDictionary fd = FeedDictionary.create(tokenIds)) {
 
-    float[][][] logits = new float[fd.getNumberOfSentences()][fd.getMaxSentenceLength()][indexTagger.getNumberOfTags()];
-    run.get(0).copyTo(logits);
+      List<Tensor<?>> run = session.runner()
+          .feed("chars/char_ids:0", fd.getCharIdsTensor())
+          .feed("dropout_keep_prop:0", fd.getDropoutTensor())
+          .feed("words/sequence_lengths:0", fd.getSentenceLengthsTensor())
+          .feed("words/word_ids:0", fd.getWordIdsTensor())
+          .feed("chars/word_lengths:0", fd.getWordLengthsTensor())
+          .fetch("logits", 0)
+          .fetch("trans_params", 0).run();
 
-    float[][] trans_params = new float[indexTagger.getNumberOfTags()][indexTagger.getNumberOfTags()];
-    run.get(1).copyTo(trans_params);
+      float[][][] logits = new float[fd.getNumberOfSentences()][fd.getMaxSentenceLength()][indexTagger.getNumberOfTags()];
+      run.get(0).copyTo(logits);
 
-    String[][] returnValue = new String[fd.getNumberOfSentences()][];
-    for (int i=0; i < logits.length; i++) {
-      //logit = logit[:sequence_length] # keep only the valid steps
-      float[][] logit = Arrays.copyOf(logits[i], fd.getSentenceLengths()[i]);
-      returnValue[i] = Viterbi.decode(logit, trans_params).stream().map(indexTagger::getTag).toArray(String[]::new);
+      float[][] trans_params = new float[indexTagger.getNumberOfTags()][indexTagger.getNumberOfTags()];
+      run.get(1).copyTo(trans_params);
+
+      String[][] returnValue = new String[fd.getNumberOfSentences()][];
+      for (int i = 0; i < logits.length; i++) {
+        float[][] logit = Arrays.copyOf(logits[i], fd.getSentenceLengths()[i]);
+        returnValue[i] = Viterbi.decode(logit, trans_params).stream().map(indexTagger::getTag).toArray(String[]::new);
+      }
+
+      for (int i = 0; i < returnValue[0].length; i++) {
+        if (returnValue[0][i] == null) {
+          returnValue[0][i] = "other";
+        }
+      }
+
+      for (Tensor t : run) {
+        t.close();
+      }
+
+      return returnValue;
     }
-
-    return returnValue;
   }
 
   @Override
