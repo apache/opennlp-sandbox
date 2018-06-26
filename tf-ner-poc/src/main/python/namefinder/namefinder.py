@@ -103,6 +103,8 @@ class NameFinder:
                 vector = 0
                 if word_dict.get(token) is not None:
                     vector = word_dict[token]
+                else:
+                    vector = word_dict['__UNK__']
 
                 sentence.append(vector)
 
@@ -348,7 +350,7 @@ def main():
         print("Usage namefinder.py embedding_file train_file dev_file test_file")
         return
 
-    name_finder = NameFinder(300)
+    name_finder = NameFinder(100)
 
     word_dict, rev_word_dict, embeddings = name_finder.load_glove(sys.argv[1])
     sentences, labels, char_set = name_finder.load_data(word_dict, sys.argv[2])
@@ -423,8 +425,6 @@ def main():
             f1 = 2 * p * r / (p + r) if correct_preds > 0 else 0
             acc = np.mean(accs)
 
-            print("ACC " + str(acc))
-            print("F1  " + str(f1) + "  P " + str(p) + "  R " + str(r))
 
             if (f1 > best_f1):
                 best_f1 = f1
@@ -435,6 +435,9 @@ def main():
                 builder.save()
             else:
                 no_improvement += 1
+
+            print("ACC " + str(acc))
+            print("F1  " + str(f1) + "  P " + str(p) + "  R " + str(r))
 
             if no_improvement > 5:
                 print("No further improvement. Stopping.")
