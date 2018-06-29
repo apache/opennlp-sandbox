@@ -22,6 +22,7 @@ import tensorflow as tf
 import sys
 from math import floor
 import numpy as np
+import random
 
 def load_data(file):
     with open(file) as f:
@@ -35,6 +36,9 @@ def load_data(file):
 
 # create placeholders
 def create_placeholders():
+
+    dropout_keep_prob = tf.placeholder(tf.float32, name="dropout_keep_prop")
+
     # shape is batch_size, and length of name
     char_ids_ph = tf.placeholder(tf.int32, shape=[None, None], name="char_ids")
 
@@ -43,9 +47,10 @@ def create_placeholders():
 
     # shape is batch_size
     y_ph = tf.placeholder(tf.int32, shape=[None], name="y")
-    return char_ids_ph, name_lengths_ph, y_ph
+    return dropout_keep_prob, char_ids_ph, name_lengths_ph, y_ph
 
-def create_graph(char_ids_ph, name_lengths_ph, y_ph, nchars, nclasses):
+def create_graph(dropout_keep_prob, char_ids_ph, name_lengths_ph, y_ph, nchars, nclasses):
+
 
     dim_char = 100
 
@@ -54,7 +59,9 @@ def create_graph(char_ids_ph, name_lengths_ph, y_ph, nchars, nclasses):
 
     char_embeddings = tf.nn.embedding_lookup(K, char_ids_ph)
 
-    char_hidden_size = 100
+    char_embeddings = tf.nn.dropout(char_embeddings, dropout_keep_prob)
+
+    char_hidden_size = 256
     cell_fw = tf.contrib.rnn.LSTMCell(char_hidden_size, state_is_tuple=True)
     cell_bw = tf.contrib.rnn.LSTMCell(char_hidden_size, state_is_tuple=True)
 
@@ -66,6 +73,8 @@ def create_graph(char_ids_ph, name_lengths_ph, y_ph, nchars, nclasses):
 
     output = tf.concat([output_fw, output_bw], axis=-1)
 
+    output = tf.nn.dropout(output, dropout_keep_prob)
+
     W = tf.get_variable("W", shape=[2*char_hidden_size, nclasses])
     b = tf.get_variable("b", shape=[nclasses])
     logits = tf.nn.xw_plus_b(output, W, b, name="logits")
@@ -76,7 +85,9 @@ def create_graph(char_ids_ph, name_lengths_ph, y_ph, nchars, nclasses):
 
     loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=y_ph)
     mean_loss = tf.reduce_mean(loss)
+
     train_op = tf.train.AdamOptimizer().minimize(loss)
+    #train_op = tf.train.RMSPropOptimizer(learning_rate=0.001).minimize(loss)
 
     return train_op, norm_probs
 
@@ -107,6 +118,12 @@ def mini_batch(label_dict, char_dict, labels, names, batch_size, batch_index):
 
     return label_batch, np.asarray(name_batch), name_length
 
+def write_mapping(tags, output_filename):
+    with open(output_filename, 'w', encoding='utf-8') as f:
+        for i, tag in enumerate(tags):
+            f.write(tag)
+            f.write("\n")
+
 def main():
 
     if len(sys.argv) != 4:
@@ -131,9 +148,12 @@ def main():
 
     char_dict = {k: v for v, k in enumerate(char_set)}
 
-    char_ids_ph, name_lengths_ph, y_ph = create_placeholders()
+    write_mapping(label_dict, "label_dict.txt")
+    write_mapping(char_dict, "char_dict.txt")
 
-    train_op, probs_op = create_graph(char_ids_ph, name_lengths_ph, y_ph, len(char_set), len(label_dict))
+    dropout_keep_prob, char_ids_ph, name_lengths_ph, y_ph = create_placeholders()
+
+    train_op, probs_op = create_graph(dropout_keep_prob, char_ids_ph, name_lengths_ph, y_ph, len(char_set), len(label_dict))
 
     sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True,
                                             log_device_placement=True))
@@ -143,14 +163,18 @@ def main():
         sess.run(init)
 
         batch_size = 20
-        for epoch in range(100):
+        for epoch in range(10):
             print("Epoch " + str(epoch))
             acc_train = []
-            for batch_index in range(floor(len(names_train) / batch_size)):
+
+            batch_indexes = list(range(floor(len(names_train) / batch_size)))
+            random.Random(epoch).shuffle(batch_indexes)
+
+            for batch_index in batch_indexes:
                 label_train_batch, name_train_batch, name_train_length = \
                     mini_batch(label_dict, char_dict, labels_train, names_train, batch_size, batch_index)
 
-                feed_dict = {char_ids_ph: name_train_batch, name_lengths_ph: name_train_length, y_ph: label_train_batch}
+                feed_dict = {dropout_keep_prob: 0.5, char_ids_ph: name_train_batch, name_lengths_ph: name_train_length, y_ph: label_train_batch}
                 _, probs = sess.run([train_op, probs_op], feed_dict)
 
                 acc_train.append((batch_size  - np.sum(np.abs(label_train_batch - np.argmax(probs, axis=1)))) / batch_size)
@@ -162,14 +186,29 @@ def main():
                 label_dev_batch, name_dev_batch, name_dev_length = \
                     mini_batch(label_dict, char_dict, labels_dev, names_dev, batch_size, batch_index)
 
-                feed_dict = {char_ids_ph: name_dev_batch, name_lengths_ph: name_dev_length, y_ph: label_dev_batch}
+                feed_dict = {dropout_keep_prob: 1, char_ids_ph: name_dev_batch, name_lengths_ph: name_dev_length, y_ph: label_dev_batch}
                 probs = sess.run(probs_op, feed_dict)
 
                 acc_dev.append((batch_size  - np.sum(np.abs(label_dev_batch - np.argmax(probs, axis=1)))) / batch_size)
 
             print("Dev acc: " + str(np.mean(acc_dev)))
 
-    # Add code to save the model, and resource files ....
+        #acc_test = []
+        #for batch_index in range(floor(len(names_test) / batch_size)):
+        #    label_test_batch, name_test_batch, name_test_length = \
+        #        mini_batch(label_dict, char_dict, labels_test, names_test, batch_size, batch_index)
+
+        #    feed_dict = {char_ids_ph: name_test_batch, name_lengths_ph: name_test_length, y_ph: label_test_batch}
+        #    probs = sess.run(probs_op, feed_dict)
+
+        #    acc_test.append((batch_size  - np.sum(np.abs(label_test_batch - np.argmax(probs, axis=1)))) / batch_size)
+
+        #print("Test acc: " + str(np.mean(acc_test)))
+
+        saver = tf.train.Saver()
+        builder = tf.saved_model.builder.SavedModelBuilder("./namecat_model" + str(epoch))
+        builder.add_meta_graph_and_variables(sess, [tf.saved_model.tag_constants.SERVING])
+        builder.save()
 
 if __name__ == "__main__":
     main()
