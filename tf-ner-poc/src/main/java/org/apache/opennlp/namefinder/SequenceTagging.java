@@ -20,13 +20,11 @@ package org.apache.opennlp.namefinder;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
+import org.apache.opennlp.ModelUtil;
 import org.tensorflow.SavedModelBundle;
 import org.tensorflow.Session;
 import org.tensorflow.Tensor;
@@ -57,27 +55,7 @@ public class SequenceTagging implements TokenNameFinder, AutoCloseable {
     wordIndexer = new WordIndexer(vocabWords, vocabChars);
     indexTagger = new IndexTagger(vocabTags);
 
-    Path tmpDir = Files.createTempDirectory("opennlp2_namefinder");
-
-    // Unzip the model to a temp directory
-    ZipInputStream zis = new ZipInputStream(modelZipPackage);
-    ZipEntry zipEntry = zis.getNextEntry();
-    while(zipEntry != null){
-      Path newFile = tmpDir.resolve(zipEntry.getName());
-
-      if (zipEntry.isDirectory()) {
-        Files.createDirectories(newFile);
-      }
-      else {
-        Files.copy(zis, newFile);
-        // This is a bit of hack, but should work fine for now ...
-        newFile.toFile().deleteOnExit();
-      }
-
-      zipEntry = zis.getNextEntry();
-    }
-    zis.closeEntry();
-    zis.close();
+    Path tmpDir = ModelUtil.writeModelToTmpDir(modelZipPackage);
 
     model = SavedModelBundle.load(tmpDir.toString(), "serve");
     session = model.session();
