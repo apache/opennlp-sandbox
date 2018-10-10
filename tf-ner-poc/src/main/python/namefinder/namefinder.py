@@ -261,7 +261,7 @@ class NameFinder:
 
             labels = tf.placeholder(tf.int32, shape=[None, None], name="labels")
 
-        ntags = 7; # TODO: Compute this and not hard code
+        ntags = len(self.label_dict)
 
         W = tf.get_variable("W", shape=[2*hidden_size, ntags], dtype=tf.float32)
         b = tf.get_variable("b", shape=[ntags], dtype=tf.float32, initializer=tf.zeros_initializer())
