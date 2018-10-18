@@ -32,6 +32,18 @@ class NameSample:
     def __init__(self, line):
         self.tokens = []
         self.names = []
+
+        line = re.sub('\d', '0', line)
+        line = re.sub('-LRB-', '(', line)
+        line = re.sub('-RRB-', ')', line)
+        line = re.sub('\w\.', ' ', line)
+        line = re.sub('-', ' - ', line)
+        line = re.sub('/', ' / ', line)
+        line = re.sub('"', ' ', line)
+        line = re.sub('`', ' ', line)
+        line = re.sub('\'', ' ', line)
+        line = re.sub('\w\.', ' ', line)
+
         start_regex = re.compile("<START(:([^:>\\s]*))?>")
         parts = line.split()
         start_index = -1
@@ -62,7 +74,7 @@ class NameFinder:
     def __init__(self, vector_size=100):
         self.__vector_size = vector_size
 
-    def load_data(self, word_dict, file):
+    def load_data(self, word_dict, rev_word_dict, file, case_sensitive_lookup):
         with open(file) as f:
             raw_data = f.readlines()
 
@@ -78,16 +90,23 @@ class NameFinder:
                 continue
 
             for token in name_sample.tokens:
-                vector = 0
-                if word_dict.get(token) is not None:
-                    vector = word_dict[token]
-                else:
-                    vector = word_dict['__UNK__']
-
-                sentence.append(vector)
 
                 for c in token:
                     chars_set.add(c)
+
+                token_for_dictionary_lookup = token
+                if not case_sensitive_lookup:
+                    token_for_dictionary_lookup = token.lower()
+
+                if word_dict.get(token_for_dictionary_lookup) is not None:
+                    sentence.append(word_dict[token_for_dictionary_lookup])
+                else:
+                    if '__UNK__' in word_dict:
+                        print("Using __UNK__ for unknown token [{}]".format(token_for_dictionary_lookup))
+                        sentence.append(word_dict['__UNK__'])
+                    else:
+                        print("Dropping unknown token [{}]".format(token_for_dictionary_lookup))
+                        sentence.append(word_dict['x']) # this is wrong!
 
             label = ["other"] * len(name_sample.tokens)
             for name in name_sample.names:
@@ -147,7 +166,10 @@ class NameFinder:
 
                 word_chars = []
                 for c in rev_word_dict[word]:
-                    word_chars.append(char_dict[c]) # TODO: This fails if c is not present
+                    if c in char_dict:
+                        word_chars.append(char_dict[c])
+                    else:
+                        raise VectorException('Missing character key [{}] from rev_word_dict {}, word {}. Known chars: {}'.format(c, rev_word_dict[word], word,char_dict))
 
                 sentence_word_length.append(len(word_chars))
                 word_chars = word_chars + [0] * max(max_word_length - len(word_chars), 0)
@@ -323,13 +345,12 @@ def write_mapping(tags, output_filename):
             f.write('{}\n'.format(tag))
 
 def load_glove(glove_file):
+    word_dict = {}
+    embeddings = []
+    vector_size = -1
+
+    index = 0
     with open(glove_file) as f:
-
-        word_dict = {}
-        embeddings = []
-
-        vector_size = -1
-
         for line in f:
             parts = line.strip().split(" ")
 
@@ -340,11 +361,11 @@ def load_glove(glove_file):
                 vector_size = len(parts) - 1
 
             if len(parts) != vector_size + 1:
-                #print("Bad Vector: ",len(line),len(parts), line)
-                raise VectorException("Bad Vector in line: {}, size: {} vector: {}".format(len(line),len(parts), line))
-                continue
-            word_dict[parts[0]] = len(word_dict)
-            embeddings.append(np.array(parts[1:], dtype=np.float32))
+                print("Dropping bad vector in line: {}, size: {} vector: [{}]".format(len(line), len(parts), line))
+            else:
+                word_dict[parts[0]] = index
+                embeddings.append(np.array(parts[1:], dtype=np.float32))
+                index = index + 1
 
     # Create a reverse word dict
     rev_word_dict = {}
@@ -355,16 +376,30 @@ def load_glove(glove_file):
 
 def main():
 
-    if len(sys.argv) != 5:
-        print("Usage namefinder.py embedding_file train_file dev_file test_file")
+    if len(sys.argv) != 5 and len(sys.argv) != 6:
+        print("Usage \n"
+              "   namefinder.py embedding_file train_file dev_file test_file\n"
+              "   namefinder.py embedding_file train_file dev_file test_file caseSensitive # where case is 0 for case insensitive or 1 for case sensitive (default)")
         return
+
+        case_sensitive_lookup = True
+    if len(sys.argv) == 6:
+        if sys.argv[5] == '0':
+            case_sensitive_lookup = False
+        elif sys.argv[5] == '1':
+            case_sensitive_lookup = True
+        else:
+            print("caseSensitive argv should be 0 for case insensitive or 1 for case sensitive. Value was [{}]".format(
+                sys.argv[5]))
+            return
 
     word_dict, rev_word_dict, embeddings, vector_size = load_glove(sys.argv[1])
 
     name_finder = NameFinder(vector_size)
 
-    sentences, labels, char_set = name_finder.load_data(word_dict, sys.argv[2])
-    sentences_dev, labels_dev, char_set_dev = name_finder.load_data(word_dict, sys.argv[3])
+
+    sentences, labels, char_set = name_finder.load_data(word_dict, rev_word_dict, sys.argv[2], case_sensitive_lookup)
+    sentences_dev, labels_dev, char_set_dev = name_finder.load_data(word_dict, rev_word_dict, sys.argv[3], case_sensitive_lookup)
 
     char_dict = {k: v for v, k in enumerate(char_set | char_set_dev)}
 
