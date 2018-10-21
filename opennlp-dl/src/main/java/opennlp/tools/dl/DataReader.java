@@ -233,11 +233,6 @@ public class DataReader implements DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        return this.records.size();
-    }
-
-    @Override
     public int inputColumns() {
         return this.embedder.getVectorSize();
     }
@@ -272,16 +267,6 @@ public class DataReader implements DataSetIterator {
     }
 
     @Override
-    public int cursor() {
-        return this.cursor;
-    }
-
-    @Override
-    public int numExamples() {
-        return totalExamples();
-    }
-
-    @Override
     public void setPreProcessor(DataSetPreProcessor preProcessor) {
         throw new UnsupportedOperationException();
     }
@@ -298,7 +283,7 @@ public class DataReader implements DataSetIterator {
 
     @Override
     public boolean hasNext() {
-        return cursor < totalExamples() - 1;
+        return cursor < this.records.size() - 1;
     }
 
     @Override

@@ -60,7 +60,7 @@ public class NeuralDocCat implements DocumentCategorizer {
         INDArray seqFeatures = this.model.getGloves().embed(text, this.model.getMaxSeqLen());
 
         INDArray networkOutput = this.model.getNetwork().output(seqFeatures);
-        int timeSeriesLength = networkOutput.size(2);
+        long timeSeriesLength = networkOutput.size(2);
         INDArray probsAtLastWord = networkOutput.get(NDArrayIndex.point(0),
                 NDArrayIndex.all(), NDArrayIndex.point(timeSeriesLength - 1));
 

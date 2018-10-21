@@ -29,6 +29,7 @@ import java.util.List;
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.OldSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.factory.Nd4j;
@@ -251,7 +252,7 @@ public class StackedRNN extends RNN {
       }
       ys.putRow(t, yst);
 
-      INDArray pst = Nd4j.getExecutioner().execAndReturn(new ReplaceNans(Nd4j.getExecutioner().execAndReturn(new SoftMax(yst)), 0d)); // probabilities for next chars
+      INDArray pst = Nd4j.getExecutioner().execAndReturn(new ReplaceNans(Nd4j.getExecutioner().execAndReturn(new OldSoftMax(yst)), 0d)); // probabilities for next chars
       if (ps == null) {
         ps = init(seqLength, pst.shape());
       }
@@ -312,7 +313,7 @@ public class StackedRNN extends RNN {
       h = Transforms.tanh((wxh.mmul(x)).add(whh.mmul(h)).add(bh));
       h2 = Transforms.tanh((wxh2.mmul(h)).add(whh2.mmul(h2)).add(bh2));
       INDArray y = wh2y.mmul(h2).add(by);
-      INDArray pm = Nd4j.getExecutioner().execAndReturn(new SoftMax(y)).ravel();
+      INDArray pm = Nd4j.getExecutioner().execAndReturn(new OldSoftMax(y)).ravel();
 
       List<Pair<Integer, Double>> d = new LinkedList<>();
       for (int pi = 0; pi < vocabSize; pi++) {

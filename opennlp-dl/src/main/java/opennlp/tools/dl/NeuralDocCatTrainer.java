@@ -135,12 +135,11 @@ public class NeuralDocCatTrainer {
         //TODO: the below network params should be configurable from CLI or settings file
         //Set up network configuration
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .updater(new RmsProp(0.9)) // ADAM .adamMeanDecay(0.9).adamVarDecay(0.999)
-                .regularization(true).l2(1e-5)
+                .updater(new RmsProp(args.learningRate)) // ADAM .adamMeanDecay(0.9).adamVarDecay(0.999)
+                .l2(1e-5)
                 .weightInit(WeightInit.XAVIER)
                 .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                 .gradientNormalizationThreshold(1.0)
-                .learningRate(args.learningRate)
                 .list()
                 .layer(0, new GravesLSTM.Builder()
                         .nIn(vectorSize)
@@ -177,8 +176,8 @@ public class NeuralDocCatTrainer {
     public void train(int nEpochs, DataReader train, DataReader validation) {
         assert model != null;
         assert train != null;
-        LOG.info("Starting training...\nTotal epochs={}, Training Size={}, Validation Size={}", nEpochs,
-                train.totalExamples(), validation == null ? null : validation.totalExamples());
+//        LOG.info("Starting training...\nTotal epochs={}, Training Size={}, Validation Size={}", nEpochs,
+//                train.(), validation == null ? null : validation.totalExamples());
         for (int i = 0; i < nEpochs; i++) {
             model.getNetwork().fit(train);
             train.reset();
@@ -190,7 +189,7 @@ public class NeuralDocCatTrainer {
                 Evaluation evaluation = new Evaluation();
                 while (validation.hasNext()) {
                     DataSet t = validation.next();
-                    INDArray features = t.getFeatureMatrix();
+                    INDArray features = t.getFeatures();
                     INDArray labels = t.getLabels();
                     INDArray inMask = t.getFeaturesMaskArray();
                     INDArray outMask = t.getLabelsMaskArray();

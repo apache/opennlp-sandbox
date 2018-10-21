@@ -35,6 +35,7 @@ import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.OldSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SetRange;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.factory.Nd4j;
@@ -241,7 +242,7 @@ public class RNN {
         ys = init(inputs.length(), yst.shape());
       }
       ys.putRow(t, yst);
-      INDArray pst = Nd4j.getExecutioner().execAndReturn(new SoftMax(yst)); // probabilities for next chars
+      INDArray pst = Nd4j.getExecutioner().execAndReturn(new OldSoftMax(yst)); // probabilities for next chars
       if (ps == null) {
         ps = init(inputs.length(), pst.shape());
       }
@@ -251,7 +252,7 @@ public class RNN {
 
     // backward pass: compute gradients going backwards
     INDArray dhNext = Nd4j.zerosLike(hPrev);
-    for (int t = inputs.length() - 1; t >= 0; t--) {
+    for (int t = (int) (inputs.length() - 1); t >= 0; t--) {
       INDArray dy = ps.getRow(t);
       dy.putRow(targets.getInt(t), dy.getRow(targets.getInt(t)).sub(1)); // backprop into y
       INDArray hst = hs.getRow(t);
@@ -271,9 +272,9 @@ public class RNN {
     return loss;
   }
 
-  protected INDArray init(int t, int[] aShape) {
+  protected INDArray init(long t, long[] aShape) {
     INDArray as;
-    int[] shape = new int[1 + aShape.length];
+    long[] shape = new long[1 + aShape.length];
     shape[0] = t;
     System.arraycopy(aShape, 0, shape, 1, aShape.length);
     as = Nd4j.create(shape);
@@ -295,7 +296,7 @@ public class RNN {
     for (int t = 0; t < sampleSize; t++) {
       h = Transforms.tanh(wxh.mmul(x).add(whh.mmul(h)).add(bh));
       INDArray y = (why.mmul(h)).add(by);
-      INDArray pm = Nd4j.getExecutioner().execAndReturn(new SoftMax(y)).ravel();
+      INDArray pm = Nd4j.getExecutioner().execAndReturn(new OldSoftMax(y)).ravel();
 
       List<Pair<Integer, Double>> d = new LinkedList<>();
       for (int pi = 0; pi < vocabSize; pi++) {
@@ -321,11 +322,12 @@ public class RNN {
 
     NdIndexIterator ndIndexIterator = new NdIndexIterator(ixes.shape());
     while (ndIndexIterator.hasNext()) {
-      int[] next = ndIndexIterator.next();
+      long[] next = ndIndexIterator.next();
       if (!useChars && txt.length() > 0) {
         txt.append(' ');
       }
-      txt.append(ixToChar.get(ixes.getInt(next)));
+      int aDouble = (int) ixes.getDouble(next);
+      txt.append(ixToChar.get(aDouble));
     }
     return txt.toString();
   }
