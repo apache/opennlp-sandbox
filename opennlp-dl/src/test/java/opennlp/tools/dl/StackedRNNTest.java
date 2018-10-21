@@ -63,7 +63,7 @@ public class StackedRNNTest {
   @Parameterized.Parameters
   public static Collection<Object[]> data() {
     return Arrays.asList(new Object[][] {
-        {1e-2f, 25, 50, 4},
+        {1e-3f, 25, 50, 4},
     });
   }
 

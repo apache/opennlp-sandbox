@@ -140,7 +140,7 @@ public class NameSampleDataSetIterator implements DataSetIterator {
       }
 
       if (sample != null) {
-        INDArray feature = sample.getFeatureMatrix();
+        INDArray feature = sample.getFeatures();
         features.put(new INDArrayIndex[] {NDArrayIndex.point(i)}, feature.get(NDArrayIndex.point(0)));
 
         feature.get(new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.all(),

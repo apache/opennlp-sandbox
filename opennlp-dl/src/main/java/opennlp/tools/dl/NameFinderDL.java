@@ -42,6 +42,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import opennlp.tools.namefind.BioCodec;
@@ -159,12 +160,9 @@ public class NameFinderDL implements TokenNameFinder {
     int layerSize = 256;
 
     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-        .updater(Updater.RMSPROP)
-        .regularization(true).l2(0.001)
+        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+        .updater(new RmsProp(0.01)).l2(0.001)
         .weightInit(WeightInit.XAVIER)
-        // .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue).gradientNormalizationThreshold(1.0)
-        .learningRate(0.01)
         .list()
         .layer(0, new GravesLSTM.Builder().nIn(vectorSize).nOut(layerSize)
             .activation(Activation.TANH).build())
