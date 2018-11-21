@@ -9,7 +9,7 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <tensorflow.version>1.7.0</tensorflow.version>
+        <tensorflow.version>1.12.0</tensorflow.version>
     </properties>
 
     <dependencies>
@@ -43,6 +43,7 @@
                     <target>1.8</target>
                 </configuration>
             </plugin>
+
         </plugins>
     </build>
 

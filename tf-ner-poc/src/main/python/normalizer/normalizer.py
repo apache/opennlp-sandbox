@@ -161,16 +161,6 @@ def create_graph(mode, batch_size, encoder_nchars, max_target_length, decoder_nc
         gradients, _ = tf.clip_by_global_norm(gradients, 10.0)
         optimize = optimizer.apply_gradients(zip(gradients, v))
 
-        # decoder is here ...
-        #helperE = tf.contrib.seq2seq.GreedyEmbeddingHelper(
-        #    decoder_embedding_weights,
-        #    tf.fill([batch_size], decoder_nchars-2), decoder_nchars-1)
-        #decoderE = tf.contrib.seq2seq.BasicDecoder(
-        #    decoder_cell, helperE, encoder_state,
-        #    output_layer=projection_layer)
-        #outputs, _, _ = tf.contrib.seq2seq.dynamic_decode(decoderE, maximum_iterations=15, output_time_major=True)
-
-
         return encoder_char_ids_ph, encoder_lengths_ph, decoder_char_ids_ph, decoder_lengths, optimize, train_prediction, outputs
 
     if "EVAL" == mode:
@@ -182,16 +172,23 @@ def create_graph(mode, batch_size, encoder_nchars, max_target_length, decoder_nc
             output_layer=projection_layer)
         outputs, _, _ = tf.contrib.seq2seq.dynamic_decode(decoderE, maximum_iterations=15)
 
-        translations = outputs.sample_id
+
+        translations = tf.identity(outputs.sample_id, name="decode")
 
         # the outputs don't decode anything ...
-        return encoder_char_ids_ph, encoder_lengths_ph, outputs
+        return encoder_char_ids_ph, encoder_lengths_ph, translations
 
 def encode_chars(names):
     char_set = set()
     for name in names:
         char_set = char_set.union(name)
     return {k: v for v, k in enumerate(char_set)}
+
+# TODO: Deduplicate this, same as in namefinder.py
+def write_mapping(tags, output_filename):
+    with open(output_filename, 'w', encoding='utf-8') as f:
+        for i, tag in enumerate(tags):
+            f.write('{}\n'.format(tag))
 
 def main():
 
@@ -202,11 +199,16 @@ def main():
     source_test, target_test = load_data("date_test.txt")
 
     source_char_dict = encode_chars(source_train + source_dev + source_test)
+
+    write_mapping(source_char_dict, 'source_char_dict.txt')
+
     target_char_dict = encode_chars(target_train + target_dev + target_test)
 
     # TODO: Find better chars for begin and end markers
     target_char_dict['S'] = len(target_char_dict)
     target_char_dict['E'] = len(target_char_dict)
+
+    write_mapping(target_char_dict, 'target_char_dict.txt')
 
     target_dict_rev = {v: k for k, v in target_char_dict.items()}
 
@@ -230,58 +232,61 @@ def main():
             create_graph("EVAL", batch_size, len(source_char_dict), target_max_len, len(target_char_dict))
         eval_saver = tf.train.Saver()
 
-    eval_sess = tf.Session(graph=eval_graph)
+        eval_sess = tf.Session(graph=eval_graph)
 
-
-    for epoch in range(200):
+    for epoch in range(30):
         print("Epoch " + str(epoch))
 
-        for batch_index in range(floor(len(source_train) / batch_size)):
-            if batch_index > 0 and batch_index % 100 == 0:
-                print("batch_index " + str(batch_index))
+        with train_graph.as_default():
+            for batch_index in range(floor(len(source_train) / batch_size)):
+                if batch_index > 0 and batch_index % 100 == 0:
+                    print("batch_index " + str(batch_index))
 
-            target_batch, target_length, source_batch, source_length = \
-                mini_batch(target_char_dict, target_train, source_char_dict, source_train, batch_size, batch_index)
+                target_batch, target_length, source_batch, source_length = \
+                    mini_batch(target_char_dict, target_train, source_char_dict, source_train, batch_size, batch_index)
 
-            feed_dict = {t_encoder_lengths_ph: source_length, t_encoder_char_ids_ph: source_batch,
-                         t_decoder_lengths: target_length, t_decoder_char_ids_ph: target_batch}
+                feed_dict = {t_encoder_lengths_ph: source_length, t_encoder_char_ids_ph: source_batch,
+                             t_decoder_lengths: target_length, t_decoder_char_ids_ph: target_batch}
 
-            t1, dec1 = train_sess.run([t_adam_optimize, t_dec_out], feed_dict)
-            dec2 = train_sess.run([t_dec_out], feed_dict)
-            tv=1
+                t1, dec1 = train_sess.run([t_adam_optimize, t_dec_out], feed_dict)
+                dec2 = train_sess.run([t_dec_out], feed_dict)
+                tv=1
 
-        # Save train model, and restore it into the eval session
-        checkpoint_path = train_saver.save(train_sess, checkpoints_path, global_step=epoch)
-        eval_saver.restore(eval_sess, checkpoint_path)
+            # Save train model, and restore it into the eval session
+            checkpoint_path = train_saver.save(train_sess, checkpoints_path, global_step=epoch)
+            eval_saver.restore(eval_sess, checkpoint_path)
 
-        count_correct = 0
-        for batch_index in range(floor(len(source_dev) / batch_size)):
-            target_batch, target_length, source_batch, source_length = \
-                mini_batch(target_char_dict, target_dev, source_char_dict, source_dev, batch_size, batch_index)
+        with eval_graph.as_default():
+            count_correct = 0
+            for batch_index in range(floor(len(source_dev) / batch_size)):
+                target_batch, target_length, source_batch, source_length = \
+                    mini_batch(target_char_dict, target_dev, source_char_dict, source_dev, batch_size, batch_index)
 
-            begin = batch_index
-            end = min(batch_index + batch_size, len(source_dev))
-            target_strings = target_dev[begin:end]
+                begin = batch_index
+                end = min(batch_index + batch_size, len(source_dev))
+                target_strings = target_dev[begin:end]
 
+                feed_dict = {e_encoder_lengths_ph: source_length, e_encoder_char_ids_ph: source_batch}
+                result = eval_sess.run(e_dec_out, feed_dict)
 
-            feed_dict = {e_encoder_lengths_ph: source_length, e_encoder_char_ids_ph: source_batch}
-            result = eval_sess.run(e_dec_out, feed_dict)
+                decoded_dates = []
 
+                for coded_date in result:
+                    date = ""
+                    for char_id in coded_date:
+                        if not char_id == len(target_char_dict) - 1:
+                            date = date + (target_dict_rev[char_id])
+                    decoded_dates.append(date)
 
-            decoded_dates = []
+                for i in range(len(target_strings)):
+                    if target_strings[i] == decoded_dates[i]:
+                        count_correct = count_correct + 1
 
-            for coded_date in result.sample_id:
-                date = ""
-                for char_id in coded_date:
-                    if not char_id == len(target_char_dict) - 1:
-                        date = date + (target_dict_rev[char_id])
-                decoded_dates.append(date)
+            print("Dev: " + str(count_correct / len(target_dev)))
 
-            for i in range(len(target_strings)):
-                if target_strings[i] == decoded_dates[i]:
-                    count_correct = count_correct + 1
-
-        print("Dev: " + str(count_correct / len(target_dev)))
+            builder = tf.saved_model.builder.SavedModelBuilder("./normalizer_model" + str(epoch))
+            builder.add_meta_graph_and_variables(eval_sess, [tf.saved_model.tag_constants.SERVING])
+            builder.save()
 
 if __name__ == "__main__":
     main()
