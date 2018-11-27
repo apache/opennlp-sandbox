@@ -53,19 +53,19 @@ public class CoreferencerTool extends BasicCmdLineTool {
     public CorefParse(List<Parse> parses, DiscourseEntity[] entities) {
       this.parses = parses;
       parseMap = new HashMap<Parse, Integer>();
-      for (int ei=0,en=entities.length;ei<en;ei++) {
+      for (int ei = 0, en = entities.length; ei < en;ei++) {
         if (entities[ei].getNumMentions() > 1) {
           for (Iterator<MentionContext> mi = entities[ei].getMentions(); mi.hasNext();) {
             MentionContext mc = mi.next();
             Parse mentionParse = ((DefaultParse) mc.getParse()).getParse();
-            parseMap.put(mentionParse,ei+1);
+            parseMap.put(mentionParse,ei + 1);
           }
         }
       }
     }
 
     public void show() {
-      for (int pi=0,pn=parses.size();pi<pn;pi++) {
+      for (int pi = 0, pn = parses.size(); pi < pn;pi++) {
         Parse p = parses.get(pi);
         show(p);
         System.out.println();
@@ -79,13 +79,13 @@ public class CoreferencerTool extends BasicCmdLineTool {
         System.out.print("(");
         System.out.print(p.getType());
         if (parseMap.containsKey(p)) {
-          System.out.print("#"+parseMap.get(p));
+          System.out.print("#" + parseMap.get(p));
         }
         //System.out.print(p.hashCode()+"-"+parseMap.containsKey(p));
         System.out.print(" ");
       }
       Parse[] children = p.getChildren();
-      for (int pi=0,pn=children.length;pi<pn;pi++) {
+      for (int pi = 0, pn = children.length; pi < pn;pi++) {
         Parse c = children[pi];
         Span s = c.getSpan();
         if (start < s.getStart()) {
@@ -134,19 +134,21 @@ public class CoreferencerTool extends BasicCmdLineTool {
         while ((line = lineStream.read()) != null) {
 
           if (line.equals("")) {
-            DiscourseEntity[] entities = treebankLinker.getEntities(document.toArray(new Mention[document.size()]));
+            DiscourseEntity[] entities =
+                treebankLinker.getEntities(document.toArray(new Mention[document.size()]));
             //showEntities(entities);
             new CorefParse(parses,entities).show();
-            sentenceNumber=0;
+            sentenceNumber = 0;
             document.clear();
             parses.clear();
           }
           else {
             Parse p = Parse.parseParse(line);
             parses.add(p);
-            Mention[] extents = treebankLinker.getMentionFinder().getMentions(new DefaultParse(p,sentenceNumber));
+            Mention[] extents =
+                treebankLinker.getMentionFinder().getMentions(new DefaultParse(p,sentenceNumber));
             //construct new parses for mentions which don't have constituents.
-            for (int ei=0,en=extents.length;ei<en;ei++) {
+            for (int ei = 0, en = extents.length; ei < en;ei++) {
               //System.err.println("PennTreebankLiner.main: "+ei+" "+extents[ei]);
 
               if (extents[ei].getParse() == null) {

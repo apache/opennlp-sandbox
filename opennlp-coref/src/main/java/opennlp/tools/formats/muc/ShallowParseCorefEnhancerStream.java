@@ -34,7 +34,8 @@ public class ShallowParseCorefEnhancerStream extends FilterObjectStream<RawCoref
   private final POSTagger posTagger;
   private final Chunker chunker;
   
-  public ShallowParseCorefEnhancerStream(POSTagger posTagger, Chunker chunker, ObjectStream<RawCorefSample> samples) {
+  public ShallowParseCorefEnhancerStream(POSTagger posTagger, Chunker chunker,
+                                         ObjectStream<RawCorefSample> samples) {
     super(samples);
     this.posTagger = posTagger;
     this.chunker = chunker;
@@ -50,22 +51,23 @@ public class ShallowParseCorefEnhancerStream extends FilterObjectStream<RawCoref
       
       List<String[]> sentences = sample.getTexts();
       
-      for (String sentence[] : sentences) {
+      for (String[] sentence : sentences) {
         
         Parse p = FullParseCorefEnhancerStream.createIncompleteParse(sentence);
         p.setType(AbstractBottomUpParser.TOP_NODE);
         
-        Parse parseTokens[] = p.getChildren();
+        Parse[] parseTokens = p.getChildren();
         
         // construct incomplete parse here ..
-        String tags[] = posTagger.tag(sentence);
+        String[] tags = posTagger.tag(sentence);
         
         for (int i = 0; i < parseTokens.length; i++) {
-          p.insert(new Parse(p.getText(), parseTokens[i].getSpan(), tags[i], 1d, parseTokens[i].getHeadIndex()));
+          p.insert(new Parse(p.getText(), parseTokens[i].getSpan(), tags[i],
+              1d, parseTokens[i].getHeadIndex()));
         }
         
         // insert tags into incomplete parse
-        Span chunks[] = chunker.chunkAsSpans(sentence, tags); 
+        Span[] chunks = chunker.chunkAsSpans(sentence, tags);
         
         for (Span chunk : chunks) {
           if ("NP".equals(chunk.getType())) {

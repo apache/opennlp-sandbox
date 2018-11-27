@@ -33,7 +33,7 @@ import opennlp.tools.util.ReverseListIterator;
 public abstract class DiscourseElement {
 
   private List<MentionContext> extents;
-  private int id=-1;
+  private int id = -1;
   private MentionContext lastExtent;
 
   /**
@@ -48,11 +48,12 @@ public abstract class DiscourseElement {
   }
 
   /**
-   * Returns an iterator over the mentions which iterates through them based on which were most recently mentioned.
+   * Returns an iterator over the mentions which iterates through them
+   * based on which were most recently mentioned.
    * @return the {@link Iterator}.
    */
   public Iterator<MentionContext> getRecentMentions() {
-    return(new ReverseListIterator<MentionContext>(extents));
+    return new ReverseListIterator<MentionContext>(extents);
   }
 
   /**
@@ -62,7 +63,7 @@ public abstract class DiscourseElement {
    * @return the {@link Iterator}
    */
   public Iterator<MentionContext> getMentions() {
-    return(extents.listIterator());
+    return extents.listIterator();
   }
 
   /**
@@ -71,7 +72,7 @@ public abstract class DiscourseElement {
    * @return number of mentions
    */
   public int getNumMentions() {
-    return(extents.size());
+    return extents.size();
   }
 
   /**
@@ -80,7 +81,7 @@ public abstract class DiscourseElement {
    */
   public void addMention(MentionContext mention) {
     extents.add(mention);
-    lastExtent=mention;
+    lastExtent = mention;
   }
 
   /**
@@ -89,7 +90,7 @@ public abstract class DiscourseElement {
    * @return the last mention for this element.
    */
   public MentionContext getLastExtent() {
-    return(lastExtent);
+    return lastExtent;
   }
 
   /**
@@ -97,7 +98,7 @@ public abstract class DiscourseElement {
    * @param id The id.
    */
   public void setId(int id) {
-    this.id=id;
+    this.id = id;
   }
 
   /**
@@ -106,7 +107,7 @@ public abstract class DiscourseElement {
    * @return the id associated with this element.
    */
   public int getId() {
-    return(id);
+    return id;
   }
 
   @Override
@@ -120,6 +121,6 @@ public abstract class DiscourseElement {
       de.append(", ").append(ex.toText());//.append("<").append(ex.getHeadText()).append(">");
     }
     de.append(" ]");
-    return(de.toString());
+    return de.toString();
   }
 }

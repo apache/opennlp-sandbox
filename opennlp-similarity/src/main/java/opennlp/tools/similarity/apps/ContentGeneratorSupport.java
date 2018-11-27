@@ -132,7 +132,7 @@ public class ContentGeneratorSupport {
 		return queryArrayStr;
 
 	}
-	
+
 	public static String[] cleanListOfSents(String[] sents) {
 		List<String> sentsClean = new ArrayList<String>();
 		for (String s : sents) {
@@ -144,11 +144,9 @@ public class ContentGeneratorSupport {
 	}
 
 	public static String cleanSpacesInCleanedHTMLpage(String pageContent){ //was 4 spaces 
-		 //was 3 spaces => now back to 2
+		//was 3 spaces => now back to 2
 		//TODO - verify regexp!!
 		pageContent = pageContent.trim().replaceAll("([a-z])(\\s{2,3})([A-Z])", "$1. $3")
-				//replaceAll("[a-z]  [A-Z]", ". $0")// .replace("  ",
-				// ". ")
 				.replace("..", ".").replace(". . .", " ").
 				replace(".    .",". ").trim(); // sometimes   html breaks are converted into ' ' (two spaces), so
 		// we need to put '.'
@@ -461,7 +459,22 @@ public class ContentGeneratorSupport {
 		}
 		return (String[]) sentsClean.toArray(new String[0]);
 	}
-	
+
+	public static String getPortionOfTitleWithoutDelimiters(String title){
+		String[] delimiters = new String[]{"\\+","-", "=", "_", "\\)", "\\|"};
+		for(String delim: delimiters ){
+			String[] split = title.split(delim);
+			if (split.length>1){
+				for(String s: split){
+					if (s.indexOf(".")<0)
+						return s;
+				}
+			}
+		}
+
+		return title;
+	}
+
 	public static void main(String[] args){
 		String s = "You can grouP   parts  Of your regular expression  In your pattern   You grouP  elements";
 		//with round brackets, e.g., ()." +
@@ -472,6 +485,15 @@ public class ContentGeneratorSupport {
 		sr1 = s.replaceAll("  [A-Z]", ". $1");
 	}
 
+	public static boolean problematicHitList(List<HitBase> hits){
+		if (hits.size()<1)
+			return true;
+		for(HitBase hit: hits){
+			if (!hit.getFragments().isEmpty())
+				return false;
+		}
+		return true;		
+	}
 }
 
 

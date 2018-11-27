@@ -32,11 +32,12 @@ import opennlp.tools.util.Span;
  */
 public class NameFinderCorefEnhancerStream extends FilterObjectStream<RawCorefSample, RawCorefSample> {
 
-  private TokenNameFinder nameFinders[];
-  private String tags[];
+  private TokenNameFinder[] nameFinders;
+  private String[] tags;
   
   // TODO: Should be updated to use tag from span instead!
-  protected NameFinderCorefEnhancerStream(TokenNameFinder nameFinders[], String tags[], ObjectStream<RawCorefSample> samples) {
+  protected NameFinderCorefEnhancerStream(TokenNameFinder[] nameFinders, String[] tags,
+                                          ObjectStream<RawCorefSample> samples) {
     super(samples);
     this.nameFinders = nameFinders;
     this.tags = tags;
@@ -56,15 +57,15 @@ public class NameFinderCorefEnhancerStream extends FilterObjectStream<RawCorefSa
       
       for (Parse p : sample.getParses()) {
         
-        Parse parseTokens[] = p.getTagNodes();
-        String tokens[] = new String[parseTokens.length];
+        Parse[] parseTokens = p.getTagNodes();
+        String[] tokens = new String[parseTokens.length];
         
         for (int i = 0; i < tokens.length; i++) {
           tokens[i] = parseTokens[i].toString();
         }
         
         for (int i = 0; i < nameFinders.length; i++) {
-          Span names[] = nameFinders[i].find(tokens);
+          Span[] names = nameFinders[i].find(tokens);
           Parse.addNames(tags[i], names, parseTokens);
         }
         

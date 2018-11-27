@@ -26,8 +26,8 @@ public class ShallowParseMentionFinder extends AbstractMentionFinder {
 
   private ShallowParseMentionFinder(HeadFinder hf) {
     headFinder = hf;
-    collectPrenominalNamedEntities=true;
-    collectCoordinatedNounPhrases=true;
+    collectPrenominalNamedEntities = true;
+    collectCoordinatedNounPhrases = true;
   }
 
   /**

@@ -89,7 +89,7 @@ public class GeneratedSentenceProcessor {
 
 		String[] periods = StringUtils.split(sent.replace('.', '#'), '#');
 		if ((float) periods.length / (float) spaces.length > 0.2) {
-			System.out.println("Rejection: too many periods in sent ='"+sent);
+			//System.out.println("Rejection: too many periods in sent ='"+sent);
 			return null;
 		}
 		// commented [x], to avoid rejection sentences with refs[]
@@ -102,7 +102,7 @@ public class GeneratedSentenceProcessor {
 		String[] pipes = StringUtils.split(sent, '|');
 		if (StringUtils.split(sent, '|').length > 2
 				|| StringUtils.split(sent, '>').length > 2) {
-			System.out.println("Rejection: too many |s or >s in sent ='"+sent);
+			//System.out.println("Rejection: too many |s or >s in sent ='"+sent);
 			return null;
 		}
 		String sentTry = sent.toLowerCase();
@@ -200,14 +200,14 @@ public class GeneratedSentenceProcessor {
 	public static boolean isProhibitiveWordsOccurOrStartWith(String sentenceLowercase){
 		for(String o: occurs){
 			if (sentenceLowercase.indexOf(o)>-1){
-				System.out.println("Found prohibited occurrence "+ o +" \n in sentence = "+  sentenceLowercase);
+				//System.out.println("Found prohibited occurrence "+ o +" \n in sentence = "+  sentenceLowercase);
 				return true;
 			}
 		}
 
 		for(String o: occursStartsWith){
 			if (sentenceLowercase.startsWith(o)){
-				System.out.println("Found prohibited occurrence Start With  "+ o +" \n in sentence = "+  sentenceLowercase);
+				//System.out.println("Found prohibited occurrence Start With  "+ o +" \n in sentence = "+  sentenceLowercase);
 				return true;
 			}
 		}

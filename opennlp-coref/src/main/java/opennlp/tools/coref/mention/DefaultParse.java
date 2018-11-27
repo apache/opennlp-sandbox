@@ -30,12 +30,14 @@ import opennlp.tools.parser.chunking.Parser;
 import opennlp.tools.util.Span;
 
 /**
- * This class is a wrapper for {@link opennlp.tools.parser.Parse} mapping it to the API specified in {@link opennlp.tools.coref.mention.Parse}.
- *  This allows coreference to be done on the output of the parser.
+ * This class is a wrapper for {@link opennlp.tools.parser.Parse} mapping
+ * it to the API specified in {@link opennlp.tools.coref.mention.Parse}.
+ * This allows coreference to be done on the output of the parser.
  */
 public class DefaultParse extends AbstractParse {
 
-  public static String[] NAME_TYPES = {"person", "organization", "location", "date", "time", "percentage", "money"};
+  public static String[] NAME_TYPES = {"person", "organization", "location", "date",
+      "time", "percentage", "money"};
   
   private Parse parse;
   private int sentenceNumber;
@@ -118,10 +120,9 @@ public class DefaultParse extends AbstractParse {
   }
 
   private List<opennlp.tools.coref.mention.Parse> createParses(Parse[] parses) {
-    List<opennlp.tools.coref.mention.Parse> newParses =
-      new ArrayList<opennlp.tools.coref.mention.Parse>(parses.length);
+    List<opennlp.tools.coref.mention.Parse> newParses = new ArrayList<>(parses.length);
 
-    for (int pi=0,pn=parses.length;pi<pn;pi++) {
+    for (int pi = 0, pn = parses.length; pi < pn;pi++) {
       newParses.add(new DefaultParse(parses[pi],sentenceNumber));
     }
 
@@ -139,7 +140,7 @@ public class DefaultParse extends AbstractParse {
 
   public boolean isParentNAC() {
     Parse parent = parse.getParent();
-    while(parent != null) {
+    while (parent != null) {
       if (parent.getType().equals("NAC")) {
         return true;
       }
@@ -228,7 +229,7 @@ public class DefaultParse extends AbstractParse {
         // get parent and update distance
         // if match return distance
         // if not match do it again
-        }
+      }
       
       return parse.getSpan().compareTo(p.getSpan());
     }
@@ -243,10 +244,10 @@ public class DefaultParse extends AbstractParse {
   public opennlp.tools.coref.mention.Parse getPreviousToken() {
     Parse parent = parse.getParent();
     Parse node = parse;
-    int index=-1;
+    int index = -1;
     //find parent with previous children
-    while(parent != null && index < 0) {
-      index = parent.indexOf(node)-1;
+    while (parent != null && index < 0) {
+      index = parent.indexOf(node) - 1;
       if (index < 0) {
         node = parent;
         parent = parent.getParent();
@@ -260,7 +261,7 @@ public class DefaultParse extends AbstractParse {
       Parse p = parent.getChildren()[index];
       while (!p.isPosTag()) {
         Parse[] kids = p.getChildren();
-        p = kids[kids.length-1];
+        p = kids[kids.length - 1];
       }
       return new DefaultParse(p,sentenceNumber);
     }
@@ -269,10 +270,10 @@ public class DefaultParse extends AbstractParse {
   public opennlp.tools.coref.mention.Parse getNextToken() {
     Parse parent = parse.getParent();
     Parse node = parse;
-    int index=-1;
+    int index = -1;
     //find parent with subsequent children
-    while(parent != null) {
-      index = parent.indexOf(node)+1;
+    while (parent != null) {
+      index = parent.indexOf(node) + 1;
       if (index == parent.getChildCount()) {
         node = parent;
         parent = parent.getParent();

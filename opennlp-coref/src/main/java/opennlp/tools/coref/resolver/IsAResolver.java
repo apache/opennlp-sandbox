@@ -49,7 +49,8 @@ public class IsAResolver extends MaxentResolver {
 
   public boolean canResolve(MentionContext ec) {
     if (ec.getHeadTokenTag().startsWith("NN")) {
-      return (ec.getPreviousToken() != null && predicativePattern.matcher(ec.getPreviousToken().toString()).matches());
+      return ec.getPreviousToken() != null
+          && predicativePattern.matcher(ec.getPreviousToken().toString()).matches();
     }
     return false;
   }
@@ -57,13 +58,15 @@ public class IsAResolver extends MaxentResolver {
   @Override
   protected boolean excluded(MentionContext ec, DiscourseEntity de) {
     MentionContext cec = de.getLastExtent();
-    //System.err.println("IsAResolver.excluded?: ec.span="+ec.getSpan()+" cec.span="+cec.getSpan()+" cec="+cec.toText()+" lastToken="+ec.getNextToken());
+    //System.err.println("IsAResolver.excluded?: ec.span="+ec.getSpan()+" cec.span="+cec.getSpan()
+    //    +" cec="+cec.toText()+" lastToken="+ec.getNextToken());
     if (ec.getSentenceNumber() != cec.getSentenceNumber()) {
       //System.err.println("IsAResolver.excluded: (true) not same sentence");
       return (true);
     }
     //shallow parse appositives
-    //System.err.println("IsAResolver.excluded: ec="+ec.toText()+" "+ec.span+" cec="+cec.toText()+" "+cec.span);
+    //System.err.println("IsAResolver.excluded: ec="+ec.toText()+" "
+    //    +ec.span+" cec="+cec.toText()+" "+cec.span);
     if (cec.getIndexSpan().getEnd() == ec.getIndexSpan().getStart() - 2) {
       return (false);
     }
@@ -73,7 +76,8 @@ public class IsAResolver extends MaxentResolver {
       return (false);
     }
     //full parse w/ trailing comma or period
-    if (cec.getIndexSpan().getEnd() <= ec.getIndexSpan().getEnd() + 2 && (ec.getNextToken() != null && (ec.getNextToken().toString().equals(",") || ec.getNextToken().toString().equals(".")))) {
+    if (cec.getIndexSpan().getEnd() <= ec.getIndexSpan().getEnd() + 2 && (ec.getNextToken() != null
+        && (ec.getNextToken().toString().equals(",") || ec.getNextToken().toString().equals(".")))) {
       //System.err.println("IsAResolver.excluded: (false) spans end + punct");
       return (false);
     }
@@ -106,11 +110,12 @@ public class IsAResolver extends MaxentResolver {
       for (int ci = 0, cn = rightContexts.size(); ci < cn; ci++) {
         features.add("r" + rightContexts.get(ci));
       }
-      features.add("hts"+ant.getHeadTokenTag()+","+mention.getHeadTokenTag());
+      features.add("hts" + ant.getHeadTokenTag() + "," + mention.getHeadTokenTag());
     }
     /*
     if (entity != null) {
-      //System.err.println("MaxentIsResolver.getFeatures: ["+ec2.toText()+"] -> ["+de.getLastExtent().toText()+"]");
+      //System.err.println("MaxentIsResolver.getFeatures:
+       [ "+ec2.toText()+"] -> ["+de.getLastExtent().toText()+"]");
       //previous word and tag
       if (ant.prevToken != null) {
         features.add("pw=" + ant.prevToken);
@@ -159,7 +164,8 @@ public class IsAResolver extends MaxentResolver {
           features.add("w=" + c1toks.get(i) + "|" + "w=" + c2toks.get(j));
           features.add("w=" + c1toks.get(i) + "|" + "t=" + ((Parse) c2toks.get(j)).getSyntacticType());
           features.add("t=" + ((Parse) c1toks.get(i)).getSyntacticType() + "|" + "w=" + c2toks.get(j));
-          features.add("t=" + ((Parse) c1toks.get(i)).getSyntacticType() + "|" + "t=" + ((Parse) c2toks.get(j)).getSyntacticType());
+          features.add("t=" + ((Parse) c1toks.get(i)).getSyntacticType() + "|" + "t=" +
+              ((Parse) c2toks.get(j)).getSyntacticType());
         }
       }
       features.add("ht=" + ant.headTokenTag + "|" + "ht=" + mention.headTokenTag);

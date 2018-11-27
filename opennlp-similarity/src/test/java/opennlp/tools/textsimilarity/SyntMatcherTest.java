@@ -94,11 +94,11 @@ public class SyntMatcherTest extends TestCase {
 
     System.out.println(matchResult);
     assertEquals(
-        "[[ [PRP-i ],  [NN-zoom NN-camera ],  [JJ-digital NN-* ],  [NN-* IN-for ],  [NN-camera ]], [ [JJ-digital NN-* ],  [NN-zoom NN-camera ],  [NN-* IN-for ]]]",
+        "[[ [PRP-i ],  [NN-zoom NN-camera ],  [JJ-digital NN-* ],  [NN-* IN-for ]], [ [JJ-digital NN-* ],  [NN-zoom NN-camera ],  [NN-* IN-for ]]]",
         matchResult.toString());
     System.out.println(parseTreeChunk.listToString(matchResult));
     assertEquals(
-        " np [ [PRP-i ],  [NN-zoom NN-camera ],  [JJ-digital NN-* ],  [NN-* IN-for ],  [NN-camera ]] vp [ [JJ-digital NN-* ],  [NN-zoom NN-camera ],  [NN-* IN-for ]]",
+        " np [ [PRP-i ],  [NN-zoom NN-camera ],  [JJ-digital NN-* ],  [NN-* IN-for ]] vp [ [JJ-digital NN-* ],  [NN-zoom NN-camera ],  [NN-* IN-for ]]",
         parseTreeChunk.listToString(matchResult));
     parserChunker2Matcher.close();
   }
@@ -112,11 +112,11 @@ public class SyntMatcherTest extends TestCase {
 
     System.out.println(matchResult);
     assertEquals(
-        "[[ [PRP-i ],  [NN-focus NNS-* NNS-lens IN-for JJ-digital NN-camera ],  [JJ-digital NN-camera ]], [ [VB-get NN-focus NNS-* NNS-lens IN-for JJ-digital NN-camera ]]]",
+        "[[ [PRP-i ],  [NN-focus NNS-* NNS-lens IN-for JJ-digital NN-camera ]], [ [VB-get NN-focus NNS-* NNS-lens IN-for JJ-digital NN-camera ]]]",
         matchResult.toString());
     System.out.println(parseTreeChunk.listToString(matchResult));
     assertEquals(
-        " np [ [PRP-i ],  [NN-focus NNS-* NNS-lens IN-for JJ-digital NN-camera ],  [JJ-digital NN-camera ]] vp [ [VB-get NN-focus NNS-* NNS-lens IN-for JJ-digital NN-camera ]]",
+        " np [ [PRP-i ],  [NN-focus NNS-* NNS-lens IN-for JJ-digital NN-camera ]] vp [ [VB-get NN-focus NNS-* NNS-lens IN-for JJ-digital NN-camera ]]",
         parseTreeChunk.listToString(matchResult));
     parserChunker2Matcher.close();
   }

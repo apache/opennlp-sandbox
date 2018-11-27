@@ -49,7 +49,7 @@ public class DiscourseModel {
       entities.add(0,e);
     }
     else {
-      System.err.println("DiscourseModel.mentionEntity: failed to remove "+e);
+      System.err.println("DiscourseModel.mentionEntity: failed to remove " + e);
     }
   }
 
@@ -91,7 +91,7 @@ public class DiscourseModel {
    * @param confidence The confidence.
    */
   public void mergeEntities(DiscourseEntity e1,DiscourseEntity e2,float confidence) {
-    for (Iterator<MentionContext> ei=e2.getMentions();ei.hasNext();) {
+    for (Iterator<MentionContext> ei = e2.getMentions(); ei.hasNext();) {
       e1.addMention(ei.next());
     }
     //System.err.println("DiscourseModel.mergeEntities: removing "+e2);

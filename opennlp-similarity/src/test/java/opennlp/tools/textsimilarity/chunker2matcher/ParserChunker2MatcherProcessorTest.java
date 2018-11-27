@@ -101,9 +101,9 @@ public class ParserChunker2MatcherProcessorTest extends TestCase {
     String phrase2 = "How to deduct repair expense from rental income.";
     List<List<ParseTreeChunk>> matchResult = parser.assessRelevance(phrase1,
         phrase2).getMatchResult();
-    assertEquals(
-        matchResult.toString(),
-        "[[ [NN-expense IN-from NN-income ],  [JJ-rental NN-* ],  [NN-income ]], [ [TO-to VB-deduct JJ-rental NN-* ],  [VB-deduct NN-expense IN-from NN-income ]]]");
+    assertEquals(      
+        "[[ [NN-expense IN-from NN-income ],  [JJ-rental NN-* ]], [ [TO-to VB-deduct JJ-rental NN-* ],  [VB-deduct NN-expense IN-from NN-income ]]]", 
+        matchResult.toString());
     System.out.println(matchResult);
     double matchScore = parseTreeChunkListScorer
         .getParseTreeChunkListScore(matchResult);
@@ -119,8 +119,8 @@ public class ParserChunker2MatcherProcessorTest extends TestCase {
     phrase2 = "Means to deduct educational expense for my son";
     matchResult = parser.assessRelevance(phrase1, phrase2).getMatchResult();
     assertEquals(
-        matchResult.toString(),
-        "[[ [JJ-* NN-expense IN-for PRP$-my NN-* ],  [PRP$-my NN-* ]], [ [TO-to VB-* JJ-* NN-expense IN-for PRP$-my NN-* ]]]");
+        "[[ [JJ-* NN-expense IN-for PRP$-my NN-* ]], [ [TO-to VB-* JJ-* NN-expense IN-for PRP$-my NN-* ]]]", 
+        matchResult.toString());
     System.out.println(matchResult);
     matchScore = parseTreeChunkListScorer
         .getParseTreeChunkListScore(matchResult);

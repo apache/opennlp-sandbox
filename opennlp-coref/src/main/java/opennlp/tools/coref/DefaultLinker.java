@@ -62,27 +62,32 @@ public class DefaultLinker extends AbstractLinker {
   }
 
   /**
-   * Creates a new linker with the specified model directory, running in the specified mode which uses a discourse model
+   * Creates a new linker with the specified model directory,
+   * running in the specified mode which uses a discourse model
    * based on the specified parameter.
    * @param modelDirectory The directory where the models for this linker are kept.
    * @param mode The mode that this linker is running in.
    * @param useDiscourseModel Whether the model should use a discourse model or not.
    * @throws IOException when the models can not be read or written to based on the mode.
    */
-  public DefaultLinker(String modelDirectory, LinkerMode mode, boolean useDiscourseModel) throws IOException {
+  public DefaultLinker(String modelDirectory, LinkerMode mode, boolean useDiscourseModel)
+      throws IOException {
     this(modelDirectory,mode,useDiscourseModel,-1);
   }
 
   /**
-   * Creates a new linker with the specified model directory, running in the specified mode which uses a discourse model
+   * Creates a new linker with the specified model directory,
+   * running in the specified mode which uses a discourse model
    * based on the specified parameter and uses the specified fixed non-referential probability.
    * @param modelDirectory The directory where the models for this linker are kept.
    * @param mode The mode that this linker is running in.
    * @param useDiscourseModel Whether the model should use a discourse model or not.
-   * @param fixedNonReferentialProbability The probability which resolvers are required to exceed to positi a coreference relationship.
+   * @param fixedNonReferentialProbability The probability which resolvers are
+   *                                       required to exceed to positi a coreference relationship.
    * @throws IOException when the models can not be read or written to based on the mode.
    */
-  public DefaultLinker(String modelDirectory, LinkerMode mode, boolean useDiscourseModel, double fixedNonReferentialProbability) throws IOException {
+  public DefaultLinker(String modelDirectory, LinkerMode mode, boolean useDiscourseModel,
+                       double fixedNonReferentialProbability) throws IOException {
     super(modelDirectory, mode, useDiscourseModel);
     if (mode != LinkerMode.SIM) {
       mcm = new MaxentCompatibilityModel(corefProject);

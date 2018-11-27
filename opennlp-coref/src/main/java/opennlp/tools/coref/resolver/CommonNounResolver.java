@@ -35,7 +35,8 @@ public class CommonNounResolver extends MaxentResolver {
     preferFirstReferent = true;
   }
 
-  public CommonNounResolver(String projectName, ResolverMode m, NonReferentialResolver nrr) throws IOException {
+  public CommonNounResolver(String projectName, ResolverMode m, NonReferentialResolver nrr)
+      throws IOException {
     super(projectName,"cmodel", m, 80, true,nrr);
     showExclusions = false;
     preferFirstReferent = true;
@@ -55,7 +56,8 @@ public class CommonNounResolver extends MaxentResolver {
   public boolean canResolve(MentionContext mention) {
     String firstTok = mention.getFirstTokenText().toLowerCase();
     String firstTokTag = mention.getFirstToken().getSyntacticType();
-    boolean rv = mention.getHeadTokenTag().equals("NN") && !ResolverUtils.definiteArticle(firstTok, firstTokTag);
+    boolean rv = mention.getHeadTokenTag().equals("NN")
+        && !ResolverUtils.definiteArticle(firstTok, firstTokTag);
     return rv;
   }
 

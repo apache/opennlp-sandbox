@@ -26,7 +26,7 @@ import java.util.logging.Logger;
 import opennlp.tools.similarity.apps.BingQueryRunner;
 import opennlp.tools.similarity.apps.HitBase;
 import opennlp.tools.similarity.apps.utils.StringCleaner;
-import opennlp.tools.stemmer.PorterStemmer;
+import opennlp.tools.stemmer.PStemmer;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
 import opennlp.tools.textsimilarity.ParseTreeChunkListScorer;
 import opennlp.tools.textsimilarity.SentencePairMatchResult;
@@ -51,7 +51,7 @@ public class TaxonomyExtenderViaMebMining extends BingQueryRunner {
 
   private Map<String, List<List<String>>> lemma_ExtendedAssocWords = new HashMap<String, List<List<String>>>();
   private Map<List<String>, List<List<String>>> assocWords_ExtendedAssocWords = new HashMap<List<String>, List<List<String>>>();
-  private PorterStemmer ps;
+  private PStemmer ps;
 
   public Map<List<String>, List<List<String>>> getAssocWords_ExtendedAssocWords() {
     return assocWords_ExtendedAssocWords;
@@ -73,7 +73,7 @@ public class TaxonomyExtenderViaMebMining extends BingQueryRunner {
       System.err.println("Problem loading synt matcher");
 
     }
-    ps = new PorterStemmer();
+    ps = new PStemmer();
 
   }
 

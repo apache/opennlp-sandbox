@@ -22,8 +22,8 @@ import java.util.List;
 import java.util.logging.Logger;
 
 
+
 import opennlp.tools.jsmlearning.ProfileReaderWriter;
-import opennlp.tools.parse_thicket.matching.Matcher;
 import opennlp.tools.similarity.apps.BingQueryRunner;
 import opennlp.tools.similarity.apps.HitBase;
 import opennlp.tools.similarity.apps.HitBaseComparable;
@@ -38,7 +38,7 @@ public class MultiSentenceSearchResultsProcessor  {
 			.getLogger("opennlp.tools.similarity.apps.SearchResultsProcessor");
 
 	private WebSearchEngineResultsScraper scraper = new WebSearchEngineResultsScraper();
-	private Matcher matcher = new Matcher();
+	private ParserChunker2MatcherProcessor matcher = ParserChunker2MatcherProcessor.getInstance();
 	private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
 	private BingQueryRunner bingSearcher = new BingQueryRunner();
 	private SnippetToParagraph snp = new SnippetToParagraph();
@@ -65,17 +65,18 @@ public class MultiSentenceSearchResultsProcessor  {
 					
 			Double score = 0.0;
 			try {
-				List<List<ParseTreeChunk>> match = null;
+				SentencePairMatchResult match = null;
 				if (pageSentsAndSnippet!=null && pageSentsAndSnippet[0].length()>50){
-					match = matcher.assessRelevanceCache(pageSentsAndSnippet[0] ,
+					match = matcher.assessRelevance(pageSentsAndSnippet[0] ,
 							searchQuery);
-					score = parseTreeChunkListScorer.getParseTreeChunkListScore(match);
+					 score = parseTreeChunkListScorer.getParseTreeChunkListScore(match.getMatchResult());
+							//parseTreeChunkListScorer.getParseTreeChunkListScore(match);
 					hit.setSource(match.toString());
 				}
 				if (score < 2){ // attempt to match with snippet, if not much luck with original text
-					match = matcher.assessRelevanceCache(pageSentsAndSnippet[0] ,
+					match = matcher.assessRelevance(pageSentsAndSnippet[1] ,
 							searchQuery);
-					score = parseTreeChunkListScorer.getParseTreeChunkListScore(match);
+					score = parseTreeChunkListScorer.getParseTreeChunkListScore(match.getMatchResult());
 				}
 				LOG.info(score + " | " +pageSentsAndSnippet[1]);
 			} catch (Exception e) {
@@ -161,7 +162,7 @@ public class MultiSentenceSearchResultsProcessor  {
 			LOG.info("No search results for query '" + query);
 			return null;
 		}
-		ProfileReaderWriter.writeReport(reportData, "resultsForQuery_"+query.replace(' ', '_')+".csv");
+		//ProfileReaderWriter.writeReport(reportData, "resultsForQuery_"+query.replace(' ', '_')+".csv");
 		return hits;
 	}
 	

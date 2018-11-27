@@ -23,8 +23,11 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
+
+import opennlp.tools.similarity.apps.utils.PageFetcher;
 import opennlp.tools.similarity.apps.utils.StringCleaner;
-import opennlp.tools.stemmer.PorterStemmer;
+import opennlp.tools.stemmer.PStemmer;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
 import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.TextProcessor;
@@ -34,7 +37,8 @@ public class StoryDiscourseNavigator {
 	protected BingQueryRunner yrunner = new BingQueryRunner();
 	ParserChunker2MatcherProcessor sm = ParserChunker2MatcherProcessor
 			.getInstance();
-	private PorterStemmer ps = new PorterStemmer();
+	private PStemmer ps = new PStemmer();
+	PageFetcher pFetcher = new PageFetcher();
 
 	public static final String[] frequentPerformingVerbs = {
 		" born raised meet learn ", " graduated enter discover",
@@ -53,8 +57,34 @@ public class StoryDiscourseNavigator {
 		"meet enjoy follow create", "discover continue produce"
 
 	};
+	
+	private String[] obtainKeywordsForAnEntityFromWikipedia(String entity){
+		yrunner.setKey("xdnRVcVf9m4vDvW1SkTAz5kS5DFYa19CrPYGelGJxnc");
+		List<HitBase> resultList = yrunner.runSearch(entity, 20);
+		HitBase h = null;
+		for (int i = 0; i < resultList.size(); i++) {
+			h = resultList.get(i);
+			if (h.getUrl().indexOf("wikipedia.")>-1)
+				break;
+		}
+		String content = pFetcher.fetchOrigHTML(h.getUrl());
+		content = content.replace("\"><a href=\"#", "&_&_&_&");
+		String[] portions = StringUtils.substringsBetween(content, "&_&_&_&", "\"><span");
+		List<String> results = new ArrayList<String>();
+		for(int i = 0; i< portions.length; i++){
+			if (portions[i].indexOf("cite_note")>-1)
+				continue;
+			 results.add(entity + " " + portions[i].replace('_', ' ').replace('.',' '));
+		}
+	    return results.toArray(new String[0]);	
+	}
 
 	public String[] obtainAdditionalKeywordsForAnEntity(String entity){
+		String[] keywordsFromWikipedia = obtainKeywordsForAnEntityFromWikipedia(entity);
+		// these keywords should include *entity*
+		if (keywordsFromWikipedia!=null && keywordsFromWikipedia.length>3)
+			return keywordsFromWikipedia;
+		
 		List<List<ParseTreeChunk>> matchList = runSearchForTaxonomyPath(
 				entity, "", "en", 30);
 		Collection<String> keywordsToRemove = TextProcessor.fastTokenize(entity.toLowerCase(), false);
@@ -70,7 +100,7 @@ public class StoryDiscourseNavigator {
 		return res;
 	}
 
-	public List<List<ParseTreeChunk>> runSearchForTaxonomyPath(String query,
+	private List<List<ParseTreeChunk>> runSearchForTaxonomyPath(String query,
 			String domain, String lang, int numbOfHits) {
 		List<List<ParseTreeChunk>> genResult = new ArrayList<List<ParseTreeChunk>>();
 		try {
@@ -126,6 +156,8 @@ public class StoryDiscourseNavigator {
 	}
 	public static void main(String[] args){
 		String[] res = new StoryDiscourseNavigator().obtainAdditionalKeywordsForAnEntity("Albert Einstein");
+		System.out.println(Arrays.asList(res));
+		res = new StoryDiscourseNavigator().obtainAdditionalKeywordsForAnEntity("search engine marketing");
 		System.out.println(Arrays.asList(res));
 	}
 }

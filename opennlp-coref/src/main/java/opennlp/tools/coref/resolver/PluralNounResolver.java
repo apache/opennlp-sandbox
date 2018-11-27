@@ -35,7 +35,8 @@ public class PluralNounResolver extends MaxentResolver {
     showExclusions = false;
   }
 
-  public PluralNounResolver(String projectName, ResolverMode m, NonReferentialResolver nrr) throws IOException {
+  public PluralNounResolver(String projectName, ResolverMode m, NonReferentialResolver nrr)
+      throws IOException {
     super(projectName,"plmodel", m, 80, true,nrr);
     showExclusions = false;
   }
@@ -56,7 +57,8 @@ public class PluralNounResolver extends MaxentResolver {
   public boolean canResolve(MentionContext mention) {
     String firstTok = mention.getFirstTokenText().toLowerCase();
     String firstTokTag = mention.getFirstToken().getSyntacticType();
-    boolean rv = mention.getHeadTokenTag().equals("NNS") && !ResolverUtils.definiteArticle(firstTok, firstTokTag);
+    boolean rv = mention.getHeadTokenTag().equals("NNS")
+        && !ResolverUtils.definiteArticle(firstTok, firstTokTag);
     return rv;
   }
 

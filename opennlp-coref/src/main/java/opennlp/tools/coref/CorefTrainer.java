@@ -53,9 +53,9 @@ public class CorefTrainer {
 
       Parse p = ((DefaultParse) corefParse).getParse();
       
-      Mention extents[] = mentionFinder.getMentions(corefParse);
+      Mention[] extents = mentionFinder.getMentions(corefParse);
       
-      for (int ei = 0, en = extents.length; ei < en;ei++) {
+      for (int ei = 0, en = extents.length; ei < en; ei++) {
 
         if (extents[ei].getParse() == null) {
 
@@ -117,7 +117,7 @@ public class CorefTrainer {
     genTrain.trainModel();
     numTrain.trainModel();
     
-    MaxentResolver.setSimilarityModel(SimilarityModel.testModel(modelDirectory + "/coref"+"/sim"));
+    MaxentResolver.setSimilarityModel(SimilarityModel.testModel(modelDirectory + "/coref" + "/sim"));
     
     // Done with similarity training
     

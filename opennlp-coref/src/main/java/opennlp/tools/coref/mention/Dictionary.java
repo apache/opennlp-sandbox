@@ -42,7 +42,7 @@ public interface Dictionary {
    * @return a key indicating the specified sense number of the specified
    * lemma with the specified part-of-speech.
    */
- public  String getSenseKey(String lemma, String pos, int senseNumber);
+  public  String getSenseKey(String lemma, String pos, int senseNumber);
 
   /**
    * Returns the number of senses in the dictionary for the specified lemma.
@@ -54,12 +54,14 @@ public interface Dictionary {
   public int getNumSenses(String lemma, String pos);
 
   /**
-   * Returns an array of keys for each parent of the specified sense number of the specified lemma with the specified part-of-speech.
+   * Returns an array of keys for each parent of the specified sense number
+   * of the specified lemma with the specified part-of-speech.
    * 
    * @param lemma A lemmatized form of the word to look up.
    * @param pos The part-of-speech for the lemma.
    * @param senseNumber The sense number for which the parent keys are desired.
-   * @return an array of keys for each parent of the specified sense number of the specified lemma with the specified part-of-speech.
+   * @return an array of keys for each parent of the specified sense number of
+   *         the specified lemma with the specified part-of-speech.
    */
   public String[] getParentSenseKeys(String lemma, String pos, int senseNumber);
 }

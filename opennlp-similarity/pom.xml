@@ -1,25 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!--
-   Licensed to the Apache Software Foundation (ASF) under one
-   or more contributor license agreements.  See the NOTICE file
-   distributed with this work for additional information
-   regarding copyright ownership.  The ASF licenses this file
-   to you under the Apache License, Version 2.0 (the
-   "License"); you may not use this file except in compliance
-   with the License.  You may obtain a copy of the License at
+<!-- Licensed to the Apache Software Foundation (ASF) under one or more contributor 
+	license agreements. See the NOTICE file distributed with this work for additional 
+	information regarding copyright ownership. The ASF licenses this file to 
+	you under the Apache License, Version 2.0 (the "License"); you may not use 
+	this file except in compliance with the License. You may obtain a copy of 
+	the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required 
+	by applicable law or agreed to in writing, software distributed under the 
+	License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS 
+	OF ANY KIND, either express or implied. See the License for the specific 
+	language governing permissions and limitations under the License. -->
 
-     http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing,
-   software distributed under the License is distributed on an
-   "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-   KIND, either express or implied.  See the License for the
-   specific language governing permissions and limitations
-   under the License.    
--->
-
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
@@ -31,35 +24,52 @@
 
 	<groupId>org.apache.opennlp</groupId>
 	<artifactId>opennlp-similarity</artifactId>
-	<version>0.0.1</version>
+	<version>0.1.0</version>
 	<packaging>jar</packaging>
 
 	<name>OpenNLP Tool Similarity distribution</name>
 
 	<scm>
-  		<connection>scm:svn:http://svn.apache.org/repos/asf/opennlp/sandbox/opennlp-similarity/tags/opennlp-similarity-0.0.1</connection> 
-  		<developerConnection>scm:svn:https://svn.apache.org/repos/asf/opennlp/sandbox/opennlp-similarity/tags/opennlp-similarity-0.0.1</developerConnection> 
-  		<url>http://svn.apache.org/viewvc/opennlp/tags/opennlp-similarity-0.0.1</url> 
+		<connection>scm:svn:http://svn.apache.org/repos/asf/opennlp/sandbox/opennlp-similarity/tags/opennlp-similarity-0.0.1</connection>
+		<developerConnection>scm:svn:https://svn.apache.org/repos/asf/opennlp/sandbox/opennlp-similarity/tags/opennlp-similarity-0.0.1</developerConnection>
+		<url>http://svn.apache.org/viewvc/opennlp/tags/opennlp-similarity-1.1.0</url>
 	</scm>
 	<prerequisites>
 		<maven>3.0</maven>
 	</prerequisites>
-	
+	<distributionManagement>
+	  <snapshotRepository>
+	    <id>ossrh</id>
+	    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+	  </snapshotRepository>
+	</distributionManagement>
+
+
 	<repositories>
 		<repository>
-		 <id>net.billylieurance</id>
-        <name>BillyLieuranceNet</name>
-        <url>http://www.billylieurance.net/maven2</url>	
-        </repository>
+			<id>net.billylieurance</id>
+			<name>BillyLieuranceNet</name>
+			<url>http://www.billylieurance.net/maven2</url>
+		</repository>
 	</repositories>
+	
+	<properties>
+              <nd4j.version>0.4-rc3.4</nd4j.version> 
+              <dl4j.version>0.4-rc3.3</dl4j.version>
+   </properties>
 
 	<dependencies>
 		<dependency>
-		  <groupId>org.apache.opennlp</groupId>
-		  <artifactId>opennlp-tools</artifactId>
-		  <version>1.5.2-incubating</version>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>1.6.4</version>
 		</dependency>
-		
+		<dependency>
+  			<groupId>org.apache.opennlp</groupId>
+  			<artifactId>opennlp-tools</artifactId>
+  			<version>1.6.0</version>
+		</dependency>
+
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -77,11 +87,10 @@
 			<artifactId>json</artifactId>
 			<version>20090211</version>
 		</dependency>
-
 		<dependency>
 			<groupId>org.apache.tika</groupId>
-			<artifactId>tika-core</artifactId>
-			<version>0.7</version>
+			<artifactId>tika-app</artifactId>
+			<version>1.6</version>
 		</dependency>
 		<dependency>
 			<groupId>net.sf.opencsv</groupId>
@@ -91,57 +100,127 @@
 		<dependency>
 			<groupId>org.apache.lucene</groupId>
 			<artifactId>lucene-core</artifactId>
-			<version>4.0.0-BETA</version>
+			<version>4.10.0</version>
 		</dependency>
-            
+
 		<dependency>
 			<groupId>org.apache.solr</groupId>
 			<artifactId>solr-core</artifactId>
-			<version>4.0.0-BETA</version>
+			<version>4.10.0</version>
 		</dependency>
 		<dependency>
-			 <groupId>commons-codec</groupId>
-			 <artifactId>commons-codec</artifactId>
-			 <version>1.7</version>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>1.7</version>
 		</dependency>
 		<dependency>
-			 <groupId>commons-logging</groupId>
-			 <artifactId>commons-logging</artifactId>
-			 <version>1.1.1</version>
+			<groupId>commons-logging</groupId>
+			<artifactId>commons-logging</artifactId>
+			<version>1.1.1</version>
 		</dependency>
 		<dependency>
-			 <groupId>org.apache.httpcomponents</groupId>
-			 <artifactId>httpclient</artifactId>
-			 <version>4.2.1</version>
+			<groupId>commons-collections</groupId>
+			<artifactId>commons-collections</artifactId>
+			<version>3.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-math3</artifactId>
+			<version>3.5</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>4.2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient-cache</artifactId>
+			<version>4.2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpcore</artifactId>
+			<version>4.2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpmime</artifactId>
+			<version>4.2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>fluent-hc</artifactId>
+			<version>4.2.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.jgrapht</groupId>
+			<artifactId>jgrapht-jdk1.5</artifactId>
+			<version>0.7.3</version>
+		</dependency>
+		<dependency>
+			<groupId>de.jollyday</groupId>
+			<artifactId>jollyday</artifactId>
+			<version>0.4.7</version>
+		</dependency>
+		<dependency>
+			<groupId>jgraph</groupId>
+			<artifactId>jgraph</artifactId>
+			<version>5.13.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.mail</groupId>
+			<artifactId>mail</artifactId>
+			<version>1.4</version>
+		</dependency>
+		<dependency>
+			<groupId>com.restfb</groupId>
+			<artifactId>restfb</artifactId>
+			<version>1.6.12</version>
+		</dependency>
+		<dependency>
+			<groupId>com.memetix</groupId>
+			<artifactId>microsoft-translator-java-api</artifactId>
+			<version>0.3</version>
+		</dependency>
+
+		<dependency>
+			<groupId>net.billylieurance.azuresearch</groupId>
+			<artifactId>azure-bing-search-java</artifactId>
+			<version>0.11.0</version>
+		</dependency>
+		<dependency>
+			<groupId>edu.mit</groupId>
+			<artifactId>jverbnet</artifactId>
+			<version>1.2.0</version>
+			<systemPath>${project.basedir}/lib/edu.mit.jverbnet-1.2.0.jar</systemPath>
+			<scope>system</scope>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.docx4j</groupId>
+			<artifactId>docx4j</artifactId>
+			<version>2.7.1</version>
+		</dependency>
+		<dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-ui</artifactId>
+            <version>${dl4j.version}</version>
         </dependency>
         <dependency>
-			 <groupId>org.apache.httpcomponents</groupId>
-			 <artifactId>httpclient-cache</artifactId>
-			 <version>4.2.1</version>
-		</dependency>
-		<dependency>
-			 <groupId>org.apache.httpcomponents</groupId>
-			 <artifactId>httpcore</artifactId>
-			 <version>4.2.1</version>
-		</dependency>
-		<dependency>
-			 <groupId>org.apache.httpcomponents</groupId>
-			 <artifactId>httpmime</artifactId>
-			 <version>4.2.1</version>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-nlp</artifactId>
+            <version>${dl4j.version}</version>
         </dependency>
-		<dependency>
-			 <groupId>org.apache.httpcomponents</groupId>
-			 <artifactId>fluent-hc</artifactId>
-			 <version>4.2.1</version>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-jblas</artifactId> 
+            <version>${nd4j.version}</version>
         </dependency>
-		<dependency>
-	        <groupId>net.billylieurance.azuresearch</groupId>
-	        <artifactId>azure-bing-search-java</artifactId>
-        <version>0.11.0</version>
-		</dependency>
-            
 	</dependencies>
-	
+
 	<build>
 		<plugins>
 			<plugin>
@@ -150,10 +229,10 @@
 				<configuration>
 					<source>1.5</source>
 					<target>1.5</target>
-          			<compilerArgument>-Xlint</compilerArgument>
+					<compilerArgument>-Xlint</compilerArgument>
 				</configuration>
 			</plugin>
-			
+
 			<plugin>
 				<artifactId>maven-source-plugin</artifactId>
 				<executions>
@@ -166,87 +245,94 @@
 					</execution>
 				</executions>
 			</plugin>
+			
 			<plugin>
-				<artifactId>maven-javadoc-plugin</artifactId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>1.6</version>
 				<executions>
 					<execution>
-						<id>create-javadoc-jar</id>
+						<id>generate checksums for binary artifacts</id>
 						<goals>
-							<goal>jar</goal>
+							<goal>run</goal>
 						</goals>
-						<phase>package</phase>
+						<phase>verify</phase>
 						<configuration>
-							<show>public</show>
-							<quiet>true</quiet>
-							<use>false</use> <!-- Speeds up the build of the javadocs -->
+							<target>
+								<checksum algorithm="sha1" format="MD5SUM">
+									<fileset dir="${project.build.directory}">
+										<include name="*.zip" />
+										<include name="*.gz" />
+									</fileset>
+								</checksum>
+								<checksum algorithm="md5" format="MD5SUM">
+									<fileset dir="${project.build.directory}">
+										<include name="*.zip" />
+										<include name="*.gz" />
+									</fileset>
+								</checksum>
+							</target>
 						</configuration>
 					</execution>
 				</executions>
 			</plugin>
-			<plugin> 
-	        <artifactId>maven-antrun-plugin</artifactId> 
-	        <version>1.6</version> 
-	        <executions> 
-	          <execution> 
-	            <id>generate checksums for binary artifacts</id> 
-	            <goals><goal>run</goal></goals> 
-	            <phase>verify</phase> 
-	            <configuration> 
-	              <target> 
-	                <checksum algorithm="sha1" format="MD5SUM"> 
-	                  <fileset dir="${project.build.directory}"> 
-	                    <include name="*.zip" /> 
-	                    <include name="*.gz" /> 
-	                  </fileset> 
-	                </checksum> 
-	                <checksum algorithm="md5" format="MD5SUM"> 
-	                  <fileset dir="${project.build.directory}"> 
-	                    <include name="*.zip" /> 
-	                    <include name="*.gz" /> 
-	                  </fileset> 
-	                </checksum> 
-	              </target> 
-	            </configuration> 
-	          </execution> 
-	        </executions> 
-	      </plugin>
-	      <plugin>
-			  <artifactId>maven-assembly-plugin</artifactId> 
-				 <executions>
-					 <execution>
-					  <id>src</id> 
-					 <goals>
-					  	<goal>single</goal> 
-					  </goals>
-					  <phase>package</phase> 
-					 	<configuration>
-					 		<descriptors>
-					  			<descriptor>src/main/assembly/assembly.xml</descriptor> 
-					  		</descriptors>
-					  	</configuration>
-					  </execution>
-					 <execution>
-					  <id>source-release-assembly</id> 
-					 <configuration>
-					  <skipAssembly>true</skipAssembly> 
-					  <mavenExecutorId>forked-path</mavenExecutorId>
-					  </configuration>
-					  </execution>
-				  </executions>
-			  </plugin>
-	      <plugin>
-	        <groupId>org.apache.maven.plugins</groupId>
-	        <artifactId>maven-gpg-plugin</artifactId>
-	        <executions>
-	          <execution>
-	            <id>sign-artifacts</id>
-	            <phase>verify</phase>
-	            <goals>
-	              <goal>sign</goal>
-	            </goals>
-	          </execution>
-	        </executions>
-      </plugin>
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>src</id>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<phase>package</phase>
+						<configuration>
+							<descriptors>
+								<descriptor>src/main/assembly/assembly.xml</descriptor>
+							</descriptors>
+						</configuration>
+					</execution>
+					<execution>
+						<id>source-release-assembly</id>
+						<configuration>
+							<skipAssembly>true</skipAssembly>
+							<mavenExecutorId>forked-path</mavenExecutorId>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		<!--	<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-gpg-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>sign-artifacts</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>sign</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			-->
+			 <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.1</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+			<plugin>
+		      <groupId>org.sonatype.plugins</groupId>
+		      <artifactId>nexus-staging-maven-plugin</artifactId>
+		      <version>1.6.3</version>
+		      <extensions>true</extensions>
+		      <configuration>
+		        <serverId>ossrh</serverId>
+		        <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+		        <autoReleaseAfterClose>true</autoReleaseAfterClose>
+		      </configuration>
+    		</plugin>
 		</plugins>
 	</build>
 </project>

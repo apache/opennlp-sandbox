@@ -22,9 +22,12 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import opennlp.tools.jsmlearning.ProfileReaderWriter;
 
 /**
  * This class stores the taxonomy on the file-system
@@ -80,6 +83,31 @@ public class TaxonomySerializer implements Serializable {
       ex.printStackTrace();
     }
 
+     String csvFilename = filename+".csv";
+     List<String[]> taxo_list = new  ArrayList<String[]>();
+     List<String> entries = new ArrayList<String>(lemma_ExtendedAssocWords.keySet());
+     for(String e: entries){
+    	 List<String> lines = new ArrayList<String>();
+    	 lines.add(e);
+    	 for(List<String> ls: lemma_ExtendedAssocWords.get(e)){
+    		 lines.add(ls.toString());
+    	 }
+    	 taxo_list.add((String[])lines.toArray(new String[0]));
+     }
+     ProfileReaderWriter.writeReport(taxo_list, csvFilename);
+     
+     String csvFilenameListEntries = filename+"_ListEntries.csv";
+     taxo_list = new  ArrayList<String[]>();
+     List<List<String>> entriesList = new ArrayList<List<String>>( assocWords_ExtendedAssocWords.keySet());
+     for(List<String> e: entriesList){
+    	 List<String> lines = new ArrayList<String>();
+    	 lines.addAll(e);
+    	 for(List<String> ls: assocWords_ExtendedAssocWords.get(e)){
+    		 lines.add(ls.toString());
+    	 }
+    	 taxo_list.add((String[])lines.toArray(new String[0]));
+     }
+     ProfileReaderWriter.writeReport(taxo_list, csvFilenameListEntries);
   }
 
   public static TaxonomySerializer readTaxonomy(String filename) {

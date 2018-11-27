@@ -1,0 +1,10 @@
+target
+.classpath
+.project
+.settings
+nbactions.xml
+nb-configuration.xml
+*.DS_Store
+
+.idea
+*.iml
