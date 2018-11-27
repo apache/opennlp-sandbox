@@ -19,12 +19,11 @@ package opennlp.tools.textsimilarity;
 
 import java.util.List;
 
-
-import opennlp.tools.stemmer.PorterStemmer;
+import opennlp.tools.stemmer.PStemmer;
 
 public class LemmaFormManager {
 
-  public String matchLemmas(PorterStemmer ps, String lemma1, String lemma2,
+  public String matchLemmas(PStemmer ps, String lemma1, String lemma2,
       String POS) {
     if (POS == null) {
       return null;
@@ -70,7 +69,8 @@ public class LemmaFormManager {
     }
     try {
       if (ps != null) {
-        if (ps.stem(lemma1).toString().equalsIgnoreCase(ps.stem(lemma2).toString())) {
+        if (ps.stem(lemma1).toString()
+            .equalsIgnoreCase(ps.stem(lemma2).toString())) {
           return lemma1;
         }
       }

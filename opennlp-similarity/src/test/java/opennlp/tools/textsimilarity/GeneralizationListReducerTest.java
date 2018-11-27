@@ -22,8 +22,8 @@ import java.util.List;
 
 import junit.framework.TestCase;
 
-public class GeneralizationListReducerTest extends TestCase{
-  private GeneralizationListReducer generalizationListReducer = new  GeneralizationListReducer();
+public class GeneralizationListReducerTest extends TestCase {
+  private GeneralizationListReducer generalizationListReducer = new GeneralizationListReducer();
 
   public void notNull() {
     assertNotNull(generalizationListReducer);
@@ -61,16 +61,18 @@ public class GeneralizationListReducerTest extends TestCase{
     assertFalse(ch2.isASubChunk(ch1));
     assertFalse(ch5.isASubChunk(ch4));
     assertTrue(ch4.isASubChunk(ch5));
-    
+
     assertFalse(ch2.isASubChunk(ch3));
     assertFalse(ch3.isASubChunk(ch2));
-    
+
     assertFalse(ch5.isASubChunk(ch3));
     assertFalse(ch3.isASubChunk(ch5));
 
     List<ParseTreeChunk> res = generalizationListReducer
         .applyFilteringBySubsumption(inp);
-    assertEquals(res.toString(), "[VP [VB-run IN-around NP-tigers NP-zoo ], NP [DT-the NP-tigers ], NP [DT-the NN-* VBG-flying NN-car ]]");
+    assertEquals(
+        res.toString(),
+        "[VP [VB-run IN-around NP-tigers NP-zoo ], NP [DT-the NP-tigers ], NP [DT-the NN-* VBG-flying NN-car ]]");
     System.out.println(res);
 
   }

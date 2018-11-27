@@ -17,68 +17,78 @@
 
 package org.apache.opennlp.corpus_server.store;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.apache.opennlp.corpus_server.UimaUtil;
-import org.apache.uima.cas.CAS;
-import org.apache.uima.resource.metadata.TypeSystemDescription;
 
 /**
  * Dummy in memory corpus store.
  */
 public class MemoryCorpusStore implements CorpusStore {
 
-	private final String corpusName;
-	private final TypeSystemDescription typeSystem;
-	private byte[] indexMapping;
-	
-	private Map<String, byte[]> casStore = new HashMap<String, byte[]>();
-	
-	MemoryCorpusStore(String corpusName, TypeSystemDescription typeSystem, byte[] indexMapping) {
-		this.corpusName = corpusName;
-		this.typeSystem = typeSystem;
-		this.indexMapping = indexMapping;
-	}
-	
-	@Override
-	public String getCorpusId() {
-	  return corpusName;
-	}
-	
-	public byte[] getCAS(String casId) {
-		return casStore.get(casId);
-	}
-	
-	// TODO: Add exception declaration to propagte errors back to client ...
-	public void addCAS(String casID, byte[] content) {
-		
-		// Note:
-		// Directly store data as xmi, but deserialization is needed to index and validate it!
-		
-		CAS cas = UimaUtil.createEmptyCAS(typeSystem);
-		
-		try {
-			UimaUtil.deserializeXmiCAS(cas, new ByteArrayInputStream(content));
-		} catch (IOException e) {
-			// TODO: Send error back to client ...
-			e.printStackTrace();
-		}
-		
-		casStore.put(casID, content);
-	}
-	
-	@Override
-	public void updateCAS(String casID, byte[] content) throws IOException {
-	  addCAS(casID, content);
-	}
-	
-	public TypeSystemDescription getTypeSystem() {
-		return typeSystem;
-	}
-	
+  private final String corpusName;
+  private byte[] typeSystemBytes;
+  private byte[] indexMapping;
+
+  private Map<String, byte[]> casStore = new HashMap<String, byte[]>();
+
+  MemoryCorpusStore(String corpusName, byte[] typeSystem,
+      byte[] indexMapping) {
+    this.corpusName = corpusName;
+    this.typeSystemBytes = typeSystem;
+    this.indexMapping = indexMapping;
+  }
+
+  @Override
+  public String getCorpusId() {
+    return corpusName;
+  }
+
+  public byte[] getCAS(String casId) {
+    return casStore.get(casId);
+  }
+
+  // TODO: Add exception declaration to propagte errors back to client ...
+  public void addCAS(String casID, byte[] content) {
+
+    // Note:
+    // Directly store data as xmi, but deserialization is needed to index and
+    // validate it!
+
+//    TypeSystemDescription tsDescription = UimaUtil.createTypeSystemDescription(
+//        new ByteArrayInputStream(typeSystemBytes));
+//    
+//    CAS cas = UimaUtil.createEmptyCAS(tsDescription);
+//
+//    try {
+//      UimaUtil.deserializeXmiCAS(cas, new ByteArrayInputStream(content));
+//    } catch (IOException e) {
+//      // TODO: Send error back to client ...
+//      e.printStackTrace();
+//    }
+
+    casStore.put(casID, content);
+  }
+
+  @Override
+  public void updateCAS(String casID, byte[] content) throws IOException {
+    addCAS(casID, content);
+  }
+
+  @Override
+  public void removeCAS(String casID) throws IOException {
+    casStore.remove(casID);
+  }
+  
+  @Override
+  public void replaceTypeSystem(byte[] newTypeSystem) throws IOException {
+    typeSystemBytes = newTypeSystem;
+  }
+  
+  public byte[] getTypeSystem() {
+    return typeSystemBytes;
+  }
+
   @Override
   public byte[] getIndexMapping() throws IOException {
     return indexMapping;

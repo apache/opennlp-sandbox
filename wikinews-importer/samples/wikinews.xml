@@ -24,26 +24,84 @@
 
 	<field name="headline" index="yes" stored="no">
 		<annotations>
-			<annotation type="org.apache.opennlp.annotations.Headline" tokenizer="standard"/>
+			<annotation type="org.apache.opennlp.annotations.Headline" tokenizer="standard">
+				<filters>
+					<filter name="lowercase"/>
+				</filters>
+			</annotation>
 		</annotations>
 	</field>
 	
 	<field name="text" index="yes" stored="no">
 		<annotations>
-			<annotation type="uima.tcas.DocumentAnnotation" tokenizer="standard"/>
+			<annotation type="uima.tcas.DocumentAnnotation" tokenizer="standard">
+				<filters>
+					<filter name="lowercase"/>
+				</filters>
+			</annotation>
+			
 		</annotations>
 	</field>
 	
 	<field name="person" index="yes" stored="no">
 		<annotations>
-			<annotation type="org.apache.opennlp.annotations.Person" tokenizer="standard"/>
+			<annotation type="org.apache.opennlp.annotations.Person" tokenizer="standard">
+				<filters>
+					<filter name="lowercase"/>
+				</filters>
+			</annotation>
+			
 		</annotations>
 	</field>
 	
 	<field name="organization" index="yes" stored="no">
 		<annotations>
-			<annotation type="org.apache.opennlp.annotations.Organization" tokenizer="standard"/>
+			<annotation type="org.apache.opennlp.annotations.Organization" tokenizer="standard">
+				<filters>
+					<filter name="lowercase"/>
+				</filters>
+			</annotation>
+			
 		</annotations>
 	</field>
 	
+	<field name="status-sentence" index="yes" stored="no" termVector="no">
+		<annotations>
+			<annotation type="bumblebee.annotations.AnnotationStatus" tokenizer="standard">
+				<features>
+					<feature name="sentence"/>
+				</features>
+			</annotation>
+		</annotations>
+	</field>
+	
+	<field name="status-token" index="yes" stored="no" termVector="no">
+		<annotations>
+			<annotation type="bumblebee.annotations.AnnotationStatus">
+				<features>
+					<feature name="token"/>
+				</features>
+			</annotation>
+		</annotations>
+	</field>
+	
+	<field name="status-person" index="yes" stored="yes">
+		<annotations>
+			<annotation type="bumblebee.annotations.AnnotationStatus">
+				<features>
+					<feature name="token"/>
+				</features>
+			</annotation>
+		</annotations>
+	</field>
+	
+	<field name="status-organization" index="yes">
+		<annotations>
+			<annotation type="bumblebee.annotations.AnnotationStatus">
+				<features>
+					<feature name="token"/>
+				</features>
+			</annotation>
+		</annotations>
+	</field>
 </fields>

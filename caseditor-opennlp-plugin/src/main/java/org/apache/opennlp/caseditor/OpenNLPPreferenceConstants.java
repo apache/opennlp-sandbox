@@ -26,6 +26,7 @@ public class OpenNLPPreferenceConstants {
   // Sentence detector
   public static final String PARAGRAPH_TYPE = OpenNLPPlugin.ID + ".PARAGRAPH_TYPE";
   public static final String SENTENCE_DETECTOR_MODEL_PATH = OpenNLPPlugin.ID + ".SENTENCE_DETECTOR_MODEL_PATH";
+  public static final String SENT_EXCLUSION_TYPE = OpenNLPPlugin.ID + ".SENT_EXCLUSION_TYPE";
 
   // Name Finder  
   public static final String ADDITIONAL_SENTENCE_TYPE = OpenNLPPlugin.ID + ".ADDITIONAL_SENTENCE_TYPE";

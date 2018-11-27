@@ -28,44 +28,42 @@ import com.sun.jersey.api.client.WebResource;
 
 public class CASImporter {
 
-	public static void main(String[] args) throws Exception {
-		
-		if (args.length != 2) {
-			System.out.println("WikinewsImporter address xmiFileOrFolder");
-			System.exit(-1);
-		}
-		
-		Client c = Client.create();
-		
-		WebResource r = c.resource(args[0]);
-		
-		File xmiFileOrFolder = new File(args[1]);
-		
-		File xmiFiles[];
-		
-		if (xmiFileOrFolder.isFile()) {
-		  xmiFiles = new File[]{xmiFileOrFolder};
-		}
-		else {
-		  xmiFiles = xmiFileOrFolder.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-              return name.toLowerCase().endsWith(".xmi");
-            }
-          });
-		}
-		
-		for (File xmiFile : xmiFiles) {
-    		byte xmiBytes[] = FileUtil.fileToBytes(xmiFile);
-    		
-    		ClientResponse response = r
-    				.path(xmiFile.getName())
-    				.accept(MediaType.TEXT_XML)
-    				// TODO: How to fix this? Shouldn't accept do it?
-    				.header("Content-Type", MediaType.TEXT_XML)
-    				.post(ClientResponse.class, xmiBytes);
-    		
-    		System.out.println(xmiFile.getName() + " " + response.getStatus());
-		}
-	}
+  public static void main(String[] args) throws Exception {
+
+    if (args.length != 2) {
+      System.out.println("WikinewsImporter address xmiFileOrFolder");
+      System.exit(-1);
+    }
+
+    Client c = Client.create();
+
+    WebResource r = c.resource(args[0]);
+
+    File xmiFileOrFolder = new File(args[1]);
+
+    File xmiFiles[];
+
+    if (xmiFileOrFolder.isFile()) {
+      xmiFiles = new File[] { xmiFileOrFolder };
+    } else {
+      xmiFiles = xmiFileOrFolder.listFiles(new FilenameFilter() {
+        @Override
+        public boolean accept(File dir, String name) {
+          return name.toLowerCase().endsWith(".xmi");
+        }
+      });
+    }
+
+    for (File xmiFile : xmiFiles) {
+      byte xmiBytes[] = FileUtil.fileToBytes(xmiFile);
+
+      ClientResponse response = r.path(xmiFile.getName())
+          .accept(MediaType.TEXT_XML)
+          // TODO: How to fix this? Shouldn't accept do it?
+          .header("Content-Type", MediaType.TEXT_XML)
+          .post(ClientResponse.class, xmiBytes);
+
+      System.out.println(xmiFile.getName() + " " + response.getStatus());
+    }
+  }
 }

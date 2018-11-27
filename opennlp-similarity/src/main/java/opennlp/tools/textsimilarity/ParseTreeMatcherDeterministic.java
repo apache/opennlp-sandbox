@@ -19,7 +19,7 @@ package opennlp.tools.textsimilarity;
 
 import java.util.ArrayList;
 import java.util.List;
-import opennlp.tools.stemmer.PorterStemmer;
+import opennlp.tools.stemmer.PStemmer;
 
 public class ParseTreeMatcherDeterministic {
 
@@ -28,8 +28,11 @@ public class ParseTreeMatcherDeterministic {
   private LemmaFormManager lemmaFormManager = new LemmaFormManager();
 
   private POSManager posManager = new POSManager();
+
   /**
-   * key matching function which takes two phrases, aligns them and finds a set of maximum common sub-phrase
+   * key matching function which takes two phrases, aligns them and finds a set
+   * of maximum common sub-phrase
+   * 
    * @param chunk1
    * @param chunk2
    * @return
@@ -45,7 +48,7 @@ public class ParseTreeMatcherDeterministic {
     List<String> lem1stem = new ArrayList<String>();
     List<String> lem2stem = new ArrayList<String>();
 
-    PorterStemmer ps = new PorterStemmer();
+    PStemmer ps = new PStemmer();
     for (String word : lem1) {
       try {
         lem1stem.add(ps.stem(word.toLowerCase()).toString());
@@ -202,13 +205,15 @@ public class ParseTreeMatcherDeterministic {
     return results;
   }
 
-  /** main function to generalize two expressions grouped by phrase types
-   * returns a list of generalizations for each phrase type with filtered
+  /**
+   * main function to generalize two expressions grouped by phrase types returns
+   * a list of generalizations for each phrase type with filtered
    * sub-expressions
    * 
    * @param sent1
    * @param sent2
-   * @return  List<List<ParseTreeChunk>> list of list of POS-words pairs for each resultant matched / overlapped phrase
+   * @return List<List<ParseTreeChunk>> list of list of POS-words pairs for each
+   *         resultant matched / overlapped phrase
    */
   public List<List<ParseTreeChunk>> matchTwoSentencesGroupedChunksDeterministic(
       List<List<ParseTreeChunk>> sent1, List<List<ParseTreeChunk>> sent2) {

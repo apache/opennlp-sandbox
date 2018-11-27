@@ -24,6 +24,8 @@ public interface CorporaChangeListener {
 
   void addedCorpus(CorpusStore store);
   
+  void droppedCorpus(CorpusStore store);
+  
   /**
    * Indicates that the CAS was added to the corpus.
    * 
@@ -33,10 +35,18 @@ public interface CorporaChangeListener {
   void addedCAS(CorpusStore store, String casId);
   
   /**
-   * Indicates that a CAS was removed from the corpus.
+   * Indicates that a CAS was updated in the corpus.
    * 
    * @param store
    * @param casId
    */
   void updatedCAS(CorpusStore store, String casId);
+  
+  /**
+   * Indicates that a CAS was removed from the corpus.
+   * 
+   * @param store
+   * @param casId
+   */
+  void removedCAS(CorpusStore store, String casId);
 }

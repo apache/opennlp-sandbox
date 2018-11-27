@@ -20,6 +20,7 @@ package org.apache.opennlp.caseditor.sentdetect;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import opennlp.tools.sentdetect.SentenceDetectorME;
@@ -47,6 +48,8 @@ public class SentenceDetectorJob extends Job {
   private List<Span> paragraphs;
   
   private List<PotentialAnnotation> detectedSentences;
+
+  private List<Span> exclusionSpans;
   
   public SentenceDetectorJob() {
     super("Sentence Detector Job");
@@ -66,6 +69,13 @@ public class SentenceDetectorJob extends Job {
   
   public void setParagraphs(List<Span> paragraphs) {
     this.paragraphs =  paragraphs;
+  }
+  
+  public void setExclusionSpans(List<Span> exclusionSpans) {
+    
+    this.exclusionSpans = new ArrayList<Span>();
+    this.exclusionSpans.addAll(exclusionSpans);
+    Collections.sort(this.exclusionSpans);
   }
   
   @Override
@@ -93,17 +103,42 @@ public class SentenceDetectorJob extends Job {
     
     detectedSentences = new ArrayList<PotentialAnnotation>();
     for (Span para : paragraphs) {
-    
-      Span sentenceSpans[] = sentenceDetector.sentPosDetect(para.getCoveredText(text).toString());
+
+      List<Span> textBlocks = new ArrayList<Span>();
+
+      int textBlockBeginIndex = 0;
       
-      double confidence[] = sentenceDetector.getSentenceProbabilities();
+      for (Span exclusionSpan : exclusionSpans) {
+        
+        Span textBlockSpan = new Span(textBlockBeginIndex, exclusionSpan.getStart());
+        
+        // TODO: Filter out whitespace sentences ...
+        
+        if (textBlockSpan.length() > 0) {
+          textBlocks.add(textBlockSpan);
+        }
+        
+        textBlockBeginIndex = exclusionSpan.getEnd();
+      }
       
-      for (int i = 0; i < sentenceSpans.length; i++) {
-        Span sentenceSpan = sentenceSpans[i];
-        String sentenceText = text.substring(para.getStart() + sentenceSpan.getStart(), para.getStart() + sentenceSpan.getEnd());
-        detectedSentences.add(new PotentialAnnotation(para.getStart() + sentenceSpan.getStart(), 
-            para.getStart() + sentenceSpan.getEnd(), sentenceText,
-            confidence[i], sentenceType));
+      if (textBlockBeginIndex < para.getEnd() - para.getStart()) {
+        textBlocks.add(new Span(textBlockBeginIndex, para.getEnd()));
+      }
+      
+      for (Span textBlock : textBlocks) {
+        Span sentenceSpans[] = sentenceDetector.sentPosDetect(
+            textBlock.getCoveredText(text).toString());
+        
+        double confidence[] = sentenceDetector.getSentenceProbabilities();
+        
+        for (int i = 0; i < sentenceSpans.length; i++) {
+          Span sentenceSpan = sentenceSpans[i];
+          String sentenceText = text.substring(textBlock.getStart() + sentenceSpan.getStart(),
+              textBlock.getStart() + sentenceSpan.getEnd());
+          detectedSentences.add(new PotentialAnnotation(textBlock.getStart() + sentenceSpan.getStart(), 
+              textBlock.getStart() + sentenceSpan.getEnd(), sentenceText,
+              confidence[i], sentenceType));
+        }
       }
     }
     

@@ -21,25 +21,41 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.opennlp.corpus_server.CorpusServer;
+import org.apache.opennlp.corpus_server.CorpusServerBundle;
 import org.apache.opennlp.corpus_server.store.CorpusStore;
 
-// task queue is lost, after server is restarted ...
+/**
+ * In memory task queue. Contents of the queue is lost when the
+ * server restarts.
+ */
 public class MemoryTaskQueueService implements TaskQueueService {
 
+  private final static Logger LOGGER = Logger.getLogger(
+      MemoryTaskQueueService.class .getName());
+
   private Map<String, MemoryTaskQueue> queues = new HashMap<String, MemoryTaskQueue>();
-  
+
   @Override
   public void createTaskQueue(String queueId, String corpusId, String query) {
-    
+
     try {
-      CorpusStore store = CorpusServer.getInstance().getStore().getCorpus(corpusId);
-      List<String> hits = CorpusServer.getInstance().getSearchService().search(store, query);
+      CorpusServer corpusServer = CorpusServerBundle.getInstance().getCorpusServer();
       
+      CorpusStore store = corpusServer.getStore().getCorpus(corpusId);
+      List<String> hits = corpusServer.getSearchService().search(store, query);
+
       queues.put(queueId, new MemoryTaskQueue(hits));
+
+      if (LOGGER.isLoggable(Level.INFO)) {
+        LOGGER.log(Level.INFO, "Created queue " + queueId +
+            " with " + hits.size() + "CASes.");
+      }
     } catch (IOException e) {
-      e.printStackTrace();
+      LOGGER.log(Level.SEVERE, "Failed to create task queue: " + queueId, e);
     }
   }
 

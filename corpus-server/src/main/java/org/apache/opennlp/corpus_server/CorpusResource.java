@@ -17,14 +17,11 @@
 
 package org.apache.opennlp.corpus_server;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -36,8 +33,6 @@ import javax.ws.rs.core.MediaType;
 
 import org.apache.opennlp.corpus_server.search.SearchService;
 import org.apache.opennlp.corpus_server.store.CorpusStore;
-import org.apache.uima.resource.metadata.TypeSystemDescription;
-import org.xml.sax.SAXException;
 
 public class CorpusResource {
 
@@ -48,71 +43,84 @@ public class CorpusResource {
     this.corpus = corpus;
     this.service = service;
   }
-	
-	/**
-	 * Adds a new CAS to the store.
-	 * 
-	 */
-	// TODO: Should fail if resource already exists.
-	@POST
-	@Consumes(MediaType.TEXT_XML)
-	@Path("{casId}")
-	public void addCAS(@PathParam("casId") String casId, 
-			byte[] cas) throws IOException {
-		corpus.addCAS(casId, cas);
-	}
-	
-	/**
-	 * Updates an existing CAS in the store.
-	 */
-	// TODO: Should fail is resource does not exist
-	@PUT
-	@Consumes(MediaType.TEXT_XML)
-	@Path("{casId}")
-	public void updateCAS(@PathParam("casId") String casId, 
-			byte[] cas) throws IOException {
-		corpus.updateCAS(casId, cas);
-	}
-	
-	/**
-	 * Retrieves an existing CAS form the store.
-	 * @param casId
-	 * @return
-	 */
-	@GET
-	@Produces(MediaType.TEXT_XML)
-	@Path("{casId}")
-	public byte[] getCAS(@PathParam("casId") String casId) throws IOException{
-		return corpus.getCAS(casId);
-	}
 
-	/**
-	 * Retrieves the type system for this corpus.
-	 * @return
-	 */
-	@GET
-	@Produces(MediaType.TEXT_XML)
-	@Path("_typesystem")
-	public byte[] getTypeSystem() throws IOException {
-		TypeSystemDescription typeSystem = corpus.getTypeSystem();
+  /**
+   * Adds a new CAS to the store.
+   * 
+   */
+  // TODO: Should fail if resource already exists.
+  @POST
+  @Consumes(MediaType.TEXT_XML)
+  @Path("{casId}")
+  public void addCAS(@PathParam("casId") String casId, byte[] cas)
+      throws IOException {
+    corpus.addCAS(casId, cas);
+  }
 
-		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-		
-		try {
-			typeSystem.toXML(bytes);
-		} catch (SAXException e) {
-		  throw new IOException(e);
-		} catch (IOException e) {
-			throw new IllegalStateException("Writing to memory must not fail!");
-		}
-		
-		return bytes.toByteArray();
-	}
-	
-	@GET
-	@Produces(MediaType.APPLICATION_JSON)
-	@Path("_search")
-	public List<String> search(@QueryParam("q") String q) throws IOException {
-	  return service.search(corpus, q);
-	}
+  /**
+   * Updates an existing CAS in the store.
+   */
+  // TODO: Should fail if resource does not exist
+  @PUT
+  @Consumes(MediaType.TEXT_XML)
+  @Path("{casId}")
+  public void updateCAS(@PathParam("casId") String casId, byte[] cas)
+      throws IOException {
+    corpus.updateCAS(casId, cas);
+  }
+
+  @DELETE
+  @Path("{casId}")
+  public void removeCAS(@PathParam("casId") String casId) throws IOException {
+    corpus.removeCAS(casId);
+  }
+
+  /**
+   * Retrieves an existing CAS form the store.
+   * 
+   * @param casId
+   * @return
+   */
+  @GET
+  @Produces(MediaType.TEXT_XML)
+  @Path("{casId}")
+  public byte[] getCAS(@PathParam("casId") String casId) throws IOException {
+    return corpus.getCAS(casId);
+  }
+  
+  /**
+   * Note:
+   * The Type System is not checked for compatibility, if it does not work anymore
+   * the user needs to diagnose the problem himself and provide a new Type System to
+   * fix this.
+   * 
+   * @param newTypeSystem
+   * 
+   * @throws IOException
+   */
+  @PUT
+  @Consumes(MediaType.TEXT_XML)
+  @Path("_replaceTypeSystem")
+  public void replaceTypeSystem(byte[] newTypeSystem) throws IOException {
+    corpus.replaceTypeSystem(newTypeSystem);
+  }
+  
+  /**
+   * Retrieves the type system for this corpus.
+   * 
+   * @return
+   */
+  @GET
+  @Produces(MediaType.TEXT_XML)
+  @Path("_typesystem")
+  public byte[] getTypeSystem() throws IOException {
+    return corpus.getTypeSystem();
+  }
+
+  @GET
+  @Produces(MediaType.APPLICATION_JSON)
+  @Path("_search")
+  public List<String> search(@QueryParam("q") String q) throws IOException {
+    return service.search(corpus, q);
+  }
 }

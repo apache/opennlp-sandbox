@@ -17,6 +17,7 @@
 
 package org.apache.opennlp.wikinews_importer;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -39,25 +40,21 @@ import org.apache.uima.resource.metadata.TypeSystemDescription;
 import org.xml.sax.SAXException;
 
 /**
- * Demo application which reads a compressed or uncompressed Wikipedia XML dump
- * file (depending on the given file extension <i>.gz</i>, <i>.bz2</i> or
- * <i>.xml</i>) and prints the title and wiki text.
- * 
+ * Demo application which reads an uncompressed Wikipedia XML dump
+ * file and writes each article as an XMI file.
  */
 public class WikinewsConverter {
 
-  /**
-   * Print title an content of all the wiki pages in the dump.
-   * 
-   */
   static class CASArticleFilter implements IArticleFilter {
 
     private final TypeSystemDescription tsDesc;
+    private final File outputFolder;
     private List<String> endOfArtilceMarkers = new ArrayList<String>();
     
-    CASArticleFilter(TypeSystemDescription tsDesc) {
+    CASArticleFilter(TypeSystemDescription tsDesc, File outputFolder) {
       
       this.tsDesc = tsDesc;
+      this.outputFolder = outputFolder;
       
       endOfArtilceMarkers.add("{{haveyoursay}}");
       endOfArtilceMarkers.add("== Sources ==");
@@ -87,21 +84,19 @@ public class WikinewsConverter {
           
           String pageText = page.getText();
           
-          int cutIndex = -1;
-          
+
+          int cutIndex = pageText.length();
+
           for (String endMarker : endOfArtilceMarkers) {
-            
             int endMarkerIndex = pageText.indexOf(endMarker);
-            if (endMarkerIndex != -1) {
-              cutIndex = endMarkerIndex;
-              break;
-            }
+              if (endMarkerIndex != -1 && endMarkerIndex < cutIndex) {
+                cutIndex = endMarkerIndex;
+              }
           }
           
-          if (cutIndex == -1)
-            cutIndex = pageText.length();
-          
-          pageText = pageText.substring(0, cutIndex);
+          if (cutIndex < pageText.length()) {
+            pageText = pageText.substring(0, cutIndex);
+          }
           
           WikinewsWikiModel wikiModel = new WikinewsWikiModel("http://en.wikinews.org/wiki/${image}", 
               "http://en.wikinews.org/wiki/${title}");
@@ -171,7 +166,8 @@ public class WikinewsConverter {
           // now serialize CAS
           OutputStream casOut = null;
           try {
-              casOut = new FileOutputStream("articles/" + titleToUri(page.getTitle()) + ".xmi");
+              casOut = new FileOutputStream(outputFolder.getAbsolutePath() +
+            		  File.separator + titleToUri(page.getTitle()) + ".xmi");
               
               UimaUtil.serializeCASToXmi(articleCAS, casOut);
           }
@@ -195,21 +191,26 @@ public class WikinewsConverter {
    * @param args
    */
   public static void main(String[] args) throws Exception {
-    if (args.length != 1) {
-      System.err.println("Usage: Parser <XML-FILE>"); 
-      // TODO: add folder where file are written here
+    if (args.length != 2) {
+      System.err.println("Usage: Parser <XML-File> <Output-Folder>"); 
       System.exit(-1);
     }
     
+    // TODO: Should to be configurable!
     TypeSystemDescription tsDesc = UimaUtil.createTypeSystemDescription(
         new FileInputStream("samples/TypeSystem.xml"));
 
+    File outputFolder = new File(args[1]);
+    outputFolder.mkdirs();
+    
     String bz2Filename = args[0];
     try {
-      IArticleFilter handler = new CASArticleFilter(tsDesc);
+      IArticleFilter handler = new CASArticleFilter(tsDesc, new File(args[1]));
       WikiXMLParser wxp = new WikiXMLParser(bz2Filename, handler);
       wxp.parse();
     } catch (Exception e) {
+      System.out.println("Parsing the corpus failed:");
+      System.out.println();
       e.printStackTrace();
     }
   }

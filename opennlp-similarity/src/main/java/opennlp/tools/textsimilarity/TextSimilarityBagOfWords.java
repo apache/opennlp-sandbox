@@ -21,878 +21,873 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class TextSimilarityBagOfWords
-{
-	public double assessRelevanceAndGetScore(String para1, String para2)
-	{
-		List<String> wordsOfPara1 = TextProcessor.fastTokenize(para1, false); 
-		List<String> wordsOfPara2 = TextProcessor.fastTokenize(para2, false); 
-		List<String> overlap = new ArrayList<String>(wordsOfPara1);
-		overlap.retainAll(wordsOfPara2);
-		overlap.removeAll(Arrays.asList(stopList));
-		
-		return overlap.size();
-	}
-	
-	public String[] stopList = new String[]{
-			"a",
+public class TextSimilarityBagOfWords {
+  public double assessRelevanceAndGetScore(String para1, String para2) {
+    List<String> wordsOfPara1 = TextProcessor.fastTokenize(para1, false);
+    List<String> wordsOfPara2 = TextProcessor.fastTokenize(para2, false);
+    List<String> overlap = new ArrayList<String>(wordsOfPara1);
+    overlap.retainAll(wordsOfPara2);
+    overlap.removeAll(Arrays.asList(stopList));
 
-			"about",
+    return overlap.size();
+  }
 
-			"above",
+  public String[] stopList = new String[] { "a",
 
-			"across",
+  "about",
 
-			"after",
+  "above",
 
-			"again",
+  "across",
 
-			"against",
+  "after",
 
-			"all",
+  "again",
 
-			"almost",
+  "against",
 
-			"alone",
+  "all",
 
-			"along",
+  "almost",
 
-			"already",
+  "alone",
 
-			"also",
+  "along",
 
-			"although",
+  "already",
 
-			"always",
+  "also",
 
-			"among",
+  "although",
 
-			"an",
+  "always",
 
-			"and",
+  "among",
 
-			"another",
+  "an",
 
-			"any",
+  "and",
 
-			"anybody",
+  "another",
 
-			"anyone",
+  "any",
 
-			"anything",
+  "anybody",
 
-			"anywhere",
+  "anyone",
 
-			"are",
+  "anything",
 
-			"area",
+  "anywhere",
 
-			"areas",
+  "are",
 
-			"around",
+  "area",
 
-			"as",
+  "areas",
 
-			"ask",
+  "around",
 
-			"asked",
+  "as",
 
-			"asking",
+  "ask",
 
-			"asks",
+  "asked",
 
-			"at",
+  "asking",
 
-			"away",
+  "asks",
 
-			"b",
+  "at",
 
-			"back",
+  "away",
 
-			"backed",
+  "b",
 
-			"backing",
+  "back",
 
-			"backs",
+  "backed",
 
-			"be",
+  "backing",
 
-			"became",
+  "backs",
 
-			"because",
+  "be",
 
-			"become",
+  "became",
 
-			"becomes",
+  "because",
 
-			"been",
+  "become",
 
-			"before",
+  "becomes",
 
-			"began",
+  "been",
 
-			"behind",
+  "before",
 
-			"being",
+  "began",
 
-			"beings",
+  "behind",
 
-			"best",
+  "being",
 
-			"better",
+  "beings",
 
-			"between",
+  "best",
 
-			"big",
+  "better",
 
-			"both",
+  "between",
 
-			"but",
+  "big",
 
-			"by",
+  "both",
 
-			"c",
+  "but",
 
-			"came",
+  "by",
 
-			"can",
+  "c",
 
-			"cannot",
+  "came",
 
-			"case",
+  "can",
 
-			"cases",
+  "cannot",
 
-			"certain",
+  "case",
 
-			"certainly",
+  "cases",
 
-			"clear",
+  "certain",
 
-			"clearly",
+  "certainly",
 
-			"come",
+  "clear",
 
-			"could",
+  "clearly",
 
-			"d",
+  "come",
 
-			"did",
+  "could",
 
-			"differ",
+  "d",
 
-			"different",
+  "did",
 
-			"differently",
+  "differ",
 
-			"do",
+  "different",
 
-			"does",
+  "differently",
 
-			"done",
+  "do",
 
-			"down",
+  "does",
 
-			"down",
+  "done",
 
-			"downed",
+  "down",
 
-			"downing",
+  "down",
 
-			"downs",
+  "downed",
 
-			"during",
+  "downing",
 
-			"e",
+  "downs",
 
-			"each",
+  "during",
 
-			"early",
+  "e",
 
-			"either",
+  "each",
 
-			"end",
+  "early",
 
-			"ended",
+  "either",
 
-			"ending",
+  "end",
 
-			"ends",
+  "ended",
 
-			"enough",
+  "ending",
 
-			"even",
+  "ends",
 
-			"evenly",
+  "enough",
 
-			"ever",
+  "even",
 
-			"every",
+  "evenly",
 
-			"everybody",
+  "ever",
 
-			"everyone",
+  "every",
 
-			"everything",
+  "everybody",
 
-			"everywhere",
+  "everyone",
 
-			"f",
+  "everything",
 
-			"face",
+  "everywhere",
 
-			"faces",
+  "f",
 
-			"fact",
+  "face",
 
-			"facts",
+  "faces",
 
-			"far",
+  "fact",
 
-			"felt",
+  "facts",
 
-			"few",
+  "far",
 
-			"find",
+  "felt",
 
-			"finds",
+  "few",
 
-			"first",
+  "find",
 
-			"for",
+  "finds",
 
-			"four",
+  "first",
 
-			"from",
+  "for",
 
-			"full",
+  "four",
 
-			"fully",
+  "from",
 
-			"further",
+  "full",
 
-			"furthered",
+  "fully",
 
-			"furthering",
+  "further",
 
-			"furthers",
+  "furthered",
 
-			"g",
+  "furthering",
 
-			"gave",
+  "furthers",
 
-			"general",
+  "g",
 
-			"generally",
+  "gave",
 
-			"get",
+  "general",
 
-			"gets",
+  "generally",
 
-			"give",
+  "get",
 
-			"given",
+  "gets",
 
-			"gives",
+  "give",
 
-			"go",
+  "given",
 
-			"going",
+  "gives",
 
-			"good",
+  "go",
 
-			"goods",
+  "going",
 
-			"got",
+  "good",
 
-			"great",
+  "goods",
 
-			"greater",
+  "got",
 
-			"greatest",
+  "great",
 
-			"group",
+  "greater",
 
-			"grouped",
+  "greatest",
 
-			"grouping",
+  "group",
 
-			"groups",
+  "grouped",
 
-			"h",
+  "grouping",
 
-			"had",
+  "groups",
 
-			"has",
+  "h",
 
-			"have",
+  "had",
 
-			"having",
+  "has",
 
-			"he",
+  "have",
 
-			"her",
+  "having",
 
-			"here",
+  "he",
 
-			"herself",
+  "her",
 
-			"high",
+  "here",
 
-			"high",
+  "herself",
 
-			"high",
+  "high",
 
-			"higher",
+  "high",
 
-			"highest",
+  "high",
 
-			"him",
+  "higher",
 
-			"himself",
+  "highest",
 
-			"his",
+  "him",
 
-			"how",
+  "himself",
 
-			"however",
+  "his",
 
-			"i",
+  "how",
 
-			"if",
+  "however",
 
-			"important",
+  "i",
 
-			"in",
+  "if",
 
-			"interest",
+  "important",
 
-			"interested",
+  "in",
 
-			"interesting",
+  "interest",
 
-			"interests",
+  "interested",
 
-			"into",
+  "interesting",
 
-			"is",
+  "interests",
 
-			"it",
+  "into",
 
-			"its",
+  "is",
 
-			"itself",
+  "it",
 
-			"j",
+  "its",
 
-			"just",
+  "itself",
 
-			"k",
+  "j",
 
-			"keep",
+  "just",
 
-			"keeps",
+  "k",
 
-			"kind",
+  "keep",
 
-			"knew",
+  "keeps",
 
-			"know",
+  "kind",
 
-			"known",
+  "knew",
 
-			"knows",
+  "know",
 
-			"l",
+  "known",
 
-			"large",
+  "knows",
 
-			"largely",
+  "l",
 
-			"last",
+  "large",
 
-			"later",
+  "largely",
 
-			"latest",
+  "last",
 
-			"least",
+  "later",
 
-			"less",
+  "latest",
 
-			"let",
+  "least",
 
-			"lets",
+  "less",
 
-			"like",
+  "let",
 
-			"likely",
+  "lets",
 
-			"long",
+  "like",
 
-			"longer",
+  "likely",
 
-			"longest",
+  "long",
 
-			"m",
+  "longer",
 
-			"made",
+  "longest",
 
-			"make",
+  "m",
 
-			"making",
+  "made",
 
-			"man",
+  "make",
 
-			"many",
+  "making",
 
-			"may",
+  "man",
 
-			"me",
+  "many",
 
-			"member",
+  "may",
 
-			"members",
+  "me",
 
-			"men",
+  "member",
 
-			"might",
+  "members",
 
-			"more",
+  "men",
 
-			"most",
+  "might",
 
-			"mostly",
+  "more",
 
-			"mr",
+  "most",
 
-			"mrs",
+  "mostly",
 
-			"much",
+  "mr",
 
-			"must",
+  "mrs",
 
-			"my",
+  "much",
 
-			"myself",
+  "must",
 
-			"n",
+  "my",
 
-			"necessary",
+  "myself",
 
-			"need",
+  "n",
 
-			"needed",
+  "necessary",
 
-			"needing",
+  "need",
 
-			"needs",
+  "needed",
 
-			"never",
+  "needing",
 
-			"new",
+  "needs",
 
-			"new",
+  "never",
 
-			"newer",
+  "new",
 
-			"newest",
+  "new",
 
-			"next",
+  "newer",
 
-			"no",
+  "newest",
 
-			"nobody",
+  "next",
 
-			"non",
+  "no",
 
-			"noone",
+  "nobody",
 
-			"not",
+  "non",
 
-			"nothing",
+  "noone",
 
-			"now",
+  "not",
 
-			"nowhere",
+  "nothing",
 
-			"number",
+  "now",
 
-			"numbers",
+  "nowhere",
 
-			"o",
+  "number",
 
-			"of",
+  "numbers",
 
-			"off",
+  "o",
 
-			"often",
+  "of",
 
-			"old",
+  "off",
 
-			"older",
+  "often",
 
-			"oldest",
+  "old",
 
-			"on",
+  "older",
 
-			"once",
+  "oldest",
 
-			"one",
+  "on",
 
-			"only",
+  "once",
 
-			"open",
+  "one",
 
-			"opened",
+  "only",
 
-			"opening",
+  "open",
 
-			"opens",
+  "opened",
 
-			"or",
+  "opening",
 
-			"order",
+  "opens",
 
-			"ordered",
+  "or",
 
-			"ordering",
+  "order",
 
-			"orders",
+  "ordered",
 
-			"other",
+  "ordering",
 
-			"others",
+  "orders",
 
-			"our",
+  "other",
 
-			"out",
+  "others",
 
-			"over",
+  "our",
 
-			"p",
+  "out",
 
-			"part",
+  "over",
 
-			"parted",
+  "p",
 
-			"parting",
+  "part",
 
-			"parts",
+  "parted",
 
-			"per",
+  "parting",
 
-			"perhaps",
+  "parts",
 
-			"place",
+  "per",
 
-			"places",
+  "perhaps",
 
-			"point",
+  "place",
 
-			"pointed",
+  "places",
 
-			"pointing",
+  "point",
 
-			"points",
+  "pointed",
 
-			"possible",
+  "pointing",
 
-			"present",
+  "points",
 
-			"presented",
+  "possible",
 
-			"presenting",
+  "present",
 
-			"presents",
+  "presented",
 
-			"problem",
+  "presenting",
 
-			"problems",
+  "presents",
 
-			"put",
+  "problem",
 
-			"puts",
+  "problems",
 
-			"q",
+  "put",
 
-			"quite",
+  "puts",
 
-			"r",
+  "q",
 
-			"rather",
+  "quite",
 
-			"really",
+  "r",
 
-			"right",
+  "rather",
 
-			"right",
+  "really",
 
-			"room",
+  "right",
 
-			"rooms",
+  "right",
 
-			"s",
+  "room",
 
-			"said",
+  "rooms",
 
-			"same",
+  "s",
 
-			"saw",
+  "said",
 
-			"say",
+  "same",
 
-			"says",
+  "saw",
 
-			"second",
+  "say",
 
-			"seconds",
+  "says",
 
-			"see",
+  "second",
 
-			"seem",
+  "seconds",
 
-			"seemed",
+  "see",
 
-			"seeming",
+  "seem",
 
-			"seems",
+  "seemed",
 
-			"sees",
+  "seeming",
 
-			"several",
+  "seems",
 
-			"shall",
+  "sees",
 
-			"she",
+  "several",
 
-			"should",
+  "shall",
 
-			"show",
+  "she",
 
-			"showed",
+  "should",
 
-			"showing",
+  "show",
 
-			"shows",
+  "showed",
 
-			"side",
+  "showing",
 
-			"sides",
+  "shows",
 
-			"since",
+  "side",
 
-			"small",
+  "sides",
 
-			"smaller",
+  "since",
 
-			"smallest",
+  "small",
 
-			"so",
+  "smaller",
 
-			"some",
+  "smallest",
 
-			"somebody",
+  "so",
 
-			"someone",
+  "some",
 
-			"something",
+  "somebody",
 
-			"somewhere",
+  "someone",
 
-			"state",
+  "something",
 
-			"states",
+  "somewhere",
 
-			"still",
+  "state",
 
-			"still",
+  "states",
 
-			"such",
+  "still",
 
-			"sure",
+  "still",
 
-			"t",
+  "such",
 
-			"take",
+  "sure",
 
-			"taken",
+  "t",
 
-			"than",
+  "take",
 
-			"that",
+  "taken",
 
-			"the",
+  "than",
 
-			"their",
+  "that",
 
-			"them",
+  "the",
 
-			"then",
+  "their",
 
-			"there",
+  "them",
 
-			"therefore",
+  "then",
 
-			"these",
+  "there",
 
-			"they",
+  "therefore",
 
-			"thing",
+  "these",
 
-			"things",
+  "they",
 
-			"think",
+  "thing",
 
-			"thinks",
+  "things",
 
-			"this",
+  "think",
 
-			"those",
+  "thinks",
 
-			"though",
+  "this",
 
-			"thought",
+  "those",
 
-			"thoughts",
+  "though",
 
-			"three",
+  "thought",
 
-			"through",
+  "thoughts",
 
-			"thus",
+  "three",
 
-			"to",
+  "through",
 
-			"today",
+  "thus",
 
-			"together",
+  "to",
 
-			"too",
+  "today",
 
-			"took",
+  "together",
 
-			"toward",
+  "too",
 
-			"turn",
+  "took",
 
-			"turned",
+  "toward",
 
-			"turning",
+  "turn",
 
-			"turns",
+  "turned",
 
-			"two",
+  "turning",
 
-			"u",
+  "turns",
 
-			"under",
+  "two",
 
-			"until",
+  "u",
 
-			"up",
+  "under",
 
-			"upon",
+  "until",
 
-			"us",
+  "up",
 
-			"use",
+  "upon",
 
-			"used",
+  "us",
 
-			"uses",
+  "use",
 
-			"v",
+  "used",
 
-			"very",
+  "uses",
 
-			"w",
+  "v",
 
-			"want",
+  "very",
 
-			"wanted",
+  "w",
 
-			"wanting",
+  "want",
 
-			"wants",
+  "wanted",
 
-			"was",
+  "wanting",
 
-			"way",
+  "wants",
 
-			"ways",
+  "was",
 
-			"we",
+  "way",
 
-			"well",
+  "ways",
 
-			"wells",
+  "we",
 
-			"went",
+  "well",
 
-			"were",
+  "wells",
 
-			"what",
+  "went",
 
-			"when",
+  "were",
 
-			"where",
+  "what",
 
-			"whether",
+  "when",
 
-			"which",
+  "where",
 
-			"while",
+  "whether",
 
-			"who",
+  "which",
 
-			"whole",
+  "while",
 
-			"whose",
+  "who",
 
-			"why",
+  "whole",
 
-			"will",
+  "whose",
 
-			"with",
+  "why",
 
-			"within",
+  "will",
 
-			"without",
+  "with",
 
-			"work",
+  "within",
 
-			"worked",
+  "without",
 
-			"working",
+  "work",
 
-			"works",
+  "worked",
 
-			"would",
+  "working",
 
-			"x",
+  "works",
 
-			"y",
+  "would",
 
-			"year",
+  "x",
 
-			"years",
+  "y",
 
-			"yet",
+  "year",
 
-			"you",
+  "years",
 
-			"young",
+  "yet",
 
-			"younger",
+  "you",
 
-			"youngest",
+  "young",
 
-			"your",
+  "younger",
 
-			"yours",
+  "youngest",
 
-			"z" };
+  "your",
 
-	
+  "yours",
+
+  "z" };
 
 }

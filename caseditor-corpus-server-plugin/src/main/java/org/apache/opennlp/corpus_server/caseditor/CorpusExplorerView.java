@@ -36,8 +36,6 @@ import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
-import org.eclipse.swt.events.VerifyEvent;
-import org.eclipse.swt.events.VerifyListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -67,18 +65,23 @@ public class CorpusExplorerView extends ViewPart {
   private TableViewer searchResultViewer;
   
   private void doSearch() {
+    
+    String queryString = queryText.getText();
+    
     // Remember query and save last queries to the preference store
-    int queryIndex = queryText.indexOf(queryText.getText());
+    int queryIndex = queryText.indexOf(queryString);
     
     if (queryIndex != -1) {
       queryText.remove(queryIndex);
     }
     
-    queryText.add(queryText.getText(), 0);
+    queryText.add(queryString, 0);
     
     if (queryText.getItemCount() > 10) {
       queryText.remove(queryText.getItemCount() - 1);
     }
+    
+    queryText.setText(queryString);
     
     // TODO: Serialize history to lastUsedQueries settings ...
     StringBuilder lastUsedQueriesString = new StringBuilder();
@@ -96,13 +99,10 @@ public class CorpusExplorerView extends ViewPart {
     // get server url
     String serverPath = serverUrl.getText();
     
-    // get query
-    String query = queryText.getText();
-    
     final SearchCorpusServerJob searchJob = new SearchCorpusServerJob();
     
     searchJob.setServerAddress(serverPath);
-    searchJob.setQuery(query);
+    searchJob.setQuery(queryString);
     
     searchJob.schedule();
     

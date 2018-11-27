@@ -1,0 +1,157 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+ 
+<html xmlns='http://www.w3.org/1999/xhtml'>
+   <head >
+      <meta http-equiv='Content-Type' content='text/html; charset=utf-8'/>
+      <title >Submit Your Essay Writing request here</title>
+      <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+      
+      <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+      <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap-theme.min.css">
+      <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+      
+      <link rel="stylesheet" href="ladda/ladda.min.css">
+	<script src="ladda/spin.min.js"></script>
+	<script src="ladda/ladda.min.js"></script>
+	<script src="ladda/spin.min.js"></script>
+      
+      
+      
+      
+      <style type="text/css">
+    .bs-example{
+    	margin: 30px;
+    }
+    
+    .form-horizontal .form-group input#seed {
+    	width:350px;
+	}
+
+    .form-horizontal .form-group input {
+    	width:165px;
+	}
+
+    .form-horizontal .form-group select#lang {
+    width:140px;
+	}
+	
+    .form-horizontal .form-group input#searchResultsNum {
+    width:70px;
+	}
+	
+    .form-horizontal .form-group input#stepsNum {
+    width:70px;
+	}
+	
+	
+	
+body { 
+
+background: #ffffff; /* Old browsers */
+background: -moz-linear-gradient(45deg,  #ffffff 0%, #f6f6f6 47%, #ededed 100%); /* FF3.6+ */
+background: -webkit-gradient(linear, left bottom, right top, color-stop(0%,#ffffff), color-stop(47%,#f6f6f6), color-stop(100%,#ededed)); /* Chrome,Safari4+ */
+background: -webkit-linear-gradient(45deg,  #ffffff 0%,#f6f6f6 47%,#ededed 100%); /* Chrome10+,Safari5.1+ */
+background: -o-linear-gradient(45deg,  #ffffff 0%,#f6f6f6 47%,#ededed 100%); /* Opera 11.10+ */
+background: -ms-linear-gradient(45deg,  #ffffff 0%,#f6f6f6 47%,#ededed 100%); /* IE10+ */
+background: linear-gradient(45deg,  #ffffff 0%,#f6f6f6 47%,#ededed 100%); /* W3C */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#ededed',GradientType=1 ); /* IE6-9 fallback on horizontal gradient */
+
+}
+
+</style>
+
+<script>
+ 
+
+ 
+</script>
+   </head>
+<body>
+<div class="bs-example">
+<h1>Submit Your Essay Writing request here / Envie su solicitud ensayo escrito aqui</h1>
+It takes 20-30 minutes to write a 40-60 page essay. So don't wait for this form to finish, just open another tab to proceed with browsing.
+<br>Your essay should arrive to your specified email address with a DOCX as attachment.
+Depending on your requirements, you might want to edit DOCX file to remove unwanted parts and make a smoother read.
+References to sources are included: notice how many are used. We compiled this from hundreds sources on the web. It would probably take you a few days to write something of a similar size. Instead, using this tool it should take you couple of hours to polish the draft.<br>
+Here are the docs <a href="http://173.255.254.250/written/">ordered by other users</a>
+
+
+
+<form class="form-horizontal" role="form"  id="essayForm"  method="post" action="http://173.255.254.250:8983/solr/contentgen/?resourceDir=/home/solr/solr-4.4.0/example/src/test/resources&workDir=/home/solr/solr-4.4.0/example/solr-webapp/webapp/WEB-INF/lib&relevanceThreshold=0.5&bingKey=e8ADxIjn9YyHx36EihdjH/tMqJJItUrrbPTUpKahiU0=">
+  <div class="form-group">
+    <label for="inputEmail1" class="col-lg-2 control-label">Topic for your essay/Tema de su ensayo: </label>
+    <div class="col-lg-10">
+      <input type="text" class="form-control" id="q" name="q" placeholder="Enter at least 2 words...">
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="inputPassword1" class="col-lg-2 control-label">Email to receive your essay/para recibir su ensayo:</label>
+    <div class="col-lg-10">
+      <input type="email" name="email" class="form-control" id="email" placeholder="">
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="inpuLanguage" class="col-lg-2 control-label">Select language/seleccionar el idioma:</label>
+    <div class="col-lg-10">
+     <select class="form-control" name="lang" id="lang" >
+   		<option value="en-US"> English</option>
+ 		<option value="es-US"> Espaniol</option>
+ 		<option value="de-DE"> German</option>
+	</select>
+    </div>
+  </div>
+ 
+
+  <div class="form-group">
+	   <label for="inputEmail1" class="col-lg-2 control-label">Number of plot elements (use 30 as default for fourty page doc):  </label>
+	   <div class="col-lg-10">
+	     <input type="number" name="stepsNum" class="form-control" id="stepsNum" value = "30">
+	   </div>    
+   </div>  
+  <div class="form-group">
+	    <label for="inputEmail1" class="col-lg-2 control-label">Number of paragraphs in each plot (use 50 for fourty page doc):  </label>
+	    <div class="col-lg-10">
+	      <input type="number" name="searchResultsNum" class="form-control" id="searchResultsNum" value = "50">
+	    </div>
+ </div>
+  
+  
+  <div class="form-group">
+    <div class="col-lg-offset-2 col-lg-10">
+	     <a href="#" id="form-submit" class="btn btn-primary btn-lg ladda-button" data-style="expand-right" data-size="l">
+	     	<span class="ladda-label">Submit</span>
+	     </a>
+	</div>
+  </div>
+</form>
+</div>
+<script>
+$(function() {
+	$('#form-submit').click(function(e){
+	 	e.preventDefault();
+	 	var l = Ladda.create(this);
+	 	l.start();
+	 	var data = $('#essayForm').serialize();
+	 	console.log("form-data", data);
+	 	
+	 	$.post("http://173.255.254.250:8983/solr/contentgen/?resourceDir=/home/solr/solr-4.4.0/example/src/test/resources&workDir=/home/solr/solr-4.4.0/example/solr-webapp/webapp/WEB-INF/lib&relevanceThreshold=0.5&bingKey=e8ADxIjn9YyHx36EihdjH/tMqJJItUrrbPTUpKahiU0=&wt=json", 
+	 	   data,
+	 	  function(response){
+	 	    console.log(response);
+	 	    var responseMsg = response.response;
+	 	    
+	 	    alert(responseMsg);
+	 	  }, "json")
+	 	.always(function() { l.stop(); });
+	 	return false;
+	});
+});
+  
+
+</script>	
+	
+	
+</body>
+
+</html>

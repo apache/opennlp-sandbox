@@ -1,3 +1,18 @@
+
+opennlp/tools.apps -? similarity.apps
+
+textsimilarity : sentence-level SG (based on opennlp)
+parse_thicket: paragraph-level SG (based on stanford NLP)
+
+matching.utils - all old classed, might be working better
+
+apps.search
+apps.content_generation
+parse_thicket.apps.lattice_queries
+
+
+
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreemnets.  See the NOTICE file distributed with

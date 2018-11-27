@@ -1,0 +1,7440 @@
+breathe
+respire
+choke
+hyperventilate
+aspirate
+burp
+force out
+hiccup
+sigh
+exhale
+hold
+sneeze
+inhale
+pant
+cough
+hack
+expectorate
+snort
+wheeze
+puff
+blow
+insufflate
+yawn
+sniff
+blink
+palpebrate
+bat
+wink
+squint
+wince
+shed
+desquamate
+twitch
+fibrillate
+move involuntarily
+act involuntarily
+act
+fall over backwards
+presume
+vulgarize
+optimize
+quack
+menace
+make
+swagger
+freeze
+wanton
+romanticize
+sentimentalise
+bungle
+play
+stooge
+shake
+shiver
+rest
+be active
+sleep
+bundle
+snooze
+nap
+oversleep
+sleep late
+hibernate
+estivate
+drowse
+nod
+zonk out
+snore
+fall asleep
+bed down
+doss
+go to bed
+get up
+wake up
+awaken
+reawaken
+cause to sleep
+affect
+attack
+ulcerate
+wake
+stay up
+keep up
+hypnotize
+entrance
+anesthetize
+etherize
+cocainize
+chloroform
+bring to
+sedate
+stimulate
+de-energize
+cathect
+perk up
+faint
+come to
+animate
+refresh
+freshen
+wash up
+tense
+crick
+relax
+unbend
+vege out
+sit back
+limber up
+stretch
+spread-eagle
+exsert
+hyperextend
+crane
+invigorate
+smile
+dimple
+grin
+beam
+smirk
+fleer
+bray
+bellylaugh
+roar
+snicker
+giggle
+break up
+break
+break down
+drop like flies
+cramp
+fall over
+cackle
+guffaw
+chuckle
+laugh
+convulse
+cachinnate
+sneer
+frown
+glower
+stare
+look
+scowl
+shrug
+clap
+grimace
+screw up
+pout
+clear the throat
+shower
+foment
+bathe
+cleanse
+wash
+sponge down
+scrub
+soap
+gargle
+shave
+epilate
+razor
+tonsure
+douche
+comb
+slick
+dress
+bob
+pompadour
+marcel
+wave
+gauffer
+perm
+mousse
+pomade
+tease
+groom
+clean up
+make up
+highlight
+lipstick
+rouge
+condition
+floss
+shampoo
+powder
+talc
+manicure
+barber
+pedicure
+doll up
+spruce up
+perfume
+preen
+prank
+tart up
+overdress
+enrobe
+prim
+bedizen
+dress down
+prink
+reduce
+sweat off
+gain
+round
+bundle up
+hat
+try on
+bonnet
+wear
+cover
+jacket
+frock
+shirt
+habit
+vesture
+underdress
+corset
+shoe
+undress
+peel off
+take off
+scarf
+slip on
+slip off
+coat
+cross-dress
+costume
+dandify
+vest
+inseminate
+stratify
+quicken
+impregnate
+inoculate
+cross-fertilize
+pollinate
+conceive
+nick
+beget
+ejaculate
+reproduce
+propagate
+vegetate
+fructify
+breed
+pullulate
+spawn
+spat
+give birth
+lie in
+labor
+twin
+drop
+foal
+cub
+kitten
+lamb
+litter
+whelp
+farrow
+fawn
+calve
+have a bun in the oven
+expect
+carry to term
+miscarry
+abort
+brood
+alter
+defeminize
+emasculate
+caponize
+geld
+vasectomize
+sterilize
+face-lift
+trephine
+menstruate
+ovulate
+antisepticize
+autoclave
+hatch
+irritate
+inflame
+soothe
+relieve
+massage
+hurt
+indispose
+suffer
+have
+be well
+wail
+cry
+bawl
+tear
+sob
+snivel
+sweat
+superfetate
+exude
+distill
+reek
+transpire
+extravasate
+stream
+gum
+secrete
+water
+swelter
+injure
+trample
+concuss
+calk
+trouble
+disagree with
+torture
+rack
+martyr
+pull
+urinate
+wet
+stale
+excrete
+evacuate
+suction
+purge
+stool
+dung
+constipate
+obstipate
+shed blood
+tire
+exhaust
+frazzle
+overtire
+vomit
+spew
+keep down
+gag
+gnash
+ail
+treat
+correct
+detox
+irrigate
+iodize
+doctor
+vet
+nurse
+manipulate
+administer
+transfuse
+digitalize
+bring around
+help
+comfort
+remedy
+poultice
+bandage
+ligate
+strap
+splint
+operate on
+venesect
+medicate
+drug
+dope
+soup
+overdose
+narcotize
+anoint
+salve
+bleed
+inject
+infuse
+immunize
+cup
+sicken
+wan
+contract
+catch
+catch cold
+poison
+intoxicate
+infect
+superinfect
+smut
+disinfect
+chlorinate
+canker
+traumatize
+shock
+galvanize
+mutilate
+maim
+twist
+subluxate
+cripple
+hamstring
+disable
+hock
+devolve
+recuperate
+snap back
+relapse
+languish
+waste
+atrophy
+hypertrophy
+fledge
+grow
+regrow
+spring
+sprout
+leaf
+pod
+teethe
+cut
+ankylose
+pupate
+work up
+fester
+draw
+suppurate
+necrose
+regenerate
+rejuvenate
+resuscitate
+boot
+resurrect
+scab
+skin over
+heal
+granulate
+poop out
+exercise
+train
+tumble
+roll
+warm up
+limber
+tone
+fart
+snuffle
+spit
+splutter
+stub
+harm
+salivate
+drivel
+blush
+pale
+etiolate
+tan
+suntan
+sun
+sunburn
+generalize
+metastasize
+emit
+joke
+clown
+feel
+feel like a million
+suffocate
+gown
+jaundice
+piffle
+run down
+pack on
+call
+make as if
+fracture
+refracture
+give
+pack
+snuff
+froth
+lather
+change
+shade
+gel
+brutalize
+caramelize
+rasterize
+convert
+humify
+verbalize
+creolize
+sporulate
+novelize
+deaden
+opalize
+receive
+reconvert
+malt
+stay
+keep out
+continue
+sit tight
+differentiate
+speciate
+dedifferentiate
+mutate
+arterialize
+revert
+render
+get
+alternate
+spell
+interchange
+counterchange
+vascularize
+decrepitate
+crackle
+suburbanize
+modulate
+avianize
+move
+step
+scroll
+glaze
+revolutionize
+turn
+bald
+sensualize
+barbarize
+alkalinize
+mythologize
+allegorize
+demythologize
+bring
+secularize
+rubberize
+coarsen
+anodize
+citrate
+equilibrate
+leave
+strike a blow
+repercuss
+tell on
+redound
+bacterize
+change by reversal
+turn the tables
+commutate
+alchemize
+alcoholize
+change integrity
+switch over
+change shape
+individuate
+tie
+terrace
+fork
+constellate
+shape
+tabulate
+dimension
+strike
+crystallize
+culminate
+sliver
+ridge
+plume
+conglobate
+form
+scallop
+square
+round off
+purse
+pooch
+change state
+fall
+fall off
+fall in love
+suspend
+resuspend
+sober up
+sober
+become
+work
+adjust
+follow
+go by
+readjust
+proportion
+reconstruct
+readapt
+decrease
+shrink
+taper
+drop off
+vanish
+increase
+suppress
+extend
+augment
+build up
+enlarge
+up
+rise
+soar
+jump
+accrue
+bull
+ease up
+spike
+add to
+explode
+pyramid
+advance
+snowball
+raise
+bump up
+accumulate
+backlog
+accrete
+run up
+assimilate
+acculturate
+detribalize
+dissimilate
+rectify
+utilize
+commute
+capitalize
+overcapitalize
+transduce
+replace
+refurbish
+gentrify
+revamp
+retread
+renovate
+revitalize
+vitalize
+ruggedize
+consolidate
+proof
+bombproof
+bulletproof
+child-proof
+goofproof
+fireproof
+weatherproof
+devitalize
+eviscerate
+reincarnate
+reform
+surge
+revive
+republish
+change magnitude
+modify
+attemper
+syncopate
+update
+soup up
+cream
+enrich
+redevelop
+round out
+deprive
+fail
+disestablish
+remove
+harvest
+tip
+stem
+extirpate
+enucleate
+exenterate
+decorticate
+bail
+strip
+ablate
+clean
+winnow
+pick
+clear
+muck
+lift
+tear away
+uncloak
+take away
+pit
+seed
+unhinge
+shuck
+hull
+crumb
+chip away
+burl
+knock out
+bus
+scavenge
+hypophysectomize
+degas
+husk
+bur
+clear off
+unclutter
+clutter
+clog
+brim
+add
+gild the lily
+adjoin
+work in
+add on
+include
+mix
+dash
+put on
+butylate
+nitrate
+tank
+oxygenate
+mercerize
+back
+fluoridate
+creosote
+carbonate
+camphorate
+bromate
+ammoniate
+welt
+insert
+plug
+inset
+glass
+catheterize
+launder
+intersperse
+interleave
+feed
+slip
+foist
+intercalate
+punctuate
+concatenate
+string
+flick
+activate
+biodegrade
+inactivate
+deactivate
+reactivate
+obtund
+petrify
+jazz up
+enliven
+spirit
+compound
+totalize
+recombine
+milk
+denude
+clear-cut
+stump
+defoliate
+deforest
+burn off
+burn
+frost
+scald
+declaw
+defang
+dehorn
+disbud
+bone
+disembowel
+shell
+tusk
+scalp
+moderate
+mitigate
+qualify
+remodel
+debug
+edit
+bowdlerize
+interpolate
+black out
+blank out
+falsify
+tame
+break in
+chasten
+corrupt
+pervert
+abuse
+worsen
+lapse
+better
+turn around
+brisk
+upgrade
+recondition
+degrade
+emend
+iron out
+deteriorate
+go to pot
+decay
+decompose
+digest
+dissociate
+hang
+spoil
+addle
+mold
+dry-rot
+exsiccate
+dehydrate
+freeze-dry
+conserve
+lyophilize
+preserve
+tin
+pickle
+salt
+marinade
+decoct
+can
+hydrate
+slack
+air-slake
+bedew
+spin-dry
+tumble dry
+spray-dry
+humidify
+dehumidify
+drench
+brine
+bedraggle
+bate
+ret
+flood
+flow
+lave
+inundate
+moisten
+moil
+parch
+dry
+rough-dry
+lubricate
+blow-dry
+drip-dry
+scorch
+lock
+unlock
+engage
+disengage
+strengthen
+attenuate
+substantiate
+restrengthen
+undergird
+confirm
+sandbag
+fortify
+reinforce
+buttress
+line
+vouch
+bolster
+weaken
+melt
+die down
+die
+collapse
+fade
+depress
+unbrace
+dilute
+rarefy
+intensify
+build
+redouble
+heat up
+fan
+blunt
+bloody
+hose
+sprinkle
+moonshine
+enhance
+potentiate
+follow up
+touch up
+mushroom
+undergrow
+exfoliate
+overgrow
+subside
+pare
+restrict
+develop
+gate
+draw the line
+mark off
+rule
+baffle
+carry
+limit
+hold down
+number
+cap
+hamper
+abridge
+boil down
+concentrate
+deoxidize
+benficiate
+crack
+catabolize
+oxidize
+oxidise
+rust
+pole
+blow up
+reef
+miniaturize
+shrivel
+blast
+die back
+mummify
+weld
+unite
+consubstantiate
+abbreviate
+foreshorten
+encapsulate
+telescope
+abate
+slake
+culture
+rotate
+double
+geminate
+triple
+quadruple
+quintuple
+multiply
+manifold
+proliferate
+senesce
+age
+progress
+climb
+leapfrog
+regress
+fossilize
+ripen
+mature
+find oneself
+evolve
+work out
+elaborate
+derive
+adolesce
+antique
+antiquate
+incubate
+mellow
+soften
+encrust
+effloresce
+face-harden
+callus
+mollify
+balloon
+reflate
+bulge
+swell
+distend
+expand
+belly
+tumefy
+bilge
+leak
+damage
+total
+bruise
+disturb
+afflict
+visit
+devastate
+repair
+tinker
+fill
+piece
+cobble
+point
+overhaul
+retrofit
+trouble-shoot
+patch
+impair
+flaw
+dish
+bulk
+amplify
+inflate
+puff up
+deflate
+acidify
+alkalize
+polymerize
+copolymerize
+ionize
+ossify
+catalyze
+dwindle
+turn down
+get well
+get worse
+remit
+paralyze
+palsy
+stun
+immobilize
+unblock
+mobilize
+acerbate
+mend
+fluctuate
+stabilize
+peg
+ballast
+guy
+destabilize
+sensitize
+desensitize
+inure
+callous
+steel oneself against
+habituate
+teach
+corrode
+fret
+erode
+weather
+regularize
+tidy
+mess
+disorder
+perturb
+order
+predate
+postdate
+chronologize
+straighten
+disarrange
+rearrange
+recode
+reshuffle
+randomize
+serialize
+alphabetize
+bleach
+peroxide
+wash out
+whiten
+blacken
+melanize
+lighten
+discolor
+blackwash
+sallow
+bronze
+silver
+foliate
+dye
+stain
+deep-dye
+henna
+impress
+color
+motley
+polychrome
+azure
+purple
+aurify
+verdigris
+pinkify
+incarnadine
+madder
+embrown
+handcolor
+ebonize
+dip
+tint
+pigment
+tincture
+imbue
+complexion
+hue
+fast dye
+double dye
+tie-dye
+retouch
+hand-dye
+batik
+piece-dye
+redden
+grey
+yellow
+escalate
+de-escalate
+radiate
+effuse
+irradiate
+bombard
+light
+floodlight
+spotlight
+clip
+fancify
+uglify
+dress up
+blossom
+bloom
+temper
+season
+tune
+untune
+calibrate
+time
+trim
+zero
+attune
+gear
+pitch
+set
+reset
+keynote
+regulate
+adapt
+fit
+anglicise
+habilitate
+capacitate
+disqualify
+shoehorn
+tailor
+domesticate
+fine-tune
+anneal
+toughen
+widen
+white out
+let out
+take in
+flare out
+constrict
+astringe
+strangulate
+bottleneck
+narrow
+taper off
+dilate
+implode
+detonate
+fulminate
+crump
+go off
+dynamite
+erupt
+dehisce
+oxygenize
+dehydrogenate
+hydrogenate
+burst
+pop
+puncture
+stave
+boom
+luxuriate
+boost
+blur
+obliterate
+darken
+infuscate
+murk
+dun
+blind
+dusk
+brighten
+weed
+dim
+obscure
+benight
+focus
+refocus
+depreciate
+appreciate
+revalue
+expense
+deafen
+shorten
+lengthen
+truncate
+broaden
+prolong
+temporize
+spin
+elongate
+tree
+size
+scale
+resize
+rescale
+bake
+ovenbake
+brown
+coddle
+fire
+farce
+fetishize
+feudalize
+stuff
+cork
+pad
+baste
+souse
+microwave
+crispen
+shirr
+blanch
+overboil
+cook
+overcook
+fricassee
+stew
+jug
+simmer
+seethe
+roast
+barbeque
+pan roast
+braise
+fry
+frizzle
+deep-fat-fry
+griddle
+pan-fry
+slenderize
+french-fry
+stir fry
+saute
+grill
+hibachi
+steam
+steep
+brew
+boil
+broil
+pan-broil
+pressure-cook
+branch
+ramify
+arborize
+twig
+bifurcate
+trifurcate
+atomize
+dialyse
+backscatter
+peptize
+grind
+pound
+pulp
+pestle
+mill
+powderize
+run
+partition
+subdivide
+screen off
+shatter
+smash
+ladder
+stave in
+sunder
+check
+fissure
+snap
+chap
+craze
+alligator
+splinter
+dissolve
+rag
+brecciate
+crush
+arise
+happen
+result
+intervene
+operate
+supervene
+proceed
+drag
+come
+anticipate
+recur
+iterate
+cycle
+come around
+dematerialize
+befall
+spin off
+concur
+bud
+get down
+recommence
+strike out
+break out
+jump off
+get to
+auspicate
+plunge
+come on
+embark
+take up
+get cracking
+begin
+jumpstart
+inaugurate
+set off
+carry over
+resume
+persevere
+obstinate
+ask for it
+stick to
+pass away
+close out
+finish
+close
+cut out
+go out
+finish up
+end
+give the axe
+ax
+stamp out
+kill
+change surface
+level
+crust
+heave
+shoot
+germinate
+burgeon
+root
+strangle
+buy it
+go
+widow
+drown
+predecease
+be born
+come to life
+cloud over
+mist
+demist
+bloat
+curl
+hold on
+cut short
+hang up
+nolle pros
+bog down
+interrupt
+adjourn
+pasteurize
+condense
+sublime
+resublime
+evaporate
+pervaporate
+unify
+unitize
+syncretize
+disunify
+converge
+league
+federate
+carbonize
+cool
+overheat
+quench
+ice
+refrigerate
+heat
+soak
+calcine
+preheat
+warm
+chafe
+cauterize
+glaciate
+concrete
+boil over
+deep freeze
+quick-freeze
+deliquesce
+defrost
+burn down
+smolder
+sear
+sizzle
+incinerate
+singe
+backfire
+cremate
+torch
+char
+blister
+switch
+permute
+map
+transpose
+metricize
+flour
+transform
+transmute
+transubstantiate
+sorcerize
+ash
+translate
+reclaim
+metamorphose
+moralize
+Islamize
+Christianize
+evangelize
+catholicize
+turn back
+invert
+resile
+customize
+personalize
+depersonalize
+lay waste to
+harry
+emaciate
+enfeeble
+enervate
+pine away
+dampen
+shush
+stifle
+choke off
+dull
+cloud
+pall
+sharpen
+subtilize
+acuminate
+flatten
+acclimatize
+synchronize
+phase
+desynchronize
+blend
+gauge
+absorb
+blend in
+cut in
+conjugate
+admix
+alloy
+fuse
+crumble
+disintegrate
+fold
+reintegrate
+macerate
+putrefy
+magnetize
+demagnetize
+simplify
+oversimplify
+complicate
+complexify
+involve
+refine
+sophisticate
+snarl
+snafu
+pressurize
+supercharge
+depressurize
+structure
+restructure
+organize
+interlock
+centralize
+decentralize
+socialize
+fix
+provide
+cram
+precondition
+mount
+set up
+rig
+winterize
+summerize
+prime
+communize
+internationalize
+Americanize
+Europeanize
+bestialize
+Frenchify
+modernize
+civilize
+nationalize
+denationalize
+privatize
+naturalize
+denaturalize
+adopt
+immigrate
+settle
+colonize
+relocate
+dislocate
+homestead
+roost
+set in
+resettle
+emigrate
+expatriate
+steady
+even
+equal
+homologize
+stiffen
+starch
+buckram
+rigidify
+clamp down
+loosen
+tighten
+frap
+tauten
+transitivize
+detransitivize
+slacken
+douse
+absent
+evanesce
+appear
+peep
+manifest
+come to light
+gleam
+emerge
+get on
+outcrop
+flash
+turn out
+resurface
+basset
+pop out
+reappear
+break through
+disappear
+skip town
+die out
+minimize
+hedge
+scale down
+scale up
+maximize
+spill
+retrench
+slash
+thin out
+thin
+thicken
+decline
+wear on
+heighten
+shoot up
+slump
+wax
+full
+wane
+magnify
+crash
+give way
+blow out
+unfurl
+roll up
+bolt
+diversify
+vary
+checker
+specialize
+overspecialize
+accelerate
+decelerate
+retard
+fishtail
+rev up
+slow
+diminish
+gasify
+jell
+curdle
+harden
+liquefy
+try
+solidify
+solvate
+react
+etch
+validate
+invalidate
+empty
+clean out
+flow away
+bail out
+void
+populate
+people
+drain
+rack up
+top off
+heap
+overfill
+ink
+replenish
+suffuse
+perfuse
+flush
+wash down
+sluice
+complete
+complement
+saturate
+match
+service
+homogenize
+clot
+sour
+ferment
+vinify
+rush
+delay
+stonewall
+stall
+buy time
+hush
+louden
+inhibit
+burke
+silence
+squelch
+splat
+steamroll
+align
+address
+realign
+true
+collimate
+plumb
+misalign
+skew
+integrate
+lysogenize
+build in
+re-incorporate
+standardize
+normalize
+reorient
+morph
+wilt
+neutralize
+commercialize
+eliminate
+decimate
+cancel out
+decouple
+extinguish
+excise
+sparkle
+perfect
+polish
+overrefine
+precipitate
+purify
+spiritualize
+lustrate
+deform
+block
+mar
+snuff out
+stamp
+stub out
+massacre
+erase
+mechanize
+dehumanize
+automatize
+semi-automatize
+systematize
+codify
+finalize
+harmonize
+key
+accommodate
+compartmentalize
+top
+get through
+see through
+cap off
+crown
+follow through
+adhere
+fixate
+glue
+polarize
+load
+water down
+leach
+vent
+air
+linearize
+glorify
+justify
+quantify
+meter
+pace
+clock
+mistime
+click off
+fathom
+titrate
+foul
+pollute
+decontaminate
+contaminate
+debase
+devalue
+demonetize
+isolate
+segregate
+ghettoize
+insulate
+weatherstrip
+soundproof
+cloister
+sequester
+seclude
+quarantine
+maroon
+let
+preisolate
+ammonify
+thoriate
+charge
+imbrue
+calcify
+coke
+decalcify
+carnify
+chondrify
+citify
+urbanize
+industrialize
+emulsify
+demulsify
+denazify
+decarboxylate
+nazify
+denitrify
+nitrify
+fertilize
+topdress
+innervate
+pinch
+federalize
+clarify
+detoxify
+devitrify
+embrittle
+electrify
+esterify
+etherify
+interstratify
+jellify
+lapidify
+dot
+mark
+stigmatize
+raddle
+striate
+red-ink
+reline
+spot
+freckle
+fox
+mottle
+harlequin
+crisscross
+star
+flag
+bark
+lay up
+nobble
+pinion
+enable
+equip
+buffer
+background
+pick up
+wave off
+foreground
+bring out
+de-emphasize
+tender
+process
+reverberate
+curry
+dose
+sulphur
+vulcanize
+chrome
+bituminize
+Agenize
+rerun
+recharge
+facilitate
+mystify
+demystify
+bubble
+foam
+sweeten
+de-ionate
+iodinate
+de-iodinate
+ionate
+upset
+green
+blue
+thrombose
+diagonalize
+archaize
+take effect
+inform
+take
+officialize
+marbleize
+occidentalize
+orientalize
+acetylate
+achromatize
+assume
+re-assume
+parallel
+ritualize
+camp
+carboxylate
+caseate
+classicize
+clinker
+closure
+compost
+conventionalize
+cure
+corn
+recover
+rally
+dawn
+issue
+escape
+debouch
+decarbonize
+decimalize
+declutch
+delouse
+depopulate
+lower
+derate
+salinate
+desalinate
+dizzy
+exteriorize
+glamorize
+sentimentalize
+sole
+vamp
+heel
+honeycomb
+introvert
+laicize
+politicize
+radicalize
+encrimson
+vermilion
+carmine
+rubify
+rubric
+ruddle
+rusticate
+sauce
+shallow
+steepen
+superannuate
+scramble
+unscramble
+unsex
+vitrify
+saponify
+lead up
+open
+territorialize
+globalize
+ream
+bring home
+catch on
+outgrow
+muddy
+reheat
+poach
+dignify
+exalt
+deify
+fly
+harshen
+flow out
+emanate
+white-out
+dinge
+crescendo
+decrescendo
+assibilate
+smoothen
+demonize
+devilize
+etherealize
+immaterialize
+animize
+come back
+turn on
+mangle
+shift
+break into
+save
+turn to
+transition
+deepen
+surf
+dynamize
+concretize
+volatilize
+uniformize
+symmetrize
+immortalize
+denature
+disrupt
+sanitize
+verbify
+introject
+transfer
+brush
+sputter
+transcribe
+swing
+lull
+prostrate
+excite
+outmode
+spice
+leap
+veer
+run out
+think
+format
+digitize
+hydrolyze
+hydrolize
+saccharify
+rumple
+gelatinize
+felt
+float
+feminize
+masculinize
+bind
+disharmonize
+obsolesce
+sexualize
+schematize
+patent
+constitutionalize
+rationalize
+stalinize
+destalinize
+plasticize
+scrap
+desorb
+recede
+ebb
+wash away
+drift
+paganize
+defervesce
+incandesce
+leave off
+play out
+damp
+deaminate
+angulate
+circularize
+depolarize
+demineralize
+isomerize
+legitimate
+indurate
+gradate
+keratinize
+beneficiate
+novate
+opacify
+opsonize
+militarize
+popularize
+recommend
+ruin
+solemnize
+subordinate
+transaminate
+transfigure
+unsanctify
+vesiculate
+visualize
+undulate
+variegate
+ventilate
+vivify
+vulgarise
+supple
+professionalize
+still
+roll in
+flip
+weaponize
+deflagrate
+diazotize
+hay
+lignify
+mineralize
+ozonize
+slag
+sulfate
+cutinize
+duplex
+eroticize
+piggyback
+repress
+downsize
+subtract
+shear
+port
+carve out
+lifehack
+grok
+lie low
+understand
+sense
+smell
+figure
+touch
+intuit
+perceive
+click
+resonate
+strike a chord
+do justice
+acknowledge
+attorn
+write off
+extrapolate
+sympathize
+know
+keep track
+lose track
+ignore
+have down
+know the score
+taste
+relive
+master
+learn
+relearn
+unlearn
+catch up
+get the goods
+wise up
+trip up
+audit
+consume
+welter
+swallow
+espouse
+imbibe
+apprentice
+retrain
+drill
+housebreak
+roughhouse
+toilet-train
+memorize
+understudy
+indoctrinate
+brainwash
+hammer in
+inculcate
+din
+study
+major
+remember
+forget
+come to mind
+mind
+retain
+recognize
+remind
+take back
+nag
+reminisce
+commemorate
+monumentalize
+jilt
+abandon
+expose
+walk out
+neglect
+elide
+exclude
+attend to
+pretermit
+slight
+misremember
+err
+stumble
+mistake
+identify
+type
+date
+misdate
+confuse
+misconstrue
+read
+read between the lines
+puzzle over
+demoralize
+perplex
+riddle
+interpret
+mythicize
+literalize
+reinterpret
+misread
+idealize
+anagram
+reread
+dip into
+empanel
+decipher
+make out
+numerate
+dictate
+scry
+skim
+lipread
+copyread
+proofread
+rationalize away
+think out
+philosophize
+brainstorm
+chew over
+premeditate
+theologize
+introspect
+reason
+theorize
+ratiocinate
+speculate
+etymologize
+solve
+answer
+cinch
+guess
+induce
+deduce
+establish
+calculate
+quantize
+extract
+prorate
+miscalculate
+recalculate
+average
+cube
+factor
+foot
+carry back
+divide
+halve
+quarter
+analyze
+parse
+synthesize
+anatomize
+botanize
+diagnose
+explore
+put out feelers
+survey
+triangulate
+measure
+caliper
+prospect
+research
+google
+mapquest
+re-explore
+cast about
+pioneer
+cave
+discriminate
+distinguish
+label
+bristle
+sex
+individualize
+catalogue
+compare
+analogize
+syllogize
+reconsider
+come round
+classify
+refer
+reclassify
+dichotomize
+pigeonhole
+group
+regroup
+bracket
+collocate
+categorize
+grade
+rate
+superordinate
+shortlist
+reorder
+countermarch
+outclass
+place
+rank
+prioritize
+sequence
+downgrade
+contrast
+severalize
+contradistinguish
+collate
+receipt
+see
+control
+double-check
+cross-check
+card
+spot-check
+authenticate
+verify
+prove
+prove oneself
+lay down
+document
+source
+negate
+disprove
+refute
+accept
+stand for
+bear up
+take lying down
+take it on the chin
+take a joke
+test
+sit out
+evaluate
+stand
+misjudge
+underestimate
+sell short
+overestimate
+judge
+estimate
+misgauge
+lowball
+approve
+frown on
+disapprove
+rubberstamp
+choose
+field
+sieve
+dial
+plump
+hand-pick
+elect
+excerpt
+cull out
+cream off
+sieve out
+assign
+dedicate
+detail
+schedule
+book
+calendar
+slot
+single out
+opt out
+prejudice
+bias
+slant
+predispose
+dispose
+prejudge
+assess
+reappraise
+reassess
+censor
+bethink
+believe
+buy
+credit
+misbelieve
+disbelieve
+count
+subsume
+rule out
+reject
+repudiate
+recuse
+approbate
+reprobate
+doubt
+discredit
+distrust
+lean
+trust
+rethink
+backpedal
+about-face
+surmise
+think of
+consider
+like
+relativize
+favor
+abstract
+reify
+hypostatize
+apotheosize
+deem
+respect
+think the world of
+disrespect
+undervalue
+assay
+bioassay
+value
+overvalue
+review
+screen
+decide
+will
+design
+seal
+purpose
+determine
+filiate
+initialize
+miscreate
+carry weight
+reshape
+index
+predetermine
+predestine
+jinx
+cogitate
+contemplate
+plan
+chart
+draw a bead on
+overshoot
+overrun
+hope
+project
+offer
+introduce
+frame
+conspire
+coconspire
+counterplot
+scheme
+plot
+intend
+mean
+aim
+want
+slate
+mastermind
+choreograph
+plat
+lay out
+block out
+loft
+engineer
+entertain
+dally
+reckon
+associate
+interrelate
+correlate
+free-associate
+debate
+conclude
+find
+pin down
+overrule
+presuppose
+postulate
+insist
+premise
+overreact
+respond
+greet
+look forward
+look to
+tell
+ascertain
+discover
+rake up
+price
+ferret out
+rivet
+recall
+occur
+allow
+budget for
+budget
+beware
+amaze
+dazzle
+surprise
+explode a bombshell
+flabbergast
+impute
+reattribute
+anthropomorphize
+personify
+accredit
+blame
+register
+elicit
+penetrate
+trace
+wonder
+internalize
+demarcate
+find out
+concenter
+resign
+observe
+discountenance
+resolve
+factorize
+misgive
+fall in line
+believe in
+think about
+plant
+dateline
+arrange
+factor analyse
+re-create
+drink in
+keep note
+grab
+seize
+pay
+take one's lumps
+relegate
+communicate
+yak
+fingerspell
+aphorize
+shrug off
+send a message
+relay
+reach
+ping
+diphthongize
+reach out
+draw out
+get across
+twang
+vocalize
+troll
+ordain
+destine
+force
+intrude
+clamp
+stick
+inflict
+furlough
+direct
+talk down
+point the way
+instruct
+overburden
+bear down
+overwhelm
+mandate
+command
+featherbed
+general
+officer
+ask
+request
+solicit
+encore
+requisition
+page
+petition
+demand
+adjure
+appeal
+claim
+profess
+contend
+purport
+disclaim
+disown
+apostatize
+abnegate
+crave
+supplicate
+beg
+plead
+bid
+pray
+commune
+intercede
+concert
+negociate
+renegociate
+horse-trade
+parley
+powwow
+palaver
+clinch
+agree
+plea-bargain
+bargain
+reconcile
+propitiate
+apply
+urge
+push
+nudge
+persuade
+hustle
+bring round
+badger
+sell
+chat up
+blaze away
+memorialize
+talk out of
+talk into
+rope in
+wheedle
+elocute
+soft-soap
+proselytize
+dissuade
+encourage
+lead
+prompt
+argue
+re-argue
+present
+expostulate
+stickle
+spar
+quibble
+brawl
+clamor
+polemize
+quarrel
+fall out
+oppose
+assure
+charm
+gibber
+hex
+voodoo
+prevail
+importune
+besiege
+put away
+pause
+take five
+take ten
+chime in
+burst in on
+digress
+go ahead
+segue
+hook
+hit
+quest
+entice
+seduce
+lead on
+tweedle
+tempt
+pry
+question
+interpellate
+spy
+investigate
+quiz
+examine
+cross examine
+catechize
+spoonfeed
+pump
+interrogate
+probe
+re-examine
+cell phone
+call in
+hang on
+telecommunicate
+telex
+summon
+beep
+call back
+buzz
+convoke
+muster
+subpoena
+invite
+provoke
+jog
+call on
+book up
+program
+reschedule
+reserve
+forbid
+ban
+bar
+enjoin
+refuse
+contract in
+contract out
+rebuff
+abjure
+misstate
+retreat
+revoke
+renege
+cancel
+cross off
+dismiss
+recount
+pass off
+scoff
+turn a blind eye
+laugh off
+permit
+authorize
+certificate
+assent
+yield
+dissent
+disagree
+clash
+see eye to eye
+concede
+subscribe
+sanction
+visa
+object
+demur
+challenge
+counterchallenge
+cavil
+interview
+check out
+miss
+get off
+evade
+bypass
+avoid
+keep off
+shirk
+shy away from
+shun
+confront
+vex
+wrestle
+bandy
+hash out
+blaspheme
+hold forth
+counter
+sass
+retort
+deny
+admit
+make no bones about
+make a clean breast of
+bastardize
+sustain
+confess
+stand pat
+hunker down
+avow
+disavow
+attest
+declare
+reflect
+mirror
+notarize
+certify
+beatify
+canonize
+contradict
+reprimand
+savage
+admonish
+chastise
+flame
+call on the carpet
+represent
+tell off
+lip off
+reproach
+reprehend
+deplore
+knock
+animadvert
+belabor
+come down
+preach
+sermonize
+pontificate
+orate
+bloviate
+induct
+mentor
+tutor
+unteach
+ground
+lecture
+brief
+debrief
+acquaint
+warn
+fill in
+coach
+misinform
+lie
+romance
+perjure
+suborn
+fib
+beat around the bush
+typify
+misrepresent
+tinge
+pose
+masquerade
+bluff
+feign
+go through the motions
+play possum
+take a dive
+bamboozle
+talk through one's hat
+overstate
+soft-pedal
+trivialize
+overemphasize
+re-emphasise
+understate
+denounce
+accuse
+arraign
+tax
+complain
+recriminate
+impeach
+slang
+claw
+disparage
+nitpick
+pan
+defame
+assassinate
+libel
+vilify
+badmouth
+diss
+bristle at
+mock
+caricature
+impersonate
+spoof
+jeer
+pull the leg of
+incite
+needle
+ridicule
+satirize
+deride
+debunk
+stultify
+horse around
+deceive
+undeceive
+gull
+kid
+referee
+deprecate
+condemn
+praise
+salute
+overpraise
+crow
+trumpet
+exuberate
+glory
+cheerlead
+cheer
+humor
+amuse
+applaud
+bravo
+laud
+ensky
+crack up
+hymn
+promulgate
+acclaim
+boo
+vitriol
+rip
+whang
+accurse
+blog
+curse
+gee
+ooh
+bless
+consecrate
+reconsecrate
+desecrate
+account
+impugn
+defy
+call one's bluff
+brazen
+call out
+contest
+forewarn
+caution
+threaten
+bode
+alarm
+rede
+tip off
+advise
+familiarize
+orient
+verse
+reacquaint
+get into
+propose
+proposition
+misadvise
+feed back
+propound
+consult
+confer
+collogue
+submit
+return
+report out
+nominate
+volunteer
+flatter
+adulate
+stroke
+eulogize
+curry favor
+butter up
+compliment
+congratulate
+rave
+commend
+speak of the devil
+boast
+gloat
+promise
+pledge
+swear off
+article
+oblige
+indenture
+tie down
+disoblige
+collateralize
+betroth
+vow
+inscribe
+rededicate
+take the veil
+stipulate
+sign
+undertake
+underwrite
+swear
+guarantee
+doom
+reinsure
+thank
+apologize
+excuse
+alibi
+frank
+take the Fifth
+defend
+stand up
+cover for
+uphold
+shake hands
+cross oneself
+bow
+congee
+take a bow
+curtsy
+salaam
+hail
+welcome
+say farewell
+reintroduce
+precede
+preamble
+prologize
+absolve
+wash one's hands
+meld
+wish
+forgive
+shrive
+acquit
+vindicate
+whitewash
+pardon
+amnesty
+extenuate
+convict
+reconvict
+sentence
+foredoom
+backbite
+heckle
+whine
+deter
+foster
+patronize
+stoop to
+murmur
+grouch
+coo
+protest
+declaim
+remonstrate
+raise hell
+repine
+gripe
+rail
+regret
+exclaim
+shout
+yell
+hollo
+hurrah
+halloo
+whoop
+shriek
+yowl
+interject
+vociferate
+holler
+thunder
+whisper
+speak up
+enthuse
+rhapsodize
+suppose
+second-guess
+predict
+vaticinate
+augur
+bet
+guesstimate
+redetermine
+refract
+suspect
+bespeak
+blaze
+signpost
+signalize
+singularize
+buoy
+say
+show
+surcharge
+indicate
+finger
+foreshow
+scruple
+marvel
+explicate
+forecast
+prophesy
+enlighten
+hint
+intimate
+clue in
+contraindicate
+convey
+imply
+burst out
+rip out
+suggest
+connote
+denote
+signify
+euphemize
+speak in tongues
+voice
+tone down
+unwrap
+muckrake
+out
+come out of the closet
+unmask
+betray
+confide
+unbosom
+sell out
+nark
+spill the beans
+keep quiet
+misspell
+deconstruct
+commentate
+misinterpret
+explain
+account for
+obfuscate
+express
+pour out
+miaou
+talk
+whiff
+talk of
+blubber
+drone
+gather
+recite
+rattle down
+list
+enumerate
+itemize
+specify
+name
+count down
+miscount
+census
+tally
+take a dare
+devoice
+lilt
+palatalize
+nasalize
+mispronounce
+platitudinize
+tsk
+relate
+yarn
+narrate
+publicize
+hype
+bulletin
+embroider
+disambiguate
+define
+redefine
+repeat
+cuckoo
+reecho
+parrot
+perseverate
+ditto
+regurgitate
+harp
+hark back
+retranslate
+mistranslate
+dub
+gloss
+phrase
+Latinize
+paraphrase
+lexicalize
+spiel
+dogmatize
+cheek
+speak
+run on
+smatter
+talk turkey
+monologuize
+converse
+broach
+report
+announce
+check in
+clock in
+clock out
+publish
+circulate
+podcast
+satellite
+sportscast
+sow
+telecast
+colorcast
+go around
+bandy about
+propagandize
+misname
+tout
+pronounce
+sign off
+trump
+blare out
+count off
+advertise
+headline
+ballyhoo
+bill
+proclaim
+clarion
+articulate
+retroflex
+subvocalize
+syllabize
+drawl
+give voice
+formularize
+bumble
+rasp
+blurt out
+lisp
+inflect
+stress
+utter
+gurgle
+nasale
+bite out
+troat
+volley
+chorus
+describe
+symbolize
+actualize
+dramatize
+overdramatize
+portray
+delineate
+take the floor
+deliver
+speechify
+harangue
+approach
+misdirect
+instrument
+re-address
+disabuse
+post
+placard
+gesticulate
+telepathize
+write
+write in
+style
+apostrophize
+encode
+code
+decode
+transliterate
+notate
+Romanize
+braille
+rewrite
+revise
+amend
+rubricate
+undersign
+autograph
+initial
+countersign
+execute
+endorse
+cosign
+record
+overwrite
+tape record
+prerecord
+accession
+ring up
+chronicle
+set forth
+file
+trademark
+log
+log up
+film
+videotape
+photograph
+retake
+reshoot
+x-ray
+score
+underline
+quote
+notch
+handwrite
+backspace
+double-space
+triple-space
+touch-type
+spell out
+jot down
+scribble
+sketch
+correspond
+cable
+radio
+fax
+sum up
+precis
+docket
+recapitulate
+retrograde
+state
+get out
+affirm
+reaffirm
+circumstantiate
+reconfirm
+topicalize
+point up
+drive home
+underscore
+testify
+adduce
+allege
+assert
+predicate
+swear in
+maintain
+counterclaim
+reassure
+note
+write down
+dash down
+exemplify
+firm up
+overgeneralize
+universalize
+mention
+misquote
+underquote
+touch on
+invoke
+namedrop
+call up
+slip in
+drag up
+cross-refer
+allude
+drive
+toss in
+decree
+opine
+editorialize
+baptize
+rename
+entitle
+term
+tag
+designate
+excommunicate
+covenant
+mail
+airmail
+e-mail
+spam
+network
+express-mail
+comment
+disk-jockey
+sugarcoat
+discourse
+descant
+talk shop
+browbeat
+compromise
+whore
+give and take
+queer
+chatter
+yack
+babble
+chew the fat
+shmooze
+wigwag
+semaphore
+heliograph
+mouth
+lip-synch
+close up
+open up
+beckon
+dish the dirt
+rumor
+rap
+hoot
+pant-hoot
+grunt-hoot
+grunt
+whistle
+wolf-whistle
+susurrate
+mumble
+slur
+groan
+grumble
+vroom
+yawp
+sough
+howl
+squall
+bay
+yelp
+bleat
+bellow
+squawk
+chirk
+croon
+chant
+singsong
+intonate
+pipe up
+yodel
+warble
+quaver
+treble
+perorate
+scan
+rant
+churr
+chirr
+meow
+purr
+honk
+chitter
+hiss
+sibilate
+hee-haw
+squeal
+cluck
+moo
+trill
+flap
+hum
+cackel
+gaggle
+bridle
+jam
+barrage jam
+point jam
+spot jam
+blanket jam
+mince
+crunch
+gobble
+wisecrack
+kibitz
+notice
+neigh
+caw
+mew
+catcall
+haw
+hem
+hem and haw
+hypothecate
+rubbish
+send
+come across
+share
+pooh-pooh
+thrash out
+croak
+unspell
+write out
+keep
+think twice
+gulp
+hurl
+sing
+write up
+traverse
+connect
+seek
+stet
+message
+pluralize
+harsh on
+compete
+put in
+try for
+line up
+snooker
+misplay
+start
+fumble
+replay
+cricket
+backstop
+fullback
+quarterback
+cradle
+stalemate
+castle
+serve
+ace
+overtrump
+crossruff
+exit
+front
+take the bull by the horns
+meet
+promote
+run off
+fistfight
+enter
+drop out
+demolish
+cut to ribbons
+face off
+tee off
+par
+handicap
+race
+boat-race
+horse-race
+jockey
+arm
+rearm
+forearm
+disarm
+demobilize
+man
+staff
+station
+garrison
+team
+embed
+crew
+gang
+pool
+brigade
+join battle
+tug
+fight
+recalcitrate
+fight back
+battle
+dogfight
+war
+blitzkrieg
+go to war
+make peace
+campaign
+crusade
+barnstorm
+whistlestop
+sit
+criticize
+officiate
+caddie
+soldier
+enlist
+sign up
+discharge
+recruit
+conscript
+remilitarize
+demilitarize
+lose
+go down
+win
+romp
+sweep
+outpoint
+homer
+count out
+beat
+walk over
+worst
+wallop
+down
+whomp
+lurch
+get the best
+get the jump
+cut down
+cheat
+outwit
+outshout
+outroar
+outsail
+outdraw
+surpass
+outsell
+outpace
+upstage
+outshine
+outrange
+outweigh
+outbrave
+out-herod
+outfox
+take the cake
+shame
+get the better of
+overcome
+bulldog
+rout
+outdo
+outfight
+nose
+outgeneral
+manoeuver
+outmaneuver
+overpower
+steamroller
+outmarch
+steal
+win back
+place-kick
+kick
+eagle
+hole up
+walk
+drive in
+fall back
+keep step
+conquer
+checkmate
+bait
+sic
+equalize
+surrender
+resist
+stand out
+hold off
+capitulate
+subject
+submarine
+assail
+blindside
+harass
+reassail
+pepper
+pin
+duel
+rival
+emulate
+outrival
+joust
+tilt
+chicken-fight
+tourney
+feud
+skirmish
+slice
+chop
+feather
+counterattack
+take the count
+gas
+teargas
+mine
+countermine
+storm
+blitz
+invade
+beset
+blockade
+barricade
+bulwark
+protect
+overprotect
+look out
+guard
+ward off
+shield
+wall
+stockade
+circumvallate
+repel
+carpet bomb
+bomb out
+dive-bomb
+glide-bomb
+skip-bomb
+atom-bomb
+hydrogen-bomb
+pattern-bomb
+nuke
+letter bomb
+firebomb
+loose off
+cannon
+misfire
+trigger
+sharpshoot
+snipe
+open fire
+strafe
+cannonade
+gun
+machine gun
+gun down
+grass
+kneecap
+fusillade
+defuse
+torpedo
+safeguard
+ambush
+gamble
+dice
+shoot craps
+bet on
+ante
+underplay
+parlay
+bird
+crab
+seine
+harpoon
+fish
+brail
+fly-fish
+angle
+whale
+shrimp
+still-hunt
+turtle
+rabbit
+fowl
+grouse
+whelk
+net fish
+shark
+trawl
+hunt
+ferret
+course
+foxhunt
+jacklight
+still-fish
+hawk
+falcon
+strive
+extend oneself
+kill oneself
+bowl
+skittle
+golf
+fence
+parry
+shuttlecock
+double-team
+side
+champion
+deploy
+tackle
+weight-lift
+target
+undershoot
+range in
+retaliate
+revenge
+get even
+pay back
+retire
+put out
+take the field
+croquet
+mothproof
+outplay
+overtake
+fort
+drop one's serve
+spare
+use
+pull out all the stops
+put
+repose
+ply
+misapply
+avail
+overuse
+take in vain
+work through
+cannibalize
+recycle
+rehash
+exploit
+make hay
+harness
+quarry
+strip mine
+overexploit
+addict
+strain
+overstrain
+exert
+eat
+take out
+victual
+eat in
+eat out
+dine
+picnic
+gluttonize
+wolf
+slurp
+swill
+suck
+drink
+guggle
+sip
+guzzle
+lap
+claret
+pub-crawl
+tipple
+break bread
+partake
+fare
+pitch in
+tuck in
+nosh
+pick at
+peck
+garbage down
+nibble
+ruminate
+browse
+chomp
+champ
+toast
+drain the cup
+regale
+wine
+board
+live in
+live out
+forage
+raven
+fodder
+slop
+undernourish
+overfeed
+force-feed
+plank
+cater
+pander
+power
+gratify
+spree
+underlay
+horse
+remount
+patronage
+reseed
+lunch
+brunch
+breakfast
+feast
+breastfeed
+dry-nurse
+wean
+bottlefeed
+suckle
+starve
+be full
+need
+diet
+fast
+befuddle
+delight
+have a ball
+wallow
+live it up
+indulge
+surfeit
+sow one's oats
+dunk
+enjoy
+afford
+run low
+gorge
+satiate
+cloy
+quell
+content
+host
+wine and dine
+fatten
+sample
+degust
+fritter
+abstain
+teetotal
+devour
+eat up
+smack
+stomach
+metabolize
+predigest
+smoke
+chain-smoke
+mainline
+skin pop
+take a hit
+light up
+free-base
+huff
+trip
+chew
+chaw
+toss off
+nourish
+feed on
+fix up
+prey
+fill up
+nutrify
+range
+gutter
+sup
+toe
+trap
+violate
+strew
+palpate
+handle
+paw
+grope
+dandle
+lay hands on
+mouse
+guide
+snatch
+nab
+wrest
+collar
+grasp
+latch on
+cling
+clasp
+scaffold
+pleat
+chock
+underpin
+prop up
+truss
+jack
+brace
+tread
+cling to
+slat
+stopper
+conglutinate
+agglutinate
+haemagglutinate
+unclasp
+quirk
+untwist
+crimp
+grip
+twiddle
+wield
+treadle
+goose
+caress
+pet
+canoodle
+interpenetrate
+foray
+poke into
+sneak in
+permeate
+spiritize
+jab
+poke
+stab
+prod
+knife
+poniard
+bayonet
+maul
+laminate
+lapidate
+dab
+daub
+blood
+thatch
+roof
+shingle
+mulch
+turf
+bury
+bank
+carpet
+board up
+knead
+masticate
+butt
+headbutt
+spang
+rear-end
+broadside
+thud
+bottom
+bottom out
+shoulder
+elbow
+bump
+run into
+graze
+goad
+spur
+rocket
+slam
+lam into
+shutter
+pull back
+chuck
+swab
+dust
+dredge
+vacuum
+bream
+Simonize
+buff
+edge
+strop
+whet
+hone
+cock
+skim over
+squeak by
+tap
+percuss
+postpose
+prepose
+scissor
+skive
+fillet
+plane
+rub
+pumice
+puree
+rosin
+worry
+holystone
+scour
+bedaub
+smear
+resmudge
+smirch
+slime
+smooth
+launch
+roughen
+abrade
+wear away
+amputate
+slough off
+resect
+abscise
+pink
+jag
+serrate
+carve
+swage
+julienne
+hash
+chop down
+undercut
+axe
+fell
+poleax
+chisel
+chip
+hew
+snag
+rough-hew
+stucco
+egg
+layer
+soot
+skin
+refinish
+brush on
+patinate
+copper
+broom
+bonderize
+blacktop
+pave
+hard surface
+causeway
+asphalt
+butter
+wallpaper
+canvas
+paper
+oil
+beeswax
+varnish
+veneer
+grease
+calcimine
+water-wash
+elute
+shellac
+face
+revet
+reface
+crib
+babbitt
+tar
+tar-and-feather
+stripe
+speck
+bespot
+postmark
+sideswipe
+circumcise
+flay
+scarify
+scotch
+scribe
+indent
+recess
+furrow
+wrinkle
+pucker
+buckle
+flex
+incurvate
+gnarl
+crank
+convolve
+gouge out
+rabbet
+gouge
+hole
+suck in
+scoop out
+hollow
+cavern
+wrap
+do up
+parcel
+cere
+shrinkwrap
+gift-wrap
+untie
+unloose
+retie
+tie up
+loop
+chain up
+bitt
+cord
+latch
+faggot
+lash together
+garter
+hog-tie
+fetter
+manacle
+enchain
+unchain
+chain
+picket
+rope
+rope up
+hopple
+unstrap
+tether
+fasten
+attach
+implant
+blow off
+join
+cross-link
+miter
+anastomose
+earth
+mismate
+mortice
+mortise
+cog
+mismatch
+disjoin
+disjoint
+fair
+rebate
+seam
+suture
+bridge
+hinge
+bell
+ring
+couple
+uncouple
+prefix
+suffix
+affix
+infix
+detach
+French
+cut off
+roach
+unsolder
+knot
+swaddle
+shroud
+snaffle
+curb
+restrain
+impound
+cabin
+closet
+gird
+hoop
+lash
+unlash
+cement
+unbind
+band
+cleat
+anchor
+moor
+wharf
+dock
+dry-dock
+undock
+batten
+clapperclaw
+rake
+aggrade
+strickle
+scrape
+scratch
+dig
+spade
+sap
+excavate
+trench
+dibble
+dig out
+scoop
+shovel
+trowel
+squirt
+spritz
+grub up
+nuzzle
+grope for
+divine
+dowse
+search
+leave no stone unturned
+seek out
+quest for
+raid
+frisk
+strip-search
+rifle
+rummage
+grub
+mow
+scythe
+reap
+club
+poll
+snip
+tail
+engrave
+character
+butcher
+chine
+stone
+commit suicide
+dispatch
+zap
+strike down
+sacrifice
+tomahawk
+destroy
+saber
+overlie
+brain
+exterminate
+hitch
+unhitch
+append
+subjoin
+annex
+sew
+resew
+unpick
+overcast
+oversew
+backstitch
+darn
+finedraw
+hemstitch
+tick
+tape
+scotch tape
+epoxy
+paste
+cloak
+coif
+foil
+whiteout
+sod
+rebind
+flake
+overlay
+splash
+hood
+cowl
+clapboard
+canopy
+bread
+blinker
+blindfold
+aluminize
+sheet
+tile
+tessellate
+lag
+barb
+submerge
+uncover
+undrape
+unclothe
+bare
+reeve
+padlock
+noose
+unzip
+brad
+bight
+belay
+unbar
+impact
+velcro
+unfasten
+bung
+pen up
+break open
+click open
+reopen
+fly open
+confine
+coop up
+lock in
+lock up
+hasp
+unbolt
+wring
+wring out
+wrench
+attract
+contort
+demodulate
+press out
+winkle
+unscrew
+screw
+zip up
+unseal
+reseal
+waterproof
+caulk
+daisy-chain
+interconnect
+tee
+put through
+disconnect
+leech onto
+gum up
+tack
+thumbtack
+nail
+stud
+mask
+blanket
+unstring
+thread
+bead
+marshal
+string out
+plaster
+render-set
+parget
+roughcast
+mud
+skimcoat
+mortar
+paint
+grain
+repaint
+airbrush
+cold-cream
+putty
+sponge on
+slap on
+net
+belt
+unbelt
+unhook
+hook up
+grout
+staple
+unstaple
+unclip
+button
+unbutton
+unpin
+channelize
+fray
+scuff
+drop-kick
+kick back
+kick up
+dropkick
+punt
+spray
+syringe
+spatter
+puddle
+slosh
+swatter
+drizzle
+scatter
+bespangle
+aerosolize
+bestrew
+spread
+export
+slather
+redeploy
+redistribute
+hive
+salvage
+corral
+round up
+prawn
+nut
+frog
+snail
+blackberry
+birdnest
+nest
+oyster
+sponge
+pearl
+clam
+berry
+pluck
+collect
+archive
+nickel-and-dime
+aggregate
+beat up
+lump
+batch
+bale
+sandpaper
+rough-sand
+sandblast
+corrugate
+ruffle
+plait
+compress
+straiten
+decompress
+tuck
+wall in
+brick in
+embower
+press
+iron
+calender
+roll out
+fluff up
+wipe
+squeegee
+wipe off
+deterge
+wipe up
+swipe
+towel
+grate
+grit
+clench
+plate
+nickel
+electroplate
+goldplate
+silverplate
+hug
+smite
+swat
+sock
+strong-arm
+pistol-whip
+whip
+belabour
+rough up
+flagellate
+leather
+horsewhip
+beetle
+bastinado
+bean
+conk
+cosh
+ground out
+shank
+hob
+putt
+bunker
+bounce
+bounce out
+backhand
+foul out
+bunt
+snick
+racket
+dribble
+single
+sclaff
+flog
+cowhide
+cat
+birch
+manhandle
+cane
+deck
+clout
+switch-hit
+knock cold
+thump
+punch
+slug
+whack
+pummel
+thrash
+hammer
+sledgehammer
+slap
+cuff
+clobber
+buffet
+whisk
+churn
+toss
+shuffle
+riffle
+paddle
+agitate
+roil
+muddle
+box
+prizefight
+shadowbox
+spank
+plug in
+unplug
+cannulate
+input
+instill
+tampon
+chink
+uncork
+cudgel
+embrace
+cuddle
+nestle
+smooch
+gentle
+neck
+sleep together
+fornicate
+wench
+deflower
+copulate
+ride
+mongrelize
+backcross
+crossbreed
+masturbate
+snog
+kiss
+tickle
+lick
+tongue
+bear
+spirit away
+bucket
+fetch
+retrieve
+pile
+whisk off
+transmit
+pipe in
+throw
+send in
+mail out
+pouch
+misdeliver
+recapture
+swoop
+intercept
+prickle
+pierce
+bite
+bore
+spud
+counter-drill
+center punch
+trepan
+tunnel
+funnel
+transfix
+skewer
+spear
+horn
+gore
+sting
+gnaw
+snap at
+nip
+brandish
+squeeze
+skitter
+adduct
+abduct
+transport
+porter
+frogmarch
+cart
+cart off
+airlift
+haul
+shlep
+trail
+lug
+tow
+bowse
+hoist
+trice
+upheave
+weigh anchor
+heft
+flute
+groove
+dado
+percolate
+filter
+separate
+fractionate
+concoct
+sift
+rice
+resift
+coalesce
+heterodyne
+sulfurette
+commingle
+entangle
+enmesh
+disentangle
+stack
+pair
+concord
+cascade
+catenate
+border
+surround
+fringe
+girdle
+evict
+eject
+show the door
+superimpose
+superpose
+kidnap
+shanghai
+commandeer
+skyjack
+carjack
+expropriate
+putter
+muss
+tousle
+compart
+let go of
+toggle
+unhand
+unleash
+free
+obstruct
+dam
+shut off
+land up
+crap up
+unclog
+silt up
+unstuff
+bag
+batfowl
+capture
+rat
+gin
+dangle
+containerize
+enshrine
+veil
+unveil
+compact
+bunch
+agglomerate
+unbox
+unpack
+sack
+encase
+crate
+uncrate
+burden
+unburden
+unload
+bomb up
+overload
+freight
+air-drop
+reload
+saddle
+yoke
+inspan
+unyoke
+outspan
+unharness
+unsaddle
+garner
+bin
+stow
+park
+ensconce
+put to sleep
+emplace
+ship
+reship
+shelve
+jar
+middle
+parallelize
+reposition
+coffin
+bed
+appose
+set down
+broadcast
+misplace
+juxtapose
+bottle
+barrel
+pillow
+rick
+stagger
+pile up
+scuffle
+mudwrestle
+struggle
+draw in
+invaginate
+intussuscept
+pelt
+defenestrate
+shy
+deep-six
+jettison
+switch on
+switch off
+propel
+fling
+throw back
+lob
+autotomize
+sling
+blast off
+catapult
+jet
+wreathe
+upend
+intertwine
+twine
+untwine
+wattle
+inweave
+pleach
+weave
+unweave
+tinsel
+braid
+unbraid
+undo
+vandalize
+unravel
+ravel
+lace
+relace
+wind
+encircle
+spool
+cheese
+reel
+ball
+clue
+reel off
+unwind
+coil
+uncoil
+deluge
+overstuff
+malfunction
+function
+idle
+go on
+wedge
+dislodge
+exorcise
+lodge
+lounge
+checkrow
+pot
+repot
+sandwich
+transplant
+graft
+ingrain
+entrench
+emboss
+splotch
+pipe-clay
+houseclean
+G.I.
+spring-clean
+dirty
+mire
+crock
+dry clean
+pressure-wash
+suds
+rinse
+stonewash
+handwash
+machine wash
+acid-wash
+tarnish
+defile
+blemish
+speckle
+stipple
+blot
+sponge up
+reabsorb
+adsorb
+sorb
+incorporate
+stir
+drape
+sprawl
+perch
+seat
+unseat
+reseat
+lay
+squat
+kneel
+ramp
+stand back
+recumb
+recline
+lie awake
+bask
+unbuckle
+brooch
+delete
+scratch out
+deface
+dissect
+vivisect
+bisect
+transect
+trisect
+scar
+pockmark
+cicatrize
+sculpt
+whittle
+whittle away
+crop
+cut away
+sabre
+incise
+cleave
+joint
+segment
+slit
+lacerate
+saw
+whipsaw
+splice
+fleece
+discerp
+sever
+collide
+prang
+ditch
+syllabify
+do a job on
+subvert
+rape
+shipwreck
+bust up
+bang up
+uproot
+afforest
+re-afforest
+reforest
+replant
+smother
+install
+reinstall
+decapitate
+guillotine
+garrote
+impale
+dismember
+rend
+shred
+grapple
+tamp down
+press down
+ram
+bulldoze
+situate
+redeposit
+cushion
+sop
+immerse
+sheathe
+ladle
+pitchfork
+spoon
+unfold
+divaricate
+envelop
+tube
+capsule
+engulf
+unsheathe
+cocoon
+construct
+circumscribe
+chase
+bevel
+cone
+shove
+reticulate
+extricate
+tamper
+toy
+kick in
+enclose
+dike
+brand
+badge
+lean on
+core
+doff
+gut
+head
+jerk
+stake
+yank
+winch
+tweak
+draw off
+tweeze
+hike up
+gap
+squash
+solder
+dip solder
+soft-solder
+braze
+spotweld
+butt-weld
+currycomb
+drag down
+slam-dunk
+carom
+birdie
+double bogey
+bogey
+wire
+unwire
+carburet
+casket
+chemisorb
+crape
+coal
+coapt
+crosscut
+stoop
+poise
+juggle
+blacklead
+gravel
+metal
+macadamize
+lime
+lance
+lasso
+joggle
+knuckle
+mantle
+ooze through
+bond
+hem in
+mound over
+straw
+retract
+draw close
+siphon
+squish
+butterfly
+steel
+metalize
+platinize
+porcelainize
+zinc
+disperse
+clothe
+track
+institute
+short-circuit
+do
+unmake
+remake
+self-destruct
+destruct
+wipe out
+interdict
+produce
+prefabricate
+underproduce
+output
+pulse
+clap up
+custom-make
+dummy
+machine
+churn out
+overproduce
+mass-produce
+bootleg
+compose
+confect
+cobble together
+anthologize
+compile
+generate
+come up
+originate
+educe
+extort
+create by mental act
+invent
+formulate
+gestate
+preconceive
+think up
+fabricate
+confabulate
+trump up
+fictionalize
+envision
+imagine
+fantasize
+prefigure
+fantasy
+dream
+mint
+spatchcock
+redesign
+create
+carry through
+get over
+consummate
+initiate
+strike up
+phase in
+phase out
+effect
+bring on
+realize
+incarnate
+disincarnate
+cause
+occasion
+inspire
+pacify
+stage
+tee up
+prearrange
+engender
+riff
+motivate
+impel
+sound off
+overbear
+fruit
+create from raw material
+manufacture
+raft
+forge
+dry-wall
+rebuild
+groin
+cantilever
+assemble
+jumble
+reassemble
+configure
+disassemble
+fashion
+recast
+craft
+handcraft
+cooper
+preform
+mound
+hill
+sinter
+rig up
+dilapidate
+cast
+sand cast
+handbuild
+deglaze
+flambe
+devil
+precook
+whip up
+quilt
+purl
+illustrate
+hot-work
+coldwork
+overwork
+rework
+tool
+garland
+spangle
+caparison
+pipe
+applique
+macrame
+knit
+cast on
+cast off
+rib
+purl stitch
+web
+loom
+crochet
+shell stitch
+double crochet
+single crochet
+brocade
+tat
+twill
+dropforge
+extrude
+decorate
+vermiculate
+smock
+redecorate
+panel
+bejewel
+dress ship
+lard
+festoon
+silhouette
+animalize
+profile
+finger-paint
+tattoo
+marble
+bodypaint
+enamel
+smelt
+inlay
+damascene
+lacquer
+japan
+gild
+fresco
+distemper
+blueprint
+illuminate
+miniate
+emblazon
+picture
+stylize
+pencil
+contour
+streamline
+chalk
+stenograph
+calligraph
+cross
+superscribe
+letter
+crayon
+charcoal
+doodle
+diagram
+cartoon
+copy
+imitate
+back up
+hectograph
+clone
+recopy
+mimeograph
+roneo
+crosshatch
+vein
+watercolour
+model
+create verbally
+coin
+sloganeer
+lyric
+relyric
+write on
+paragraph
+hyphenate
+dash off
+write copy
+draft
+rhyme
+alliterate
+pun
+metrify
+spondaize
+elegize
+sonnet
+serenade
+belt out
+descant on
+author
+co-author
+ghost
+annotate
+reference
+counterpoint
+set to music
+melodize
+reharmonize
+orchestrate
+jive
+dance
+hoof
+tap dance
+belly dance
+miscast
+typecast
+stage direct
+film-make
+cinematize
+microfilm
+cut corners
+perform
+stunt
+interlude
+scamp
+grandstand
+solo
+underperform
+sightread
+sightsing
+concertize
+debut
+premier
+audition
+cybernate
+support
+co-star
+dissemble
+simulate
+feint
+enact
+act out
+reenact
+rehearse
+walk through
+scrimmage
+parody
+travesty
+mime
+fiddle
+prelude
+jazz
+bugle
+skirl
+symphonize
+chord
+reprise
+pedal
+bang out
+play along
+sing along
+improvise
+psalm
+minstrel
+solmizate
+choir
+carol
+madrigal
+drum
+conduct
+double tongue
+duplicate
+replicate
+reduplicate
+triplicate
+quadruplicate
+reprint
+photocopy
+microcopy
+photostat
+recreate
+reinvent
+play back
+fudge together
+till
+garden
+landscape
+cultivate
+overcrop
+plow
+harrow
+hoe
+mimic
+sovietize
+take after
+typeset
+table
+print
+gazette
+misprint
+offset
+copy out
+overprint
+cyclostyle
+fingerprint
+boldface
+italicize
+lithograph
+silkscreen
+stencil
+benday
+aquatint
+corduroy
+overact
+underact
+grind out
+prepare
+rough in
+graph
+shimmy
+script
+demyelinate
+filigree
+release
+embattle
+busk
+arouse
+rekindle
+infatuate
+prick
+fuel
+jolt
+bubble over
+hype up
+calm
+unbalance
+strike dumb
+hit home
+prepossess
+wow
+sweep away
+incline
+pride
+emote
+harbor
+resent
+embitter
+grudge
+eat into
+hate
+abhor
+contemn
+love
+fall for
+care for
+fancy
+dislike
+cotton
+dote
+yearn
+cool off
+adore
+idolize
+reverence
+worship
+frighten
+awe
+overawe
+buffalo
+fear
+terrify
+intimidate
+hold over
+tyrannize
+panic
+apprehend
+dismay
+haunt
+preoccupy
+faze
+unman
+freak out
+daunt
+anger
+combust
+miff
+gall
+infuriate
+raise the roof
+madden
+annoy
+peeve
+pique
+fluster
+consternate
+bewilder
+bother
+distract
+embarrass
+pain
+break someone's heart
+fuss
+agonize
+anguish
+fume
+flip one's lid
+enrage
+rage
+foam at the mouth
+thrill
+repent
+mourn
+grieve
+tribulate
+distress
+disappoint
+fall short
+humiliate
+take down
+efface
+humanize
+humble
+mortify
+lament
+express emotion
+torment
+ingratiate
+cozy up
+warm to
+mope
+grizzle
+ache
+take heart
+endear
+antagonize
+disgust
+turn off
+shout down
+despair
+despond
+elate
+exhilarate
+gladden
+sadden
+overjoy
+exult
+rejoice
+weigh down
+abreact
+please
+titillate
+satisfy
+dissatisfy
+discontent
+displease
+enchant
+disenchant
+chill
+discourage
+dishearten
+throw cold water on
+dither
+pother
+feast one's eyes
+exacerbate
+fascinate
+interest
+startle
+feel for
+commiserate
+condole
+care
+care a hang
+estrange
+alienate
+drift apart
+begrudge
+desire
+itch
+ambition
+feel like
+prefer
+envy
+covet
+drool over
+admire
+look down on
+lust after
+hanker
+take pride
+fall apart
+fly high
+glow
+bring down
+disgruntle
+spook
+obsess
+puzzle
+drop back
+hit the dirt
+prolapse
+ease
+whish
+stand still
+grind to a halt
+gravitate
+travel
+swap
+betake oneself
+pass over
+red-eye
+hop
+wend
+sheer
+pull over
+astrogate
+desert
+get around
+junketeer
+travel to
+sightsee
+revisit
+frequent
+cruise
+tour
+globe-trot
+take the road
+sledge
+voyage
+sail
+trek
+kite
+stay in place
+move over
+shove off
+drive up
+center
+re-enter
+transit
+move in
+move out
+clear out
+migrate
+kick-start
+hot-wire
+rein
+restart
+stop
+halt
+bring up
+cut to
+flag down
+pull up short
+turn on a dime
+draw up
+brake
+get off the ground
+duck
+dabble
+bob around
+rim
+tramp down
+somersault
+roll over
+trundle
+waver
+writhe
+wobble
+sidle
+pronk
+swan
+skid
+side-slip
+wamble
+jostle
+push out
+push aside
+muscle into
+push up
+uplift
+boost up
+shoulder in
+waft
+tide
+refloat
+travel purposefully
+rock
+reciprocate
+nutate
+swag
+move back and forth
+oscillate
+librate
+flicker
+swing around
+pulsate
+palpitate
+beat out
+teeter
+tramp
+maunder
+gallivant
+snake
+beat down
+frolic
+buck
+cant
+careen
+scend
+crawl
+formicate
+slither
+coast
+freewheel
+wheel
+glide
+tremble
+tremor
+shudder
+quiver
+sparge
+succuss
+rattle
+vibrate
+brachiate
+judder
+skip
+glance
+capsize
+breeze
+glissade
+chasse
+capriole
+bop
+waltz
+tapdance
+tango
+shag
+foxtrot
+contradance
+break dance
+cakewalk
+conga
+samba
+two-step
+Charleston
+boogie
+cha-cha
+disco
+mambo
+polka
+one-step
+rhumba
+slam dance
+jig
+jitterbug
+jiggle
+wag
+folk dance
+square dance
+quickstep
+thrust
+dart
+flit
+flutter
+founder
+lollop
+falter
+trot
+luff
+scurry
+swim
+spacewalk
+chariot
+turn away
+caracole
+corner
+overturn
+boggle
+traipse
+perambulate
+circumambulate
+circle
+circumnavigate
+ambulate
+sneak
+stride
+infiltrate
+ford
+decussate
+uncross
+jaywalk
+slice into
+wade
+tittup
+sleepwalk
+slink
+limp
+stroll
+amble
+prowl
+skulk
+toddle
+totter
+promenade
+march
+troop
+file in
+pop in
+file out
+hike
+slog
+clamber
+escalade
+mountaineer
+rappel
+hop on
+hop out
+tiptoe
+stalk
+flounce
+parade
+stomp
+lumber
+stray
+backpack
+run bases
+streak
+outrun
+bear down on
+sprint
+lope
+goose step
+slouch
+clump
+automobile
+test drive
+steer
+helm
+navigate
+starboard
+conn
+beacon
+channel
+angle-park
+parallel-park
+double-park
+bicycle
+unicycle
+motorbike
+skate
+ice skate
+figure skate
+roller skate
+skateboard
+Rollerblade
+speed skate
+ski
+wedel
+hot-dog
+schuss
+slalom
+sled
+dogsled
+mush
+bobsled
+toboggan
+water ski
+flight
+fly on
+fly blind
+fly contact
+test fly
+aquaplane
+sailplane
+hydroplane
+hover
+go up
+levitate
+boat
+steamer
+tram
+motorboat
+yacht
+scud
+wear ship
+jibe
+row
+scull
+canoe
+kayak
+surfboard
+body-surf
+windsurf
+taxi
+ferry
+caravan
+wheelbarrow
+barge
+railroad
+air-ship
+divert
+route
+recommit
+redirect
+sublimate
+desexualize
+truck
+lighter
+bundle off
+forward
+hedgehop
+hang glide
+joyride
+hitchhike
+snowmobile
+override
+ride herd
+outride
+unhorse
+ride horseback
+prance
+canter
+gallop
+single-foot
+school
+fin
+breaststroke
+backstroke
+skinny-dip
+dive
+skin-dive
+belly-flop
+jackknife
+power-dive
+snorkel
+galumph
+ski jump
+saltate
+vault
+curvet
+leap out
+avalanche
+caper
+hurdle
+nosedive
+crash-dive
+sky dive
+chute
+ascend
+queen
+chandelle
+descend
+sink
+flop
+pinnacle
+chin
+keel over
+plop
+dump
+plonk down
+plummet
+flump
+alight
+force-land
+beach
+disembark
+entrain
+touch down
+land
+belly-land
+crash land
+rear
+rear back
+drop open
+prick up
+change posture
+right
+sit down
+lie down
+sag
+position
+square up
+glycerolize
+deglycerolize
+space
+sediment
+surface
+uprise
+bubble up
+well
+zigzag
+seesaw
+teeter-totter
+creep up
+encroach
+press on
+withdraw
+back out
+tailgate
+draw away
+hand
+mislead
+usher
+pursue
+shadow
+chase away
+clear the air
+banish
+shoo off
+hound
+backtrack
+cut back
+home
+go home
+boomerang
+arrive
+max out
+break even
+access
+flood in
+crest
+top out
+depart
+walk out of
+pop off
+beat a retreat
+walk off
+hightail
+come away
+decamp
+scram
+ride off
+tarry
+derail
+shunt
+transship
+displace
+roar off
+sally forth
+pull out
+pull in
+detrain
+deplane
+step out
+walk in
+call at
+plump in
+plump out
+take water
+turn in
+edge in
+emplane
+barge in
+move in on
+muscle
+transgress
+intrude on
+foray into
+maraud
+infest
+summit
+meet up with
+intersect
+congregate
+mass
+convene
+reconvene
+cluster
+flock
+accompany
+escort
+squire
+convoy
+chaperone
+body guard
+tag along
+huddle
+bunch together
+crowd
+overcrowd
+pour
+herd
+diffract
+disband
+curtain off
+avulse
+diverge
+bend
+swerve
+deflect
+yaw
+avert
+crook
+recurve
+arch
+overarch
+camber
+hunch
+slope
+lean back
+ripple
+genuflect
+billow
+burrow
+convect
+send around
+orb
+revolve
+splay
+cartwheel
+pivot
+whirligig
+centrifuge
+ultracentrifuge
+eddy
+whirl
+birl
+pirouette
+skank
+twirl
+gyrate
+corkscrew
+pass
+get by
+negotiate
+cycle on
+travel by
+skirt
+run by
+fly by
+pass through
+bushwhack
+zip by
+close in
+zoom
+travel rapidly
+speed
+stampede
+rout out
+smoke out
+drive around
+bustle
+fidget
+linger
+rush off
+diffuse
+creep
+flinch
+shrink back
+shuttle
+lunge
+riposte
+crouch
+squinch
+double over
+uncurl
+throng
+pounce
+deviate
+detour
+sidetrack
+spurt
+whoosh
+woosh
+spill over
+decant
+trickle
+drip
+seep
+overflow
+geyser
+ratchet
+elapse
+abscond
+levant
+elope
+elude
+scat
+flee
+skedaddle
+slip away
+vacate
+dispread
+bush out
+bring in
+insinuate
+interpose
+church
+impart
+retransmit
+peregrinate
+pronate
+leave behind
+outdistance
+career
+revolve around
+circuit
+manure
+birdlime
+circumfuse
+concertina
+bestir
+flurry
+hare
+outflank
+strand
+wind up
+swash
+come to the fore
+evert
+supinate
+bring about
+slide
+step on
+hurtle
+high-tail
+flail
+bed-hop
+island hop
+dodge
+topple
+jackrabbit
+come out
+make way
+curl up
+sit up
+bang
+run away
+precess
+itinerate
+advect
+wander
+snowshoe
+lateralize
+teleport
+snowboard
+apperceive
+hear
+chiromance
+experience
+undergo
+tolerate
+air out
+overexpose
+underexpose
+solarize
+photosensitize
+numb
+besot
+horripilate
+fellate
+hallucinate
+misperceive
+take notice
+pass up
+glimpse
+nettle
+urticate
+twinge
+hunger
+thirst
+act up
+throb
+tingle
+cause to be perceived
+reach one's nostrils
+scent
+sniff out
+odorize
+stink up
+get a noseful
+cense
+deodorize
+fumigate
+witness
+eyewitness
+watch
+catch sight
+lose sight of
+behold
+view
+take a look
+look back
+look away
+look around
+see double
+gaze
+stare down
+regard
+stargaze
+sound
+dissonate
+ting
+disclose
+underdevelop
+hold up
+bench
+moon
+flaunt
+splurge
+trot out
+reveal
+hide
+occult
+stow away
+conceal
+bosom
+dissimulate
+attaint
+candle
+autopsy
+auscultate
+rubberneck
+image
+spectate
+preview
+peruse
+zoom in
+size up
+descry
+detect
+instantiate
+rediscover
+bob under
+crop up
+film over
+overshadow
+eclipse
+disguise
+camouflage
+reorientate
+disorient
+fluoresce
+scintillate
+glare
+glitter
+monitor
+ogle
+give the glad eye
+leer
+goggle
+groak
+inspect
+case
+overlook
+eye
+keep one's eyes peeled
+look after
+scout
+give the eye
+abacinate
+seel
+snow-blind
+peer
+listen
+hear out
+listen in
+attend
+tune in
+clatter
+stridulate
+drown out
+jingle
+make noise
+scream
+clang
+clank
+clangor
+ruckle
+crepitate
+ring out
+tweet
+glug
+chug
+gong
+strum
+ding
+tintinnabulate
+peal
+knell
+toll
+chime
+rustle
+tootle
+resound
+consonate
+bong
+clop
+patter
+tinkle
+clink
+bleep
+rumble
+whizz
+wiretap
+hark
+quieten
+change intensity
+muffle
+resinate
+zest
+ginger
+savor
+bitter
+honey
+sugar
+mull
+change taste
+seem
+surveil
+sight
+cough up
+endow
+benefice
+distribute
+give away
+raffle
+monopolize
+own
+come by
+rescue
+buy back
+lease
+sublet
+hire out
+glom
+enter upon
+withhold
+keep to oneself
+devote
+fund
+grubstake
+bankroll
+subsidize
+finance
+fund-raise
+farm
+refinance
+computerize
+sponsor
+cosponsor
+demise
+alien
+desacralize
+change hands
+discard
+trash
+weed out
+work off
+get rid of
+cull
+stint
+motorize
+embalm
+foreswear
+reallot
+bequeath
+devise
+pass on
+hand down
+import
+offload
+FTP
+download
+upload
+allocate
+reapportion
+ration
+yield up
+refuel
+honor
+put up
+dishonor
+obtain
+procure
+get in
+copyright
+eke out
+gazump
+blackmail
+remainder
+resell
+syndicate
+deaccession
+sell off
+foist off
+auction
+deal
+transact
+black marketeer
+misdeal
+retail
+wholesale
+de-access
+log in
+log out
+recoup
+compensate
+overpay
+underpay
+prepay
+go Dutch
+insure
+indemnify
+coinsure
+tithe
+pay up
+default
+owe
+liquidate
+accord
+vouchsafe
+allowance
+grant
+prize
+cash
+redeem
+ransom
+exchange
+substitute
+trade
+barter
+haggle
+dicker
+traffic
+arbitrage
+turn over
+broker
+award
+pension
+donate
+bestow
+graduate
+lavish
+balance
+overbalance
+debit
+overspend
+underspend
+misspend
+penny-pinch
+spend
+be
+tighten one's belt
+scrounge
+schnorr
+mooch
+freeload
+panhandle
+invest
+shelter
+appropriate
+reconquer
+garnishee
+take over
+hijack
+pretend
+derequisition
+distrain
+foreclose
+arrogate
+pilfer
+shoplift
+mug
+pirate
+plagiarize
+pocket
+line one's pockets
+profit
+turn a nice dime
+cash in on
+profiteer
+plastinate
+store
+mothball
+reposit
+warehouse
+garage
+ensile
+keep open
+bribe
+buy into
+rake off
+buy off
+refund
+reimburse
+stock
+locate
+unearth
+fall upon
+pinpoint
+sleep off
+acquire
+cozen
+take home
+rake in
+earn
+benefit
+gross
+pay off
+rout up
+embezzle
+hand over
+barter away
+admeasure
+double up
+communalize
+market
+by-bid
+overbid
+underbid
+outbid
+outcall
+preempt
+disburse
+belong
+face the music
+peddle
+dispense with
+forfeit
+snap up
+hog
+hoard
+levy
+reimpose
+mulct
+tariff
+surtax
+overtax
+contribute
+combine
+restore
+deposit
+cheque
+overdraw
+decommission
+tongue-tie
+bilk
+divest
+dispossess
+deplume
+orphan
+bereave
+inherit
+disinherit
+pay cash
+impoverish
+beggar
+bankrupt
+feather one's nest
+overcharge
+undercharge
+discount
+mark up
+hold the line
+mark down
+invoice
+chalk up
+rob
+restock
+overstock
+understock
+caption
+borrow
+lend
+immolate
+shop
+comparison-shop
+window-shop
+supply
+ticket
+air-cool
+air-condition
+uniform
+partner
+bewhisker
+subtitle
+hobnail
+wive
+steam-heat
+munition
+double-glaze
+crenel
+canal
+bush
+brattice
+furnish
+refurnish
+berth
+bunk
+rafter
+retool
+gas up
+provision
+horseshoe
+transistorize
+muzzle
+unmuzzle
+kit out
+appoint
+re-equip
+refit
+armor
+upholster
+accouter
+supplement
+vitaminize
+thrive
+sign away
+requite
+reward
+plunder
+loot
+scrimp
+smuggle
+pawn
+consign
+obligate
+commit
+hospitalize
+entrust
+secure
+defray
+rid
+disinfest
+disembody
+overprice
+undersell
+mortgage
+amortize
+corbel
+cornice
+copper-bottom
+curtain
+impulse-buy
+rewire
+redispose
+throw in
+leverage
+reflectorize
+subrogate
+outsource
+machicolate
+sanitate
+translocate
+co-opt
+shaft
+fee-tail
+enfeoff
+theme
+deaerate
+decaffeinate
+decarbonate
+decerebrate
+dechlorinate
+defat
+defibrinate
+degrease
+deionize
+delist
+delocalize
+deoxygenate
+destain
+desulfurize
+detick
+devein
+fettle
+flesh
+flense
+kern
+pith
+scum
+unbridle
+headquarter
+satisfice
+maneuver
+play it by ear
+let it go
+sweep under the rug
+overexert
+egotrip
+venture
+come close
+sit by
+whip through
+backslap
+make bold
+prosecute
+politick
+logroll
+act on
+interact
+marginalize
+summate
+lie dormant
+abdicate
+pension off
+bow out
+chicken out
+accede
+leave office
+take office
+take orders
+educate
+co-educate
+home-school
+get in touch
+fraternize
+hobnob
+hang out
+readmit
+enthrone
+dethrone
+delegate
+task
+regiment
+second
+depute
+tenure
+spot promote
+ennoble
+baronetize
+lord
+lionize
+knight
+demote
+sideline
+vote in
+reelect
+oust
+take time by the forelock
+overthrow
+squeeze out
+pull off
+winkle out
+invalid
+depose
+supplant
+usurp
+succeed
+flounder
+overdrive
+carpenter
+implement
+hire
+clerk
+fink
+wait
+pull one's weight
+electioneer
+assist
+beaver
+work at
+potter
+plug away
+busy
+collaborate
+financier
+coact
+connive at
+ride the bench
+daydream
+walk around
+ranch
+moonlight
+job
+slave
+cashier
+give up
+dragoon
+oppress
+call to order
+abolish
+get around to
+prorogue
+caucus
+band oneself
+ally
+misally
+disassociate
+imprint
+militate
+break with
+reorganize
+collectivize
+hold one's own
+unionize
+confederate
+ally with
+fall in
+affiliate
+rejoin
+disorganize
+manage
+come to grips
+dispose of
+take care
+coordinate
+expedite
+mismanage
+tend
+stoke
+set about
+chair
+captain
+spearhead
+take hold
+hold sway
+govern
+oversee
+preside
+license
+decertify
+racketeer
+minister
+intern
+skipper
+cox
+boondoggle
+franchise
+charter
+choose up
+lock out
+participate
+partake in
+prevent
+keep away
+blank
+impede
+interfere
+set back
+hobble
+dwarf
+embargo
+debar
+privilege
+patrol
+stand guard
+keep tabs on
+baby-sit
+rebury
+disinter
+mesh
+get along with
+canvass
+lobby
+house
+rehouse
+kennel
+stable
+rent
+tenant
+subcontract
+vote
+turn thumbs down
+bullet vote
+outvote
+ballot
+scrimshank
+malinger
+turn a trick
+co-sign
+probate
+boycott
+ostracize
+filibuster
+legislate
+liberalize
+decontrol
+gerrymander
+sectionalize
+hive off
+lot
+canton
+Balkanize
+consociate
+band together
+reunify
+matriculate
+enroll
+cross-file
+inventory
+cross-index
+blacklist
+veto
+empower
+bar mitzvah
+bat mitzvah
+commission
+defrock
+disenfranchise
+enfranchise
+affranchise
+abrogate
+formalize
+reissue
+disbar
+outlaw
+monetize
+legalize
+desegregate
+murder
+pillory
+crucify
+lynch
+pick off
+electrocute
+halter
+gibbet
+double-date
+go steady
+ask out
+reunite
+rendezvous
+stick together
+drop by
+marry
+inmarry
+mismarry
+intermarry
+remarry
+divorce
+celebrate
+jubilate
+revel
+party
+slum
+carouse
+imprison
+bind over
+cage
+keep in
+manumit
+enslave
+subjugate
+liberate
+emancipate
+amerce
+court-martial
+punish
+castigate
+get it
+catch it
+victimize
+scourge
+rehear
+expel
+send down
+repatriate
+extradite
+coerce
+turn up the heat
+bludgeon
+squeeze for
+terrorize
+compel
+bring oneself
+trouble oneself
+taboo
+declassify
+trellis
+scant
+localize
+derestrict
+pull the plug
+thermostat
+deregulate
+zone
+redline
+advantage
+disadvantage
+aggrieve
+wrong
+handle with kid gloves
+fall all over
+criminalize
+ride roughshod
+rough-house
+do well by
+gloss over
+skimp
+mistreat
+kick around
+misbehave
+fall from grace
+condescend
+hugger mugger
+behave
+assert oneself
+attitudinize
+footle
+over-correct
+expiate
+indict
+demonstrate
+breeze through
+luck out
+nail down
+overreach
+pan out
+achieve
+compass
+wangle
+botch
+muff
+fall through
+have a go
+take pains
+endeavor
+field-test
+give it a whirl
+experiment
+countercheck
+breathalyze
+democratize
+waive
+dispense
+woo
+court
+display
+take the stage
+secede
+influence
+double cross
+meddle
+dominate
+grow up
+come of age
+valet
+speak for
+comply
+toe the line
+obey
+disobey
+sit in
+sabotage
+counteract
+go for broke
+luck it
+dare
+risk
+bell the cat
+benefact
+help out
+subserve
+succor
+abet
+shepherd
+mother
+reprieve
+bootstrap
+rehabilitate
+defibrillate
+reinstate
+discipline
+prostitute
+street-walk
+brevet
+thwart
+enforce
+bring to bear
+practice
+backdate
+overachieve
+underachieve
+misdo
+go all out
+exempt
+throne
+sin
+drop the ball
+conflict
+trespass
+gang-rape
+sodomize
+shamanize
+overdo
+overleap
+molest
+impinge
+pamper
+burglarize
+heed
+short-change
+welsh
+shill
+flim-flam
+freelance
+fool
+cheat on
+two-time
+fudge
+hoax
+decoy
+ensnare
+make good
+lead off
+action
+litigate
+perpetrate
+rebel
+revolt
+mutiny
+defect
+riot
+rampage
+rumpus
+connive
+persecute
+haze
+get at
+misgovern
+reign
+cope
+fend
+scrape along
+befriend
+pal
+consort
+decolonize
+philander
+interlope
+parole
+emcee
+do the honors
+fag
+frivol
+humbug
+invigilate
+lord it over
+chance
+rain out
+make a point
+stag
+come near
+mingle
+remember oneself
+play around
+take to
+call the shots
+go off half-cocked
+exist
+preexist
+coexist
+cut across
+neighbor
+eventuate
+bunk off
+live
+dissipate
+unlive
+pig
+buccaneer
+bachelor
+indwell
+survive
+perennate
+last out
+outstay
+make sense
+outlive
+succumb
+constitute
+chelate
+hang together
+intercommunicate
+complect
+tide over
+resurge
+come forth
+flocculate
+nucleate
+well up
+originate in
+necessitate
+cost
+cry out for
+obviate
+preclude
+give off
+sport
+exhibit
+phosphoresce
+possess
+consist
+equate
+be due
+entail
+incriminate
+bide
+overstay
+remain
+kick one's heels
+stand by
+loiter
+bum
+lie about
+lurk
+dwell on
+hesitate
+hold out
+procrastinate
+postpone
+predominate
+outnumber
+preponderate
+weigh
+deserve
+have it coming
+perpetuate
+eternize
+occupy
+stay at
+reside
+overpopulate
+cohabit
+barrack
+wrangle
+sleep over
+lay over
+dwell
+inhere
+pertain
+inhabit
+shine
+chamber
+coincide
+dovetail
+overlap
+collocate with
+aberrate
+co-vary
+conform
+corroborate
+repose on
+depend on
+depend
+hang by a thread
+underlie
+amount
+resemble
+look like
+approximate
+differ
+counterweight
+come in
+fit the bill
+behoove
+fly in the face of
+conform to
+exceed
+suffice
+go a long way
+act as
+fall short of
+excel
+stink
+shine at
+ape
+echo
+follow suit
+focus on
+implicate
+embroil
+disinvolve
+concern
+matter to
+intrigue
+discontinue
+call it quits
+distance
+housekeep
+ramble on
+beard
+enfilade
+imbricate
+reach into
+mediate
+subtend
+flank
+surmount
+radiolocate
+endanger
+overhang
+embody
+characterize
+body
+befit
+contain
+suit
+truckle
+verge
+border on
+last
+outwear
+drag on
+inhere in
+fall into
+straddle
+shillyshally
+shimmer
+lend oneself
+weekend
+piddle
+vacation
+honeymoon
+while away
+sojourn
+winter
+summer
+breast
+bound
+shore
+embank
+box in
+pattern
+stick out
+protuberate
+teem
+abound
+abound in
+attach to
+company
+droop
+gape
+sulk
+take kindly to
+belong to
+incur
+look out on
+center on
+do well
+go back
+rut
+stagnate
+come in handy
+refrain
+forbear
+help oneself
+hoodoo
+impend
+come in for
+persist
+resplend
+go far
+iridesce
+opalesce
+tie in
+go into
+let go
+circumvolute
+spiral
+miscegenate
+issue forth
+ornament
+assonate
+osculate
+summarize
+cohere
+cash out
+base
+rain
+ice up
+snow
+sleet
+ignite
+set ablaze
+reignite
+kindle
+flare
+flare up
+twinkle
+luminesce
+spark
+ray
+bluster
+overcloud
+clear up
+blight
+swamp
+run dry
+fog up

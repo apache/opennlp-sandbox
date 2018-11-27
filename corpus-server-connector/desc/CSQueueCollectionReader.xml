@@ -9,7 +9,7 @@
 	 * to you under the Apache License, Version 2.0 (the
 	 * "License"); you may not use this file except in compliance
 	 * with the License.  You may obtain a copy of the License at
-         *
+     *
 	 *   http://www.apache.org/licenses/LICENSE-2.0
 	 * 
 	 * Unless required by applicable law or agreed to in writing,
@@ -31,15 +31,29 @@
         <vendor>The Apache Software Foundation</vendor>
         <configurationParameters>
             <configurationParameter>
-                <name>CorpusAddress</name>
-                <description>Directory containing input files</description>
+                <name>ServerAddress</name>
+                <description>The location of the server.</description>
                 <type>String</type>
                 <multiValued>false</multiValued>
                 <mandatory>true</mandatory>
             </configurationParameter>
             <configurationParameter>
-                <name>QueueAddress</name>
-                <description>Directory containing input files</description>
+                <name>CorpusName</name>
+                <description>The id of the corpus which should be processed.</description>
+                <type>String</type>
+                <multiValued>false</multiValued>
+                <mandatory>true</mandatory>
+            </configurationParameter>
+            <configurationParameter>
+                <name>SearchQuery</name>
+                <description>The query to populate the queue.</description>
+                <type>String</type>
+                <multiValued>false</multiValued>
+                <mandatory>true</mandatory>
+            </configurationParameter>
+            <configurationParameter>
+                <name>QueueName</name>
+                <description>Name of the queue to create with the search query.</description>
                 <type>String</type>
                 <multiValued>false</multiValued>
                 <mandatory>true</mandatory>
@@ -47,24 +61,35 @@
         </configurationParameters>
 		<configurationParameterSettings>
 		    <nameValuePair>
-		        <name>CorpusAddress</name>
+		        <name>ServerAddress</name>
 		        <value>
-		            <string>http://localhost:8080/corpus-server/rest/corpora/wikinews</string>
+		            <string>http://localhost:8080/rest</string>
 		        </value>
 		    </nameValuePair>
-            <nameValuePair>
-                <name>QueueAddress</name>
-                <value>
-                    <string>http://localhost:8080/corpus-server/rest/queues/WikinewsNerPersonTrainingTask</string>
-                </value>
-            </nameValuePair>
+		    <nameValuePair>
+		        <name>CorpusName</name>
+		        <value>
+		            <string>enwikinews</string>
+		        </value>
+		    </nameValuePair>
+		    <nameValuePair>
+		        <name>SearchQuery</name>
+		        <value>
+		            <string>status-token:true</string>
+		        </value>
+		    </nameValuePair>
+		    <nameValuePair>
+		        <name>QueueName</name>
+		        <value>
+		            <string>EnglishTokenizerTraining</string>
+		        </value>
+		    </nameValuePair>
 		</configurationParameterSettings>
-
-        <!-- Type System of CASes returned by this Collection Reader -->
-		<!-- TODO: Can TS be imported via http?! Otherwise it must be downloaded by the user! -->
+		
+		<!-- Type System must be compatible with the one used for the corpus. -->
         <typeSystemDescription>
           <imports>
-            <import name="org.apache.uima.examples.SourceDocumentInformation"/>
+            <import location="TypeSystem.xml"/>
           </imports>
         </typeSystemDescription>
 

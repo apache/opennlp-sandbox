@@ -23,23 +23,27 @@ import junit.framework.TestCase;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-public class LemmaFormManagerTest extends TestCase{
+public class LemmaFormManagerTest extends TestCase {
 
   private LemmaFormManager lemmaFormManager = new LemmaFormManager();
-
 
   public void testNotNull() {
     assertNotNull(lemmaFormManager);
   }
 
-
   public void testMatches() {
-	assertEquals(lemmaFormManager.matchLemmas(null, "loud", "loudness", "NN"), "loud" );
+    assertEquals(lemmaFormManager.matchLemmas(null, "loud", "loudness", "NN"),
+        "loud");
     assertEquals(lemmaFormManager.matchLemmas(null, "24", "12", "CD"), null);
-    assertEquals(lemmaFormManager.matchLemmas(null, "loud", "loudly", "NN"), "loud" );
-    assertEquals(lemmaFormManager.matchLemmas(null, "!upgrade", "upgrade", "NN"), "!upgrade" );
-    assertEquals(lemmaFormManager.matchLemmas(null, "!upgrade", "upgrades", "NN"), null );
-    assertEquals(lemmaFormManager.matchLemmas(null, "!upgrade", "get", "NN"), null);
+    assertEquals(lemmaFormManager.matchLemmas(null, "loud", "loudly", "NN"),
+        "loud");
+    assertEquals(
+        lemmaFormManager.matchLemmas(null, "!upgrade", "upgrade", "NN"),
+        "!upgrade");
+    assertEquals(
+        lemmaFormManager.matchLemmas(null, "!upgrade", "upgrades", "NN"), null);
+    assertEquals(lemmaFormManager.matchLemmas(null, "!upgrade", "get", "NN"),
+        null);
   }
 
 }

@@ -27,7 +27,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.opennlp.corpus_server.store.CorporaStore;
-import org.codehaus.jettison.json.JSONArray;
+import org.apache.opennlp.corpus_server.store.CorpusStore;
 
 @Path("/corpora")
 public class CorporaResource {
@@ -50,7 +50,8 @@ public class CorporaResource {
 	    // TODO: throw exception
 	  }
 	  
-	  CorpusServer corpusServer = CorpusServer.getInstance();
+	  CorpusServer corpusServer = CorpusServerBundle.getInstance().getCorpusServer();
+	  
 	  CorporaStore store = corpusServer.getStore();
 	  
 	  store.createCorpus(corpusName, resources[0], resources[1]);
@@ -58,11 +59,28 @@ public class CorporaResource {
 
   @Path("{corpus}")
 	public CorpusResource getCorpus(
-			@PathParam("corpus") String corpus) throws IOException {
+			@PathParam("corpus") String corpusId) throws IOException {
     
-      CorpusServer corpusServer = CorpusServer.getInstance();
+      CorpusServer corpusServer = CorpusServerBundle.getInstance().getCorpusServer();
       CorporaStore store = corpusServer.getStore();
     
-      return new CorpusResource(store.getCorpus(corpus), corpusServer.getSearchService());
+      CorpusStore corpus = store.getCorpus(corpusId);
+      
+      if (corpus != null) {
+        return new CorpusResource(corpus, corpusServer.getSearchService());
+      }
+      else {
+        return null;
+      }
 	}
+  
+  @POST
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Path("_dropCorpus")
+  public void dropCorpus(@QueryParam("corpusName") String corpusName) throws IOException {
+    CorpusServer corpusServer = CorpusServerBundle.getInstance().getCorpusServer();
+    
+    CorporaStore store = corpusServer.getStore();
+    store.dropCorpus(corpusName);
+  }
 }

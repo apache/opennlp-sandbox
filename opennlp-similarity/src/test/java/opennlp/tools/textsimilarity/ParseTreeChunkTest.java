@@ -26,7 +26,7 @@ import junit.framework.TestCase;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-public class ParseTreeChunkTest extends TestCase{
+public class ParseTreeChunkTest extends TestCase {
   private ParseTreeMatcherDeterministic parseTreeMatcher = new ParseTreeMatcherDeterministic();
   private ParseTreeChunk parseTreeChunk = new ParseTreeChunk();
   private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();

@@ -26,81 +26,84 @@ import opennlp.tools.textsimilarity.ParseTreeChunkListScorer;
 import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
+public class SearchResultsProcessor extends BingQueryRunner {
+  private static Logger LOG = Logger
+      .getLogger("opennlp.tools.similarity.apps.SearchResultsProcessor");
+  private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
+  ParserChunker2MatcherProcessor sm;
+  WebSearchEngineResultsScraper scraper = new WebSearchEngineResultsScraper();
 
-public class SearchResultsProcessor extends BingWebQueryRunner {
-	private static Logger LOG = Logger.getLogger("opennlp.tools.similarity.apps.SearchResultsProcessor");
-	private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
+  /*
+   * Takes a search engine API (or scraped) search results and calculates the parse tree similarity
+   * between the question and each snippet. Ranks those snippets with higher
+   * similarity score up
+   */
+  
+  
+  private List<HitBase> calculateMatchScoreResortHits(List<HitBase> hits,
+      String searchQuery) {
 
-	/*
-	 * Takes Bing API search results and calculates the parse tree similarity between the question and each snippet.
-	 * Ranks those snippets with higher similarity score up
-	 */
-	private	BingResponse calculateMatchScoreResortHits(BingResponse resp, String searchQuery){
-		// TODO
-		/*if query is multi-sentence, special handling
-		int indexDot = searchQuery.indexOf("."); 
-		if (indexDot>0 && indexDot<searchQuery.length()-1){
-			MultipleSentenceQueryAnswerer ans = new MultipleSentenceQueryAnswerer();
-			return ans.calculateMatchScoreResortHits(resp, searchQuery);		
-		} */
-		List<HitBase> newHitList =	new ArrayList<HitBase>();
-		ParserChunker2MatcherProcessor sm = ParserChunker2MatcherProcessor.getInstance();
+    List<HitBase> newHitList = new ArrayList<HitBase>();
+    sm = ParserChunker2MatcherProcessor.getInstance();
 
-		for(HitBase hit: resp.getHits()){
-			String snapshot = hit.getAbstractText().replace("<b>...</b>", ". ").replace("<b>", "").replace("</b>","");
-			snapshot=snapshot.replace("</B>", "").replace("<B>", "").replace("<br>", "").replace("</br>", "").replace("...", ". ").replace("|", " ").replace(">", " ");
-			snapshot+=" . "+hit.getTitle();
-			Double score = 0.0;
-			try {
-				SentencePairMatchResult matchRes = sm.assessRelevance(snapshot, searchQuery);
-				List<List<ParseTreeChunk>> match = matchRes.getMatchResult();
-				score = parseTreeChunkListScorer.getParseTreeChunkListScore(match);
-				LOG.finest(score + " | "+ snapshot );
-			}
-			catch (Exception e){
-				LOG.severe("Problem processing snapshot "+snapshot);
-				e.printStackTrace();
-			}
-			hit.setGenerWithQueryScore(score);
-			newHitList.add(hit);
-		}
-		Collections.sort(newHitList,new HitBaseComparable());
-		resp.setHits(newHitList);
-		LOG.info("\n\n ============= NEW ORDER ================= ");
-		for(HitBase hit: newHitList){
-			LOG.info(hit.toString());
-		}
+    for (HitBase hit : hits) {
+      String snapshot = hit.getAbstractText().replace("<b>...</b>", ". ").replace("<span class='best-phrase'>", " ").replace("<span>", " ").replace("<span>", " ")
+          .replace("<b>", "").replace("</b>", "");
+      snapshot = snapshot.replace("</B>", "").replace("<B>", "")
+          .replace("<br>", "").replace("</br>", "").replace("...", ". ")
+          .replace("|", " ").replace(">", " ");
+      snapshot += " . " + hit.getTitle();
+      Double score = 0.0;
+      try {
+        SentencePairMatchResult matchRes = sm.assessRelevance(snapshot,
+            searchQuery);
+        List<List<ParseTreeChunk>> match = matchRes.getMatchResult();
+        score = parseTreeChunkListScorer.getParseTreeChunkListScore(match);
+        LOG.finest(score + " | " + snapshot);
+      } catch (Exception e) {
+        LOG.severe("Problem processing snapshot " + snapshot);
+        e.printStackTrace();
+      }
+      hit.setGenerWithQueryScore(score);
+      newHitList.add(hit);
+    }
+    Collections.sort(newHitList, new HitBaseComparable());
+   
+    LOG.info("\n\n ============= NEW ORDER ================= ");
+    for (HitBase hit : newHitList) {
+      LOG.info(hit.toString());
+    }
 
+    return newHitList;
+  }
 
-		return resp; 
-	}
+  public void close() {
+    sm.close();
+  }
 
-	public List<HitBase> runSearch(String query) {
-		BingResponse resp = null, // obtained from bing
-		newResp = null; // re-sorted based on similarity
-		try {
-			List<String> resultList = search(query, "", "", 30);
-			resp = populateBingHit(resultList.get(0));
-			// now we apply our own relevance filter
-			newResp=calculateMatchScoreResortHits(resp, query);
+  public List<HitBase> runSearch(String query) {
+    
+    
+    List<HitBase> hits = scraper.runSearch(query);
+    hits = calculateMatchScoreResortHits(hits, query);
+    return hits;
+  }
+  
+  public List<HitBase> runSearchViaAPI(String query) {
+	List<HitBase> hits = null;
+    try {
+      List<HitBase> resultList = runSearch(query);
+      // now we apply our own relevance filter
+      hits = calculateMatchScoreResortHits(resultList, query);
 
-		} catch (Exception e) {
-			// e.printStackTrace();
-			LOG.info("No search results for query '" + query);
-			e.printStackTrace();
-			return null;
-		}
-		// cast to super class
-		List<HitBase> hits = new ArrayList<HitBase>();
-		for (HitBase h : resp.getHits())
-			hits.add((HitBase) h);
-
-		hits = removeDuplicates(hits, 0.9);
-
-		return hits;
-	}
+    } catch (Exception e) {
+      // e.printStackTrace();
+      LOG.info("No search results for query '" + query);
+      return null;
+    }
 
 
-
+    return hits;
+  }
 
 }

@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+   Licensed to the Apache Software Foundation (ASF) under one
+   or more contributor license agreements.  See the NOTICE file
+   distributed with this work for additional information
+   regarding copyright ownership.  The ASF licenses this file
+   to you under the Apache License, Version 2.0 (the
+   "License"); you may not use this file except in compliance
+   with the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing,
+   software distributed under the License is distributed on an
+   "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+   KIND, either express or implied.  See the License for the
+   specific language governing permissions and limitations
+   under the License.    
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.apache</groupId>
+		<artifactId>apache</artifactId>
+		<version>9</version>
+		<relativePath />
+	</parent>
+
+	<groupId>org.apache.opennlp</groupId>
+	<artifactId>corpus-server-impl</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>bundle</packaging>
+
+	<name>OpenNLP Corpus Server Implementation</name>
+
+	<prerequisites>
+		<maven>3.0</maven>
+	</prerequisites>
+
+	<repositories>
+		<repository>
+		    <id>maven2-repository.java.net</id>
+		    <name>Java.net Repository for Maven</name>
+		    <url>http://download.java.net/maven/2/</url>
+		    <layout>default</layout>
+		</repository>
+	</repositories>
+	
+	<dependencies>
+
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.core</artifactId>
+            <version>4.2.0</version>
+            <scope>provided</scope>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.compendium</artifactId>
+            <version>4.2.0</version>
+            <scope>provided</scope>
+        </dependency>
+        
+		<dependency>
+			<groupId>org.apache.opennlp</groupId>
+			<artifactId>corpus-server</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+		    <groupId>org.apache.derby</groupId>
+		    <artifactId>derby</artifactId>
+		    <version>10.8.1.2</version>
+		    <scope>provided</scope>
+		</dependency>
+
+		<!-- UIMA and Lucas must be embedded to work properly! -->
+		<dependency>
+			<groupId>org.apache.uima</groupId>
+			<artifactId>uimaj-core</artifactId>
+			<version>2.3.1</version>
+			<scope>compile</scope>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.apache.uima</groupId>
+			<artifactId>Lucas</artifactId>
+			<version>2.3.1</version>
+			<scope>compile</scope>
+		</dependency>
+		
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.8.1</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+	
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.6</source>
+					<target>1.6</target>
+          			<compilerArgument>-Xlint</compilerArgument>
+				</configuration>
+			</plugin>
+			
+			<!-- to generate the MANIFEST-FILE required by the bundle -->
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <version>2.3.7</version>
+                <extensions>true</extensions>
+                <executions>
+                    <execution>
+                        <id>bundle-manifest</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>manifest</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <instructions>
+                    	<Embed-Dependency>*;scope=compile;inline=false</Embed-Dependency>
+                    	<Embed-Transitive>true</Embed-Transitive>
+                        <Bundle-SymbolicName>${pom.artifactId}</Bundle-SymbolicName>
+                        <Import-Package>
+                        	!com.sun.jdmk.comm,
+                        	!javax.persistence.*,
+                        	!javax.servlet.annotation,
+                        	!javax.servlet.jsp.*,
+                        	!javax.microedition.*,
+                        	!javax.mail.*,
+                        	!javax.transaction.xa,
+                        	!javax.jms,
+                        	!javax.interceptor,!javax.inject,
+                        	!javax.enterprise.*,
+                        	!javax.annotation.security,
+                        	!javax.ejb,
+                        	!com.sun.xml.fastinfoset.*,
+                        	!org.jvnet.*,
+                        	!org.apache.derby.impl.drda,
+                        	!com.ibm.jvm,
+                        	!com.sun.net.httpserver,
+                        	!sun.misc,
+                        	*,
+                        	org.apache.opennlp.corpus_server,
+                        	org.apache.derby.jdbc
+                        	</Import-Package>
+                        <!-- Import-Package>!com.ibm.jvm,!com.sun.jdmk.comm,!com.sun.net.httpserver,*,com.sun.jersey.api.core,com.sun.jersey.spi.container.servlet</Import-Package-->
+                        <Export-Package>org.apache.opennlp.corpus_server.impl</Export-Package>
+                        <Bundle-Activator>org.apache.opennlp.corpus_server.impl.Activator</Bundle-Activator>
+                    </instructions>
+                </configuration>
+            </plugin>
+		</plugins>
+	</build>
+</project>

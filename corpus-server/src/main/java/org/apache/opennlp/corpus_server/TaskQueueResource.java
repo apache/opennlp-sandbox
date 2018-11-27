@@ -29,6 +29,11 @@ public class TaskQueueResource {
   private TaskQueue queue;
   
   TaskQueueResource(TaskQueue queue) {
+    
+    if (queue == null) {
+      throw new IllegalArgumentException("queue parameter must not be null!");
+    }
+    
     this.queue = queue;
   }
   
