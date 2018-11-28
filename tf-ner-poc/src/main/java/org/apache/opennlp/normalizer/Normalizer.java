@@ -73,8 +73,6 @@ public class Normalizer {
 
   public String[] normalize(String[] texts) {
 
-    // TODO: Batch size is hard coded in the graph, make it dynamic or at padding here
-
     int textLengths[] = Arrays.stream(texts).mapToInt(String::length).toArray();
     int maxLength = Arrays.stream(textLengths).max().getAsInt();
 
@@ -89,11 +87,13 @@ public class Normalizer {
     }
 
     try (Tensor<?> charTensor = Tensor.create(charIds);
-         Tensor<?> textLength = Tensor.create(textLengths)) {
+         Tensor<?> textLength = Tensor.create(textLengths);
+         Tensor<?> batchSize = Tensor.create(texts.length)) {
 
       List<Tensor<?>> result = session.runner()
           .feed("encoder_char_ids", charTensor)
           .feed("encoder_lengths", textLength)
+          .feed("batch_size", batchSize)
           .fetch("decode", 0).run();
 
       try (Tensor<?> translationTensor = result.get(0)) {
