@@ -16,8 +16,10 @@
 #  specific language governing permissions and limitations
 #  under the License.
 #
-
+import os
 import re
+import zipfile
+from tempfile import TemporaryDirectory
 
 import tensorflow as tf
 import numpy as np
@@ -200,15 +202,11 @@ def main():
 
     source_char_dict = encode_chars(source_train + source_dev + source_test)
 
-    write_mapping(source_char_dict, 'source_char_dict.txt')
-
     target_char_dict = encode_chars(target_train + target_dev + target_test)
 
     # TODO: Find better chars for begin and end markers
     target_char_dict['S'] = len(target_char_dict)
     target_char_dict['E'] = len(target_char_dict)
-
-    write_mapping(target_char_dict, 'target_char_dict.txt')
 
     target_dict_rev = {v: k for k, v in target_char_dict.items()}
 
@@ -234,7 +232,7 @@ def main():
 
         eval_sess = tf.Session(graph=eval_graph)
 
-    for epoch in range(30):
+    for epoch in range(1):
         print("Epoch " + str(epoch))
 
         with train_graph.as_default():
@@ -284,9 +282,25 @@ def main():
 
             print("Dev: " + str(count_correct / len(target_dev)))
 
-            builder = tf.saved_model.builder.SavedModelBuilder("./normalizer_model" + str(epoch))
+    with TemporaryDirectory() as temp_dir:
+
+        temp_model_dir = temp_dir + "/model"
+
+
+        with eval_graph.as_default():
+            builder = tf.saved_model.builder.SavedModelBuilder(temp_model_dir)
             builder.add_meta_graph_and_variables(eval_sess, [tf.saved_model.tag_constants.SERVING])
             builder.save()
+
+        write_mapping(source_char_dict, temp_model_dir + '/source_char_dict.txt')
+        write_mapping(target_char_dict, temp_model_dir + '/target_char_dict.txt')
+
+        zipf = zipfile.ZipFile("normalizer.zip", 'w', zipfile.ZIP_DEFLATED)
+
+        for root, dirs, files in os.walk(temp_model_dir):
+            for file in files:
+                modelFile = os.path.join(root, file)
+                zipf.write(modelFile, arcname=os.path.relpath(modelFile, temp_model_dir))
 
 if __name__ == "__main__":
     main()

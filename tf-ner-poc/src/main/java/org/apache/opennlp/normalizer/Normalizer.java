@@ -18,6 +18,7 @@
 package org.apache.opennlp.normalizer;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -44,19 +45,23 @@ public class Normalizer {
   private final Map<Character, Integer> sourceCharMap;
   private final Map<Integer, Character> targetCharMap;
 
-  Normalizer(InputStream sourceCharMapIn, InputStream targetCharMapIn,
-             InputStream modelZipPackage) throws IOException {
+  public Normalizer(InputStream modelZipPackage) throws IOException {
 
     Path tmpModelPath = ModelUtil.writeModelToTmpDir(modelZipPackage);
+    try(InputStream sourceCharMapIn = new FileInputStream(
+        tmpModelPath.resolve("source_char_dict.txt").toFile())) {
+      sourceCharMap = loadCharMap(sourceCharMapIn).entrySet()
+          .stream()
+          .collect(Collectors.toMap(Map.Entry::getValue, c -> c.getKey()));
+    }
+
+    try(InputStream targetCharMapIn = new FileInputStream(
+        tmpModelPath.resolve("target_char_dict.txt").toFile())) {
+      targetCharMap = loadCharMap(targetCharMapIn);
+    }
 
     SavedModelBundle model = SavedModelBundle.load(tmpModelPath.toString(), "serve");
     session = model.session();
-
-    sourceCharMap = loadCharMap(sourceCharMapIn).entrySet()
-        .stream()
-        .collect(Collectors.toMap(Map.Entry::getValue, c -> c.getKey()));
-
-    targetCharMap = loadCharMap(targetCharMapIn);
   }
 
   private static Map<Integer, Character> loadCharMap(InputStream in) throws IOException {
@@ -123,5 +128,16 @@ public class Normalizer {
         return normalizedTexts.toArray(new String[normalizedTexts.size()]);
       }
     }
+  }
+
+  public static void main(String[] args) throws Exception {
+    Normalizer normalizer = new Normalizer(new FileInputStream(
+            "/home/blue/dev/opennlp-sandbox/tf-ner-poc/src/main/python/normalizer/normalizer.zip"));
+
+    String[] result = normalizer.normalize(new String[] {
+        "18 Mars 2012"
+    });
+
+    System.out.println(result[0]);
   }
 }
