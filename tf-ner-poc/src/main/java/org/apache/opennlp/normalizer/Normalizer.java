@@ -99,9 +99,8 @@ public class Normalizer {
           .fetch("decode", 0).run();
 
       try (Tensor<?> translationTensor = result.get(0)) {
-        // TODO: This can't be hard coded ... normalized form doesn't need to have static length
         int[][] translations =
-            translationTensor.copyTo(new int[texts.length][9]); // shape is (20, 9) in eval py code
+            translationTensor.copyTo(new int[texts.length][(int) translationTensor.shape()[1]]);
 
         List<String> normalizedTexts = new ArrayList<>();
 
