@@ -38,6 +38,8 @@ import org.tensorflow.Tensor;
 
 public class Normalizer {
 
+  private static final char END_MARKER = 'E';
+
   private final Session session;
   private final Map<Character, Integer> sourceCharMap;
   private final Map<Integer, Character> targetCharMap;
@@ -107,6 +109,13 @@ public class Normalizer {
           StringBuilder normalizedText = new StringBuilder();
           for (int ci = 0; ci < translations[ti].length; ci++) {
             normalizedText.append(targetCharMap.get(translations[ti][ci]));
+          }
+
+          // Remove the end marker from the translated string
+          for (int ci = normalizedText.length() - 1; ci >= 0; ci--) {
+            if (END_MARKER == normalizedText.charAt(ci)) {
+              normalizedText.setLength(ci);
+            }
           }
 
           normalizedTexts.add(normalizedText.toString());
