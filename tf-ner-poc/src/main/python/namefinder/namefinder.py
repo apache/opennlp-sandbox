@@ -19,7 +19,7 @@
 
 # This poc is based on source code taken from:
 # https://github.com/guillaumegenthial/sequence_tagging
-
+import random
 import sys
 from math import floor
 import tensorflow as tf
@@ -395,6 +395,12 @@ def main():
                 # mini_batch should also return char_ids and word length ...
                 sentences_batch, chars_batch, word_length_batch, labels_batch, lengths = \
                     name_finder.mini_batch(rev_word_dict, char_dict, sentences, labels, batch_size, batch_index)
+
+                # TODO: Add a parameter to disable/enable this ?!?!
+                for batch_row in range(batch_size):
+                    for token_index in range(lengths[batch_row]):
+                        if random.uniform(0, 1) <= 0.05:
+                            sentences_batch[batch_row][token_index] = word_dict['__UNK__']
 
                 feed_dict = {token_ids_ph:  sentences_batch, char_ids_ph: chars_batch, word_lengths_ph: word_length_batch, sequence_lengths_ph: lengths,
                              labels_ph: labels_batch, dropout_keep_prob: 0.5}
