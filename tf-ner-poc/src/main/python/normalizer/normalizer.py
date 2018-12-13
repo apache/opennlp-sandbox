@@ -91,6 +91,9 @@ def create_graph(mode, batch_size, encoder_nchars, max_target_length, decoder_nc
 
     encoder_emb_inp = tf.nn.embedding_lookup(encoder_embedding_weights, encoder_char_ids_ph)
 
+    if "TRAIN" == mode:
+        encoder_emb_inp = tf.nn.dropout(encoder_emb_inp, 0.7)
+
     encoder_emb_inp = tf.transpose(encoder_emb_inp, perm=[1, 0, 2])
 
     encoder_cell = tf.nn.rnn_cell.BasicLSTMCell(num_units)
@@ -143,8 +146,6 @@ def create_graph(mode, batch_size, encoder_nchars, max_target_length, decoder_nc
                                                   decoder_initial_state, output_layer=projection_layer)
 
         outputs, _, _ = tf.contrib.seq2seq.dynamic_decode(decoder, output_time_major=True, swap_memory=True )
-
-        # TODO: Use attention to improve training performance ...
 
         logits = outputs.rnn_output
         train_prediction = outputs.sample_id
@@ -232,7 +233,7 @@ def main():
 
         eval_sess = tf.Session(graph=eval_graph)
 
-    for epoch in range(1):
+    for epoch in range(20):
         print("Epoch " + str(epoch))
 
         with train_graph.as_default():
