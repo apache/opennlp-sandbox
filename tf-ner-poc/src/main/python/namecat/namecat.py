@@ -23,6 +23,9 @@ import sys
 from math import floor
 import numpy as np
 import random
+import zipfile
+import os
+from tempfile import TemporaryDirectory
 
 def load_data(file):
     with open(file) as f:
@@ -148,9 +151,6 @@ def main():
 
     char_dict = {k: v for v, k in enumerate(char_set)}
 
-    write_mapping(label_dict, "label_dict.txt")
-    write_mapping(char_dict, "char_dict.txt")
-
     dropout_keep_prob, char_ids_ph, name_lengths_ph, y_ph = create_placeholders()
 
     train_op, probs_op = create_graph(dropout_keep_prob, char_ids_ph, name_lengths_ph, y_ph, len(char_set), len(label_dict))
@@ -205,10 +205,22 @@ def main():
 
         #print("Test acc: " + str(np.mean(acc_test)))
 
-        saver = tf.train.Saver()
-        builder = tf.saved_model.builder.SavedModelBuilder("./namecat_model" + str(epoch))
-        builder.add_meta_graph_and_variables(sess, [tf.saved_model.tag_constants.SERVING])
-        builder.save()
+        with TemporaryDirectory() as temp_dir:
+            temp_model_dir = temp_dir + "/model"
+
+            builder = tf.saved_model.builder.SavedModelBuilder("./namecat_model" + str(epoch))
+            builder.add_meta_graph_and_variables(sess, [tf.saved_model.tag_constants.SERVING])
+            builder.save()
+
+            write_mapping(label_dict, temp_model_dir + "/label_dict.txt")
+            write_mapping(char_dict, temp_model_dir + "/char_dict.txt")
+
+            zipf = zipfile.ZipFile("namecat-" + str(epoch) +".zip", 'w', zipfile.ZIP_DEFLATED)
+
+            for root, dirs, files in os.walk(temp_model_dir):
+                for file in files:
+                    modelFile = os.path.join(root, file)
+                    zipf.write(modelFile, arcname=os.path.relpath(modelFile, temp_model_dir))
 
 if __name__ == "__main__":
     main()

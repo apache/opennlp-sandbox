@@ -20,8 +20,8 @@ package org.apache.opennlp.namecat;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -39,21 +39,20 @@ public class NameCategorizer {
   private final Map<Character, Integer> charMap = new HashMap<>();
   private final Map<Integer, String> labelMap;
 
-  public NameCategorizer(InputStream vocabChars, InputStream labelDict,
-                         InputStream modelZipPackage) throws IOException {
+  public NameCategorizer(InputStream modelZipPackage) throws IOException {
 
-    try (BufferedReader in = new BufferedReader(new InputStreamReader(vocabChars,
-        StandardCharsets.UTF_8))) {
+    Path tmpModelPath = ModelUtil.writeModelToTmpDir(modelZipPackage);
+
+    try (BufferedReader in = Files.newBufferedReader(
+            tmpModelPath.resolve("char_dict.txt"), StandardCharsets.UTF_8)) {
       in.lines().forEach(ch -> charMap.put(ch.charAt(0), charMap.size()));
     }
 
     labelMap = new HashMap<>();
-    try (BufferedReader in = new BufferedReader(new InputStreamReader(labelDict,
-        StandardCharsets.UTF_8))) {
+    try (BufferedReader in = Files.newBufferedReader(
+            tmpModelPath.resolve("label_dict.txt"), StandardCharsets.UTF_8)) {
       in.lines().forEach(label -> labelMap.put(labelMap.size(), label));
     }
-
-    Path tmpModelPath = ModelUtil.writeModelToTmpDir(modelZipPackage);
 
     SavedModelBundle model = SavedModelBundle.load(tmpModelPath.toString(), "serve");
     session = model.session();
