@@ -25,6 +25,9 @@ from math import floor
 import tensorflow as tf
 import re
 import numpy as np
+import zipfile
+import os
+from tempfile import TemporaryDirectory
 
 # Parse the OpenNLP Name Finder format into begin, end, type triples
 class NameSample:
@@ -371,10 +374,6 @@ def main():
     embedding_ph, token_ids_ph, char_ids_ph, word_lengths_ph, sequence_lengths_ph, labels_ph, dropout_keep_prob, train_op \
         = name_finder.create_graph(len(char_set | char_set_dev), embeddings)
 
-    write_mapping(word_dict, 'word_dict.txt')
-    write_mapping(name_finder.label_dict, "label_dict.txt")
-    write_mapping(char_dict, "char_dict.txt")
-
     sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True,
                                             log_device_placement=True))
 
@@ -437,12 +436,28 @@ def main():
 
 
             if (f1 > best_f1):
+
+
                 best_f1 = f1
                 no_improvement = 0
-                saver = tf.train.Saver()
-                builder = tf.saved_model.builder.SavedModelBuilder("./savedmodel/{}".format(epoch))
-                builder.add_meta_graph_and_variables(sess, [tf.saved_model.tag_constants.SERVING])
-                builder.save()
+
+                with TemporaryDirectory() as temp_dir:
+                    temp_model_dir = temp_dir + "/model"
+
+                    builder = tf.saved_model.builder.SavedModelBuilder(temp_model_dir)
+                    builder.add_meta_graph_and_variables(sess, [tf.saved_model.tag_constants.SERVING])
+                    builder.save()
+
+                    write_mapping(word_dict, temp_model_dir + '/word_dict.txt')
+                    write_mapping(name_finder.label_dict, temp_model_dir + "/label_dict.txt")
+                    write_mapping(char_dict, temp_model_dir + "/char_dict.txt")
+
+                    zipf = zipfile.ZipFile("namefinder-" + str(epoch) +".zip", 'w', zipfile.ZIP_DEFLATED)
+
+                    for root, dirs, files in os.walk(temp_model_dir):
+                        for file in files:
+                            modelFile = os.path.join(root, file)
+                            zipf.write(modelFile, arcname=os.path.relpath(modelFile, temp_model_dir))
             else:
                 no_improvement += 1
 
@@ -452,6 +467,7 @@ def main():
             if no_improvement > 5:
                 print("No further improvement. Stopping.")
                 break
+
 
 if __name__ == "__main__":
     main()

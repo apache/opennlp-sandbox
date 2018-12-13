@@ -20,6 +20,7 @@ package org.apache.opennlp.namefinder;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -49,13 +50,18 @@ public class SequenceTagging implements TokenNameFinder, AutoCloseable {
     this.indexTagger = new IndexTagger((new FileInputStream(config.getVocabTags())));
   }
 
-  public SequenceTagging(InputStream vocabWords, InputStream vocabChars,
-                         InputStream vocabTags, InputStream modelZipPackage) throws IOException {
-
-    wordIndexer = new WordIndexer(vocabWords, vocabChars);
-    indexTagger = new IndexTagger(vocabTags);
+  public SequenceTagging(InputStream modelZipPackage) throws IOException {
 
     Path tmpDir = ModelUtil.writeModelToTmpDir(modelZipPackage);
+
+    try (InputStream wordsIn = Files.newInputStream(tmpDir.resolve("word_dict.txt"));
+         InputStream charsIn = Files.newInputStream(tmpDir.resolve("char_dict.txt"))) {
+      wordIndexer = new WordIndexer(wordsIn, charsIn);
+    }
+
+    try (InputStream in = Files.newInputStream(tmpDir.resolve("label_dict.txt"))) {
+      indexTagger = new IndexTagger(in);
+    }
 
     model = SavedModelBundle.load(tmpDir.toString(), "serve");
     session = model.session();
