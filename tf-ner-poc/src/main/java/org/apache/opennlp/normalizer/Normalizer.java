@@ -80,6 +80,10 @@ public class Normalizer {
 
   public String[] normalize(String[] texts) {
 
+    if (texts.length == 0) {
+      return new String[0];
+    }
+
     int textLengths[] = Arrays.stream(texts).mapToInt(String::length).toArray();
     int maxLength = Arrays.stream(textLengths).max().getAsInt();
 
