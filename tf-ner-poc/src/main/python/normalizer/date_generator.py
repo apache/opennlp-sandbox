@@ -45,6 +45,7 @@ FORMATS = ['short',
            'MMMM YYY',
            'MMM YYY',
            'MMMM d, YYY',
+           'YYY',
            'dd.MM.YY',
            'dd.MM',
            'full',
@@ -65,7 +66,7 @@ with open('date_dev_deu.txt', 'w', encoding="utf-8") as f:
         dt = fake.date_time_ad(start_datetime=datetime(1900, 1, 1))
 
         format = random.choice(FORMATS)
-        source_date = format_date(dt, format=format,  locale='de_DE')
+        source_date = format_date(dt, format=format,  locale='en_US')
         target_date = format_date(dt, format='YYYYMMdd',  locale='en_US')
 
         if "short" not in format \
@@ -79,5 +80,7 @@ with open('date_dev_deu.txt', 'w', encoding="utf-8") as f:
             if "d" not in format:
                 target_date = target_date[:6] + "00"
 
+            if "M" not in format:
+                target_date = target_date[:4] + "00" + target_date[6:]
 
         f.write(target_date + '\t' + source_date + '\n')
