@@ -23,7 +23,7 @@ from tempfile import TemporaryDirectory
 
 import tensorflow as tf
 import numpy as np
-
+import random
 from math import floor
 
 def load_data(file):
@@ -202,6 +202,7 @@ def main():
     source_test, target_test = load_data("date_test.txt")
 
     source_char_dict = encode_chars(source_train + source_dev + source_test)
+    source_char_dict[chr(0)] = 0
 
     target_char_dict = encode_chars(target_train + target_dev + target_test)
 
@@ -243,6 +244,11 @@ def main():
 
                 target_batch, target_length, source_batch, source_length = \
                     mini_batch(target_char_dict, target_train, source_char_dict, source_train, batch_size, batch_index)
+
+                # TODO: Add char dropout here ...
+                for i, j in np.ndindex(source_batch.shape):
+                    if random.uniform(0, 1) <= 0.0005:
+                        source_batch[i][j] = 0
 
                 feed_dict = {t_encoder_lengths_ph: source_length, t_encoder_char_ids_ph: source_batch,
                              t_decoder_lengths: target_length, t_decoder_char_ids_ph: target_batch}

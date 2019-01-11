@@ -91,7 +91,8 @@ public class Normalizer {
 
     for (int textIndex = 0; textIndex < texts.length; textIndex++) {
       for (int charIndex = 0; charIndex < texts[textIndex].length(); charIndex++) {
-        charIds[textIndex][charIndex] = sourceCharMap.get(texts[textIndex].charAt(charIndex));
+        charIds[textIndex][charIndex] =
+                sourceCharMap.getOrDefault(texts[textIndex].charAt(charIndex), 0);
       }
 
       textLengths[textIndex] = texts[textIndex].length();
