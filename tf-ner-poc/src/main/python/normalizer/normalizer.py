@@ -219,8 +219,12 @@ def main():
 
     batch_size = 20
 
-    # TODO: Don't hard code this ...
-    target_max_len = 9
+    target_max_len = -1
+    for token in (target_train + target_dev + target_test):
+        target_max_len = max(target_max_len, len(token))
+
+    # Increase size by one for termination char
+    target_max_len += 1
 
     train_graph = tf.Graph()
     eval_graph = tf.Graph()
