@@ -211,9 +211,9 @@ def main():
 
     target_char_dict = encode_chars(target_train + target_dev + target_test)
 
-    # TODO: Find better chars for begin and end markers
-    target_char_dict['S'] = len(target_char_dict)
-    target_char_dict['E'] = len(target_char_dict)
+    # char id 2 is STX (Start of Text), and 3 ETX (End of Text)
+    target_char_dict[chr(2)] = len(target_char_dict)
+    target_char_dict[chr(3)] = len(target_char_dict)
 
     target_dict_rev = {v: k for k, v in target_char_dict.items()}
 

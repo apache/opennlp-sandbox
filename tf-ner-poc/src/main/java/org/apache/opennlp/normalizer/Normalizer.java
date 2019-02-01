@@ -39,7 +39,7 @@ import org.tensorflow.Tensor;
 
 public class Normalizer {
 
-  private static final char END_MARKER = 'E';
+  private static final char END_MARKER = 3;
 
   private final Session session;
   private final Map<Character, Integer> sourceCharMap;
