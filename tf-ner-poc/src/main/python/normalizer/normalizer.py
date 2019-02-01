@@ -25,6 +25,7 @@ import tensorflow as tf
 import numpy as np
 import random
 from math import floor
+import sys
 
 def load_data(file):
     with open(file, encoding="utf-8") as f:
@@ -195,11 +196,15 @@ def write_mapping(tags, output_filename):
 
 def main():
 
+    if len(sys.argv) != 4:
+        print("Usage normalizer.py train_file dev_file test_file")
+        return
+
     checkpoints_path = "/tmp/model/checkpoints"
 
-    source_train, target_train = load_data("date_train.txt")
-    source_dev, target_dev = load_data("date_dev.txt")
-    source_test, target_test = load_data("date_test.txt")
+    source_train, target_train = load_data(sys.argv[1])
+    source_dev, target_dev = load_data(sys.argv[2])
+    source_test, target_test = load_data(sys.argv[3])
 
     source_char_dict = encode_chars(source_train + source_dev + source_test)
     source_char_dict[chr(0)] = 0
