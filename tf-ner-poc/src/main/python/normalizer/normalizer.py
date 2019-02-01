@@ -97,7 +97,7 @@ def create_graph(mode, batch_size, encoder_nchars, max_target_length, decoder_nc
 
     encoder_emb_inp = tf.transpose(encoder_emb_inp, perm=[1, 0, 2])
 
-    encoder_cell = tf.nn.rnn_cell.BasicLSTMCell(num_units)
+    encoder_cell = tf.nn.rnn_cell.LSTMCell(num_units)
     initial_state = encoder_cell.zero_state(batch_size_ph, dtype=tf.float32)
 
     encoder_outputs, encoder_state = tf.nn.dynamic_rnn(
@@ -123,7 +123,7 @@ def create_graph(mode, batch_size, encoder_nchars, max_target_length, decoder_nc
         num_units, attention_states,
         memory_sequence_length=encoder_lengths_ph)
 
-    decoder_cell = tf.nn.rnn_cell.BasicLSTMCell(num_units)
+    decoder_cell = tf.nn.rnn_cell.LSTMCell(num_units)
 
     decoder_cell = tf.contrib.seq2seq.AttentionWrapper(decoder_cell, attention_mechanism,
         attention_layer_size=num_units)
