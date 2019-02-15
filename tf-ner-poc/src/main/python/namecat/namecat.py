@@ -177,7 +177,8 @@ def main():
                 feed_dict = {dropout_keep_prob: 0.5, char_ids_ph: name_train_batch, name_lengths_ph: name_train_length, y_ph: label_train_batch}
                 _, probs = sess.run([train_op, probs_op], feed_dict)
 
-                acc_train.append((batch_size  - np.sum(np.abs(label_train_batch - np.argmax(probs, axis=1)))) / batch_size)
+                acc_train.append((batch_size - np.sum(np.minimum(np.abs(label_train_batch - np.argmax(probs, axis=1)),
+                                                                        np.full((batch_size), 1)))) / batch_size)
 
             print("Train acc: " + str(np.mean(acc_train)))
 
@@ -189,7 +190,8 @@ def main():
                 feed_dict = {dropout_keep_prob: 1, char_ids_ph: name_dev_batch, name_lengths_ph: name_dev_length, y_ph: label_dev_batch}
                 probs = sess.run(probs_op, feed_dict)
 
-                acc_dev.append((batch_size  - np.sum(np.abs(label_dev_batch - np.argmax(probs, axis=1)))) / batch_size)
+                acc_dev.append((batch_size - np.sum(np.minimum(np.abs(label_dev_batch - np.argmax(probs, axis=1)),
+                                                               np.full((batch_size), 1)))) / batch_size)
 
             print("Dev acc: " + str(np.mean(acc_dev)))
 
