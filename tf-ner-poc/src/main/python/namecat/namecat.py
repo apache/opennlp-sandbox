@@ -208,7 +208,7 @@ def main():
         with TemporaryDirectory() as temp_dir:
             temp_model_dir = temp_dir + "/model"
 
-            builder = tf.saved_model.builder.SavedModelBuilder("./namecat_model" + str(epoch))
+            builder = tf.saved_model.builder.SavedModelBuilder(temp_model_dir)
             builder.add_meta_graph_and_variables(sess, [tf.saved_model.tag_constants.SERVING])
             builder.save()
 
