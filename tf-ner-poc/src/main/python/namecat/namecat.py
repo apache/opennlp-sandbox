@@ -28,13 +28,13 @@ import os
 from tempfile import TemporaryDirectory
 
 def load_data(file):
-    with open(file) as f:
+    with open(file, encoding="utf-8") as f:
         labels = []
         names = []
         for line in f:
             parts = re.split(r'\t+', line)
-            labels.append(parts[0]);
-            names.append(parts[1])
+            labels.append(parts[0].strip())
+            names.append(parts[1].strip())
     return labels, names
 
 # create placeholders
