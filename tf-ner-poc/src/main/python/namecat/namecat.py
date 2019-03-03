@@ -150,6 +150,7 @@ def main():
         char_set = char_set.union(name)
 
     char_dict = {k: v for v, k in enumerate(char_set)}
+    char_dict[chr(0)] = 0
 
     dropout_keep_prob, char_ids_ph, name_lengths_ph, y_ph = create_placeholders()
 
@@ -163,7 +164,7 @@ def main():
         sess.run(init)
 
         batch_size = 20
-        for epoch in range(10):
+        for epoch in range(20):
             print("Epoch " + str(epoch))
             acc_train = []
 
@@ -173,6 +174,11 @@ def main():
             for batch_index in batch_indexes:
                 label_train_batch, name_train_batch, name_train_length = \
                     mini_batch(label_dict, char_dict, labels_train, names_train, batch_size, batch_index)
+
+                # Add char dropout here ...
+                for i, j in np.ndindex(name_train_batch.shape):
+                    if random.uniform(0, 1) <= 0.0005:
+                        name_train_batch[i][j] = 0
 
                 feed_dict = {dropout_keep_prob: 0.5, char_ids_ph: name_train_batch, name_lengths_ph: name_train_length, y_ph: label_train_batch}
                 _, probs = sess.run([train_op, probs_op], feed_dict)
