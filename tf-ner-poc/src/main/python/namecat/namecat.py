@@ -169,7 +169,11 @@ def main():
             acc_train = []
 
             batch_indexes = list(range(floor(len(names_train) / batch_size)))
-            random.Random(epoch).shuffle(batch_indexes)
+
+            # Shuffle the data
+            combined = list(zip(names_train, labels_train))
+            random.shuffle(combined)
+            names_train[:], labels_train[:] = zip(*combined)
 
             for batch_index in batch_indexes:
                 label_train_batch, name_train_batch, name_train_length = \
