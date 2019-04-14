@@ -18,6 +18,7 @@
 package opennlp.tools.coref.resolver;
 
 import java.io.File;
+import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -332,7 +333,7 @@ public abstract class MaxentResolver extends AbstractResolver {
     if (ResolverMode.TRAIN == mode) {
       if (debugOn) {
         System.err.println(this + " referential");
-        FileWriter writer = new FileWriter(modelName + ".events");
+        BufferedWriter writer = new BufferedWriter(new FileWriter(modelName + ".events"));
         for (Iterator<Event> ei = events.iterator(); ei.hasNext();) {
           Event e = ei.next();
           writer.write(e.toString() + "\n");

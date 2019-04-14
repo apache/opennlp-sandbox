@@ -19,6 +19,7 @@ package opennlp.tools.coref.sim;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -366,7 +367,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
    */
   public void trainModel() throws IOException {
     if (debugOn) {
-      FileWriter writer = new FileWriter(modelName + ".events");
+      BufferedWriter writer = new BufferedWriter(new FileWriter(modelName + ".events"));
       for (Iterator<Event> ei = events.iterator();ei.hasNext();) {
         Event e = ei.next();
         writer.write(e.toString() + "\n");

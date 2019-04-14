@@ -19,6 +19,7 @@ package opennlp.tools.coref.resolver;
 
 import java.io.DataInputStream;
 import java.io.File;
+import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -119,7 +120,7 @@ public class DefaultNonReferentialResolver implements NonReferentialResolver {
     if (ResolverMode.TRAIN == mode) {
       System.err.println(this + " referential");
       if (debugOn) {
-        FileWriter writer = new FileWriter(modelName + ".events");
+        BufferedWriter writer = new BufferedWriter(new FileWriter(modelName + ".events"));
         for (Iterator<Event> ei = events.iterator(); ei.hasNext();) {
           Event e = ei.next();
           writer.write(e.toString() + "\n");

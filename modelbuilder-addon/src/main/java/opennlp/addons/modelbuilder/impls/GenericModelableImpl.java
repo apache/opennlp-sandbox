@@ -18,6 +18,7 @@ package opennlp.addons.modelbuilder.impls;
 import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -57,7 +58,7 @@ public class GenericModelableImpl implements Modelable {
   public void writeAnnotatedSentences() {
     try {
 
-      FileWriter writer = new FileWriter(params.getAnnotatedTrainingDataFile(), false);
+      BufferedWriter writer = new BufferedWriter(new FileWriter(params.getAnnotatedTrainingDataFile(), false));
 
       for (String s : annotatedSentences) {
         writer.write(s.replace("\n", " ").trim() + "\n");
