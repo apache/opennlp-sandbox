@@ -19,6 +19,7 @@
 package org.apache.opennlp.utils.regression;
 
 import java.util.Arrays;
+import java.util.Random;
 import org.apache.opennlp.utils.TrainingSet;
 
 /**
@@ -71,7 +72,8 @@ public class GradientDescentUtils {
   private static double[] initializeRandomWeights(int size) {
     double[] doubles = new double[size];
     for (int i = 0; i < doubles.length; i++) {
-      doubles[i] = Math.random() * 0.1d;
+      Random rand = new Random();
+      doubles[i] = rand.nextDouble() * 0.1d;
     }
     return doubles;
   }

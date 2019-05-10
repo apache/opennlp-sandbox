@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -87,7 +88,8 @@ public class SentenceOriginalizer {
 		prodName = StringUtils.trim(prodName.toLowerCase());
 				
 		for(int i = 0; i< sents.length; i++){
-			double flag = Math.random();
+			Random rand = new Random();
+			double flag = rand.nextDouble();
 			String prodNameCurr = null;
 			if (flag>0.4)
 				prodNameCurr = prodName;

@@ -20,6 +20,7 @@ package opennlp.tools.textsimilarity;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 public class ParseTreeMatcher {
 
@@ -151,6 +152,7 @@ public class ParseTreeMatcher {
         String sim = posManager.similarPOS(pos1.get(k1), pos2.get(k2));
         String lemmaMatch = lemmaFormManager.matchLemmas(null, chunk1
             .getLemmas().get(k1), chunk2.getLemmas().get(k2), sim);
+	Random rand = new Random();
         // if (LemmaFormManager.acceptableLemmaAndPOS(sim, lemmaMatch)){
         if ((sim != null)
             && (lemmaMatch == null || (lemmaMatch != null && !lemmaMatch
@@ -168,7 +170,7 @@ public class ParseTreeMatcher {
           }
           k1++;
           k2++;
-        } else if (Math.random() > 0.5) {
+        } else if (rand.nextDouble() > 0.5) {
           k1++;
         } else {
           k2++;
