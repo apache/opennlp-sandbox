@@ -328,7 +328,7 @@ def get_chunks(seq, tags):
 
 def write_mapping(tags, output_filename):
     with open(output_filename, 'w', encoding='utf-8') as f:
-        for i, tag in enumerate(tags):
+        for (tag, i) in sorted(tags.items(), key=lambda x: x[1]):
             f.write('{}\n'.format(tag))
 
 
