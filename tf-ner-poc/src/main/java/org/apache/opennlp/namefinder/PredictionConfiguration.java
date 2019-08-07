@@ -20,6 +20,7 @@ package org.apache.opennlp.namefinder;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.regex.Pattern;
 
 public class PredictionConfiguration {
 
@@ -27,6 +28,11 @@ public class PredictionConfiguration {
   private String vocabChars;
   private String vocabTags;
   private String savedModel;
+
+  private boolean useLowerCaseEmbeddings;
+  private boolean allowUNK;
+  private boolean allowNUM;
+  private Pattern digitPattern = Pattern.compile("\\d+(,\\d+)*(\\.\\d+)?");
 
   public PredictionConfiguration(String vocabWords, String vocabChars, String vocabTags, String savedModel) {
     this.vocabWords = vocabWords;
@@ -49,6 +55,38 @@ public class PredictionConfiguration {
 
   public String getSavedModel() {
     return savedModel;
+  }
+
+  public boolean isUseLowerCaseEmbeddings() {
+    return useLowerCaseEmbeddings;
+  }
+
+  public void setUseLowerCaseEmbeddings(boolean useLowerCaseEmbeddings) {
+    this.useLowerCaseEmbeddings = useLowerCaseEmbeddings;
+  }
+
+  public boolean isAllowUNK() {
+    return allowUNK;
+  }
+
+  public void setAllowUNK(boolean allowUNK) {
+    this.allowUNK = allowUNK;
+  }
+
+  public boolean isAllowNUM() {
+    return allowNUM;
+  }
+
+  public void setAllowNUM(boolean allowNUM) {
+    this.allowNUM = allowNUM;
+  }
+
+  public Pattern getDigitPattern() {
+    return digitPattern;
+  }
+
+  public void setDigitPattern(Pattern digitPattern) {
+    this.digitPattern = digitPattern;
   }
 
   public InputStream getVocabWordsInputStream() throws IOException{

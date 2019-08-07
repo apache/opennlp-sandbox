@@ -17,6 +17,8 @@
 
 package org.apache.opennlp.namefinder;
 
+import opennlp.tools.util.StringUtil;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,22 +26,73 @@ import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.regex.Pattern;
-
-import opennlp.tools.util.StringUtil;
 
 public class WordIndexer {
 
   private final Map<Character, Integer> char2idx;
   private final Map<String, Integer> word2idx;
 
-  public static String UNK = "$UNK$";
-  public static String NUM = "$NUM$";
+  public static String UNK = "__UNK__";
+  public static String NUM = "__NUM__";
 
   private boolean lowerCase = false;
-  private boolean allowUnk = false;
+  private boolean allowUnk = true;
+  private boolean allowNum = false;
 
   private Pattern digitPattern = Pattern.compile("\\d+(,\\d+)*(\\.\\d+)?");
+
+  public boolean isLowerCase() {
+    return lowerCase;
+  }
+
+  public void setLowerCase(boolean lowerCase) {
+    this.lowerCase = lowerCase;
+  }
+
+  public boolean isAllowUnk() {
+    return allowUnk;
+  }
+
+  public void setAllowUnk(boolean allowUnk) {
+    this.allowUnk = allowUnk;
+  }
+
+  public boolean isAllowNum() {
+    return allowNum;
+  }
+
+  public void setAllowNum(boolean allowNum) {
+    this.allowNum = allowNum;
+  }
+
+  public Pattern getDigitPattern() {
+    return digitPattern;
+  }
+
+  public void setDigitPattern(Pattern digitPattern) {
+    this.digitPattern = digitPattern;
+  }
+
+  public WordIndexer(InputStream config, InputStream vocabWords, InputStream vocabChars) throws IOException {
+    this(vocabWords, vocabChars);
+    Properties props = new Properties();
+    if (config != null) {
+      props.load(new InputStreamReader(config, "UTF8"));
+      this.setLowerCase(Boolean.valueOf(props.getProperty("lower_case_embeddings")));
+      this.setAllowUnk(Boolean.valueOf(props.getProperty("allow_unk")));
+      this.setAllowNum(Boolean.valueOf(props.getProperty("allow_num")));
+      this.setDigitPattern(Pattern.compile(props.getProperty("digit_pattern")));
+    }
+  }
+
+  public WordIndexer(boolean lowerCaseTokens, boolean allowUnk, boolean allowNum, InputStream vocabWords, InputStream vocabChars) throws IOException {
+    this(vocabWords, vocabChars);
+    this.allowUnk = allowUnk;
+    this.allowNum = allowNum;
+    this.lowerCase = lowerCaseTokens;
+  }
 
   public WordIndexer(InputStream vocabWords, InputStream vocabChars) throws IOException {
     this.word2idx = new HashMap<>();
@@ -113,8 +166,8 @@ public class WordIndexer {
       word = StringUtil.toLowerCase(word);
     }
 
-    // if (digitPattern.matcher(word).find())
-    //  word = NUM;
+    if (allowNum && digitPattern.matcher(word).find())
+      word = NUM;
 
     // 2. get id of word
     Integer wordId;

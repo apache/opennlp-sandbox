@@ -20,7 +20,6 @@
 # This poc is based on source code taken from:
 # https://github.com/guillaumegenthial/sequence_tagging
 
-import sys
 from math import floor
 import tensorflow as tf
 import re
@@ -28,6 +27,7 @@ import numpy as np
 import zipfile
 import os
 from tempfile import TemporaryDirectory
+import argparse
 
 # global variables for unknown word and numbers
 __UNK__ = '__UNK__'
@@ -68,12 +68,16 @@ class VectorException(Exception):
 class NameFinder:
     label_dict = {}
 
-    def __init__(self, use_lower_case_embeddings=False, vector_size=100):
+    def __init__(self, use_lower_case_embeddings, allow_unk, allow_num, digit_pattern, encoding, vector_size=100):
         self.__vector_size = vector_size
         self.__use_lower_case_embeddings = use_lower_case_embeddings
+        self.__allow_unk = allow_unk
+        self.__allow_num = allow_num
+        self.__digit_pattern = re.compile(digit_pattern)
+        self.__encoding = encoding
 
     def load_data(self, word_dict, file):
-        with open(file) as f:
+        with open(file, encoding=self.__encoding) as f:
             raw_data = f.readlines()
 
         sentences = []
@@ -96,7 +100,8 @@ class NameFinder:
                 if self.__use_lower_case_embeddings:
                     token = token.lower()
 
-                # TODO: implement NUM encoding
+                if self.__allow_num and self.__digit_pattern.match(token):
+                    token = __NUM__
 
                 if word_dict.get(token) is not None:
                     vector = word_dict[token]
@@ -340,8 +345,8 @@ def write_mapping(tags, output_filename):
             f.write('{}\n'.format(tag))
 
 
-def load_glove(glove_file):
-    with open(glove_file) as f:
+def load_glove(glove_file, encoding='utf-8'):
+    with open(glove_file, encoding=encoding) as f:
 
         word_dict = {}
         embeddings = []
@@ -381,16 +386,28 @@ def load_glove(glove_file):
 
 
 def main():
-    if len(sys.argv) != 5:
-        print("Usage namefinder.py embedding_file train_file dev_file test_file")
-        return
+    parser = argparse.ArgumentParser()
+    parser.add_argument("embedding_file", help="path to the embeddings file.")
+    parser.add_argument("train_file", help="path to the training file.")
+    parser.add_argument("dev_file", help="path to the dev file.")
+    parser.add_argument("--allow_unk", help="use general UNK vector for unknown tokens.", default=True)
+    parser.add_argument("--allow_num", help="use general NUM vector for all numeric tokens.", default=False)
+    parser.add_argument("--lower_case_embeddings", help="convert tokens to lowercase for embeddings lookup.",
+                        default=False)
+    parser.add_argument("--digit_pattern", help="regex to use for identifying numeric tokens.",
+                        default='^\\d+(,\\d+)*(\\.\\d+)?$')
+    parser.add_argument("--data_encoding", help="set encoding of train and dev data.", default='utf-8')
+    parser.add_argument("--embeddings_encoding", help="set encoding of the embeddings.", default='utf-8')
+    args = parser.parse_args()
 
-    word_dict, rev_word_dict, embeddings, vector_size = load_glove(sys.argv[1])
+    word_dict, rev_word_dict, embeddings, vector_size = load_glove(args.embedding_file, args.embeddings_encoding)
 
-    name_finder = NameFinder(vector_size)
+    name_finder = NameFinder(use_lower_case_embeddings=args.lower_case_embeddings, allow_unk=args.allow_unk,
+                             allow_num=args.allow_num, digit_pattern=args.digit_pattern,
+                             encoding=args.data_encoding, vector_size=vector_size)
 
-    sentences, labels, char_set = name_finder.load_data(word_dict, sys.argv[2])
-    sentences_dev, labels_dev, char_set_dev = name_finder.load_data(word_dict, sys.argv[3])
+    sentences, labels, char_set = name_finder.load_data(word_dict, args.train_file)
+    sentences_dev, labels_dev, char_set_dev = name_finder.load_data(word_dict, args.dev_file)
 
     char_dict = {k: v for v, k in enumerate(char_set | char_set_dev)}
 
@@ -471,6 +488,14 @@ def main():
                     write_mapping(word_dict, temp_model_dir + '/word_dict.txt')
                     write_mapping(name_finder.label_dict, temp_model_dir + "/label_dict.txt")
                     write_mapping(char_dict, temp_model_dir + "/char_dict.txt")
+
+                    write_mapping({'lower_case_embeddings=' + str(args.lower_case_embeddings).lower(): 0,
+                                   'allow_unk=' + str(args.allow_unk).lower(): 1,
+                                   'allow_num=' + str(args.allow_num).lower(): 2,
+                                   'digit_pattern=' + re.escape(args.digit_pattern): 3,
+                                   'data_encoding=' + args.data_encoding: 4,
+                                   'embeddings_encoding=' + args.embeddings_encoding: 5},
+                                  temp_model_dir + "/config.properties")
 
                     zipf = zipfile.ZipFile("namefinder-" + str(epoch) + ".zip", 'w', zipfile.ZIP_DEFLATED)
 
