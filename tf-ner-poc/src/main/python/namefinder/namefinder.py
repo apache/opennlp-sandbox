@@ -29,6 +29,10 @@ import zipfile
 import os
 from tempfile import TemporaryDirectory
 
+# global variables for unknown word and numbers
+__UNK__ = '$UNK$'
+__NUM__ = '$NUM$'
+
 
 # Parse the OpenNLP Name Finder format into begin, end, type triples
 class NameSample:
@@ -83,11 +87,11 @@ class NameFinder:
                 continue
 
             for token in name_sample.tokens:
-                vector = 0
                 if word_dict.get(token) is not None:
                     vector = word_dict[token]
                 else:
-                    vector = word_dict['__UNK__']
+                    vector = word_dict[__UNK__]
+                # TODO: impl. NUM Tokens
 
                 sentence.append(vector)
 
@@ -350,11 +354,20 @@ def load_glove(glove_file):
                 vector_size = len(parts) - 1
 
             if len(parts) != vector_size + 1:
-                # print("Bad Vector: ",len(line),len(parts), line)
                 raise VectorException("Bad Vector in line: {}, size: {} vector: {}".format(len(line), len(parts), line))
                 continue
             word_dict[parts[0]] = len(word_dict)
             embeddings.append(np.array(parts[1:], dtype=np.float32))
+
+    # add unknown word symbol and number symbol
+    if __UNK__ not in word_dict:
+        word_dict[__UNK__] = len(word_dict)
+        unk_random = 0.08 * np.random.random_sample(vector_size) - 0.04
+        embeddings.append(unk_random.astype(np.float32))
+    if __NUM__ not in word_dict:
+        word_dict[__NUM__] = len(word_dict)
+        # TODO: This vector might also have to be a random vector. Test needed!
+        embeddings.append(np.zeros(vector_size, dtype=np.float32))
 
     # Create a reverse word dict
     rev_word_dict = {}
