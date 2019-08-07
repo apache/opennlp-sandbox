@@ -29,6 +29,7 @@ import zipfile
 import os
 from tempfile import TemporaryDirectory
 
+
 # Parse the OpenNLP Name Finder format into begin, end, type triples
 class NameSample:
 
@@ -42,14 +43,15 @@ class NameSample:
         for i in range(0, len(parts)):
             if start_regex.match(parts[i]):
                 start_index = word_index
-                name_type = start_regex.search(parts[i]).group(2);
-                if None == name_type:
+                name_type = start_regex.search(parts[i]).group(2)
+                if name_type is None:
                     name_type = "default"
             elif parts[i] == "<END>":
                 self.names.append((start_index, word_index, name_type))
             else:
                 self.tokens.append(parts[i])
                 word_index += 1
+
 
 class VectorException(Exception):
     def __init__(self, value):
@@ -58,8 +60,8 @@ class VectorException(Exception):
     def __str__(self):
         return repr(self.value)
 
-class NameFinder:
 
+class NameFinder:
     label_dict = {}
 
     def __init__(self, vector_size=100):
@@ -113,7 +115,6 @@ class NameFinder:
 
         return label_ids
 
-
     def mini_batch(self, rev_word_dict, char_dict, sentences, labels, batch_size, batch_index):
         begin = batch_size * batch_index
         end = min(batch_size * (batch_index + 1), len(labels))
@@ -150,7 +151,7 @@ class NameFinder:
 
                 word_chars = []
                 for c in rev_word_dict[word]:
-                    word_chars.append(char_dict[c]) # TODO: This fails if c is not present
+                    word_chars.append(char_dict[c])  # TODO: This fails if c is not present
 
                 sentence_word_length.append(len(word_chars))
                 word_chars = word_chars + [0] * max(max_word_length - len(word_chars), 0)
@@ -164,8 +165,8 @@ class NameFinder:
 
         return sb, cb, wlb, lb, seq_length
 
-
-    def create_graph(self, nchars, embedding_dict): # probably not necessary to pass in the embedding_dict, can be passed to init directly
+    # probably not necessary to pass in the embedding_dict, can be passed to init directly
+    def create_graph(self, nchars, embedding_dict):
 
         dropout_keep_prob = tf.placeholder(tf.float32, name="dropout_keep_prop")
 
@@ -186,10 +187,10 @@ class NameFinder:
             char_embeddings = tf.nn.embedding_lookup(K, char_ids)
 
             # 2. put the time dimension on axis=1 for dynamic_rnn
-            s = tf.shape(char_embeddings) # store old shape
+            s = tf.shape(char_embeddings)  # store old shape
             # shape = (batch x sentence, word, dim of char embeddings)
-            char_embeddings = tf.reshape(char_embeddings, shape=[s[0]*s[1], s[-2], dim_char])
-            word_lengths = tf.reshape(word_lengths_ph, shape=[s[0]*s[1]])
+            char_embeddings = tf.reshape(char_embeddings, shape=[s[0] * s[1], s[-2], dim_char])
+            word_lengths = tf.reshape(word_lengths_ph, shape=[s[0] * s[1]])
 
             # 3. bi lstm on chars
             char_hidden_size = 100
@@ -205,7 +206,7 @@ class NameFinder:
             output = tf.concat([output_fw, output_bw], axis=-1)
 
             # shape = (batch, sentence, 2 x char_hidden_size)
-            char_rep = tf.reshape(output, shape=[-1, s[1], 2*char_hidden_size])
+            char_rep = tf.reshape(output, shape=[-1, s[1], 2 * char_hidden_size])
 
         with tf.variable_scope("words"):
             token_ids = tf.placeholder(tf.int32, shape=[None, None], name="word_ids")
@@ -215,7 +216,8 @@ class NameFinder:
             # Don't hardcode this 300
             embedding_placeholder = tf.placeholder(dtype=tf.float32, name="embedding_placeholder",
                                                    shape=(len(embedding_dict), self.__vector_size))
-            embedding_matrix = tf.Variable(embedding_placeholder, dtype=tf.float32, trainable=False, name="glove_embeddings")
+            embedding_matrix = tf.Variable(embedding_placeholder, dtype=tf.float32, trainable=False,
+                                           name="glove_embeddings")
 
             token_embeddings = tf.nn.embedding_lookup(embedding_matrix, token_ids)
 
@@ -234,7 +236,8 @@ class NameFinder:
             cell_bw = tf.contrib.rnn.LSTMCell(hidden_size)
 
             (output_fw, output_bw), _ = tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, word_embeddings,
-                                                                        sequence_length=sequence_lengths, dtype=tf.float32)
+                                                                        sequence_length=sequence_lengths,
+                                                                        dtype=tf.float32)
 
             context_rep = tf.concat([output_fw, output_bw], axis=-1)
 
@@ -244,10 +247,10 @@ class NameFinder:
 
         ntags = len(self.label_dict)
 
-        W = tf.get_variable("W", shape=[2*hidden_size, ntags], dtype=tf.float32)
+        W = tf.get_variable("W", shape=[2 * hidden_size, ntags], dtype=tf.float32)
         b = tf.get_variable("b", shape=[ntags], dtype=tf.float32, initializer=tf.zeros_initializer())
         ntime_steps = tf.shape(context_rep)[1]
-        context_rep_flat = tf.reshape(context_rep, [-1, 2*hidden_size])
+        context_rep_flat = tf.reshape(context_rep, [-1, 2 * hidden_size])
         pred = tf.matmul(context_rep_flat, W) + b
         self.logits = tf.reshape(pred, [-1, ntime_steps, ntags], name="logits")
 
@@ -274,7 +277,7 @@ class NameFinder:
 
         for logit, sequence_length in zip(logits, lengths):
             if sequence_length != 0:
-                logit = logit[:sequence_length] # keep only the valid steps
+                logit = logit[:sequence_length]  # keep only the valid steps
                 viterbi_seq, viterbi_score = tf.contrib.crf.viterbi_decode(logit, trans_params)
                 viterbi_sequences += [viterbi_seq]
             else:
@@ -282,11 +285,13 @@ class NameFinder:
 
         return viterbi_sequences, lengths
 
+
 def get_chunk_type(tok, idx_to_tag):
     tag_name = idx_to_tag[tok]
     tag_class = tag_name.split('-')[0]
     tag_type = tag_name.split('-')[-1]
     return tag_class, tag_type
+
 
 def get_chunks(seq, tags):
     default = tags["other"]
@@ -320,10 +325,12 @@ def get_chunks(seq, tags):
 
     return chunks
 
+
 def write_mapping(tags, output_filename):
     with open(output_filename, 'w', encoding='utf-8') as f:
         for i, tag in enumerate(tags):
             f.write('{}\n'.format(tag))
+
 
 def load_glove(glove_file):
     with open(glove_file) as f:
@@ -343,8 +350,8 @@ def load_glove(glove_file):
                 vector_size = len(parts) - 1
 
             if len(parts) != vector_size + 1:
-                #print("Bad Vector: ",len(line),len(parts), line)
-                raise VectorException("Bad Vector in line: {}, size: {} vector: {}".format(len(line),len(parts), line))
+                # print("Bad Vector: ",len(line),len(parts), line)
+                raise VectorException("Bad Vector in line: {}, size: {} vector: {}".format(len(line), len(parts), line))
                 continue
             word_dict[parts[0]] = len(word_dict)
             embeddings.append(np.array(parts[1:], dtype=np.float32))
@@ -356,8 +363,8 @@ def load_glove(glove_file):
 
     return word_dict, rev_word_dict, np.asarray(embeddings), vector_size
 
-def main():
 
+def main():
     if len(sys.argv) != 5:
         print("Usage namefinder.py embedding_file train_file dev_file test_file")
         return
@@ -395,11 +402,11 @@ def main():
                 sentences_batch, chars_batch, word_length_batch, labels_batch, lengths = \
                     name_finder.mini_batch(rev_word_dict, char_dict, sentences, labels, batch_size, batch_index)
 
-                feed_dict = {token_ids_ph:  sentences_batch, char_ids_ph: chars_batch, word_lengths_ph: word_length_batch, sequence_lengths_ph: lengths,
+                feed_dict = {token_ids_ph: sentences_batch, char_ids_ph: chars_batch,
+                             word_lengths_ph: word_length_batch, sequence_lengths_ph: lengths,
                              labels_ph: labels_batch, dropout_keep_prob: 0.5}
 
                 train_op.run(feed_dict, sess)
-
 
             accs = []
             correct_preds, total_correct, total_preds = 0., 0., 0.
@@ -418,15 +425,15 @@ def main():
 
                 for lab, lab_pred, length in zip(labels_test_batch, labels_pred,
                                                  sequence_lengths):
-                    lab      = lab[:length]
+                    lab = lab[:length]
                     lab_pred = lab_pred[:length]
-                    accs += [a==b for (a, b) in zip(lab, lab_pred)]
+                    accs += [a == b for (a, b) in zip(lab, lab_pred)]
 
-                    lab_chunks      = set(get_chunks(lab, name_finder.label_dict))
+                    lab_chunks = set(get_chunks(lab, name_finder.label_dict))
                     lab_pred_chunks = set(get_chunks(lab_pred, name_finder.label_dict))
 
                     correct_preds += len(lab_chunks & lab_pred_chunks)
-                    total_preds   += len(lab_pred_chunks)
+                    total_preds += len(lab_pred_chunks)
                     total_correct += len(lab_chunks)
 
             p = correct_preds / total_preds if correct_preds > 0 else 0
@@ -434,9 +441,7 @@ def main():
             f1 = 2 * p * r / (p + r) if correct_preds > 0 else 0
             acc = np.mean(accs)
 
-
-            if (f1 > best_f1):
-
+            if f1 > best_f1:
 
                 best_f1 = f1
                 no_improvement = 0
@@ -452,7 +457,7 @@ def main():
                     write_mapping(name_finder.label_dict, temp_model_dir + "/label_dict.txt")
                     write_mapping(char_dict, temp_model_dir + "/char_dict.txt")
 
-                    zipf = zipfile.ZipFile("namefinder-" + str(epoch) +".zip", 'w', zipfile.ZIP_DEFLATED)
+                    zipf = zipfile.ZipFile("namefinder-" + str(epoch) + ".zip", 'w', zipfile.ZIP_DEFLATED)
 
                     for root, dirs, files in os.walk(temp_model_dir):
                         for file in files:
