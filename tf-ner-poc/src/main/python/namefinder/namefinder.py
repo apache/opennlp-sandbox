@@ -29,6 +29,10 @@ import zipfile
 import os
 from tempfile import TemporaryDirectory
 
+# global variables for unknown word and numbers
+__UNK__ = '__UNK__'
+__NUM__ = '__NUM__'
+
 
 # Parse the OpenNLP Name Finder format into begin, end, type triples
 class NameSample:
@@ -87,7 +91,7 @@ class NameFinder:
                 if word_dict.get(token) is not None:
                     vector = word_dict[token]
                 else:
-                    vector = word_dict['__UNK__']
+                    vector = word_dict[__UNK__]
 
                 sentence.append(vector)
 
@@ -103,7 +107,7 @@ class NameFinder:
             labels.append(label)
 
             for label_string in label:
-                if not label_string in self.label_dict:
+                if label_string not in self.label_dict:
                     self.label_dict[label_string] = len(self.label_dict)
 
         return sentences, labels, chars_set
@@ -350,11 +354,19 @@ def load_glove(glove_file):
                 vector_size = len(parts) - 1
 
             if len(parts) != vector_size + 1:
-                # print("Bad Vector: ",len(line),len(parts), line)
                 raise VectorException("Bad Vector in line: {}, size: {} vector: {}".format(len(line), len(parts), line))
                 continue
             word_dict[parts[0]] = len(word_dict)
             embeddings.append(np.array(parts[1:], dtype=np.float32))
+
+    # add unknown word symbol and number symbol
+    if __UNK__ not in word_dict:
+        word_dict[__UNK__] = len(word_dict)
+        unk_random = 0.08 * np.random.random_sample(vector_size) - 0.04
+        embeddings.append(unk_random.astype(np.float32))
+    if __NUM__ not in word_dict:
+        word_dict[__NUM__] = len(word_dict)
+        embeddings.append(np.zeros(vector_size, dtype=np.float32))
 
     # Create a reverse word dict
     rev_word_dict = {}
