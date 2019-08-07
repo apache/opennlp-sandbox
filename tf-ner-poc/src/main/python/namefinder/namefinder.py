@@ -113,11 +113,7 @@ class NameFinder:
         return sentences, labels, chars_set
 
     def encode_labels(self, labels):
-        label_ids = []
-        for label in labels:
-            label_ids.append(self.label_dict[label])
-
-        return label_ids
+        return list(map(lambda l: self.label_dict[l], labels))
 
     def mini_batch(self, rev_word_dict, char_dict, sentences, labels, batch_size, batch_index):
         begin = batch_size * batch_index
