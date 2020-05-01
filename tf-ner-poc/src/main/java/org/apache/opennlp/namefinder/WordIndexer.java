@@ -127,21 +127,35 @@ public class WordIndexer {
     int[][][] charIds = new int[sentences.length][][];
     int[][] wordIds = new int[sentences.length][];
 
+    // get max token length
+    int maxTokenLength = 0;
     for (int i = 0; i < sentences.length; i++) {
-      String[] sentenceWords = sentences[i];
+      if (sentences[i].length > maxTokenLength)
+        maxTokenLength = sentences[i].length;
+    }
 
-      int[][] sentcharIds = new int[sentenceWords.length][];
-      int[] sentwordIds = new int[sentenceWords.length];
+    for (int i = 0; i < sentences.length; i++) {
+      String[] tokens = sentences[i];
 
-      for (int j=0; j < sentenceWords.length; j++) {
-        Ids ids = apply(sentenceWords[j]);
+      int[][] sentcharIds = new int[maxTokenLength][];
+      int[] sentwordIds = new int[maxTokenLength];
 
-        sentcharIds[j] = Arrays.copyOf(ids.getChars(), ids.getChars().length);
-        sentwordIds[j] = ids.getWord();
+      for (int j=0; j < maxTokenLength; j++) {
+        if (j < tokens.length) {
+          Ids ids = apply(tokens[j]);
+
+          sentcharIds[j] = Arrays.copyOf(ids.getChars(), ids.getChars().length);
+          sentwordIds[j] = ids.getWord();
+        } else {
+          // pad
+          sentcharIds[j] = new int[] {0};
+          sentwordIds[j] = 0;
+        }
       }
 
       charIds[i] = sentcharIds;
       wordIds[i] = sentwordIds;
+
     }
 
     return new TokenIds(charIds, wordIds);
