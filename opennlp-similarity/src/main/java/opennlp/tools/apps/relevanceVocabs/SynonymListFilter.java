@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,7 +93,8 @@ public class SynonymListFilter {
 			String[] synonyms = map.getSynonyms(word);
 			if (synonyms==null || synonyms.length<1)
 				return null;
-			int index = (int) Math.floor(Math.random()*(double)synonyms.length);
+			Random rand = new Random();
+			int index = (int) Math.floor(rand.nextDouble()*(double)synonyms.length);
 			System.out.println("Found synonyms "+Arrays.asList(synonyms).toString()+ " | selected synonym = "+synonyms[index] +" | for the input = "+ word);
 			return synonyms[index];
 			
