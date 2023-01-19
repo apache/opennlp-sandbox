@@ -25,25 +25,19 @@ import java.util.logging.Logger;
 import opennlp.tools.util.FilterObjectStream;
 import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.ObjectStream;
-import opennlp.tools.util.PlainTextByLineStream;
 
 public class WSDSampleStream extends FilterObjectStream<String, WSDSample> {
 
-  private static Logger logger = Logger.getLogger(WSDSampleStream.class
-      .getName());
+  private static Logger logger = Logger.getLogger(WSDSampleStream.class.getName());
 
   /**
    * Initializes the current instance.
    *
    * @param sentences
-   *          reader with sentences
+   *          An {@link ObjectStream} with sentences
    * @throws IOException
    *           IOException
    */
-  public WSDSampleStream(Reader sentences) throws IOException {
-    super(new PlainTextByLineStream(sentences));
-  }
-
   public WSDSampleStream(ObjectStream<String> sentences) {
     super(sentences);
   }
@@ -54,9 +48,9 @@ public class WSDSampleStream extends FilterObjectStream<String, WSDSample> {
    * If an error occurs an empty {@link WSDSample} object is returned and an
    * warning message is logged. Usually it does not matter if one of many
    * sentences is ignored.
-   *
-   * TODO: An exception in error case should be thrown.
    */
+   // TODO: An exception in error case should be thrown.
+  @Override
   public WSDSample read() throws IOException {
 
     String sentence = samples.read();

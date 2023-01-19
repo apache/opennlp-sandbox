@@ -21,14 +21,15 @@ package opennlp.tools.disambiguator;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-
-import opennlp.tools.disambiguator.LeskParameters.LESK_TYPE;
-import opennlp.tools.util.Span;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import opennlp.tools.disambiguator.LeskParameters.LESK_TYPE;
+import opennlp.tools.lemmatizer.Lemmatizer;
+import opennlp.tools.util.Span;
 
 /**
  * This is the test class for {@link Lesk}.
@@ -58,9 +59,9 @@ public class LeskTester {
   static String[] tags2;
   static String[] tags3;
 
-  static String[] lemmas1;
-  static String[] lemmas2;
-  static String[] lemmas3;
+  static List<List<String>> lemmas1;
+  static List<List<String>> lemmas2;
+  static List<List<String>> lemmas3;
 
   /*
    * Setup the testing variables
@@ -68,9 +69,9 @@ public class LeskTester {
   @BeforeClass
   public static void setUp() {
 
-    WSDHelper.loadTokenizer(modelsDir + "en-token.bin");
-    WSDHelper.loadLemmatizer(modelsDir + "en-lemmatizer.dict");
     WSDHelper.loadTagger(modelsDir + "en-pos-maxent.bin");
+    WSDHelper.loadTokenizer(modelsDir + "en-token.bin");
+    WSDHelper.loadLemmatizer(modelsDir + "en-lemmatizer.dict.gz");
 
     sentence1 = WSDHelper.getTokenizer().tokenize(test1);
     sentence2 = WSDHelper.getTokenizer().tokenize(test2);
@@ -80,33 +81,16 @@ public class LeskTester {
     tags2 = WSDHelper.getTagger().tag(sentence2);
     tags3 = WSDHelper.getTagger().tag(sentence3);
 
-    List<String> tempLemmas1 = new ArrayList<String>();
-    for (int i = 0; i < sentence1.length; i++) {
-      tempLemmas1
-          .add(WSDHelper.getLemmatizer().lemmatize(sentence1[i], tags1[i]));
-    }
-    lemmas1 = tempLemmas1.toArray(new String[tempLemmas1.size()]);
-
-    List<String> tempLemmas2 = new ArrayList<String>();
-    for (int i = 0; i < sentence2.length; i++) {
-      tempLemmas2
-          .add(WSDHelper.getLemmatizer().lemmatize(sentence2[i], tags2[i]));
-    }
-    lemmas2 = tempLemmas2.toArray(new String[tempLemmas2.size()]);
-
-    List<String> tempLemmas3 = new ArrayList<String>();
-    for (int i = 0; i < sentence3.length; i++) {
-      tempLemmas3
-          .add(WSDHelper.getLemmatizer().lemmatize(sentence3[i], tags3[i]));
-    }
-    lemmas3 = tempLemmas3.toArray(new String[tempLemmas3.size()]);
+    final Lemmatizer lemmatizer = WSDHelper.getLemmatizer();
+    lemmas1 = lemmatizer.lemmatize(Arrays.asList(sentence1), Arrays.asList(tags1));
+    lemmas2 = lemmatizer.lemmatize(Arrays.asList(sentence2), Arrays.asList(tags2));
+    lemmas3 = lemmatizer.lemmatize(Arrays.asList(sentence3), Arrays.asList(tags3));
 
     lesk = new Lesk();
 
     LeskParameters params = new LeskParameters();
     params.setLeskType(LESK_TYPE.LESK_EXT);
-    boolean a[] = { true, true, true, true, true, true, true, true, true,
-        true };
+    boolean a[] = { true, true, true, true, true, true, true, true, true, true };
     params.setFeatures(a);
     lesk.setParams(params);
   }
@@ -116,7 +100,7 @@ public class LeskTester {
    */
   @Test
   public void testOneWordDisambiguation() {
-    String sense = lesk.disambiguate(sentence1, tags1, lemmas1, 8);
+    String sense = lesk.disambiguate(sentence1, tags1, lemmas1.get(0).toArray(new String[0]), 8);
     assertEquals("Check 'please' sense ID", "WORDNET please%2:37:00:: -1", sense);
   }
 
@@ -128,7 +112,7 @@ public class LeskTester {
   @Test
   public void testWordSpanDisambiguation() {
     Span span = new Span(3, 7);
-    List<String> senses = lesk.disambiguate(sentence2, tags2, lemmas2, span);
+    List<String> senses = lesk.disambiguate(sentence2, tags2, lemmas2.get(0).toArray(new String[0]), span);
 
     assertEquals("Check number of returned words", 5, senses.size());
     assertEquals("Check 'highly' sense ID", "WORDNET highly%4:02:01:: 3.8",
@@ -144,7 +128,7 @@ public class LeskTester {
    */
   @Test
   public void testAllWordsDisambiguation() {
-    List<String> senses = lesk.disambiguate(sentence3, tags3, lemmas3);
+    List<String> senses = lesk.disambiguate(sentence3, tags3, lemmas3.get(0).toArray(new String[0]));
 
     assertEquals("Check number of returned words", 15, senses.size());
     assertEquals("Check preposition", "WSDHELPER personal pronoun",

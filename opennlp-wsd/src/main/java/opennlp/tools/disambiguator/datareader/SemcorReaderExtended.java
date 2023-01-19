@@ -27,6 +27,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 import opennlp.tools.disambiguator.WSDHelper;
 import opennlp.tools.disambiguator.WSDSample;
+import opennlp.tools.lemmatizer.Lemmatizer;
+import opennlp.tools.postag.POSTagger;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.ObjectStreamUtils;
 
@@ -200,7 +202,7 @@ public class SemcorReaderExtended {
    */
   private ArrayList<WSDSample> getSemcorOneFileData(String file, String wordTag) {
 
-    ArrayList<WSDSample> setInstances = new ArrayList<WSDSample>();
+    ArrayList<WSDSample> setInstances = new ArrayList<>();
 
     try {
 
@@ -238,21 +240,19 @@ public class SemcorReaderExtended {
                   + isentences.get(j + 1).toString();
               index = isentences.get(j - 1).getIwords().size() + k;
             }
-            ArrayList<String> senses = new ArrayList<String>();
+            ArrayList<String> senses = new ArrayList<>();
             String sense = iword.getLexsn();
             if (sense != null) {
               senses.add(sense);
             }
 
             if (!senses.isEmpty()) {
-              String[] words = sentence.split("\\s");
-              String[] tags = WSDHelper.getTagger().tag(words);
-              String[] lemmas = new String[words.length];
+              final Lemmatizer lemmatizer = WSDHelper.getLemmatizer();
+              final POSTagger tagger = WSDHelper.getTagger();
 
-              for (int i = 0; i < words.length; i++) {
-                lemmas[i] = WSDHelper.getLemmatizer().lemmatize(words[i],
-                    tags[i]);
-              }
+              final String[] words = sentence.split("\\s");
+              final String[] tags = tagger.tag(words);
+              String[] lemmas = lemmatizer.lemmatize(words, tags);
 
               WSDSample wtd = new WSDSample(words, tags, lemmas, index, senses.toArray(new String[0]));
               setInstances.add(wtd);
@@ -285,7 +285,7 @@ public class SemcorReaderExtended {
    */
   private ArrayList<WSDSample> getSemcorFolderData(String folder, String wordTag) {
 
-    ArrayList<WSDSample> result = new ArrayList<WSDSample>();
+    ArrayList<WSDSample> result = new ArrayList<>();
 
     String directory = semcorDirectory + folder + tagfiles;
     File tempFolder = new File(directory);

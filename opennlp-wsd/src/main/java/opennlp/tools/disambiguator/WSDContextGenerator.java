@@ -19,17 +19,16 @@
 
 package opennlp.tools.disambiguator;
 
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Interface for {@link WSDisambiguator} context generators.
  */
 public interface WSDContextGenerator {
 
-  public String[] getContext(int index, String[] toks, String[] tags,
-    String[] lemmas, int ngram, int windowSize, ArrayList<String> model);
+  String[] getContext(int index, String[] toks, String[] tags,
+    String[] lemmas, int ngram, int windowSize, List<String> model);
 
-  public String[] getContext(WSDSample sample, int ngram, int windowSize,
-    ArrayList<String> model);
+  String[] getContext(WSDSample sample, int ngram, int windowSize, List<String> model);
 
 }

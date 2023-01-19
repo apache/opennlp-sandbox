@@ -19,8 +19,7 @@ package opennlp.tools.disambiguator;
 
 import opennlp.tools.util.eval.EvaluationMonitor;
 
-public interface WSDEvaluationMonitor extends
-    EvaluationMonitor<WSDSample> {
+public interface WSDEvaluationMonitor extends EvaluationMonitor<WSDSample> {
 
 }
 

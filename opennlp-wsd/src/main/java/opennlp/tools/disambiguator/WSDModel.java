@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -45,12 +46,12 @@ public class WSDModel extends BaseModel {
   private static final String NGRAM = "ngram";
   private static final String CONTEXT = "context";
 
-  private ArrayList<String> contextEntries = new ArrayList<String>();
+  private List<String> contextEntries = new ArrayList<>();
   private String wordTag;
   private int windowSize;
   private int ngram;
 
-  public ArrayList<String> getContextEntries() {
+  public List<String> getContextEntries() {
     return contextEntries;
   }
 
@@ -145,7 +146,7 @@ public class WSDModel extends BaseModel {
     Properties manifest = (Properties) artifactMap.get(MANIFEST_ENTRY);
     String surroundings = (String) manifest.get(CONTEXT);
 
-    this.contextEntries = new ArrayList(Arrays.asList(surroundings.split(",")));
+    this.contextEntries = Arrays.asList(surroundings.split(","));
     this.wordTag = (String) manifest.get(WORDTAG);
     this.windowSize = Integer.parseInt((String) manifest.get(WINSIZE));
     this.ngram = Integer.parseInt((String) manifest.get(NGRAM));
