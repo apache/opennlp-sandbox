@@ -21,13 +21,10 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	
 	<parent>
-		<groupId>org.apache</groupId>
-		<artifactId>apache</artifactId>
-		<!-- TODO OPENNLP-1452 once this is resolved, move to 29 as well. -->
-		<version>18</version>
-		<relativePath />
+		<groupId>org.apache.opennlp</groupId>
+		<artifactId>opennlp-sandbox</artifactId>
+		<version>2.1.1-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>opennlp-wsd</artifactId>
@@ -39,7 +36,6 @@
 		<dependency>
 			<groupId>org.apache.opennlp</groupId>
 			<artifactId>opennlp-tools</artifactId>
-			<version>2.1.0</version>
 		</dependency>
 
 		<dependency>
@@ -63,7 +59,7 @@
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>4.13.1</version>
+			<version>4.13.2</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

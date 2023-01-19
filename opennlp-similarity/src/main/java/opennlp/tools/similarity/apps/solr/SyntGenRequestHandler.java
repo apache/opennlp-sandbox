@@ -149,7 +149,7 @@ public class SyntGenRequestHandler extends SearchHandler {
 				if (answerText==null)
 					continue;
 				SentencePairMatchResult matchResult = pos.assessRelevance( requestExpression , answerText);
-				float syntMatchScore = new Double(parseTreeChunkListScorer.getParseTreeChunkListScore(matchResult.getMatchResult())).floatValue();
+				float syntMatchScore = Double.valueOf(parseTreeChunkListScorer.getParseTreeChunkListScore(matchResult.getMatchResult())).floatValue();
 				bestMatchesDocIds.add(docId);
 				bestMatchesScore.add(syntMatchScore);
 				syntMatchScoreArr[i] = syntMatchScore; //*iter.score();
@@ -167,7 +167,7 @@ public class SyntGenRequestHandler extends SearchHandler {
 		}
 
 		docIdsScores.sort(new PairComparable<>());
-		for(int i = 0; i<docIdsScores.size(); i++){
+		for (int i = 0; i<docIdsScores.size(); i++){
 			bestMatchesDocIds.set(i, docIdsScores.get(i).getFirst());
 			bestMatchesScore.set(i, docIdsScores.get(i).getSecond());
 		}

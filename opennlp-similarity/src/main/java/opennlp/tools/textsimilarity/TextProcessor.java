@@ -47,7 +47,7 @@ public class TextProcessor {
 
   public static void removeCommonPhrases(ArrayList<String> segments) {
 
-    ArrayList<Pair<List<String>, Map<String, HashSet<Integer>>>> docs = new ArrayList<Pair<List<String>, Map<String, HashSet<Integer>>>>();
+    ArrayList<Pair<List<String>, Map<String, HashSet<Integer>>>> docs = new ArrayList<>();
     // tokenize each segment
     for (int i = 0; i < segments.size(); i++) {
       String s = segments.get(i);
@@ -56,7 +56,7 @@ public class TextProcessor {
       docs.add(tokPos);
     }
 
-    HashMap<String, HashSet<Integer>> commonSegments = new HashMap<String, HashSet<Integer>>();
+    HashMap<String, HashSet<Integer>> commonSegments = new HashMap<>();
     // now we have all documents and the token positions
     for (int i = 0; i < docs.size(); i++) {
       Pair<List<String>, Map<String, HashSet<Integer>>> objA = docs.get(i);
@@ -71,7 +71,7 @@ public class TextProcessor {
             docIds.add(k);
             commonSegments.put(seg, docIds);
           } else {
-            HashSet<Integer> docIds = new HashSet<Integer>();
+            HashSet<Integer> docIds = new HashSet<>();
             docIds.add(i);
             docIds.add(k);
             commonSegments.put(seg, docIds); // set frequency to two, since both
@@ -101,7 +101,7 @@ public class TextProcessor {
       Pair<List<String>, Map<String, HashSet<Integer>>> objA,
       Pair<List<String>, Map<String, HashSet<Integer>>> objB, Integer segSize) {
 
-    HashSet<String> commonSegments = new HashSet<String>();
+    HashSet<String> commonSegments = new HashSet<>();
 
     List<String> tokensA = objA.getFirst();
 
@@ -109,7 +109,7 @@ public class TextProcessor {
 
     HashSet<Integer> lastPositions = null;
     int segLength = 1;
-    StringBuffer segmentStr = new StringBuffer();
+    StringBuilder segmentStr = new StringBuilder();
 
     for (int i = 0; i < tokensA.size(); i++) {
       String token = tokensA.get(i);
@@ -172,22 +172,22 @@ public class TextProcessor {
 
     String[] toks = StringUtils.split(s);
     List<String> list = Arrays.asList(toks);
-    ArrayList<String> tokens = new ArrayList<String>(list);
+    ArrayList<String> tokens = new ArrayList<>(list);
 
-    Map<String, HashSet<Integer>> theMap = new HashMap<String, HashSet<Integer>>();
+    Map<String, HashSet<Integer>> theMap = new HashMap<>();
     for (int i = 0; i < tokens.size(); i++) {
-      HashSet<Integer> pos = null;
+      HashSet<Integer> pos;
       String token = tokens.get(i);
       if ((pos = theMap.get(token)) != null) {
         pos.add(i);
       } else {
-        pos = new HashSet<Integer>();
+        pos = new HashSet<>();
         pos.add(i);
       }
       theMap.put(token, pos);
     }
 
-    return new Pair<List<String>, Map<String, HashSet<Integer>>>(tokens, theMap);
+    return new Pair<>(tokens, theMap);
   }
 
   public static boolean isStringAllPunc(String token) {
@@ -203,14 +203,14 @@ public class TextProcessor {
   /**
    * Splits input text into sentences.
    * 
-   * @param txt
+   * @param text
    *          Input text
    * @return List of sentences
    */
 
   public static ArrayList<String> splitToSentences(String text) {
 
-    ArrayList<String> sentences = new ArrayList<String>();
+    ArrayList<String> sentences = new ArrayList<>();
     if (text.trim().length() > 0) {
       String s = "[\\?!\\.]\"?[\\s+][A-Z0-9i]";
       text += " XOXOX.";
@@ -286,12 +286,12 @@ public class TextProcessor {
   }
 
   public static ArrayList<String> fastTokenize(String txt, boolean retainPunc) {
-    ArrayList<String> tokens = new ArrayList<String>();
+    ArrayList<String> tokens = new ArrayList<>();
     if (StringUtils.isEmpty(txt)) {
       return tokens;
     }
 
-    StringBuffer tok = new StringBuffer();
+    StringBuilder tok = new StringBuilder();
     char[] chars = txt.toCharArray();
 
     for (int i = 0; i < chars.length; i++) {
@@ -322,8 +322,7 @@ public class TextProcessor {
   }
 
   public static String convertTokensToString(ArrayList<String> tokens) {
-    StringBuffer b = new StringBuffer();
-    b.append("");
+    StringBuilder b = new StringBuilder();
     for (String s : tokens) {
       b.append(s);
       b.append(" ");
@@ -335,19 +334,16 @@ public class TextProcessor {
   public static Hashtable<String, Integer> getAllBigrams(String[] tokens,
       boolean retainPunc) {
     // convert to ArrayList and pass on
-    ArrayList<String> f = new ArrayList<String>();
-    for (int i = 0; i < tokens.length; i++) {
-      f.add(tokens[i]);
-    }
+    ArrayList<String> f = new ArrayList<>(Arrays.asList(tokens));
     return getAllBigrams(f, retainPunc);
   }
 
   public static Hashtable<String, Integer> getAllBigrams(
       ArrayList<String> tokens, boolean retainPunc) {
-    Hashtable<String, Integer> bGramCandidates = new Hashtable<String, Integer>();
-    ArrayList<String> r = new ArrayList<String>();
+    Hashtable<String, Integer> bGramCandidates = new Hashtable<>();
+    ArrayList<String> r = new ArrayList<>();
     for (int i = 0; i < tokens.size() - 1; i++) {
-      String b = (String) tokens.get(i) + " " + (String) tokens.get(i + 1);
+      String b = tokens.get(i) + " " + tokens.get(i + 1);
       b = b.toLowerCase();
       // don't add punc tokens
       if (b.indexOf("<punc>") != -1 && !retainPunc)
@@ -355,9 +351,9 @@ public class TextProcessor {
 
       int freq = 1;
       if (bGramCandidates.containsKey(b)) {
-        freq = ((Integer) bGramCandidates.get(b)).intValue() + 1;
+        freq = bGramCandidates.get(b) + 1;
       }
-      bGramCandidates.put(b, new Integer(freq));
+      bGramCandidates.put(b, freq);
     }
     return bGramCandidates;
   }
@@ -365,19 +361,19 @@ public class TextProcessor {
   public static Hashtable<String, Float> getAllBigramsStopWord(
       ArrayList<String> tokens, boolean retainPunc) {
 
-    Hashtable<String, Float> bGramCandidates = new Hashtable<String, Float>();
+    Hashtable<String, Float> bGramCandidates = new Hashtable<>();
     try {
-      ArrayList<String> r = new ArrayList<String>();
+      ArrayList<String> r = new ArrayList<>();
       for (int i = 0; i < tokens.size() - 1; i++) {
-        String p1 = (String) tokens.get(i).toLowerCase();
-        String p2 = (String) tokens.get(i + 1).toLowerCase();
+        String p1 = tokens.get(i).toLowerCase();
+        String p2 = tokens.get(i + 1).toLowerCase();
         // check to see if stopword
         /*
          * if(StopList.getInstance().isStopWord(p1.trim()) ||
          * StopList.getInstance().isStopWord(p2.trim())){ continue; }
          */
 
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf = new StringBuilder();
         buf.append(p1);
         buf.append(" ");
         buf.append(p2);
@@ -568,12 +564,12 @@ public class TextProcessor {
   public static String generateFingerPrintForHistogram(String s)
       throws Exception {
 
-    Hashtable tokenHash = new Hashtable();
+    Hashtable<String, Integer> tokenHash = new Hashtable<>();
     // ArrayList tokens = TextProcessor.tokenizeWithPunctuation(s);
-    ArrayList tokens = TextProcessor.fastTokenize(s, true);
+    ArrayList<String> tokens = TextProcessor.fastTokenize(s, true);
 
-    for (Object t : tokens) {
-      String tokenLower = ((String) (t)).toLowerCase();
+    for (String t : tokens) {
+      String tokenLower = t.toLowerCase();
 
       if (tokenLower == "<punc>") {
         continue;
@@ -587,20 +583,20 @@ public class TextProcessor {
       String stemmedToken = TextProcessor.stemTerm(tokenLower);
 
       if (tokenHash.containsKey(stemmedToken)) {
-        int freq = ((Integer) tokenHash.get(stemmedToken)).intValue();
+        int freq = tokenHash.get(stemmedToken);
         freq++;
-        tokenHash.put(stemmedToken, new Integer(freq));
+        tokenHash.put(stemmedToken, freq);
       } else {
-        tokenHash.put(stemmedToken, new Integer(1));
+        tokenHash.put(stemmedToken, 1);
       }
     }
 
     // now we have histogram, lets write it out
     String hashString = "";
-    Enumeration en = tokenHash.keys();
+    Enumeration<String> en = tokenHash.keys();
     while (en.hasMoreElements()) {
-      String t = (String) en.nextElement();
-      int freq = (Integer) tokenHash.get(t);
+      String t = en.nextElement();
+      int freq = tokenHash.get(t);
       hashString += t + freq;
     }
 
@@ -635,7 +631,7 @@ public class TextProcessor {
   }
 
   public static HashMap<String, Integer> getUniqueTokenIndex(List<String> tokens) {
-    HashMap<String, Integer> m = new HashMap<String, Integer>();
+    HashMap<String, Integer> m = new HashMap<>();
 
     for (String s : tokens) {
       s = s.toLowerCase();
@@ -712,7 +708,7 @@ public class TextProcessor {
           finalSummary = finalSummary.substring(0, finalSummary.length() - 2);
         }
       }
-      // check to see if we have anything, if not, return the fullcontent
+      // check to see if we have anything, if not, return the full content
       if (finalSummary.trim().length() < 5) {
         finalSummary = txt;
       }
@@ -740,7 +736,7 @@ public class TextProcessor {
 
       finalSummary = trimPunctuationFromStart(finalSummary);
 
-      // check to see if we have anything, if not, return the fullcontent
+      // check to see if we have anything, if not, return the full content
       if (finalSummary.trim().length() < 5) {
         finalSummary = txt;
       }
