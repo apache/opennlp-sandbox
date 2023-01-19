@@ -17,27 +17,30 @@
 
 package opennlp.tools.coref.sim;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import opennlp.tools.coref.resolver.ResolverUtils;
-import opennlp.tools.ml.maxent.GIS;
-import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelReader;
-import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelWriter;
+import opennlp.tools.ml.maxent.GISModel;
+import opennlp.tools.ml.maxent.GISTrainer;
+import opennlp.tools.ml.maxent.io.BinaryGISModelReader;
+import opennlp.tools.ml.maxent.io.BinaryGISModelWriter;
 import opennlp.tools.ml.model.Event;
 import opennlp.tools.ml.model.MaxentModel;
-import opennlp.tools.util.HashList;
 import opennlp.tools.util.ObjectStreamUtils;
+import opennlp.tools.util.TrainingParameters;
 
 /**
  * Models semantic similarity between two mentions and returns a score based on
@@ -45,31 +48,33 @@ import opennlp.tools.util.ObjectStreamUtils;
  */
 public class SimilarityModel implements TestSimilarityModel, TrainSimilarityModel {
 
-  private String modelName;
-  private String modelExtension = ".bin.gz";
+  private final String modelName;
+  private final String modelExtension = ".bin.gz";
   private MaxentModel testModel;
   private List<Event> events;
   private int SAME_INDEX;
   private static final String SAME = "same";
   private static final String DIFF = "diff";
-  private boolean debugOn = false;
+  private final boolean debugOn = false;
 
   public static TestSimilarityModel testModel(String name) throws IOException {
     return new SimilarityModel(name, false);
   }
 
   public static TrainSimilarityModel trainModel(String name) throws IOException {
-    SimilarityModel sm = new SimilarityModel(name, true);
-    return sm;
+    return new SimilarityModel(name, true);
   }
 
   private SimilarityModel(String modelName, boolean train) throws IOException {
     this.modelName = modelName;
     if (train) {
-      events = new ArrayList<Event>();
+      events = new ArrayList<>();
     }
     else {
-      testModel = (new SuffixSensitiveGISModelReader(new File(modelName + modelExtension))).getModel();
+      try (DataInputStream dis = new DataInputStream(
+              new BufferedInputStream(new FileInputStream(modelName + modelExtension)))) {
+        testModel = new BinaryGISModelReader(dis).getModel();
+      }
       SAME_INDEX = testModel.getIndex(SAME);
     }
   }
@@ -98,16 +103,15 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
    */
   private Set<String> constructHeadSet(List<Context> mentions) {
     Set<String> headSet = new HashSet<String>();
-    for (Iterator<Context> ei = mentions.iterator(); ei.hasNext();) {
-      Context ec = ei.next();
+    for (Context ec : mentions) {
       headSet.add(ec.getHeadTokenText().toLowerCase());
     }
     return headSet;
   }
 
   private boolean hasSameHead(Set<String> entityHeadSet, Set<String> candidateHeadSet) {
-    for (Iterator<String> hi = entityHeadSet.iterator(); hi.hasNext();) {
-      if (candidateHeadSet.contains(hi.next())) {
+    for (String s : entityHeadSet) {
+      if (candidateHeadSet.contains(s)) {
         return true;
       }
     }
@@ -115,8 +119,8 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
   }
 
   private boolean hasSameNameType(Set<String> entityNameSet, Set<String> candidateNameSet) {
-    for (Iterator<String> hi = entityNameSet.iterator(); hi.hasNext();) {
-      if (candidateNameSet.contains(hi.next())) {
+    for (String s : entityNameSet) {
+      if (candidateNameSet.contains(s)) {
         return true;
       }
     }
@@ -124,10 +128,9 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
   }
 
   private boolean hasSuperClass(List<Context> entityContexts, List<Context> candidateContexts) {
-    for (Iterator<Context> ei = entityContexts.iterator(); ei.hasNext();) {
-      Context ec = ei.next();
-      for (Iterator<Context> cei = candidateContexts.iterator(); cei.hasNext();) {
-        if (inSuperClass(ec, cei.next())) {
+    for (Context ec : entityContexts) {
+      for (Context candidateContext : candidateContexts) {
+        if (inSuperClass(ec, candidateContext)) {
           return true;
         }
       }
@@ -149,48 +152,39 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
    * with entity indicated by the specified key.
    */
   @SuppressWarnings("unchecked")
-  private Set<Context> constructExclusionSet(Integer entityKey, HashList entities, Map<Integer,
+  private Set<Context> constructExclusionSet(Integer entityKey, Map<Integer, Context> entities, Map<Integer,
       Set<String>> headSets, Map<Integer, Set<String>> nameSets, List<Context> singletons) {
-    Set<Context> exclusionSet = new HashSet<Context>();
+    Set<Context> exclusionSet = new HashSet<>();
     Set<String> entityHeadSet = headSets.get(entityKey);
     Set<String> entityNameSet = nameSets.get(entityKey);
     List<Context> entityContexts = (List<Context>) entities.get(entityKey);
     //entities
-    for (Iterator<Integer> ei = entities.keySet().iterator(); ei.hasNext();) {
-      Integer key = ei.next();
+    for (Integer key : entities.keySet()) {
       List<Context> candidateContexts = (List<Context>) entities.get(key);
       if (key.equals(entityKey)) {
         exclusionSet.addAll(candidateContexts);
-      }
-      else if (nameSets.get(key).isEmpty()) {
+      } else if (nameSets.get(key).isEmpty()) {
         exclusionSet.addAll(candidateContexts);
-      }
-      else if (hasSameHead(entityHeadSet, headSets.get(key))) {
+      } else if (hasSameHead(entityHeadSet, headSets.get(key))) {
         exclusionSet.addAll(candidateContexts);
-      }
-      else if (hasSameNameType(entityNameSet, nameSets.get(key))) {
+      } else if (hasSameNameType(entityNameSet, nameSets.get(key))) {
         exclusionSet.addAll(candidateContexts);
-      }
-      else if (hasSuperClass(entityContexts, candidateContexts)) {
+      } else if (hasSuperClass(entityContexts, candidateContexts)) {
         exclusionSet.addAll(candidateContexts);
       }
     }
     //singles
-    List<Context> singles = new ArrayList<Context>(1);
-    for (Iterator<Context> si = singletons.iterator(); si.hasNext();) {
-      Context sc = si.next();
+    List<Context> singles = new ArrayList<>(1);
+    for (Context sc : singletons) {
       singles.clear();
       singles.add(sc);
       if (entityHeadSet.contains(sc.getHeadTokenText().toLowerCase())) {
         exclusionSet.add(sc);
-      }
-      else if (sc.getNameType() == null) {
+      } else if (sc.getNameType() == null) {
         exclusionSet.add(sc);
-      }
-      else if (entityNameSet.contains(sc.getNameType())) {
+      } else if (entityNameSet.contains(sc.getNameType())) {
         exclusionSet.add(sc);
-      }
-      else if (hasSuperClass(entityContexts, singles)) {
+      } else if (hasSuperClass(entityContexts, singles)) {
         exclusionSet.add(sc);
       }
     }
@@ -206,10 +200,9 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
    * generated from the mentions associated with that key.
    */
   @SuppressWarnings("unchecked")
-  private Map<Integer, Set<String>> constructHeadSets(HashList entities) {
-    Map<Integer, Set<String>> headSets = new HashMap<Integer, Set<String>>();
-    for (Iterator<Integer> ei = entities.keySet().iterator(); ei.hasNext();) {
-      Integer key = ei.next();
+  private Map<Integer, Set<String>> constructHeadSets(Map<Integer, Context> entities) {
+    Map<Integer, Set<String>> headSets = new HashMap<>();
+    for (Integer key : entities.keySet()) {
       List<Context> entityContexts = (List<Context>) entities.get(key);
       headSets.put(key, constructHeadSet(entityContexts));
     }
@@ -221,12 +214,11 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
    *
    * @param mentions A list of mentions.
    *
-   * @return A set set of name types assigned to the specified mentions.
+   * @return A set of name types assigned to the specified mentions.
    */
   private Set<String> constructNameSet(List<Context> mentions) {
-    Set<String> nameSet = new HashSet<String>();
-    for (Iterator<Context> ei = mentions.iterator(); ei.hasNext();) {
-      Context ec = ei.next();
+    Set<String> nameSet = new HashSet<>();
+    for (Context ec : mentions) {
       if (ec.getNameType() != null) {
         nameSet.add(ec.getNameType());
       }
@@ -243,10 +235,9 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
    *         with the each mention of that entity.
    */
   @SuppressWarnings("unchecked")
-  private Map<Integer, Set<String>> constructNameSets(HashList entities) {
-    Map<Integer, Set<String>> nameSets = new HashMap<Integer, Set<String>>();
-    for (Iterator<Integer> ei = entities.keySet().iterator(); ei.hasNext();) {
-      Integer key = ei.next();
+  private Map<Integer, Set<String>> constructNameSets(Map<Integer, Context> entities) {
+    Map<Integer, Set<String>> nameSets = new HashMap<>();
+    for (Integer key : entities.keySet()) {
       List<Context> entityContexts = (List<Context>) entities.get(key);
       nameSets.put(key, constructNameSet(entityContexts));
     }
@@ -259,8 +250,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
     }
     else {
       int numCommonSynsets = 0;
-      for (Iterator<String> si = ec.getSynsets().iterator(); si.hasNext();) {
-        String synset = si.next();
+      for (String synset : ec.getSynsets()) {
         if (cec.getSynsets().contains(synset)) {
           numCommonSynsets++;
         }
@@ -283,20 +273,19 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
   }
   */
 
+  @Override
   @SuppressWarnings("unchecked")
   public void setExtents(Context[] extentContexts) {
-    HashList entities = new HashList();
-    /** Extents which are not in a coreference chain. */
-    List<Context> singletons = new ArrayList<Context>();
-    List<Context> allExtents = new ArrayList<Context>();
+    Map<Integer, Context> entities = new HashMap<>();
+    /* Extents which are not in a coreference chain. */
+    List<Context> singletons = new ArrayList<>();
+    List<Context> allExtents = new ArrayList<>();
     //populate data structures
-    for (int ei = 0, el = extentContexts.length; ei < el; ei++) {
-      Context ec = extentContexts[ei];
+    for (Context ec : extentContexts) {
       //System.err.println("SimilarityModel: setExtents: ec("+ec.getId()+") "+ec.getNameType()+" "+ec);
       if (ec.getId() == -1) {
         singletons.add(ec);
-      }
-      else {
+      } else {
         entities.put(ec.getId(), ec);
       }
       allExtents.add(ec);
@@ -306,8 +295,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
     Map<Integer, Set<String>> headSets = constructHeadSets(entities);
     Map<Integer, Set<String>> nameSets = constructNameSets(entities);
 
-    for (Iterator<Integer> ei = entities.keySet().iterator(); ei.hasNext();) {
-      Integer key = ei.next();
+    for (Integer key : entities.keySet()) {
       Set<String> entityNameSet = nameSets.get(key);
       if (entityNameSet.isEmpty()) {
         continue;
@@ -333,7 +321,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
             axi = (axi + 1) % allExtents.size();
             if (!exclusionSet.contains(sec1)) {
               if (debugOn) System.err.println(ec1.toString() + " " + entityNameSet + " "
-                  + sec1.toString() + " " + nameSets.get(sec1.getId()));
+                      + sec1.toString() + " " + nameSets.get(sec1.getId()));
               addEvent(false, ec1, sec1);
               break;
             }
@@ -354,6 +342,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
    * @return a number between 0 and 1 which represents the models belief that the specified
    *         mentions are compatible.
    */
+  @Override
   public double compatible(Context mention1, Context mention2) {
     List<String> feats = getFeatures(mention1, mention2);
     if (debugOn) System.err.println("SimilarityModel.compatible: feats=" + feats);
@@ -364,18 +353,22 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
    * Train a model based on the previously supplied evidence.
    * @see #setExtents(Context[])
    */
+  @Override
   public void trainModel() throws IOException {
     if (debugOn) {
       FileWriter writer = new FileWriter(modelName + ".events");
-      for (Iterator<Event> ei = events.iterator();ei.hasNext();) {
-        Event e = ei.next();
+      for (Event e : events) {
         writer.write(e.toString() + "\n");
       }
       writer.close();
     }
-    new SuffixSensitiveGISModelWriter(GIS.trainModel(
-        ObjectStreamUtils.createObjectStream(events),100,10),
-        new File(modelName + modelExtension)).persist();
+    TrainingParameters params = TrainingParameters.defaultParams();
+    params.put(TrainingParameters.ITERATIONS_PARAM, 100);
+    params.put(TrainingParameters.CUTOFF_PARAM, 10);
+    GISTrainer trainer = new GISTrainer();
+    trainer.init(params, null);
+    GISModel trainedModel = trainer.trainModel(ObjectStreamUtils.createObjectStream(events));
+    new BinaryGISModelWriter(trainedModel, new File(modelName + modelExtension)).persist();
   }
 
   private boolean isName(Context np) {
@@ -399,8 +392,8 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
     List<String> features = new ArrayList<>(2 + synsets.size());
     features.add("nn=" + name.getNameType() + "," + common.getNameType());
     features.add("nw=" + name.getNameType() + "," + common.getHeadTokenText().toLowerCase());
-    for (Iterator<String> si = synsets.iterator(); si.hasNext();) {
-      features.add("ns=" + name.getNameType() + "," + si.next());
+    for (String synset : synsets) {
+      features.add("ns=" + name.getNameType() + "," + synset);
     }
     if (name.getNameType() == null) {
       //features.addAll(getCommonCommonFeatures(name,common));
@@ -409,14 +402,14 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
   }
 
   private List<String> getNameNumberFeatures(Context name, Context number) {
-    List<String> features = new ArrayList<String>(2);
+    List<String> features = new ArrayList<>(2);
     features.add("nt=" + name.getNameType() + "," + number.getHeadTokenTag());
     features.add("nn=" + name.getNameType() + "," + number.getNameType());
     return features;
   }
 
   private List<String> getNamePronounFeatures(Context name, Context pronoun) {
-    List<String> features = new ArrayList<String>(2);
+    List<String> features = new ArrayList<>(2);
     features.add("nw=" + name.getNameType() + "," + pronoun.getHeadTokenText().toLowerCase());
     features.add("ng=" + name.getNameType() + "," + ResolverUtils.getPronounGender(
         pronoun.getHeadTokenText().toLowerCase()));
@@ -424,13 +417,12 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
   }
 
   private List<String> getCommonPronounFeatures(Context common, Context pronoun) {
-    List<String> features = new ArrayList<String>();
+    List<String> features = new ArrayList<>();
     Set<String> synsets1 = common.getSynsets();
     String p = pronoun.getHeadTokenText().toLowerCase();
     String gen = ResolverUtils.getPronounGender(p);
     features.add("wn=" + p + "," + common.getNameType());
-    for (Iterator<String> si = synsets1.iterator(); si.hasNext();) {
-      String synset = si.next();
+    for (String synset : synsets1) {
       features.add("ws=" + p + "," + synset);
       features.add("gs=" + gen + "," + synset);
     }
@@ -438,10 +430,9 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
   }
 
   private List<String> getCommonNumberFeatures(Context common, Context number) {
-    List<String> features = new ArrayList<String>();
+    List<String> features = new ArrayList<>();
     Set<String> synsets1 = common.getSynsets();
-    for (Iterator<String> si = synsets1.iterator(); si.hasNext();) {
-      String synset = si.next();
+    for (String synset : synsets1) {
       features.add("ts=" + number.getHeadTokenTag() + "," + synset);
       features.add("ns=" + number.getNameType() + "," + synset);
     }
@@ -450,7 +441,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
   }
 
   private List<String> getNumberPronounFeatures(Context number, Context pronoun) {
-    List<String> features = new ArrayList<String>();
+    List<String> features = new ArrayList<>();
     String p = pronoun.getHeadTokenText().toLowerCase();
     String gen = ResolverUtils.getPronounGender(p);
     features.add("wt=" + p + "," + number.getHeadTokenTag());
@@ -461,7 +452,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
   }
 
   private List<String> getNameNameFeatures(Context name1, Context name2) {
-    List<String> features = new ArrayList<String>(1);
+    List<String> features = new ArrayList<>(1);
     if (name1.getNameType() == null && name2.getNameType() == null) {
       features.add("nn=" + name1.getNameType() + "," + name2.getNameType());
       //features.addAll(getCommonCommonFeatures(name1,name2));
@@ -489,7 +480,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
   }
 
   private List<String> getCommonCommonFeatures(Context common1, Context common2) {
-    List<String> features = new ArrayList<String>();
+    List<String> features = new ArrayList<>();
     Set<String> synsets1 = common1.getSynsets();
     Set<String> synsets2 = common2.getSynsets();
 
@@ -502,8 +493,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
       return features;
     }
     int numCommonSynsets = 0;
-    for (Iterator<String> si = synsets1.iterator(); si.hasNext();) {
-      String synset = si.next();
+    for (String synset : synsets1) {
       if (synsets2.contains(synset)) {
         features.add("ss=" + synset);
         numCommonSynsets++;
@@ -527,7 +517,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
   }
 
   private List<String> getPronounPronounFeatures(Context pronoun1, Context pronoun2) {
-    List<String> features = new ArrayList<String>();
+    List<String> features = new ArrayList<>();
     String g1 = ResolverUtils.getPronounGender(pronoun1.getHeadTokenText());
     String g2 = ResolverUtils.getPronounGender(pronoun2.getHeadTokenText());
     if (g1.equals(g2)) {
@@ -540,7 +530,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
   }
 
   private List<String> getFeatures(Context np1, Context np2) {
-    List<String> features = new ArrayList<String>();
+    List<String> features = new ArrayList<>();
     features.add("default");
     //  semantic categories
     String w1 = np1.getHeadTokenText().toLowerCase();
