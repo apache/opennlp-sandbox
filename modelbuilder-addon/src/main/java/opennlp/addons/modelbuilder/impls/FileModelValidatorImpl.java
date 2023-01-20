@@ -17,16 +17,16 @@ package opennlp.addons.modelbuilder.impls;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import opennlp.addons.modelbuilder.ModelGenerationValidator;
 
 /**
@@ -34,7 +34,7 @@ import opennlp.addons.modelbuilder.ModelGenerationValidator;
  */
 public class FileModelValidatorImpl implements ModelGenerationValidator {
 
-  private Set<String> badentities = new HashSet<String>();
+  private final Set<String> badentities = new HashSet<>();
   BaseModelBuilderParams params;
 
   @Override
@@ -59,7 +59,7 @@ public class FileModelValidatorImpl implements ModelGenerationValidator {
 //    if (p.matcher(namedEntity).find()) {
 //      return false;
 //    }
-    Boolean b = true;
+    boolean b = true;
     if (badentities.contains(namedEntity.toLowerCase())) {
       b = false;
     }
@@ -78,15 +78,13 @@ public class FileModelValidatorImpl implements ModelGenerationValidator {
         String line;
 
         fis = new FileInputStream(params.getKnownEntityBlacklist());
-        br = new BufferedReader(new InputStreamReader(fis, Charset.forName("UTF-8")));
+        br = new BufferedReader(new InputStreamReader(fis, StandardCharsets.UTF_8));
         while ((line = br.readLine()) != null) {
           badentities.add(line);
         }
         br.close();
         br = null;
         fis = null;
-      } catch (FileNotFoundException ex) {
-        Logger.getLogger(FileKnownEntityProvider.class.getName()).log(Level.SEVERE, null, ex);
       } catch (IOException ex) {
         Logger.getLogger(FileKnownEntityProvider.class.getName()).log(Level.SEVERE, null, ex);
       }

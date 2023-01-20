@@ -17,6 +17,7 @@ package opennlp.addons.modelbuilder.impls;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import opennlp.addons.modelbuilder.KnownEntityProvider;
 import opennlp.addons.modelbuilder.ModelGenerationValidator;
 import opennlp.addons.modelbuilder.Modelable;
@@ -31,7 +32,7 @@ import opennlp.tools.util.Span;
  */
 public class GenericModelGenerator implements SemiSupervisedModelGenerator {
 
-  private Map<String, String> params = new HashMap<String, String>();
+  private Map<String, String> params = new HashMap<>();
 
   @Override
   public void setParameters(BaseModelBuilderParams params) {

@@ -17,29 +17,26 @@ package opennlp.addons.modelbuilder;
 
 import java.util.Set;
 
-
-
 /**
- *
-Supplies a list of known entities (a list of names or locations)
+ * Supplies a list of known entities (a list of names or locations)
  */
-public interface KnownEntityProvider extends ModelParameter{
+public interface KnownEntityProvider extends ModelParameter {
   /**
- * returns a list of known non ambiguous entities.
- * @return a set of entities
- */
+   * returns a list of known non ambiguous entities.
+   * @return a set of entities
+   */
   Set<String> getKnownEntities();
-/**
- * adds to the set of known entities. Overriding classes should hold this list in a class level set.
- * @param unambiguousEntity 
- */
+
+  /**
+   * adds to the set of known entities. Overriding classes should hold this list in a class level set.
+   * @param unambiguousEntity
+   */
   void addKnownEntity(String unambiguousEntity);
-/**
- * defines the type of entity that the set contains, ie person, location, organization.
- * @return 
- */
+
+  /**
+   * defines the type of entity that the set contains, ie person, location, organization.
+   * @return
+   */
   String getKnownEntitiesType();
-  
-  
-  
+
 }

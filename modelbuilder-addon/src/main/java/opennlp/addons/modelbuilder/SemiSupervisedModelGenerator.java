@@ -17,10 +17,6 @@ package opennlp.addons.modelbuilder;
 
 import opennlp.addons.modelbuilder.impls.BaseModelBuilderParams;
 
-/**
- *
-
- */
 public interface SemiSupervisedModelGenerator extends ModelParameter<BaseModelBuilderParams> {
 
   void build(SentenceProvider sentenceProvider, KnownEntityProvider knownEntityProvider, 

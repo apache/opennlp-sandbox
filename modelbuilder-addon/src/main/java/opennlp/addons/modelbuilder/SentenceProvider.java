@@ -18,9 +18,6 @@ package opennlp.addons.modelbuilder;
 import java.util.Set;
 import opennlp.addons.modelbuilder.impls.BaseModelBuilderParams;
 
-/**
- *
- */
 public interface SentenceProvider extends ModelParameter<BaseModelBuilderParams> {
 
   Set<String> getSentences();
