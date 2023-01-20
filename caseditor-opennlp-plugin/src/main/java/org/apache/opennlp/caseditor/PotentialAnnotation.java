@@ -30,7 +30,7 @@ public class PotentialAnnotation {
 
   private Double confidence;
   
-  private String type;
+  private final String type;
 
   public PotentialAnnotation(int beginIndex, int endIndex, String entityText,
       Double confidence, String type) {

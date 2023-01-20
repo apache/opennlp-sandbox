@@ -27,7 +27,7 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 public class NameFinderPreferencePage extends FieldEditorPreferencePage
     implements IWorkbenchPreferencePage {
 
-  private TypeSystem ts;
+  private final TypeSystem ts;
 
   public NameFinderPreferencePage(TypeSystem ts) {
     setDescription("Name Finder Preferences.");
@@ -64,6 +64,6 @@ public class NameFinderPreferencePage extends FieldEditorPreferencePage
         new ConfirmedNameDetectionFieldEditor(getFieldEditorParent());
     addField(forceNameDetection);
     // Add a group
-    // Other options should be have an indent ...
+    // Other options should have an indent ...
   }
 }

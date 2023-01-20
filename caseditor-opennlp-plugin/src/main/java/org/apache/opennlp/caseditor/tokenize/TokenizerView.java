@@ -27,6 +27,7 @@ public class TokenizerView extends AnnotationEditorView {
     super("The Tokenizer View is currently not available.");
   }
 
+  @Override
   protected PageRec doCreatePage(ICasEditor editor) {
     PageRec result = null;
 

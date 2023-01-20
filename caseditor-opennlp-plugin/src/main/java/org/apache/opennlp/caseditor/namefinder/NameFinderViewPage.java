@@ -20,14 +20,13 @@ package org.apache.opennlp.caseditor.namefinder;
 import org.apache.opennlp.caseditor.ConfirmAnnotationAction;
 import org.apache.opennlp.caseditor.OpenPreferenceDialog;
 import org.apache.opennlp.caseditor.PotentialAnnotation;
-import org.apache.opennlp.caseditor.PotentialAnnotationComperator;
+import org.apache.opennlp.caseditor.PotentialAnnotationComparator;
 import org.apache.uima.cas.text.AnnotationFS;
 import org.apache.uima.caseditor.CasEditorPlugin;
 import org.apache.uima.caseditor.Images;
 import org.apache.uima.caseditor.editor.AnnotationEditor;
 import org.apache.uima.caseditor.editor.ICasDocument;
 import org.apache.uima.caseditor.editor.ICasEditor;
-import org.apache.uima.caseditor.editor.ICasEditorInputListener;
 import org.apache.uima.caseditor.editor.util.AnnotationSelection;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IToolBarManager;
@@ -45,7 +44,6 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IActionBars;
-import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.actions.BaseSelectionListenerAction;
@@ -62,9 +60,9 @@ class NameFinderViewPage extends Page implements ISelectionListener {
 
   private static final String QUICK_ANNOTATE_ACTION_ID = "QuickAnnotate";
   
-  private NameFinderView nameFinderView;
+  private final NameFinderView nameFinderView;
   
-  private ICasEditor editor;
+  private final ICasEditor editor;
 
   private PageBook book;
 
@@ -111,7 +109,7 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     entityList.setContentProvider(new EntityContentProvider(this, (AnnotationEditor) editor, entityList));
     getSite().setSelectionProvider(entityList);
     
-    entityList.setComparator(new PotentialAnnotationComperator());
+    entityList.setComparator(new PotentialAnnotationComparator());
     
     entityList.setInput(editor.getDocument());
     

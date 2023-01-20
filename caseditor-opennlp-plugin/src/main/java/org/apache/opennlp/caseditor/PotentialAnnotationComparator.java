@@ -22,10 +22,10 @@ import org.eclipse.jface.viewers.ViewerComparator;
 
 /**
  * Compares two entities. Entities which have a smaller begin index are ordered first.
- * If entities have an identical begin index the one with the higher confidence score
+ * If entities have an identical start index the one with the higher confidence score
  * is ordered first.
  */
-public class PotentialAnnotationComperator extends ViewerComparator {
+public class PotentialAnnotationComparator extends ViewerComparator {
 
   @Override
   public int compare(Viewer viewer, Object o1, Object o2) {

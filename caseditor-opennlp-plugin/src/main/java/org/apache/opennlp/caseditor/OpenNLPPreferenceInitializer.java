@@ -22,6 +22,7 @@ import org.eclipse.jface.preference.IPreferenceStore;
 
 public class OpenNLPPreferenceInitializer extends AbstractPreferenceInitializer {
 
+	@Override
 	public void initializeDefaultPreferences() {
 		IPreferenceStore store = OpenNLPPlugin.getDefault().getPreferenceStore();
 		

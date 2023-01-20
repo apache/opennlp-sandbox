@@ -25,7 +25,7 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 public class OpenNLPPreferencePage extends FieldEditorPreferencePage
     implements IWorkbenchPreferencePage {
 
-  private TypeSystem ts;
+  private final TypeSystem ts;
 
   public OpenNLPPreferencePage(TypeSystem ts) {
     this.ts = ts;  

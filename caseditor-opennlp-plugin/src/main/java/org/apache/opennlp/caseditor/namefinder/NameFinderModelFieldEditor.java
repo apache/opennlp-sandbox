@@ -31,9 +31,7 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
@@ -51,7 +49,7 @@ class NameFinderModelFieldEditor extends FieldEditor {
   private static final String MODEL_PATH_KEY = "ModelPathKey";
   private static final String TYPE_NAME_KEY = "TypeNameKey";
 
-  private TypeSystem ts;
+  private final TypeSystem ts;
 
   private Table modelTypeTable;
   private Button editButton;
@@ -100,12 +98,7 @@ class NameFinderModelFieldEditor extends FieldEditor {
     modelTypeTable.setLinesVisible(true);
     modelTypeTable.setHeaderVisible(true);
 
-    modelTypeTable.addListener(SWT.Selection, new Listener() {
-
-      @Override
-      public void handleEvent(Event event) {
-        checkState();
-      }});
+    modelTypeTable.addListener(SWT.Selection, event -> checkState());
 
     TableColumn modelColumn = new TableColumn(modelTypeTable, SWT.NONE);
     modelColumn.setText("Model Path");
@@ -123,57 +116,45 @@ class NameFinderModelFieldEditor extends FieldEditor {
     addButton.setLayoutData(GridDataFactory.fillDefaults().create());
     addButton.setText("Add");
 
-    addButton.addListener(SWT.Selection, new Listener() {
+    addButton.addListener(SWT.Selection, event -> {
+      NameFinderModelInputDialog dialog = new NameFinderModelInputDialog(
+          parent.getShell(), "Add a name finder model", ts);
 
-      @Override
-      public void handleEvent(Event event) {
-
-        NameFinderModelInputDialog dialog = new NameFinderModelInputDialog(
-            parent.getShell(), "Add a name finder model", ts);
-
-        if (Dialog.OK == dialog.open()) {
-          createTableItem(dialog.getModelPath(), dialog.getTypeName());
-        }
-      }});
+      if (Dialog.OK == dialog.open()) {
+        createTableItem(dialog.getModelPath(), dialog.getTypeName());
+      }
+    });
 
     editButton = new Button(buttonGroup, SWT.PUSH);
     editButton.setLayoutData(GridDataFactory.fillDefaults().create());
     editButton.setText("Edit");
 
-    editButton.addListener(SWT.Selection, new Listener() {
+    editButton.addListener(SWT.Selection, event -> {
+      NameFinderModelInputDialog dialog = new NameFinderModelInputDialog(parent.getShell(),
+          "Edit name finder model", ts);
 
-      @Override
-      public void handleEvent(Event event) {
-        NameFinderModelInputDialog dialog = new NameFinderModelInputDialog(parent.getShell(),
-            "Edit name finder model", ts);
+      TableItem item = modelTypeTable.getItem(modelTypeTable.getSelectionIndex());
 
-        TableItem item = modelTypeTable.getItem(modelTypeTable.getSelectionIndex());
+      dialog.setModelPath((String) item.getData(MODEL_PATH_KEY));
+      dialog.setTypeName((String) item.getData(TYPE_NAME_KEY));
 
-        dialog.setModelPath((String) item.getData(MODEL_PATH_KEY));
-        dialog.setTypeName((String) item.getData(TYPE_NAME_KEY));
+      if (Dialog.OK == dialog.open()) {
+        item.setData(MODEL_PATH_KEY, dialog.getModelPath());
+        item.setText(0, dialog.getModelPath());
 
-        if (Dialog.OK == dialog.open()) {
-          item.setData(MODEL_PATH_KEY, dialog.getModelPath());
-          item.setText(0, dialog.getModelPath());
-
-          item.setData(TYPE_NAME_KEY, dialog.getTypeName());
-          item.setText(1, dialog.getTypeName());
-        }
-      }});
+        item.setData(TYPE_NAME_KEY, dialog.getTypeName());
+        item.setText(1, dialog.getTypeName());
+      }
+    });
 
     removeButton = new Button(buttonGroup, SWT.PUSH);
     removeButton.setLayoutData(GridDataFactory.fillDefaults().create());
     removeButton.setText("Remove");
 
-    removeButton.addListener(SWT.Selection, new Listener() {
-
-      @Override
-      public void handleEvent(Event event) {
-
-        modelTypeTable.remove(modelTypeTable.getSelectionIndex());
-
-        checkState();
-      }});
+    removeButton.addListener(SWT.Selection, event -> {
+      modelTypeTable.remove(modelTypeTable.getSelectionIndex());
+      checkState();
+    });
 
     checkState();
   }
@@ -182,10 +163,10 @@ class NameFinderModelFieldEditor extends FieldEditor {
   protected void doLoad() {
     if (modelTypeTable != null) {
       String modelPathsString = getPreferenceStore().getString(OpenNLPPreferenceConstants.NAME_FINDER_MODEL_PATH);
-      String modelPaths[] = TypeListFieldEditor.getTypeList(modelPathsString);
+      String[] modelPaths = TypeListFieldEditor.getTypeList(modelPathsString);
 
       String typeNamesString = getPreferenceStore().getString(OpenNLPPreferenceConstants.NAME_TYPE);
-      String typeNames[] = TypeListFieldEditor.getTypeList(typeNamesString);
+      String[] typeNames = TypeListFieldEditor.getTypeList(typeNamesString);
 
       // Don't load anything ...
       if (modelPaths.length != typeNames.length) {
@@ -207,8 +188,8 @@ class NameFinderModelFieldEditor extends FieldEditor {
   @Override
   protected void doStore() {
 
-    List<String> modelPaths = new ArrayList<String>();
-    List<String> typeNames = new ArrayList<String>();
+    List<String> modelPaths = new ArrayList<>();
+    List<String> typeNames = new ArrayList<>();
 
     // iterate over table
     for (int i = 0; i < modelTypeTable.getItemCount(); i++) {
