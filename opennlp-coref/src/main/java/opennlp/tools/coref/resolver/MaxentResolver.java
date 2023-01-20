@@ -17,23 +17,27 @@
 
 package opennlp.tools.coref.resolver;
 
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import opennlp.tools.coref.DiscourseEntity;
 import opennlp.tools.coref.DiscourseModel;
 import opennlp.tools.coref.mention.MentionContext;
 import opennlp.tools.coref.sim.TestSimilarityModel;
-import opennlp.tools.ml.maxent.GIS;
-import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelReader;
-import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelWriter;
+import opennlp.tools.ml.maxent.GISModel;
+import opennlp.tools.ml.maxent.GISTrainer;
+import opennlp.tools.ml.maxent.io.BinaryGISModelReader;
+import opennlp.tools.ml.maxent.io.BinaryGISModelWriter;
 import opennlp.tools.ml.model.Event;
 import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.util.ObjectStreamUtils;
+import opennlp.tools.util.TrainingParameters;
 
 /**
  *  Provides common functionality used by classes which implement the {@link Resolver} class
@@ -118,7 +122,10 @@ public abstract class MaxentResolver extends AbstractResolver {
     this.mode = mode;
     this.modelName = modelDirectory + "/" + name;
     if (ResolverMode.TEST == this.mode) {
-      model = (new SuffixSensitiveGISModelReader(new File(modelName + modelExtension))).getModel();
+      try (DataInputStream dis = new DataInputStream(
+              new BufferedInputStream(new FileInputStream(modelName + modelExtension)))) {
+        model = new BinaryGISModelReader(dis).getModel();
+      }
       sameIndex = model.getIndex(SAME);
     }
     else if (ResolverMode.TRAIN == this.mode) {
@@ -169,6 +176,7 @@ public abstract class MaxentResolver extends AbstractResolver {
         new FixedNonReferentialResolver(nonReferentialProbability));
   }
 
+  @Override
   public DiscourseEntity resolve(MentionContext ec, DiscourseModel dm) {
     DiscourseEntity de;
     int ei = 0;
@@ -229,8 +237,8 @@ public abstract class MaxentResolver extends AbstractResolver {
 
   /**
    * Returns whether the specified entity satisfies the criteria for being a default referent.
-   * This criteria is used to perform sample selection on the training data and to select a single
-   * non-referent entity. Typically the criteria is a heuristic for a likely referent.
+   * These criteria are used to perform sample selection on the training data and to select a single
+   * non-referent entity. Typically, the criteria is a heuristic for a likely referent.
    * @param de The discourse entity being considered for non-reference.
    * @return True if the entity should be used as a default referent, false otherwise.
    */
@@ -286,7 +294,8 @@ public abstract class MaxentResolver extends AbstractResolver {
               events.add(new Event(SAME, features.toArray(new String[features.size()])));
               de = cde;
               //System.err.println("MaxentResolver.retain: resolved at "+ei);
-              distances.add(ei);
+              // incrementing count for key 'ei'
+              distances.merge(ei, 1, Integer::sum);
             }
             else if (!pairedSampleSelection || (!nonReferentFound && useAsDifferentExample)) {
               nonReferentFound = true;
@@ -333,14 +342,19 @@ public abstract class MaxentResolver extends AbstractResolver {
       if (debugOn) {
         System.err.println(this + " referential");
         FileWriter writer = new FileWriter(modelName + ".events");
-        for (Iterator<Event> ei = events.iterator(); ei.hasNext();) {
-          Event e = ei.next();
+        for (Event e : events) {
           writer.write(e.toString() + "\n");
         }
         writer.close();
       }
-      (new SuffixSensitiveGISModelWriter(GIS.trainModel(ObjectStreamUtils.createObjectStream(events),
-          100,10),new File(modelName + modelExtension))).persist();
+      TrainingParameters params = TrainingParameters.defaultParams();
+      params.put(TrainingParameters.ITERATIONS_PARAM, 100);
+      params.put(TrainingParameters.CUTOFF_PARAM, 10);
+      GISTrainer trainer = new GISTrainer();
+      trainer.init(params, null);
+      GISModel trainedModel = trainer.trainModel(ObjectStreamUtils.createObjectStream(events));
+      new BinaryGISModelWriter(trainedModel, new File(modelName + modelExtension)).persist();
+
       nonReferentialResolver.train();
     }
   }
