@@ -26,20 +26,16 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 
 import cc.mallet.classify.Classifier;
-import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.model.ArtifactSerializer;
 
 // The standard method for saving classifiers in Mallet is through Java serialization.
 
-public class ClassifierModelSerializer implements
-    ArtifactSerializer<ClassifierModel> {
+public class ClassifierModelSerializer implements ArtifactSerializer<ClassifierModel> {
 
   @Override
-  public ClassifierModel create(InputStream in) throws IOException,
-      InvalidFormatException {
+  public ClassifierModel create(InputStream in) throws IOException {
 
-    ObjectInputStream ois = new ObjectInputStream(in);
-    try {
+    try ( ObjectInputStream ois = new ObjectInputStream(in)) {
       Classifier classifier = (Classifier) ois.readObject();
       return new ClassifierModel(classifier);
     } catch (ClassNotFoundException e) {
@@ -48,10 +44,9 @@ public class ClassifierModelSerializer implements
   }
 
   @Override
-  public void serialize(ClassifierModel artifact, OutputStream out)
-      throws IOException {
+  public void serialize(ClassifierModel artifact, OutputStream out) throws IOException {
     ObjectOutputStream oos = new ObjectOutputStream(out);
-    oos.writeObject(artifact.getClassifer());
+    oos.writeObject(artifact.getClassifier());
     oos.flush();
   }
 }

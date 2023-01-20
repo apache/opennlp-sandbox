@@ -22,22 +22,12 @@ package opennlp.addons.mallet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Map;
 
 import opennlp.tools.ml.AbstractEventTrainer;
 import opennlp.tools.ml.model.DataIndexer;
 import opennlp.tools.ml.model.MaxentModel;
-import cc.mallet.classify.C45Trainer;
 import cc.mallet.classify.Classifier;
-import cc.mallet.classify.MaxEntGETrainer;
-import cc.mallet.classify.MaxEntL1Trainer;
-import cc.mallet.classify.MaxEntPRTrainer;
 import cc.mallet.classify.MaxEntTrainer;
-import cc.mallet.classify.NaiveBayes;
-import cc.mallet.classify.NaiveBayesEMTrainer;
-import cc.mallet.classify.NaiveBayesTrainer;
-import cc.mallet.optimize.LimitedMemoryBFGS;
-import cc.mallet.optimize.Optimizer;
 import cc.mallet.types.Alphabet;
 import cc.mallet.types.FeatureVector;
 import cc.mallet.types.Instance;
@@ -61,13 +51,13 @@ public class MaxentTrainer extends AbstractEventTrainer {
 
     Collection<Instance> instances = new ArrayList<>();
 
-    String predLabels[] = indexer.getPredLabels();
+    String[] predLabels = indexer.getPredLabels();
     
-    int outcomes[] = indexer.getOutcomeList();
+    int[] outcomes = indexer.getOutcomeList();
     for (int contextIndex = 0; contextIndex < indexer.getContexts().length; contextIndex++) {
 
-      int malletFeatures[] = new int[indexer.getContexts()[contextIndex].length];
-      double weights[] = new double[indexer.getContexts()[contextIndex].length];
+      int[] malletFeatures = new int[indexer.getContexts()[contextIndex].length];
+      double[] weights = new double[indexer.getContexts()[contextIndex].length];
 
       for (int featureIndex = 0; featureIndex < malletFeatures.length; featureIndex++) {
         malletFeatures[featureIndex] = dataAlphabet.lookupIndex(
