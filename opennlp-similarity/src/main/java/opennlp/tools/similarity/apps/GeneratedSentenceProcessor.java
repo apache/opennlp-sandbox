@@ -20,9 +20,9 @@ package opennlp.tools.similarity.apps;
 import java.util.Arrays;
 import java.util.List;
 
-import opennlp.tools.similarity.apps.utils.Utils;
-
 import org.apache.commons.lang.StringUtils;
+
+import opennlp.tools.similarity.apps.utils.Utils;
 
 public class GeneratedSentenceProcessor {
 
@@ -114,8 +114,6 @@ public class GeneratedSentenceProcessor {
 		if (isProhibitiveWordsOccurOrStartWith(sentTry))
 			return null;
 
-		
-
 		// count symbols indicating wrong parts of page to mine for text
 		// if short and contains too many symbols indicating wrong area: reject
 		String sentWrongSym = sentTry.replace(">", "&&&").replace("�", "&&&")
@@ -152,7 +150,8 @@ public class GeneratedSentenceProcessor {
 
 	public static String processSentence(String pageSentence) {
 		if (acceptableMinedSentence(pageSentence)==null){
-			System.out.println("Rejected sentence by GenerSentProc.processSentence.acceptableMinedSentence()");
+			// TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
+			// System.out.println("Rejected sentence by GeneratedSentenceProcessor.processSentence.acceptableMinedSentence()");
 			return "";
 		}
 		if (pageSentence == null)
@@ -211,9 +210,6 @@ public class GeneratedSentenceProcessor {
 				return true;
 			}
 		}
-
-
-
 		//  || sentTry.endsWith("the")
 		//  || sentTry.endsWith("the.") || sentTry.startsWith("below") 
 		return false;
@@ -224,7 +220,6 @@ public class GeneratedSentenceProcessor {
 		String sentence = "Accepted sentence: Educational. Video. About Us menu. Home. Nobel Prizes and Laureates. Nobel Prizes and Laureates. Physics Prize. Chemistry Prize. Medicine Prize. Literature Prize. Peace Prize. Prize in Economic Sciences. Quick Facts. Nomination. Nomination. Physics Prize. Chemistry Prize. Medicine Prize. Literature Prize. Peace Prize. Prize in Economic Sciences. Nomination Archive. Ceremonies. Ceremonies. Ceremony Archive. Nobel Banquet Menus. Nobel Banquet Dress Code. The Queen's Gowns. Eyewitness Reports. Alfred Nobel. Alfred Nobel. Alfred Nobel's Will. Alfred Nobel's Life. Private Library of Alfred Nobel. Books on Alfred Nobel. Events. Events. Nobel Week Dialogue. Nobel Prize Inspiration Initiative. Nobel Prize Concert. Exhibitions at the Nobel Museum. Exhibitions at the Nobel Peace Center. About Us. Nobel Prizes and Laureates. Physics PrizesChemistry PrizesMedicine PrizesLiterature PrizesPeace PrizesPrize in Economic Sciences. About the Nobel Prize in Physics 1921. Albert Einstein. Facts. Biographical. Nobel Lecture. Banquet Speech. Documentary. Photo Gallery. Questions and Answers. Other Resources. All Nobel Prizes in Physics. All Nobel Prizes in 1921. The Nobel Prize in Physics 1921. Albert Einstein. Questions and Answers. Question: When was Albert Einstein born . Answer: Albert Einstein was born on 14 March 1879. Question: Where was he born . Answer: He was born in Ulm, Germany. Question: When did he die . Answer: He died 18 April 1955 in Princeton, New Jersey, USA. Question: Who were his parents . Answer: His father was Hermann Einstein and his mother was Pauline Einstein (born Koch). Question: Did he have any sisters and brothers . Answer: He had one sister named Maja. Question: Did he marry and have children . Answer: He was married to Mileva Mari between 1903 and 1919. They had three children, Lieserl (born 1902), Hans Albert (born 1904) and Eduard (born 1910). He married Elsa L Kwenthal in 1919 and they lived together until her death in 1936. Question: Where did he receive his education . Answer: He received his main education at the following schools:. Catholic elementary school in Munich, Germany (1885-1888). Luitpold Gymnasium in Munich, Germany (1888-1894). Cantonal school in Aarau, Switzerland (1895-1896). Swiss Federal Institute of Technology in Zurich, Switzerland (1896-1900). Ph.D. from Zurich University, Switzerland (1905). Question: When was Albert Einstein awarded the Nobel Prize in Physics . Answer: The Nobel Prize Awarding Institution, the Royal Swedish Academy of Sciences, decided to reserve the Nobel Prize in Physics in 1921, and therefore no Physics Prize was awarded that year.";
 		
 		String res = GeneratedSentenceProcessor.acceptableMinedSentence(sentence);
-
 		String para = "About Albert Einstein     15 External links  16 Credits         Youth and schooling  Albert Einstein was born into a Jewish family";
 		para = "inventions of albert einstein                            what was albert einsteins invention                            invention of einstein                            what were albert einsteins inventions ";
 
@@ -236,12 +231,13 @@ public class GeneratedSentenceProcessor {
 		System.exit(0);
 		RelatedSentenceFinder f = new RelatedSentenceFinder();
 		try {
-			List<HitBase> hits = f
-					.findRelatedOpinionsForSentence(
+			List<HitBase> hits = f.findRelatedOpinionsForSentence(
 							"Give me a break, there is no reason why you can't retire in ten years if you had been a rational investor and not a crazy trader",
-							Arrays
-							.asList(new String[] { "Give me a break there is no reason why you can't retire in ten years if you had been a rational investor and not a crazy trader. For example you went to cash in 2008 and stay in cash until now you made nothing. Whereas people who rode out the storm are doing fine so let's quit focusing on the loser who think they are so smart and went to 100% cash and are wondering what happen. Its a market that always moves unlike your mattress.", }));
-			StringBuffer buf = new StringBuffer();
+							Arrays.asList("Give me a break there is no reason why you can't retire in ten years if you had been a rational investor and not a crazy trader. " +
+											"For example you went to cash in 2008 and stay in cash until now you made nothing. " +
+											"Whereas people who rode out the storm are doing fine so let's quit focusing on the loser who think they are so smart and went to 100% cash and are wondering what happen. " +
+											"Its a market that always moves unlike your mattress."));
+			StringBuilder buf = new StringBuilder();
 
 			for (HitBase h : hits) {
 				List<Fragment> frags = h.getFragments();
@@ -252,7 +248,6 @@ public class GeneratedSentenceProcessor {
 			}
 
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 

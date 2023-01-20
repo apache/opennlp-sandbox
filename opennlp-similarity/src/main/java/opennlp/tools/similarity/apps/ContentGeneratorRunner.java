@@ -28,7 +28,7 @@ public class ContentGeneratorRunner {
 	public static void main(String[] args) {
 		ParserChunker2MatcherProcessor sm = null;
 	    	    
-	    try {
+		try {
 			String resourceDir = args[2];
 			if (resourceDir!=null)
 				sm = ParserChunker2MatcherProcessor.getInstance(resourceDir);
@@ -36,60 +36,57 @@ public class ContentGeneratorRunner {
 				sm = ParserChunker2MatcherProcessor.getInstance();
 	
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	    
-	    String bingKey = args[7];
-	    if (bingKey == null){
-	    	bingKey = "e8ADxIjn9YyHx36EihdjH/tMqJJItUrrbPTUpKahiU0=";
-	    }
-	    
-	    RelatedSentenceFinder f = null;
-	    String lang = args[6];
-	    if (lang.startsWith("es")){
-	    	f = new RelatedSentenceFinderML(Integer.parseInt(args[3]), Integer.parseInt(args[4]), Float.parseFloat(args[5]), bingKey);
-	    	f.setLang(lang);
-	    } else	    
-	    
-		    if (args.length>4 && args[4]!=null)
-		    	f = new RelatedSentenceFinder(Integer.parseInt(args[3]), Integer.parseInt(args[4]), Float.parseFloat(args[5]), bingKey);
-		    else
-		    	f = new RelatedSentenceFinder();
-		    
-	    List<HitBase> hits = null;
-	    try {
-	      
-	      hits = f.generateContentAbout(args[0].replace('+', ' ').replace('"', ' ').trim());
-	      System.out.println(HitBase.toString(hits));
-	      String generatedContent = HitBase.toResultantString(hits);
-	      
-	      opennlp.tools.apps.utils.email.EmailSender s = new opennlp.tools.apps.utils.email.EmailSender();
-			
-			try {
-				s.sendMail("smtp.live.com", "bgalitsky@hotmail.com", "borgalor", new InternetAddress("bgalitsky@hotmail.com"), new InternetAddress[]{new InternetAddress(args[1])}, new InternetAddress[]{}, new InternetAddress[]{}, 
-						"Generated content for you on '"+args[0].replace('+', ' ')+"'", generatedContent, null);
-			} catch (AddressException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (Exception e) {
-		
-				e.printStackTrace();
-				try {
-					s.sendMail("smtp.live.com", "bgalitsky@hotmail.com", "borgalor", new InternetAddress("bgalitsky@hotmail.com"), new InternetAddress[]{new InternetAddress(args[1])}, new InternetAddress[]{}, new InternetAddress[]{}, 
-							"Generated content for you on '"+args[0].replace('+', ' ')+"'", generatedContent, null);
-				} catch (Exception e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-			}
-	      
-	      
-	    } catch (Exception e) {
-	      e.printStackTrace();
-	    }
+		String bingKey = args[7];
+		if (bingKey == null){
+			bingKey = "e8ADxIjn9YyHx36EihdjH/tMqJJItUrrbPTUpKahiU0=";
+		}
 
-	  }
+		RelatedSentenceFinder f = null;
+		String lang = args[6];
+		if (lang.startsWith("es")){
+			f = new RelatedSentenceFinderML(Integer.parseInt(args[3]), Integer.parseInt(args[4]), Float.parseFloat(args[5]), bingKey);
+			f.setLang(lang);
+		} else
+
+			if (args.length>4 && args[4]!=null)
+				f = new RelatedSentenceFinder(Integer.parseInt(args[3]), Integer.parseInt(args[4]), Float.parseFloat(args[5]), bingKey);
+			else
+				f = new RelatedSentenceFinder();
+
+		List<HitBase> hits = null;
+		try {
+
+			hits = f.generateContentAbout(args[0].replace('+', ' ').replace('"', ' ').trim());
+			System.out.println(HitBase.toString(hits));
+			String generatedContent = HitBase.toResultantString(hits);
+
+			opennlp.tools.apps.utils.email.EmailSender s = new opennlp.tools.apps.utils.email.EmailSender();
+
+		try {
+			s.sendMail("smtp.live.com", "bgalitsky@hotmail.com", "borgalor", new InternetAddress("bgalitsky@hotmail.com"), new InternetAddress[]{new InternetAddress(args[1])}, new InternetAddress[]{}, new InternetAddress[]{},
+					"Generated content for you on '"+args[0].replace('+', ' ')+"'", generatedContent, null);
+		} catch (AddressException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+
+			e.printStackTrace();
+			try {
+				s.sendMail("smtp.live.com", "bgalitsky@hotmail.com", "borgalor", new InternetAddress("bgalitsky@hotmail.com"), new InternetAddress[]{new InternetAddress(args[1])}, new InternetAddress[]{}, new InternetAddress[]{},
+						"Generated content for you on '"+args[0].replace('+', ' ')+"'", generatedContent, null);
+			} catch (Exception e1) {
+				e1.printStackTrace();
+			}
+		}
+
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+	}
 }
 
 /*

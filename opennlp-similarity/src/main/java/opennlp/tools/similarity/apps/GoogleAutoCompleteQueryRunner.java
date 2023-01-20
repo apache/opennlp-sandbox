@@ -28,8 +28,7 @@ import opennlp.tools.similarity.apps.utils.PageFetcher;
 
 public class GoogleAutoCompleteQueryRunner {
 	protected PageFetcher pageFetcher = new PageFetcher();
-	private static String searchRequest = "http://google.com/complete/search?q=",
-			suffix = "&output=toolbar";
+	private final static String searchRequest = "http://google.com/complete/search?q=", suffix = "&output=toolbar";
 	
 	
 	public List<String> getAutoCompleteExpression(String rawExpr){
@@ -39,17 +38,16 @@ public class GoogleAutoCompleteQueryRunner {
 		try {
 			query = URLEncoder.encode(query, "UTF-8");
 		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
 		String pageOrigHTML = pageFetcher.fetchOrigHTML(searchRequest +query+suffix);
 		String[] results = StringUtils.substringsBetween(pageOrigHTML, "<CompleteSuggestion>", "</CompleteSuggestion>");
-		List<List<String>> accum = new ArrayList<List<String>>();
+		List<List<String>> accum = new ArrayList<>();
 		if (results==null)
 				return null;
 		for(String wrapped: results){
-			List<String> accumCase = new ArrayList<String>();
+			List<String> accumCase;
 			String[] words = null;
 			try {
 				words = StringUtils.substringBetween(wrapped, "\"").split(" ");
@@ -64,8 +62,8 @@ public class GoogleAutoCompleteQueryRunner {
 		
 		//TODO make more noise-resistant algo
 		if (accum.size()>1){
-			List<String> first = new ArrayList<String>(accum.get(0));
-			List<String> second = new ArrayList<String>(accum.get(1));
+			List<String> first = new ArrayList<>(accum.get(0));
+			List<String> second = new ArrayList<>(accum.get(1));
 			
 			first.retainAll(second);
 			if (first.size()>0)

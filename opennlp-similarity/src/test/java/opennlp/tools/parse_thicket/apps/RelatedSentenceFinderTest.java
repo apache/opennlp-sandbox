@@ -18,60 +18,60 @@ package opennlp.tools.parse_thicket.apps;
 
 
 import java.util.ArrayList;
-import java.util.List;
 
 import opennlp.tools.similarity.apps.ContentGenerator;
 import opennlp.tools.similarity.apps.HitBase;
-import opennlp.tools.similarity.apps.RelatedSentenceFinder;
-import junit.framework.TestCase;
+import org.junit.Test;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
-public class RelatedSentenceFinderTest extends TestCase {
-	//RelatedSentenceFinder finder = new RelatedSentenceFinder();
-	ContentGenerator finder = new ContentGenerator();
+public class RelatedSentenceFinderTest {
 	
+	private final ContentGenerator finder = new ContentGenerator();
+
+	@Test
 	public void testAugmentWithMinedSentencesAndVerifyRelevanceTest(){
 		HitBase input = new HitBase();
 		input.setAbstractText("He is pictured here in the Swiss Patent Office where he did ...");
-		input.setUrl("http://apod.nasa.gov/apod/ap951219.html");
+		input.setUrl("https://apod.nasa.gov/apod/ap951219.html");
 		input.setTitle("Albert Einstein");
-		HitBase result = finder.buildParagraphOfGeneratedText(input, "Swiss Patent Office", new ArrayList<String>());
-		System.out.println(result.toString());
-		assertTrue(result.getOriginalSentences()!=null);
+		HitBase result = finder.buildParagraphOfGeneratedText(input, "Swiss Patent Office", new ArrayList<>());
+		assertNotNull(result.getOriginalSentences());
 		assertTrue(result.getOriginalSentences().size()>0);
-		//assertTrue(result.getFragments().size()>0);
-		//assertTrue(result.getFragments().get(0).getFragment().indexOf("Swiss Patent Office")>-1);
+		// TODO Investigate why the below to checks fail
+		// assertTrue(result.getFragments().size()>0);
+		// assertTrue(result.getFragments().get(0).getFragment().contains("Swiss Patent Office"));
 	}
 	
 	/*
-	public void testBuildParagraphOfGeneratedTextTest(){
-		HitBase input = new HitBase();
-		input.setAbstractText("Albert Einstein was a German-born theoretical physicist who developed the general theory of relativity, one of the two pillars of modern physics (alongside ...");
-		input.setUrl("http://en.wikipedia.org/wiki/Albert_Einstein");
-		input.setTitle("Albert Einstein - Wikipedia, the free encyclopedia");
-		HitBase result = finder.buildParagraphOfGeneratedText(input,
-				"Albert Einstein", new ArrayList<String>());
-		System.out.println(result.toString());
-		assertTrue(result.getOriginalSentences()!=null);
-		assertTrue(result.getOriginalSentences().size()>0);
-		assertTrue(result.getFragments().size()>0);
-		assertTrue(result.getFragments().get(0).getFragment().indexOf("Albert Einstein")>-1);
-	} 
-*/
-	
+		public void testBuildParagraphOfGeneratedTextTest(){
+			HitBase input = new HitBase();
+			input.setAbstractText("Albert Einstein was a German-born theoretical physicist who developed the general theory of relativity, one of the two pillars of modern physics (alongside ...");
+			input.setUrl("http://en.wikipedia.org/wiki/Albert_Einstein");
+			input.setTitle("Albert Einstein - Wikipedia, the free encyclopedia");
+			HitBase result = finder.buildParagraphOfGeneratedText(input,
+					"Albert Einstein", new ArrayList<String>());
+			System.out.println(result.toString());
+			assertTrue(result.getOriginalSentences()!=null);
+			assertTrue(result.getOriginalSentences().size()>0);
+			assertTrue(result.getFragments().size()>0);
+			assertTrue(result.getFragments().get(0).getFragment().indexOf("Albert Einstein")>-1);
+		}
+	*/
+
+	@Test
 	public void testBuildParagraphOfGeneratedTextTestYearInTheEnd(){
 	    
 		HitBase input = new HitBase();
 		input.setAbstractText("Albert Einstein was born ... Germany, on March 14, 1879");
-		input.setUrl("http://www.nobelprize.org/nobel_prizes/physics/laureates/1921/einstein-bio.html");
+		input.setUrl("https://www.nobelprize.org/prizes/physics/1921/einstein/biographical");
 		input.setTitle("Albert Einstein - Biographical");
-		HitBase result = finder.buildParagraphOfGeneratedText(input,
-				"Albert Einstein", new ArrayList<String>());
-		System.out.println(result.toString());
-		assertTrue(result.getOriginalSentences()!=null);
+		HitBase result = finder.buildParagraphOfGeneratedText(input, "Albert Einstein", new ArrayList<>());
+		assertNotNull(result.getOriginalSentences());
 		assertTrue(result.getOriginalSentences().size()>0);
 		assertTrue(result.getFragments().size()>0);
-		assertTrue(result.getFragments().get(0).getFragment().indexOf("Albert Einstein")>-1);
+		assertTrue(result.getFragments().get(0).getFragment().contains("Albert Einstein"));
 	} 
 	
 	/*

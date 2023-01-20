@@ -51,7 +51,6 @@ public class Comment {
                 org.docx4j.wml.ObjectFactory wmlObjectFactory = new ObjectFactory();
                 wordMlPackage.getMainDocumentPart().addTargetPart(cp);
             } catch (InvalidFormatException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         }
@@ -105,13 +104,7 @@ public class Comment {
         
         // Now you can add comments to your comments part,
         // and comment refs in your main document part   
-        
-        
-        
-        
-        
-        
-              
+
         wmlPack.save(new java.io.File(System.getProperty("user.dir")+ "/out-m.docx"));       
       }
     

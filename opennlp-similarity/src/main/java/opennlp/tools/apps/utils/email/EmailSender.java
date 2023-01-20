@@ -6,6 +6,7 @@ import java.util.regex.Pattern;
 import javax.mail.*;
 import javax.mail.internet.*;
 import javax.activation.*;
+
 /**
  * Responsible to sending e-mails trough a gmail smtp server.
  * It will be extended to handle arbitrary smtp servers.
@@ -162,10 +163,8 @@ public class EmailSender {
 						new InternetAddress("bgalitsky@hotmail.com"), new InternetAddress[]{new InternetAddress("bgalitsky@hotmail.com")}, new InternetAddress[]{}, new InternetAddress[]{}, 
 						"Generated content for you", "body", null);
 			} catch (AddressException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}

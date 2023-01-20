@@ -59,7 +59,6 @@ public class FBOpenGraphSearchManager {
                 }
                 catch (InterruptedException e1)
                 {
-                    // TODO Auto-generated catch block
                 	System.out.println("Error "+e1);
                 }
     	    }
@@ -91,7 +90,6 @@ public class FBOpenGraphSearchManager {
                 }
                 catch (InterruptedException e1)
                 {
-                    // TODO Auto-generated catch block
                 	System.out.println("Error "+e1);
                 }
             }

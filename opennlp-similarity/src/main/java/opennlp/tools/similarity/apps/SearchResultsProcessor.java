@@ -27,9 +27,9 @@ import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
 public class SearchResultsProcessor extends BingQueryRunner {
-  private static Logger LOG = Logger
-      .getLogger("opennlp.tools.similarity.apps.SearchResultsProcessor");
-  private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
+  private static final Logger LOG =
+          Logger.getLogger("opennlp.tools.similarity.apps.SearchResultsProcessor");
+  private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
   ParserChunker2MatcherProcessor sm;
   WebSearchEngineResultsScraper scraper = new WebSearchEngineResultsScraper();
 
@@ -53,26 +53,30 @@ public class SearchResultsProcessor extends BingQueryRunner {
           .replace("<br>", "").replace("</br>", "").replace("...", ". ")
           .replace("|", " ").replace(">", " ");
       snapshot += " . " + hit.getTitle();
-      Double score = 0.0;
+      double score = 0.0;
       try {
         SentencePairMatchResult matchRes = sm.assessRelevance(snapshot,
             searchQuery);
         List<List<ParseTreeChunk>> match = matchRes.getMatchResult();
         score = parseTreeChunkListScorer.getParseTreeChunkListScore(match);
-        LOG.finest(score + " | " + snapshot);
+        /*
+          LOG.finest(score + " | " + snapshot);
+         */
       } catch (Exception e) {
-        LOG.severe("Problem processing snapshot " + snapshot);
+        LOG.warning("Problem processing snapshot " + snapshot);
         e.printStackTrace();
       }
       hit.setGenerWithQueryScore(score);
       newHitList.add(hit);
     }
-    Collections.sort(newHitList, new HitBaseComparable());
+    newHitList.sort(new HitBaseComparable());
    
-    LOG.info("\n\n ============= NEW ORDER ================= ");
+    // LOG.info("\n\n ============= NEW ORDER ================= ");
+    /*
     for (HitBase hit : newHitList) {
       LOG.info(hit.toString());
     }
+    */
 
     return newHitList;
   }

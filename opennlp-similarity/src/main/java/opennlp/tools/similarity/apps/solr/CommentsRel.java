@@ -46,7 +46,6 @@ public class CommentsRel {
 	            
 	            wordMlPackage.getMainDocumentPart().addTargetPart(cp);
 	         } catch (InvalidFormatException e) {
-	            // TODO Auto-generated catch block
 	            e.printStackTrace();
 	         }
 	      }
@@ -107,33 +106,23 @@ public class CommentsRel {
 	         
 	         endnote.setId(BigInteger.ONE.add(BigInteger.ONE));
 	         String endnoteBody = "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" ><w:pPr><w:pStyle w:val=\"EndnoteText\"/></w:pPr><w:r><w:rPr><w:rStyle w:val=\"EndnoteReference\"/></w:rPr><w:endnoteRef/></w:r><w:r><w:t xml:space=\"preserve\"> An endnote</w:t></w:r></w:p>";
-	         try {
-				endnote.getEGBlockLevelElts().add( XmlUtils.unmarshalString(endnoteBody));
-			} catch (JAXBException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-	         
+					 try {
+						 endnote.getEGBlockLevelElts().add( XmlUtils.unmarshalString(endnoteBody));
+				   } catch (JAXBException e) {
+					    e.printStackTrace();
+				   }
+
 	         // Add the body text referencing it
 	         String docBody = "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" ><w:r><w:t>the quick brown</w:t></w:r><w:r><w:rPr><w:rStyle w:val=\"EndnoteReference\"/></w:rPr><w:endnoteReference w:id=\"2\"/></w:r></w:p>";
 	         
-	         try {
-				mlPackage.getMainDocumentPart().addParagraph(docBody);
-			} catch (JAXBException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-	         
-	         
-	         
-	         
-	         
-	         
-	          mlPackage.save(new File("C:/workspace/TestSolr/mydoc.docx-OUT.docx"));
+					try {
+						mlPackage.getMainDocumentPart().addParagraph(docBody);
+					} catch (JAXBException e) {
+						e.printStackTrace();
+					}
+					mlPackage.save(new File("C:/workspace/TestSolr/mydoc.docx-OUT.docx"));
 	      } catch (Docx4JException e) {
-	         // TODO Auto-generated catch block
 	         e.printStackTrace();
 	      }
-
 	   }
 	}

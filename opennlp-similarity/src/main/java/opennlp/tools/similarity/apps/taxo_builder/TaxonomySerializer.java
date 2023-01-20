@@ -50,7 +50,6 @@ public class TaxonomySerializer implements Serializable {
   }
 
   public TaxonomySerializer() {
-    // TODO Auto-generated constructor stub
   }
 
   public Map<List<String>, List<List<String>>> getAssocWords_ExtendedAssocWords() {

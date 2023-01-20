@@ -86,10 +86,7 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 				}
 			}
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			// e.printStackTrace();
-			System.err
-			.println("Problem downloading  the page and splitting into sentences");
+			System.err.println("Problem downloading  the page and splitting into sentences");
 			return item;
 		}
 
@@ -103,13 +100,11 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 					&& sents.size() > 0)
 				try {
 					String[] mainAndFollowSent = getFullOriginalSentenceFromWebpageBySnippetFragment(
-							fragment.replace("_should_find_orig_", ""), (String[])sents.toArray(new String[]{}));
+							fragment.replace("_should_find_orig_", ""), sents.toArray(new String[]{}));
 					pageSentence = mainAndFollowSent[0];
 					followSent = mainAndFollowSent[1];
 
 				} catch (Exception e) {
-
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			else
@@ -299,7 +294,8 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 		if (sentenceOrMultSent==null || sentenceOrMultSent.length()<20)
 			continue;
 		if (GeneratedSentenceProcessor.acceptableMinedSentence(sentenceOrMultSent)==null){
-			System.out.println("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = "+sentenceOrMultSent);
+			// TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
+			// System.out.println("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = "+sentenceOrMultSent);
 			continue;
 		}
 		// aaa. hhh hhh.  kkk . kkk ll hhh. lll kkk n.
@@ -328,7 +324,7 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 		}
 	}
 
-	return (String[]) sentsClean.toArray(new String[0]);
+	return sentsClean.toArray(new String[0]);
 }
 	private String[] verifyEnforceStartsUpperCase(String[] sents) {
 		for(int i=0; i<sents.length; i++){

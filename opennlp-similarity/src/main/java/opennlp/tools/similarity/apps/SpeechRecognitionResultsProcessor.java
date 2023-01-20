@@ -18,7 +18,6 @@ package opennlp.tools.similarity.apps;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -28,11 +27,11 @@ import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
 public class SpeechRecognitionResultsProcessor /*extends BingWebQueryRunner*/ {
-  private static Logger LOG = Logger
-      .getLogger("opennlp.tools.similarity.apps.SpeechRecognitionResultsProcessor");
-  private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
-  ParserChunker2MatcherProcessor sm;
-  WebSearchEngineResultsScraper scraper = new WebSearchEngineResultsScraper();
+  private static final Logger LOG =
+          Logger.getLogger("opennlp.tools.similarity.apps.SpeechRecognitionResultsProcessor");
+  private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
+  private ParserChunker2MatcherProcessor sm;
+  private final WebSearchEngineResultsScraper scraper = new WebSearchEngineResultsScraper();
 
   /**
    * Gets an expression and tries to find it on the web. If search results are
@@ -60,15 +59,17 @@ public class SpeechRecognitionResultsProcessor /*extends BingWebQueryRunner*/ {
           .replace("<br>", "").replace("</br>", "").replace("...", ". ")
           .replace("|", " ").replace(">", " ");
       snapshot += " . " + hit.getTitle();
-      Double score = 0.0;
+      double score = 0.0;
       try {
         SentencePairMatchResult matchRes = sm.assessRelevance(snapshot,
             searchQuery);
         List<List<ParseTreeChunk>> match = matchRes.getMatchResult();
         score = parseTreeChunkListScorer.getParseTreeChunkListScore(match);
+        /*
         if (score > 1.5) {
           LOG.info(score + " | " + match);
         }
+        */
       } catch (Exception e) {
         LOG.severe("Problem processing snapshot " + snapshot);
         e.printStackTrace();
@@ -97,24 +98,20 @@ public class SpeechRecognitionResultsProcessor /*extends BingWebQueryRunner*/ {
    */
   public List<SentenceMeaningfullnessScore> runSearchAndScoreMeaningfulness(
       List<String> sents) {
-    List<SentenceMeaningfullnessScore> res = new ArrayList<SentenceMeaningfullnessScore>();
+    List<SentenceMeaningfullnessScore> res = new ArrayList<>();
     double bestSentScore = -1;
-    String bestSent = null;
     for (String sentence : sents) {
       try {
         List<HitBase> resultList = scraper.runSearch(sentence);
-        double scoreForSentence = calculateTotalMatchScoreForHits(resultList,
-            sentence);
-        System.out.println("Total meaningfulness score = " + scoreForSentence
-            + " for sentence = " + sentence);
+        double scoreForSentence = calculateTotalMatchScoreForHits(resultList, sentence);
+        // TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
+        // System.out.println("Total meaningfulness score = " + scoreForSentence + " for sentence = " + sentence);
         if (scoreForSentence > bestSentScore) {
           bestSentScore = scoreForSentence;
-          bestSent = sentence;
         }
         res.add(new SentenceMeaningfullnessScore(sentence, scoreForSentence));
       } catch (Exception e) {
-        // e.printStackTrace();
-        LOG.info("No search results for query '" + sentence);
+        LOG.warning("No search results for query '" + sentence);
         e.printStackTrace();
         return null;
       }

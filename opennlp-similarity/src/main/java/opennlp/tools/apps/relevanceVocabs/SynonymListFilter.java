@@ -49,11 +49,7 @@ public class SynonymListFilter {
 		dir = dir.replace("maps/analytics","");
 		try {
 			map = new SynonymMap( new FileInputStream(dir+"wn_s.pl"));
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

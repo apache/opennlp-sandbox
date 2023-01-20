@@ -20,15 +20,23 @@ package opennlp.tools.textsimilarity;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.TestCase;
+import org.junit.Before;
+import org.junit.Test;
 
-public class GeneralizationListReducerTest extends TestCase {
-  private GeneralizationListReducer generalizationListReducer = new GeneralizationListReducer();
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
-  public void notNull() {
+public class GeneralizationListReducerTest {
+  private final GeneralizationListReducer generalizationListReducer = new GeneralizationListReducer();
+
+  @Before
+  public void setup() {
     assertNotNull(generalizationListReducer);
   }
 
+  @Test
   public void test() {
     ParseTreeChunk ch1 = new ParseTreeChunk("VP", new String[] { "run",
         "around", "tigers", "zoo" }, new String[] { "VB", "IN", "NP", "NP" });
@@ -47,7 +55,7 @@ public class GeneralizationListReducerTest extends TestCase {
 
     // [DT-the NN-* VBG-flying NN-car ], [], [], [DT-the NN-* ]]
 
-    List<ParseTreeChunk> inp = new ArrayList<ParseTreeChunk>();
+    List<ParseTreeChunk> inp = new ArrayList<>();
     inp.add(ch1);
     inp.add(ch2);
     inp.add(ch5);
@@ -68,12 +76,9 @@ public class GeneralizationListReducerTest extends TestCase {
     assertFalse(ch5.isASubChunk(ch3));
     assertFalse(ch3.isASubChunk(ch5));
 
-    List<ParseTreeChunk> res = generalizationListReducer
-        .applyFilteringBySubsumption(inp);
-    assertEquals(
-        res.toString(),
+    List<ParseTreeChunk> res = generalizationListReducer.applyFilteringBySubsumption(inp);
+    assertEquals(res.toString(),
         "[VP [VB-run IN-around NP-tigers NP-zoo ], NP [DT-the NP-tigers ], NP [DT-the NN-* VBG-flying NN-car ]]");
-    System.out.println(res);
 
   }
 }

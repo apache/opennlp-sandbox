@@ -29,8 +29,7 @@ import opennlp.tools.similarity.apps.utils.PageFetcher;
 import opennlp.tools.textsimilarity.TextProcessor;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
-public class WebPageExtractor
-{
+public class WebPageExtractor {
 	protected PageFetcher pageFetcher = new PageFetcher();
 	
 	protected ParserChunker2MatcherProcessor nlProc;
@@ -116,13 +115,14 @@ public class WebPageExtractor
 				if (s == null || s.trim().length() < sentThresholdLength || s.length() < sentThresholdLength + 10)
 					continue;
 				if (GeneratedSentenceProcessor.acceptableMinedSentence(s)==null){
-					System.out.println("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = "+s);
+					// TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
+					// System.out.println("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = "+s);
 					continue;
 				}
 				sentsClean.add(s);
 			}
 		}
-		return (String[]) sentsClean.toArray(new String[0]);
+		return sentsClean.toArray(new String[0]);
 	}
 
 	public class TextChunk {

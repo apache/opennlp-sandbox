@@ -66,24 +66,23 @@ public class FileHandler {
    * @param append
    * @throws Exception
    */
-  public void writeToTextFile(ArrayList<String> list, String filePath,
-      boolean append) throws Exception {
-    FileWriter outFile = null;
+  public void writeToTextFile(ArrayList<String> list, String filePath, boolean append) throws Exception {
+    FileWriter outFile;
     Iterator<String> it = list.iterator();
     if (!append) {
       outFile = new FileWriter(filePath);
       PrintWriter out = new PrintWriter(outFile);
       while (it.hasNext()) {
-        out.println((String) it.next());
+        out.println(it.next());
       }
       outFile.close();
     } else {
       int tmp = 0;
       while (it.hasNext()) {
         if (tmp == 0) {
-          appendtofile("\n" + (String) it.next(), filePath);
+          appendtofile("\n" + it.next(), filePath);
         } else {
-          appendtofile((String) it.next(), filePath);
+          appendtofile(it.next(), filePath);
         }
         tmp++;
       }

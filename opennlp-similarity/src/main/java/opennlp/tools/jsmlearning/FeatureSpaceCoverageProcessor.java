@@ -26,7 +26,7 @@ import org.apache.commons.lang.StringUtils;
 
 public class FeatureSpaceCoverageProcessor {
 
-	public Map<String, Integer> paramMap = new HashMap<String, Integer>();
+	public Map<String, Integer> paramMap = new HashMap<>();
 	public String[] header; 
 	String[] attributes;
 
@@ -48,7 +48,7 @@ public class FeatureSpaceCoverageProcessor {
 		if (paramMap.isEmpty())
 			throw new Exception("paramMap.isEmpty()");
 
-		Float score = 0f;
+		float score = 0f;
 		int p1 = paramMap.get("First Level Category");	
 		int p2 = paramMap.get("Second Level Category");
 		if (seed[p1].equals(candidate[p1])) {
@@ -80,7 +80,7 @@ public class FeatureSpaceCoverageProcessor {
 		if (paramMap.isEmpty())
 			throw new Exception("paramMap.isEmpty()");
 
-		Float score = 0f, catScore = 10000f, currCatScore=10000000f;
+		float score = 0f, catScore = 10000f, currCatScore=10000000f;
 
 		int p1 = paramMap.get("First Level Category");	
 		int p2 = paramMap.get("Second Level Category");
@@ -98,7 +98,7 @@ public class FeatureSpaceCoverageProcessor {
 		if (score > 1000000f)
 			return 10000000f;
 
-		Float latLongScore = 100000f, currLatLongScore = 10000000f;
+		float latLongScore = 100000f, currLatLongScore = 10000000f;
 		for(int v=0; v<seed[0].length; v++){
 			try {
 				int p3 = paramMap.get("Latitude");	
@@ -128,7 +128,6 @@ public class FeatureSpaceCoverageProcessor {
 		try {
 			res.toString();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			System.out.println("wrong key"+key);
 		}

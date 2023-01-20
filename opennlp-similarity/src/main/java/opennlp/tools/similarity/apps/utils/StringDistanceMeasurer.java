@@ -93,7 +93,7 @@ public class StringDistanceMeasurer {
   // main entry point. Gets two strings and applies string match
   // and also linguistic match if score > a threshold
   public double measureStringDistance(String str1, String str2) {
-    double result = (double) -1.0;
+    double result = -1.0;
     try {
       str1 = StringCleaner.processSnapshotForMatching(str1);
       str2 = StringCleaner.processSnapshotForMatching(str2);
@@ -143,7 +143,7 @@ public class StringDistanceMeasurer {
       result = Math.pow((double) (lOverlap * lOverlap) / (double) l1
           / (double) l2, 0.4);
       if (result > 1)
-        result = (double) 1.0;
+        result = 1.0;
 
       // double ld = LevensteinDistanceFinder. levensteinDistance(str1, str2, 1,
       // 10, 1, 10);
@@ -151,10 +151,10 @@ public class StringDistanceMeasurer {
 
     } catch (Exception e) {
       e.printStackTrace();
-      return (double) -1.0;
+      return -1.0;
     }
 
-    Double linguisticScore = (double) -1.0;
+    Double linguisticScore = -1.0;
     // to be developed - employs linguistic processor
     /*
      * if (result>MIN_SCORE_FOR_LING) { List<List<ParseTreeChunk>> matchResult =
@@ -169,7 +169,7 @@ public class StringDistanceMeasurer {
   }
 
   public double measureStringDistanceNoStemming(String str1, String str2) {
-    double result = (double) -1.0;
+    double result = -1.0;
     try {
       str1 = StringCleaner.processSnapshotForMatching(str1);
       str2 = StringCleaner.processSnapshotForMatching(str2);
@@ -219,7 +219,7 @@ public class StringDistanceMeasurer {
       result = Math.pow((double) (lOverlap * lOverlap) / (double) l1
           / (double) l2, 0.4);
       if (result > 1)
-        result = (double) 1.0;
+        result = 1.0;
 
       // double ld = LevensteinDistanceFinder. levensteinDistance(str1, str2, 1,
       // 10, 1, 10);
@@ -227,10 +227,10 @@ public class StringDistanceMeasurer {
 
     } catch (Exception e) {
       e.printStackTrace();
-      return (double) -1.0;
+      return -1.0;
     }
 
-    Double linguisticScore = (double) -1.0;
+    Double linguisticScore = -1.0;
     // to be developed - employs linguistic processor
     /*
      * if (result>MIN_SCORE_FOR_LING) { List<List<ParseTreeChunk>> matchResult =

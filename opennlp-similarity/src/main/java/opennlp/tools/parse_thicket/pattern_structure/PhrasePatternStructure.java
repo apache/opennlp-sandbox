@@ -16,8 +16,6 @@
  */
 package opennlp.tools.parse_thicket.pattern_structure;
 
-
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -28,7 +26,6 @@ import opennlp.tools.parse_thicket.ParseTreeNode;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
 import opennlp.tools.textsimilarity.ParseTreeMatcherDeterministic;
 
-
 public class PhrasePatternStructure {
 	int objectCount;
 	int attributeCount;
@@ -37,7 +34,7 @@ public class PhrasePatternStructure {
 	public PhrasePatternStructure(int objectCounts, int attributeCounts) {
 		objectCount = objectCounts;
 		attributeCount = attributeCounts;
-		conceptList = new ArrayList<PhraseConcept>();
+		conceptList = new ArrayList<>();
 		PhraseConcept bottom = new PhraseConcept();
 		md = new ParseTreeMatcherDeterministic();
 		/*Set<Integer> b_intent = new HashSet<Integer>();
@@ -63,8 +60,8 @@ public class PhrasePatternStructure {
 		return Generator;
 	}
 	public int AddIntent(List<List<ParseTreeChunk>> intent, int generator) {
-		System.out.println("debug");
-		System.out.println("called for " + intent);
+		// TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
+		// System.out.println("debug called for " + intent);
 		//printLattice();
 		int generator_tmp = GetMaximalConcept(intent, generator);
 		generator = generator_tmp;
@@ -75,7 +72,7 @@ public class PhrasePatternStructure {
 			return generator;
 		}
 		Set<Integer> generatorParents = conceptList.get(generator).parents;
-		Set<Integer> newParents = new HashSet<Integer>();
+		Set<Integer> newParents = new HashSet<>();
 		for (int candidate : generatorParents) {
 			if (!intent.containsAll(conceptList.get(candidate).intent)) {
 				//if (!conceptList.get(candidate).intent.containsAll(intent)) {
@@ -84,11 +81,13 @@ public class PhrasePatternStructure {
 				//intersection.retainAll(intent);
 				List<List<ParseTreeChunk>> intersection = md
 						.matchTwoSentencesGroupedChunksDeterministic(intent, conceptList.get(candidate).intent);
-				System.out.println("recursive call (inclusion)");
+				// TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
+				// System.out.println("recursive call (inclusion)");
 				candidate = AddIntent(intersection, candidate);
 			}
 			boolean addParents = true;
-			System.out.println("now iterating over parents");
+			// TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
+			// System.out.println("now iterating over parents");
 			Iterator<Integer> iterator = newParents.iterator();
 			while (iterator.hasNext()) {
 				Integer parent = iterator.next();
@@ -121,7 +120,8 @@ public class PhrasePatternStructure {
 				newParents.add(candidate);
 			}
 		}
-		System.out.println("size of lattice: " + conceptList.size());
+		// TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
+		// System.out.println("size of lattice: " + conceptList.size());
 		PhraseConcept newConcept = new PhraseConcept();
 		newConcept.setIntent(intent);
 		newConcept.setPosition(conceptList.size());
@@ -177,7 +177,7 @@ public class PhrasePatternStructure {
 	}
 
 	private ParseTreeChunk convertNodeListIntoChunk(List<ParseTreeNode> ps) {
-		List<String> lemmas = new ArrayList<String>(),  poss = new ArrayList<String>();
+		List<String> lemmas = new ArrayList<>(),  poss = new ArrayList<>();
 		for(ParseTreeNode n: ps){
 			lemmas.add(n.getWord());
 			poss.add(n.getPos());

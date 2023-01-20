@@ -107,7 +107,7 @@ public class WebPageContentSentenceExtractor extends WebPageExtractor {
 		for (String sentenceOrMultSent : longestSents)
 		{
 			if (GeneratedSentenceProcessor.acceptableMinedSentence(sentenceOrMultSent)==null){
-				System.out.println("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = "+sentenceOrMultSent);
+				// System.out.println("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = "+sentenceOrMultSent);
 				continue;
 			}
 			// aaa. hhh hhh.  kkk . kkk ll hhh. lll kkk n.
@@ -124,7 +124,7 @@ public class WebPageContentSentenceExtractor extends WebPageExtractor {
 			sentsClean.add(sentenceOrMultSent);
 		}
 
-		return (String[]) sentsClean.toArray(new String[0]);
+		return sentsClean.toArray(new String[0]);
 	}
 
 	

@@ -163,7 +163,6 @@ public class BingQueryRunner {
         		  "biomecanica las palancas");
       System.out.print(resp.get(0));
     } catch (Exception e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
 

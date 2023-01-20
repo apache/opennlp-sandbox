@@ -29,7 +29,6 @@ public class TreeKernelRunner {
 		try {
 			mStartProcess = r.exec( command, null, new File(runPath));
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -39,7 +38,6 @@ public class TreeKernelRunner {
 		try {
 			int returnCode = mStartProcess.waitFor();
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

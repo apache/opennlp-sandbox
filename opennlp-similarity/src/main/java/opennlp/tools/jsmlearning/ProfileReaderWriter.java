@@ -150,7 +150,6 @@ public class ProfileReaderWriter {
 	}
 
 	public static void writeReportListStr(List<String> res, String string) {
-		// TODO Auto-generated method stub
 
 	}
 

@@ -18,26 +18,20 @@
 package opennlp.tools.fca;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.collections.ListUtils;
 
-
 public class BasicLevelMetrics {
-
 	
 	ConceptLattice cl;	
-	ArrayList<ArrayList<Integer>> attributesExtent  = null; 
+	ArrayList<ArrayList<Integer>> attributesExtent;
 	ArrayList<ArrayList<Integer>> objectsIntent  = null; 
 	ArrayList<Integer> attributes = null; 
-	double[][] objectsSimilarityJ = null;
-	double [][] objectsSimilaritySMC = null; 
-					
-	
+	private final double[][] objectsSimilarityJ;
+	private final double [][] objectsSimilaritySMC;
+
 	public BasicLevelMetrics (ConceptLattice cl){
 		this.cl = cl;
 		this.attributesExtent = null;
@@ -46,9 +40,9 @@ public class BasicLevelMetrics {
 	}
 	
 	public void setUp(){
-		attributesExtent = new ArrayList<ArrayList<Integer>>();
-		objectsIntent = new ArrayList<ArrayList<Integer>>();
-		attributes = new ArrayList<Integer>();
+		attributesExtent = new ArrayList<>();
+		objectsIntent = new ArrayList<>();
+		attributes = new ArrayList<>();
 		
 		for (int i=0;i<cl.attributeCount;i++){
 			attributesExtent.add((ArrayList<Integer>) cl.getAttributeExtByID(i));
@@ -56,10 +50,10 @@ public class BasicLevelMetrics {
 		}	
 		
 		for (int i=0;i<cl.objectCount;i++){
-			objectsIntent.add((ArrayList<Integer>) cl.getObjectIntByID(i));
+			objectsIntent.add(cl.getObjectIntByID(i));
 		}
 	
-		double [] buf = new double[2];
+		double [] buf;
 		
 		for (int i = 0; i < cl.objectCount; i++){
 			for (int j = i + 1 ; j < cl.objectCount; j++){
@@ -83,8 +77,7 @@ public class BasicLevelMetrics {
 	//Utility functions for  Similarity approach (S)
 	public double simSMC (ArrayList<Integer> intent1, ArrayList<Integer>intent2){
 		int tp = (ListUtils.intersection(intent1,intent2)).size();
-		ArrayList<Integer> fnlst = new ArrayList<Integer>();
-		fnlst.addAll(this.attributes);
+		ArrayList<Integer> fnlst = new ArrayList<>(this.attributes);
 		fnlst.removeAll(ListUtils.union(intent1,intent2)); 
 		int fn = fnlst.size();
 		return (this.attributes.size()>0) ? 1.*(tp + fn)/this.attributes.size() : 0;
@@ -95,18 +88,15 @@ public class BasicLevelMetrics {
 	}
 	
 	public  double [] simJ_SMC(ArrayList<Integer> intent1, ArrayList<Integer>intent2){
-		double simJ = 0;
-		double simSMC = 0;	
-		Set<Integer> intersection = new HashSet<Integer>(); 
-		intersection.addAll(intent1);
+		double simJ;
+		double simSMC;
+		Set<Integer> intersection = new HashSet<>(intent1);
 		intersection.retainAll(intent2);
 		
-		Set<Integer> union = new HashSet<Integer>(); 
+		Set<Integer> union = new HashSet<>(); 
 		union.addAll(intent1);
 		union.addAll(intent2);
-		int fn = 0;
-		Set<Integer> unionOut = new HashSet<Integer>();
-		unionOut.addAll(this.attributes);
+		Set<Integer> unionOut = new HashSet<>(this.attributes);
 		unionOut.removeAll(union);	
 		simSMC = (this.attributes.size() > 0) ? 1.*(intersection.size() + unionOut.size())/this.attributes.size() : 0;
 		simJ = (union.size() > 0) ? 1.*intersection.size()/union.size() : 0;
@@ -151,8 +141,7 @@ public class BasicLevelMetrics {
 	}
 	
 	public double minCohJ (FormalConcept c){
-		double min = Integer.MAX_VALUE,
-				val = 0;
+		double min = Integer.MAX_VALUE, val;
 		
 		for (Integer i:c.extent){
 			for (Integer j: c.extent){
@@ -165,8 +154,7 @@ public class BasicLevelMetrics {
 	}
 	
 	public double minCohSMC (FormalConcept c){
-		double min = Integer.MAX_VALUE,
-				val = 0;
+		double min = Integer.MAX_VALUE, val;
 		for (Integer i:c.extent){
 			for (Integer j: c.extent){
 					val = objectsSimilaritySMC[i][j];
@@ -183,7 +171,7 @@ public class BasicLevelMetrics {
 		double sum = 0;
 		Set<Integer> upperNeighbors =c.parents;
 		int rightNeighborsNumber = 0;
-		float truthDegree = 0;
+		float truthDegree;
 		for (Integer i: upperNeighbors){
 			if (c.cohAvgJ > cl.conceptList.get(i).cohAvgJ){
 				rightNeighborsNumber++;
@@ -204,7 +192,7 @@ public class BasicLevelMetrics {
 		double sum = 0;
 		Set<Integer> upperNeighbors =c.parents;
 		int rightNeighborsNumber = 0;
-		float truthDegree = 0;
+		float truthDegree;
 		for (Integer i: upperNeighbors){
 			if (c.cohMinJ > cl.conceptList.get(i).cohMinJ){
 				rightNeighborsNumber++;
@@ -222,10 +210,9 @@ public class BasicLevelMetrics {
 	
 	public double upperCohMinByAvgJ(FormalConcept c,float tetta){
 		//min alpha whth average cohesion J
-		double max = Integer.MIN_VALUE,
-				val = 0; 
+		double max = Integer.MIN_VALUE, val;
 		int rightNeighborsNumber = 0;
-		float truthDegree = 0;
+		float truthDegree;
 		Set<Integer> upperNeighbors =c.parents;
 		for (Integer i: upperNeighbors){
 			if (c.cohAvgJ > cl.conceptList.get(i).cohAvgJ){
@@ -246,10 +233,9 @@ public class BasicLevelMetrics {
 	
 	public double upperCohMinByMinJ(FormalConcept c,float tetta){
 		//min alpha whth average cohesion J
-		double max = Integer.MIN_VALUE,
-				val = 0; 
+		double max = Integer.MIN_VALUE, val;
 		int rightNeighborsNumber = 0;
-		float truthDegree = 0;
+		float truthDegree;
 		Set<Integer> upperNeighbors =c.parents;
 		for (Integer i: upperNeighbors){
 			if (c.cohMinJ > cl.conceptList.get(i).cohMinJ){
@@ -274,7 +260,7 @@ public class BasicLevelMetrics {
 		double sum = 0;
 		Set<Integer> upperNeighbors =c.parents;
 		int rightNeighborsNumber = 0;
-		float truthDegree = 0;
+		float truthDegree;
 		for (Integer i: upperNeighbors){
 			if (c.cohAvgSMC > cl.conceptList.get(i).cohAvgSMC){
 				rightNeighborsNumber++;
@@ -294,7 +280,7 @@ public class BasicLevelMetrics {
 		double sum = 0;
 		Set<Integer> upperNeighbors =c.parents;
 		int rightNeighborsNumber = 0;
-		float truthDegree = 0;
+		float truthDegree;
 		for (Integer i: upperNeighbors){
 			if (c.cohMinSMC > cl.conceptList.get(i).cohMinSMC){
 				rightNeighborsNumber++;
@@ -313,10 +299,9 @@ public class BasicLevelMetrics {
 	public double upperCohMinByAvgSMC(FormalConcept c,float tetta){
 		//min alpha whth average cohesion J
 		
-		double max = Integer.MIN_VALUE,
-				val = 0; 
+		double max = Integer.MIN_VALUE, val;
 		int rightNeighborsNumber = 0;
-		float truthDegree = 0;
+		float truthDegree;
 		Set<Integer> upperNeighbors =c.parents;
 		for (Integer i: upperNeighbors){
 			if (c.cohAvgSMC > cl.conceptList.get(i).cohAvgSMC){
@@ -337,10 +322,9 @@ public class BasicLevelMetrics {
 	
 	public double upperCohMinByMinSMC(FormalConcept c,float tetta){
 		//min alpha whth average cohesion J
-		double max = Integer.MIN_VALUE,
-				val = 0; 
+		double max = Integer.MIN_VALUE, val;
 		int rightNeighborsNumber = 0;
-		float truthDegree = 0;
+		float truthDegree;
 		Set<Integer> upperNeighbors =c.parents;
 		for (Integer i: upperNeighbors){
 			if (c.cohMinSMC > cl.conceptList.get(i).cohMinSMC){
@@ -365,7 +349,7 @@ public class BasicLevelMetrics {
 		double sum = 0;
 		Set<Integer> lowerNeighbors =c.childs;
 		int rightNeighborsNumber = 0;
-		float truthDegree = 0;
+		float truthDegree;
 		for (Integer i: lowerNeighbors){
 			if (c.cohAvgJ < cl.conceptList.get(i).cohAvgJ){
 				rightNeighborsNumber++;
@@ -384,7 +368,7 @@ public class BasicLevelMetrics {
 	public double lowerCohAvgByMinJ(FormalConcept c,float tetta){
 		double sum = 0;
 		int rightNeighborsNumber = 0;
-		float truthDegree = 0;
+		float truthDegree;
 		Set<Integer> lowerNeighbors =c.childs;
 		for (Integer i: lowerNeighbors){
 			if (c.cohMinJ< cl.conceptList.get(i).cohMinJ){
@@ -403,10 +387,9 @@ public class BasicLevelMetrics {
 	}
 	
 	public double lowerCohMinByAvgJ(FormalConcept c,float tetta){
-		double min = Integer.MAX_VALUE,
-				val = 0;
+		double min = Integer.MAX_VALUE, val;
 		int rightNeighborsNumber = 0;
-		float truthDegree = 0;
+		float truthDegree;
 		Set<Integer> lowerNeighbors =c.childs;
 		for (Integer i: lowerNeighbors){
 			if (c.cohAvgJ< cl.conceptList.get(i).cohAvgJ){
@@ -426,10 +409,9 @@ public class BasicLevelMetrics {
 	}
 	
 	public double lowerCohMinByMinJ(FormalConcept c,float tetta){
-		double min = Integer.MAX_VALUE,
-				val = 0;
+		double min = Integer.MAX_VALUE, val;
 		int rightNeighborsNumber = 0;
-		float truthDegree = 0;
+		float truthDegree;
 		Set<Integer> lowerNeighbors =c.childs;
 		for (Integer i: lowerNeighbors){
 			if (c.cohMinJ< cl.conceptList.get(i).cohMinJ){
@@ -451,7 +433,7 @@ public class BasicLevelMetrics {
 	public double lowerCohAvgByAvgSMC(FormalConcept c,float tetta){
 		double sum = 0;
 		int rightNeighborsNumber = 0;
-		float truthDegree = 0;
+		float truthDegree;
 		Set<Integer> lowerNeighbors =c.childs;
 		for (Integer i: lowerNeighbors){
 			if (c.cohAvgSMC < cl.conceptList.get(i).cohAvgSMC){
@@ -471,7 +453,7 @@ public class BasicLevelMetrics {
 	public double lowerCohAvgByMinSMC(FormalConcept c,float tetta){
 		double sum = 0;
 		int rightNeighborsNumber = 0;
-		float truthDegree = 0;
+		float truthDegree;
 		Set<Integer> lowerNeighbors =c.childs;
 		for (Integer i: lowerNeighbors){
 			if (c.cohMinSMC < cl.conceptList.get(i).cohMinSMC){
@@ -489,10 +471,9 @@ public class BasicLevelMetrics {
 	}
 	
 	public double lowerCohMinByAvgSMC(FormalConcept c,float tetta){
-		double min = Integer.MAX_VALUE,
-				val = 0;
+		double min = Integer.MAX_VALUE, val;
 		int rightNeighborsNumber = 0;
-		float truthDegree = 0;
+		float truthDegree;
 		Set<Integer> lowerNeighbors =c.childs;
 		for (Integer i: lowerNeighbors){
 			if (c.cohAvgSMC<=cl.conceptList.get(i).cohAvgSMC){
@@ -513,10 +494,9 @@ public class BasicLevelMetrics {
 	
 	
 	public double lowerCohMinByMinSMC(FormalConcept c,float tetta){
-		double min = Integer.MAX_VALUE,
-				val = 0;
+		double min = Integer.MAX_VALUE, val;
 		int rightNeighborsNumber = 0;
-		float truthDegree = 0;
+		float truthDegree;
 		Set<Integer> lowerNeighbors =c.childs;
 		for (Integer i: lowerNeighbors){
 			if (c.cohMinSMC< cl.conceptList.get(i).cohMinSMC){
@@ -578,15 +558,14 @@ public class BasicLevelMetrics {
 		
 		ArrayList<Integer> attrExtent;
 		Set<Integer> intersection;
-		double sum = 0;
+		double sum;
 		for (FormalConcept c: cl.conceptList){
 			sum = 0;
 			for (Integer i: c.intent){
-				intersection = new HashSet<Integer>();
-				intersection.addAll(c.extent);
+				intersection = new HashSet<>(c.extent);
 				attrExtent = attributesExtent.get(i);				
 				intersection.retainAll(attrExtent);
-				sum+=(double)intersection.size()*1./attrExtent.size();
+				sum+= (double) intersection.size() /attrExtent.size();
 				}	
 			c.blCV = Double.isNaN(sum) ? 0 : sum;
 			
@@ -599,16 +578,15 @@ public class BasicLevelMetrics {
 		
 		ArrayList<Integer> attrExtent;
 		Set<Integer> intersection;
-		double sum = 0;
+		double sum;
 		int latticeSize = cl.conceptList.size();
 		for (FormalConcept c: cl.conceptList){
 			sum = 0;
 			for (int i = 0; i < cl.attributeCount; i++){
-				intersection = new HashSet<Integer>();
-				intersection.addAll(c.extent);
+				intersection = new HashSet<>(c.extent);
 				attrExtent = attributesExtent.get(i);				
 				intersection.retainAll(attrExtent);
-				sum+=(double)intersection.size()*1./attrExtent.size()*intersection.size()/c.extent.size();
+				sum+=(double)intersection.size()/attrExtent.size()*intersection.size()/c.extent.size();
 				}	
 			c.blCFC = Double.isNaN(sum) ? 0 : sum;
 		}
@@ -621,18 +599,17 @@ public class BasicLevelMetrics {
 		
 		ArrayList<Integer> attrExtent;
 		Set<Integer> intersection;
-		double sum = 0;
+		double sum;
 		int attrSize = cl.objectCount;
 		int cExtentSize = 0;
 		for (FormalConcept c: cl.conceptList){
 			sum = 0;
 			for (int i = 0; i < cl.attributeCount; i++){
-				intersection = new HashSet<Integer>();
-				intersection.addAll(c.extent);
+				intersection = new HashSet<>(c.extent);
 				cExtentSize = c.extent.size();
 				attrExtent = attributesExtent.get(i);				
 				intersection.retainAll(attrExtent);
-				sum+=(double)Math.pow(intersection.size()*1./cExtentSize,2)-Math.pow(1.*attrExtent.size()/attrSize,2);
+				sum += Math.pow(intersection.size()*1./cExtentSize,2)-Math.pow(1.*attrExtent.size()/attrSize,2);
 				}	
 			c.blCU =Double.isNaN(1.*cExtentSize/attrSize*sum) ? 0 : 1.*cExtentSize/attrSize*sum;
 		}					
@@ -643,8 +620,8 @@ public class BasicLevelMetrics {
 		
 		if (attributesExtent == null)
 			this.setUp();
-		ArrayList<Integer> attributes = new ArrayList<Integer>();
-		ArrayList<Integer> outOfIntent = new ArrayList<Integer>();
+		ArrayList<Integer> attributes = new ArrayList<>();
+		ArrayList<Integer> outOfIntent;
 		Set<Integer> intersection;
 		ArrayList<Integer> attrExtent;
 		double sum, term;
@@ -654,12 +631,10 @@ public class BasicLevelMetrics {
 		}
 		for (FormalConcept c: cl.conceptList){
 			sum = 0;
-			outOfIntent = new ArrayList<Integer>();
-			outOfIntent.addAll(attributes);
+			outOfIntent = new ArrayList<>(attributes);
 			outOfIntent.removeAll(c.intent);
 			for (Integer y: outOfIntent){
-				intersection = new HashSet<Integer>();
-				intersection.addAll(c.extent);	
+				intersection = new HashSet<>(c.extent);
 				attrExtent = attributesExtent.get(y);				
 				intersection.retainAll(attrExtent);
 				term = 1.*intersection.size()/c.extent.size();

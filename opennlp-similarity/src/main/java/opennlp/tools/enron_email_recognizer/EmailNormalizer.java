@@ -2,12 +2,14 @@ package opennlp.tools.enron_email_recognizer;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 import org.apache.commons.io.FileUtils;
 
 public class EmailNormalizer {
-	protected ArrayList<File> queue = new ArrayList<File>();
+
+	protected ArrayList<File> queue = new ArrayList<>();
 	
 	protected void addFilesPos(File file) {
 
@@ -47,20 +49,15 @@ public class EmailNormalizer {
 		"@", "<", ">"
 	};
 
-	private String OrigFolder = "maildir_ENRON_EMAILS", NewFolder = "data";
-
-	
-	
 	public void normalizeAndWriteIntoANewFile(File f){
 		String content="";
-        try {
-	        content = FileUtils.readFileToString(f);
-        } catch (IOException e) {
-	        // TODO Auto-generated catch block
-	        e.printStackTrace();
-        }
+		try {
+			content = FileUtils.readFileToString(f, StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		String[] lines = content.split("\n");
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		for(String l: lines){
 			boolean bAccept = true;
 			for(String h: headers){
@@ -74,14 +71,15 @@ public class EmailNormalizer {
 				}
 			}
 			if (bAccept)
-				buf.append(l+"\n");
+				buf.append(l).append("\n");
 		}
-		String directoryNew = f.getAbsolutePath().replace(OrigFolder, NewFolder);
+		String origFolder = "maildir_ENRON_EMAILS";
+		String newFolder = "data";
+		String directoryNew = f.getAbsolutePath().replace(origFolder, newFolder);
 		try {
 			String fullFileNameNew = directoryNew +"txt";
-	        FileUtils.writeStringToFile(new File(fullFileNameNew), buf.toString());
+	        FileUtils.writeStringToFile(new File(fullFileNameNew), buf.toString(), StandardCharsets.UTF_8);
         } catch (IOException e) {
-	        // TODO Auto-generated catch block
 	        e.printStackTrace();
         }
 	}

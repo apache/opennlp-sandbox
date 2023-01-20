@@ -11,15 +11,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import edu.mit.jverbnet.data.Frame;
-import edu.mit.jverbnet.data.Frame.FrameBuilder;
 import edu.mit.jverbnet.data.FrameType;
 import edu.mit.jverbnet.data.IFrame;
 import edu.mit.jverbnet.data.IMember;
 import edu.mit.jverbnet.data.IThematicRole;
 import edu.mit.jverbnet.data.IVerbClass;
 import edu.mit.jverbnet.data.IWordnetKey;
-import edu.mit.jverbnet.data.VerbClass;
 import edu.mit.jverbnet.index.IVerbIndex;
 import edu.mit.jverbnet.index.VerbIndex;
 
@@ -48,14 +45,9 @@ public class VerbNetProcessor implements IGeneralizer<Map<String, List<String>>>
 		try {
 			URL url = new URL ("file", null , pathToVerbnet ) ;
 			index = new VerbIndex ( url ) ;
+			index.open() ;
 
-			index . open () ;
-
-		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -152,7 +144,6 @@ public class VerbNetProcessor implements IGeneralizer<Map<String, List<String>>>
 				if (frames2.get(i).getSecondaryType()!=null && frames2.get(i).getSecondaryType().getID()!=null)
 					patternsWord2.add(frames2.get(i).getSecondaryType().getID());
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -218,7 +209,6 @@ public class VerbNetProcessor implements IGeneralizer<Map<String, List<String>>>
 				try {
 					System.out.println(f.getPrimaryType().getID() + " => " + f.getXTag() + " >> "+ f.getSecondaryType().getID() +  " : " + f.getExamples().get(0));
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -240,18 +230,11 @@ public class VerbNetProcessor implements IGeneralizer<Map<String, List<String>>>
 	public static void main(String[] args){
 		String resourceDir = new File(".").getAbsolutePath().replace("/.", "") + "/src/test/resources";
 		VerbNetProcessor proc = VerbNetProcessor.getInstance(resourceDir);
-		/*	try {
-				proc.testIndex();
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		 */	
 
 		System.out.println(proc.buildTreeRepresentationForTreeKernelLearning("abandon"));
 		System.out.println(proc.buildTreeRepresentationForTreeKernelLearning("earn"));
 		
-		List res = proc.generalize("marry", "engage");
+		List<Map<String, List<String>>> res = proc.generalize("marry", "engage");
 		System.out.println (res);
 
 		res = proc.generalize("assume", "alert");
