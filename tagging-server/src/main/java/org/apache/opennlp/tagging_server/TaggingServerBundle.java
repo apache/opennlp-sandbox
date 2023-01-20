@@ -57,9 +57,7 @@ public class TaggingServerBundle implements BundleActivator {
         try {
           httpService.registerServlet("/rest", new ServletContainer(), jerseyServletParams, null);
           httpService.registerResources("/","/htmls",null);
-        } catch (ServletException e) {
-          throw new RuntimeException(e);
-        } catch (NamespaceException e) {
+        } catch (ServletException | NamespaceException e) {
           throw new RuntimeException(e);
         }
         
