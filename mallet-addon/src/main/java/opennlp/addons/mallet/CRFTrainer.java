@@ -20,7 +20,6 @@
 package opennlp.addons.mallet;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.regex.Pattern;
 
 import opennlp.tools.ml.AbstractSequenceTrainer;
@@ -30,7 +29,6 @@ import opennlp.tools.ml.model.SequenceClassificationModel;
 import opennlp.tools.ml.model.SequenceStream;
 import cc.mallet.fst.CRF;
 import cc.mallet.fst.CRFOptimizableByLabelLikelihood;
-import cc.mallet.fst.CRFTrainerByLabelLikelihood;
 import cc.mallet.fst.CRFTrainerByValueGradients;
 import cc.mallet.fst.Transducer;
 import cc.mallet.optimize.Optimizable;
@@ -71,17 +69,17 @@ public class CRFTrainer extends AbstractSequenceTrainer {
     int nameIndex = 0;
     Sequence sequence;
     while ((sequence = sequences.read()) != null) {
-      FeatureVector featureVectors[] = new FeatureVector[sequence.getEvents().length];
-      Label malletOutcomes[] = new Label[sequence.getEvents().length];
+      FeatureVector[] featureVectors = new FeatureVector[sequence.getEvents().length];
+      Label[] malletOutcomes = new Label[sequence.getEvents().length];
 
-      Event events[] = sequence.getEvents();
+      Event[] events = sequence.getEvents();
 
       for (int eventIndex = 0; eventIndex < events.length; eventIndex++) {
 
         Event event = events[eventIndex];
 
-        String features[] = event.getContext();
-        int malletFeatures[] = new int[features.length];
+        String[] features = event.getContext();
+        int[] malletFeatures = new int[features.length];
 
         for (int featureIndex = 0; featureIndex < features.length; featureIndex++) {
           malletFeatures[featureIndex] = dataAlphabet.lookupIndex(
@@ -109,8 +107,7 @@ public class CRFTrainer extends AbstractSequenceTrainer {
     CRF crf = new CRF(trainingData.getDataAlphabet(),
         trainingData.getTargetAlphabet());
 
-    String startStateName = crf.addOrderNStates(trainingData, getOrders(),
-        (boolean[]) null,
+    String startStateName = crf.addOrderNStates(trainingData, getOrders(), null,
         // default label
         "other", Pattern.compile("other,*-cont"), // forbidden pattern
         null, // allowed pattern

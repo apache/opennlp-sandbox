@@ -32,10 +32,8 @@ import cc.mallet.fst.Transducer;
 public class TransducerModelSerializer implements ArtifactSerializer<TransducerModel> {
 
   @Override
-  public TransducerModel create(InputStream in) throws IOException,
-      InvalidFormatException {
-    ObjectInputStream ois = new ObjectInputStream(in);
-    try {
+  public TransducerModel create(InputStream in) throws IOException, InvalidFormatException {
+    try (ObjectInputStream ois = new ObjectInputStream(in)) {
       Transducer classifier = (Transducer) ois.readObject();
       return new TransducerModel(classifier);
     } catch (ClassNotFoundException e) {
@@ -44,8 +42,7 @@ public class TransducerModelSerializer implements ArtifactSerializer<TransducerM
   }
 
   @Override
-  public void serialize(TransducerModel artifact, OutputStream out)
-      throws IOException {
+  public void serialize(TransducerModel artifact, OutputStream out) throws IOException {
     ObjectOutputStream oos = new ObjectOutputStream(out);
     oos.writeObject(artifact.getModel());
     oos.flush();

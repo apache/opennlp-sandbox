@@ -36,7 +36,7 @@ import cc.mallet.types.Sequence;
 
 public class TransducerModel<T> implements SequenceClassificationModel<T>, SerializableArtifact {
 
-  private Transducer model;
+  private final Transducer model;
 
   public TransducerModel(Transducer model) {
     this.model = model;
@@ -45,7 +45,8 @@ public class TransducerModel<T> implements SequenceClassificationModel<T>, Seria
   Transducer getModel() {
     return model;
   }
-  
+
+  @Override
   public opennlp.tools.util.Sequence bestSequence(T[] sequence,
       Object[] additionalContext, BeamSearchContextGenerator<T> cg,
       SequenceValidator<T> validator) {
@@ -59,7 +60,8 @@ public class TransducerModel<T> implements SequenceClassificationModel<T>, Seria
     // TODO: How to implement min score filtering here? 
     return bestSequences(numSequences, sequence, additionalContext, cg, validator);
   }
-  
+
+  @Override
   public opennlp.tools.util.Sequence[] bestSequences(int numSequences,
       T[] sequence, Object[] additionalContext,
       BeamSearchContextGenerator<T> cg, SequenceValidator<T> validator) {
@@ -67,16 +69,16 @@ public class TransducerModel<T> implements SequenceClassificationModel<T>, Seria
     // TODO: CRF.getInputAlphabet
     Alphabet dataAlphabet = model.getInputPipe().getAlphabet();
     
-    FeatureVector featureVectors[] = new FeatureVector[sequence.length];
+    FeatureVector[] featureVectors = new FeatureVector[sequence.length];
     
     // TODO:: The feature generator needs to get the detected sequence in the end
     // to update the adaptive data!
-    String prior[] = new String[sequence.length];
+    String[] prior = new String[sequence.length];
     Arrays.fill(prior, "s"); // <- HACK, this will degrade performance!
     
     // TODO: Put together a feature generator which doesn't fail if outcomes is null!
     for (int i = 0; i < sequence.length; i++) {
-      String features[] = cg.getContext(i, sequence, null, additionalContext);
+      String[] features = cg.getContext(i, sequence, null, additionalContext);
       
       List<Integer> malletFeatureList = new ArrayList<>(features.length);
       
@@ -86,7 +88,7 @@ public class TransducerModel<T> implements SequenceClassificationModel<T>, Seria
         }
       }
 
-      int malletFeatures[] = new int[malletFeatureList.size()];
+      int[] malletFeatures = new int[malletFeatureList.size()];
       for (int k = 0; k < malletFeatureList.size(); k++) {
         malletFeatures[k] = malletFeatureList.get(k);
       }
@@ -97,7 +99,7 @@ public class TransducerModel<T> implements SequenceClassificationModel<T>, Seria
     
     FeatureVectorSequence malletSequence = new FeatureVectorSequence(featureVectors);
     
-    Sequence[] answers = null;
+    Sequence[] answers;
     if (numSequences == 1) {
       answers = new Sequence[1];
       answers[0] = model.transduce(malletSequence);
@@ -136,7 +138,7 @@ public class TransducerModel<T> implements SequenceClassificationModel<T>, Seria
     
     Alphabet targetAlphabet = model.getInputPipe().getTargetAlphabet();
     
-    String outcomes[] = new String[targetAlphabet.size()];
+    String[] outcomes = new String[targetAlphabet.size()];
     
     for (int i = 0; i < targetAlphabet.size(); i++) {
       outcomes[i] = targetAlphabet.lookupObject(i).toString();
