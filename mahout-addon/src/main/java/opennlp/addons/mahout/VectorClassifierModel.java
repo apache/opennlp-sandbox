@@ -42,6 +42,7 @@ public class VectorClassifierModel implements MaxentModel {
     this.predMap = predMap;
   }
 
+  @Override
   public double[] eval(String[] features) {
     Vector vector = new RandomAccessSparseVector(predMap.size());
     
@@ -64,10 +65,12 @@ public class VectorClassifierModel implements MaxentModel {
     return outcomes;
   }
 
+  @Override
   public double[] eval(String[] context, double[] probs) {
     return eval(context);
   }
 
+  @Override
   public double[] eval(String[] context, float[] values) {
     return eval(context);
   }
