@@ -22,6 +22,8 @@ package opennlp.tools.disambiguator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import net.sf.extjwnl.data.Synset;
 
@@ -73,10 +75,11 @@ public class OSCCWSDContextGenerator implements WSDContextGenerator {
    *
    * @return The OSCC context of the word to disambiguate
    */
-  @Override public String[] getContext(int index, String[] toks, String[] tags,
-    String[] lemmas, int ngram, int windowSize, ArrayList<String> model) {
+  @Override
+  public String[] getContext(int index, String[] toks, String[] tags,
+    String[] lemmas, int ngram, int windowSize, List<String> model) {
 
-    HashSet<String> surroundingContextClusters = new HashSet<>();
+    Set<String> surroundingContextClusters = new HashSet<>();
     surroundingContextClusters.addAll(Arrays.asList(
       extractSurroundingContext(index, toks, tags, lemmas,
         windowSize)));
@@ -96,8 +99,8 @@ public class OSCCWSDContextGenerator implements WSDContextGenerator {
     return serializedFeatures;
   }
 
-  public String[] getContext(WSDSample sample, int ngram, int windowSize,
-    ArrayList<String> model) {
+  @Override
+  public String[] getContext(WSDSample sample, int ngram, int windowSize, List<String> model) {
     return getContext(sample.getTargetPosition(), sample.getSentence(),
       sample.getTags(), sample.getLemmas(), 0, windowSize, model);
   }

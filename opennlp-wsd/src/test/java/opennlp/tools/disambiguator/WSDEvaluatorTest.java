@@ -23,6 +23,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import opennlp.tools.disambiguator.datareader.SemcorReaderExtended;
 import opennlp.tools.disambiguator.datareader.SensevalReader;
 import opennlp.tools.util.ObjectStream;
@@ -32,11 +35,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 // TODO improve the tests improve parameters
-public class WSDEvaluatorTest {
+public class WSDEvaluatorTest extends AbstractEvaluatorTest {
 
   static SensevalReader seReader;
 
-  static String modelsDir = "src/test/resources/models/";
   static String trainingDataDirectory = "src/test/resources/supervised/models/";
 
   static WSDDefaultParameters params = new WSDDefaultParameters("");
@@ -44,14 +46,12 @@ public class WSDEvaluatorTest {
   static WSDModel model;
 
   static ArrayList<String> testWords;
+  
+  @Test
+  @Ignore // TODO OPENNLP-1446: Investigate why test fails while parsing 'EnglishLS.train'
+  public void testTraining() {
 
-  /*
-   * Setup the testing variables
-   */
-  public static void setUpAndTraining() {
-    WSDHelper.loadTokenizer(modelsDir + "en-token.bin");
-    WSDHelper.loadLemmatizer(modelsDir + "en-lemmatizer.dict");
-    WSDHelper.loadTagger(modelsDir + "en-pos-maxent.bin");
+    WSDHelper.print("Evaluation Started");
 
     seReader = new SensevalReader();
     testWords = seReader.getSensevalWords();
@@ -72,10 +72,10 @@ public class WSDEvaluatorTest {
           ObjectStream<WSDSample> sampleStream = sr.getSemcorDataStream(word);
 
           WSDModel writeModel = null;
-    /*
-     * Tests training the disambiguator We test both writing and reading a model
-     * file trained by semcor
-     */
+          /*
+           * Tests training the disambiguator We test both writing and reading a model
+           * file trained by semcor
+           */
           File outFile;
           try {
             writeModel = WSDisambiguatorME
@@ -97,7 +97,9 @@ public class WSDEvaluatorTest {
     }
   }
 
-  public static void disambiguationEval() {
+  @Test
+  @Ignore // Make this work once we have migrated to JUnit5 in the sandbox components
+  public void testDisambiguationEval() {
 
     WSDHelper.print("Evaluation Started");
 
@@ -125,8 +127,4 @@ public class WSDEvaluatorTest {
     }
   }
 
-  public static void main(String[] args) {
-    setUpAndTraining();
-    disambiguationEval();
-  }
 }

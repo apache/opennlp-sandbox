@@ -83,7 +83,7 @@ public class SynNode {
     }
 
     for (int i = 0; i < phypernyms.size(); i++) {
-      PointerTargetNode ptn = (PointerTargetNode) phypernyms.get(i);
+      PointerTargetNode ptn = phypernyms.get(i);
       this.hypernyms.add(ptn.getSynset());
     }
 
@@ -102,7 +102,7 @@ public class SynNode {
     }
 
     for (int i = 0; i < pmeronyms.size(); i++) {
-      PointerTargetNode ptn = (PointerTargetNode) pmeronyms.get(i);
+      PointerTargetNode ptn = pmeronyms.get(i);
       this.meronyms.add(ptn.getSynset());
     }
   }
@@ -120,7 +120,7 @@ public class SynNode {
     }
 
     for (int i = 0; i < pholonyms.size(); i++) {
-      PointerTargetNode ptn = (PointerTargetNode) pholonyms.get(i);
+      PointerTargetNode ptn = pholonyms.get(i);
       this.holonyms.add(ptn.getSynset());
     }
 
@@ -139,7 +139,7 @@ public class SynNode {
     }
 
     for (int i = 0; i < phyponyms.size(); i++) {
-      PointerTargetNode ptn = (PointerTargetNode) phyponyms.get(i);
+      PointerTargetNode ptn = phyponyms.get(i);
       this.hyponyms.add(ptn.getSynset());
     }
   }
@@ -157,7 +157,7 @@ public class SynNode {
     }
 
     for (int i = 0; i < pentailments.size(); i++) {
-      PointerTargetNode ptn = (PointerTargetNode) pentailments.get(i);
+      PointerTargetNode ptn = pentailments.get(i);
       this.entailments.add(ptn.getSynset());
     }
 
@@ -176,7 +176,7 @@ public class SynNode {
     }
 
     for (int i = 0; i < pcoordinateTerms.size(); i++) {
-      PointerTargetNode ptn = (PointerTargetNode) pcoordinateTerms.get(i);
+      PointerTargetNode ptn = pcoordinateTerms.get(i);
       this.coordinateTerms.add(ptn.getSynset());
     }
 
@@ -195,7 +195,7 @@ public class SynNode {
     }
 
     for (int i = 0; i < pcauses.size(); i++) {
-      PointerTargetNode ptn = (PointerTargetNode) pcauses.get(i);
+      PointerTargetNode ptn = pcauses.get(i);
       this.causes.add(ptn.getSynset());
     }
 
@@ -214,7 +214,7 @@ public class SynNode {
     }
 
     for (int i = 0; i < pattributes.size(); i++) {
-      PointerTargetNode ptn = (PointerTargetNode) pattributes.get(i);
+      PointerTargetNode ptn = pattributes.get(i);
       this.attributes.add(ptn.getSynset());
     }
 
@@ -233,7 +233,7 @@ public class SynNode {
     }
 
     for (int i = 0; i < ppertainyms.size(); i++) {
-      PointerTargetNode ptn = (PointerTargetNode) ppertainyms.get(i);
+      PointerTargetNode ptn = ppertainyms.get(i);
       this.pertainyms.add(ptn.getSynset());
     }
 

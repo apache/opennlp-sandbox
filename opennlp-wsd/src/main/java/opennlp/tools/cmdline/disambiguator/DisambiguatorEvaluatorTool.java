@@ -33,14 +33,17 @@ import opennlp.tools.util.ObjectStream;
 
 public final class DisambiguatorEvaluatorTool extends CmdLineTool {
 
+  @Override
   public String getName() {
     return "DisambiguatorEvaluator";
   }
 
+  @Override
   public String getShortDescription() {
     return "Disambiguator Evaluation Tool";
   }
 
+  @Override
   public String getHelp() {
     return "Usage: " + CLI.CMD + " " + getName() + " "
         + ArgumentParser.createUsage(DisambiguatorEvaluatorParams.class);

@@ -21,25 +21,23 @@ package opennlp.tools.disambiguator;
 
 import java.util.ArrayList;
 
-import opennlp.tools.disambiguator.datareader.SensevalReader;
-
+import org.junit.Ignore;
 import org.junit.Test;
 
-public class LeskEvaluatorTest {
+import opennlp.tools.disambiguator.datareader.SensevalReader;
+
+public class LeskEvaluatorTest extends AbstractEvaluatorTest {
 
   static SensevalReader seReader = new SensevalReader();
 
   @Test
-  public static void main(String[] args) {
+  @Ignore // TODO OPENNLP-1446: Investigate why test fails while parsing 'EnglishLS.train'
+  public void testEvaluation() {
     WSDHelper.print("Evaluation Started");
-    String modelsDir = "src/test/resources/models/";
-    WSDHelper.loadTokenizer(modelsDir + "en-token.bin");
-    WSDHelper.loadLemmatizer(modelsDir + "en-lemmatizer.dict");
-    WSDHelper.loadTagger(modelsDir + "en-pos-maxent.bin");
+
     Lesk lesk = new Lesk();
     LeskParameters leskParams = new LeskParameters();
-    boolean a[] = { true, true, true, true, true, false, false, false, false,
-        false };
+    boolean a[] = { true, true, true, true, true, false, false, false, false, false };
     leskParams.setFeatures(a);
     leskParams.setLeskType(LeskParameters.LESK_TYPE.LESK_EXT_CTXT);
     lesk.setParams(leskParams);
@@ -68,6 +66,5 @@ public class LeskEvaluatorTest {
       }
     }
   }
-
 
 }

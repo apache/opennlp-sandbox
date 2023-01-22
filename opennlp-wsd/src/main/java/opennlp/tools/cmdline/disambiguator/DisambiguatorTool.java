@@ -20,16 +20,17 @@
 package opennlp.tools.cmdline.disambiguator;
 
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import opennlp.tools.cmdline.ArgumentParser;
 import opennlp.tools.cmdline.CLI;
 import opennlp.tools.cmdline.CmdLineTool;
 import opennlp.tools.cmdline.CmdLineUtil;
 import opennlp.tools.cmdline.PerformanceMonitor;
+import opennlp.tools.cmdline.SystemInputStreamFactory;
 import opennlp.tools.cmdline.TerminateToolException;
 import opennlp.tools.disambiguator.Lesk;
 import opennlp.tools.disambiguator.WSDHelper;
@@ -37,7 +38,9 @@ import opennlp.tools.disambiguator.WSDSample;
 import opennlp.tools.disambiguator.WSDSampleStream;
 import opennlp.tools.disambiguator.WSDisambiguator;
 import opennlp.tools.disambiguator.MFS;
+import opennlp.tools.util.MarkableFileInputStreamFactory;
 import opennlp.tools.util.ObjectStream;
+import opennlp.tools.util.ParagraphStream;
 import opennlp.tools.util.PlainTextByLineStream;
 
 /*
@@ -47,14 +50,17 @@ import opennlp.tools.util.PlainTextByLineStream;
 public class DisambiguatorTool extends CmdLineTool {
 
   // TODO CmdLineTool should be an interface not abstract class
+  @Override
   public String getName() {
     return "Disambiguator";
   }
 
+  @Override
   public String getShortDescription() {
     return "Word Sense Disambiguator";
   }
 
+  @Override
   public String getHelp() {
     return "Usage: " + CLI.CMD + " " + getName() + " "
         + ArgumentParser.createUsage(DisambiguatorToolParams.class)
@@ -75,12 +81,10 @@ public class DisambiguatorTool extends CmdLineTool {
 
     PerformanceMonitor perfMon = new PerformanceMonitor(System.err, "sent");
 
-    ObjectStream<String> lineStream = new PlainTextByLineStream(
-        new InputStreamReader(System.in));
-
     perfMon.start();
 
-    try {
+    try (ObjectStream<String> lineStream = new PlainTextByLineStream(
+            new SystemInputStreamFactory(), StandardCharsets.UTF_8)) {
       String line;
       while ((line = lineStream.read()) != null) {
 
@@ -115,13 +119,19 @@ public class DisambiguatorTool extends CmdLineTool {
 
   static ObjectStream<WSDSample> openSampleData(String sampleDataName,
       File sampleDataFile, Charset encoding) {
+
     CmdLineUtil.checkInputFile(sampleDataName + " Data", sampleDataFile);
+    final MarkableFileInputStreamFactory factory;
+    try {
+      factory = new MarkableFileInputStreamFactory(sampleDataFile);
+    } catch (FileNotFoundException e) {
+      throw new RuntimeException("Error finding specified input file!", e);
+    }
 
-    FileInputStream sampleDataIn = CmdLineUtil.openInFile(sampleDataFile);
-
-    ObjectStream<String> lineStream = new PlainTextByLineStream(
-        sampleDataIn.getChannel(), encoding);
-
-    return new WSDSampleStream(lineStream);
+    try (ObjectStream<String> lineStream = new ParagraphStream(new PlainTextByLineStream(factory, encoding))) {
+      return new WSDSampleStream(lineStream);
+    } catch (IOException e) {
+      throw new RuntimeException("Error loading WSD samples from input data!", e);
+    }
   }
 }

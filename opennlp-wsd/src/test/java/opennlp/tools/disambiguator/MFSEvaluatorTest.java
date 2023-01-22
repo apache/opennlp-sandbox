@@ -21,24 +21,21 @@ package opennlp.tools.disambiguator;
 
 import java.util.ArrayList;
 
-import opennlp.tools.disambiguator.datareader.SensevalReader;
-import opennlp.tools.disambiguator.MFS;
-
+import org.junit.Ignore;
 import org.junit.Test;
 
-public class MFSEvaluatorTest {
+import opennlp.tools.disambiguator.datareader.SensevalReader;
+
+public class MFSEvaluatorTest extends AbstractEvaluatorTest {
 
   static SensevalReader seReader = new SensevalReader();
 
   @Test
-  public static void main(String[] args) {
+  @Ignore // TODO OPENNLP-1446: Investigate why test fails while parsing 'EnglishLS.train'
+  public void testEvaluation() {
     WSDHelper.print("Evaluation Started");
-    String modelsDir = "src/test/resources/models/";
-    WSDHelper.loadTokenizer(modelsDir + "en-token.bin");
-    WSDHelper.loadLemmatizer(modelsDir + "en-lemmatizer.dict");
-    WSDHelper.loadTagger(modelsDir + "en-pos-maxent.bin");
-    MFS mfs = new MFS();
 
+    MFS mfs = new MFS();
     ArrayList<String> words = seReader.getSensevalWords();
 
     for (String word : words) {
@@ -62,9 +59,7 @@ public class MFSEvaluatorTest {
           WSDHelper.print("null instances");
         }
       }
-
     }
-
   }
 
 }

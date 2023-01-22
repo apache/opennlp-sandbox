@@ -19,18 +19,25 @@
 
 package opennlp.tools.disambiguator.datareader;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Collections;
 import java.util.Arrays;
+import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import opennlp.tools.lemmatizer.Lemmatizer;
+import opennlp.tools.postag.POSTagger;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -42,16 +49,17 @@ import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.ObjectStreamUtils;
 
 /**
- * This class handles the extraction of Senseval-3 data from the different files
- * (training data, dictionary instances, etc.)
+ * This class handles the extraction of
+ * <a href="https://web.eecs.umich.edu/~mihalcea/senseval/senseval3/data.html">Senseval-3</a>
+ * data from the different files (training data, dictionary instances, etc.)
  */
 public class SensevalReader {
 
-  protected String sensevalDirectory = "src/test/resources/senseval3/";
+  private String sensevalDirectory = "src/test/resources/senseval3/";
 
-  protected String data = sensevalDirectory + "EnglishLS.train";
-  protected String sensemapFile = sensevalDirectory + "EnglishLS.sensemap";
-  protected String wordList = sensevalDirectory + "EnglishLS.train.key";
+  private String sensemapFile = sensevalDirectory + "EnglishLS.sensemap";
+  private String data = sensevalDirectory + "EnglishLS.train.gz";
+  private String wordList = sensevalDirectory + "EnglishLS.train.key.gz";
 
   public String getSensevalDirectory() {
     return sensevalDirectory;
@@ -73,15 +81,12 @@ public class SensevalReader {
    * This extracts the equivalent senses. This serves in the case of the
    * coarse-grained disambiguation
    *
-   * @param sensemapFile
-   *          the file containing the equivalent senses, each set of equivalent
-   *          senses per line
    * @return a {@link HashMap} conaining the new sense ID ({@link Integer}) and
    *         an {@link ArrayList} of the equivalent senses original IDs
    */
   public HashMap<Integer, ArrayList<String>> getEquivalentSense() {
 
-    HashMap<Integer, ArrayList<String>> mappedSenses = new HashMap<Integer, ArrayList<String>>();
+    HashMap<Integer, ArrayList<String>> mappedSenses = new HashMap<>();
 
     try (BufferedReader wordsList = new BufferedReader(new FileReader(
         sensemapFile))) {
@@ -94,7 +99,7 @@ public class SensevalReader {
 
         String[] temp = line.split("\\s");
 
-        ArrayList<String> tempSenses = new ArrayList<String>();
+        ArrayList<String> tempSenses = new ArrayList<>();
 
         for (String sense : temp) {
           if (sense.length() > 1) {
@@ -123,20 +128,26 @@ public class SensevalReader {
    */
   public ArrayList<String> getSensevalWords() {
 
-    ArrayList<String> wordTags = new ArrayList<String>();
+    ArrayList<String> wordTags = new ArrayList<>();
 
-    try (BufferedReader br = new BufferedReader(new FileReader(wordList))) {
+    final InputStream resource;
+    try {
+      if (wordList.endsWith(".train.key.gz")) {
+        resource = new GZIPInputStream(new FileInputStream(wordList));
+      } else {
+        resource = new FileInputStream(wordList);
+      }
+    } catch (IOException e) {
+      throw new RuntimeException("Error opening or loading Senseval wordlist from specified resource file!", e);
+    }
 
+    try (BufferedReader br = new BufferedReader(new InputStreamReader(resource))) {
       String line;
-
       while ((line = br.readLine()) != null) {
-
         String word = line.split("\\s")[0];
-
         if (!wordTags.contains(word)) {
           wordTags.add(word);
         }
-
       }
 
     } catch (IOException e) {
@@ -159,14 +170,23 @@ public class SensevalReader {
    */
   public ArrayList<WSDSample> getSensevalData(String wordTag) {
 
-    ArrayList<WSDSample> setInstances = new ArrayList<WSDSample>();
+    ArrayList<WSDSample> setInstances = new ArrayList<>();
 
+    final InputStream resource;
     try {
+      if (data.endsWith(".train.gz")) {
+        resource = new GZIPInputStream(new FileInputStream(data));
+      } else {
+        resource = new FileInputStream(data);
+      }
+    } catch (IOException e) {
+      throw new RuntimeException("Error opening or loading Senseval data from specified resource file!", e);
+    }
 
-      File xmlFile = new File(data);
+    try (InputStream xmlFileInputStream = new BufferedInputStream(resource)) {
       DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
       DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-      Document doc = dBuilder.parse(xmlFile);
+      Document doc = dBuilder.parse(xmlFileInputStream);
 
       doc.getDocumentElement().normalize();
 
@@ -188,7 +208,7 @@ public class SensevalReader {
               Node nInstance = nInstances.item(j);
 
               if (nInstance.getNodeType() == Node.ELEMENT_NODE) {
-                ArrayList<String> senseIDs = new ArrayList<String>();
+                ArrayList<String> senseIDs = new ArrayList<>();
                 String rawWord = "";
                 String[] finalText = null;
                 int index = 0;
@@ -218,29 +238,26 @@ public class SensevalReader {
                       String textAfter = nChild.getChildNodes().item(2)
                           .getTextContent();
 
-                      ArrayList<String> textBeforeTokenzed = new ArrayList<String>(
-                          Arrays.asList(textBefore.split("\\s")));
-                      ArrayList<String> textAfterTokenzed = new ArrayList<String>(
-                          Arrays.asList(textAfter.split("\\s")));
+                      List<String> textBeforeTokenized = Arrays.asList(textBefore.split("\\s"));
+                      List<String> textAfterTokenized = Arrays.asList(textAfter.split("\\s"));
 
-                      textBeforeTokenzed.removeAll(Collections.singleton(null));
-                      textBeforeTokenzed.removeAll(Collections.singleton(""));
+                      textBeforeTokenized.removeAll(Collections.singleton(null));
+                      textBeforeTokenized.removeAll(Collections.singleton(""));
+                      textAfterTokenized.removeAll(Collections.singleton(null));
+                      textAfterTokenized.removeAll(Collections.singleton(""));
 
-                      textAfterTokenzed.removeAll(Collections.singleton(null));
-                      textAfterTokenzed.removeAll(Collections.singleton(""));
-
-                      finalText = new String[textBeforeTokenzed.size() + 1
-                          + textAfterTokenzed.size()];
+                      finalText = new String[textBeforeTokenized.size() + 1
+                          + textAfterTokenized.size()];
 
                       int l = 0;
-                      for (String tempWord : textBeforeTokenzed) {
+                      for (String tempWord : textBeforeTokenized) {
                         finalText[l] = tempWord;
                         l++;
                       }
                       index = l;
                       finalText[l] = rawWord.toLowerCase();
                       l++;
-                      for (String tempWord : textAfterTokenzed) {
+                      for (String tempWord : textAfterTokenized) {
                         finalText[l] = tempWord;
                         l++;
                       }
@@ -249,27 +266,20 @@ public class SensevalReader {
                   }
 
                 }
+                final Lemmatizer lemmatizer = WSDHelper.getLemmatizer();
+                final POSTagger tagger = WSDHelper.getTagger();
 
-                String[] words = finalText;
-                String[] tags = WSDHelper.getTagger().tag(words);
-                String[] lemmas = new String[words.length];
+                final String[] words = finalText;
+                final String[] tags = tagger.tag(finalText);
+                String[] lemmas = lemmatizer.lemmatize(words, tags);
 
-                for (int k = 0; k < words.length; k++) {
-                  lemmas[k] = WSDHelper.getLemmatizer().lemmatize(words[k],
-                      tags[k]);
-                }
-
-                WSDSample wtd = new WSDSample(words, tags, lemmas, index,
-                    senseIDs.toArray(new String[0]));
+                WSDSample wtd = new WSDSample(words, tags, lemmas, index, senseIDs.toArray(new String[0]));
                 setInstances.add(wtd);
 
               }
             }
-
           }
-
         }
-
       }
 
     } catch (Exception e) {

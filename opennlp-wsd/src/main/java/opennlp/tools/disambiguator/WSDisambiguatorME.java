@@ -21,7 +21,6 @@ import opennlp.tools.ml.EventTrainer;
 import opennlp.tools.ml.TrainerFactory;
 import opennlp.tools.ml.model.Event;
 import opennlp.tools.ml.model.MaxentModel;
-import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.ObjectStreamUtils;
 import opennlp.tools.util.TrainingParameters;
@@ -30,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class WSDisambiguatorME extends WSDisambiguator {
 
@@ -64,12 +64,12 @@ public class WSDisambiguatorME extends WSDisambiguator {
     ArrayList<String> surroundingContext = buildSurroundingContext(samples,
       ((WSDDefaultParameters) params).getWindowSize());
 
-    HashMap<String, String> manifestInfoEntries = new HashMap<String, String>();
+    HashMap<String, String> manifestInfoEntries = new HashMap<>();
 
-    MaxentModel meModel = null;
+    MaxentModel meModel;
 
-    ArrayList<Event> events = new ArrayList<Event>();
-    ObjectStream<Event> es = null;
+    List<Event> events = new ArrayList<>();
+    ObjectStream<Event> es;
 
     WSDSample sample = samples.read();
     String wordTag = "";
@@ -86,8 +86,7 @@ public class WSDisambiguatorME extends WSDisambiguator {
     }
 
     es = ObjectStreamUtils.createObjectStream(events);
-    EventTrainer trainer = TrainerFactory
-      .getEventTrainer(mlParams.getSettings(), manifestInfoEntries);
+    EventTrainer trainer = TrainerFactory.getEventTrainer(mlParams, manifestInfoEntries);
 
     meModel = trainer.train(es);
 
@@ -132,9 +131,6 @@ public class WSDisambiguatorME extends WSDisambiguator {
         if (file.exists() && !file.isDirectory()) {
           try {
             setModel(new WSDModel(file));
-
-          } catch (InvalidFormatException e) {
-            e.printStackTrace();
           } catch (IOException e) {
             e.printStackTrace();
           }
