@@ -72,8 +72,8 @@ public class Viterbi {
     float[] returnValue = new float[array[0].length];
     for (int col=0; col < array[0].length; col++) {
       returnValue[col] = Float.MIN_VALUE;
-      for (int row=0; row < array.length; row++) {
-        returnValue[col] = Float.max(returnValue[col],array[row][col]);
+      for (float[] floats : array) {
+        returnValue[col] = Float.max(returnValue[col], floats[col]);
       }
     }
 
@@ -82,8 +82,8 @@ public class Viterbi {
 
   private static float max(float[] array) {
     float returnValue = Float.MIN_VALUE;
-    for (int col=0; col < array.length; col++) {
-        returnValue = Float.max(returnValue, array[col]);
+    for (float v : array) {
+      returnValue = Float.max(returnValue, v);
     }
     return returnValue;
   }
@@ -131,7 +131,6 @@ public class Viterbi {
   public static List<Integer> decode(float[][] score, float[][] transition_params) {
 
     float[][] trellis = zeros_like(score);
-
     int[][] backpointers = zeros_like(shape(score));
 
     trellis[0] = score[0];
@@ -142,7 +141,7 @@ public class Viterbi {
       backpointers[t] = argmax_columnwise(v);
     }
 
-    List<Integer> viterbi = new ArrayList();
+    List<Integer> viterbi = new ArrayList<>();
     viterbi.add(argmax(trellis[trellis.length - 1]));
 
     for (int i=backpointers.length - 1; i >= 1; i--) {

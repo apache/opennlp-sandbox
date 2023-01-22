@@ -25,7 +25,6 @@ public class FeedDictionary implements AutoCloseable  {
 
   static int PAD_VALUE = 0;
 
-
   private final Tensor<Float> dropoutTensor;
   private final Tensor<Integer> charIdsTensor;
   private final Tensor<Integer> wordLengthsTensor;
@@ -60,7 +59,6 @@ public class FeedDictionary implements AutoCloseable  {
     return sentenceLengthsTensor;
   }
 
-
   public Tensor<Integer> getWordLengthsTensor() {
     return wordLengthsTensor;
   }
@@ -69,14 +67,10 @@ public class FeedDictionary implements AutoCloseable  {
     return wordIdsTensor;
   }
 
-  private FeedDictionary(final float dropout,
-                         final int[][][] charIds,
-                         final int[][] wordLengths,
-                         final int[][] wordIds,
-                         final int[] sentenceLengths,
-                         final int maxSentenceLength,
-                         final int maxCharLength,
-                         final int numberOfSentences) {
+  private FeedDictionary(final float dropout, final int[][][] charIds,
+                         final int[][] wordLengths, final int[][] wordIds,
+                         final int[] sentenceLengths, final int maxSentenceLength,
+                         final int maxCharLength, final int numberOfSentences) {
 
     dropoutTensor = Tensor.create(dropout, Float.class);
     charIdsTensor = Tensor.create(charIds, Integer.class);
@@ -90,6 +84,7 @@ public class FeedDictionary implements AutoCloseable  {
 
   }
 
+  @Override
   public void close() {
     dropoutTensor.close();
     charIdsTensor.close();
@@ -142,11 +137,12 @@ public class FeedDictionary implements AutoCloseable  {
   }
 
   private static class Padded {
+    private final int[][] ids;
+    private final int[] lengths;
+    
     Padded(int[][] ids, int[] lengths) {
       this.ids = ids;
       this.lengths = lengths;
     }
-    private int[][] ids;
-    private int[] lengths;
   }
 }

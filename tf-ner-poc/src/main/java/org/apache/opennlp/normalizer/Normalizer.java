@@ -50,8 +50,7 @@ public class Normalizer {
     Path tmpModelPath = ModelUtil.writeModelToTmpDir(modelZipPackage);
     try(InputStream sourceCharMapIn = new FileInputStream(
         tmpModelPath.resolve("source_char_dict.txt").toFile())) {
-      sourceCharMap = loadCharMap(sourceCharMapIn).entrySet()
-          .stream()
+      sourceCharMap = loadCharMap(sourceCharMapIn).entrySet().stream()
           .collect(Collectors.toMap(Map.Entry::getValue, c -> c.getKey()));
     }
 
@@ -60,8 +59,9 @@ public class Normalizer {
       targetCharMap = loadCharMap(targetCharMapIn);
     }
 
-    SavedModelBundle model = SavedModelBundle.load(tmpModelPath.toString(), "serve");
-    session = model.session();
+    try (SavedModelBundle model = SavedModelBundle.load(tmpModelPath.toString(), "serve")) {
+      session = model.session();
+    }
   }
 
   private static Map<Integer, Character> loadCharMap(InputStream in) throws IOException {
@@ -84,10 +84,10 @@ public class Normalizer {
       return new String[0];
     }
 
-    int textLengths[] = Arrays.stream(texts).mapToInt(String::length).toArray();
+    int[] textLengths = Arrays.stream(texts).mapToInt(String::length).toArray();
     int maxLength = Arrays.stream(textLengths).max().getAsInt();
 
-    int charIds[][] = new int[texts.length][maxLength];
+    int[][] charIds = new int[texts.length][maxLength];
 
     for (int textIndex = 0; textIndex < texts.length; textIndex++) {
       for (int charIndex = 0; charIndex < texts[textIndex].length(); charIndex++) {
@@ -114,10 +114,10 @@ public class Normalizer {
 
         List<String> normalizedTexts = new ArrayList<>();
 
-        for (int ti = 0; ti < translations.length; ti++) {
+        for (int[] translation : translations) {
           StringBuilder normalizedText = new StringBuilder();
-          for (int ci = 0; ci < translations[ti].length; ci++) {
-            normalizedText.append(targetCharMap.get(translations[ti][ci]));
+          for (int i : translation) {
+            normalizedText.append(targetCharMap.get(i));
           }
 
           // Remove the end marker from the translated string
@@ -136,8 +136,7 @@ public class Normalizer {
   }
 
   public static void main(String[] args) throws Exception {
-    Normalizer normalizer = new Normalizer(new FileInputStream(
-            "/home/blue/dev/opennlp-sandbox/tf-ner-poc/src/main/python/normalizer/normalizer.zip"));
+    Normalizer normalizer = new Normalizer(new FileInputStream("python/normalizer/normalizer.zip"));
 
     String[] result = normalizer.normalize(new String[] {
         "18 Mars 2012"
