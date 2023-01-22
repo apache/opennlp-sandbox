@@ -40,7 +40,7 @@ public class POSTaggerResource {
   // @QueryParam("model") String modelName
   public String[][] tag(String document[][]) {
     
-    ServiceReference modelService = ModelUtil.getModelService(POSModel.class);
+    ServiceReference modelService = ModelUtil.getService(POSModel.class);
     
     try {
       String[][] tags = new String[document.length][];
@@ -53,7 +53,7 @@ public class POSTaggerResource {
       return tags;
     }
     finally {
-      ModelUtil.releaseModel(modelService);
+      ModelUtil.releaseService(modelService);
     }
   }
 }

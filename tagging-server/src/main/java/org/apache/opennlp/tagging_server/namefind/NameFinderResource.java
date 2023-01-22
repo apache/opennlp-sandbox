@@ -26,6 +26,9 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.opennlp.tagging_server.ServiceUtil;
+import org.osgi.framework.ServiceReference;
+
 import opennlp.tools.namefind.NameFinderME;
 import opennlp.tools.namefind.TokenNameFinder;
 import opennlp.tools.namefind.TokenNameFinderModel;
@@ -33,16 +36,12 @@ import opennlp.tools.sentdetect.SentenceDetector;
 import opennlp.tools.tokenize.Tokenizer;
 import opennlp.tools.util.Span;
 
-import org.apache.opennlp.tagging_server.ServiceUtil;
-import org.osgi.framework.ServiceReference;
-
-
 @Path("/namefinder")
 public class NameFinderResource {
 
   public static class NameFinderDocument {
-    private List<Span[]> document;
-    private List<Span[]> names;
+    private final List<Span[]> document;
+    private final List<Span[]> names;
     
     NameFinderDocument(List<Span[]> document, List<Span[]> names) {
       this.document = document;
@@ -58,11 +57,11 @@ public class NameFinderResource {
     }
   }
   
-  private List<Span[]> find(TokenNameFinder nameFinders[], String[][] document) {
+  private List<Span[]> find(TokenNameFinder[] nameFinders, String[][] document) {
 
-    List<Span[]> names = new ArrayList<Span[]>();
+    List<Span[]> names = new ArrayList<>();
 
-    for (String sentence[] : document) {
+    for (String[] sentence : document) {
       for (TokenNameFinder nameFinder : nameFinders) {
         names.add(nameFinder.find(sentence));
       }
@@ -83,9 +82,9 @@ public class NameFinderResource {
       NameFinderME nameFinder = new NameFinderME(
           ServiceUtil.getService(modelService, TokenNameFinderModel.class));
       
-      List<Span[]> names = new ArrayList<Span[]>();
+      List<Span[]> names = new ArrayList<>();
       
-      for (String sentence[] : document) {
+      for (String[] sentence : document) {
         names.add(nameFinder.find(sentence));
       }
       
@@ -114,20 +113,20 @@ public class NameFinderResource {
       SentenceDetector sentDetect = factory.createSentenceDetector();
       Tokenizer tokenizer = factory.createTokenizer();
       
-      Span sentenceSpans[] = sentDetect.sentPosDetect(document);
+      Span[] sentenceSpans = sentDetect.sentPosDetect(document);
       
-      List<Span[]> tokenizedSentencesSpan = new ArrayList<Span[]>();
+      List<Span[]> tokenizedSentencesSpan = new ArrayList<>();
       String[][] tokenizedSentences = new String[sentenceSpans.length][];
       
       for (int i = 0; i < sentenceSpans.length; i++) {
         // offset of sentence gets lost here!
-        Span tokenSpans[] = tokenizer.tokenizePos(sentenceSpans[i].getCoveredText(document).toString());
+        Span[] tokenSpans = tokenizer.tokenizePos(sentenceSpans[i].getCoveredText(document).toString());
         // all spans need to be sentence offset adjusted!
         tokenSpans = offsetSpans(tokenSpans, sentenceSpans[i].getStart());
         
         tokenizedSentencesSpan.add(tokenSpans);
         
-        String tokens[] = new String[tokenSpans.length];
+        String[] tokens = new String[tokenSpans.length];
         for (int ti = 0; ti < tokenSpans.length; ti++) {
           tokens[ti] = tokenSpans[ti].getCoveredText(document).toString();
         }
@@ -135,7 +134,7 @@ public class NameFinderResource {
         tokenizedSentences[i] = tokens;
       }
       
-      TokenNameFinder nameFinders[] = factory.createNameFinders();
+      TokenNameFinder[] nameFinders = factory.createNameFinders();
       
       return new NameFinderDocument(tokenizedSentencesSpan, find(nameFinders, tokenizedSentences));
     }
@@ -147,7 +146,7 @@ public class NameFinderResource {
   private Span[] offsetSpans(
       Span[] tokenSpans, int offset) {
     
-    Span spans[] = new Span[tokenSpans.length];
+    Span[] spans = new Span[tokenSpans.length];
     
     for (int i = 0; i < tokenSpans.length; i++) {
       spans[i] = new Span(tokenSpans[i].getStart() + offset,

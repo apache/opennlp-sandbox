@@ -31,12 +31,12 @@ public class DefaultRawTextNameFinderFactory implements RawTextNameFinderFactory
   
   private final SentenceModel sentModel;
   private final TokenizerModel tokenModel;
-  private final TokenNameFinderModel nameModels[];
+  private final TokenNameFinderModel[] nameModels;
 
   // TODO: How can this be an array of models with blueprint?!
   
   public DefaultRawTextNameFinderFactory(SentenceModel sentModel,
-      TokenizerModel tokenModel, TokenNameFinderModel nameModels[]) {
+      TokenizerModel tokenModel, TokenNameFinderModel[] nameModels) {
     this.sentModel = sentModel;
     this.tokenModel = tokenModel;
     this.nameModels = nameModels;
@@ -55,7 +55,7 @@ public class DefaultRawTextNameFinderFactory implements RawTextNameFinderFactory
   @Override
   public TokenNameFinder[] createNameFinders() {
     
-    TokenNameFinder nameFinders[] = new TokenNameFinder[nameModels.length];
+    TokenNameFinder[] nameFinders = new TokenNameFinder[nameModels.length];
     
     for (int i = 0; i < nameFinders.length; i++) {
       nameFinders[i] = new NameFinderME(nameModels[i]);

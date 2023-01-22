@@ -26,13 +26,13 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.opennlp.tagging_server.ServiceUtil;
+import org.osgi.framework.ServiceReference;
+
 import opennlp.tools.sentdetect.SentenceDetector;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
 import opennlp.tools.util.Span;
-
-import org.apache.opennlp.tagging_server.ServiceUtil;
-import org.osgi.framework.ServiceReference;
 
 @Path("/sentdetect")
 public class SentenceDetectorResource {

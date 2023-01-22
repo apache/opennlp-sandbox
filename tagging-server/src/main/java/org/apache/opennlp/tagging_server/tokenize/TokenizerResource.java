@@ -26,12 +26,12 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.opennlp.tagging_server.ServiceUtil;
+import org.osgi.framework.ServiceReference;
+
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.tokenize.TokenizerModel;
 import opennlp.tools.util.Span;
-
-import org.apache.opennlp.tagging_server.ServiceUtil;
-import org.osgi.framework.ServiceReference;
 
 @Path("/tokenize")
 public class TokenizerResource {
@@ -47,7 +47,7 @@ public class TokenizerResource {
       TokenizerME tokenizer = new TokenizerME(
           ServiceUtil.getService(modelService, TokenizerModel.class));
       
-      List<String[]> tokenizedSentences = new ArrayList<String[]>();
+      List<String[]> tokenizedSentences = new ArrayList<>();
       
       for (String sentence : document) {
         tokenizedSentences.add(tokenizer.tokenize(sentence));
@@ -71,7 +71,7 @@ public class TokenizerResource {
       TokenizerME tokenizer = new TokenizerME(
               ServiceUtil.getService(modelService, TokenizerModel.class));
 
-      List<Span[]> tokenizedSentences = new ArrayList<Span[]>();
+      List<Span[]> tokenizedSentences = new ArrayList<>();
       
       for (String sentence : document) {
         tokenizedSentences.add(tokenizer.tokenizePos(sentence));

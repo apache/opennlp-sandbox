@@ -23,12 +23,12 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.opennlp.tagging_server.ServiceUtil;
+import org.osgi.framework.ServiceReference;
+
 import opennlp.tools.postag.POSModel;
 import opennlp.tools.postag.POSTagger;
 import opennlp.tools.postag.POSTaggerME;
-
-import org.apache.opennlp.tagging_server.ServiceUtil;
-import org.osgi.framework.ServiceReference;
 
 @Path("/postagger")
 public class POSTaggerResource {
@@ -39,7 +39,7 @@ public class POSTaggerResource {
   @Path("_tag")
   // @QueryParam("lang") String lang,
   // @QueryParam("model") String modelName
-  public String[][] tag(String document[][]) {
+  public String[][] tag(String[][] document) {
     
     ServiceReference modelService = ServiceUtil.getServiceReference(POSModel.class);
     
