@@ -25,22 +25,27 @@ import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.swt.graphics.Image;
 
 public class SentenceLabelProvider implements ITableLabelProvider {
-  private DecimalFormat df = new DecimalFormat("#.#");
-  
+  private final DecimalFormat df = new DecimalFormat("#.#");
+
+  @Override
   public void addListener(ILabelProviderListener listener) {
   }
 
+  @Override
   public void removeListener(ILabelProviderListener listener) {
   }
 
+  @Override
   public boolean isLabelProperty(Object element, String property) {
     return false;
   }
 
+  @Override
   public Image getColumnImage(Object element, int columnIndex) {
     return null;
   }
 
+  @Override
   public String getColumnText(Object element, int columnIndex) {
     String result = null;
     
@@ -67,6 +72,7 @@ public class SentenceLabelProvider implements ITableLabelProvider {
     return result;
   }
 
+  @Override
   public void dispose() {
   }
 }

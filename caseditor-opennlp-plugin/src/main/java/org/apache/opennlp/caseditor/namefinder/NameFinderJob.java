@@ -25,16 +25,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import opennlp.tools.namefind.NameFinderME;
-import opennlp.tools.util.Span;
-import opennlp.tools.util.featuregen.StringPattern;
-
 import org.apache.opennlp.caseditor.OpenNLPPlugin;
 import org.apache.opennlp.caseditor.PotentialAnnotation;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+
+import opennlp.tools.namefind.NameFinderME;
+import opennlp.tools.util.Span;
+import opennlp.tools.util.featuregen.StringPattern;
 
 // Add error handling, if something goes wrong, an error should be reported!
 // Need a rule, only one name finder job at a time ...
@@ -44,14 +44,14 @@ public class NameFinderJob extends Job {
   
   private MultiModelNameFinder nameFinder;
   
-  private String modelPath[];
+  private String[] modelPath;
   
-  private String modelTypes[];
+  private String[] modelTypes;
   
   private String text;
-  private Span sentences[];
-  private Span tokens[];
-  private Span verifiedNames[] = new Span[0];
+  private Span[] sentences;
+  private Span[] tokens;
+  private Span[] verifiedNames = new Span[0];
   
   private List<PotentialAnnotation> nameList;
 
@@ -65,11 +65,8 @@ public class NameFinderJob extends Job {
     super("Name Finder Job");
   }
   
-  /**
-   * @param modelPath
-   */
-  synchronized void setModelPath(String modelPathes[], String modelTypes[]) {
-    this.modelPath = modelPathes;
+  synchronized void setModelPath(String[] modelPath, String[] modelTypes) {
+    this.modelPath = modelPath;
     this.modelTypes = modelTypes;
   }
   
@@ -77,15 +74,15 @@ public class NameFinderJob extends Job {
     this.text = text;
   }
   
-  synchronized void setSentences(Span sentences[]) {
+  synchronized void setSentences(Span[] sentences) {
     this.sentences = sentences;
   }
   
-  synchronized void setTokens(Span tokens[]) {
+  synchronized void setTokens(Span[] tokens) {
     this.tokens = tokens;
   }
   
-  synchronized void setVerifiedNames(Span verifiedNames[]) {
+  synchronized void setVerifiedNames(Span[] verifiedNames) {
     this.verifiedNames = verifiedNames;
   }
 
@@ -121,16 +118,16 @@ public class NameFinderJob extends Job {
     if (nameFinder != null) {
       nameFinder.clearAdaptiveData(); // TODO: If model loading fails we get a NPE here!
     
-      nameList = new ArrayList<PotentialAnnotation>();
+      nameList = new ArrayList<>();
       
       // TODO: Name tokens, should be for the entire text,
       // not just the prev sentences ...
-      Set<String> nameTokens = new HashSet<String>();
+      Set<String> nameTokens = new HashSet<>();
       
       for (Span sentence : sentences) {
         
         // Create token list for sentence
-        List<Span> sentenceTokens = new ArrayList<Span>();
+        List<Span> sentenceTokens = new ArrayList<>();
         
         for (Span token : tokens) {
           if (sentence.contains(token)) {
@@ -138,14 +135,14 @@ public class NameFinderJob extends Job {
           }
         }
         
-        String tokenStrings[] = new String[sentenceTokens.size()];
+        String[] tokenStrings = new String[sentenceTokens.size()];
         
         for (int i = 0; i < sentenceTokens.size(); i++) {
           Span token = sentenceTokens.get(i);
           tokenStrings[i] = token.getCoveredText(text).toString();
         }
         
-        Map<Integer, String> verifiedNameTokens = new HashMap<Integer, String>();
+        Map<Integer, String> verifiedNameTokens = new HashMap<>();
         
         // Note: This is slow!
         // iterate over names, to find token indexes
@@ -198,19 +195,18 @@ public class NameFinderJob extends Job {
         nameFinder.setNameOnlyTokens(nameTokens);
         
         // TODO: Use multiple name finders here .... 
-        ConfidenceSpan names[] = nameFinder.find(tokenStrings);
-        
-        for (int i = 0; i < names.length; i++) {
-          
+        ConfidenceSpan[] names = nameFinder.find(tokenStrings);
+
+        for (ConfidenceSpan name : names) {
+
           // add sentence offset here ...
-          
-          int beginIndex = sentenceTokens.get(names[i].getStart()).getStart();
-          int endIndex = sentenceTokens.get(names[i].getEnd() - 1).getEnd();
-          
+          int beginIndex = sentenceTokens.get(name.getStart()).getStart();
+          int endIndex = sentenceTokens.get(name.getEnd() - 1).getEnd();
+
           String coveredText = text.substring(beginIndex, endIndex);
-          
+
           nameList.add(new PotentialAnnotation(beginIndex, endIndex, coveredText,
-              names[i].getConfidence(), names[i].getType()));
+                  name.getConfidence(), name.getType()));
         }
       }
     }
@@ -222,8 +218,6 @@ public class NameFinderJob extends Job {
   }
 
   public List<PotentialAnnotation> getNames() {
-    List<PotentialAnnotation> names = new ArrayList<PotentialAnnotation>();
-    names.addAll(nameList);
-    return names;
+    return new ArrayList<>(nameList);
   }
 }

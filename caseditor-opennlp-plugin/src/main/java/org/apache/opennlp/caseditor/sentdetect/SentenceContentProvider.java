@@ -71,16 +71,16 @@ public class SentenceContentProvider implements IStructuredContentProvider {
     }
   }
   
-  private SentenceDetectorViewPage sentenceDetectorView;
+  private final SentenceDetectorViewPage sentenceDetectorView;
   
-  private AnnotationEditor editor;
+  private final AnnotationEditor editor;
   
   private ICasDocumentListener casChangedTrigger;
-  private PreferenceChangeTrigger preferenceChangeTrigger = new PreferenceChangeTrigger();
+  private final PreferenceChangeTrigger preferenceChangeTrigger = new PreferenceChangeTrigger();
   
-  private SentenceDetectorJob sentenceDetector;
+  private final SentenceDetectorJob sentenceDetector;
   
-  private TableViewer sentenceList;
+  private final TableViewer sentenceList;
 
   public SentenceContentProvider(SentenceDetectorViewPage sentenceDetectorView, AnnotationEditor editor,
       SentenceDetectorJob sentenceDetector, TableViewer sentenceList) {
@@ -91,87 +91,81 @@ public class SentenceContentProvider implements IStructuredContentProvider {
     
     sentenceDetector.addJobChangeListener(new JobChangeAdapter() {
       public void done(final IJobChangeEvent event) {
-        Display.getDefault().asyncExec(new Runnable() {
+        Display.getDefault().asyncExec(() -> {
+          if (event.getResult().isOK()) {
 
-          @Override
-          public void run() {
-            if (event.getResult().isOK()) {
-              
-              SentenceContentProvider.this.sentenceDetectorView.setMessage(null);
-              
-              List<PotentialAnnotation> confirmedSentences = new ArrayList<PotentialAnnotation>();
-              // TODO: Create a list of existing sentence annotations.
-              
-              // get sentence annotation index ...
-              CAS cas = SentenceContentProvider.this.editor.getDocument().getCAS();
-              
-              IPreferenceStore store = SentenceContentProvider.this.editor.
-                  getCasDocumentProvider().getTypeSystemPreferenceStore(
-                  SentenceContentProvider.this.editor.getEditorInput());
-              
-              String sentenceTypeName = store.getString(OpenNLPPreferenceConstants.SENTENCE_TYPE);;
-              Type sentenceType = cas.getTypeSystem().getType(sentenceTypeName);
-              
-              for (Iterator<AnnotationFS> it = cas.getAnnotationIndex(sentenceType).iterator();
-                  it.hasNext(); ) {
-                AnnotationFS sentenceAnnotation = it.next();
-                confirmedSentences.add(new PotentialAnnotation(sentenceAnnotation.getBegin(),
-                    sentenceAnnotation.getEnd(), sentenceAnnotation.getCoveredText(), 1d, sentenceTypeName));
-              }
-             
-              
-              PotentialAnnotation sentences[] = SentenceContentProvider.this.
-                  sentenceDetector.getDetectedSentences();
-              
-              // TODO:
-              // Remove all detected sentences from the last run which are not detected anymore
-              Table sentenceTable = SentenceContentProvider.this.sentenceList.getTable();
-              
-              int selectionIndex = sentenceTable.getSelectionIndex();
-              
-              SentenceContentProvider.this.sentenceList.refresh();
-              
-              // TODO: Update sentence if it already exist
-              
-              // Add a new potential sentence
-              // Only add if it is not a confirmed sentence yet!
-              // for each annotation, search confirmed sentence array above ...
-              for (PotentialAnnotation sentence : sentences) {
-                if (EntityContentProvider.searchEntity(confirmedSentences,
-                    sentence.getBeginIndex(), sentence.getEndIndex(),
-                    sentence.getType()) == null) {
-                  SentenceContentProvider.this.sentenceList.add(sentence);
-                }
-              }
-              
-              // TODO: Try to reuse selection computation code
-              
-              // is sentence detector view active ?!
-              if (SentenceContentProvider.this.sentenceDetectorView.isActive()) {
-                int newSelectionIndex = -1;
-                
-                if (sentenceTable.getItemCount() > 0) {
-                  if (sentenceTable.getSelectionIndex() == -1) {
-                    newSelectionIndex = 0;
-                  }
-                  
-                  if (selectionIndex < sentenceTable.getItemCount()) {
-                    newSelectionIndex = selectionIndex;
-                  }
-                  else if (selectionIndex >= sentenceTable.getItemCount()) {
-                    newSelectionIndex = sentenceTable.getItemCount() - 1;
-                  }
-                }
-                
-                if (newSelectionIndex != -1) {
-                  SentenceContentProvider.this.sentenceList.setSelection(
-                      new StructuredSelection(SentenceContentProvider.this.sentenceList.getElementAt(newSelectionIndex)));
-                }
+            SentenceContentProvider.this.sentenceDetectorView.setMessage(null);
+
+            List<PotentialAnnotation> confirmedSentences = new ArrayList<>();
+            // TODO: Create a list of existing sentence annotations.
+
+            // get sentence annotation index ...
+            CAS cas = SentenceContentProvider.this.editor.getDocument().getCAS();
+
+            IPreferenceStore store = SentenceContentProvider.this.editor.
+                getCasDocumentProvider().getTypeSystemPreferenceStore(
+                SentenceContentProvider.this.editor.getEditorInput());
+
+            String sentenceTypeName = store.getString(OpenNLPPreferenceConstants.SENTENCE_TYPE);
+            Type sentenceType = cas.getTypeSystem().getType(sentenceTypeName);
+
+            for (AnnotationFS sentenceAnnotation : cas.getAnnotationIndex(sentenceType)) {
+              confirmedSentences.add(new PotentialAnnotation(sentenceAnnotation.getBegin(),
+                      sentenceAnnotation.getEnd(), sentenceAnnotation.getCoveredText(), 1d, sentenceTypeName));
+            }
+
+
+            PotentialAnnotation[] sentences = SentenceContentProvider.this.
+                sentenceDetector.getDetectedSentences();
+
+            // TODO:
+            // Remove all detected sentences from the last run which are not detected anymore
+            Table sentenceTable = SentenceContentProvider.this.sentenceList.getTable();
+
+            int selectionIndex = sentenceTable.getSelectionIndex();
+
+            SentenceContentProvider.this.sentenceList.refresh();
+
+            // TODO: Update sentence if it already exist
+
+            // Add a new potential sentence
+            // Only add if it is not a confirmed sentence yet!
+            // for each annotation, search confirmed sentence array above ...
+            for (PotentialAnnotation sentence : sentences) {
+              if (EntityContentProvider.searchEntity(confirmedSentences,
+                  sentence.getBeginIndex(), sentence.getEndIndex(),
+                  sentence.getType()) == null) {
+                SentenceContentProvider.this.sentenceList.add(sentence);
               }
             }
-            else {
-              SentenceContentProvider.this.sentenceDetectorView.setMessage(event.getResult().getMessage());
+
+            // TODO: Try to reuse selection computation code
+
+            // is sentence detector view active ?!
+            if (SentenceContentProvider.this.sentenceDetectorView.isActive()) {
+              int newSelectionIndex = -1;
+
+              if (sentenceTable.getItemCount() > 0) {
+                if (sentenceTable.getSelectionIndex() == -1) {
+                  newSelectionIndex = 0;
+                }
+
+                if (selectionIndex < sentenceTable.getItemCount()) {
+                  newSelectionIndex = selectionIndex;
+                }
+                else if (selectionIndex >= sentenceTable.getItemCount()) {
+                  newSelectionIndex = sentenceTable.getItemCount() - 1;
+                }
+              }
+
+              if (newSelectionIndex != -1) {
+                SentenceContentProvider.this.sentenceList.setSelection(
+                    new StructuredSelection(SentenceContentProvider.this.sentenceList.getElementAt(newSelectionIndex)));
+              }
             }
+          }
+          else {
+            SentenceContentProvider.this.sentenceDetectorView.setMessage(event.getResult().getMessage());
           }
         });
       }
@@ -209,9 +203,9 @@ public class SentenceContentProvider implements IStructuredContentProvider {
     CAS cas = editor.getDocument().getCAS();
     
     String paragraphTypeNames = store.getString(OpenNLPPreferenceConstants.PARAGRAPH_TYPE);
-    Type paragraphTypes[] = UIMAUtil.splitTypes(paragraphTypeNames, ',', cas.getTypeSystem());
+    Type[] paragraphTypes = UIMAUtil.splitTypes(paragraphTypeNames, ',', cas.getTypeSystem());
     
-    List<Span> paragraphSpans = new ArrayList<Span>();
+    List<Span> paragraphSpans = new ArrayList<>();
     
     if (paragraphTypes != null) {
       
@@ -256,7 +250,7 @@ public class SentenceContentProvider implements IStructuredContentProvider {
     
     String exclusionSpanTypeNames = store.getString(OpenNLPPreferenceConstants.SENT_EXCLUSION_TYPE);
     
-    Type exclusionSpanTypes[] = UIMAUtil.splitTypes(exclusionSpanTypeNames, ',', cas.getTypeSystem());
+    Type[] exclusionSpanTypes = UIMAUtil.splitTypes(exclusionSpanTypeNames, ',', cas.getTypeSystem());
 
     if (exclusionSpanTypes == null) {
       exclusionSpanTypes = new Type[0];
@@ -267,7 +261,7 @@ public class SentenceContentProvider implements IStructuredContentProvider {
       exclusionSpanTypes[exclusionSpanTypes.length - 1] = sentenceType;
     }
     
-    List<Span> exclusionSpans = new ArrayList<Span>();
+    List<Span> exclusionSpans = new ArrayList<>();
     
     for (Iterator<AnnotationFS> exclusionAnnIterator = UIMAUtil.createMultiTypeIterator(cas, exclusionSpanTypes);
         exclusionAnnIterator.hasNext();) {

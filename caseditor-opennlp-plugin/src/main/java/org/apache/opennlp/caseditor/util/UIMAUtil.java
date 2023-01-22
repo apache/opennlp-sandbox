@@ -29,7 +29,7 @@ public class UIMAUtil {
 
   public static String[] split(String parameter, char splitChar) {
     
-    String parts[] = parameter.split(Character.toString(splitChar));
+    String[] parts = parameter.split(Character.toString(splitChar));
     
     for (int i = 0; i < parts.length; i++) {
       parts[i] = parts[i].trim();
@@ -40,9 +40,9 @@ public class UIMAUtil {
   
   // TODO: Should throw an exception
   public static Type[] splitTypes(String typeList, char splitChar, TypeSystem typeSystem) {
-    String typeNames[] = split(typeList, splitChar);
+    String[] typeNames = split(typeList, splitChar);
     
-    Type types[] = new Type[typeNames.length];
+    Type[] types = new Type[typeNames.length];
     
     for (int i = 0; i < typeNames.length; i++) {
       types[i] = typeSystem.getType(typeNames[i]);
@@ -70,8 +70,6 @@ public class UIMAUtil {
     }
 
     // Create and use the filtered iterator
-    FSIterator<AnnotationFS> filteredIterator = cas.createFilteredIterator(iterator, typeConstraint);
-    
-    return filteredIterator;
+    return cas.createFilteredIterator(iterator, typeConstraint);
   }
 }

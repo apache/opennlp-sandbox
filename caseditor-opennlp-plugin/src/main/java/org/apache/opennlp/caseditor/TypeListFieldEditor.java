@@ -25,10 +25,8 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.List;
-import org.eclipse.swt.widgets.Listener;
 
 /**
  * Field Editor for a list of UIMA type names.
@@ -37,7 +35,7 @@ import org.eclipse.swt.widgets.Listener;
 public class TypeListFieldEditor extends FieldEditor {
   
   private List typeList;
-  private TypeSystem ts;
+  private final TypeSystem ts;
   private Button removeButton;
   
   public TypeListFieldEditor(String name, String labelText,
@@ -72,12 +70,7 @@ public class TypeListFieldEditor extends FieldEditor {
     gd.verticalAlignment = GridData.FILL;
     
     typeList.setLayoutData(gd);
-    typeList.addListener(SWT.Selection, new Listener(){
-
-      @Override
-      public void handleEvent(Event event) {
-        checkState();
-      }});
+    typeList.addListener(SWT.Selection, event -> checkState());
     
     Composite buttonGroup = new Composite(parent, SWT.NONE);
     GridLayout buttonLayout = new GridLayout();
@@ -85,20 +78,16 @@ public class TypeListFieldEditor extends FieldEditor {
     
     Button addButton = new Button(buttonGroup, SWT.PUSH);
     addButton.setText("Add");
-    addButton.addListener(SWT.Selection, new Listener() {
+    addButton.addListener(SWT.Selection, event -> {
+      // We need a reference to the type system here ...
+      // open dialog to ask for new type ...
+      // dialog should contain a list of existing types ...
+      TypeInputDialog dialog = new TypeInputDialog(parent.getShell(), ts);
+      dialog.open();
+      String typeName = dialog.getValue();
 
-      @Override
-      public void handleEvent(Event event) {
-        // We need a reference to the type system here ...
-        // open dialog to ask for new type ...
-        // dialog should contain a list of existing types ...
-        TypeInputDialog dialog = new TypeInputDialog(parent.getShell(), ts);
-        dialog.open();
-        String typeName = dialog.getValue();
-        
-        if (typeName != null) {
-          typeList.add(typeName);
-        }        
+      if (typeName != null) {
+        typeList.add(typeName);
       }
     });
     
@@ -107,18 +96,14 @@ public class TypeListFieldEditor extends FieldEditor {
     // TODO: only enabled when an item in the list is selected
     removeButton = new Button(buttonGroup, SWT.PUSH);
     removeButton.setText("Remove");
-    removeButton.addListener(SWT.Selection, new Listener() {
-
-      @Override
-      public void handleEvent(Event event) {
-        int selectedItem = typeList.getSelectionIndex();
-        if (selectedItem != -1) {
-          typeList.remove(selectedItem);
-        }
-        
-        checkState();
-        
+    removeButton.addListener(SWT.Selection, event -> {
+      int selectedItem = typeList.getSelectionIndex();
+      if (selectedItem != -1) {
+        typeList.remove(selectedItem);
       }
+
+      checkState();
+
     });
     
     removeButton.setLayoutData(GridDataFactory.fillDefaults().create());
@@ -131,7 +116,7 @@ public class TypeListFieldEditor extends FieldEditor {
     if (typeList != null) {
       String value = getPreferenceStore().getString(getPreferenceName());
       
-      String types[] = getTypeList(value);
+      String[] types = getTypeList(value);
       
       for (String type : types) {
         typeList.add(type);
@@ -154,7 +139,7 @@ public class TypeListFieldEditor extends FieldEditor {
     return 3;
   }
   
-  public static String listToString(String types[]) {
+  public static String listToString(String[] types) {
     StringBuilder typeListString = new StringBuilder();
     
     for (String type : types) {
@@ -170,7 +155,7 @@ public class TypeListFieldEditor extends FieldEditor {
   }
   
   public static String[] getTypeList(String typeListString) {
-    String types[] = typeListString.split(",");
+    String[] types = typeListString.split(",");
     
     for (int i = 0; i < types.length; i++) {
       types[i] = types[i].trim();

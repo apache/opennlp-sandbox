@@ -22,8 +22,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import opennlp.tools.util.Span;
-
 import org.apache.opennlp.caseditor.AbstractCasChangeTrigger;
 import org.apache.opennlp.caseditor.OpenNLPPlugin;
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
@@ -49,6 +47,8 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.widgets.Display;
+
+import opennlp.tools.util.Span;
 
 /**
  * The EntityContentProvider is responsible to trigger the detection of entities
@@ -276,26 +276,26 @@ public class EntityContentProvider implements IStructuredContentProvider {
     };
   }
   
-  private NameFinderJob nameFinder;
+  private final NameFinderJob nameFinder;
   
-  private CasChangeNameFinderTrigger casChangeTrigger = new CasChangeNameFinderTrigger();
-  private PreferenceChangeNameFinderTrigger preferenceChangeTrigger = new PreferenceChangeNameFinderTrigger();
-  private ConfirmedEntityListener casChangeListener = new ConfirmedEntityListener();
+  private final CasChangeNameFinderTrigger casChangeTrigger = new CasChangeNameFinderTrigger();
+  private final PreferenceChangeNameFinderTrigger preferenceChangeTrigger = new PreferenceChangeNameFinderTrigger();
+  private final ConfirmedEntityListener casChangeListener = new ConfirmedEntityListener();
   
-  private TableViewer entityListViewer;
+  private final TableViewer entityListViewer;
   
   private ICasDocument input;
   
-  private AnnotationEditor editor;
+  private final AnnotationEditor editor;
   
   // contains all existing entity annotations and is synchronized!
   // needed by name finder to calculate updates ... 
-  private List<PotentialAnnotation> candidateEntities = new ArrayList<PotentialAnnotation>();
-  private List<PotentialAnnotation> confirmedEntities = new ArrayList<PotentialAnnotation>();
+  private final List<PotentialAnnotation> candidateEntities = new ArrayList<>();
+  private final List<PotentialAnnotation> confirmedEntities = new ArrayList<>();
   
-  private String nameTypeNames[];
+  private String[] nameTypeNames;
 
-  private NameFinderViewPage nameFinderView;
+  private final NameFinderViewPage nameFinderView;
   
   EntityContentProvider(NameFinderViewPage nameFinderView, AnnotationEditor editor, TableViewer entityList) {
     this.nameFinder = new NameFinderJob();
@@ -308,7 +308,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
     store.addPropertyChangeListener(preferenceChangeTrigger);
   }
   
-  private static boolean contains(String array[], String element) {
+  private static boolean contains(String[] array, String element) {
     
     for (String arrayElement : array) {
       if (element.equals(arrayElement))
@@ -317,7 +317,8 @@ public class EntityContentProvider implements IStructuredContentProvider {
     
     return false;
   }
-  
+
+  @Override
   public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 
     // Problem: "The viewer should not be updated during this call, as it might be in 
@@ -396,7 +397,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
       return;
     }
     
-    String modelPathes[] = store.getString(OpenNLPPreferenceConstants.NAME_FINDER_MODEL_PATH).split(",");
+    String[] modelPathes = store.getString(OpenNLPPreferenceConstants.NAME_FINDER_MODEL_PATH).split(",");
     
     for (int i = 0; i < modelPathes.length; i++) {
       modelPathes[i] = modelPathes[i].trim();
@@ -415,7 +416,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
 
     if (text != null) {
 
-      Type sentenceTypes[] = UIMAUtil.splitTypes(
+      Type[] sentenceTypes = UIMAUtil.splitTypes(
           sentenceTypeName + "," +  additionalSentenceTypes, ',', cas.getTypeSystem());
       
       if (sentenceTypes == null) {
@@ -437,15 +438,14 @@ public class EntityContentProvider implements IStructuredContentProvider {
         return;
       }
       
-      List<Span> sentences = new ArrayList<Span>();
-      List<Span> tokens = new ArrayList<Span>();
+      List<Span> sentences = new ArrayList<>();
+      List<Span> tokens = new ArrayList<>();
       
       for (Iterator<AnnotationFS> sentenceIterator = 
           UIMAUtil.createMultiTypeIterator(cas, sentenceTypes);
           sentenceIterator.hasNext();) {
         
-        AnnotationFS sentenceAnnotation = (AnnotationFS) sentenceIterator
-            .next();
+        AnnotationFS sentenceAnnotation = sentenceIterator.next();
         
         // TODO: Add code to detect overlapping sentences ... not allowed!
         
@@ -464,13 +464,13 @@ public class EntityContentProvider implements IStructuredContentProvider {
             allTokens.iterator(), containingConstraint);
         
         while (containingTokens.hasNext()) {
-          AnnotationFS token = (AnnotationFS) containingTokens.next();
+          AnnotationFS token = containingTokens.next();
           
           tokens.add(new Span(token.getBegin(), token.getEnd()));
         }
       }
       
-      List<Span> nameSpans = new ArrayList<Span>();
+      List<Span> nameSpans = new ArrayList<>();
 
       for (String nameTypeName : nameTypeNames) {
         
@@ -483,14 +483,10 @@ public class EntityContentProvider implements IStructuredContentProvider {
         
         FSIndex<AnnotationFS> nameAnnotations = cas
             .getAnnotationIndex(nameType);
-  
-        for (Iterator<AnnotationFS> nameIterator = nameAnnotations
-            .iterator(); nameIterator.hasNext();) {
-  
-          AnnotationFS nameAnnotation = (AnnotationFS) nameIterator.next();
-  
+
+        for (AnnotationFS nameAnnotation : nameAnnotations) {
           nameSpans.add(new Span(nameAnnotation.getBegin(), nameAnnotation.getEnd(),
-              nameAnnotation.getType().getName()));
+                  nameAnnotation.getType().getName()));
         }
       }
       
@@ -539,7 +535,8 @@ public class EntityContentProvider implements IStructuredContentProvider {
       nameFinder.schedule();
     }
   }
-  
+
+  @Override
   public Object[] getElements(Object inputElement) {
     // Note: 
     // Called directly after showing the view, the
@@ -547,7 +544,8 @@ public class EntityContentProvider implements IStructuredContentProvider {
     // which will be added to the viewer
     return candidateEntities.toArray();
   }
-  
+
+  @Override
   public void dispose() {
     IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
     store.removePropertyChangeListener(preferenceChangeTrigger);

@@ -39,7 +39,7 @@ public class TypeInputDialog extends InputDialog {
         String result = null;
         
         if (ts.getType(value) == null) {
-          return "Type does not exist in type sysetm!";
+          return "Type does not exist in type system!";
         }
         
         return result;
