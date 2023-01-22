@@ -44,8 +44,11 @@ public class SequenceTagging implements TokenNameFinder, AutoCloseable {
     model = SavedModelBundle.load(config.getSavedModel(), "serve");
     session = model.session();
 
-    this.wordIndexer = new WordIndexer(new FileInputStream(config.getVocabWords()),
+    this.wordIndexer = new WordIndexer(config.isUseLowerCaseEmbeddings(), config.isAllowNUM(), config.isAllowNUM(),
+            new FileInputStream(config.getVocabWords()),
             new FileInputStream(config.getVocabChars()));
+
+    this.wordIndexer.setDigitPattern(config.getDigitPattern());
 
     this.indexTagger = new IndexTagger((new FileInputStream(config.getVocabTags())));
   }
@@ -54,9 +57,10 @@ public class SequenceTagging implements TokenNameFinder, AutoCloseable {
 
     Path tmpDir = ModelUtil.writeModelToTmpDir(modelZipPackage);
 
-    try (InputStream wordsIn = Files.newInputStream(tmpDir.resolve("word_dict.txt"));
+    try (InputStream configIn = Files.newInputStream(tmpDir.resolve("config.properties"));
+         InputStream wordsIn = Files.newInputStream(tmpDir.resolve("word_dict.txt"));
          InputStream charsIn = Files.newInputStream(tmpDir.resolve("char_dict.txt"))) {
-      wordIndexer = new WordIndexer(wordsIn, charsIn);
+      wordIndexer = new WordIndexer(configIn, wordsIn, charsIn);
     }
 
     try (InputStream in = Files.newInputStream(tmpDir.resolve("label_dict.txt"))) {
@@ -120,6 +124,10 @@ public class SequenceTagging implements TokenNameFinder, AutoCloseable {
 
       return returnValue;
     }
+  }
+
+  public WordIndexer getWordIndexer() {
+    return wordIndexer;
   }
 
   @Override
