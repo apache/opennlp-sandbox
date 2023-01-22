@@ -22,8 +22,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,45 +49,38 @@ public class WikinewsConverter {
 
     private final TypeSystemDescription tsDesc;
     private final File outputFolder;
-    private List<String> endOfArtilceMarkers = new ArrayList<String>();
+    private final List<String> endOfArticleMarkers = new ArrayList<>();
     
     CASArticleFilter(TypeSystemDescription tsDesc, File outputFolder) {
       
       this.tsDesc = tsDesc;
       this.outputFolder = outputFolder;
       
-      endOfArtilceMarkers.add("{{haveyoursay}}");
-      endOfArtilceMarkers.add("== Sources ==");
-      endOfArtilceMarkers.add("==Sources==");
-      endOfArtilceMarkers.add("== Source ==");
-      endOfArtilceMarkers.add("==Source==");
-      endOfArtilceMarkers.add("==References==");
-      endOfArtilceMarkers.add("== References ==");
-      endOfArtilceMarkers.add("=== References===");
+      endOfArticleMarkers.add("{{haveyoursay}}");
+      endOfArticleMarkers.add("== Sources ==");
+      endOfArticleMarkers.add("==Sources==");
+      endOfArticleMarkers.add("== Source ==");
+      endOfArticleMarkers.add("==Source==");
+      endOfArticleMarkers.add("==References==");
+      endOfArticleMarkers.add("== References ==");
+      endOfArticleMarkers.add("=== References===");
     }
     
-    
-      public static String titleToUri(String title) {
-      try {
-          return URLEncoder.encode(title.replaceAll(" ", "_"), "UTF-8");
-      } catch (UnsupportedEncodingException e) {
-          throw new RuntimeException(e);
-      }
+    public static String titleToUri(String title) {
+      return URLEncoder.encode(title.replaceAll(" ", "_"), StandardCharsets.UTF_8);
     }
-    
+
+    @Override
     public void process(WikiArticle page, Siteinfo siteinfo)
         throws SAXException {
       
       if (page.getIntegerNamespace() == 0 && page.isMain()) {
-
         if (page.getText().toLowerCase().contains("{publish}")) {
           
           String pageText = page.getText();
-          
-
           int cutIndex = pageText.length();
 
-          for (String endMarker : endOfArtilceMarkers) {
+          for (String endMarker : endOfArticleMarkers) {
             int endMarkerIndex = pageText.indexOf(endMarker);
               if (endMarkerIndex != -1 && endMarkerIndex < cutIndex) {
                 cutIndex = endMarkerIndex;
@@ -98,8 +91,9 @@ public class WikinewsConverter {
             pageText = pageText.substring(0, cutIndex);
           }
           
-          WikinewsWikiModel wikiModel = new WikinewsWikiModel("http://en.wikinews.org/wiki/${image}", 
-              "http://en.wikinews.org/wiki/${title}");
+          WikinewsWikiModel wikiModel = new WikinewsWikiModel(
+                  "https://en.wikinews.org/wiki/${image}",
+                  "https://en.wikinews.org/wiki/${title}");
           
           AnnotatingMarkupParser converter = new AnnotatingMarkupParser();
           String plainStr = wikiModel.render(converter, pageText);
@@ -137,8 +131,7 @@ public class WikinewsConverter {
           }
           
           for (Annotation subHeadAnn : converter.getHeaderAnnotations()) {
-            AnnotationFS subHeadAnnFS = articleCAS.createAnnotation(
-                articleCAS.getTypeSystem()
+            AnnotationFS subHeadAnnFS = articleCAS.createAnnotation(articleCAS.getTypeSystem()
                 .getType("org.apache.opennlp.annotations.SubHeadline"),
                 bodyOffset + subHeadAnn.begin, bodyOffset + subHeadAnn.end);
             
@@ -150,8 +143,7 @@ public class WikinewsConverter {
           Feature linkFeature = wikiLinkType.getFeatureByBaseName("link");
           
           for (Annotation wikiLinkAnn : converter.getWikiLinkAnnotations()) {
-            AnnotationFS wikiLinkAnnFS = articleCAS.createAnnotation(
-                articleCAS.getTypeSystem()
+            AnnotationFS wikiLinkAnnFS = articleCAS.createAnnotation(articleCAS.getTypeSystem()
                 .getType("org.apache.opennlp.annotations.WikiLink"),
                 bodyOffset + wikiLinkAnn.begin, bodyOffset + wikiLinkAnn.end);
             
@@ -164,32 +156,19 @@ public class WikinewsConverter {
           markupCas.setDocumentText(page.toString());
           
           // now serialize CAS
-          OutputStream casOut = null;
-          try {
-              casOut = new FileOutputStream(outputFolder.getAbsolutePath() +
-            		  File.separator + titleToUri(page.getTitle()) + ".xmi");
-              
+          try (OutputStream casOut = new FileOutputStream(outputFolder.getAbsolutePath() +
+                  File.separator + titleToUri(page.getTitle()) + ".xmi")) {
+
               UimaUtil.serializeCASToXmi(articleCAS, casOut);
           }
           catch (IOException e) {
             e.printStackTrace();
           }
-          finally {
-            try {
-            if (casOut != null)
-                casOut.close();
-              } catch (IOException e) {
-              }
-          }
-          
         }
       }
     }
   }
 
-  /**
-   * @param args
-   */
   public static void main(String[] args) throws Exception {
     if (args.length != 2) {
       System.err.println("Usage: Parser <XML-File> <Output-Folder>"); 
