@@ -16,14 +16,12 @@
 package opennlp.addons.modelbuilder;
 
 import java.util.Set;
-import opennlp.tools.namefind.TokenNameFinderModel;
 
+import opennlp.tools.namefind.TokenNameFinderModel;
 /**
  *
  */
-public interface Modelable extends ModelParameter{
-
-
+public interface Modelable extends ModelParameter {
 
   String annotate(String sentence, String namedEntity, String entityType);
 
@@ -40,6 +38,5 @@ public interface Modelable extends ModelParameter{
   TokenNameFinderModel getModel();
 
   String[] tokenizeSentenceToWords(String sentence);
-  
 
 }

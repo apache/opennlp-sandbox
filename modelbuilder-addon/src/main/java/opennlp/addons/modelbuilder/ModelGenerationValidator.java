@@ -18,16 +18,13 @@ package opennlp.addons.modelbuilder;
 import java.util.Collection;
 
 /**
- *
-Validates results from the iterative namefinding
+ * Validates results from the iterative namefinding
  */
 public interface ModelGenerationValidator extends ModelParameter {
 
   Boolean validSentence(String sentence);
 
   Boolean validNamedEntity(String namedEntity);
-  
-
 
   Collection<String> getBlackList();
 }

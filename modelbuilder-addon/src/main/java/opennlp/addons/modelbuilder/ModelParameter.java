@@ -17,12 +17,8 @@ package opennlp.addons.modelbuilder;
 
 import opennlp.addons.modelbuilder.impls.BaseModelBuilderParams;
 
-/**
- *
- */
 public interface ModelParameter<T extends  BaseModelBuilderParams>{
    
   void setParameters(T params);
-  
 
 }
