@@ -21,18 +21,18 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 public class IndexTagger {
 
-  private Map<Integer, String> idx2Tag = new HashMap<>();
+  private final Map<Integer, String> idx2Tag = new HashMap<>();
 
   public IndexTagger(InputStream vocabTags) throws IOException {
     try(BufferedReader in = new BufferedReader(
-            new InputStreamReader(
-                    vocabTags, "UTF8"))) {
+            new InputStreamReader(vocabTags, StandardCharsets.UTF_8))) {
       String tag;
       int idx = 0;
       while ((tag = in.readLine()) != null) {
@@ -40,7 +40,6 @@ public class IndexTagger {
         idx += 1;
       }
     }
-
   }
 
   public String getTag(Integer idx) {

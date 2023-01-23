@@ -23,10 +23,10 @@ import java.io.InputStream;
 
 public class PredictionConfiguration {
 
-  private String vocabWords;
-  private String vocabChars;
-  private String vocabTags;
-  private String savedModel;
+  private final String vocabWords;
+  private final String vocabChars;
+  private final String vocabTags;
+  private final String savedModel;
 
   public PredictionConfiguration(String vocabWords, String vocabChars, String vocabTags, String savedModel) {
     this.vocabWords = vocabWords;
