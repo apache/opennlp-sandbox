@@ -47,8 +47,8 @@ public class ReviewObj {
 
 
 		public ReviewObj() {
-			// TODO Auto-generated constructor stub
 		}
+		
 		public String[] getOrigSentences() {
 			return origSentences;
 		}

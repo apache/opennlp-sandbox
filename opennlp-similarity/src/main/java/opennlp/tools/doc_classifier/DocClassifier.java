@@ -44,14 +44,13 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.Version;
 import org.json.JSONObject;
 
 public class DocClassifier {
 	public static final String DOC_CLASSIFIER_KEY = "doc_class";
 	public static String resourceDir = null;
 	public static final Log logger = LogFactory.getLog(DocClassifier.class);
-	private Map<String, Float> scoredClasses = new HashMap<String, Float>();
+	private Map<String, Float> scoredClasses = new HashMap<>();
 	
 
 	public static Float MIN_TOTAL_SCORE_FOR_CATEGORY = 0.3f; //3.0f;
@@ -71,9 +70,9 @@ public class DocClassifier {
 			MAX_CATEG_RESULTS = 2;
 	private static final float BEST_TO_NEX_BEST_RATIO = 2.0f;
 	// to accumulate classif results
-	private CountItemsList<String> localCats = new CountItemsList<String>();
-	private int MAX_TOKENS_TO_FORM = 30;
-	private String CAT_COMPUTING = "computing";
+	private final CountItemsList<String> localCats = new CountItemsList<>();
+	private static final int MAX_TOKENS_TO_FORM = 30;
+	private final String CAT_COMPUTING = "computing";
 	public static final String DOC_CLASSIFIER_MAP = "doc_classifier_map";
 	private static final int MIN_SENTENCE_LENGTH_TO_CATEGORIZE = 60; // if
 	// sentence
@@ -99,7 +98,7 @@ public class DocClassifier {
 			Directory indexDirectory = null;
 
 			try {
-				indexDirectory = FSDirectory.open(new File(INDEX_PATH));
+				indexDirectory = FSDirectory.open(new File(INDEX_PATH).toPath());
 			} catch (IOException e2) {
 				logger.error("problem opening index " + e2);
 			}
@@ -119,14 +118,14 @@ public class DocClassifier {
 	/* returns the class name for a sentence */
 	private List<String> classifySentence(String queryStr) {
 
-		List<String> results = new ArrayList<String>();
+		List<String> results = new ArrayList<>();
 		// too short of a query
 		if (queryStr.length() < MIN_CHARS_IN_QUERY) {
 			return results;
 		}
 
-		Analyzer std = new StandardAnalyzer(Version.LUCENE_46);
-		QueryParser parser = new QueryParser(Version.LUCENE_46, "text", std);
+		Analyzer std = new StandardAnalyzer();
+		QueryParser parser = new QueryParser("text", std);
 		parser.setDefaultOperator(QueryParser.Operator.OR);
 		Query query = null;
 		try {

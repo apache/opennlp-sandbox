@@ -18,22 +18,14 @@
 package opennlp.tools.similarity.apps;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Logger;
 
-import opennlp.tools.parse_thicket.Triple;
-import opennlp.tools.parse_thicket.apps.SnippetToParagraph;
-import opennlp.tools.parse_thicket.apps.SnippetToParagraph.TextChunk;
-import opennlp.tools.parse_thicket.apps.SnippetToParagraph.TextChunkComparable;
-import opennlp.tools.similarity.apps.utils.PageFetcher;
 import opennlp.tools.similarity.apps.utils.StringDistanceMeasurer;
 import opennlp.tools.similarity.apps.utils.Utils;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
-import opennlp.tools.textsimilarity.ParseTreeChunkListScorer;
-import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.TextProcessor;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
@@ -67,7 +59,7 @@ public class ContentGeneratorSupport {
 
 		List<ParseTreeChunk> nPhrases = pos
 				.formGroupedPhrasesFromChunksForSentence(sentence).get(0);
-		List<String> queryArrayStr = new ArrayList<String>();
+		List<String> queryArrayStr = new ArrayList<>();
 		for (ParseTreeChunk ch : nPhrases) {
 			String query = "";
 			int size = ch.getLemmas().size();
@@ -140,7 +132,7 @@ public class ContentGeneratorSupport {
 				continue;
 			sentsClean.add(s);
 		}
-		return (String[]) sentsClean.toArray(new String[0]);
+		return sentsClean.toArray(new String[0]);
 	}
 
 	public static String cleanSpacesInCleanedHTMLpage(String pageContent){ //was 4 spaces 
@@ -211,15 +203,15 @@ public class ContentGeneratorSupport {
 		StringDistanceMeasurer meas = new StringDistanceMeasurer();
 		double dupeThresh = // 0.8; // if more similar, then considered dupes was
 				0.7;
-		List<Integer> idsToRemove = new ArrayList<Integer>();
-		List<HitBase> hitsDedup = new ArrayList<HitBase>();
+		List<Integer> idsToRemove = new ArrayList<>();
+		List<HitBase> hitsDedup = new ArrayList<>();
 		try {
 			for (int i = 0; i < hits.size(); i++)
 				for (int j = i + 1; j < hits.size(); j++) {
 					HitBase hit2 = hits.get(j);
 					List<Fragment> fragmList1 = hits.get(i).getFragments();
 					List<Fragment> fragmList2 = hits.get(j).getFragments();
-					List<Fragment> fragmList2Results = new ArrayList<Fragment>(fragmList2);
+					List<Fragment> fragmList2Results = new ArrayList<>(fragmList2);
 					for (Fragment f1 : fragmList1)
 						for (Fragment f2 : fragmList2) {
 							String sf1 = f1.getResultText();
@@ -245,7 +237,7 @@ public class ContentGeneratorSupport {
 
 
 	// given a fragment from snippet, finds an original sentence at a webpage by
-	// optimizing alignmemt score
+	// optimizing alignment score
 	public static String[] getFullOriginalSentenceFromWebpageBySnippetFragment(
 			String fragment, String[] sents) {
 		if (fragment.trim().length() < 15)
@@ -277,7 +269,6 @@ public class ContentGeneratorSupport {
 						}
 					}
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -286,7 +277,7 @@ public class ContentGeneratorSupport {
 	}
 
 	// given a fragment from snippet, finds an original sentence at a webpage by
-	// optimizing alignmemt score
+	// optimizing alignment score
 	public static String[] getBestFullOriginalSentenceFromWebpageBySnippetFragment(
 			String fragment, String[] sents) {
 		if (fragment.trim().length() < 15)
@@ -386,7 +377,8 @@ public class ContentGeneratorSupport {
 			if (sentenceOrMultSent==null || sentenceOrMultSent.length()<20)
 				continue;
 			if (GeneratedSentenceProcessor.acceptableMinedSentence(sentenceOrMultSent)==null){
-				System.out.println("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = "+sentenceOrMultSent);
+				// TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
+				// System.out.println("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = "+sentenceOrMultSent);
 				continue;
 			}
 			// aaa. hhh hhh.  kkk . kkk ll hhh. lll kkk n.
@@ -414,7 +406,7 @@ public class ContentGeneratorSupport {
 				sentsClean.add(s);
 			}
 		}
-		return (String[]) sentsClean.toArray(new String[0]);
+		return sentsClean.toArray(new String[0]);
 	}	
 
 	protected String[] cleanSplitListOfSentsFirstSplit(String[] longestSents){
@@ -457,7 +449,7 @@ public class ContentGeneratorSupport {
 				sentsClean.add(sentence);
 			}
 		}
-		return (String[]) sentsClean.toArray(new String[0]);
+		return sentsClean.toArray(new String[0]);
 	}
 
 	public static String getPortionOfTitleWithoutDelimiters(String title){

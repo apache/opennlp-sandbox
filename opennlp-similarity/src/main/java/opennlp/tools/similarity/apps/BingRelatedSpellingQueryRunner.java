@@ -98,7 +98,6 @@ public class BingRelatedSpellingQueryRunner extends BingQueryRunner{
 		          .runSSSearch("clear Sess", 10);
 		      System.out.print(resp.get(0));
 	    } catch (Exception e) {
-	      // TODO Auto-generated catch block
 	      e.printStackTrace();
 	    }
 	}

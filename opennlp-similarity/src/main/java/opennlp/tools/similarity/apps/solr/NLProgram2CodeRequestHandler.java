@@ -16,67 +16,27 @@
  */
 package opennlp.tools.similarity.apps.solr;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.logging.Logger;
 
 import opennlp.tools.nl2code.NL2Obj;
 import opennlp.tools.nl2code.NL2ObjCreateAssign;
 import opennlp.tools.nl2code.ObjectPhraseListForSentence;
-import opennlp.tools.similarity.apps.HitBase;
-import opennlp.tools.similarity.apps.utils.Pair;
-import opennlp.tools.textsimilarity.ParseTreeChunk;
 import opennlp.tools.textsimilarity.ParseTreeChunkListScorer;
-import opennlp.tools.textsimilarity.SentencePairMatchResult;
-import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.CachingWrapperFilter;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-
-
 public class NLProgram2CodeRequestHandler extends SearchHandler {
-	private static Logger LOG = Logger
-			.getLogger("opennlp.tools.similarity.apps.solr.NLProgram2CodeRequestHandler");
+	private static final Logger LOG =
+					Logger.getLogger("opennlp.tools.similarity.apps.solr.NLProgram2CodeRequestHandler");
 	private final static int MAX_SEARCH_RESULTS = 100;
-	private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
-	private ParserChunker2MatcherProcessor sm = null;
-	private int MAX_QUERY_LENGTH_NOT_TO_RERANK=3;
-	private static String resourceDir = //"/home/solr/solr-4.4.0/example/src/test/resources";
+	private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
+	private final int MAX_QUERY_LENGTH_NOT_TO_RERANK = 3;
+	private static final String resourceDir = //"/home/solr/solr-4.4.0/example/src/test/resources";
 	"C:/workspace/TestSolr/src/test/resources";
-
 	//"/data1/solr/example/src/test/resources";
 	
 	NL2Obj compiler = new NL2ObjCreateAssign(resourceDir);
@@ -93,32 +53,27 @@ public class NLProgram2CodeRequestHandler extends SearchHandler {
 					text[count] = val;
 					count++;
 				}
-
 			}
-		
 
-			StringBuffer buf = new StringBuffer();
-		    for(String sent:text){
-		      ObjectPhraseListForSentence opls=null;
-		      try {
-		        opls = compiler.convertSentenceToControlObjectPhrase(sent);
-		      } catch (Exception e) {
-		        e.printStackTrace();
-		      }
-		      System.out.println(sent+"\n"+opls+"\n");
-		      buf.append(sent+"\n |=> "+opls+"\n");
-		    }
-		
-		
-		LOG.info("re-ranking results: "+buf.toString());
+		StringBuilder buf = new StringBuilder();
+		for(String sent:text){
+			ObjectPhraseListForSentence opls=null;
+			try {
+				opls = compiler.convertSentenceToControlObjectPhrase(sent);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			System.out.println(sent+"\n"+opls+"\n");
+			buf.append(sent).append("\n |=> ").append(opls).append("\n");
+		}
+
+		LOG.info("re-ranking results: " + buf);
 		NamedList<Object> values = rsp.getValues();
 		values.remove("response");
 		values.add("response", buf.toString().trim());
 		rsp.setAllValues(values);
 		
 	}
-
-	
 
 }
 

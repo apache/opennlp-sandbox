@@ -60,13 +60,12 @@ public class Pair<T1, T2> {
   }
   
   public class PairComparable implements Comparator<Pair<T1, T2>> {
-    // @Override
-    public int compare(Pair o1, Pair o2) {
+
+    @Override
+    public int compare(Pair<T1, T2> o1, Pair<T1, T2> o2) {
       int b = -2;
-      if ( o1.second instanceof Float && o2.second instanceof Float){
-        
-        b =  (((Float)o1.second > (Float)o2.second) ? -1
-          : (((Float)o1.second == (Float)o2.second) ? 0 : 1));
+      if ( o1.second instanceof Float && o2.second instanceof Float) {
+        b =  (((Float) o2.second).compareTo((Float) o1.second));
       }
       return b;
     }

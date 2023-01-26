@@ -14,72 +14,101 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-
 	<parent>
 		<groupId>org.apache</groupId>
 		<artifactId>apache</artifactId>
-		<version>9</version>
+		<!-- TODO OPENNLP-1452 once this is resolved, move to 29 as well. -->
+		<version>18</version>
 		<relativePath />
 	</parent>
 
 	<groupId>org.apache.opennlp</groupId>
 	<artifactId>opennlp-similarity</artifactId>
-	<version>0.1.0</version>
+	<version>2.1.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
-	<name>OpenNLP Tool Similarity distribution</name>
-
-	<scm>
-		<connection>scm:svn:http://svn.apache.org/repos/asf/opennlp/sandbox/opennlp-similarity/tags/opennlp-similarity-0.0.1</connection>
-		<developerConnection>scm:svn:https://svn.apache.org/repos/asf/opennlp/sandbox/opennlp-similarity/tags/opennlp-similarity-0.0.1</developerConnection>
-		<url>http://svn.apache.org/viewvc/opennlp/tags/opennlp-similarity-1.1.0</url>
-	</scm>
-	<prerequisites>
-		<maven>3.0</maven>
-	</prerequisites>
-	<distributionManagement>
-	  <snapshotRepository>
-	    <id>ossrh</id>
-	    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-	  </snapshotRepository>
-	</distributionManagement>
-
+	<name>Apache OpenNLP Tool Similarity distribution</name>
+	
+	<properties>
+		<nd4j.version>0.4-rc3.6</nd4j.version>
+		<dl4j.version>1.0.0-M2.1</dl4j.version>
+		<maven.compiler.source>11</maven.compiler.source>
+		<maven.compiler.target>11</maven.compiler.target>
+	</properties>
 
 	<repositories>
 		<repository>
-			<id>net.billylieurance</id>
-			<name>BillyLieuranceNet</name>
-			<url>http://www.billylieurance.net/maven2</url>
+			<id>central</id>
+			<name>Maven Central Repository</name>
+			<url>https://repo1.maven.org/maven2</url>
+		</repository>
+		<repository>
+			<id>billylieurance-net</id>
+			<url>https://www.billylieurance.net/maven2</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
 		</repository>
 	</repositories>
-	
-	<properties>
-              <nd4j.version>0.4-rc3.4</nd4j.version> 
-              <dl4j.version>0.4-rc3.3</dl4j.version>
-   </properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.apache.httpcomponents</groupId>
+				<artifactId>httpclient</artifactId>
+				<version>4.5.13</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.httpcomponents</groupId>
+				<artifactId>httpclient-cache</artifactId>
+				<version>4.5.13</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.httpcomponents</groupId>
+				<artifactId>httpcore</artifactId>
+				<version>4.4.14</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.httpcomponents</groupId>
+				<artifactId>httpmime</artifactId>
+				<version>4.5.13</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.httpcomponents</groupId>
+				<artifactId>fluent-hc</artifactId>
+				<version>4.5.13</version>
+			</dependency>
+			<!-- Required to avoid IllegalAccessError by Lombok during compilation -->
+			<dependency>
+				<groupId>org.projectlombok</groupId>
+				<artifactId>lombok</artifactId>
+				<version>1.18.22</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<dependencies>
 		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-log4j12</artifactId>
-			<version>1.6.4</version>
-		</dependency>
-		<dependency>
-  			<groupId>org.apache.opennlp</groupId>
-  			<artifactId>opennlp-tools</artifactId>
-  			<version>1.6.0</version>
+			<groupId>org.apache.opennlp</groupId>
+			<artifactId>opennlp-tools</artifactId>
+			<version>2.1.0</version>
 		</dependency>
 
 		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>1.7.33</version>
+		</dependency>
+		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>4.8.1</version>
+			<version>4.13.2</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>commons-lang</groupId>
 			<artifactId>commons-lang</artifactId>
-			<version>2.5</version>
+			<version>2.6</version>
 		</dependency>
 
 		<dependency>
@@ -90,28 +119,23 @@
 		<dependency>
 			<groupId>org.apache.tika</groupId>
 			<artifactId>tika-app</artifactId>
-			<version>1.6</version>
+			<version>2.6.0</version>
 		</dependency>
 		<dependency>
 			<groupId>net.sf.opencsv</groupId>
 			<artifactId>opencsv</artifactId>
 			<version>2.0</version>
 		</dependency>
-		<dependency>
-			<groupId>org.apache.lucene</groupId>
-			<artifactId>lucene-core</artifactId>
-			<version>4.10.0</version>
-		</dependency>
 
 		<dependency>
 			<groupId>org.apache.solr</groupId>
 			<artifactId>solr-core</artifactId>
-			<version>4.10.0</version>
+			<version>8.11.2</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec</artifactId>
-			<version>1.7</version>
+			<version>1.13</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-logging</groupId>
@@ -128,31 +152,26 @@
 			<artifactId>commons-math3</artifactId>
 			<version>3.5</version>
 		</dependency>
-
+		
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>
-			<version>4.2.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient-cache</artifactId>
-			<version>4.2.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpcore</artifactId>
-			<version>4.2.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpmime</artifactId>
-			<version>4.2.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>fluent-hc</artifactId>
-			<version>4.2.1</version>
 		</dependency>
 
 		<dependency>
@@ -189,14 +208,20 @@
 		<dependency>
 			<groupId>net.billylieurance.azuresearch</groupId>
 			<artifactId>azure-bing-search-java</artifactId>
-			<version>0.11.0</version>
+			<version>0.12.0</version>
 		</dependency>
+
 		<dependency>
 			<groupId>edu.mit</groupId>
 			<artifactId>jverbnet</artifactId>
-			<version>1.2.0</version>
-			<systemPath>${project.basedir}/lib/edu.mit.jverbnet-1.2.0.jar</systemPath>
-			<scope>system</scope>
+			<version>1.2.0.1</version>
+			<exclusions>
+				<!-- Avoids problems with conflicting slf4j bindings at runtime -->
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>log4j-over-slf4j</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		
 		<dependency>
@@ -205,20 +230,20 @@
 			<version>2.7.1</version>
 		</dependency>
 		<dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-ui</artifactId>
-            <version>${dl4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-nlp</artifactId>
-            <version>${dl4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-jblas</artifactId> 
-            <version>${nd4j.version}</version>
-        </dependency>
+				<groupId>org.deeplearning4j</groupId>
+				<artifactId>deeplearning4j-ui</artifactId>
+				<version>${dl4j.version}</version>
+		</dependency>
+		<dependency>
+				<groupId>org.deeplearning4j</groupId>
+				<artifactId>deeplearning4j-nlp</artifactId>
+				<version>${dl4j.version}</version>
+		</dependency>
+		<dependency>
+				<groupId>org.nd4j</groupId>
+				<artifactId>nd4j-jblas</artifactId>
+				<version>${nd4j.version}</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -227,8 +252,8 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
-					<source>1.5</source>
-					<target>1.5</target>
+					<source>11</source>
+					<target>11</target>
 					<compilerArgument>-Xlint</compilerArgument>
 				</configuration>
 			</plugin>
@@ -248,7 +273,6 @@
 			
 			<plugin>
 				<artifactId>maven-antrun-plugin</artifactId>
-				<version>1.6</version>
 				<executions>
 					<execution>
 						<id>generate checksums for binary artifacts</id>
@@ -313,15 +337,6 @@
 				</executions>
 			</plugin>
 			-->
-			 <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
-            </plugin>
 			<plugin>
 		      <groupId>org.sonatype.plugins</groupId>
 		      <artifactId>nexus-staging-maven-plugin</artifactId>

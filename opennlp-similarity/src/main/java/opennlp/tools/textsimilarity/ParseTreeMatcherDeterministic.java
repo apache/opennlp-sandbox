@@ -19,15 +19,16 @@ package opennlp.tools.textsimilarity;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import opennlp.tools.stemmer.PStemmer;
 
 public class ParseTreeMatcherDeterministic {
 
-  private GeneralizationListReducer generalizationListReducer = new GeneralizationListReducer();
+  private final GeneralizationListReducer generalizationListReducer = new GeneralizationListReducer();
 
-  private LemmaFormManager lemmaFormManager = new LemmaFormManager();
+  private final LemmaFormManager lemmaFormManager = new LemmaFormManager();
 
-  private POSManager posManager = new POSManager();
+  private final POSManager posManager = new POSManager();
 
   /**
    * key matching function which takes two phrases, aligns them and finds a set
@@ -45,13 +46,13 @@ public class ParseTreeMatcherDeterministic {
     List<String> lem1 = chunk1.getLemmas();
     List<String> lem2 = chunk2.getLemmas();
 
-    List<String> lem1stem = new ArrayList<String>();
-    List<String> lem2stem = new ArrayList<String>();
+    List<String> lem1stem = new ArrayList<>();
+    List<String> lem2stem = new ArrayList<>();
 
     PStemmer ps = new PStemmer();
     for (String word : lem1) {
       try {
-        lem1stem.add(ps.stem(word.toLowerCase()).toString());
+        lem1stem.add(ps.stem(word.toLowerCase()));
       } catch (Exception e) {
         // e.printStackTrace();
 
@@ -61,19 +62,19 @@ public class ParseTreeMatcherDeterministic {
     }
     try {
       for (String word : lem2) {
-        lem2stem.add(ps.stem(word.toLowerCase()).toString());
+        lem2stem.add(ps.stem(word.toLowerCase()));
       }
     } catch (Exception e) {
       System.err.println("problem processing word " + lem2.toString());
     }
 
-    List<String> overlap = new ArrayList(lem1stem);
+    List<String> overlap = new ArrayList<>(lem1stem);
     overlap.retainAll(lem2stem);
 
-    if (overlap == null || overlap.size() < 1)
+    if (overlap.size() < 1)
       return null;
 
-    List<Integer> occur1 = new ArrayList<Integer>(), occur2 = new ArrayList<Integer>();
+    List<Integer> occur1 = new ArrayList<>(), occur2 = new ArrayList<>();
     for (String word : overlap) {
       Integer i1 = lem1stem.indexOf(word);
       Integer i2 = lem2stem.indexOf(word);
@@ -81,13 +82,13 @@ public class ParseTreeMatcherDeterministic {
       occur2.add(i2);
     }
 
-    // now we search for plausible sublists of overlaps
+    // now we search for plausible sub-lists of overlaps
     // if at some position correspondence is inverse (one of two position
     // decreases instead of increases)
     // then we terminate current alignment accum and start a new one
-    List<List<int[]>> overlapsPlaus = new ArrayList<List<int[]>>();
+    List<List<int[]>> overlapsPlaus = new ArrayList<>();
     // starts from 1, not 0
-    List<int[]> accum = new ArrayList<int[]>();
+    List<int[]> accum = new ArrayList<>();
     accum.add(new int[] { occur1.get(0), occur2.get(0) });
     for (int i = 1; i < occur1.size(); i++) {
 
@@ -96,7 +97,7 @@ public class ParseTreeMatcherDeterministic {
         accum.add(new int[] { occur1.get(i), occur2.get(i) });
       else {
         overlapsPlaus.add(accum);
-        accum = new ArrayList<int[]>();
+        accum = new ArrayList<>();
         accum.add(new int[] { occur1.get(i), occur2.get(i) });
       }
     }
@@ -104,20 +105,20 @@ public class ParseTreeMatcherDeterministic {
       overlapsPlaus.add(accum);
     }
 
-    List<ParseTreeChunk> results = new ArrayList<ParseTreeChunk>();
+    List<ParseTreeChunk> results = new ArrayList<>();
     for (List<int[]> occur : overlapsPlaus) {
-      List<Integer> occr1 = new ArrayList<Integer>(), occr2 = new ArrayList<Integer>();
+      List<Integer> occr1 = new ArrayList<>(), occr2 = new ArrayList<>();
       for (int[] column : occur) {
         occr1.add(column[0]);
         occr2.add(column[1]);
       }
 
       int ov1 = 0, ov2 = 0; // iterators over common words;
-      List<String> commonPOS = new ArrayList<String>(), commonLemmas = new ArrayList<String>();
+      List<String> commonPOS = new ArrayList<>(), commonLemmas = new ArrayList<>();
       // we start two words before first word
       int k1 = occr1.get(ov1) - 2, k2 = occr2.get(ov2) - 2;
       // if (k1<0) k1=0; if (k2<0) k2=0;
-      Boolean bReachedCommonWord = false;
+      boolean bReachedCommonWord = false;
       while (k1 < 0 || k2 < 0) {
         k1++;
         k2++;
@@ -179,7 +180,7 @@ public class ParseTreeMatcherDeterministic {
                                                                     // behind
                                                                     // current
                                                                     // position,
-                                                                    // synchroneously
+                                                                    // synchronously
                                                                     // move
                                                                     // towards
                                                                     // right
@@ -217,11 +218,11 @@ public class ParseTreeMatcherDeterministic {
    */
   public List<List<ParseTreeChunk>> matchTwoSentencesGroupedChunksDeterministic(
       List<List<ParseTreeChunk>> sent1, List<List<ParseTreeChunk>> sent2) {
-    List<List<ParseTreeChunk>> results = new ArrayList<List<ParseTreeChunk>>();
+    List<List<ParseTreeChunk>> results = new ArrayList<>();
     // first iterate through component
     for (int comp = 0; comp < 2 && // just np & vp
         comp < sent1.size() && comp < sent2.size(); comp++) {
-      List<ParseTreeChunk> resultComps = new ArrayList<ParseTreeChunk>();
+      List<ParseTreeChunk> resultComps = new ArrayList<>();
       // then iterate through each phrase in each component
       for (ParseTreeChunk ch1 : sent1.get(comp)) {
         for (ParseTreeChunk ch2 : sent2.get(comp)) { // simpler version
@@ -229,7 +230,7 @@ public class ParseTreeMatcherDeterministic {
               ch1, ch2);
 
           if (chunkToAdd == null)
-            chunkToAdd = new ArrayList<ParseTreeChunk>();
+            chunkToAdd = new ArrayList<>();
           // System.out.println("ch1 = "+
           // ch1.toString()+" | ch2="+ch2.toString()
           // +"\n result = "+chunkToAdd.toString() + "\n");
@@ -248,7 +249,7 @@ public class ParseTreeMatcherDeterministic {
           // if (!LemmaFormManager.mustOccurVerifier(ch1, ch2, chunkToAdd))
           // continue; // if the words which have to stay do not stay, proceed
           // to other elements
-          Boolean alreadyThere = false;
+          boolean alreadyThere = false;
           for (ParseTreeChunk chunk : resultComps) {
             if (chunkToAdd.contains(chunk)) {
               alreadyThere = true;
@@ -258,16 +259,13 @@ public class ParseTreeMatcherDeterministic {
             // }
           }
 
-          if (!alreadyThere && chunkToAdd != null && chunkToAdd.size() > 0) {
+          if (!alreadyThere && chunkToAdd.size() > 0) {
             resultComps.addAll(chunkToAdd);
           }
 
         }
       }
-      List<ParseTreeChunk> resultCompsRed = generalizationListReducer
-          .applyFilteringBySubsumption(resultComps);
-
-      resultComps = resultCompsRed;
+      resultComps = generalizationListReducer.applyFilteringBySubsumption(resultComps);
       results.add(resultComps);
     }
 

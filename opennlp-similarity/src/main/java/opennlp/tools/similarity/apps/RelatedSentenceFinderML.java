@@ -42,7 +42,6 @@ public class RelatedSentenceFinderML extends RelatedSentenceFinder{
 	}
 
 	public RelatedSentenceFinderML() {
-		// TODO Auto-generated constructor stub
 	}
 
 	public List<HitBase> generateContentAbout(String sentence) throws Exception {
@@ -130,10 +129,7 @@ public class RelatedSentenceFinderML extends RelatedSentenceFinder{
 				}
 			}
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			// e.printStackTrace();
-			System.err
-			.println("Problem downloading  the page and splitting into sentences");
+			System.err.println("Problem downloading  the page and splitting into sentences");
 			return item;
 		}
 
@@ -154,7 +150,6 @@ public class RelatedSentenceFinderML extends RelatedSentenceFinder{
 						mainAndFollowSent = getFullOriginalSentenceFromWebpageBySnippetFragment(
 								fragment.replace("_should_find_orig_", ""), sentsSortedByLength);
 					} catch (Exception e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 					// if the above gives null than try to match all sentences from snippet fragment
@@ -165,8 +160,6 @@ public class RelatedSentenceFinderML extends RelatedSentenceFinder{
 
 
 				} catch (Exception e) {
-
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			else

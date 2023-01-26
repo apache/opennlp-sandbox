@@ -24,18 +24,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
 import net.billylieurance.azuresearch.AzureSearchImageResult;
 import net.billylieurance.azuresearch.AzureSearchResultSet;
-import net.billylieurance.azuresearch.AzureSearchWebResult;
 
 import org.docx4j.dml.wordprocessingDrawing.Inline;
-import org.docx4j.openpackaging.exceptions.Docx4JException;
-import org.docx4j.openpackaging.exceptions.InvalidFormatException;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.docx4j.openpackaging.parts.WordprocessingML.BinaryPartAbstractImage;
 import org.docx4j.wml.CTFootnotes;
@@ -43,7 +39,6 @@ import org.docx4j.wml.CTFtnEdn;
 import org.docx4j.wml.Drawing;
 import org.docx4j.wml.P;
 import org.docx4j.wml.R;
-import org.docx4j.wml.STFtnEdn;
 
 import opennlp.tools.similarity.apps.BingQueryRunner;
 import opennlp.tools.similarity.apps.Fragment;
@@ -85,7 +80,6 @@ public class WordDocBuilder{
 	        
 			wordMLPackage.save(new File(outputDocFinename));
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -108,17 +102,10 @@ public class WordDocBuilder{
 		String destinationFile = url.replace("http://", "").replace("/", "_");
 		saveImageFromTheWeb(url, absPath+IMG_REL_PATH+destinationFile);
 		File file = new File(absPath+destinationFile);
-        try {
+		try {
 			byte[] bytes = convertImageToByteArray(file);
 			addImageToPackage(wordMLPackage, bytes);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -143,17 +130,16 @@ public class WordDocBuilder{
      */
     protected static void addImageToPackage(WordprocessingMLPackage wordMLPackage,
                             byte[] bytes) throws Exception {
-        BinaryPartAbstractImage imagePart =
-            BinaryPartAbstractImage.createImagePart(wordMLPackage, bytes);
- 
-        int docPrId = 1;
-        int cNvPrId = 2;
-            Inline inline = imagePart.createImageInline("Filename hint",
-                "Alternative text", docPrId, cNvPrId, false);
- 
-        P paragraph = addInlineImageToParagraph(inline);
- 
-        wordMLPackage.getMainDocumentPart().addObject(paragraph);
+			BinaryPartAbstractImage imagePart =
+					BinaryPartAbstractImage.createImagePart(wordMLPackage, bytes);
+
+			int docPrId = 1;
+			int cNvPrId = 2;
+					Inline inline = imagePart.createImageInline("Filename hint",
+							"Alternative text", docPrId, cNvPrId, false);
+
+			P paragraph = addInlineImageToParagraph(inline);
+			wordMLPackage.getMainDocumentPart().addObject(paragraph);
     }
  
     /**
@@ -167,7 +153,7 @@ public class WordDocBuilder{
      */
     private static P addInlineImageToParagraph(Inline inline) {
         // Now add the in-line image to a paragraph
-    	org.docx4j.wml.ObjectFactory factory = new org.docx4j.wml.ObjectFactory();
+    		org.docx4j.wml.ObjectFactory factory = new org.docx4j.wml.ObjectFactory();
         P paragraph = factory.createP();
         R run = factory.createR();
         paragraph.getContent().add(run);
@@ -222,44 +208,36 @@ public class WordDocBuilder{
     
     
     public static void saveImageFromTheWeb(String imageUrl, String destinationFile) {
-		try {
-			URL url = new URL(imageUrl);
-			InputStream is = url.openStream();
-			if (!new File(destinationFile).exists()) {
-				new File(destinationFile).createNewFile();
+			File f = new File(destinationFile);
+			if (!f.exists()) {
+				try {
+					f.createNewFile();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
 			}
-			
-			OutputStream os = new FileOutputStream(destinationFile);
-			
+			try (InputStream is = new URL(imageUrl).openStream();
+					 OutputStream os = new FileOutputStream(destinationFile)) {
 
-			byte[] b = new byte[2048];
-			int length;
+				byte[] b = new byte[2048];
+				int length;
 
-			while ((length = is.read(b)) != -1) {
-				os.write(b, 0, length);
+				while ((length = is.read(b)) != -1) {
+					os.write(b, 0, length);
+				}
+
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-
-			is.close();
-			os.close();
-		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
-	}
     
     public static void main(String[] args){
     	WordDocBuilder b = new WordDocBuilder();
-    	List<HitBase> content = new ArrayList<HitBase>();
+    	List<HitBase> content = new ArrayList<>();
     	for(int i = 0; i<10; i++){
     		HitBase h = new HitBase();
     		h.setTitle("albert einstein "+i);
-    		List<Fragment> frs = new ArrayList<Fragment>();
+    		List<Fragment> frs = new ArrayList<>();
     		frs.add(new Fragment(" content "+i, 0));
     		h.setFragments(frs);
     		content.add(h);

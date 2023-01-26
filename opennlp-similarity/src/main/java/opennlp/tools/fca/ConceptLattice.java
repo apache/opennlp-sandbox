@@ -25,11 +25,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Set;
 
 import org.apache.commons.collections.ListUtils;
-
 
 public class ConceptLattice {
 	int objectCount;
@@ -71,7 +69,7 @@ public class ConceptLattice {
 		this.attributeCount = fr.getAttributesCount();
 		this.binaryContext = fr.getBinaryContext();
 		
-		this.conceptList = new ArrayList<FormalConcept>();
+		this.conceptList = new ArrayList<>();
 		FormalConcept bottom = new FormalConcept();
 		bottom.setPosition(0);
 		conceptList.add(bottom);
@@ -118,7 +116,7 @@ public class ConceptLattice {
 	
 	public int AddIntent(List<Integer> intent,LinkedHashSet<Integer>extent, int generator) {
 		//System.out.println("add intent "+intent+extent+generator);
-		int generator_tmp = GetMaximalConcept(intent, generator);	
+		int generator_tmp = GetMaximalConcept(intent, generator);
 		generator = generator_tmp;
 		//System.out.println("	max gen "+generator);
 		if (conceptList.get(generator).getIntent().equals(intent)) {
@@ -127,11 +125,11 @@ public class ConceptLattice {
 			return generator;
 		}
 		Set<Integer> generatorParents = conceptList.get(generator).getParents();
-		Set<Integer> newParents = new HashSet<Integer>();
+		Set<Integer> newParents = new HashSet<>();
 		for (int candidate : generatorParents) {
 			if (!intent.containsAll(conceptList.get(candidate).getIntent())) {
 				List<Integer> intersection = ListUtils.intersection(intent, conceptList.get(candidate).getIntent());				
-				LinkedHashSet<Integer> new_extent = new LinkedHashSet<Integer>();
+				LinkedHashSet<Integer> new_extent = new LinkedHashSet<>();
 				new_extent.addAll(conceptList.get(candidate).extent);
 				new_extent.addAll(extent);
 				candidate = AddIntent(intersection,new_extent,candidate);
@@ -158,7 +156,7 @@ public class ConceptLattice {
 		
 		FormalConcept newConcept = new FormalConcept();
 		newConcept.setIntent(intent);
-		LinkedHashSet<Integer> new_extent = new LinkedHashSet<Integer>();
+		LinkedHashSet<Integer> new_extent = new LinkedHashSet<>();
 		new_extent.addAll(conceptList.get(generator).extent);
 		new_extent.addAll(extent);
 		newConcept.addExtents(new_extent);
@@ -222,20 +220,15 @@ public class ConceptLattice {
 		LinkedHashSet<Integer> obj;
 		ArrayList<Integer> intent;
 		// attributes list
-		ArrayList<Integer> attributes = new ArrayList<Integer>();
+		ArrayList<Integer> attributes = new ArrayList<>();
 		for (int i = 0; i <attributeCount; i++){
 			attributes.add(i);
 		}
-		// objects set
-		LinkedHashSet<Integer> objects = new LinkedHashSet<Integer>();
-		for (int i = 0; i <objectCount; i++){
-			objects.add(i);
-		}
-		
 		this.conceptList.get(0).setIntent(attributes);
+
 		for (int i = 0; i < objectCount; i++){
-			intent = new ArrayList<Integer>();
-			obj = new LinkedHashSet<Integer>();
+			intent = new ArrayList<>();
+			obj = new LinkedHashSet<>();
 			obj.add(i);
 			for (int j = 0; j < attributeCount; j++){
 				if (binaryContext[i][j] == 1){
@@ -247,14 +240,12 @@ public class ConceptLattice {
 	}
 	
 	public static void main(String []args) throws FileNotFoundException, IOException {
-
 		ConceptLattice cl = new ConceptLattice("sports.cxt", true);
 		cl.printLattice();	
 	}
 	
-	
 	public List<Integer> getAttributeExtByID(int ind){
-		ArrayList<Integer> attrExt = new ArrayList<Integer>();
+		ArrayList<Integer> attrExt = new ArrayList<>();
 		for (int i=0;i<objectCount; i++)
 			if (binaryContext[i][ind]==1)
 				attrExt.add(i); 
@@ -262,7 +253,7 @@ public class ConceptLattice {
 	}
 	
 	public ArrayList<Integer> getObjectIntByID(int ind){
-		ArrayList<Integer> objInt = new ArrayList<Integer>();
+		ArrayList<Integer> objInt = new ArrayList<>();
 		for (int i=0;i<attributeCount; i++)
 			if (binaryContext[ind][i]==1)
 				objInt.add(i); 
@@ -285,14 +276,10 @@ public class ConceptLattice {
 		return conceptList.size();
 	}
 
-	
 	public void printBinContext() {
 		for (int i = 0; i < binaryContext.length; i++ ){
 				System.out.println(Arrays.toString(binaryContext[i]));
 		}	
 	}
-
-
 	
 }
-

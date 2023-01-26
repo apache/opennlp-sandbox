@@ -22,64 +22,26 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.logging.Logger;
 
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 
-import opennlp.tools.similarity.apps.HitBase;
-import opennlp.tools.similarity.apps.RelatedSentenceFinder;
-import opennlp.tools.similarity.apps.RelatedSentenceFinderML;
-import opennlp.tools.similarity.apps.utils.Pair;
-import opennlp.tools.textsimilarity.ParseTreeChunk;
-import opennlp.tools.textsimilarity.ParseTreeChunkListScorer;
-import opennlp.tools.textsimilarity.SentencePairMatchResult;
-import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
-
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.CachingWrapperFilter;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-
+import opennlp.tools.similarity.apps.HitBase;
+import opennlp.tools.similarity.apps.RelatedSentenceFinder;
+import opennlp.tools.similarity.apps.RelatedSentenceFinderML;
+import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
 public class ContentGeneratorRequestHandler extends SearchHandler {
-	private static Logger LOG = Logger
-			.getLogger("com.become.search.requestHandlers.SearchResultsReRankerRequestHandler");
-	private ParserChunker2MatcherProcessor sm = null;
-	WordDocBuilderEndNotes docBuilder = new WordDocBuilderEndNotes ();
-
+	private static final Logger LOG =
+					Logger.getLogger("com.become.search.requestHandlers.SearchResultsReRankerRequestHandler");
+	private final WordDocBuilderEndNotes docBuilder = new WordDocBuilderEndNotes ();
 
 	public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp){
 
@@ -108,24 +70,23 @@ public class ContentGeneratorRequestHandler extends SearchHandler {
 			resultText = cgRunner(runInternal);
 		} catch (Exception e1) {
 			
-/*
-		Runtime r = Runtime.getRuntime();
-		Process mStartProcess = null;
-		String workDir = req.getParams().get("workDir"); 
-		if (workDir == null)
-			System.err.println("workDir = null");
+		/*
+				Runtime r = Runtime.getRuntime();
+				Process mStartProcess = null;
+				String workDir = req.getParams().get("workDir");
+				if (workDir == null)
+					System.err.println("workDir = null");
 
-		try {
-			mStartProcess = r.exec(runCommand, null, new File(workDir));
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+				try {
+					mStartProcess = r.exec(runCommand, null, new File(workDir));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 
-		StreamLogger outputGobbler = new StreamLogger(mStartProcess.getInputStream());
-		outputGobbler.start();
-		}
-*/
+				StreamLogger outputGobbler = new StreamLogger(mStartProcess.getInputStream());
+				outputGobbler.start();
+				}
+		*/
 		}
 		
 		NamedList<Object> values = rsp.getValues();
@@ -136,10 +97,9 @@ public class ContentGeneratorRequestHandler extends SearchHandler {
 
 	}
 
+	static class StreamLogger extends Thread{
 
-	class StreamLogger extends Thread{
-
-		private InputStream mInputStream;
+		private final InputStream mInputStream;
 
 		public StreamLogger(InputStream is) {
 			this.mInputStream = is;
@@ -165,17 +125,14 @@ public class ContentGeneratorRequestHandler extends SearchHandler {
 			System.out.print(count+">>" + a + " | ");
 			count++;
 		}
-		
-
 		try {
 			String resourceDir = args[2];
+			ParserChunker2MatcherProcessor sm = null;
 			if (resourceDir!=null)
 				sm = ParserChunker2MatcherProcessor.getInstance(resourceDir);
 			else
 				sm = ParserChunker2MatcherProcessor.getInstance();
-
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -224,7 +181,6 @@ public class ContentGeneratorRequestHandler extends SearchHandler {
 				s.sendMail("smtp.rambler.ru", "bg7550@rambler.ru", "pill0693", new InternetAddress("bg7550@rambler.ru"), new InternetAddress[]{new InternetAddress(args[1])}, new InternetAddress[]{}, new InternetAddress[]{}, 
 						"Generated content for you on '"+args[0].replace('+', ' ')+"'", generatedContent, attachmentFileName);
 			} catch (AddressException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (Exception e) {
 
@@ -233,7 +189,6 @@ public class ContentGeneratorRequestHandler extends SearchHandler {
 					s.sendMail("smtp.rambler.ru", "bg7550@rambler.ru", "pill0693", new InternetAddress("bg7550@rambler.ru"), new InternetAddress[]{new InternetAddress(args[1])}, new InternetAddress[]{}, new InternetAddress[]{}, 
 							"Generated content for you on '"+args[0].replace('+', ' ')+"'", generatedContent, attachmentFileName);
 				} catch (Exception e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 			}
@@ -284,5 +239,4 @@ public class ContentGeneratorRequestHandler extends SearchHandler {
 
 /*
 http://173.255.254.250:8983/solr/contentgen/?q=human+body+anatomy&email=bgalitsky@hotmail.com&resourceDir=/home/solr/solr-4.4.0/example/src/test/resources&workDir=/home/solr/solr-4.4.0/example/solr-webapp/webapp/WEB-INF/lib&stepsNum=20&searchResultsNum=10&relevanceThreshold=1.5
-
  */

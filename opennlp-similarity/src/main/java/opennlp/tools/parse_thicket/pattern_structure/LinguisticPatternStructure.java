@@ -45,8 +45,8 @@ public class LinguisticPatternStructure extends PhrasePatternStructure {
 	}
 	
 	public int AddIntent(List<List<ParseTreeChunk>> intent, LinkedHashSet<Integer>extent,int generator) {
-		System.out.println("debug");
-		System.out.println("called for " + intent);
+		// TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
+		// System.out.println("debug called for " + intent);
 		//printLattice();
 		int generator_tmp = GetMaximalConcept(intent, generator);
 		generator = generator_tmp;
@@ -63,18 +63,19 @@ public class LinguisticPatternStructure extends PhrasePatternStructure {
 			if (!intent.containsAll(conceptList.get(candidate).intent)) {
 				List<List<ParseTreeChunk>> intersection = md
 				.matchTwoSentencesGroupedChunksDeterministic(intent, conceptList.get(candidate).intent);
-				LinkedHashSet<Integer> new_extent = new LinkedHashSet<Integer>();
+				LinkedHashSet<Integer> new_extent = new LinkedHashSet<>();
 				new_extent.addAll(conceptList.get(candidate).extent);
 				new_extent.addAll(extent);
 				if (intent.size()!=intersection.size()){
-					System.out.println("recursive call (inclusion)");
-					System.out.println(intent + "----" + intersection);
+					// TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
+					// System.out.println("recursive call (inclusion)");
+					// System.out.println(intent + "----" + intersection);
 					candidate = AddIntent(intersection,new_extent, candidate);
 				}
 			}
 			
 			boolean addParents = true;
-			System.out.println("now iterating over parents");
+			// System.out.println("now iterating over parents");
 			Iterator<Integer> iterator = newParents.iterator();
 			while (iterator.hasNext()) {
 				Integer parent = iterator.next();
@@ -92,11 +93,12 @@ public class LinguisticPatternStructure extends PhrasePatternStructure {
 				newParents.add(candidate);
 			}
 		}
-		System.out.println("size of lattice: " + conceptList.size());
+		// TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
+		// System.out.println("size of lattice: " + conceptList.size());
 		PhraseConcept newConcept = new PhraseConcept();
 		newConcept.setIntent(intent);
 
-		LinkedHashSet<Integer> new_extent = new LinkedHashSet<Integer>();
+		LinkedHashSet<Integer> new_extent = new LinkedHashSet<>();
 		new_extent.addAll(conceptList.get(generator).extent);
 		new_extent.addAll(extent);
 		newConcept.addExtents(new_extent);

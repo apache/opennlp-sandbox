@@ -18,13 +18,11 @@
 package opennlp.tools.parse_thicket.pattern_structure;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 
 import opennlp.tools.fca.ConceptLattice;
 import opennlp.tools.fca.FcaWriter;
-import opennlp.tools.fca.FormalConcept;
 import opennlp.tools.similarity.apps.BingWebQueryRunner;
 import opennlp.tools.similarity.apps.HitBase;
 import opennlp.tools.textsimilarity.ParseTreeChunk;

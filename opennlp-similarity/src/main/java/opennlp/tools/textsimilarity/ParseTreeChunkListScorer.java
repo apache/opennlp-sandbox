@@ -28,7 +28,8 @@ public class ParseTreeChunkListScorer {
     double currScore = 0.0;
     for (List<ParseTreeChunk> chunksGivenPhraseType : matchResult)
       for (ParseTreeChunk chunk : chunksGivenPhraseType) {
-        Double score = getScore(chunk);
+        double score = getScore(chunk);
+        // TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
         // System.out.println(chunk+ " => score >>> "+score);
         if (score > currScore) {
           currScore = score;
@@ -44,7 +45,8 @@ public class ParseTreeChunkListScorer {
     for (List<ParseTreeChunk> chunksGivenPhraseType : matchResult) {
       double currScorePT = 0.0;
       for (ParseTreeChunk chunk : chunksGivenPhraseType) {
-        Double score = getScore(chunk);
+        double score = getScore(chunk);
+        // TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
         // System.out.println(chunk+ " => score >>> "+score);
         if (score > currScorePT) {
           currScorePT = score;

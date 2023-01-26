@@ -2,7 +2,6 @@ package opennlp.tools.apps.review_builder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import opennlp.tools.jsmlearning.ProfileReaderWriter;
@@ -17,8 +16,8 @@ import org.apache.commons.lang.StringUtils;
 
 public class WebPageReviewExtractor extends WebPageExtractor {
 	
-	BingAPIProductSearchManager prodman = new BingAPIProductSearchManager();
-	SentenceOriginalizer orig = null;
+	private final BingAPIProductSearchManager prodman = new BingAPIProductSearchManager();
+	private final SentenceOriginalizer orig;
 		
 	public WebPageReviewExtractor(String resourceDir) {
 		orig = new SentenceOriginalizer(resourceDir);
@@ -28,10 +27,9 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 	{
 		StringDistanceMeasurer meas = new StringDistanceMeasurer();
 
-		List<Integer> idsToRemove = new ArrayList<Integer>();
-		List<String> hitsDedup = new ArrayList<String>();
-		try
-		{
+		List<Integer> idsToRemove = new ArrayList<>();
+		List<String> hitsDedup = new ArrayList<>();
+		try {
 			for (int i = 0; i < hits.length; i++)
 				for (int j = i + 1; j < hits.length; j++)
 				{
@@ -48,14 +46,12 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 			for (int i = 0; i < hits.length; i++)
 				if (!idsToRemove.contains(i))
 					hitsDedup.add(hits[i]);
-			if (hitsDedup.size() < hits.length)
-			{
+			if (hitsDedup.size() < hits.length) {
 				System.out.println("Removed duplicates from relevant search results, including "
 					+ hits[idsToRemove.get(0)]);
 			}
 		}
-		catch (Exception e)
-		{
+		catch (Exception e) {
 			System.out.println("Problem removing duplicates from relevant images");
 		}
 
@@ -63,8 +59,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 
 	}
 
-	public ReviewObj extractSentencesWithPotentialReviewPhrases(String url)
-	{
+	public ReviewObj extractSentencesWithPotentialReviewPhrases(String url) {
 		ReviewObj reviewObj = new ReviewObj();
 		int maxSentsFromPage= 20;
 		List<String[]> results = new ArrayList<String[]>();
@@ -81,11 +76,12 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 		String[] productFeatures = StringUtils.substringsBetween(pageOrigHTML, "<li>", "</li>" );
 		if (productFeatures!=null){
 			for(String item: productFeatures ){
-				if (item.indexOf("class")>-1 || item.indexOf("www.")>-1 || item.indexOf("href")>-1)
+				if (item.contains("class") || item.contains("www.") || item.contains("href"))
 					continue;
 				item = item.replace("<span>","").replace("</span>","").replace("<b>","").replace("</b>","");
 				if (item.length()>80 && MinedSentenceProcessor.acceptableMinedSentence(item)==null){
-					System.out.println("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = "+item);
+					// TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
+					// System.out.println("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = "+item);
 					continue;
 				}
 				productFeaturesList .add(item);
@@ -108,7 +104,6 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 				float rating = Float.parseFloat(item);
 				reviewObj.setRating(rating);
 			} catch (NumberFormatException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -125,7 +120,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 			sentsList.add(new TextChunk(s, s.length()));
 		}
 
-		Collections.sort(sentsList, new TextChunkComparable());
+		sentsList.sort(new TextChunkComparable());
 		String[] longestSents = new String[maxSentsFromPage];
 		int j=0;														// -1 removed
 		for(int i=sentsList.size()-1 -maxSentsFromPage; i< sentsList.size()&& j<longestSents.length; i++){
@@ -134,7 +129,6 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 		}
 
 		sents = cleanListOfSents(longestSents);
-		
 		sents = removeDuplicates(sents);
 		sents = verifyEnforceStartsUpperCase(sents);
 
@@ -158,7 +152,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 	}
 
 	private List<String> cleanProductFeatures(List<String> productFeaturesList) {
-		List<String> results = new ArrayList<String>();
+		List<String> results = new ArrayList<>();
 		for(String feature: productFeaturesList){
 			if (feature.startsWith("Unlimited Free") || feature.startsWith("View Larger") || feature.startsWith("View Larger") || feature.indexOf("shipping")>0)
 				continue;
@@ -171,11 +165,10 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 	{
 		float minFragmentLength = 40, minFragmentLengthSpace=4;
 
-		List<String> sentsClean = new ArrayList<String>();
-		for (String sentenceOrMultSent : longestSents)
-		{
+		List<String> sentsClean = new ArrayList<>();
+		for (String sentenceOrMultSent : longestSents) {
 			if (MinedSentenceProcessor.acceptableMinedSentence(sentenceOrMultSent)==null){
-				System.out.println("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = "+sentenceOrMultSent);
+				// System.out.println("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = "+sentenceOrMultSent);
 				continue;
 			}
 			// aaa. hhh hhh.  kkk . kkk ll hhh. lll kkk n.
@@ -204,12 +197,12 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 			}
 		}
 
-		return (String[]) sentsClean.toArray(new String[0]);
+		return sentsClean.toArray(new String[0]);
 	}
 
 	private List<String> furtherMakeSentencesShorter(List<String> furtherSplit) {
 		int MIN_LENGTH_TO_SPLIT = 80;
-		List<String> results = new ArrayList<String>();
+		List<String> results = new ArrayList<>();
 		for(String sent: furtherSplit) {
 			sent = startWithCapitalSent(sent);
 			int len = sent.length(); 
@@ -282,7 +275,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 				}
 */
 			}
-			if (reviewObjTotal==null) return new ArrayList<String>();
+			if (reviewObjTotal==null) return new ArrayList<>();
 			
 			List<String> textReviews = buildManyReviewTexts(reviewObjTotal);
 
@@ -298,7 +291,6 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 			*/
 			
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} 
 		return reviewObjTotal.getOriginalizedSentences();

@@ -67,9 +67,9 @@ public class ParserChunker2MatcherProcessor {
   private Parser parser;
   private ChunkerME chunker;
   private final int NUMBER_OF_SECTIONS_IN_SENTENCE_CHUNKS = 5;
-  private static Logger LOG = Logger
-      .getLogger("opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor");
-  private Map<String, String[][]> sentence_parseObject = new HashMap<String, String[][]>();
+  private static final Logger LOG =
+          Logger.getLogger("opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor");
+  private Map<String, String[][]> sentence_parseObject;
 
   public SentenceDetector getSentenceDetector() {
     return sentenceDetector;
@@ -102,11 +102,11 @@ public class ParserChunker2MatcherProcessor {
           .readObject();
     } catch (Exception e) {
       // this file might not exist initially
-      LOG.fine("parsing  cache file does not exist (but should be created)");
-      sentence_parseObject = new HashMap<String, String[][]>();
+      LOG.warning("parsing  cache file does not exist (but should be created)");
+      sentence_parseObject = new HashMap<>();
     }
     if (sentence_parseObject == null)
-      sentence_parseObject = new HashMap<String, String[][]>();
+      sentence_parseObject = new HashMap<>();
 
     try {
     	if (MODEL_DIR==null || MODEL_DIR.equals("/models")) {
@@ -122,8 +122,8 @@ public class ParserChunker2MatcherProcessor {
       initializeParser();
       initializeChunker();
     } catch (Exception e) { // a typical error when 'model' is not installed
+      LOG.warning("The model can't be read and we rely on cache");
       System.err.println("Please install OpenNLP model files in 'src/test/resources' (folder 'model'");
-      LOG.fine("The model can't be read and we rely on cache");
     }
   }
 
@@ -219,7 +219,7 @@ public class ParserChunker2MatcherProcessor {
     if (sentence == null || sentence.trim().length() < MIN_SENTENCE_LENGTH)
       return null;
 
-    Parse[] parseArray = null;
+    Parse[] parseArray;
     try {
       parseArray = ParserTool.parseLine(sentence, parser, 1);
     } catch (Throwable t) {

@@ -78,12 +78,8 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 				ep.setJaxbElement(endnotes);
 				wordMLPackage.getMainDocumentPart().addTargetPart(ep);
 			} catch (InvalidFormatException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
-			
-			
-			
 			
 			wordMLPackage.getMainDocumentPart().addStyledParagraphOfText("Title", title.toUpperCase());
 			for(HitBase para: content){
@@ -110,7 +106,6 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 			         try {
 						endnote.getEGBlockLevelElts().add( XmlUtils.unmarshalString(endnoteBody));
 					} catch (JAXBException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 			         
@@ -121,7 +116,6 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 			         try {
 			        	 wordMLPackage.getMainDocumentPart().addParagraph(docBody);
 					} catch (JAXBException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 					
@@ -132,7 +126,6 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 						//e.printStackTrace();
 					}
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				count++;
@@ -148,9 +141,7 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 					String paraText = para.getUrl();
 					wordMLPackage.getMainDocumentPart().addParagraphOfText(paraText);
 					
-					
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -160,7 +151,6 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 				wordMLPackage.save(new File(outputDocFinename));
 				System.out.println("Finished creating docx ="+outputDocFinename);
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			
@@ -169,12 +159,10 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 				wordMLPackage.save(new File(fileNameToDownload));
 				System.out.println("Wrote a doc for download :"+fileNameToDownload);
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		

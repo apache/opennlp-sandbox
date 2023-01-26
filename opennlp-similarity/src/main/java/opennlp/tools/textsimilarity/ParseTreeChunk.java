@@ -28,7 +28,9 @@ import org.apache.commons.lang3.StringUtils;
 
 import opennlp.tools.parse_thicket.ParseTreeNode;
 
-public class ParseTreeChunk implements Serializable{
+public class ParseTreeChunk implements Serializable {
+
+	private static final long serialVersionUID = -9007722991829174647L;
 	private String mainPOS;
 
 	private List<String> lemmas;
@@ -518,7 +520,6 @@ public class ParseTreeChunk implements Serializable{
 			}
 			results.add(resultsPhraseType);
 		}
-		System.out.println(results);
 		return results;
 
 		// 2.1 | Vietnam <b>embassy</b> <b>in</b> <b>Israel</b>: information on how

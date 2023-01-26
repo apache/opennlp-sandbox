@@ -18,10 +18,8 @@
 package opennlp.tools.similarity.apps.utils;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.logging.Logger;
@@ -34,11 +32,9 @@ import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.sax.BodyContentHandler;
 
-
 public class PageFetcher {
-  private static final Logger log = Logger
-      .getLogger("opennlp.tools.similarity.apps.utils.PageFetcher");
-  Tika tika = new Tika();
+  private static final Logger log = Logger.getLogger("opennlp.tools.similarity.apps.utils.PageFetcher");
+  private final Tika tika = new Tika();
 
   private static int DEFAULT_TIMEOUT = 1500;
   private void setTimeout(int to){
@@ -52,47 +48,37 @@ public class PageFetcher {
   public String fetchPageAutoDetectParser(final String url ){
 	  String fetchURL = addHttp(url);
 	  String pageContent = null;
-	    URLConnection connection;
-	    try {
-	      log.info("fetch url  auto detect parser " + url);
-	      connection = new URL(fetchURL).openConnection();
-	      connection.setReadTimeout(DEFAULT_TIMEOUT);
-	      
-	    //parse method parameters
-	      Parser parser = new AutoDetectParser();
-	      BodyContentHandler handler = new BodyContentHandler();
-	      Metadata metadata = new Metadata();
-	      ParseContext context = new ParseContext();
-	      
-	      //parsing the file
-	      parser.parse(connection.getInputStream(), handler, metadata, context);
-	      
-	      pageContent = handler.toString();
-	    } catch (Exception e) {
-	      log.info(e.getMessage() + "\n" + e);
-	    }
-	    return  pageContent;
+    URLConnection connection;
+    try {
+      connection = new URL(fetchURL).openConnection();
+      connection.setReadTimeout(DEFAULT_TIMEOUT);
+      // parse method parameters
+      Parser parser = new AutoDetectParser();
+      BodyContentHandler handler = new BodyContentHandler();
+      Metadata metadata = new Metadata();
+      ParseContext context = new ParseContext();
+
+      // parsing the file
+      parser.parse(connection.getInputStream(), handler, metadata, context);
+
+      pageContent = handler.toString();
+    } catch (Exception e) {
+      log.severe(e.getMessage() + "\n" + e);
+    }
+    return  pageContent;
   }
   
 
   public String fetchPage(final String url, final int timeout) {
     String fetchURL = addHttp(url);
-
-    log.info("fetch url " + fetchURL);
-
     String pageContent = null;
     URLConnection connection;
     try {
       connection = new URL(fetchURL).openConnection();
       connection.setReadTimeout(DEFAULT_TIMEOUT);
-      
       pageContent = tika.parseToString(connection.getInputStream())
           .replace('\n', ' ').replace('\t', ' ');
-    } catch (MalformedURLException e) {
-      log.severe(e.getMessage() + "\n" + e);
-    } catch (IOException e) {
-      log.severe(e.getMessage() + "\n" + e);
-    } catch (TikaException e) {
+    } catch (IOException | TikaException e) {
       log.severe(e.getMessage() + "\n" + e);
     }
     return pageContent;

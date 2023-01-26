@@ -16,10 +16,10 @@ import opennlp.tools.textsimilarity.ParseTreeChunk;
 public class SentenceOriginalizer {
 	private String[] sents; 
 	private SentenceBeingOriginalized[] sentenceBeingOriginalized;
-	public List<String> formedPhrases = new ArrayList<String>();
+	public List<String> formedPhrases = new ArrayList<>();
 
-	private MachineTranslationWrapper rePhraser = new MachineTranslationWrapper();
-	private SentimentVocab sVocab = SentimentVocab.getInstance();
+	private final MachineTranslationWrapper rePhraser = new MachineTranslationWrapper();
+	private final SentimentVocab sVocab = SentimentVocab.getInstance();
 	PhraseProcessor pProc = new PhraseProcessor();
 	SynonymListFilter filter = null;
 	private List<String> verbsShouldStayNoSubstition = Arrays.asList(new String[]{
@@ -233,37 +233,32 @@ public class SentenceOriginalizer {
 		try {
 			substituteProsCons();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		try {
 			//insertProductNameForRefs(name);
 			insertProductNameForRefsFullNameKeywords(name, keywordsName);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		try {
 			turnTenseToPast();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		try {
 			turnCounterFactual();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
 		try {
 			substituteSynonymVerbs();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		// remove dupes
-		this.formedPhrases = new ArrayList<String>(new HashSet<String>(this.formedPhrases));
+		this.formedPhrases = new ArrayList<>(new HashSet<>(this.formedPhrases));
 
 		return sents;
 

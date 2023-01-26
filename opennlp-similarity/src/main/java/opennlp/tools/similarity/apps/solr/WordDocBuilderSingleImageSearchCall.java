@@ -73,11 +73,9 @@ public class WordDocBuilderSingleImageSearchCall extends WordDocBuilder{
 					try {
 						addImageByImageURLToPackage(count, wordMLPackage, imageURLs);
 					} catch (Exception e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				count++;
@@ -95,7 +93,6 @@ public class WordDocBuilderSingleImageSearchCall extends WordDocBuilder{
 					
 					
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -113,7 +110,6 @@ public class WordDocBuilderSingleImageSearchCall extends WordDocBuilder{
     	*/	
 			
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -134,16 +130,11 @@ public class WordDocBuilderSingleImageSearchCall extends WordDocBuilder{
 			byte[] bytes = convertImageToByteArray(file);
 			addImageToPackage(wordMLPackage, bytes);
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 	}
 
 	protected List<String>  getAllImageSearchResults(String title) {

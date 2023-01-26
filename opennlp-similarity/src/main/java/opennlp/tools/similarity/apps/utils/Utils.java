@@ -22,7 +22,6 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,7 +40,7 @@ public class Utils {
   private static final Logger LOG = Logger
       .getLogger("opennlp.tools.similarity.apps.utils.Utils");
 
-  protected static final ArrayList<String[]> characterMappings = new ArrayList<String[]>();
+  protected static final ArrayList<String[]> characterMappings = new ArrayList<>();
 
   static {
     characterMappings
@@ -193,7 +192,7 @@ public class Utils {
   }
 
   public static String stripNonAsciiChars(String s) {
-    StringBuffer b = new StringBuffer();
+    StringBuilder b = new StringBuilder();
     if (s != null) {
       for (int i = 0; i < s.length(); i++) {
         if (((int) s.charAt(i)) <= 256) {
@@ -229,10 +228,11 @@ public class Utils {
       this.value = i;
     }
 
-    public static class SortByValue implements Comparator {
-      public int compare(Object obj1, Object obj2) {
-        float i1 = ((KeyValue) obj1).value;
-        float i2 = ((KeyValue) obj2).value;
+    public static class SortByValue implements Comparator<KeyValue> {
+      @Override
+      public int compare(KeyValue obj1, KeyValue obj2) {
+        float i1 = obj1.value;
+        float i2 = obj2.value;
 
         if (i1 < i2)
           return 1;
@@ -280,7 +280,7 @@ public class Utils {
   }
 
   public static int computeEditDistance(String s, String t) {
-    int d[][]; // matrix
+    int[][] d; // matrix
     int n; // length of s
     int m; // length of t
     int i; // iterates through s
@@ -334,13 +334,13 @@ public class Utils {
       res.add(new KeyValue(o, h.get(o)));
     }
 
-    Collections.sort(res, new KeyValue.SortByValue());
+    res.sort(new KeyValue.SortByValue());
 
     return res;
   }
 
   public static String convertKeyValueToString(ArrayList<KeyValue> l) {
-    StringBuffer retVal = new StringBuffer();
+    StringBuilder retVal = new StringBuilder();
     for (KeyValue kv : l) {
       retVal.append(kv.key);
       retVal.append("-");
@@ -352,7 +352,7 @@ public class Utils {
   }
 
   public static String convertStringArrayToString(ArrayList<String> l) {
-    StringBuffer b = new StringBuffer();
+    StringBuilder b = new StringBuilder();
     for (String s : l) {
       b.append(s);
       b.append(", ");
@@ -362,7 +362,7 @@ public class Utils {
   }
 
   public static String convertStringArrayToPlainString(ArrayList<String> l) {
-    StringBuffer b = new StringBuffer();
+    StringBuilder b = new StringBuilder();
     for (String s : l) {
       b.append(s);
       b.append(" ");
@@ -420,7 +420,7 @@ public class Utils {
   }
 
   public static String convertHashMapToString(HashMap<String, Integer> m) {
-    StringBuffer s = new StringBuffer();
+    StringBuilder s = new StringBuilder();
     for (String x : m.keySet()) {
       s.append(x);
       s.append("-");
@@ -450,7 +450,7 @@ public class Utils {
   }
 
   public static String CleanCharacter(String txt, int uValue) {
-    StringBuffer retVal = new StringBuffer();
+    StringBuilder retVal = new StringBuilder();
     for (int i = 0; i < txt.length(); i++) {
       int uChar = (txt.charAt(i));
       if (uChar != uValue) {
@@ -486,16 +486,14 @@ public class Utils {
     Pattern p = java.util.regex.Pattern.compile("\\<SCRIPT.*?</SCRIPT>",
         Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
     Matcher matcher = p.matcher(text);
-    String tmp = matcher.replaceAll("");
-    return tmp;
+    return matcher.replaceAll("");
   }
 
   public static String stripNoScriptTags(String text) {
     Pattern p = java.util.regex.Pattern.compile("\\<NOSCRIPT.*?</NOSCRIPT>",
         Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
     Matcher matcher = p.matcher(text);
-    String tmp = matcher.replaceAll("");
-    return tmp;
+    return matcher.replaceAll("");
   }
 
   public static String stripHTMLMultiLine(String text,
@@ -531,15 +529,13 @@ public class Utils {
   public static String stripHTMLMultiLine(String text) {
     Pattern p = java.util.regex.Pattern.compile("\\<.*?>", Pattern.DOTALL);
     Matcher matcher = p.matcher(text);
-    String tmp = matcher.replaceAll("");
-    return tmp;
+    return matcher.replaceAll("");
   }
 
   public static String stripHTMLCommentsMultiLine(String text) {
     Pattern p = java.util.regex.Pattern.compile("\\<!--.*?-->", Pattern.DOTALL);
     Matcher matcher = p.matcher(text);
-    String tmp = matcher.replaceAll("");
-    return tmp;
+    return matcher.replaceAll("");
   }
 
   public static boolean isFlagSet(Integer flags, Integer flagToCheck) {
@@ -560,11 +556,10 @@ public class Utils {
 
   public static Integer setFlag(Integer flags, Integer flagToCheck) {
     if (flags == null) {
-      flags = new Integer(0);
+      flags = 0;
     }
     if (!isFlagSet(flags, flagToCheck)) {
       flags = flags + flagToCheck;
-      ;
     }
     return flags;
   }
@@ -572,7 +567,7 @@ public class Utils {
   public static Integer resetFlag(Integer flags, Integer flagToCheck) {
     if (flags == null) {
       // nothing to reset
-      flags = new Integer(0);
+      flags = 0;
       return flags;
     }
 
@@ -587,7 +582,7 @@ public class Utils {
     if (text.length() <= length) {
       retVal = text;
     } else {
-      StringBuffer b = new StringBuffer();
+      StringBuilder b = new StringBuilder();
       for (int i = 0; i < text.length(); i++) {
         if (b.length() >= length && Character.isWhitespace(text.charAt(i))) { // iterate
           // until
@@ -615,7 +610,7 @@ public class Utils {
   }
 
   public static String makeStringUrlSafe(String text) {
-    StringBuffer b = new StringBuffer();
+    StringBuilder b = new StringBuilder();
     for (int i = 0; i < text.length(); i++) {
       if (StringUtils.isAlphanumericSpace(String.valueOf(text.charAt(i)))) {
         b.append(text.charAt(i));
@@ -636,10 +631,10 @@ public class Utils {
     return eventId;
   }
 
-  public static String buildCommaSeparatedIds(List ids) {
+  public static String buildCommaSeparatedIds(List<?> ids) {
 
     if (ids != null && ids.size() > 0) {
-      StringBuffer sbuf = new StringBuffer();
+      StringBuilder sbuf = new StringBuilder();
 
       for (int count = 0; count < ids.size(); count++) {
         if (count > 0) {
@@ -680,8 +675,7 @@ public class Utils {
     Pattern p = java.util.regex.Pattern.compile("\\<STYLE.*?</STYLE>",
         Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
     Matcher matcher = p.matcher(text);
-    String tmp = matcher.replaceAll("");
-    return tmp;
+    return matcher.replaceAll("");
   }
 
   public static boolean isLatinWord(String word) {

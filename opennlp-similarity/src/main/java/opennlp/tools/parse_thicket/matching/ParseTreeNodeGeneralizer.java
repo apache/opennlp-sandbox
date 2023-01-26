@@ -10,15 +10,16 @@ import opennlp.tools.parse_thicket.IGeneralizer;
 import opennlp.tools.parse_thicket.ParseTreeNode;
 import opennlp.tools.parse_thicket.VerbNetProcessor;
 
-public class ParseTreeNodeGeneralizer implements IGeneralizer<ParseTreeNode>{
-	private LemmaGeneralizer lGen = new LemmaGeneralizer ();
-	private PartOfSpeechGeneralizer posGen = new PartOfSpeechGeneralizer ();
-	private VerbNetProcessor vnProc = VerbNetProcessor.getInstance(null);
+public class ParseTreeNodeGeneralizer implements IGeneralizer<ParseTreeNode> {
+
+	private final LemmaGeneralizer lGen = new LemmaGeneralizer ();
+	private final PartOfSpeechGeneralizer posGen = new PartOfSpeechGeneralizer ();
+	private final VerbNetProcessor vnProc = VerbNetProcessor.getInstance(null);
 
 	@Override
 	public List<ParseTreeNode> generalize(Object o1, Object o2) {
 
-		List<ParseTreeNode> results = new ArrayList<ParseTreeNode>();
+		List<ParseTreeNode> results = new ArrayList<>();
 
 		ParseTreeNode newNode = null;
 		ParseTreeNode ch1 = (ParseTreeNode)o1, ch2 = (ParseTreeNode)o2;
@@ -44,11 +45,11 @@ public class ParseTreeNodeGeneralizer implements IGeneralizer<ParseTreeNode>{
 				Map<String, List<String>> verbNetGen = verbNetGenList.get(0);
 				Map<String, Object> attr = newNode.getAttributes();
 				if (attr == null)
-					attr = new HashMap<String, Object> ();
+					attr = new HashMap<> ();
 				try {
 					List<String> phrDscr = (List<String>) attr.get("phrDescr");
 					if (phrDscr!=null) // && phrDscr.size()>1)
-						phrDscr = new ArrayList<String>(new HashSet<String>(phrDscr));
+						phrDscr = new ArrayList<>(new HashSet<>(phrDscr));
 				} catch (Exception e) {
 					System.err.println("Problem de-duplicating verbnet expr" + attr);
 				}

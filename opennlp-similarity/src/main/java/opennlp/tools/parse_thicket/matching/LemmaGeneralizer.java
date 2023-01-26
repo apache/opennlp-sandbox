@@ -79,7 +79,7 @@ public class LemmaGeneralizer implements IGeneralizer<String> {
 			// if different words, then compute word2vec distance and write the value as a string
 			if (w2v.vec!=null){
 				double value = w2v.vec.similarity(lemma1,  lemma2);
-				results.add(w2vPrefix+new Float(value).toString());
+				results.add(w2vPrefix + value);
 			}
 			return results;
 		}
