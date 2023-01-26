@@ -23,7 +23,7 @@ import java.util.Random;
 import org.apache.opennlp.utils.TrainingSet;
 
 /**
- * Utility class for calculating gradient descent
+ * A utility class for calculating gradient descent.
  */
 public class GradientDescentUtils {
 

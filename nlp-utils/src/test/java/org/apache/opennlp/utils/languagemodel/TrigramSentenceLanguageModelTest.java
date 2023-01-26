@@ -31,17 +31,17 @@ import static org.junit.Assert.assertTrue;
 public class TrigramSentenceLanguageModelTest {
 
   @Test
-  public void testEmptyVocabularyProbability() throws Exception {
-    TrigramSentenceLanguageModel<String> model = new TrigramSentenceLanguageModel<String>();
-    assertEquals("probability with an empty vocabulary is always 0", 0d, model.calculateProbability(Collections.<String[]>emptySet(),
-            new String[0]), 0d);
-    assertEquals("probability with an empty vocabulary is always 0", 0d, model.calculateProbability(Collections.<String[]>emptySet(),
-            new String[]{"1", "2", "3"}), 0d);
+  public void testEmptyVocabularyProbability() {
+    TrigramSentenceLanguageModel<String> model = new TrigramSentenceLanguageModel<>();
+    assertEquals("probability with an empty vocabulary is always 0",
+            0d, model.calculateProbability(Collections.emptySet(), new String[0]), 0d);
+    assertEquals("probability with an empty vocabulary is always 0",
+            0d, model.calculateProbability(Collections.emptySet(), new String[]{"1", "2", "3"}), 0d);
   }
 
   @Test
-  public void testRandomVocabularyAndSentence() throws Exception {
-    TrigramSentenceLanguageModel<String> model = new TrigramSentenceLanguageModel<String>();
+  public void testRandomVocabularyAndSentence() {
+    TrigramSentenceLanguageModel<String> model = new TrigramSentenceLanguageModel<>();
     double probability = model.calculateProbability(TestUtils.generateRandomVocabulary(), TestUtils.generateRandomSentence());
     assertTrue("a probability measure should be between 0 and 1 [was " + probability + "]", probability >= 0 && probability <= 1);
   }

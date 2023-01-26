@@ -32,7 +32,7 @@ import static org.junit.Assert.assertTrue;
 public class NGramUtilsTest {
   @Test
   public void testBigram() {
-    Collection<String[]> set = new LinkedList<String[]>();
+    Collection<String[]> set = new LinkedList<>();
     set.add(new String[]{"<s>", "I", "am", "Sam", "</s>"});
     set.add(new String[]{"<s>", "Sam", "I", "am", "</s>"});
     set.add(new String[]{"<s>", "I", "do", "not", "like", "green", "eggs", "and", "ham", "</s>"});
@@ -48,7 +48,7 @@ public class NGramUtilsTest {
 
   @Test
   public void testTrigram() {
-    Collection<String[]> set = new LinkedList<String[]>();
+    Collection<String[]> set = new LinkedList<>();
     set.add(new String[]{"<s>", "I", "am", "Sam", "</s>"});
     set.add(new String[]{"<s>", "Sam", "I", "am", "</s>"});
     set.add(new String[]{"<s>", "I", "do", "not", "like", "green", "eggs", "and", "ham", "</s>"});
@@ -60,8 +60,8 @@ public class NGramUtilsTest {
   }
 
   @Test
-  public void testLinearInterpolation() throws Exception {
-    Collection<String[]> set = new LinkedList<String[]>();
+  public void testLinearInterpolation() {
+    Collection<String[]> set = new LinkedList<>();
     set.add(new String[]{"the", "green", "book", "STOP"});
     set.add(new String[]{"my", "blue", "book", "STOP"});
     set.add(new String[]{"his", "green", "house", "STOP"});
@@ -74,8 +74,8 @@ public class NGramUtilsTest {
   }
 
   @Test
-  public void testLinearInterpolation2() throws Exception {
-    Collection<String[]> set = new LinkedList<String[]>();
+  public void testLinearInterpolation2() {
+    Collection<String[]> set = new LinkedList<>();
     set.add(new String[]{"D", "N", "V", "STOP"});
     set.add(new String[]{"D", "N", "V", "STOP"});
     Double lambda = 1d / 3d;

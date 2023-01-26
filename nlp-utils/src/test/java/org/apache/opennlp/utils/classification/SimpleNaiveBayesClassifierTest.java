@@ -31,8 +31,8 @@ import static org.junit.Assert.assertTrue;
 public class SimpleNaiveBayesClassifierTest {
 
   @Test
-  public void ppsIntegrationTest() throws Exception {
-    Map<String, String> trainedCorpus = new HashMap<String, String>();
+  public void ppsIntegrationTest() {
+    Map<String, String> trainedCorpus = new HashMap<>();
     trainedCorpus.put("CAVOUR ad.te napoleone III affare: cat. C/2 ottimo" +
             " stato ingresso angolo cottura bagno con doccia e camera. " +
             "ottimo per investimento o piccolo studio per professionisti" +
@@ -69,7 +69,7 @@ public class SimpleNaiveBayesClassifierTest {
 
     SimpleNaiveBayesClassifier classifier = new SimpleNaiveBayesClassifier(trainedCorpus);
 
-    Boolean isAgency = classifier.calculateClass("CENTRO S.Maria Maggiore " +
+    boolean isAgency = classifier.calculateClass("CENTRO S.Maria Maggiore " +
             "angolo Napoleone III in palazzo epoca con portiere 110 mq ristrutt." +
             " IIp salone doppio cucina ab. 2 camere bagno ripost. balcone " +
             "perimetrale E. 730.000 tratt. ").equals("A");

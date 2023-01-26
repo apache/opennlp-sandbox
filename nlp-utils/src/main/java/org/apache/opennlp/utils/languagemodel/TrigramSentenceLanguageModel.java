@@ -54,7 +54,7 @@ public class TrigramSentenceLanguageModel<T> implements LanguageModel<T[]> {
   }
 
   private Set<Trigram> getTrigrams(T[] sample) {
-    Set<Trigram> trigrams = new HashSet<Trigram>();
+    Set<Trigram> trigrams = new HashSet<>();
     for (int i = 0; i < sample.length; i++) {
       T x0 = null;
       T x1 = null;

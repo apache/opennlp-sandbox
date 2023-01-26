@@ -62,7 +62,7 @@ public class CFGBuilder {
 
   public ContextFreeGrammar build() {
     assert nonTerminalSymbols != null && terminalSymbols != null && rules != null && startSymbol != null :
-            "missing definitions { V : " + nonTerminalSymbols + ", ∑ : " + terminalSymbols + ", R : " + rules + ", S : " + startSymbol + "}";
+            "missing definitions {V : " + nonTerminalSymbols + ", ∑ : " + terminalSymbols + ", R : " + rules + ", S : " + startSymbol + "}";
     return new ContextFreeGrammar(nonTerminalSymbols, terminalSymbols, rules, startSymbol, randomExpansion);
   }
 }

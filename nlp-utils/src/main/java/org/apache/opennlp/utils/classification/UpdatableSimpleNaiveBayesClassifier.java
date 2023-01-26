@@ -25,22 +25,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
-
 public class UpdatableSimpleNaiveBayesClassifier implements NaiveBayesClassifier<List<String>, String> {
 
 
-  private final Collection<String> vocabulary = new TreeSet<String>(); // the bag of all the words in the corpus
-  private final Map<String, Integer> classCounts = new LinkedHashMap<String, Integer>();
+  private final Collection<String> vocabulary = new TreeSet<>(); // the bag of all the words in the corpus
+  private final Map<String, Integer> classCounts = new LinkedHashMap<>();
   private double noDocs = 0d;
-  private final Map<String, Map<String, Integer>> nm = new HashMap<String, Map<String, Integer>>();
-  private final Map<String, Double> priors = new HashMap<String, Double>();
-  private final Map<String, Double> dens = new HashMap<String, Double>();
+  private final Map<String, Map<String, Integer>> nm = new HashMap<>();
+  private final Map<String, Double> priors = new HashMap<>();
+  private final Map<String, Double> dens = new HashMap<>();
 
   public void addExample(String klass, List<String> words) {
     vocabulary.addAll(words);
 
     Integer integer = classCounts.get(klass);
-    Integer f = integer != null ? integer : 0;
+    int f = integer != null ? integer : 0;
     classCounts.put(klass, f + 1);
 
     noDocs++;
@@ -48,7 +47,7 @@ public class UpdatableSimpleNaiveBayesClassifier implements NaiveBayesClassifier
     for (String w : words) {
       Map<String, Integer> wordCountsForClass = nm.get(klass);
       if (wordCountsForClass == null) {
-        wordCountsForClass = new HashMap<String, Integer>();
+        wordCountsForClass = new HashMap<>();
       }
       Integer count = wordCountsForClass.get(w);
       if (count == null) {
@@ -69,7 +68,7 @@ public class UpdatableSimpleNaiveBayesClassifier implements NaiveBayesClassifier
 
   private void calculateDen(String c) {
     // den : for the whole dictionary, count the no of times a word appears in documents of class c (+|V|)
-    Double den = 0d;
+    double den = 0d;
     for (String w : vocabulary) {
       Integer integer = nm.get(c).get(w);
       den += integer != null ? integer : 0;
@@ -78,8 +77,9 @@ public class UpdatableSimpleNaiveBayesClassifier implements NaiveBayesClassifier
     dens.put(c, den);
   }
 
-  public String calculateClass(List<String> words) throws Exception {
-    Double max = -1000000d;
+  @Override
+  public String calculateClass(List<String> words) {
+    double max = -1000000d;
     String foundClass = null;
     for (String cl : nm.keySet()) {
       double prior = priors.get(cl);
@@ -100,7 +100,7 @@ public class UpdatableSimpleNaiveBayesClassifier implements NaiveBayesClassifier
     double result = 0d;
     for (String word : words) {
       // num : count the no of times the word appears in documents of class c (+1)
-      Integer freq = wordFreqs.get(word) != null ? wordFreqs.get(word) : 0;
+      int freq = wordFreqs.get(word) != null ? wordFreqs.get(word) : 0;
       double num = freq + 1d; // +1 is added because of add 1 smoothing
 
       // P(w|c) = num/den
