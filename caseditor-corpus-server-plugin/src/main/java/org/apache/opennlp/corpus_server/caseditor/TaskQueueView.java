@@ -25,7 +25,6 @@ import javax.ws.rs.core.MediaType;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.IOpenListener;
-import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
@@ -53,17 +52,16 @@ import com.sun.jersey.api.client.WebResource;
  */
 public class TaskQueueView extends ViewPart {
 
-  private Composite explorerComposite;
   private Text serverUrl;
   
   private TableViewer historyViewer;
   
-  private List<IEditorInput> lastInputElements = new ArrayList<IEditorInput>();
+  private final List<IEditorInput> lastInputElements = new ArrayList<>();
       
   @Override
   public void createPartControl(Composite parent) {
 
-    explorerComposite = new Composite(parent, SWT.NONE);
+    Composite explorerComposite = new Composite(parent, SWT.NONE);
     GridLayout explorerLayout = new GridLayout();
     explorerLayout.numColumns = 2;
     explorerComposite.setLayout(explorerLayout);
@@ -76,10 +74,10 @@ public class TaskQueueView extends ViewPart {
     GridDataFactory.swtDefaults().align(SWT.FILL, SWT.CENTER).grab(true, false)
         .applyTo(serverUrl);
     
-    // TOOD: Should be stored in some way, or just done more sophisticated ..
+    // TODO: Should be stored in some way, or just done more sophisticated ..
     serverUrl.setText("http://localhost:8080/corpus-server/rest/queues/ObamaNerTask");
     
-    // Button for next cas (gets nexts and closes current one,
+    // Button for next cas (gets next and closes current one,
     // if not saved user is asked for it)
     Button nextDocument = new Button(explorerComposite, SWT.BORDER);
     nextDocument.setText("Next");
@@ -109,7 +107,7 @@ public class TaskQueueView extends ViewPart {
         // we also need to corpus the cas id belongs too ...
         IWorkbenchPage page = TaskQueueView.this.getSite().getPage();
         
-        // TODO: Thats a short cut, we need to make this work properly ...
+        // TODO: That's a short cut, we need to make this work properly ...
         IEditorInput input = new CorpusServerCasEditorInput(
             "http://localhost:8080/corpus-server/rest/corpora/wikinews", casId);
 
