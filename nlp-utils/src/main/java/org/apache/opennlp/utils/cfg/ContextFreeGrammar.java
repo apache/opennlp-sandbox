@@ -65,7 +65,7 @@ public class ContextFreeGrammar {
   }
 
   public String[] leftMostDerivation(String... words) {
-    ArrayList<String> expansion = new ArrayList<String>(words.length);
+    ArrayList<String> expansion = new ArrayList<>(words.length);
 
     assert words.length > 0 && startSymbol.equals(words[0]);
 
@@ -78,13 +78,13 @@ public class ContextFreeGrammar {
 
   private Collection<String> getTerminals(String word) {
     if (terminalSymbols.contains(word)) {
-      Collection<String> c = new LinkedList<String>();
+      Collection<String> c = new LinkedList<>();
       c.add(word);
       return c;
     } else {
       assert nonTerminalSymbols.contains(word) : "word " + word + " is not contained in non terminals";
       String[] expansions = getExpansionForSymbol(word);
-      Collection<String> c = new LinkedList<String>();
+      Collection<String> c = new LinkedList<>();
       for (String e : expansions) {
         c.addAll(getTerminals(e));
       }
@@ -98,7 +98,7 @@ public class ContextFreeGrammar {
   }
 
   private Rule getRuleForSymbol(String word) {
-    ArrayList<Rule> possibleRules = new ArrayList<Rule>();
+    ArrayList<Rule> possibleRules = new ArrayList<>();
     for (Rule r : rules) {
       if (word.equals(r.getEntry())) {
         if (!randomExpansion) {

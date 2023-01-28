@@ -22,18 +22,18 @@ import java.util.Collection;
 
 /**
  * A language model can calculate the probability <i>p</i> (between 0 and 1) of a
- * certain set of <code>T</code> objects, given a vocabulary.
- * <code>T</code> is usually an {@link java.lang.Iterable} or an array as language models are very commonly used for
- * sentences, so that T is e.g. an array of <code>String</code>s.
+ * certain set of {@code T} objects, given a vocabulary.
+ * {@code T} is usually an {@link java.lang.Iterable} or an array as language models are very commonly used for
+ * sentences, so that T is e.g. an array of {@code String}s.
  */
 public interface LanguageModel<T> {
 
   /**
-   * Calculate the probability of a sample, given a vocabulary
+   * Calculates the probability of a sample, given a {@code vocabulary},
    *
-   * @param vocabulary a {@link Collection} of objects of type <code>T</code>
+   * @param vocabulary a {@link Collection} of objects of type {@code T}
    * @param sample     the sample to evaluate the probability for
-   * @return a <code>double</code> between <code>0</code> and <code>1</code>
+   * @return a {@code double} between {@code 0} and {@code 1}
    */
   double calculateProbability(Collection<T> vocabulary, T sample);
 

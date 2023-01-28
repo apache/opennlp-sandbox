@@ -19,6 +19,8 @@
 package org.apache.opennlp.utils.anomalydetection;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 import org.apache.opennlp.utils.TrainingExample;
 import org.apache.opennlp.utils.TrainingSet;
 
@@ -84,9 +86,8 @@ public class AnomalyDetectionUtils {
    * @param x   the input
    * @param set the training set
    * @return the probability of the given input
-   * @throws Exception
    */
-  public static double getGaussianProbability(TrainingExample x, TrainingSet set) throws Exception {
+  public static double getGaussianProbability(TrainingExample x, TrainingSet set) {
     double[] mus = fitMus(set);
     double[] sigmas = fitSigmas(mus, set);
     return calculateGaussianProbability(x, mus, sigmas);
@@ -97,7 +98,7 @@ public class AnomalyDetectionUtils {
     assert mus.length == sigmas.length : "parameters not aligned";
     BigDecimal px = new BigDecimal(1d);
     for (int i = 0; i < mus.length; i++) {
-      BigDecimal firstTerm = BigDecimal.ONE.divide(BigDecimal.valueOf(Math.sqrt(2d * Math.PI * sigmas[i])), BigDecimal.ROUND_CEILING);
+      BigDecimal firstTerm = BigDecimal.ONE.divide(BigDecimal.valueOf(Math.sqrt(2d * Math.PI * sigmas[i])), RoundingMode.CEILING);
       BigDecimal secondTerm = BigDecimal.valueOf(Math.exp(-1 * (Math.pow(x.getInputs()[i] - mus[i], 2) / (2 * Math.pow(sigmas[i], 2)))));
       px = px.multiply(firstTerm.multiply(secondTerm));
     }

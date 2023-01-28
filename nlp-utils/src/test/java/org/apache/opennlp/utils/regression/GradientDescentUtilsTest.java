@@ -28,7 +28,7 @@ import org.junit.Test;
 public class GradientDescentUtilsTest {
 
   @Test
-  public void testConvergence() throws Exception {
+  public void testConvergence() {
     TrainingSet trainingSet = new TrainingSet();
     TestUtils.fillTrainingSet(trainingSet, 100, 5);
     GradientDescentUtils.batchGradientDescent(trainingSet, 0.00002);
