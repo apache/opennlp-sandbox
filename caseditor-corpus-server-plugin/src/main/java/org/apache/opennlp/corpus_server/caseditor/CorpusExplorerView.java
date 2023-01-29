@@ -117,12 +117,12 @@ public class CorpusExplorerView extends ViewPart {
           @Override
           public void run() {
             if (event.getResult().isOK()) {
-              
+
               setMessage(null);
-              
+
               searchResultViewer.setItemCount(0);
               JSONArray searchResult = searchJob.getSearchResult();
-              
+
               for (int i = 0; i < searchResult.length(); i++) {
                 try {
                   searchResultViewer.add(searchResult.getString(i));
@@ -192,16 +192,15 @@ public class CorpusExplorerView extends ViewPart {
       lastUsedSearchQueriesString = "*:*";
     }
     
-    String lastUsedQueries[] = lastUsedSearchQueriesString.split(LUCENE_QUERY_DELIMITER);
+    String[] lastUsedQueries = lastUsedSearchQueriesString.split(LUCENE_QUERY_DELIMITER);
     
     if (lastUsedQueries.length > 0)
       queryText.setText(lastUsedQueries[0]);
-    
-    for (int i = 0; i < lastUsedQueries.length; i++) {
-      queryText.add(lastUsedQueries[i]);
+
+    for (String lastUsedQuery : lastUsedQueries) {
+      queryText.add(lastUsedQuery);
     }
-    
-    
+
     queryText.addSelectionListener(new SelectionListener() {
       
       @Override
