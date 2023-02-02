@@ -170,7 +170,7 @@ public class IterativeSearchRequestHandler extends SearchHandler {
 				if (answerText==null)
 					continue;
 				SentencePairMatchResult matchResult = pos.assessRelevance( requestExpression , answerText);
-				float syntMatchScore =  new Double(parseTreeChunkListScorer.getParseTreeChunkListScore(matchResult.getMatchResult())).floatValue();
+				float syntMatchScore =  Double.valueOf(parseTreeChunkListScorer.getParseTreeChunkListScore(matchResult.getMatchResult())).floatValue();
 				bestMatchesDocIds.add(docId);
 				bestMatchesScore.add(syntMatchScore);
 				syntMatchScoreArr[i] = (float)syntMatchScore; //*iter.score();

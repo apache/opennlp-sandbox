@@ -21,15 +21,12 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<parent>
-    <groupId>org.apache</groupId>
-    <artifactId>apache</artifactId>
-    <!-- TODO OPENNLP-1452 once this is resolved, move to 29 as well. -->
-    <version>18</version>
-    <relativePath />
-	</parent>
+  <parent>
+    <groupId>org.apache.opennlp</groupId>
+    <artifactId>opennlp-sandbox</artifactId>
+    <version>2.1.1-SNAPSHOT</version>
+  </parent>
 
-	<groupId>org.apache.opennlp</groupId>
 	<artifactId>corpus-server</artifactId>
 	<version>2.1.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
@@ -44,12 +41,7 @@
 	</modules>
 
   <properties>
-    <maven.compiler.source>11</maven.compiler.source>
-    <maven.compiler.target>11</maven.compiler.target>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
     <derby.version>10.14.2.0</derby.version>
-    <uimaj.version>3.3.1</uimaj.version>
   </properties>
 
   <dependencyManagement>
@@ -78,21 +70,21 @@
       <dependency>
         <groupId>com.sun.jersey</groupId>
         <artifactId>jersey-servlet</artifactId>
-        <version>1.12</version>
+        <version>1.19.4</version>
         <scope>provided</scope>
       </dependency>
 
       <dependency>
           <groupId>com.sun.jersey</groupId>
           <artifactId>jersey-json</artifactId>
-          <version>1.12</version>
+          <version>1.19.4</version>
           <scope>provided</scope>
       </dependency>
 
       <dependency>
           <groupId>com.sun.jersey</groupId>
           <artifactId>jersey-client</artifactId>
-          <version>1.12</version>
+          <version>1.19.4</version>
           <scope>provided</scope>
       </dependency>
 
