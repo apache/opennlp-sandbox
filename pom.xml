@@ -272,7 +272,7 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${maven.surefire.plugin}</version>
                     <configuration>
-                        <argLine>-Xmx2048m</argLine>
+                        <argLine>-Xmx2048m -Dfile.encoding=UTF-8</argLine>
                         <forkCount>${opennlp.forkCount}</forkCount>
                         <failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
                         <excludes>
