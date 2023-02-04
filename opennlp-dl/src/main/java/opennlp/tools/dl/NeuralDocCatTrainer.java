@@ -1,11 +1,30 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package opennlp.tools.dl;
 
-import org.deeplearning4j.eval.Evaluation;
+import java.io.*;
+import java.util.List;
+
+import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -14,6 +33,7 @@ import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 import org.kohsuke.args4j.spi.StringArrayOptionHandler;
+import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -21,10 +41,6 @@ import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.*;
-import java.util.List;
-
 
 /**
  * This class provides functionality to construct and train neural networks that can be used for
@@ -100,9 +116,9 @@ public class NeuralDocCatTrainer {
 
     private static final Logger LOG = LoggerFactory.getLogger(NeuralDocCatTrainer.class);
 
-    private NeuralDocCatModel model;
-    private Args args;
-    private DataReader trainSet;
+    private final NeuralDocCatModel model;
+    private final Args args;
+    private final DataReader trainSet;
     private DataReader validSet;
 
 
@@ -141,7 +157,7 @@ public class NeuralDocCatTrainer {
                 .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                 .gradientNormalizationThreshold(1.0)
                 .list()
-                .layer(0, new GravesLSTM.Builder()
+                .layer(0, new LSTM.Builder()
                         .nIn(vectorSize)
                         .nOut(args.nRNNUnits)
                         .activation(Activation.RELU).build())
@@ -151,8 +167,7 @@ public class NeuralDocCatTrainer {
                         .activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT)
                         .build())
-                .pretrain(false)
-                .backprop(true)
+                .backpropType(BackpropType.Standard)
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -185,7 +200,7 @@ public class NeuralDocCatTrainer {
 
             if (validation != null) {
                 LOG.info("Starting evaluation");
-                //Run evaluation. This is on 25k reviews, so can take some time
+                // Run evaluation. This is on 25k reviews, so can take some time
                 Evaluation evaluation = new Evaluation();
                 while (validation.hasNext()) {
                     DataSet t = validation.next();
@@ -203,10 +218,10 @@ public class NeuralDocCatTrainer {
     }
 
     /**
-     * Saves the model to specified path
+     * Saves the model to specified path.
      *
      * @param path model path
-     * @throws IOException
+     * @throws IOException Thrown if IO errors occurred.
      */
     public void saveModel(String path) throws IOException {
         assert model != null;
@@ -218,35 +233,35 @@ public class NeuralDocCatTrainer {
 
     /**
      * <pre>
-     *   # Download pre trained Glo-ves (this is a large file)
-     *   wget http://nlp.stanford.edu/data/glove.6B.zip
-     *   unzip glove.6B.zip -d glove.6B
+     *  # Download pre trained Glo-ves (this is a large file)
+     *  {@code wget http://nlp.stanford.edu/data/glove.6B.zip}
+     *  {@code unzip glove.6B.zip -d glove.6B}
      *
-     *   # Download dataset
-     *   wget http://ai.stanford.edu/~amaas/data/sentiment/aclImdb_v1.tar.gz
-     *   tar xzf aclImdb_v1.tar.gz
+     *  # Download dataset
+     *  {@code wget http://ai.stanford.edu/~amaas/data/sentiment/aclImdb_v1.tar.gz}
+     *  {@code tar xzf aclImdb_v1.tar.gz}
      *
-     *  mvn compile exec:java
+     *  {@code mvn compile exec:java
      *    -Dexec.mainClass=edu.usc.irds.sentiment.analysis.dl.NeuralDocCat
      *    -Dexec.args="-glovesPath $HOME/work/datasets/glove.6B/glove.6B.100d.txt
      *    -labels pos neg -modelPath imdb-sentiment-neural-model.zip
-     *    -trainDir=$HOME/work/datasets/aclImdb/train -lr 0.001"
+     *    -trainDir=$HOME/work/datasets/aclImdb/train -lr 0.001"}
      *
      * </pre>
      */
-    public static void main(String[] argss) throws CmdLineException, IOException {
-        Args args = new Args();
+    public static void main(String[] args) throws IOException {
+        Args arguments = new Args();
         CmdLineParser parser = new CmdLineParser(args);
         try {
-            parser.parseArgument(argss);
+            parser.parseArgument(args);
         } catch (CmdLineException e) {
             System.out.println(e.getMessage());
             e.getParser().printUsage(System.out);
             System.exit(1);
         }
-        NeuralDocCatTrainer classifier = new NeuralDocCatTrainer(args);
+        NeuralDocCatTrainer classifier = new NeuralDocCatTrainer(arguments);
         classifier.train();
-        classifier.saveModel(args.modelPath);
+        classifier.saveModel(arguments.modelPath);
     }
 
 }

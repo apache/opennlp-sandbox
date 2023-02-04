@@ -19,6 +19,7 @@ package opennlp.tools.word2vec;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,7 +37,6 @@ import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreproc
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.common.primitives.Pair;
-import org.springframework.core.io.ClassPathResource;
 
 public class W2VDistanceMeasurer {
 	static W2VDistanceMeasurer instance;
@@ -84,11 +84,12 @@ public class W2VDistanceMeasurer {
 
 		SentenceIterator iter=null;
 		try {
-			String filePath = new ClassPathResource("raw_sentences.txt").getFile().getAbsolutePath();
+			ClassLoader cl = Thread.currentThread().getContextClassLoader();
+			String filePath = new File(cl.getResource("/raw_sentences.txt").toURI()).getAbsolutePath();
 			// Strip white space before and after for each line
 			System.out.println("Load & Vectorize Sentences....");
 			iter = new FileSentenceIterator(new File(filePath));
-		} catch (IOException e1) {
+		} catch (URISyntaxException e1) {
 			e1.printStackTrace();
 		}
 

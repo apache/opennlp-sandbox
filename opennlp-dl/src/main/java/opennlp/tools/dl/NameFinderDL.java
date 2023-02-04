@@ -1,4 +1,4 @@
-package opennlp.tools.dl;/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,6 +15,8 @@ package opennlp.tools.dl;/*
  * limitations under the License.
  */
 
+package opennlp.tools.dl;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -28,10 +30,10 @@ import java.util.stream.IntStream;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -60,8 +62,8 @@ public class NameFinderDL implements TokenNameFinder {
 
   private final MultiLayerNetwork network;
   private final WordVectors wordVectors;
-  private int windowSize;
-  private String[] labels;
+  private final int windowSize;
+  private final String[] labels;
 
   public NameFinderDL(MultiLayerNetwork network, WordVectors wordVectors, int windowSize,
                       String[] labels) {
@@ -102,11 +104,11 @@ public class NameFinderDL implements TokenNameFinder {
     Map<String, Integer> labelToIndex = IntStream.range(0, labelStrings.length).boxed()
         .collect(Collectors.toMap(i -> labelStrings[i], i -> i));
 
-    List<INDArray> vectors = new ArrayList<INDArray>();
+    List<INDArray> vectors = new ArrayList<>();
 
     for (int i = 0; i < sample.getSentence().length; i++) {
       // encode the outcome as one-hot-representation
-      String outcomes[] =
+      String[] outcomes =
           new BioCodec().encode(sample.getNames(), sample.getSentence().length);
 
       INDArray labels = Nd4j.create(1, labelStrings.length, windowSize);
@@ -129,11 +131,11 @@ public class NameFinderDL implements TokenNameFinder {
 
   @Override
   public Span[] find(String[] tokens) {
-    List<INDArray> featureMartrices = mapToFeatureMatrices(wordVectors, tokens, windowSize);
+    List<INDArray> featureMatrices = mapToFeatureMatrices(wordVectors, tokens, windowSize);
 
     String[] outcomes = new String[tokens.length];
     for (int i = 0; i < tokens.length; i++) {
-      INDArray predictionMatrix = network.output(featureMartrices.get(i), false);
+      INDArray predictionMatrix = network.output(featureMatrices.get(i), false);
       INDArray outcomeVector = predictionMatrix.get(NDArrayIndex.point(0), NDArrayIndex.all(),
           NDArrayIndex.point(windowSize - 1));
 
@@ -164,11 +166,12 @@ public class NameFinderDL implements TokenNameFinder {
         .updater(new RmsProp(0.01)).l2(0.001)
         .weightInit(WeightInit.XAVIER)
         .list()
-        .layer(0, new GravesLSTM.Builder().nIn(vectorSize).nOut(layerSize)
-            .activation(Activation.TANH).build())
+        .layer(0, new LSTM.Builder().nIn(vectorSize).nOut(layerSize)
+                .activation(Activation.TANH).build())
         .layer(1, new RnnOutputLayer.Builder().activation(Activation.SOFTMAX)
-            .lossFunction(LossFunctions.LossFunction.MCXENT).nIn(layerSize).nOut(3).build())
-        .pretrain(false).backprop(true).build();
+                .lossFunction(LossFunctions.LossFunction.MCXENT).nIn(layerSize).nOut(3).build())
+        .backpropType(BackpropType.Standard)
+        .build();
 
     MultiLayerNetwork net = new MultiLayerNetwork(conf);
     net.init();
@@ -200,8 +203,7 @@ public class NameFinderDL implements TokenNameFinder {
     };
 
     System.out.print("Loading vectors ... ");
-    WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(
-        new File(args[2]));
+    WordVectors wordVectors = WordVectorSerializer.readWord2VecModel(new File(args[2]));
     System.out.println("Done");
 
     int windowSize = 5;
