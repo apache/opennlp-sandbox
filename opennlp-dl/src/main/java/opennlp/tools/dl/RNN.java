@@ -16,10 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package opennlp.tools.dl;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collections;
@@ -35,9 +35,7 @@ import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.OldSoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.SetRange;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -242,7 +240,7 @@ public class RNN {
         ys = init(inputs.length(), yst.shape());
       }
       ys.putRow(t, yst);
-      INDArray pst = Nd4j.getExecutioner().execAndReturn(new OldSoftMax(yst)); // probabilities for next chars
+      INDArray pst = Nd4j.getExecutioner().execAndReturn(new SoftMax(yst)).outputArguments().get(0); // probabilities for next chars
       if (ps == null) {
         ps = init(inputs.length(), pst.shape());
       }
@@ -259,7 +257,7 @@ public class RNN {
       dWhy.addi(dy.mmul(hst.transpose())); // derivative of hy layer
       dby.addi(dy);
       INDArray dh = why.transpose().mmul(dy).add(dhNext); // backprop into h
-      INDArray dhraw = (Nd4j.ones(hst.shape()).sub(hst.mul(hst))).mul(dh); // backprop through tanh nonlinearity
+      INDArray dhraw = (Nd4j.ones(hst.shape()).sub(hst.mul(hst))).mul(dh); // backprop through tanh non-linearity
       dbh.addi(dhraw);
       dWxh.addi(dhraw.mmul(xs.getRow(t)));
       INDArray hsRow = t == 0 ? hs1 : hs.getRow(t - 1);
@@ -296,7 +294,7 @@ public class RNN {
     for (int t = 0; t < sampleSize; t++) {
       h = Transforms.tanh(wxh.mmul(x).add(whh.mmul(h)).add(bh));
       INDArray y = (why.mmul(h)).add(by);
-      INDArray pm = Nd4j.getExecutioner().execAndReturn(new OldSoftMax(y)).ravel();
+      INDArray pm = Nd4j.getExecutioner().execAndReturn(new SoftMax(y)).outputArguments().get(0).ravel();
 
       List<Pair<Integer, Double>> d = new LinkedList<>();
       for (int pi = 0; pi < vocabSize; pi++) {
@@ -311,6 +309,7 @@ public class RNN {
         x.putScalar(ix, 1);
         ixes.putScalar(t, ix);
       } catch (Exception e) {
+        e.printStackTrace();
       }
     }
 
@@ -350,18 +349,18 @@ public class RNN {
   }
 
   public void serialize(String prefix) throws IOException {
-    BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(new File(prefix + new Date().toString() + ".txt")));
-    bufferedWriter.write("wxh");
-    bufferedWriter.write(wxh.toString());
-    bufferedWriter.write("whh");
-    bufferedWriter.write(whh.toString());
-    bufferedWriter.write("why");
-    bufferedWriter.write(why.toString());
-    bufferedWriter.write("bh");
-    bufferedWriter.write(bh.toString());
-    bufferedWriter.write("by");
-    bufferedWriter.write(by.toString());
-    bufferedWriter.flush();
-    bufferedWriter.close();
+    try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(prefix + new Date() + ".txt"))) {
+      bufferedWriter.write("wxh");
+      bufferedWriter.write(wxh.toString());
+      bufferedWriter.write("whh");
+      bufferedWriter.write(whh.toString());
+      bufferedWriter.write("why");
+      bufferedWriter.write(why.toString());
+      bufferedWriter.write("bh");
+      bufferedWriter.write(bh.toString());
+      bufferedWriter.write("by");
+      bufferedWriter.write(by.toString());
+      bufferedWriter.flush();
+    }
   }
 }

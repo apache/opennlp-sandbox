@@ -16,10 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package opennlp.tools.dl;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Date;
@@ -29,9 +29,8 @@ import java.util.List;
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.OldSoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
+import org.nd4j.linalg.api.ops.impl.scalar.ReplaceNans;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -252,7 +251,7 @@ public class StackedRNN extends RNN {
       }
       ys.putRow(t, yst);
 
-      INDArray pst = Nd4j.getExecutioner().execAndReturn(new ReplaceNans(Nd4j.getExecutioner().execAndReturn(new OldSoftMax(yst)), 0d)); // probabilities for next chars
+      INDArray pst = Nd4j.getExecutioner().exec(new ReplaceNans(new SoftMax(yst).outputArguments().get(0), 0d)); // probabilities for next chars
       if (ps == null) {
         ps = init(seqLength, pst.shape());
       }
@@ -284,7 +283,7 @@ public class StackedRNN extends RNN {
       dh2Next = whh2.transpose().mmul(dhraw2);
 
       INDArray dh = wxh2.transpose().mmul(dhraw2).add(dhNext); // backprop into h
-      INDArray dhraw = (Nd4j.ones(hst.shape()).sub(hst.mul(hst))).mul(dh); // backprop through tanh nonlinearity
+      INDArray dhraw = (Nd4j.ones(hst.shape()).sub(hst.mul(hst))).mul(dh); // backprop through tanh non-linearity
       dbh.addi(dhraw);
       dWxh.addi(dhraw.mmul(xs.getRow(t)));
       INDArray hsRow = t == 0 ? hPrev : hs.getRow(t - 1);
@@ -313,7 +312,7 @@ public class StackedRNN extends RNN {
       h = Transforms.tanh((wxh.mmul(x)).add(whh.mmul(h)).add(bh));
       h2 = Transforms.tanh((wxh2.mmul(h)).add(whh2.mmul(h2)).add(bh2));
       INDArray y = wh2y.mmul(h2).add(by);
-      INDArray pm = Nd4j.getExecutioner().execAndReturn(new OldSoftMax(y)).ravel();
+      INDArray pm = Nd4j.getExecutioner().execAndReturn(new SoftMax(y)).outputArguments().get(0).ravel();
 
       List<Pair<Integer, Double>> d = new LinkedList<>();
       for (int pi = 0; pi < vocabSize; pi++) {
@@ -328,6 +327,7 @@ public class StackedRNN extends RNN {
         x.putScalar(ix, 1);
         ixes.putScalar(t, ix);
       } catch (Exception e) {
+        e.printStackTrace();
       }
     }
 
@@ -336,25 +336,25 @@ public class StackedRNN extends RNN {
 
   @Override
   public void serialize(String prefix) throws IOException {
-    BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(new File(prefix + new Date().toString() + ".txt")));
-    bufferedWriter.write("wxh");
-    bufferedWriter.write(wxh.toString());
-    bufferedWriter.write("whh");
-    bufferedWriter.write(whh.toString());
-    bufferedWriter.write("wxh2");
-    bufferedWriter.write(wxh2.toString());
-    bufferedWriter.write("whh2");
-    bufferedWriter.write(whh2.toString());
-    bufferedWriter.write("wh2y");
-    bufferedWriter.write(wh2y.toString());
-    bufferedWriter.write("bh");
-    bufferedWriter.write(bh.toString());
-    bufferedWriter.write("bh2");
-    bufferedWriter.write(bh2.toString());
-    bufferedWriter.write("by");
-    bufferedWriter.write(by.toString());
-    bufferedWriter.flush();
-    bufferedWriter.close();
+    try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(prefix + new Date() + ".txt"))) {
+      bufferedWriter.write("wxh");
+      bufferedWriter.write(wxh.toString());
+      bufferedWriter.write("whh");
+      bufferedWriter.write(whh.toString());
+      bufferedWriter.write("wxh2");
+      bufferedWriter.write(wxh2.toString());
+      bufferedWriter.write("whh2");
+      bufferedWriter.write(whh2.toString());
+      bufferedWriter.write("wh2y");
+      bufferedWriter.write(wh2y.toString());
+      bufferedWriter.write("bh");
+      bufferedWriter.write(bh.toString());
+      bufferedWriter.write("bh2");
+      bufferedWriter.write(bh2.toString());
+      bufferedWriter.write("by");
+      bufferedWriter.write(by.toString());
+      bufferedWriter.flush();
+    }
   }
 
 }

@@ -19,70 +19,236 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.apache.opennlp</groupId>
+    <artifactId>opennlp-sandbox</artifactId>
+    <version>2.1.1-SNAPSHOT</version>
+  </parent>
 
-  <groupId>org.apache.opennlp</groupId>
   <artifactId>opennlp-dl</artifactId>
-  <version>0.1-SNAPSHOT</version>
+  <version>2.1.1-SNAPSHOT</version>
+  <packaging>jar</packaging>
+  <name>Apache OpenNLP DL4J</name>
 
   <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <nd4j.version>1.0.0-beta2</nd4j.version>
+    <nd4j.version>1.0.0-M2.1</nd4j.version>
+    <nd4j.native.version>1.0.0-M2.1</nd4j.native.version>
+    <javacpp.version>1.5.7</javacpp.version>
+    <openblas.version>0.3.19-1.5.7</openblas.version>
   </properties>
 
   <dependencies>
-      <dependency>
-          <groupId>org.apache.opennlp</groupId>
-          <artifactId>opennlp-tools</artifactId>
-          <version>1.8.3</version>
-      </dependency>
-
-      <dependency>
-          <groupId>org.deeplearning4j</groupId>
-          <artifactId>deeplearning4j-core</artifactId>
-          <version>${nd4j.version}</version>
-      </dependency>
-      <dependency>
-          <groupId>org.deeplearning4j</groupId>
-          <artifactId>deeplearning4j-nlp</artifactId>
-          <version>${nd4j.version}</version>
-      </dependency>
-      <dependency>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-simple</artifactId>
-          <version>1.7.12</version>
-      </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.11</version>
-      <scope>test</scope>
+        <groupId>org.apache.opennlp</groupId>
+        <artifactId>opennlp-tools</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.deeplearning4j</groupId>
+      <artifactId>deeplearning4j-core</artifactId>
+      <version>${nd4j.version}</version>
+      <exclusions>
+        <!-- Excluded to avoid irrelevant platforms dependencies, see profiles -->
+        <exclusion>
+          <groupId>org.bytedeco</groupId>
+          <artifactId>openblas-platform</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.bytedeco</groupId>
+          <artifactId>hdf5-platform</artifactId>
+        </exclusion>
+        <!-- Not required for NLP applications -->
+        <exclusion>
+          <groupId>org.datavec</groupId>
+          <artifactId>datavec-data-image</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.deeplearning4j</groupId>
+      <artifactId>deeplearning4j-nlp</artifactId>
+      <version>${nd4j.version}</version>
     </dependency>
     <dependency>
       <groupId>org.nd4j</groupId>
-      <artifactId>nd4j-native-platform</artifactId>
-      <version>${nd4j.version}</version>
+      <artifactId>nd4j-native-api</artifactId>
+      <version>${nd4j.native.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.nd4j</groupId>
+      <artifactId>nd4j-native</artifactId>
+      <version>${nd4j.native.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.bytedeco</groupId>
+      <artifactId>openblas</artifactId>
+      <version>${openblas.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.bytedeco</groupId>
+      <artifactId>javacpp</artifactId>
+      <version>${javacpp.version}</version>
+    </dependency>
+
+
+    <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>1.7.36</version>
+        <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>args4j</groupId>
       <artifactId>args4j</artifactId>
       <version>2.33</version>
     </dependency>
-      <dependency>
-          <groupId>org.apache.commons</groupId>
-          <artifactId>commons-collections4</artifactId>
-          <version>4.1</version>
-      </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.13.2</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>platform-win-x64</id>
+      <activation>
+        <os>
+          <family>Windows</family>
+          <arch>x64</arch>
+        </os>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.bytedeco</groupId>
+          <artifactId>javacpp</artifactId>
+          <version>${javacpp.version}</version>
+          <classifier>windows-x86_64</classifier>
+          <scope>runtime</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.bytedeco</groupId>
+          <artifactId>openblas</artifactId>
+          <version>${openblas.version}</version>
+          <classifier>windows-x86_64</classifier>
+          <scope>runtime</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>platform-win-x86</id>
+      <activation>
+        <os>
+          <family>Windows</family>
+          <arch>x86</arch>
+        </os>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.bytedeco</groupId>
+          <artifactId>javacpp</artifactId>
+          <version>${javacpp.version}</version>
+          <classifier>windows-x86</classifier>
+          <scope>runtime</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.bytedeco</groupId>
+          <artifactId>openblas</artifactId>
+          <version>${openblas.version}</version>
+          <classifier>windows-x86</classifier>
+          <scope>runtime</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>platform-linux-x64</id>
+      <activation>
+        <os>
+          <family>unix</family>
+          <name>Linux</name>
+          <arch>amd64</arch>
+        </os>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.bytedeco</groupId>
+          <artifactId>javacpp</artifactId>
+          <version>${javacpp.version}</version>
+          <classifier>linux-x86_64</classifier>
+          <scope>runtime</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.bytedeco</groupId>
+          <artifactId>openblas</artifactId>
+          <version>${openblas.version}</version>
+          <classifier>linux-x86_64</classifier>
+          <scope>runtime</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>platform-macosx-x64</id>
+      <activation>
+        <os>
+          <family>Mac</family>
+          <arch>x64</arch>
+        </os>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.bytedeco</groupId>
+          <artifactId>javacpp</artifactId>
+          <version>${javacpp.version}</version>
+          <classifier>macosx-x86_64</classifier>
+          <scope>runtime</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.bytedeco</groupId>
+          <artifactId>openblas</artifactId>
+          <version>${openblas.version}</version>
+          <classifier>macosx-x86_64</classifier>
+          <scope>runtime</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>platform-macosx-aarch64</id>
+      <activation>
+        <os>
+          <family>mac</family>
+          <arch>aarch64</arch>
+        </os>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.bytedeco</groupId>
+          <artifactId>javacpp</artifactId>
+          <version>${javacpp.version}</version>
+          <classifier>macosx-arm64</classifier>
+          <scope>runtime</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.bytedeco</groupId>
+          <artifactId>openblas</artifactId>
+          <version>${openblas.version}</version>
+          <classifier>macosx-arm64</classifier>
+          <scope>runtime</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+
   <build>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.0.2</version>
         <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
+          <source>${maven.compiler.source}</source>
+          <target>${maven.compiler.target}</target>
           <encoding>UTF-8</encoding>
+          <compilerArgument>-Xlint</compilerArgument>
         </configuration>
       </plugin>
     </plugins>

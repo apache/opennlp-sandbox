@@ -1,4 +1,4 @@
-package opennlp.tools.dl;/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,6 +14,8 @@ package opennlp.tools.dl;/*
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package opennlp.tools.dl;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,11 +40,13 @@ import opennlp.tools.util.ObjectStream;
 
 public class NameSampleDataSetIterator implements DataSetIterator {
 
+  private static final long serialVersionUID = -7252120980388575448L;
+
   private static class NameSampleToDataSetStream extends FilterObjectStream<NameSample, DataSet> {
 
     private final WordVectors wordVectors;
     private final String[] labels;
-    private int windowSize;
+    private final int windowSize;
 
     private Iterator<DataSet> dataSets = Collections.emptyListIterator();
 
@@ -165,22 +169,27 @@ public class NameSampleDataSetIterator implements DataSetIterator {
     return totalSamples;
   }
 
+  @Override
   public int inputColumns() {
     return vectorSize;
   }
 
+  @Override
   public int totalOutcomes() {
     return getLabels().size();
   }
 
+  @Override
   public boolean resetSupported() {
     return true;
   }
 
+  @Override
   public boolean asyncSupported() {
     return false;
   }
 
+  @Override
   public void reset() {
     cursor = 0;
 
@@ -191,6 +200,7 @@ public class NameSampleDataSetIterator implements DataSetIterator {
     }
   }
 
+  @Override
   public int batch() {
     return batchSize;
   }
@@ -203,22 +213,27 @@ public class NameSampleDataSetIterator implements DataSetIterator {
     return totalExamples();
   }
 
+  @Override
   public void setPreProcessor(DataSetPreProcessor dataSetPreProcessor) {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public DataSetPreProcessor getPreProcessor() {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public List<String> getLabels() {
     return Arrays.asList("start","cont", "other");
   }
 
+  @Override
   public boolean hasNext() {
     return cursor < numExamples();
   }
 
+  @Override
   public DataSet next() {
     return next(batchSize);
   }

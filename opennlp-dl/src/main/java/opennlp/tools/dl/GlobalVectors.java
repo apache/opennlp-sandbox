@@ -16,29 +16,34 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package opennlp.tools.dl;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * GlobalVectors (Glove) for projecting words to vector space.
  * This tool utilizes word vectors  pre-trained on large datasets.
- *
- * Visit https://nlp.stanford.edu/projects/glove/ for full documentation of Gloves.
+ * <p>
+ * Visit <a href="https://nlp.stanford.edu/projects/glove/">https://nlp.stanford.edu/projects/glove/</a>
+ * for full documentation of Gloves.
  *
  * <h2>Usage</h2>
  * <pre>
@@ -64,9 +69,10 @@ public class GlobalVectors {
     private final int maxWords;
 
     /**
-     * Reads Global Vectors from stream
+     * Reads Global Vectors from stream.
+     * 
      * @param stream Glove word vectors stream (plain text)
-     * @throws IOException
+     * @throws IOException Thrown if IO errors occurred.
      */
     public GlobalVectors(InputStream stream) throws IOException {
         this(stream, Integer.MAX_VALUE);
@@ -76,7 +82,7 @@ public class GlobalVectors {
      *
      * @param stream vector stream
      * @param maxWords maximum number of words to use, i.e. vocabulary size
-     * @throws IOException
+     * @throws IOException Thrown if IO errors occurred.
      */
     public GlobalVectors(InputStream stream, int maxWords) throws IOException {
         List<String> words = new ArrayList<>();
@@ -127,7 +133,7 @@ public class GlobalVectors {
 
     /**
      *
-     * @param word
+     * @param word The string literal to check for.
      * @return {@code true} if word is known; false otherwise
      */
     public boolean hasWord(String word){
@@ -169,12 +175,11 @@ public class GlobalVectors {
         return features;
     }
 
-    public void writeOut(OutputStream stream, boolean closeStream) throws IOException {
+    public void writeOut(OutputStream stream, boolean closeStream) {
         writeOut(stream, "%.5f", closeStream);
     }
 
-    public void writeOut(OutputStream stream,
-                         String floatPrecisionFormatString, boolean closeStream) throws IOException {
+    public void writeOut(OutputStream stream, String floatPrecisionFormatString, boolean closeStream) {
         if (!Character.isWhitespace(floatPrecisionFormatString.charAt(0))) {
             floatPrecisionFormatString = " " + floatPrecisionFormatString;
         }
@@ -193,7 +198,7 @@ public class GlobalVectors {
         } finally {
             if (closeStream){
                 IOUtils.closeQuietly(out);
-            } // else dont close because, closing the print writer also closes the inner stream
+            } // else don't close because closing the print writer also closes the inner stream
         }
     }
 }
