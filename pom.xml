@@ -104,6 +104,7 @@
         <module>opennlp-similarity</module>
         <module>opennlp-wsd</module>
         <module>tf-ner-poc</module>
+        <module>summarizer</module>
         <module>tagging-server</module>
         <module>wikinews-importer</module>
     </modules>

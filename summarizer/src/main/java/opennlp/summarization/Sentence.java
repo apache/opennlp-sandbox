@@ -25,13 +25,13 @@ import java.util.Locale;
 import opennlp.summarization.preprocess.PorterStemmer;
 import opennlp.summarization.preprocess.StopWords;
 
-/*
+/**
  * A representation of a sentence geared toward pagerank and summarization.
  */
 public class Sentence {	
 	//sentId is always position of sentence in doc..
 	private int sentId;
-	private String stringVal, procStringVal;
+	private String stringVal;
 	private Score pageRankScore;
 	private int paragraph;
 	private int paraPos;
@@ -39,11 +39,10 @@ public class Sentence {
 	private double wordWt = 0;
 	private int wordCnt;
 	
-	private List<Sentence> links;
-	private PorterStemmer stemmer;
+	private final List<Sentence> links;
 	
 	public Sentence(){
-		links = new ArrayList<Sentence>();
+		links = new ArrayList<>();
 	}
 
 	public Sentence(int id){
@@ -113,7 +112,8 @@ public class Sentence {
 	{
 		return this.links;
 	}
-	
+
+	@Override
 	public String toString()
 	{
 		return this.stringVal ;//+ "("+ this.paragraph +", "+this.paraPos+")";
@@ -133,36 +133,36 @@ public class Sentence {
 	}
 
 	//Should add an article id to the sentence class.. For now returns true if the ids are the same..
+	@Override
 	public boolean equals(Object o){
 		if(! (o instanceof Sentence)) return false;
-
 		Sentence s = (Sentence)o;
-		if(s.sentId == this.sentId) return true;
-		return false;
+		return s.sentId == this.sentId;
 	}
 
-	static final String space=" ";
+	private static final String SPACE = " ";
+
 	public String stem() {
 		PorterStemmer stemmer = new PorterStemmer();
-	    StopWords sw = StopWords.getInstance();      
+		StopWords sw = StopWords.getInstance();
 
-	    BreakIterator wrdItr = BreakIterator.getWordInstance(Locale.US);
+		BreakIterator wrdItr = BreakIterator.getWordInstance(Locale.US);
 		int wrdStrt = 0;
-		StringBuffer b = new StringBuffer();
+		StringBuilder b = new StringBuilder();
 		wrdItr.setText(stringVal);	
 		for(int wrdEnd = wrdItr.next(); wrdEnd != BreakIterator.DONE; 
 				wrdStrt = wrdEnd, wrdEnd = wrdItr.next())
 		{
 			String word = this.getStringVal().substring(wrdStrt, wrdEnd);//words[i].trim();
-			word.replaceAll("\"|'","");
+			word = word.replace("\"|'","");
 
-			//Skip stop words and stem the word..
-			if(sw.isStopWord(word)) continue;                        
-            stemmer.stem(word);
+			//Skip stop words and stem the word.
+			if(sw.isStopWord(word)) continue;
+			
+			stemmer.stem(word);
 			b.append(stemmer.toString()); 
-			b.append(space);
+			b.append(SPACE);
 		}
-		// TODO Auto-generated method stub
 		return b.toString();
 	}
 }

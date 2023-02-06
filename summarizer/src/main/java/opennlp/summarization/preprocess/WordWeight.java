@@ -17,7 +17,6 @@
 
 package opennlp.summarization.preprocess;
 
-public interface WordWeight
-{
-	public double getWordWeight(String s);
+public interface WordWeight {
+	double getWordWeight(String s);
 }
