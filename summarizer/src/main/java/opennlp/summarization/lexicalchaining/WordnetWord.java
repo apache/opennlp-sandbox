@@ -32,11 +32,11 @@ public class WordnetWord implements Word{
 	
 	//Cache..
 	ISynset synonyms;
-	Hashtable<IPointer, List<ISynsetID>>rels;
+	Hashtable<IPointer, List<ISynsetID>> rels;
 	
 	public WordnetWord()
 	{
-		rels = new Hashtable<IPointer, List<ISynsetID>>();
+		rels = new Hashtable<>();
 	}
 	
 	@Override

@@ -15,50 +15,33 @@
  * limitations under the License.
  */
 
-package opennlp.summarization;
 
-/**
- * A utility class to store the score of a sentence for ranking sentences within a document.
- */
-public class Score implements Comparable<Score> {
-  int sentId;
-  public double score;
+package opennlp.summarization.preprocess;
 
-  public Score()
-  {
-    score = 0;
+import java.util.List;
+
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import opennlp.summarization.Sentence;
+
+import static org.junit.Assert.assertEquals;
+
+public class DocProcessorTest {
+
+  private static DefaultDocProcessor dp;
+
+  @BeforeClass
+  public static void initEnv() throws Exception {
+    dp = new DefaultDocProcessor(DocProcessorTest.class.getResourceAsStream("/en-sent.bin"));
   }
 
-  public int getSentId(){
-    return sentId;
+  @Test
+  public void testGetSentencesFromStr() {
+    String sent = "This is a sentence, with some punctuations; to test if the sentence breaker can handle it! Is every thing working OK ? Yes.";
+    List<Sentence> doc = dp.getSentencesFromStr(sent);
+    //dp.docToString(fileName);
+    assertEquals(doc.size(),3);
   }
 
-  public double getScore()
-  {
-    return score;
-  }
-
-  public void setScore(double score)
-  {
-    this.score = score;
-  }
-
-  public void setSentId(int sentId)
-  {
-    this.sentId = sentId;
-  }
-
-  @Override
-  public int compareTo(Score o) {
-
-    if(o.score > score) return 1;
-    else if (o.score < score) return -1;
-    return 0;
-  }
-
-  @Override
-  public String toString()
-  {
-    return sentId +" "+score;
-  }
 }

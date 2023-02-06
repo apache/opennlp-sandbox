@@ -22,8 +22,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.LineNumberReader;
 
-import com.sun.istack.internal.logging.Logger;
-	
 /*
  * Class to load inverse document frequency for words. Resources like google n-gram can be used to populate this.
  * 
@@ -78,8 +76,9 @@ public class IDFWordWeight implements WordWeight
 				  idf.put(word, idfVal); 
 		        }
 		    }   	
-		}catch(Exception ex){
-			Logger.getLogger(opennlp.summarization.preprocess.IDFWordWeight.class).warning("Could not load the file with IDF");
+		} catch(Exception ex){
+			System.err.println("Could not load the file with IDF");
+			ex.printStackTrace();
 		}
 	}	
 }

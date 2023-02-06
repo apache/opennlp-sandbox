@@ -20,13 +20,14 @@ package opennlp.summarization.lexicalchaining;
 import java.util.List;
 
 public interface POSTagger {
+	
 	//Tagger types..
-	public static final int NOUN=0;
-	public static final int VERB=1;
-	public static final int ADJECTIVE=2;
-	public static final int ADVERB=3;
-	public static final int PRONOUN=4;
+	int NOUN = 0;
+	int VERB = 1;
+	int ADJECTIVE = 2;
+	int ADVERB = 3;
+	int PRONOUN = 4;
 
-	public String getTaggedString(String article);
-	public List<String> getWordsOfType(String sent, int type);	
+	String getTaggedString(String input);
+	List<String> getWordsOfType(String sent, int type);
 }

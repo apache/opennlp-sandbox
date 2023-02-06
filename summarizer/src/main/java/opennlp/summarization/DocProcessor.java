@@ -21,17 +21,27 @@ import java.util.List;
 
 import opennlp.tools.stemmer.Stemmer;
 
-/*
+/**
  * A document processor abstracts a lot of the underlying complexities of parsing the document and 
- * preparing it (e.g. stemming, stop word removal) from the summarization algorithm. The current package
- * supports sentence extraction based algorithms. Thus extracting Sentences from the text is the
- * first step and the basis for the algorithms.
+ * preparing it (e.g. stemming, stop word removal) from the summarization algorithm.
+ * <p>
+ * The current package supports sentence extraction based algorithms.
+ * Thus, extracting sentences from the text is the first step and the basis for related algorithms.
  */
 public interface DocProcessor {
-	/* Extract sentences from a string representing an article.*/
-	public List<Sentence> getSentencesFromStr(String text) ;
-	/* Utility method to parse out words from a string.*/
-	public String[] getWords(String sent);
-	/* Provide a stemmer to stem words*/
-	public Stemmer getStemmer();
+
+	/**
+	 * Extracts sentences from a string representing an article.
+	 */
+	List<Sentence> getSentencesFromStr(String text) ;
+
+	/**
+	 * Parses out words from a specified {@link String sent}.
+	 */
+	String[] getWords(String sent);
+	
+	/**
+	 * Provides a stemmer to stem words
+	 */
+	Stemmer getStemmer();
 }
