@@ -20,15 +20,15 @@ package org.apache.opennlp.utils.regression;
 
 import org.apache.opennlp.utils.TestUtils;
 import org.apache.opennlp.utils.TrainingSet;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Testcase for {@link org.apache.opennlp.utils.regression.GradientDescentUtils}
  */
-public class GradientDescentUtilsTest {
+class GradientDescentUtilsTest {
 
   @Test
-  public void testConvergence() {
+  void testConvergence() {
     TrainingSet trainingSet = new TrainingSet();
     TestUtils.fillTrainingSet(trainingSet, 100, 5);
     GradientDescentUtils.batchGradientDescent(trainingSet, 0.00002);

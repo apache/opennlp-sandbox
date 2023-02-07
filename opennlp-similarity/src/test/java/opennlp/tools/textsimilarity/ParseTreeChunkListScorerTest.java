@@ -19,16 +19,16 @@ package opennlp.tools.textsimilarity;
 
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ParseTreeChunkListScorerTest {
+class ParseTreeChunkListScorerTest {
   private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
   private final ParseTreeChunk parseTreeChunk = new ParseTreeChunk();
 
   @Test
-  public void test() {
+  void test() {
     List<List<ParseTreeChunk>> chs = parseTreeChunk
         .obtainParseTreeChunkListByParsingList("[[ [NN-* IN-in NP-israel ],  [NP-* IN-in NP-israel ],  [NP-* IN-* TO-* NN-* ],  [NN-visa IN-* NN-* IN-in ]],"
             + " [ [VB-get NN-visa IN-* NN-* IN-in .-* ],  [VBD-* IN-* NN-* NN-* .-* ],  [VB-* NP-* ]]]");

@@ -18,30 +18,30 @@
  */
 package org.apache.opennlp.utils.cfg;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for {@link CFGRunner}
  */
-public class CFGRunnerTest {
+class CFGRunnerTest {
 
   @Test
-  public void testDefaultMain() throws Exception {
+  void testDefaultMain() throws Exception {
     CFGRunner.main(new String[0]);
   }
 
   @Test
-  public void testMainWithWD() throws Exception {
-    CFGRunner.main(new String[]{"-wn"});
+  void testMainWithWD() throws Exception {
+    CFGRunner.main(new String[] {"-wn"});
   }
 
   @Test
-  public void testMainWithPT() throws Exception {
-    CFGRunner.main(new String[]{"-pt"});
+  void testMainWithPT() throws Exception {
+    CFGRunner.main(new String[] {"-pt"});
   }
 
   @Test
-  public void testMainWithWNAndPT() throws Exception {
-    CFGRunner.main(new String[]{"-wn", "-pt"});
+  void testMainWithWNAndPT() throws Exception {
+    CFGRunner.main(new String[] {"-wn", "-pt"});
   }
 }

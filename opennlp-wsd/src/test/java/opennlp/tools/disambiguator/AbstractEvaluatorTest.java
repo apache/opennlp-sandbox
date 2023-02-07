@@ -19,14 +19,14 @@
 
 package opennlp.tools.disambiguator;
 
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 
 public abstract class AbstractEvaluatorTest {
 
   private static final String MODELS_DIR = "src/test/resources/models/";
 
-  @BeforeClass
-  public static void initEnv() {
+  @BeforeAll
+  static void initEnv() {
     WSDHelper.loadTokenizer(MODELS_DIR + "en-token.bin");
     WSDHelper.loadTagger(MODELS_DIR + "en-pos-maxent.bin");
     WSDHelper.loadLemmatizer(MODELS_DIR + "en-lemmatizer.dict.gz");

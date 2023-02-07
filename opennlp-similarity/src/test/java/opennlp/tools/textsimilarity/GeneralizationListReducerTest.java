@@ -20,38 +20,38 @@ package opennlp.tools.textsimilarity;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class GeneralizationListReducerTest {
+class GeneralizationListReducerTest {
   private final GeneralizationListReducer generalizationListReducer = new GeneralizationListReducer();
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     assertNotNull(generalizationListReducer);
   }
 
   @Test
-  public void test() {
-    ParseTreeChunk ch1 = new ParseTreeChunk("VP", new String[] { "run",
-        "around", "tigers", "zoo" }, new String[] { "VB", "IN", "NP", "NP" });
+  void test() {
+    ParseTreeChunk ch1 = new ParseTreeChunk("VP", new String[] {"run",
+        "around", "tigers", "zoo"}, new String[] {"VB", "IN", "NP", "NP"});
 
-    ParseTreeChunk ch2 = new ParseTreeChunk("NP", new String[] { "run",
-        "around", "tigers" }, new String[] { "VB", "IN", "NP", });
+    ParseTreeChunk ch2 = new ParseTreeChunk("NP", new String[] {"run",
+        "around", "tigers"}, new String[] {"VB", "IN", "NP",});
 
-    ParseTreeChunk ch3 = new ParseTreeChunk("NP", new String[] { "the",
-        "tigers" }, new String[] { "DT", "NP", });
+    ParseTreeChunk ch3 = new ParseTreeChunk("NP", new String[] {"the",
+        "tigers"}, new String[] {"DT", "NP",});
 
-    ParseTreeChunk ch4 = new ParseTreeChunk("NP", new String[] { "the", "*",
-        "flying", "car" }, new String[] { "DT", "NN", "VBG", "NN" });
+    ParseTreeChunk ch4 = new ParseTreeChunk("NP", new String[] {"the", "*",
+        "flying", "car"}, new String[] {"DT", "NN", "VBG", "NN"});
 
-    ParseTreeChunk ch5 = new ParseTreeChunk("NP", new String[] { "the", "*" },
-        new String[] { "DT", "NN", });
+    ParseTreeChunk ch5 = new ParseTreeChunk("NP", new String[] {"the", "*"},
+        new String[] {"DT", "NN",});
 
     // [DT-the NN-* VBG-flying NN-car ], [], [], [DT-the NN-* ]]
 

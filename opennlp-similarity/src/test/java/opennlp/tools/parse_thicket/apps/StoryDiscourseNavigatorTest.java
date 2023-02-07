@@ -18,22 +18,21 @@ package opennlp.tools.parse_thicket.apps;
 
 import java.util.Arrays;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import opennlp.tools.similarity.apps.StoryDiscourseNavigator;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class StoryDiscourseNavigatorTest {
+class StoryDiscourseNavigatorTest {
 
-	@Test
-	@Ignore
-	// TODO OPENNLP-1455 This test fails with "UnknownHostException: api.datamarket.azure.com: nodename nor servname provided, or not known"
-	public void testGeneratedExtensionKeywords(){
-		String[] res = new StoryDiscourseNavigator().obtainAdditionalKeywordsForAnEntity("Albert Einstein");
-		assertTrue(res.length>0);
-		assertTrue(Arrays.asList(res).toString().contains("physics"));
-		assertTrue(Arrays.asList(res).toString().contains("relativity"));
-	}
+  @Test
+  @Disabled // TODO OPENNLP-1455 This test fails with "UnknownHostException: api.datamarket.azure.com: nodename nor servname provided, or not known"
+  void testGeneratedExtensionKeywords() {
+    String[] res = new StoryDiscourseNavigator().obtainAdditionalKeywordsForAnEntity("Albert Einstein");
+    assertTrue(res.length > 0);
+    assertTrue(Arrays.asList(res).toString().contains("physics"));
+    assertTrue(Arrays.asList(res).toString().contains("relativity"));
+  }
 }

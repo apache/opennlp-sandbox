@@ -21,12 +21,10 @@ package org.apache.opennlp.utils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Random;
-import org.junit.Ignore;
 
 /**
  * Utility class for tests
  */
-@Ignore
 public class TestUtils {
 
   private static final Random R = new Random();

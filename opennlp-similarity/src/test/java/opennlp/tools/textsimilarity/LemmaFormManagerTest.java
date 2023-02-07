@@ -17,24 +17,24 @@
 
 package opennlp.tools.textsimilarity;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class LemmaFormManagerTest {
+class LemmaFormManagerTest {
 
   private final LemmaFormManager lemmaFormManager = new LemmaFormManager();
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     assertNotNull(lemmaFormManager);
   }
 
   @Test
-  public void testMatches() {
+  void testMatches() {
     assertEquals(lemmaFormManager.matchLemmas(null, "loud", "loudness", "NN"),
         "loud");
     assertNull(lemmaFormManager.matchLemmas(null, "24", "12", "CD"));

@@ -1,20 +1,20 @@
 package org.apache.opennlp.namefinder;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import opennlp.tools.util.Span;
 
 import java.io.IOException;
 import java.nio.file.Path;
 
-public class PredictTest {
+class PredictTest {
 
-  @Test @Ignore
-  // TODO This test is not platform neutral and, for instance, fails with:
-  //  "Cannot find TensorFlow native library for OS: darwin, architecture: aarch64"
-  //  We need JUnit 5 in the sandbox to circumvent this, so it can be run in supported environments
-  public void testFindTokens() throws IOException {
+  @Test
+  @Disabled // TODO This test is not platform neutral and, for instance, fails with
+    //  "Cannot find TensorFlow native library for OS: darwin, architecture: aarch64"
+    //  We need JUnit 5 in the sandbox to circumvent this, so it can be run in supported environments
+  void testFindTokens() throws IOException {
 
     // can be changed to File or InputStream
     String words = PredictTest.class.getResource("/words.txt.gz").getPath();
@@ -29,7 +29,7 @@ public class PredictTest {
       String[] tokens = "Stormy Cars ' friend says she also plans to sue Michael Cohen .".split("\\s+");
       Span[] pred = tagger.find(tokens);
 
-      for (int i=0; i<tokens.length; i++) {
+      for (int i = 0; i < tokens.length; i++) {
         System.out.print(tokens[i] + "/" + pred[i] + " ");
       }
       System.out.println();

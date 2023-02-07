@@ -32,27 +32,28 @@ import org.apache.uima.resource.ResourceSpecifier;
 import org.apache.uima.resource.metadata.TypeSystemDescription;
 import org.apache.uima.util.CasCreationUtils;
 import org.apache.uima.util.XMLInputSource;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class CSCollectionReaderTest extends AbstractCSTest {
+@Disabled
+class CSCollectionReaderTest extends AbstractCSTest {
 
   private static final String CRDPATH = "/CSCollectionReaderTestDescriptor.xml";
 
-  @BeforeClass
-  public static void setUp() throws IOException {
+  @BeforeAll
+  static void setUp() throws IOException {
     // kick out the old db instances that might be present already in this environment
     cleanTestDB();
 
@@ -64,7 +65,7 @@ public class CSCollectionReaderTest extends AbstractCSTest {
       CorporaStore corporaStore = new DerbyCorporaStore();
 
       corporaStore.initialize(BASE_PATH.replace("file:", "").replace("/test-classes", ""));
-      byte[] indexMapping = new byte[]{};
+      byte[] indexMapping = new byte[] {};
       corporaStore.createCorpus("wikinews", os.toByteArray(), indexMapping);
 
       os.reset();
@@ -82,14 +83,13 @@ public class CSCollectionReaderTest extends AbstractCSTest {
       e.printStackTrace();
       fail(e.getLocalizedMessage());
     }
-    new TestCorpusServer();
   }
 
   @Test
-  @Ignore
-  // TODO Investigate why this test fails with:
-  //  No value has been assigned to the mandatory configuration parameter corpusName.
-  public void explicitCRTest() {
+  @Disabled
+    // TODO Investigate why this test fails with:
+    //  No value has been assigned to the mandatory configuration parameter corpusName.
+  void explicitCRTest() {
     try {
       XMLInputSource s = new XMLInputSource(CSCollectionReaderTest.class.getResource(CRDPATH));
       ResourceSpecifier rs = UIMAFramework.getXMLParser().parseCollectionReaderDescription(s);

@@ -20,36 +20,36 @@ package opennlp.tools.textsimilarity;
 
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
-import static org.junit.Assert.*;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class SyntMatcherTest {
+class SyntMatcherTest {
 
   private final ParseTreeChunk parseTreeChunk = new ParseTreeChunk();
-  
+
   private ParserChunker2MatcherProcessor parserChunker2Matcher;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     parserChunker2Matcher = ParserChunker2MatcherProcessor.getInstance();
     assertNotNull(parserChunker2Matcher);
   }
 
-  @After
-  public void cleanUp() {
+  @AfterEach
+  void cleanUp() {
     if (parserChunker2Matcher != null) {
       parserChunker2Matcher.close();
     }
   }
 
   @Test
-  public void testMatch() {
+  void testMatch() {
     List<List<ParseTreeChunk>> matchResult = parserChunker2Matcher.assessRelevance(
             // "Can I get auto focus lens for digital camera",
             // "How can I get short focus zoom lens for digital camera"
@@ -83,7 +83,7 @@ public class SyntMatcherTest {
   }
 
   @Test
-  public void testMatchDigitalCamera() {
+  void testMatchDigitalCamera() {
     List<List<ParseTreeChunk>> matchResult = parserChunker2Matcher.assessRelevance(
             "I am curious how to use the digital zoom of this camera for filming insects",
             "How can I get short focus zoom lens for digital camera")
@@ -98,7 +98,7 @@ public class SyntMatcherTest {
   }
 
   @Test
-  public void testHighSimilarity() {
+  void testHighSimilarity() {
     List<List<ParseTreeChunk>> matchResult = parserChunker2Matcher.assessRelevance(
             "Can I get auto focus lens for digital camera",
             "How can I get short focus zoom lens for digital camera")
@@ -113,7 +113,7 @@ public class SyntMatcherTest {
   }
 
   @Test
-  public void testZClose() {
+  void testZClose() {
     ParserChunker2MatcherProcessor.getInstance().close();
   }
 
