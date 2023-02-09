@@ -21,28 +21,29 @@ import java.util.ArrayList;
 
 import opennlp.tools.similarity.apps.ContentGenerator;
 import opennlp.tools.similarity.apps.HitBase;
-import org.junit.Test;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Test;
 
-public class RelatedSentenceFinderTest {
-	
-	private final ContentGenerator finder = new ContentGenerator();
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-	@Test
-	public void testAugmentWithMinedSentencesAndVerifyRelevanceTest(){
-		HitBase input = new HitBase();
-		input.setAbstractText("He is pictured here in the Swiss Patent Office where he did ...");
-		input.setUrl("https://apod.nasa.gov/apod/ap951219.html");
-		input.setTitle("Albert Einstein");
-		HitBase result = finder.buildParagraphOfGeneratedText(input, "Swiss Patent Office", new ArrayList<>());
-		assertNotNull(result.getOriginalSentences());
-		assertTrue(result.getOriginalSentences().size()>0);
-		// TODO Investigate why the below to checks fail
-		// assertTrue(result.getFragments().size()>0);
-		// assertTrue(result.getFragments().get(0).getFragment().contains("Swiss Patent Office"));
-	}
+class RelatedSentenceFinderTest {
+
+  private final ContentGenerator finder = new ContentGenerator();
+
+  @Test
+  void testAugmentWithMinedSentencesAndVerifyRelevanceTest() {
+    HitBase input = new HitBase();
+    input.setAbstractText("He is pictured here in the Swiss Patent Office where he did ...");
+    input.setUrl("https://apod.nasa.gov/apod/ap951219.html");
+    input.setTitle("Albert Einstein");
+    HitBase result = finder.buildParagraphOfGeneratedText(input, "Swiss Patent Office", new ArrayList<>());
+    assertNotNull(result.getOriginalSentences());
+    assertTrue(result.getOriginalSentences().size() > 0);
+    // TODO Investigate why the below to checks fail
+    // assertTrue(result.getFragments().size()>0);
+    // assertTrue(result.getFragments().get(0).getFragment().contains("Swiss Patent Office"));
+  }
 	
 	/*
 		public void testBuildParagraphOfGeneratedTextTest(){
@@ -60,19 +61,19 @@ public class RelatedSentenceFinderTest {
 		}
 	*/
 
-	@Test
-	public void testBuildParagraphOfGeneratedTextTestYearInTheEnd(){
-	    
-		HitBase input = new HitBase();
-		input.setAbstractText("Albert Einstein was born ... Germany, on March 14, 1879");
-		input.setUrl("https://www.nobelprize.org/prizes/physics/1921/einstein/biographical");
-		input.setTitle("Albert Einstein - Biographical");
-		HitBase result = finder.buildParagraphOfGeneratedText(input, "Albert Einstein", new ArrayList<>());
-		assertNotNull(result.getOriginalSentences());
-		assertTrue(result.getOriginalSentences().size()>0);
-		assertTrue(result.getFragments().size()>0);
-		assertTrue(result.getFragments().get(0).getFragment().contains("Albert Einstein"));
-	} 
+  @Test
+  void testBuildParagraphOfGeneratedTextTestYearInTheEnd() {
+
+    HitBase input = new HitBase();
+    input.setAbstractText("Albert Einstein was born ... Germany, on March 14, 1879");
+    input.setUrl("https://www.nobelprize.org/prizes/physics/1921/einstein/biographical");
+    input.setTitle("Albert Einstein - Biographical");
+    HitBase result = finder.buildParagraphOfGeneratedText(input, "Albert Einstein", new ArrayList<>());
+    assertNotNull(result.getOriginalSentences());
+    assertTrue(result.getOriginalSentences().size() > 0);
+    assertTrue(result.getFragments().size() > 0);
+    assertTrue(result.getFragments().get(0).getFragment().contains("Albert Einstein"));
+  }
 	
 	/*
 	public void testBuildParagraphOfGeneratedTextTestBio1(){
@@ -131,7 +132,7 @@ public class RelatedSentenceFinderTest {
 		assertTrue(result.getFragments().size()>0);
 		assertTrue(result.getFragments().get(0).getFragment().indexOf("view of the world")>-1);
 	}  */
-	
+
 
 }
 

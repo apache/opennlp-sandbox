@@ -21,25 +21,25 @@ package opennlp.tools.similarity.apps;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import opennlp.tools.similarity.apps.SpeechRecognitionResultsProcessor.SentenceMeaningfullnessScore;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class SpeechRecognitionResultsProcessorTest {
+class SpeechRecognitionResultsProcessorTest {
 
   @Test
-  public void testRestaurantEntityInSpeechRecognitionResults() {
+  void testRestaurantEntityInSpeechRecognitionResults() {
     SpeechRecognitionResultsProcessor proc = new SpeechRecognitionResultsProcessor();
     List<SentenceMeaningfullnessScore> res = proc.runSearchAndScoreMeaningfulness(Arrays.asList(
-            "remember to buy milk tomorrow for details",
-            "remember to buy milk tomorrow from trader joes",
-            "remember to buy milk tomorrow from 3 to jones",
-            "remember to buy milk tomorrow for for details",
-            "remember to buy milk tomorrow from third to joes",
-            "remember to buy milk tomorrow from third to jones",
-            "remember to buy milk tomorrow from for d jones"));
+        "remember to buy milk tomorrow for details",
+        "remember to buy milk tomorrow from trader joes",
+        "remember to buy milk tomorrow from 3 to jones",
+        "remember to buy milk tomorrow for for details",
+        "remember to buy milk tomorrow from third to joes",
+        "remember to buy milk tomorrow from third to jones",
+        "remember to buy milk tomorrow from for d jones"));
 
     assertTrue(res.get(1).getScore() > res.get(0).getScore()
         && res.get(1).getScore() > res.get(2).getScore()

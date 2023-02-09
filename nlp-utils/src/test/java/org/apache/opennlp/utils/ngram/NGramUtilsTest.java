@@ -20,23 +20,24 @@ package org.apache.opennlp.utils.ngram;
 
 import java.util.Collection;
 import java.util.LinkedList;
-import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Testcase for {@link org.apache.opennlp.utils.ngram.NGramUtils}
  */
-public class NGramUtilsTest {
+class NGramUtilsTest {
   @Test
-  public void testBigram() {
+  void testBigram() {
     Collection<String[]> set = new LinkedList<>();
-    set.add(new String[]{"<s>", "I", "am", "Sam", "</s>"});
-    set.add(new String[]{"<s>", "Sam", "I", "am", "</s>"});
-    set.add(new String[]{"<s>", "I", "do", "not", "like", "green", "eggs", "and", "ham", "</s>"});
-    set.add(new String[]{});
+    set.add(new String[] {"<s>", "I", "am", "Sam", "</s>"});
+    set.add(new String[] {"<s>", "Sam", "I", "am", "</s>"});
+    set.add(new String[] {"<s>", "I", "do", "not", "like", "green", "eggs", "and", "ham", "</s>"});
+    set.add(new String[] {});
     Double d = NGramUtils.calculateBigramMLProbability("I", "<s>", set);
     assertTrue(d > 0);
     assertEquals(Double.valueOf(0.6666666666666666d), d);
@@ -47,12 +48,12 @@ public class NGramUtilsTest {
   }
 
   @Test
-  public void testTrigram() {
+  void testTrigram() {
     Collection<String[]> set = new LinkedList<>();
-    set.add(new String[]{"<s>", "I", "am", "Sam", "</s>"});
-    set.add(new String[]{"<s>", "Sam", "I", "am", "</s>"});
-    set.add(new String[]{"<s>", "I", "do", "not", "like", "green", "eggs", "and", "ham", "</s>"});
-    set.add(new String[]{});
+    set.add(new String[] {"<s>", "I", "am", "Sam", "</s>"});
+    set.add(new String[] {"<s>", "Sam", "I", "am", "</s>"});
+    set.add(new String[] {"<s>", "I", "do", "not", "like", "green", "eggs", "and", "ham", "</s>"});
+    set.add(new String[] {});
     Double d = NGramUtils.calculateTrigramMLProbability("I", "am", "Sam", set);
     assertEquals(Double.valueOf(0.5), d);
     d = NGramUtils.calculateTrigramMLProbability("Sam", "I", "am", set);
@@ -60,29 +61,29 @@ public class NGramUtilsTest {
   }
 
   @Test
-  public void testLinearInterpolation() {
+  void testLinearInterpolation() {
     Collection<String[]> set = new LinkedList<>();
-    set.add(new String[]{"the", "green", "book", "STOP"});
-    set.add(new String[]{"my", "blue", "book", "STOP"});
-    set.add(new String[]{"his", "green", "house", "STOP"});
-    set.add(new String[]{"book", "STOP"});
+    set.add(new String[] {"the", "green", "book", "STOP"});
+    set.add(new String[] {"my", "blue", "book", "STOP"});
+    set.add(new String[] {"his", "green", "house", "STOP"});
+    set.add(new String[] {"book", "STOP"});
     Double lambda = 1d / 3d;
     Double d = NGramUtils.calculateLinearInterpolationProbability("the", "green", "book", set, lambda, lambda, lambda);
     assertNotNull(d);
     assertTrue(d > 0);
-    assertEquals("wrong result", Double.valueOf(0.5714285714285714d), d);
+    assertEquals(Double.valueOf(0.5714285714285714d), d, "wrong result");
   }
 
   @Test
-  public void testLinearInterpolation2() {
+  void testLinearInterpolation2() {
     Collection<String[]> set = new LinkedList<>();
-    set.add(new String[]{"D", "N", "V", "STOP"});
-    set.add(new String[]{"D", "N", "V", "STOP"});
+    set.add(new String[] {"D", "N", "V", "STOP"});
+    set.add(new String[] {"D", "N", "V", "STOP"});
     Double lambda = 1d / 3d;
     Double d = NGramUtils.calculateLinearInterpolationProbability("N", "V", "STOP", set, lambda, lambda, lambda);
     assertNotNull(d);
     assertTrue(d > 0);
-    assertEquals("wrong result", Double.valueOf(0.75d), d);
+    assertEquals(Double.valueOf(0.75d), d, "wrong result");
   }
 
 }

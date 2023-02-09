@@ -6,19 +6,19 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class WordIndexerTest {
+class WordIndexerTest {
 
   private static WordIndexer indexer;
 
-  @BeforeClass
-  public static void beforeClass() {
+  @BeforeAll
+  static void beforeClass() {
     try (InputStream words = new GZIPInputStream(WordIndexerTest.class.getResourceAsStream("/words.txt.gz"));
          InputStream chars = new GZIPInputStream(WordIndexerTest.class.getResourceAsStream("/chars.txt.gz"))) {
       indexer = new WordIndexer(words, chars);
@@ -29,11 +29,11 @@ public class WordIndexerTest {
   }
 
   @Test
-  public void testToTokenIdsWithOneSentence() {
+  void testToTokenIdsWithOneSentence() {
     String text = "Stormy Cars ' friend says she also plans to sue Michael Cohen .";
 
     TokenIds ids = indexer.toTokenIds(text.split("\\s+"));
-    assertEquals("Expect 13 tokenIds", 13, ids.getWordIds()[0].length);
+    assertEquals(13, ids.getWordIds()[0].length, "Expect 13 tokenIds");
 
     assertArrayEquals(new int[] {7, 30, 34, 80, 42, 3}, ids.getCharIds()[0][0]);
     assertArrayEquals(new int[] {51, 41, 80, 54}, ids.getCharIds()[0][1]);
@@ -67,10 +67,10 @@ public class WordIndexerTest {
   }
 
   @Test
-  public void testToTokenIdsWithTwoSentences() {
+  void testToTokenIdsWithTwoSentences() {
 
     String[] text = new String[] {"I wish I was born in Copenhagen Denmark",
-            "Donald Trump died on his way to Tivoli Gardens in Denmark ."};
+        "Donald Trump died on his way to Tivoli Gardens in Denmark ."};
 
     List<String[]> collect = Arrays.stream(text).map(s -> s.split("\\s+")).collect(Collectors.toList());
 
@@ -124,5 +124,5 @@ public class WordIndexerTest {
     // assertEquals(7420, ids.getWordIds()[1][10]);
     assertEquals(2684, ids.getWordIds()[1][11]);
   }
-  
+
 }

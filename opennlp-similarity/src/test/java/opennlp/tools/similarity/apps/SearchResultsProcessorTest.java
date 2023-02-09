@@ -18,15 +18,15 @@ package opennlp.tools.similarity.apps;
 
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class SearchResultsProcessorTest {
+class SearchResultsProcessorTest {
   private final SearchResultsProcessor proc = new SearchResultsProcessor();
 
   @Test
-  public void testSearchOrder() {
+  void testSearchOrder() {
     List<HitBase> res = proc.runSearch("How can I pay tax on my income abroad");
 
     // we verify that top answers have high similarity score
@@ -43,7 +43,7 @@ public class SearchResultsProcessorTest {
   }
 
   @Test
-  public void testSearchOrder2() {
+  void testSearchOrder2() {
     List<HitBase> res = proc.runSearch("Can I estimate what my income tax would be by using my last pay");
 
     HitBase first = res.get(0);

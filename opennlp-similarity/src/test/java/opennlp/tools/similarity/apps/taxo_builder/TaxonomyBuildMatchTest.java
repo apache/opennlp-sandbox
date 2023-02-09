@@ -16,23 +16,23 @@
  */
 package opennlp.tools.similarity.apps.taxo_builder;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TaxonomyBuildMatchTest {
+class TaxonomyBuildMatchTest {
 
   @Test
-  public void testTaxonomySeedImport() {
+  void testTaxonomySeedImport() {
     AriAdapter ad = new AriAdapter();
     ad.getChainsFromARIfile("src/test/resources/taxonomies/irs_dom.ari");
     assertTrue(ad.lemma_AssocWords.size() > 0);
   }
 
   @Test
-  @Ignore // TODO Check if this test works as expected, and: why it takes so much time.
-  public void testTaxonomyBuild() {
+  @Disabled // TODO Check if this test works as expected, and: why it takes so much time.
+  void testTaxonomyBuild() {
     TaxonomyExtenderViaMebMining self = new TaxonomyExtenderViaMebMining();
     self.extendTaxonomy("src/test/resources/taxonomies/irs_dom.ari", "tax", "en");
     self.close();
@@ -40,13 +40,13 @@ public class TaxonomyBuildMatchTest {
   }
 
   @Test
-  public void testTaxonomyMatch() {
+  void testTaxonomyMatch() {
     TaxoQuerySnapshotMatcher matcher = new TaxoQuerySnapshotMatcher(
         "src/test/resources/taxonomies/irs_domTaxo.dat");
     int score = matcher.getTaxoScore(
-            "Can Form 1040 EZ be used to claim the earned income credit.",
-            "Can Form 1040EZ be used to claim the earned income credit? . " +
-                    "Must I be entitled to claim a child as a dependent to claim the earned income credit based on the child being ");
+        "Can Form 1040 EZ be used to claim the earned income credit.",
+        "Can Form 1040EZ be used to claim the earned income credit? . " +
+            "Must I be entitled to claim a child as a dependent to claim the earned income credit based on the child being ");
 
     assertTrue(score > 3);
     matcher.close();

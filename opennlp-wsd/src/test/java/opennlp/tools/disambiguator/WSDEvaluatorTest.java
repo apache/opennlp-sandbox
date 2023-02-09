@@ -23,19 +23,19 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import opennlp.tools.disambiguator.datareader.SemcorReaderExtended;
 import opennlp.tools.disambiguator.datareader.SensevalReader;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.TrainingParameters;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 // TODO improve the tests improve parameters
-public class WSDEvaluatorTest extends AbstractEvaluatorTest {
+class WSDEvaluatorTest extends AbstractEvaluatorTest {
 
   static SensevalReader seReader;
 
@@ -46,10 +46,10 @@ public class WSDEvaluatorTest extends AbstractEvaluatorTest {
   static WSDModel model;
 
   static ArrayList<String> testWords;
-  
+
   @Test
-  @Ignore // TODO OPENNLP-1446: Investigate why test fails while parsing 'EnglishLS.train'
-  public void testTraining() {
+  @Disabled // TODO OPENNLP-1446: Investigate why test fails while parsing 'EnglishLS.train'
+  void testTraining() {
 
     WSDHelper.print("Evaluation Started");
 
@@ -79,15 +79,15 @@ public class WSDEvaluatorTest extends AbstractEvaluatorTest {
           File outFile;
           try {
             writeModel = WSDisambiguatorME
-              .train("en", sampleStream, trainingParams, params);
-            assertNotNull("Checking the model to be written", writeModel);
+                .train("en", sampleStream, trainingParams, params);
+            assertNotNull(writeModel, "Checking the model to be written");
             writeModel.writeModel(params.getTrainingDataDirectory() + word);
             outFile = new File(
-              params.getTrainingDataDirectory() + word + ".wsd.model");
+                params.getTrainingDataDirectory() + word + ".wsd.model");
             model = new WSDModel(outFile);
-            assertNotNull("Checking the read model", model);
+            assertNotNull(model, "Checking the read model");
             wsdME = new WSDisambiguatorME(model, params);
-            assertNotNull("Checking the disambiguator", wsdME);
+            assertNotNull(wsdME, "Checking the disambiguator");
           } catch (IOException e1) {
             e1.printStackTrace();
             fail("Exception in training");
@@ -98,8 +98,8 @@ public class WSDEvaluatorTest extends AbstractEvaluatorTest {
   }
 
   @Test
-  @Ignore // Make this work once we have migrated to JUnit5 in the sandbox components
-  public void testDisambiguationEval() {
+  @Disabled  // Make this work once we have migrated to JUnit5 in the sandbox components
+  void testDisambiguationEval() {
 
     WSDHelper.print("Evaluation Started");
 
@@ -114,7 +114,7 @@ public class WSDEvaluatorTest extends AbstractEvaluatorTest {
           WSDHelper.print("------------------" + word + "------------------");
           for (WSDSample instance : instances) {
             if (instance.getSenseIDs() != null && !instance.getSenseIDs()[0]
-              .equals("null")) {
+                .equals("null")) {
               evaluator.evaluateSample(instance);
             }
           }

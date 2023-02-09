@@ -19,24 +19,24 @@ package opennlp.tools.textsimilarity.chunker2matcher;
 
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class PhraseNodeTest {
-  
+class PhraseNodeTest {
+
   private final ParserChunker2MatcherProcessor proc = ParserChunker2MatcherProcessor.getInstance();
 
-  @After
-  public void cleanUp() {
+  @AfterEach
+  void cleanUp() {
     if (proc != null) {
       proc.close();
     }
   }
 
   @Test
-  public void testPOSTagsExtraction() {
+  void testPOSTagsExtraction() {
 
     SentenceNode node = proc.parseSentenceNode("How can I get there");
 

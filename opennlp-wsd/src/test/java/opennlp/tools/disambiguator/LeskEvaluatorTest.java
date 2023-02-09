@@ -21,23 +21,23 @@ package opennlp.tools.disambiguator;
 
 import java.util.ArrayList;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import opennlp.tools.disambiguator.datareader.SensevalReader;
 
-public class LeskEvaluatorTest extends AbstractEvaluatorTest {
+class LeskEvaluatorTest extends AbstractEvaluatorTest {
 
   static SensevalReader seReader = new SensevalReader();
 
   @Test
-  @Ignore // TODO OPENNLP-1446: Investigate why test fails while parsing 'EnglishLS.train'
-  public void testEvaluation() {
+  @Disabled  // TODO OPENNLP-1446: Investigate why test fails while parsing 'EnglishLS.train'
+  void testEvaluation() {
     WSDHelper.print("Evaluation Started");
 
     Lesk lesk = new Lesk();
     LeskParameters leskParams = new LeskParameters();
-    boolean a[] = { true, true, true, true, true, false, false, false, false, false };
+    boolean a[] = {true, true, true, true, true, false, false, false, false, false};
     leskParams.setFeatures(a);
     leskParams.setLeskType(LeskParameters.LESK_TYPE.LESK_EXT_CTXT);
     lesk.setParams(leskParams);

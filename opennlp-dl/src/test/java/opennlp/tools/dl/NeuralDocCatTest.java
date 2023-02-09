@@ -21,20 +21,20 @@ package opennlp.tools.dl;
 import java.util.Arrays;
 import java.util.Map;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for {@link NeuralDocCat}
  */
-@Ignore
-public class NeuralDocCatTest {
+@Disabled
+class NeuralDocCatTest {
 
   @Test
-  public void testDocCatTrainingOnTweets() throws Exception {
+  void testDocCatTrainingOnTweets() throws Exception {
     NeuralDocCatTrainer.Args args = new NeuralDocCatTrainer.Args();
     args.glovesPath = "/path/to/glove.6B/glove.6B.50d.txt";
     args.labels = Arrays.asList("0", "1");

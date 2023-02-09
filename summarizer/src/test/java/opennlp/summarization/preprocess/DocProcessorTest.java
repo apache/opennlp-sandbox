@@ -20,28 +20,28 @@ package opennlp.summarization.preprocess;
 
 import java.util.List;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import opennlp.summarization.Sentence;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DocProcessorTest {
+class DocProcessorTest {
 
   private static DefaultDocProcessor dp;
 
-  @BeforeClass
-  public static void initEnv() throws Exception {
+  @BeforeAll
+  static void initEnv() throws Exception {
     dp = new DefaultDocProcessor(DocProcessorTest.class.getResourceAsStream("/en-sent.bin"));
   }
 
   @Test
-  public void testGetSentencesFromStr() {
+  void testGetSentencesFromStr() {
     String sent = "This is a sentence, with some punctuations; to test if the sentence breaker can handle it! Is every thing working OK ? Yes.";
     List<Sentence> doc = dp.getSentencesFromStr(sent);
     //dp.docToString(fileName);
-    assertEquals(doc.size(),3);
+    assertEquals(doc.size(), 3);
   }
 
 }

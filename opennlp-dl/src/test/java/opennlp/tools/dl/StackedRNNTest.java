@@ -21,40 +21,27 @@ package opennlp.tools.dl;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Stream;
 
 import org.apache.commons.io.IOUtils;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests for {@link StackedRNN}
  */
-@RunWith(Parameterized.class)
 public class StackedRNNTest {
 
-  private final float learningRate;
-  private final int seqLength;
-  private final int hiddenLayerSize;
-  private final int epochs;
-
-  private final Random r = new Random();
+  private final Random r = new Random(42);
   private String text;
   private List<String> words;
 
-  public StackedRNNTest(float learningRate, int seqLength, int hiddenLayerSize, int epochs) {
-    this.learningRate = learningRate;
-    this.seqLength = seqLength;
-    this.hiddenLayerSize = hiddenLayerSize;
-    this.epochs = epochs;
-  }
-
-  @Before
+  @BeforeEach
   public void setUp() throws Exception {
     try (InputStream stream = getClass().getResourceAsStream("/text/sentences.txt")) {
       text = IOUtils.toString(stream, StandardCharsets.UTF_8);
@@ -62,20 +49,20 @@ public class StackedRNNTest {
     }
   }
 
-  @Parameterized.Parameters
-  public static Collection<Object[]> data() {
-    return Arrays.asList(new Object[][] {
-        {1e-3f, 25, 50, 4},
-    });
+  private static Stream<Arguments> provideRNNParams() {
+    return Stream.of(
+        Arguments.of(1e-3f, 25, 50, 5)
+    );
   }
 
-  @Test
-  @Ignore
+  @Disabled
   // TODO check why this fails with:
   //   java.lang.IllegalStateException: Can't transpose array with rank < 2: array shape [62]
   //   ...
   //   on MacOS (only?)
-  public void testStackedCharRNNLearn() throws Exception {
+  @ParameterizedTest
+  @MethodSource("provideRNNParams")
+  public void testVanillaCharRNNLearn(float learningRate, int seqLength, int hiddenLayerSize, int epochs) throws Exception {
     RNN rnn = new StackedRNN(learningRate, seqLength, hiddenLayerSize, epochs, text, 10, true, true);
     evaluate(rnn, true);
     rnn.serialize("target/scrnn-weights-");

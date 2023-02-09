@@ -19,39 +19,39 @@ package opennlp.tools.textsimilarity.chunker2matcher;
 
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import opennlp.tools.textsimilarity.ParseTreeChunk;
 import opennlp.tools.textsimilarity.ParseTreeChunkListScorer;
 import opennlp.tools.textsimilarity.TextSimilarityBagOfWords;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ParserChunker2MatcherProcessorTest {
+class ParserChunker2MatcherProcessorTest {
   private final TextSimilarityBagOfWords parserBOW = new TextSimilarityBagOfWords();
   private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
-  
+
   private ParserChunker2MatcherProcessor parser;
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void setup() {
     parser = ParserChunker2MatcherProcessor.getInstance();
     assertNotNull(parser);
   }
 
-  @After
-  public void cleanUp() {
+  @AfterEach
+  void cleanUp() {
     if (parser != null) {
       parser.close();
     }
   }
 
   @Test
-  public void testGroupedPhrasesFormer() {
+  void testGroupedPhrasesFormer() {
     String text = "Where do I apply? Go to your town office or city hall. If your town doesn't have an office, ask the town clerk or a Selectman. Tell them that you need a 1040 tax form . I Can 't Pay the Taxes on my House: What Can I Do?. Pine Tree Legal";
 
     List<List<ParseTreeChunk>> res = parser.formGroupedPhrasesFromChunksForPara(text);
@@ -75,12 +75,12 @@ public class ParserChunker2MatcherProcessorTest {
         res.toString());
     res = parser.formGroupedPhrasesFromChunksForSentence("UN Ambassador Ron Prosor repeated the Israeli position that the only way the Palestinians will get UN membership and statehood is through direct negotiations with the Israelis on a comprehensive peace agreement");
     assertEquals(
-            "[[NP [NNP-UN NNP-Ambassador NNP-Ron NNP-Prosor ], NP [DT-the JJ-Israeli NN-position IN-that DT-the JJ-only NN-way DT-the NNPS-Palestinians ], NP [DT-the JJ-only NN-way DT-the NNPS-Palestinians ], NP [DT-the NNPS-Palestinians ], NP [NN-membership CC-and NN-statehood VBZ-is IN-through JJ-direct NNS-negotiations IN-with DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ], NP [JJ-direct NNS-negotiations IN-with DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ], NP [DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ], NP [DT-a JJ-comprehensive NN-peace NN-agreement ]], [VP [VBD-repeated DT-the JJ-Israeli NN-position IN-that DT-the JJ-only NN-way DT-the NNPS-Palestinians ], VP [MD-will VB-get IN-UN NN-membership CC-and NN-statehood VBZ-is IN-through JJ-direct NNS-negotiations IN-with DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ]], [PP [IN-that DT-the JJ-only NN-way DT-the NNPS-Palestinians ], PP [IN-UN NN-membership CC-and NN-statehood VBZ-is IN-through JJ-direct NNS-negotiations IN-with DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ], PP [IN-through JJ-direct NNS-negotiations IN-with DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ], PP [IN-with DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ], PP [IN-on DT-a JJ-comprehensive NN-peace NN-agreement ]], [], [SENTENCE [NNP-UN NNP-Ambassador NNP-Ron NNP-Prosor VBD-repeated DT-the JJ-Israeli NN-position IN-that DT-the JJ-only NN-way DT-the NNPS-Palestinians MD-will VB-get IN-UN NN-membership CC-and NN-statehood VBZ-is IN-through JJ-direct NNS-negotiations IN-with DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ]]]",
+        "[[NP [NNP-UN NNP-Ambassador NNP-Ron NNP-Prosor ], NP [DT-the JJ-Israeli NN-position IN-that DT-the JJ-only NN-way DT-the NNPS-Palestinians ], NP [DT-the JJ-only NN-way DT-the NNPS-Palestinians ], NP [DT-the NNPS-Palestinians ], NP [NN-membership CC-and NN-statehood VBZ-is IN-through JJ-direct NNS-negotiations IN-with DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ], NP [JJ-direct NNS-negotiations IN-with DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ], NP [DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ], NP [DT-a JJ-comprehensive NN-peace NN-agreement ]], [VP [VBD-repeated DT-the JJ-Israeli NN-position IN-that DT-the JJ-only NN-way DT-the NNPS-Palestinians ], VP [MD-will VB-get IN-UN NN-membership CC-and NN-statehood VBZ-is IN-through JJ-direct NNS-negotiations IN-with DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ]], [PP [IN-that DT-the JJ-only NN-way DT-the NNPS-Palestinians ], PP [IN-UN NN-membership CC-and NN-statehood VBZ-is IN-through JJ-direct NNS-negotiations IN-with DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ], PP [IN-through JJ-direct NNS-negotiations IN-with DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ], PP [IN-with DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ], PP [IN-on DT-a JJ-comprehensive NN-peace NN-agreement ]], [], [SENTENCE [NNP-UN NNP-Ambassador NNP-Ron NNP-Prosor VBD-repeated DT-the JJ-Israeli NN-position IN-that DT-the JJ-only NN-way DT-the NNPS-Palestinians MD-will VB-get IN-UN NN-membership CC-and NN-statehood VBZ-is IN-through JJ-direct NNS-negotiations IN-with DT-the NNP-Israelis IN-on DT-a JJ-comprehensive NN-peace NN-agreement ]]]",
         res.toString());
   }
 
   @Test
-  public void testPrintParseTree() {
+  void testPrintParseTree() {
     try {
       parser.printParseTree("How can I get short focus zoom lens for digital camera");
     } catch (Exception e) {
@@ -89,7 +89,7 @@ public class ParserChunker2MatcherProcessorTest {
   }
 
   @Test
-  public void testRelevanceAssessm() {
+  void testRelevanceAssessm() {
     String phrase1 = "Its classy design and the Mercedes name make it a very cool vehicle to drive. "
         + "The engine makes it a powerful car. "
         + "The strong engine gives it enough power. "
@@ -103,14 +103,14 @@ public class ParserChunker2MatcherProcessorTest {
   }
 
   @Test
-  public void testCompareRelevanceAssessmWithBagOfWords() {
+  void testCompareRelevanceAssessmWithBagOfWords() {
     // we first demonstrate how similarity expression for DIFFERENT cases have
     // too high score for bagOfWords
     String phrase1 = "How to deduct rental expense from income ";
     String phrase2 = "How to deduct repair expense from rental income.";
     List<List<ParseTreeChunk>> matchResult = parser.assessRelevance(phrase1, phrase2).getMatchResult();
-    assertEquals(      
-        "[[ [NN-expense IN-from NN-income ],  [JJ-rental NN-* ]], [ [TO-to VB-deduct JJ-rental NN-* ],  [VB-deduct NN-expense IN-from NN-income ]]]", 
+    assertEquals(
+        "[[ [NN-expense IN-from NN-income ],  [JJ-rental NN-* ]], [ [TO-to VB-deduct JJ-rental NN-* ],  [VB-deduct NN-expense IN-from NN-income ]]]",
         matchResult.toString());
     double matchScore = parseTreeChunkListScorer.getParseTreeChunkListScore(matchResult);
     double bagOfWordsScore = parserBOW.assessRelevanceAndGetScore(phrase1, phrase2);
@@ -124,7 +124,7 @@ public class ParserChunker2MatcherProcessorTest {
     phrase2 = "Means to deduct educational expense for my son";
     matchResult = parser.assessRelevance(phrase1, phrase2).getMatchResult();
     assertEquals(
-        "[[ [JJ-* NN-expense IN-for PRP$-my NN-* ]], [ [TO-to VB-* JJ-* NN-expense IN-for PRP$-my NN-* ]]]", 
+        "[[ [JJ-* NN-expense IN-for PRP$-my NN-* ]], [ [TO-to VB-* JJ-* NN-expense IN-for PRP$-my NN-* ]]]",
         matchResult.toString());
     matchScore = parseTreeChunkListScorer.getParseTreeChunkListScore(matchResult);
     bagOfWordsScore = parserBOW.assessRelevanceAndGetScore(phrase1, phrase2);

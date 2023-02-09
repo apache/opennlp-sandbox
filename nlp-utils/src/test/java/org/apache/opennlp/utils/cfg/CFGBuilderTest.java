@@ -20,18 +20,19 @@ package org.apache.opennlp.utils.cfg;
 
 import java.util.Arrays;
 import java.util.Collections;
-import org.junit.Test;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Testcase for {@link org.apache.opennlp.utils.cfg.CFGBuilder}
  */
-public class CFGBuilderTest {
+class CFGBuilderTest {
 
   @Test
-  public void testVoidBuild() throws Exception {
+  void testVoidBuild() throws Exception {
     CFGBuilder builder = CFGBuilder.createCFG();
     assertNotNull(builder);
     try {
@@ -43,12 +44,12 @@ public class CFGBuilderTest {
   }
 
   @Test
-  public void testBuildWithEmptySets() throws Exception {
+  void testBuildWithEmptySets() throws Exception {
     CFGBuilder builder = CFGBuilder.createCFG().
-            withNonTerminals(Collections.<String>emptyList()).
-            withTerminals(Collections.<String>emptyList()).
-            withRules(Collections.<Rule>emptyList()).
-            withStartSymbol("");
+        withNonTerminals(Collections.<String>emptyList()).
+        withTerminals(Collections.<String>emptyList()).
+        withRules(Collections.<Rule>emptyList()).
+        withStartSymbol("");
     try {
       assertNotNull(builder.build());
       fail("cannot build a grammar whose start symbol doesn't belong to the non terminals symbols set");
@@ -58,23 +59,23 @@ public class CFGBuilderTest {
   }
 
   @Test
-  public void testBuildWithMinimalGrammarSettings() throws Exception {
+  void testBuildWithMinimalGrammarSettings() throws Exception {
     CFGBuilder builder = CFGBuilder.createCFG().
-            withNonTerminals(Arrays.asList("")).
-            withTerminals(Collections.<String>emptyList()).
-            withRules(Collections.<Rule>emptyList()).
-            withStartSymbol("");
+        withNonTerminals(Arrays.asList("")).
+        withTerminals(Collections.<String>emptyList()).
+        withRules(Collections.<Rule>emptyList()).
+        withStartSymbol("");
     assertNotNull(builder.build());
   }
 
   @Test
-  public void testBuildWithMinimalGrammarSettingsAndRandomExpansion() throws Exception {
+  void testBuildWithMinimalGrammarSettingsAndRandomExpansion() throws Exception {
     CFGBuilder builder = CFGBuilder.createCFG().
-            withNonTerminals(Arrays.asList("")).
-            withTerminals(Collections.<String>emptyList()).
-            withRules(Collections.<Rule>emptyList()).
-            withRandomExpansion(true).
-            withStartSymbol("");
+        withNonTerminals(Arrays.asList("")).
+        withTerminals(Collections.<String>emptyList()).
+        withRules(Collections.<Rule>emptyList()).
+        withRandomExpansion(true).
+        withStartSymbol("");
     assertNotNull(builder.build());
   }
 }
