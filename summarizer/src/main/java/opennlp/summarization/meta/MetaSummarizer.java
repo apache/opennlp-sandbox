@@ -35,7 +35,7 @@ import opennlp.summarization.textrank.TextRankSummarizer;
 import opennlp.summarization.DocProcessor;
 /*
  * A summarizer that combines results from the text rank algorithm and the lexical chaining algorithm.
- * It runs both algorithm and uses the the lexical chains to identify the main topics and relative importance
+ * It runs both algorithm and uses the lexical chains to identify the main topics and relative importance
  * and the text rank to pick sentences from lexical chains.
  */
 public class MetaSummarizer {
@@ -57,8 +57,8 @@ public class MetaSummarizer {
     return s;
   }
 
-  // Rank sentences by merging the scores from lexical chaining and text rank..
-  // maxWords -1 indicates rank all sentences..
+  // Rank sentences by merging the scores from lexical chaining and text rank.
+  // maxWords -1 indicates rank all sentences.
   public int getBestSent(LexicalChain l, Hashtable<Integer, Score> pageRankScores) {
     double bestScore = 0; int bestStr=-1;
     for(Sentence s : l.getSentences())

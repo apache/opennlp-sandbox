@@ -20,7 +20,7 @@ package opennlp.tools.coref.sim;
 import java.io.IOException;
 
 /**
- * Model of mention compatibiltiy using a maxent model.
+ * Model of mention compatibility using a maxent model.
  */
 public class MaxentCompatibilityModel {
 

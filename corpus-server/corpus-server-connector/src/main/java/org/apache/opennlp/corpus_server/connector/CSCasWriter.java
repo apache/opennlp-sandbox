@@ -115,7 +115,7 @@ public class CSCasWriter extends CasAnnotator_ImplBase {
         response = casResponseBuilder.put(ClientResponse.class, xmiBytes);
       }
       else {
-        throw new AnalysisEngineProcessException(new Exception("Unkown action: " + action));
+        throw new AnalysisEngineProcessException(new Exception("Unknown action: " + action));
       }
       
       int statusCode = response.getStatus();

@@ -33,15 +33,16 @@ import com.sun.jersey.api.client.WebResource;
 
 /** 
  * Tools to back up a corpus from the corpus server into a zip package.
- * 
- * Sample server address: http://localhost:8080/corpus-server/rest
+ * <p>
+ * Sample server address:
+ * <a href="http://localhost:8080/corpus-server/rest">http://localhost:8080/corpus-server/rest</a>.
  */
 public class CorpusBackup {
 
   private static void copyStream(InputStream in,
       OutputStream out) throws IOException {
     
-    byte buffer[] = new byte[1024];
+    byte[] buffer = new byte[1024];
     int len;
     while ((len = in.read(buffer)) > 0) {
       out.write(buffer, 0, len);
@@ -129,18 +130,9 @@ public class CorpusBackup {
             .get(ClientResponse.class);
         
         zipPackageOut.putNextEntry(new ZipEntry(casId));
-        
-        InputStream casIn = casResponse.getEntityInputStream();
-        
-        try {
+
+        try (InputStream casIn = casResponse.getEntityInputStream()) {
           copyStream(casIn, zipPackageOut);
-        }
-        finally {
-          try {
-            casIn.close();
-          }
-          catch (IOException e) {
-          }
         }
         
         zipPackageOut.closeEntry();

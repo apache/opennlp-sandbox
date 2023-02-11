@@ -21,6 +21,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import au.com.bytecode.opencsv.CSVReader;
@@ -57,9 +58,7 @@ public class ProfileReaderWriter {
 
 	public static void writeReportArr( String[][] allLines, String reportName){
 		List<String[]> rep = new ArrayList<String[]>();
-		for(String[] line: allLines){
-			rep.add(line);
-		}
+    rep.addAll(Arrays.asList(allLines));
 		writeReport( rep, reportName);
 	}
 

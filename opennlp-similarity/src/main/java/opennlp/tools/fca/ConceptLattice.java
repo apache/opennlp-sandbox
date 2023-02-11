@@ -163,16 +163,16 @@ public class ConceptLattice {
 		newConcept.setPosition(conceptList.size());
 		conceptList.add(newConcept);
 		conceptList.get(generator).getParents().add(newConcept.position);
-		conceptList.get(newConcept.position).childs.add(generator);
+		conceptList.get(newConcept.position).children.add(generator);
 		for (int newParent: newParents) {
 			if (conceptList.get(generator).getParents().contains(newParent)) {
 				conceptList.get(generator).getParents().remove(newParent);
-				conceptList.get(newParent).childs.remove(generator);
+				conceptList.get(newParent).children.remove(generator);
 			}
 			conceptList.get(newConcept.position).getParents().add(newParent);
 			conceptList.get(newParent).addExtents(new_extent);
 			AddExtentToAncestors(new_extent, newParent);
-			conceptList.get(newParent).childs.add(newConcept.position);
+			conceptList.get(newParent).children.add(newConcept.position);
 		}
 		
 		return newConcept.position;

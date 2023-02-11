@@ -129,7 +129,7 @@ public class SearchResultsReRankerRequestHandler extends SearchHandler {
 		StringBuilder buf = new StringBuilder();
 		buf.append("<scores>");
 		for(HitBase hit: reRankedResults){
-			buf.append("<score index=\""+hit.getSource()+"\">"+hit.getGenerWithQueryScore()+"</score>");				
+			buf.append("<score index=\"").append(hit.getSource()).append("\">").append(hit.getGenerWithQueryScore()).append("</score>");
 		}
 		buf.append("</scores>");
 
@@ -141,7 +141,7 @@ public class SearchResultsReRankerRequestHandler extends SearchHandler {
 		StringBuffer bufNums = new StringBuffer(); 
 		bufNums.append("order>");
 		for(HitBase hit: reRankedResults){
-			bufNums.append(hit.getSource()+"_");				
+			bufNums.append(hit.getSource()).append("_");
 		}
 		bufNums.append("/order>");
 		

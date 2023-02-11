@@ -62,10 +62,11 @@ public class WordRelationshipDetermination {
 
   private IWord isSynonym(String noun, Word w) {
     WordnetWord ww = (WordnetWord)w;
-    IWord ret = null;
+    IWord ret;
     IIndexWord idxNoun = dictionary.getIndexWord(noun, POS.NOUN);
 
-    /*getWordIDs() returns all the WordID associated with a index
+    /*
+     * getWordIDs() returns all the WordID associated with an index
      *
      */
 //		for(IWordID wordID : idxWord.getWordIDs())
@@ -89,7 +90,7 @@ public class WordRelationshipDetermination {
     return ret;
   }
   /*
-   * Returns true if the word represented by idxNoun is present in a synset..
+   * Returns true if the word represented by idxNoun is present in a synset.
    */
   private IWord inSynset(ISynset wordSynset, IIndexWord idxNoun)
   {
@@ -172,9 +173,9 @@ public class WordRelationshipDetermination {
    */
   public WordRelation getRelation(LexicalChain l, String noun, boolean checkMed) {
     WordRelation ret = new WordRelation();
-    ret.relation = ret.NO_RELATION;
+    ret.relation = WordRelation.NO_RELATION;
     for(Word w : l.word) {
-      //Exact match is a string relation..
+      //Exact match is a string relation.
       if(w.getLexicon().equalsIgnoreCase(noun)) {
         ret.relation = WordRelation.STRONG_RELATION;
         ret.src = w;

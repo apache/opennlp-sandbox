@@ -111,7 +111,7 @@ public class DataReader implements DataSetIterator {
     /**
      * Creates a reader with the specified arguments
      * @param dataDirPath data directory
-     * @param labelNames list of labels (names should match sub directory names)
+     * @param labelNames list of labels (names should match subdirectory names)
      * @param embedder embeddings to convert words to vectors
      * @param batchSize mini batch size for DL4j training
      * @param maxSeqLength truncate sequences that are longer than this.

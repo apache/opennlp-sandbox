@@ -69,7 +69,7 @@ AnnotationEditor.prototype.removeAnnotation = function(annotationId) {
 // Selection handling and navigation depends highly
 // on the annotation task. There is no default way of
 // doing it which fits all tasks.
-// Therefore we should implement a few default tools which
+// Therefore, we should implement a few default tools which
 // can be registered if required.
 
 // Registers a previous and forward key shortcuts to navigate based on span types.
@@ -84,7 +84,7 @@ AnnotationEditor.prototype.setNavigationByFunctionKeys = function(previousKey, n
 
 
 // If a user clicks with a mouse on something he expects a reaction
-// It should be possible to register a function which helps dealing with
+// It should be possible to register a function which helps to deal with
 // such a selection in a default way
 
 // e.g. user wants to select a few tokens

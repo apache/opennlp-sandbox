@@ -36,7 +36,7 @@ public class SpeechRecognitionResultsProcessor /*extends BingWebQueryRunner*/ {
   /**
    * Gets an expression and tries to find it on the web. If search results are
    * syntactically similar to this phrase, then we conclude that this phrase is
-   * meaningful (makes sense, someone have said something similar. If search
+   * meaningful (makes sense), someone have said something similar. If search
    * results ate not similar to this phrase, we conclude that the phrase is
    * meaningless (does not make sense, nobody has ever said something like that)
    * 
@@ -120,7 +120,7 @@ public class SpeechRecognitionResultsProcessor /*extends BingWebQueryRunner*/ {
 
   }
 
-  public class SentenceMeaningfullnessScore {
+  public static class SentenceMeaningfullnessScore {
     String sentence;
     double score;
 

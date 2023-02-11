@@ -15,26 +15,25 @@
  * limitations under the License.
  */
 
-package opennlp.tools.coref.sim;
+package opennlp.tools.apps.utils.email;
+
+import javax.mail.PasswordAuthentication;
 
 /**
- * Class which models the semantic compatibility of an entity and the confidence of that association.
+ * This contains the required information for the smtp authorization!
  */
-public class SemanticCompatibility {
-
-  private final SemanticEnum type;
-  private final double confidence;
-
-  public SemanticCompatibility(SemanticEnum type,double confidence) {
-    this.type = type;
-    this.confidence = confidence;
-  }
-
-  public SemanticEnum getType() {
-    return type;
-  }
-
-  public double getConfidence() {
-    return confidence;
-  }
+public class SMTPAuthenticator extends javax.mail.Authenticator {
+	
+	private final String username;
+	private final String password;
+	
+	public SMTPAuthenticator(String user, String pwd) {
+		this.username=user;
+		this.password=pwd;
+	}
+	
+	@Override
+	public PasswordAuthentication getPasswordAuthentication() {
+		return new PasswordAuthentication(username, password);
+		}
 }

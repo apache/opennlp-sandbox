@@ -32,7 +32,7 @@ public abstract class WSDParameters {
   protected SenseSource senseSource;
 
   /**
-   * @return if the disambiguation type is coarse grained or fine grained
+   * @return if the disambiguation type is coarse grained or fine-grained
    */
 
   public SenseSource getSenseSource() {

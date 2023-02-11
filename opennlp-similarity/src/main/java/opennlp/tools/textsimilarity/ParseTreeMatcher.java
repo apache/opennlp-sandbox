@@ -26,9 +26,9 @@ public class ParseTreeMatcher {
 
   private static final int NUMBER_OF_ITERATIONS = 2;
 
-  private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
-  private POSManager posManager = new POSManager();
-  private LemmaFormManager lemmaFormManager = new LemmaFormManager();
+  private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
+  private final POSManager posManager = new POSManager();
+  private final LemmaFormManager lemmaFormManager = new LemmaFormManager();
 
   public ParseTreeMatcher() {
 

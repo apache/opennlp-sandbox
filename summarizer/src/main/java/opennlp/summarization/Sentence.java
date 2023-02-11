@@ -29,7 +29,7 @@ import opennlp.summarization.preprocess.StopWords;
  * A representation of a sentence geared toward pagerank and summarization.
  */
 public class Sentence {	
-	//sentId is always position of sentence in doc..
+	//sentId is always position of sentence in doc.
 	private int sentId;
 	private String stringVal;
 	private Score pageRankScore;
@@ -132,7 +132,7 @@ public class Sentence {
 		return wordCnt==0? this.getStringVal().split(" ").length: wordCnt;
 	}
 
-	//Should add an article id to the sentence class.. For now returns true if the ids are the same..
+	//Should add an article id to the sentence class. For now returns true if the ids are the same.
 	@Override
 	public boolean equals(Object o){
 		if(! (o instanceof Sentence)) return false;

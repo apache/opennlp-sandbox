@@ -28,10 +28,11 @@ import java.util.HashMap;
  * Disambiguation approaches.<br>
  * Each set of methods refer to one approach
  * <ul>
- * <li>IMS (It Makes Sense): check {@link https
- * ://www.comp.nus.edu.sg/~nght/pubs/ims.pdf} for details about this approach</li>
- * <li>SST (SuperSense Tagging): check {@link http
- * ://ttic.uchicago.edu/~altun/pubs/CiaAlt_EMNLP06.pdf} for details about this
+ * <li>IMS (It Makes Sense): check <a href="https://www.comp.nus.edu.sg/~nght/pubs/ims.pdf">
+ *   https://www.comp.nus.edu.sg/~nght/pubs/ims.pdf</a>
+ * for details about this approach</li>
+ * <li>SST (SuperSense Tagging): check <a href="https://ttic.uchicago.edu/~altun/pubs/CiaAlt_EMNLP06.pdf">
+ *   https://ttic.uchicago.edu/~altun/pubs/CiaAlt_EMNLP06.pdf</a> for details about this
  * approach</li>
  * </ul>
  * 
@@ -39,8 +40,9 @@ import java.util.HashMap;
  * families of features are to be extracted: - PoS of Surrounding Words: it
  * requires one parameter: "Window size" - Surrounding Words: no parameters are
  * required - Local Collocations: it requires one parameter: "the n-gram"
- * 
- * check {@link https://www.comp.nus.edu.sg/~nght/pubs/ims.pdf} for details
+ * <p>
+ * check <a href="https://www.comp.nus.edu.sg/~nght/pubs/ims.pdf">
+ *   https://www.comp.nus.edu.sg/~nght/pubs/ims.pdf</a> for details
  * about this approach
  */
 public class FeaturesExtractor {
@@ -75,7 +77,7 @@ public class FeaturesExtractor {
 
   private String[] extractSurroundingWords(WTDIMS wordToDisambiguate) {
 
-    ArrayList<String> contextWords = new ArrayList<String>();
+    ArrayList<String> contextWords = new ArrayList<>();
 
     for (int i = 0; i < wordToDisambiguate.getSentence().length; i++) {
       if (wordToDisambiguate.getLemmas() != null) {
@@ -97,12 +99,12 @@ public class FeaturesExtractor {
   }
 
   private String[] extractLocalCollocations(WTDIMS wordToDisambiguate, int ngram) {
-    /**
+    /*
      * Here the author used only 11 features of this type. the range was set to
      * 3 (bigrams extracted in a way that they are at max separated by 1 word).
      */
 
-    ArrayList<String> localCollocations = new ArrayList<String>();
+    ArrayList<String> localCollocations = new ArrayList<>();
 
     for (int i = wordToDisambiguate.getWordIndex() - ngram; i <= wordToDisambiguate
         .getWordIndex() + ngram; i++) {
@@ -133,7 +135,7 @@ public class FeaturesExtractor {
   }
 
   /**
-   * This methods generates the full list of Surrounding words, from the
+   * Generates the full list of Surrounding words, from the
    * training data. These data will be later used for the generation of the
    * features qualified of "Surrounding words
    * 
@@ -144,7 +146,7 @@ public class FeaturesExtractor {
   public ArrayList<String> extractTrainingSurroundingWords(
       ArrayList<WTDIMS> trainingData) {
 
-    HashMap<String, Object> words = new HashMap<String, Object>();
+    HashMap<String, Object> words = new HashMap<>();
 
     for (WTDIMS word : trainingData) {
       for (String sWord : word.getSurroundingWords()) {
@@ -154,22 +156,16 @@ public class FeaturesExtractor {
       }
     }
 
-    ArrayList<String> list = new ArrayList<String>();
-
-    for (String word : words.keySet()) {
-      list.add(word);
-    }
-
-    return list;
+    return new ArrayList<>(words.keySet());
 
   }
 
   /**
    * This method generates the different set of features related to the IMS
-   * approach and store them in the corresponding attributes of the WTDIMS
+   * approach and store them in the corresponding attributes of the {@link WTDIMS}
    * 
    * @param wordToDisambiguate
-   *          the word to disambiguate [object: WTDIMS]
+   *          the word to disambiguate [object: {@link WTDIMS}]
    * @param windowSize
    *          the parameter required to generate the features qualified of
    *          "PoS of Surrounding Words"
@@ -191,19 +187,18 @@ public class FeaturesExtractor {
 
   /**
    * This generates the context of IMS. It supposes that the features have
-   * already been extracted and stored in the WTDIMS object, therefore it
+   * already been extracted and stored in the {@link WTDIMS} object, therefore it
    * doesn't require any parameters.
    * 
    * @param word
    *          the word to disambiguate
    * @param listSurrWords
    *          the full list of surrounding words of the training data
-   * @return the Context of the wordToDisambiguate
    */
   public void serializeIMSFeatures(WTDIMS word, ArrayList<String> listSurrWords) {
 
     String[] posOfSurroundingWords = word.getPosOfSurroundingWords();
-    ArrayList<String> surroundingWords = new ArrayList<String>(
+    ArrayList<String> surroundingWords = new ArrayList<>(
         Arrays.asList((word.getSurroundingWords())));
     String[] localCollocations = word.getLocalCollocations();
 

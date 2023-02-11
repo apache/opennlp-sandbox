@@ -35,12 +35,13 @@ import opennlp.tools.coref.mention.Mention;
 import opennlp.tools.coref.mention.PTBMentionFinder;
 import opennlp.tools.parser.Parse;
 
-
 /**
- * This class perform coreference for treebank style parses.
+ * Performs coreference for treebank style parses.
  * It will only perform coreference over constituents defined in the trees and
  * will not generate new constituents for pre-nominal entities or sub-entities in
- * simple coordinated noun phrases.  This linker requires that named-entity information also be provided.
+ * simple coordinated noun phrases.
+ * <p>
+ * This linker requires that named-entity information also be provided.
  * This information can be added to the parse using the -parse option with EnglishNameFinder.
  * 
  * @deprecated will be removed soon!
@@ -73,7 +74,7 @@ public class TreebankLinker extends DefaultLinker {
   }
 
   /**
-   * Identitifies corefernce relationships for parsed input passed via standard in.
+   * Identifies co-reference relationships for parsed input passed via standard in.
    * @param args The model directory.
    * @throws IOException when the model directory can not be read.
    */
@@ -93,8 +94,8 @@ public class TreebankLinker extends DefaultLinker {
     }
     Linker treebankLinker = new TreebankLinker(dataDir,LinkerMode.TEST);
     int sentenceNumber = 0;
-    List<Mention> document = new ArrayList<Mention>();
-    List<Parse> parses = new ArrayList<Parse>();
+    List<Mention> document = new ArrayList<>();
+    List<Parse> parses = new ArrayList<>();
     for (String line = in.readLine();null != line;line = in.readLine()) {
       if (line.equals("")) {
         DiscourseEntity[] entities =
@@ -110,14 +111,14 @@ public class TreebankLinker extends DefaultLinker {
         parses.add(p);
         Mention[] extents = treebankLinker.getMentionFinder().getMentions(new DefaultParse(p,sentenceNumber));
         //construct new parses for mentions which don't have constituents.
-        for (int ei = 0, en = extents.length; ei < en; ei++) {
+        for (Mention extent : extents) {
           //System.err.println("PennTreebankLiner.main: "+ei+" "+extents[ei]);
 
-          if (extents[ei].getParse() == null) {
+          if (extent.getParse() == null) {
             //not sure how to get head index, but its not used at this point.
-            Parse snp = new Parse(p.getText(),extents[ei].getSpan(),"NML",1.0,0);
+            Parse snp = new Parse(p.getText(), extent.getSpan(), "NML", 1.0, 0);
             p.insert(snp);
-            extents[ei].setParse(new DefaultParse(snp,sentenceNumber));
+            extent.setParse(new DefaultParse(snp, sentenceNumber));
           }
 
         }

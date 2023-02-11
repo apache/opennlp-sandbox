@@ -71,7 +71,7 @@ public class Word {
    * @param wnum
    *          id of the word in the sentence
    * @param type
-   *          the type in this case is {@link Type.DWORD}
+   *          the type in this case is {@link Type#WORD}
    * @param word
    *          The raw word, as it appears in the sentence
    * @param cmd
@@ -112,7 +112,7 @@ public class Word {
    * @param snum
    *          id of the sentence
    * @param type
-   *          the type in this case is {@link Type.DWORD}
+   *          the type in this case is {@link Type#WORD}
    * @param word
    *          The raw word, as it appears in the sentence
    * @param cmd

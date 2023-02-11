@@ -79,10 +79,9 @@ public class OSCCWSDContextGenerator implements WSDContextGenerator {
   public String[] getContext(int index, String[] toks, String[] tags,
     String[] lemmas, int ngram, int windowSize, List<String> model) {
 
-    Set<String> surroundingContextClusters = new HashSet<>();
-    surroundingContextClusters.addAll(Arrays.asList(
-      extractSurroundingContext(index, toks, tags, lemmas,
-        windowSize)));
+    Set<String> surroundingContextClusters = new HashSet<>(Arrays.asList(
+            extractSurroundingContext(index, toks, tags, lemmas,
+                    windowSize)));
 
     String[] serializedFeatures = new String[model.size()];
 

@@ -59,9 +59,9 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 	
 	public String buildWordDoc(List<HitBase> content, String title){
 		
-		String outputDocFinename =  absPath+"written/"+ title.replace(' ','_').replace('\"', ' ').trim()+ ".docx";
+		String outputDocFilename =  absPath+"written/"+ title.replace(' ','_').replace('\"', ' ').trim()+ ".docx";
 		
-		WordprocessingMLPackage wordMLPackage=null;
+		WordprocessingMLPackage wordMLPackage;
 		
        
 		List<String> imageURLs = getAllImageSearchResults(title);
@@ -69,8 +69,7 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 		BigInteger refId = BigInteger.ONE;
 		try {
 			wordMLPackage = WordprocessingMLPackage.createPackage();
-			
-			
+
 			CTEndnotes endnotes = null;
 			try {
 				EndnotesPart ep = new EndnotesPart();
@@ -148,8 +147,8 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 	
 	        
 			try {
-				wordMLPackage.save(new File(outputDocFinename));
-				System.out.println("Finished creating docx ="+outputDocFinename);
+				wordMLPackage.save(new File(outputDocFilename));
+				System.out.println("Finished creating docx ="+outputDocFilename);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -166,7 +165,7 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 			e.printStackTrace();
 		}
 		
-		return outputDocFinename;
+		return outputDocFilename;
 	}
 	
 	public static String processParagraphText(String title){

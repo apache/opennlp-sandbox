@@ -17,8 +17,6 @@
 
 package opennlp.tools.apps.object_dedup;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -38,8 +36,7 @@ import org.slf4j.LoggerFactory;
 
 /* This is a template class for deduplicator */
 
-public class SimilarityAccessorBase
-{
+public class SimilarityAccessorBase {
 	private static final Logger LOG = LoggerFactory.getLogger(SimilarityAccessorBase.class);
 
 	public static final int MAX_EV_TO_RECOMM = 6;
@@ -69,13 +66,12 @@ public class SimilarityAccessorBase
 		"mondays", "tuesdays", "wednesdays", "thirsdays", "fridays", "saturdays", "sundays", "men" // ?
 	});
 
-	private BingQueryRunner webSearch = new BingQueryRunner();
+	private final BingQueryRunner webSearch = new BingQueryRunner();
 
-	private StringDistanceMeasurer stringDistanceMeasurer = new StringDistanceMeasurer();
+	private final StringDistanceMeasurer stringDistanceMeasurer = new StringDistanceMeasurer();
 
 
-	public SimilarityAccessorBase()
-	{
+	public SimilarityAccessorBase() {
 	}
 
 
@@ -110,9 +106,7 @@ public class SimilarityAccessorBase
 
 	}
 
-	protected Boolean applySemanticNameSimilarityRule(Object es1,
-		Object es2)
-	{
+	protected Boolean applySemanticNameSimilarityRule(Object es1, Object es2) {
 		
 		//TODO check attributes of objects
 		/*
@@ -604,7 +598,7 @@ public class SimilarityAccessorBase
 		}
 		// accept common expression
 		LOG.info("Formed common entity = " + entityExpression);
-		reason.append("Formed common entity = " + entityExpression + "\n");
+		reason.append("Formed common entity = ").append(entityExpression).append("\n");
 		// now go to the web / bing api with this common expression
 		List<HitBase> searchResult = webSearch.runSearch(entityExpression);
 		float entityScore = 0f;
@@ -615,7 +609,7 @@ public class SimilarityAccessorBase
 			{
 				String lookup = item.getTitle();
 				LOG.info("Bing hit title = '" + lookup + "'");
-				reason.append("Bing hit title = '" + lookup + "'\n");
+				reason.append("Bing hit title = '").append(lookup).append("'\n");
 				if (count > 4)
 					break;
 				count++;
@@ -707,8 +701,7 @@ public class SimilarityAccessorBase
 					if (d > thresh) // 0.8)
 					{
 
-						reason.append("Found common search result title for group names '" + lookup1 + " < > "
-							+ lookup2 + " sim = " + d + "\n");
+						reason.append("Found common search result title for group names '").append(lookup1).append(" < > ").append(lookup2).append(" sim = ").append(d).append("\n");
 						LOG.info(("Found common search result title for group names '" + lookup1 + " < > " + lookup2
 							+ " sim = " + d));
 						score++;

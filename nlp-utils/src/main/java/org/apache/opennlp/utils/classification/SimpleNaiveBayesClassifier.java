@@ -42,7 +42,7 @@ public class SimpleNaiveBayesClassifier implements NaiveBayesClassifier<String, 
   private static final String UNKNOWN_WORD_TOKEN = "_unk_word_";
 
   private Collection<String> vocabulary; // the bag of all the words in the corpus
-  private final Map<String, String> docsWithClass; // this is the trained corpus holding a the doc as a key and the class as a value
+  private final Map<String, String> docsWithClass; // this is the trained corpus holding the doc as a key and the class as a value
   private Map<String, String> classMegaDocMap; // key is the class, value is the megadoc
   //    private Map<String, String> preComputedWordClasses; // the key is the word, the value is its likelihood
   private Map<String, Double> priors;

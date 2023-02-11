@@ -119,8 +119,7 @@ public class ProperNounResolver extends MaxentResolver {
   @Override
   protected List<String> getFeatures(MentionContext mention, DiscourseEntity entity) {
     //System.err.println("ProperNounResolver.getFeatures: "+mention.toText()+" -> "+entity);
-    List<String> features = new ArrayList<String>();
-    features.addAll(super.getFeatures(mention, entity));
+    List<String> features = new ArrayList<String>(super.getFeatures(mention, entity));
     if (entity != null) {
       features.addAll(ResolverUtils.getStringMatchFeatures(mention, entity));
       features.addAll(getAcronymFeatures(mention, entity));

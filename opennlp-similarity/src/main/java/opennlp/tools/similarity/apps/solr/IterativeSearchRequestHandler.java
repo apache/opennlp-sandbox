@@ -324,7 +324,7 @@ public class IterativeSearchRequestHandler extends SearchHandler {
 		}
 	}
 	public class PairComparable implements Comparator<Pair> {
-		// @Override
+		@Override
 		public int compare(Pair o1, Pair o2) {
 			int b = -2;
 			if ( o1.getSecond() instanceof Float && o2.getSecond() instanceof Float){

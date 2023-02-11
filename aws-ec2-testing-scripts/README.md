@@ -35,7 +35,7 @@ aws cloudformation create-stack \
     ParameterKey=Tests,ParameterValue=run-eval-tests.sh
 ```
 
-When the tests are complete (either as success or failure) the email address specified in the `NotificationsEmail` parameter will receive an email notification. The email's subject will indicate if the tests were successful or failed and the email's body will contain approximately the last 200 KB of text from the Maven build log. Once you receive the notification you can terminate the stack or you can SSH into the EC2 instance if you need to debug or re-run any tests.
+When the tests are complete (either as success or failure) the email address specified in the `NotificationsEmail` parameter will receive an email notification. The email's subject will indicate if the tests were successful or failed and the email's body will contain approximately the last 200 KB of text from the Maven build log. Once you receive the notification you can terminate the stack, or you can SSH into the EC2 instance if you need to debug or re-run any tests.
 
 ```
 aws cloudformation delete-stack --stack-name OpenNLP-Testing

@@ -253,7 +253,7 @@ public class CorpusExplorerView extends ViewPart {
 
     // List with casIds in the corpus ... (might be later replaced with a title)
     // The table should later be virtual, and be able to scroll through very huge
-    // lits of CASes ... might be connected to a repository with million of documents
+    // lits of CASes ... might be connected to a repository with millions of documents
     searchResultViewer = new TableViewer(book);
     GridDataFactory.swtDefaults().align(SWT.FILL, SWT.FILL).grab(true, true)
         .span(2, 1).applyTo(searchResultViewer.getControl());

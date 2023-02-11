@@ -28,13 +28,13 @@ public class Paragraph {
 
   public Paragraph() {
     super();
-    this.isentences = new ArrayList<Sentence>();
+    this.isentences = new ArrayList<>();
   }
 
   public Paragraph(int pnum) {
     super();
     this.pnum = pnum;
-    this.isentences = new ArrayList<Sentence>();
+    this.isentences = new ArrayList<>();
   }
 
   public Paragraph(int pnum, ArrayList<Sentence> sentences) {
@@ -74,12 +74,11 @@ public class Paragraph {
   }
 
   /**
-   * This return TRUE only and only if the paragraph contains the word and it is
+   * Returns {@code true} only and only if the paragraph contains the word, and it is
    * sense-tagged
    * 
    * @param wordTag
-   * @return {@value Boolean.true} if the word exists in the paragraph and is
-   *         sense-tagged
+   * @return {@code true} if the word exists in the paragraph and is sense-tagged.
    * 
    */
   public boolean contains(String wordTag) {

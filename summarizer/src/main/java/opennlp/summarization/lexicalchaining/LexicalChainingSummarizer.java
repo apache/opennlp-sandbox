@@ -98,7 +98,7 @@ public class LexicalChainingSummarizer implements Summarizer{
           //chaincnt++
           // End loop LC
         }
-        //Could not add the word to any existing list.. Start a new lexical chain with the word..
+        //Could not add the word to any existing list. Start a new lexical chain with the word.
         if(chainsAddCnt==0) {
           List<Word> senses = wordRel.getWordSenses(noun);
           for(Word w : senses) {
@@ -117,16 +117,16 @@ public class LexicalChainingSummarizer implements Summarizer{
 //			disambiguateAndCleanChains(lc, chains);
     // Calculate score
     //	Length of chain * homogeneity
-    //sort LC by strength..
+    //sort LC by strength.
     return lc;
   }
 
   /*
-   * A way to manage the number of lexical chains generated. Expire very small lexical chains ..
+   * A way to manage the number of lexical chains generated. Expire very small lexical chains.
    * Takes care to only remove small chains that were added "long back"
    */
   private void purge(List<LexicalChain> lc, int sentId, int totSents) {
-    //Do nothing for the first 50 sentences..
+    //Do nothing for the first 50 sentences.
     if(lc.size()<20 ) return;
 
     Collections.sort(lc);
@@ -141,7 +141,7 @@ public class LexicalChainingSummarizer implements Summarizer{
       LexicalChain l = lc.get(i);
       if(l.score() < cutOff && (sentId - l.last) > totSents/3)//	 && containsAllWords(words, l.word))
         toRem.add(l);
-        //A different sense and added long back..
+        //A different sense and added long back.
       else if(words.containsKey(l.getWord().get(0).getLexicon()) && (sentId - l.start) > totSents/10)
         toRem.add(l);
       else

@@ -64,7 +64,7 @@ public class RegressionModelUtils {
   }
 
   /**
-   * calculate least mean square update for a given training example for the j-th input
+   * Calculates the Least Mean Square update for a given training example for the j-th input.
    *
    * @param thetas          The array of weights.
    * @param alpha           The learning rate alpha.

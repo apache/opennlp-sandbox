@@ -168,7 +168,7 @@ public class AnnotatingMarkupParser implements ITextConverter {
                             hasSpecialHandling = true;
                         } else if (oAttributes != null
                                 && oAttributes.get(WIKIOBJECT_ATTR_KEY) instanceof ImageFormat) {
-                            // the caption of images often holds well formed
+                            // the caption of images often holds well-formed
                             // sentences with links to entities
                             hasSpecialHandling = true;
                             ImageFormat iformat = (ImageFormat) oAttributes.get(WIKIOBJECT_ATTR_KEY);

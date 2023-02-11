@@ -265,11 +265,10 @@ public class SentenceOriginalizer {
 	}
 
 	public static void main(String[] args){
-		//ProductFinderInAWebPage init = new ProductFinderInAWebPage("C:/workspace/productsearchfe/src/test/resources");
 		SentenceOriginalizer orig = new SentenceOriginalizer("src/test/resources");
 		String[] sents = new String[] {
 				"Leave the bulky stabilization rig at home and take smooth handheld videos from any angle thanks to Optical SteadyShot image stabilization with Active Mode."
-				//"Other then that, it works well, and the chain stops instantly when you let go of the trigger, or push the safety bar."	
+				//"Other than that, it works well, and the chain stops instantly when you let go of the trigger, or push the safety bar."
 		};
 		String[] res = orig.convert(sents, "VIP Product", "vv propro");
 		System.out.println(Arrays.asList(res));
@@ -278,7 +277,7 @@ public class SentenceOriginalizer {
 }
 
 /*
- * 1.	Some Amazon specific text keeps showing up so we might want to put a filter on recurring phrases such as:
+ * 1.	Some Amazon specific text keeps showing up, so we might want to put a filter on recurring phrases such as:
 1.	Unlimited Free Two-Day Shipping
 2.	View Larger
 3.	What's in the box
@@ -291,7 +290,7 @@ public class SentenceOriginalizer {
 3.	Saw some HTML formatting occasionally, such as <em></em>
 4.	Redundancy with choice phrases appearing multiple times in a single review
 5.	Specific issue with words being added at the end of the letter "s," creating nonsensical words:
-1.	It mispronouncesulphur virtually every caller'sulphur name in waysulphur that..
+1.	It mispronouncesulphur virtually every caller'sulphur name in waysulphur that.
 2.	In fact, it'southward a rare feature that I recollect southwardhould be commonplace in any southwardurround receiver.
 6.	Adding -iness to make nonsensical words: mightinessiness, powerinessiness
 
@@ -300,7 +299,7 @@ public class SentenceOriginalizer {
 
 
 /*
- * After using a gasoline powered chain saw for many years had to stop using because of dust and fumes made my copd worse this electric saw is great has surprising amount of power without the gas fumes..
+ * After using a gasoline powered chain saw for many years had to stop using because of dust and fumes made my copd worse this electric saw is great has surprising amount of power without the gas fumes.
 Nice chainsaw, works great, well built.
 The instant-stop chain is very safe, but a bit abrupt when releasing the trigger.
 I wish there were a half-way release that turned off the motor but did not engage the instant stop break.
@@ -308,7 +307,7 @@ Pros .
 inexpensive compared to gas chainsaws, lightweight, cuts with good power, will do most anything that a gas chainsaw will do. like the automatic chain oiler and easy tension adjustment.
 Cons .
 If you are cutting larger branches and trees, a gas is better.
-However this will work on 8-10" size very well.
+However, this will work on 8-10" size very well.
 Bought this McCulloch electric chainsaw to replace an old Craftsman electric chain saw. (the Craftsman got ran over by a car).
 Compared to my old Craftsman electric chain saw, the McCulloch seems to be wonderful.
 The first test was to cut a 16" diameter oak branch, cut thru it like hot butter.

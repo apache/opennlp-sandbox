@@ -23,13 +23,16 @@ import java.io.IOException;
  * Interface for training a similarity, gender, or number model.
  */
 public interface TrainSimilarityModel {
-  public void trainModel() throws IOException;
+
+  void trainModel() throws IOException;
   /**
-   * Creates simialrity training pairs based on the specified extents.
+   * Creates similarity training pairs based on the specified extents.
    * Extents are considered compatible is they are in the same coreference chain,
-   * have the same named-entity tag, or share a common head word.  Incompatible extents are chosen at random
-   * from the set of extents which don't meet this criteria.
+   * have the same named-entity tag, or share a common head word.
+   * <p>
+   * Incompatible extents are chosen at random from the set of extents which don't meet these criteria.
+   *
    * @param extents
    */
-  public void setExtents(Context[] extents);
+  void setExtents(Context[] extents);
 }

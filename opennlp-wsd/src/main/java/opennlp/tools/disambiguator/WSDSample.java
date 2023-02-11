@@ -129,7 +129,7 @@ public class WSDSample {
   public String toString() {
 
     StringBuilder result = new StringBuilder();
-    result.append("target at : " + this.targetPosition + " in : ");
+    result.append("target at : ").append(this.targetPosition).append(" in : ");
     for (int i = 0; i < getSentence().length; i++) {
       result.append(i);
       result.append(".");

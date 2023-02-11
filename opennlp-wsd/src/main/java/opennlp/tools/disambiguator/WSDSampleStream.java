@@ -18,7 +18,6 @@
 package opennlp.tools.disambiguator;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -28,7 +27,7 @@ import opennlp.tools.util.ObjectStream;
 
 public class WSDSampleStream extends FilterObjectStream<String, WSDSample> {
 
-  private static Logger logger = Logger.getLogger(WSDSampleStream.class.getName());
+  private static final Logger logger = Logger.getLogger(WSDSampleStream.class.getName());
 
   /**
    * Initializes the current instance.
@@ -44,8 +43,8 @@ public class WSDSampleStream extends FilterObjectStream<String, WSDSample> {
 
   /**
    * Parses the next sentence and return the next {@link WSDSample} object.
-   *
-   * If an error occurs an empty {@link WSDSample} object is returned and an
+   * <p> 
+   * If an error occurs an empty {@link WSDSample} object is returned and a
    * warning message is logged. Usually it does not matter if one of many
    * sentences is ignored.
    */
@@ -66,7 +65,7 @@ public class WSDSampleStream extends FilterObjectStream<String, WSDSample> {
               .warning("Error during parsing, ignoring sentence: " + sentence);
         }
 
-        sample = null;// new WSDSample(new String[]{}, new String[]{},0);
+        sample = null; // new WSDSample(new String[]{}, new String[]{},0);
       }
 
       return sample;

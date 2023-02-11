@@ -135,7 +135,7 @@ public class FileHandler {
 
   /**
    * Creates a byte array from any object.
-   * 
+   * <p>
    * I wanted to use it when I write out object to files! (This is not in use
    * right now, I may move it into other class)
    * 
@@ -367,7 +367,7 @@ public class FileHandler {
   }
 
   /**
-   * Returns the number of individual files in a directory (Not ercursive)
+   * Returns the number of individual files in a directory (Not recursive)
    * 
    * @param dirPath
    * @return

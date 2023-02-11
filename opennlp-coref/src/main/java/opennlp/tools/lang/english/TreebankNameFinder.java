@@ -109,7 +109,7 @@ public class TreebankNameFinder {
       String[] tokens = Span.spansToStrings(spans,line);
       for (int fi = 0, fl = finders.length; fi < fl; fi++) {
         nameSpans[fi] = finders[fi].nameFinder.find(tokens);
-        //System.err.println("EnglighNameFinder.processText: "+tags[fi] + " "
+        //System.err.println("EnglishNameFinder.processText: "+tags[fi] + " "
         // + java.util.Arrays.asList(finderTags[fi]));
         nameOutcomes[fi] = NameFinderEventStream.generateOutcomes(nameSpans[fi], null, tokens.length);
       }

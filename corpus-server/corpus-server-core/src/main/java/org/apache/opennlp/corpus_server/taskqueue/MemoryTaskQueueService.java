@@ -34,10 +34,9 @@ import org.apache.opennlp.corpus_server.store.CorpusStore;
  */
 public class MemoryTaskQueueService implements TaskQueueService {
 
-  private final static Logger LOGGER = Logger.getLogger(
-      MemoryTaskQueueService.class .getName());
+  private final static Logger LOGGER = Logger.getLogger(MemoryTaskQueueService.class .getName());
 
-  private Map<String, MemoryTaskQueue> queues = new HashMap<String, MemoryTaskQueue>();
+  private final Map<String, MemoryTaskQueue> queues = new HashMap<>();
 
   @Override
   public void createTaskQueue(String queueId, String corpusId, String query) {
@@ -60,7 +59,7 @@ public class MemoryTaskQueueService implements TaskQueueService {
   }
 
   @Override
-  public TaskQueue getTaskQeue(String queueId) {
+  public TaskQueue getTaskQueue(String queueId) {
     return queues.get(queueId);
   }
 }

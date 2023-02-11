@@ -25,13 +25,12 @@ import org.apache.lucene.util.ArrayUtil;
 
 /**
  * Stemmer, implementing the Porter Stemming Algorithm
- *
+ * <p>
  * The Stemmer class transforms a word into its root form.  The input
  * word can be provided a character at time (by calling add()), or at once
  * by calling one of the various stem(something) methods.
  */
-public class PStemmer
-{
+public class PStemmer {
 	private char[] b;
 	private int i,    /* offset into b */
 		j, k, k0;
@@ -44,15 +43,15 @@ public class PStemmer
 	}
 
 	/**
-	 * reset() resets the stemmer so it can stem another word.  If you invoke
-	 * the stemmer by calling add(char) and then stem(), you must call reset()
-	 * before starting another word.
+	 * Resets the stemmer, so it can stem another word. If you invoke
+	 * the stemmer by calling {@link #add(char)} and then {@link #stem()}, you must call
+	 * {@code reset()} before starting another word.
 	 */
 	public void reset() { i = 0; dirty = false; }
 
 	/**
-	 * Add a character to the word being stemmed.  When you are finished
-	 * adding characters, you can call stem(void) to process the word.
+	 * Add a character to the word being stemmed. When you are finished
+	 * adding characters, you can call {@link #stem()} to process the word.
 	 */
 	public void add(char ch) {
 		if (b.length <= i) {
@@ -469,9 +468,8 @@ public class PStemmer
 	public static void main(String[] args) {
 		PStemmer s = new PStemmer();
 
-		for (int i = 0; i < args.length; i++) {
-			try {
-				InputStream in = new FileInputStream(args[i]);
+		for (String arg : args) {
+			try (InputStream in = new FileInputStream(arg)) {
 				byte[] buffer = new byte[1024];
 				int bufferLen, offset, ch;
 
@@ -479,7 +477,7 @@ public class PStemmer
 				offset = 0;
 				s.reset();
 
-				while(true) {
+				while (true) {
 					if (offset < bufferLen)
 						ch = buffer[offset++];
 					else {
@@ -493,23 +491,19 @@ public class PStemmer
 
 					if (Character.isLetter((char) ch)) {
 						s.add(Character.toLowerCase((char) ch));
+					} else {
+						s.stem();
+						System.out.print(s.toString());
+						s.reset();
+						if (ch < 0)
+							break;
+						else {
+							System.out.print((char) ch);
+						}
 					}
-					else {
-						 s.stem();
-						 System.out.print(s.toString());
-						 s.reset();
-						 if (ch < 0)
-							 break;
-						 else {
-							 System.out.print((char) ch);
-						 }
-					 }
 				}
-
-				in.close();
-			}
-			catch (IOException e) {
-				System.out.println("error reading " + args[i]);
+			} catch (IOException e) {
+				System.out.println("error reading " + arg);
 			}
 		}
 	}

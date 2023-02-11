@@ -24,7 +24,7 @@ import org.apache.commons.lang.StringUtils;
 
 public class SentencePairMatchResult {
   public List<List<ParseTreeChunk>> matchResult;
-  private static Logger LOG = Logger
+  private static final Logger LOG = Logger
       .getLogger("opennlp.tools.textsimilarity.SentencePairMatchResult");
 
   public List<List<ParseTreeChunk>> getMatchResult() {

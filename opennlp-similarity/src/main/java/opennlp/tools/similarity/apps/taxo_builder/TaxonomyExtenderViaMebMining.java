@@ -39,8 +39,6 @@ import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcess
  * commonalities of search results snapshots output map 1) for the entity,
  * derived list output map 2) for such manual list of words -> derived list of
  * words
- * 
- * 
  */
 
 public class TaxonomyExtenderViaMebMining extends BingQueryRunner {

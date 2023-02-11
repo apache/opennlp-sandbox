@@ -41,5 +41,5 @@ public interface TaskQueueService {
    * 
    * @return the task queue or null if it does not exist
    */
-  TaskQueue getTaskQeue(String queueId);
+  TaskQueue getTaskQueue(String queueId);
 }

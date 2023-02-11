@@ -81,7 +81,7 @@ public class DefaultModelBuilderUtil {
     /*
      * KnownEntityProviders provide a seed list of known entities... such as
      * Barack Obama for person, or Germany for location obviously these would
-     * want to be prolific, non ambiguous names
+     * want to be prolific, non-ambiguous names
      */
     KnownEntityProvider knownEntityProvider = new FileKnownEntityProvider();
     knownEntityProvider.setParameters(params);

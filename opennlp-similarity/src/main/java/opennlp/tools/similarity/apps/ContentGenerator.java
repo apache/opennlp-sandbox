@@ -144,7 +144,7 @@ public class ContentGenerator /*extends RelatedSentenceFinder*/ {
 				for (String w : qs) {
 					if (w.toLowerCase().equals(w)) // idf only two words then
 						// has to be person name,
-						// title or geo location
+						// title or geolocation
 						bAccept = false;
 				}
 				if (!bAccept)

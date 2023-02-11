@@ -117,7 +117,7 @@ public class StackedRNN extends RNN {
       INDArray inputs = getSequence(p);
       INDArray targets = getSequence(p + 1);
 
-      // sample from the model every now and then
+      // sample from the model now and then
       if (n % 1000 == 0 && n > 0) {
         for (int i = 0; i < 3; i++) {
           String txt = sample(inputs.getInt(0));

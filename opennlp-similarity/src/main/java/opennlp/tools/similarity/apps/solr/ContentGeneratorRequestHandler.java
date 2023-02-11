@@ -209,7 +209,7 @@ public class ContentGeneratorRequestHandler extends SearchHandler {
 		try {
  
 			file = new File(absPath+"/written/"+ title.replace(' ','_').replace('\"', ' ').trim()+ ".txt");
-			// if file doesnt exists, then create it
+			// if file doesn't exist, then create it
 			if (!file.exists()) {
 				file.createNewFile();
 			}

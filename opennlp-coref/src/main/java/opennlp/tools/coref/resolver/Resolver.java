@@ -37,7 +37,7 @@ public interface Resolver {
    * @return true if the resolver handles this type of referring
    * expression, false otherwise.
    */
-  public boolean canResolve(MentionContext mention);
+  boolean canResolve(MentionContext mention);
 
   /** 
    * Resolve this referring expression to a discourse entity in the discourse model.
@@ -47,9 +47,9 @@ public interface Resolver {
    * 
    * @return the discourse entity which the resolver believes this
    * referring expression refers to or null if no discourse entity is
-   * coreferent with the referring expression.
+   * co-referent with the referring expression.
    */
-  public DiscourseEntity resolve(MentionContext ec, DiscourseModel dm);
+  DiscourseEntity resolve(MentionContext ec, DiscourseModel dm);
 
   /** 
    * Uses the specified mention and discourse model to train this resolver.
@@ -62,12 +62,12 @@ public interface Resolver {
    * @return the discourse entity which is referred to by the referring
    * expression or null if no discourse entity is referenced.
    */
-  public DiscourseEntity retain(MentionContext mention, DiscourseModel model);
+  DiscourseEntity retain(MentionContext mention, DiscourseModel model);
 
   /** 
    * Retrains model on examples for which retain was called.
    * 
    * @throws IOException
    */
-  public void train() throws IOException;
+  void train() throws IOException;
 }

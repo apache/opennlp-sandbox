@@ -21,17 +21,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
+
 import opennlp.tools.similarity.apps.utils.Utils;
 import opennlp.tools.textsimilarity.TextProcessor;
 
-/*
+/**
  * This class does content generation in ES, DE etc
- * 
  */
-
 public class RelatedSentenceFinderML extends RelatedSentenceFinder{
-	private static Logger LOG = Logger
-			.getLogger("opennlp.tools.similarity.apps.RelatedSentenceFinderML");
+	private static final Logger LOG = Logger.getLogger("opennlp.tools.similarity.apps.RelatedSentenceFinderML");
 
 
 	public RelatedSentenceFinderML(int ms, int msr, float thresh, String key) {
@@ -74,16 +72,11 @@ public class RelatedSentenceFinderML extends RelatedSentenceFinder{
 	 * to be written and forms essey sentences from the title, abstract, and
 	 * possibly original page
 	 * 
-	 * @param HitBase
-	 *          item : search result
-	 * @param originalSentence
-	 *          : seed for the essay to be written
-	 * @param sentsAll
-	 *          : list<String> of other sentences in the seed if it is
-	 *          multi-sentence
+	 * @param item The search result
+	 * @param originalSentence The seed for the essay to be written
+	 * @param sentsAll A list<String> of other sentences in the seed if it is multi-sentence
 	 * @return search result
 	 */
-
 	public HitBase augmentWithMinedSentencesAndVerifyRelevance(HitBase item,
 			String originalSentence, List<String> sentsAll) {
 		if (sentsAll == null)
@@ -106,8 +99,7 @@ public class RelatedSentenceFinderML extends RelatedSentenceFinder{
 		String snapshotMarked = snapshot.replace("...",
 				" _should_find_orig_ . _should_find_orig_");
 		String[] fragments = sm.splitSentences(snapshotMarked);
-		List<String> allFragms = new ArrayList<String>();
-		allFragms.addAll(Arrays.asList(fragments));
+		List<String> allFragms = new ArrayList<String>(Arrays.asList(fragments));
 
 		String[] sents = null;
 		String downloadedPage = null;

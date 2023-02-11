@@ -32,7 +32,7 @@ public interface Parse extends Comparable<Parse> {
    * 
    * @return The index of the sentence which contains this parse.
    */
-  public int getSentenceNumber();
+  int getSentenceNumber();
 
   /** 
    * Returns a list of the all noun phrases
@@ -41,7 +41,7 @@ public interface Parse extends Comparable<Parse> {
    * 
    * @return a list of all the noun phrases contained by this parse.
    */
-  public List<Parse> getNounPhrases();
+  List<Parse> getNounPhrases();
 
   /** 
    * Returns a list of all the named entities
@@ -49,25 +49,25 @@ public interface Parse extends Comparable<Parse> {
    * also implement the {@link Parse} interface.
    * 
    * @return a list of all the named entities contained by this parse. */
-  public List<Parse> getNamedEntities();
+  List<Parse> getNamedEntities();
 
   /** 
-   * Returns a list of the children to this object.  The
+   * Returns a list of the children to this object. The
    * children should also implement the {@link Parse} interface
    * .
    * @return a list of the children to this object.
    * */
-  public List<Parse> getChildren();
+  List<Parse> getChildren();
 
   /**
    * Returns a list of the children to this object which are constituents or tokens.  The
-   * children should also implement the {@link Parse} interface.  This allows
+   * children should also implement the {@link Parse} interface. This allows
    * implementations which contain addition nodes for things such as semantic categories to
    * hide those nodes from the components which only care about syntactic nodes.
    * 
    * @return a list of the children to this object which are constituents or tokens.
    */
-  public List<Parse> getSyntacticChildren();
+  List<Parse> getSyntacticChildren();
 
   /** 
    * Returns a list of the tokens contained by this object.  The tokens in this list should also
@@ -75,102 +75,102 @@ public interface Parse extends Comparable<Parse> {
    *
    * @return the tokens
    */
-  public List<Parse> getTokens();
+  List<Parse> getTokens();
 
   /** 
-   * Returns the syntactic type of this node. Typically this is the part-of-speech or
+   * Returns the syntactic type of this node. Typically, this is the part-of-speech or
    * constituent labeling.
    * 
    * @return the syntactic type.
    */
-  public String getSyntacticType();
+  String getSyntacticType();
 
   /** 
    * Returns the named-entity type of this node.
    * 
    * @return the named-entity type. 
    */
-  public String getEntityType();
+  String getEntityType();
 
   /** 
    * Determines whether this has an ancestor of type NAC.
    * 
-   * @return true is this has an ancestor of type NAC, false otherwise.
+   * @return {@code True} if this has an ancestor of type NAC, {@code false} otherwise.
    */
-  public boolean isParentNAC();
+  boolean isParentNAC();
 
   /**
    * Returns the parent parse of this parse node.
    * 
    * @return the parent parse of this parse node.
    */
-  public Parse getParent();
+  Parse getParent();
 
   /**
    * Specifies whether this parse is a named-entity.
    * 
-   * @return True if this parse is a named-entity; false otherwise.
+   * @return {@code True} if this parse is a named-entity; {@code false} otherwise.
    */
-  public boolean isNamedEntity();
+  boolean isNamedEntity();
 
   /**
    * Specifies whether this parse is a noun phrase.
    * 
-   * @return True if this parse is a noun phrase; false otherwise.
+   * @return {@code True} if this parse is a noun phrase; {@code false} otherwise.
    */
-  public boolean isNounPhrase();
+  boolean isNounPhrase();
 
   /**
    * Specifies whether this parse is a sentence.
    * 
-   * @return True if this parse is a sentence; false otherwise.
+   * @return {@code True} if this parse is a sentence; {@code false} otherwise.
    */
-  public boolean isSentence();
+  boolean isSentence();
 
   /**
    * Specifies whether this parse is a coordinated noun phrase.
    * 
-   * @return True if this parse is a coordinated noun phrase; false otherwise.
+   * @return {@code True} if this parse is a coordinated noun phrase; {@code false} otherwise.
    */
-  public boolean isCoordinatedNounPhrase();
+  boolean isCoordinatedNounPhrase();
 
   /** 
    * Specifies whether this parse is a token.
    * 
-   * @return True if this parse is a token; false otherwise.
+   * @return {@code True} if this parse is a token; {@code false} otherwise.
    */
-  public boolean isToken();
+  boolean isToken();
 
-  public String toString();
+  String toString();
 
   /** 
-   * Returns an entity id associated with this parse and coreferent parses.  This is only used for training on
+   * Returns an entity id associated with this parse and co-referent parses. This is only used for training on
    * already annotated coreference annotation.
    * 
-   * @return an entity id associated with this parse and coreferent parses.
+   * @return an entity id associated with this parse and co-referent parses.
    */
-  public int getEntityId();
+  int getEntityId();
 
   /**
    * Returns the character offsets of this parse node.
    * 
    * @return The span representing the character offsets of this parse node.
    */
-  public Span getSpan();
+  Span getSpan();
 
   /**
-   * Returns the first token which is not a child of this parse.  If the first token of a sentence is
+   * Returns the first token which is not a child of this parse. If the first token of a sentence is
    * a child of this parse then null is returned.
    * 
    * @return the first token which is not a child of this parse or null if no such token exists.
    */
-  public Parse getPreviousToken();
+  Parse getPreviousToken();
 
   /**
-   * Returns the next token which is not a child of this parse.  If the last token of a sentence is
+   * Returns the next token which is not a child of this parse. If the last token of a sentence is
    * a child of this parse then null is returned.
    * 
    * @return the next token which is not a child of this parse or null if no such token exists.
    */
-  public Parse getNextToken();
+  Parse getNextToken();
 }

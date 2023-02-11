@@ -161,7 +161,7 @@ public class MentionContext extends Context {
   }
 
 
-  /**
+  /*
    * Constructs context information for the specified mention.
    * 
    * @param mentionParse Mention parse structure for which context is to be constructed.

@@ -64,7 +64,7 @@ public class TreeKernelRunner {
 		runEXE(runString, dir);
 	}
 
-	class StreamLogger extends Thread{
+	static class StreamLogger extends Thread{
 
 		private InputStream mInputStream;
 

@@ -38,32 +38,32 @@ public interface Linker {
   /** 
    * String constant used to label a mention which is a description.
    */
-  public static final String DESCRIPTOR = "desc";
+  String DESCRIPTOR = "desc";
   
   /** 
-   * String constant used to label an mention in an appositive relationship.
+   * String constant used to label a mention in an appositive relationship.
    */
-  public static final String ISA = "isa";
+  String ISA = "isa";
   
   /** 
    * String constant used to label a mention which consists of two or more noun phrases.
    */
-  public static final String COMBINED_NPS = "cmbnd";
+  String COMBINED_NPS = "cmbnd";
   
   /** 
    * String constant used to label a mention which consists of a single noun phrase.
    */
-  public static final String NP = "np";
+  String NP = "np";
   
   /** 
    * String constant used to label a mention which is a proper noun modifying another noun.
    */
-  public static final String PROPER_NOUN_MODIFIER = "pnmod";
+  String PROPER_NOUN_MODIFIER = "pnmod";
   
   /** 
    * String constant used to label a mention which is a pronoun.
    */
-  public static final String PRONOUN_MODIFIER = "np";
+  String PRONOUN_MODIFIER = "np";
 
  
   /**
@@ -73,14 +73,15 @@ public interface Linker {
    * 
    * @param mentions The mentions to be used to train the linker.
    */
-  public void setEntities(Mention[] mentions);
+  void setEntities(Mention[] mentions);
 
-  /** Returns a list of entities which group the mentions into entity classes.
-   * @param mentions A array of mentions.
+  /**
+   * Returns a list of entities which group the mentions into entity classes.
+   * @param mentions An array of mentions.
    * 
    * @return An array of discourse entities.
    */
-  public DiscourseEntity[] getEntities(Mention[] mentions);
+  DiscourseEntity[] getEntities(Mention[] mentions);
 
   /**
    * Creates mention contexts for the specified mention exents.
@@ -90,26 +91,27 @@ public interface Linker {
    * 
    * @return mention contexts for the specified mention exents.
    */
-  public MentionContext[] constructMentionContexts(Mention[] mentions);
+  MentionContext[] constructMentionContexts(Mention[] mentions);
 
   /** 
-   * Trains the linker based on the data specified via calls to {@link #setEntities setEntities}.
+   * Trains the linker based on the data specified via calls to {@link #setEntities}.
    *
-   * @throws IOException
+   * @throws IOException Thrown if IO errors occurred.
    */
-  public void train() throws IOException;
+  void train() throws IOException;
 
   /**
-   * Returns the mention finder for this linker.  This can be used to get the mentions of a Parse.
+   * Returns the mention finder for this linker.
+   * This can be used to get the mentions of a Parse.
    * 
    * @return The object which finds mentions for this linker.
    */
-  public MentionFinder getMentionFinder();
+  MentionFinder getMentionFinder();
 
   /**
    * Returns the head finder associated with this linker.
    * 
    * @return The head finder associated with this linker.
    */
-  public HeadFinder getHeadFinder();
+  HeadFinder getHeadFinder();
 }

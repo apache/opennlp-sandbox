@@ -64,11 +64,11 @@ public class Lesk extends WSDisambiguator {
 
   /**
    * If the parameters are null set the default ones, else only set them if they
-   * valid. Invalid parameters will return a exception
+   * valid.
    *
    * @param params
    *          parameters
-   * @throws InvalidParameterException
+   * @throws InvalidParameterException Thrown if specified parameters are invalid.
    */
   @Override
   public void setParams(WSDParameters params) throws InvalidParameterException {
@@ -197,7 +197,7 @@ public class Lesk extends WSDisambiguator {
    * 
    * @param sample
    *          the word sample to disambiguate
-   * @return the array of WordSenses with their scores
+   * @return the list of WordSenses with their scores
    */
   public ArrayList<WordSense> extended(WSDSample sample) {
     params.setWin_b_size(0);
@@ -213,7 +213,7 @@ public class Lesk extends WSDisambiguator {
    * 
    * @param sample
    *          the word sample to disambiguate
-   * @return the array of WordSenses with their scores
+   * @return the list of WordSenses with their scores
    */
   public ArrayList<WordSense> extendedContextual(WSDSample sample) {
     ArrayList<WordSense> scoredSenses;
@@ -306,7 +306,7 @@ public class Lesk extends WSDisambiguator {
    * 
    * @param sample
    *          the word sample to disambiguate
-   * @return the array of WordSenses with their scores
+   * @return the list of WordSenses with their scores
    */
   public ArrayList<WordSense> extendedExponentialContextual(WSDSample sample) {
     ArrayList<WordSense> scoredSenses;

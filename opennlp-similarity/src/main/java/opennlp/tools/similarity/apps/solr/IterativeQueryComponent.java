@@ -39,7 +39,7 @@ public class IterativeQueryComponent extends QueryComponent{
 	public static final String[] fieldSequence = new String[]{"cat", "name", "content", "author"}; 
 
 	/**
-	 * Run the query multiple times againts various fields, trying to recognize search intention
+	 * Run the query multiple times against various fields, trying to recognize search intention
 	 */
 	@Override
 	public void process(ResponseBuilder rb) throws IOException {

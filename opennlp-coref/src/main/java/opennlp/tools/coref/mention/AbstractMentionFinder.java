@@ -320,7 +320,7 @@ public abstract class AbstractMentionFinder implements MentionFinder {
     return mentions.toArray(new Mention[mentions.size()]);
   }
 
-  /**
+  /*
    * Adds a mention for the non-treebank-labeled possesive noun phrases.
    * @param possesiveNounPhrase The possesive noun phase which may require an additional mention.
    * @param mentions The list of mentions into which a new mention can be added.

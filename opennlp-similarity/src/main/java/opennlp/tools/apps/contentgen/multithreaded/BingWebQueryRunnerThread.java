@@ -28,13 +28,12 @@ public class BingWebQueryRunnerThread extends BingQueryRunner implements Runnabl
 	
 	// Create the listener list
     protected javax.swing.event.EventListenerList listenerList = new javax.swing.event.EventListenerList();
-    // This methods allows classes to register for MyEvents 
-
+    // This method allows classes to register for MyEvents
     public void addMyEventListener(MyEventListener listener) {
         listenerList.add(MyEventListener.class, listener);
     }
-    // This methods allows classes to unregister for MyEvents
 
+    // This method allows classes to unregister for MyEvents
     public void removeMyEventListener(MyEventListener listener) {
         listenerList.remove(MyEventListener.class, listener);
     }

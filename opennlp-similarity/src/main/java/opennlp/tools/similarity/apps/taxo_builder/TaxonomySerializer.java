@@ -99,8 +99,7 @@ public class TaxonomySerializer implements Serializable {
      taxo_list = new  ArrayList<String[]>();
      List<List<String>> entriesList = new ArrayList<List<String>>( assocWords_ExtendedAssocWords.keySet());
      for(List<String> e: entriesList){
-    	 List<String> lines = new ArrayList<String>();
-    	 lines.addAll(e);
+       List<String> lines = new ArrayList<String>(e);
     	 for(List<String> ls: assocWords_ExtendedAssocWords.get(e)){
     		 lines.add(ls.toString());
     	 }

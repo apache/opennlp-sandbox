@@ -51,42 +51,36 @@ import au.com.bytecode.opencsv.CSVReader;
 import au.com.bytecode.opencsv.CSVWriter;
 
 public class ParserCacheSerializer {
-  private static Logger LOG = Logger
+  private static final Logger LOG = Logger
       .getLogger("opennlp.tools.textsimilarity.chunker2matcher.ParserCacheSerializer");
-  private static boolean javaObjectSerialization = false;
-  private static String RESOURCE_DIR = "src/test/resources/";
+  private static final boolean javaObjectSerialization = false;
+  private static final String RESOURCE_DIR = "src/test/resources/";
   public static String parseCacheFileName = "sentence_parseObject.dat";
   public static String parseCacheFileNameCSV = "sentence_parseObject.csv";
 
   public static void writeObject(Object objectToSerialize) {
     if (javaObjectSerialization) {
       String filename = RESOURCE_DIR + parseCacheFileName;
-      FileOutputStream fos = null;
-      ObjectOutputStream out = null;
-      try {
-        fos = new FileOutputStream(filename);
-        out = new ObjectOutputStream(fos);
+      try(FileOutputStream fos = new FileOutputStream(filename);
+          ObjectOutputStream out = new ObjectOutputStream(fos)) {
+        
         out.writeObject(objectToSerialize);
-        out.close();
       } catch (IOException ex) {
         ex.printStackTrace();
       }
     } else {
 
       Map<String, String[][]> sentence_parseObject = (Map<String, String[][]>) objectToSerialize;
-      List<String> keys = new ArrayList<String>(sentence_parseObject.keySet());
-      try {
-        CSVWriter writer = new CSVWriter(new FileWriter(RESOURCE_DIR
-            + parseCacheFileNameCSV, false));
+      List<String> keys = new ArrayList<>(sentence_parseObject.keySet());
+      try (CSVWriter writer = new CSVWriter(
+              new FileWriter(RESOURCE_DIR + parseCacheFileNameCSV, false))) {
         for (String k : keys) {
           String[][] triplet = sentence_parseObject.get(k);
           writer.writeNext(new String[] { k });
           writer.writeNext(triplet[0]);
           writer.writeNext(triplet[1]);
           writer.writeNext(triplet[2]);
-
         }
-        writer.close();
       } catch (IOException e) {
         LOG.severe(e.getMessage());
       }
@@ -98,13 +92,10 @@ public class ParserCacheSerializer {
     if (javaObjectSerialization) {
       String filename = RESOURCE_DIR + parseCacheFileName;
       Object data = null;
-      FileInputStream fis = null;
-      ObjectInputStream in = null;
-      try {
-        fis = new FileInputStream(filename);
-        in = new ObjectInputStream(fis);
-        data = (Object) in.readObject();
-        in.close();
+      try (FileInputStream fis = new FileInputStream(filename);
+           ObjectInputStream in = new ObjectInputStream(fis)) {
+
+        data = in.readObject();
       } catch (IOException ex) {
         System.out.println("Cant find parsing cache file ");
       } catch (ClassNotFoundException ex) {
@@ -112,12 +103,10 @@ public class ParserCacheSerializer {
       }
       return data;
     } else {
-      CSVReader reader = null;
-      List<String[]> lines = null;
+      List<String[]> lines;
 
-      try {
-        reader = new CSVReader(new FileReader(RESOURCE_DIR
-            + parseCacheFileNameCSV), ',');
+      try (CSVReader reader = new CSVReader(new FileReader(RESOURCE_DIR
+              + parseCacheFileNameCSV), ',')) {
         lines = reader.readAll();
       } catch (FileNotFoundException e) {
     	  if (javaObjectSerialization)
@@ -127,8 +116,7 @@ public class ParserCacheSerializer {
         ioe.printStackTrace();
         return null;
       }
-      Map<String, String[][]> sentence_parseObject = new HashMap<String, String[][]>();
-      int count = 0;
+      Map<String, String[][]> sentence_parseObject = new HashMap<>();
       for (int i = 0; i < lines.size() - 3; i += 4) {
         String key = lines.get(i)[0];
         String[][] value = new String[][] { lines.get(i + 1), lines.get(i + 2),
@@ -138,10 +126,6 @@ public class ParserCacheSerializer {
 
       return sentence_parseObject;
     }
-
-  }
-
-  public class ParserObjectSer {
 
   }
 

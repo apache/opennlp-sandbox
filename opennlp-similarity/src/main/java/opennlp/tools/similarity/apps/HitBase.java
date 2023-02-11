@@ -171,9 +171,9 @@ public class HitBase {
 			String fragm = (hit.toString());
 			if (fragm.length() > 15) {
 				if (pBreak)
-					buf.append(fragm + " | ");
+					buf.append(fragm).append(" | ");
 				else
-					buf.append(fragm + " | \n");
+					buf.append(fragm).append(" | \n");
 				// switch to opposite
 				if (pBreak)
 					pBreak = false;
@@ -195,9 +195,9 @@ public class HitBase {
 				String fragm = hit.getFragments().toString();
 				if (fragm.length() > 15) {
 					if (pBreak)
-						buf.append(fragm + " | 	");
+						buf.append(fragm).append(" | 	");
 					else
-						buf.append(fragm + " | <br>\n");
+						buf.append(fragm).append(" | <br>\n");
 					// switch to opposite
 					if (pBreak)
 						pBreak = false;

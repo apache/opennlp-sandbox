@@ -47,8 +47,7 @@ public class ContentGeneratorSupport {
 	 * general (irrelevant search results) or too specific (too few search
 	 * results)
 	 * 
-	 * @param String
-	 *          input sentence to form queries
+	 * @param sentence The input sentence to form queries
 	 * @return List<String> of search expressions
 	 */
 	public static List<String> buildSearchEngineQueryFromSentence(String sentence) {
@@ -80,7 +79,7 @@ public class ContentGeneratorSupport {
 				for (String w : qs) {
 					if (w.toLowerCase().equals(w)) // idf only two words then
 						// has to be person name,
-						// title or geo location
+						// title or geolocation
 						bAccept = false;
 				}
 				if (!bAccept)
@@ -149,8 +148,7 @@ public class ContentGeneratorSupport {
 	 * remove dupes from queries to easy cleaning dupes and repetitive search
 	 * afterwards
 	 * 
-	 * @param List
-	 *          <String> of sentences (search queries, or search results
+	 * @param hits A List<String> of sentences (search queries, or search results
 	 *          abstracts, or titles
 	 * @return List<String> of sentences where dupes are removed
 	 */
@@ -194,17 +192,13 @@ public class ContentGeneratorSupport {
 	/**
 	 * remove dupes from search results
 	 * 
-	 * @param List
-	 *          <HitBase> of search results objects
+	 * @param hits  A List<HitBase> of search results objects
 	 * @return List<String> of search results objects where dupes are removed
 	 */
-	public static List<HitBase> removeDuplicatesFromResultantHits(
-			List<HitBase> hits) {
+	public static List<HitBase> removeDuplicatesFromResultantHits(List<HitBase> hits) {
 		StringDistanceMeasurer meas = new StringDistanceMeasurer();
 		double dupeThresh = // 0.8; // if more similar, then considered dupes was
 				0.7;
-		List<Integer> idsToRemove = new ArrayList<>();
-		List<HitBase> hitsDedup = new ArrayList<>();
 		try {
 			for (int i = 0; i < hits.size(); i++)
 				for (int j = i + 1; j < hits.size(); j++) {
@@ -346,7 +340,7 @@ public class ContentGeneratorSupport {
 		return sents;
 	}
 
-	public class TextChunk {
+	public static class TextChunk {
 		public TextChunk(String s, int length) {
 			this.text = s;
 			this.len = length;

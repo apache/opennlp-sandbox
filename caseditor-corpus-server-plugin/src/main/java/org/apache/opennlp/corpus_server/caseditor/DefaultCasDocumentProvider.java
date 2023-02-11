@@ -101,15 +101,15 @@ public class DefaultCasDocumentProvider extends
     TypePriorities typePriorities = resourceSpecifierFactory
         .createTypePriorities();
 
-    FsIndexDescription indexDesciptor = new FsIndexDescription_impl();
-    indexDesciptor.setLabel("TOPIndex");
-    indexDesciptor.setTypeName("uima.cas.TOP");
-    indexDesciptor.setKind(FsIndexDescription.KIND_SORTED);
+    FsIndexDescription indexDescriptor = new FsIndexDescription_impl();
+    indexDescriptor.setLabel("TOPIndex");
+    indexDescriptor.setTypeName("uima.cas.TOP");
+    indexDescriptor.setKind(FsIndexDescription.KIND_SORTED);
 
     CAS cas;
     try {
       cas = CasCreationUtils.createCas(typeSystem, typePriorities,
-          new FsIndexDescription[] { indexDesciptor });
+          new FsIndexDescription[] { indexDescriptor });
     } catch (ResourceInitializationException e) {
       e.printStackTrace();
       cas = null;

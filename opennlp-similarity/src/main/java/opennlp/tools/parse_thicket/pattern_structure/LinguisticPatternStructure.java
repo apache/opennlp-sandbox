@@ -106,16 +106,16 @@ public class LinguisticPatternStructure extends PhrasePatternStructure {
 		newConcept.setPosition(conceptList.size());
 		conceptList.add(newConcept);
 		conceptList.get(generator).parents.add(newConcept.position);
-		conceptList.get(newConcept.position).childs.add(generator);
+		conceptList.get(newConcept.position).children.add(generator);
 		for (int newParent: newParents) {
 			if (conceptList.get(generator).parents.contains(newParent)) {
 				conceptList.get(generator).parents.remove(newParent);
-				conceptList.get(newParent).childs.remove(generator);
+				conceptList.get(newParent).children.remove(generator);
 			}
 			conceptList.get(newConcept.position).parents.add(newParent);
 			conceptList.get(newParent).addExtents(new_extent);
 			AddExtentToAncestors(new_extent, newParent);
-			conceptList.get(newParent).childs.add(newConcept.position);
+			conceptList.get(newParent).children.add(newConcept.position);
 		}
 		return newConcept.position;
 	}
@@ -135,8 +135,7 @@ public class LinguisticPatternStructure extends PhrasePatternStructure {
 	public int [][] toContext(int extentCardinality){
 		
 		int newAttrCount = conceptList.size();
-		ArrayList<PhraseConcept> cList = new ArrayList<PhraseConcept>();
-		cList.addAll(conceptList);	
+		ArrayList<PhraseConcept> cList = new ArrayList<>(conceptList);
 		boolean run = true;
 		int k=0;
 		while (run && k<conceptList.size()){
@@ -175,18 +174,17 @@ public class LinguisticPatternStructure extends PhrasePatternStructure {
 	public void logStability(){
 		int min_delta = -1, delta = -1;
 		float sum = 0;
-		for (int i = 0; i < conceptList.size(); ++i) {
+		for (PhraseConcept phraseConcept : conceptList) {
 			min_delta = Integer.MAX_VALUE;
 			sum = 0;
-			PhraseConcept pc = conceptList.get(i);
-			Set<Integer> childs = pc.childs;
-			for (Integer j: childs) {
+			PhraseConcept pc = phraseConcept;
+			for (Integer j : pc.children) {
 				delta = pc.extent.size() - conceptList.get(j).extent.size();
-				if (delta<min_delta)
+				if (delta < min_delta)
 					min_delta = delta;
 				sum += Math.pow(2, -delta);
 			}
-			pc.intLogStabilityBottom=-(Math.log(sum)/Math.log(2.0));
+			pc.intLogStabilityBottom = -(Math.log(sum) / Math.log(2.0));
 			pc.intLogStabilityUp = min_delta;
 		}
 	}
