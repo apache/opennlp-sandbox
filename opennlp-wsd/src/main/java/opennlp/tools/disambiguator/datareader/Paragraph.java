@@ -86,7 +86,7 @@ public class Paragraph {
 
     for (Sentence isentence : this.getSsentences()) {
       for (Word iword : isentence.getIwords()) {
-        if (iword.equals(iword))
+        if (iword.equals(wordTag))
           return true;
       }
     }
