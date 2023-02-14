@@ -16,18 +16,20 @@
  */
 package opennlp.tools.parse_thicket.pattern_structure;
 
-import java.util.*;
-import java.io.*;
 
-import opennlp.tools.fca.FormalConcept;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 public class PhraseConcept {
 	int position;
 	public List<List<ParseTreeChunk>> intent;
 	Set<Integer> parents;
-	Set<Integer> childs;
+	Set<Integer> children;
 	Set<Integer> extent;
 	
 	double intLogStabilityBottom = 0;
@@ -36,23 +38,27 @@ public class PhraseConcept {
 	
 	public PhraseConcept() {
 		position = -1;
-		intent = new ArrayList<List<ParseTreeChunk>>();
-		parents = new HashSet<Integer>();
-		extent = new HashSet<Integer>();
-		childs = new HashSet<Integer>();
+		intent = new ArrayList<>();
+		parents = new HashSet<>();
+		extent = new HashSet<>();
+		children = new HashSet<>();
 	}
+
 	public void setPosition( int newPosition ){
 	       position = newPosition;
 	}
+
 	public void setIntent( List<List<ParseTreeChunk>> newIntent ){
 	       intent.clear();
 	       intent.addAll(newIntent);
 	}
+
 	public void setParents( Set<Integer> newParents ){
 	       //parents = newParents;
 		parents.clear();
 		parents.addAll(newParents);
 	}
+
 	public void printConcept() {
 		System.out.println("Concept position:" + position);
 		System.out.println("Concept intent:" + intent);
@@ -64,15 +70,14 @@ public class PhraseConcept {
 		System.out.println("Concept intent:" + intent);
 		System.out.println("Concept extent:" + extent);
 		System.out.println("Concept parents:" + parents);
-		System.out.println("Concept parents:" + childs);
+		System.out.println("Concept parents:" + children);
 		System.out.println("log stab: ["+ intLogStabilityBottom + "; "+intLogStabilityUp+"]");		
 	}
 	
 	public void addExtents(LinkedHashSet<Integer> ext){
 		extent.addAll(ext);
 }
-	
-	
+
 	 public static void main(String []args) {
 		 PhraseConcept c = new PhraseConcept();
 		 c.printConcept();

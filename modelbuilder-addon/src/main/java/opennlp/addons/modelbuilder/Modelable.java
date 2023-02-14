@@ -18,9 +18,7 @@ package opennlp.addons.modelbuilder;
 import java.util.Set;
 
 import opennlp.tools.namefind.TokenNameFinderModel;
-/**
- *
- */
+
 public interface Modelable extends ModelParameter {
 
   String annotate(String sentence, String namedEntity, String entityType);

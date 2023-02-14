@@ -20,27 +20,14 @@ package opennlp.tools.apps.relevanceVocabs;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-
 
 public class SynonymListFilter {
 	SynonymMap map=null;
@@ -94,7 +81,8 @@ public class SynonymListFilter {
 			System.out.println("Found synonyms "+Arrays.asList(synonyms).toString()+ " | selected synonym = "+synonyms[index] +" | for the input = "+ word);
 			return synonyms[index];
 			
-	}	
+	}
+
 	public static void main(String[] args){
 		SynonymListFilter filter = new  SynonymListFilter("/src/test/resources");
 		String syn = filter.getSynonym("bring");

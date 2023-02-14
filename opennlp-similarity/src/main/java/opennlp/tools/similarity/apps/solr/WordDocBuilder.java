@@ -56,7 +56,7 @@ public class WordDocBuilder{
 	
 	public String buildWordDoc(List<HitBase> content, String title){
 		
-		String outputDocFinename =  absPath+"/written/"+ title.replace(' ','_').replace('\"', ' ').trim()+ ".docx";
+		String outputDocFilename =  absPath+"/written/"+ title.replace(' ','_').replace('\"', ' ').trim()+ ".docx";
 		
 		WordprocessingMLPackage wordMLPackage;
 		try {
@@ -78,12 +78,12 @@ public class WordDocBuilder{
 	        //byte[] bytes = convertImageToByteArray(file);
 	        //addImageToPackage(wordMLPackage, bytes);
 	        
-			wordMLPackage.save(new File(outputDocFinename));
+			wordMLPackage.save(new File(outputDocFilename));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		
-		return outputDocFinename;
+		return outputDocFilename;
 	}
 	
 	private void addImageByImageTitleToPackage(
@@ -117,8 +117,8 @@ public class WordDocBuilder{
      *  there is also a method, which takes a filename hint, an alt-text, two ids
      *  and an indication on whether it should be embedded or linked to.
      *  One id is for the drawing object non-visual properties of the document, and
-     *  the second id is for the non visual drawing properties of the picture itself.
-     *  Finally we add this inline object to the paragraph and the paragraph to the
+     *  the second id is for the non-visual drawing properties of the picture itself.
+     *  Finally, we add this inline object to the paragraph and the paragraph to the
      *  main document of the package.
      *
      *  @param wordMLPackage The package we want to add the image to
@@ -145,7 +145,7 @@ public class WordDocBuilder{
     /**
      *  We create an object factory and use it to create a paragraph and a run.
      *  Then we add the run to the paragraph. Next we create a drawing and
-     *  add it to the run. Finally we add the inline object to the drawing and
+     *  add it to the run. Finally, we add the inline object to the drawing and
      *  return the paragraph.
      *
      * @param   inline The inline object containing the image.

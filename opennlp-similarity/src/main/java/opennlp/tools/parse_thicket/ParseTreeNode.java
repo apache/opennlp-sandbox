@@ -137,13 +137,13 @@ public class ParseTreeNode implements IGeneralizer<ParseTreeNode>{
 	public String toString(){
 		StringBuffer buf = new StringBuffer();
 		if (id!=null)
-			buf.append("<"+id+">");
+			buf.append("<").append(id).append(">");
 		if(phraseType!=null)
 			buf.append(phraseType);
 		if(word!=null)
-			buf.append("'"+word+"'");
+			buf.append("'").append(word).append("'");
 		if (pos!=null)
-			buf.append(":"+pos);
+			buf.append(":").append(pos);
 		return buf.toString();
 	}
 
@@ -152,7 +152,7 @@ public class ParseTreeNode implements IGeneralizer<ParseTreeNode>{
 		for(ParseTreeNode ch: chList){
 			if (ch.getPos().startsWith(".") || ch.getPos().startsWith(",") || ch.getPos().startsWith(";") || ch.getPos().startsWith("!"))
 				continue;
-			buf.append( "("+ch.getWord()+ " " + ch.getPos() + ")" );
+			buf.append("(").append(ch.getWord()).append(" ").append(ch.getPos()).append(")");
 		}
 		return buf.toString().trim();
 	}

@@ -26,7 +26,7 @@ import opennlp.tools.cmdline.params.LanguageParams;
 
 /**
  * Parameters for DisambiguatorTool.
- * 
+ * <p>
  * Note: Do not use this class, internal use only!
  */
 interface DisambiguatorToolParams extends LanguageParams,EncodingParameter {

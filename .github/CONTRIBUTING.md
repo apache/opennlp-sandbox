@@ -8,4 +8,4 @@ To make the process smooth for the project *committers* (those who review and ac
 
 Please check out the [How to get involved](https://opennlp.apache.org/get-involved.html) to understand how contributions are made. 
 A detailed list of coding standards can be found at [Apache OpenNLP Code Conventions](https://opennlp.apache.org/code-conventions.html) which also contains a list of coding guidelines that you should follow.
-For pull requests, there is a [check list](PULL_REQUEST_TEMPLATE.md) with criteria for acceptable contributions.
+For pull requests, there is a [checklist](PULL_REQUEST_TEMPLATE.md) with criteria for acceptable contributions.

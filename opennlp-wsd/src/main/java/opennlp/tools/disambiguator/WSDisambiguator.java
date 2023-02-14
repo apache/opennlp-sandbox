@@ -30,13 +30,13 @@ import opennlp.tools.util.Span;
  * different senses of the ambiguous word. Disambiguation can be achieved in
  * either supervised or un-supervised approaches. A disambiguator returns a
  * sense ID.
- * 
+ * <p>
  * <b>How it works :<b> Just supply the context as an array of tokens and the
  * index of the target word to the disambiguate method.
- * 
- * Otherwise for multiple words, you can set a word span instead of simply one
+ * <p>
+ * Otherwise, for multiple words, you can set a word span instead of simply one
  * index. For the moment the source of sense definitions is from WordNet. *
- * 
+ * <p> 
  * Examples on how to use each approach are provided in the test section.
  *
  */

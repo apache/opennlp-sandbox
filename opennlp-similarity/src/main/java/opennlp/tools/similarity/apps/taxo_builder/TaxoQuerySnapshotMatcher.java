@@ -107,14 +107,14 @@ public class TaxoQuerySnapshotMatcher {
     return score;
   }
 
-  /**
+  /*
    * It loads a serialized taxonomy in .dat format and serializes it into a much
    * more readable XML format.
    * 
-   * @param taxonomyPath
    * @param taxonomyXML_Path
-   * 
-
+   * @param taxo
+   */
+  /*
   public void convertDatToXML(String taxonomyXML_Path, TaxonomySerializer taxo) {
     XStream xStream = new XStream();
     FileHandler fileHandler = new FileHandler();
@@ -124,9 +124,10 @@ public class TaxoQuerySnapshotMatcher {
       e.printStackTrace();
       LOG.info(e.toString());
     }
-
   }
+  */
 
+  /*
   public void xmlWork() {
     TaxoQuerySnapshotMatcher matcher = new TaxoQuerySnapshotMatcher(
         "src/test/resources/taxonomies/irs_domTaxo.dat");
@@ -135,7 +136,8 @@ public class TaxoQuerySnapshotMatcher {
     matcher.taxo = (TaxonomySerializer) xStream.fromXML(fileHandler
         .readFromTextFile("src/test/resources/taxo_English.xml"));
   }
-*/
+  */
+
   public void close() {
     sm.close();
   }

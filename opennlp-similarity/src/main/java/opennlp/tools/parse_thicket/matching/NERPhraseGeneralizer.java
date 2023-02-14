@@ -21,27 +21,13 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-
-
-
-
-
-
-
-
-
-import opennlp.tools.parse_thicket.IGeneralizer;
 import opennlp.tools.parse_thicket.ParseTreeNode;
-import opennlp.tools.stemmer.PStemmer;
-import opennlp.tools.textsimilarity.GeneralizationListReducer;
-import opennlp.tools.textsimilarity.LemmaFormManager;
-import opennlp.tools.textsimilarity.POSManager;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
 
 public class NERPhraseGeneralizer extends PhraseGeneralizer {
 
-	/* alignment is based on NER values, not on POS now
-	 * 
+	/*
+	 * alignment is based on NER values, not on POS now
 	 */
 
 
@@ -49,8 +35,8 @@ public class NERPhraseGeneralizer extends PhraseGeneralizer {
 	 * key matching function which takes two phrases, aligns them and finds a set
 	 * of maximum common sub-phrase
 	 * 
-	 * @param chunk1
-	 * @param chunk2
+	 * @param chunk1o
+	 * @param chunk2o
 	 * @return
 	 */
 	@Override
@@ -240,7 +226,7 @@ public class NERPhraseGeneralizer extends PhraseGeneralizer {
 						// behind
 						// current
 						// position,
-						// synchroneously
+						// synchronously
 						// move
 						// towards
 						// right

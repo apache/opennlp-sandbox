@@ -59,8 +59,7 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 		String snapshotMarked = snapshot.replace("...",
 				" _should_find_orig_ . _should_find_orig_");
 		List<String> fragments = TextProcessor.splitToSentences(snapshotMarked);
-		List<String> allFragms = new ArrayList<String>();
-		allFragms.addAll(fragments);
+		List<String> allFragms = new ArrayList<String>(fragments);
 
 		List<String> sents = new ArrayList<String>();
 		String downloadedPage;
@@ -348,7 +347,7 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 		}
 		return results;
 	}
-	public class TextChunk {
+	public static class TextChunk {
 		public TextChunk(String s, int length) {
 			this.text = s;
 			this.len = length;

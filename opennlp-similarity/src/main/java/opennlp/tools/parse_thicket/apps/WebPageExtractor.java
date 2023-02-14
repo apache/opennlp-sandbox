@@ -125,7 +125,7 @@ public class WebPageExtractor {
 		return sentsClean.toArray(new String[0]);
 	}
 
-	public class TextChunk {
+	public static class TextChunk {
 		public TextChunk(String s, int length) {
 			this.text = s;
 			this.len = length;

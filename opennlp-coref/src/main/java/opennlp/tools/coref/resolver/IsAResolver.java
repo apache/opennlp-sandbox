@@ -98,8 +98,7 @@ public class IsAResolver extends MaxentResolver {
 
   @Override
   protected List<String> getFeatures(MentionContext mention, DiscourseEntity entity) {
-    List<String> features = new ArrayList<String>();
-    features.addAll(super.getFeatures(mention, entity));
+    List<String> features = new ArrayList<String>(super.getFeatures(mention, entity));
     if (entity != null) {
       MentionContext ant = entity.getLastExtent();
       List<String> leftContexts = ResolverUtils.getContextFeatures(ant);

@@ -347,7 +347,7 @@ public class BasicLevelMetrics {
 	
 	public double lowerCohAvgByAvgJ(FormalConcept c,float tetta){
 		double sum = 0;
-		Set<Integer> lowerNeighbors =c.childs;
+		Set<Integer> lowerNeighbors =c.children;
 		int rightNeighborsNumber = 0;
 		float truthDegree;
 		for (Integer i: lowerNeighbors){
@@ -369,7 +369,7 @@ public class BasicLevelMetrics {
 		double sum = 0;
 		int rightNeighborsNumber = 0;
 		float truthDegree;
-		Set<Integer> lowerNeighbors =c.childs;
+		Set<Integer> lowerNeighbors =c.children;
 		for (Integer i: lowerNeighbors){
 			if (c.cohMinJ< cl.conceptList.get(i).cohMinJ){
 				rightNeighborsNumber++;
@@ -390,7 +390,7 @@ public class BasicLevelMetrics {
 		double min = Integer.MAX_VALUE, val;
 		int rightNeighborsNumber = 0;
 		float truthDegree;
-		Set<Integer> lowerNeighbors =c.childs;
+		Set<Integer> lowerNeighbors =c.children;
 		for (Integer i: lowerNeighbors){
 			if (c.cohAvgJ< cl.conceptList.get(i).cohAvgJ){
 				rightNeighborsNumber++;
@@ -412,7 +412,7 @@ public class BasicLevelMetrics {
 		double min = Integer.MAX_VALUE, val;
 		int rightNeighborsNumber = 0;
 		float truthDegree;
-		Set<Integer> lowerNeighbors =c.childs;
+		Set<Integer> lowerNeighbors =c.children;
 		for (Integer i: lowerNeighbors){
 			if (c.cohMinJ< cl.conceptList.get(i).cohMinJ){
 				rightNeighborsNumber++;
@@ -434,7 +434,7 @@ public class BasicLevelMetrics {
 		double sum = 0;
 		int rightNeighborsNumber = 0;
 		float truthDegree;
-		Set<Integer> lowerNeighbors =c.childs;
+		Set<Integer> lowerNeighbors =c.children;
 		for (Integer i: lowerNeighbors){
 			if (c.cohAvgSMC < cl.conceptList.get(i).cohAvgSMC){
 				rightNeighborsNumber++;
@@ -454,7 +454,7 @@ public class BasicLevelMetrics {
 		double sum = 0;
 		int rightNeighborsNumber = 0;
 		float truthDegree;
-		Set<Integer> lowerNeighbors =c.childs;
+		Set<Integer> lowerNeighbors =c.children;
 		for (Integer i: lowerNeighbors){
 			if (c.cohMinSMC < cl.conceptList.get(i).cohMinSMC){
 				rightNeighborsNumber++;
@@ -474,7 +474,7 @@ public class BasicLevelMetrics {
 		double min = Integer.MAX_VALUE, val;
 		int rightNeighborsNumber = 0;
 		float truthDegree;
-		Set<Integer> lowerNeighbors =c.childs;
+		Set<Integer> lowerNeighbors =c.children;
 		for (Integer i: lowerNeighbors){
 			if (c.cohAvgSMC<=cl.conceptList.get(i).cohAvgSMC){
 				rightNeighborsNumber++;
@@ -497,7 +497,7 @@ public class BasicLevelMetrics {
 		double min = Integer.MAX_VALUE, val;
 		int rightNeighborsNumber = 0;
 		float truthDegree;
-		Set<Integer> lowerNeighbors =c.childs;
+		Set<Integer> lowerNeighbors =c.children;
 		for (Integer i: lowerNeighbors){
 			if (c.cohMinSMC< cl.conceptList.get(i).cohMinSMC){
 				rightNeighborsNumber++;

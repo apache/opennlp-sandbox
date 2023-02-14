@@ -55,7 +55,7 @@ import opennlp.tools.stemmer.Stemmer;
 
 /**
   * Stemmer, implementing the Porter Stemming Algorithm
-  *
+  * <p>
   * The Stemmer class transforms a word into its root form.  The input
   * word can be provided a character at time (by calling add()), or at once
   * by calling one of the various stem(something) methods.

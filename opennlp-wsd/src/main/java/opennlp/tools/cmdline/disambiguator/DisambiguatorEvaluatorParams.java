@@ -25,7 +25,7 @@ import opennlp.tools.cmdline.params.EncodingParameter;
 
 /**
  * Common evaluation parameters.
- * 
+ * <p>
  * Note: Do not use this class, internal use only!
  */
 public interface DisambiguatorEvaluatorParams extends EncodingParameter,

@@ -68,17 +68,17 @@ public class CreateCorpus {
 
     XMLParser xmlParser = UIMAFramework.getXMLParser();
 
-    TypeSystemDescription typeSystemDesciptor = (TypeSystemDescription) xmlParser
+    TypeSystemDescription typeSystemDescriptor = (TypeSystemDescription) xmlParser
         .parse(xmlTypeSystemSource);
 
-    typeSystemDesciptor.resolveImports();
+    typeSystemDescriptor.resolveImports();
 
     ByteArrayOutputStream typeSystemBytes = new ByteArrayOutputStream();
-    typeSystemDesciptor.toXML(typeSystemBytes);
+    typeSystemDescriptor.toXML(typeSystemBytes);
 
     resources[0] = typeSystemBytes.toByteArray();
 
-    byte indexMappingBytes[] = FileUtil.fileToBytes(new File(args[3]));
+    byte[] indexMappingBytes = FileUtil.fileToBytes(new File(args[3]));
     resources[1] = indexMappingBytes;
 
     ClientResponse response = r.path("_createCorpus")

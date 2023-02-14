@@ -119,7 +119,7 @@ public class WebSearchEngineResultsScraper {
         hit.setTitle(title);
         results.add(hit);
       } catch (Exception e) {
-        //problem parsing SERP page; source - specific problem so we swallow exceptions here
+        //problem parsing SERP page; source - specific problem, so we swallow exceptions here
       }
     }
 

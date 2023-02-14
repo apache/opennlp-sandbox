@@ -27,16 +27,15 @@ import opennlp.tools.util.eval.Mean;
  *
  * @see Evaluator
  * @see WSDisambiguator
- * @see WordToDisambiguate
  */
 public class WSDEvaluator extends Evaluator<WSDSample> {
 
-  private Mean accuracy = new Mean();
+  private final Mean accuracy = new Mean();
 
   /**
    * The {@link WSDisambiguator} used to create the disambiguated senses.
    */
-  private WSDisambiguator disambiguator;
+  private final WSDisambiguator disambiguator;
 
   /**
    * Initializes the current instance with the given {@link WSDisambiguator}.
@@ -52,7 +51,7 @@ public class WSDEvaluator extends Evaluator<WSDSample> {
     this.disambiguator = disambiguator;
   }
 
-  // @Override
+  @Override
   protected WSDSample processSample(WSDSample reference) {
 
     String[] referenceSenses = reference.getSenseIDs();
@@ -82,7 +81,7 @@ public class WSDEvaluator extends Evaluator<WSDSample> {
 
   /**
    * Retrieves the WSD accuracy.
-   *
+   * <p>
    * This is defined as: WSD accuracy = correctly disambiguated / total words
    *
    * @return the WSD accuracy
@@ -101,7 +100,7 @@ public class WSDEvaluator extends Evaluator<WSDSample> {
   }
 
   /**
-   * Represents this objects as human readable {@link String}.
+   * Represents this objects as human-readable {@link String}.
    */
   @Override
   public String toString() {

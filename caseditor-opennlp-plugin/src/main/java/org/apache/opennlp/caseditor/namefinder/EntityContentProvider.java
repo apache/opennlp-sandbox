@@ -334,7 +334,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
     if (newInput != null) {
       input = (ICasDocument) newInput;
       
-      // Note: Name Finder might run to often ... 
+      // Note: Name Finder might run too often ...
       input.addChangeListener(casChangeListener);
       input.addChangeListener(casChangeTrigger);
       

@@ -192,11 +192,11 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
   }
 
   /**
-   * Constructs a mapping between the specified entities and their head set.
+   * Constructs a mapping between the specified entities and their headset.
    *
    * @param entities Mapping between a key and a list of mentions which compose an entity.
    *
-   * @return a mapping between the keys of the specified entity mapping and the head set
+   * @return a mapping between the keys of the specified entity mapping and the headset
    * generated from the mentions associated with that key.
    */
   @SuppressWarnings("unchecked")
@@ -232,7 +232,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
    * @param entities A mapping between a key and a list of mentions.
    *
    * @return a mapping between each key in the specified entity map and the name types associated
-   *         with the each mention of that entity.
+   *         with each mention of that entity.
    */
   @SuppressWarnings("unchecked")
   private Map<Integer, Set<String>> constructNameSets(Map<Integer, Context> entities) {

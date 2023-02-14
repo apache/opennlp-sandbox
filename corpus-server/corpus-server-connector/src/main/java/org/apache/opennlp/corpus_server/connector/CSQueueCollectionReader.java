@@ -103,7 +103,7 @@ public class CSQueueCollectionReader extends CollectionReader_ImplBase {
       }
       
       if (logger.isLoggable(Level.INFO)) {
-        logger.log(Level.INFO, "Sucessfully created queue: " + queueName + " for corpus: " + corpusName);
+        logger.log(Level.INFO, "Successfully created queue: " + queueName + " for corpus: " + corpusName);
       }
     }
     

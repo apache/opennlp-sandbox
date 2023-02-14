@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang.StringUtils;
+
 import opennlp.tools.parse_thicket.Triple;
 import opennlp.tools.similarity.apps.utils.PageFetcher;
 import opennlp.tools.similarity.apps.utils.StringDistanceMeasurer;
@@ -35,18 +37,15 @@ import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.TextProcessor;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
-import org.apache.commons.lang.StringUtils;
-
-/*
- * This class does content generation by using web mining and syntactic generalization to get sentences from the web, convert and combine them in the form 
- * expected to be readable by humans.
- * 
+/**
+ * Provides content generation by using web mining and syntactic generalization to get sentences from the web,
+ * convert and combine them in the form expected to be readable by humans.
+ * <p>
  * These are examples of generated articles, given the article title
  * http://www.allvoices.com/contributed-news/9423860/content/81937916-ichie-sings-jazz-blues-contemporary-tunes
  * http://www.allvoices.com/contributed-news/9415063-britney-spears-femme-fatale-in-north-sf-bay-area
  * 
  */
-
 public class RelatedSentenceFinder {
 	private static final Logger LOG = Logger.getLogger("opennlp.tools.similarity.apps.RelatedSentenceFinder");
 	PageFetcher pFetcher = new PageFetcher();
@@ -216,7 +215,7 @@ public class RelatedSentenceFinder {
 				for (String w : qs) {
 					if (w.toLowerCase().equals(w)) // idf only two words then
 						// has to be person name,
-						// title or geo location
+						// title or geolocation
 						bAccept = false;
 				}
 				if (!bAccept)

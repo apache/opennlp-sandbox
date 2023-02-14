@@ -38,17 +38,17 @@ public class ValueSortMap {
   }
 
   /**
-   * This method returns the new LinkedHashMap sorted with values for passed
-   * Comparater. If null values exist they will be put in the last of the
+   * Returns the new {@link LinkedHashMap} sorted with values for passed
+   * {@link Comparator}. If null values exist they will be put in the last of the
    * returned LinkedHashMap. If there are duplicate values they will come
-   * together at the values ordering order but ordering between same multiple
-   * values is ramdom. Passed Map will be intect.
+   * together at the values ordering, but ordering between same multiple
+   * values is random. Passed Map will be intect.
    * 
    * @param inMap
    *          Map to be sorted
    * @param comparator
-   *          Values will be sorted as per passed Comparater
-   * @return LinkedHashMap Sorted new LinkedHashMap
+   *          Values will be sorted as per passed {@link Comparator}
+   * @return A sorted new {@link LinkedHashMap} instance.
    */
   public static <K, V> LinkedHashMap<K, V> sortMapByValue(Map<K, V> inMap,
       Comparator<V> comparator) {
@@ -56,18 +56,18 @@ public class ValueSortMap {
   }
 
   /**
-   * This method returns the new LinkedHashMap sorted with values for passed
+   * Returns the new {@link LinkedHashMap} sorted with values for passed
    * ascendingOrder. If null values exist they will be put in the last for true
-   * value of ascendingOrder or will be put on top of the returned LinkedHashMap
+   * value of ascendingOrder or will be put on top of the returned {@link LinkedHashMap}
    * for false value of ascendingOrder. If there are duplicate values they will
-   * come together at the values ordering order but ordering between same
-   * multiple values is ramdom. Passed Map will be intect.
+   * come together at the values ordering but ordering between same
+   * multiple values is random. Passed Map will be intect.
    * 
    * @param inMap
    *          Map to be sorted
    * @param ascendingOrder
    *          Values will be sorted as per value of ascendingOrder
-   * @return LinkedHashMap Sorted new LinkedHashMap
+   * @return A sorted new {@link LinkedHashMap} instance.
    */
   public static <K, V> LinkedHashMap<K, V> sortMapByValue(Map<K, V> inMap,
       boolean ascendingOrder) {
@@ -75,37 +75,37 @@ public class ValueSortMap {
   }
 
   /**
-   * This method returns the new LinkedHashMap sorted with values in ascending
+   * This method returns the new {@link LinkedHashMap} sorted with values in ascending
    * order. If null values exist they will be put in the last of the returned
-   * LinkedHashMap. If there are duplicate values they will come together at the
-   * values ordering order but ordering between same multiple values is ramdom.
+   * {@link LinkedHashMap}. If there are duplicate values they will come together at the
+   * values ordering but ordering between same multiple values is random.
    * Passed Map will be intect.
    * 
    * @param inMap
    *          Map to be sorted
-   * @return LinkedHashMap Sorted new LinkedHashMap
+   * @return A sorted new {@link LinkedHashMap} instance.
    */
   public static <K, V> LinkedHashMap<K, V> sortMapByValue(Map<K, V> inMap) {
     return sortMapByValue(inMap, null, null);
   }
 
   /**
-   * This method returns the new LinkedHashMap sorted with values. Values will
+   * This method returns the new {@link LinkedHashMap} sorted with values. Values will
    * be sorted as value of passed comparator if ascendingOrder is null or in
    * order of passed ascendingOrder if it is not null. If null values exist they
    * will be put in the last for true value of ascendingOrder or will be put on
-   * top of the returned LinkedHashMap for false value of ascendingOrder. If
-   * there are duplicate values they will come together at the values ordering
-   * order but ordering between same multiple values is ramdom. Passed Map will
+   * top of the returned {@link LinkedHashMap} for false value of ascendingOrder. If
+   * there are duplicate values they will come together at the values
+   * order but ordering between same multiple values is random. Passed Map will
    * be intect.
    * 
    * @param inMap
    *          Map to be sorted
    * @param comparator
-   *          Values will be sorted as per passed Comparater
+   *          Values will be sorted as per passed {@link Comparator}
    * @param ascendingOrder
    *          Values will be sorted as per value of ascendingOrder
-   * @return LinkedHashMap Sorted new LinkedHashMap
+   * @return A sorted new {@link LinkedHashMap} instance.
    */
   private static <K, V> LinkedHashMap<K, V> sortMapByValue(Map<K, V> inMap,
       Comparator<V> comparator, Boolean ascendingOrder) {
@@ -120,7 +120,7 @@ public class ValueSortMap {
     HashSet distinctValues = new HashSet(values); // To know the distinct values
                                                   // in passed Map
 
-    // Do handing for null values. remove them from the list that will be used
+    // Handling for null values: remove them from the list that will be used
     // for sorting
     int iNullValueCount = 0; // Total number of null values present in passed
                              // Map
@@ -165,8 +165,7 @@ public class ValueSortMap {
     HashMap hmNullValueMap = new HashMap();
 
     if (bAllDistinct) {
-      // There are no multiple same values in the passed map (without consedring
-      // null)
+      // There are no multiple same values of the passed map (without considering null)
       keySet = inMap.keySet();
       itKeyList = keySet.iterator();
       while (itKeyList.hasNext()) {
@@ -200,7 +199,7 @@ public class ValueSortMap {
         sortedMap.putAll(hmNullValueMap);
       }
     } else {
-      // There are some multiple values (with out considering null)
+      // There are some multiple values (without considering null)
       keySet = inMap.keySet();
       itKeyList = keySet.iterator();
       while (itKeyList.hasNext()) {

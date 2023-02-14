@@ -28,6 +28,7 @@ import opennlp.tools.util.TrainingParameters;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -107,9 +108,7 @@ public class WSDisambiguatorME extends WSDisambiguator {
           sample.getSentence(), sample.getLemmas(), windowSize);
 
       if (words.length > 0) {
-        for (String word : words) {
-          surroundingWordsModel.add(word);
-        }
+        surroundingWordsModel.addAll(Arrays.asList(words));
       }
     }
     samples.reset();

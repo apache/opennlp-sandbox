@@ -43,7 +43,7 @@ public abstract class AbstractLinker implements Linker {
   /** The mode in which this linker is running. */
   protected LinkerMode mode;
 
-  /** Instance used for for returning the same linker for subsequent getInstance requests. */
+  /** Instance used for returning the same linker for subsequent getInstance requests. */
   protected static Linker linker;
 
   /** The resolvers used by this Linker. */

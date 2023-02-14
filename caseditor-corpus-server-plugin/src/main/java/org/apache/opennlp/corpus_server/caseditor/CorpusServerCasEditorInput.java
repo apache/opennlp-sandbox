@@ -37,7 +37,7 @@ public class CorpusServerCasEditorInput implements IEditorInput {
     return null;
   }
 
-  // can be checked through an http lookup
+  // can be checked through an HTTP lookup
   @Override
   public boolean exists() {
     return false;

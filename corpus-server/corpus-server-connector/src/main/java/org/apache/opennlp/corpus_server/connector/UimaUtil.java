@@ -52,18 +52,18 @@ public class UimaUtil {
 
     XMLParser xmlParser = UIMAFramework.getXMLParser();
 
-    TypeSystemDescription typeSystemDesciptor;
+    TypeSystemDescription typeSystemDescriptor;
 
     try {
-      typeSystemDesciptor = (TypeSystemDescription) xmlParser.parse(xmlTypeSystemSource);
+      typeSystemDescriptor = (TypeSystemDescription) xmlParser.parse(xmlTypeSystemSource);
 
-      typeSystemDesciptor.resolveImports();
+      typeSystemDescriptor.resolveImports();
     } catch (InvalidXMLException e) {
       e.printStackTrace();
-      typeSystemDesciptor = null;
+      typeSystemDescriptor = null;
     }
 
-    return typeSystemDesciptor;
+    return typeSystemDescriptor;
   }
 
   public static CAS createEmptyCAS(TypeSystemDescription typeSystem) {

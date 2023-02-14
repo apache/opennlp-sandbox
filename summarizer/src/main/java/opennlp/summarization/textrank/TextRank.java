@@ -49,19 +49,20 @@ public class TextRank {
   private DocProcessor docProc;
 
   private final double title_wt = 0;
-  private Hashtable<Integer, String[]> wordsInSent;
+  
+  // private Hashtable<Integer, String[]> wordsInSent;
 
   // DAMPING FACTOR..
-  private static double df = 0.15;
+  private static final double df = 0.15;
   private static final boolean HIGHER_TITLE_WEIGHT = true;
   private static final double TITLE_WRD_WT = 2d;
-  private final String resources = "./resources";
 
   public TextRank(DocProcessor dp) {
     sw = new StopWords();
     setLinks(new Hashtable<>());
     processedSent = new ArrayList<>();
     docProc = dp;
+    String resources = "./resources";
     wordWt = IDFWordWeight.getInstance(resources + "/idf.csv");
   }
 
@@ -164,8 +165,8 @@ public class TextRank {
     return currWtScores;
   }
 
-  // Raw score is sigma wtsimilarity of neighbors..
-  // Used in the denominator of the Text rank formula..
+  // Raw score is sigma wtsimilarity of neighbors.
+  // Used in the denominator of the Text rank formula.
   public List<Score> getNeighborsSigmaWtSim(List<String> sentences,
                                             Hashtable<String, List<Integer>> iidx, Hashtable<String, Double> wts) {
     List<Score> allScores = new ArrayList<>();

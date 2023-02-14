@@ -42,6 +42,6 @@ public class TaskQueuesResource {
   public TaskQueueResource getTaskQueue(@PathParam("queue") String queueId) {
     TaskQueueService taskQueueService = CorpusServerBundle.getInstance().getCorpusServer().getTaskQueueService();
     
-    return new TaskQueueResource(taskQueueService.getTaskQeue(queueId));
+    return new TaskQueueResource(taskQueueService.getTaskQueue(queueId));
   }
 }

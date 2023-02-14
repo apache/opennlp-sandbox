@@ -16,10 +16,10 @@
  */
 package opennlp.tools.fca;
 
-
-import org.apache.commons.math3.special.*;
 import java.util.ArrayList;
 import java.util.Set;
+
+import org.apache.commons.math3.special.Gamma;
 
 public class Measures {
 		
@@ -55,8 +55,7 @@ public class Measures {
 			min_delta = cl.attributeCount;
 			sum = 0;
 			FormalConcept fc = cl.conceptList.get(i);
-			Set<Integer> childs = fc.childs;
-			for (Integer j: childs) {
+			for (Integer j: fc.children) {
 				delta = fc.getExtent().size() - cl.conceptList.get(j).getExtent().size();
 				if (delta<min_delta)
 					min_delta = delta;
@@ -137,7 +136,7 @@ public class Measures {
 					mult*=(1-Math.pow(outOfIntentAttrProb.get(j),k));
 				}				
 				mult1 = Math.pow(pB,k)*Math.pow(1-pB,n-k);
-				prob+=mult1*mult*Gamma.digamma(n+1)/Gamma.digamma(k+1)/Gamma.digamma(n-k+1);				
+				prob+=mult1*mult* Gamma.digamma(n+1)/Gamma.digamma(k+1)/Gamma.digamma(n-k+1);
 			}
 			
 			cl.conceptList.get(i).probability = prob;			

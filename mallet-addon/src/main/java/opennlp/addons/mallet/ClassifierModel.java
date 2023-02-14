@@ -37,8 +37,8 @@ class ClassifierModel implements MaxentModel, SerializableArtifact {
 
   private final Classifier classifier;
 
-  public ClassifierModel(Classifier classifer) {
-    this.classifier = classifer;
+  public ClassifierModel(Classifier classifier) {
+    this.classifier = classifier;
   }
 
   Classifier getClassifier() {
@@ -58,7 +58,7 @@ class ClassifierModel implements MaxentModel, SerializableArtifact {
       }
     }
 
-    int malletFeatures[] = new int[malletFeatureList.size()];
+    int[] malletFeatures = new int[malletFeatureList.size()];
     for (int i = 0; i < malletFeatureList.size(); i++) {
       malletFeatures[i] = malletFeatureList.get(i);
     }
@@ -73,7 +73,7 @@ class ClassifierModel implements MaxentModel, SerializableArtifact {
 
     LabelAlphabet targetAlphabet = classifier.getLabelAlphabet();
 
-    double outcomes[] = new double[targetAlphabet.size()];
+    double[] outcomes = new double[targetAlphabet.size()];
     for (int i = 0; i < outcomes.length; i++) {
 
       Label label = targetAlphabet.lookupLabel(i);

@@ -46,8 +46,7 @@ public class SpeechPronounResolver extends MaxentResolver {
 
   @Override
   protected List<String> getFeatures(MentionContext mention, DiscourseEntity entity) {
-    List<String> features = new ArrayList<String>();
-    features.addAll(super.getFeatures(mention, entity));
+    List<String> features = new ArrayList<String>(super.getFeatures(mention, entity));
     if (entity != null) {
       features.addAll(ResolverUtils.getPronounMatchFeatures(mention,entity));
       List<String> contexts = ResolverUtils.getContextFeatures(mention);
@@ -107,7 +106,7 @@ public class SpeechPronounResolver extends MaxentResolver {
       }
     }
     else if (mention.getHeadTokenTag().startsWith("PRP")) { // mention is a speech pronoun
-      // cec can be either a speech pronoun or a propernoun
+      // cec can be either a speech pronoun or a proper noun
       if (cec.getHeadTokenTag().startsWith("NNP")) {
         //exclude antecedents not in the same sentence when they are not pronoun
         return (mention.getSentenceNumber() - cec.getSentenceNumber() != 0);
@@ -116,12 +115,12 @@ public class SpeechPronounResolver extends MaxentResolver {
         return false;
       }
       else {
-        System.err.println("Unexpected candidate exluded: " + cec.toText());
+        System.err.println("Unexpected candidate excluded: " + cec.toText());
         return true;
       }
     }
     else {
-      System.err.println("Unexpected mention exluded: " + mention.toText());
+      System.err.println("Unexpected mention excluded: " + mention.toText());
       return true;
     }
   }

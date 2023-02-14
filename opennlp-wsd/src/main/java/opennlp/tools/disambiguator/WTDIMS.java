@@ -19,12 +19,7 @@
 
 package opennlp.tools.disambiguator;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import net.sf.extjwnl.data.POS;
-import opennlp.tools.disambiguator.WSDHelper;
-import opennlp.tools.disambiguator.WSDSample;
 
 public class WTDIMS {
 

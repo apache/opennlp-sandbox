@@ -78,7 +78,7 @@ public class DefaultDocProcessor implements DocProcessor {
     {
       String sentence = str.substring(start,end);//str.substring(oldSentEndIdx, sentEndIdx).trim();
 
-      //Add the sentence as-is; do any processing at the word level..
+      //Add the sentence as-is; do any processing at the word level
       //To lower case and trim all punctuations
       sentences.add(sentence);
       wrdItr.setText(sentence);
@@ -91,12 +91,12 @@ public class DefaultDocProcessor implements DocProcessor {
         String word = sentence.substring(wrdStrt, wrdEnd);//words[i].trim();
         word = word.replaceAll("\"|'","");
 
-        //Skip stop words and stem the word..
+        //Skip stop words and stem the word
         if(sw.isStopWord(word)) continue;
 
         String stemedWrd = stemmer.stem(word).toString();
 
-        //update iidx by adding the current sentence to the list..
+        //update iidx by adding the current sentence to the list
         if(iidx!=null)
         {
           if(stemedWrd.length()>1)
@@ -182,7 +182,7 @@ public class DefaultDocProcessor implements DocProcessor {
     List<String> sentStrs = new ArrayList<>();
     List<String> cleanedSents = new ArrayList<>();
 
-    //Custom/simple method if specified or open nlp model was not found..
+    //Custom/simple method if specified or open nlp model was not found
     if(sentModel==null || SENTENCE_FRAG==SIMPLE)
       getSentences(text, sentStrs, null, cleanedSents);
     else{

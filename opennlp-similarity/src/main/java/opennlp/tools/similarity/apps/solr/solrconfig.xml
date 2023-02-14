@@ -37,7 +37,7 @@
   -->
   <luceneMatchVersion>LUCENE_40</luceneMatchVersion>
 
-  <!-- lib directives can be used to instruct Solr to load an Jars
+  <!-- lib directives can be used to instruct Solr to load Jars
        identified and use them to resolve any "plugins" specified in
        your solrconfig.xml or schema.xml (ie: Analyzers, Request
        Handlers, etc...).
@@ -132,10 +132,10 @@
          LimitTokenCountFilterFactory in your fieldType definition. E.g. 
      <filter class="solr.LimitTokenCountFilterFactory" maxTokenCount="10000"/>
     -->
-    <!-- Maximum time to wait for a write lock (ms) for an IndexWriter. Default: 1000 -->
+    <!-- Maximum time to wait for a write-lock (ms) for an IndexWriter. Default: 1000 -->
     <!-- <writeLockTimeout>1000</writeLockTimeout>  -->
 
-    <!-- Expert: Enabling compound file will use less files for the index, 
+    <!-- Expert: Enabling compound file will use fewer files for the index,
          using fewer file descriptors on the expense of performance decrease. 
          Default in Lucene is "true". Default in Solr is "false" (since 3.6) -->
     <!-- <useCompoundFile>false</useCompoundFile> -->
@@ -220,7 +220,7 @@
       -->
     
     <!-- Expert: Controls how often Lucene loads terms into memory
-         Default is 128 and is likely good for most everyone.
+         Default is 128 and is likely good for almost everyone.
       -->
     <!-- <termIndexInterval>128</termIndexInterval> -->
 
@@ -468,7 +468,7 @@
 
     <!-- Query Result Cache
          
-         Caches results of searches - ordered lists of document ids
+         Caches result of searches - ordered lists of document ids
          (DocList) based on a query, a sort, and the range of documents requested.  
       -->
     <queryResultCache class="solr.LRUCache"
@@ -1365,7 +1365,7 @@
 
        This is purely as an example.
 
-       In reality you will likely want to add the component to your 
+       In reality, you will likely want to add the component to your
        already specified request handlers. 
     -->
   <requestHandler name="/tvrh" class="solr.SearchHandler" startup="lazy">
@@ -1450,7 +1450,7 @@
 
        This is purely as an example.
 
-       In reality you will likely want to add the component to your 
+       In reality, you will likely want to add the component to your
        already specified request handlers. 
     -->
   <requestHandler name="/clustering"

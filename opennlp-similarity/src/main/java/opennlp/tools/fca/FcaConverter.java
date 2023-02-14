@@ -30,8 +30,7 @@ public class FcaConverter {
 		
 		int newAttrCount = cl.conceptList.size();
 		int [][] binaryContext = null;
-		ArrayList<FormalConcept> cList = new ArrayList<FormalConcept>();
-		cList.addAll(cl.conceptList);
+    ArrayList<FormalConcept> cList = new ArrayList<FormalConcept>(cl.conceptList);
 		boolean run = true;
 		int k=0;
 		while (run && k<cl.conceptList.size()){

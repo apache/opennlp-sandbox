@@ -20,26 +20,17 @@ package opennlp.tools.parse_thicket.matching;
 import java.util.ArrayList;
 import java.util.List;
 
-
-
-
-
-
 import opennlp.tools.parse_thicket.IGeneralizer;
 import opennlp.tools.parse_thicket.ParseTreeNode;
 import opennlp.tools.stemmer.PStemmer;
 import opennlp.tools.textsimilarity.GeneralizationListReducer;
-import opennlp.tools.textsimilarity.LemmaFormManager;
-import opennlp.tools.textsimilarity.POSManager;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
 
 public class PhraseGeneralizer implements IGeneralizer<ParseTreeChunk> {
 
-	private GeneralizationListReducer generalizationListReducer = new GeneralizationListReducer();
+	private final GeneralizationListReducer generalizationListReducer = new GeneralizationListReducer();
 	protected LemmaGeneralizer lemmaFormManager = new LemmaGeneralizer();
-	//protected LemmaFormManager lemmaFormManager = new LemmaFormManager();
-	
-	
+
 	protected PartOfSpeechGeneralizer posManager = new PartOfSpeechGeneralizer();
 	
 	protected PStemmer ps = new PStemmer();
@@ -49,8 +40,8 @@ public class PhraseGeneralizer implements IGeneralizer<ParseTreeChunk> {
 	 * key matching function which takes two phrases, aligns them and finds a set
 	 * of maximum common sub-phrase
 	 * 
-	 * @param chunk1
-	 * @param chunk2
+	 * @param chunk1o
+	 * @param chunk2o
 	 * @return
 	 */
 	@Override
@@ -69,7 +60,6 @@ public class PhraseGeneralizer implements IGeneralizer<ParseTreeChunk> {
 
 		List<String> lem1stem = new ArrayList<String>();
 		List<String> lem2stem = new ArrayList<String>();
-
 
 		for (String word : lem1) {
 			try {
@@ -237,7 +227,7 @@ public class PhraseGeneralizer implements IGeneralizer<ParseTreeChunk> {
 						// behind
 						// current
 						// position,
-						// synchroneously
+						// synchronously
 						// move
 						// towards
 						// right

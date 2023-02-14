@@ -27,7 +27,7 @@ public class Mention implements Comparable<Mention> {
   /** 
    * Represents the character offset for this extent. 
    */
-  private Span span;
+  private final Span span;
 
   /** 
    * A string representing the type of this extent. This is helpful for determining
@@ -42,9 +42,9 @@ public class Mention implements Comparable<Mention> {
   private int id;
 
   /** 
-   * Represents the character offsets of the the head of this extent.
+   * Represents the character offsets of the head of this extent.
    */
-  private Span headSpan;
+  private final Span headSpan;
 
   /** 
    * The parse node that this extent is based on.
@@ -104,6 +104,7 @@ public class Mention implements Comparable<Mention> {
     return parse;
   }
 
+  @Override
   public int compareTo(Mention e) {
     return span.compareTo(e.span);
   }

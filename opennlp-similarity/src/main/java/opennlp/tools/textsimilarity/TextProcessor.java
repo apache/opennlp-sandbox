@@ -31,10 +31,11 @@ import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import opennlp.tools.stemmer.PStemmer;
-import opennlp.tools.similarity.apps.utils.Pair;
 
 import org.apache.commons.lang.StringUtils;
+
+import opennlp.tools.stemmer.PStemmer;
+import opennlp.tools.similarity.apps.utils.Pair;
 
 public class TextProcessor {
 
@@ -373,13 +374,10 @@ public class TextProcessor {
          * StopList.getInstance().isStopWord(p2.trim())){ continue; }
          */
 
-        StringBuilder buf = new StringBuilder();
-        buf.append(p1);
-        buf.append(" ");
-        buf.append(p2);
-        String b = buf.toString().toLowerCase();
+        String buf = p1 + " " + p2;
+        String b = buf.toLowerCase();
         // don't add punc tokens
-        if (b.indexOf("<punc>") != -1 && !retainPunc)
+        if (b.contains("<punc>") && !retainPunc)
           continue;
 
         float freq = 1;
@@ -712,7 +710,7 @@ public class TextProcessor {
       if (finalSummary.trim().length() < 5) {
         finalSummary = txt;
       }
-      // see if have a punc in the first 30 chars
+      // see if we have a punctuation character in the first 30 chars
       int highestIdx = -1;
       int sIdx = Math.min(finalSummary.length() - 1, 45);
       for (String p : puncChars) {
@@ -785,7 +783,7 @@ public class TextProcessor {
 
   public static String trimSentence(String txt, String title) {
 
-    // iterate backwards looking for the first all cap word..
+    // iterate backwards looking for the first all cap word.
     int numCapWords = 0;
     int firstIdx = -1;
     String cleaned = txt;
@@ -898,9 +896,7 @@ public class TextProcessor {
         String[] tks = s.split(" ");
         List<String> tokens = Arrays.asList(tks);
         HashMap<String, Integer> ut = TextProcessor.getUniqueTokenIndex(tokens);
-        for (String t : ut.keySet()) {
-          allTokens.add(t);
-        }
+        allTokens.addAll(ut.keySet());
       }
       HashMap<String, Integer> uniqueTokens = TextProcessor
           .getUniqueTokenIndex(allTokens);

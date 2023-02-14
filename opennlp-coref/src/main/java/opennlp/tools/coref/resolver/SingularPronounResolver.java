@@ -55,8 +55,7 @@ public class SingularPronounResolver extends MaxentResolver {
 
   @Override
   protected List<String> getFeatures(MentionContext mention, DiscourseEntity entity) {
-    List<String> features = new ArrayList<String>();
-    features.addAll(super.getFeatures(mention, entity));
+    List<String> features = new ArrayList<String>(super.getFeatures(mention, entity));
     if (entity != null) { //generate pronoun w/ referent features
       MentionContext cec = entity.getLastExtent();
       //String gen = getPronounGender(pronoun);

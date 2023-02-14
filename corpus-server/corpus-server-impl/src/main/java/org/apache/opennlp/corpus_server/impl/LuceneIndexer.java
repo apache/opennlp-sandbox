@@ -42,7 +42,7 @@ import org.apache.uima.resource.ResourceInitializationException;
 public class LuceneIndexer extends LuceneDocumentAE {
 
   static final String CAS_ID_TYPE = "org.apache.opennlp.corpus_server.CasId";
-  static final String CAS_ID_FEEATURE = "id";
+  static final String CAS_ID_FEATURE = "id";
   
   private static final String RESOURCE_INDEX_WRITER_PROVIDER = "indexWriterProvider";
   
@@ -73,7 +73,7 @@ public class LuceneIndexer extends LuceneDocumentAE {
     super.typeSystemInit(aTypeSystem);
     
     casIdType = aTypeSystem.getType(CAS_ID_TYPE);
-    casIdFeature = casIdType.getFeatureByBaseName(CAS_ID_FEEATURE);
+    casIdFeature = casIdType.getFeatureByBaseName(CAS_ID_FEATURE);
   }
   
   @Override

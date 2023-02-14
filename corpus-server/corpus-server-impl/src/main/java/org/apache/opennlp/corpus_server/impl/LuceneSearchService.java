@@ -272,7 +272,7 @@ public class LuceneSearchService implements SearchService {
     
     // Inject id feature structure into the CAS
     Type casIdType = cas.getTypeSystem().getType(LuceneIndexer.CAS_ID_TYPE);
-    Feature casIdFeature =  casIdType.getFeatureByBaseName(LuceneIndexer.CAS_ID_FEEATURE);
+    Feature casIdFeature =  casIdType.getFeatureByBaseName(LuceneIndexer.CAS_ID_FEATURE);
 
     FeatureStructure casIdFS = cas.createFS(casIdType);
     casIdFS.setStringValue(casIdFeature, casId);

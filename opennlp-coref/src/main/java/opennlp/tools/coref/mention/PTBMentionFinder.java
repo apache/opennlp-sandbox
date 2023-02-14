@@ -83,10 +83,11 @@ public class PTBMentionFinder extends AbstractMentionFinder {
   }
   */
 
-  /** Moves entity ids assigned to basal nps and possesives to their
-   * maximaly containing np.  Also assign head information of basal
+  /*
+   * Moves entity ids assigned to basal nps and possessives to their
+   * maximally containing np.  Also assign head information of basal
    * noun phase to the maximally containing np.
-   * @deprecated No on uses this any more.
+   * @deprecated No on uses this anymore.
    *
   private void propigateEntityIds(Map headMap) {
     for (Iterator ki = headMap.keySet().iterator(); ki.hasNext();) {

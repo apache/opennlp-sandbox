@@ -48,7 +48,7 @@ public class WordDocBuilderSingleImageSearchCall extends WordDocBuilder{
 	
 	public String buildWordDoc(List<HitBase> content, String title){
 		
-		String outputDocFinename =  absPath+"/written/"+ title.replace(' ','_').replace('\"', ' ').trim()+ ".docx";
+		String outputDocFilename =  absPath+"/written/"+ title.replace(' ','_').replace('\"', ' ').trim()+ ".docx";
 		
 		WordprocessingMLPackage wordMLPackage;
 		List<String> imageURLs = getAllImageSearchResults(title);
@@ -98,22 +98,22 @@ public class WordDocBuilderSingleImageSearchCall extends WordDocBuilder{
 			}
 	
 	        
-			wordMLPackage.save(new File(outputDocFinename));
-			System.out.println("Finished creating docx ="+outputDocFinename);
+			wordMLPackage.save(new File(outputDocFilename));
+			System.out.println("Finished creating docx ="+outputDocFilename);
 		//TODO pdf export
 			/*
 			FOSettings foSettings = Docx4J.createFOSettings();
             foSettings.setWmlPackage(wordMLPackage);
-            OutputStream os = new java.io.FileOutputStream(outputDocFinename.replace(".docx", ".pdf"));
+            OutputStream os = new java.io.FileOutputStream(outputDocFilename.replace(".docx", ".pdf"));
             Docx4J.toFO(foSettings, os, Docx4J.FLAG_NONE);
-        	System.out.println("Finished creating docx's PDF ="+outputDocFinename);
+        	System.out.println("Finished creating docx's PDF ="+outputDocFilename);
     	*/	
 			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		
-		return outputDocFinename;
+		return outputDocFilename;
 	}
 	
 	protected void addImageByImageURLToPackage(int count,

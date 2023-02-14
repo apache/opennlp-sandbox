@@ -229,7 +229,7 @@ public class IntersectionSetBuilder{
 
 				} 
 				if (countCoverNeg<2){
-					System.err.println("A rule formed but it does not cover its origin! "+intersection);
+					System.err.println("A rule formed, but it does not cover its origin! "+intersection);
 					distProcessorNeg.ruleCoversCase(intersection, negativeSet.get(i));
 					distProcessorNeg.ruleCoversCase(intersection, negativeSet.get(j));
 				} */

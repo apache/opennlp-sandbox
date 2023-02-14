@@ -25,7 +25,7 @@ import java.util.Set;
 public class FormalConcept {
 	int position;
 	ArrayList<Integer>intent;
-	Set<Integer> childs;
+	Set<Integer> children;
 	Set<Integer> parents;
 	Set<Integer> extent;
 	double intLogStabilityBottom = 0,
@@ -56,7 +56,7 @@ public class FormalConcept {
 		intent = new ArrayList<Integer>();
 		extent = new LinkedHashSet<Integer>();
 		parents = new HashSet<Integer>();
-		childs = new HashSet<Integer>();	
+		children = new HashSet<Integer>();
 	}
 
 	public void setPosition(int newPosition ){
@@ -76,13 +76,13 @@ public class FormalConcept {
 	       intent.addAll(newIntent);
 	}
 	
-	public void setChilds(Set<Integer> newChilds ){
-		childs.clear();
-		childs.addAll(newChilds);
+	public void setChildren(Set<Integer> newChilds ){
+		children.clear();
+		children.addAll(newChilds);
 	}
 	
 	public void addChild(Integer child ){
-		childs.add(child);
+		children.add(child);
 	}
 	
 	public void setParents( Set<Integer> newParents ){
@@ -96,7 +96,7 @@ public class FormalConcept {
 		System.out.println("Concept intent:" + getIntent());
 		System.out.println("Concept extent:" + extent);
 		System.out.println("Concept parents:" + getParents());
-		System.out.println("Concept childs:" + childs);
+		System.out.println("Concept children:" + children);
 	    System.out.println("--------------------");
 	}
 	
@@ -105,7 +105,7 @@ public class FormalConcept {
 		System.out.println("Concept intent:" + getIntent());
 		System.out.println("Concept extent:" + extent);
 		System.out.println("Concept parents:" + getParents());
-		System.out.println("Concept childs:" + childs);
+		System.out.println("Concept children:" + children);
 		System.out.format("Prob.  blSaaJ   blSaaSMC blSmaJ   blSmmJ   blSmaSMC  blSamJ   blSamSMC  blCV     blCFC    blCU     blP      separ.\n");
 		System.out.format("%5.3f %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n", probability, blS_Jaa, blS_SMCaa,
 				 blS_Jma, blS_Jmm, blS_SMCma, blS_Jam, blS_SMCam, blCV, blCFC, blCU, blP, separation);	

@@ -98,7 +98,7 @@ public class Muc6FullParseCorefSampleStreamFactory extends AbstractSampleStreamF
     
     
     // How to load all these nameFinder models ?! 
-    // Lets make a param per model, not that nice, but ok!
+    // Let's make a param per model, not that nice, but ok!
     
     Map<String, File> modelFileTagMap = new HashMap<String, File>();
     

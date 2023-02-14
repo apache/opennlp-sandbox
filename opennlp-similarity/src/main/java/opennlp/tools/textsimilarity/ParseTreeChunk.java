@@ -461,25 +461,25 @@ public class ParseTreeChunk implements Serializable {
 	public String listToString(List<List<ParseTreeChunk>> chunks) {
 		StringBuffer buf = new StringBuffer();
 		if (chunks.get(0).size() > 0) {
-			buf.append(" np " + chunks.get(0).toString());
+			buf.append(" np ").append(chunks.get(0).toString());
 		}
 		if (chunks.get(1).size() > 0) {
-			buf.append(" vp " + chunks.get(1).toString());
+			buf.append(" vp ").append(chunks.get(1).toString());
 		}
 		if (chunks.size() < 3) {
 			return buf.toString();
 		}
 		if (chunks.get(2).size() > 0) {
-			buf.append(" prp " + chunks.get(2).toString());
+			buf.append(" prp ").append(chunks.get(2).toString());
 		}
 		if (chunks.get(3).size() > 0) {
-			buf.append(" pp " + chunks.get(3).toString());
+			buf.append(" pp ").append(chunks.get(3).toString());
 		}
 		if (chunks.get(4).size() > 0) {
-			buf.append(" adjp " + chunks.get(4).toString());
+			buf.append(" adjp ").append(chunks.get(4).toString());
 		}
 		if (chunks.get(5).size() > 0) {
-			buf.append(" whadvp " + chunks.get(5).toString());
+			buf.append(" whadvp ").append(chunks.get(5).toString());
 		}
 		/*
 		 * if (mainPos.equals("np")) np.add(ch); else if (mainPos.equals( "vp"))

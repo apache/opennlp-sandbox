@@ -19,7 +19,7 @@ package opennlp.summarization.lexicalchaining;
 
 public class WordRelation {
 
-	//Match strength constants for lexical chains..
+	//Match strength constants for lexical chains.
 	public static int STRONG_RELATION = 0;
 	public static int MED_RELATION = 1;
 	public static int WEAK_RELATION = 2;

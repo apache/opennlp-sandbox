@@ -147,7 +147,7 @@ public class RNN {
       INDArray inputs = getSequence(p);
       INDArray targets = getSequence(p + 1);
 
-      // sample from the model every now and then
+      // sample from the model now and then
       if (n % 1000 == 0 && n > 0) {
         String txt = sample(inputs.getInt(0));
         System.out.printf("\n---\n %s \n----\n", txt);

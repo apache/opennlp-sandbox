@@ -19,15 +19,13 @@ package opennlp.summarization.lexicalchaining;
 
 public interface Word {
 	
-	//Lexicon..
 	String getLexicon();
 	void setLexicon(String lex);
 
-	//Sense of a word..
+	// Sense of a word.
 	Object getSense();
 	void setSense(Object senseID);
 	
-	//ID for a word..
 	Object getID();
 	void setID(Object id);
 }

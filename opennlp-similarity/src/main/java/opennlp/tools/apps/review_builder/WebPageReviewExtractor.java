@@ -304,7 +304,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 		int count = 0;
 		for(String sent:sentences){
 			if (sent!=null)
-				buf.append(sent+" ");
+				buf.append(sent).append(" ");
 			if (count%2==0 && count<features.length)
 				if (features[count]!=null){
 					buf.append(features[count]);
@@ -344,7 +344,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 		int currentRevIndex = 0;
 		for(String sent:sentences){
 			if (sent!=null)
-				bufs[currentRevIndex].append(sent+" ");
+				bufs[currentRevIndex].append(sent).append(" ");
 			if (count%2==0 && count<features.length)
 				if (features[count]!=null){
 					bufs[currentRevIndex].append(features[count]);

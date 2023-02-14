@@ -112,7 +112,7 @@ public class PageFetcher {
         reader = new BufferedReader(new InputStreamReader(
             connection.getInputStream()));
       } catch (Exception e) {
-        // we dont always need to log trial web pages if access fails
+        // we don't always need to log trial web pages if access fails
         log.severe(e.toString());
       }
 

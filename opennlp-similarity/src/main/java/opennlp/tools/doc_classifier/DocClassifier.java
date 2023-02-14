@@ -85,7 +85,7 @@ public class DocClassifier {
 	// for
 	// classification
 	private static final int MIN_CHARS_IN_QUERY = 30; // if combination of
-	// keywords is shorter,
+	// keywords are shorter,
 	// should not be used
 	// for classification
 
@@ -135,7 +135,7 @@ public class DocClassifier {
 
 			return results;
 		}
-		TopDocs hits = null; // TopDocs search(Query query, int n)
+		TopDocs hits = null; // TopDocs search(Query, int)
 		// Finds the top n hits for query.
 		try {
 			hits = indexSearcher
@@ -279,9 +279,7 @@ public class DocClassifier {
 				String query = formClassifQuery(sentence, MAX_TOKENS_TO_FORM);
 				classifResults = classifySentence(query);
 				if (classifResults != null && classifResults.size() > 0) {
-					for (String c : classifResults) {
-						localCats.add(c);
-					}
+					localCats.addAll(classifResults);
 					logger.debug(sentence + " =>  " + classifResults);
 				}
 			}

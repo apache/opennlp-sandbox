@@ -157,37 +157,37 @@ public class VerbNetProcessor implements IGeneralizer<Map<String, List<String>>>
 	}
 
 	// takes a verb and forms its verbnet parameters 
-	// abandon  (leave-51.2 leave-51.2 ) (NP V NP.source ) (Transitivebasically, locative preposition drop of "from" ) (
+	// abandon  (leave-51.2 leave-51.2 ) (NP V NP.source ) (Transitive basically, locative preposition drop of "from" ) (
 	public StringBuilder buildTreeRepresentationForTreeKernelLearning(String verb){
 		StringBuilder sb = new StringBuilder(1000);
 		IVerbClass v;
 		v = getVerbNetForAVerb(verb);
 		if (v==null) // for some reason this verb is not in the vocabulary
 			return null;
-		sb.append(verb + "  (" );
+		sb.append(verb).append("  (");
 		List<IThematicRole> roles = v.getThematicRoles();
 
 		for(int i=0; i< roles.size(); i++){
-			sb.append(roles.get(i).getVerbClass().getID().replace(".", "")+" ");
+			sb.append(roles.get(i).getVerbClass().getID().replace(".", "")).append(" ");
 		}
 		sb.append( ") (" );
 
 		List<IFrame> frames = v.getFrames();
 		for(int i=0; i< frames.size(); i++){
-			sb.append(//" ("+
-		frames.get(i).getPrimaryType().getID().replace(".", "-")+" ");
+			//" ("+
+			sb.append(frames.get(i).getPrimaryType().getID().replace(".", "-")).append(" ");
 		}
 		sb.append( ") (" );
 		for(int i=0; i< frames.size(); i++){
 			sb.append(frames.get(i).getSecondaryType().getID().
-					replace(".", "").replace(",", " ").replace("\"", "-").replace("/", "-").replace("(","").replace(")","")+" ");
+							replace(".", "").replace(",", " ").replace("\"", "-").replace("/", "-").replace("(", "").replace(")", "")).append(" ");
 		}
 		sb.append( ") " );
 
 		if (v.getParent()!=null && v.getParent().getThematicRoles()!=null){
 			sb.append( "(" );
 			for(int i=0; i<v.getParent().getThematicRoles().size(); i++){
-				sb.append(v.getParent().getThematicRoles().get(i).getType()+" ");
+				sb.append(v.getParent().getThematicRoles().get(i).getType()).append(" ");
 			}
 			sb.append( ")" );
 		}

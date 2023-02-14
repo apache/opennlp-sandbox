@@ -46,7 +46,7 @@ import opennlp.tools.util.Span;
 
 public class CoreferencerTool extends BasicCmdLineTool {
 
-  class CorefParse {
+  static class CorefParse {
 
     private final Map<Parse, Integer> parseMap;
     private final List<Parse> parses;
@@ -135,7 +135,7 @@ public class CoreferencerTool extends BasicCmdLineTool {
             DiscourseEntity[] entities =
                 treebankLinker.getEntities(document.toArray(new Mention[document.size()]));
             //showEntities(entities);
-            new CorefParse(parses,entities).show();
+            new CorefParse(parses, entities).show();
             sentenceNumber = 0;
             document.clear();
             parses.clear();
@@ -150,7 +150,7 @@ public class CoreferencerTool extends BasicCmdLineTool {
               //System.err.println("PennTreebankLiner.main: "+ei+" "+extents[ei]);
 
               if (extent.getParse() == null) {
-                //not sure how to get head index, but its not used at this point.
+                //not sure how to get head index, but it's not used at this point.
                 Parse snp = new Parse(p.getText(), extent.getSpan(), "NML", 1.0, 0);
                 p.insert(snp);
                 extent.setParse(new DefaultParse(snp, sentenceNumber));

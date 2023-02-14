@@ -41,10 +41,10 @@ public class ResolverUtils {
   private static final Pattern ENDS_WITH_PERIOD = Pattern.compile("\\.$");
   private static final Pattern initialCaps = Pattern.compile("^[A-Z]");
 
-  /** Regular expression for English singular third person pronouns. */
+  /** Regular expression for English singular third-person pronouns. */
   public static final Pattern singularThirdPersonPronounPattern =
       Pattern.compile("^(he|she|it|him|her|his|hers|its|himself|herself|itself)$",Pattern.CASE_INSENSITIVE);
-  /** Regular expression for English plural third person pronouns. */
+  /** Regular expression for English plural third-person pronouns. */
   public static final Pattern pluralThirdPersonPronounPattern =
       Pattern.compile("^(they|their|theirs|them|themselves)$",Pattern.CASE_INSENSITIVE);
   /** Regular expression for English speech pronouns. */
@@ -56,13 +56,13 @@ public class ResolverUtils {
   /** Regular expression for English neuter pronouns. */
   public static final Pattern neuterPronounPattern =
       Pattern.compile("^(it|its|itself)$",Pattern.CASE_INSENSITIVE);
-  /** Regular expression for English first person pronouns. */
+  /** Regular expression for English first-person pronouns. */
   public static final Pattern firstPersonPronounPattern =
       Pattern.compile("^(I|me|my|we|our|us|ours)$",Pattern.CASE_INSENSITIVE);
-  /** Regular expression for English singular second person pronouns. */
+  /** Regular expression for English singular second-person pronouns. */
   public static final Pattern secondPersonPronounPattern =
       Pattern.compile("^(you|your|yours)$",Pattern.CASE_INSENSITIVE);
-  /** Regular expression for English third person pronouns. */
+  /** Regular expression for English third-person pronouns. */
   public static final Pattern thirdPersonPronounPattern =
       Pattern.compile("^(he|she|it|him|her|his|hers|its|himself|herself|itself|they|" +
       "their|theirs|them|themselves)$",Pattern.CASE_INSENSITIVE);
@@ -103,11 +103,11 @@ public class ResolverUtils {
 
   /**
    * Returns a list of features based on the surrounding context of the specified mention.
-   * @param mention he mention whose surround context the features model.
+   * @param mention The mention whose surround context the features model.
    * @return a list of features based on the surrounding context of the specified mention
    */
   public static List<String> getContextFeatures(MentionContext mention) {
-    List<String> features = new ArrayList<String>();
+    List<String> features = new ArrayList<>();
     if (mention.getPreviousToken() != null) {
       features.add("pt=" + mention.getPreviousToken().getSyntacticType());
       features.add("pw=" + mention.getPreviousToken().toString());
@@ -141,7 +141,7 @@ public class ResolverUtils {
    * @return a list of word features for the specified tokens.
    */
   public static List<String> getWordFeatures(Parse token) {
-    List<String> wordFeatures = new ArrayList<String>();
+    List<String> wordFeatures = new ArrayList<>();
     String word = token.toString().toLowerCase();
     String wf = "";
     if (ENDS_WITH_PERIOD.matcher(word).find()) {
@@ -154,7 +154,7 @@ public class ResolverUtils {
   }
 
   public static Set<String> constructModifierSet(Parse[] tokens, int headIndex) {
-    Set<String> modSet = new HashSet<String>();
+    Set<String> modSet = new HashSet<>();
     for (int ti = 0; ti < headIndex; ti++) {
       Parse tok = tokens[ti];
       modSet.add(tok.toString().toLowerCase());
@@ -166,8 +166,7 @@ public class ResolverUtils {
     StringBuilder sb = new StringBuilder();
     boolean first = true;
     Parse[] mtokens = ec.getTokenParses();
-    for (int ti = 0, tl = mtokens.length; ti < tl; ti++) {
-      Parse token = mtokens[ti];
+    for (Parse token : mtokens) {
       String tag = token.getSyntacticType();
       if (!tag.equals("DT")) {
         if (!first) {
@@ -184,8 +183,8 @@ public class ResolverUtils {
     StringBuilder sb = new StringBuilder();
     boolean first = true;
     Object[] mtokens = ec.getTokens();
-    for (int ti = 0, tl = mtokens.length; ti < tl; ti++) {
-      String token = mtokens[ti].toString();
+    for (Object mtoken : mtokens) {
+      String token = mtoken.toString();
       if (!honorificsPattern.matcher(token).matches()) {
         if (!first) {
           sb.append(" ");
@@ -201,8 +200,8 @@ public class ResolverUtils {
     StringBuilder sb = new StringBuilder();
     boolean first = true;
     Object[] mtokens = ec.getTokens();
-    for (int ti = 0, tl = mtokens.length; ti < tl; ti++) {
-      String token = mtokens[ti].toString();
+    for (Object mtoken : mtokens) {
+      String token = mtoken.toString();
       if (!token.equals("the") && !token.equals("The") && !token.equals("THE")) {
         if (!first) {
           sb.append(" ");
@@ -232,21 +231,21 @@ public class ResolverUtils {
   }
 
   /**
-   * Returns string-match features for the the specified mention and entity.
+   * Returns string-match features for the specified mention and entity.
    * @param mention The mention.
    * @param entity The entity.
-   * @return list of string-match features for the the specified mention and entity.
+   * @return list of string-match features for the specified mention and entity.
    */
   public static List<String> getStringMatchFeatures(MentionContext mention, DiscourseEntity entity) {
     boolean sameHead = false;
     boolean modsMatch = false;
     boolean titleMatch = false;
     boolean nonTheModsMatch = false;
-    List<String> features = new ArrayList<String>();
+    List<String> features = new ArrayList<>();
     Parse[] mtokens = mention.getTokenParses();
     Set<String> ecModSet = constructModifierSet(mtokens, mention.getHeadTokenIndex());
     String mentionHeadString = mention.getHeadTokenText().toLowerCase();
-    Set<String> featureSet = new HashSet<String>();
+    Set<String> featureSet = new HashSet<>();
     for (Iterator<MentionContext> ei = entity.getMentions(); ei.hasNext();) {
       MentionContext entityMention = ei.next();
       String exactMatchFeature = getExactMatchFeature(entityMention, mention);
@@ -282,8 +281,7 @@ public class ResolverUtils {
           modsMatch = true;
           nonTheModsMatch = true;
           Set<String> entityMentionModifierSet = constructModifierSet(xtoks, headIndex);
-          for (Iterator<String> mi = ecModSet.iterator(); mi.hasNext();) {
-            String mw = mi.next();
+          for (String mw : ecModSet) {
             if (!entityMentionModifierSet.contains(mw)) {
               modsMatch = false;
               if (!mw.equals("the")) {
@@ -405,15 +403,15 @@ public class ResolverUtils {
       //System.err.println("stripNp: return null 5");
       return null;
     }
-    String strip = "";
+    StringBuilder strip = new StringBuilder();
     for (int i = start; i < end; i++) {
-      strip += mtokens[i].toString() + ' ';
+      strip.append(mtokens[i].toString()).append(' ');
     }
-    return strip.trim();
+    return strip.toString().trim();
   }
 
   public static MentionContext getProperNounExtent(DiscourseEntity de) {
-    //use first extent which is propername
+    //use first extent which is proper name
     for (Iterator<MentionContext> ei = de.getMentions(); ei.hasNext();) {
       MentionContext xec = ei.next();
       String xecHeadTag = xec.getHeadTokenTag();
@@ -425,7 +423,7 @@ public class ResolverUtils {
   }
 
   private static Map<String, String> getPronounFeatureMap(String pronoun) {
-    Map<String, String> pronounMap = new HashMap<String, String>();
+    Map<String, String> pronounMap = new HashMap<>();
     if (malePronounPattern.matcher(pronoun).matches()) {
       pronounMap.put("gender","male");
     }
@@ -481,16 +479,14 @@ public class ResolverUtils {
                 getPronounFeatureMap(candidateMention.getHeadTokenText());
             //System.err.println("getPronounMatchFeatures.candidatePronounMap:"+candidatePronounMap);
             boolean allKeysMatch = true;
-            for (Iterator<String> ki = pronounMap.keySet().iterator(); ki.hasNext();) {
-              String key = ki.next();
+            for (String key : pronounMap.keySet()) {
               String cfv = candidatePronounMap.get(key);
               if (cfv != null) {
                 if (!pronounMap.get(key).equals(cfv)) {
                   foundIncompatiblePronoun = true;
                   allKeysMatch = false;
                 }
-              }
-              else {
+              } else {
                 allKeysMatch = false;
               }
             }
@@ -518,7 +514,7 @@ public class ResolverUtils {
    * @return list of distance features for the specified mention and entity.
    */
   public static List<String> getDistanceFeatures(MentionContext mention, DiscourseEntity entity) {
-    List<String> features = new ArrayList<String>();
+    List<String> features = new ArrayList<>();
     MentionContext cec = entity.getLastExtent();
     int entityDistance = mention.getNounPhraseDocumentIndex() - cec.getNounPhraseDocumentIndex();
     int sentenceDistance = mention.getSentenceNumber() - cec.getSentenceNumber();
@@ -581,7 +577,7 @@ public class ResolverUtils {
    */
   public static List<String> getCompatibilityFeatures(MentionContext mention,
                                                       DiscourseEntity entity, TestSimilarityModel simModel) {
-    List<String> compatFeatures = new ArrayList<String>();
+    List<String> compatFeatures = new ArrayList<>();
     String semCompatible = getSemanticCompatibilityFeature(mention, entity, simModel);
     compatFeatures.add(semCompatible);
     String genCompatible = getGenderCompatibilityFeature(mention, entity);
