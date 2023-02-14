@@ -17,12 +17,9 @@
 
 package opennlp.tools.apps.review_builder;
 
-import java.util.Arrays;
-import java.util.List;
+import org.apache.commons.lang.StringUtils;
 
 import opennlp.tools.similarity.apps.utils.Utils;
-
-import org.apache.commons.lang.StringUtils;
 
 public class MinedSentenceProcessor {
   public static String acceptableMinedSentence(String sent) {
