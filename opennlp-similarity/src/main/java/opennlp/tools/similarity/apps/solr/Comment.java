@@ -34,8 +34,8 @@ import org.docx4j.wml.ObjectFactory;
 
 public class Comment {
 
-    private WordprocessingMLPackage wordMlPackage;
-    private boolean relSet = false;
+    private final WordprocessingMLPackage wordMlPackage;
+    private final boolean relSet = false;
 
     public Comment(WordprocessingMLPackage wordMLPack) {
         this.wordMlPackage = wordMLPack;

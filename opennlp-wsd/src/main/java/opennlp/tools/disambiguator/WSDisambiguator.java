@@ -83,7 +83,7 @@ public abstract class WSDisambiguator {
    */
   public List<String> disambiguate(String[] tokenizedContext,
       String[] tokenTags, String[] lemmas, Span ambiguousTokenIndexSpan) {
-    List<String> senses = new ArrayList<String>();
+    List<String> senses = new ArrayList<>();
 
     int start = Math.max(0, ambiguousTokenIndexSpan.getStart());
 
@@ -128,7 +128,7 @@ public abstract class WSDisambiguator {
   public List<String> disambiguate(String[] tokenizedContext,
       String[] tokenTags, String[] lemmas) {
 
-    List<String> senses = new ArrayList<String>();
+    List<String> senses = new ArrayList<>();
 
     for (int i = 0; i < tokenizedContext.length; i++) {
 

@@ -40,7 +40,7 @@ public class TreebankNameFinder {
   public static String[] NAME_TYPES =
       {"person", "organization", "location", "date", "time", "percentage", "money"};
 
-  private NameFinderME nameFinder;
+  private final NameFinderME nameFinder;
   
   /** Creates an English name finder using the specified model.
    * @param mod The model used for finding names.
@@ -50,8 +50,8 @@ public class TreebankNameFinder {
   }
 
   private static void clearPrevTokenMaps(TreebankNameFinder[] finders) {
-    for (int mi = 0; mi < finders.length; mi++) {
-      finders[mi].nameFinder.clearAdaptiveData();
+    for (TreebankNameFinder finder : finders) {
+      finder.nameFinder.clearAdaptiveData();
     }
   }
 

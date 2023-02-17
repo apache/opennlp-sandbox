@@ -42,7 +42,7 @@ import java.util.logging.Logger;
  */
 public class FileHandler {
 
-  private static Logger LOG = Logger
+  private static final Logger LOG = Logger
       .getLogger("opennlp.tools.similarity.apps.utils.FileHandler");
 
   public void writeToTextFile(String data, String filepath, boolean append)
@@ -93,7 +93,7 @@ public class FileHandler {
     if (!isFileOrDirectoryExists(getDirPathfromFullPath(filepath))) {
       createFolder(getDirPathfromFullPath(filepath));
     }
-    ObjectOutputStream outputStream = null;
+    ObjectOutputStream outputStream;
     try {
       outputStream = new ObjectOutputStream(new FileOutputStream(filepath));
       outputStream.writeObject(obj);
@@ -107,18 +107,14 @@ public class FileHandler {
     try {
       // Construct the ObjectInputStream object
       inputStream = new ObjectInputStream(new FileInputStream(filePath));
-      Object obj = null;
+      Object obj;
       while ((obj = inputStream.readObject()) != null) {
         return obj;
       }
     } catch (EOFException ex) { // This exception will be caught when EOF is
                                 // reached
-      LOG.severe("End of file reached.\n" + ex.toString());
-    } catch (ClassNotFoundException ex) {
-      LOG.severe(ex.toString());
-    } catch (FileNotFoundException ex) {
-      LOG.severe(ex.toString());
-    } catch (IOException ex) {
+      LOG.severe("End of file reached.\n" + ex);
+    } catch (ClassNotFoundException | IOException ex) {
       LOG.severe(ex.toString());
     } finally {
       // Close the ObjectInputStream
@@ -150,8 +146,7 @@ public class FileHandler {
     oos.flush();
     oos.close();
     bos.close();
-    byte[] data = bos.toByteArray();
-    return data;
+    return bos.toByteArray();
   }
 
   /**
@@ -170,9 +165,8 @@ public class FileHandler {
       // TODO be sure that the default encoding is OK!!!!! Otherwise
       // change it
 
-      BufferedReader input = new BufferedReader(new FileReader(aFile));
-      try {
-        String line = null; // not declared within while loop
+      try (BufferedReader input = new BufferedReader(new FileReader(aFile))) {
+        String line; // not declared within while loop
         /*
          * readLine is a bit quirky : it returns the content of a line MINUS the
          * newline. it returns null only for the END of the stream. it returns
@@ -182,8 +176,6 @@ public class FileHandler {
           contents.append(line);
           contents.append(System.getProperty("line.separator"));
         }
-      } finally {
-        input.close();
       }
     } catch (IOException ex) {
       LOG.severe("fileName: " + filePath +"\n " + ex);
@@ -199,7 +191,7 @@ public class FileHandler {
    * @return
    */
   public List<String> readLinesFromTextFile(String filePath) {
-    List<String> lines = new ArrayList<String>();
+    List<String> lines = new ArrayList<>();
     // ...checks on aFile are edited
     File aFile = new File(filePath);
     try {
@@ -210,7 +202,7 @@ public class FileHandler {
 
       BufferedReader input = new BufferedReader(new FileReader(aFile));
       try {
-        String line = null; // not declared within while loop
+        String line; // not declared within while loop
         /*
          * readLine is a bit quirky : it returns the content of a line MINUS the
          * newline. it returns null only for the END of the stream. it returns
@@ -229,10 +221,8 @@ public class FileHandler {
   }
 
   private void appendtofile(String data, String filePath) {
-    try {
-      BufferedWriter out = new BufferedWriter(new FileWriter(filePath, true));
+    try (BufferedWriter out = new BufferedWriter(new FileWriter(filePath, true))) {
       out.write(data + "\n");
-      out.close();
     } catch (IOException e) {
     }
   }
@@ -250,8 +240,7 @@ public class FileHandler {
 
   public boolean isFileOrDirectoryExists(String path) {
     File file = new File(path);
-    boolean exists = file.exists();
-    return exists;
+    return file.exists();
   }
 
   /**
@@ -263,7 +252,7 @@ public class FileHandler {
   private String getDirPathfromFullPath(String filePath) {
     String dirPath = "";
     if (filePath != null) {
-      if (filePath != "" && filePath.contains("\\"))
+      if (filePath.contains("\\"))
         dirPath = filePath.substring(0, filePath.lastIndexOf("\\"));
     }
     return dirPath;
@@ -277,15 +266,15 @@ public class FileHandler {
    * @return
    */
   public ArrayList<String> getFileNamesInFolder(String dirPath) {
-    ArrayList<String> fileNames = new ArrayList<String>();
+    ArrayList<String> fileNames = new ArrayList<>();
 
     File folder = new File(dirPath);
     File[] listOfFiles = folder.listFiles();
 
-    for (int i = 0; i < listOfFiles.length; i++) {
-      if (listOfFiles[i].isFile()) {
-        fileNames.add(listOfFiles[i].getName());
-      } else if (listOfFiles[i].isDirectory()) {
+    for (File listOfFile : listOfFiles) {
+      if (listOfFile.isFile()) {
+        fileNames.add(listOfFile.getName());
+      } else if (listOfFile.isDirectory()) {
         // TODO if I want to use it recursive I should handle this case
       }
     }
@@ -295,12 +284,12 @@ public class FileHandler {
   public void deleteAllfilesinDir(String dirName) {
     ArrayList<String> fileNameList = getFileNamesInFolder(dirName);
     if (fileNameList != null) {
-      for (int i = 0; i < fileNameList.size(); i++) {
+      for (String s : fileNameList) {
         try {
-          deleteFile(dirName + fileNameList.get(i));
+          deleteFile(dirName + s);
         } catch (IllegalArgumentException e) {
-          LOG.severe("No way to delete file: " + dirName + fileNameList.get(i) + "\n"+
-              e);
+          LOG.severe("No way to delete file: " + dirName + s + "\n" +
+                  e);
         }
       }
     }
@@ -332,11 +321,11 @@ public class FileHandler {
   public boolean deleteDirectory(File path) {
     if (path.exists()) {
       File[] files = path.listFiles();
-      for (int i = 0; i < files.length; i++) {
-        if (files[i].isDirectory()) {
-          deleteDirectory(files[i]);
+      for (File file : files) {
+        if (file.isDirectory()) {
+          deleteDirectory(file);
         } else {
-          files[i].delete();
+          file.delete();
         }
       }
     }
@@ -350,16 +339,16 @@ public class FileHandler {
    * @return
    */
   public ArrayList<String> getFilePathsInFolder(String dirPath) {
-    ArrayList<String> filePaths = new ArrayList<String>();
+    ArrayList<String> filePaths = new ArrayList<>();
 
     File folder = new File(dirPath);
     File[] listOfFiles = folder.listFiles();
     if (listOfFiles == null)
       return null;
-    for (int i = 0; i < listOfFiles.length; i++) {
-      if (listOfFiles[i].isFile()) {
-        filePaths.add(listOfFiles[i].getAbsolutePath());
-      } else if (listOfFiles[i].isDirectory()) {
+    for (File listOfFile : listOfFiles) {
+      if (listOfFile.isFile()) {
+        filePaths.add(listOfFile.getAbsolutePath());
+      } else if (listOfFile.isDirectory()) {
         // TODO if I want to use it recursive I should handle this case
       }
     }
@@ -373,7 +362,7 @@ public class FileHandler {
    * @return
    */
   public int getFileNumInFolder(String dirPath) {
-    int num = 0;
+    int num;
     try {
       num = getFileNamesInFolder(dirPath).size();
     } catch (Exception e) {

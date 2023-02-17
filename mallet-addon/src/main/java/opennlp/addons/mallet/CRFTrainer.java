@@ -146,7 +146,7 @@ public class CRFTrainer extends AbstractSequenceTrainer {
     // can be very similar to the other model
     // one important difference is that the feature gen needs to be integrated
     // ...
-    return new TransducerModel(crf);
+    return new TransducerModel<>(crf);
   }
 
   // TODO: We need to return a sequence model here. How should that be done ?!

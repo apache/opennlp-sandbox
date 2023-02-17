@@ -17,8 +17,6 @@
 
 package org.apache.opennlp.corpus_server.tools;
 
-import javax.ws.rs.core.MediaType;
-
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;

@@ -38,7 +38,7 @@ public class WebSearchEngineResultsScraper {
   protected static String fetchPageSearchEngine(String url) {
     System.out.println("fetch url " + url);
     String pageContent = null;
-    StringBuffer buf = new StringBuffer();
+    StringBuilder buf = new StringBuilder();
     try {
       URLConnection connection = new URL(url).openConnection();
       connection.setReadTimeout(50000);
@@ -69,7 +69,7 @@ public class WebSearchEngineResultsScraper {
   }
 
   private static List<String> extractURLsFromPage(String content, String domain) {
-    List<String> results = new ArrayList<String>();
+    List<String> results = new ArrayList<>();
     if (content == null)
       return results;
     content = StringUtils.substringBetween(content, ">Advanced</a></div>",
@@ -94,7 +94,7 @@ public class WebSearchEngineResultsScraper {
   }
 
   private static List<HitBase> extractSearchResultFromPage(String content) {
-    List<HitBase> results = new ArrayList<HitBase>();
+    List<HitBase> results = new ArrayList<>();
     if (content == null)
       return results;
     content = StringUtils.substringBetween(content, "<div id=\"results",
@@ -141,17 +141,17 @@ public class WebSearchEngineResultsScraper {
   }
 
   public Set<String> getURLsForWebDomainIterations(String domain) {
-    List<String> results = new ArrayList<String>();
+    List<String> results = new ArrayList<>();
     List<String> res = extractURLsFromPage(
         fetchPageSearchEngine(formRequestURL(domain)), domain);
     for (String r : res)
       results.addAll(extractURLsFromPage(fetchPageSearchEngine(formRequestURL(r)), r));
 
-    return new HashSet<String>(results);
+    return new HashSet<>(results);
   }
   
   public List<HitBase> runSearch(String query) {
-    List<HitBase> hits = new ArrayList<HitBase>();
+    List<HitBase> hits = new ArrayList<>();
     /*  Actual external web search is commented out
     try {
       String serp = fetchPageSearchEngine(formRequestURL(query));
@@ -183,7 +183,7 @@ public class WebSearchEngineResultsScraper {
     System.out.println(scraper.runSearch("lady gaga in san francisco"));        
   }
   
-  Map<String, String[][]> cachedSearchEngineData = new HashMap<String, String[][]>();
+  final Map<String, String[][]> cachedSearchEngineData = new HashMap<>();
   
   
   private void buildCache(){

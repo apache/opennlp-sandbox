@@ -109,7 +109,7 @@ public class CSQueueCollectionReader extends CollectionReader_ImplBase {
     
     // Retrieve queue link ...
     
-    List<String> casIdList = new ArrayList<String>();
+    List<String> casIdList = new ArrayList<>();
     
     
     WebResource r = client.resource(serverAddress +  "/queues/" + queueName);

@@ -46,7 +46,7 @@ public class SpeechPronounResolver extends MaxentResolver {
 
   @Override
   protected List<String> getFeatures(MentionContext mention, DiscourseEntity entity) {
-    List<String> features = new ArrayList<String>(super.getFeatures(mention, entity));
+    List<String> features = new ArrayList<>(super.getFeatures(mention, entity));
     if (entity != null) {
       features.addAll(ResolverUtils.getPronounMatchFeatures(mention,entity));
       List<String> contexts = ResolverUtils.getContextFeatures(mention);
@@ -55,15 +55,15 @@ public class SpeechPronounResolver extends MaxentResolver {
         features.add(mention.getHeadTokenText() + "," + cec.getHeadTokenText());
       }
       else if (mention.getHeadTokenText().startsWith("NNP")) {
-        for (int ci = 0, cl = contexts.size(); ci < cl; ci++) {
-          features.add(contexts.get(ci));
+        for (String context : contexts) {
+          features.add(context);
         }
         features.add(mention.getNameType() + "," + cec.getHeadTokenText());
       }
       else {
         List<String> ccontexts = ResolverUtils.getContextFeatures(cec);
-        for (int ci = 0, cl = ccontexts.size(); ci < cl; ci++) {
-          features.add(ccontexts.get(ci));
+        for (String ccontext : ccontexts) {
+          features.add(ccontext);
         }
         features.add(cec.getNameType() + "," + mention.getHeadTokenText());
       }

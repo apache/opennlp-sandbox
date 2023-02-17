@@ -22,8 +22,8 @@ package opennlp.tools.coref.sim;
  */
 public class Gender {
 
-  private GenderEnum type;
-  private double confidence;
+  private final GenderEnum type;
+  private final double confidence;
 
   public Gender(GenderEnum type,double confidence) {
     this.type = type;

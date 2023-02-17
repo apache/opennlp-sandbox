@@ -32,7 +32,7 @@ import java.util.Map;
  */
 public class AriAdapter {
   // income_taks(state,company(cafeteria,_)):-do(71100).
-  Map<String, List<List<String>>> lemma_AssocWords = new HashMap<String, List<List<String>>>();
+  final Map<String, List<List<String>>> lemma_AssocWords = new HashMap<>();
 
   public void getChainsFromARIfile(String fileName) {
 
@@ -51,12 +51,12 @@ public class AriAdapter {
             .replace('.', '&').replace("&&&", "&").replace("&&", "&")
             .replace("&", " ");
         String[] chains = chain0.split(" ");
-        List<String> chainList = new ArrayList<String>(); // Arrays.asList(chains);
+        List<String> chainList = new ArrayList<>(); // Arrays.asList(chains);
         for (String word : chains) {
-          if (word != null && word.length() > 2 && word.indexOf("0") < 0
-              && word.indexOf("1") < 0 && word.indexOf("2") < 0
-              && word.indexOf("3") < 0 && word.indexOf("4") < 0
-              && word.indexOf("5") < 0)
+          if (word != null && word.length() > 2 && !word.contains("0")
+              && !word.contains("1") && !word.contains("2")
+              && !word.contains("3") && !word.contains("4")
+              && !word.contains("5"))
             chainList.add(word);
         }
         if (chains.length < 1 || chainList.size() < 1
@@ -68,7 +68,7 @@ public class AriAdapter {
         chainList.remove(entry);
         List<List<String>> res = lemma_AssocWords.get(entry);
         if (res == null) {
-          List<List<String>> resList = new ArrayList<List<String>>();
+          List<List<String>> resList = new ArrayList<>();
           resList.add(chainList);
           lemma_AssocWords.put(entry, resList);
         } else {

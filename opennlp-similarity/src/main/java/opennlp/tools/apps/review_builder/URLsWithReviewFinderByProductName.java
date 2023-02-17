@@ -24,11 +24,11 @@ import opennlp.tools.similarity.apps.BingQueryRunner;
 import opennlp.tools.similarity.apps.HitBase;
 
 public class URLsWithReviewFinderByProductName {
-	BingQueryRunner search = new BingQueryRunner();
+	final BingQueryRunner search = new BingQueryRunner();
 	
 	public List<String> findFacebookURLByNameAndZip(String name){
 		List<HitBase> foundFBPages = search.runSearch(name, 20);
-		List<String> results = new ArrayList<String>();
+		List<String> results = new ArrayList<>();
 		for(HitBase h: foundFBPages){
 			results.add(h.getUrl());
 		}

@@ -20,7 +20,6 @@ package org.apache.opennlp.utils.cfg;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -77,7 +76,7 @@ public class CFGRunner {
 
     builder.withStartSymbol(startSymbol);
 
-    Collection<Rule> rules = new LinkedList<Rule>();
+    Collection<Rule> rules = new LinkedList<>();
     rules.add(new Rule(startSymbol, "VP", "NP"));
     rules.add(new Rule("VP", "Adv", "Vb"));
     rules.add(new Rule("NP", "Adj", "NN"));

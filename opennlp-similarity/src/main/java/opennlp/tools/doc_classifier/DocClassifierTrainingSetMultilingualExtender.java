@@ -42,10 +42,10 @@ public class DocClassifierTrainingSetMultilingualExtender {
 
 	public static String projectHome = new File(".").getAbsolutePath().replace("contentinspection/.", "");
 	public static String resourceDir = new File(".").getAbsolutePath().replace("/.", "") + "/src/main/resources";
-	DocClassifier classifier = null;
+	final DocClassifier classifier;
 	private String sourceDir = null, destinationDir = null;
 	//interwiki-fr"><a href="http://fr.wikipedia.org/wiki/Niveau_d%27%C3%A9nergie" title="Niveau d&#39;énergie – French" lang="fr" 
-	private static String[][] multilingualTokens = new String[][]{ 
+	private static final String[][] multilingualTokens = new String[][]{
 		{"interwiki-fr\"><a href=\"", "lang=\"fr\""},
 		{"interwiki-es\"><a href=\"", "lang=\"es\""},
 		{"interwiki-de\"><a href=\"", "lang=\"de\""},
@@ -53,14 +53,14 @@ public class DocClassifierTrainingSetMultilingualExtender {
 	
 	private static final String[] LANGS = new String[]{ "fr", "es", "de"};
 
-	protected ArrayList<File> queue = new ArrayList<>();
+	protected final ArrayList<File> queue = new ArrayList<>();
 
 	public DocClassifierTrainingSetMultilingualExtender(String resource) {
 
 		classifier = new DocClassifier("", new JSONObject());
 
 	}
-	private int FRAGMENT_LENGTH = 500;
+	private final int FRAGMENT_LENGTH = 500;
 
 	protected void addFiles(File file) {
 

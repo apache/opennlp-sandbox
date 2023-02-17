@@ -25,10 +25,10 @@ import java.util.List;
 import org.apache.commons.io.FileUtils;
 
 public class EmailTrainingSetFormer {
-	static String dataDir = "/Users/bgalitsky/Downloads/",
-			//enron_with_categories/",
-			fileListFile = "cats4_11-17.txt",
-			destinationDir = "/Users/bgalitsky/Documents/ENRON/data11_17/";
+	static final String dataDir = "/Users/bgalitsky/Downloads/";
+	static final String//enron_with_categories/",
+			fileListFile = "cats4_11-17.txt";
+	static final String destinationDir = "/Users/bgalitsky/Documents/ENRON/data11_17/";
 
 	//enron_with_categories/5/70665.cats:4,10,1
 	public static void  createPosTrainingSet(){
@@ -47,7 +47,8 @@ public class EmailTrainingSetFormer {
 		}
 	}
 
-	private String origFolder = "maildir_ENRON_EMAILS", newFolder = "data11_17";
+	private final String origFolder = "maildir_ENRON_EMAILS";
+	private final String newFolder = "data11_17";
 
 	public static String normalize(File f){
 		String content="";

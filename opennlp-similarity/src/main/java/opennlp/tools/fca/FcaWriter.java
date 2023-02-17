@@ -31,7 +31,7 @@ public class FcaWriter {
 						new FileOutputStream(filename), StandardCharsets.UTF_8))) {
 			writer.write("B\n");
 			writer.write("\n");
-			writer.write(String.valueOf(cl.objectCount) + "\n");
+			writer.write(cl.objectCount + "\n");
 			writer.write(cl.attributeCount + "\n");
 			writer.write("\n");
 
@@ -48,8 +48,6 @@ public class FcaWriter {
 				}
 				writer.write("\n");
 			}
-
-			writer.close();
 
 		} catch (IOException ex) {
 			System.err.println(ex.getMessage());

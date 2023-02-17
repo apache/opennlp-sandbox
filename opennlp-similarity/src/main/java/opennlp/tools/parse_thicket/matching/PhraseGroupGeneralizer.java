@@ -44,7 +44,7 @@ public class PhraseGroupGeneralizer implements IGeneralizer<List<ParseTreeChunk>
   public List<List<ParseTreeChunk>> generalize(Object o1, Object o2) {
 	  
   
-      List<List<ParseTreeChunk>> sent1 = (List<List<ParseTreeChunk>>)o1, 
+    List<List<ParseTreeChunk>> sent1 = (List<List<ParseTreeChunk>>)o1,
     	 sent2 = (List<List<ParseTreeChunk>>) o2 ;
     List<List<ParseTreeChunk>> results = new ArrayList<>();
     // first iterate through component

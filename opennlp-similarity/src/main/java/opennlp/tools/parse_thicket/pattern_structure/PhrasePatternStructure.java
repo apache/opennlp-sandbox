@@ -27,10 +27,10 @@ import opennlp.tools.textsimilarity.ParseTreeChunk;
 import opennlp.tools.textsimilarity.ParseTreeMatcherDeterministic;
 
 public class PhrasePatternStructure {
-	int objectCount;
-	int attributeCount;
-	public List<PhraseConcept> conceptList;
-	ParseTreeMatcherDeterministic md; 
+	final int objectCount;
+	final int attributeCount;
+	public final List<PhraseConcept> conceptList;
+	final ParseTreeMatcherDeterministic md;
 	public PhrasePatternStructure(int objectCounts, int attributeCounts) {
 		objectCount = objectCounts;
 		attributeCount = attributeCounts;
@@ -157,9 +157,9 @@ public class PhrasePatternStructure {
 
 	public List<List<ParseTreeChunk>> formGroupedPhrasesFromChunksForPara(
 			List<List<ParseTreeNode>> phrs) {
-		List<List<ParseTreeChunk>> results = new ArrayList<List<ParseTreeChunk>>();
-		List<ParseTreeChunk> nps = new ArrayList<ParseTreeChunk>(), vps = new ArrayList<ParseTreeChunk>(), 
-				pps = new ArrayList<ParseTreeChunk>();
+		List<List<ParseTreeChunk>> results = new ArrayList<>();
+		List<ParseTreeChunk> nps = new ArrayList<>(), vps = new ArrayList<>(),
+				pps = new ArrayList<>();
 		for(List<ParseTreeNode> ps:phrs){
 			ParseTreeChunk ch = convertNodeListIntoChunk(ps);
 			String ptype = ps.get(0).getPhraseType();

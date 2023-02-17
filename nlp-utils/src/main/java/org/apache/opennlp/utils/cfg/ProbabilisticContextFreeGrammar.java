@@ -259,7 +259,7 @@ public class ProbabilisticContextFreeGrammar {
         return "(" +
                 (rule != null ? rule.getEntry() : null) + " " +
                 (leftTree != null && rightTree != null ?
-                        leftTree.toString() + " " + rightTree.toString() :
+                        leftTree + " " + rightTree.toString() :
                         (rule != null ? rule.getExpansion()[0] : null)
                 ) +
                 ')';

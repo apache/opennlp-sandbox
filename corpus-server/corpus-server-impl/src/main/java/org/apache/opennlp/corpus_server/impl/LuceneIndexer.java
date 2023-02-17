@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
@@ -109,8 +108,6 @@ public class LuceneIndexer extends LuceneDocumentAE {
       
       // TODO: Commit handling might need to be changed
       indexWriter.commit();
-    } catch (CorruptIndexException e) {
-      throw new AnalysisEngineProcessException(e);
     } catch (IOException e) {
       throw new AnalysisEngineProcessException(e);
     }
@@ -122,12 +119,10 @@ public class LuceneIndexer extends LuceneDocumentAE {
     
     try {
       indexWriter.close();
-    } catch (CorruptIndexException e) {
-      e.printStackTrace();
     } catch (IOException e) {
       e.printStackTrace();
     }
-    
+
     indexWriter = null;
   }
 }

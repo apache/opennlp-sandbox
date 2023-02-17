@@ -41,18 +41,18 @@ public class SynonymListFilter {
 		}
 	}
 	
-	protected static Map<String, List<String>> filteredKeyword_synonyms = new HashMap<String, List<String>>();
+	protected static Map<String, List<String>> filteredKeyword_synonyms = new HashMap<>();
 
 	static public List<String> getFileLines(File aFile) {
 
-		List<String> items = new ArrayList<String>();
+		List<String> items = new ArrayList<>();
 
 		StringBuilder contents = new StringBuilder();		    
 		try {
 
 			BufferedReader input =  new BufferedReader(new FileReader(aFile));
 			try {
-				String line = null; //not declared within while loop
+				String line; //not declared within while loop
 				while (( line = input.readLine()) != null){
 					int endOfWord = line.indexOf(';');
 					if (endOfWord>2)
@@ -78,7 +78,7 @@ public class SynonymListFilter {
 				return null;
 			Random rand = new Random();
 			int index = (int) Math.floor(rand.nextDouble()*(double)synonyms.length);
-			System.out.println("Found synonyms "+Arrays.asList(synonyms).toString()+ " | selected synonym = "+synonyms[index] +" | for the input = "+ word);
+			System.out.println("Found synonyms " + Arrays.asList(synonyms) + " | selected synonym = "+synonyms[index] +" | for the input = "+ word);
 			return synonyms[index];
 			
 	}

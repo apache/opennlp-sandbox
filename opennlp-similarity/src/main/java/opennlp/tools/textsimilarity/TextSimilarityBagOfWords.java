@@ -25,14 +25,14 @@ public class TextSimilarityBagOfWords {
   public double assessRelevanceAndGetScore(String para1, String para2) {
     List<String> wordsOfPara1 = TextProcessor.fastTokenize(para1, false);
     List<String> wordsOfPara2 = TextProcessor.fastTokenize(para2, false);
-    List<String> overlap = new ArrayList<String>(wordsOfPara1);
+    List<String> overlap = new ArrayList<>(wordsOfPara1);
     overlap.retainAll(wordsOfPara2);
     overlap.removeAll(Arrays.asList(stopList));
 
     return overlap.size();
   }
 
-  public String[] stopList = new String[] { "a",
+  public final String[] stopList = new String[] { "a",
 
   "about",
 

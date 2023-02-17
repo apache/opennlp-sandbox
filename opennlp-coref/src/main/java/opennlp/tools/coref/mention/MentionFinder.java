@@ -30,21 +30,21 @@ public interface MentionFinder {
    * @param collectPrenominalNamedEntities true if pre-nominal named-entities
    *                                       should be collected; false otherwise.
    */
-  public void setPrenominalNamedEntityCollection(boolean collectPrenominalNamedEntities);
+  void setPrenominalNamedEntityCollection(boolean collectPrenominalNamedEntities);
 
   /**
    * Returns whether this mention finder collects pre-nominal named-entities as mentions.
    *
    * @return true if this mention finder collects pre-nominal named-entities as mentions
    */
-  public boolean isPrenominalNamedEntityCollection();
+  boolean isPrenominalNamedEntityCollection();
 
   /**
    * Returns whether this mention finder collects coordinated noun phrases as mentions.
    *
    * @return true if this mention finder collects coordinated noun phrases as mentions; false otherwise.
    */
-  public boolean isCoordinatedNounPhraseCollection();
+  boolean isCoordinatedNounPhraseCollection();
 
   /**
    * Specifies whether coordinated noun phrases should be collected as mentions.
@@ -52,7 +52,7 @@ public interface MentionFinder {
    * @param collectCoordinatedNounPhrases true if coordinated noun phrases should be collected;
    *                                      false otherwise.
    */
-  public void setCoordinatedNounPhraseCollection(boolean collectCoordinatedNounPhrases);
+  void setCoordinatedNounPhraseCollection(boolean collectCoordinatedNounPhrases);
 
   /**
    * Returns an array of mentions.
@@ -61,5 +61,5 @@ public interface MentionFinder {
    *
    * @return an array of mentions which implement the <code>Extent</code> interface.
    */
-  public Mention[] getMentions(Parse parse);
+  Mention[] getMentions(Parse parse);
 }

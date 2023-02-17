@@ -31,7 +31,7 @@ import opennlp.summarization.preprocess.WordWeight;
 public class TextRankSummarizer implements Summarizer {
 
   // An optional file to store idf of words. If idf is not available it uses a default equal weight for all words.
-  private String idfFile = "resources/idf.csv";
+  private final String idfFile = "resources/idf.csv";
   public TextRankSummarizer() {
   }
 

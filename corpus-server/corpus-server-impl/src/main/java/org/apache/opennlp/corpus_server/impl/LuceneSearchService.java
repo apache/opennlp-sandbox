@@ -111,8 +111,8 @@ public class LuceneSearchService implements SearchService {
       try {
         mappingTmpOut = new FileOutputStream(mappingTmpFile);
         
-        byte buffer[] = new byte[1024];
-        int len = 0;
+        byte[] buffer = new byte[1024];
+        int len;
         while ((len = mappingFileIn.read(buffer)) > 0) {
           mappingTmpOut.write(buffer, 0, len);
         }
@@ -194,9 +194,7 @@ public class LuceneSearchService implements SearchService {
       
       AnalysisEngine indexer = UIMAFramework.produceAnalysisEngine(specifier);
       corpusIndexerMap.put(corpusId, indexer);
-    } catch (InvalidXMLException e) {
-      throw new IOException(e);
-    } catch (ResourceInitializationException e) {
+    } catch (InvalidXMLException | ResourceInitializationException e) {
       throw new IOException(e);
     }
   }
@@ -247,7 +245,7 @@ public class LuceneSearchService implements SearchService {
       indexTsIn.close();
     }
     
-    List<MetaDataObject> specs = new ArrayList<MetaDataObject>();
+    List<MetaDataObject> specs = new ArrayList<>();
     specs.add(indexTypeDesc);
     TypeSystemDescription tsDescription = UimaUtil.createTypeSystemDescription(
           new ByteArrayInputStream(store.getTypeSystem()));
@@ -336,7 +334,7 @@ public class LuceneSearchService implements SearchService {
       throw new IOException(e);
     }
     
-    final List<String> results = new ArrayList<String>();
+    final List<String> results = new ArrayList<>();
     
     
     final IndexSearcher finalSearcher = searcher;

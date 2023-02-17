@@ -17,7 +17,6 @@
 
 package opennlp.tools.fca;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,7 +40,7 @@ public class ConceptLattice {
 		this.objectCount = objCount;
 		this.attributeCount = attrCount;
 		this.binaryContext = binaryContext;
-		this.conceptList = new ArrayList<FormalConcept>();
+		this.conceptList = new ArrayList<>();
 		FormalConcept bottom = new FormalConcept();
 		bottom.setPosition(0);
 		conceptList.add(bottom);
@@ -61,7 +60,7 @@ public class ConceptLattice {
 		}
 	}
 	
-	public ConceptLattice(String filename, boolean stats) throws FileNotFoundException, IOException {
+	public ConceptLattice(String filename, boolean stats) throws IOException {
 		
 		FcaReader fr = new FcaReader();
 		fr.ReadContextFromCxt(filename);
@@ -239,7 +238,7 @@ public class ConceptLattice {
 		}	
 	}
 	
-	public static void main(String []args) throws FileNotFoundException, IOException {
+	public static void main(String []args) throws IOException {
 		ConceptLattice cl = new ConceptLattice("sports.cxt", true);
 		cl.printLattice();	
 	}
@@ -277,8 +276,8 @@ public class ConceptLattice {
 	}
 
 	public void printBinContext() {
-		for (int i = 0; i < binaryContext.length; i++ ){
-				System.out.println(Arrays.toString(binaryContext[i]));
+		for (int[] ints : binaryContext) {
+			System.out.println(Arrays.toString(ints));
 		}	
 	}
 	

@@ -58,7 +58,7 @@ public class LinguisticPatternStructure extends PhrasePatternStructure {
 			return generator;
 		}
 		Set<Integer> generatorParents = conceptList.get(generator).parents;
-		Set<Integer> newParents = new HashSet<Integer>();
+		Set<Integer> newParents = new HashSet<>();
 		for (int candidate : generatorParents) {
 			if (!intent.containsAll(conceptList.get(candidate).intent)) {
 				List<List<ParseTreeChunk>> intersection = md
@@ -172,8 +172,8 @@ public class LinguisticPatternStructure extends PhrasePatternStructure {
 	
 	
 	public void logStability(){
-		int min_delta = -1, delta = -1;
-		float sum = 0;
+		int min_delta, delta;
+		float sum;
 		for (PhraseConcept phraseConcept : conceptList) {
 			min_delta = Integer.MAX_VALUE;
 			sum = 0;

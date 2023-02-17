@@ -61,9 +61,9 @@ public class SentencePairMatchResult {
 
   private List<LemmaPair> resForMinedSent1;
 
-  public boolean verbExists = false;
+  public boolean verbExists;
 
-  public boolean imperativeVerb = false;
+  public boolean imperativeVerb;
 
   public SentencePairMatchResult(List<List<ParseTreeChunk>> matchResult,
       List<LemmaPair> resForMinedSent1) {

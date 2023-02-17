@@ -21,6 +21,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -31,18 +32,18 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.Version;
 import org.apache.tika.Tika;
 
 public class ClassifierTrainingSetIndexer {
   
-  public static String resourceDir = new File(".").getAbsolutePath().replace("/.", "") + "/src/main/resources";
-  public static String INDEX_PATH = "/classif", CLASSIF_TRAINING_CORPUS_PATH = "/training_corpus";
-  protected ArrayList<File> queue = new ArrayList<>();
-  Tika tika = new Tika();
+  public static final String resourceDir = new File(".").getAbsolutePath().replace("/.", "") + "/src/main/resources";
+  public static final String INDEX_PATH = "/classif";
+  public static final String CLASSIF_TRAINING_CORPUS_PATH = "/training_corpus";
+  protected final ArrayList<File> queue = new ArrayList<>();
+  final Tika tika = new Tika();
 
   IndexWriter indexWriter = null;
-  protected static String[] domains =  new String[] { "legal", "health", "computing", "engineering", "business" };
+  protected static final String[] domains =  new String[] { "legal", "health", "computing", "engineering", "business" };
   private String absolutePathTrainingSet=null;
 
   public ClassifierTrainingSetIndexer() {
@@ -66,17 +67,8 @@ public class ClassifierTrainingSetIndexer {
   public void indexTrainingSet() {
 
     try {
-      if (absolutePathTrainingSet==null)
-        indexFileOrDirectory(resourceDir
-                + CLASSIF_TRAINING_CORPUS_PATH);
-      else
-        indexFileOrDirectory(
-                this.absolutePathTrainingSet);
-
-    } catch (IOException e1) {
-      e1.printStackTrace();
-    }
-    try {
+      indexFileOrDirectory(Objects.requireNonNullElseGet(absolutePathTrainingSet,
+              () -> resourceDir + CLASSIF_TRAINING_CORPUS_PATH));
       indexWriter.commit();
     } catch (IOException e) {
       e.printStackTrace();
@@ -119,7 +111,7 @@ public class ClassifierTrainingSetIndexer {
   public void indexFileOrDirectory(String fileName) throws IOException {
     addFiles(new File(fileName));
 
-    List<File> files = new ArrayList<File>(queue);
+    List<File> files = new ArrayList<>(queue);
     for (File f : files) {
       if (!f.getName().endsWith(".xml")) {
 
@@ -129,7 +121,7 @@ public class ClassifierTrainingSetIndexer {
           String name = f.getPath();
           String className = null;
           for (String d : domains) {
-            if (name.indexOf(d) > -1) {
+            if (name.contains(d)) {
               className = d;
               break;
             }
@@ -227,7 +219,7 @@ public class ClassifierTrainingSetIndexer {
   public static String getCategoryFromFilePath(String path){
     String className = null;
     for (String d : domains) {
-      if (path.indexOf("/"+d+"/") > -1) {
+      if (path.contains("/" + d + "/")) {
         className = d;
         break;
       }
@@ -236,7 +228,7 @@ public class ClassifierTrainingSetIndexer {
   }
 
   public static void main(String[] args) {
-    ClassifierTrainingSetIndexer indexer = null;
+    ClassifierTrainingSetIndexer indexer;
     if (args!=null && args.length==1){
       String relativeDirWithTrainingCorpus = args[0];
       // expect corpus relative to 'resource' directory, such as 'training_corpus'

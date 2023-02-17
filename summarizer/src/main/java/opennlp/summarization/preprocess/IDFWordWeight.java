@@ -18,7 +18,6 @@
 package opennlp.summarization.preprocess;
 
 import java.util.Hashtable;
-import java.io.File;
 import java.io.FileReader;
 import java.io.LineNumberReader;
 
@@ -28,12 +27,12 @@ import java.io.LineNumberReader;
  */
 public class IDFWordWeight implements WordWeight
 {
-	Hashtable<String, Double> idf;
+	final Hashtable<String, Double> idf;
 	private static IDFWordWeight instance;
 	
 	public IDFWordWeight(String fileName)
 	{
-		idf = new Hashtable<String,Double>();
+		idf = new Hashtable<>();
 		load(fileName);
 	}
 
@@ -53,7 +52,7 @@ public class IDFWordWeight implements WordWeight
 		{
 			   return 1;
 		}
-	    return d.doubleValue();
+	    return d;
 	}
 
 	/*

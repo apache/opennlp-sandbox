@@ -66,8 +66,8 @@ public class Paragraph {
   @Override
   public String toString() {
     String paragraph = "";
-    for (int i = 0; i < this.isentences.size(); i++) {
-      paragraph = paragraph + " " + this.isentences.get(i).toString();
+    for (Sentence isentence : this.isentences) {
+      paragraph = paragraph + " " + isentence.toString();
     }
     return paragraph.substring(1, paragraph.length());
 

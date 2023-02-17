@@ -38,7 +38,7 @@ public class POSTaggerResource {
   @Path("_tag")
   // @QueryParam("lang") String lang,
   // @QueryParam("model") String modelName
-  public String[][] tag(String document[][]) {
+  public String[][] tag(String[][] document) {
     
     ServiceReference modelService = ModelUtil.getService(POSModel.class);
     

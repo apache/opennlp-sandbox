@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -87,6 +86,7 @@ public class IterativeSearchRequestHandler extends SearchHandler {
 		return req;
 	}
 
+	@SuppressWarnings("unchecked")
 	public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp){
          
 		SolrQueryResponse rsp1 = new SolrQueryResponse(), rsp2=new SolrQueryResponse(), rsp3=new SolrQueryResponse();
@@ -123,8 +123,9 @@ public class IterativeSearchRequestHandler extends SearchHandler {
 		rsp.setAllValues(rsp3.getValues());
 	}
 
+	@SuppressWarnings("unchecked")
 	public DocList filterResultsBySyntMatchReduceDocSet(DocList docList,
-			SolrQueryRequest req,  SolrParams params) {
+																											SolrQueryRequest req, SolrParams params) {
 		//if (!docList.hasScores())
 		//	return docList;
 
@@ -237,9 +238,8 @@ public class IterativeSearchRequestHandler extends SearchHandler {
 		// build and write response
 		float maxScore = 0.0F;
 		int numFound = 0;
-		List<SolrDocument> slice = new ArrayList<SolrDocument>();
-		for (Iterator<SolrDocument> it = results.iterator(); it.hasNext(); ) {
-			SolrDocument sdoc = it.next();
+		List<SolrDocument> slice = new ArrayList<>();
+		for (SolrDocument sdoc : results) {
 			Float score = (Float) sdoc.getFieldValue("score");
 			if (maxScore < score) {
 				maxScore = score;
@@ -323,7 +323,8 @@ public class IterativeSearchRequestHandler extends SearchHandler {
 			alreadyFound.add(hit.doc);
 		}
 	}
-	public class PairComparable implements Comparator<Pair> {
+	public static class PairComparable implements Comparator<Pair> {
+
 		@Override
 		public int compare(Pair o1, Pair o2) {
 			int b = -2;

@@ -65,7 +65,7 @@ public class LevensteinDistanceFinder {
         cost = digitInsDelCost;
       }
       upper[j] = upper[j - 1] + cost;
-      int min = 0;
+      int min;
       for (int i = 1; i < length1; i++) {
         cost = letterInsDelCost; // 1 is a cost for inserting a character
         if (Character.isDigit(str1.charAt(i - 1))) {

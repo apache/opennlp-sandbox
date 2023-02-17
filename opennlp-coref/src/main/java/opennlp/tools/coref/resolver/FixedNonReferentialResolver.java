@@ -26,7 +26,7 @@ import opennlp.tools.coref.mention.MentionContext;
  */
 public class FixedNonReferentialResolver implements NonReferentialResolver {
 
-  private double nonReferentialProbability;
+  private final double nonReferentialProbability;
 
   public FixedNonReferentialResolver(double nonReferentialProbability) {
     this.nonReferentialProbability = nonReferentialProbability;

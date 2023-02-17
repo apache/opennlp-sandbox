@@ -27,8 +27,8 @@ import opennlp.tools.similarity.apps.HitBase;
 
 public class BingWebQueryRunnerThread extends BingQueryRunner implements Runnable{
 	
-	private String query;
-	private List<HitBase> results= new ArrayList<HitBase>();
+	private final String query;
+	private List<HitBase> results= new ArrayList<>();
 	public BingWebQueryRunnerThread(String Query){
 		super();
 		this.query=Query;
@@ -46,7 +46,7 @@ public class BingWebQueryRunnerThread extends BingQueryRunner implements Runnabl
 	}
 	
 	// Create the listener list
-    protected javax.swing.event.EventListenerList listenerList = new javax.swing.event.EventListenerList();
+    protected final javax.swing.event.EventListenerList listenerList = new javax.swing.event.EventListenerList();
     // This method allows classes to register for MyEvents
     public void addMyEventListener(MyEventListener listener) {
         listenerList.add(MyEventListener.class, listener);

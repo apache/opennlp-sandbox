@@ -39,7 +39,7 @@ public class ParseTreeMatcher {
     List<String> pos1 = chunk1.getPOSs();
     List<String> pos2 = chunk1.getPOSs();
 
-    List<String> commonPOS = new ArrayList<String>(), commonLemmas = new ArrayList<String>();
+    List<String> commonPOS = new ArrayList<>(), commonLemmas = new ArrayList<>();
     int k1 = 0, k2 = 0;
     Boolean incrFirst = true;
     while (k1 < pos1.size() && k2 < pos2.size()) {
@@ -74,7 +74,7 @@ public class ParseTreeMatcher {
   // into {A B {X Y} C}
   // should only be applied to a noun phrase
   public ParseTreeChunk prepositionalNNSTransform(ParseTreeChunk ch) {
-    List<String> transfPOS = new ArrayList<String>(), transfLemmas = new ArrayList<String>();
+    List<String> transfPOS = new ArrayList<>(), transfLemmas = new ArrayList<>();
     if (!ch.getPOSs().contains("IN"))
       return ch;
     int indexIN = ch.getPOSs().lastIndexOf("IN");
@@ -115,7 +115,7 @@ public class ParseTreeMatcher {
     ParseTreeChunk chRes3 = generalizeTwoGroupedPhrasesRandomSelectHighestScore(
         prepositionalNNSTransform(chunk2), chunk1);
 
-    ParseTreeChunk chRes = null;
+    ParseTreeChunk chRes;
     if (parseTreeChunkListScorer.getScore(chRes1) > parseTreeChunkListScorer
         .getScore(chRes2))
       if (parseTreeChunkListScorer.getScore(chRes1) > parseTreeChunkListScorer
@@ -144,9 +144,9 @@ public class ParseTreeMatcher {
     ParseTreeChunk result = null;
 
     for (int timesRun = 0; timesRun < timesRepetitiveRun; timesRun++) {
-      List<String> commonPOS = new ArrayList<String>(), commonLemmas = new ArrayList<String>();
+      List<String> commonPOS = new ArrayList<>(), commonLemmas = new ArrayList<>();
       int k1 = 0, k2 = 0;
-      Double score = 0.0;
+      Double score;
       while (k1 < pos1.size() && k2 < pos2.size()) {
         // first check if the same POS
         String sim = posManager.similarPOS(pos1.get(k1), pos2.get(k2));
@@ -189,9 +189,9 @@ public class ParseTreeMatcher {
     }
 
     for (int timesRun = 0; timesRun < timesRepetitiveRun; timesRun++) {
-      List<String> commonPOS = new ArrayList<String>(), commonLemmas = new ArrayList<String>();
+      List<String> commonPOS = new ArrayList<>(), commonLemmas = new ArrayList<>();
       int k1 = pos1.size() - 1, k2 = pos2.size() - 1;
-      Double score = 0.0;
+      Double score;
       while (k1 >= 0 && k2 >= 0) {
         // first check if the same POS
         String sim = posManager.similarPOS(pos1.get(k1), pos2.get(k2));

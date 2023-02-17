@@ -105,18 +105,16 @@ public class CorpusServerBundle implements BundleActivator {
       public Object addingService(ServiceReference serviceRef) {
         httpService = (HttpService)super.addingService(serviceRef);
          
-        Dictionary<String, String> jerseyServletParams = new Hashtable<String, String>();
+        Dictionary<String, String> jerseyServletParams = new Hashtable<>();
         jerseyServletParams.put("javax.ws.rs.Application", CorpusServerApplication.class.getName());
         jerseyServletParams.put("com.sun.jersey.api.json.POJOMappingFeature", "true");
         
         try {
           httpService.registerServlet("/rest", new ServletContainer(), jerseyServletParams, null);
-        } catch (ServletException e) {
-          throw new RuntimeException(e);
-        } catch (NamespaceException e) {
+        } catch (ServletException | NamespaceException e) {
           throw new RuntimeException(e);
         }
-        
+
         return httpService;
       }
 

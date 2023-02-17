@@ -26,8 +26,9 @@ import java.util.Map;
 import opennlp.tools.jsmlearning.ProfileReaderWriter;
 
 public class CsvAdapter {
-	  Map<String, List<List<String>>> lemma_AssocWords = new HashMap<String, List<List<String>>>();
-	private String resourceDir=null, fileNameToImport = null;
+	final Map<String, List<List<String>>> lemma_AssocWords = new HashMap<>();
+	private String resourceDir = null;
+	private final String fileNameToImport;
 	  
 	  public CsvAdapter(){
 		  if (resourceDir==null)
@@ -44,8 +45,8 @@ public class CsvAdapter {
 		  String topNode=null;
 		  for(String[] line: lines){	
 			  String line0 = extractEntity(line[0]).toLowerCase();
-			  List<String> path = new ArrayList<String>();
-			  List<List<String>> paths = new ArrayList<List<String>>();
+			  List<String> path = new ArrayList<>();
+			  List<List<String>> paths = new ArrayList<>();
 			if (line[1]!=null && line[1].equals("1")){
 				  topNode = line0;
 			} else {

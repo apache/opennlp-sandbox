@@ -49,7 +49,7 @@ public class EmailSender {
 													 InternetAddress from, InternetAddress[] to, InternetAddress[] cc, InternetAddress[] bcc,
 													 String subject, String body, String file) throws Exception {
 
-		boolean correct=true;
+		boolean correct;
 		try {
 			// Eliminate spaces from addresses
 			if(from!=null){
@@ -117,7 +117,7 @@ public class EmailSender {
 	private  boolean validateAddress(InternetAddress from,
 			InternetAddress[] to, InternetAddress[] cc, InternetAddress[] bcc) {
 
-		boolean correct = true;
+		boolean correct;
 		try {
 			correct = from!=null && !from.getAddress().equals("") && to!=null && to.length>=1;
 

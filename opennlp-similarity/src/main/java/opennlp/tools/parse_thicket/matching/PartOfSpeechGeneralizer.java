@@ -27,7 +27,7 @@ public class PartOfSpeechGeneralizer implements IGeneralizer<String>{
 	@Override
 	public List<String> generalize(Object o1, Object o2){
 		String pos1 = (String)o1, pos2 =  (String) o2;
-		List<String>  results = new ArrayList<String>();
+		List<String>  results = new ArrayList<>();
 		String res = computeSimilarity(pos1, pos2);
 		if (res!=null)
 			results.add(res);

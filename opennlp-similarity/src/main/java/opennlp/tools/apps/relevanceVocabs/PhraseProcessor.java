@@ -33,27 +33,24 @@ public class PhraseProcessor {
 	
 	public static boolean allChildNodesArePOSTags(Parse p) {
 		Parse[] subParses = p.getChildren();
-		for (int pi = 0; pi < subParses.length; pi++)
-			if (!((Parse) subParses[pi]).isPosTag())
+		for (Parse subPars : subParses)
+			if (!((Parse) subPars).isPosTag())
 				return false;
 		return true;
 	}
 	
 	public ArrayList<String> getNounPhrases(Parse p)
 	{
-		ArrayList<String> nounphrases = new ArrayList<String>();
+		ArrayList<String> nounphrases = new ArrayList<>();
 
 		Parse[] subparses = p.getChildren();
-		for (int pi = 0; pi < subparses.length; pi++)
-		{
+		for (Parse subpars : subparses) {
 
-			if (subparses[pi].getType().equals("NP") && allChildNodesArePOSTags(subparses[pi]))
-			{
-				Span _span = subparses[pi].getSpan();
+			if (subpars.getType().equals("NP") && allChildNodesArePOSTags(subpars)) {
+				Span _span = subpars.getSpan();
 				nounphrases.add(p.getText().substring(_span.getStart(), _span.getEnd()));
-			}
-			else if (!((Parse) subparses[pi]).isPosTag())
-				nounphrases.addAll(getNounPhrases(subparses[pi]));
+			} else if (!((Parse) subpars).isPosTag())
+				nounphrases.addAll(getNounPhrases(subpars));
 		}
 
 		return nounphrases;
@@ -61,19 +58,16 @@ public class PhraseProcessor {
 	
 	public ArrayList<String> getVerbPhrases(Parse p)
 	{
-		ArrayList<String> verbPhrases = new ArrayList<String>();
+		ArrayList<String> verbPhrases = new ArrayList<>();
 
 		Parse[] subparses = p.getChildren();
-		for (int pi = 0; pi < subparses.length; pi++)
-		{
+		for (Parse subpars : subparses) {
 
-			if (subparses[pi].getType().startsWith("VB") && allChildNodesArePOSTags(subparses[pi]))
-			{
-				Span _span = subparses[pi].getSpan();
+			if (subpars.getType().startsWith("VB") && allChildNodesArePOSTags(subpars)) {
+				Span _span = subpars.getSpan();
 				verbPhrases.add(p.getText().substring(_span.getStart(), _span.getEnd()));
-			}
-			else if (!((Parse) subparses[pi]).isPosTag())
-				verbPhrases.addAll(getNounPhrases(subparses[pi]));
+			} else if (!((Parse) subpars).isPosTag())
+				verbPhrases.addAll(getNounPhrases(subpars));
 		}
 
 		return verbPhrases;
@@ -121,7 +115,7 @@ public class PhraseProcessor {
 // forms phrases from text which are candidate expressions for events lookup
 public List<String> extractNounPhraseProductNameCandidate(String sentence) {
 
-	List<String> queryArrayStr = new ArrayList<String>();
+	List<String> queryArrayStr = new ArrayList<>();
 
 	if (sentence.split(" ").length ==1) { // this is a word, return empty
 		//queryArrayStr.add( sentence);

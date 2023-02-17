@@ -33,7 +33,7 @@ public class Mention implements Comparable<Mention> {
    * A string representing the type of this extent. This is helpful for determining
    * which piece of code created a particular extent.
    */
-  protected String type;
+  protected final String type;
   
   /** 
    * The entity id indicating which entity this extent belongs to.  This is only

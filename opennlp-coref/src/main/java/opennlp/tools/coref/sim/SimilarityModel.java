@@ -102,7 +102,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
    * @return A set containing the head words of the specified mentions.
    */
   private Set<String> constructHeadSet(List<Context> mentions) {
-    Set<String> headSet = new HashSet<String>();
+    Set<String> headSet = new HashSet<>();
     for (Context ec : mentions) {
       headSet.add(ec.getHeadTokenText().toLowerCase());
     }

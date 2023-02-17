@@ -36,12 +36,12 @@ import opennlp.tools.util.Span;
  */
 public class DefaultParse extends AbstractParse {
 
-  public static String[] NAME_TYPES = {"person", "organization", "location", "date",
+  public static final String[] NAME_TYPES = {"person", "organization", "location", "date",
       "time", "percentage", "money"};
   
-  private Parse parse;
-  private int sentenceNumber;
-  private static Set<String> entitySet = new HashSet<String>(Arrays.asList(NAME_TYPES));
+  private final Parse parse;
+  private final int sentenceNumber;
+  private static final Set<String> entitySet = new HashSet<>(Arrays.asList(NAME_TYPES));
   
   /**
    * Initializes the current instance.
@@ -61,8 +61,8 @@ public class DefaultParse extends AbstractParse {
   }
 
   public List<opennlp.tools.coref.mention.Parse> getNamedEntities() {
-    List<Parse> names = new ArrayList<Parse>();
-    List<Parse> kids = new LinkedList<Parse>(Arrays.asList(parse.getChildren()));
+    List<Parse> names = new ArrayList<>();
+    List<Parse> kids = new LinkedList<>(Arrays.asList(parse.getChildren()));
     while (kids.size() > 0) {
       Parse p = kids.remove(0);
       if (entitySet.contains(p.getType())) {
@@ -80,7 +80,7 @@ public class DefaultParse extends AbstractParse {
   }
 
   public List<opennlp.tools.coref.mention.Parse> getSyntacticChildren() {
-    List<Parse> kids = new ArrayList<Parse>(Arrays.asList(parse.getChildren()));
+    List<Parse> kids = new ArrayList<>(Arrays.asList(parse.getChildren()));
     for (int ci = 0; ci < kids.size(); ci++) {
       Parse kid = kids.get(ci);
       if (entitySet.contains(kid.getType())) {
@@ -93,8 +93,8 @@ public class DefaultParse extends AbstractParse {
   }
 
   public List<opennlp.tools.coref.mention.Parse> getTokens() {
-    List<Parse> tokens = new ArrayList<Parse>();
-    List<Parse> kids = new LinkedList<Parse>(Arrays.asList(parse.getChildren()));
+    List<Parse> tokens = new ArrayList<>();
+    List<Parse> kids = new LinkedList<>(Arrays.asList(parse.getChildren()));
     while (kids.size() > 0) {
       Parse p = kids.remove(0);
       if (p.isPosTag()) {
@@ -122,8 +122,8 @@ public class DefaultParse extends AbstractParse {
   private List<opennlp.tools.coref.mention.Parse> createParses(Parse[] parses) {
     List<opennlp.tools.coref.mention.Parse> newParses = new ArrayList<>(parses.length);
 
-    for (int pi = 0, pn = parses.length; pi < pn;pi++) {
-      newParses.add(new DefaultParse(parses[pi],sentenceNumber));
+    for (Parse pars : parses) {
+      newParses.add(new DefaultParse(pars, sentenceNumber));
     }
 
     return newParses;
@@ -221,7 +221,7 @@ public class DefaultParse extends AbstractParse {
 
         System.out.println("Maybe incorrect measurement!");
         
-        Stack<Parse> parents = new Stack<Parse>();
+        Stack<Parse> parents = new Stack<>();
         
         
         

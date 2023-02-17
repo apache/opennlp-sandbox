@@ -136,7 +136,7 @@ public class SyntGenRequestHandler extends SearchHandler {
 		int[] docIDsHits = new int[len];
 
 		IndexReader indexReader = req.getSearcher().getIndexReader();
-		List<Integer> bestMatchesDocIds = new ArrayList<>(); List<Float> bestMatchesScore = new ArrayList<Float>();
+		List<Integer> bestMatchesDocIds = new ArrayList<>(); List<Float> bestMatchesScore = new ArrayList<>();
 		List<Pair<Integer, Float>> docIdsScores = new ArrayList<> ();
 		try {
 			for (int i=0; i<docList.size(); ++i) {

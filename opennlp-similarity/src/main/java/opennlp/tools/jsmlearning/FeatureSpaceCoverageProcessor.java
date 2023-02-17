@@ -26,7 +26,7 @@ import org.apache.commons.lang.StringUtils;
 
 public class FeatureSpaceCoverageProcessor {
 
-	public Map<String, Integer> paramMap = new HashMap<>();
+	public final Map<String, Integer> paramMap = new HashMap<>();
 	public String[] header; 
 	String[] attributes;
 
@@ -80,7 +80,7 @@ public class FeatureSpaceCoverageProcessor {
 		if (paramMap.isEmpty())
 			throw new Exception("paramMap.isEmpty()");
 
-		float score = 0f, catScore = 10000f, currCatScore=10000000f;
+		float score, catScore = 10000f, currCatScore=10000000f;
 
 		int p1 = paramMap.get("First Level Category");	
 		int p2 = paramMap.get("Second Level Category");
@@ -145,11 +145,11 @@ public class FeatureSpaceCoverageProcessor {
 	public Map<String, String> computeIntersection(String[] line1,
 			String[] line2) {
 
-		Map<String, String> attr_value = new HashMap<String, String>();
+		Map<String, String> attr_value = new HashMap<>();
 		for(String attr: attributes){
 			int attrIndex = getIdForAttributeName(attr);
-			String v1 = line1[attrIndex].toLowerCase().replace("\"", "").replace(",  ", ", ").replace(", ", ",");;
-			String v2 = line2[attrIndex].toLowerCase().replace("\"", "").replace(",  ", ", ").replace(", ", ",");;
+			String v1 = line1[attrIndex].toLowerCase().replace("\"", "").replace(",  ", ", ").replace(", ", ",");
+			String v2 = line2[attrIndex].toLowerCase().replace("\"", "").replace(",  ", ", ").replace(", ", ",");
 			String valArr1Str = StringUtils.substringBetween(v1, "{", "}");
 			String valArr2Str = StringUtils.substringBetween(v2, "{", "}");
 			if (valArr1Str==null || valArr2Str==null) { // we assume single value, not an array of values
@@ -162,8 +162,8 @@ public class FeatureSpaceCoverageProcessor {
 				valArr2Str = valArr2Str.replaceAll(", ", ",");
 				String[] valArr1 = valArr1Str.split(",");
 				String[] valArr2 = valArr2Str.split(","); 
-				List<String> valList1 = new ArrayList<String>(Arrays.asList(valArr1));
-				List<String> valList2 = new ArrayList<String>(Arrays.asList(valArr2));
+				List<String> valList1 = new ArrayList<>(Arrays.asList(valArr1));
+				List<String> valList2 = new ArrayList<>(Arrays.asList(valArr2));
 				valList1.retainAll(valList2);
 				/* verification of coverage
 				valList1.retainAll(valList2);
@@ -207,8 +207,8 @@ public class FeatureSpaceCoverageProcessor {
 				else {
 					String[] valArrCase = valArrCaseStr.split(",");
 					String[] valArrRule = valArrRuleStr.split(","); 
-					List<String> valListCase = new ArrayList<String>(Arrays.asList(valArrCase));
-					List<String> valListRule = new ArrayList<String>(Arrays.asList(valArrRule));
+					List<String> valListCase = new ArrayList<>(Arrays.asList(valArrCase));
+					List<String> valListRule = new ArrayList<>(Arrays.asList(valArrRule));
 					
 					int ruleSize = valListRule.size();
 					//System.out.println(valListRule);
@@ -256,8 +256,8 @@ public class FeatureSpaceCoverageProcessor {
 				else {
 					String[] valArrRuleBeingCovered = valArrRuleBeingCoveredStr.split(",");
 					String[] valArrRule = valArrRuleStr.split(","); 
-					List<String> valListRuleBeingCovered = new ArrayList<String>(Arrays.asList(valArrRuleBeingCovered));
-					List<String> valListRule = new ArrayList<String>(Arrays.asList(valArrRule));		
+					List<String> valListRuleBeingCovered = new ArrayList<>(Arrays.asList(valArrRuleBeingCovered));
+					List<String> valListRule = new ArrayList<>(Arrays.asList(valArrRule));
 					for(String r: valListRule){
 						if (!strListContainsMember(valListRuleBeingCovered, r)){
 							soFarCovers = false;
@@ -272,7 +272,7 @@ public class FeatureSpaceCoverageProcessor {
 
 		public Map<String, String> computeIntersection(
 				Map<String, String> rule1, Map<String, String> rule2) {
-			Map<String, String> attr_value = new HashMap<String, String>();
+			Map<String, String> attr_value = new HashMap<>();
 			for(String attr: attributes){
 				int attrIndex = getIdForAttributeName(attr);
 				String v1 = rule1.get(attr);
@@ -291,8 +291,8 @@ public class FeatureSpaceCoverageProcessor {
 					valArr2Str = valArr2Str.replaceAll(", ", ",");
 					String[] valArr1 = valArr1Str.split(",");
 					String[] valArr2 = valArr2Str.split(","); 
-					List<String> valList1 = new ArrayList<String>(Arrays.asList(valArr1));
-					List<String> valList2 = new ArrayList<String>(Arrays.asList(valArr2));
+					List<String> valList1 = new ArrayList<>(Arrays.asList(valArr1));
+					List<String> valList2 = new ArrayList<>(Arrays.asList(valArr2));
 					valList1.retainAll(valList2);
 					if (!valList1.isEmpty()){
 						v1 = "{"+valList1.toString().replace("["," ").replace("]", " ").trim()+"}";

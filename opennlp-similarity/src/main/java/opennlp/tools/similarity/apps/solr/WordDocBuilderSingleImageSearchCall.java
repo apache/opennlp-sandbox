@@ -18,31 +18,17 @@ package opennlp.tools.similarity.apps.solr;
 
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
 import net.billylieurance.azuresearch.AzureSearchImageResult;
 import net.billylieurance.azuresearch.AzureSearchResultSet;
-import net.billylieurance.azuresearch.AzureSearchWebResult;
 
-import org.apache.commons.lang.StringUtils;
-//import org.docx4j.Docx4J;
-//import org.docx4j.convert.out.FOSettings;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 
 import opennlp.tools.similarity.apps.ContentGeneratorSupport;
 import opennlp.tools.similarity.apps.Fragment;
 import opennlp.tools.similarity.apps.HitBase;
-
-
 
 public class WordDocBuilderSingleImageSearchCall extends WordDocBuilder{
 	
@@ -129,8 +115,6 @@ public class WordDocBuilderSingleImageSearchCall extends WordDocBuilder{
         try {
 			byte[] bytes = convertImageToByteArray(file);
 			addImageToPackage(wordMLPackage, bytes);
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -138,7 +122,7 @@ public class WordDocBuilderSingleImageSearchCall extends WordDocBuilder{
 	}
 
 	protected List<String>  getAllImageSearchResults(String title) {
-		List<String> imageURLs = new ArrayList<String>();
+		List<String> imageURLs = new ArrayList<>();
 		AzureSearchResultSet<AzureSearchImageResult> res = imageSearcher.runImageSearch(title);
 		for(AzureSearchImageResult imResult: res){
 			imageURLs.add(imResult.getMediaUrl());
@@ -150,11 +134,11 @@ public class WordDocBuilderSingleImageSearchCall extends WordDocBuilder{
     
     public static void main(String[] args){
     	WordDocBuilderSingleImageSearchCall b = new WordDocBuilderSingleImageSearchCall();
-    	List<HitBase> content = new ArrayList<HitBase>();
+    	List<HitBase> content = new ArrayList<>();
     	for(int i = 0; i<10; i++){
     		HitBase h = new HitBase();
     		h.setTitle("albert einstein "+i);
-    		List<Fragment> frs = new ArrayList<Fragment>();
+    		List<Fragment> frs = new ArrayList<>();
     		frs.add(new Fragment(" content "+i, 0));
     		h.setFragments(frs);
     		content.add(h);

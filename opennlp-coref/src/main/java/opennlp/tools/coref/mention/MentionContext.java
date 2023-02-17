@@ -33,52 +33,52 @@ public class MentionContext extends Context {
   /** 
    * The index of first token which is not part of a descriptor.  This is 0 if no descriptor is present. 
    */
-  private int nonDescriptorStart;
+  private final int nonDescriptorStart;
   
   /** 
    * The Parse of the head constituent of this mention.
    */
-  private Parse head;
+  private final Parse head;
   
   /** 
    * Sentence-token-based span whose end is the last token of the mention.
    */
-  private Span indexSpan;
+  private final Span indexSpan;
   
   /** 
    * Position of the NP in the sentence.
    */
-  private int nounLocation;
+  private final int nounLocation;
 
   /** 
    * Position of the NP in the document.
    */
-  private  int nounNumber;
+  private final int nounNumber;
   
   /** 
    * Number of noun phrases in the sentence which contains this mention.
    */
-  private int maxNounLocation;
+  private final int maxNounLocation;
   
   /** 
    * Index of the sentence in the document which contains this mention. 
    */
-  private int sentenceNumber;
+  private final int sentenceNumber;
   
   /** 
    * The token preceding this mention's maximal noun phrase.
    */
-  private Parse prevToken;
+  private final Parse prevToken;
   
   /** 
    * The token following this mention's maximal noun phrase.
    */
-  private Parse nextToken;
+  private final Parse nextToken;
   
   /** 
    * The token following this mention's basal noun phrase.
    */
-  private Parse basalNextToken;
+  private final Parse basalNextToken;
 
   /** 
    * The parse of the mention's head word. 
@@ -226,8 +226,8 @@ public class MentionContext extends Context {
 
   public String getHeadText() {
     StringBuilder headText = new StringBuilder();
-    for (int hsi = 0; hsi < tokens.length; hsi++) {
-      headText.append(" ").append(tokens[hsi].toString());
+    for (Object token : tokens) {
+      headText.append(" ").append(token.toString());
     }
     return headText.toString().substring(1);
   }

@@ -20,7 +20,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
@@ -45,7 +45,7 @@ public class FileSentenceProvider implements SentenceProvider {
         String line;
 
         fis = new FileInputStream(params.getSentenceFile());
-        br = new BufferedReader(new InputStreamReader(fis, Charset.forName("UTF-8")));
+        br = new BufferedReader(new InputStreamReader(fis, StandardCharsets.UTF_8));
         int i=0;
         while ((line = br.readLine()) != null) {
          

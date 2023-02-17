@@ -41,7 +41,7 @@ public class CASImporter {
 
     File xmiFileOrFolder = new File(args[1]);
 
-    File xmiFiles[];
+    File[] xmiFiles;
 
     if (xmiFileOrFolder.isFile()) {
       xmiFiles = new File[] { xmiFileOrFolder };
@@ -55,7 +55,7 @@ public class CASImporter {
     }
 
     for (File xmiFile : xmiFiles) {
-      byte xmiBytes[] = FileUtil.fileToBytes(xmiFile);
+      byte[] xmiBytes = FileUtil.fileToBytes(xmiFile);
 
       ClientResponse response = r.path(xmiFile.getName())
           .accept(MediaType.TEXT_XML)

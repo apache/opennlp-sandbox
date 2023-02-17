@@ -55,8 +55,8 @@ public class ParserCacheSerializer {
       .getLogger("opennlp.tools.textsimilarity.chunker2matcher.ParserCacheSerializer");
   private static final boolean javaObjectSerialization = false;
   private static final String RESOURCE_DIR = "src/test/resources/";
-  public static String parseCacheFileName = "sentence_parseObject.dat";
-  public static String parseCacheFileNameCSV = "sentence_parseObject.csv";
+  public static final String parseCacheFileName = "sentence_parseObject.dat";
+  public static final String parseCacheFileNameCSV = "sentence_parseObject.csv";
 
   public static void writeObject(Object objectToSerialize) {
     if (javaObjectSerialization) {

@@ -44,7 +44,7 @@ public class PluralNounResolver extends MaxentResolver {
 
   @Override
   protected List<String> getFeatures(MentionContext mention, DiscourseEntity entity) {
-    List<String> features = new ArrayList<String>(super.getFeatures(mention, entity));
+    List<String> features = new ArrayList<>(super.getFeatures(mention, entity));
     if (entity != null) {
       features.addAll(ResolverUtils.getContextFeatures(mention));
       features.addAll(ResolverUtils.getStringMatchFeatures(mention,entity));

@@ -28,9 +28,9 @@ public class MemoryCorpusStore implements CorpusStore {
 
   private final String corpusName;
   private byte[] typeSystemBytes;
-  private byte[] indexMapping;
+  private final byte[] indexMapping;
 
-  private Map<String, byte[]> casStore = new HashMap<String, byte[]>();
+  private final Map<String, byte[]> casStore = new HashMap<>();
 
   MemoryCorpusStore(String corpusName, byte[] typeSystem,
       byte[] indexMapping) {

@@ -273,7 +273,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
           }
         }
       });
-    };
+    }
   }
   
   private final NameFinderJob nameFinder;
@@ -374,16 +374,13 @@ public class EntityContentProvider implements IStructuredContentProvider {
       
       FSIndex<AnnotationFS> nameAnnotations = input.getCAS()
           .getAnnotationIndex(nameType);
-      
-      for (Iterator<AnnotationFS> nameIterator = nameAnnotations
-          .iterator(); nameIterator.hasNext();) {
-        
-        AnnotationFS nameAnnotation = (AnnotationFS) nameIterator.next();
-        
+
+      for (AnnotationFS nameAnnotation : nameAnnotations) {
+
         // TODO: Entity must have a type ...
         PotentialAnnotation entity = new PotentialAnnotation(nameAnnotation.getBegin(),
-            nameAnnotation.getEnd(), nameAnnotation.getCoveredText(), null,
-            nameAnnotation.getType().getName());
+                nameAnnotation.getEnd(), nameAnnotation.getCoveredText(), null,
+                nameAnnotation.getType().getName());
         confirmedEntities.add(entity); // TODO: This needs to go into a second list!
       }
     }
@@ -553,7 +550,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
   
   static List<PotentialAnnotation> searchEntities(List<PotentialAnnotation> entities, int begin, int end) {
     
-    List<PotentialAnnotation> intersectingEntities = new ArrayList<PotentialAnnotation>();
+    List<PotentialAnnotation> intersectingEntities = new ArrayList<>();
     
     Span testSpan = new Span(begin, end);
     

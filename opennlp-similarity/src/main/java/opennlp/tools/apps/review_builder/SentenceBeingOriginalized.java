@@ -17,14 +17,13 @@
 
 package opennlp.tools.apps.review_builder;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import opennlp.tools.textsimilarity.ParseTreeChunk;
 
 public class SentenceBeingOriginalized {
-	private Map<String, String> sentKey_value = new HashMap<String, String>();
+	private Map<String, String> sentKey_value;
 	private String sentence;
 	private List<List<ParseTreeChunk>> groupedChunks;
 	

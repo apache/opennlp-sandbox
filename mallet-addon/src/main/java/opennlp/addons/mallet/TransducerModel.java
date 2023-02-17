@@ -81,10 +81,10 @@ public class TransducerModel<T> implements SequenceClassificationModel<T>, Seria
       String[] features = cg.getContext(i, sequence, null, additionalContext);
       
       List<Integer> malletFeatureList = new ArrayList<>(features.length);
-      
-      for (int featureIndex = 0; featureIndex < features.length; featureIndex++) {
-        if (dataAlphabet.contains(features[featureIndex])) {
-          malletFeatureList.add(dataAlphabet.lookupIndex(features[featureIndex]));
+
+      for (String feature : features) {
+        if (dataAlphabet.contains(feature)) {
+          malletFeatureList.add(dataAlphabet.lookupIndex(feature));
         }
       }
 

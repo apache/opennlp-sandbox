@@ -108,6 +108,7 @@ public class PorterStemmer implements Stemmer {
   * or a reference to the internal buffer can be retrieved by getResultBuffer
   * and getResultLength (which is generally more efficient.)
   */
+  @Override
   public String toString() { return new String(b,0,i_end); }
 
   /**

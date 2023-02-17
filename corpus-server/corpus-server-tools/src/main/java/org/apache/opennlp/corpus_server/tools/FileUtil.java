@@ -33,7 +33,7 @@ public class FileUtil {
     InputStream fileIn = new FileInputStream(file);
 
     try {
-      byte buffer[] = new byte[1024];
+      byte[] buffer = new byte[1024];
       int length;
       while ((length = fileIn.read(buffer)) > 0) {
         fileBytes.write(buffer, 0, length);

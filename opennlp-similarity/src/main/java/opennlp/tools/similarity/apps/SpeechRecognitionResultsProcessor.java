@@ -121,8 +121,8 @@ public class SpeechRecognitionResultsProcessor /*extends BingWebQueryRunner*/ {
   }
 
   public static class SentenceMeaningfullnessScore {
-    String sentence;
-    double score;
+    final String sentence;
+    final double score;
 
     public SentenceMeaningfullnessScore(String sent, double sc) {
       sentence = sent;

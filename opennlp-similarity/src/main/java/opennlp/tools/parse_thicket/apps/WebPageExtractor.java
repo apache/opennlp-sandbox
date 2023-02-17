@@ -18,7 +18,6 @@ package opennlp.tools.parse_thicket.apps;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -30,17 +29,17 @@ import opennlp.tools.textsimilarity.TextProcessor;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
 public class WebPageExtractor {
-	protected PageFetcher pageFetcher = new PageFetcher();
+	protected final PageFetcher pageFetcher = new PageFetcher();
 	
 	protected ParserChunker2MatcherProcessor nlProc;
-	protected MostFrequentWordsFromPageGetter mostFrequentWordsFromPageGetter = new MostFrequentWordsFromPageGetter();
+	protected final MostFrequentWordsFromPageGetter mostFrequentWordsFromPageGetter = new MostFrequentWordsFromPageGetter();
 
-	protected static int sentThresholdLength = 70;
+	protected static final int sentThresholdLength = 70;
 
 	public List<String[]> extractSentencesWithPotentialProductKeywords(String url)
 	{
 		int maxSentsFromPage= 20;
-		List<String[]> results = new ArrayList<String[]>();
+		List<String[]> results = new ArrayList<>();
 
 		String downloadedPage = pageFetcher.fetchPage(url, 20000);
 		if (downloadedPage == null || downloadedPage.length() < 100)
@@ -53,7 +52,7 @@ public class WebPageExtractor {
 		pageTitle = pageTitle.replace("  ", ". ").replace("..", ".").replace(". . .", " ")
 				.replace(": ", ". ").replace("- ", ". ").replace(" |", ". ").
 				replace (". .",".").trim();
-		List<String> pageTitles = new ArrayList<String>();
+		List<String> pageTitles = new ArrayList<>();
 		pageTitles.addAll(TextProcessor.splitToSentences(pageTitle));
 		pageTitles.addAll(Arrays.asList(pageTitle.split(".")));
 
@@ -71,7 +70,7 @@ public class WebPageExtractor {
 		downloadedPage= downloadedPage.replace("     ", "&");
 		downloadedPage = downloadedPage.replaceAll("(?:&)+", "#");
 		String[] sents = downloadedPage.split("#");
-		List<TextChunk> sentsList = new ArrayList<TextChunk>();
+		List<TextChunk> sentsList = new ArrayList<>();
 		for(String s: sents){
 			s = s.trim().replace("  ", ". ").replace("..", ".").replace(". . .", " ")
 					.replace(": ", ". ").replace("- ", ". ").
@@ -79,7 +78,7 @@ public class WebPageExtractor {
 			sentsList.add(new TextChunk(s, s.length()));
 		}
 
-		Collections.sort(sentsList, new TextChunkComparable());
+		sentsList.sort(new TextChunkComparable());
 
 
 		String[] longestSents = new String[maxSentsFromPage];
@@ -103,7 +102,7 @@ public class WebPageExtractor {
 
 	protected String[] cleanListOfSents(String[] longestSents)
 	{
-		List<String> sentsClean = new ArrayList<String>();
+		List<String> sentsClean = new ArrayList<>();
 		for (String sentenceOrMultSent : longestSents)
 		{
 			List<String> furtherSplit = TextProcessor.splitToSentences(sentenceOrMultSent);
@@ -130,19 +129,15 @@ public class WebPageExtractor {
 			this.text = s;
 			this.len = length;
 		}
-		public String text;
-		public int len;
+		public final String text;
+		public final int len;
 	}
 
-	public class TextChunkComparable implements Comparator<TextChunk>
-	{
-		public int compare(TextChunk ch1, TextChunk ch2)
-		{
-			if (ch1.len>ch2.len)
-				return 1;
-			else if (ch1.len<ch2.len)
-				return  -1;
-			else return 0;
+	public static class TextChunkComparable implements Comparator<TextChunk> {
+
+		@Override
+		public int compare(TextChunk ch1, TextChunk ch2) {
+			return Integer.compare(ch1.len, ch2.len);
 
 		}
 	}

@@ -36,7 +36,7 @@ public class OSCCWSDContextGenerator implements WSDContextGenerator {
     String[] tags, String[] lemmas, int windowSize) {
 
     // TODO consider windowSize
-    ArrayList<String> contextClusters = new ArrayList<String>();
+    ArrayList<String> contextClusters = new ArrayList<>();
 
     for (int i = 0; i < toks.length; i++) {
       if (lemmas != null) {

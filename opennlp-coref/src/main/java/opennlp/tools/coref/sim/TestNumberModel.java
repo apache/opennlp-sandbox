@@ -22,8 +22,8 @@ package opennlp.tools.coref.sim;
  *
  */
 public interface TestNumberModel {
-  public double[] numberDist(Context np1);
+  double[] numberDist(Context np1);
 
-  public int getSingularIndex();
-  public int getPluralIndex();
+  int getSingularIndex();
+  int getPluralIndex();
 }

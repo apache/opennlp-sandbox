@@ -26,9 +26,9 @@ import opennlp.tools.word2vec.W2VDistanceMeasurer;
 
 public class LemmaGeneralizer implements IGeneralizer<String> {
 	public static final String w2vPrefix = "w2v_";
-	PStemmer ps = new PStemmer();
+	final PStemmer ps = new PStemmer();
 	String pos = null;
-	W2VDistanceMeasurer w2v = null; 
+	final W2VDistanceMeasurer w2v;
 	public LemmaGeneralizer() {
 		w2v = W2VDistanceMeasurer.getInstance();
     }
@@ -39,7 +39,7 @@ public class LemmaGeneralizer implements IGeneralizer<String> {
 
 	@Override
 	public List<String> generalize(Object o1, Object o2) {
-		List<String> results = new ArrayList<String>();
+		List<String> results = new ArrayList<>();
 		boolean bEqual = false;
 
 		String lemma1 = (String)o1, lemma2 = (String)o2;

@@ -26,7 +26,7 @@ import org.apache.opennlp.corpus_server.taskqueue.TaskQueue;
 
 public class TaskQueueResource {
 
-  private TaskQueue queue;
+  private final TaskQueue queue;
   
   TaskQueueResource(TaskQueue queue) {
     

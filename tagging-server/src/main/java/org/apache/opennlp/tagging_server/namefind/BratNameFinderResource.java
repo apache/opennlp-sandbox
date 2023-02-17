@@ -99,7 +99,7 @@ public class BratNameFinderResource {
                     + sentenceSpan.getStart();
 
             // create a list of new line indexes
-            List<Integer> newLineIndexes = new ArrayList<Integer>();
+            List<Integer> newLineIndexes = new ArrayList<>();
 
             // TODO: Code needs to handle case that there are multiple new lines in a row
 

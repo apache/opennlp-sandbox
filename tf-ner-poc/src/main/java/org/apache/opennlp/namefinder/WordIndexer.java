@@ -34,7 +34,7 @@ public class WordIndexer {
   private final Map<Character, Integer> char2idx;
   private final Map<String, Integer> word2idx;
 
-  public static String UNK = "$UNK$";
+  public static final String UNK = "$UNK$";
   public static String NUM = "$NUM$";
 
   private final boolean lowerCase = false;

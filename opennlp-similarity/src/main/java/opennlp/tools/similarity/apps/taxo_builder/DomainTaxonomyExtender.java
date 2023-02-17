@@ -40,22 +40,22 @@ import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcess
  */
 
 public class DomainTaxonomyExtender {
-	private static Logger LOG = Logger
+	private static final Logger LOG = Logger
 			.getLogger("opennlp.tools.similarity.apps.taxo_builder.DomainTaxonomyExtender");
 
-	private BingQueryRunner brunner = new BingQueryRunner();
-	private ParserChunker2MatcherProcessor matcher = ParserChunker2MatcherProcessor.getInstance();
+	private final BingQueryRunner brunner = new BingQueryRunner();
+	private final ParserChunker2MatcherProcessor matcher = ParserChunker2MatcherProcessor.getInstance();
 
-	protected static String BING_KEY = "WFoNMM706MMJ5JYfcHaSEDP+faHj3xAxt28CPljUAHA";
+	protected static final String BING_KEY = "WFoNMM706MMJ5JYfcHaSEDP+faHj3xAxt28CPljUAHA";
 	
 
 	private final static String TAXO_FILENAME = "taxo_data.dat";
 
-	private Map<String, List<List<String>>> lemma_ExtendedAssocWords = new HashMap<String, List<List<String>>>();
-	private Map<List<String>, List<List<String>>> assocWords_ExtendedAssocWords = new HashMap<List<String>, List<List<String>>>();
-	private PStemmer ps;
+	private Map<String, List<List<String>>> lemma_ExtendedAssocWords = new HashMap<>();
+	private final Map<List<String>, List<List<String>>> assocWords_ExtendedAssocWords = new HashMap<>();
+	private final PStemmer ps;
 
-	CsvAdapter adapter = new CsvAdapter();
+	final CsvAdapter adapter = new CsvAdapter();
 
 	public Map<List<String>, List<List<String>>> getAssocWords_ExtendedAssocWords() {
 		return assocWords_ExtendedAssocWords;
@@ -79,9 +79,9 @@ public class DomainTaxonomyExtender {
 	private List<List<String>> getCommonWordsFromList_List_ParseTreeChunk(
 			List<List<ParseTreeChunk>> matchList, List<String> queryWordsToRemove,
 			List<String> toAddAtEnd) {
-		List<List<String>> res = new ArrayList<List<String>>();
+		List<List<String>> res = new ArrayList<>();
 		for (List<ParseTreeChunk> chunks : matchList) {
-			List<String> wordRes = new ArrayList<String>();
+			List<String> wordRes = new ArrayList<>();
 			for (ParseTreeChunk ch : chunks) {
 				List<String> lemmas = ch.getLemmas();
 				for (int w = 0; w < lemmas.size(); w++)
@@ -94,8 +94,8 @@ public class DomainTaxonomyExtender {
 							wordRes.add(formedWord);
 					}
 			}
-			wordRes = new ArrayList<String>(new HashSet<String>(wordRes));
-			List<String> cleanedRes = new ArrayList<String>();
+			wordRes = new ArrayList<>(new HashSet<>(wordRes));
+			List<String> cleanedRes = new ArrayList<>();
 			for(String s: wordRes){
 				if (!queryWordsToRemove.contains(s))
 					cleanedRes .add(s);  	  
@@ -106,14 +106,14 @@ public class DomainTaxonomyExtender {
 				res.add(cleanedRes);
 			}
 		}
-		res = new ArrayList<List<String>>(new HashSet<List<String>>(res));
+		res = new ArrayList<>(new HashSet<>(res));
 		return res;
 	}
 
 	public void extendTaxonomy(String fileNameWithTaxonomyRoot, String domain, String lang) {
 
 
-		List<String> entries = new ArrayList<String>((adapter.lemma_AssocWords.keySet()));
+		List<String> entries = new ArrayList<>((adapter.lemma_AssocWords.keySet()));
 		try {
 			for (String entity : entries) { // .
 				List<List<String>> paths = adapter.lemma_AssocWords.get(entity);
@@ -123,7 +123,7 @@ public class DomainTaxonomyExtender {
 							.replace('_', ' ');
 					List<List<ParseTreeChunk>> matchList = runSearchForTaxonomyPath(
 							query, "", lang, 20); //30
-					List<String> toRemoveFromExtension = new ArrayList<String>(taxoPath);
+					List<String> toRemoveFromExtension = new ArrayList<>(taxoPath);
 					toRemoveFromExtension.add(entity);
 					toRemoveFromExtension.add(domain);
 					List<List<String>> resList = getCommonWordsFromList_List_ParseTreeChunk(
@@ -147,7 +147,7 @@ public class DomainTaxonomyExtender {
 
 	public List<List<ParseTreeChunk>> runSearchForTaxonomyPath(String query,
 			String domain, String lang, int numbOfHits) {
-		List<List<ParseTreeChunk>> genResult = new ArrayList<List<ParseTreeChunk>>();
+		List<List<ParseTreeChunk>> genResult = new ArrayList<>();
 		try {
 			List<HitBase> resultList = brunner.runSearch(query, numbOfHits);
 
@@ -176,7 +176,7 @@ public class DomainTaxonomyExtender {
 
 	public List<String> runSearchForTaxonomyPathFlatten(String query,
 			String domain, String lang, int numbOfHits) {
-		List<String> genResult = new ArrayList<String>();
+		List<String> genResult = new ArrayList<>();
 		try {
 			List<HitBase> resultList = brunner.runSearch(query, numbOfHits);
 
@@ -205,7 +205,7 @@ public class DomainTaxonomyExtender {
 
 
 	private List<String> assessKeywordOverlap(String snapshot1, String snapshot2) {
-		List<String> results = new ArrayList<String>();
+		List<String> results = new ArrayList<>();
 		List<String> firstList = TextProcessor.fastTokenize(snapshot1, false), 
 				secondList = TextProcessor.fastTokenize(snapshot2, false);	  
 		firstList.retainAll(secondList);
