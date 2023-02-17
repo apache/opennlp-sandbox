@@ -35,20 +35,20 @@ import org.json.JSONObject;
 public class DocClassifierTrainingSetVerifier {
 	public static String projectHome = new File(".").getAbsolutePath();
 	public static String resourceDir = new File(".").getAbsolutePath().replace("/.", "") + "/src/main/resources";
-	DocClassifier classifier = null;
+	DocClassifier classifier;
 	private String sourceDir = null, destinationDir = null;
 	
 
-	protected ArrayList<File> queue = new ArrayList<File>();
+	protected final ArrayList<File> queue = new ArrayList<>();
 
-	protected Tika tika = new Tika();
+	protected final Tika tika = new Tika();
 	public DocClassifierTrainingSetVerifier(String resource) {
 
 		
 		classifier = new DocClassifier("", new JSONObject());
 
 	}
-	private int FRAGMENT_LENGTH = 500;
+	private static final int FRAGMENT_LENGTH = 500;
 
 
 	protected void addFiles(File file) {
@@ -73,7 +73,7 @@ public class DocClassifierTrainingSetVerifier {
 	}
 
 	public void processDirectory(String fileName) throws IOException {
-		List<String[]> report = new ArrayList<String[]>();
+		List<String[]> report = new ArrayList<>();
 		report.add(new String[] { "filename", "category",
 				"confirmed?" ,
 		});
@@ -84,7 +84,7 @@ public class DocClassifierTrainingSetVerifier {
 		
 
 		for (File f : queue) {
-			String content = null;
+			String content;
 			try {
 				System.out.println("processing "+f.getName());
 				

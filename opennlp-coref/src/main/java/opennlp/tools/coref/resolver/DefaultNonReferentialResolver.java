@@ -24,7 +24,6 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import opennlp.tools.coref.mention.MentionContext;
@@ -57,7 +56,7 @@ public class DefaultNonReferentialResolver implements NonReferentialResolver {
     this.mode = mode;
     this.modelName = projectName + "/" + name + ".nr";
     if (mode == ResolverMode.TRAIN) {
-      events = new ArrayList<Event>();
+      events = new ArrayList<>();
     }
     else if (mode == ResolverMode.TEST) {
       if (loadAsResource) {
@@ -97,7 +96,7 @@ public class DefaultNonReferentialResolver implements NonReferentialResolver {
   }
 
   protected List<String> getFeatures(MentionContext mention) {
-    List<String> features = new ArrayList<String>();
+    List<String> features = new ArrayList<>();
     features.add(MaxentResolver.DEFAULT);
     features.addAll(getNonReferentialFeatures(mention));
     return features;
@@ -109,14 +108,14 @@ public class DefaultNonReferentialResolver implements NonReferentialResolver {
    * @return a list of features used to predict whether the specified mention is non-referential.
    */
   protected List<String> getNonReferentialFeatures(MentionContext mention) {
-    List<String> features = new ArrayList<String>();
+    List<String> features = new ArrayList<>();
     Parse[] mtokens = mention.getTokenParses();
     //System.err.println("getNonReferentialFeatures: mention has "+mtokens.length+" tokens");
     for (int ti = 0; ti <= mention.getHeadTokenIndex(); ti++) {
       Parse tok = mtokens[ti];
       List<String> wfs = ResolverUtils.getWordFeatures(tok);
-      for (int wfi = 0; wfi < wfs.size(); wfi++) {
-        features.add("nr" + wfs.get(wfi));
+      for (String wf : wfs) {
+        features.add("nr" + wf);
       }
     }
     features.addAll(ResolverUtils.getContextFeatures(mention));
@@ -129,8 +128,7 @@ public class DefaultNonReferentialResolver implements NonReferentialResolver {
       System.err.println(this + " referential");
       if (debugOn) {
         FileWriter writer = new FileWriter(modelName + ".events");
-        for (Iterator<Event> ei = events.iterator(); ei.hasNext();) {
-          Event e = ei.next();
+        for (Event e : events) {
           writer.write(e.toString() + "\n");
         }
         writer.close();

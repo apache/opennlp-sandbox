@@ -39,7 +39,7 @@ public class NLProgram2CodeRequestHandler extends SearchHandler {
 	"C:/workspace/TestSolr/src/test/resources";
 	//"/data1/solr/example/src/test/resources";
 	
-	NL2Obj compiler = new NL2ObjCreateAssign(resourceDir);
+	final NL2Obj compiler = new NL2ObjCreateAssign(resourceDir);
 
 	public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp){
 		// get query string

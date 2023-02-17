@@ -40,7 +40,7 @@ import org.nd4j.common.primitives.Pair;
 
 public class W2VDistanceMeasurer {
 	static W2VDistanceMeasurer instance;
-	public Word2Vec vec = null;
+	public Word2Vec vec;
 
 	public synchronized static W2VDistanceMeasurer getInstance() {
 		if (instance == null)

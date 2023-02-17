@@ -58,7 +58,7 @@ public class SimpleNaiveBayesClassifier implements NaiveBayesClassifier<String, 
   }
 
   private void preComputePriors() {
-    priors = new HashMap<String, Double>();
+    priors = new HashMap<>();
     for (String cl : classMegaDocMap.keySet()) {
       priors.put(cl, calculatePrior(cl));
     }
@@ -72,8 +72,8 @@ public class SimpleNaiveBayesClassifier implements NaiveBayesClassifier<String, 
 //    }
 
   private void createMegaDocs() {
-    classMegaDocMap = new HashMap<String, String>();
-    Map<String, StringBuilder> mockClassMegaDocMap = new HashMap<String, StringBuilder>();
+    classMegaDocMap = new HashMap<>();
+    Map<String, StringBuilder> mockClassMegaDocMap = new HashMap<>();
     for (String doc : docsWithClass.keySet()) {
       String cl = docsWithClass.get(doc);
       StringBuilder megaDoc = mockClassMegaDocMap.get(cl);
@@ -91,7 +91,7 @@ public class SimpleNaiveBayesClassifier implements NaiveBayesClassifier<String, 
   }
 
   private void createVocabulary() {
-    vocabulary = new LinkedList<String>();
+    vocabulary = new LinkedList<>();
     for (String doc : docsWithClass.keySet()) {
       String[] split = tokenizeDoc(doc);
       vocabulary.addAll(Arrays.asList(split));

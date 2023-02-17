@@ -22,7 +22,7 @@ import java.util.Iterator;
 
 class MemoryTaskQueue implements TaskQueue {
 
-  private Iterator<String> casIdQueueIterator;
+  private final Iterator<String> casIdQueueIterator;
   
   MemoryTaskQueue(Collection<String> casIdQueue) {
     casIdQueueIterator = casIdQueue.iterator();   

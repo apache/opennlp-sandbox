@@ -70,7 +70,7 @@ public class WordSense implements Comparable<WordSense> {
 
   @Override
   public int compareTo(WordSense o) {
-    return (this.score - ((WordSense) o).score) < 0 ? 1 : -1;
+    return Double.compare(this.score, o.score);
   }
 
   public String getGloss() {

@@ -17,7 +17,6 @@
 package opennlp.tools.similarity.apps.solr;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -66,7 +65,7 @@ public class SearchResultsReRankerRequestHandler extends SearchHandler {
 			keys.add(iter.next());
 		}
 
-		List<HitBase> searchResults = new ArrayList<HitBase>();
+		List<HitBase> searchResults = new ArrayList<>();
 
 
 
@@ -109,7 +108,7 @@ public class SearchResultsReRankerRequestHandler extends SearchHandler {
 		}
 
 
-		List<HitBase> reRankedResults = null;
+		List<HitBase> reRankedResults;
 		query = query.replace('+', ' ');
 		if (tooFewKeywords(query)|| orQuery(query)){
 			reRankedResults = searchResults;
@@ -138,7 +137,7 @@ public class SearchResultsReRankerRequestHandler extends SearchHandler {
 			scoreNum.add(hit.getSource(), hit.getGenerWithQueryScore());				
 		}
 		
-		StringBuffer bufNums = new StringBuffer(); 
+		StringBuilder bufNums = new StringBuilder();
 		bufNums.append("order>");
 		for(HitBase hit: reRankedResults){
 			bufNums.append(hit.getSource()).append("_");
@@ -155,10 +154,7 @@ public class SearchResultsReRankerRequestHandler extends SearchHandler {
 	}
 
 	private boolean orQuery(String query) {
-		if (query.indexOf('|')>-1)
-			return true;
-
-		return false;
+		return query.indexOf('|') > -1;
 	}
 
 	private boolean tooFewKeywords(String query) {

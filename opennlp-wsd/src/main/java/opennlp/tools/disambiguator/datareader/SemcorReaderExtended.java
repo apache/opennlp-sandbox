@@ -67,8 +67,8 @@ public class SemcorReaderExtended {
   private static final String ELEMENT_PUNCTUATION = "punc";
 
   private static String semcorDirectory = "src/test/resources/semcor3.0/";
-  private static String[] folders = { "brown1", "brown2", "brownv" };
-  private static String tagfiles = "/tagfiles/";
+  private static final String[] folders = { "brown1", "brown2", "brownv" };
+  private static final String tagfiles = "/tagfiles/";
 
   
   public static String getSemcorDirectory() {
@@ -88,7 +88,7 @@ public class SemcorReaderExtended {
    */
   private ArrayList<Sentence> readFile(String file) {
 
-    ArrayList<Sentence> result = new ArrayList<Sentence>();
+    ArrayList<Sentence> result = new ArrayList<>();
 
     try {
 
@@ -316,7 +316,7 @@ public class SemcorReaderExtended {
    */
   public ArrayList<WSDSample> getSemcorData(String wordTag) {
 
-    ArrayList<WSDSample> result = new ArrayList<WSDSample>();
+    ArrayList<WSDSample> result = new ArrayList<>();
 
     for (String folder : folders) {
       ArrayList<WSDSample> list = getSemcorFolderData(folder, wordTag);

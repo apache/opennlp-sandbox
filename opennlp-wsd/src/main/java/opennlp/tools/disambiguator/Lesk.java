@@ -45,7 +45,7 @@ public class Lesk extends WSDisambiguator {
   /**
    * List of filtered context words
    */
-  ArrayList<WordPOS> contextWords = new ArrayList<WordPOS>();
+  final ArrayList<WordPOS> contextWords = new ArrayList<>();
 
   public Lesk() {
     this(null);
@@ -102,7 +102,7 @@ public class Lesk extends WSDisambiguator {
     WordPOS word = new WordPOS(sample.getTargetWord(), sample.getTargetTag());
 
     ArrayList<Synset> synsets = word.getSynsets();
-    ArrayList<SynNode> nodes = new ArrayList<SynNode>();
+    ArrayList<SynNode> nodes = new ArrayList<>();
 
     for (int i = 0; i < sample.getSentence().length; i++) {
       if (!WSDHelper.getStopCache().containsKey(sample.getSentence()[i])) {
@@ -147,7 +147,7 @@ public class Lesk extends WSDisambiguator {
     WordPOS word = new WordPOS(sample.getTargetWord(), sample.getTargetTag());
 
     ArrayList<Synset> synsets = word.getSynsets();
-    ArrayList<SynNode> nodes = new ArrayList<SynNode>();
+    ArrayList<SynNode> nodes = new ArrayList<>();
 
     int index = sample.getTargetPosition();
 
@@ -954,7 +954,7 @@ public class Lesk extends WSDisambiguator {
       }
     }
 
-    ArrayList<WordSense> wsenses = null;
+    ArrayList<WordSense> wsenses;
 
     switch (this.params.leskType) {
     case LESK_BASIC:

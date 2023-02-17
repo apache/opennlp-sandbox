@@ -30,15 +30,15 @@ public class NL2ObjCreateAssign extends NL2Obj {
 		"create", "assign", "set", 
 	};
 
-	public static String[] dataTypesList = new String[] {
+	public static final String[] dataTypesList = new String[] {
 		"text", "double", "array", 
 	};
 
-	public static String[] arrayElementList = new String[] {
+	public static final String[] arrayElementList = new String[] {
 		"first", "second", "third", "fourth" 
 	};
 
-	public static String[] arrayElementListInsdex = new String[] {
+	public static final String[] arrayElementListInsdex = new String[] {
 		"0", "1", "2", "3" 
 	};
 
@@ -55,13 +55,13 @@ public class NL2ObjCreateAssign extends NL2Obj {
 	@Override
 	public ObjectPhraseListForSentence convertSentenceToControlObjectPhrase(String sentence){
 		String expression = null;
-		if (sentence.indexOf(":")>-1){
+		if (sentence.contains(":")){
 			expression = sentence.split(":")[1];
 			sentence = sentence.split(":")[0]+".";
 		}
 
 
-		List<ObjectPhrase> oPhrases = new  ArrayList<ObjectPhrase>();
+		List<ObjectPhrase> oPhrases = new ArrayList<>();
 		parser = ParserChunker2MatcherProcessor.getInstance();
 		List<List<ParseTreeChunk>> lingPhrases = 
 				parser.formGroupedPhrasesFromChunksForSentence(sentence);

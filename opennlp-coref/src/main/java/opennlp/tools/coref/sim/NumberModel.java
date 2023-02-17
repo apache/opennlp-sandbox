@@ -61,7 +61,7 @@ public class NumberModel implements TestNumberModel, TrainSimilarityModel {
   private NumberModel(String modelName, boolean train) throws IOException {
     this.modelName = modelName;
     if (train) {
-      events = new ArrayList<Event>();
+      events = new ArrayList<>();
     }
     else {
       try (DataInputStream dis = new DataInputStream(
@@ -117,13 +117,11 @@ public class NumberModel implements TestNumberModel, TrainSimilarityModel {
   public void setExtents(Context[] extentContexts) {
     Map<Integer,Context> entities = new HashMap<>();
     List<Context> singletons = new ArrayList<>();
-    for (int ei = 0, el = extentContexts.length; ei < el; ei++) {
-      Context ec = extentContexts[ei];
+    for (Context ec : extentContexts) {
       //System.err.println("NumberModel.setExtents: ec("+ec.getId()+") "+ec.toText());
       if (ec.getId() != -1) {
         entities.put(ec.getId(), ec);
-      }
-      else {
+      } else {
         singletons.add(ec);
       }
     }

@@ -17,8 +17,6 @@
 
 package opennlp.tools.parse_thicket.matching;
 
-import java.util.List;
-
 import opennlp.tools.stemmer.PStemmer;
 
 public class LemmaFormManager {

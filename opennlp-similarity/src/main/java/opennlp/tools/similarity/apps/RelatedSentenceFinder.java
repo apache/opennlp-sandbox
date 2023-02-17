@@ -48,19 +48,19 @@ import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcess
  */
 public class RelatedSentenceFinder {
 	private static final Logger LOG = Logger.getLogger("opennlp.tools.similarity.apps.RelatedSentenceFinder");
-	PageFetcher pFetcher = new PageFetcher();
-	ParserChunker2MatcherProcessor sm = ParserChunker2MatcherProcessor.getInstance();
-	protected ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
-	protected ParseTreeChunk parseTreeChunk = new ParseTreeChunk();
-	protected static StringDistanceMeasurer stringDistanceMeasurer = new StringDistanceMeasurer();
-	protected BingQueryRunner yrunner = new BingQueryRunner();
+	final PageFetcher pFetcher = new PageFetcher();
+	final ParserChunker2MatcherProcessor sm = ParserChunker2MatcherProcessor.getInstance();
+	protected final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
+	protected final ParseTreeChunk parseTreeChunk = new ParseTreeChunk();
+	protected static final StringDistanceMeasurer stringDistanceMeasurer = new StringDistanceMeasurer();
+	protected final BingQueryRunner yrunner = new BingQueryRunner();
 	protected int MAX_STEPS = 1;
 	protected int MAX_SEARCH_RESULTS = 1;
 	protected float RELEVANCE_THRESHOLD = 1.1f;
-	protected Set<String> visitedURLs = new HashSet<>();
+	protected final Set<String> visitedURLs = new HashSet<>();
 
 	// used to indicate that a sentence is an opinion, so more appropriate
-	static List<String> MENTAL_VERBS = new ArrayList<>(
+	static final List<String> MENTAL_VERBS = new ArrayList<>(
 			Arrays.asList(new String[] { "want", "know", "believe", "appeal", "ask",
 					"accept", "agree", "allow", "appeal", "ask", "assume", "believe",
 					"check", "confirm", "convince", "deny", "disagree", "explain",
@@ -654,8 +654,8 @@ public class RelatedSentenceFinder {
 			this.text = s;
 			this.len = length;
 		}
-		public String text;
-		public int len;
+		public final String text;
+		public final int len;
 	}
 
 	public static class TextChunkComparable implements Comparator<TextChunk> {

@@ -1,7 +1,5 @@
 package opennlp.tools.parse_thicket;
 
-import java.util.Comparator;
-
 
 public class Triple<T1, T2, T3> {
 		  private T1 first;

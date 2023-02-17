@@ -17,26 +17,8 @@
 
 package opennlp.tools.jsmlearning;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
-
-import org.apache.commons.collections.ListUtils;
-
-import opennlp.tools.fca.ConceptLattice;
-import opennlp.tools.fca.FcaWriter;
-import opennlp.tools.fca.FormalConcept;
-import opennlp.tools.parse_thicket.pattern_structure.LinguisticPatternStructure;
-import opennlp.tools.similarity.apps.BingWebQueryRunner;
-import opennlp.tools.similarity.apps.HitBase;
-import opennlp.tools.similarity.apps.utils.Pair;
-import opennlp.tools.textsimilarity.ParseTreeChunk;
-import opennlp.tools.textsimilarity.ParseTreeChunkListScorer;
-import opennlp.tools.textsimilarity.ParseTreeMatcherDeterministic;
-import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
 public class JSMLearnerOnLatticeWithAbduction extends JSMLearnerOnLatticeWithDeduction{
 

@@ -115,7 +115,7 @@ public class NGramUtils {
   }
 
   private static <T> Collection<T> flatSet(Collection<T[]> set) {
-    Collection<T> flatSet = new HashSet<T>();
+    Collection<T> flatSet = new HashSet<>();
     for (T[] sentence : set) {
       flatSet.addAll(Arrays.asList(sentence));
     }

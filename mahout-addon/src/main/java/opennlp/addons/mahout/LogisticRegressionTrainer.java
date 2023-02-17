@@ -40,7 +40,7 @@ public class LogisticRegressionTrainer extends AbstractOnlineLearnerTrainer {
     
     // TODO: Lets use the predMap here as well for encoding
     
-    int outcomes[] = indexer.getOutcomeList();
+    int[] outcomes = indexer.getOutcomeList();
     
     int cardinality = indexer.getPredLabels().length;
     
@@ -73,9 +73,9 @@ public class LogisticRegressionTrainer extends AbstractOnlineLearnerTrainer {
     
     pa.close();
     
-    Map<String, Integer> predMap = new HashMap<String, Integer>();
+    Map<String, Integer> predMap = new HashMap<>();
     
-    String predLabels[] = indexer.getPredLabels();
+    String[] predLabels = indexer.getPredLabels();
     for (int i = 0; i < predLabels.length; i++) {
       predMap.put(predLabels[i], i);
     }

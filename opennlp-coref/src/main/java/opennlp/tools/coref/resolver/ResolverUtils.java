@@ -172,7 +172,7 @@ public class ResolverUtils {
         if (!first) {
           sb.append(" ");
         }
-        sb.append(token.toString());
+        sb.append(token);
         first = false;
       }
     }
@@ -497,7 +497,7 @@ public class ResolverUtils {
         }
       }
     }
-    List<String> pronounFeatures = new ArrayList<String>();
+    List<String> pronounFeatures = new ArrayList<>();
     if (foundCompatiblePronoun) {
       pronounFeatures.add("compatiblePronoun");
     }

@@ -30,7 +30,7 @@ public interface Dictionary {
    * @param pos The part-of-speech of the specified word.
    * @return The lemmas of the specified word given the specified part-of-speech.
    */
-  public String[] getLemmas(String word, String pos);
+  String[] getLemmas(String word, String pos);
 
   /**
    * Returns a key indicating the specified sense number of the specified
@@ -42,7 +42,7 @@ public interface Dictionary {
    * @return a key indicating the specified sense number of the specified
    * lemma with the specified part-of-speech.
    */
-  public  String getSenseKey(String lemma, String pos, int senseNumber);
+  String getSenseKey(String lemma, String pos, int senseNumber);
 
   /**
    * Returns the number of senses in the dictionary for the specified lemma.
@@ -51,7 +51,7 @@ public interface Dictionary {
    * @param pos The part-of-speech for the lemma.
    * @return the number of senses in the dictionary for the specified lemma.
    */
-  public int getNumSenses(String lemma, String pos);
+  int getNumSenses(String lemma, String pos);
 
   /**
    * Returns an array of keys for each parent of the specified sense number
@@ -63,5 +63,5 @@ public interface Dictionary {
    * @return an array of keys for each parent of the specified sense number of
    *         the specified lemma with the specified part-of-speech.
    */
-  public String[] getParentSenseKeys(String lemma, String pos, int senseNumber);
+  String[] getParentSenseKeys(String lemma, String pos, int senseNumber);
 }

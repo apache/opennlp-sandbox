@@ -37,9 +37,9 @@ public class SentenceOriginalizer {
 
 	private final MachineTranslationWrapper rePhraser = new MachineTranslationWrapper();
 	private final SentimentVocab sVocab = SentimentVocab.getInstance();
-	PhraseProcessor pProc = new PhraseProcessor();
+	final PhraseProcessor pProc = new PhraseProcessor();
 	SynonymListFilter filter = null;
-	private List<String> verbsShouldStayNoSubstition = Arrays.asList(new String[]{
+	private final List<String> verbsShouldStayNoSubstition = Arrays.asList(new String[]{
 			"might", "can", "power", "bonk", "screw", "victimization", "victimize", "victimised", "victimized", "victimise",
 			"hump", "sluttish", "wanton"
 	});
@@ -53,7 +53,7 @@ public class SentenceOriginalizer {
 
 	public SentenceOriginalizer(String dir){
 		filter = new  SynonymListFilter(dir);
-	};
+	}
 
 	public String[] getSents() {
 		return sents;
@@ -107,7 +107,7 @@ public class SentenceOriginalizer {
 		for(int i = 0; i< sents.length; i++){
 			Random rand = new Random();
 			double flag = rand.nextDouble();
-			String prodNameCurr = null;
+			String prodNameCurr;
 			if (flag>0.4)
 				prodNameCurr = prodName;
 				else
@@ -230,7 +230,7 @@ public class SentenceOriginalizer {
 	}
 
 	private void extractNounPhrasesWithSentiments(List<ParseTreeChunk> list) {
-		List<String> phrasesWithSentiments = new ArrayList<String>();
+		List<String> phrasesWithSentiments = new ArrayList<>();
 		for(ParseTreeChunk ch: list){
 			List<String> lemmas = ch.getLemmas();
 			for(String l:lemmas){

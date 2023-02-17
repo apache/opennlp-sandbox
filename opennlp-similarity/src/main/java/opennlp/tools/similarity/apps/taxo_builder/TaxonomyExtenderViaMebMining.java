@@ -42,14 +42,14 @@ import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcess
  */
 
 public class TaxonomyExtenderViaMebMining extends BingQueryRunner {
-  private static Logger LOG = Logger
+  private static final Logger LOG = Logger
       .getLogger("opennlp.tools.similarity.apps.taxo_builder.TaxonomyExtenderSearchResultFromYahoo");
-  private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
+  private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
   ParserChunker2MatcherProcessor sm;
 
-  private Map<String, List<List<String>>> lemma_ExtendedAssocWords = new HashMap<String, List<List<String>>>();
-  private Map<List<String>, List<List<String>>> assocWords_ExtendedAssocWords = new HashMap<List<String>, List<List<String>>>();
-  private PStemmer ps;
+  private Map<String, List<List<String>>> lemma_ExtendedAssocWords = new HashMap<>();
+  private final Map<List<String>, List<List<String>>> assocWords_ExtendedAssocWords = new HashMap<>();
+  private final PStemmer ps;
 
   public Map<List<String>, List<List<String>>> getAssocWords_ExtendedAssocWords() {
     return assocWords_ExtendedAssocWords;
@@ -78,9 +78,9 @@ public class TaxonomyExtenderViaMebMining extends BingQueryRunner {
   private List<List<String>> getCommonWordsFromList_List_ParseTreeChunk(
       List<List<ParseTreeChunk>> matchList, List<String> queryWordsToRemove,
       List<String> toAddAtEnd) {
-    List<List<String>> res = new ArrayList<List<String>>();
+    List<List<String>> res = new ArrayList<>();
     for (List<ParseTreeChunk> chunks : matchList) {
-      List<String> wordRes = new ArrayList<String>();
+      List<String> wordRes = new ArrayList<>();
       for (ParseTreeChunk ch : chunks) {
         List<String> lemmas = ch.getLemmas();
         for (int w = 0; w < lemmas.size(); w++)
@@ -93,21 +93,21 @@ public class TaxonomyExtenderViaMebMining extends BingQueryRunner {
               wordRes.add(formedWord);
           }
       }
-      wordRes = new ArrayList<String>(new HashSet<String>(wordRes));
+      wordRes = new ArrayList<>(new HashSet<>(wordRes));
       wordRes.removeAll(queryWordsToRemove);
       if (wordRes.size() > 0) {
         wordRes.addAll(toAddAtEnd);
         res.add(wordRes);
       }
     }
-    res = new ArrayList<List<String>>(new HashSet<List<String>>(res));
+    res = new ArrayList<>(new HashSet<>(res));
     return res;
   }
 
   public void extendTaxonomy(String fileName, String domain, String lang) {
     AriAdapter ad = new AriAdapter();
     ad.getChainsFromARIfile(fileName);
-    List<String> entries = new ArrayList<String>((ad.lemma_AssocWords.keySet()));
+    List<String> entries = new ArrayList<>((ad.lemma_AssocWords.keySet()));
     try {
       for (String entity : entries) { // .
         List<List<String>> paths = ad.lemma_AssocWords.get(entity);
@@ -121,7 +121,7 @@ public class TaxonomyExtenderViaMebMining extends BingQueryRunner {
               .replace('_', ' ');
           List<List<ParseTreeChunk>> matchList = runSearchForTaxonomyPath(
               query, "", lang, 30);
-          List<String> toRemoveFromExtension = new ArrayList<String>(taxoPath);
+          List<String> toRemoveFromExtension = new ArrayList<>(taxoPath);
           toRemoveFromExtension.add(entity);
           toRemoveFromExtension.add(domain);
           List<List<String>> resList = getCommonWordsFromList_List_ParseTreeChunk(
@@ -142,7 +142,7 @@ public class TaxonomyExtenderViaMebMining extends BingQueryRunner {
 
   public List<List<ParseTreeChunk>> runSearchForTaxonomyPath(String query,
       String domain, String lang, int numbOfHits) {
-    List<List<ParseTreeChunk>> genResult = new ArrayList<List<ParseTreeChunk>>();
+    List<List<ParseTreeChunk>> genResult = new ArrayList<>();
     try {
       List<HitBase> resultList = runSearch(query, numbOfHits);
 

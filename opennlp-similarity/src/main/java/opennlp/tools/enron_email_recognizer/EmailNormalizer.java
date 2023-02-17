@@ -26,7 +26,7 @@ import org.apache.commons.io.FileUtils;
 
 public class EmailNormalizer {
 
-	protected ArrayList<File> queue = new ArrayList<>();
+	protected final ArrayList<File> queue = new ArrayList<>();
 	
 	protected void addFilesPos(File file) {
 

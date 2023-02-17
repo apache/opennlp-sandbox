@@ -200,7 +200,7 @@ public class DerbyCorporaStore extends AbstractCorporaStore {
     DerbyCorpusStore corpusStore = null;
     
     try {
-      DatabaseMetaData metadata = null;
+      DatabaseMetaData metadata;
       metadata = dataSource.getConnection().getMetaData();
       String[] names = { "TABLE" };
       ResultSet tableNames = metadata.getTables(null, null, null, names);

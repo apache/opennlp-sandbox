@@ -34,21 +34,21 @@ import net.sf.extjwnl.data.list.PointerTargetNodeList;
 public class SynNode {
 
   public Synset parent;
-  public Synset synset;
+  public final Synset synset;
 
   protected ArrayList<WordPOS> senseRelevantWords;
 
-  public ArrayList<Synset> hypernyms = new ArrayList<Synset>();
-  public ArrayList<Synset> hyponyms = new ArrayList<Synset>();
-  public ArrayList<Synset> meronyms = new ArrayList<Synset>();
-  public ArrayList<Synset> holonyms = new ArrayList<Synset>();
-  public ArrayList<Synset> entailments = new ArrayList<Synset>();
-  public ArrayList<Synset> coordinateTerms = new ArrayList<Synset>();
-  public ArrayList<Synset> causes = new ArrayList<Synset>();
-  public ArrayList<Synset> attributes = new ArrayList<Synset>();
-  public ArrayList<Synset> pertainyms = new ArrayList<Synset>();
+  public final ArrayList<Synset> hypernyms = new ArrayList<>();
+  public final ArrayList<Synset> hyponyms = new ArrayList<>();
+  public final ArrayList<Synset> meronyms = new ArrayList<>();
+  public final ArrayList<Synset> holonyms = new ArrayList<>();
+  public final ArrayList<Synset> entailments = new ArrayList<>();
+  public final ArrayList<Synset> coordinateTerms = new ArrayList<>();
+  public final ArrayList<Synset> causes = new ArrayList<>();
+  public final ArrayList<Synset> attributes = new ArrayList<>();
+  public final ArrayList<Synset> pertainyms = new ArrayList<>();
 
-  public ArrayList<WordPOS> synonyms = new ArrayList<WordPOS>();
+  public final ArrayList<WordPOS> synonyms = new ArrayList<>();
 
   public SynNode(Synset parent, Synset synSet,
       ArrayList<WordPOS> senseRelevantWords) {
@@ -82,8 +82,7 @@ public class SynNode {
       e.printStackTrace();
     }
 
-    for (int i = 0; i < phypernyms.size(); i++) {
-      PointerTargetNode ptn = phypernyms.get(i);
+    for (PointerTargetNode ptn : phypernyms) {
       this.hypernyms.add(ptn.getSynset());
     }
 
@@ -101,8 +100,7 @@ public class SynNode {
       e.printStackTrace();
     }
 
-    for (int i = 0; i < pmeronyms.size(); i++) {
-      PointerTargetNode ptn = pmeronyms.get(i);
+    for (PointerTargetNode ptn : pmeronyms) {
       this.meronyms.add(ptn.getSynset());
     }
   }
@@ -119,8 +117,7 @@ public class SynNode {
       e.printStackTrace();
     }
 
-    for (int i = 0; i < pholonyms.size(); i++) {
-      PointerTargetNode ptn = pholonyms.get(i);
+    for (PointerTargetNode ptn : pholonyms) {
       this.holonyms.add(ptn.getSynset());
     }
 
@@ -138,8 +135,7 @@ public class SynNode {
       e.printStackTrace();
     }
 
-    for (int i = 0; i < phyponyms.size(); i++) {
-      PointerTargetNode ptn = phyponyms.get(i);
+    for (PointerTargetNode ptn : phyponyms) {
       this.hyponyms.add(ptn.getSynset());
     }
   }
@@ -156,8 +152,7 @@ public class SynNode {
       e.printStackTrace();
     }
 
-    for (int i = 0; i < pentailments.size(); i++) {
-      PointerTargetNode ptn = pentailments.get(i);
+    for (PointerTargetNode ptn : pentailments) {
       this.entailments.add(ptn.getSynset());
     }
 
@@ -175,8 +170,7 @@ public class SynNode {
       e.printStackTrace();
     }
 
-    for (int i = 0; i < pcoordinateTerms.size(); i++) {
-      PointerTargetNode ptn = pcoordinateTerms.get(i);
+    for (PointerTargetNode ptn : pcoordinateTerms) {
       this.coordinateTerms.add(ptn.getSynset());
     }
 
@@ -194,8 +188,7 @@ public class SynNode {
       e.printStackTrace();
     }
 
-    for (int i = 0; i < pcauses.size(); i++) {
-      PointerTargetNode ptn = pcauses.get(i);
+    for (PointerTargetNode ptn : pcauses) {
       this.causes.add(ptn.getSynset());
     }
 
@@ -213,8 +206,7 @@ public class SynNode {
       e.printStackTrace();
     }
 
-    for (int i = 0; i < pattributes.size(); i++) {
-      PointerTargetNode ptn = pattributes.get(i);
+    for (PointerTargetNode ptn : pattributes) {
       this.attributes.add(ptn.getSynset());
     }
 
@@ -232,8 +224,7 @@ public class SynNode {
       e.printStackTrace();
     }
 
-    for (int i = 0; i < ppertainyms.size(); i++) {
-      PointerTargetNode ptn = ppertainyms.get(i);
+    for (PointerTargetNode ptn : ppertainyms) {
       this.pertainyms.add(ptn.getSynset());
     }
 
@@ -299,7 +290,7 @@ public class SynNode {
    * @return senses from the nodes
    */
   public static ArrayList<WordSense> updateSenses(ArrayList<SynNode> nodes) {
-    ArrayList<WordSense> scoredSenses = new ArrayList<WordSense>();
+    ArrayList<WordSense> scoredSenses = new ArrayList<>();
 
     for (int i = 0; i < nodes.size(); i++) {
       ArrayList<WordPOS> sensesComponents = WSDHelper

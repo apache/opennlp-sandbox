@@ -19,8 +19,6 @@ package opennlp.tools.similarity.apps.utils;
 
 import java.util.Comparator;
 
-import opennlp.tools.similarity.apps.HitBase;
-
 /**
  * Generic pair class for holding two objects. Often used as return object.
  * 

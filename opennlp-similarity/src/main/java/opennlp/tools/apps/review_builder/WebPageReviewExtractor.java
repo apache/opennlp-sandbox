@@ -79,7 +79,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 	public ReviewObj extractSentencesWithPotentialReviewPhrases(String url) {
 		ReviewObj reviewObj = new ReviewObj();
 		int maxSentsFromPage= 20;
-		List<String[]> results = new ArrayList<String[]>();
+		List<String[]> results = new ArrayList<>();
 
 		String downloadedPage = pageFetcher.fetchPage(url, 20000);
 		if (downloadedPage == null || downloadedPage.length() < 100)
@@ -89,7 +89,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 
 		String pageOrigHTML = pageFetcher.fetchOrigHTML(url);
 
-		List<String> productFeaturesList = new ArrayList<String> ();
+		List<String> productFeaturesList = new ArrayList<>();
 		String[] productFeatures = StringUtils.substringsBetween(pageOrigHTML, "<li>", "</li>" );
 		if (productFeatures!=null){
 			for(String item: productFeatures ){
@@ -129,7 +129,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 		downloadedPage= downloadedPage.replace("     ", "&");
 		downloadedPage = downloadedPage.replaceAll("(?:&)+", "#");
 		String[] sents = downloadedPage.split("#");
-		List<TextChunk> sentsList = new ArrayList<TextChunk>();
+		List<TextChunk> sentsList = new ArrayList<>();
 		for(String s: sents){
 			s = s.trim().replace("  ", ". ").replace("..", ".").replace(". . .", " ")
 					.replace(": ", ". ").replace("- ", ". ").
@@ -229,7 +229,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 				try {
 					int commaIndex = StringUtils.indexOf(sent, ',');
 					int lastCommaIndex = StringUtils.lastIndexOf(sent, ',');
-					int splitIndex = -1;
+					int splitIndex;
 					if (Math.abs(commaIndex- len/2) > Math.abs(lastCommaIndex- len/2))
 						splitIndex = commaIndex;
 					else
@@ -317,7 +317,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 
 		String[] features = reviewObj.getFeaturePhrases();
 		List<String> sentences =reviewObj.getOriginalizedSentences();
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		int count = 0;
 		for(String sent:sentences){
 			if (sent!=null)
@@ -383,7 +383,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 				currentRevIndex=0;	
 		}
 		
-		List<String> results = new ArrayList<String>();
+		List<String> results = new ArrayList<>();
 		for(StringBuffer b:bufs){
 			String sent = b.toString().replace("!.","!").replace("?.","?");
 			results.add(sent);
@@ -398,7 +398,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 		//ProductFinderInAWebPage init = new ProductFinderInAWebPage("C:/workspace/relevanceEngine/src/test/resources");
 
 		WebPageReviewExtractor extractor = new WebPageReviewExtractor(resourceDir);
-		String res1[] = extractor.verifyEnforceStartsUpperCase(new String[]{ "hhhh !", "Klyn mng hghj ."});
+		String[] res1 = extractor.verifyEnforceStartsUpperCase(new String[]{ "hhhh !", "Klyn mng hghj ."});
 				
 		List<String> res = extractor.formReviewsForAProduct(//"McCulloch 16-Inch 3.5 HP Electric Chain Saw");
 				//	"WORX Electric JawSaw with Extension Handle");

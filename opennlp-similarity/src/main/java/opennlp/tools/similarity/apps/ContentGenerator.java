@@ -38,13 +38,13 @@ import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcess
  */
 
 public class ContentGenerator /*extends RelatedSentenceFinder*/ {
-	PageFetcher pFetcher = new PageFetcher();
-	ParserChunker2MatcherProcessor sm = ParserChunker2MatcherProcessor.getInstance();
-	protected ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
-	protected ParseTreeChunk parseTreeChunk = new ParseTreeChunk();
-	protected static StringDistanceMeasurer stringDistanceMeasurer = new StringDistanceMeasurer();
-	protected BingQueryRunner yrunner = new BingQueryRunner();
-	protected ContentGeneratorSupport support = new ContentGeneratorSupport();
+	final PageFetcher pFetcher = new PageFetcher();
+	final ParserChunker2MatcherProcessor sm = ParserChunker2MatcherProcessor.getInstance();
+	protected final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
+	protected final ParseTreeChunk parseTreeChunk = new ParseTreeChunk();
+	protected static final StringDistanceMeasurer stringDistanceMeasurer = new StringDistanceMeasurer();
+	protected final BingQueryRunner yrunner = new BingQueryRunner();
+	protected final ContentGeneratorSupport support = new ContentGeneratorSupport();
 	protected int MAX_STEPS = 1;
 	protected int MAX_SEARCH_RESULTS = 1;
 	protected float RELEVANCE_THRESHOLD = 1.1f;
@@ -242,7 +242,7 @@ public class ContentGenerator /*extends RelatedSentenceFinder*/ {
 			return null;
 		String pageSentence = "";
 		// try to find original sentence from webpage
-		if (fragment.indexOf("_should_find_orig_") > -1 && sents != null
+		if (fragment.contains("_should_find_orig_") && sents != null
 				&& sents.length > 0){
 			try { 
 				// first try sorted sentences from page by length approach

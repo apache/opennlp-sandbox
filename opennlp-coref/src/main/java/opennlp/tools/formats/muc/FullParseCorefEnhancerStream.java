@@ -73,19 +73,17 @@ public class FullParseCorefEnhancerStream extends FilterObjectStream<RawCorefSam
     
     if (sample != null) {
 
-      List<Parse> enhancedParses = new ArrayList<Parse>();
+      List<Parse> enhancedParses = new ArrayList<>();
       
       List<String[]> sentences = sample.getTexts();
-      
-      for (int i = 0; i < sentences.size(); i++) {
-        
-        String[] sentence = sentences.get(i);
-        
+
+      for (String[] sentence : sentences) {
+
         Parse incompleteParse = createIncompleteParse(sentence);
         Parse p = parser.parse(incompleteParse);
-        
+
         // What to do when a parse cannot be found ?!
-        
+
         enhancedParses.add(p);
       }
       

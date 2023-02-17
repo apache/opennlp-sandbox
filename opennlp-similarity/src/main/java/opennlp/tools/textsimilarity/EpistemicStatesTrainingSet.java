@@ -20,7 +20,7 @@ import java.util.HashMap;
 
 public class EpistemicStatesTrainingSet {
 
-  static public HashMap<String, String> class_setOfSentences = new HashMap<String, String>();
+  static public final HashMap<String, String> class_setOfSentences = new HashMap<>();
 
   static {
     class_setOfSentences

@@ -6,20 +6,18 @@ import java.util.List;
 import opennlp.tools.similarity.apps.BingQueryRunner;
 import opennlp.tools.similarity.apps.HitBase;
 
-import org.apache.commons.lang.StringUtils;
-
 public class BingAPIProductSearchManager {
-	BingQueryRunner search = new BingQueryRunner();
+	final BingQueryRunner search = new BingQueryRunner();
 
 	public List<HitBase> findProductByName(String name, int count){
 		List<HitBase> foundFBPages = search.runSearch("site:amazon.com"+" "+name + " reviews"
 				, 10);
-		List<HitBase> results = new ArrayList<HitBase>();
+		List<HitBase> results = new ArrayList<>();
 		int ct=0;
 		for(HitBase h: foundFBPages){
 			if (ct>=count) break; ct++; 
 			String title = h.getTitle().toLowerCase();
-			if (h.getUrl().indexOf("amazon.com")<0)
+			if (!h.getUrl().contains("amazon.com"))
 				continue;
 			String[] merchantWords = name.toLowerCase().split(" ");
 			int overlapCount=0;
@@ -38,7 +36,7 @@ public class BingAPIProductSearchManager {
 	
 	public List<HitBase> findProductByNameNoReview(String name, int count){
 		List<HitBase> foundFBPages = search.runSearch(name, count);
-		List<HitBase> results = new ArrayList<HitBase>();
+		List<HitBase> results = new ArrayList<>();
 		int ct=0;
 		for(HitBase h: foundFBPages){
 			if (ct>=count) break; ct++; 
@@ -46,7 +44,7 @@ public class BingAPIProductSearchManager {
 			String[] merchantWords = name.toLowerCase().split(" ");
 			int overlapCount=0;
 			for(String commonWord:merchantWords){
-				if (title.indexOf(commonWord+" ")>-1 || title.indexOf(" "+commonWord)>-1){
+				if (title.contains(commonWord + " ") || title.contains(" " + commonWord)){
 					overlapCount++;
 					System.out.println(" found word "+ commonWord + " in title = "+title);
 				}

@@ -27,7 +27,7 @@ import java.util.Iterator;
  */
 public class TrainingSet implements Iterable<TrainingExample> {
 
-  private final Collection<TrainingExample> trainingExamples = new HashSet<TrainingExample>();
+  private final Collection<TrainingExample> trainingExamples = new HashSet<>();
 
   @Override
   public Iterator<TrainingExample> iterator() {

@@ -24,11 +24,11 @@ import opennlp.tools.stemmer.PStemmer;
 
 public class StringDistanceMeasurer {
   // external tools
-  private PStemmer ps; // stemmer
+  private final PStemmer ps; // stemmer
 
   private static final int MIN_STRING_LENGTH_FOR_WORD = 4;
 
-  protected int MIN_STRING_LENGTH_FOR_DISTORTED_WORD = 6;
+  protected final int MIN_STRING_LENGTH_FOR_DISTORTED_WORD = 6;
 
   protected static final int ACCEPTABLE_DEVIATION_IN_CHAR = 2;
 
@@ -44,7 +44,7 @@ public class StringDistanceMeasurer {
 
   // gets string array and process numbers, applies stemming and forms a list
   protected List<String> filterWordArray(String[] strWords) {
-    List<String> strList = new ArrayList<String>();
+    List<String> strList = new ArrayList<>();
     for (String w : strWords) {
       Boolean bInteger = true;
       try {
@@ -70,7 +70,7 @@ public class StringDistanceMeasurer {
   }
 
   protected List<String> filterWordArrayNoStem(String[] strWords) {
-    List<String> strList = new ArrayList<String>();
+    List<String> strList = new ArrayList<>();
     for (String w : strWords) {
       Boolean bInteger = true;
       try {
@@ -93,7 +93,7 @@ public class StringDistanceMeasurer {
   // main entry point. Gets two strings and applies string match
   // and also linguistic match if score > a threshold
   public double measureStringDistance(String str1, String str2) {
-    double result = -1.0;
+    double result;
     try {
       str1 = StringCleaner.processSnapshotForMatching(str1);
       str2 = StringCleaner.processSnapshotForMatching(str2);
@@ -112,7 +112,7 @@ public class StringDistanceMeasurer {
         l2 = str2Words.length;
 
       int lOverlap = 0;
-      List<String> strListOverlap = new ArrayList<String>(str1List);
+      List<String> strListOverlap = new ArrayList<>(str1List);
       strListOverlap.retainAll(str2List);
       for (String w : strListOverlap) {
         if (w.toLowerCase().equals(w)) // no special interest word
@@ -169,7 +169,7 @@ public class StringDistanceMeasurer {
   }
 
   public double measureStringDistanceNoStemming(String str1, String str2) {
-    double result = -1.0;
+    double result;
     try {
       str1 = StringCleaner.processSnapshotForMatching(str1);
       str2 = StringCleaner.processSnapshotForMatching(str2);
@@ -188,7 +188,7 @@ public class StringDistanceMeasurer {
         l2 = str2Words.length;
 
       int lOverlap = 0;
-      List<String> strListOverlap = new ArrayList<String>(str1List);
+      List<String> strListOverlap = new ArrayList<>(str1List);
       strListOverlap.retainAll(str2List);
       for (String w : strListOverlap) {
         if (w.toLowerCase().equals(w)) // no special interest word
@@ -293,7 +293,7 @@ public class StringDistanceMeasurer {
 
     // common sub-chunk = [NN-defence NN-minister ]
 
-    List<Double> matchRes = new ArrayList<Double>();
+    List<Double> matchRes = new ArrayList<>();
     matchRes.add(meas.measureStringDistance(sent2a, sent2b));
     matchRes.add(meas.measureStringDistance(sent4a, sent4b));
     matchRes.add(meas.measureStringDistance(sent5a, sent5b));
@@ -304,7 +304,7 @@ public class StringDistanceMeasurer {
     // [0.8178702752867737, 0.21082473737065027, 0.27594593229224296,
     // 0.7517586466500455, 0.9100766715907641]
 
-    matchRes = new ArrayList<Double>();
+    matchRes = new ArrayList<>();
     matchRes.add(meas.measureStringDistance(sent8a, sent8b));
     matchRes.add(meas.measureStringDistance(sent8a, sent8c));
     matchRes.add(meas.measureStringDistance(sent8a, sent8d));
@@ -317,7 +317,7 @@ public class StringDistanceMeasurer {
     // 0.48044977359257246, 0.27594593229224296,
     // 0.6391010941257969]
 
-    matchRes = new ArrayList<Double>();
+    matchRes = new ArrayList<>();
     // to verify that the same sentence gives 1
     matchRes.add(meas.measureStringDistance(sent8dd, sent8d));
     // to verify that totally different sentences give 0

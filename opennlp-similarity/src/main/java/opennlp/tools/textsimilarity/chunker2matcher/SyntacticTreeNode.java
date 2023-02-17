@@ -83,9 +83,7 @@ public abstract class SyntacticTreeNode {
       return "";
 
     StringBuilder builder = new StringBuilder();
-    for (int i = 0; i < numTabs; i++) {
-      builder.append("\t");
-    }
+    builder.append("\t".repeat(numTabs));
 
     return builder.toString();
   }
@@ -113,7 +111,7 @@ public abstract class SyntacticTreeNode {
       SyntacticTreeNode newNode) {
     List<SyntacticTreeNode> newNodeList = null;
     if (newNode != null) {
-      newNodeList = new ArrayList<SyntacticTreeNode>(1);
+      newNodeList = new ArrayList<>(1);
       newNodeList.add(newNode);
     }
 

@@ -18,40 +18,21 @@ package opennlp.tools.similarity.apps.solr;
 
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.math.BigInteger;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.bind.JAXBException;
 
-import net.billylieurance.azuresearch.AzureSearchImageResult;
-import net.billylieurance.azuresearch.AzureSearchResultSet;
-import net.billylieurance.azuresearch.AzureSearchWebResult;
-
 import org.apache.commons.lang.StringUtils;
 import org.docx4j.XmlUtils;
-import org.docx4j.dml.wordprocessingDrawing.Inline;
 import org.docx4j.jaxb.Context;
-import org.docx4j.openpackaging.exceptions.Docx4JException;
 import org.docx4j.openpackaging.exceptions.InvalidFormatException;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
-import org.docx4j.openpackaging.parts.WordprocessingML.BinaryPartAbstractImage;
 import org.docx4j.openpackaging.parts.WordprocessingML.EndnotesPart;
 import org.docx4j.wml.CTEndnotes;
 import org.docx4j.wml.CTFtnEdn;
-import org.docx4j.wml.Drawing;
-import org.docx4j.wml.P;
-import org.docx4j.wml.R;
 
-import opennlp.tools.similarity.apps.BingQueryRunner;
 import opennlp.tools.similarity.apps.Fragment;
 import opennlp.tools.similarity.apps.HitBase;
 
@@ -194,11 +175,11 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
     
     public static void main(String[] args){
     	WordDocBuilderEndNotes b = new WordDocBuilderEndNotes();
-    	List<HitBase> content = new ArrayList<HitBase>();
+    	List<HitBase> content = new ArrayList<>();
     	for(int i = 0; i<10; i++){
     		HitBase h = new HitBase();
     		h.setTitle("albert einstein "+i);
-    		List<Fragment> frs = new ArrayList<Fragment>();
+    		List<Fragment> frs = new ArrayList<>();
     		frs.add(new Fragment(" content "+i, 0));
     		h.setFragments(frs);
     		h.setUrl("http://www."+i+".com");

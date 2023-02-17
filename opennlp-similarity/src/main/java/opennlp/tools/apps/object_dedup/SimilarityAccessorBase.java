@@ -51,7 +51,7 @@ public class SimilarityAccessorBase {
 		"thru", "till", "to", "toward", "under", "up", "upon", "versus", "with", "within", "you", "must", "know",
 		"when" };
 
-	protected List<String> commonWordsInEventTitles = Arrays.asList(new String[] { "community", "party", "film",
+	protected final List<String> commonWordsInEventTitles = Arrays.asList(new String[] { "community", "party", "film",
 		"music", "exhibition", "kareoke", "guitar", "quartet", "reggae", "r&b", "band", "dj ", "piano", "pray",
 		"worship", "god", "training", "class", "development", "training", "class", "course", "our", "comedy", ",fun",
 		"musical", "group", "alliance", "session", "feeding", "introduction", "school", "conversation", "learning",
@@ -82,7 +82,7 @@ public class SimilarityAccessorBase {
 
 	protected List<String> removeDollarWordAndNonAlphaFromList(List<String> list)
 	{
-		List<String> result = new ArrayList<String>();
+		List<String> result = new ArrayList<>();
 		Pattern p = Pattern.compile("^\\$(\\d{1,3}(\\,\\d{3})*|(\\d+))(\\.\\d{2})?$");
 		for (String w : list)
 		{
@@ -166,9 +166,8 @@ public class SimilarityAccessorBase {
 		List<String> name1Tokens = TextProcessor.fastTokenize(name1.toLowerCase(), false);
 		List<String> name2Tokens = TextProcessor.fastTokenize(name2.toLowerCase(), false);
 		// get unique names
-		List<String> name1TokensC = new ArrayList<String>(name1Tokens), name2TokensC = new ArrayList<String>(
-			name2Tokens);
-		;
+		List<String> name1TokensC = new ArrayList<>(name1Tokens), name2TokensC = new ArrayList<>(
+						name2Tokens);
 		name1TokensC.removeAll(name2Tokens);
 		name2TokensC.removeAll(name1Tokens);
 		// get all unique names
@@ -191,7 +190,7 @@ public class SimilarityAccessorBase {
 	protected List<String> tokenizeAndStem(String input)
 	{
 
-		List<String> results = new ArrayList<String>();
+		List<String> results = new ArrayList<>();
 		List<String> toks = TextProcessor.fastTokenize(input.toLowerCase(), false);
 		for (String word : toks)
 		{
@@ -212,7 +211,7 @@ public class SimilarityAccessorBase {
 	protected List<String> stemList(List<String> toks)
 	{
 
-		List<String> results = new ArrayList<String>();
+		List<String> results = new ArrayList<>();
 		for (String word : toks)
 		{
 			try
@@ -231,7 +230,7 @@ public class SimilarityAccessorBase {
 
 	public List<String> removeVenuePart(ArrayList<String> toks)
 	{
-		List<String> results = new ArrayList<String>();
+		List<String> results = new ArrayList<>();
 		boolean bVenuePart = false;
 		for (String word : toks)
 		{
@@ -270,7 +269,7 @@ public class SimilarityAccessorBase {
 
 	protected List<String> extractMainNounPhrase(List<String> name1Tokens)
 	{
-		List<String> results = new ArrayList<String>();
+		List<String> results = new ArrayList<>();
 		int ofPos = name1Tokens.indexOf("of");
 		List<String> ofList = name1Tokens.subList(ofPos + 1, name1Tokens.size() - 1);
 		// now iterate till next preposition towards the end of noun phrase
@@ -381,9 +380,8 @@ public class SimilarityAccessorBase {
 		List<String> name1Tokens = TextProcessor.fastTokenize(name1.toLowerCase(), false);
 		List<String> name2Tokens = TextProcessor.fastTokenize(name2.toLowerCase(), false);
 		// get unique names
-		List<String> name1TokensC = new ArrayList<String>(name1Tokens), name2TokensC = new ArrayList<String>(
-			name2Tokens);
-		;
+		List<String> name1TokensC = new ArrayList<>(name1Tokens), name2TokensC = new ArrayList<>(
+						name2Tokens);
 		name1TokensC.removeAll(name2Tokens);
 		name2TokensC.removeAll(name1Tokens);
 		// get all unique names
@@ -428,11 +426,11 @@ public class SimilarityAccessorBase {
 			|| name1Tokens.contains("lang") || name2Tokens.contains("lang")) // special group 'lang lang'
 		{ // all words should be the
 			// same
-			List<String> name1TokensClone = new ArrayList<String>(name1Tokens);
+			List<String> name1TokensClone = new ArrayList<>(name1Tokens);
 			name1Tokens.removeAll(name2Tokens);
 			name2Tokens.removeAll(name1TokensClone);
 			name1Tokens.addAll(name2Tokens);
-			name1Tokens.removeAll(Arrays.asList(this.englishPrepositions));
+			name1Tokens.removeAll(Arrays.asList(englishPrepositions));
 			// name1Tokens.removeAll(Arrays.asList(this.commonWordsInEventTitles));
 			if (name1Tokens.size() < 1)
 				return true;
@@ -447,13 +445,13 @@ public class SimilarityAccessorBase {
 	public int getAttemptedNameMerge(String name1, String name2)
 	{
 		name1 = name1.replaceAll("[a-z][A-Z]", "$0&$0").replaceAll(".&.", " ");
-		; // suspected word merge if higher case is in the middle of word
+		// suspected word merge if higher case is in the middle of word
 		name2 = name2.replaceAll("[a-z][A-Z]", "$0&$0").replaceAll(".&.", " ");
 
 		name1 = name1.toLowerCase();
 		name2 = name2.toLowerCase();
 		if (name1.equals(name2) || name1.startsWith(name2) || name2.startsWith(name1) || name1.endsWith(name2)
-			|| name1.endsWith(name2) || name1.indexOf(name2) > -1 || name1.indexOf(name2) > -1) // ??
+			|| name1.endsWith(name2) || name1.contains(name2) || name1.contains(name2)) // ??
 			return 2;
 		String name2r = name2.replace(" ", "");
 		if (name1.equals(name2r) || name1.startsWith(name2r) || name1.startsWith(name2r) || name1.endsWith(name2r)
@@ -500,7 +498,7 @@ public class SimilarityAccessorBase {
 		if (bShortTitlesSimilarInWebSpace)
 			return new DedupResult("Accepted as short title by web mining", 2, true);
 
-		StringBuffer reason = new StringBuffer();
+		StringBuilder reason = new StringBuilder();
 		List<String> venueToks = removeVenuePart(TextProcessor.fastTokenize(venue.toLowerCase(), false));
 
 		LOG.info("\nComputing similarity between name = '" + name1 + "' and name = '" + name2 + "'");
@@ -656,7 +654,7 @@ public class SimilarityAccessorBase {
 		name1 = normalizeGenderAndOtherAttributes(name1);
 		name2 = normalizeGenderAndOtherAttributes(name2);
 
-		StringBuffer reason = new StringBuffer();
+		StringBuilder reason = new StringBuilder();
 
 		boolean bSportsOrOrchestra = !succeededMenWomenSportsRule(name1, name2);
 		if (bSportsOrOrchestra)
@@ -685,7 +683,7 @@ public class SimilarityAccessorBase {
 		{
 			for (HitBase item1 : searchResult1)
 			{
-				if (item1.getUrl().indexOf("myspace") > -1 || item1.getUrl().indexOf("wiki") > -1)
+				if (item1.getUrl().contains("myspace") || item1.getUrl().contains("wiki"))
 					continue;
 				for (HitBase item2 : searchResult2)
 				{
@@ -693,7 +691,7 @@ public class SimilarityAccessorBase {
 						.replace("MySpace", "");
 					String lookup2 = item2.getTitle().replace("Facebook", "").replace("LinkedIn", "")
 						.replace("MySpace", "");
-					double d = 0;
+					double d;
 					if (bStem)
 						d = stringDistanceMeasurer.measureStringDistance(lookup1, lookup2);
 					else

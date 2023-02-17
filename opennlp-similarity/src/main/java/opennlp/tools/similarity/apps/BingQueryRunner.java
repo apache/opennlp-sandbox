@@ -33,26 +33,23 @@ public class BingQueryRunner {
 	
 	protected static String BING_KEY = 
 			"WFoNMM706MMJ5JYfcHaSEDP+faHj3xAxt28CPljUAHA";
-			//"pjtCgujmf9TtfjCVBdcQ2rBUQwGLmtLtgCG4Ex7kekw";		
-			//"e8ADxIjn9YyHx36EihdjH/tMqJJItUrrbPTUpKahiU0=";
-			//"Cec1TlE67kPGDA/1MbeqPfHzP0I1eJypf3o0pYxRsuU=";
 	private static final Logger LOG = Logger
 		      .getLogger("opennlp.tools.similarity.apps.BingQueryRunner");
-	protected AzureSearchWebQuery aq = new AzureSearchWebQuery();
-	private AzureSearchImageQuery iq = new AzureSearchImageQuery();
+	protected final AzureSearchWebQuery aq = new AzureSearchWebQuery();
+	private final AzureSearchImageQuery iq = new AzureSearchImageQuery();
 	
 	public void setKey(String key){
 		BING_KEY = key;
 	}
 	
-	private int MAX_QUERY_LENGTH = 100;
+	private final int MAX_QUERY_LENGTH = 100;
 	
 	public void setLang(String language){
 		aq.setMarket(language);
 	}
   
 	public List<HitBase> runSearchMultiplePages(String query, int nPages) {
-		List<HitBase> results = new ArrayList<HitBase>();
+		List<HitBase> results = new ArrayList<>();
 		for(int i=0; i< nPages; i++){
 			aq.setPage(i);
 		    results.addAll( runSearch(query, 50));
@@ -93,7 +90,7 @@ public class BingQueryRunner {
 		
 		//org.xml.sax.SAXParseException
 		
-		List<HitBase> results = new ArrayList<HitBase> ();
+		List<HitBase> results = new ArrayList<>();
 		AzureSearchResultSet<AzureSearchWebResult> ars = aq.getQueryResult();
 		
 		for (AzureSearchWebResult anr : ars){

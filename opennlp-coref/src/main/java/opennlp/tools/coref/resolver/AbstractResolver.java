@@ -34,7 +34,7 @@ public abstract class AbstractResolver implements Resolver {
   /** 
    * The number of previous entities that resolver should consider.
    */
-  protected int numEntitiesBack;
+  protected final int numEntitiesBack;
   
   /** 
    * Debugging variable which specifies whether error output is generated
@@ -47,7 +47,7 @@ public abstract class AbstractResolver implements Resolver {
    * Debugging variable which holds statistics about mention distances
    * during training.
    */
-  protected Map<Integer, Integer> distances;
+  protected final Map<Integer, Integer> distances;
   
   /** 
    * The number of sentences back this resolver should look for a referent.
@@ -197,5 +197,5 @@ public abstract class AbstractResolver implements Resolver {
   }
 
 
-  public void train() throws IOException {};
+  public void train() throws IOException {}
 }

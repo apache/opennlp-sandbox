@@ -30,7 +30,7 @@ public class MucCorefSampleStream extends FilterObjectStream<String, RawCorefSam
 
   private final Tokenizer tokenizer;
   
-  private List<RawCorefSample> documents = new ArrayList<RawCorefSample>();
+  private final List<RawCorefSample> documents = new ArrayList<>();
   
   public MucCorefSampleStream(Tokenizer tokenizer, ObjectStream<String> documents) {
     super(new DocumentSplitterStream(documents));

@@ -38,8 +38,8 @@ import opennlp.tools.jsmlearning.ProfileReaderWriter;
 public class TaxonomySerializer implements Serializable {
 
   private static final long serialVersionUID = 7431412616514648388L;
-  private Map<String, List<List<String>>> lemma_ExtendedAssocWords = new HashMap<String, List<List<String>>>();
-  private Map<List<String>, List<List<String>>> assocWords_ExtendedAssocWords = new HashMap<List<String>, List<List<String>>>();
+  private Map<String, List<List<String>>> lemma_ExtendedAssocWords = new HashMap<>();
+  private Map<List<String>, List<List<String>>> assocWords_ExtendedAssocWords = new HashMap<>();
 
   public TaxonomySerializer(
       Map<String, List<List<String>>> lemma_ExtendedAssocWords,
@@ -71,8 +71,8 @@ public class TaxonomySerializer implements Serializable {
   }
 
   public void writeTaxonomy(String filename) {
-    FileOutputStream fos = null;
-    ObjectOutputStream out = null;
+    FileOutputStream fos;
+    ObjectOutputStream out;
     try {
       fos = new FileOutputStream(filename);
       out = new ObjectOutputStream(fos);
@@ -83,10 +83,10 @@ public class TaxonomySerializer implements Serializable {
     }
 
      String csvFilename = filename+".csv";
-     List<String[]> taxo_list = new  ArrayList<String[]>();
-     List<String> entries = new ArrayList<String>(lemma_ExtendedAssocWords.keySet());
+     List<String[]> taxo_list = new ArrayList<>();
+     List<String> entries = new ArrayList<>(lemma_ExtendedAssocWords.keySet());
      for(String e: entries){
-    	 List<String> lines = new ArrayList<String>();
+    	 List<String> lines = new ArrayList<>();
     	 lines.add(e);
     	 for(List<String> ls: lemma_ExtendedAssocWords.get(e)){
     		 lines.add(ls.toString());
@@ -96,10 +96,10 @@ public class TaxonomySerializer implements Serializable {
      ProfileReaderWriter.writeReport(taxo_list, csvFilename);
      
      String csvFilenameListEntries = filename+"_ListEntries.csv";
-     taxo_list = new  ArrayList<String[]>();
-     List<List<String>> entriesList = new ArrayList<List<String>>( assocWords_ExtendedAssocWords.keySet());
+     taxo_list = new ArrayList<>();
+     List<List<String>> entriesList = new ArrayList<>(assocWords_ExtendedAssocWords.keySet());
      for(List<String> e: entriesList){
-       List<String> lines = new ArrayList<String>(e);
+       List<String> lines = new ArrayList<>(e);
     	 for(List<String> ls: assocWords_ExtendedAssocWords.get(e)){
     		 lines.add(ls.toString());
     	 }
@@ -110,16 +110,14 @@ public class TaxonomySerializer implements Serializable {
 
   public static TaxonomySerializer readTaxonomy(String filename) {
     TaxonomySerializer data = null;
-    FileInputStream fis = null;
-    ObjectInputStream in = null;
+    FileInputStream fis;
+    ObjectInputStream in;
     try {
       fis = new FileInputStream(filename);
       in = new ObjectInputStream(fis);
       data = (TaxonomySerializer) in.readObject();
       in.close();
-    } catch (IOException ex) {
-      ex.printStackTrace();
-    } catch (ClassNotFoundException ex) {
+    } catch (IOException | ClassNotFoundException ex) {
       ex.printStackTrace();
     }
 

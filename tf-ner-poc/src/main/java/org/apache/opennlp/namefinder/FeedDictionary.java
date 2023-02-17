@@ -23,7 +23,7 @@ import org.tensorflow.Tensor;
 
 public class FeedDictionary implements AutoCloseable  {
 
-  static int PAD_VALUE = 0;
+  static final int PAD_VALUE = 0;
 
   private final Tensor<Float> dropoutTensor;
   private final Tensor<Integer> charIdsTensor;

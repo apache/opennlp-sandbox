@@ -8,5 +8,5 @@ public interface IGeneralizer<T> {
 	 * 
 	 * In this project Everything is subject to generalization, and returns a list of generic objects
 	 */
-   public List<T> generalize(Object o1, Object o2);
+	List<T> generalize(Object o1, Object o2);
 }

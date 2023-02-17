@@ -109,7 +109,7 @@ public class ContentGeneratorRequestHandler extends SearchHandler {
 			try {
 				InputStreamReader isr = new InputStreamReader(mInputStream);
 				BufferedReader br = new BufferedReader(isr);
-				String line = null;
+				String line;
 				while ((line = br.readLine()) != null) {
 					System.out.println(line);
 				}
@@ -142,7 +142,7 @@ public class ContentGeneratorRequestHandler extends SearchHandler {
 					//"xdnRVcVf9m4vDvW1SkTAz5kS5DFYa19CrPYGelGJxnc";
 		}
 
-		RelatedSentenceFinder f = null;
+		RelatedSentenceFinder f;
 		String lang = args[6];
 		if (lang.startsWith("es") || lang.startsWith("ru") || lang.startsWith("de")){
 			f = new RelatedSentenceFinderML(Integer.parseInt(args[3]), Integer.parseInt(args[4]), Float.parseFloat(args[5]), bingKey);
@@ -154,7 +154,7 @@ public class ContentGeneratorRequestHandler extends SearchHandler {
 			else
 				f = new RelatedSentenceFinder();
 		String generatedContent = null;
-		List<HitBase> hits = null;
+		List<HitBase> hits;
 		try {
 
 			hits = f.generateContentAbout(args[0].replace('+', ' ').replace('"', ' ').trim());

@@ -160,7 +160,7 @@ public class Sentence {
 			if(sw.isStopWord(word)) continue;
 			
 			stemmer.stem(word);
-			b.append(stemmer.toString()); 
+			b.append(stemmer);
 			b.append(SPACE);
 		}
 		return b.toString();

@@ -104,17 +104,17 @@ public class WSDModel extends BaseModel {
       null);
   }
 
-  public WSDModel(InputStream in) throws IOException, InvalidFormatException {
+  public WSDModel(InputStream in) throws IOException {
     super(COMPONENT_NAME, in);
     updateAttributes();
   }
 
-  public WSDModel(File modelFile) throws IOException, InvalidFormatException {
+  public WSDModel(File modelFile) throws IOException {
     super(COMPONENT_NAME, modelFile);
     updateAttributes();
   }
 
-  public WSDModel(URL modelURL) throws IOException, InvalidFormatException {
+  public WSDModel(URL modelURL) throws IOException {
     super(COMPONENT_NAME, modelURL);
     updateAttributes();
   }

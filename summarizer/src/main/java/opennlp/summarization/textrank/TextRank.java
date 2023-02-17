@@ -91,7 +91,7 @@ public class TextRank {
 
             wt = wrdWts.get(currWrd1);
             if (wt != null)
-              wordsInCommon += wt.doubleValue();
+              wordsInCommon += wt;
             else
               wordsInCommon++;
           }

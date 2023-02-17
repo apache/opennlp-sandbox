@@ -1,6 +1,5 @@
 package opennlp.tools.jsmlearning;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import opennlp.tools.textsimilarity.ParseTreeChunk;

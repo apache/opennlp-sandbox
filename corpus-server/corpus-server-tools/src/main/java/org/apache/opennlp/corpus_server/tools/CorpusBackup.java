@@ -79,7 +79,7 @@ public class CorpusBackup {
     File backupFile = new File(args[2]);
 
     // create zip file
-    OutputStream backupOut = null;
+    OutputStream backupOut;
         
     try {
       backupOut = new FileOutputStream(backupFile);

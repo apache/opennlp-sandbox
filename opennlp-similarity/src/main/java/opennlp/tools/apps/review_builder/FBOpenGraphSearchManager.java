@@ -34,9 +34,9 @@ import opennlp.tools.similarity.apps.utils.PageFetcher;
 
 public class FBOpenGraphSearchManager {
 
-	public List<String[]> profiles = null;
+	public final List<String[]> profiles;
 	protected FacebookClient mFBClient;
-	protected PageFetcher pageFetcher = new PageFetcher();
+	protected final PageFetcher pageFetcher = new PageFetcher();
 	protected static final int NUM_TRIES = 5;
 	protected static final long WAIT_BTW_TRIES=1000; //milliseconds between re-tries
 	
@@ -53,7 +53,7 @@ public class FBOpenGraphSearchManager {
 	
 	public List<Event> getFBEventsByName(String event)
 	{
-	    List<Event> events = new ArrayList<Event>();
+	    List<Event> events = new ArrayList<>();
 	    
 	    for(int i=0; i < NUM_TRIES; i++)
 	    {
@@ -84,7 +84,7 @@ public class FBOpenGraphSearchManager {
 	
 	public Long getFBPageLikes(String merchant)
 	{
-        List<Page> groups = new ArrayList<Page>();
+        List<Page> groups = new ArrayList<>();
         
         for(int i=0; i < NUM_TRIES; i++)
         {

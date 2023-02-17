@@ -25,9 +25,9 @@ import java.util.Set;
 public class FormalConcept {
 	int position;
 	ArrayList<Integer>intent;
-	Set<Integer> children;
-	Set<Integer> parents;
-	Set<Integer> extent;
+	final Set<Integer> children;
+	final Set<Integer> parents;
+	final Set<Integer> extent;
 	double intLogStabilityBottom = 0,
 			intLogStabilityUp = 0,
 			separation = 0,
@@ -53,10 +53,10 @@ public class FormalConcept {
 	
 	public FormalConcept() {
 		position = -1;
-		intent = new ArrayList<Integer>();
-		extent = new LinkedHashSet<Integer>();
-		parents = new HashSet<Integer>();
-		children = new HashSet<Integer>();
+		intent = new ArrayList<>();
+		extent = new LinkedHashSet<>();
+		parents = new HashSet<>();
+		children = new HashSet<>();
 	}
 
 	public void setPosition(int newPosition ){

@@ -28,8 +28,8 @@ import opennlp.tools.parser.Parse;
  */
 public class RawCorefSample {
   
-  private List<String[]> texts = new ArrayList<>();
-  private List<CorefMention[]> mentions = new ArrayList<>();
+  private final List<String[]> texts = new ArrayList<>();
+  private final List<CorefMention[]> mentions = new ArrayList<>();
   
   private List<Parse> parses;
   

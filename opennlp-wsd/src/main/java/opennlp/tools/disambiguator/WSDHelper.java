@@ -68,7 +68,7 @@ public class WSDHelper {
       "VBG", "VBN", "VBP", "VBZ", "WDT", "WP", "WP$", "WRB" };
 
   // List of the PoS tags of which the senses are to be extracted
-  public static String[] relevantPOS = { "JJ", "JJR", "JJS", "NN", "NNS", "RB",
+  public static final String[] relevantPOS = { "JJ", "JJR", "JJS", "NN", "NNS", "RB",
       "RBR", "RBS", "VB", "VBD", "VBG", "VBN", "VBP", "VBZ" };
 
   // List of Negation Words
@@ -76,7 +76,7 @@ public class WSDHelper {
       Arrays.asList("not", "no", "never", "none", "nor", "non"));
 
   // List of Stop Words
-  public static List<String> stopWords = new ArrayList<>(
+  public static final List<String> stopWords = new ArrayList<>(
       Arrays.asList("a", "able", "about", "above", "according", "accordingly",
           "across", "actually", "after", "afterwards", "again", "against",
           "ain't", "all", "allow", "allows", "almost", "alone", "along",

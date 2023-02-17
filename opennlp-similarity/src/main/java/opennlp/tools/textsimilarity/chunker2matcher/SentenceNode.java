@@ -62,7 +62,7 @@ public class SentenceNode extends PhraseNode {
 
   @Override
   public List<String> getOrderedPOSList() {
-    List<String> types = new ArrayList<String>();
+    List<String> types = new ArrayList<>();
     if (this.getChildren() != null && this.getChildren().size() > 0) {
       for (SyntacticTreeNode child : this.getChildren()) {
         types.addAll(child.getOrderedPOSList());
@@ -73,7 +73,7 @@ public class SentenceNode extends PhraseNode {
 
   @Override
   public List<String> getOrderedLemmaList() {
-    List<String> types = new ArrayList<String>();
+    List<String> types = new ArrayList<>();
     if (this.getChildren() != null && this.getChildren().size() > 0) {
       for (SyntacticTreeNode child : this.getChildren()) {
         types.addAll(child.getOrderedLemmaList());
@@ -83,7 +83,7 @@ public class SentenceNode extends PhraseNode {
   }
 
   public List<ParseTreeChunk> getParseTreeChunkList() {
-    List<ParseTreeChunk> chunks = new ArrayList<ParseTreeChunk>();
+    List<ParseTreeChunk> chunks = new ArrayList<>();
 
     if (this.getChildren() != null && this.getChildren().size() > 0) {
       for (SyntacticTreeNode child : this.getChildren()) {

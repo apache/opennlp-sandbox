@@ -209,7 +209,7 @@ public class SensevalReader {
 
               if (nInstance.getNodeType() == Node.ELEMENT_NODE) {
                 ArrayList<String> senseIDs = new ArrayList<>();
-                String rawWord = "";
+                String rawWord;
                 String[] finalText = null;
                 int index = 0;
 

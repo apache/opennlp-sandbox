@@ -28,7 +28,7 @@ import java.util.Set;
 public final class PTBHeadFinder implements HeadFinder {
 
   private static PTBHeadFinder instance;
-  private static Set<String> skipSet = new HashSet<String>();
+  private static final Set<String> skipSet = new HashSet<>();
   static {
     skipSet.add("POS");
     skipSet.add(",");
@@ -92,8 +92,7 @@ public final class PTBHeadFinder implements HeadFinder {
         }
       }
       //all other NPs
-      for (int pi = 0; pi < parts.size(); pi++) {
-        Parse child = parts.get(pi);
+      for (Parse child : parts) {
         //System.err.println("PTBHeadFinder.getHead: "+p.getSyntacticType()+" "+p
         // +" child "+pi+"="+child.getSyntacticType()+" "+child);
         if (child.isNounPhrase()) {

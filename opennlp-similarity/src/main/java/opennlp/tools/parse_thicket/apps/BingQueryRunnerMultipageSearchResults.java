@@ -17,11 +17,6 @@
 
 package opennlp.tools.parse_thicket.apps;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -33,17 +28,13 @@ import net.billylieurance.azuresearch.AzureSearchWebResult;
 import opennlp.tools.similarity.apps.BingQueryRunner;
 import opennlp.tools.similarity.apps.HitBase;
 
-import org.apache.commons.lang.StringUtils;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 
 public class BingQueryRunnerMultipageSearchResults extends BingQueryRunner {
 	
-	private static String BING_KEY = "e8ADxIjn9YyHx36EihdjH/tMqJJItUrrbPTUpKahiU0=";
+	private static final String BING_KEY = "e8ADxIjn9YyHx36EihdjH/tMqJJItUrrbPTUpKahiU0=";
 	private static final Logger LOG = Logger
 		      .getLogger("opennlp.tools.similarity.apps.BingQueryRunnerMultipageSearchResults");
-	private AzureSearchWebQuery aq = new AzureSearchWebQuery();
+	private final AzureSearchWebQuery aq = new AzureSearchWebQuery();
 
 	public List<HitBase> runSearch(String query, int nRes, boolean bHighRank) {
 		aq.setAppid(BING_KEY);
@@ -53,7 +44,7 @@ public class BingQueryRunnerMultipageSearchResults extends BingQueryRunner {
 			aq.setPage(5);
 		aq.setPerPage(nRes);
 		
-		List<HitBase> results = new ArrayList<HitBase> ();
+		List<HitBase> results = new ArrayList<>();
 		AzureSearchResultSet<AzureSearchWebResult> ars = aq.getQueryResult();
 		
 		for (AzureSearchWebResult anr : ars){

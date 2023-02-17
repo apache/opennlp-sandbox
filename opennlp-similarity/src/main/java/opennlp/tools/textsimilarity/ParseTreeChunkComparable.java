@@ -20,6 +20,8 @@ package opennlp.tools.textsimilarity;
 import java.util.Comparator;
 
 public class ParseTreeChunkComparable implements Comparator<ParseTreeChunk> {
+
+  @Override
   public int compare(ParseTreeChunk ch1, ParseTreeChunk ch2) {
     for (int i = 0; i < ch1.getLemmas().size() && i < ch2.getLemmas().size(); i++) {
       if (!(ch1.getLemmas().get(i).equals(ch2.getLemmas().get(i)) && ch1

@@ -46,8 +46,8 @@ import opennlp.tools.similarity.apps.HitBase;
 
 public class WordDocBuilder{
 	protected static final String IMG_REL_PATH = "images/";
-	protected BingQueryRunner imageSearcher = new BingQueryRunner();
-	protected String absPath = null;
+	protected final BingQueryRunner imageSearcher = new BingQueryRunner();
+	protected String absPath;
 	
 	public WordDocBuilder(){
 	absPath = new File(".").getAbsolutePath();
@@ -192,7 +192,7 @@ public class WordDocBuilder{
         }
         byte[] bytes = new byte[(int)length];
         int offset = 0;
-        int numRead = 0;
+        int numRead;
         while (offset < bytes.length && (numRead=is.read(bytes, offset, bytes.length-offset)) >= 0) {
             offset += numRead;
         }

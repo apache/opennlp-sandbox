@@ -219,7 +219,7 @@ public class StopWords {
   }
 
   public boolean isStopWord(String s) {
-    boolean ret = h.get(s)==null ? false: true;
+    boolean ret = h.get(s) != null;
     if(s.length()==1) ret = true;
     return ret;
   }

@@ -23,8 +23,8 @@ import java.util.List;
 import opennlp.summarization.Sentence;
 
 public class LexicalChain implements Comparable<LexicalChain>{
-  List<Word> word;
-  List<Sentence> sentences;
+  final List<Word> word;
+  final List<Sentence> sentences;
 
   int start, last;
   int score;

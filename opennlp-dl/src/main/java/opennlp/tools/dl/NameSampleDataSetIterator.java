@@ -106,7 +106,7 @@ public class NameSampleDataSetIterator implements DataSetIterator {
   private final ObjectStream<DataSet> samples;
 
   NameSampleDataSetIterator(ObjectStream<NameSample> samples, WordVectors wordVectors, int windowSize,
-                            String labels[]) throws IOException {
+                            String[] labels) throws IOException {
     this.windowSize = windowSize;
     this.labels = labels;
 

@@ -21,7 +21,6 @@ import java.util.List;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 
-import opennlp.tools.apps.utils.email.EmailSender;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
 public class ContentGeneratorRunner {
@@ -44,7 +43,7 @@ public class ContentGeneratorRunner {
 			bingKey = "e8ADxIjn9YyHx36EihdjH/tMqJJItUrrbPTUpKahiU0=";
 		}
 
-		RelatedSentenceFinder f = null;
+		RelatedSentenceFinder f;
 		String lang = args[6];
 		if (lang.startsWith("es")){
 			f = new RelatedSentenceFinderML(Integer.parseInt(args[3]), Integer.parseInt(args[4]), Float.parseFloat(args[5]), bingKey);
@@ -56,7 +55,7 @@ public class ContentGeneratorRunner {
 			else
 				f = new RelatedSentenceFinder();
 
-		List<HitBase> hits = null;
+		List<HitBase> hits;
 		try {
 
 			hits = f.generateContentAbout(args[0].replace('+', ' ').replace('"', ' ').trim());

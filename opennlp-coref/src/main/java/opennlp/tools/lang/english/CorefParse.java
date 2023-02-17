@@ -31,8 +31,8 @@ import opennlp.tools.util.Span;
 
 class CorefParse {
 
-  private Map<Parse, Integer> parseMap;
-  private List<Parse> parses;
+  private final Map<Parse, Integer> parseMap;
+  private final List<Parse> parses;
 
   public CorefParse(List<Parse> parses, DiscourseEntity[] entities) {
     this.parses = parses;
@@ -50,8 +50,7 @@ class CorefParse {
   }
 
   public void show() {
-    for (int pi = 0, pn = parses.size(); pi < pn; pi++) {
-      Parse p = parses.get(pi);
+    for (Parse p : parses) {
       show(p);
       System.out.println();
     }
@@ -70,8 +69,7 @@ class CorefParse {
       System.out.print(" ");
     }
     Parse[] children = p.getChildren();
-    for (int pi = 0, pn = children.length; pi < pn;pi++) {
-      Parse c = children[pi];
+    for (Parse c : children) {
       Span s = c.getSpan();
       if (start < s.getStart()) {
         System.out.print(p.getText().substring(start, s.getStart()));

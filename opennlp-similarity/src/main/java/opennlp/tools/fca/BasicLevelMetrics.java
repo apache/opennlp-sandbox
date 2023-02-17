@@ -25,7 +25,7 @@ import org.apache.commons.collections.ListUtils;
 
 public class BasicLevelMetrics {
 	
-	ConceptLattice cl;	
+	final ConceptLattice cl;
 	ArrayList<ArrayList<Integer>> attributesExtent;
 	ArrayList<ArrayList<Integer>> objectsIntent  = null; 
 	ArrayList<Integer> attributes = null; 

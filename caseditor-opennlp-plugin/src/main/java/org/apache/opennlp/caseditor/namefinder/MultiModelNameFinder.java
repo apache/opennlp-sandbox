@@ -64,7 +64,7 @@ public class MultiModelNameFinder implements TokenNameFinder {
       if (valid && nameIndex.get(i) != null) {
         
         // TODO: That could be improved!
-        String parts[] = nameIndex.get(i).split("-");
+        String[] parts = nameIndex.get(i).split("-");
         String nameModelType = parts[0];
         String desiredOutcome = parts[1];
         

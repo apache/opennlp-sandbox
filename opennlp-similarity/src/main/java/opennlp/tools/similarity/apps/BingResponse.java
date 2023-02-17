@@ -36,7 +36,7 @@ public class BingResponse {
   int pageSize;
 
   public BingResponse() {
-    hits = new ArrayList<HitBase>();
+    hits = new ArrayList<>();
   }
 
   public void appendHits(HitBase hit) {

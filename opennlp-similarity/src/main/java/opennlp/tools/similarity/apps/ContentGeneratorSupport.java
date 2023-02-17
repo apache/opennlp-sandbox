@@ -18,7 +18,6 @@
 package opennlp.tools.similarity.apps;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Logger;
@@ -37,7 +36,7 @@ import org.apache.commons.lang.StringUtils;
  */
 
 public class ContentGeneratorSupport {
-	private static Logger LOG = Logger
+	private static final Logger LOG = Logger
 			.getLogger("opennlp.tools.similarity.apps.ContentGeneratorSupport");
 
 	/**
@@ -125,7 +124,7 @@ public class ContentGeneratorSupport {
 	}
 
 	public static String[] cleanListOfSents(String[] sents) {
-		List<String> sentsClean = new ArrayList<String>();
+		List<String> sentsClean = new ArrayList<>();
 		for (String s : sents) {
 			if (s == null || s.trim().length() < 30 || s.length() < 20)
 				continue;
@@ -156,8 +155,8 @@ public class ContentGeneratorSupport {
 		StringDistanceMeasurer meas = new StringDistanceMeasurer();
 		double dupeThresh = 0.8; // if more similar, then considered dupes was
 		// 0.7
-		List<Integer> idsToRemove = new ArrayList<Integer>();
-		List<String> hitsDedup = new ArrayList<String>();
+		List<Integer> idsToRemove = new ArrayList<>();
+		List<String> hitsDedup = new ArrayList<>();
 		try {
 			for (int i = 0; i < hits.size(); i++)
 				for (int j = i + 1; j < hits.size(); j++) {
@@ -308,20 +307,20 @@ public class ContentGeneratorSupport {
 	{
 
 		int maxSentsFromPage= 100;
-		List<String[]> results = new ArrayList<String[]>();
+		List<String[]> results = new ArrayList<>();
 
 		//String pageOrigHTML = pFetcher.fetchOrigHTML(url);
 
 		downloadedPage= downloadedPage.replace("     ", "&");
 		downloadedPage = downloadedPage.replaceAll("(?:&)+", "#");
 		String[] sents = downloadedPage.split("#");
-		List<TextChunk> sentsList = new ArrayList<TextChunk>();
+		List<TextChunk> sentsList = new ArrayList<>();
 		for(String s: sents){
 			s = ContentGeneratorSupport.cleanSpacesInCleanedHTMLpage(s);
 			sentsList.add(new TextChunk(s, s.length()));
 		}
 
-		Collections.sort(sentsList, new TextChunkComparable());
+		sentsList.sort(new TextChunkComparable());
 		String[] longestSents = new String[maxSentsFromPage];
 		int j=0;
 		int initIndex = sentsList.size()-1 -maxSentsFromPage;
@@ -345,27 +344,22 @@ public class ContentGeneratorSupport {
 			this.text = s;
 			this.len = length;
 		}
-		public String text;
-		public int len;
+		public final String text;
+		public final int len;
 	}
 
-	public class TextChunkComparable implements Comparator<TextChunk>
-	{
-		public int compare(TextChunk ch1, TextChunk ch2)
-		{
-			if (ch1.len>ch2.len)
-				return 1;
-			else if (ch1.len<ch2.len)
-				return  -1;
-			else return 0;
-
+	public static class TextChunkComparable implements Comparator<TextChunk> {
+		
+		@Override
+		public int compare(TextChunk ch1, TextChunk ch2) {
+			return Integer.compare(ch1.len, ch2.len);
 		}
 	}
 
 	protected String[] cleanSplitListOfSents(String[] longestSents){
 		float minFragmentLength = 40, minFragmentLengthSpace=4;
 
-		List<String> sentsClean = new ArrayList<String>();
+		List<String> sentsClean = new ArrayList<>();
 		for (String sentenceOrMultSent : longestSents)
 		{
 			if (sentenceOrMultSent==null || sentenceOrMultSent.length()<20)
@@ -406,7 +400,7 @@ public class ContentGeneratorSupport {
 	protected String[] cleanSplitListOfSentsFirstSplit(String[] longestSents){
 		float minFragmentLength = 40, minFragmentLengthSpace=4;
 
-		List<String> sentsClean = new ArrayList<String>();
+		List<String> sentsClean = new ArrayList<>();
 		for (String sentenceOrMultSent : longestSents)
 		{
 			if (sentenceOrMultSent==null || sentenceOrMultSent.length()<minFragmentLength)
@@ -452,7 +446,7 @@ public class ContentGeneratorSupport {
 			String[] split = title.split(delim);
 			if (split.length>1){
 				for(String s: split){
-					if (s.indexOf(".")<0)
+					if (!s.contains("."))
 						return s;
 				}
 			}

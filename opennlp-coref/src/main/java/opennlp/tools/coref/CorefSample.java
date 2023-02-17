@@ -25,7 +25,7 @@ import opennlp.tools.parser.Parse;
 
 public class CorefSample {
 
-  private List<Parse> parses;
+  private final List<Parse> parses;
 
   public CorefSample(List<Parse> parses) {
     this.parses = parses;
@@ -34,7 +34,7 @@ public class CorefSample {
   public List<opennlp.tools.coref.mention.Parse> getParses() {
     
     List<opennlp.tools.coref.mention.Parse> corefParses =
-        new ArrayList<opennlp.tools.coref.mention.Parse>();
+            new ArrayList<>();
     
     int sentNumber = 0;
     for (Parse parse : parses) {
@@ -61,7 +61,7 @@ public class CorefSample {
   
   public static CorefSample parse(String corefSampleString) {
     
-    List<Parse> parses = new ArrayList<Parse>();
+    List<Parse> parses = new ArrayList<>();
     
     for (String line : corefSampleString.split("\\r?\\n")) {
       parses.add(Parse.parseParse(line));

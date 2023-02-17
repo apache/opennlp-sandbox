@@ -106,14 +106,14 @@ public class SentimentVocab {
 	private static final SentimentVocab instance = new SentimentVocab();
 
 	// complete sentiment word map, key = word, value = sentiment object
-	private final Map<String, Sentiment> sentimentMap = new HashMap<String, Sentiment>();
+	private final Map<String, Sentiment> sentimentMap = new HashMap<>();
 
 	// sentiment word sets, key = POS type, value = word set
-	private final Map<String, HashSet<String>> wordSetMap = new HashMap<String, HashSet<String>>();
+	private final Map<String, HashSet<String>> wordSetMap = new HashMap<>();
 
 	public static class Sentiment {
-		public String posType;
-		public int sentimentType;
+		public final String posType;
+		public final int sentimentType;
 
 		Sentiment(String posType, int sentimentType) {
 			this.posType = posType;
@@ -154,7 +154,7 @@ public class SentimentVocab {
 		if (sentiment == null)
 			return false;
 
-		return sentiment.posType == posType;
+		return sentiment.posType.equals(posType);
 	}
 
 	public HashSet<String> getSentimentWordSet(String posType) {
@@ -206,7 +206,7 @@ public class SentimentVocab {
 		// add the word to the corresponding sentiment word set
 		HashSet<String> wordSet = wordSetMap.get(posType);
 		if (wordSet == null) {
-			wordSet = new HashSet<String>();
+			wordSet = new HashSet<>();
 			wordSetMap.put(posType, wordSet);
 		}
     wordSet.addAll(Arrays.asList(words));

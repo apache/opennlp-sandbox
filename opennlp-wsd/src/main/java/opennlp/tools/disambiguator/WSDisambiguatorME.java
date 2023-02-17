@@ -36,7 +36,7 @@ public class WSDisambiguatorME extends WSDisambiguator {
 
   protected WSDModel model;
 
-  protected static WSDContextGenerator cg = new IMSWSDContextGenerator();
+  protected static final WSDContextGenerator cg = new IMSWSDContextGenerator();
 
   public WSDisambiguatorME(WSDParameters params) {
     this.params = params;
@@ -100,7 +100,7 @@ public class WSDisambiguatorME extends WSDisambiguator {
   public static ArrayList<String> buildSurroundingContext(
     ObjectStream<WSDSample> samples, int windowSize) throws IOException {
     IMSWSDContextGenerator contextGenerator = new IMSWSDContextGenerator();
-    ArrayList<String> surroundingWordsModel = new ArrayList<String>();
+    ArrayList<String> surroundingWordsModel = new ArrayList<>();
     WSDSample sample;
     while ((sample = samples.read()) != null) {
       String[] words = contextGenerator
@@ -134,7 +134,7 @@ public class WSDisambiguatorME extends WSDisambiguator {
             e.printStackTrace();
           }
 
-          String outcome = "";
+          String outcome;
 
           String[] context = cg
             .getContext(sample, ((WSDDefaultParameters) this.params).ngram,
@@ -160,7 +160,7 @@ public class WSDisambiguatorME extends WSDisambiguator {
           return mfs.disambiguate(wordTag);
         }
       } else {
-        String outcome = "";
+        String outcome;
 
         String[] context = cg
           .getContext(sample, ((WSDDefaultParameters) this.params).ngram,

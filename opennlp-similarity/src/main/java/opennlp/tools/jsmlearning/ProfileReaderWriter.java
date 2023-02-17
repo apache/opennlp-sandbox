@@ -29,36 +29,31 @@ import au.com.bytecode.opencsv.CSVWriter;
 
 public class ProfileReaderWriter {
 	public static List<String[]> readProfiles(String filename) {
-		CSVReader reader = null;
+		CSVReader reader;
 		List<String[]> profiles = null;
 		try	{
 			reader = new CSVReader(new FileReader(filename), ',');
 			profiles = reader.readAll();
-		} catch (FileNotFoundException e) {
+		} catch (IOException e) {
 			e.printStackTrace();
-		} catch (IOException ioe) {
-			ioe.printStackTrace();
 		}
 		return profiles;
 	}
 	
 	public static List<String[]> readProfiles(String filename, char delimiter) {
-		CSVReader reader = null;
+		CSVReader reader;
 		List<String[]> profiles = null;
 		try	{
 			reader = new CSVReader(new FileReader(filename), delimiter);
 			profiles = reader.readAll();
-		} catch (FileNotFoundException e) {
+		} catch (IOException e) {
 			e.printStackTrace();
-		} catch (IOException ioe) {
-			ioe.printStackTrace();
 		}
 		return profiles;
 	}
 
 	public static void writeReportArr( String[][] allLines, String reportName){
-		List<String[]> rep = new ArrayList<String[]>();
-    rep.addAll(Arrays.asList(allLines));
+		List<String[]> rep = new ArrayList<>(Arrays.asList(allLines));
 		writeReport( rep, reportName);
 	}
 
@@ -153,7 +148,7 @@ public class ProfileReaderWriter {
 	}
 
 	public static void main(String[] args){
-		List<String[]> allLines = new ArrayList<String[]>();
+		List<String[]> allLines = new ArrayList<>();
 		allLines.add(new String[] {"aa " , "  bb", "ccc" });
 		ProfileReaderWriter.writeReport( allLines, "reportName.txt", ' ');
 

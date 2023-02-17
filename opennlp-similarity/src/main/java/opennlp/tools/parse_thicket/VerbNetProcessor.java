@@ -2,7 +2,6 @@ package opennlp.tools.parse_thicket;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -78,14 +77,11 @@ public class VerbNetProcessor implements IGeneralizer<Map<String, List<String>>>
 
 
 	public IVerbClass getVerbNetForAVerb(String verb){
-		Iterator<IVerbClass> iter = index.iterator();
-		while(iter.hasNext()){
-			IVerbClass v = iter.next();
-
+		for (IVerbClass v : index) {
 			if (v.getID().startsWith(verb))
 				return v;
 
-			if (!v.getMembers().isEmpty() && v.getMembers().get(0).getName().equals(verb)){
+			if (!v.getMembers().isEmpty() && v.getMembers().get(0).getName().equals(verb)) {
 				return v;
 			}
 		}
@@ -102,16 +98,16 @@ public class VerbNetProcessor implements IGeneralizer<Map<String, List<String>>>
 
 			v1 = (IVerbClass)o1;
 		v2 = (IVerbClass)o2;
-		List<Map<String, List<String>>> resList = new ArrayList<Map<String, List<String>>>();
+		List<Map<String, List<String>>> resList = new ArrayList<>();
 
 		if (v1 ==null || v2==null) // not found
 			return  resList;
 
 		// lists for results
-		List<String> roles = new ArrayList<String>();
+		List<String> roles = new ArrayList<>();
 
 		List<IThematicRole> roles1 = v1.getThematicRoles(), roles2 = v2.getThematicRoles();
-		Map<String, List<String>> results = new HashMap<String, List<String>>();
+		Map<String, List<String>> results = new HashMap<>();
 
 		for(int i=0; i< roles1.size()&& i< roles2.size(); i++){
 			if (roles1.get(i).getType().equals(roles2.get(i).getType())){
@@ -121,28 +117,28 @@ public class VerbNetProcessor implements IGeneralizer<Map<String, List<String>>>
 		}
 
 		List<IFrame> frames1 = v1.getFrames(), frames2 = v2.getFrames();
-		List<String> patterns1 = new ArrayList<String>(), patterns2 = new ArrayList<String>();
-		for(int i=0; i< frames1.size(); i++){
-			patterns1.add(frames1.get(i).getPrimaryType().getID());
+		List<String> patterns1 = new ArrayList<>(), patterns2 = new ArrayList<>();
+		for (IFrame item : frames1) {
+			patterns1.add(item.getPrimaryType().getID());
 		}
-		for(int i=0; i< frames2.size(); i++){
-			patterns2.add(frames2.get(i).getPrimaryType().getID());
+		for (IFrame value : frames2) {
+			patterns2.add(value.getPrimaryType().getID());
 		}
 		patterns2.retainAll(patterns1);
 		results.put("phrStr", patterns2) ; 
 
-		List<String> patternsWord1 = new ArrayList<String>(), patternsWord2 = new ArrayList<String>();
-		for(int i=0; i< frames1.size(); i++){
+		List<String> patternsWord1 = new ArrayList<>(), patternsWord2 = new ArrayList<>();
+		for (IFrame frame : frames1) {
 			try {
-				patternsWord1.add(frames1.get(i).getSecondaryType().getID());
+				patternsWord1.add(frame.getSecondaryType().getID());
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
-		for(int i=0; i< frames2.size(); i++){
+		for (IFrame iFrame : frames2) {
 			try {
-				if (frames2.get(i).getSecondaryType()!=null && frames2.get(i).getSecondaryType().getID()!=null)
-					patternsWord2.add(frames2.get(i).getSecondaryType().getID());
+				if (iFrame.getSecondaryType() != null && iFrame.getSecondaryType().getID() != null)
+					patternsWord2.add(iFrame.getSecondaryType().getID());
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -167,19 +163,19 @@ public class VerbNetProcessor implements IGeneralizer<Map<String, List<String>>>
 		sb.append(verb).append("  (");
 		List<IThematicRole> roles = v.getThematicRoles();
 
-		for(int i=0; i< roles.size(); i++){
-			sb.append(roles.get(i).getVerbClass().getID().replace(".", "")).append(" ");
+		for (IThematicRole role : roles) {
+			sb.append(role.getVerbClass().getID().replace(".", "")).append(" ");
 		}
 		sb.append( ") (" );
 
 		List<IFrame> frames = v.getFrames();
-		for(int i=0; i< frames.size(); i++){
+		for (IFrame iFrame : frames) {
 			//" ("+
-			sb.append(frames.get(i).getPrimaryType().getID().replace(".", "-")).append(" ");
+			sb.append(iFrame.getPrimaryType().getID().replace(".", "-")).append(" ");
 		}
 		sb.append( ") (" );
-		for(int i=0; i< frames.size(); i++){
-			sb.append(frames.get(i).getSecondaryType().getID().
+		for (IFrame frame : frames) {
+			sb.append(frame.getSecondaryType().getID().
 							replace(".", "").replace(",", " ").replace("\"", "-").replace("/", "-").replace("(", "").replace(")", "")).append(" ");
 		}
 		sb.append( ") " );
@@ -195,19 +191,17 @@ public class VerbNetProcessor implements IGeneralizer<Map<String, List<String>>>
 	}
 
 	public void testIndex () throws Exception {
-		Iterator<IVerbClass> iter = index.iterator();
-		while(iter.hasNext()){
-			IVerbClass v = iter.next();
-			System.out.println(v.getID() + " +> " + v.getFrames().get(0).getVerbClass().getID() + "  \n ===> " + v.getMembers().get(0).getName()  );
+		for (IVerbClass v : index) {
+			System.out.println(v.getID() + " +> " + v.getFrames().get(0).getVerbClass().getID() + "  \n ===> " + v.getMembers().get(0).getName());
 			List<IThematicRole> roles = v.getThematicRoles();
-			for (IThematicRole r: roles){
+			for (IThematicRole r : roles) {
 				System.out.println(r.getType());
 			}
 
 			List<IFrame> frames = v.getFrames();
-			for(IFrame f: frames){
+			for (IFrame f : frames) {
 				try {
-					System.out.println(f.getPrimaryType().getID() + " => " + f.getXTag() + " >> "+ f.getSecondaryType().getID() +  " : " + f.getExamples().get(0));
+					System.out.println(f.getPrimaryType().getID() + " => " + f.getXTag() + " >> " + f.getSecondaryType().getID() + " : " + f.getExamples().get(0));
 				} catch (Exception e) {
 					e.printStackTrace();
 				}

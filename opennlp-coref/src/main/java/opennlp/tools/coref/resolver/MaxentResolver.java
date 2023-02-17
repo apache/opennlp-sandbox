@@ -53,7 +53,7 @@ public abstract class MaxentResolver extends AbstractResolver {
   public static final String DEFAULT = "default";
 
 
-  private static boolean debugOn = false;
+  private static final boolean debugOn = false;
 
   private String modelName;
   private MaxentModel model;
@@ -129,7 +129,7 @@ public abstract class MaxentResolver extends AbstractResolver {
       sameIndex = model.getIndex(SAME);
     }
     else if (ResolverMode.TRAIN == this.mode) {
-      events = new ArrayList<Event>();
+      events = new ArrayList<>();
     }
     else {
       System.err.println("Unknown mode: " + this.mode);

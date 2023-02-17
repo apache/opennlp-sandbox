@@ -50,7 +50,7 @@ public class TaggingServerBundle implements BundleActivator {
       public Object addingService(ServiceReference serviceRef) {
         httpService = (HttpService)super.addingService(serviceRef);
          
-        Dictionary<String, String> jerseyServletParams = new Hashtable<String, String>();
+        Dictionary<String, String> jerseyServletParams = new Hashtable<>();
         jerseyServletParams.put("javax.ws.rs.Application", TaggingServerApplication.class.getName());
         jerseyServletParams.put("com.sun.jersey.api.json.POJOMappingFeature", "true");
         

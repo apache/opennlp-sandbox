@@ -21,7 +21,7 @@ public class CommunicativeActionsAttribute implements IGeneralizer<Integer[]>{
 			else if (arr2[i]==0)
 				result[i]=arr1[i];
 		}
-		List<Integer[]> results = new ArrayList<Integer[]>();
+		List<Integer[]> results = new ArrayList<>();
 		results.add(result);
 		return results;
 	}

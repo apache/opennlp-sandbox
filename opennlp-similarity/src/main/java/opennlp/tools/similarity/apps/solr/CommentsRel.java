@@ -20,11 +20,11 @@ import org.docx4j.wml.Comments;
 
 public class CommentsRel {
 	   
-	   private WordprocessingMLPackage wordMlPackage;
-	   private MainDocumentPart mainPart;
-	   private boolean relSet = false;
-	   private org.docx4j.wml.ObjectFactory wmlObjectFactory;
-	   private CommentsPart cmPart;
+	   private final WordprocessingMLPackage wordMlPackage;
+	   private final MainDocumentPart mainPart;
+	   private final boolean relSet = false;
+	   private final org.docx4j.wml.ObjectFactory wmlObjectFactory;
+	   private final CommentsPart cmPart;
 
 	   
 	   public CommentsRel(WordprocessingMLPackage wordMLPack) {
@@ -77,7 +77,7 @@ public class CommentsRel {
 
 	//   WordprocessingMLPackage wordML;
 
-	   public static void main(String args[]) throws IOException {
+	   public static void main(String[] args) throws IOException {
 
 	      File document = new File("C:/workspace/TestSolr/mydoc.docx");
 

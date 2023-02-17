@@ -219,9 +219,9 @@ public class Utils {
   }
 
   public static class KeyValue {
-    public Object key = null;
+    public final Object key;
 
-    public float value = 0;
+    public final float value;
 
     public KeyValue(Object o, Float i) {
       this.key = o;
@@ -229,14 +229,10 @@ public class Utils {
     }
 
     public static class SortByValue implements Comparator<KeyValue> {
+
       @Override
       public int compare(KeyValue obj1, KeyValue obj2) {
-        float i1 = obj1.value;
-        float i2 = obj2.value;
-
-        if (i1 < i2)
-          return 1;
-        return -1;
+        return Float.compare(obj1.value, obj2.value);
       }
     }
   }
@@ -328,7 +324,7 @@ public class Utils {
   }
 
   public static ArrayList<KeyValue> sortByValue(HashMap<Object, Float> h) {
-    ArrayList<KeyValue> res = new ArrayList<KeyValue>();
+    ArrayList<KeyValue> res = new ArrayList<>();
     for (Object o : h.keySet()) {
       // form a pair
       res.add(new KeyValue(o, h.get(o)));
@@ -578,7 +574,7 @@ public class Utils {
   }
 
   public static String truncateOnSpace(String text, Integer length) {
-    String retVal = "";
+    String retVal;
     if (text.length() <= length) {
       retVal = text;
     } else {
@@ -650,7 +646,7 @@ public class Utils {
 
   public static float computeScoreForRanking(List<Float> scores,
       int desiredRanking) {
-    float newScore = 0f;
+    float newScore;
 
     if (desiredRanking == 1) {
       newScore = scores.get(0) + 50000;

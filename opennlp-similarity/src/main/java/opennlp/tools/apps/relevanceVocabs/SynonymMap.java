@@ -240,7 +240,7 @@ public class SynonymMap {
        ArrayList<String> words = group2Words.get(group.get(i));
        for (int j=words.size(); --j >= 0; ) { // add all words
          String synonym = words.get(j); // note that w and word are interned
-         if (synonym != word) { // a word implicitly is its own synonym
+         if (!synonym.equals(word)) { // a word implicitly is its own synonym
            synonyms.add(synonym);
          }
        }

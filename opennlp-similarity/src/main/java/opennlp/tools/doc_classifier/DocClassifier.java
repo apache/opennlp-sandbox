@@ -48,12 +48,12 @@ import org.json.JSONObject;
 
 public class DocClassifier {
 	public static final String DOC_CLASSIFIER_KEY = "doc_class";
-	public static String resourceDir = null;
+	public static final String resourceDir = null;
 	public static final Log logger = LogFactory.getLog(DocClassifier.class);
-	private Map<String, Float> scoredClasses = new HashMap<>();
+	private Map<String, Float> scoredClasses;
 	
 
-	public static Float MIN_TOTAL_SCORE_FOR_CATEGORY = 0.3f; //3.0f;
+	public static final Float MIN_TOTAL_SCORE_FOR_CATEGORY = 0.3f; //3.0f;
 	protected static IndexReader indexReader = null;
 	protected static IndexSearcher indexSearcher = null;
 	// resource directory plus the index folder
@@ -112,7 +112,7 @@ public class DocClassifier {
 	}
 
 	public DocClassifier(String inputFilename, JSONObject inputJSON) {
-		scoredClasses = new HashMap<String, Float>();
+		scoredClasses = new HashMap<>();
 	}
 
 	/* returns the class name for a sentence */
@@ -127,7 +127,7 @@ public class DocClassifier {
 		Analyzer std = new StandardAnalyzer();
 		QueryParser parser = new QueryParser("text", std);
 		parser.setDefaultOperator(QueryParser.Operator.OR);
-		Query query = null;
+		Query query;
 		try {
 			query = parser.parse(queryStr);
 
@@ -148,7 +148,7 @@ public class DocClassifier {
 		
 
 		for (ScoreDoc scoreDoc : hits.scoreDocs) {
-			Document doc = null;
+			Document doc;
 			try {
 				doc = indexSearcher.doc(scoreDoc.doc);
 			} catch (IOException e) {
@@ -174,8 +174,8 @@ public class DocClassifier {
 		}
 		try {
 			scoredClasses = ValueSortMap.sortMapByValue(scoredClasses, false);
-			List<String> resultsAll = new ArrayList<String>(
-					scoredClasses.keySet()), resultsAboveThresh = new ArrayList<String>();
+			List<String> resultsAll = new ArrayList<>(
+							scoredClasses.keySet()), resultsAboveThresh = new ArrayList<>();
 			for (String key : resultsAll) {
 				if (scoredClasses.get(key) > MIN_TOTAL_SCORE_FOR_CATEGORY)
 					resultsAboveThresh.add(key);
@@ -222,7 +222,7 @@ public class DocClassifier {
 
 		Scanner in = new Scanner(pageContentReader);
 		in.useDelimiter("\\s+");
-		Map<String, Integer> words = new HashMap<String, Integer>();
+		Map<String, Integer> words = new HashMap<>();
 
 		while (in.hasNext()) {
 			String word = in.next();
@@ -237,7 +237,7 @@ public class DocClassifier {
 		}
 		in.close();
 		words = ValueSortMap.sortMapByValue(words, false);
-		List<String> resultsAll = new ArrayList<String>(words.keySet()), results = null;
+		List<String> resultsAll = new ArrayList<>(words.keySet()), results;
 
 		int len = resultsAll.size();
 		if (len > maxRes)
@@ -288,7 +288,7 @@ public class DocClassifier {
 			logger.error("Problem classifying sentence\n " + e);
 		}
 		
-		List<String> aggrResults = new ArrayList<String>();
+		List<String> aggrResults = new ArrayList<>();
 		try {
 
 			aggrResults = localCats.getFrequentTags();

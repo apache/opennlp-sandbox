@@ -17,9 +17,7 @@
 
 package opennlp.tools.disambiguator;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import net.sf.extjwnl.JWNLException;
@@ -153,12 +151,12 @@ public class WSDSample {
   public static WSDSample parse(String sentenceString)
       throws InvalidFormatException {
 
-    String tokenTags[] = WhitespaceTokenizer.INSTANCE.tokenize(sentenceString);
+    String[] tokenTags = WhitespaceTokenizer.INSTANCE.tokenize(sentenceString);
 
     int position = Integer.parseInt(tokenTags[0]);
-    String sentence[] = new String[tokenTags.length - 1];
-    String tags[] = new String[tokenTags.length - 1];
-    String lemmas[] = new String[tokenTags.length - 1];
+    String[] sentence = new String[tokenTags.length - 1];
+    String[] tags = new String[tokenTags.length - 1];
+    String[] lemmas = new String[tokenTags.length - 1];
 
     for (int i = 1; i < tokenTags.length; i++) {
       int split = tokenTags[i].lastIndexOf("_");

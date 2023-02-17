@@ -66,7 +66,7 @@ public class TreeKernelRunner {
 
 	static class StreamLogger extends Thread{
 
-		private InputStream mInputStream;
+		private final InputStream mInputStream;
 
 		public StreamLogger(InputStream is) {
 			this.mInputStream = is;
@@ -76,7 +76,7 @@ public class TreeKernelRunner {
 			try {
 				InputStreamReader isr = new InputStreamReader(mInputStream);
 				BufferedReader br = new BufferedReader(isr);
-				String line = null;
+				String line;
 				while ((line = br.readLine()) != null) {
 					System.out.println(line);
 				}

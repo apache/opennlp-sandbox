@@ -51,7 +51,7 @@ public class PhraseNode extends SyntacticTreeNode {
       return;
 
     if (children == null) {
-      children = new ArrayList<SyntacticTreeNode>();
+      children = new ArrayList<>();
     }
 
     // set the parent of the child node
@@ -77,7 +77,7 @@ public class PhraseNode extends SyntacticTreeNode {
     StringBuilder builder = new StringBuilder();
     boolean first = true;
     for (SyntacticTreeNode child : children) {
-      String childText = null;
+      String childText;
       if (useLemma)
         childText = child.getLemma(removeStopWord);
       else
@@ -119,7 +119,7 @@ public class PhraseNode extends SyntacticTreeNode {
 
   @Override
   public List<String> getOrderedPOSList() {
-    List<String> types = new ArrayList<String>();
+    List<String> types = new ArrayList<>();
     if (children != null && children.size() > 0) {
       for (SyntacticTreeNode child : children) {
         types.addAll(child.getOrderedPOSList());
@@ -131,7 +131,7 @@ public class PhraseNode extends SyntacticTreeNode {
 
   @Override
   public List<String> getOrderedLemmaList() {
-    List<String> types = new ArrayList<String>();
+    List<String> types = new ArrayList<>();
     if (children != null && children.size() > 0) {
       for (SyntacticTreeNode child : children) {
         types.addAll(child.getOrderedLemmaList());

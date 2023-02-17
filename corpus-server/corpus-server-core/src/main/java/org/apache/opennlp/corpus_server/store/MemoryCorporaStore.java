@@ -53,7 +53,7 @@ public class MemoryCorporaStore extends AbstractCorporaStore {
 	
 	// Note: Add one twice, overwrites an existing one!
 	public void createCorpus(String corpusName,
-			byte typeSystemBytes[], byte indexMapping[]) {
+                           byte[] typeSystemBytes, byte[] indexMapping) {
 		corpora.put(corpusName, new MemoryCorpusStore(corpusName, 
 				typeSystemBytes, indexMapping));
 	}

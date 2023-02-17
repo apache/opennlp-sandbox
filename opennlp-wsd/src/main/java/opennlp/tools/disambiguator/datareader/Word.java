@@ -24,13 +24,13 @@ import opennlp.tools.disambiguator.WSDHelper;
 // TODO extend Word from Wordnet
 public class Word {
 
-  public static enum Type {
+  public enum Type {
     WORD(1, "word"), PUNCTUATIONMARK(2, "pm");
 
-    public int code;
-    public String type;
+    public final int code;
+    public final String type;
 
-    private Type(int code, String type) {
+    Type(int code, String type) {
       this.code = code;
       this.type = type;
     }

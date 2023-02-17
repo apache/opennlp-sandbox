@@ -47,7 +47,7 @@ public class ShallowParseCorefEnhancerStream extends FilterObjectStream<RawCoref
     
     if (sample != null) {
       
-      List<Parse> enhancedParses = new ArrayList<Parse>();
+      List<Parse> enhancedParses = new ArrayList<>();
       
       List<String[]> sentences = sample.getTexts();
       

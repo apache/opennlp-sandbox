@@ -26,7 +26,7 @@ public class CorpusServerApplication extends Application {
 
   @Override
   public Set<Class<?>> getClasses() {
-    Set<Class<?>> result = new HashSet<Class<?>>();
+    Set<Class<?>> result = new HashSet<>();
     result.add(CorporaResource.class);
     result.add(CorpusResource.class);
     result.add(TaskQueuesResource.class);

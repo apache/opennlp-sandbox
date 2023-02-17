@@ -41,7 +41,7 @@ public abstract class AbstractLinker implements Linker {
   protected boolean debug = true;
 
   /** The mode in which this linker is running. */
-  protected LinkerMode mode;
+  protected final LinkerMode mode;
 
   /** Instance used for returning the same linker for subsequent getInstance requests. */
   protected static Linker linker;
@@ -58,19 +58,19 @@ public abstract class AbstractLinker implements Linker {
   protected int SINGULAR_PRONOUN;
 
   /** The name of the project where the coreference models are stored. */
-  protected String corefProject;
+  protected final String corefProject;
 
   /** The head finder used in this linker. */
   protected HeadFinder headFinder;
 
   /** Specifies whether coreferent mentions should be combined into a single entity.
    * Set this to true to combine them, false otherwise.  */
-  protected boolean useDiscourseModel;
+  protected final boolean useDiscourseModel;
 
   /** Specifies whether mentions for which no resolver can be used should be added to the
    * discourse model.
    */
-  protected boolean removeUnresolvedMentions;
+  protected final boolean removeUnresolvedMentions;
 
   /**
    * Creates a new linker using the models in the specified project directory and using the specified mode.
@@ -220,9 +220,9 @@ public abstract class AbstractLinker implements Linker {
   public DiscourseEntity[] getEntities(Mention[] mentions) {
     MentionContext[] extentContexts = this.constructMentionContexts(mentions);
     DiscourseModel dm = new DiscourseModel();
-    for (int ei = 0; ei < extentContexts.length; ei++) {
+    for (MentionContext extentContext : extentContexts) {
       //System.err.println(ei+" "+extentContexts[ei].toText());
-      resolve(extentContexts[ei], dm);
+      resolve(extentContext, dm);
     }
     return (dm.getEntities());
   }
@@ -232,8 +232,8 @@ public abstract class AbstractLinker implements Linker {
   }
 
   public void train() throws IOException {
-    for (int ri = 0; ri < resolvers.length; ri++) {
-      resolvers[ri].train();
+    for (AbstractResolver resolver : resolvers) {
+      resolver.train();
     }
   }
 

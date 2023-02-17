@@ -25,14 +25,13 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 
-import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.model.ArtifactSerializer;
 import cc.mallet.fst.Transducer;
 
 public class TransducerModelSerializer implements ArtifactSerializer<TransducerModel> {
 
   @Override
-  public TransducerModel create(InputStream in) throws IOException, InvalidFormatException {
+  public TransducerModel create(InputStream in) throws IOException {
     try (ObjectInputStream ois = new ObjectInputStream(in)) {
       Transducer classifier = (Transducer) ois.readObject();
       return new TransducerModel(classifier);

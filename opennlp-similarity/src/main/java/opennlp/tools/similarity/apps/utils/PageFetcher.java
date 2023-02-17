@@ -98,7 +98,7 @@ public class PageFetcher {
 
   public String fetchOrigHTML(String url) {
     log.info("fetch url " + url);
-    StringBuffer buf = new StringBuffer();
+    StringBuilder buf = new StringBuilder();
     try {
       URLConnection connection = new URL(url).openConnection();
       connection.setReadTimeout(DEFAULT_TIMEOUT);

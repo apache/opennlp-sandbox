@@ -46,8 +46,8 @@ public class ObjectPhrase {
   }
   
   public ObjectPhrase(){
-    paramType = new ArrayList<String>();
-    paramValues = new ArrayList<String>();
+    paramType = new ArrayList<>();
+    paramValues = new ArrayList<>();
   }
   public String getObjectName() {
     return objectName;
@@ -108,7 +108,7 @@ public class ObjectPhrase {
     List<String> comparativePrpList = Arrays.asList(new String[]{"below", "more", "less", "above"}); 
     if (this.getParamChunk()==null)
       return;
-    List<String> pOSs = this.getParamChunk().getPOSs(), lemmas = this.getParamChunk().getLemmas(), cleanedArgs = new ArrayList<String>();
+    List<String> pOSs = this.getParamChunk().getPOSs(), lemmas = this.getParamChunk().getLemmas(), cleanedArgs = new ArrayList<>();
     
     for(int i=0; i<pOSs.size(); i++){
       String pos = pOSs.get(i);

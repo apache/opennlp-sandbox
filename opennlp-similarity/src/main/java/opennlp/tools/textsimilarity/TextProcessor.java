@@ -17,7 +17,7 @@
 
 package opennlp.tools.textsimilarity;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -50,9 +50,7 @@ public class TextProcessor {
 
     ArrayList<Pair<List<String>, Map<String, HashSet<Integer>>>> docs = new ArrayList<>();
     // tokenize each segment
-    for (int i = 0; i < segments.size(); i++) {
-      String s = segments.get(i);
-
+    for (String s : segments) {
       Pair<List<String>, Map<String, HashSet<Integer>>> tokPos = buildTokenPositions(s);
       docs.add(tokPos);
     }
@@ -112,9 +110,8 @@ public class TextProcessor {
     int segLength = 1;
     StringBuilder segmentStr = new StringBuilder();
 
-    for (int i = 0; i < tokensA.size(); i++) {
-      String token = tokensA.get(i);
-      HashSet<Integer> positions = null;
+    for (String token : tokensA) {
+      HashSet<Integer> positions;
       // if ((positions = tokenPosB.get(token)) != null &&
       // !token.equals("<punc>") &&
       // !StopList.getInstance().isStopWord(token) && token.length()>1) {
@@ -228,8 +225,8 @@ public class TextProcessor {
         cand += " " + text.substring(idx, m.end() - 1).trim();
         boolean hasAbbrev = false;
 
-        for (int i = 0; i < abbrevs.length; i++) {
-          if (cand.toLowerCase().endsWith(abbrevs[i])) {
+        for (String abbrev : abbrevs) {
+          if (cand.toLowerCase().endsWith(abbrev)) {
             hasAbbrev = true;
             break;
           }
@@ -347,7 +344,7 @@ public class TextProcessor {
       String b = tokens.get(i) + " " + tokens.get(i + 1);
       b = b.toLowerCase();
       // don't add punc tokens
-      if (b.indexOf("<punc>") != -1 && !retainPunc)
+      if (b.contains("<punc>") && !retainPunc)
         continue;
 
       int freq = 1;
@@ -543,12 +540,8 @@ public class TextProcessor {
       } catch (NoSuchAlgorithmException e) {
         LOG.severe("NoSuchAlgorithmException " + 2);
       }
-      try {
-        md.update(s.getBytes("UTF-8")); // step 3
-      } catch (UnsupportedEncodingException e) {
-        LOG.severe("UnsupportedEncodingException " + e);
-      }
-      byte raw[] = md.digest();
+      md.update(s.getBytes(StandardCharsets.UTF_8)); // step 3
+      byte[] raw = md.digest();
       hash = null; // (new BASE64Encoder()).encode(raw);
     }
     return hash;
@@ -569,13 +562,13 @@ public class TextProcessor {
     for (String t : tokens) {
       String tokenLower = t.toLowerCase();
 
-      if (tokenLower == "<punc>") {
+      if ("<punc>".equals(tokenLower)) {
         continue;
       }
-      if (tokenLower == "close_a") {
+      if ("close_a".equals(tokenLower)) {
         continue;
       }
-      if (tokenLower == "open_a") {
+      if ("open_a".equals(tokenLower)) {
         continue;
       }
       String stemmedToken = TextProcessor.stemTerm(tokenLower);
@@ -602,20 +595,15 @@ public class TextProcessor {
     String hash = "";
 
     if (hashString.length() > 0) {
-      MessageDigest md = null;
+      MessageDigest md;
       try {
         md = MessageDigest.getInstance("SHA"); // step 2
       } catch (NoSuchAlgorithmException e) {
         LOG.severe("NoSuchAlgorithmException " + e);
         throw new Exception(e.getMessage());
       }
-      try {
-        md.update(hashString.getBytes("UTF-8")); // step 3
-      } catch (UnsupportedEncodingException e) {
-        LOG.severe("UnsupportedEncodingException " + e);
-        throw new Exception(e.getMessage());
-      }
-      byte raw[] = md.digest();
+      md.update(hashString.getBytes(StandardCharsets.UTF_8)); // step 3
+      byte[] raw = md.digest();
       hash = null; // (new BASE64Encoder()).encode(raw);
     }
     return hash;
@@ -648,7 +636,7 @@ public class TextProcessor {
 
   public static String generateSummary(String txt, String title, int numChars,
       boolean truncateInSentence) {
-    String finalSummary = "";
+    String finalSummary;
 
     try {
 
@@ -659,7 +647,7 @@ public class TextProcessor {
       txt = txt.replace(" |", " ");
       ArrayList<String> sentences = TextProcessor.splitToSentences(txt);
       // System.out.println("Sentences are:");
-      StringBuffer sum = new StringBuffer();
+      StringBuilder sum = new StringBuilder();
       int cnt = 0;
       int lCnt = 0;
       for (String s : sentences) {
@@ -771,7 +759,7 @@ public class TextProcessor {
     int retVal = 0;
     if (txt.length() > 0) {
       for (int i = txt.length() - 1; i >= 0; i--) {
-        if (txt.valueOf(txt.charAt(i)).equals(".")) {
+        if (String.valueOf(txt.charAt(i)).equals(".")) {
           retVal++;
         } else {
           break;
@@ -819,19 +807,19 @@ public class TextProcessor {
     txt = txt.substring(idx);
 
     // scrub the title
-    if (title.trim().length() > 0 && txt.indexOf(title.trim()) != -1) {
+    if (title.trim().length() > 0 && txt.contains(title.trim())) {
       txt = txt
           .substring(txt.indexOf(title.trim()) + title.trim().length() - 1);
     }
 
     // scrub before first -
-    if (txt.indexOf(" � ") != -1) {
+    if (txt.contains(" � ")) {
       txt = txt.substring(txt.indexOf(" � ") + 3);
     }
-    if (txt.indexOf(" - ") != -1) {
+    if (txt.contains(" - ")) {
       txt = txt.substring(txt.indexOf(" - ") + 3);
     }
-    if (txt.indexOf("del.icio.us") != -1) {
+    if (txt.contains("del.icio.us")) {
       txt = txt.substring(txt.indexOf("del.icio.us") + "del.icio.us".length());
     }
 
@@ -873,7 +861,7 @@ public class TextProcessor {
   }
 
   public static List<String> extractUrlsFromText(String txt) {
-    List<String> urls = new ArrayList<String>();
+    List<String> urls = new ArrayList<>();
     // tokenize and iterate
     String[] tokens = txt.split(" ");
     for (String t : tokens) {
@@ -888,10 +876,10 @@ public class TextProcessor {
   }
 
   public static List<String> findCommonTokens(List<String> segments) {
-    List<String> commonTokens = new ArrayList<String>();
+    List<String> commonTokens = new ArrayList<>();
 
     if (segments.size() > 1) {
-      List<String> allTokens = new ArrayList<String>();
+      List<String> allTokens = new ArrayList<>();
       for (String s : segments) {
         String[] tks = s.split(" ");
         List<String> tokens = Arrays.asList(tks);
@@ -902,7 +890,7 @@ public class TextProcessor {
           .getUniqueTokenIndex(allTokens);
       for (String t : uniqueTokens.keySet()) {
         Integer freq = uniqueTokens.get(t);
-        if (freq.intValue() == segments.size()) {
+        if (freq == segments.size()) {
           commonTokens.add(t);
         }
       }

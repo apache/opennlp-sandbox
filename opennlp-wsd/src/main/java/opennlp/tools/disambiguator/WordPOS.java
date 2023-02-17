@@ -32,9 +32,9 @@ import net.sf.extjwnl.data.Synset;
 // TODO extend Word instead
 public class WordPOS {
 
-  private String word;
+  private final String word;
   private List<String> stems;
-  private POS pos;
+  private final POS pos;
   private String posTag;
   public boolean isTarget = false;
 
@@ -88,7 +88,7 @@ public class WordPOS {
         return null;
       }
       List<Synset> synsets = indexWord.getSenses();
-      return (new ArrayList<Synset>(synsets));
+      return (new ArrayList<>(synsets));
     } catch (JWNLException e) {
       e.printStackTrace();
     }

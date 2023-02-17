@@ -27,10 +27,10 @@ import java.util.Set;
 
 public class PhraseConcept {
 	int position;
-	public List<List<ParseTreeChunk>> intent;
-	Set<Integer> parents;
-	Set<Integer> children;
-	Set<Integer> extent;
+	public final List<List<ParseTreeChunk>> intent;
+	final Set<Integer> parents;
+	final Set<Integer> children;
+	final Set<Integer> extent;
 	
 	double intLogStabilityBottom = 0;
 	double intLogStabilityUp = 0;

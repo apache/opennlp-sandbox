@@ -19,7 +19,7 @@ package opennlp.tools.formats.muc;
 
 import java.io.File;
 import java.io.FileFilter;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -89,7 +89,7 @@ public class Muc6FullParseCorefSampleStreamFactory extends AbstractSampleStreamF
           public boolean accept(File file) {
             return file.getName().toLowerCase().endsWith(".sgm");
           }
-        }, false), Charset.forName("UTF-8"));
+        }, false), StandardCharsets.UTF_8);
     
     ObjectStream<RawCorefSample> rawSamples = 
         new MucCorefSampleStream(tokenizer, mucDocStream);
@@ -100,13 +100,13 @@ public class Muc6FullParseCorefSampleStreamFactory extends AbstractSampleStreamF
     // How to load all these nameFinder models ?! 
     // Let's make a param per model, not that nice, but ok!
     
-    Map<String, File> modelFileTagMap = new HashMap<String, File>();
+    Map<String, File> modelFileTagMap = new HashMap<>();
     
     modelFileTagMap.put("person", params.getPersonModel());
     modelFileTagMap.put("organization", params.getOrganizationModel());
     
-    List<TokenNameFinder> nameFinders = new ArrayList<TokenNameFinder>();
-    List<String> tags = new ArrayList<String>();
+    List<TokenNameFinder> nameFinders = new ArrayList<>();
+    List<String> tags = new ArrayList<>();
     
     for (Map.Entry<String, File> entry : modelFileTagMap.entrySet()) {
       nameFinders.add(new NameFinderME(

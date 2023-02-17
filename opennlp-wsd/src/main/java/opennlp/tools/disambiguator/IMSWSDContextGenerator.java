@@ -89,7 +89,7 @@ public class IMSWSDContextGenerator implements WSDContextGenerator {
       }
 
     }
-    String[] res = new String[localCollocations.size()];
+    String[] res;
     res = localCollocations.toArray(new String[localCollocations.size()]);
 
     return res;
@@ -114,9 +114,8 @@ public class IMSWSDContextGenerator implements WSDContextGenerator {
     String[] posOfSurroundingWords = extractPosOfSurroundingWords(index, tokens,
       windowSize);
 
-    HashSet<String> surroundingWords = new HashSet<>();
-    surroundingWords.addAll(Arrays
-      .asList(extractSurroundingContext(index, tokens, lemmas, windowSize)));
+    HashSet<String> surroundingWords = new HashSet<>(Arrays
+            .asList(extractSurroundingContext(index, tokens, lemmas, windowSize)));
 
     String[] localCollocations = extractLocalCollocations(index, tokens, ngram);
 

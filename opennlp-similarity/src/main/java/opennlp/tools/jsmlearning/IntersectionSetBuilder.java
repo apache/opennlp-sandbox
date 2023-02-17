@@ -53,7 +53,7 @@ public class IntersectionSetBuilder{
 	private FeatureSpaceCoverageProcessor distProcessorPos, distProcessorNeg;
 	private final float percentageOfAllowedSetCover = 0.001f;
 	//The set of attribute in analysis is hard coded
-	String[] fieldsToAggr = new String[]{
+	final String[] fieldsToAggr = new String[]{
 			"reason_code",	"risk_rating", "service_type", 	"device_match_result", 	"device_result", 	"http_referer", 	"device_id_reason_code",
 			"review_status", "tcp_os_sig_ttl", "tcp_connection_type",
 			"mime_type_number", "plugin_number", "http_connection_type", "device_last_event", "http_connection_type"
