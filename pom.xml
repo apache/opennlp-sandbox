@@ -342,7 +342,6 @@
                     <compilerArgument>-Xlint</compilerArgument>
                 </configuration>
             </plugin>
-            <!--  TODO re-activate checks, once plugin config has consensus.
             <plugin>
                 <groupId>org.apache.rat</groupId>
                 <artifactId>apache-rat-plugin</artifactId>
@@ -356,13 +355,29 @@
                         <configuration>
                             <excludes>
                                 <exclude>release.properties</exclude>
+                                <exclude>.gitattributes</exclude>
+                                <exclude>.github/*</exclude>
+                                <exclude>**/*.md</exclude>
+                                <!-- We do not ship files from test/resources, so ok to exclude -->
+                                <exclude>**/src/test/resources/**/*.txt</exclude>
+                                <exclude>**/src/test/resources/**/*.ari</exclude>
+                                <exclude>**/src/test/resources/**/*.csv</exclude>
+                                <exclude>**/src/test/resources/**/*.cxt</exclude>
+                                <exclude>**/src/test/resources/**/*.xml</exclude>
+                                <exclude>**/src/test/resources/**/*.sensemap</exclude>
+                                <exclude>**/src/test/resources/**/*.bin</exclude>
+                                <!-- These files do not allow a license header -->
+                                <exclude>**/src/main/resources/opennlp/cfg/an/*.txt</exclude>
+                                <exclude>**/src/main/resources/opennlp/cfg/wn/*.txt</exclude>
+                                <exclude>**/src/main/java/opennlp/tools/similarity/apps/taxo_builder/taxonomy.txt</exclude>
+                                <exclude>**/src/main/java/opennlp/tools/similarity/apps/gen.txt</exclude>
+                                <!-- These files are samples in wikinews-importer -->
+                                <exclude>**/samples/*.xmi</exclude>
                             </excludes>
-                            <numUnapprovedLicenses>1000000</numUnapprovedLicenses>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-            -->
 
             <plugin>
                 <artifactId>maven-javadoc-plugin</artifactId>
