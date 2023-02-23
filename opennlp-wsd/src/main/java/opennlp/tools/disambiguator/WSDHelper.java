@@ -35,6 +35,7 @@ import net.sf.extjwnl.JWNLException;
 import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.dictionary.Dictionary;
 import net.sf.extjwnl.dictionary.MorphologicalProcessor;
+
 import opennlp.tools.cmdline.postag.POSModelLoader;
 import opennlp.tools.lemmatizer.DictionaryLemmatizer;
 import opennlp.tools.postag.POSTaggerME;
@@ -62,22 +63,21 @@ public class WSDHelper {
   private static Map<String, Object> nonRelevWordsDef;
 
   // List of all the PoS tags
-  public static String[] allPOS = { "CC", "CD", "DT", "EX", "FW", "IN", "JJ",
+  public static final String[] ALL_POS = { "CC", "CD", "DT", "EX", "FW", "IN", "JJ",
       "JJR", "JJS", "LS", "MD", "NN", "NNS", "NNP", "NNPS", "PDT", "POS",
       "PRP", "PRP$", "RB", "RBR", "RBS", "RP", "SYM", "TO", "UH", "VB", "VBD",
       "VBG", "VBN", "VBP", "VBZ", "WDT", "WP", "WP$", "WRB" };
 
   // List of the PoS tags of which the senses are to be extracted
-  public static final String[] relevantPOS = { "JJ", "JJR", "JJS", "NN", "NNS", "RB",
+  public static final String[] RELEVANT_POS = { "JJ", "JJR", "JJS", "NN", "NNS", "RB",
       "RBR", "RBS", "VB", "VBD", "VBG", "VBN", "VBP", "VBZ" };
 
   // List of Negation Words
-  public static List<String> negationWords = new ArrayList<>(
-      Arrays.asList("not", "no", "never", "none", "nor", "non"));
+  public static final List<String> NEGATION_WORDS = Arrays.asList("not", "no", "never", "none", "nor", "non");
 
   // List of Stop Words
-  public static final List<String> stopWords = new ArrayList<>(
-      Arrays.asList("a", "able", "about", "above", "according", "accordingly",
+  public static final List<String> STOP_WORDS = Arrays.asList(
+          "a", "able", "about", "above", "according", "accordingly",
           "across", "actually", "after", "afterwards", "again", "against",
           "ain't", "all", "allow", "allows", "almost", "alone", "along",
           "already", "also", "although", "always", "am", "among", "amongst",
@@ -155,12 +155,12 @@ public class WSDHelper {
           "who", "whoever", "whole", "whom", "who's", "whose", "why", "will",
           "willing", "wish", "with", "within", "without", "wonder", "won't",
           "would", "wouldn't", "yes", "yet", "you", "you'd", "you'll", "your",
-          "you're", "yours", "yourself", "yourselves", "you've", "zero"));
+          "you're", "yours", "yourself", "yourselves", "you've", "zero");
 
   public static Map<String, Object> getRelvCache() {
     if (relvCache == null || relvCache.keySet().isEmpty()) {
       relvCache = new HashMap<>();
-      for (String t : relevantPOS) {
+      for (String t : RELEVANT_POS) {
         relvCache.put(t, null);
       }
     }
@@ -170,7 +170,7 @@ public class WSDHelper {
   public static Map<String, Object> getStopCache() {
     if (stopCache == null || stopCache.keySet().isEmpty()) {
       stopCache = new HashMap<>();
-      for (String s : stopWords) {
+      for (String s : STOP_WORDS) {
         stopCache.put(s, null);
       }
     }

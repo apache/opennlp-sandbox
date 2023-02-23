@@ -76,9 +76,9 @@ public class ParseTreeChunkListScorer {
         } else {
           score += 0.1;
         }
-      } else if (l.startsWith(LemmaGeneralizer.w2vPrefix) ){
+      } else if (l.startsWith(LemmaGeneralizer.W2V_PREFIX) ){
     	  try {
-			float val = Float.parseFloat(l.substring(LemmaGeneralizer.w2vPrefix.length()));
+			float val = Float.parseFloat(l.substring(LemmaGeneralizer.W2V_PREFIX.length()));
 			  score+= 1- val;
 		} catch (NumberFormatException e) {
 			e.printStackTrace();

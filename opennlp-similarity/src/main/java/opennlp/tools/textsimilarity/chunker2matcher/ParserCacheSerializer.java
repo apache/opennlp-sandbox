@@ -53,14 +53,14 @@ import au.com.bytecode.opencsv.CSVWriter;
 public class ParserCacheSerializer {
   private static final Logger LOG = Logger
       .getLogger("opennlp.tools.textsimilarity.chunker2matcher.ParserCacheSerializer");
-  private static final boolean javaObjectSerialization = false;
+  private static final boolean JAVA_OBJECT_SERIALIZATION = false;
   private static final String RESOURCE_DIR = "src/test/resources/";
-  public static final String parseCacheFileName = "sentence_parseObject.dat";
-  public static final String parseCacheFileNameCSV = "sentence_parseObject.csv";
+  private static final String PARSE_CACHE_FILE_NAME = "sentence_parseObject.dat";
+  private static final String PARSE_CACHE_FILE_NAME_CSV = "sentence_parseObject.csv";
 
   public static void writeObject(Object objectToSerialize) {
-    if (javaObjectSerialization) {
-      String filename = RESOURCE_DIR + parseCacheFileName;
+    if (JAVA_OBJECT_SERIALIZATION) {
+      String filename = RESOURCE_DIR + PARSE_CACHE_FILE_NAME;
       try(FileOutputStream fos = new FileOutputStream(filename);
           ObjectOutputStream out = new ObjectOutputStream(fos)) {
         
@@ -73,7 +73,7 @@ public class ParserCacheSerializer {
       Map<String, String[][]> sentence_parseObject = (Map<String, String[][]>) objectToSerialize;
       List<String> keys = new ArrayList<>(sentence_parseObject.keySet());
       try (CSVWriter writer = new CSVWriter(
-              new FileWriter(RESOURCE_DIR + parseCacheFileNameCSV, false))) {
+              new FileWriter(RESOURCE_DIR + PARSE_CACHE_FILE_NAME_CSV, false))) {
         for (String k : keys) {
           String[][] triplet = sentence_parseObject.get(k);
           writer.writeNext(new String[] { k });
@@ -89,8 +89,8 @@ public class ParserCacheSerializer {
   }
 
   public static Object readObject() {
-    if (javaObjectSerialization) {
-      String filename = RESOURCE_DIR + parseCacheFileName;
+    if (JAVA_OBJECT_SERIALIZATION) {
+      String filename = RESOURCE_DIR + PARSE_CACHE_FILE_NAME;
       Object data = null;
       try (FileInputStream fis = new FileInputStream(filename);
            ObjectInputStream in = new ObjectInputStream(fis)) {
@@ -106,10 +106,10 @@ public class ParserCacheSerializer {
       List<String[]> lines;
 
       try (CSVReader reader = new CSVReader(new FileReader(RESOURCE_DIR
-              + parseCacheFileNameCSV), ',')) {
+              + PARSE_CACHE_FILE_NAME_CSV), ',')) {
         lines = reader.readAll();
       } catch (FileNotFoundException e) {
-    	  if (javaObjectSerialization)
+    	  if (JAVA_OBJECT_SERIALIZATION)
     		  System.err.println("Cannot find cache file");
         return null;
       } catch (IOException ioe) {

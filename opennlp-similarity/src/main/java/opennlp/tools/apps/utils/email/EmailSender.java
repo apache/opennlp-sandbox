@@ -41,9 +41,9 @@ import java.util.regex.Pattern;
  * @author GaDo
  */
 public class EmailSender {
-	private static final Pattern pc = Pattern.compile("[^\\s]+@[^\\s]+.[^\\s]+");
+	private static final Pattern EMAIL_PATTERN = Pattern.compile("[^\\s]+@[^\\s]+.[^\\s]+");
 
-	private static final String mailboxAddress = "boris_galitsky@rambler.ru";
+	private static final String MAILBOX_ADDRESS = "boris_galitsky@rambler.ru";
 
 	public boolean sendMail(String smtp, String user, String pass,
 													 InternetAddress from, InternetAddress[] to, InternetAddress[] cc, InternetAddress[] bcc,
@@ -101,7 +101,7 @@ public class EmailSender {
 				}
 
 				Transport tr = session.getTransport("smtp");
-				tr.connect(smtp, mailboxAddress, pass);
+				tr.connect(smtp, MAILBOX_ADDRESS, pass);
 				message.saveChanges();
 				tr.sendMessage(message, message.getAllRecipients());
 				tr.close();
@@ -124,7 +124,7 @@ public class EmailSender {
 			Matcher m;
 
 			if(correct){
-				m = pc.matcher(from.getAddress());
+				m = EMAIL_PATTERN.matcher(from.getAddress());
 				correct = m.matches();
 			}
 
@@ -133,7 +133,7 @@ public class EmailSender {
 				while(correct && vault<to.length){
 					correct = !to[vault].getAddress().equals("");
 					if(correct){
-							m = pc.matcher(to[vault].getAddress());
+							m = EMAIL_PATTERN.matcher(to[vault].getAddress());
 							correct = m.matches();
 					}
 					vault++;
@@ -145,7 +145,7 @@ public class EmailSender {
 				while(correct && vault<cc.length){
 					correct = !cc[vault].getAddress().equals("");
 					if(correct){
-							m = pc.matcher(cc[vault].getAddress());
+							m = EMAIL_PATTERN.matcher(cc[vault].getAddress());
 							correct = m.matches();
 					}
 					vault++;
@@ -157,7 +157,7 @@ public class EmailSender {
 				while(correct && vault<bcc.length){
 					correct = !bcc[vault].getAddress().equals("");
 					if(correct){
-							m = pc.matcher(bcc[vault].getAddress());
+							m = EMAIL_PATTERN.matcher(bcc[vault].getAddress());
 							correct = m.matches();
 					}
 					vault++;

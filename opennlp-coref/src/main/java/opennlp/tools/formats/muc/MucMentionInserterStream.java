@@ -42,7 +42,7 @@ import opennlp.tools.util.Span;
  */
 public class MucMentionInserterStream extends FilterObjectStream<RawCorefSample, CorefSample> {
 
-  private static final Set<String> entitySet = new HashSet<>(Arrays.asList(DefaultParse.NAME_TYPES));
+  private static final Set<String> ENTITY_SET = new HashSet<>(Arrays.asList(DefaultParse.NAME_TYPES));
   
   private final MentionFinder mentionFinder;
   
@@ -95,7 +95,7 @@ public class MucMentionInserterStream extends FilterObjectStream<RawCorefSample,
     if (commonParent != null) {
 //      Span mentionSpan = new Span(startToken.getSpan().getStart(), endToken.getSpan().getEnd());
       
-      if (entitySet.contains(commonParent.getType())) {
+      if (ENTITY_SET.contains(commonParent.getType())) {
         commonParent.getParent().setType("NP#" + id);            
       }
       else if (commonParent.getType().equals("NML")) {

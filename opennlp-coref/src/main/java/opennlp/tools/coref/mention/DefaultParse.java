@@ -41,7 +41,7 @@ public class DefaultParse extends AbstractParse {
   
   private final Parse parse;
   private final int sentenceNumber;
-  private static final Set<String> entitySet = new HashSet<>(Arrays.asList(NAME_TYPES));
+  private static final Set<String> ENTITY_SET = new HashSet<>(Arrays.asList(NAME_TYPES));
   
   /**
    * Initializes the current instance.
@@ -65,7 +65,7 @@ public class DefaultParse extends AbstractParse {
     List<Parse> kids = new LinkedList<>(Arrays.asList(parse.getChildren()));
     while (kids.size() > 0) {
       Parse p = kids.remove(0);
-      if (entitySet.contains(p.getType())) {
+      if (ENTITY_SET.contains(p.getType())) {
         names.add(p);
       }
       else {
@@ -83,7 +83,7 @@ public class DefaultParse extends AbstractParse {
     List<Parse> kids = new ArrayList<>(Arrays.asList(parse.getChildren()));
     for (int ci = 0; ci < kids.size(); ci++) {
       Parse kid = kids.get(ci);
-      if (entitySet.contains(kid.getType())) {
+      if (ENTITY_SET.contains(kid.getType())) {
         kids.remove(ci);
         kids.addAll(ci, Arrays.asList(kid.getChildren()));
         ci--;
@@ -108,7 +108,7 @@ public class DefaultParse extends AbstractParse {
   }
 
   public String getSyntacticType() {
-    if (entitySet.contains(parse.getType())) {
+    if (ENTITY_SET.contains(parse.getType())) {
       return null;
     }
     else if (parse.getType().contains("#")) {
@@ -130,7 +130,7 @@ public class DefaultParse extends AbstractParse {
   }
 
   public String getEntityType() {
-    if (entitySet.contains(parse.getType())) {
+    if (ENTITY_SET.contains(parse.getType())) {
       return parse.getType();
     }
     else {
@@ -165,7 +165,7 @@ public class DefaultParse extends AbstractParse {
     // the type can be extracted from. Then it just depends
     // on the training data and not the values inside NAME_TYPES.
     
-    if (entitySet.contains(parse.getType())) {
+    if (ENTITY_SET.contains(parse.getType())) {
       return true;
     }
     else {

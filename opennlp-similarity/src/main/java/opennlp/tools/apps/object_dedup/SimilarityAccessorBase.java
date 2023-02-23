@@ -43,7 +43,7 @@ public class SimilarityAccessorBase {
 
 	private List<String> namesBothSides;
 
-	protected static final String[] englishPrepositions = new String[] { "a", "aboard", "about", "above", "absent",
+	private static final String[] ENGLISH_PREPOSITIONS = new String[] { "a", "aboard", "about", "above", "absent",
 		"across", "after", "against", "along", "alongside", "among", "around", "as", "at", "before", "behind", "below",
 		"beneath", "between", "beyond", "but", "by", "despite", "down", "during", "except", "excluding", "failing",
 		"following", "for", "from", "in", "including", "inside", "into", "like", "near", "next", "of", "off", "on",
@@ -51,20 +51,20 @@ public class SimilarityAccessorBase {
 		"thru", "till", "to", "toward", "under", "up", "upon", "versus", "with", "within", "you", "must", "know",
 		"when" };
 
-	protected final List<String> commonWordsInEventTitles = Arrays.asList(new String[] { "community", "party", "film",
-		"music", "exhibition", "kareoke", "guitar", "quartet", "reggae", "r&b", "band", "dj ", "piano", "pray",
-		"worship", "god", "training", "class", "development", "training", "class", "course", "our", "comedy", ",fun",
-		"musical", "group", "alliance", "session", "feeding", "introduction", "school", "conversation", "learning",
-		"nursery", "unity", "trivia", "chat", "conference", "tuition", "technology", "teen", "communication",
-		"reception", "management", "beginner", "beginning", "collabora", "reuninon", "political", "course", "age",
-		"ages", "through", "grade", "networking", "workshop", "demonstration", "tuning", "program", "summit",
-		"convention", "day", "night", "one", "two", "outfest", "three", "online", "writing", "seminar", "coach",
-		",expo", "advanced", "beginner", "intermediate", "earn", "free", "ii", "iii", "skills", "skill", "artist",
-		"summer", "winter", "autumn", "spring", "camp", "vacation", "miscrosoft", "kid", "child", "kids", "children",
-		"every", "everyone", "dancer", "dancers", "senior", "seniors", "basic", "elementary", "outfest", "2008",
-		"2009", "2010", "2011", "2012", "monday", "tuesday", "wednesday", "thirsday", "friday", "saturday", "sunday",
-		"mondays", "tuesdays", "wednesdays", "thirsdays", "fridays", "saturdays", "sundays", "men" // ?
-	});
+	private static final List<String> COMMON_WORDS_IN_EVENT_TITLES = Arrays.asList("community", "party", "film",
+					"music", "exhibition", "kareoke", "guitar", "quartet", "reggae", "r&b", "band", "dj ", "piano", "pray",
+					"worship", "god", "training", "class", "development", "training", "class", "course", "our", "comedy", ",fun",
+					"musical", "group", "alliance", "session", "feeding", "introduction", "school", "conversation", "learning",
+					"nursery", "unity", "trivia", "chat", "conference", "tuition", "technology", "teen", "communication",
+					"reception", "management", "beginner", "beginning", "collabora", "reuninon", "political", "course", "age",
+					"ages", "through", "grade", "networking", "workshop", "demonstration", "tuning", "program", "summit",
+					"convention", "day", "night", "one", "two", "outfest", "three", "online", "writing", "seminar", "coach",
+					",expo", "advanced", "beginner", "intermediate", "earn", "free", "ii", "iii", "skills", "skill", "artist",
+					"summer", "winter", "autumn", "spring", "camp", "vacation", "miscrosoft", "kid", "child", "kids", "children",
+					"every", "everyone", "dancer", "dancers", "senior", "seniors", "basic", "elementary", "outfest", "2008",
+					"2009", "2010", "2011", "2012", "monday", "tuesday", "wednesday", "thirsday", "friday", "saturday", "sunday",
+					"mondays", "tuesdays", "wednesdays", "thirsdays", "fridays", "saturdays", "sundays", "men" // ?
+	);
 
 	private final BingQueryRunner webSearch = new BingQueryRunner();
 
@@ -257,7 +257,7 @@ public class SimilarityAccessorBase {
 			if (word.length() < 2) // '-', '|', ':'
 				break;
 
-			if (word.equals(word.toLowerCase()) && (!Arrays.asList(englishPrepositions).contains(word))
+			if (word.equals(word.toLowerCase()) && (!Arrays.asList(ENGLISH_PREPOSITIONS).contains(word))
 				&& word.length() > 3 && StringUtils.isAlphanumeric(word))
 				continue; // was return false;
 			if (count > 3)
@@ -275,7 +275,7 @@ public class SimilarityAccessorBase {
 		// now iterate till next preposition towards the end of noun phrase
 		for (String preposCand : ofList)
 		{
-			if (Arrays.asList(englishPrepositions).contains(preposCand))
+			if (Arrays.asList(ENGLISH_PREPOSITIONS).contains(preposCand))
 				break;
 			results.add(preposCand);
 		}
@@ -403,8 +403,8 @@ public class SimilarityAccessorBase {
 		{ // all words should be the
 			// same
 			name1Tokens.removeAll(name2Tokens);
-			name1Tokens.removeAll(Arrays.asList(englishPrepositions));
-			name1Tokens.removeAll(Arrays.asList(commonWordsInEventTitles));
+			name1Tokens.removeAll(Arrays.asList(ENGLISH_PREPOSITIONS));
+			name1Tokens.removeAll(Arrays.asList(COMMON_WORDS_IN_EVENT_TITLES));
 			if (name1Tokens.size() < 1)
 				return true;
 
@@ -430,7 +430,7 @@ public class SimilarityAccessorBase {
 			name1Tokens.removeAll(name2Tokens);
 			name2Tokens.removeAll(name1TokensClone);
 			name1Tokens.addAll(name2Tokens);
-			name1Tokens.removeAll(Arrays.asList(englishPrepositions));
+			name1Tokens.removeAll(Arrays.asList(ENGLISH_PREPOSITIONS));
 			// name1Tokens.removeAll(Arrays.asList(this.commonWordsInEventTitles));
 			if (name1Tokens.size() < 1)
 				return true;
@@ -539,8 +539,8 @@ public class SimilarityAccessorBase {
 		name1Tokens.retainAll(name2Tokens);
 		name1Tokens.removeAll(venueToks);
 
-		name1Tokens.removeAll(commonWordsInEventTitles);
-		name1Tokens.removeAll(Arrays.asList(englishPrepositions));
+		name1Tokens.removeAll(COMMON_WORDS_IN_EVENT_TITLES);
+		name1Tokens.removeAll(Arrays.asList(ENGLISH_PREPOSITIONS));
 		name1Tokens = removeDollarWordAndNonAlphaFromList(name1Tokens);
 		// todo : to use full string measure
 		// boundary case: too many words => just do counts

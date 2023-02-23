@@ -138,13 +138,13 @@ public class GenderModel implements TestGenderModel, TrainSimilarityModel {
    * @return The heuristically determined gender or unknown.
    */
   private GenderEnum getGender(Context mention) {
-    if (ResolverUtils.malePronounPattern.matcher(mention.getHeadTokenText()).matches()) {
+    if (ResolverUtils.MALE_PRONOUN_PATTERN.matcher(mention.getHeadTokenText()).matches()) {
       return GenderEnum.MALE;
     }
-    else if (ResolverUtils.femalePronounPattern.matcher(mention.getHeadTokenText()).matches()) {
+    else if (ResolverUtils.FEMALE_PRONOUN_PATTERN.matcher(mention.getHeadTokenText()).matches()) {
       return GenderEnum.FEMALE;
     }
-    else if (ResolverUtils.neuterPronounPattern.matcher(mention.getHeadTokenText()).matches()) {
+    else if (ResolverUtils.NEUTER_PRONOUN_PATTERN.matcher(mention.getHeadTokenText()).matches()) {
       return GenderEnum.NEUTER;
     }
     Object[] mtokens = mention.getTokens();

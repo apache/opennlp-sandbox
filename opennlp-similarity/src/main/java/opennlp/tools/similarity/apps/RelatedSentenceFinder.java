@@ -52,7 +52,7 @@ public class RelatedSentenceFinder {
 	final ParserChunker2MatcherProcessor sm = ParserChunker2MatcherProcessor.getInstance();
 	protected final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
 	protected final ParseTreeChunk parseTreeChunk = new ParseTreeChunk();
-	protected static final StringDistanceMeasurer stringDistanceMeasurer = new StringDistanceMeasurer();
+	protected static final StringDistanceMeasurer STRING_DISTANCE_MEASURER = new StringDistanceMeasurer();
 	protected final BingQueryRunner yrunner = new BingQueryRunner();
 	protected int MAX_STEPS = 1;
 	protected int MAX_SEARCH_RESULTS = 1;
@@ -61,11 +61,11 @@ public class RelatedSentenceFinder {
 
 	// used to indicate that a sentence is an opinion, so more appropriate
 	static final List<String> MENTAL_VERBS = new ArrayList<>(
-			Arrays.asList(new String[] { "want", "know", "believe", "appeal", "ask",
-					"accept", "agree", "allow", "appeal", "ask", "assume", "believe",
-					"check", "confirm", "convince", "deny", "disagree", "explain",
-					"ignore", "inform", "remind", "request", "suggest", "suppose",
-					"think", "threaten", "try", "understand" }));
+			Arrays.asList("want", "know", "believe", "appeal", "ask",
+							"accept", "agree", "allow", "appeal", "ask", "assume", "believe",
+							"check", "confirm", "convince", "deny", "disagree", "explain",
+							"ignore", "inform", "remind", "request", "suggest", "suppose",
+							"think", "threaten", "try", "understand"));
 
 	private static final int MAX_FRAGMENT_SENTS = 10;
 
@@ -137,7 +137,7 @@ public class RelatedSentenceFinder {
 		String[] extraKeywords = new StoryDiscourseNavigator().obtainAdditionalKeywordsForAnEntity(sentence);
 		System.out.println("Found  extraKeywords "+ Arrays.asList(extraKeywords));
 		if (extraKeywords==null || extraKeywords.length<1)
-			extraKeywords = StoryDiscourseNavigator.frequentPerformingVerbs;
+			extraKeywords = StoryDiscourseNavigator.FREQUENT_PERFORMING_VERBS;
 
 		int stepCount=0;
 		for (String verbAddition : extraKeywords) {
@@ -492,7 +492,7 @@ public class RelatedSentenceFinder {
 						}
 					}
 
-					measScore = stringDistanceMeasurer.measureStringDistance(
+					measScore = STRING_DISTANCE_MEASURER.measureStringDistance(
 							originalSentence, pageSentence);
 
 
@@ -863,7 +863,7 @@ public class RelatedSentenceFinder {
 				e.printStackTrace();
 			}
 
-			measScore = stringDistanceMeasurer.measureStringDistance(
+			measScore = STRING_DISTANCE_MEASURER.measureStringDistance(
 					originalSentence, pageSentence);
 
 

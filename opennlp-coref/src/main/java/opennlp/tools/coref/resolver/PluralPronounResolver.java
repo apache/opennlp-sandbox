@@ -90,6 +90,6 @@ public class PluralPronounResolver extends MaxentResolver {
   public boolean canResolve(MentionContext mention) {
     String tag = mention.getHeadTokenTag();
     return (tag != null && tag.startsWith("PRP")
-        && ResolverUtils.pluralThirdPersonPronounPattern.matcher(mention.getHeadTokenText()).matches());
+        && ResolverUtils.PLURAL_THIRD_PERSON_PRONOUN_PATTERN.matcher(mention.getHeadTokenText()).matches());
   }
 }

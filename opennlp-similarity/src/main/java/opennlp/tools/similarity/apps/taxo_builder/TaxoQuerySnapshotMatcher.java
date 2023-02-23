@@ -22,12 +22,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import opennlp.tools.textsimilarity.TextProcessor;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
-
-//import com.thoughtworks.xstream.XStream;
 
 /**
  * This class can be used to generate scores based on the overlapping between a
@@ -40,8 +37,6 @@ public class TaxoQuerySnapshotMatcher {
   // XStream xStream= new XStream();
   Map<String, List<List<String>>> lemma_ExtendedAssocWords;
   final TaxonomySerializer taxo;
-  private static final Logger LOG = Logger
-      .getLogger("opennlp.tools.similarity.apps.taxo_builder.TaxoQuerySnapshotMatcher");
 
   public TaxoQuerySnapshotMatcher(String taxoFileName) {
     sm = ParserChunker2MatcherProcessor.getInstance();

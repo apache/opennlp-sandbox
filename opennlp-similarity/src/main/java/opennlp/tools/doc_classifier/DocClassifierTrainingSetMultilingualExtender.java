@@ -45,11 +45,8 @@ public class DocClassifierTrainingSetMultilingualExtender {
 	final DocClassifier classifier;
 	private String sourceDir = null, destinationDir = null;
 	//interwiki-fr"><a href="http://fr.wikipedia.org/wiki/Niveau_d%27%C3%A9nergie" title="Niveau d&#39;énergie – French" lang="fr" 
-	private static final String[][] multilingualTokens = new String[][]{
-		{"interwiki-fr\"><a href=\"", "lang=\"fr\""},
-		{"interwiki-es\"><a href=\"", "lang=\"es\""},
-		{"interwiki-de\"><a href=\"", "lang=\"de\""},
-	};
+	private static final String[][] MULTILINGUAL_TOKENS = new String[][]{{"interwiki-fr\"><a href=\"", "lang=\"fr\""},
+		{"interwiki-es\"><a href=\"", "lang=\"es\""}, {"interwiki-de\"><a href=\"", "lang=\"de\""} };
 	
 	private static final String[] LANGS = new String[]{ "fr", "es", "de"};
 
@@ -131,7 +128,7 @@ public class DocClassifierTrainingSetMultilingualExtender {
 				System.out.println("processing "+f.getName());
 				content = FileUtils.readFileToString(f, "utf-8");
 				int langIndex =0;
-				for(String[] begEnd: multilingualTokens){
+				for(String[] begEnd: MULTILINGUAL_TOKENS){
 					String urlDirty = StringUtils.substringBetween(content, begEnd[0], begEnd[1]);
 					String url = StringUtils.substringBefore(urlDirty, "\"");
 

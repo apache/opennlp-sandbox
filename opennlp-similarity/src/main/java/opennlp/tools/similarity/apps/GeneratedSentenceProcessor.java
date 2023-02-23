@@ -26,7 +26,7 @@ import opennlp.tools.similarity.apps.utils.Utils;
 
 public class GeneratedSentenceProcessor {
 
-	public static final String[] occurs = new String[]{ "click here", "wikipedia", "retrieved", "isbn",
+	private static final String[] OCCURS = new String[]{ "click here", "wikipedia", "retrieved", "isbn",
 		"http", "www.",
 		"copyright", "advertise",  "(accessed", "[edit]", "[citation needed]",
 		"site map",  "email updates",  "contact us", "rss feeds",  "cite this site",
@@ -67,7 +67,7 @@ public class GeneratedSentenceProcessor {
 		"menu.", "search.",  "sign in", "home.",
 		"additional terms", "may apply"};
 
-	public static final String[] occursStartsWith = new String[]{
+	private static final String[] OCCURS_STARTS_WITH = new String[]{
 		"fax",  "write","email", "contact",  "conditions",  "chat live",
 		"we ",  "the recipient",  "day return",  "days return",
 		"refund it",  "your money",
@@ -75,6 +75,7 @@ public class GeneratedSentenceProcessor {
 		"exchange it ",  "return it",  "day return",  "days return",
 		"subscribe","posted by", "below" , "corporate",
 		"this book"};
+
 	public static String acceptableMinedSentence(String sent) {
 		if (sent==null || sent.length()<40)
 			return null;
@@ -197,14 +198,14 @@ public class GeneratedSentenceProcessor {
 	}
 
 	public static boolean isProhibitiveWordsOccurOrStartWith(String sentenceLowercase){
-		for(String o: occurs){
+		for(String o: OCCURS){
 			if (sentenceLowercase.contains(o)){
 				//System.out.println("Found prohibited occurrence "+ o +" \n in sentence = "+  sentenceLowercase);
 				return true;
 			}
 		}
 
-		for(String o: occursStartsWith){
+		for(String o: OCCURS_STARTS_WITH){
 			if (sentenceLowercase.startsWith(o)){
 				//System.out.println("Found prohibited occurrence Start With  "+ o +" \n in sentence = "+  sentenceLowercase);
 				return true;

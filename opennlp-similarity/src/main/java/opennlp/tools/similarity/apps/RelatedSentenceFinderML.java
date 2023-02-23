@@ -186,7 +186,7 @@ public class RelatedSentenceFinderML extends RelatedSentenceFinder{
 						}
 					}
 
-					measScore = stringDistanceMeasurer.measureStringDistance(
+					measScore = STRING_DISTANCE_MEASURER.measureStringDistance(
 							originalSentence, pageSentence);
 
 					// now possibly increase score by finding mental verbs

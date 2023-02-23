@@ -30,19 +30,18 @@ import opennlp.tools.textsimilarity.ParseTreeChunkListScorer;
 import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
-/*
- * This class does content generation by using web mining and syntactic generalization to get sentences from the web, convert and combine 
- * them in the form 
- * expected to be readable by humans and not distinguishable from genuine content by search engines
- * 
+/**
+ * This class does content generation by using web mining and syntactic generalization to get sentences
+ * from the web, convert and combine them in the form expected to be readable by humans and
+ * not distinguishable from genuine content by search engines.
  */
-
 public class ContentGenerator /*extends RelatedSentenceFinder*/ {
-	final PageFetcher pFetcher = new PageFetcher();
-	final ParserChunker2MatcherProcessor sm = ParserChunker2MatcherProcessor.getInstance();
-	protected final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
-	protected final ParseTreeChunk parseTreeChunk = new ParseTreeChunk();
-	protected static final StringDistanceMeasurer stringDistanceMeasurer = new StringDistanceMeasurer();
+
+	private final PageFetcher pFetcher = new PageFetcher();
+	private final ParserChunker2MatcherProcessor sm = ParserChunker2MatcherProcessor.getInstance();
+	private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
+	private final ParseTreeChunk parseTreeChunk = new ParseTreeChunk();
+	private static final StringDistanceMeasurer STRING_DISTANCE_MEASURER = new StringDistanceMeasurer();
 	protected final BingQueryRunner yrunner = new BingQueryRunner();
 	protected final ContentGeneratorSupport support = new ContentGeneratorSupport();
 	protected int MAX_STEPS = 1;
@@ -84,7 +83,7 @@ public class ContentGenerator /*extends RelatedSentenceFinder*/ {
 		System.out.println(" \n=== Entity to write about = " + sentence);
 	
 		int stepCount=0;
-		for (String verbAddition : StoryDiscourseNavigator.frequentPerformingVerbs) {
+		for (String verbAddition : StoryDiscourseNavigator.FREQUENT_PERFORMING_VERBS) {
 			List<HitBase> searchResult = yrunner.runSearch(sentence + " "
 					+ verbAddition, MAX_SEARCH_RESULTS); //100);
 			if (MAX_SEARCH_RESULTS<searchResult.size())
@@ -323,7 +322,7 @@ public class ContentGenerator /*extends RelatedSentenceFinder*/ {
 				}
 			}
 
-			measScore = stringDistanceMeasurer.measureStringDistance(originalSentence, pageSentence);
+			measScore = STRING_DISTANCE_MEASURER.measureStringDistance(originalSentence, pageSentence);
 
 
 			if ((syntScore > RELEVANCE_THRESHOLD || measScore > 0.5)

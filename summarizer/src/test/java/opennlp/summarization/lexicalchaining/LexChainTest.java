@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LexChainTest {
 
-  private static final String article =
+  private static final String ARTICLE =
       "US President Barack Obama has welcomed an agreement between the US and Russia under which Syria's chemical weapons must be destroyed or removed by mid-2014 as an \"important step\"."
           + "But a White House statement cautioned that the US expected Syria to live up to its public commitments. "
           + "The US-Russian framework document stipulates that Syria must provide details of its stockpile within a week. "
@@ -52,14 +52,14 @@ class LexChainTest {
 
   @Test
   void testBuildLexicalChains() {
-    List<Sentence> sent = dp.getSentencesFromStr(article);
+    List<Sentence> sent = dp.getSentencesFromStr(ARTICLE);
     assertNotNull(sent);
-    List<LexicalChain> vh = lcs.buildLexicalChains(article, sent);
+    List<LexicalChain> vh = lcs.buildLexicalChains(ARTICLE, sent);
     assertNotNull(vh);
     Collections.sort(vh);
     assertTrue(vh.size() > 0);
 
-    List<Sentence> s = dp.getSentencesFromStr(article);
+    List<Sentence> s = dp.getSentencesFromStr(ARTICLE);
     Hashtable<String, Boolean> comp = new Hashtable<>();
 
     for (int i = vh.size() - 1; i >= Math.max(vh.size() - 50, 0); i--) {

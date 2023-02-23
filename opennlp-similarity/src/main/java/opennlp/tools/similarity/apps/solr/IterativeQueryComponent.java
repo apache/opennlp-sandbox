@@ -36,7 +36,7 @@ import org.apache.solr.search.QueryParsing;
 
 public class IterativeQueryComponent extends QueryComponent{
 	public static final String COMPONENT_NAME = "iterative_query";
-	public static final String[] fieldSequence = new String[]{"cat", "name", "content", "author"}; 
+	private static final String[] FIELD_SEQUENCE = new String[]{"cat", "name", "content", "author"};
 
 	/**
 	 * Run the query multiple times against various fields, trying to recognize search intention
@@ -47,10 +47,10 @@ public class IterativeQueryComponent extends QueryComponent{
 		NamedList<Object> nameValuePairs = rb.rsp.getValues();
 		nameValuePairs.remove("response");
 		rb.rsp.setAllValues(nameValuePairs);
-		rb = substituteField(rb, fieldSequence[0] );
+		rb = substituteField(rb, FIELD_SEQUENCE[0] );
 		super.process(rb);
 
-		for(int iter = 1; iter<fieldSequence.length; iter++){
+		for(int iter = 1; iter< FIELD_SEQUENCE.length; iter++){
 			nameValuePairs = rb.rsp.getValues();
 			ResultContext c = (ResultContext) nameValuePairs.get("response");
 			if (c!=null){			
@@ -58,7 +58,7 @@ public class IterativeQueryComponent extends QueryComponent{
 				if (dList.size()<1){
 					nameValuePairs.remove("response");
 					rb.rsp.setAllValues(nameValuePairs);
-					rb = substituteField(rb, fieldSequence[iter] );
+					rb = substituteField(rb, FIELD_SEQUENCE[iter] );
 
 					super.process(rb);
 				}

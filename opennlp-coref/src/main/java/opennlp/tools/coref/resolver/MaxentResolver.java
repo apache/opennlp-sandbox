@@ -52,8 +52,7 @@ public abstract class MaxentResolver extends AbstractResolver {
   /** Default feature value. */
   public static final String DEFAULT = "default";
 
-
-  private static final boolean debugOn = false;
+  private static final boolean DEBUG = false;
 
   private String modelName;
   private MaxentModel model;
@@ -84,7 +83,7 @@ public abstract class MaxentResolver extends AbstractResolver {
   /** The model for computing non-referential probabilities. */
   protected NonReferentialResolver nonReferentialResolver;
 
-  private static final String modelExtension = ".bin.gz";
+  private static final String MODEL_EXTENSION = ".bin.gz";
 
   /**
    * Creates a maximum-entropy-based resolver which will look the specified number of
@@ -123,7 +122,7 @@ public abstract class MaxentResolver extends AbstractResolver {
     this.modelName = modelDirectory + "/" + name;
     if (ResolverMode.TEST == this.mode) {
       try (DataInputStream dis = new DataInputStream(
-              new BufferedInputStream(new FileInputStream(modelName + modelExtension)))) {
+              new BufferedInputStream(new FileInputStream(modelName + MODEL_EXTENSION)))) {
         model = new BinaryGISModelReader(dis).getModel();
       }
       sameIndex = model.getIndex(SAME);
@@ -181,7 +180,7 @@ public abstract class MaxentResolver extends AbstractResolver {
     DiscourseEntity de;
     int ei = 0;
     double nonReferentialProbability = nonReferentialResolver.getNonReferentialProbability(ec);
-    if (debugOn) {
+    if (DEBUG) {
       System.err.println(this + ".resolve: " + ec.toText() + " -> " +  "null " + nonReferentialProbability);
     }
     for (; ei < getNumEntities(dm); ei++) {
@@ -191,7 +190,7 @@ public abstract class MaxentResolver extends AbstractResolver {
       }
       if (excluded(ec, de)) {
         candProbs[ei] = 0;
-        if (debugOn) {
+        if (DEBUG) {
           System.err.println("excluded " + this + ".resolve: " + ec.toText() + " -> " + de + " "
               + candProbs[ei]);
         }
@@ -206,7 +205,7 @@ public abstract class MaxentResolver extends AbstractResolver {
         catch (ArrayIndexOutOfBoundsException e) {
           candProbs[ei] = 0;
         }
-        if (debugOn) {
+        if (DEBUG) {
           System.err.println(this + ".resolve: " + ec.toText() + " -> " + de + " ("
               + ec.getGender() + "," + de.getGender() + ") " + candProbs[ei] + " " + lfeatures);
         }
@@ -284,7 +283,7 @@ public abstract class MaxentResolver extends AbstractResolver {
             List<String> features = getFeatures(mention, cde);
 
             //add Event to Model
-            if (debugOn) {
+            if (DEBUG) {
               System.err.println(this + ".retain: " + mention.getId() + " " + mention.toText()
                   + " -> " + entityMention.getId() + " " + cde);
             }
@@ -339,7 +338,7 @@ public abstract class MaxentResolver extends AbstractResolver {
   @Override
   public void train() throws IOException {
     if (ResolverMode.TRAIN == mode) {
-      if (debugOn) {
+      if (DEBUG) {
         System.err.println(this + " referential");
         FileWriter writer = new FileWriter(modelName + ".events");
         for (Event e : events) {
@@ -353,7 +352,7 @@ public abstract class MaxentResolver extends AbstractResolver {
       GISTrainer trainer = new GISTrainer();
       trainer.init(params, null);
       GISModel trainedModel = trainer.trainModel(ObjectStreamUtils.createObjectStream(events));
-      new BinaryGISModelWriter(trainedModel, new File(modelName + modelExtension)).persist();
+      new BinaryGISModelWriter(trainedModel, new File(modelName + MODEL_EXTENSION)).persist();
 
       nonReferentialResolver.train();
     }

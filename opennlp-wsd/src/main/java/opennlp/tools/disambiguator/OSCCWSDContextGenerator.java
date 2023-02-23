@@ -41,7 +41,7 @@ public class OSCCWSDContextGenerator implements WSDContextGenerator {
     for (int i = 0; i < toks.length; i++) {
       if (lemmas != null) {
 
-        if (!WSDHelper.stopWords.contains(toks[i].toLowerCase()) && (index
+        if (!WSDHelper.STOP_WORDS.contains(toks[i].toLowerCase()) && (index
           != i)) {
 
           String lemma = lemmas[i].toLowerCase().replaceAll("[^a-z_]", "")

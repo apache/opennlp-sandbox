@@ -187,9 +187,9 @@ public abstract class AbstractMentionFinder implements MentionFinder {
   }
 
   private boolean handledPronoun(String tok) {
-    return ResolverUtils.singularThirdPersonPronounPattern.matcher(tok).find() ||
-                 ResolverUtils.pluralThirdPersonPronounPattern.matcher(tok).find() ||
-                 ResolverUtils.speechPronounPattern.matcher(tok).find();
+    return ResolverUtils.SINGULAR_THIRD_PERSON_PRONOUN_PATTERN.matcher(tok).find() ||
+                 ResolverUtils.PLURAL_THIRD_PERSON_PRONOUN_PATTERN.matcher(tok).find() ||
+                 ResolverUtils.SPEECH_PRONOUN_PATTERN.matcher(tok).find();
   }
 
   private void collectPossesivePronouns(Parse np, List<Mention> entities) {

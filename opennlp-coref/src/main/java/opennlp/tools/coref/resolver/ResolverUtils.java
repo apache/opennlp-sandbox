@@ -39,49 +39,49 @@ import opennlp.tools.coref.sim.TestSimilarityModel;
 public class ResolverUtils {
   
   private static final Pattern ENDS_WITH_PERIOD = Pattern.compile("\\.$");
-  private static final Pattern initialCaps = Pattern.compile("^[A-Z]");
+  private static final Pattern INITIAL_CAPS = Pattern.compile("^[A-Z]");
 
   /** Regular expression for English singular third-person pronouns. */
-  public static final Pattern singularThirdPersonPronounPattern =
+  public static final Pattern SINGULAR_THIRD_PERSON_PRONOUN_PATTERN =
       Pattern.compile("^(he|she|it|him|her|his|hers|its|himself|herself|itself)$",Pattern.CASE_INSENSITIVE);
   /** Regular expression for English plural third-person pronouns. */
-  public static final Pattern pluralThirdPersonPronounPattern =
+  public static final Pattern PLURAL_THIRD_PERSON_PRONOUN_PATTERN =
       Pattern.compile("^(they|their|theirs|them|themselves)$",Pattern.CASE_INSENSITIVE);
   /** Regular expression for English speech pronouns. */
-  public static final Pattern speechPronounPattern =
+  public static final Pattern SPEECH_PRONOUN_PATTERN =
       Pattern.compile("^(I|me|my|you|your|you|we|us|our|ours)$",Pattern.CASE_INSENSITIVE);
   /** Regular expression for English female pronouns. */
-  public static final Pattern femalePronounPattern =
+  public static final Pattern FEMALE_PRONOUN_PATTERN =
       Pattern.compile("^(she|her|hers|herself)$",Pattern.CASE_INSENSITIVE);
   /** Regular expression for English neuter pronouns. */
-  public static final Pattern neuterPronounPattern =
+  public static final Pattern NEUTER_PRONOUN_PATTERN =
       Pattern.compile("^(it|its|itself)$",Pattern.CASE_INSENSITIVE);
   /** Regular expression for English first-person pronouns. */
-  public static final Pattern firstPersonPronounPattern =
+  public static final Pattern FIRST_PERSON_PRONOUN_PATTERN =
       Pattern.compile("^(I|me|my|we|our|us|ours)$",Pattern.CASE_INSENSITIVE);
   /** Regular expression for English singular second-person pronouns. */
-  public static final Pattern secondPersonPronounPattern =
+  public static final Pattern SECOND_PERSON_PRONOUN_PATTERN =
       Pattern.compile("^(you|your|yours)$",Pattern.CASE_INSENSITIVE);
   /** Regular expression for English third-person pronouns. */
-  public static final Pattern thirdPersonPronounPattern =
+  public static final Pattern THIRD_PERSON_PRONOUN_PATTERN =
       Pattern.compile("^(he|she|it|him|her|his|hers|its|himself|herself|itself|they|" +
       "their|theirs|them|themselves)$",Pattern.CASE_INSENSITIVE);
   /** Regular expression for English singular pronouns. */
-  public static final Pattern singularPronounPattern =
+  public static final Pattern SINGULAR_PRONOUN_PATTERN =
       Pattern.compile("^(I|me|my|he|she|it|him|her|his|hers|its|himself|herself|itself)$",
       Pattern.CASE_INSENSITIVE);
   /** Regular expression for English plural pronouns. */
-  public static final Pattern pluralPronounPattern =
+  public static final Pattern PLURAL_PRONOUN_PATTERN =
       Pattern.compile("^(we|us|our|ours|they|their|theirs|them|themselves)$",
       Pattern.CASE_INSENSITIVE);
   /** Regular expression for English male pronouns. */
-  public static final Pattern malePronounPattern =
+  public static final Pattern MALE_PRONOUN_PATTERN =
       Pattern.compile("^(he|him|his|himself)$",Pattern.CASE_INSENSITIVE);
   /** Regular expression for English honorifics. */
-  public static final Pattern honorificsPattern =
+  public static final Pattern HONORIFICS_PATTERN =
       Pattern.compile("[A-Z][a-z]+\\.$|^[A-Z][b-df-hj-np-tv-xz]+$");
   /** Regular expression for English corporate designators. */
-  public static final Pattern designatorsPattern =
+  public static final Pattern DESIGNATORS_PATTERN =
       Pattern.compile("[a-z]\\.$|^[A-Z][b-df-hj-np-tv-xz]+$|^Co(rp)?$");
 
   
@@ -185,7 +185,7 @@ public class ResolverUtils {
     Object[] mtokens = ec.getTokens();
     for (Object mtoken : mtokens) {
       String token = mtoken.toString();
-      if (!honorificsPattern.matcher(token).matches()) {
+      if (!HONORIFICS_PATTERN.matcher(token).matches()) {
         if (!first) {
           sb.append(" ");
         }
@@ -387,7 +387,7 @@ public class ResolverUtils {
     }
     if (start + 1 != end) { // don't do this on head words, to keep "U.S."
       //strip off honorifics in begining
-      if (honorificsPattern.matcher(mtokens[start].toString()).find()) {
+      if (HONORIFICS_PATTERN.matcher(mtokens[start].toString()).find()) {
         start++;
       }
       if (start == end) {
@@ -395,7 +395,7 @@ public class ResolverUtils {
         return null;
       }
       //strip off and honerifics on the end
-      if (designatorsPattern.matcher(mtokens[mtokens.length - 1].toString()).find()) {
+      if (DESIGNATORS_PATTERN.matcher(mtokens[mtokens.length - 1].toString()).find()) {
         end--;
       }
     }
@@ -415,7 +415,7 @@ public class ResolverUtils {
     for (Iterator<MentionContext> ei = de.getMentions(); ei.hasNext();) {
       MentionContext xec = ei.next();
       String xecHeadTag = xec.getHeadTokenTag();
-      if (xecHeadTag.startsWith("NNP") || initialCaps.matcher(xec.getHeadTokenText()).find()) {
+      if (xecHeadTag.startsWith("NNP") || INITIAL_CAPS.matcher(xec.getHeadTokenText()).find()) {
         return xec;
       }
     }
@@ -424,19 +424,19 @@ public class ResolverUtils {
 
   private static Map<String, String> getPronounFeatureMap(String pronoun) {
     Map<String, String> pronounMap = new HashMap<>();
-    if (malePronounPattern.matcher(pronoun).matches()) {
+    if (MALE_PRONOUN_PATTERN.matcher(pronoun).matches()) {
       pronounMap.put("gender","male");
     }
-    else if (femalePronounPattern.matcher(pronoun).matches()) {
+    else if (FEMALE_PRONOUN_PATTERN.matcher(pronoun).matches()) {
       pronounMap.put("gender","female");
     }
-    else if (neuterPronounPattern.matcher(pronoun).matches()) {
+    else if (NEUTER_PRONOUN_PATTERN.matcher(pronoun).matches()) {
       pronounMap.put("gender","neuter");
     }
-    if (singularPronounPattern.matcher(pronoun).matches()) {
+    if (SINGULAR_PRONOUN_PATTERN.matcher(pronoun).matches()) {
       pronounMap.put("number","singular");
     }
-    else if (pluralPronounPattern.matcher(pronoun).matches()) {
+    else if (PLURAL_PRONOUN_PATTERN.matcher(pronoun).matches()) {
       pronounMap.put("number","plural");
     }
     /*
@@ -651,13 +651,13 @@ public class ResolverUtils {
    * @return the gender of the specified pronoun.
    */
   public static String getPronounGender(String pronoun) {
-    if (malePronounPattern.matcher(pronoun).matches()) {
+    if (MALE_PRONOUN_PATTERN.matcher(pronoun).matches()) {
       return "m";
     }
-    else if (femalePronounPattern.matcher(pronoun).matches()) {
+    else if (FEMALE_PRONOUN_PATTERN.matcher(pronoun).matches()) {
       return "f";
     }
-    else if (neuterPronounPattern.matcher(pronoun).matches()) {
+    else if (NEUTER_PRONOUN_PATTERN.matcher(pronoun).matches()) {
       return "n";
     }
     else {

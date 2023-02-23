@@ -25,20 +25,19 @@ import java.util.List;
 import org.apache.commons.io.FileUtils;
 
 public class EmailTrainingSetFormer {
-	static final String dataDir = "/Users/bgalitsky/Downloads/";
-	static final String//enron_with_categories/",
-			fileListFile = "cats4_11-17.txt";
-	static final String destinationDir = "/Users/bgalitsky/Documents/ENRON/data11_17/";
+	static final String DATA_DIR = "/Users/bgalitsky/Downloads/";
+	static final String FILE_LIST_FILE = "cats4_11-17.txt";
+	static final String DESTINATION_DIR = "/Users/bgalitsky/Documents/ENRON/data11_17/";
 
 	//enron_with_categories/5/70665.cats:4,10,1
 	public static void  createPosTrainingSet(){
 		try {
-			List<String> lines = FileUtils.readLines(new File(dataDir+fileListFile), StandardCharsets.UTF_8);
+			List<String> lines = FileUtils.readLines(new File(DATA_DIR + FILE_LIST_FILE), StandardCharsets.UTF_8);
 			for(String l: lines){
 				int endOfFname = l.indexOf('.'), startOfFname = l.lastIndexOf('/');
-				String filenameOld =dataDir+ l.substring(0, endOfFname)+".txt";
+				String filenameOld = DATA_DIR + l.substring(0, endOfFname)+".txt";
 				String content = normalize(new File(filenameOld));
-				String filenameNew = destinationDir  + l.substring(startOfFname+1, endOfFname)+".txt";
+				String filenameNew = DESTINATION_DIR + l.substring(startOfFname+1, endOfFname)+".txt";
 				//FileUtils.copyFile(new File(filenameOld), new File(filenameNew));
 				FileUtils.writeStringToFile(new File(filenameNew), content, StandardCharsets.UTF_8);
 			}
@@ -61,12 +60,12 @@ public class EmailTrainingSetFormer {
 		StringBuilder buf = new StringBuilder();
 		for(String l: lines){
 			boolean bAccept = true;
-			for(String h: EmailNormalizer.headers){
+			for(String h: EmailNormalizer.HEADERS){
 				if (l.startsWith(h)){
 					bAccept = false;
 				}
 			}
-			for(String h: EmailNormalizer.prohibitedStrings){
+			for(String h: EmailNormalizer.PROHIBITED_STRINGS){
 				if (l.indexOf(h)>0){
 					bAccept = false;
 				}

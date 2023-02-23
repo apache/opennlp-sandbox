@@ -53,7 +53,7 @@ public class TextRank {
   // private Hashtable<Integer, String[]> wordsInSent;
 
   // DAMPING FACTOR..
-  private static final double df = 0.15;
+  private static final double DF = 0.15;
   private static final boolean HIGHER_TITLE_WEIGHT = true;
   private static final double TITLE_WRD_WT = 2d;
 
@@ -150,7 +150,7 @@ public class TextRank {
             sum += wij / sigmawjk * txtRnkj;
           }
         }
-        ns.setScore((1d - df) + sum * df);// * rs.score
+        ns.setScore((1d - DF) + sum * DF);// * rs.score
         totErr += ns.getScore() - getScoreFrom(rawScores, sentId);
         newWtScores.add(ns);
       }
