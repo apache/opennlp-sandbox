@@ -96,7 +96,7 @@ public class AnomalyDetectionUtils {
   private static double calculateGaussianProbability(TrainingExample x, double[] mus,
                                                      double[] sigmas) {
     assert mus.length == sigmas.length : "parameters not aligned";
-    BigDecimal px = new BigDecimal(1d);
+    BigDecimal px = new BigDecimal("1");
     for (int i = 0; i < mus.length; i++) {
       BigDecimal firstTerm = BigDecimal.ONE.divide(BigDecimal.valueOf(Math.sqrt(2d * Math.PI * sigmas[i])), RoundingMode.CEILING);
       BigDecimal secondTerm = BigDecimal.valueOf(Math.exp(-1 * (Math.pow(x.getInputs()[i] - mus[i], 2) / (2 * Math.pow(sigmas[i], 2)))));
