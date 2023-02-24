@@ -50,7 +50,7 @@ public class SingularPronounResolver extends MaxentResolver {
     //System.err.println("MaxentSingularPronounResolver.canResolve: ec= ("+mention.id+") "+ mention.toText());
     String tag = mention.getHeadTokenTag();
     return tag != null && tag.startsWith("PRP")
-        && ResolverUtils.singularThirdPersonPronounPattern.matcher(mention.getHeadTokenText()).matches();
+        && ResolverUtils.SINGULAR_THIRD_PERSON_PRONOUN_PATTERN.matcher(mention.getHeadTokenText()).matches();
   }
 
   @Override
@@ -111,7 +111,7 @@ public class SingularPronounResolver extends MaxentResolver {
       MentionContext entityMention = ei.next();
       String tag = entityMention.getHeadTokenTag();
       if (tag != null && tag.startsWith("PRP")
-          && ResolverUtils.singularThirdPersonPronounPattern.matcher(mention.getHeadTokenText()).matches()) {
+          && ResolverUtils.SINGULAR_THIRD_PERSON_PRONOUN_PATTERN.matcher(mention.getHeadTokenText()).matches()) {
         if (mentionGender == null) { //lazy initialization
           mentionGender = ResolverUtils.getPronounGender(mention.getHeadTokenText());
         }

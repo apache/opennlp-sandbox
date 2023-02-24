@@ -40,7 +40,7 @@ public class StoryDiscourseNavigator {
 	private final PStemmer ps = new PStemmer();
 	final PageFetcher pFetcher = new PageFetcher();
 
-	public static final String[] frequentPerformingVerbs = {
+	public static final String[] FREQUENT_PERFORMING_VERBS = {
 		" born raised meet learn ", " graduated enter discover",
 		" facts inventions life ", "accomplishments childhood timeline",
 		" acquire befriend encounter", " achieve reache describe ",

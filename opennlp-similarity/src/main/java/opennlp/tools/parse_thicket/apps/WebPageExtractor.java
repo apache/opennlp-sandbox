@@ -34,7 +34,7 @@ public class WebPageExtractor {
 	protected ParserChunker2MatcherProcessor nlProc;
 	protected final MostFrequentWordsFromPageGetter mostFrequentWordsFromPageGetter = new MostFrequentWordsFromPageGetter();
 
-	protected static final int sentThresholdLength = 70;
+	protected static final int SENT_THRESHOLD_LENGTH = 70;
 
 	public List<String[]> extractSentencesWithPotentialProductKeywords(String url)
 	{
@@ -111,7 +111,7 @@ public class WebPageExtractor {
 					continue;
 				if (s.indexOf('|')>-1)
 					continue;
-				if (s == null || s.trim().length() < sentThresholdLength || s.length() < sentThresholdLength + 10)
+				if (s == null || s.trim().length() < SENT_THRESHOLD_LENGTH || s.length() < SENT_THRESHOLD_LENGTH + 10)
 					continue;
 				if (GeneratedSentenceProcessor.acceptableMinedSentence(s)==null){
 					// TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful

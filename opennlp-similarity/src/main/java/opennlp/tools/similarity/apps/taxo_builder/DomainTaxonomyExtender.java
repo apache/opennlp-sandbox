@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -34,14 +33,7 @@ import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.TextProcessor;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
-/**
-
- * 
- */
-
 public class DomainTaxonomyExtender {
-	private static final Logger LOG = Logger
-			.getLogger("opennlp.tools.similarity.apps.taxo_builder.DomainTaxonomyExtender");
 
 	private final BingQueryRunner brunner = new BingQueryRunner();
 	private final ParserChunker2MatcherProcessor matcher = ParserChunker2MatcherProcessor.getInstance();
@@ -161,7 +153,7 @@ public class DomainTaxonomyExtender {
 						String snapshot2 = StringCleaner.processSnapshotForMatching(h2
 								.getTitle() + " " + h2.getAbstractText());
 						 SentencePairMatchResult overlaps = matcher.assessRelevance(snapshot1, snapshot2);
-						genResult.addAll(overlaps.matchResult);
+						genResult.addAll(overlaps.getMatchResult());
 					}
 				}
 			}

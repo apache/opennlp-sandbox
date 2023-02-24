@@ -47,9 +47,10 @@ import org.apache.lucene.store.FSDirectory;
 import org.json.JSONObject;
 
 public class DocClassifier {
+
+	private static final Log LOGGER = LogFactory.getLog(DocClassifier.class);
 	public static final String DOC_CLASSIFIER_KEY = "doc_class";
-	public static final String resourceDir = null;
-	public static final Log logger = LogFactory.getLog(DocClassifier.class);
+	public static final String RESOURCE_DIR = null;
 	private Map<String, Float> scoredClasses;
 	
 
@@ -57,7 +58,7 @@ public class DocClassifier {
 	protected static IndexReader indexReader = null;
 	protected static IndexSearcher indexSearcher = null;
 	// resource directory plus the index folder
-	private static final String INDEX_PATH = resourceDir
+	private static final String INDEX_PATH = RESOURCE_DIR
 			+ ClassifierTrainingSetIndexer.INDEX_PATH;
 
 	// http://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm
@@ -90,8 +91,8 @@ public class DocClassifier {
 	// for classification
 
 	// these are categories from the index
-	public static final String[] categories = new String[] { "legal", "health",
-		"finance", "computing", "engineering", "business" };
+	public static final String[] CATEGORIES = new String[]
+					{ "legal", "health", "finance", "computing", "engineering", "business" };
 
 	static {
 		synchronized (DocClassifier.class) {
@@ -100,13 +101,13 @@ public class DocClassifier {
 			try {
 				indexDirectory = FSDirectory.open(new File(INDEX_PATH).toPath());
 			} catch (IOException e2) {
-				logger.error("problem opening index " + e2);
+				LOGGER.error("problem opening index " + e2);
 			}
 			try {
 				indexReader = DirectoryReader.open(indexDirectory);
 				indexSearcher = new IndexSearcher(indexReader);
 			} catch (IOException e2) {
-				logger.error("problem reading index \n" + e2);
+				LOGGER.error("problem reading index \n" + e2);
 			}
 		}
 	}
@@ -141,9 +142,9 @@ public class DocClassifier {
 			hits = indexSearcher
 					.search(query, MAX_DOCS_TO_USE_FOR_CLASSIFY + 2);
 		} catch (IOException e1) {
-			logger.error("problem searching index \n" + e1);
+			LOGGER.error("problem searching index \n" + e1);
 		}
-		logger.debug("Found " + hits.totalHits + " hits for " + queryStr);
+		LOGGER.debug("Found " + hits.totalHits + " hits for " + queryStr);
 		int count = 0;
 		
 
@@ -152,7 +153,7 @@ public class DocClassifier {
 			try {
 				doc = indexSearcher.doc(scoreDoc.doc);
 			} catch (IOException e) {
-				logger.error("Problem searching training set for classif \n"
+				LOGGER.error("Problem searching training set for classif \n"
 						+ e);
 				continue;
 			}
@@ -164,7 +165,7 @@ public class DocClassifier {
 			else
 				scoredClasses.put(flag, scoreForClass + scoreDoc.score);
 
-			logger.debug(" <<categorized as>> " + flag + " | score="
+			LOGGER.debug(" <<categorized as>> " + flag + " | score="
 					+ scoreDoc.score + " \n text =" + doc.get("text") + "\n");
 
 			if (count > MAX_DOCS_TO_USE_FOR_CLASSIFY) {
@@ -180,7 +181,7 @@ public class DocClassifier {
 				if (scoredClasses.get(key) > MIN_TOTAL_SCORE_FOR_CATEGORY)
 					resultsAboveThresh.add(key);
 				else
-					logger.debug("Too low score of " + scoredClasses.get(key)
+					LOGGER.debug("Too low score of " + scoredClasses.get(key)
 							+ " for category = " + key);
 			}
 
@@ -192,7 +193,7 @@ public class DocClassifier {
 			else
 				results = resultsAboveThresh;
 		} catch (Exception e) {
-			logger.error("Problem aggregating search results\n" + e);
+			LOGGER.error("Problem aggregating search results\n" + e);
 		}
 		if (results.size() < 2)
 			return results;
@@ -253,7 +254,7 @@ public class DocClassifier {
 		try {
 			indexReader.close();
 		} catch (IOException e) {
-			logger.error("Problem closing index \n" + e);
+			LOGGER.error("Problem closing index \n" + e);
 		}
 	}	
 	
@@ -280,12 +281,12 @@ public class DocClassifier {
 				classifResults = classifySentence(query);
 				if (classifResults != null && classifResults.size() > 0) {
 					localCats.addAll(classifResults);
-					logger.debug(sentence + " =>  " + classifResults);
+					LOGGER.debug(sentence + " =>  " + classifResults);
 				}
 			}
 
 		} catch (Exception e) {
-			logger.error("Problem classifying sentence\n " + e);
+			LOGGER.error("Problem classifying sentence\n " + e);
 		}
 		
 		List<String> aggrResults = new ArrayList<>();
@@ -293,9 +294,9 @@ public class DocClassifier {
 
 			aggrResults = localCats.getFrequentTags();
 
-			logger.debug(localCats.getFrequentTags());
+			LOGGER.debug(localCats.getFrequentTags());
 		} catch (Exception e) {
-			logger.error("Problem aggregating search results\n" + e);
+			LOGGER.error("Problem aggregating search results\n" + e);
 		}
 		return aggrResults;
 	}

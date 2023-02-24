@@ -43,7 +43,7 @@ public class EmailNormalizer {
 		}
 	}
 	
-	public static final String[] headers = new String[] {
+	static final String[] HEADERS = new String[] {
 		"Message-ID:",
 		"Date:",
 		"From:",
@@ -62,12 +62,10 @@ public class EmailNormalizer {
 		"----",
 	};
 	
-	public static final String[] prohibitedStrings = new String[] {
-		"@", "<", ">"
-	};
+	static final String[] PROHIBITED_STRINGS = new String[] {"@", "<", ">"};
 
 	public void normalizeAndWriteIntoANewFile(File f){
-		String content="";
+		String content = "";
 		try {
 			content = FileUtils.readFileToString(f, StandardCharsets.UTF_8);
 		} catch (IOException e) {
@@ -77,12 +75,12 @@ public class EmailNormalizer {
 		StringBuilder buf = new StringBuilder();
 		for(String l: lines){
 			boolean bAccept = true;
-			for(String h: headers){
+			for(String h: HEADERS){
 				if (l.startsWith(h)){
 					bAccept = false;
 				}
 			}
-			for(String h: prohibitedStrings){
+			for(String h: PROHIBITED_STRINGS){
 				if (l.indexOf(h)>0){
 					bAccept = false;
 				}

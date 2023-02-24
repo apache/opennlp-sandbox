@@ -43,7 +43,7 @@ public class NL2Obj {
 	    parser = ParserChunker2MatcherProcessor.getInstance();
 	  }
 
-  public static final String[] epistemicStatesList = new String[] {
+  static final String[] EPISTEMIC_STATES_LIST = new String[] {
     "select", "verify", "find", "start", "stop", "go", "check"
   };
 
@@ -156,7 +156,7 @@ public class NL2Obj {
   }
 
   private boolean isControlOp(String methodOrControlOp) {
-    return Arrays.asList(epistemicStatesList).contains(methodOrControlOp);
+    return Arrays.asList(EPISTEMIC_STATES_LIST).contains(methodOrControlOp);
   }
 
   protected List<ParseTreeChunk> applyWhichRuleOnVP(List<ParseTreeChunk> actionWithObject) {

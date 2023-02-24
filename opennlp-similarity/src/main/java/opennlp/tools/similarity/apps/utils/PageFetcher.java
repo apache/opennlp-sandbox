@@ -33,7 +33,7 @@ import org.apache.tika.parser.Parser;
 import org.apache.tika.sax.BodyContentHandler;
 
 public class PageFetcher {
-  private static final Logger log = Logger.getLogger("opennlp.tools.similarity.apps.utils.PageFetcher");
+  private static final Logger LOG = Logger.getLogger("opennlp.tools.similarity.apps.utils.PageFetcher");
   private final Tika tika = new Tika();
 
   private static int DEFAULT_TIMEOUT = 1500;
@@ -63,7 +63,7 @@ public class PageFetcher {
 
       pageContent = handler.toString();
     } catch (Exception e) {
-      log.severe(e.getMessage() + "\n" + e);
+      LOG.severe(e.getMessage() + "\n" + e);
     }
     return  pageContent;
   }
@@ -79,7 +79,7 @@ public class PageFetcher {
       pageContent = tika.parseToString(connection.getInputStream())
           .replace('\n', ' ').replace('\t', ' ');
     } catch (IOException | TikaException e) {
-      log.severe(e.getMessage() + "\n" + e);
+      LOG.severe(e.getMessage() + "\n" + e);
     }
     return pageContent;
   }
@@ -97,7 +97,7 @@ public class PageFetcher {
   }
 
   public String fetchOrigHTML(String url) {
-    log.info("fetch url " + url);
+    LOG.info("fetch url " + url);
     StringBuilder buf = new StringBuilder();
     try {
       URLConnection connection = new URL(url).openConnection();
@@ -113,7 +113,7 @@ public class PageFetcher {
             connection.getInputStream()));
       } catch (Exception e) {
         // we don't always need to log trial web pages if access fails
-        log.severe(e.toString());
+        LOG.severe(e.toString());
       }
 
       while ((line = reader.readLine()) != null) {

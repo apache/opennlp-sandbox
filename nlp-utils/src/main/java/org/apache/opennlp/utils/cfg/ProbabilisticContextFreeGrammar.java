@@ -41,15 +41,15 @@ public class ProbabilisticContextFreeGrammar {
   private final String startSymbol;
   private final boolean randomExpansion;
 
-  private static final Rule emptyRule = new Rule("EMPTY~", "");
+  private static final Rule EMPTY_RULE = new Rule("EMPTY~", "");
 
-  private static final String nonTerminalMatcher = "[\\w\\~\\*\\-\\.\\,\\'\\:\\_\\\"]";
-  private static final String terminalMatcher = "[\\*òàùìèé\\|\\w\\'\\.\\,\\:\\_Ù\\?È\\%\\;À\\-\\\"]";
+  private static final String NON_TERMINAL_MATCHER = "[\\w\\~\\*\\-\\.\\,\\'\\:\\_\\\"]";
+  private static final String TERMINAL_MATCHER = "[\\*òàùìèé\\|\\w\\'\\.\\,\\:\\_Ù\\?È\\%\\;À\\-\\\"]";
 
-  private static final Pattern terminalPattern = Pattern.compile("\\(("+nonTerminalMatcher+"+)\\s("+terminalMatcher+"+)\\)");
-  private static final Pattern nonTerminalPattern = Pattern.compile(
-          "\\(("+nonTerminalMatcher+"+)" + // source NT
-                  "\\s("+nonTerminalMatcher+"+)((\\s"+nonTerminalMatcher+"+)*)\\)" // expansion NTs
+  private static final Pattern TERMINAL_PATTERN = Pattern.compile("\\(("+ NON_TERMINAL_MATCHER +"+)\\s("+ TERMINAL_MATCHER +"+)\\)");
+  private static final Pattern NON_TERMINAL_PATTERN = Pattern.compile(
+          "\\(("+ NON_TERMINAL_MATCHER +"+)" + // source NT
+                  "\\s("+ NON_TERMINAL_MATCHER +"+)((\\s"+ NON_TERMINAL_MATCHER +"+)*)\\)" // expansion NTs
   );
 
   public ProbabilisticContextFreeGrammar(Collection<String> nonTerminalSymbols, Collection<String> terminalSymbols,
@@ -255,7 +255,7 @@ public class ProbabilisticContextFreeGrammar {
 
     @Override
     public String toString() {
-      if (getRule() != emptyRule) {
+      if (getRule() != EMPTY_RULE) {
         return "(" +
                 (rule != null ? rule.getEntry() : null) + " " +
                 (leftTree != null && rightTree != null ?
@@ -295,10 +295,10 @@ public class ProbabilisticContextFreeGrammar {
     Collection<String> nonTerminals = new HashSet<>();
     Collection<String> terminals = new HashSet<>();
 
-    rules.put(emptyRule, 1d);
-    rulesMap.put(emptyRule, 1d);
-    nonTerminals.add(emptyRule.getEntry());
-    terminals.add(emptyRule.getExpansion()[0]);
+    rules.put(EMPTY_RULE, 1d);
+    rulesMap.put(EMPTY_RULE, 1d);
+    nonTerminals.add(EMPTY_RULE.getEntry());
+    terminals.add(EMPTY_RULE.getExpansion()[0]);
 
     for (String parseTreeString : parseStrings) {
 
@@ -308,7 +308,7 @@ public class ProbabilisticContextFreeGrammar {
 
       String toConsume = String.valueOf(parseTreeString);
 
-      Matcher m = terminalPattern.matcher(parseTreeString);
+      Matcher m = TERMINAL_PATTERN.matcher(parseTreeString);
       while (m.find()) {
         String nt = m.group(1);
         String t = m.group(2);
@@ -321,7 +321,7 @@ public class ProbabilisticContextFreeGrammar {
       }
 
       while (toConsume.contains(" ") && !toConsume.trim().equals("( " + startSymbol + " )")) {
-        Matcher m2 = nonTerminalPattern.matcher(toConsume);
+        Matcher m2 = NON_TERMINAL_PATTERN.matcher(toConsume);
         while (m2.find()) {
           String nt = m2.group(1);
           String t1 = m2.group(2);
@@ -370,7 +370,7 @@ public class ProbabilisticContextFreeGrammar {
       if (!terminals.contains(firstExpansion)) {
         if (nonTerminals.contains(firstExpansion)) {
           // nt1 -> nt2 should be expanded in nt1 -> nt2,E
-          Rule newRule = new Rule(rule.getEntry(), firstExpansion, emptyRule.getEntry());
+          Rule newRule = new Rule(rule.getEntry(), firstExpansion, EMPTY_RULE.getEntry());
           addRule(newRule, rulesMap);
         } else {
           throw new RuntimeException("rule "+rule+" expands to neither a terminal or non terminal");

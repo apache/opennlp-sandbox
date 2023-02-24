@@ -26,19 +26,19 @@ import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcess
 public class NL2ObjCreateAssign extends NL2Obj {
 
 	private boolean classBeingDefined = false;
-	public static String[] declarationStatesList = new String[] {
+	static final String[] DECLARATION_STATES_LIST = new String[] {
 		"create", "assign", "set", 
 	};
 
-	public static final String[] dataTypesList = new String[] {
+	static final String[] DATA_TYPES_LIST = new String[] {
 		"text", "double", "array", 
 	};
 
-	public static final String[] arrayElementList = new String[] {
+	static final String[] ARRAY_ELEMENT_LIST = new String[] {
 		"first", "second", "third", "fourth" 
 	};
 
-	public static final String[] arrayElementListInsdex = new String[] {
+	static final String[] ARRAY_ELEMENT_LIST_INSDEX = new String[] {
 		"0", "1", "2", "3" 
 	};
 
@@ -91,12 +91,12 @@ public class NL2ObjCreateAssign extends NL2Obj {
 				}
 				String dataType = verbChunk.getLemmas().get(1).toLowerCase();
 
-				if (classBeingDefined && Arrays.asList(dataTypesList).contains(dataType) && verbChunk.getLemmas().get(2).toLowerCase().equals("attribute")){
+				if (classBeingDefined && Arrays.asList(DATA_TYPES_LIST).contains(dataType) && verbChunk.getLemmas().get(2).toLowerCase().equals("attribute")){
 					op.setOperatorFor(dataType + " "+verbChunk.getLemmas().get(verbChunk.getLemmas().size()-1).toLowerCase());
 					classBeingDefined = true;
 					break;
 				}
-				if (Arrays.asList(dataTypesList).contains(dataType) && verbChunk.getLemmas().get(2).toLowerCase().equals("attribute")){
+				if (Arrays.asList(DATA_TYPES_LIST).contains(dataType) && verbChunk.getLemmas().get(2).toLowerCase().equals("attribute")){
 					op.setOperatorFor(dataType + " "+verbChunk.getLemmas().get(verbChunk.getLemmas().size()-1).toLowerCase());
 					classBeingDefined = true;
 					break;
@@ -126,9 +126,9 @@ public class NL2ObjCreateAssign extends NL2Obj {
 					numElements = lems.indexOf("object");
 				if (numElements<0)
 					numElements = lems.indexOf("member");
-				if (Arrays.asList(arrayElementList).contains(lems.get(numElements-1))){
-					int arrIndex = Arrays.asList(arrayElementList).indexOf(lems.get(numElements-1));
-					String indexValue = arrayElementListInsdex[arrIndex]; 
+				if (Arrays.asList(ARRAY_ELEMENT_LIST).contains(lems.get(numElements-1))){
+					int arrIndex = Arrays.asList(ARRAY_ELEMENT_LIST).indexOf(lems.get(numElements-1));
+					String indexValue = ARRAY_ELEMENT_LIST_INSDEX[arrIndex];
 
 					String arrayName = lems.get(lems.size()-1);
 					if (expression!=null)

@@ -41,9 +41,8 @@ public class SearchResultsReRankerRequestHandler extends SearchHandler {
 	private final static int MAX_SEARCH_RESULTS = 100;
 	private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
 	private ParserChunker2MatcherProcessor sm = null;
-	private static final String resourceDir = "/home/solr/solr-4.4.0/example/src/test/resources";
+	private static final String RESOURCE_DIR = "/home/solr/solr-4.4.0/example/src/test/resources";
 	//"C:/workspace/TestSolr/src/test/resources";
-
 	//"/data1/solr/example/src/test/resources";
 
 	public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp){
@@ -169,7 +168,7 @@ public class SearchResultsReRankerRequestHandler extends SearchHandler {
 	private List<HitBase> calculateMatchScoreResortHits(List<HitBase> hits,
 			String searchQuery) {
 		try {
-			sm =  ParserChunker2MatcherProcessor.getInstance(resourceDir);
+			sm =  ParserChunker2MatcherProcessor.getInstance(RESOURCE_DIR);
 		} catch (Exception e){
 			LOG.severe(e.getMessage());
 		}

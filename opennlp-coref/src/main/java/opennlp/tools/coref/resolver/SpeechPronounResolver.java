@@ -80,7 +80,7 @@ public class SpeechPronounResolver extends MaxentResolver {
   public boolean canResolve(MentionContext mention) {
     String tag = mention.getHeadTokenTag();
     boolean fpp = tag != null && tag.startsWith("PRP")
-        && ResolverUtils.speechPronounPattern.matcher(mention.getHeadTokenText()).matches();
+        && ResolverUtils.SPEECH_PRONOUN_PATTERN.matcher(mention.getHeadTokenText()).matches();
     boolean pn = tag != null && tag.startsWith("NNP");
     return (fpp || pn);
   }

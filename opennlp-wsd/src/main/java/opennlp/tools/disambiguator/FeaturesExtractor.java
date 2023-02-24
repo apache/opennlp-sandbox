@@ -81,7 +81,7 @@ public class FeaturesExtractor {
 
     for (int i = 0; i < wordToDisambiguate.getSentence().length; i++) {
       if (wordToDisambiguate.getLemmas() != null) {
-        if (!WSDHelper.stopWords.contains(wordToDisambiguate.getSentence()[i]
+        if (!WSDHelper.STOP_WORDS.contains(wordToDisambiguate.getSentence()[i]
             .toLowerCase()) && (wordToDisambiguate.getWordIndex() != i)) {
 
           String lemma = wordToDisambiguate.getLemmas()[i].toLowerCase()

@@ -53,7 +53,7 @@ public class JWNLDictionary implements Dictionary {
 
   private final net.didion.jwnl.dictionary.Dictionary dict;
   private MorphologicalProcessor morphy;
-  private static final String[] empty = new String[0];
+  private static final String[] EMPTY = new String[0];
 
   public JWNLDictionary(String searchDirectory) throws IOException, JWNLException {
     PointerType.initialize();
@@ -162,7 +162,7 @@ public class JWNLDictionary implements Dictionary {
         return parents.toArray(new String[parents.size()]);
       }
       else {
-        return empty;
+        return EMPTY;
       }
     }
     catch (JWNLException e) {

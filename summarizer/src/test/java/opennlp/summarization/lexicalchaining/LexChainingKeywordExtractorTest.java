@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class LexChainingKeywordExtractorTest {
 
-  private static final String article =
+  private static final String ARTICLE =
       "US President Barack Obama has welcomed an agreement between the US and Russia under which Syria's chemical weapons must be destroyed or removed by mid-2014 as an \"important step\"."
           + "But a White House statement cautioned that the US expected Syria to live up to its public commitments. "
           + "The US-Russian framework document stipulates that Syria must provide details of its stockpile within a week. "
@@ -49,8 +49,8 @@ class LexChainingKeywordExtractorTest {
 
   @Test
   void testGetKeywords() {
-    List<Sentence> sent = dp.getSentencesFromStr(article);
-    List<LexicalChain> vh = lcs.buildLexicalChains(article, sent);
+    List<Sentence> sent = dp.getSentencesFromStr(ARTICLE);
+    List<LexicalChain> vh = lcs.buildLexicalChains(ARTICLE, sent);
     LexChainingKeywordExtractor ke = new LexChainingKeywordExtractor();
     List<String> keywords = ke.getKeywords(vh, 5);
     assertNotNull(keywords);

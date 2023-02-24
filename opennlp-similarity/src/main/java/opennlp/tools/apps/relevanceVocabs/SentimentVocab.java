@@ -103,7 +103,7 @@ public class SentimentVocab {
 	public static final int SENTIMENT_UNKNOWN = 0;
 	public static final int SENTIMENT_NEGATIVE = -1;
 
-	private static final SentimentVocab instance = new SentimentVocab();
+	private static final SentimentVocab INSTANCE = new SentimentVocab();
 
 	// complete sentiment word map, key = word, value = sentiment object
 	private final Map<String, Sentiment> sentimentMap = new HashMap<>();
@@ -122,7 +122,7 @@ public class SentimentVocab {
 	}
 
 	public static SentimentVocab getInstance() {
-		return instance;
+		return INSTANCE;
 	}
 
 	public Sentiment getSentiment(String word) {

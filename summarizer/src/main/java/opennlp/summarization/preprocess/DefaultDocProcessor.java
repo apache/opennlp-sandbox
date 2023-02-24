@@ -142,7 +142,6 @@ public class DefaultDocProcessor implements DocProcessor {
   //List of sentences form a document
   public List<Sentence> docToSentList(String fileName) {
     List<Sentence> sentList = new ArrayList<>();
-    StringBuilder docBuffer = new StringBuilder();
 
     try (LineNumberReader lnr = new LineNumberReader(new FileReader(fileName))) {
       String nextLine;
@@ -168,7 +167,6 @@ public class DefaultDocProcessor implements DocProcessor {
         }
       }
 
-      String doc = docBuffer.toString();
     } catch (Exception ex) {
       Logger.getLogger(DefaultDocProcessor.class.getName()).log(Level.SEVERE, null, ex);
     }

@@ -36,7 +36,7 @@ public class WSDisambiguatorME extends WSDisambiguator {
 
   protected WSDModel model;
 
-  protected static final WSDContextGenerator cg = new IMSWSDContextGenerator();
+  protected static final WSDContextGenerator CONTEXT_GENERATOR = new IMSWSDContextGenerator();
 
   public WSDisambiguatorME(WSDParameters params) {
     this.params = params;
@@ -78,7 +78,7 @@ public class WSDisambiguatorME extends WSDisambiguator {
       wordTag = sample.getTargetWordTag();
       do {
         String sense = sample.getSenseIDs()[0];
-        String[] context = cg
+        String[] context = CONTEXT_GENERATOR
           .getContext(sample, ((WSDDefaultParameters) params).ngram,
             ((WSDDefaultParameters) params).windowSize, surroundingContext);
         Event ev = new Event(sense + "", context);
@@ -136,7 +136,7 @@ public class WSDisambiguatorME extends WSDisambiguator {
 
           String outcome;
 
-          String[] context = cg
+          String[] context = CONTEXT_GENERATOR
             .getContext(sample, ((WSDDefaultParameters) this.params).ngram,
               ((WSDDefaultParameters) this.params).windowSize,
               this.model.getContextEntries());
@@ -162,7 +162,7 @@ public class WSDisambiguatorME extends WSDisambiguator {
       } else {
         String outcome;
 
-        String[] context = cg
+        String[] context = CONTEXT_GENERATOR
           .getContext(sample, ((WSDDefaultParameters) this.params).ngram,
             ((WSDDefaultParameters) this.params).windowSize,
             this.model.getContextEntries());

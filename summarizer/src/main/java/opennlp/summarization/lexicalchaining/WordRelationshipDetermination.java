@@ -46,7 +46,7 @@ import edu.mit.jwi.RAMDictionary;
 public class WordRelationshipDetermination {
 
   private final IDictionary dictionary;
-  private static final String dictionaryFile = "/wordnet/dict";
+  private static final String DICTIONARY_FILE = "/wordnet/dict";
   private static final int MAX_DIST_MED_REL = 1000;
 
   private final Pointer[] rels = {Pointer.ANTONYM, Pointer.HYPERNYM, Pointer.HYPONYM, Pointer.MERONYM_PART,
@@ -55,7 +55,7 @@ public class WordRelationshipDetermination {
   private final Hashtable<ISynset, List<IWord>> synsetWordCache = new Hashtable<>();
 
   public WordRelationshipDetermination() throws Exception {
-    dictionary = new RAMDictionary(WordRelationshipDetermination.class.getResource(dictionaryFile), ILoadPolicy.IMMEDIATE_LOAD);
+    dictionary = new RAMDictionary(WordRelationshipDetermination.class.getResource(DICTIONARY_FILE), ILoadPolicy.IMMEDIATE_LOAD);
     ((RAMDictionary)dictionary).load();
     openDict();
   }

@@ -27,7 +27,7 @@ import opennlp.tools.util.ObjectStream;
 
 public class WSDSampleStream extends FilterObjectStream<String, WSDSample> {
 
-  private static final Logger logger = Logger.getLogger(WSDSampleStream.class.getName());
+  private static final Logger LOG = Logger.getLogger(WSDSampleStream.class.getName());
 
   /**
    * Initializes the current instance.
@@ -60,8 +60,8 @@ public class WSDSampleStream extends FilterObjectStream<String, WSDSample> {
         sample = WSDSample.parse(sentence);
       } catch (InvalidFormatException e) {
 
-        if (logger.isLoggable(Level.WARNING)) {
-          logger
+        if (LOG.isLoggable(Level.WARNING)) {
+          LOG
               .warning("Error during parsing, ignoring sentence: " + sentence);
         }
 

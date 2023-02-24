@@ -42,7 +42,7 @@ public class TextProcessor {
   private static final Logger LOG = Logger
       .getLogger("opennlp.tools.textsimilarity.TextProcessor");
 
-  static final String[] abbrevs = { "mr.", "mrs.", "sen.", "rep.", "gov.",
+  static final String[] ABBREVS = { "mr.", "mrs.", "sen.", "rep.", "gov.",
       "miss.", "dr.", "oct.", "nov.", "jan.", "feb.", "mar.", "apr.", "may",
       "jun.", "jul.", "aug.", "sept." };
 
@@ -225,7 +225,7 @@ public class TextProcessor {
         cand += " " + text.substring(idx, m.end() - 1).trim();
         boolean hasAbbrev = false;
 
-        for (String abbrev : abbrevs) {
+        for (String abbrev : ABBREVS) {
           if (cand.toLowerCase().endsWith(abbrev)) {
             hasAbbrev = true;
             break;

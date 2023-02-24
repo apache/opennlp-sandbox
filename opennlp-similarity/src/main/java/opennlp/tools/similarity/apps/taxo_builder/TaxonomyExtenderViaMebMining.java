@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import opennlp.tools.similarity.apps.BingQueryRunner;
 import opennlp.tools.similarity.apps.HitBase;
@@ -42,8 +41,7 @@ import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcess
  */
 
 public class TaxonomyExtenderViaMebMining extends BingQueryRunner {
-  private static final Logger LOG = Logger
-      .getLogger("opennlp.tools.similarity.apps.taxo_builder.TaxonomyExtenderSearchResultFromYahoo");
+
   private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
   ParserChunker2MatcherProcessor sm;
 

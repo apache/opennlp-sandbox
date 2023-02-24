@@ -18,14 +18,11 @@
 package opennlp.tools.textsimilarity;
 
 import java.util.List;
-import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
 
 public class SentencePairMatchResult {
-  public List<List<ParseTreeChunk>> matchResult;
-  private static final Logger LOG = Logger
-      .getLogger("opennlp.tools.textsimilarity.SentencePairMatchResult");
+  private List<List<ParseTreeChunk>> matchResult;
 
   public List<List<ParseTreeChunk>> getMatchResult() {
     return matchResult;

@@ -54,7 +54,8 @@ import opennlp.tools.tokenize.TokenizerModel;
 import opennlp.tools.util.Span;
 
 public class ParserChunker2MatcherProcessor {
-  protected static final int MIN_SENTENCE_LENGTH = 10;
+
+  static final int MIN_SENTENCE_LENGTH = 10;
   private static final String MODEL_DIR_KEY = "nlp.models.dir";
   // TODO config
   // this is where resources should live
@@ -67,7 +68,7 @@ public class ParserChunker2MatcherProcessor {
   private POSTagger posTagger;
   private Parser parser;
   private ChunkerME chunker;
-  private final int NUMBER_OF_SECTIONS_IN_SENTENCE_CHUNKS = 5;
+  private static final int NUMBER_OF_SECTIONS_IN_SENTENCE_CHUNKS = 5;
   private static final Logger LOG =
           Logger.getLogger("opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor");
   private Map<String, String[][]> sentence_parseObject;

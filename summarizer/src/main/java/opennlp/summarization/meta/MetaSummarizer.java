@@ -42,11 +42,11 @@ public class MetaSummarizer {
   private final DocProcessor dp;
   private final TextRankSummarizer textRank;
   private final LexicalChainingSummarizer lcs;
-  private static final String sentFragModel = "/en-sent.bin";
+  private static final String SENT_FRAG_MODEL = "/en-sent.bin";
 
   public MetaSummarizer(String posModelFile) throws Exception {
     Logger.getAnonymousLogger().info("Initializing Meta Summarizer");
-    dp = new DefaultDocProcessor(MetaSummarizer.class.getResourceAsStream(sentFragModel));
+    dp = new DefaultDocProcessor(MetaSummarizer.class.getResourceAsStream(SENT_FRAG_MODEL));
     textRank = new TextRankSummarizer();
     lcs = new LexicalChainingSummarizer(dp, new FileInputStream(posModelFile));
   }

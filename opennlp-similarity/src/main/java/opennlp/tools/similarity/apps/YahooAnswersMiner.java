@@ -20,21 +20,21 @@ package opennlp.tools.similarity.apps;
 import java.util.ArrayList;
 import java.util.List;
 
-import opennlp.tools.jsmlearning.ProfileReaderWriter;
-import opennlp.tools.parse_thicket.Triple;
-
 import net.billylieurance.azuresearch.AzureSearchResultSet;
 import net.billylieurance.azuresearch.AzureSearchWebResult;
+
+import opennlp.tools.jsmlearning.ProfileReaderWriter;
+import opennlp.tools.parse_thicket.Triple;
 
 public class YahooAnswersMiner extends BingQueryRunner{
 
 	private int page = 0;
-	private static final int hitsPerPage = 50;
+	private static final int HITS_PER_PAGE = 50;
 
 	public List<HitBase> runSearch(String query) {
 		aq.setAppid(BING_KEY);
 		aq.setQuery("site:answers.yahoo.com "+ query);
-		aq.setPerPage(hitsPerPage);
+		aq.setPerPage(HITS_PER_PAGE);
 		aq.setPage(page);
 
 		aq.doQuery();
@@ -56,7 +56,7 @@ public class YahooAnswersMiner extends BingQueryRunner{
 	public List<HitBase> runSearch(String query, int totalPages) {
 		int count=0;
 		List<HitBase> results = new ArrayList<>();
-		while(totalPages>page*hitsPerPage){
+		while(totalPages>page* HITS_PER_PAGE){
 			List<HitBase> res = runSearch(query);
 			results.addAll(res);
 			if (count>10)

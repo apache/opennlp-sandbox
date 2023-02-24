@@ -36,20 +36,20 @@ import org.apache.tika.Tika;
 
 public class ClassifierTrainingSetIndexer {
   
-  public static final String resourceDir = new File(".").getAbsolutePath().replace("/.", "") + "/src/main/resources";
-  public static final String INDEX_PATH = "/classif";
-  public static final String CLASSIF_TRAINING_CORPUS_PATH = "/training_corpus";
+  private static final String[] DOMAINS = new String[] { "legal", "health", "computing", "engineering", "business" };
+  private static final String RESOURCE_DIR = new File(".").getAbsolutePath().replace("/.", "") + "/src/main/resources";
+  static final String INDEX_PATH = "/classif";
+  static final String CLASSIF_TRAINING_CORPUS_PATH = "/training_corpus";
   protected final ArrayList<File> queue = new ArrayList<>();
-  final Tika tika = new Tika();
+  private final Tika tika = new Tika();
 
-  IndexWriter indexWriter = null;
-  protected static final String[] domains =  new String[] { "legal", "health", "computing", "engineering", "business" };
-  private String absolutePathTrainingSet=null;
+  private IndexWriter indexWriter = null;
+  private String absolutePathTrainingSet = null;
 
   public ClassifierTrainingSetIndexer() {
 
     try {
-      initIndexWriter(resourceDir);
+      initIndexWriter(RESOURCE_DIR);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -58,7 +58,7 @@ public class ClassifierTrainingSetIndexer {
   public ClassifierTrainingSetIndexer(String absolutePathTrainingSet) {
     this.absolutePathTrainingSet = absolutePathTrainingSet;
     try {
-      initIndexWriter(resourceDir);
+      initIndexWriter(RESOURCE_DIR);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -68,7 +68,7 @@ public class ClassifierTrainingSetIndexer {
 
     try {
       indexFileOrDirectory(Objects.requireNonNullElseGet(absolutePathTrainingSet,
-              () -> resourceDir + CLASSIF_TRAINING_CORPUS_PATH));
+              () -> RESOURCE_DIR + CLASSIF_TRAINING_CORPUS_PATH));
       indexWriter.commit();
     } catch (IOException e) {
       e.printStackTrace();
@@ -120,7 +120,7 @@ public class ClassifierTrainingSetIndexer {
 
           String name = f.getPath();
           String className = null;
-          for (String d : domains) {
+          for (String d : DOMAINS) {
             if (name.contains(d)) {
               className = d;
               break;
@@ -218,7 +218,7 @@ public class ClassifierTrainingSetIndexer {
 
   public static String getCategoryFromFilePath(String path){
     String className = null;
-    for (String d : domains) {
+    for (String d : DOMAINS) {
       if (path.contains("/" + d + "/")) {
         className = d;
         break;

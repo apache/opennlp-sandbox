@@ -91,10 +91,10 @@ public class NumberModel implements TestNumberModel, TrainSimilarityModel {
   }
 
   public NumberEnum getNumber(Context ec) {
-    if (ResolverUtils.singularPronounPattern.matcher(ec.getHeadTokenText()).matches()) {
+    if (ResolverUtils.SINGULAR_PRONOUN_PATTERN.matcher(ec.getHeadTokenText()).matches()) {
       return NumberEnum.SINGULAR;
     }
-    else if (ResolverUtils.pluralPronounPattern.matcher(ec.getHeadTokenText()).matches()) {
+    else if (ResolverUtils.PLURAL_PRONOUN_PATTERN.matcher(ec.getHeadTokenText()).matches()) {
       return NumberEnum.PLURAL;
     }
     else {
