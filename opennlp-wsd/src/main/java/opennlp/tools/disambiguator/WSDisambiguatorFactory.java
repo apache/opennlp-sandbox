@@ -50,7 +50,8 @@ public class WSDisambiguatorFactory extends BaseToolFactory {
     }
   }
 
-  @Override public void validateArtifactMap() throws InvalidFormatException {
+  @Override
+  public void validateArtifactMap() throws InvalidFormatException {
     // no additional artifacts
   }
 

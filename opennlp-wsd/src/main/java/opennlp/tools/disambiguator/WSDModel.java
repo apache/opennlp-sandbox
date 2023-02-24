@@ -126,7 +126,8 @@ public class WSDModel extends BaseModel {
     return true;
   }
 
-  @Override protected void validateArtifactMap() throws InvalidFormatException {
+  @Override
+  protected void validateArtifactMap() throws InvalidFormatException {
     super.validateArtifactMap();
 
     if (!(artifactMap.get(WSD_MODEL_ENTRY_NAME) instanceof AbstractModel)) {

@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.Stack;
 
 import opennlp.tools.parser.Parse;
 import opennlp.tools.parser.chunking.Parser;
@@ -56,10 +55,12 @@ public class DefaultParse extends AbstractParse {
     // Should we just maintain a parse id map !?
   }
 
+  @Override
   public int getSentenceNumber() {
     return sentenceNumber;
   }
 
+  @Override
   public List<opennlp.tools.coref.mention.Parse> getNamedEntities() {
     List<Parse> names = new ArrayList<>();
     List<Parse> kids = new LinkedList<>(Arrays.asList(parse.getChildren()));
@@ -75,10 +76,12 @@ public class DefaultParse extends AbstractParse {
     return createParses(names.toArray(new Parse[names.size()]));
   }
 
+  @Override
   public List<opennlp.tools.coref.mention.Parse> getChildren() {
     return createParses(parse.getChildren());
   }
 
+  @Override
   public List<opennlp.tools.coref.mention.Parse> getSyntacticChildren() {
     List<Parse> kids = new ArrayList<>(Arrays.asList(parse.getChildren()));
     for (int ci = 0; ci < kids.size(); ci++) {
@@ -92,6 +95,7 @@ public class DefaultParse extends AbstractParse {
     return createParses(kids.toArray(new Parse[kids.size()]));
   }
 
+  @Override
   public List<opennlp.tools.coref.mention.Parse> getTokens() {
     List<Parse> tokens = new ArrayList<>();
     List<Parse> kids = new LinkedList<>(Arrays.asList(parse.getChildren()));
@@ -107,6 +111,7 @@ public class DefaultParse extends AbstractParse {
     return createParses(tokens.toArray(new Parse[tokens.size()]));
   }
 
+  @Override
   public String getSyntacticType() {
     if (ENTITY_SET.contains(parse.getType())) {
       return null;
@@ -129,6 +134,7 @@ public class DefaultParse extends AbstractParse {
     return newParses;
   }
 
+  @Override
   public String getEntityType() {
     if (ENTITY_SET.contains(parse.getType())) {
       return parse.getType();
@@ -138,6 +144,7 @@ public class DefaultParse extends AbstractParse {
     }
   }
 
+  @Override
   public boolean isParentNAC() {
     Parse parent = parse.getParent();
     while (parent != null) {
@@ -149,6 +156,7 @@ public class DefaultParse extends AbstractParse {
     return false;
   }
 
+  @Override
   public opennlp.tools.coref.mention.Parse getParent() {
     Parse parent = parse.getParent();
     if (parent == null) {
@@ -159,32 +167,32 @@ public class DefaultParse extends AbstractParse {
     }
   }
 
+  @Override
   public boolean isNamedEntity() {
     
     // TODO: We should use here a special tag to, where
     // the type can be extracted from. Then it just depends
     // on the training data and not the values inside NAME_TYPES.
-    
-    if (ENTITY_SET.contains(parse.getType())) {
-      return true;
-    }
-    else {
-      return false;
-    }
+
+    return ENTITY_SET.contains(parse.getType());
   }
 
+  @Override
   public boolean isNounPhrase() {
     return parse.getType().equals("NP") || parse.getType().startsWith("NP#");
   }
 
+  @Override
   public boolean isSentence() {
     return parse.getType().equals(Parser.TOP_NODE);
   }
 
+  @Override
   public boolean isToken() {
     return parse.isPosTag();
   }
 
+  @Override
   public int getEntityId() {
     
     String type = parse.getType();
@@ -198,16 +206,17 @@ public class DefaultParse extends AbstractParse {
     }
   }
 
+  @Override
   public Span getSpan() {
     return parse.getSpan();
   }
 
+  @Override
   public int compareTo(opennlp.tools.coref.mention.Parse p) {
 
     if (p == this) {
       return 0;
     }
-
     if (getSentenceNumber() < p.getSentenceNumber()) {
       return -1;
     }
@@ -220,11 +229,6 @@ public class DefaultParse extends AbstractParse {
           parse.getSpan().getEnd() == p.getSpan().getEnd()) {
 
         System.out.println("Maybe incorrect measurement!");
-        
-        Stack<Parse> parents = new Stack<>();
-        
-        
-        
         
         // get parent and update distance
         // if match return distance
@@ -241,6 +245,7 @@ public class DefaultParse extends AbstractParse {
   }
 
 
+  @Override
   public opennlp.tools.coref.mention.Parse getPreviousToken() {
     Parse parent = parse.getParent();
     Parse node = parse;
@@ -267,6 +272,7 @@ public class DefaultParse extends AbstractParse {
     }
   }
 
+  @Override
   public opennlp.tools.coref.mention.Parse getNextToken() {
     Parse parent = parse.getParent();
     Parse node = parse;

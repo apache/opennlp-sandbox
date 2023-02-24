@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import opennlp.tools.similarity.apps.utils.StringDistanceMeasurer;
 import opennlp.tools.similarity.apps.utils.Utils;
@@ -30,14 +31,15 @@ import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcess
 
 import org.apache.commons.lang.StringUtils;
 
-/*
- * This class supports content generation by static functions
- * 
+/**
+ * This class supports content generation by static functions.
  */
-
 public class ContentGeneratorSupport {
 	private static final Logger LOG = Logger
 			.getLogger("opennlp.tools.similarity.apps.ContentGeneratorSupport");
+
+	//TODO - verify regexp!!
+	private static final Pattern SPACES_PATTERN = Pattern.compile("([a-z])(\\s{2,3})([A-Z])");
 
 	/**
 	 * Takes a sentence and extracts noun phrases and entity names to from search
@@ -50,10 +52,7 @@ public class ContentGeneratorSupport {
 	 * @return List<String> of search expressions
 	 */
 	public static List<String> buildSearchEngineQueryFromSentence(String sentence) {
-		ParseTreeChunk matcher = new ParseTreeChunk();
-		ParserChunker2MatcherProcessor pos = ParserChunker2MatcherProcessor
-				.getInstance();
-		List<List<ParseTreeChunk>> sent1GrpLst = null;
+		ParserChunker2MatcherProcessor pos = ParserChunker2MatcherProcessor.getInstance();
 
 		List<ParseTreeChunk> nPhrases = pos
 				.formGroupedPhrasesFromChunksForSentence(sentence).get(0);
@@ -135,10 +134,11 @@ public class ContentGeneratorSupport {
 
 	public static String cleanSpacesInCleanedHTMLpage(String pageContent){ //was 4 spaces 
 		//was 3 spaces => now back to 2
-		//TODO - verify regexp!!
-		pageContent = pageContent.trim().replaceAll("([a-z])(\\s{2,3})([A-Z])", "$1. $3")
-				.replace("..", ".").replace(". . .", " ").
-				replace(".    .",". ").trim(); // sometimes   html breaks are converted into ' ' (two spaces), so
+		pageContent = pageContent.trim();
+		pageContent = SPACES_PATTERN.matcher(pageContent).replaceAll("$1. $3")
+				.replace("..", ".").replace(". . .", " ")
+				.replace(".    .",". ").trim();
+		// sometimes html breaks are converted into ' ' (two spaces), so
 		// we need to put '.'
 		return pageContent;
 	}
@@ -209,12 +209,11 @@ public class ContentGeneratorSupport {
 						for (Fragment f2 : fragmList2) {
 							String sf1 = f1.getResultText();
 							String sf2 = f2.getResultText();
-							if (StringUtils.isEmpty(sf1) || StringUtils.isEmpty(sf1))
+							if (StringUtils.isEmpty(sf1) || StringUtils.isEmpty(sf2))
 								continue;
 							if (meas.measureStringDistance(sf1, sf2) > dupeThresh) {
 								fragmList2Results.remove(f2);
-								LOG.info("Removed duplicates from formed fragments list: "
-										+ sf2);
+								LOG.info("Removed duplicates from formed fragments list: " + sf2);
 							}
 						}
 

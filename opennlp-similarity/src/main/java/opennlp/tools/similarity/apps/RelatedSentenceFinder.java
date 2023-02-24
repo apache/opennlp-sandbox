@@ -311,8 +311,7 @@ public class RelatedSentenceFinder {
 	 * @param hits List<HitBase> of search results objects
 	 * @return List<String> of search results objects where dupes are removed
 	 */
-	public static List<HitBase> removeDuplicatesFromResultantHits(
-			List<HitBase> hits) {
+	public static List<HitBase> removeDuplicatesFromResultantHits(List<HitBase> hits) {
 		StringDistanceMeasurer meas = new StringDistanceMeasurer();
 		double dupeThresh = // 0.8; // if more similar, then considered dupes was
 				0.7;
@@ -447,7 +446,7 @@ public class RelatedSentenceFinder {
 				// or get original snippet
 				pageSentence = fragment;
 			if (pageSentence != null)
-				pageSentence.replace("_should_find_orig_", "");
+				pageSentence = pageSentence.replace("_should_find_orig_", "");
 
 			// resultant sentence SHOULD NOT be longer than for times the size of
 			// snippet fragment
@@ -463,9 +462,7 @@ public class RelatedSentenceFinder {
 							+ " " + title, originalSentence);
 					List<List<ParseTreeChunk>> match = matchRes.getMatchResult();
 					if (!matchRes.isVerbExists() || matchRes.isImperativeVerb()) {
-						System.out
-						.println("Rejected Sentence : No verb OR Yes imperative verb :"
-								+ pageSentence);
+						System.out.println("Rejected Sentence : No verb OR Yes imperative verb :" + pageSentence);
 						continue;
 					}
 
@@ -520,12 +517,9 @@ public class RelatedSentenceFinder {
 									+ "| with title= " + title);
 							System.out.println("For fragment = " + fragment);
 						} else
-							System.out
-							.println("Rejected sentence due to wrong area at webpage: "
-									+ pageSentence);
+							System.out.println("Rejected sentence due to wrong area at webpage: " + pageSentence);
 					} else
-						System.out.println("Rejected sentence due to low score: "
-								+ pageSentence);
+						System.out.println("Rejected sentence due to low score: " + pageSentence);
 					// }
 				} catch (Throwable t) {
 					t.printStackTrace();
@@ -902,63 +896,58 @@ public class RelatedSentenceFinder {
 			t.printStackTrace();
 		}
 
-	return result;
-}
-
-public HitBase buildParagraphOfGeneratedText(HitBase item,
-		String originalSentence, List<String> sentsAll) {
-	List<Fragment> results = new ArrayList<>() ;
-	
-	Triple<List<String>, String, String[]> fragmentExtractionResults = formCandidateFragmentsForPage(item, originalSentence, sentsAll);
-
-	List<String> allFragms = fragmentExtractionResults.getFirst();
-
-	for (String fragment : allFragms) {
-		String[] candidateSentences = formCandidateSentences(fragment, fragmentExtractionResults);
-		if (candidateSentences == null)
-			continue;
-		Fragment res = verifyCandidateSentencesAndFormParagraph(candidateSentences, item, fragment, originalSentence, sentsAll);
-		if (res!=null)
-			results.add(res);
-
-	}
-	
-	item.setFragments(results );
-	return item;
-}
-
-
-
-
-public static void main(String[] args) {
-	RelatedSentenceFinder f = new RelatedSentenceFinder();
-
-	List<HitBase> hits;
-	try {
-		// uncomment the sentence you would like to serve as a seed sentence for
-		// content generation for an event description
-
-		// uncomment the sentence you would like to serve as a seed sentence for
-		// content generation for an event description
-		hits = f.generateContentAbout("Albert Einstein"
-				// "Britney Spears - The Femme Fatale Tour"
-				// "Rush Time Machine",
-				// "Blue Man Group" ,
-				// "Belly Dance With Zaharah",
-				// "Hollander Musicology Lecture: Danielle Fosler-Lussier, Guest Lecturer",
-				// "Jazz Master and arguably the most famous jazz musician alive, trumpeter Wynton Marsalis",
-				);
-		System.out.println(HitBase.toString(hits));
-		System.out.println(HitBase.toResultantString(hits));
-		// WordFileGenerator.createWordDoc("Essey about Albert Einstein",
-		// hits.get(0).getTitle(), hits);
-
-	} catch (Exception e) {
-		e.printStackTrace();
+		return result;
 	}
 
-}
+	public HitBase buildParagraphOfGeneratedText(HitBase item,
+			String originalSentence, List<String> sentsAll) {
+		List<Fragment> results = new ArrayList<>() ;
+
+		Triple<List<String>, String, String[]> fragmentExtractionResults = formCandidateFragmentsForPage(item, originalSentence, sentsAll);
+
+		List<String> allFragms = fragmentExtractionResults.getFirst();
+
+		for (String fragment : allFragms) {
+			String[] candidateSentences = formCandidateSentences(fragment, fragmentExtractionResults);
+			if (candidateSentences == null)
+				continue;
+			Fragment res = verifyCandidateSentencesAndFormParagraph(candidateSentences, item, fragment, originalSentence, sentsAll);
+			if (res!=null)
+				results.add(res);
+
+		}
+		item.setFragments(results);
+		return item;
+	}
 
 
+	public static void main(String[] args) {
+		RelatedSentenceFinder f = new RelatedSentenceFinder();
+
+		List<HitBase> hits;
+		try {
+			// uncomment the sentence you would like to serve as a seed sentence for
+			// content generation for an event description
+
+			// uncomment the sentence you would like to serve as a seed sentence for
+			// content generation for an event description
+			hits = f.generateContentAbout("Albert Einstein"
+					// "Britney Spears - The Femme Fatale Tour"
+					// "Rush Time Machine",
+					// "Blue Man Group" ,
+					// "Belly Dance With Zaharah",
+					// "Hollander Musicology Lecture: Danielle Fosler-Lussier, Guest Lecturer",
+					// "Jazz Master and arguably the most famous jazz musician alive, trumpeter Wynton Marsalis",
+					);
+			System.out.println(HitBase.toString(hits));
+			System.out.println(HitBase.toResultantString(hits));
+			// WordFileGenerator.createWordDoc("Essey about Albert Einstein",
+			// hits.get(0).getTitle(), hits);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+	}
 
 }

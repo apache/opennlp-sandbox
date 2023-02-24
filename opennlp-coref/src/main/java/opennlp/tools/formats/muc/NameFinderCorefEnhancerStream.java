@@ -43,6 +43,7 @@ public class NameFinderCorefEnhancerStream extends FilterObjectStream<RawCorefSa
     this.tags = tags;
   }
 
+  @Override
   public RawCorefSample read() throws IOException {
     
     RawCorefSample sample = samples.read();

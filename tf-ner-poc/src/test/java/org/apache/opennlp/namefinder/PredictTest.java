@@ -19,20 +19,24 @@
 
 package org.apache.opennlp.namefinder;
 
+import java.io.IOException;
+import java.nio.file.Path;
+
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import opennlp.tools.util.Span;
 
-import java.io.IOException;
-import java.nio.file.Path;
-
 class PredictTest {
 
+  // Note: As of Feb 2023, this test won't work on all platforms and, for instance, fails with
+  //  "Cannot find TensorFlow native library for OS: darwin, architecture: aarch64"
+  // That's why it is disabled via the architecture system property.
+  // @DisabledIfSystemProperty(named = "os.arch", matches = "aarch64")
   @Test
-  @Disabled // TODO This test is not platform neutral and, for instance, fails with
-    //  "Cannot find TensorFlow native library for OS: darwin, architecture: aarch64"
-    //  We need JUnit 5 in the sandbox to circumvent this, so it can be run in supported environments
+  @Disabled
+  // TODO This test won't work as the required TF model is missing and needs to be re-trained.
+  //      Further details, see: https://github.com/apache/opennlp-sandbox/pull/89
   void testFindTokens() throws IOException {
 
     // can be changed to File or InputStream
