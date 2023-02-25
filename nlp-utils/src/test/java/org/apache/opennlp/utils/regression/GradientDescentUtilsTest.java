@@ -20,6 +20,7 @@ package org.apache.opennlp.utils.regression;
 
 import org.apache.opennlp.utils.TestUtils;
 import org.apache.opennlp.utils.TrainingSet;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -27,11 +28,17 @@ import org.junit.jupiter.api.Test;
  */
 class GradientDescentUtilsTest {
 
-  @Test
-  void testConvergence() {
-    TrainingSet trainingSet = new TrainingSet();
+  private TrainingSet trainingSet;
+  
+  @BeforeEach
+  public void setup() {
+    trainingSet = new TrainingSet();
     TestUtils.fillTrainingSet(trainingSet, 100, 5);
-    GradientDescentUtils.batchGradientDescent(trainingSet, 0.00002);
+  }
+
+  @Test // @RepeatedTest(1000)
+  void testConvergence() {
+    GradientDescentUtils.batchGradientDescent(trainingSet, 0.00001);
   }
 
 }

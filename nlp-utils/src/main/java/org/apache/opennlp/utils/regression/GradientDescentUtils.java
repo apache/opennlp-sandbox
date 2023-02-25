@@ -18,8 +18,6 @@
  */
 package org.apache.opennlp.utils.regression;
 
-import java.util.Arrays;
-import java.util.Random;
 import org.apache.opennlp.utils.TrainingSet;
 
 /**
@@ -31,10 +29,13 @@ public class GradientDescentUtils {
   private static final int MAX_ITERATIONS = 100000;
 
   /**
-   * Calculates batch gradient descent on the give hypothesis, training set and learning rate alpha.
-   * The algorithms iteratively adjusts the hypothesis parameters
+   * Calculates batch gradient descent on a {@link Hypothesis}, {@link TrainingSet} and
+   * learning rate {@code alpha}. The algorithms iteratively adjusts the hypothesis parameters
    *
-   * @param trainingSet the training set used to fit the parameters
+   * <p>
+   * Note: This implementation uses {@link LinearCombinationHypothesis} as hypothesis.
+   *
+   * @param trainingSet the {@link TrainingSet} used to fit the parameters
    * @param alpha       the learning rate alpha used to define how big the descent steps are
    */
   public static void batchGradientDescent(TrainingSet trainingSet, double alpha) {
@@ -52,7 +53,7 @@ public class GradientDescentUtils {
       if (newCost > cost) {
         throw new RuntimeException("failed to converge at iteration " + iterations + " with cost going from " + cost + " to " + newCost);
       } else if (cost == newCost || newCost < THRESHOLD || iterations > MAX_ITERATIONS) {
-        System.out.println(cost + " with parameters " + Arrays.toString(parameters) + "(" + iterations + " iterations)");
+        // System.out.println(cost + " with parameters " + Arrays.toString(parameters) + "(" + iterations + " iterations)");
         break;
       }
 
@@ -72,8 +73,7 @@ public class GradientDescentUtils {
   private static double[] initializeRandomWeights(int size) {
     double[] doubles = new double[size];
     for (int i = 0; i < doubles.length; i++) {
-      Random rand = new Random();
-      doubles[i] = rand.nextDouble() * 0.1d;
+      doubles[i] = Math.random() * 0.1d;
     }
     return doubles;
   }
