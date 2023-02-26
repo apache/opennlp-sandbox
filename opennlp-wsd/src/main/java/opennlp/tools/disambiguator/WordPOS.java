@@ -36,7 +36,6 @@ public class WordPOS {
   private List<String> stems;
   private final POS pos;
   private String posTag;
-  public boolean isTarget = false;
 
   public WordPOS(String word, String tag) throws IllegalArgumentException {
     if (word == null || tag == null) {
@@ -82,8 +81,7 @@ public class WordPOS {
     try {
       indexWord = WSDHelper.getDictionary().lookupIndexWord(pos, word);
       if (indexWord == null) {
-        WSDHelper
-            .print("NULL synset probably a POS tagger mistake ! :: [POS] : "
+        WSDHelper.print("NULL synset probably a POS tagger mistake ! :: [POS] : "
                 + pos.getLabel() + " [word] : " + word);
         return null;
       }

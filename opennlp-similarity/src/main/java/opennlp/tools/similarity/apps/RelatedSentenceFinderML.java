@@ -20,7 +20,6 @@ package opennlp.tools.similarity.apps;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Logger;
 
 import opennlp.tools.similarity.apps.utils.Utils;
 import opennlp.tools.textsimilarity.TextProcessor;
@@ -29,8 +28,6 @@ import opennlp.tools.textsimilarity.TextProcessor;
  * This class does content generation in ES, DE etc
  */
 public class RelatedSentenceFinderML extends RelatedSentenceFinder{
-	private static final Logger LOG = Logger.getLogger("opennlp.tools.similarity.apps.RelatedSentenceFinderML");
-
 
 	public RelatedSentenceFinderML(int ms, int msr, float thresh, String key) {
 		this.MAX_STEPS = ms;
@@ -45,7 +42,6 @@ public class RelatedSentenceFinderML extends RelatedSentenceFinder{
 	public List<HitBase> generateContentAbout(String sentence) throws Exception {
 		List<HitBase> opinionSentencesToAdd = new ArrayList<>();
 		System.out.println(" \n=== Entity to write about = " + sentence);
-		List<String> nounPhraseQueries = new ArrayList<>();
 
 		List<HitBase> searchResult = yrunner.runSearch(sentence, 100);
 		if (MAX_SEARCH_RESULTS<searchResult.size())

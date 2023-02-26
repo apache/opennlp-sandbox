@@ -27,7 +27,6 @@ import opennlp.tools.similarity.apps.HitBase;
 import opennlp.tools.similarity.apps.utils.StringCleaner;
 import opennlp.tools.stemmer.PStemmer;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
-import opennlp.tools.textsimilarity.ParseTreeChunkListScorer;
 import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
@@ -39,11 +38,9 @@ import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcess
  * derived list output map 2) for such manual list of words -> derived list of
  * words
  */
-
 public class TaxonomyExtenderViaMebMining extends BingQueryRunner {
 
-  private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
-  ParserChunker2MatcherProcessor sm;
+  private ParserChunker2MatcherProcessor sm;
 
   private Map<String, List<List<String>>> lemma_ExtendedAssocWords = new HashMap<>();
   private final Map<List<String>, List<List<String>>> assocWords_ExtendedAssocWords = new HashMap<>();
@@ -145,19 +142,17 @@ public class TaxonomyExtenderViaMebMining extends BingQueryRunner {
       List<HitBase> resultList = runSearch(query, numbOfHits);
 
       for (int i = 0; i < resultList.size(); i++) {
-        {
-          for (int j = i + 1; j < resultList.size(); j++) {
-            HitBase h1 = resultList.get(i);
-            HitBase h2 = resultList.get(j);
-            String snapshot1 = StringCleaner.processSnapshotForMatching(h1
-                .getTitle() + " . " + h1.getAbstractText());
-            String snapshot2 = StringCleaner.processSnapshotForMatching(h2
-                .getTitle() + " . " + h2.getAbstractText());
-            SentencePairMatchResult matchRes = sm.assessRelevance(snapshot1,
-                snapshot2);
-            List<List<ParseTreeChunk>> matchResult = matchRes.getMatchResult();
-            genResult.addAll(matchResult);
-          }
+        for (int j = i + 1; j < resultList.size(); j++) {
+          HitBase h1 = resultList.get(i);
+          HitBase h2 = resultList.get(j);
+          String snapshot1 = StringCleaner.processSnapshotForMatching(h1
+              .getTitle() + " . " + h1.getAbstractText());
+          String snapshot2 = StringCleaner.processSnapshotForMatching(h2
+              .getTitle() + " . " + h2.getAbstractText());
+          SentencePairMatchResult matchRes = sm.assessRelevance(snapshot1,
+              snapshot2);
+          List<List<ParseTreeChunk>> matchResult = matchRes.getMatchResult();
+          genResult.addAll(matchResult);
         }
       }
 
@@ -175,9 +170,7 @@ public class TaxonomyExtenderViaMebMining extends BingQueryRunner {
 
   public static void main(String[] args) {
     TaxonomyExtenderViaMebMining self = new TaxonomyExtenderViaMebMining();
-    self.extendTaxonomy("src/test/resources/taxonomies/irs_dom.ari", "tax",
-        "en");
-
+    self.extendTaxonomy("src/test/resources/taxonomies/irs_dom.ari", "tax", "en");
   }
 
 }

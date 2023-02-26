@@ -61,8 +61,7 @@ public class WSDSampleStream extends FilterObjectStream<String, WSDSample> {
       } catch (InvalidFormatException e) {
 
         if (LOG.isLoggable(Level.WARNING)) {
-          LOG
-              .warning("Error during parsing, ignoring sentence: " + sentence);
+          LOG.warning("Error during parsing, ignoring sentence: " + sentence);
         }
 
         sample = null; // new WSDSample(new String[]{}, new String[]{},0);

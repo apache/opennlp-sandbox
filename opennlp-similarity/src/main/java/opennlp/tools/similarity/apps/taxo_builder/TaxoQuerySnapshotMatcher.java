@@ -19,7 +19,6 @@ package opennlp.tools.similarity.apps.taxo_builder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -55,8 +54,7 @@ public class TaxoQuerySnapshotMatcher {
    */
   public int getTaxoScore(String query, String snapshot) {
 
-    lemma_ExtendedAssocWords = (HashMap<String, List<List<String>>>) taxo
-        .getLemma_ExtendedAssocWords();
+    lemma_ExtendedAssocWords = taxo.getLemma_ExtendedAssocWords();
 
     query = query.toLowerCase();
     snapshot = snapshot.toLowerCase();

@@ -17,28 +17,18 @@
 
 package opennlp.tools.similarity.apps.utils;
 
-import java.awt.Graphics2D;
-import java.awt.geom.AffineTransform;
-import java.awt.image.BufferedImage;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.imageio.ImageIO;
 
 import org.apache.commons.lang.StringUtils;
 
 public class Utils {
-
-  private static final Logger LOG = Logger
-      .getLogger("opennlp.tools.similarity.apps.utils.Utils");
 
   protected static final ArrayList<String[]> CHARACTER_MAPPINGS = new ArrayList<>();
 
@@ -235,30 +225,6 @@ public class Utils {
         return Float.compare(obj1.value, obj2.value);
       }
     }
-  }
-
-  public static boolean createResizedCopy(String originalImage,
-      String newImage, int scaledWidth, int scaledHeight) {
-    boolean retVal = true;
-    try {
-      File o = new File(originalImage);
-      BufferedImage bsrc = ImageIO.read(o);
-      BufferedImage bdest = new BufferedImage(scaledWidth, scaledHeight,
-          BufferedImage.TYPE_INT_RGB);
-
-      Graphics2D g = bdest.createGraphics();
-      AffineTransform at = AffineTransform.getScaleInstance(
-          (double) scaledWidth / bsrc.getWidth(),
-          (double) scaledHeight / bsrc.getHeight());
-      g.drawRenderedImage(bsrc, at);
-      ImageIO.write(bdest, "jpeg", new File(newImage));
-
-    } catch (Exception e) {
-      retVal = false;
-      LOG.severe("Failed creating thumbnail for image: " + originalImage + e);
-    }
-
-    return retVal;
   }
 
   private static int minimum(int a, int b, int c) {
@@ -676,7 +642,7 @@ public class Utils {
 
   public static boolean isLatinWord(String word) {
     for (int i = 0; i < word.length(); i++) {
-      int asciiCode = (int) word.charAt(i);
+      int asciiCode = word.charAt(i);
       if (asciiCode > 128)
         return false;
     }

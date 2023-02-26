@@ -115,7 +115,8 @@ public class WSDisambiguatorME extends WSDisambiguator {
     return surroundingWordsModel;
   }
 
-  @Override public String disambiguate(WSDSample sample) {
+  @Override
+  public String disambiguate(WSDSample sample) {
     if (WSDHelper.isRelevantPOSTag(sample.getTargetTag())) {
       String wordTag = sample.getTargetWordTag();
 
@@ -202,6 +203,7 @@ public class WSDisambiguatorME extends WSDisambiguator {
    * @param index            : the index of the word to disambiguate
    * @return an array of the senses of the word to disambiguate
    */
+  @Override
   public String disambiguate(String[] tokenizedContext, String[] tokenTags,
     String[] lemmas, int index) {
     return disambiguate(

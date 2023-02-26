@@ -20,25 +20,17 @@ package opennlp.tools.jsmlearning;
 import java.util.Arrays;
 import java.util.List;
 
-public class JSMLearnerOnLatticeWithAbduction extends JSMLearnerOnLatticeWithDeduction{
+public class JSMLearnerOnLatticeWithAbduction extends JSMLearnerOnLatticeWithDeduction {
 
-
-
-
+	@Override
 	public JSMDecision buildLearningModel(List<String> posTexts, List<String> negTexts, 
 			String unknown, String[] separationKeywords){
-		JSMDecision decision = super.buildLearningModel(posTexts, negTexts, unknown, separationKeywords);
-		// verify each hypothesis
-		//TODO
-				return decision;
-
+		//TODO verify each hypothesis
+		return super.buildLearningModel(posTexts, negTexts, unknown, separationKeywords);
 	}
 
 
-	
-
 	public static void main (String[] args) {
-
 		String[] posArr = new String[] {"I rent an office space. This office is for my business. I can deduct office rental expense from my business profit to calculate net income. ",
 				"To run my business, I have to rent an office. The net business profit is calculated as follows. Rental expense needs to be subtracted from revenue. ",
 				"To store goods for my retail business I rent some space. When I calculate the net income, I take revenue and subtract business expenses such as office rent. ",
@@ -60,10 +52,5 @@ public class JSMLearnerOnLatticeWithAbduction extends JSMLearnerOnLatticeWithDed
 		// Finally, do prediction
 		JSMDecision dec = // may be determined by ...
 				jsm.buildLearningModel(Arrays.asList(posArr), Arrays.asList(negArr), unknown , new String[]{"property"});
-		
-		
-		
-
-
 	}
 }

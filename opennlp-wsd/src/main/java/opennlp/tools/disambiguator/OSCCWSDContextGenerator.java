@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import net.sf.extjwnl.data.Synset;
 
@@ -38,14 +39,16 @@ public class OSCCWSDContextGenerator implements WSDContextGenerator {
     // TODO consider windowSize
     ArrayList<String> contextClusters = new ArrayList<>();
 
+    final Pattern pattern = Pattern.compile("[^a-z_]");
+
     for (int i = 0; i < toks.length; i++) {
       if (lemmas != null) {
 
         if (!WSDHelper.STOP_WORDS.contains(toks[i].toLowerCase()) && (index
           != i)) {
 
-          String lemma = lemmas[i].toLowerCase().replaceAll("[^a-z_]", "")
-            .trim();
+          String lemma = lemmas[i].toLowerCase();
+          lemma = pattern.matcher(lemma).replaceAll("").trim();
 
           WordPOS word = new WordPOS(lemma, tags[i]);
 

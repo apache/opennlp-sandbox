@@ -93,8 +93,7 @@ public class ContentGenerator /*extends RelatedSentenceFinder*/ {
 				for (HitBase item : searchResult) { // got some text from .html
 					if (item.getAbstractText() != null
 							&& !(item.getUrl().indexOf(".pdf") > 0)) { // exclude pdf
-						opinionSentencesToAdd
-						.add(buildParagraphOfGeneratedText(item, sentence, null));
+						opinionSentencesToAdd.add(buildParagraphOfGeneratedText(item, sentence, null));
 					}
 				}
 			}

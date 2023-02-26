@@ -73,6 +73,7 @@ public class Muc6FullParseCorefSampleStreamFactory extends AbstractSampleStreamF
     super(Parameters.class);
   }
 
+  @Override
   public ObjectStream<CorefSample> create(String[] args) {
     
     Parameters params = ArgumentParser.parse(args, Parameters.class);
@@ -85,7 +86,7 @@ public class Muc6FullParseCorefSampleStreamFactory extends AbstractSampleStreamF
     
     ObjectStream<String> mucDocStream = new FileToStringSampleStream(
         new DirectorySampleStream(params.getData(), new FileFilter() {
-          
+          @Override
           public boolean accept(File file) {
             return file.getName().toLowerCase().endsWith(".sgm");
           }

@@ -43,13 +43,11 @@ import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.ParagraphStream;
 import opennlp.tools.util.PlainTextByLineStream;
 
-/*
- * Command line tool for disambiguator supports MFS for now
- * 
+/**
+ * Command line tool for disambiguator supports MFS for now.
  */
 public class DisambiguatorTool extends CmdLineTool {
 
-  // TODO CmdLineTool should be an interface not abstract class
   @Override
   public String getName() {
     return "Disambiguator";
