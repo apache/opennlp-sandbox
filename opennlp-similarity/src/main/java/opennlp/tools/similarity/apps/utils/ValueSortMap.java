@@ -25,12 +25,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * This class is used to show how you can sort a java.uti.Map for values. This
- * also takes care of null and duplicate values present in the map.
+ * Sorts a {@link Map} by its values.
+ * Also takes care of {@code null} and duplicate values present in the map.
  */
 public class ValueSortMap {
 
@@ -112,18 +113,17 @@ public class ValueSortMap {
     int iSize = inMap.size();
 
     // Create new LinkedHashMap that need to be returned
-    LinkedHashMap sortedMap = new LinkedHashMap(iSize);
+    LinkedHashMap<K, V> sortedMap = new LinkedHashMap<>(iSize);
 
-    Collection values = inMap.values();
-    ArrayList valueList = new ArrayList(values); // To get List of all values in
+    Collection<V> values = inMap.values();
+    List<V> valueList = new ArrayList<>(values); // To get List of all values in
                                                  // passed Map
-    HashSet distinctValues = new HashSet(values); // To know the distinct values
+    Set<V> distinctValues = new HashSet<>(values); // To know the distinct values
                                                   // in passed Map
 
     // Handling for null values: remove them from the list that will be used
     // for sorting
-    int iNullValueCount = 0; // Total number of null values present in passed
-                             // Map
+    int iNullValueCount = 0; // Total number of null values present in passed Map
     if (distinctValues.contains(null)) {
       distinctValues.remove(null);
       for (int i = 0; i < valueList.size(); i++) {
@@ -131,7 +131,6 @@ public class ValueSortMap {
           valueList.remove(i);
           iNullValueCount++;
           i--;
-          continue;
         }
       }
     }
@@ -144,11 +143,11 @@ public class ValueSortMap {
     } else if (ascendingOrder) {
       // If Boolean ascendingOrder is not null and is true, sort values in
       // ascending order
-      Collections.sort(valueList);
+      valueList.sort(comparator);
     } else {
       // If Boolean ascendingOrder is not null and is false, sort values in
       // descending order
-      Collections.sort(valueList);
+      valueList.sort(comparator);
       Collections.reverse(valueList);
     }
 
@@ -158,11 +157,12 @@ public class ValueSortMap {
     if (iSize != (distinctValues.size() + iNullValueCount))
       bAllDistinct = false;
 
-    Object key, value, sortedValue;
-    Set keySet;
-    Iterator itKeyList;
-    HashMap hmTmpMap = new HashMap(iSize);
-    HashMap hmNullValueMap = new HashMap();
+    K key;
+    V value, sortedValue;
+    Set<K> keySet;
+    Iterator<K> itKeyList;
+    Map<K, V> hmTmpMap = new HashMap<>(iSize);
+    Map<K, V> hmNullValueMap = new HashMap<>();
 
     if (bAllDistinct) {
       // There are no multiple same values of the passed map (without considering null)
@@ -173,11 +173,9 @@ public class ValueSortMap {
         value = inMap.get(key);
 
         if (value != null)
-          hmTmpMap.put(value, key); // Prepare new temp HashMap with value=key
-                                    // combination
+          hmTmpMap.put((K) value, (V) key); // Prepare new temp HashMap with value=key combination
         else
-          hmNullValueMap.put(key, value); // Keep all null values in a new temp
-                                          // Map
+          hmNullValueMap.put(key, value); // Keep all null values in a new temp Map
       }
 
       if (ascendingOrder != null && !ascendingOrder) {
@@ -187,9 +185,9 @@ public class ValueSortMap {
       }
 
       // Put all not null values in returning LinkedHashMap
-      for (Object o : valueList) {
+      for (V o : valueList) {
         value = o;
-        key = hmTmpMap.get(value);
+        key = (K) hmTmpMap.get((V) value);
 
         sortedMap.put(key, value);
       }
@@ -207,11 +205,9 @@ public class ValueSortMap {
         value = inMap.get(key);
 
         if (value != null)
-          hmTmpMap.put(key, value); // Prepare new temp HashMap with key=value
-                                    // combination
+          hmTmpMap.put(key, value); // Prepare new temp HashMap with key=value combination
         else
-          hmNullValueMap.put(key, value); // Keep all null values in a new temp
-                                          // Map
+          hmNullValueMap.put(key, value); // Keep all null values in a new temp Map
       }
 
       if (ascendingOrder != null && !ascendingOrder) {
@@ -221,7 +217,7 @@ public class ValueSortMap {
       }
 
       // Put all not null values in returning LinkedHashMap
-      for (Object o : valueList) {
+      for (V o : valueList) {
         sortedValue = o;
 
         // Search this value in temp HashMap and if found remove it
@@ -247,39 +243,4 @@ public class ValueSortMap {
     return sortedMap;
   }
 
-  public static void main(String[] args) {
-    HashMap hmValue = new HashMap();
-
-    hmValue.put("ZNU", "Zuki Ndulo");
-    hmValue.put("YSH", "Yogesh Sharma");
-    hmValue.put("HHU", "Hiram Hugesh");
-    hmValue.put("MLE", "Marry Lee");
-    hmValue.put("FST", "Faran Stott");
-    hmValue.put("HET", null);
-    hmValue.put("SID", null);
-    hmValue.put("AFR", "Alice Fryer");
-    hmValue.put("KIQ", null);
-    hmValue.put("JBE", "Jim Bell");
-    hmValue.put("MAU", null);
-    hmValue.put("KAE", null);
-    hmValue.put("JBA", "Jim Bader");
-    hmValue.put("RAN", "Robert Anthony");
-    hmValue.put("CLE", "Carole Lee");
-    hmValue.put("JMD", "Jim Bader");
-    hmValue.put("ALI", null);
-    hmValue.put("GMI", "Gracia Millan");
-    hmValue.put("MAL", "Marry Lee");
-    hmValue.put("CLE", "Carole Lee");
-    hmValue.put("APE", "Annin Peck");
-    hmValue.put("HUA", null);
-
-    System.out.println("============ Before Sorting ===============");
-    System.out.println(hmValue);
-
-    // Call method to sort the hmValue Map for it's Values
-    Map sortedMap = sortMapByValue(hmValue, false);
-
-    System.out.println("============ After Sorting ===============");
-    System.out.println(sortedMap);
-  }
 }
