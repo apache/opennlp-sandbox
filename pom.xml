@@ -155,7 +155,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         
-        <opennlp.tools.version>2.1.0</opennlp.tools.version>
+        <opennlp.tools.version>2.1.1</opennlp.tools.version>
         <commons.io.version>2.6</commons.io.version>
         <uimaj.version>3.3.1</uimaj.version>
 
