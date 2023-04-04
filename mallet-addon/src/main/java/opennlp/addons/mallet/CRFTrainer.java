@@ -22,7 +22,8 @@ package opennlp.addons.mallet;
 import java.io.IOException;
 import java.util.regex.Pattern;
 
-import opennlp.tools.ml.AbstractSequenceTrainer;
+import opennlp.tools.ml.AbstractTrainer;
+import opennlp.tools.ml.SequenceTrainer;
 import opennlp.tools.ml.model.Event;
 import opennlp.tools.ml.model.Sequence;
 import opennlp.tools.ml.model.SequenceClassificationModel;
@@ -44,7 +45,7 @@ import cc.mallet.types.LabelSequence;
 // Transducer should be abstract, we have two CRF and HMM.
 // For HMM we don't need to generate any features (how to do that nicely?!)
 // Dummy feature generator ?!
-public class CRFTrainer extends AbstractSequenceTrainer {
+public class CRFTrainer extends AbstractTrainer implements SequenceTrainer {
 
   private int[] getOrders() {
     String[] ordersString = "0,1".split(",");
@@ -56,9 +57,8 @@ public class CRFTrainer extends AbstractSequenceTrainer {
     return orders;
   }
 
-  // TODO: Interface has to be changed here,
   @Override
-  public SequenceClassificationModel<String> doTrain(SequenceStream sequences)
+  public <T> SequenceClassificationModel<String> train(SequenceStream<T> sequences)
       throws IOException {
 
     Alphabet dataAlphabet = new Alphabet();
@@ -67,7 +67,7 @@ public class CRFTrainer extends AbstractSequenceTrainer {
     InstanceList trainingData = new InstanceList(dataAlphabet, targetAlphabet);
 
     int nameIndex = 0;
-    Sequence sequence;
+    Sequence<T> sequence;
     while ((sequence = sequences.read()) != null) {
       FeatureVector[] featureVectors = new FeatureVector[sequence.getEvents().length];
       Label[] malletOutcomes = new Label[sequence.getEvents().length];
@@ -150,6 +150,5 @@ public class CRFTrainer extends AbstractSequenceTrainer {
   }
 
   // TODO: We need to return a sequence model here. How should that be done ?!
-  //
 
 }

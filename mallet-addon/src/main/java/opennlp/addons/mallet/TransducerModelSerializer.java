@@ -28,13 +28,13 @@ import java.io.OutputStream;
 import opennlp.tools.util.model.ArtifactSerializer;
 import cc.mallet.fst.Transducer;
 
-public class TransducerModelSerializer implements ArtifactSerializer<TransducerModel> {
+public class TransducerModelSerializer implements ArtifactSerializer<TransducerModel<?>> {
 
   @Override
-  public TransducerModel create(InputStream in) throws IOException {
+  public TransducerModel<?> create(InputStream in) throws IOException {
     try (ObjectInputStream ois = new ObjectInputStream(in)) {
       Transducer classifier = (Transducer) ois.readObject();
-      return new TransducerModel(classifier);
+      return new TransducerModel<>(classifier);
     } catch (ClassNotFoundException e) {
       throw new IOException(e);
     }

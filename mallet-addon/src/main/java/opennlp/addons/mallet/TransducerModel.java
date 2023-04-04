@@ -99,7 +99,7 @@ public class TransducerModel<T> implements SequenceClassificationModel<T>, Seria
     
     FeatureVectorSequence malletSequence = new FeatureVectorSequence(featureVectors);
     
-    Sequence[] answers;
+    Sequence<T>[] answers;
     if (numSequences == 1) {
       answers = new Sequence[1];
       answers[0] = model.transduce(malletSequence);
@@ -112,7 +112,7 @@ public class TransducerModel<T> implements SequenceClassificationModel<T>, Seria
     opennlp.tools.util.Sequence[] outcomeSequences = new opennlp.tools.util.Sequence[answers.length];
     
     for (int i = 0; i < answers.length; i++) {
-      Sequence seq = answers[i];
+      Sequence<T> seq = answers[i];
       
       List<String> outcomes = new ArrayList<>(seq.size());
       

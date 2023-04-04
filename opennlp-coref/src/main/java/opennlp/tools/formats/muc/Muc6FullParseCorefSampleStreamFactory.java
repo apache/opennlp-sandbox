@@ -50,7 +50,7 @@ import opennlp.tools.util.ObjectStream;
  * Factory creates a stream which can parse MUC 6 Coref data and outputs CorefSample
  * objects which are enhanced with a full parse and are suitable to train the Coreference component.
  */
-public class Muc6FullParseCorefSampleStreamFactory extends AbstractSampleStreamFactory<CorefSample> {
+public class Muc6FullParseCorefSampleStreamFactory extends AbstractSampleStreamFactory<CorefSample, Muc6FullParseCorefSampleStreamFactory.Parameters> {
 
   interface Parameters extends BasicFormatParams {
 
@@ -92,8 +92,7 @@ public class Muc6FullParseCorefSampleStreamFactory extends AbstractSampleStreamF
           }
         }, false), StandardCharsets.UTF_8);
     
-    ObjectStream<RawCorefSample> rawSamples = 
-        new MucCorefSampleStream(tokenizer, mucDocStream);
+    ObjectStream<RawCorefSample> rawSamples = new MucCorefSampleStream(tokenizer, mucDocStream);
     
     ObjectStream<RawCorefSample> parsedSamples = new FullParseCorefEnhancerStream(parser, rawSamples);
     
@@ -110,14 +109,12 @@ public class Muc6FullParseCorefSampleStreamFactory extends AbstractSampleStreamF
     List<String> tags = new ArrayList<>();
     
     for (Map.Entry<String, File> entry : modelFileTagMap.entrySet()) {
-      nameFinders.add(new NameFinderME(
-          new TokenNameFinderModelLoader().load(entry.getValue())));
+      nameFinders.add(new NameFinderME(new TokenNameFinderModelLoader().load(entry.getValue())));
       tags.add(entry.getKey());
     }
     
     return new MucMentionInserterStream(new NameFinderCorefEnhancerStream(nameFinders.toArray(
-        new TokenNameFinder[nameFinders.size()]),
-        tags.toArray(new String[tags.size()]), parsedSamples));
+            new TokenNameFinder[0]), tags.toArray(new String[0]), parsedSamples));
   }
   
   public static void registerFactory() {

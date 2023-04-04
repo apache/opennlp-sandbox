@@ -31,9 +31,9 @@ import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.ParagraphStream;
 import opennlp.tools.util.PlainTextByLineStream;
 
-public class CorefSampleStreamFactory extends AbstractSampleStreamFactory<CorefSample> {
+public class CorefSampleStreamFactory extends AbstractSampleStreamFactory<CorefSample, CorefSampleStreamFactory.Parameters> {
 
-  interface Parameters extends BasicFormatParams {
+  public interface Parameters extends BasicFormatParams {
   }
   
   protected CorefSampleStreamFactory() {
