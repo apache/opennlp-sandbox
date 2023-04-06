@@ -22,8 +22,7 @@ import opennlp.tools.util.eval.Mean;
 
 /**
  * The {@link WSDEvaluator} measures the performance of the given
- * {@link WSDisambiguator} with the provided reference
- * {@link WordToDisambiguate}.
+ * {@link WSDisambiguator} with the provided reference {@code WordToDisambiguate}.
  *
  * @see Evaluator
  * @see WSDisambiguator

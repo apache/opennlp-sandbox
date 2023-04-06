@@ -38,6 +38,8 @@ import opennlp.tools.util.model.BaseModel;
 // TODO unify both supervised models
 public class WSDModel extends BaseModel {
 
+  private static final long serialVersionUID = 8597537955427934846L;
+  
   private static final String COMPONENT_NAME = "WSD";
   private static final String WSD_MODEL_ENTRY_NAME = "WSD.model";
 

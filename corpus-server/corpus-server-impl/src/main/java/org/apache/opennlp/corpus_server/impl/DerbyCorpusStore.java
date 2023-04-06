@@ -56,30 +56,22 @@ public class DerbyCorpusStore implements CorpusStore {
     
     byte[] casBytes  = null;
     
-    try {
-      Connection conn = dataSource.getConnection();
-      
-      PreparedStatement ps = conn.prepareStatement("select * from " + 
-          corpusName + " where name=?");
+    try (Connection conn = dataSource.getConnection();
+         PreparedStatement ps = conn.prepareStatement("select * from " + corpusName + " where name=?")) {
+
       ps.setString(1, casId);
       
       ResultSet casResult = ps.executeQuery();
-      
       if (casResult.next()) {
         casBytes = casResult.getBytes(2);
       }
       
       casResult.close();
-      ps.close();
-      conn.close();
-      
+
     } catch (SQLException e) {
-      
       if (LOGGER.isLoggable(Level.SEVERE)) {
-        LOGGER.log(Level.SEVERE, "Failed to retrieve CAS: " + 
-            casId, e);
+        LOGGER.log(Level.SEVERE, "Failed to retrieve CAS: " + casId, e);
       }
-      
       throw new IOException(e);
     }
     
@@ -89,30 +81,20 @@ public class DerbyCorpusStore implements CorpusStore {
   @Override
   public void addCAS(String casID, byte[] content) throws IOException {
     
-    try {
-      Connection conn = dataSource.getConnection();
-      PreparedStatement ps = conn.prepareStatement("insert into " + 
-          corpusName + " values (?, ?)");
-      
+    try (Connection conn = dataSource.getConnection();
+         PreparedStatement ps = conn.prepareStatement("insert into " + corpusName + " values (?, ?)")) {
       ps.setString(1, casID);
       
       Blob b = conn.createBlob();
       b.setBytes(1, content);
       ps.setBlob(2, b);
-      
       ps.executeUpdate();
-      
+
       conn.commit();
-      
-      ps.close();
-      conn.close();
     } catch (SQLException e) {
-      
       if (LOGGER.isLoggable(Level.SEVERE)) {
-        LOGGER.log(Level.SEVERE, "Failed to add CAS: " + 
-            casID, e);
+        LOGGER.log(Level.SEVERE, "Failed to add CAS: " + casID, e);
       }
-      
       throw new IOException(e);
     }
     
@@ -123,30 +105,21 @@ public class DerbyCorpusStore implements CorpusStore {
 
   @Override
   public void updateCAS(String casID, byte[] content) throws IOException {
-    try {
-      Connection conn = dataSource.getConnection();
-      PreparedStatement ps = conn.prepareStatement("update " + 
-          corpusName + " set cas = ? where name = ?");
-      
+    try (Connection conn = dataSource.getConnection();
+         PreparedStatement ps = conn.prepareStatement("update " + corpusName + " set cas = ? where name = ?")) {
+
       ps.setString(2, casID);
       
       Blob b = conn.createBlob();
       b.setBytes(1, content);
       ps.setBlob(1, b);
-      
       ps.executeUpdate();
       
       conn.commit();
-      
-      ps.close();
-      conn.close();
     } catch (SQLException e) {
-      
       if (LOGGER.isLoggable(Level.SEVERE)) {
-        LOGGER.log(Level.SEVERE, "Failed to add CAS: " + 
-            casID, e);
+        LOGGER.log(Level.SEVERE, "Failed to add CAS: " + casID, e);
       }
-      
       throw new IOException(e);
     }
     
@@ -158,26 +131,16 @@ public class DerbyCorpusStore implements CorpusStore {
   @Override
   public void removeCAS(String casID) throws IOException {
     
-    try {
-      Connection conn = dataSource.getConnection();
-      PreparedStatement ps = conn.prepareStatement("delete from " + 
-          corpusName + " where name = ?");
-      
+    try (Connection conn = dataSource.getConnection();
+         PreparedStatement ps = conn.prepareStatement("delete from " + corpusName + " where name = ?")) {
       ps.setString(1, casID);
-      
       ps.executeUpdate();
       
       conn.commit();
-      
-      ps.close();
-      conn.close();
     } catch (SQLException e) {
-      
       if (LOGGER.isLoggable(Level.SEVERE)) {
-        LOGGER.log(Level.SEVERE, "Failed to remove CAS: " + 
-            casID, e);
+        LOGGER.log(Level.SEVERE, "Failed to remove CAS: " + casID, e);
       }
-      
       throw new IOException(e);
     }
     
@@ -188,61 +151,44 @@ public class DerbyCorpusStore implements CorpusStore {
   
   @Override
   public void replaceTypeSystem(byte[] newTypeSystem) throws IOException {
-    try {
-      Connection conn = dataSource.getConnection();
+    try (Connection conn = dataSource.getConnection();
+         PreparedStatement typeSystemPS = conn.prepareStatement("update " +
+                 corpusName + " set cas = ? where name = ?")) {
       // Replace the type system
-      PreparedStatement typeSystemPS = conn.prepareStatement("update " + 
-          corpusName + " set cas = ? where name = ?");
-
       typeSystemPS.setString(2, "_typesystem");
 
       Blob typeSystemBlob = conn.createBlob();
       typeSystemBlob.setBytes(1, newTypeSystem);
       typeSystemPS.setBlob(1, typeSystemBlob);
-
       typeSystemPS.executeUpdate();
       
       conn.commit();
-      
-      typeSystemPS.close();
-      conn.close();
     } catch (SQLException e) {
-      
       if (LOGGER.isLoggable(Level.SEVERE)) {
         LOGGER.log(Level.SEVERE, "Failed to replace the Type System!", e);
       }
-      
       throw new IOException(e);
     }
   }
   
   @Override
   public byte[] getTypeSystem() throws IOException {
-    
     byte[] tsBytes;
     
-    try {
-      Connection conn = dataSource.getConnection();
-      Statement s = conn.createStatement();
-      ResultSet tsResult = s.executeQuery("select * FROM " + corpusName + 
-          " WHERE name='_typesystem'");
-      
+    try (Connection conn = dataSource.getConnection();
+         ResultSet tsResult = conn.createStatement().executeQuery(
+                 "select * FROM " + corpusName + " WHERE name='_typesystem'")) {
+
       if (tsResult.next()) {
         tsBytes = tsResult.getBytes(2);
-      }
-      else {
+      } else {
         throw new IOException("Failed to retrieve type system!");
       }
       
-      tsResult.close();
-      s.close();
-      conn.close();
     } catch (SQLException e) {
-      
       if (LOGGER.isLoggable(Level.SEVERE)) {
         LOGGER.log(Level.SEVERE, "Failed to retrieve type system", e);
       }
-      
       throw new IOException(e);
     }
     
@@ -253,25 +199,18 @@ public class DerbyCorpusStore implements CorpusStore {
   public byte[] getIndexMapping() throws IOException {
     byte[] indexMappingBytes = null;
     
-    try {
-      Connection conn = dataSource.getConnection();
-      Statement s = conn.createStatement();
-      ResultSet indexMappingResult = s.executeQuery("select * FROM " + corpusName + 
-          " WHERE name='_indexMapping'");
-      
+    try (Connection conn = dataSource.getConnection();
+         ResultSet indexMappingResult = conn.createStatement().executeQuery(
+                 "select * FROM " + corpusName + " WHERE name='_indexMapping'")) {
+
       if (indexMappingResult.next()) {
         indexMappingBytes = indexMappingResult.getBytes(2);
       }
       
-      indexMappingResult.close();
-      s.close();
-      conn.close();
     } catch (SQLException e) {
-      
       if (LOGGER.isLoggable(Level.SEVERE)) {
         LOGGER.log(Level.SEVERE, "Failed to retrieve type system", e);
       }
-      
       throw new IOException(e);
     }
     

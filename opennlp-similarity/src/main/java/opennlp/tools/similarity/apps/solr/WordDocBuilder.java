@@ -182,31 +182,28 @@ public class WordDocBuilder{
      * @throws FileNotFoundException
      * @throws IOException
      */
-    protected static byte[] convertImageToByteArray(File file)
-            throws FileNotFoundException, IOException {
-        InputStream is = new FileInputStream(file );
-        long length = file.length();
-        // You cannot create an array using a long, it needs to be an int.
-        if (length > Integer.MAX_VALUE) {
-            System.out.println("File too large!!");
-        }
-        byte[] bytes = new byte[(int)length];
-        int offset = 0;
-        int numRead;
-        while (offset < bytes.length && (numRead=is.read(bytes, offset, bytes.length-offset)) >= 0) {
-            offset += numRead;
-        }
-        // Ensure all the bytes have been read
-        if (offset < bytes.length) {
-            System.out.println("Could not completely read file "
-                        +file.getName());
-        }
-        is.close();
-        return bytes;
+    protected static byte[] convertImageToByteArray(File file) throws FileNotFoundException, IOException {
+        try (InputStream is = new FileInputStream(file)) {
+					long length = file.length();
+					// You cannot create an array using a long, it needs to be an int.
+					if (length > Integer.MAX_VALUE) {
+							System.out.println("File too large!!");
+					}
+					byte[] bytes = new byte[(int)length];
+					int offset = 0;
+					int numRead;
+					while (offset < bytes.length && (numRead=is.read(bytes, offset, bytes.length-offset)) >= 0) {
+							offset += numRead;
+					}
+					// Ensure all the bytes have been read
+					if (offset < bytes.length) {
+							System.out.println("Could not completely read file "
+													+file.getName());
+					}
+					return bytes;
+				}
     }
-    
-    
-    
+
     public static void saveImageFromTheWeb(String imageUrl, String destinationFile) {
 			File f = new File(destinationFile);
 			if (!f.exists()) {

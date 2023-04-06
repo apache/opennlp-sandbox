@@ -251,11 +251,11 @@ public class GenderModel implements TestGenderModel, TrainSimilarityModel {
   @Override
   public void trainModel() throws IOException {
     if (debugOn) {
-      FileWriter writer = new FileWriter(modelName + ".events");
-      for (Event e : events) {
-        writer.write(e.toString() + "\n");
+      try (FileWriter writer = new FileWriter(modelName + ".events")) {
+        for (Event e : events) {
+          writer.write(e.toString() + "\n");
+        }
       }
-      writer.close();
     }
     GISTrainer trainer = new GISTrainer();
     trainer.init(TrainingParameters.defaultParams(), null);

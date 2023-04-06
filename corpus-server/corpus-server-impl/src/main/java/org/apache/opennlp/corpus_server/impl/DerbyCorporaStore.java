@@ -71,9 +71,10 @@ public class DerbyCorporaStore extends AbstractCorporaStore {
 
   private void readTable(Set<String> set, DatabaseMetaData md, String searchCriteria, String schema)
           throws SQLException {
-    ResultSet rs = md.getTables(null, schema, null, new String[]{ searchCriteria });
-    while (rs.next()) {
-      set.add(rs.getString("TABLE_NAME").toLowerCase());
+    try (ResultSet rs = md.getTables(null, schema, null, new String[]{ searchCriteria })) {
+      while (rs.next()) {
+        set.add(rs.getString("TABLE_NAME").toLowerCase());
+      }
     }
   }
 
@@ -117,29 +118,26 @@ public class DerbyCorporaStore extends AbstractCorporaStore {
       }
 
     } catch (SQLException e) {
-      
       if (LOGGER.isLoggable(Level.SEVERE)) {
         LOGGER.log(Level.SEVERE, "Failed to create corpus: " + corpusName, e);
       }
-      
       throw new IOException(e);
     }
     
     LOGGER.info("Created new corpus: " + corpusName);
-    
-    
+
     for (CorporaChangeListener listener : getListeners()) {
       // TODO: Maybe optimize this, or just pass the corpus id
       listener.addedCorpus(getCorpus(corpusName));
     }
   }
 
+  @Override
   public Set<String> getCorpusIds() throws IOException {
     
     Set<String> corpusIds = new HashSet<>();
     
-    try {
-      Connection conn = dataSource.getConnection();
+    try (Connection conn = dataSource.getConnection()) {
       DatabaseMetaData dbmd = conn.getMetaData();
 
       String[] types = { "TABLE" };
@@ -150,14 +148,10 @@ public class DerbyCorporaStore extends AbstractCorporaStore {
         corpusIds.add(tableName.toLowerCase());
       }
 
-      conn.close();
-
     } catch (SQLException e) {
-
       if (LOGGER.isLoggable(Level.SEVERE)) {
         LOGGER.log(Level.SEVERE, "Failed to retrieve corpus ids!", e);
       }
-
       throw new IOException(e);
     }
     
@@ -167,14 +161,12 @@ public class DerbyCorporaStore extends AbstractCorporaStore {
   @Override
   public void dropCorpus(String corpusName) throws IOException {
 
-    try {
-      Connection conn = dataSource.getConnection();
+    try (Connection conn = dataSource.getConnection()) {
       Statement s = conn.createStatement();
       s.execute("drop table " + corpusName);
       s.close();
 
       conn.commit();
-      conn.close();
     } catch (SQLException e) {
       if (LOGGER.isLoggable(Level.SEVERE)) {
         LOGGER.log(Level.SEVERE, "Failed to create corpus: " + corpusName, e);
@@ -199,9 +191,8 @@ public class DerbyCorporaStore extends AbstractCorporaStore {
     
     DerbyCorpusStore corpusStore = null;
     
-    try {
-      DatabaseMetaData metadata;
-      metadata = dataSource.getConnection().getMetaData();
+    try (Connection conn = dataSource.getConnection()) {
+      DatabaseMetaData metadata = conn.getMetaData();
       String[] names = { "TABLE" };
       ResultSet tableNames = metadata.getTables(null, null, null, names);
 
@@ -214,7 +205,6 @@ public class DerbyCorporaStore extends AbstractCorporaStore {
         }
       }
     } catch (SQLException e) {
-      
       if (LOGGER.isLoggable(Level.SEVERE)) {
         LOGGER.log(Level.SEVERE, "Failed to check if corpus exists!", e);
       }

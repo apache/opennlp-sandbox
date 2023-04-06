@@ -148,30 +148,18 @@ public class ClassifierTrainingSetIndexer {
           ee.printStackTrace();
         }
       } else { // for xml files
-        try {
+        try (FileReader fr = new FileReader(f)) {
           Document doc = new Document();
 
-          String name = new String(f.getPath());
+          String name = f.getPath();
           String[] nparts = name.split("/");
           int len = nparts.length;
           name = nparts[len - 2];
 
-          FileReader fr = new FileReader(f);
           doc.add(new TextField("text", fr));
-
-          doc.add(new StringField("path", f.getPath(),
-                  Field.Store.YES));
+          doc.add(new StringField("path", f.getPath(), Field.Store.YES));
           doc.add(new StringField("class", name, Field.Store.YES));
-          try {
-
-            indexWriter.addDocument(doc);
-
-          } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Could not add: " + f);
-          } finally {
-            fr.close();
-          }
+          indexWriter.addDocument(doc);
         } catch (Exception ee) {
           ee.printStackTrace();
         }

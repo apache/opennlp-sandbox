@@ -72,8 +72,8 @@ public class ParserCacheSerializer {
 
       Map<String, String[][]> sentence_parseObject = (Map<String, String[][]>) objectToSerialize;
       List<String> keys = new ArrayList<>(sentence_parseObject.keySet());
-      try (CSVWriter writer = new CSVWriter(
-              new FileWriter(RESOURCE_DIR + PARSE_CACHE_FILE_NAME_CSV, false))) {
+      try (CSVWriter writer = new CSVWriter(new FileWriter(
+              RESOURCE_DIR + PARSE_CACHE_FILE_NAME_CSV, false))) {
         for (String k : keys) {
           String[][] triplet = sentence_parseObject.get(k);
           writer.writeNext(new String[] { k });

@@ -340,11 +340,11 @@ public abstract class MaxentResolver extends AbstractResolver {
     if (ResolverMode.TRAIN == mode) {
       if (DEBUG) {
         System.err.println(this + " referential");
-        FileWriter writer = new FileWriter(modelName + ".events");
-        for (Event e : events) {
-          writer.write(e.toString() + "\n");
+        try (FileWriter writer = new FileWriter(modelName + ".events")) {
+          for (Event e : events) {
+            writer.write(e.toString() + "\n");
+          }
         }
-        writer.close();
       }
       TrainingParameters params = TrainingParameters.defaultParams();
       params.put(TrainingParameters.ITERATIONS_PARAM, 100);

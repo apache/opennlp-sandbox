@@ -27,23 +27,15 @@ public class FileUtil {
 
   static byte[] fileToBytes(File file) throws IOException {
 
-    ByteArrayOutputStream fileBytes = new ByteArrayOutputStream(
-        (int) file.length());
-
-    InputStream fileIn = new FileInputStream(file);
-
-    try {
+    try (ByteArrayOutputStream fileBytes = new ByteArrayOutputStream((int) file.length());
+         InputStream fileIn = new FileInputStream(file)) {
       byte[] buffer = new byte[1024];
       int length;
       while ((length = fileIn.read(buffer)) > 0) {
         fileBytes.write(buffer, 0, length);
       }
+      return fileBytes.toByteArray();
     }
-    finally {
-      fileIn.close();
-    }
-    
-    return fileBytes.toByteArray();
   }
 
 }

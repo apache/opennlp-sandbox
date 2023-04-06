@@ -18,7 +18,6 @@ package opennlp.addons.modelbuilder.impls;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -30,7 +29,7 @@ import java.util.logging.Logger;
 import opennlp.addons.modelbuilder.ModelGenerationValidator;
 
 /**
- *Validates NER results input before inclusion into the model
+ * Validates NER results input before inclusion into the model.
  */
 public class FileModelValidatorImpl implements ModelGenerationValidator {
 
@@ -72,19 +71,12 @@ public class FileModelValidatorImpl implements ModelGenerationValidator {
       return badentities;
     }
     if (!badentities.isEmpty()) {
-      try {
-        InputStream fis;
-        BufferedReader br;
+      try (BufferedReader br = new BufferedReader(new InputStreamReader(
+              new FileInputStream(params.getKnownEntityBlacklist()), StandardCharsets.UTF_8))) {
         String line;
-
-        fis = new FileInputStream(params.getKnownEntityBlacklist());
-        br = new BufferedReader(new InputStreamReader(fis, StandardCharsets.UTF_8));
         while ((line = br.readLine()) != null) {
           badentities.add(line);
         }
-        br.close();
-        br = null;
-        fis = null;
       } catch (IOException ex) {
         Logger.getLogger(FileKnownEntityProvider.class.getName()).log(Level.SEVERE, null, ex);
       }

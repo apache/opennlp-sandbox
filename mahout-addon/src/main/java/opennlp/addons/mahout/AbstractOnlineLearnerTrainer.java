@@ -22,11 +22,12 @@ package opennlp.addons.mahout;
 import java.util.HashMap;
 import java.util.Map;
 
-import opennlp.tools.ml.AbstractEventTrainer;
-import opennlp.tools.ml.model.DataIndexer;
-
 import org.apache.mahout.math.RandomAccessSparseVector;
 import org.apache.mahout.math.Vector;
+
+import opennlp.tools.ml.AbstractEventTrainer;
+import opennlp.tools.ml.model.DataIndexer;
+import opennlp.tools.util.TrainingParameters;
 
 abstract class AbstractOnlineLearnerTrainer extends AbstractEventTrainer {
 
@@ -36,16 +37,8 @@ abstract class AbstractOnlineLearnerTrainer extends AbstractEventTrainer {
   }
 
   @Override
-  public void init(Map<String, String> trainParams,
-	      Map<String, String> reportMap) {
-	  String iterationsValue = trainParams.get("Iterations");
-	  
-	  if (iterationsValue != null) {
-		  iterations = Integer.parseInt(iterationsValue);
-	  }
-	  else {
-		  iterations = 20;
-	  }
+  public void init(TrainingParameters trainingParams, Map<String, String> reportMap) {
+    iterations = trainingParams.getIntParameter("Iterations", 20);
   }
   
   protected void trainOnlineLearner(DataIndexer indexer, org.apache.mahout.classifier.OnlineLearner pa) {

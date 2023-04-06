@@ -167,20 +167,15 @@ public class CSQueueCollectionReader extends CollectionReader_ImplBase {
         .header("Content-Type", MediaType.TEXT_XML)
         .get(ClientResponse.class);
     
-    InputStream casIn = casResponse.getEntityInputStream();
-    
-    try {
+
+    try (InputStream casIn = casResponse.getEntityInputStream()) {
       UimaUtil.deserializeXmiCAS(cas, casIn);
     }
     catch (IOException e) {
       if (logger.isLoggable(Level.SEVERE)) {
         logger.log(Level.SEVERE, "Failed to load CAS: " +  casId + " code: " + casResponse.getStatus());
       }
-      
       throw e;
-    }
-    finally {
-      casIn.close();
     }
     
     if (idType != null && idFeature != null) {

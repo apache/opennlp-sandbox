@@ -233,24 +233,19 @@ public class LuceneSearchService implements SearchService {
     String corpusId = store.getCorpusId();
     
     AnalysisEngine indexer = corpusIndexerMap.get(corpusId);
-    
-    InputStream indexTsIn = LuceneSearchService.class.getResourceAsStream(
-        "/org/apache/opennlp/corpus_server/impl/TypeSystem.xml");
-    
+
     TypeSystemDescription indexTypeDesc;
-    try {
+    try (InputStream indexTsIn = LuceneSearchService.class.getResourceAsStream(
+        "/org/apache/opennlp/corpus_server/impl/TypeSystem.xml")) {
       indexTypeDesc = UimaUtil.createTypeSystemDescription(indexTsIn);
     }
-    finally {
-      indexTsIn.close();
-    }
-    
+
     List<MetaDataObject> specs = new ArrayList<>();
     specs.add(indexTypeDesc);
     TypeSystemDescription tsDescription = UimaUtil.createTypeSystemDescription(
           new ByteArrayInputStream(store.getTypeSystem()));
     specs.add(tsDescription);
-    
+
     // Note: This might be a performance problem
     CAS cas;
     try {

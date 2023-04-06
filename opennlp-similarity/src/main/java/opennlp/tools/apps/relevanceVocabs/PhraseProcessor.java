@@ -34,7 +34,7 @@ public class PhraseProcessor {
 	public static boolean allChildNodesArePOSTags(Parse p) {
 		Parse[] subParses = p.getChildren();
 		for (Parse subPars : subParses)
-			if (!((Parse) subPars).isPosTag())
+			if (!subPars.isPosTag())
 				return false;
 		return true;
 	}
@@ -49,7 +49,7 @@ public class PhraseProcessor {
 			if (subpars.getType().equals("NP") && allChildNodesArePOSTags(subpars)) {
 				Span _span = subpars.getSpan();
 				nounphrases.add(p.getText().substring(_span.getStart(), _span.getEnd()));
-			} else if (!((Parse) subpars).isPosTag())
+			} else if (!subpars.isPosTag())
 				nounphrases.addAll(getNounPhrases(subpars));
 		}
 
@@ -66,7 +66,7 @@ public class PhraseProcessor {
 			if (subpars.getType().startsWith("VB") && allChildNodesArePOSTags(subpars)) {
 				Span _span = subpars.getSpan();
 				verbPhrases.add(p.getText().substring(_span.getStart(), _span.getEnd()));
-			} else if (!((Parse) subpars).isPosTag())
+			} else if (!subpars.isPosTag())
 				verbPhrases.addAll(getNounPhrases(subpars));
 		}
 
@@ -89,9 +89,7 @@ public class PhraseProcessor {
 		if (groupedChunks.size()<1)
 			return null;
 
-		List<ParseTreeChunk> vPhrases = groupedChunks.get(1);
-
-		return vPhrases;
+		return groupedChunks.get(1);
 	}
 
 	public List<List<ParseTreeChunk>> getPhrasesOfAllTypes(String sentence) {
@@ -112,102 +110,102 @@ public class PhraseProcessor {
 		return groupedChunks;
 	}
 
-// forms phrases from text which are candidate expressions for events lookup
-public List<String> extractNounPhraseProductNameCandidate(String sentence) {
+	// forms phrases from text which are candidate expressions for events lookup
+	public List<String> extractNounPhraseProductNameCandidate(String sentence) {
 
-	List<String> queryArrayStr = new ArrayList<>();
+		List<String> queryArrayStr = new ArrayList<>();
 
-	if (sentence.split(" ").length ==1) { // this is a word, return empty
-		//queryArrayStr.add( sentence);
-		return queryArrayStr;
-	}
-	String quoted1 = StringUtils.substringBetween(sentence, "\"", "\"");
-	String quoted2 = StringUtils.substringBetween(sentence, "\'", "\'");
-	List<List<ParseTreeChunk>> groupedChunks = nlProc.formGroupedPhrasesFromChunksForPara(sentence);
-	if (groupedChunks.size()<1)
-		return queryArrayStr;
-
-	List<ParseTreeChunk> nPhrases = groupedChunks.get(0);
-
-	for (ParseTreeChunk ch : nPhrases) {
-		String query = "";
-		int size = ch.getLemmas().size();
-		boolean phraseBeingFormed = false;
-		for (int i = 0; i < size; i++) {
-			if ((ch.getPOSs().get(i).startsWith("N") || ch.getPOSs().get(i)
-					.startsWith("J") || ch.getPOSs().get(i).startsWith("CD") ) )
-			//		&& StringUtils.isAlpha(ch.getLemmas().get(i)))
-			{
-				query += ch.getLemmas().get(i) + " ";
-				phraseBeingFormed = true;
-			} else
-				if ((ch.getPOSs().get(i).startsWith("PR") || ch.getPOSs().get(i).startsWith("IN") || ch.getPOSs().get(i).startsWith("TO")  )
-						&& phraseBeingFormed )
-					break;
-				else if (ch.getPOSs().get(i).startsWith("DT") || ch.getPOSs().get(i).startsWith("CC"))
-				continue;
+		if (sentence.split(" ").length ==1) { // this is a word, return empty
+			//queryArrayStr.add( sentence);
+			return queryArrayStr;
 		}
-		query = query.trim();
-		int len = query.split(" ").length;
-		if (len > 5 || len < 2) // too long or too short
-			continue;
+		String quoted1 = StringUtils.substringBetween(sentence, "\"", "\"");
+		String quoted2 = StringUtils.substringBetween(sentence, "\'", "\'");
+		List<List<ParseTreeChunk>> groupedChunks = nlProc.formGroupedPhrasesFromChunksForPara(sentence);
+		if (groupedChunks.size()<1)
+			return queryArrayStr;
 
-		/*
-		if (len < 4 && len>1) { // every word should start with capital
-			String[] qs = query.split(" ");
-			boolean bAccept = true;
-			for (String w : qs) {
-				if (w.toLowerCase().equals(w)) // idf only two words then
-												// has to be person name,
-												// title or geolocation
-					bAccept = false;
-			}
-			if (!bAccept)
-				continue;
-		}
-		*/
-		 // individual word, possibly a frequent word
-		// if len==1 do nothing
+		List<ParseTreeChunk> nPhrases = groupedChunks.get(0);
 
-		query = query.trim();
-		queryArrayStr.add(query);
-
-		}
-		/*
-		if (queryArrayStr.size() < 1) { // release constraints on NP down to 2
-										// keywords
-			for (ParseTreeChunk ch : nPhrases) {
-				String query = "";
-				int size = ch.getLemmas().size();
-
-				for (int i = 0; i < size; i++) {
-					if (ch.getPOSs().get(i).startsWith("N")
-							|| ch.getPOSs().get(i).startsWith("J")) {
-						query += ch.getLemmas().get(i) + " ";
-					}
-				}
-				query = query.trim();
-				int len = query.split(" ").length;
-				if (len < 2)
+		for (ParseTreeChunk ch : nPhrases) {
+			String query = "";
+			int size = ch.getLemmas().size();
+			boolean phraseBeingFormed = false;
+			for (int i = 0; i < size; i++) {
+				if ((ch.getPOSs().get(i).startsWith("N") || ch.getPOSs().get(i)
+						.startsWith("J") || ch.getPOSs().get(i).startsWith("CD") ) )
+				//		&& StringUtils.isAlpha(ch.getLemmas().get(i)))
+				{
+					query += ch.getLemmas().get(i) + " ";
+					phraseBeingFormed = true;
+				} else
+					if ((ch.getPOSs().get(i).startsWith("PR") || ch.getPOSs().get(i).startsWith("IN") || ch.getPOSs().get(i).startsWith("TO")  )
+							&& phraseBeingFormed )
+						break;
+					else if (ch.getPOSs().get(i).startsWith("DT") || ch.getPOSs().get(i).startsWith("CC"))
 					continue;
-
-				query = TextProcessor.fastTokenize(query.toLowerCase(), false)
-						.toString().replace('[', ' ').replace(']', ' ').trim();
-				if (query.length() > 6)
-					queryArrayStr.add(query);
 			}
-		}
-		//queryArrayStr = Utils
-		//		.removeDuplicatesFromQueries(queryArrayStr);
-		if (quoted1 != null
-				&& ((quoted1.length() > 5 && !stopList.isCommonWord(quoted1)) || quoted1
-						.length() > 10))
-			queryArrayStr.add(quoted1);
-		if (quoted2 != null
-				&& ((quoted2.length() > 5 && !stopList.isCommonWord(quoted2)) || quoted2
-						.length() > 10))
-			queryArrayStr.add(quoted2);
-		*/
+			query = query.trim();
+			int len = query.split(" ").length;
+			if (len > 5 || len < 2) // too long or too short
+				continue;
+
+			/*
+			if (len < 4 && len>1) { // every word should start with capital
+				String[] qs = query.split(" ");
+				boolean bAccept = true;
+				for (String w : qs) {
+					if (w.toLowerCase().equals(w)) // idf only two words then
+													// has to be person name,
+													// title or geolocation
+						bAccept = false;
+				}
+				if (!bAccept)
+					continue;
+			}
+			*/
+			 // individual word, possibly a frequent word
+			// if len==1 do nothing
+
+			query = query.trim();
+			queryArrayStr.add(query);
+
+			}
+			/*
+			if (queryArrayStr.size() < 1) { // release constraints on NP down to 2
+											// keywords
+				for (ParseTreeChunk ch : nPhrases) {
+					String query = "";
+					int size = ch.getLemmas().size();
+
+					for (int i = 0; i < size; i++) {
+						if (ch.getPOSs().get(i).startsWith("N")
+								|| ch.getPOSs().get(i).startsWith("J")) {
+							query += ch.getLemmas().get(i) + " ";
+						}
+					}
+					query = query.trim();
+					int len = query.split(" ").length;
+					if (len < 2)
+						continue;
+
+					query = TextProcessor.fastTokenize(query.toLowerCase(), false)
+							.toString().replace('[', ' ').replace(']', ' ').trim();
+					if (query.length() > 6)
+						queryArrayStr.add(query);
+				}
+			}
+			//queryArrayStr = Utils
+			//		.removeDuplicatesFromQueries(queryArrayStr);
+			if (quoted1 != null
+					&& ((quoted1.length() > 5 && !stopList.isCommonWord(quoted1)) || quoted1
+							.length() > 10))
+				queryArrayStr.add(quoted1);
+			if (quoted2 != null
+					&& ((quoted2.length() > 5 && !stopList.isCommonWord(quoted2)) || quoted2
+							.length() > 10))
+				queryArrayStr.add(quoted2);
+			*/
 		return queryArrayStr;
 	}
 
