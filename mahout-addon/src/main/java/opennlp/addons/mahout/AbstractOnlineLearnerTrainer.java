@@ -37,8 +37,8 @@ abstract class AbstractOnlineLearnerTrainer extends AbstractEventTrainer {
   }
 
   @Override
-  public void init(TrainingParameters trainingParams, Map<String, String> reportMap) {
-    iterations = trainingParams.getIntParameter("Iterations", 20);
+  public void init(TrainingParameters trainParams, Map<String,String> reportMap) {
+	  iterations = trainParams.getIntParameter("Iterations", 20);
   }
   
   protected void trainOnlineLearner(DataIndexer indexer, org.apache.mahout.classifier.OnlineLearner pa) {

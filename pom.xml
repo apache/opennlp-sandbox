@@ -109,8 +109,78 @@
         <module>wikinews-importer</module>
     </modules>
 
+    <properties>
+        <!-- Build Properties -->
+        <java.version>11</java.version>
+        <maven.version>3.3.9</maven.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <opennlp.tools.version>2.1.1</opennlp.tools.version>
+        <opennlp.forkCount>1.0C</opennlp.forkCount>
+
+        <uimaj.version>3.3.1</uimaj.version>
+
+        <junit.version>5.9.2</junit.version>
+
+        <enforcer.plugin.version>3.0.0-M3</enforcer.plugin.version>
+        <checkstyle.plugin.version>3.2.0</checkstyle.plugin.version>
+        <coveralls.maven.plugin>4.3.0</coveralls.maven.plugin>
+        <jacoco.maven.plugin>0.7.9</jacoco.maven.plugin>
+        <maven.surefire.plugin>3.0.0-M5</maven.surefire.plugin>
+        <maven.failsafe.plugin>3.0.0-M5</maven.failsafe.plugin>
+        <mockito.version>3.9.0</mockito.version>
+    </properties>
+
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <artifactId>opennlp-tools</artifactId>
+                <groupId>${project.groupId}</groupId>
+                <version>${opennlp.tools.version}</version>
+            </dependency>
+
+            <dependency>
+                <artifactId>opennlp-tools</artifactId>
+                <groupId>${project.groupId}</groupId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+            </dependency>
+
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>2.6</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>3.4</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-codec</groupId>
+                <artifactId>commons-codec</artifactId>
+                <version>1.15</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-logging</groupId>
+                <artifactId>commons-logging</artifactId>
+                <version>1.1.1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>commons-collections</groupId>
+                <artifactId>commons-collections</artifactId>
+                <version>3.2.2</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-math3</artifactId>
+                <version>3.5</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-api</artifactId>
@@ -132,44 +202,8 @@
                 <scope>test</scope>
             </dependency>
 
-            <dependency>
-                <artifactId>opennlp-tools</artifactId>
-                <groupId>${project.groupId}</groupId>
-                <version>${opennlp.tools.version}</version>
-            </dependency>
-
-            <dependency>
-                <artifactId>opennlp-tools</artifactId>
-                <groupId>${project.groupId}</groupId>
-                <version>${project.version}</version>
-                <type>test-jar</type>
-            </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <properties>
-        <!-- Build Properties -->
-        <java.version>11</java.version>
-        <maven.version>3.3.9</maven.version>
-        <maven.compiler.source>${java.version}</maven.compiler.source>
-        <maven.compiler.target>${java.version}</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        
-        <opennlp.tools.version>2.1.1</opennlp.tools.version>
-        <commons.io.version>2.6</commons.io.version>
-        <uimaj.version>3.3.1</uimaj.version>
-
-        <junit.version>5.9.1</junit.version>
-        
-        <enforcer.plugin.version>3.0.0-M3</enforcer.plugin.version>
-        <checkstyle.plugin.version>3.2.0</checkstyle.plugin.version>
-        <opennlp.forkCount>1.0C</opennlp.forkCount>
-        <coveralls.maven.plugin>4.3.0</coveralls.maven.plugin>
-        <jacoco.maven.plugin>0.7.9</jacoco.maven.plugin>
-        <maven.surefire.plugin>3.0.0-M5</maven.surefire.plugin>
-        <maven.failsafe.plugin>3.0.0-M5</maven.failsafe.plugin>
-        <mockito.version>3.9.0</mockito.version>
-    </properties>
 
     <build>
         <pluginManagement>
