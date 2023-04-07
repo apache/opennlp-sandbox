@@ -48,22 +48,15 @@ public class SynonymListFilter {
 		List<String> items = new ArrayList<>();
 
 		StringBuilder contents = new StringBuilder();		    
-		try {
+		try (BufferedReader input =  new BufferedReader(new FileReader(aFile))) {
+			String line; //not declared within while loop
+			while (( line = input.readLine()) != null){
+				int endOfWord = line.indexOf(';');
+				if (endOfWord>2)
+					line = line.substring(1, endOfWord -1 );
 
-			BufferedReader input =  new BufferedReader(new FileReader(aFile));
-			try {
-				String line; //not declared within while loop
-				while (( line = input.readLine()) != null){
-					int endOfWord = line.indexOf(';');
-					if (endOfWord>2)
-						line = line.substring(1, endOfWord -1 );
+				items.add(line);
 
-					items.add(line);
-
-				}
-			}
-			finally {
-				input.close();
 			}
 		}
 		catch (IOException ex){

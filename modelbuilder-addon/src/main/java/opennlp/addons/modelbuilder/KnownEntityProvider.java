@@ -15,12 +15,14 @@
  */
 package opennlp.addons.modelbuilder;
 
+import opennlp.addons.modelbuilder.impls.BaseModelBuilderParams;
+
 import java.util.Set;
 
 /**
  * Supplies a list of known entities (a list of names or locations)
  */
-public interface KnownEntityProvider extends ModelParameter {
+public interface KnownEntityProvider extends ModelParameter<BaseModelBuilderParams> {
 
   /**
    * Returns a list of known non-ambiguous entities.

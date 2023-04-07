@@ -58,35 +58,18 @@ public class ProfileReaderWriter {
 	}
 
 	public static void writeReport( List<String[]> allLines, String reportName){
-		CSVWriter writer = null;
-		try {	
-			writer = new CSVWriter(new PrintWriter(reportName));			
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}		
-		writer.writeAll(allLines);
-
-		try {
+		try (CSVWriter writer = new CSVWriter(new PrintWriter(reportName))) {
+			writer.writeAll(allLines);
 			writer.flush();
-			writer.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
 	public static void writeReport( List<String[]> allLines, String reportName, char delimiter){
-		CSVWriter writer = null;
-		try {	
-			writer = new CSVWriter(new PrintWriter(reportName), delimiter, delimiter, delimiter);			
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}	
-
-		writer.writeAll(allLines);
-
-		try {
+		try (CSVWriter writer = new CSVWriter(new PrintWriter(reportName), delimiter, delimiter, delimiter)) {
+			writer.writeAll(allLines);
 			writer.flush();
-			writer.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -101,18 +84,9 @@ public class ProfileReaderWriter {
 			System.out.println("Creating file "+reportName);
 		}
 		
-		CSVWriter writer = null;
-		try {	
-			writer = new CSVWriter(new PrintWriter(reportName), delimiter, delimiter, delimiter);			
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}	
-
-		writer.writeAll(allLines);
-
-		try {
+		try (CSVWriter writer = new CSVWriter(new PrintWriter(reportName), delimiter, delimiter, delimiter)) {
+			writer.writeAll(allLines);
 			writer.flush();
-			writer.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -126,18 +100,9 @@ public class ProfileReaderWriter {
 			System.out.println("Creating file "+reportName);
 		}
 		
-		CSVWriter writer = null;
-		try {	
-			writer = new CSVWriter(new PrintWriter(reportName));			
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}	
-
-		writer.writeAll(allLines);
-
-		try {
+		try (CSVWriter writer = new CSVWriter(new PrintWriter(reportName))) {
+			writer.writeAll(allLines);
 			writer.flush();
-			writer.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -151,8 +116,6 @@ public class ProfileReaderWriter {
 		List<String[]> allLines = new ArrayList<>();
 		allLines.add(new String[] {"aa " , "  bb", "ccc" });
 		ProfileReaderWriter.writeReport( allLines, "reportName.txt", ' ');
-
 	}
-
 
 }

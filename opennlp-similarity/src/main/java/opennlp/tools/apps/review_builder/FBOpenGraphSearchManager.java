@@ -39,14 +39,11 @@ public class FBOpenGraphSearchManager {
 	protected final PageFetcher pageFetcher = new PageFetcher();
 	protected static final int NUM_TRIES = 5;
 	protected static final long WAIT_BTW_TRIES=1000; //milliseconds between re-tries
-	
-		
+
 	public FBOpenGraphSearchManager(){
 		profiles = ProfileReaderWriter.readProfiles("C:\\nc\\features\\analytics\\dealanalyzer\\sweetjack-localcoupon-may12012tooct302012.csv");
-		
 	}
-	
-		
+
 	public void setFacebookClient(FacebookClient c){
 		this.mFBClient=c;
 	}
@@ -126,9 +123,9 @@ public class FBOpenGraphSearchManager {
         	String likes = StringUtils.substringBetween(content, "stats fwb\">", "<" );
         	if (likes==null)
         		continue;
-        	Integer nLikes =0;
+        	int nLikes =0;
         	try {
-        	nLikes = Integer.parseInt(likes);
+        		nLikes = Integer.parseInt(likes);
         	} catch (Exception e){
         		
         	}
@@ -137,21 +134,15 @@ public class FBOpenGraphSearchManager {
         	}
         	
         }
-        
-        
         return null;
 	}
-	
-
-    // 
     
-    public static void main(String[] args){
-    	FBOpenGraphSearchManager man = new FBOpenGraphSearchManager ();
-    	man.setFacebookClient(new DefaultFacebookClient());
-       	
-    	
-    	long res = man.getFBPageLikes("chain saw");
-    	System.out.println(res);
-    	    	
-    }
+	public static void main(String[] args){
+		FBOpenGraphSearchManager man = new FBOpenGraphSearchManager ();
+		man.setFacebookClient(new DefaultFacebookClient());
+
+		long res = man.getFBPageLikes("chain saw");
+		System.out.println(res);
+
+	}
 }

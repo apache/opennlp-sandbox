@@ -18,7 +18,6 @@ package opennlp.addons.modelbuilder.impls;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
@@ -39,23 +38,12 @@ public class FileSentenceProvider implements SentenceProvider {
   @Override
   public Set<String> getSentences() {
      if (sentences.isEmpty()) {
-      try {
-        InputStream fis;
-        BufferedReader br;
+      try (BufferedReader br = new BufferedReader(new InputStreamReader(
+              new FileInputStream(params.getSentenceFile()), StandardCharsets.UTF_8))) {
         String line;
-
-        fis = new FileInputStream(params.getSentenceFile());
-        br = new BufferedReader(new InputStreamReader(fis, StandardCharsets.UTF_8));
-        int i=0;
         while ((line = br.readLine()) != null) {
-         
           sentences.add(line);
         }
-
-        // Done with the file
-        br.close();
-        br = null;
-        fis = null;
       } catch (IOException ex) {
         Logger.getLogger(FileKnownEntityProvider.class.getName()).log(Level.SEVERE, null, ex);
       }

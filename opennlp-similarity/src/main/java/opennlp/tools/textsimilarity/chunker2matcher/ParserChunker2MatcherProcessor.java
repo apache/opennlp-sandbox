@@ -581,25 +581,12 @@ public class ParserChunker2MatcherProcessor {
   }
 
   protected void initializeSentenceDetector() {
-    InputStream is = null;
-    try {
-      is = new FileInputStream(MODEL_DIR + "/en-sent.bin"
-
-      );
+    try (InputStream is = new FileInputStream(MODEL_DIR + "/en-sent.bin")) {
       SentenceModel model = new SentenceModel(is);
       sentenceDetector = new SentenceDetectorME(model);
     } catch (IOException e) {
       e.printStackTrace();
-    } finally {
-      if (is != null) {
-        try {
-          is.close();
-        } catch (IOException e) {
-           // we swallow exception to support the cached run
-        	e.printStackTrace();
-        }
-      }
-    }
+    } 
   }
 
   protected void initializeTokenizer() {

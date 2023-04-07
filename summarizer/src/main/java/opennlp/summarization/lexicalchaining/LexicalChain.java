@@ -19,6 +19,7 @@ package opennlp.summarization.lexicalchaining;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import opennlp.summarization.Sentence;
 
@@ -73,11 +74,19 @@ public class LexicalChain implements Comparable<LexicalChain>{
   @Override
   public int compareTo(LexicalChain o) {
     double diff = (score() - o.score());
-    return diff ==0? 0: diff > 0 ?1:-1;
+    return diff == 0 ? 0: diff > 0 ? 1:-1;
   }
 
   @Override
-  public boolean equals(Object o){
-    return super.equals(o);
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    LexicalChain that = (LexicalChain) o;
+    return start == that.start && last == that.last && score == that.score && occurrences == that.occurrences;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(start, last, score, occurrences);
   }
 }

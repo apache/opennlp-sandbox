@@ -19,6 +19,7 @@ package opennlp.tools.disambiguator;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import net.sf.extjwnl.JWNLException;
 import net.sf.extjwnl.data.POS;
@@ -186,6 +187,14 @@ public class WSDSample {
     } else {
       return false;
     }
+  }
+
+  @Override
+  public int hashCode() {
+    int result = Objects.hash(targetPosition);
+    result = 31 * result + Arrays.hashCode(sentence);
+    result = 31 * result + Arrays.hashCode(tags);
+    return result;
   }
 
   // Return the synsets (thus the senses) of the current target word

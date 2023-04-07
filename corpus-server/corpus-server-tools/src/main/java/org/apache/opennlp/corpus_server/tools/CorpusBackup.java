@@ -79,11 +79,9 @@ public class CorpusBackup {
     File backupFile = new File(args[2]);
 
     // create zip file
-    OutputStream backupOut;
-        
-    try {
-      backupOut = new FileOutputStream(backupFile);
-      ZipOutputStream zipPackageOut = new ZipOutputStream(backupOut);
+
+    try (OutputStream backupOut = new FileOutputStream(backupFile);
+         ZipOutputStream zipPackageOut = new ZipOutputStream(backupOut)){
     
       WebResource corpusWebResource = c.resource(args[0] + "/corpora/" + corpusId);
       
@@ -96,10 +94,9 @@ public class CorpusBackup {
           .get(ClientResponse.class);
       
       zipPackageOut.putNextEntry(new ZipEntry("TypeSystem.xml"));
-      InputStream tsIn = tsResponse.getEntityInputStream();
-      
-      copyStream(tsIn, zipPackageOut);
-      tsIn.close();
+      try (InputStream tsIn = tsResponse.getEntityInputStream()) {
+        copyStream(tsIn, zipPackageOut);
+      }
       zipPackageOut.closeEntry();
       
       // consume task queue
@@ -139,8 +136,6 @@ public class CorpusBackup {
         
         System.out.println(casId);
       }
-      
-      zipPackageOut.close();
     }
     catch (IOException e) {
       e.printStackTrace();

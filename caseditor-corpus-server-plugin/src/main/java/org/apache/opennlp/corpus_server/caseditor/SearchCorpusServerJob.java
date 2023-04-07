@@ -70,7 +70,7 @@ public class SearchCorpusServerJob extends Job {
       return new Status(IStatus.WARNING, CorpusServerPlugin.PLUGIN_ID, "Failed to connect to server!");
     }
     
-    if (response.getClientResponseStatus().getStatusCode() != 200) {
+    if (response.getStatusInfo().getStatusCode() != 200) {
       return new Status(IStatus.WARNING, CorpusServerPlugin.PLUGIN_ID, "Failed to retrieve results from server!");
     }
     

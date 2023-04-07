@@ -127,11 +127,11 @@ public class DefaultNonReferentialResolver implements NonReferentialResolver {
     if (ResolverMode.TRAIN == mode) {
       System.err.println(this + " referential");
       if (debugOn) {
-        FileWriter writer = new FileWriter(modelName + ".events");
-        for (Event e : events) {
-          writer.write(e.toString() + "\n");
+        try (FileWriter writer = new FileWriter(modelName + ".events")) {
+          for (Event e : events) {
+            writer.write(e.toString() + "\n");
+          }
         }
-        writer.close();
       }
       TrainingParameters params = TrainingParameters.defaultParams();
       params.put(TrainingParameters.ITERATIONS_PARAM, 100);

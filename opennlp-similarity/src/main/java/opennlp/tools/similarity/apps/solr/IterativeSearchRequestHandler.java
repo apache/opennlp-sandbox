@@ -174,10 +174,10 @@ public class IterativeSearchRequestHandler extends SearchHandler {
 				float syntMatchScore =  Double.valueOf(parseTreeChunkListScorer.getParseTreeChunkListScore(matchResult.getMatchResult())).floatValue();
 				bestMatchesDocIds.add(docId);
 				bestMatchesScore.add(syntMatchScore);
-				syntMatchScoreArr[i] = (float)syntMatchScore; //*iter.score();
+				syntMatchScoreArr[i] = syntMatchScore; //*iter.score();
 				System.out.println(" Matched query = '"+requestExpression + "' with answer = '"+answerText +"' | doc_id = '"+docId);
 				System.out.println(" Match result = '"+matchResult.getMatchResult() + "' with score = '"+syntMatchScore +"';" );
-				docIdsScores.add(new Pair(docId, syntMatchScore));
+				docIdsScores.add(new Pair<>(docId, syntMatchScore));
 			}
 
 		} catch (CorruptIndexException e1) {

@@ -22,12 +22,12 @@ package opennlp.addons.mahout;
 import java.util.HashMap;
 import java.util.Map;
 
-import opennlp.tools.ml.AbstractEventTrainer;
-import opennlp.tools.ml.model.DataIndexer;
-
-import opennlp.tools.util.TrainingParameters;
 import org.apache.mahout.math.RandomAccessSparseVector;
 import org.apache.mahout.math.Vector;
+
+import opennlp.tools.ml.AbstractEventTrainer;
+import opennlp.tools.ml.model.DataIndexer;
+import opennlp.tools.util.TrainingParameters;
 
 abstract class AbstractOnlineLearnerTrainer extends AbstractEventTrainer {
 

@@ -21,6 +21,7 @@ import java.text.BreakIterator;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.Objects;
 
 import opennlp.summarization.preprocess.PorterStemmer;
 import opennlp.summarization.preprocess.StopWords;
@@ -28,7 +29,8 @@ import opennlp.summarization.preprocess.StopWords;
 /**
  * A representation of a sentence geared toward pagerank and summarization.
  */
-public class Sentence {	
+public class Sentence {
+
 	//sentId is always position of sentence in doc.
 	private int sentId;
 	private String stringVal;
@@ -132,12 +134,18 @@ public class Sentence {
 		return wordCnt==0? this.getStringVal().split(" ").length: wordCnt;
 	}
 
-	//Should add an article id to the sentence class. For now returns true if the ids are the same.
+	// Should add an article id to the sentence class. For now returns true if the ids are the same.
 	@Override
-	public boolean equals(Object o){
-		if(! (o instanceof Sentence)) return false;
-		Sentence s = (Sentence)o;
-		return s.sentId == this.sentId;
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		Sentence sentence = (Sentence) o;
+		return sentId == sentence.sentId;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(sentId);
 	}
 
 	private static final String SPACE = " ";

@@ -122,10 +122,8 @@ public class AnnotatingMarkupParser implements ITextConverter {
                     if (node instanceof WPATag) {
                         // extract wikilink annotations
                         WPATag tag = (WPATag) node;
-                        String wikilinkLabel = (String) tag.getAttributes().get(
-                                WIKILINK_TITLE_ATTR_KEY);
-                        String wikilinkTarget = (String) tag.getAttributes().get(
-                                WIKILINK_TARGET_ATTR_KEY);
+                        String wikilinkLabel = tag.getAttributes().get(WIKILINK_TITLE_ATTR_KEY);
+                        String wikilinkTarget = tag.getAttributes().get(WIKILINK_TARGET_ATTR_KEY);
                         if (wikilinkLabel != null) {
                             int colonIdx = -1; // wikilinkLabel.indexOf(':');
                             if (colonIdx == -1) {
