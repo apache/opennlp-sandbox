@@ -202,8 +202,8 @@ class NameFinderModelFieldEditor extends FieldEditor {
       typeNames.add(typeName);
     }
 
-    String modelPathsString = TypeListFieldEditor.listToString(modelPaths.toArray(new String[modelPaths.size()]));
-    String typeNamesString = TypeListFieldEditor.listToString(typeNames.toArray(new String[typeNames.size()]));
+    String modelPathsString = TypeListFieldEditor.listToString(modelPaths.toArray(new String[0]));
+    String typeNamesString = TypeListFieldEditor.listToString(typeNames.toArray(new String[0]));
 
     getPreferenceStore().setValue(OpenNLPPreferenceConstants.NAME_FINDER_MODEL_PATH, modelPathsString);
     getPreferenceStore().setValue(OpenNLPPreferenceConstants.NAME_TYPE, typeNamesString);

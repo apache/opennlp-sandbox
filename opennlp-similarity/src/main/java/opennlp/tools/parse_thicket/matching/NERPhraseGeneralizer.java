@@ -141,7 +141,7 @@ public class NERPhraseGeneralizer extends PhraseGeneralizer {
 			List<String> commonPOS = new ArrayList<>(), commonLemmas = new ArrayList<>();
 			// we start two words before first word
 			int k1 = occr1.get(ov1) - 2, k2 = occr2.get(ov2) - 2;
-			Boolean bReachedCommonWord = false;
+			boolean bReachedCommonWord = false;
 			while (k1 < 0 || k2 < 0) {
 				k1++;
 				k2++;

@@ -291,7 +291,7 @@ public class ParseTreeChunk implements Serializable {
 						continue; // if the words which have to stay do not stay, proceed to
 						// other elements
 					}
-					Boolean alreadyThere = false;
+					boolean alreadyThere = false;
 					for (ParseTreeChunk chunk : resultComps) {
 						if (chunk.equalsTo(chunkToAdd)) {
 							alreadyThere = true;
@@ -361,7 +361,7 @@ public class ParseTreeChunk implements Serializable {
 		if (this.lemmas.size() < lems.size())
 			return false; // sub-chunk should be shorter than chunk
 
-		Boolean notSubChunkWithGivenAlignment = false, unComparable = false;
+		boolean notSubChunkWithGivenAlignment = false, unComparable = false;
 		
 		for (int i = 0; i < lems.size() && i < this.lemmas.size(); i++) {
 			// both lemma and pos are different
@@ -427,31 +427,31 @@ public class ParseTreeChunk implements Serializable {
 	}
 
 	public String toString() {
-		String buf = " [";
+		StringBuilder buf = new StringBuilder(" [");
 		if (mainPOS != null)
-			buf = mainPOS + " [";
+			buf = new StringBuilder(mainPOS + " [");
 		for (int i = 0; i < lemmas.size() && i < POSs.size() ; i++) {
-			buf += POSs.get(i) + "-" + lemmas.get(i) + " ";
+			buf.append(POSs.get(i)).append("-").append(lemmas.get(i)).append(" ");
 			if (this.parseTreeNodes!=null){
 				Map<String, Object> attrs = this.parseTreeNodes.get(i).getAttributes();
 				if (attrs!=null && attrs.keySet().size()>0){
-					buf += attrs+ " ";
+					buf.append(attrs).append(" ");
 				}
 				String ner =this.parseTreeNodes.get(i).getNe();
 				if (ner!=null && ner.length()>1)
-					buf+="("+ner+ ") ";
+					buf.append("(").append(ner).append(") ");
 			}
 		}
 		return buf + "]";
 	}
 	
 	public String toWordOnlyString(){
-		String buf = "";
+		StringBuilder buf = new StringBuilder();
 
 		for (String lemma : lemmas) {
-			buf += lemma + " ";
+			buf.append(lemma).append(" ");
 		}
-		return buf.trim();
+		return buf.toString().trim();
 	}
 
 	public int compareTo(ParseTreeChunk o) {

@@ -145,22 +145,12 @@ public class LuceneSearchService implements SearchService {
       // and replace the index path with the index location for this corpus
       
       Properties indexWriterProperties = new Properties();
-      
-      InputStream indexWriterPropertiesIn = null;
-      try {
+
+      try (InputStream indexWriterPropertiesIn = LuceneSearchService.class.getResourceAsStream(
+              "/org/apache/opennlp/corpus_server/impl/IndexWriter.properties")) {
         // TODO: Retrieve file form somewhere for this corpus
-        indexWriterPropertiesIn = LuceneSearchService.class.getResourceAsStream(
-            "/org/apache/opennlp/corpus_server/impl/IndexWriter.properties");
-      
+
         indexWriterProperties.load(indexWriterPropertiesIn);
-      }
-      finally {
-        if (indexWriterPropertiesIn != null) {
-          try {
-            indexWriterPropertiesIn.close();
-          }
-          catch (IOException e) {}
-        }
       }
       
       indexWriterProperties.setProperty(IndexWriterProviderImpl.INDEX_PATH_PROPERTY,
@@ -171,20 +161,10 @@ public class LuceneSearchService implements SearchService {
       
       File indexWriterTmpFile = File.createTempFile("index-writer", corpusId + ".properties");
       indexWriterTmpFile.deleteOnExit();
-      
-      OutputStream indexPropertiesOut = null; 
-      try {
-        indexPropertiesOut = new FileOutputStream(indexWriterTmpFile);
+
+      try (OutputStream indexPropertiesOut = new FileOutputStream(indexWriterTmpFile)) {
         // write properties into a tmp file
         indexWriterProperties.store(indexPropertiesOut, null);
-      }
-      finally {
-        if (indexPropertiesOut != null) {
-          try {
-            indexPropertiesOut.close();
-          }
-          catch (IOException e) {}
-        }
       }
       
       FileResourceSpecifier indexWriterFileSpecifier = new FileResourceSpecifier_impl();

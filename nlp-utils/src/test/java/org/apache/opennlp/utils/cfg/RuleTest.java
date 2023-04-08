@@ -53,7 +53,7 @@ class RuleTest {
 
   @Test
   void testCompare() throws Exception {
-    TreeSet<Rule> rules = new TreeSet<Rule>();
+    TreeSet<Rule> rules = new TreeSet<>();
     Rule r1 = new Rule("NP", "DT", "NN");
     Rule r2 = new Rule("NP", "NP", "PP");
     rules.add(r1);

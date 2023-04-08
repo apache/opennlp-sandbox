@@ -31,19 +31,15 @@ public class TypeInputDialog extends InputDialog {
   // TODO: Dialog should show some kind of list with existing types ...
   
   public TypeInputDialog(Shell parent, final TypeSystem ts) {
-    super(parent,"Add a type", "Type name:", "", new IInputValidator() {
-      
-      @Override
-      public String isValid(String value) {
-        
-        String result = null;
-        
-        if (ts.getType(value) == null) {
-          return "Type does not exist in type system!";
-        }
-        
-        return result;
+    super(parent,"Add a type", "Type name:", "", value -> {
+
+      String result = null;
+
+      if (ts.getType(value) == null) {
+        return "Type does not exist in type system!";
       }
+
+      return result;
     });
   }
 }

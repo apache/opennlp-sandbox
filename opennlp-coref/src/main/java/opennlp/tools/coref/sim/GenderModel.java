@@ -129,7 +129,7 @@ public class GenderModel implements TestGenderModel, TrainSimilarityModel {
 
   private void addEvent(String outcome, Context np1) {
     List<String> feats = getFeatures(np1);
-    events.add(new Event(outcome, feats.toArray(new String[feats.size()])));
+    events.add(new Event(outcome, feats.toArray(new String[0])));
   }
 
   /**
@@ -245,7 +245,7 @@ public class GenderModel implements TestGenderModel, TrainSimilarityModel {
   public double[] genderDistribution(Context np1) {
     List<String> features = getFeatures(np1);
     //System.err.println("GenderModel.genderDistribution: "+features);
-    return testModel.eval(features.toArray(new String[features.size()]));
+    return testModel.eval(features.toArray(new String[0]));
   }
 
   @Override

@@ -51,7 +51,7 @@ public class Normalizer {
     try(InputStream sourceCharMapIn = new FileInputStream(
         tmpModelPath.resolve("source_char_dict.txt").toFile())) {
       sourceCharMap = loadCharMap(sourceCharMapIn).entrySet().stream()
-          .collect(Collectors.toMap(Map.Entry::getValue, c -> c.getKey()));
+          .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
     }
 
     try(InputStream targetCharMapIn = new FileInputStream(
@@ -130,7 +130,7 @@ public class Normalizer {
           normalizedTexts.add(normalizedText.toString());
         }
 
-        return normalizedTexts.toArray(new String[normalizedTexts.size()]);
+        return normalizedTexts.toArray(new String[0]);
       }
     }
   }

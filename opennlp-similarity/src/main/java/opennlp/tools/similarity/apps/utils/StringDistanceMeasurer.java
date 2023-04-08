@@ -46,7 +46,7 @@ public class StringDistanceMeasurer {
   protected List<String> filterWordArray(String[] strWords) {
     List<String> strList = new ArrayList<>();
     for (String w : strWords) {
-      Boolean bInteger = true;
+      boolean bInteger = true;
       try {
         Integer.parseInt(w);
       } catch (Exception e) {
@@ -72,7 +72,7 @@ public class StringDistanceMeasurer {
   protected List<String> filterWordArrayNoStem(String[] strWords) {
     List<String> strList = new ArrayList<>();
     for (String w : strWords) {
-      Boolean bInteger = true;
+      boolean bInteger = true;
       try {
         Integer.parseInt(w);
       } catch (Exception e) {

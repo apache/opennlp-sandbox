@@ -133,7 +133,7 @@ public class CoreferencerTool extends BasicCmdLineTool {
 
           if (line.equals("")) {
             DiscourseEntity[] entities =
-                treebankLinker.getEntities(document.toArray(new Mention[document.size()]));
+                treebankLinker.getEntities(document.toArray(new Mention[0]));
             //showEntities(entities);
             new CorefParse(parses, entities).show();
             sentenceNumber = 0;

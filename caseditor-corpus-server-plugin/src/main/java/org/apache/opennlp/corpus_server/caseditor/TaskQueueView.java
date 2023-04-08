@@ -167,23 +167,19 @@ public class TaskQueueView extends ViewPart {
       GridDataFactory.swtDefaults().align(SWT.FILL, SWT.FILL).grab(true, true)
         .span(2, 1).applyTo(historyViewer.getTable());
     
-      historyViewer.addOpenListener(new IOpenListener() {
-        
-        @Override
-        public void open(OpenEvent event) {
-          
-          StructuredSelection selection = (StructuredSelection) event.getSelection();
-          
-          if (!selection.isEmpty()) {
-            IWorkbenchPage page = TaskQueueView.this.getSite().getPage();
-            
-            IEditorInput input = (IEditorInput) selection.getFirstElement();
+      historyViewer.addOpenListener(event -> {
 
-            try {
-              page.openEditor(input, "org.apache.uima.caseditor.editor");
-            } catch (PartInitException e) {
-              e.printStackTrace();
-            }
+        StructuredSelection selection = (StructuredSelection) event.getSelection();
+
+        if (!selection.isEmpty()) {
+          IWorkbenchPage page = TaskQueueView.this.getSite().getPage();
+
+          IEditorInput input = (IEditorInput) selection.getFirstElement();
+
+          try {
+            page.openEditor(input, "org.apache.uima.caseditor.editor");
+          } catch (PartInitException e) {
+            e.printStackTrace();
           }
         }
       });

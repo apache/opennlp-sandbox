@@ -128,7 +128,7 @@ public class PhraseProcessor {
 		List<ParseTreeChunk> nPhrases = groupedChunks.get(0);
 
 		for (ParseTreeChunk ch : nPhrases) {
-			String query = "";
+			StringBuilder query = new StringBuilder();
 			int size = ch.getLemmas().size();
 			boolean phraseBeingFormed = false;
 			for (int i = 0; i < size; i++) {
@@ -136,7 +136,7 @@ public class PhraseProcessor {
 						.startsWith("J") || ch.getPOSs().get(i).startsWith("CD") ) )
 				//		&& StringUtils.isAlpha(ch.getLemmas().get(i)))
 				{
-					query += ch.getLemmas().get(i) + " ";
+					query.append(ch.getLemmas().get(i)).append(" ");
 					phraseBeingFormed = true;
 				} else
 					if ((ch.getPOSs().get(i).startsWith("PR") || ch.getPOSs().get(i).startsWith("IN") || ch.getPOSs().get(i).startsWith("TO")  )
@@ -145,8 +145,8 @@ public class PhraseProcessor {
 					else if (ch.getPOSs().get(i).startsWith("DT") || ch.getPOSs().get(i).startsWith("CC"))
 					continue;
 			}
-			query = query.trim();
-			int len = query.split(" ").length;
+			query = new StringBuilder(query.toString().trim());
+			int len = query.toString().split(" ").length;
 			if (len > 5 || len < 2) // too long or too short
 				continue;
 
@@ -167,8 +167,8 @@ public class PhraseProcessor {
 			 // individual word, possibly a frequent word
 			// if len==1 do nothing
 
-			query = query.trim();
-			queryArrayStr.add(query);
+			query = new StringBuilder(query.toString().trim());
+			queryArrayStr.add(query.toString());
 
 			}
 			/*

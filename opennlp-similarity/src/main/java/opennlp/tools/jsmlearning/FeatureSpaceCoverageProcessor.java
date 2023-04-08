@@ -61,12 +61,12 @@ public class FeatureSpaceCoverageProcessor {
 		try {
 			int p3 = paramMap.get("Latitude");	
 			int p4 = paramMap.get("Longitude");
-			Double latDiff = Math.abs(Double.parseDouble(seed[p3]) - Double.parseDouble(candidate[p3]));
-			Double longDiff = Math.abs(Double.parseDouble(seed[p4]) - Double.parseDouble(candidate[p4]));
+			double latDiff = Math.abs(Double.parseDouble(seed[p3]) - Double.parseDouble(candidate[p3]));
+			double longDiff = Math.abs(Double.parseDouble(seed[p4]) - Double.parseDouble(candidate[p4]));
 			if (latDiff>1 || longDiff>1)
 				return 1000000f;
 			else 
-				score+= latDiff.floatValue()/100.0f + longDiff.floatValue()/100.0f;
+				score+= (float) latDiff /100.0f + (float) longDiff /100.0f;
 		} catch (Exception e) {
 			return 1000000f;
 		}
@@ -106,10 +106,10 @@ public class FeatureSpaceCoverageProcessor {
 				if (seed[p3][v].equals("") || seed[p4][v].equals("") 
 						|| candidate[p3].equals("") ||  candidate[p4].equals(""))
 					continue;
-				Double latDiff = Math.abs(Double.parseDouble(seed[p3][v]) - Double.parseDouble(candidate[p3]));
-				Double longDiff = Math.abs(Double.parseDouble(seed[p4][v]) - Double.parseDouble(candidate[p4]));
+				double latDiff = Math.abs(Double.parseDouble(seed[p3][v]) - Double.parseDouble(candidate[p3]));
+				double longDiff = Math.abs(Double.parseDouble(seed[p4][v]) - Double.parseDouble(candidate[p4]));
 				if (!(latDiff>1 || longDiff>1))
-					currLatLongScore = latDiff.floatValue()/100.0f + longDiff.floatValue()/100.0f;
+					currLatLongScore = (float) latDiff /100.0f + (float) longDiff /100.0f;
 			} catch (Exception e) {
 				//return 1000000f;
 			}

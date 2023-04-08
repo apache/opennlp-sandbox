@@ -156,7 +156,7 @@ public class PhraseGeneralizer implements IGeneralizer<ParseTreeChunk> {
 			// we start two words before first word
 			int k1 = occr1.get(ov1) - 2, k2 = occr2.get(ov2) - 2;
 			// if (k1<0) k1=0; if (k2<0) k2=0;
-			Boolean bReachedCommonWord = false;
+			boolean bReachedCommonWord = false;
 			while (k1 < 0 || k2 < 0) {
 				k1++;
 				k2++;

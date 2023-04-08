@@ -53,33 +53,31 @@ public class CorpusServerBundle implements BundleActivator {
     
     context.getServiceReference(CorpusServer.class.getName());
 
-    ServiceListener sl = new ServiceListener() {
-      public void serviceChanged(ServiceEvent ev) {
+    ServiceListener sl = ev -> {
 
-        switch (ev.getType()) {
-        case ServiceEvent.REGISTERED: {
+      switch (ev.getType()) {
+      case ServiceEvent.REGISTERED: {
 
-          if (corpusServer == null) {
-            System.out.println("Registered a Corpus Server implementation!");
+        if (corpusServer == null) {
+          System.out.println("Registered a Corpus Server implementation!");
 
-            corpusServerServiceReference = ev.getServiceReference();
-            corpusServer = (CorpusServer) context
-                .getService(corpusServerServiceReference);
-          }
+          corpusServerServiceReference = ev.getServiceReference();
+          corpusServer = (CorpusServer) context
+              .getService(corpusServerServiceReference);
         }
-          break;
-        case ServiceEvent.UNREGISTERING: {
+      }
+        break;
+      case ServiceEvent.UNREGISTERING: {
 
-          if (ev.getServiceReference().equals(corpusServerServiceReference)) {
-            System.out.println("Unregistered Corpus Server implementation!");
+        if (ev.getServiceReference().equals(corpusServerServiceReference)) {
+          System.out.println("Unregistered Corpus Server implementation!");
 
-            context.ungetService(corpusServerServiceReference);
-            corpusServerServiceReference = null;
-            corpusServer = null;
-          }
+          context.ungetService(corpusServerServiceReference);
+          corpusServerServiceReference = null;
+          corpusServer = null;
         }
-          break;
-        }
+      }
+        break;
       }
     };
 

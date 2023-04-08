@@ -48,7 +48,7 @@ class ProbabilisticContextFreeGrammarTest {
 
   @BeforeAll
   static void setUp() throws Exception {
-    nonTerminals = new LinkedList<String>();
+    nonTerminals = new LinkedList<>();
     nonTerminals.add("S");
     nonTerminals.add("NP");
     nonTerminals.add("VP");
@@ -62,7 +62,7 @@ class ProbabilisticContextFreeGrammarTest {
 
     startSymbol = "S";
 
-    terminals = new LinkedList<String>();
+    terminals = new LinkedList<>();
     terminals.add("works");
     terminals.add("saw");
     terminals.add("man");
@@ -85,7 +85,7 @@ class ProbabilisticContextFreeGrammarTest {
     terminals.add("badly");
     terminals.add("nicely");
 
-    rules = new HashMap<Rule, Double>();
+    rules = new HashMap<>();
     rules.put(new Rule("S", "NP", "VP"), 1d);
     rules.put(new Rule("VP", "Vi", "Adv"), 0.3);
     rules.put(new Rule("VP", "Vt", "NP"), 0.7);
@@ -112,7 +112,7 @@ class ProbabilisticContextFreeGrammarTest {
 
   @Test
   void testIntermediateProbability() throws Exception {
-    ArrayList<String> sentence = new ArrayList<String>();
+    ArrayList<String> sentence = new ArrayList<>();
     sentence.add("the");
     sentence.add("dog");
     sentence.add("saw");
@@ -136,7 +136,7 @@ class ProbabilisticContextFreeGrammarTest {
     ProbabilisticContextFreeGrammar pcfg = new ProbabilisticContextFreeGrammar(nonTerminals, terminals, rules, startSymbol, true);
 
     // fixed sentence one
-    List<String> sentence = new ArrayList<String>();
+    List<String> sentence = new ArrayList<>();
     sentence.add("the");
     sentence.add("dog");
     sentence.add("saw");
@@ -147,7 +147,7 @@ class ProbabilisticContextFreeGrammarTest {
     check(pcfg, parseTree, sentence);
 
     // fixed sentence two
-    sentence = new ArrayList<String>();
+    sentence = new ArrayList<>();
     sentence.add("the");
     sentence.add("man");
     sentence.add("works");
@@ -184,7 +184,7 @@ class ProbabilisticContextFreeGrammarTest {
       return Arrays.asList(parseTree.getRule().getExpansion());
     }
 
-    ArrayList<String> list = new ArrayList<String>();
+    ArrayList<String> list = new ArrayList<>();
     list.addAll(getTerminals(parseTree.getLeftTree()));
     list.addAll(getTerminals(parseTree.getRightTree()));
     return list;
@@ -245,7 +245,7 @@ class ProbabilisticContextFreeGrammarTest {
     InputStream resourceAsStream = getClass().getResourceAsStream("/it-tb-news.txt");
     BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(resourceAsStream));
     Collection<String> sentences = parseSentences(bufferedReader);
-    ProbabilisticContextFreeGrammar cfg = ProbabilisticContextFreeGrammar.parseGrammar(sentences.toArray(new String[sentences.size()]));
+    ProbabilisticContextFreeGrammar cfg = ProbabilisticContextFreeGrammar.parseGrammar(sentences.toArray(new String[0]));
     assertNotNull(cfg);
     String[] derivation = cfg.leftMostDerivation("S");
     assertNotNull(derivation);

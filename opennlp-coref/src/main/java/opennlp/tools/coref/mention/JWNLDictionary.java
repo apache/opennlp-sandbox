@@ -104,7 +104,7 @@ public class JWNLDictionary implements Dictionary {
         pos = POS.NOUN;
       }
       List<String> lemmas = morphy.lookupAllBaseForms(pos,word);
-      return lemmas.toArray(new String[lemmas.size()]);
+      return lemmas.toArray(new String[0]);
     }
     catch (JWNLException e) {
       e.printStackTrace();
@@ -159,7 +159,7 @@ public class JWNLDictionary implements Dictionary {
         Synset synset = iw.getSense(sense + 1);
         List<String> parents = new ArrayList<>();
         getParents(synset,parents);
-        return parents.toArray(new String[parents.size()]);
+        return parents.toArray(new String[0]);
       }
       else {
         return EMPTY;

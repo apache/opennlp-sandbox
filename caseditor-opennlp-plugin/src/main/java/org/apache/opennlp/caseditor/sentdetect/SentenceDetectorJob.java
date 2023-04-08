@@ -136,6 +136,6 @@ public class SentenceDetectorJob extends Job {
   }
 
   PotentialAnnotation[] getDetectedSentences() {
-    return detectedSentences.toArray(new PotentialAnnotation[detectedSentences.size()]);
+    return detectedSentences.toArray(new PotentialAnnotation[0]);
   }
 }

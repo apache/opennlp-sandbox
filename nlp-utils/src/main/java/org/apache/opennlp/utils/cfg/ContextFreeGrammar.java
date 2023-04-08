@@ -72,7 +72,7 @@ public class ContextFreeGrammar {
     for (String word : words) {
       expansion.addAll(getTerminals(word));
     }
-    return expansion.toArray(new String[expansion.size()]);
+    return expansion.toArray(new String[0]);
 
   }
 

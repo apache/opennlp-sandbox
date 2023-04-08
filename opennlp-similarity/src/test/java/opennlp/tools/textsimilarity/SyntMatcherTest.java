@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class SyntMatcherTest {
 

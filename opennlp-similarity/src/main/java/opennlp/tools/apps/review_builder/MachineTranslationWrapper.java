@@ -42,15 +42,15 @@ public class MachineTranslationWrapper  {
 			URLConnection connection = urlC.openConnection();
 
 			String line;
-			String result = "";
+			StringBuilder result = new StringBuilder();
 			BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 			int count = 0;
 			while ((line = reader.readLine()) != null)
 			{
-				result+=line;
+				result.append(line);
 				count++;
 			}
-			JSONObject rootObject = new JSONObject(result);
+			JSONObject rootObject = new JSONObject(result.toString());
 			JSONObject  findObject = rootObject.getJSONObject("responseData");
 			String transl = findObject.getString("translatedText");
 			try {

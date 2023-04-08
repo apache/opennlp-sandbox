@@ -84,13 +84,13 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
       List<String> feats = getFeatures(np1, np2);
       //System.err.println(SAME+" "+np1.headTokenText+" ("+np1.id+") -> "+np2.headTokenText+"
       // ("+np2.id+") "+feats);
-      events.add(new Event(SAME, feats.toArray(new String[feats.size()])));
+      events.add(new Event(SAME, feats.toArray(new String[0])));
     }
     else {
       List<String> feats = getFeatures(np1, np2);
       //System.err.println(DIFF+" "+np1.headTokenText+" ("+np1.id+") -> "+np2.headTokenText+"
       // ("+np2.id+") "+feats);
-      events.add(new Event(DIFF, feats.toArray(new String[feats.size()])));
+      events.add(new Event(DIFF, feats.toArray(new String[0])));
     }
   }
 
@@ -346,7 +346,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
   public double compatible(Context mention1, Context mention2) {
     List<String> feats = getFeatures(mention1, mention2);
     if (debugOn) System.err.println("SimilarityModel.compatible: feats=" + feats);
-    return (testModel.eval(feats.toArray(new String[feats.size()]))[SAME_INDEX]);
+    return (testModel.eval(feats.toArray(new String[0]))[SAME_INDEX]);
   }
 
   /**

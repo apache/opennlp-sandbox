@@ -138,7 +138,7 @@ public class PhraseTest {
 								.getAbstractText();
 					
 					LinkedHashSet<Integer> obj = null;
-					obj = new LinkedHashSet<Integer>();
+					obj = new LinkedHashSet<>();
 					obj.add(i);
 					chunks = chunk_maker.formGroupedPhrasesFromChunksForPara(text_result);
 					ps.AddIntent(chunks,obj, 0);

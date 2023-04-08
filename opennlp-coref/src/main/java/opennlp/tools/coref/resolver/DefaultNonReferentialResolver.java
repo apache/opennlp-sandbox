@@ -79,7 +79,7 @@ public class DefaultNonReferentialResolver implements NonReferentialResolver {
   @Override
   public double getNonReferentialProbability(MentionContext mention) {
     List<String> features = getFeatures(mention);
-    double r = model.eval(features.toArray(new String[features.size()]))[nonRefIndex];
+    double r = model.eval(features.toArray(new String[0]))[nonRefIndex];
     if (debugOn) System.err.println(this + " " + mention.toText() + " ->  null " + r + " " + features);
     return r;
   }
@@ -88,10 +88,10 @@ public class DefaultNonReferentialResolver implements NonReferentialResolver {
   public void addEvent(MentionContext ec) {
     List<String> features = getFeatures(ec);
     if (-1 == ec.getId()) {
-      events.add(new Event(MaxentResolver.SAME, features.toArray(new String[features.size()])));
+      events.add(new Event(MaxentResolver.SAME, features.toArray(new String[0])));
     }
     else {
-      events.add(new Event(MaxentResolver.DIFF, features.toArray(new String[features.size()])));
+      events.add(new Event(MaxentResolver.DIFF, features.toArray(new String[0])));
     }
   }
 

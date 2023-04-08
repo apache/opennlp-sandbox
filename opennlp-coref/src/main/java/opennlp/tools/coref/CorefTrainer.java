@@ -81,7 +81,7 @@ public class CorefTrainer {
       mentions.addAll(Arrays.asList(extents));
     }
     
-    return mentions.toArray(new Mention[mentions.size()]);
+    return mentions.toArray(new Mention[0]);
   }
   
   public static void train(String modelDirectory, ObjectStream<CorefSample> samples,

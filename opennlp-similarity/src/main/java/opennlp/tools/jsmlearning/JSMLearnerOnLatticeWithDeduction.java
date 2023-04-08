@@ -177,7 +177,7 @@ public class JSMLearnerOnLatticeWithDeduction extends JSMLearnerOnLatticeBase{
 	public Pair<List<String>, List<String>>  reGroupByOccurrenceOfSeparationKeyword(List<String> posTexts, List<String> negTexts, String[] keywords){
 		List<String> posTextsNew = new ArrayList<>(), negTextsNew = new ArrayList<>();
 		for(String posText:posTexts){
-			Boolean multiwordOccurs = true;
+			boolean multiwordOccurs = true;
 			for(String keyword: keywords){
 				if (!posText.contains(keyword))
 					multiwordOccurs = false;
@@ -189,7 +189,7 @@ public class JSMLearnerOnLatticeWithDeduction extends JSMLearnerOnLatticeBase{
 				negTextsNew.add(posText);
 		}
 		for(String negText:negTexts){
-			Boolean multiwordOccurs = true;
+			boolean multiwordOccurs = true;
 			for(String keyword: keywords){
 				if (!negText.contains(keyword))
 					multiwordOccurs = false;

@@ -186,7 +186,7 @@ public class NameFinderDL implements TokenNameFinder {
     for (int i = 0; i < epochs; i++) {
       net.fit(train);
       train.reset();
-      System.out.println(String.format("Finished epoch %d", i));
+      System.out.printf("Finished epoch %d%n", i);
     }
 
     return net;
