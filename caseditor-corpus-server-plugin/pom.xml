@@ -66,17 +66,29 @@
 		</dependency>
 
 		<dependency>
-		    <groupId>com.sun.jersey</groupId>
-		    <artifactId>jersey-json</artifactId>
-		    <version>1.19.4</version>
+			<groupId>org.glassfish.jersey.core</groupId>
+			<artifactId>jersey-client</artifactId>
+			<version>${jersey-client.version}</version>
 		</dependency>
 
 		<dependency>
-		    <groupId>com.sun.jersey</groupId>
-		    <artifactId>jersey-client</artifactId>
-		    <version>1.19.4</version>
+			<groupId>org.glassfish.jersey.media</groupId>
+			<artifactId>jersey-media-json-jettison</artifactId>
+			<version>${jersey-server.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.codehaus.jettison</groupId>
+					<artifactId>jettison</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
-		
+
+		<dependency>
+			<groupId>org.codehaus.jettison</groupId>
+			<artifactId>jettison</artifactId>
+			<version>${jettison.version}</version>
+		</dependency>
+
 		<!-- UIMA dependencies -->
 		<!-- don't depend on the runtime plugin, instead, depend on the parts needed -->
 		<dependency>
@@ -223,8 +235,7 @@
 									org.eclipse.ui,
 									org.eclipse.ui.workbench,
 									org.eclipse.core.runtime,
-									org.eclipse.core.resources,
-									org.junit4;bundle-version="4.13.2";resolution:=optional
+									org.eclipse.core.resources
 								</Require-Bundle>
 								<Import-Package>
 									!org.eclipse.jface.text,
@@ -238,7 +249,8 @@
 									!org.eclipse.ui.model,
 									!org.eclipse.ui.part,
 									!org.eclipse.core.runtime,
-									com.sun.jersey.api.client.config,
+									org.codehaus.jettison,
+									org.glassfish.jersey.client.config,
 									*
 								</Import-Package>
 							</instructions>

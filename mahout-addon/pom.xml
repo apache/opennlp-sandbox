@@ -42,6 +42,56 @@
 			<groupId>org.apache.mahout</groupId>
 			<artifactId>mahout-core</artifactId>
 			<version>0.9</version>
+			<exclusions>
+				<!-- No need for CLI tooling here -->
+				<exclusion>
+					<groupId>org.apache.mahout.commons</groupId>
+					<artifactId>commons-cli</artifactId>
+				</exclusion>
+				<!-- exluding as mahout-core brings ancient version (CVEs) -->
+				<exclusion>
+					<groupId>com.google</groupId>
+					<artifactId>guava</artifactId>
+				</exclusion>
+				<!-- exluding as mahout-core brings ancient version (CVEs) -->
+				<exclusion>
+					<groupId>com.thoughtworks.xstream</groupId>
+					<artifactId>xstream</artifactId>
+				</exclusion>
+				<!-- This is not needed any way and brings in ancient jersey -->
+				<exclusion>
+					<groupId>com.sun.jersey</groupId>
+					<artifactId>jersey-core</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.sun.jersey</groupId>
+					<artifactId>jersey-server</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.sun.jersey</groupId>
+					<artifactId>jersey-json</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>31.1-jre</version>
+			<scope>runtime</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>com.thoughtworks.xstream</groupId>
+			<artifactId>xstream</artifactId>
+			<version>1.4.20</version>
+			<scope>runtime</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>commons-beanutils</groupId>
+			<artifactId>commons-beanutils</artifactId>
+			<scope>runtime</scope>
 		</dependency>
 
 		<dependency>

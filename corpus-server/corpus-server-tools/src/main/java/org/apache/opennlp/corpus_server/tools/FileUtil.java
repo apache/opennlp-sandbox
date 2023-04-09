@@ -17,6 +17,7 @@
 
 package org.apache.opennlp.corpus_server.tools;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -28,7 +29,7 @@ public class FileUtil {
   static byte[] fileToBytes(File file) throws IOException {
 
     try (ByteArrayOutputStream fileBytes = new ByteArrayOutputStream((int) file.length());
-         InputStream fileIn = new FileInputStream(file)) {
+         InputStream fileIn = new BufferedInputStream(new FileInputStream(file))) {
       byte[] buffer = new byte[1024];
       int length;
       while ((length = fileIn.read(buffer)) > 0) {

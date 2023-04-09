@@ -17,19 +17,18 @@
 
 package org.apache.opennlp.corpus_server.tools;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.api.client.config.ClientConfig;
-import com.sun.jersey.api.client.config.DefaultClientConfig;
-import com.sun.jersey.api.json.JSONConfiguration;
+import javax.ws.rs.core.Response;
 
 /**
  * Command Line Tool to drop a corpus in the corpus server.
  */
 public class DropCorpus {
+
   public static void main(String[] args) throws Exception {
 
     if (args.length != 2) {
@@ -39,21 +38,19 @@ public class DropCorpus {
 
     String corpusName = args[1];
 
-    ClientConfig clientConfig = new DefaultClientConfig();
-    clientConfig.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING,
-        Boolean.TRUE);
+    Client c = ClientBuilder.newClient();
+    WebTarget r = c.target(args[0]);
 
-    Client c = Client.create(clientConfig);
+    try (Response response = r.path("_dropCorpus")
+            .queryParam("corpusName", corpusName)
+            .request(MediaType.APPLICATION_JSON)
+            .header("Content-Type", MediaType.APPLICATION_JSON_TYPE)
+            // as this is an query-param driven POST request,
+            // we just set an empty string to the body.
+            .post(Entity.entity("", MediaType.APPLICATION_JSON))) {
 
-    WebResource r = c.resource(args[0]);
+      System.out.println("Result: " + response.getStatus());
+    }
 
-    ClientResponse response = r.path("_dropCorpus")
-        .queryParam("corpusName", corpusName)
-        .accept(MediaType.APPLICATION_JSON)
-        // TODO: How to fix this? Shouldn't accept do it?
-        .header("Content-Type", MediaType.APPLICATION_JSON_TYPE)
-        .post(ClientResponse.class);
-
-    System.out.println("Result: " + response.getStatus());
   }
 }

@@ -29,7 +29,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.apache.uima.ResourceSpecifierFactory;
 import org.apache.uima.UIMAFramework;
@@ -60,10 +65,8 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.PreferenceStore;
 import org.eclipse.swt.widgets.Composite;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import org.glassfish.jersey.client.ClientProperties;
+import org.glassfish.jersey.client.ClientResponse;
 
 public class DefaultCasDocumentProvider extends
         org.apache.uima.caseditor.editor.CasDocumentProvider {
@@ -127,23 +130,22 @@ public class DefaultCasDocumentProvider extends
       //       the user if downloading the CAS fails?
       
       CorpusServerCasEditorInput casInput = (CorpusServerCasEditorInput) element;
-      
-      Client client = Client.create();
-      client.setReadTimeout(READ_TIMEOUT);
-      WebResource webResource = client.resource(casInput.getServerUrl());
-      
+
+      Client c = ClientBuilder.newClient();
+      c.property(ClientProperties.READ_TIMEOUT, READ_TIMEOUT);
+      WebTarget webResource = c.target(casInput.getServerUrl());
+
       // Note: The type system could be cached to avoid downloading it
       //       for every opened CAS, a time stamp can be used to detect
       //       if it has been changed or not.
       
       ClientResponse tsResponse = webResource.path("_typesystem")
-              .accept(MediaType.TEXT_XML)
-              // TODO: How to fix this? Shouldn't accept do it?
+              .request(MediaType.TEXT_XML)
               .header("Content-Type", MediaType.TEXT_XML)
               .get(ClientResponse.class);
       
       TypeSystemDescription tsDesc = null;
-      try (InputStream tsIn = tsResponse.getEntityInputStream()) {
+      try (InputStream tsIn = tsResponse.getEntityStream()) {
         tsDesc = createTypeSystemDescription(tsIn);
       }
       catch (IOException e) {
@@ -159,13 +161,12 @@ public class DefaultCasDocumentProvider extends
       
       ClientResponse casResponse;
       casResponse = webResource.path(URLEncoder.encode(casInput.getName(), StandardCharsets.UTF_8))
-          .accept(MediaType.TEXT_XML)
-          // TODO: How to fix this? Shouldn't accept do it?
+          .request(MediaType.TEXT_XML)
           .header("Content-Type", MediaType.TEXT_XML)
           .get(ClientResponse.class);
 
       org.apache.uima.caseditor.editor.ICasDocument doc;
-      try (InputStream casIn = casResponse.getEntityInputStream()) {
+      try (InputStream casIn = casResponse.getEntityStream()) {
         IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
         IPath pluginStatePath = CorpusServerPlugin.getDefault().getStateLocation();
         IPath tempPath = pluginStatePath.append(casInput.getName()).addFileExtension(MediaType.TEXT_XML);
@@ -200,19 +201,21 @@ public class DefaultCasDocumentProvider extends
         ByteArrayOutputStream outStream = new ByteArrayOutputStream(40000); 
         documentImpl.serialize(outStream);
         
-        Client client = Client.create();
-        client.setReadTimeout(READ_TIMEOUT);
-        WebResource webResource = client.resource(casInput.getServerUrl());
+        Client c = ClientBuilder.newClient();
+        c.property(ClientProperties.READ_TIMEOUT, READ_TIMEOUT);
+        WebTarget webResource = c.target(casInput.getServerUrl());
         
         byte[] xmiBytes = outStream.toByteArray();
         
         String encodedCasId = URLEncoder.encode(casInput.getName(), StandardCharsets.UTF_8);
+        String contentDisposition = "attachment; filename=\"" + encodedCasId + "\"";
 
-        ClientResponse response = webResource.path(encodedCasId)
-                .accept(MediaType.TEXT_XML)
-                // TODO: How to fix this? Shouldn't accept do it?
-                .header("Content-Type", MediaType.TEXT_XML)
-                .put(ClientResponse.class, xmiBytes);
+        Response response = webResource.path(encodedCasId)
+                .request(MediaType.TEXT_XML)
+                .header("Content-Type", MediaType.APPLICATION_OCTET_STREAM_TYPE)
+                .header("Content-Disposition", contentDisposition)
+                .header("Content-Length", xmiBytes.length)
+                .put(Entity.entity(xmiBytes, MediaType.APPLICATION_OCTET_STREAM_TYPE));
         
         if (response.getStatus() != 204) {
           throw new CoreException(new Status(Status.ERROR, CorpusServerPlugin.PLUGIN_ID,

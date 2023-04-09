@@ -38,7 +38,40 @@
 		  <groupId>org.apache.opennlp</groupId>
 		  <artifactId>opennlp-tools</artifactId>
 		</dependency>
-		
+
+		<dependency>
+			<groupId>org.glassfish.jersey.containers</groupId>
+			<artifactId>jersey-container-servlet</artifactId>
+			<version>${jersey-server.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.glassfish.jersey.media</groupId>
+			<artifactId>jersey-media-json-jackson</artifactId>
+			<version>${jersey-server.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.glassfish.jersey.media</groupId>
+			<artifactId>jersey-media-json-jettison</artifactId>
+			<version>${jersey-server.version}</version>
+			<scope>runtime</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>org.codehaus.jettison</groupId>
+					<artifactId>jettison</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>org.codehaus.jettison</groupId>
+			<artifactId>jettison</artifactId>
+			<version>${jettison.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+
 		<dependency>
 				<groupId>javax.servlet</groupId>
 				<artifactId>servlet-api</artifactId>
@@ -57,23 +90,12 @@
 				<version>4.2.0</version>
 		</dependency>
 
+		<!-- TEST scoped -->
 		<dependency>
-			<groupId>com.sun.jersey</groupId>
-			<artifactId>jersey-servlet</artifactId>
-			<version>1.19.4</version>
-		</dependency>
-		
-		<dependency>
-		    <groupId>com.sun.jersey</groupId>
-		    <artifactId>jersey-json</artifactId>
-		    <version>1.19.4</version>
-		</dependency>
-
-		<dependency>
-		    <groupId>com.sun.jersey</groupId>
-		    <artifactId>jersey-client</artifactId>
-		    <version>1.19.4</version>
-		    <scope>test</scope>
+			<groupId>org.glassfish.jersey.core</groupId>
+			<artifactId>jersey-client</artifactId>
+			<version>${jersey-client.version}</version>
+			<scope>test</scope>
 		</dependency>
 
 		<dependency>
@@ -145,12 +167,13 @@
 										!sun.misc,
 										javax.servlet,
 										*,
-										com.sun.jersey.json.impl.provider.entity.*,
-										com.sun.jersey.json.*,
+										org.glassfish.jersey.json.impl.provider.entity.*,
+										org.glassfish.jersey.json.*,
 										org.codehaus.jackson.*,
 										org.codehaus.jackson.xc,
-										com.sun.jersey.api.core,
-										com.sun.jersey.spi.container.servlet
+										org.glassfish.jersey.spi,
+										org.glassfish.jersey.server.spi
+										org.glassfish.jersey.servlet.spi
 									</Import-Package>
 									<!-- Import-Package>!com.ibm.jvm,!com.sun.jdmk.comm,!com.sun.net.httpserver,*,com.sun.jersey.api.core,com.sun.jersey.spi.container.servlet</Import-Package-->
 									<Export-Package>org.apache.opennlp.tagging_server.*</Export-Package>

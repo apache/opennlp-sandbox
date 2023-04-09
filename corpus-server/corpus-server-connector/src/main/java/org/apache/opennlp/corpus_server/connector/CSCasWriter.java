@@ -18,8 +18,15 @@
 package org.apache.opennlp.corpus_server.connector;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.apache.uima.UimaContext;
 import org.apache.uima.analysis_component.CasAnnotator_ImplBase;
@@ -35,11 +42,6 @@ import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.util.Level;
 import org.apache.uima.util.Logger;
 import org.xml.sax.SAXException;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.api.client.WebResource.Builder;
 
 /**
  * The CSCasWriter writes a CAS into a Corpus Server.
@@ -57,8 +59,7 @@ public class CSCasWriter extends CasAnnotator_ImplBase {
   private Logger logger;
 
   @Override
-  public void initialize(UimaContext context)
-      throws ResourceInitializationException {
+  public void initialize(UimaContext context) throws ResourceInitializationException {
     super.initialize(context);
 
     serverAddress = (String) context.getConfigParameterValue(CSQueueCollectionReader.SERVER_ADDRESS);
@@ -68,8 +69,7 @@ public class CSCasWriter extends CasAnnotator_ImplBase {
   }
 
   @Override
-  public void typeSystemInit(TypeSystem ts)
-      throws AnalysisEngineProcessException {
+  public void typeSystemInit(TypeSystem ts) throws AnalysisEngineProcessException {
     super.typeSystemInit(ts);
 
     String idTypeName = (String) getContext().getConfigParameterValue("IdFSTypeName");
@@ -91,48 +91,53 @@ public class CSCasWriter extends CasAnnotator_ImplBase {
       // TODO: Remove the FS here, so its client side only!
       // Was inserted in the reader ...
       cas.removeFsFromIndexes(idFs);
-      
-      ByteArrayOutputStream xmiBytes = new ByteArrayOutputStream();
-      try {
-        XmiCasSerializer.serialize(cas, xmiBytes);
-      } catch (SAXException e) {
+      try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+        XmiCasSerializer.serialize(cas, baos);
+
+        byte[] xmiBytes = baos.toByteArray();
+
+        Client c = ClientBuilder.newClient();
+        WebTarget r = c.target(serverAddress + "/corpora/" + corpusName);
+
+        Invocation.Builder casResponseBuilder = r.path(casId)
+                .request(MediaType.TEXT_XML)
+                .header("Content-Type", MediaType.TEXT_XML)
+                .header("Content-Length", xmiBytes.length);
+
+        if ("add".equals(action)) {
+          try (Response res = casResponseBuilder.post(
+                  Entity.entity(xmiBytes, MediaType.APPLICATION_OCTET_STREAM_TYPE))) {
+            logResponse(res, casId);
+          }
+        } else if ("update".equals(action)) {
+          try (Response res = casResponseBuilder.put(
+                  Entity.entity(xmiBytes, MediaType.APPLICATION_OCTET_STREAM_TYPE))) {
+            logResponse(res, casId);
+          }
+        }
+        else {
+          throw new AnalysisEngineProcessException(new Exception("Unknown action: " + action));
+        }
+
+      } catch (IOException | SAXException e) {
         throw new AnalysisEngineProcessException();
-      }
-      
-      Client client = Client.create();
-      
-      WebResource corpusWebResource = client.resource(serverAddress + "/corpora/"
-          + corpusName);
-      
-      Builder casResponseBuilder = corpusWebResource.path(casId)
-          .accept(MediaType.TEXT_XML).header("Content-Type", MediaType.TEXT_XML);
-      
-      ClientResponse response;
-      if ("add".equals(action)) {
-        response = casResponseBuilder.post(ClientResponse.class, xmiBytes);
-      }
-      else if ("update".equals(action)) {
-        response = casResponseBuilder.put(ClientResponse.class, xmiBytes);
-      }
-      else {
-        throw new AnalysisEngineProcessException(new Exception("Unknown action: " + action));
-      }
-      
-      int statusCode = response.getStatus();
-      
-      if (statusCode > 400) {
-        if (logger.isLoggable(Level.SEVERE)) {
-          logger.log(Level.SEVERE, "Error (" + statusCode + "), " + action + ", " + casId);
-        }
-      }
-      else {
-        if (logger.isLoggable(Level.FINE)) {
-          logger.log(Level.FINE, "OK (" + statusCode + "),  " + action + ", " + casId);
-        }
       }
     }
     else {
       throw new AnalysisEngineProcessException(new Exception("Missing Id Feature Structure!"));
+    }
+  }
+
+  private void logResponse(Response res, String casId) {
+    int statusCode = res.getStatus();
+    if (statusCode >= Response.Status.BAD_REQUEST.getStatusCode()) {
+      if (logger.isLoggable(Level.SEVERE)) {
+        logger.log(Level.SEVERE, "Error (" + statusCode + "), " + action + ", " + casId);
+      }
+    } else {
+      if (logger.isLoggable(Level.FINE)) {
+        logger.log(Level.FINE, "OK (" + statusCode + "),  " + action + ", " + casId);
+      }
     }
   }
 }

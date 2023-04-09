@@ -17,13 +17,13 @@
 
 package org.apache.opennlp.corpus_server.tools;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.codehaus.jettison.json.JSONArray;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
 
 public class SearchCorpus {
 
@@ -33,24 +33,24 @@ public class SearchCorpus {
 			System.out.println("SearchCorpus address query");
 			System.exit(-1);
 		}
+
+		Client c = ClientBuilder.newClient();
+		WebTarget r = c.target(args[0]);
 		
-		Client c = Client.create();
-		
-		WebResource r = c.resource(args[0]);
-		
-		ClientResponse response = r
-				.path("_search")
-				.queryParam("q", args[1])
-				.accept(MediaType.APPLICATION_JSON)
-				.header("Content-Type", MediaType.TEXT_XML)
-				.get(ClientResponse.class);
-		
-		JSONArray searchResult = response.getEntity(JSONArray.class);
-		
-		System.out.println("Status: " + response.getStatus());
-		
-		for (int i = 0; i < searchResult.length(); i++) {
-			System.out.println("Hit: " + searchResult.getString(i));
+		try (Response response = r.path("_search")
+						.queryParam("q", args[1])
+						.request(MediaType.APPLICATION_JSON)
+						.header("Content-Type", MediaType.TEXT_XML)
+						.get()) {
+
+			JSONArray searchResult = response.readEntity(JSONArray.class);
+
+			System.out.println("Status: " + response.getStatus());
+
+			for (int i = 0; i < searchResult.length(); i++) {
+				System.out.println("Hit: " + searchResult.getString(i));
+			}
 		}
+
 	}
 }

@@ -44,15 +44,11 @@
 		<dependency>
 				<groupId>org.osgi</groupId>
 				<artifactId>org.osgi.core</artifactId>
-				<version>4.2.0</version>
-				<scope>provided</scope>
 		</dependency>
 
 		<dependency>
 				<groupId>org.osgi</groupId>
 				<artifactId>org.osgi.compendium</artifactId>
-				<version>4.2.0</version>
-				<scope>provided</scope>
 		</dependency>
 
 		<dependency>
@@ -119,7 +115,7 @@
 							<instructions>
 								<Embed-Dependency>*;scope=compile;inline=false</Embed-Dependency>
 								<Embed-Transitive>true</Embed-Transitive>
-									<Bundle-SymbolicName>${pom.artifactId}</Bundle-SymbolicName>
+									<Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
 									<Import-Package>
 										!com.sun.jdmk.comm,
 										!javax.persistence.*,
