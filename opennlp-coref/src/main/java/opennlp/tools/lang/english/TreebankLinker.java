@@ -99,7 +99,7 @@ public class TreebankLinker extends DefaultLinker {
     for (String line = in.readLine();null != line;line = in.readLine()) {
       if (line.equals("")) {
         DiscourseEntity[] entities =
-            treebankLinker.getEntities(document.toArray(new Mention[document.size()]));
+            treebankLinker.getEntities(document.toArray(new Mention[0]));
         //showEntities(entities);
         new CorefParse(parses,entities).show();
         sentenceNumber = 0;
@@ -127,7 +127,7 @@ public class TreebankLinker extends DefaultLinker {
       }
     }
     if (document.size() > 0) {
-      DiscourseEntity[] entities = treebankLinker.getEntities(document.toArray(new Mention[document.size()]));
+      DiscourseEntity[] entities = treebankLinker.getEntities(document.toArray(new Mention[0]));
       //showEntities(entities);
       (new CorefParse(parses, entities)).show();
     }

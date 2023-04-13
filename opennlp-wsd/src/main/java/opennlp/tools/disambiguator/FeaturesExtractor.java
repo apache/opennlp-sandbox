@@ -95,7 +95,7 @@ public class FeaturesExtractor {
       }
     }
 
-    return contextWords.toArray(new String[contextWords.size()]);
+    return contextWords.toArray(new String[0]);
   }
 
   private String[] extractLocalCollocations(WTDIMS wordToDisambiguate, int ngram) {

@@ -112,28 +112,24 @@ public class CorpusExplorerView extends ViewPart {
       @Override
       public void done(final IJobChangeEvent event) {
         
-        Display.getDefault().asyncExec(new Runnable() {
+        Display.getDefault().asyncExec(() -> {
+          if (event.getResult().isOK()) {
 
-          @Override
-          public void run() {
-            if (event.getResult().isOK()) {
+            setMessage(null);
 
-              setMessage(null);
+            searchResultViewer.setItemCount(0);
+            JSONArray searchResult = searchJob.getSearchResult();
 
-              searchResultViewer.setItemCount(0);
-              JSONArray searchResult = searchJob.getSearchResult();
-
-              for (int i = 0; i < searchResult.length(); i++) {
-                try {
-                  searchResultViewer.add(searchResult.getString(i));
-                } catch (JSONException e) {
-                  setMessage("Error, failed to parse results.");
-                }
+            for (int i = 0; i < searchResult.length(); i++) {
+              try {
+                searchResultViewer.add(searchResult.getString(i));
+              } catch (JSONException e) {
+                setMessage("Error, failed to parse results.");
               }
             }
-            else {
-              setMessage("Fetching search results from server failed!");
-            }
+          }
+          else {
+            setMessage("Fetching search results from server failed!");
           }
         });
       }
@@ -166,13 +162,7 @@ public class CorpusExplorerView extends ViewPart {
     
     serverUrl.setText(lastUsedServer);
     
-    serverUrl.addModifyListener(new ModifyListener() {
-      
-      @Override
-      public void modifyText(ModifyEvent event) {
-        store.setValue(CorpusServerPreferenceConstants.LAST_USED_SERVER_ADDRESS, serverUrl.getText());
-      }
-    });
+    serverUrl.addModifyListener(event -> store.setValue(CorpusServerPreferenceConstants.LAST_USED_SERVER_ADDRESS, serverUrl.getText()));
     
     // Search field to view content of corpus
     Label queryLabel = new Label(explorerComposite, SWT.NONE);
@@ -287,28 +277,24 @@ public class CorpusExplorerView extends ViewPart {
         return arg0.toString();
       }});
     
-    searchResultViewer.addOpenListener(new IOpenListener() {
-      
-      @Override
-      public void open(OpenEvent event) {
-        
-        IWorkbenchPage page = CorpusExplorerView.this.getSite().getPage();
-        
-        StructuredSelection selection = (StructuredSelection) searchResultViewer.getSelection();
-        
-        if (selection.isEmpty())
-          return;
-        
-        String selectedCAS = (String) selection.getFirstElement();
-        
-        // Hard code it for now, lets work on retrieval code first ...
-        IEditorInput input = new CorpusServerCasEditorInput(serverUrl.getText(), selectedCAS);
-        
-        try {
-          page.openEditor(input, "org.apache.uima.caseditor.editor");
-        } catch (PartInitException e) {
-          e.printStackTrace();
-        }
+    searchResultViewer.addOpenListener(event -> {
+
+      IWorkbenchPage page = CorpusExplorerView.this.getSite().getPage();
+
+      StructuredSelection selection = (StructuredSelection) searchResultViewer.getSelection();
+
+      if (selection.isEmpty())
+        return;
+
+      String selectedCAS = (String) selection.getFirstElement();
+
+      // Hard code it for now, lets work on retrieval code first ...
+      IEditorInput input = new CorpusServerCasEditorInput(serverUrl.getText(), selectedCAS);
+
+      try {
+        page.openEditor(input, "org.apache.uima.caseditor.editor");
+      } catch (PartInitException e) {
+        e.printStackTrace();
       }
     });
 

@@ -304,7 +304,7 @@ public abstract class AbstractMentionFinder implements MentionFinder {
     }
     Collections.sort(mentions);
     removeDuplicates(mentions);
-    return mentions.toArray(new Mention[mentions.size()]);
+    return mentions.toArray(new Mention[0]);
   }
 
   /*

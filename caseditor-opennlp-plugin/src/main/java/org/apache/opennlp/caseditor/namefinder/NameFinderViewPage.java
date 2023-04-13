@@ -115,29 +115,25 @@ class NameFinderViewPage extends Page implements ISelectionListener {
     
     getSite().setSelectionProvider(entityList);
     
-    entityList.addSelectionChangedListener(new ISelectionChangedListener() {
-		
-		@Override
-		public void selectionChanged(SelectionChangedEvent event) {
-			StructuredSelection selection = (StructuredSelection) event.getSelection();
-			
-			// There are two types of entities, confirmed and un-confirmed.
-			// Confirmed entities are linked with the according annotation and
-			// are selected through the entity lists selection provider.
-			
-			// Unconfirmed entities are not selected, but the span they are covering
-			// is highlighted and revealed in the Annotation Editor.
-			
-			if (!selection.isEmpty()) {
-			  PotentialAnnotation entity = (PotentialAnnotation) selection.getFirstElement();
-				
-			  if (editor instanceof AnnotationEditor) {
-			    ((AnnotationEditor) editor).selectAndReveal(entity.getBeginIndex(),
-			        entity.getEndIndex() - entity.getBeginIndex());
-			  }
-			}
-		}
-	});
+    entityList.addSelectionChangedListener(event -> {
+      StructuredSelection selection = (StructuredSelection) event.getSelection();
+
+      // There are two types of entities, confirmed and un-confirmed.
+      // Confirmed entities are linked with the according annotation and
+      // are selected through the entity lists selection provider.
+
+      // Unconfirmed entities are not selected, but the span they are covering
+      // is highlighted and revealed in the Annotation Editor.
+
+      if (!selection.isEmpty()) {
+        PotentialAnnotation entity = (PotentialAnnotation) selection.getFirstElement();
+
+        if (editor instanceof AnnotationEditor) {
+          ((AnnotationEditor) editor).selectAndReveal(entity.getBeginIndex(),
+              entity.getEndIndex() - entity.getBeginIndex());
+        }
+      }
+    });
     
     // Display the messageLabel after start up
     book.showPage(messageText);

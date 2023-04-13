@@ -87,7 +87,7 @@ public class NumberModel implements TestNumberModel, TrainSimilarityModel {
 
   private void addEvent(String outcome, Context np1) {
     List<String> feats = getFeatures(np1);
-    events.add(new Event(outcome, feats.toArray(new String[feats.size()])));
+    events.add(new Event(outcome, feats.toArray(new String[0])));
   }
 
   public NumberEnum getNumber(Context ec) {
@@ -158,7 +158,7 @@ public class NumberModel implements TestNumberModel, TrainSimilarityModel {
   @Override
   public double[] numberDist(Context c) {
     List<String> feats = getFeatures(c);
-    return testModel.eval(feats.toArray(new String[feats.size()]));
+    return testModel.eval(feats.toArray(new String[0]));
   }
 
   @Override

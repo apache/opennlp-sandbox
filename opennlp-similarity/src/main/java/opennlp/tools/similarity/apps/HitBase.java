@@ -166,7 +166,7 @@ public class HitBase {
 
 	public static String toString(List<HitBase> hits) {
 		StringBuilder buf = new StringBuilder();
-		Boolean pBreak = true;
+		boolean pBreak = true;
 		for (HitBase hit : hits) {
 			String fragm = (hit.toString());
 			if (fragm.length() > 15) {
@@ -187,7 +187,7 @@ public class HitBase {
 
 	public static String toResultantString(List<HitBase> hits) {
 		StringBuilder buf = new StringBuilder();
-		Boolean pBreak = true;
+		boolean pBreak = true;
 		for (HitBase hit : hits) {
 			try {
 				if (hit.getFragments()==null)	

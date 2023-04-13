@@ -17,6 +17,7 @@
 
 package opennlp.tools.coref.sim;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -67,7 +68,7 @@ public class Context extends Mention {
     List<Parse> tokenList = head.getTokens();
     headTokenIndex = headFinder.getHeadIndex(head);
     Parse headToken = headFinder.getHeadToken(head);
-    tokens = tokenList.toArray(new Parse[tokenList.size()]);
+    tokens = tokenList.toArray(new Parse[0]);
     this.headTokenTag = headToken.getSyntacticType();
     this.headTokenText = headToken.toString();
     if (headTokenTag.startsWith("NN") && !headTokenTag.startsWith("NNP")) {
@@ -135,9 +136,7 @@ public class Context extends Mention {
       if (senseKey != null) {
         synsetSet.add(senseKey);
         String[] synsets = dict.getParentSenseKeys(lemma, "NN", 0);
-        for (String synset : synsets) {
-          synsetSet.add(synset);
-        }
+        synsetSet.addAll(Arrays.asList(synsets));
       }
     }
     return synsetSet;

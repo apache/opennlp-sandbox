@@ -133,7 +133,7 @@ public class MentionContext extends Context {
     nextToken = parse.getNextToken();
     head = headFinder.getLastHead(parse);
     List<Parse> headTokens = head.getTokens();
-    tokens = headTokens.toArray(new Parse[headTokens.size()]);
+    tokens = headTokens.toArray(new Parse[0]);
     basalNextToken = head.getNextToken();
     //System.err.println("MentionContext.init: "+ent+" "+ent.getEntityId()+" head="+head);
     nonDescriptorStart = 0;

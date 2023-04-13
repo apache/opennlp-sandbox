@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class PhraseNodeTest {
 
@@ -53,7 +54,7 @@ class PhraseNodeTest {
       pOSlist = node.getOrderedPOSList();
       assertEquals("[WRB, VBP, PRP]", pOSlist.toString());
     } catch (Exception e) { // for run without models, where init fails
-      assertEquals(node, null);
+      assertNull(node);
     }
   }
 

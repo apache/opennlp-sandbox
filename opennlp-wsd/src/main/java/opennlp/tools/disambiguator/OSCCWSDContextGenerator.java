@@ -69,7 +69,7 @@ public class OSCCWSDContextGenerator implements WSDContextGenerator {
       }
     }
 
-    return contextClusters.toArray(new String[contextClusters.size()]);
+    return contextClusters.toArray(new String[0]);
 
   }
 

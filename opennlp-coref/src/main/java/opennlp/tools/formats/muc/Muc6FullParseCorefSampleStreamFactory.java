@@ -85,12 +85,7 @@ public class Muc6FullParseCorefSampleStreamFactory extends AbstractSampleStreamF
     Tokenizer tokenizer = new TokenizerME(tokenizerModel);
     
     ObjectStream<String> mucDocStream = new FileToStringSampleStream(
-        new DirectorySampleStream(params.getData(), new FileFilter() {
-          @Override
-          public boolean accept(File file) {
-            return file.getName().toLowerCase().endsWith(".sgm");
-          }
-        }, false), StandardCharsets.UTF_8);
+        new DirectorySampleStream(params.getData(), file -> file.getName().toLowerCase().endsWith(".sgm"), false), StandardCharsets.UTF_8);
     
     ObjectStream<RawCorefSample> rawSamples = new MucCorefSampleStream(tokenizer, mucDocStream);
     

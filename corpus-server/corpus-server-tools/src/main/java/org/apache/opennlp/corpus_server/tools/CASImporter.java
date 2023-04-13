@@ -46,12 +46,7 @@ public class CASImporter {
     if (xmiFileOrFolder.isFile()) {
       xmiFiles = new File[] { xmiFileOrFolder };
     } else {
-      xmiFiles = xmiFileOrFolder.listFiles(new FilenameFilter() {
-        @Override
-        public boolean accept(File dir, String name) {
-          return name.toLowerCase().endsWith(".xmi");
-        }
-      });
+      xmiFiles = xmiFileOrFolder.listFiles((dir, name) -> name.toLowerCase().endsWith(".xmi"));
     }
 
     for (File xmiFile : xmiFiles) {

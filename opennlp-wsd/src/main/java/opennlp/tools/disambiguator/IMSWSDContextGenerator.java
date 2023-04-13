@@ -66,7 +66,7 @@ public class IMSWSDContextGenerator implements WSDContextGenerator {
       }
     }
 
-    return contextWords.toArray(new String[contextWords.size()]);
+    return contextWords.toArray(new String[0]);
   }
 
   private String[] extractLocalCollocations(int index, String[] sentence, int ngram) {
@@ -92,7 +92,7 @@ public class IMSWSDContextGenerator implements WSDContextGenerator {
 
     }
     String[] res;
-    res = localCollocations.toArray(new String[localCollocations.size()]);
+    res = localCollocations.toArray(new String[0]);
 
     return res;
   }

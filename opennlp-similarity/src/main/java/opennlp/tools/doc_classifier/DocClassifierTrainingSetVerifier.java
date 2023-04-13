@@ -97,7 +97,7 @@ public class DocClassifierTrainingSetVerifier {
 
 				//classifier.runExpressionsOnContent(content);
 				List<String> resultsClassif = classifier.getEntityOrClassFromText(content);
-				Boolean bRejected = true;
+				boolean bRejected = true;
 				if (resultsClassif.size()==1 
 						&& resultsClassif.get(0).equals(
 								ClassifierTrainingSetIndexer.getCategoryFromFilePath(f.getAbsolutePath()))){
@@ -114,7 +114,7 @@ public class DocClassifierTrainingSetVerifier {
 					fragment = content.substring(0, FRAGMENT_LENGTH);
 				fragment = fragment.replaceAll("\n", " ").trim();
 				report.add(new String[] { f.getName(),  resultsClassif.toString(), ClassifierTrainingSetIndexer.getCategoryFromFilePath(f.getAbsolutePath()),
-						(bRejected).toString(),   
+								Boolean.toString((bRejected)),
 						fragment});
 				ProfileReaderWriter.writeReport(report,  "DocClassifierMultiLingRpt.csv");
 

@@ -76,9 +76,9 @@ public class Sentence {
 
   @Override
   public String toString() {
-    String sentence = "";
+    StringBuilder sentence = new StringBuilder();
     for (Word iword : this.iwords) {
-      sentence = sentence + " " + iword.toString();
+      sentence.append(" ").append(iword.toString());
     }
     return sentence.substring(1, sentence.length());
 

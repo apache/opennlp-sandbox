@@ -198,7 +198,7 @@ public abstract class MaxentResolver extends AbstractResolver {
       else {
 
         List<String> lfeatures = getFeatures(ec, de);
-        String[] features = lfeatures.toArray(new String[lfeatures.size()]);
+        String[] features = lfeatures.toArray(new String[0]);
         try {
           candProbs[ei] = model.eval(features)[sameIndex];
         }
@@ -290,7 +290,7 @@ public abstract class MaxentResolver extends AbstractResolver {
 
             if (mention.getId() != -1 && entityMention.getId() == mention.getId()) {
               referentFound = true;
-              events.add(new Event(SAME, features.toArray(new String[features.size()])));
+              events.add(new Event(SAME, features.toArray(new String[0])));
               de = cde;
               //System.err.println("MaxentResolver.retain: resolved at "+ei);
               // incrementing count for key 'ei'
@@ -298,7 +298,7 @@ public abstract class MaxentResolver extends AbstractResolver {
             }
             else if (!pairedSampleSelection || (!nonReferentFound && useAsDifferentExample)) {
               nonReferentFound = true;
-              events.add(new Event(DIFF, features.toArray(new String[features.size()])));
+              events.add(new Event(DIFF, features.toArray(new String[0])));
             }
           //}
         }

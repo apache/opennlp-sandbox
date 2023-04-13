@@ -158,6 +158,6 @@ public class MultiModelNameFinder implements TokenNameFinder {
     
     // TODO: Merge names here ...
     
-    return names.toArray(new ConfidenceSpan[names.size()]);
+    return names.toArray(new ConfidenceSpan[0]);
   }
 }

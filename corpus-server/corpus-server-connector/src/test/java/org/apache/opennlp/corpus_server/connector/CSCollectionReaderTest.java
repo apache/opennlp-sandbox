@@ -18,7 +18,6 @@
 package org.apache.opennlp.corpus_server.connector;
 
 
-import org.apache.opennlp.corpus_server.CorpusServer;
 import org.apache.opennlp.corpus_server.impl.DerbyCorporaStore;
 import org.apache.opennlp.corpus_server.store.CorporaStore;
 import org.apache.uima.UIMAFramework;

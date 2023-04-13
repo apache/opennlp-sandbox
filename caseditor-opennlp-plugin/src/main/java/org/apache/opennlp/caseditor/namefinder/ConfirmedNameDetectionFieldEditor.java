@@ -61,12 +61,7 @@ public class ConfirmedNameDetectionFieldEditor extends FieldEditor {
 
     forceDetectionButton = new Button(buttonGroup, SWT.CHECK);
     forceDetectionButton.setText("Force the detection of existing names");
-    forceDetectionButton.addListener(SWT.Selection, new Listener(){
-
-      @Override
-      public void handleEvent(Event event) {
-        checkState();
-      }});
+    forceDetectionButton.addListener(SWT.Selection, event -> checkState());
 
     Composite optionButtons = new Composite(buttonGroup, SWT.NONE);
     optionButtons.setLayout(new GridLayout());

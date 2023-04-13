@@ -147,8 +147,8 @@ class MucCorefContentHandler extends SgmlParser.ContentHandler {
     
     if (MucElementNames.CONTENT_ELEMENTS.contains(name)) {
       
-      sample.getTexts().add(text.toArray(new String[text.size()]));
-      sample.getMentions().add(mentions.toArray(new CorefMention[mentions.size()]));
+      sample.getTexts().add(text.toArray(new String[0]));
+      sample.getMentions().add(mentions.toArray(new CorefMention[0]));
       
       mentions.clear();
       text.clear();

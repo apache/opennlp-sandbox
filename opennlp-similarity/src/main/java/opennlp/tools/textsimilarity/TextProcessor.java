@@ -215,26 +215,26 @@ public class TextProcessor {
       Pattern p = Pattern.compile(s, Pattern.MULTILINE);
       Matcher m = p.matcher(text);
       int idx = 0;
-      String cand = "";
+      StringBuilder cand = new StringBuilder();
 
       // while(m.find()){
       // System.out.println(m.group());
       // }
 
       while (m.find()) {
-        cand += " " + text.substring(idx, m.end() - 1).trim();
+        cand.append(" ").append(text.substring(idx, m.end() - 1).trim());
         boolean hasAbbrev = false;
 
         for (String abbrev : ABBREVS) {
-          if (cand.toLowerCase().endsWith(abbrev)) {
+          if (cand.toString().toLowerCase().endsWith(abbrev)) {
             hasAbbrev = true;
             break;
           }
         }
 
         if (!hasAbbrev) {
-          sentences.add(cand.trim());
-          cand = "";
+          sentences.add(cand.toString().trim());
+          cand = new StringBuilder();
         }
         idx = m.end() - 1;
       }
@@ -583,12 +583,12 @@ public class TextProcessor {
     }
 
     // now we have histogram, lets write it out
-    String hashString = "";
+    StringBuilder hashString = new StringBuilder();
     Enumeration<String> en = tokenHash.keys();
     while (en.hasMoreElements()) {
       String t = en.nextElement();
       int freq = tokenHash.get(t);
-      hashString += t + freq;
+      hashString.append(t).append(freq);
     }
 
     // log.info(hashString);
@@ -602,7 +602,7 @@ public class TextProcessor {
         LOG.severe("NoSuchAlgorithmException " + e);
         throw new Exception(e.getMessage());
       }
-      md.update(hashString.getBytes(StandardCharsets.UTF_8)); // step 3
+      md.update(hashString.toString().getBytes(StandardCharsets.UTF_8)); // step 3
       byte[] raw = md.digest();
       hash = null; // (new BASE64Encoder()).encode(raw);
     }
@@ -636,7 +636,7 @@ public class TextProcessor {
 
   public static String generateSummary(String txt, String title, int numChars,
       boolean truncateInSentence) {
-    String finalSummary;
+    StringBuilder finalSummary;
 
     try {
 
@@ -677,39 +677,39 @@ public class TextProcessor {
         }
       }
 
-      finalSummary = sum.toString().trim();
+      finalSummary = new StringBuilder(sum.toString().trim());
 
       if (truncateInSentence) {
-        finalSummary = truncateTextOnSpace(finalSummary, numChars);
-        int numPeriods = countTrailingPeriods(finalSummary);
+        finalSummary = new StringBuilder(truncateTextOnSpace(finalSummary.toString(), numChars));
+        int numPeriods = countTrailingPeriods(finalSummary.toString());
 
         if (numPeriods < 3 && finalSummary.length() > 0) {
           for (int i = 0; i < 3 - numPeriods; i++) {
-            finalSummary += ".";
+            finalSummary.append(".");
           }
         }
       } else {
         // trim final period
-        if (finalSummary.endsWith("..")) {
-          finalSummary = finalSummary.substring(0, finalSummary.length() - 2);
+        if (finalSummary.toString().endsWith("..")) {
+          finalSummary = new StringBuilder(finalSummary.substring(0, finalSummary.length() - 2));
         }
       }
       // check to see if we have anything, if not, return the full content
-      if (finalSummary.trim().length() < 5) {
-        finalSummary = txt;
+      if (finalSummary.toString().trim().length() < 5) {
+        finalSummary = new StringBuilder(txt);
       }
       // see if we have a punctuation character in the first 30 chars
       int highestIdx = -1;
       int sIdx = Math.min(finalSummary.length() - 1, 45);
       for (String p : puncChars) {
-        int idx = finalSummary.trim().substring(0, sIdx).lastIndexOf(p);
+        int idx = finalSummary.toString().trim().substring(0, sIdx).lastIndexOf(p);
         if (idx > highestIdx && idx < 45) {
           highestIdx = idx + p.length();
         }
       }
 
       if (highestIdx > -1) {
-        finalSummary = finalSummary.substring(highestIdx);
+        finalSummary = new StringBuilder(finalSummary.substring(highestIdx));
       }
 
       int closeParenIdx = finalSummary.indexOf(")");
@@ -717,23 +717,23 @@ public class TextProcessor {
       // if(closeParenIdx < )
       if (closeParenIdx != -1 && closeParenIdx < 15
           && (openParenIdx == -1 || openParenIdx > closeParenIdx)) {
-        finalSummary = finalSummary.substring(closeParenIdx + 1).trim();
+        finalSummary = new StringBuilder(finalSummary.substring(closeParenIdx + 1).trim());
       }
 
-      finalSummary = trimPunctuationFromStart(finalSummary);
+      finalSummary = new StringBuilder(trimPunctuationFromStart(finalSummary.toString()));
 
       // check to see if we have anything, if not, return the full content
-      if (finalSummary.trim().length() < 5) {
-        finalSummary = txt;
+      if (finalSummary.toString().trim().length() < 5) {
+        finalSummary = new StringBuilder(txt);
       }
 
     } catch (Exception e) {
       LOG.severe("Problem forming summary for: " + txt);
       LOG.severe("Using full text for the summary" + e);
-      finalSummary = txt;
+      finalSummary = new StringBuilder(txt);
     }
 
-    return finalSummary.trim();
+    return finalSummary.toString().trim();
   }
 
   public static String truncateTextOnSpace(String txt, int numChars) {

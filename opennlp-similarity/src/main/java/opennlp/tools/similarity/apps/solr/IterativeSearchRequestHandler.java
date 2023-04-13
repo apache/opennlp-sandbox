@@ -330,8 +330,7 @@ public class IterativeSearchRequestHandler extends SearchHandler {
 			int b = -2;
 			if ( o1.getSecond() instanceof Float && o2.getSecond() instanceof Float){
 
-				b =  (((Float)o1.getSecond()> (Float)o2.getSecond()) ? -1
-						: (((Float)o1.getSecond() == (Float)o2.getSecond()) ? 0 : 1));
+				b =  (((Float) o2.getSecond()).compareTo((Float) o1.getSecond()));
 			}
 			return b;
 		}

@@ -42,7 +42,7 @@ public class TestUtils {
 
   public static Collection<String[]> generateRandomVocabulary() {
     int size = R.nextInt(1000);
-    Collection<String[]> vocabulary = new ArrayList<String[]>(size);
+    Collection<String[]> vocabulary = new ArrayList<>(size);
     for (int i = 0; i < size; i++) {
       String[] sentence = generateRandomSentence();
       vocabulary.add(sentence);

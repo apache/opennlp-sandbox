@@ -38,7 +38,7 @@ class ContextFreeGrammarTest {
 
   @BeforeAll
   static void setUp() throws Exception {
-    nonTerminals = new LinkedList<String>();
+    nonTerminals = new LinkedList<>();
     nonTerminals.add("S");
     nonTerminals.add("NP");
     nonTerminals.add("VP");
@@ -55,7 +55,7 @@ class ContextFreeGrammarTest {
 
     startSymbol = "S";
 
-    terminals = new LinkedList<String>();
+    terminals = new LinkedList<>();
     terminals.add("works");
     terminals.add("saw");
     terminals.add("man");
@@ -76,7 +76,7 @@ class ContextFreeGrammarTest {
     terminals.add("of");
     terminals.add("for");
 
-    rules = new LinkedList<Rule>();
+    rules = new LinkedList<>();
     rules.add(new Rule("S", "NP", "VP"));
     rules.add(new Rule("P", "S", "CJ", "S"));
     rules.add(new Rule("P", "S", "DJ", "S"));

@@ -506,7 +506,7 @@ public class SimilarityAccessorBase {
 		List<String> name1Tokens = removeVenuePart(TextProcessor.fastTokenize(name1.toLowerCase(), true));
 		List<String> name2Tokens = removeVenuePart(TextProcessor.fastTokenize(name2.toLowerCase(), true));
 		// applySubPhraseExtractionRule()
-		Boolean bSameAttrib = verifyEventAttributesPost(name1Tokens, name2Tokens)
+		boolean bSameAttrib = verifyEventAttributesPost(name1Tokens, name2Tokens)
 			&& verifyEventAttributesPre(name1Tokens, name2Tokens);
 		if (!bSameAttrib)
 		{
@@ -668,7 +668,7 @@ public class SimilarityAccessorBase {
 
 		List<String> name1Tokens = TextProcessor.fastTokenize(name1.toLowerCase(), true);
 		List<String> name2Tokens = TextProcessor.fastTokenize(name2.toLowerCase(), true);
-		Boolean bSameAttrib = verifyEventAttributesPost(name1Tokens, name2Tokens)
+		boolean bSameAttrib = verifyEventAttributesPost(name1Tokens, name2Tokens)
 			&& verifyEventAttributesPre(name1Tokens, name2Tokens);
 		if (!bSameAttrib)
 		{
@@ -709,7 +709,7 @@ public class SimilarityAccessorBase {
 			}
 		}
 
-		Boolean bothSidesSuccess = applyBothSidesRule(name1, name2);
+		boolean bothSidesSuccess = applyBothSidesRule(name1, name2);
 		if (!bothSidesSuccess)
 		{
 			score = 1;
@@ -717,7 +717,7 @@ public class SimilarityAccessorBase {
 		}
 		if (score > 0)
 		{
-			Boolean bDifferentGroup = bDifferentGroupOneSubnameOfAnother(name1, name2);
+			boolean bDifferentGroup = bDifferentGroupOneSubnameOfAnother(name1, name2);
 			if (bDifferentGroup)
 			{
 				score = 1;

@@ -41,7 +41,7 @@ public class ParseTreeMatcher {
 
     List<String> commonPOS = new ArrayList<>(), commonLemmas = new ArrayList<>();
     int k1 = 0, k2 = 0;
-    Boolean incrFirst = true;
+    boolean incrFirst = true;
     while (k1 < pos1.size() && k2 < pos2.size()) {
       // first check if the same POS
       String sim = posManager.similarPOS(pos1.get(k1), pos2.get(k2));
@@ -140,13 +140,13 @@ public class ParseTreeMatcher {
     // Double> ();
     int timesRepetitiveRun = NUMBER_OF_ITERATIONS;
 
-    Double globalScore = -1.0;
+    double globalScore = -1.0;
     ParseTreeChunk result = null;
 
     for (int timesRun = 0; timesRun < timesRepetitiveRun; timesRun++) {
       List<String> commonPOS = new ArrayList<>(), commonLemmas = new ArrayList<>();
       int k1 = 0, k2 = 0;
-      Double score;
+      double score;
       while (k1 < pos1.size() && k2 < pos2.size()) {
         // first check if the same POS
         String sim = posManager.similarPOS(pos1.get(k1), pos2.get(k2));
@@ -191,7 +191,7 @@ public class ParseTreeMatcher {
     for (int timesRun = 0; timesRun < timesRepetitiveRun; timesRun++) {
       List<String> commonPOS = new ArrayList<>(), commonLemmas = new ArrayList<>();
       int k1 = pos1.size() - 1, k2 = pos2.size() - 1;
-      Double score;
+      double score;
       while (k1 >= 0 && k2 >= 0) {
         // first check if the same POS
         String sim = posManager.similarPOS(pos1.get(k1), pos2.get(k2));

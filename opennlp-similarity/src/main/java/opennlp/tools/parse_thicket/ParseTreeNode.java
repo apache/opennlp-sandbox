@@ -176,11 +176,11 @@ public class ParseTreeNode implements IGeneralizer<ParseTreeNode>{
 		return buf.toString().trim();
 	}
 	public static String toWordString(List<ParseTreeNode> chList){
-		String buf = "";
+		StringBuilder buf = new StringBuilder();
 		for(ParseTreeNode ch: chList){
-			buf+=ch.getWord()+ " ";
+			buf.append(ch.getWord()).append(" ");
 		}
-		return buf.trim();
+		return buf.toString().trim();
 	}
 
 	@Override

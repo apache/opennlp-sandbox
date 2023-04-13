@@ -70,7 +70,7 @@ public class SearchResultsReRankerRequestHandler extends SearchHandler {
 
 
 
-		for (Integer i=0; i< MAX_SEARCH_RESULTS; i++){
+		for (int i = 0; i< MAX_SEARCH_RESULTS; i++){
 			String title = req.getParams().get("t"+i);
 			String descr = req.getParams().get("d"+i);
 
@@ -80,7 +80,7 @@ public class SearchResultsReRankerRequestHandler extends SearchHandler {
 			HitBase hit = new HitBase();
 			hit.setTitle(title);
 			hit.setAbstractText(descr);
-			hit.setSource(i.toString());
+			hit.setSource(Integer.toString(i));
 			searchResults.add(hit);
 		}
 

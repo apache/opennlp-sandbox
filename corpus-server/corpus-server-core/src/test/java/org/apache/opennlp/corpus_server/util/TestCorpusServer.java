@@ -17,8 +17,6 @@
 
 package org.apache.opennlp.corpus_server.util;
 
-import org.apache.opennlp.corpus_server.CorpusServer;
-
 /**
  * Utility CorpusServer extension class that can be used for test purposes.
  */

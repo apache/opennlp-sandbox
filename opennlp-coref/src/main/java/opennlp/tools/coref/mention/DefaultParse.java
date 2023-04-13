@@ -73,7 +73,7 @@ public class DefaultParse extends AbstractParse {
         kids.addAll(Arrays.asList(p.getChildren()));
       }
     }
-    return createParses(names.toArray(new Parse[names.size()]));
+    return createParses(names.toArray(new Parse[0]));
   }
 
   @Override
@@ -92,7 +92,7 @@ public class DefaultParse extends AbstractParse {
         ci--;
       }
     }
-    return createParses(kids.toArray(new Parse[kids.size()]));
+    return createParses(kids.toArray(new Parse[0]));
   }
 
   @Override
@@ -108,7 +108,7 @@ public class DefaultParse extends AbstractParse {
         kids.addAll(0,Arrays.asList(p.getChildren()));
       }
     }
-    return createParses(tokens.toArray(new Parse[tokens.size()]));
+    return createParses(tokens.toArray(new Parse[0]));
   }
 
   @Override

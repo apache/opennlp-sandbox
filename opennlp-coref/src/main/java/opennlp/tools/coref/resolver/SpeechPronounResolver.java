@@ -55,16 +55,12 @@ public class SpeechPronounResolver extends MaxentResolver {
         features.add(mention.getHeadTokenText() + "," + cec.getHeadTokenText());
       }
       else if (mention.getHeadTokenText().startsWith("NNP")) {
-        for (String context : contexts) {
-          features.add(context);
-        }
+        features.addAll(contexts);
         features.add(mention.getNameType() + "," + cec.getHeadTokenText());
       }
       else {
         List<String> ccontexts = ResolverUtils.getContextFeatures(cec);
-        for (String ccontext : ccontexts) {
-          features.add(ccontext);
-        }
+        features.addAll(ccontexts);
         features.add(cec.getNameType() + "," + mention.getHeadTokenText());
       }
     }
