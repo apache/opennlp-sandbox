@@ -17,21 +17,23 @@
 
 package org.apache.opennlp.corpus_server.tools;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.apache.uima.UIMAFramework;
 import org.apache.uima.resource.metadata.TypeSystemDescription;
 import org.apache.uima.util.XMLInputSource;
 import org.apache.uima.util.XMLParser;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
 
 public class ReplaceTypeSystem {
 
@@ -42,32 +44,31 @@ public class ReplaceTypeSystem {
       System.exit(-1);
     }
     
-    Client c = Client.create();
+    Client c = ClientBuilder.newClient();
+    WebTarget r = c.target(args[0]);
 
-    WebResource r = c.resource(args[0]);
-    
- // Load and resolve type system before importing it
-    InputStream typeSystemIn = new FileInputStream(new File(args[1]));
+    // Load and resolve type system before importing it
+    try (InputStream typeSystemIn = new BufferedInputStream(new FileInputStream(args[1]))) {
+      XMLParser xmlParser = UIMAFramework.getXMLParser();
+      XMLInputSource xmlTypeSystemSource = new XMLInputSource(typeSystemIn, new File(args[1]));
 
-    XMLInputSource xmlTypeSystemSource = new XMLInputSource(typeSystemIn,
-        new File(args[1]));
+      TypeSystemDescription typeSystemDesciptor = (TypeSystemDescription) xmlParser
+              .parse(xmlTypeSystemSource);
+      typeSystemDesciptor.resolveImports();
 
-    XMLParser xmlParser = UIMAFramework.getXMLParser();
+      ByteArrayOutputStream typeSystemBytes = new ByteArrayOutputStream();
+      typeSystemDesciptor.toXML(typeSystemBytes);
 
-    TypeSystemDescription typeSystemDesciptor = (TypeSystemDescription) xmlParser
-        .parse(xmlTypeSystemSource);
+      byte[] bytes = typeSystemBytes.toByteArray();
+      try (Response response = r.path("_replaceTypeSystem")
+              .request(MediaType.TEXT_XML)
+              .header("Content-Type", MediaType.TEXT_XML)
+              .header("Content-Length", bytes.length)
+              .put(Entity.entity(bytes, MediaType.APPLICATION_OCTET_STREAM_TYPE))) {
 
-    typeSystemDesciptor.resolveImports();
+        System.out.println("Response: " + response.getStatus());
+      }
 
-    ByteArrayOutputStream typeSystemBytes = new ByteArrayOutputStream();
-    typeSystemDesciptor.toXML(typeSystemBytes);
-    
-    ClientResponse response = r.path("_replaceTypeSystem")
-        .accept(MediaType.TEXT_XML)
-        // TODO: How to fix this? Shouldn't accept do it?
-        .header("Content-Type", MediaType.TEXT_XML)
-        .put(ClientResponse.class, typeSystemBytes.toByteArray());
-    
-    System.out.println("Response: " + response.getStatus());
+    }
   }
 }

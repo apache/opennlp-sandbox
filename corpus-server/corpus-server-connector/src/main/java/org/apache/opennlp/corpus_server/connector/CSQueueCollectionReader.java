@@ -23,7 +23,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.apache.uima.cas.CAS;
 import org.apache.uima.cas.Feature;
@@ -36,14 +41,11 @@ import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.util.Level;
 import org.apache.uima.util.Logger;
 import org.apache.uima.util.Progress;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import org.glassfish.jersey.client.ClientResponse;
 
 /**
- * a {@link org.apache.uima.collection.CollectionReader} which reads {@link CAS}s from a corpus
- * in the {@link org.apache.opennlp.corpus_server.CorpusServer}
+ * A {@link org.apache.uima.collection.CollectionReader} which reads {@link CAS CASes} from a corpus
+ * stored in a {@code CorpusServer}.
  */
 public class CSQueueCollectionReader extends CollectionReader_ImplBase {
 
@@ -79,70 +81,62 @@ public class CSQueueCollectionReader extends CollectionReader_ImplBase {
     corpusName = (String) getConfigParameterValue(CORPUS_NAME);
     
     String queueName = (String) getConfigParameterValue(QUEUE_NAME);
-    
     String searchQuery = (String) getConfigParameterValue(SEARCH_QUERY);
     
-    Client client = Client.create();
-    
+    Client c = ClientBuilder.newClient();
+
     // Create a queue if the search query is specified
     if (searchQuery != null) {
-      WebResource r = client.resource(serverAddress + "/queues/");
+      WebTarget r = c.target(serverAddress + "/queues/");
 
-      ClientResponse response = r.path("_createTaskQueue")
+      try (Response response = r.path("_createTaskQueue")
           .queryParam("corpusId", corpusName)
           .queryParam("queueId", queueName)
           .queryParam("q", searchQuery)
-          .accept(MediaType.TEXT_XML)
-          // TODO: How to fix this? Shouldn't accept do it?
-          .header("Content-Type", MediaType.TEXT_XML)
-          .post(ClientResponse.class);
-      
-      if (response.getStatus() != 204) {
-    	  throw new ResourceInitializationException(
-    			  new Exception("Failed to create queue: " + response.getStatus()));
-      }
-      
-      if (logger.isLoggable(Level.INFO)) {
-        logger.log(Level.INFO, "Successfully created queue: " + queueName + " for corpus: " + corpusName);
+          .request(MediaType.TEXT_XML)
+          // as this is an query-param driven POST request,
+          // we just set an empty string to the body.
+          .post(Entity.entity("", MediaType.TEXT_PLAIN_TYPE))) {
+
+        if (response.getStatus() != Response.Status.NO_CONTENT.getStatusCode()) {
+          throw new ResourceInitializationException(
+                  new RuntimeException("Failed to create queue: " + response.getStatus()));
+        }
+
+        if (logger.isLoggable(Level.INFO)) {
+          logger.log(Level.INFO, "Successfully created queue: " + queueName + " for corpus: " + corpusName);
+        }
       }
     }
     
     // Retrieve queue link ...
     
     List<String> casIdList = new ArrayList<>();
-    
-    
-    WebResource r = client.resource(serverAddress +  "/queues/" + queueName);
-    
+    WebTarget r = c.target(serverAddress + "/queues/" + queueName);
+
     while (true) {
       System.out.println("Requesting next CAS ID!");
-    	
+
       // TODO: Make query configurable ...
-      ClientResponse response = r
-              .path("_nextTask")
-              .accept(MediaType.APPLICATION_JSON)
-              .header("Content-Type", MediaType.TEXT_XML)
-              .get(ClientResponse.class);
-      
-      if (response.getStatus() == ClientResponse.Status.NO_CONTENT.getStatusCode()) {
-        System.out.println("##### FINISHED #####");
-        break;
+      try (Response response = r.path("_nextTask").request(MediaType.APPLICATION_JSON)
+              .header("Content-Type", MediaType.TEXT_XML).get()) {
+
+        if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+            String casId = response.readEntity(String.class);
+            System.out.println("Received CAS ID: " + casId);
+            casIdList.add(casId);
+        } else if (response.getStatus() == Response.Status.NO_CONTENT.getStatusCode()) {
+          System.out.println("##### FINISHED #####");
+          break;
+        }
       }
-      else {
-      // TODO: Check if response was ok ...
-      }
-      String casId = response.getEntity(String.class);
-      casIdList.add(casId);
-      
-      System.out.println("Received CAS ID: " + casId);
     }
     
     casIds = casIdList.iterator();
   }
   
   @Override
-  public void typeSystemInit(TypeSystem ts)
-      throws ResourceInitializationException {
+  public void typeSystemInit(TypeSystem ts) throws ResourceInitializationException {
     super.typeSystemInit(ts);
     
     String idTypeName = (String) getConfigParameterValue("IdFSTypeName");
@@ -153,31 +147,24 @@ public class CSQueueCollectionReader extends CollectionReader_ImplBase {
   
   @Override
   public void getNext(CAS cas) throws IOException, CollectionException {
-	  
+
     String casId = casIds.next();
-	
-    
-    Client client = Client.create();
-    
-    WebResource corpusWebResource = client.resource(serverAddress + "/corpora/" + corpusName);
-    
-    ClientResponse casResponse = corpusWebResource
-        .path(casId)
-        .accept(MediaType.TEXT_XML)
+
+    Client c = ClientBuilder.newClient();
+    WebTarget r = c.target(serverAddress + "/corpora/" + corpusName);
+
+    ClientResponse casResponse = r.path(casId)
+        .request(MediaType.TEXT_XML)
         .header("Content-Type", MediaType.TEXT_XML)
         .get(ClientResponse.class);
-    
 
-    try (InputStream casIn = casResponse.getEntityInputStream()) {
+    try (InputStream casIn = casResponse.getEntityStream()) {
       UimaUtil.deserializeXmiCAS(cas, casIn);
-    }
-    catch (IOException e) {
-      if (logger.isLoggable(Level.SEVERE)) {
-        logger.log(Level.SEVERE, "Failed to load CAS: " +  casId + " code: " + casResponse.getStatus());
-      }
+    } catch (IOException e) {
+      logger.log(Level.SEVERE,"Failed to load CAS: " +  casId + " code: " + casResponse.getStatus());
       throw e;
     }
-    
+
     if (idType != null && idFeature != null) {
       FeatureStructure idFS = cas.createFS(idType);
       idFS.setStringValue(idFeature, casId);
@@ -189,7 +176,6 @@ public class CSQueueCollectionReader extends CollectionReader_ImplBase {
   public boolean hasNext() throws IOException, CollectionException {
     
     // TODO: What to do if content for cas cannot be loaded? Skip CAS? Report error?
-    
     return casIds.hasNext();
   }
 

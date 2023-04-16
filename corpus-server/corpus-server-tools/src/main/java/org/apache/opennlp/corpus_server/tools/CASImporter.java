@@ -18,13 +18,13 @@
 package org.apache.opennlp.corpus_server.tools;
 
 import java.io.File;
-import java.io.FilenameFilter;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import javax.ws.rs.core.Response;
 
 public class CASImporter {
 
@@ -35,9 +35,8 @@ public class CASImporter {
       System.exit(-1);
     }
 
-    Client c = Client.create();
-
-    WebResource r = c.resource(args[0]);
+    Client c = ClientBuilder.newClient();
+    WebTarget r = c.target(args[0]);
 
     File xmiFileOrFolder = new File(args[1]);
 
@@ -52,13 +51,14 @@ public class CASImporter {
     for (File xmiFile : xmiFiles) {
       byte[] xmiBytes = FileUtil.fileToBytes(xmiFile);
 
-      ClientResponse response = r.path(xmiFile.getName())
-          .accept(MediaType.TEXT_XML)
-          // TODO: How to fix this? Shouldn't accept do it?
-          .header("Content-Type", MediaType.TEXT_XML)
-          .post(ClientResponse.class, xmiBytes);
+      try (Response response = r.path(xmiFile.getName())
+              .request(MediaType.TEXT_XML)
+              .header("Content-Type", MediaType.TEXT_XML)
+              .header("Content-Length", xmiBytes.length)
+              .put(Entity.entity(xmiBytes, MediaType.APPLICATION_OCTET_STREAM_TYPE))) {
 
-      System.out.println(xmiFile.getName() + " " + response.getStatus());
+        System.out.println(xmiFile.getName() + " " + response.getStatus());
+      }
     }
   }
 }

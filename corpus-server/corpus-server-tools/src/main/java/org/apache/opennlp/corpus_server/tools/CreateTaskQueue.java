@@ -17,11 +17,12 @@
 
 package org.apache.opennlp.corpus_server.tools;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import javax.ws.rs.core.Response;
 
 public class CreateTaskQueue {
   
@@ -33,19 +34,21 @@ public class CreateTaskQueue {
 
     String corpusName = args[1];
 
-    Client c = Client.create();
+    Client c = ClientBuilder.newClient();
+    WebTarget r = c.target(args[0]);
 
-    WebResource r = c.resource(args[0]);
+    try (Response response = r.path("_createTaskQueue")
+            .queryParam("corpusId", corpusName)
+            .queryParam("queueId", args[2])
+            .queryParam("q", args[3])
+            .request(MediaType.TEXT_XML)
+            .header("Content-Type", MediaType.TEXT_XML)
+            // as this is an query-param driven POST request,
+            // we just set an empty string to the body.
+            .post(Entity.entity("", MediaType.TEXT_PLAIN_TYPE))) {
 
-    ClientResponse response = r.path("_createTaskQueue")
-        .queryParam("corpusId", corpusName)
-        .queryParam("queueId", args[2])
-        .queryParam("q", args[3])
-        .accept(MediaType.TEXT_XML)
-        // TODO: How to fix this? Shouldn't accept do it?
-        .header("Content-Type", MediaType.TEXT_XML)
-        .post(ClientResponse.class);
+      System.out.println("Result: " + response.getStatus());
+    }
 
-    System.out.println("Result: " + response.getStatus());
   }
 }

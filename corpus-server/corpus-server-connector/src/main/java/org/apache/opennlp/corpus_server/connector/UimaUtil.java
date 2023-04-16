@@ -67,8 +67,7 @@ public class UimaUtil {
   }
 
   public static CAS createEmptyCAS(TypeSystemDescription typeSystem) {
-    ResourceSpecifierFactory resourceSpecifierFactory = UIMAFramework
-        .getResourceSpecifierFactory();
+    ResourceSpecifierFactory resourceSpecifierFactory = UIMAFramework.getResourceSpecifierFactory();
     TypePriorities typePriorities = resourceSpecifierFactory
         .createTypePriorities();
 
@@ -105,8 +104,7 @@ public class UimaUtil {
       throw new IllegalStateException("SAX error while creating parser!", e);
     }
 
-    XmiCasDeserializer dezerializer = new XmiCasDeserializer(
-        cas.getTypeSystem());
+    XmiCasDeserializer dezerializer = new XmiCasDeserializer(cas.getTypeSystem());
 
     try {
       saxParser.parse(xmiIn, dezerializer.getXmiCasHandler(cas));

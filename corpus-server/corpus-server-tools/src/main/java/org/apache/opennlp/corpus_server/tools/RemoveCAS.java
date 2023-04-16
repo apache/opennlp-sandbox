@@ -17,9 +17,10 @@
 
 package org.apache.opennlp.corpus_server.tools;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Response;
 
 /**
  * Command Line Tool to remove a CAS from a corpus.
@@ -32,16 +33,15 @@ public class RemoveCAS {
       System.out.println("RemoveCAS corpusAddress casId");
       System.exit(-1);
     }
-    
-    Client c = Client.create();
 
-    WebResource r = c.resource(args[0]);
-    
-    ClientResponse response = r
-        .path(args[1])
-        .delete(ClientResponse.class);
-    
-    System.out.println("Result: " + response.getStatus());
+    Client c = ClientBuilder.newClient();
+    WebTarget r = c.target(args[0]);
+
+    try (Response response = r.path(args[1])
+        .request()
+        .delete()) {
+
+      System.out.println("Result: " + response.getStatus());
+    }
   }
-  
 }

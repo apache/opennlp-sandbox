@@ -20,7 +20,11 @@ package org.apache.opennlp.corpus_server.caseditor;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.ILabelProviderListener;
@@ -42,10 +46,6 @@ import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.part.ViewPart;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
 
 /**
  * A task queue view to retrieve the next annotation task subject from the corpus server.
@@ -89,17 +89,16 @@ public class TaskQueueView extends ViewPart {
       @Override
       public void widgetSelected(SelectionEvent event) {
 
-        Client c = Client.create();
-        
-        WebResource queueWebResource = c.resource(serverUrl.getText());
-        
-        ClientResponse response2 = queueWebResource
+        Client c = ClientBuilder.newClient();
+        WebTarget queueWebResource = c.target(serverUrl.getText());
+
+        Response response2 = queueWebResource
             .path("_nextTask")
-            .accept(MediaType.APPLICATION_JSON)
+            .request(MediaType.APPLICATION_JSON)
             .header("Content-Type", MediaType.TEXT_XML)
-            .get(ClientResponse.class);
-        
-        String casId = response2.getEntity(String.class);
+            .get();
+
+        String casId = response2.readEntity(String.class);
         
         // How to get the corpus uri for the item returned from the queue ???
         // Queue could always return full URI ...

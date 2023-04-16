@@ -25,11 +25,14 @@ import java.io.OutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import org.glassfish.jersey.client.ClientResponse;
 
 /** 
  * Tools to back up a corpus from the corpus server into a zip package.
@@ -39,8 +42,7 @@ import com.sun.jersey.api.client.WebResource;
  */
 public class CorpusBackup {
 
-  private static void copyStream(InputStream in,
-      OutputStream out) throws IOException {
+  private static void copyStream(InputStream in, OutputStream out) throws IOException {
     
     byte[] buffer = new byte[1024];
     int len;
@@ -59,21 +61,24 @@ public class CorpusBackup {
       System.exit(-1);
     }
 
-    Client c = Client.create();
-
-    WebResource r = c.resource(args[0] + "/queues");
+    Client c = ClientBuilder.newClient();
+    WebTarget r = c.target(args[0] + "/queues");
 
     String corpusId = args[1];
     String backupQueueId = args[1] + "BackupQueue";
     
-    ClientResponse createQueueResponse = r.path("_createTaskQueue")
+    try (Response createQueueResponse = r.path("_createTaskQueue")
         .queryParam("corpusId", args[1])
         .queryParam("queueId", backupQueueId)
         .queryParam("q", "*:*")
-        .accept(MediaType.TEXT_XML)
-        // TODO: How to fix this? Shouldn't accept do it?
+        .request(MediaType.TEXT_XML)
         .header("Content-Type", MediaType.TEXT_XML)
-        .post(ClientResponse.class);
+        // as this is an query-param driven POST request,
+        // we just set an empty string to the body.
+        .post(Entity.entity("", MediaType.TEXT_PLAIN_TYPE))) {
+      
+      System.out.println("Result (_createTaskQueue): " + createQueueResponse.getStatus());
+    }
     
     // zip file name ...
     File backupFile = new File(args[2]);
@@ -82,58 +87,53 @@ public class CorpusBackup {
 
     try (OutputStream backupOut = new FileOutputStream(backupFile);
          ZipOutputStream zipPackageOut = new ZipOutputStream(backupOut)){
-    
-      WebResource corpusWebResource = c.resource(args[0] + "/corpora/" + corpusId);
-      
-      // fetch ts, does it work like this!?
-      ClientResponse tsResponse = corpusWebResource
-          .path("_typesystem")
-          .accept(MediaType.TEXT_XML)
-          // TODO: How to fix this? Shouldn't accept do it?
+
+      WebTarget corpusWebResource = c.target(args[0] + "/corpora/" + corpusId);
+
+      // fetch ts
+      ClientResponse tsResponse = corpusWebResource.path("_typesystem")
+          .request(MediaType.TEXT_XML)
           .header("Content-Type", MediaType.TEXT_XML)
           .get(ClientResponse.class);
-      
+
       zipPackageOut.putNextEntry(new ZipEntry("TypeSystem.xml"));
-      try (InputStream tsIn = tsResponse.getEntityInputStream()) {
+      try (InputStream tsIn = tsResponse.getEntityStream()) {
         copyStream(tsIn, zipPackageOut);
       }
       zipPackageOut.closeEntry();
-      
+
       // consume task queue
-      WebResource r2 = c.resource(args[0] + "/queues/" + backupQueueId);
-      
+      WebTarget r2 = c.target(args[0] + "/queues/" + backupQueueId);
+
       while (true) {
         // TODO: Make query configurable ...
-        ClientResponse response2 = r2
-                .path("_nextTask")
+        ClientResponse response2 = r2.path("_nextTask")
                 .queryParam("q", args[1])
-                .accept(MediaType.APPLICATION_JSON)
+                .request(MediaType.APPLICATION_JSON)
                 .header("Content-Type", MediaType.TEXT_XML)
                 .get(ClientResponse.class);
-        
-        if (response2.getStatus() == ClientResponse.Status.NO_CONTENT.getStatusCode()) {
+
+        if (response2.getStatus() == Response.Status.NO_CONTENT.getStatusCode()) {
           System.out.println("##### FINISHED #####");
           break;
         }
-        
+
         // check if response was ok ...
-        
-        String casId = response2.getEntity(String.class);
-        
-        ClientResponse casResponse = corpusWebResource
-            .path(casId)
-            .accept(MediaType.TEXT_XML)
+        String casId = response2.readEntity(String.class);
+
+        ClientResponse casResponse = corpusWebResource.path(casId)
+            .request(MediaType.TEXT_XML)
             .header("Content-Type", MediaType.TEXT_XML)
             .get(ClientResponse.class);
-        
+
         zipPackageOut.putNextEntry(new ZipEntry(casId));
 
-        try (InputStream casIn = casResponse.getEntityInputStream()) {
+        try (InputStream casIn = casResponse.getEntityStream()) {
           copyStream(casIn, zipPackageOut);
         }
-        
+
         zipPackageOut.closeEntry();
-        
+
         System.out.println(casId);
       }
     }

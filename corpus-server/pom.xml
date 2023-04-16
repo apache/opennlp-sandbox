@@ -47,45 +47,62 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
-            <version>2.5</version>
-            <scope>provided</scope>
-        </dependency>
-
-      <dependency>
-          <groupId>org.osgi</groupId>
-          <artifactId>org.osgi.core</artifactId>
-          <version>4.2.0</version>
-          <scope>provided</scope>
-      </dependency>
-
-      <dependency>
-          <groupId>org.osgi</groupId>
-          <artifactId>org.osgi.compendium</artifactId>
-          <version>4.2.0</version>
-          <scope>provided</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>com.sun.jersey</groupId>
-        <artifactId>jersey-servlet</artifactId>
-        <version>1.19.4</version>
+        <groupId>javax.servlet</groupId>
+        <artifactId>servlet-api</artifactId>
+        <version>2.5</version>
         <scope>provided</scope>
       </dependency>
 
       <dependency>
-          <groupId>com.sun.jersey</groupId>
-          <artifactId>jersey-json</artifactId>
-          <version>1.19.4</version>
-          <scope>provided</scope>
+        <groupId>org.glassfish.jersey.containers</groupId>
+        <artifactId>jersey-container-servlet</artifactId>
+        <version>${jersey-server.version}</version>
       </dependency>
 
       <dependency>
-          <groupId>com.sun.jersey</groupId>
-          <artifactId>jersey-client</artifactId>
-          <version>1.19.4</version>
-          <scope>provided</scope>
+        <groupId>org.glassfish.jersey.core</groupId>
+        <artifactId>jersey-client</artifactId>
+        <version>${jersey-client.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.glassfish.jersey.media</groupId>
+        <artifactId>jersey-media-json-jackson</artifactId>
+        <version>${jersey-server.version}</version>
+        <scope>runtime</scope>
+      </dependency>
+      
+      <dependency>
+        <groupId>org.glassfish.jersey.media</groupId>
+        <artifactId>jersey-media-json-jettison</artifactId>
+        <version>${jersey-server.version}</version>
+        <scope>runtime</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>org.codehaus.jettison</groupId>
+            <artifactId>jettison</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>org.codehaus.jettison</groupId>
+        <artifactId>jettison</artifactId>
+        <version>${jettison.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.core</artifactId>
+        <version>4.2.0</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.compendium</artifactId>
+        <version>4.2.0</version>
+        <scope>provided</scope>
       </dependency>
 
     </dependencies>
@@ -105,25 +122,5 @@
         </plugin>
       </plugins>
     </pluginManagement>
-		<plugins>
-
-      <!-- plugin>
-				<groupId>org.apache.karaf.tooling</groupId>
-				<artifactId>features-maven-plugin</artifactId>
-				<version>2.2.4</version>
-				<executions>
-					<execution>
-						<id>generate-features-file</id>
-						<goals>
-							<goal>generate-features-file</goal>
-						</goals>
-						<configuration>
-							<karafVersion>2.2.4</karafVersion>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin -->
-      
-		</plugins>
 	</build>
 </project>

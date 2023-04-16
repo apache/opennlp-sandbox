@@ -33,22 +33,7 @@
 
 	<name>Apache OpenNLP Wikinews Importer</name>
 
-	<properties>
-		<uimaj.version>3.3.1</uimaj.version>
-	</properties>
-
 	<dependencies>
-		<dependency>
-		    <groupId>com.sun.jersey</groupId>
-		    <artifactId>jersey-json</artifactId>
-		    <version>1.19.4</version>
-		</dependency>
-
-		<dependency>
-		    <groupId>com.sun.jersey</groupId>
-		    <artifactId>jersey-client</artifactId>
-		    <version>1.19.4</version>
-		</dependency>
 
 	    <dependency> 
 	      <groupId>info.bliki.wiki</groupId> 

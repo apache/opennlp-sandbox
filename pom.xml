@@ -121,7 +121,10 @@
         <opennlp.forkCount>1.0C</opennlp.forkCount>
 
         <uimaj.version>3.3.1</uimaj.version>
-
+        <jersey-client.version>2.39.1</jersey-client.version>
+        <jersey-server.version>2.39.1</jersey-server.version>
+        <jettison.version>1.5.4</jettison.version>
+        
         <junit.version>5.9.2</junit.version>
 
         <enforcer.plugin.version>3.0.0-M3</enforcer.plugin.version>
@@ -156,7 +159,7 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
-                <version>3.4</version>
+                <version>3.12.0</version>
             </dependency>
             <dependency>
                 <groupId>commons-codec</groupId>
@@ -168,17 +171,20 @@
                 <artifactId>commons-logging</artifactId>
                 <version>1.1.1</version>
             </dependency>
-
             <dependency>
                 <groupId>commons-collections</groupId>
                 <artifactId>commons-collections</artifactId>
                 <version>3.2.2</version>
             </dependency>
-
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-math3</artifactId>
-                <version>3.5</version>
+                <version>3.6.1</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-beanutils</groupId>
+                <artifactId>commons-beanutils</artifactId>
+                <version>1.9.4</version>
             </dependency>
 
             <dependency>
@@ -500,6 +506,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>${checkstyle.plugin.version}</version>
             </plugin>
         </plugins>
     </build>

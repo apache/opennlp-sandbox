@@ -29,7 +29,7 @@ import org.osgi.service.http.HttpService;
 import org.osgi.service.http.NamespaceException;
 import org.osgi.util.tracker.ServiceTracker;
 
-import com.sun.jersey.spi.container.servlet.ServletContainer;
+import org.glassfish.jersey.servlet.ServletContainer;
 
 public class TaggingServerBundle implements BundleActivator {
 
@@ -52,7 +52,6 @@ public class TaggingServerBundle implements BundleActivator {
          
         Dictionary<String, String> jerseyServletParams = new Hashtable<>();
         jerseyServletParams.put("javax.ws.rs.Application", TaggingServerApplication.class.getName());
-        jerseyServletParams.put("com.sun.jersey.api.json.POJOMappingFeature", "true");
         
         try {
           httpService.registerServlet("/rest", new ServletContainer(), jerseyServletParams, null);
@@ -69,7 +68,6 @@ public class TaggingServerBundle implements BundleActivator {
         if (httpService == service) {
 
           httpService.unregister("/rest");
-
           httpService = null;
         }
         
