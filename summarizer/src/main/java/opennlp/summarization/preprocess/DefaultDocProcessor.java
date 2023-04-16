@@ -29,11 +29,13 @@ import java.util.Locale;
 import java.util.Hashtable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import opennlp.summarization.Sentence;
 import opennlp.summarization.DocProcessor;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
+import opennlp.tools.stemmer.PorterStemmer;
 import opennlp.tools.stemmer.Stemmer;
 
 /**
@@ -41,15 +43,19 @@ import opennlp.tools.stemmer.Stemmer;
  */
 public class DefaultDocProcessor implements DocProcessor {
   private SentenceModel sentModel;
-  private Stemmer stemmer;
-  private StopWords sw;
+  private final Stemmer stemmer;
+
+  private final static Pattern REPLACEMENT_PATTERN =
+          Pattern.compile("&#?[0-9 a-z A-Z][0-9 a-z A-Z][0-9 a-z A-Z]?;");
 
   // Sentence fragmentation to use..
   private static final int OPEN_NLP = 1;
   private static final int SIMPLE = 2;
-  private static final int SENTENCE_FRAG= OPEN_NLP;
+  private static final int SENTENCE_FRAG = OPEN_NLP;
 
   public DefaultDocProcessor(InputStream fragModelFile) {
+    stemmer = new PorterStemmer();
+
     try (InputStream modelIn = new BufferedInputStream(fragModelFile)){
       sentModel = new SentenceModel(modelIn);
     } catch(Exception ex){
@@ -65,7 +71,6 @@ public class DefaultDocProcessor implements DocProcessor {
                             Hashtable<String, List<Integer>> iidx, List<String> processedSent) {
     int oldSentEndIdx = 0;
     int sentEndIdx = 0;
-    Stemmer stemmer = new PorterStemmer();
     StopWords sw = StopWords.getInstance();
     BreakIterator iterator = BreakIterator.getSentenceInstance(Locale.US);
     BreakIterator wrdItr = BreakIterator.getWordInstance(Locale.US);
@@ -73,8 +78,7 @@ public class DefaultDocProcessor implements DocProcessor {
     int start = iterator.first();
     int sentCnt = 0;
 
-    for (int end = iterator.next(); end != BreakIterator.DONE; start = end, end = iterator.next())
-    {
+    for (int end = iterator.next(); end != BreakIterator.DONE; start = end, end = iterator.next()) {
       String sentence = str.substring(start,end);//str.substring(oldSentEndIdx, sentEndIdx).trim();
 
       //Add the sentence as-is; do any processing at the word level
@@ -100,7 +104,7 @@ public class DefaultDocProcessor implements DocProcessor {
         {
           if(stemedWrd.length()>1)
           {
-            List<Integer> sentList= iidx.get(stemedWrd);
+            List<Integer> sentList = iidx.get(stemedWrd);
             if(sentList==null)
             {
               sentList = new ArrayList<>();
@@ -130,7 +134,7 @@ public class DefaultDocProcessor implements DocProcessor {
       while ((nextLine = lnr.readLine()) != null) {
         String trimmedLine = nextLine.trim();
         if (!trimmedLine.isEmpty() ) {
-          docBuffer.append(trimmedLine.replaceAll("&#?[0-9 a-z A-Z][0-9 a-z A-Z][0-9 a-z A-Z]?;", "")).append(" ");
+          docBuffer.append(REPLACEMENT_PATTERN.matcher(trimmedLine).replaceAll("")).append(" ");
         }
       }
     } catch (Exception ex) {
@@ -154,8 +158,7 @@ public class DefaultDocProcessor implements DocProcessor {
           List<String> cleanedSents = new ArrayList<>();
           this.getSentences(trimmedLine, sents, null, cleanedSents);
           int paraPos = 1;
-          for(String sen:sents)
-          {
+          for(String sen:sents) {
             Sentence s = new Sentence();
             s.setSentId(sentNo++);
             s.setParagraph(paraNo);

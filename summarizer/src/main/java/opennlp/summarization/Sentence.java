@@ -23,8 +23,8 @@ import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Objects;
 
-import opennlp.summarization.preprocess.PorterStemmer;
 import opennlp.summarization.preprocess.StopWords;
+import opennlp.tools.stemmer.PorterStemmer;
 
 /**
  * A representation of a sentence geared toward pagerank and summarization.
@@ -159,16 +159,15 @@ public class Sentence {
 		StringBuilder b = new StringBuilder();
 		wrdItr.setText(stringVal);	
 		for(int wrdEnd = wrdItr.next(); wrdEnd != BreakIterator.DONE; 
-				wrdStrt = wrdEnd, wrdEnd = wrdItr.next())
-		{
+				wrdStrt = wrdEnd, wrdEnd = wrdItr.next()) {
 			String word = this.getStringVal().substring(wrdStrt, wrdEnd);//words[i].trim();
 			word = word.replace("\"|'","");
 
-			//Skip stop words and stem the word.
+			// Skip stop words and stem the word.
 			if(sw.isStopWord(word)) continue;
-			
+
 			stemmer.stem(word);
-			b.append(stemmer);
+			b.append(stemmer.toString());
 			b.append(SPACE);
 		}
 		return b.toString();
