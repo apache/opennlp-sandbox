@@ -75,8 +75,8 @@ public class TextRank {
   // words..
   public double getWeightedSimilarity(String sent1, String sent2,
                                       Hashtable<String, Double> wrdWts) {
-    String[] words1 = sent1.split(" ");
-    String[] words2 = sent2.split(" ");
+    String[] words1 = sent1.trim().split("\\s+");
+    String[] words2 = sent2.trim().split("\\s+");
     double wordsInCommon = 0;
     Hashtable<String, Boolean> dups = new Hashtable<>();
     for (String s : words1) {
@@ -173,8 +173,7 @@ public class TextRank {
 
     for (int i = 0; i < sentences.size(); i++) {
       String nextSent = sentences.get(i);
-      String[] words = nextSent.split(" ");
-      List<Integer> processed = new ArrayList<>();
+      String[] words = nextSent.trim().split("\\s+");
       Score s = new Score();
       s.setSentId(i);
 
@@ -185,6 +184,7 @@ public class TextRank {
         if (otherSents == null)
           continue;
 
+        List<Integer> processed = new ArrayList<>();
         for (int idx : otherSents) {
           if (idx != i && !processed.contains(idx)) {
             double currS = getWeightedSimilarity(sentences.get(i),
@@ -233,7 +233,7 @@ public class TextRank {
 
     if (HIGHER_TITLE_WEIGHT && getSentences().size()>0) {
       String sent = getSentences().get(0);
-      String[] wrds = sent.split(" ");
+      String[] wrds = sent.trim().split("\\s+");
       for (String wrd : wrds)
         wrdWts.put(wrd, TITLE_WRD_WT);
     }
@@ -278,7 +278,7 @@ public class TextRank {
 
 /*
  * public double getScore(String sent1, String sent2, boolean toPrint) {
- * String[] words1 = sent1.split(" "); String[] words2 = sent2.split(" ");
+ * String[] words1 = sent1.split("\\s+"); String[] words2 = sent2.split("\\s+");
  * double wordsInCommon = 0; for(int i=0;i< words1.length;i++) { for(int
  * j=0;j<words2.length;j++) { if(!sw.isStopWord(words1[i]) &&
  * !words1[i].trim().isEmpty() && words1[i].equals(words2[j])) { wordsInCommon+=

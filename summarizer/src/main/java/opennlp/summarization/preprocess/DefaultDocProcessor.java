@@ -208,7 +208,7 @@ public class DefaultDocProcessor implements DocProcessor {
   @Override
   public String[] getWords(String sent)
   {
-    return sent.split(" ");
+    return sent.trim().split("\\s+");
   }
 
   @Override

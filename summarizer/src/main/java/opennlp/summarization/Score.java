@@ -18,11 +18,11 @@
 package opennlp.summarization;
 
 /**
- * A utility class to store the score of a sentence for ranking sentences within a document.
+ * Stores the score of a sentence for ranking sentences within a document.
  */
 public class Score implements Comparable<Score> {
-  int sentId;
-  public double score;
+  private int sentId;
+  private double score;
 
   public Score()
   {
