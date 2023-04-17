@@ -93,7 +93,7 @@ public class Sentence {
 	private int calcWrdCnt(String stringVal2) {
 		int ret = 0;
 		StopWords sw = StopWords.getInstance();
-		String[] wrds = stringVal.split(" ");
+		String[] wrds = stringVal.split("\\s+");
 		for(String wrd: wrds){
 			if(!sw.isStopWord(wrd)&&!wrd.startsWith("'")&&!wrd.equals(".")&&!wrd.equals("?"))
 				ret++;
@@ -131,7 +131,7 @@ public class Sentence {
 	
 	public int getWordCnt()
 	{
-		return wordCnt==0? this.getStringVal().split(" ").length: wordCnt;
+		return wordCnt==0? this.getStringVal().split("\\s+").length: wordCnt;
 	}
 
 	// Should add an article id to the sentence class. For now returns true if the ids are the same.
