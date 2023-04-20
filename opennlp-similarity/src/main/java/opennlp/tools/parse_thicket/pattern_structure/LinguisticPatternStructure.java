@@ -16,6 +16,7 @@
  */
 package opennlp.tools.parse_thicket.pattern_structure;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -23,17 +24,18 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import opennlp.tools.fca.ConceptLattice;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LinguisticPatternStructure extends PhrasePatternStructure {
 
+	private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 	public LinguisticPatternStructure(int objectCounts, int attributeCounts) {
 		super(objectCounts, attributeCounts);
-		
-		ConceptLattice cl = null;
 	}
-	
+
 	public void AddExtentToAncestors(LinkedHashSet<Integer>extent, int curNode) {
 		//
 		if (conceptList.get(curNode).parents.size()>0){
@@ -41,20 +43,19 @@ public class LinguisticPatternStructure extends PhrasePatternStructure {
 				conceptList.get(parent).addExtents(extent);
 				AddExtentToAncestors(extent, parent);
 			}
-		}	
+		}
 	}
-	
+
 	public int AddIntent(List<List<ParseTreeChunk>> intent, LinkedHashSet<Integer>extent,int generator) {
-		// TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
-		// System.out.println("debug called for " + intent);
+		LOG.debug("debug called for {}", intent);
 		//printLattice();
 		int generator_tmp = GetMaximalConcept(intent, generator);
 		generator = generator_tmp;
 		if (conceptList.get(generator).intent.equals(intent)) {
-			System.out.println("at generator:" + conceptList.get(generator).intent);
-			System.out.println("to add:" + intent);
-			System.out.println("already generated");
-			AddExtentToAncestors(extent, generator);	
+			LOG.debug("at generator: {}", conceptList.get(generator).intent);
+			LOG.debug("to add: {}", intent);
+			LOG.debug("already generated");
+			AddExtentToAncestors(extent, generator);
 			return generator;
 		}
 		Set<Integer> generatorParents = conceptList.get(generator).parents;
@@ -67,13 +68,12 @@ public class LinguisticPatternStructure extends PhrasePatternStructure {
 				new_extent.addAll(conceptList.get(candidate).extent);
 				new_extent.addAll(extent);
 				if (intent.size()!=intersection.size()){
-					// TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
-					// System.out.println("recursive call (inclusion)");
-					// System.out.println(intent + "----" + intersection);
+					LOG.debug("recursive call (inclusion)");
+					LOG.debug("{}----{}", intent, intersection);
 					candidate = AddIntent(intersection,new_extent, candidate);
 				}
 			}
-			
+
 			boolean addParents = true;
 			// System.out.println("now iterating over parents");
 			Iterator<Integer> iterator = newParents.iterator();
@@ -93,8 +93,7 @@ public class LinguisticPatternStructure extends PhrasePatternStructure {
 				newParents.add(candidate);
 			}
 		}
-		// TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
-		// System.out.println("size of lattice: " + conceptList.size());
+		LOG.debug("size of lattice: {}", conceptList.size());
 		PhraseConcept newConcept = new PhraseConcept();
 		newConcept.setIntent(intent);
 
@@ -102,7 +101,7 @@ public class LinguisticPatternStructure extends PhrasePatternStructure {
 		new_extent.addAll(conceptList.get(generator).extent);
 		new_extent.addAll(extent);
 		newConcept.addExtents(new_extent);
-		
+
 		newConcept.setPosition(conceptList.size());
 		conceptList.add(newConcept);
 		conceptList.get(generator).parents.add(newConcept.position);
@@ -119,43 +118,42 @@ public class LinguisticPatternStructure extends PhrasePatternStructure {
 		}
 		return newConcept.position;
 	}
-	
+
 	public void printLatticeExtended() {
 		for (int i = 0; i < conceptList.size(); ++i) {
 			printConceptByPositionExtended(i);
 		}
 	}
-	
+
 	public void printConceptByPositionExtended(int index) {
-		System.out.println("Concept at position " + index);
+		LOG.debug("Concept at position {}", index);
 		conceptList.get(index).printConceptExtended();
 	}
-	
-	
-	public int [][] toContext(int extentCardinality){
-		
+
+	public int [][] toContext(int extentCardinality) {
+
 		int newAttrCount = conceptList.size();
 		ArrayList<PhraseConcept> cList = new ArrayList<>(conceptList);
 		boolean run = true;
-		int k=0;
-		while (run && k<conceptList.size()){
-			if (conceptList.get(k).intent.size() == attributeCount){
+		int k = 0;
+		while (run && k<conceptList.size()) {
+			if (conceptList.get(k).intent.size() == attributeCount) {
 				if (conceptList.get(k).extent.size() == 0)
 					for (Integer i:conceptList.get(k).parents)
 						cList.remove(i);
 				cList.remove(k);
-				run=false;
+				run = false;
 			}
 			else
-				k+=1;	
+				k+=1;
 		}
-		
+
 		run = true;
 		k=0;
 		while (run && k<=newAttrCount){
 			if (cList.get(k).extent.size()==0)
 				k++;
-				run = false;
+			run = false;
 		}
 		newAttrCount = cList.size();
 		Set<Integer> nodeExtend;
@@ -168,9 +166,7 @@ public class LinguisticPatternStructure extends PhrasePatternStructure {
 		}
 		return binaryContext;
 	}
-	
-	
-	
+
 	public void logStability(){
 		int min_delta, delta;
 		float sum;

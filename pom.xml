@@ -120,6 +120,9 @@
         <opennlp.tools.version>2.1.1</opennlp.tools.version>
         <opennlp.forkCount>1.0C</opennlp.forkCount>
 
+        <slf4j.version>1.7.36</slf4j.version>
+        <log4j2.version>2.20.0</log4j2.version>
+
         <uimaj.version>3.3.1</uimaj.version>
         <jersey-client.version>2.39.1</jersey-client.version>
         <jersey-server.version>2.39.1</jersey-server.version>
@@ -149,6 +152,12 @@
                 <groupId>${project.groupId}</groupId>
                 <version>${project.version}</version>
                 <type>test-jar</type>
+            </dependency>
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
             </dependency>
 
             <dependency>
@@ -185,6 +194,25 @@
                 <groupId>commons-beanutils</groupId>
                 <artifactId>commons-beanutils</artifactId>
                 <version>1.9.4</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-api</artifactId>
+                <version>${log4j2.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-core</artifactId>
+                <version>${log4j2.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-slf4j-impl</artifactId>
+                <version>${log4j2.version}</version>
+                <scope>test</scope>
             </dependency>
 
             <dependency>

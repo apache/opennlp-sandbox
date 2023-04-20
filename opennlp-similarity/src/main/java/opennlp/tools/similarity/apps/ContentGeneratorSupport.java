@@ -17,10 +17,10 @@
 
 package opennlp.tools.similarity.apps;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import opennlp.tools.similarity.apps.utils.StringDistanceMeasurer;
@@ -30,13 +30,14 @@ import opennlp.tools.textsimilarity.TextProcessor;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class supports content generation by static functions.
  */
 public class ContentGeneratorSupport {
-	private static final Logger LOG = Logger
-			.getLogger("opennlp.tools.similarity.apps.ContentGeneratorSupport");
+	private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 	//TODO - verify regexp!!
 	private static final Pattern SPACES_PATTERN = Pattern.compile("([a-z])(\\s{2,3})([A-Z])");
@@ -165,9 +166,7 @@ public class ContentGeneratorSupport {
 					if (StringUtils.isEmpty(title1) || StringUtils.isEmpty(title2))
 						continue;
 					if (meas.measureStringDistance(title1, title2) > dupeThresh) {
-						idsToRemove.add(j); // dupes found, later list member to
-						// be deleted
-
+						idsToRemove.add(j); // dupes found, later list member to be deleted
 					}
 				}
 
@@ -176,12 +175,11 @@ public class ContentGeneratorSupport {
 					hitsDedup.add(hits.get(i));
 
 			if (hitsDedup.size() < hits.size()) {
-				LOG.info("Removed duplicates from formed query, including "
-						+ hits.get(idsToRemove.get(0)));
+				LOG.info("Removed duplicates from formed query, including {}", hits.get(idsToRemove.get(0)));
 			}
 
 		} catch (Exception e) {
-			LOG.severe("Problem removing duplicates from query list");
+			LOG.error("Problem removing duplicates from query list", e);
 		}
 
 		return hitsDedup;
@@ -213,7 +211,7 @@ public class ContentGeneratorSupport {
 								continue;
 							if (meas.measureStringDistance(sf1, sf2) > dupeThresh) {
 								fragmList2Results.remove(f2);
-								LOG.info("Removed duplicates from formed fragments list: " + sf2);
+								LOG.info("Removed duplicates from formed fragments list: {}", sf2);
 							}
 						}
 
@@ -221,7 +219,7 @@ public class ContentGeneratorSupport {
 					hits.set(j, hit2);
 				}
 		} catch (Exception e) {
-			LOG.severe("Problem removing duplicates from list of fragment");
+			LOG.error("Problem removing duplicates from list of fragment", e);
 		}
 		return hits;
 	}
@@ -236,13 +234,13 @@ public class ContentGeneratorSupport {
 			return null;
 
 		StringDistanceMeasurer meas = new StringDistanceMeasurer();
-		Double dist = 0.0;
+		double dist = 0.0;
 		String result = null, followSent = "";
 		for (int i = 0; i < sents.length; i++) {
 			String s = sents[i];
 			if (s == null || s.length() < 30)
 				continue;
-			Double distCurr = meas.measureStringDistance(s, fragment);
+			double distCurr = meas.measureStringDistance(s, fragment);
 			if (distCurr > dist && distCurr > 0.4) {
 				result = s;
 				dist = distCurr;
@@ -261,7 +259,7 @@ public class ContentGeneratorSupport {
 						}
 					}
 				} catch (Exception e) {
-					e.printStackTrace();
+					LOG.error(e.getLocalizedMessage(), e);
 				}
 			}
 		}
@@ -276,13 +274,13 @@ public class ContentGeneratorSupport {
 			return null;
 		int bestSentIndex = -1;
 		StringDistanceMeasurer meas = new StringDistanceMeasurer();
-		Double distBest = 10.0; // + sup
+		double distBest = 10.0; // + sup
 		String result = null, followSent = null;
 		for (int i = 0; i < sents.length; i++) {
 			String s = sents[i];
 			if (s == null || s.length() < 30)
 				continue;
-			Double distCurr = meas.measureStringDistance(s, fragment);
+			double distCurr = meas.measureStringDistance(s, fragment);
 			if (distCurr > distBest) {
 				distBest = distCurr;
 				bestSentIndex = i;
@@ -314,7 +312,7 @@ public class ContentGeneratorSupport {
 		downloadedPage = downloadedPage.replaceAll("(?:&)+", "#");
 		String[] sents = downloadedPage.split("#");
 		List<TextChunk> sentsList = new ArrayList<>();
-		for(String s: sents){
+		for (String s: sents) {
 			s = ContentGeneratorSupport.cleanSpacesInCleanedHTMLpage(s);
 			sentsList.add(new TextChunk(s, s.length()));
 		}
@@ -325,7 +323,7 @@ public class ContentGeneratorSupport {
 		int initIndex = sentsList.size()-1 -maxSentsFromPage;
 		if (initIndex<0)
 			initIndex = 0;
-		for(int i=initIndex; i< sentsList.size() && j<maxSentsFromPage ; i++){
+		for (int i=initIndex; i< sentsList.size() && j<maxSentsFromPage ; i++) {
 			longestSents[j] = sentsList.get(i).text;
 			j++;
 		}
@@ -359,13 +357,12 @@ public class ContentGeneratorSupport {
 		float minFragmentLength = 40, minFragmentLengthSpace=4;
 
 		List<String> sentsClean = new ArrayList<>();
-		for (String sentenceOrMultSent : longestSents)
-		{
+		for (String sentenceOrMultSent : longestSents) {
 			if (sentenceOrMultSent==null || sentenceOrMultSent.length()<20)
 				continue;
-			if (GeneratedSentenceProcessor.acceptableMinedSentence(sentenceOrMultSent)==null){
-				// TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
-				// System.out.println("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = "+sentenceOrMultSent);
+			if (GeneratedSentenceProcessor.acceptableMinedSentence(sentenceOrMultSent)==null) {
+				LOG.debug("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = {}",
+								sentenceOrMultSent);
 				continue;
 			}
 			// aaa. hhh hhh.  kkk . kkk ll hhh. lll kkk n.
@@ -385,7 +382,7 @@ public class ContentGeneratorSupport {
 			// disused - Feb 26 13
 			//furtherSplit = furtherMakeSentencesShorter(furtherSplit);
 			furtherSplit.remove(furtherSplit.size()-1);
-			for(String s : furtherSplit){
+			for(String s : furtherSplit) {
 				if (s.indexOf('|')>-1)
 					continue;
 				s = s.replace("<em>"," ").replace("</em>"," ");
@@ -400,12 +397,11 @@ public class ContentGeneratorSupport {
 		float minFragmentLength = 40, minFragmentLengthSpace=4;
 
 		List<String> sentsClean = new ArrayList<>();
-		for (String sentenceOrMultSent : longestSents)
-		{
+		for (String sentenceOrMultSent : longestSents) {
 			if (sentenceOrMultSent==null || sentenceOrMultSent.length()<minFragmentLength)
 				continue;
 			List<String> furtherSplit = TextProcessor.splitToSentences(sentenceOrMultSent);
-			for(String sentence: furtherSplit ){
+			for(String sentence: furtherSplit ) {
 				if (sentence==null || sentence.length()<20)
 					continue;
 				if (GeneratedSentenceProcessor.acceptableMinedSentence(sentence)==null){
@@ -422,8 +418,6 @@ public class ContentGeneratorSupport {
 				avgSentenceLengthInTextPortion = (float)sentence.length() /(float) numOfDots;
 				if ( avgSentenceLengthInTextPortion<minFragmentLengthSpace)
 					continue;
-
-
 
 				// forced split by ',' somewhere in the middle of sentence
 				// disused - Feb 26 13
