@@ -21,8 +21,12 @@ import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -127,7 +131,9 @@ public class DefaultNonReferentialResolver implements NonReferentialResolver {
     if (ResolverMode.TRAIN == mode) {
       System.err.println(this + " referential");
       if (debugOn) {
-        try (FileWriter writer = new FileWriter(modelName + ".events")) {
+        Path p = Path.of(modelName + ".events");
+        try (Writer writer = Files.newBufferedWriter(p, StandardCharsets.UTF_8,
+                StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
           for (Event e : events) {
             writer.write(e.toString() + "\n");
           }

@@ -33,14 +33,19 @@
 
 package opennlp.tools.textsimilarity.chunker2matcher;
 
+import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -71,9 +76,11 @@ public class ParserCacheSerializer {
     } else {
 
       Map<String, String[][]> sentence_parseObject = (Map<String, String[][]>) objectToSerialize;
-      List<String> keys = new ArrayList<>(sentence_parseObject.keySet());
-      try (CSVWriter writer = new CSVWriter(new FileWriter(
-              RESOURCE_DIR + PARSE_CACHE_FILE_NAME_CSV, false))) {
+      final List<String> keys = new ArrayList<>(sentence_parseObject.keySet());
+
+      final Path p = Path.of(RESOURCE_DIR + PARSE_CACHE_FILE_NAME_CSV);
+      try (CSVWriter writer = new CSVWriter(Files.newBufferedWriter(p, StandardCharsets.UTF_8,
+              StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))) {
         for (String k : keys) {
           String[][] triplet = sentence_parseObject.get(k);
           writer.writeNext(new String[] { k });
@@ -92,7 +99,7 @@ public class ParserCacheSerializer {
     if (JAVA_OBJECT_SERIALIZATION) {
       String filename = RESOURCE_DIR + PARSE_CACHE_FILE_NAME;
       Object data = null;
-      try (FileInputStream fis = new FileInputStream(filename);
+      try (InputStream fis = new BufferedInputStream(new FileInputStream(filename));
            ObjectInputStream in = new ObjectInputStream(fis)) {
 
         data = in.readObject();
@@ -109,8 +116,8 @@ public class ParserCacheSerializer {
               + PARSE_CACHE_FILE_NAME_CSV), ',')) {
         lines = reader.readAll();
       } catch (FileNotFoundException e) {
-    	  if (JAVA_OBJECT_SERIALIZATION)
-    		  System.err.println("Cannot find cache file");
+        if (JAVA_OBJECT_SERIALIZATION)
+          System.err.println("Cannot find cache file");
         return null;
       } catch (IOException ioe) {
         ioe.printStackTrace();

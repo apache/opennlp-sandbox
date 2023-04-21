@@ -414,6 +414,8 @@
                                 <exclude>**/src/main/java/opennlp/tools/similarity/apps/gen.txt</exclude>
                                 <!-- These files are samples in wikinews-importer -->
                                 <exclude>**/samples/*.xmi</exclude>
+                                <!-- This is a log file of DerbyDB being created during test runs -->
+                                <exclude>**/derby.log</exclude>
                             </excludes>
                         </configuration>
                     </execution>
