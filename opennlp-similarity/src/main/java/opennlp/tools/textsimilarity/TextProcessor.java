@@ -34,8 +34,9 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
 
-import opennlp.tools.stemmer.PStemmer;
 import opennlp.tools.similarity.apps.utils.Pair;
+import opennlp.tools.stemmer.PorterStemmer;
+import opennlp.tools.stemmer.Stemmer;
 
 public class TextProcessor {
 
@@ -480,7 +481,7 @@ public class TextProcessor {
       }
     }
 
-    return new PStemmer().stem(token).toString();
+    return new PorterStemmer().stem(token);
   }
 
   public static String cleanToken(String token) {
@@ -525,8 +526,7 @@ public class TextProcessor {
 
   public static String stemTerm(String term) {
     term = stripToken(term);
-    PStemmer st = new PStemmer();
-
+    Stemmer st = new PorterStemmer();
     return st.stem(term).toString();
   }
 
@@ -639,9 +639,7 @@ public class TextProcessor {
     StringBuilder finalSummary;
 
     try {
-
-      String[] puncChars = { ":", "--", "PM", "MST", "EST", "CST", "PST",
-          "GMT", "AM", "  " };
+      String[] puncChars = { ":", "--", "PM", "MST", "EST", "CST", "PST", "GMT", "AM", "  " };
 
       txt = txt.replace(" | ", " ");
       txt = txt.replace(" |", " ");
@@ -808,8 +806,7 @@ public class TextProcessor {
 
     // scrub the title
     if (title.trim().length() > 0 && txt.contains(title.trim())) {
-      txt = txt
-          .substring(txt.indexOf(title.trim()) + title.trim().length() - 1);
+      txt = txt.substring(txt.indexOf(title.trim()) + title.trim().length() - 1);
     }
 
     // scrub before first -
@@ -863,7 +860,7 @@ public class TextProcessor {
   public static List<String> extractUrlsFromText(String txt) {
     List<String> urls = new ArrayList<>();
     // tokenize and iterate
-    String[] tokens = txt.split(" ");
+    String[] tokens = txt.split("\\s+");
     for (String t : tokens) {
       if (t.startsWith("http://")) {
         if (!urls.contains(t)) {
@@ -881,13 +878,12 @@ public class TextProcessor {
     if (segments.size() > 1) {
       List<String> allTokens = new ArrayList<>();
       for (String s : segments) {
-        String[] tks = s.split(" ");
+        String[] tks = s.split("\\s+");
         List<String> tokens = Arrays.asList(tks);
         HashMap<String, Integer> ut = TextProcessor.getUniqueTokenIndex(tokens);
         allTokens.addAll(ut.keySet());
       }
-      HashMap<String, Integer> uniqueTokens = TextProcessor
-          .getUniqueTokenIndex(allTokens);
+      Map<String, Integer> uniqueTokens = TextProcessor.getUniqueTokenIndex(allTokens);
       for (String t : uniqueTokens.keySet()) {
         Integer freq = uniqueTokens.get(t);
         if (freq == segments.size()) {
@@ -895,14 +891,13 @@ public class TextProcessor {
         }
       }
     }
-
     return commonTokens;
   }
 
   public static int numTokensInString(String txt) {
     int retVal = 0;
     if (txt != null && txt.trim().length() > 0) {
-      retVal = txt.trim().split(" ").length;
+      retVal = txt.trim().split("\\s+").length;
     }
     return retVal;
   }

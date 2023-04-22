@@ -25,7 +25,8 @@ import java.util.Map;
 import opennlp.tools.similarity.apps.BingQueryRunner;
 import opennlp.tools.similarity.apps.HitBase;
 import opennlp.tools.similarity.apps.utils.StringCleaner;
-import opennlp.tools.stemmer.PStemmer;
+import opennlp.tools.stemmer.PorterStemmer;
+import opennlp.tools.stemmer.Stemmer;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
 import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
@@ -44,7 +45,7 @@ public class TaxonomyExtenderViaMebMining extends BingQueryRunner {
 
   private Map<String, List<List<String>>> lemma_ExtendedAssocWords = new HashMap<>();
   private final Map<List<String>, List<List<String>>> assocWords_ExtendedAssocWords = new HashMap<>();
-  private final PStemmer ps;
+  private final Stemmer ps = new PorterStemmer();
 
   public Map<List<String>, List<List<String>>> getAssocWords_ExtendedAssocWords() {
     return assocWords_ExtendedAssocWords;
@@ -66,8 +67,6 @@ public class TaxonomyExtenderViaMebMining extends BingQueryRunner {
       System.err.println("Problem loading synt matcher");
 
     }
-    ps = new PStemmer();
-
   }
 
   private List<List<String>> getCommonWordsFromList_List_ParseTreeChunk(
@@ -83,7 +82,7 @@ public class TaxonomyExtenderViaMebMining extends BingQueryRunner {
               && ((ch.getPOSs().get(w).startsWith("NN") || ch.getPOSs().get(w)
                   .startsWith("VB"))) && lemmas.get(w).length() > 2) {
             String formedWord = lemmas.get(w);
-            String stemmedFormedWord = ps.stem(formedWord);
+            String stemmedFormedWord = ps.stem(formedWord).toString();
             if (!stemmedFormedWord.startsWith("invalid"))
               wordRes.add(formedWord);
           }
@@ -114,8 +113,7 @@ public class TaxonomyExtenderViaMebMining extends BingQueryRunner {
                                                                             // here
           query = query.replace('[', ' ').replace(']', ' ').replace(',', ' ')
               .replace('_', ' ');
-          List<List<ParseTreeChunk>> matchList = runSearchForTaxonomyPath(
-              query, "", lang, 30);
+          List<List<ParseTreeChunk>> matchList = runSearchForTaxonomyPath(query, "", lang, 30);
           List<String> toRemoveFromExtension = new ArrayList<>(taxoPath);
           toRemoveFromExtension.add(entity);
           toRemoveFromExtension.add(domain);
@@ -135,8 +133,7 @@ public class TaxonomyExtenderViaMebMining extends BingQueryRunner {
     ser.writeTaxonomy(fileName.replace(".ari", "Taxo.dat"));
   }
 
-  public List<List<ParseTreeChunk>> runSearchForTaxonomyPath(String query,
-      String domain, String lang, int numbOfHits) {
+  public List<List<ParseTreeChunk>> runSearchForTaxonomyPath(String query, String domain, String lang, int numbOfHits) {
     List<List<ParseTreeChunk>> genResult = new ArrayList<>();
     try {
       List<HitBase> resultList = runSearch(query, numbOfHits);

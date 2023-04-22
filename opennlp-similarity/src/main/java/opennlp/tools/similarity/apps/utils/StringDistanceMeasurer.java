@@ -17,14 +17,14 @@
 
 package opennlp.tools.similarity.apps.utils;
 
+import opennlp.tools.stemmer.PorterStemmer;
+import opennlp.tools.stemmer.Stemmer;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import opennlp.tools.stemmer.PStemmer;
-
 public class StringDistanceMeasurer {
-  // external tools
-  private final PStemmer ps; // stemmer
+  private final Stemmer ps = new PorterStemmer();
 
   private static final int MIN_STRING_LENGTH_FOR_WORD = 4;
 
@@ -35,11 +35,7 @@ public class StringDistanceMeasurer {
   private static final double MIN_SCORE_FOR_LING = 100; // 0.7;
 
   public StringDistanceMeasurer() {
-    // first get stemmer
-    ps = new PStemmer();
-    if (MIN_SCORE_FOR_LING > 1.0)
-      return;
-
+    
   }
 
   // gets string array and process numbers, applies stemming and forms a list
