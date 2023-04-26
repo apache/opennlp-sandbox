@@ -27,7 +27,8 @@ import org.apache.commons.lang.StringUtils;
 import opennlp.tools.similarity.apps.BingQueryRunner;
 import opennlp.tools.similarity.apps.HitBase;
 import opennlp.tools.similarity.apps.utils.StringCleaner;
-import opennlp.tools.stemmer.PStemmer;
+import opennlp.tools.stemmer.PorterStemmer;
+import opennlp.tools.stemmer.Stemmer;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
 import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.TextProcessor;
@@ -39,13 +40,12 @@ public class DomainTaxonomyExtender {
 	private final ParserChunker2MatcherProcessor matcher = ParserChunker2MatcherProcessor.getInstance();
 
 	protected static final String BING_KEY = "WFoNMM706MMJ5JYfcHaSEDP+faHj3xAxt28CPljUAHA";
-	
 
 	private final static String TAXO_FILENAME = "taxo_data.dat";
 
 	private Map<String, List<List<String>>> lemma_ExtendedAssocWords = new HashMap<>();
 	private final Map<List<String>, List<List<String>>> assocWords_ExtendedAssocWords = new HashMap<>();
-	private final PStemmer ps;
+	private final Stemmer ps = new PorterStemmer();
 
 	final CsvAdapter adapter = new CsvAdapter();
 
@@ -63,14 +63,13 @@ public class DomainTaxonomyExtender {
 	}
 
 	public DomainTaxonomyExtender() {
-		ps = new PStemmer();
 		adapter.importCSV();
 		brunner.setKey(BING_KEY);
 	}
 
 	private List<List<String>> getCommonWordsFromList_List_ParseTreeChunk(
-			List<List<ParseTreeChunk>> matchList, List<String> queryWordsToRemove,
-			List<String> toAddAtEnd) {
+			List<List<ParseTreeChunk>> matchList, List<String> queryWordsToRemove, List<String> toAddAtEnd) {
+
 		List<List<String>> res = new ArrayList<>();
 		for (List<ParseTreeChunk> chunks : matchList) {
 			List<String> wordRes = new ArrayList<>();
@@ -81,7 +80,7 @@ public class DomainTaxonomyExtender {
 							&& ((ch.getPOSs().get(w).startsWith("NN") || ch.getPOSs().get(w).startsWith("JJ") || ch.getPOSs().get(w)
 									.startsWith("VB"))) && lemmas.get(w).length() > 2) {
 						String formedWord = lemmas.get(w);
-						String stemmedFormedWord = ps.stem(formedWord);
+						String stemmedFormedWord = ps.stem(formedWord).toString();
 						if (!stemmedFormedWord.startsWith("invalid"))
 							wordRes.add(formedWord);
 					}
@@ -103,7 +102,6 @@ public class DomainTaxonomyExtender {
 	}
 
 	public void extendTaxonomy(String fileNameWithTaxonomyRoot, String domain, String lang) {
-
 
 		List<String> entries = new ArrayList<>((adapter.lemma_AssocWords.keySet()));
 		try {
@@ -166,8 +164,7 @@ public class DomainTaxonomyExtender {
 		return genResult;
 	}
 
-	public List<String> runSearchForTaxonomyPathFlatten(String query,
-			String domain, String lang, int numbOfHits) {
+	public List<String> runSearchForTaxonomyPathFlatten(String query, String domain, String lang, int numbOfHits) {
 		List<String> genResult = new ArrayList<>();
 		try {
 			List<HitBase> resultList = brunner.runSearch(query, numbOfHits);
@@ -213,8 +210,7 @@ public class DomainTaxonomyExtender {
 
 	public static void main(String[] args) {
 		DomainTaxonomyExtender self = new DomainTaxonomyExtender();
-		self.extendTaxonomy("", "music",
-				"en");
+		self.extendTaxonomy("", "music", "en");
 
 	}
 

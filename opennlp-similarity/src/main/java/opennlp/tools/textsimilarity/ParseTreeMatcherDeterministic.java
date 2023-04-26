@@ -17,10 +17,11 @@
 
 package opennlp.tools.textsimilarity;
 
+import opennlp.tools.stemmer.PorterStemmer;
+import opennlp.tools.stemmer.Stemmer;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import opennlp.tools.stemmer.PStemmer;
 
 public class ParseTreeMatcherDeterministic {
 
@@ -30,6 +31,8 @@ public class ParseTreeMatcherDeterministic {
 
   private final POSManager posManager = new POSManager();
 
+  private final Stemmer ps = new PorterStemmer();
+
   /**
    * key matching function which takes two phrases, aligns them and finds a set
    * of maximum common sub-phrase
@@ -38,7 +41,6 @@ public class ParseTreeMatcherDeterministic {
    * @param chunk2
    * @return
    */
-
   public List<ParseTreeChunk> generalizeTwoGroupedPhrasesDeterministic(
       ParseTreeChunk chunk1, ParseTreeChunk chunk2) {
     List<String> pos1 = chunk1.getPOSs();
@@ -49,10 +51,9 @@ public class ParseTreeMatcherDeterministic {
     List<String> lem1stem = new ArrayList<>();
     List<String> lem2stem = new ArrayList<>();
 
-    PStemmer ps = new PStemmer();
     for (String word : lem1) {
       try {
-        lem1stem.add(ps.stem(word.toLowerCase()));
+        lem1stem.add(ps.stem(word.toLowerCase()).toString());
       } catch (Exception e) {
         // e.printStackTrace();
 
@@ -62,7 +63,7 @@ public class ParseTreeMatcherDeterministic {
     }
     try {
       for (String word : lem2) {
-        lem2stem.add(ps.stem(word.toLowerCase()));
+        lem2stem.add(ps.stem(word.toLowerCase()).toString());
       }
     } catch (Exception e) {
       System.err.println("problem processing word " + lem2.toString());
@@ -130,8 +131,7 @@ public class ParseTreeMatcherDeterministic {
         String lemmaMatch = lemmaFormManager.matchLemmas(ps, lem1.get(k1),
             lem2.get(k2), sim);
         if ((sim != null)
-            && (lemmaMatch == null || (lemmaMatch != null && !lemmaMatch
-                .equals("fail")))) {
+            && (lemmaMatch == null || (lemmaMatch != null && !lemmaMatch.equals("fail")))) {
           commonPOS.add(pos1.get(k1));
           if (lemmaMatch != null) {
             commonLemmas.add(lemmaMatch);
@@ -198,8 +198,7 @@ public class ParseTreeMatcherDeterministic {
           bReachedCommonWord = false;
         }
       }
-      ParseTreeChunk currResult = new ParseTreeChunk(commonLemmas, commonPOS,
-          0, 0);
+      ParseTreeChunk currResult = new ParseTreeChunk(commonLemmas, commonPOS, 0, 0);
       results.add(currResult);
     }
 
@@ -267,7 +266,6 @@ public class ParseTreeMatcherDeterministic {
       resultComps = generalizationListReducer.applyFilteringBySubsumption(resultComps);
       results.add(resultComps);
     }
-
     return results;
   }
 

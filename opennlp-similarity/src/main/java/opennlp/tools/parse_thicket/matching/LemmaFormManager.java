@@ -17,12 +17,11 @@
 
 package opennlp.tools.parse_thicket.matching;
 
-import opennlp.tools.stemmer.PStemmer;
+import opennlp.tools.stemmer.Stemmer;
 
 public class LemmaFormManager {
 
-  public String matchLemmas(PStemmer ps, String lemma1, String lemma2,
-      String POS) {
+  public String matchLemmas(Stemmer ps, String lemma1, String lemma2, String POS) {
     if (POS == null) {
       return null;
     }

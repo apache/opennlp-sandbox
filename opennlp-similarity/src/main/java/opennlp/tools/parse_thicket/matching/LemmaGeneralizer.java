@@ -21,12 +21,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import opennlp.tools.parse_thicket.IGeneralizer;
-import opennlp.tools.stemmer.PStemmer;
+import opennlp.tools.stemmer.PorterStemmer;
+import opennlp.tools.stemmer.Stemmer;
 import opennlp.tools.word2vec.W2VDistanceMeasurer;
 
 public class LemmaGeneralizer implements IGeneralizer<String> {
 	public static final String W2V_PREFIX = "w2v_";
-	private final PStemmer ps = new PStemmer();
+	private final Stemmer ps = new PorterStemmer();
 	private String pos = null;
 	private final W2VDistanceMeasurer w2v;
 	public LemmaGeneralizer() {

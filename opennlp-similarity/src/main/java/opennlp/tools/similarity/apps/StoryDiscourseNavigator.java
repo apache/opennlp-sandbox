@@ -27,18 +27,18 @@ import org.apache.commons.lang.StringUtils;
 
 import opennlp.tools.similarity.apps.utils.PageFetcher;
 import opennlp.tools.similarity.apps.utils.StringCleaner;
-import opennlp.tools.stemmer.PStemmer;
+import opennlp.tools.stemmer.PorterStemmer;
+import opennlp.tools.stemmer.Stemmer;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
 import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.TextProcessor;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
 public class StoryDiscourseNavigator {
-	protected final BingQueryRunner yrunner = new BingQueryRunner();
-	final ParserChunker2MatcherProcessor sm = ParserChunker2MatcherProcessor
-			.getInstance();
-	private final PStemmer ps = new PStemmer();
-	final PageFetcher pFetcher = new PageFetcher();
+	private final BingQueryRunner yrunner = new BingQueryRunner();
+	private final ParserChunker2MatcherProcessor sm = ParserChunker2MatcherProcessor.getInstance();
+	private final Stemmer ps = new PorterStemmer();
+	private final PageFetcher pFetcher = new PageFetcher();
 
 	public static final String[] FREQUENT_PERFORMING_VERBS = {
 		" born raised meet learn ", " graduated enter discover",
@@ -100,8 +100,7 @@ public class StoryDiscourseNavigator {
 		return res;
 	}
 
-	private List<List<ParseTreeChunk>> runSearchForTaxonomyPath(String query,
-			String domain, String lang, int numbOfHits) {
+	private List<List<ParseTreeChunk>> runSearchForTaxonomyPath(String query, String domain, String lang, int numbOfHits) {
 		List<List<ParseTreeChunk>> genResult = new ArrayList<>();
 		try {
 			List<HitBase> resultList = yrunner.runSearch(query, numbOfHits);
@@ -129,8 +128,7 @@ public class StoryDiscourseNavigator {
 
 		return genResult;
 	}
-	private List<List<String>> getCommonWordsFromList_List_ParseTreeChunk(
-			List<List<ParseTreeChunk>> matchList) {
+	private List<List<String>> getCommonWordsFromList_List_ParseTreeChunk(List<List<ParseTreeChunk>> matchList) {
 		List<List<String>> res = new ArrayList<>();
 		for (List<ParseTreeChunk> chunks : matchList) {
 			List<String> wordRes = new ArrayList<>();
@@ -141,7 +139,7 @@ public class StoryDiscourseNavigator {
 							&& ((ch.getPOSs().get(w).startsWith("NN") || ch.getPOSs().get(w)
 									.startsWith("VB"))) && lemmas.get(w).length() > 2) {
 						String formedWord = lemmas.get(w);
-						String stemmedFormedWord = ps.stem(formedWord);
+						String stemmedFormedWord = ps.stem(formedWord).toString();
 						if (!stemmedFormedWord.startsWith("invalid"))
 							wordRes.add(formedWord);
 					}
@@ -154,6 +152,7 @@ public class StoryDiscourseNavigator {
 		res = new ArrayList<>(new HashSet<>(res));
 		return res;
 	}
+	
 	public static void main(String[] args){
 		String[] res = new StoryDiscourseNavigator().obtainAdditionalKeywordsForAnEntity("Albert Einstein");
 		System.out.println(Arrays.asList(res));
