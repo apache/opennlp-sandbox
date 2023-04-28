@@ -19,9 +19,12 @@
 
 package opennlp.tools.dl;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -349,18 +352,20 @@ public class RNN {
   }
 
   public void serialize(String prefix) throws IOException {
-    try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(prefix + new Date() + ".txt"))) {
-      bufferedWriter.write("wxh");
-      bufferedWriter.write(wxh.toString());
-      bufferedWriter.write("whh");
-      bufferedWriter.write(whh.toString());
-      bufferedWriter.write("why");
-      bufferedWriter.write(why.toString());
-      bufferedWriter.write("bh");
-      bufferedWriter.write(bh.toString());
-      bufferedWriter.write("by");
-      bufferedWriter.write(by.toString());
-      bufferedWriter.flush();
+    Path p = Path.of(prefix + new Date() + ".txt");
+    try (Writer writer = Files.newBufferedWriter(p, StandardCharsets.UTF_8,
+            StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+      writer.write("wxh");
+      writer.write(wxh.toString());
+      writer.write("whh");
+      writer.write(whh.toString());
+      writer.write("why");
+      writer.write(why.toString());
+      writer.write("bh");
+      writer.write(bh.toString());
+      writer.write("by");
+      writer.write(by.toString());
+      writer.flush();
     }
   }
 }

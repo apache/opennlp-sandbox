@@ -18,10 +18,13 @@ package opennlp.addons.modelbuilder.impls;
 import java.io.BufferedOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
@@ -59,7 +62,9 @@ public class GenericModelableImpl implements Modelable {
 
   @Override
   public void writeAnnotatedSentences() {
-    try (FileWriter writer = new FileWriter(params.getAnnotatedTrainingDataFile(), false)) {
+    final Path p = params.getAnnotatedTrainingDataFile().toPath();
+    try (Writer writer = Files.newBufferedWriter(p, StandardCharsets.UTF_8,
+            StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
       for (String s : annotatedSentences) {
         writer.write(s.replace("\n", " ").trim() + "\n");
       }
