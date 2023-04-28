@@ -18,16 +18,16 @@
 
 package opennlp.tools.textsimilarity.chunker2matcher;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import opennlp.tools.chunker.ChunkerME;
 import opennlp.tools.chunker.ChunkerModel;
@@ -52,8 +52,12 @@ import opennlp.tools.tokenize.Tokenizer;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.tokenize.TokenizerModel;
 import opennlp.tools.util.Span;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ParserChunker2MatcherProcessor {
+
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final int MIN_SENTENCE_LENGTH = 10;
   private static final String MODEL_DIR_KEY = "nlp.models.dir";
@@ -69,8 +73,6 @@ public class ParserChunker2MatcherProcessor {
   private Parser parser;
   private ChunkerME chunker;
   private static final int NUMBER_OF_SECTIONS_IN_SENTENCE_CHUNKS = 5;
-  private static final Logger LOG =
-          Logger.getLogger("opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor");
   private Map<String, String[][]> sentence_parseObject;
 
   public SentenceDetector getSentenceDetector() {
@@ -100,11 +102,10 @@ public class ParserChunker2MatcherProcessor {
   @SuppressWarnings("unchecked")
   protected ParserChunker2MatcherProcessor() {
     try {
-      sentence_parseObject = (Map<String, String[][]>) ParserCacheSerializer
-          .readObject();
+      sentence_parseObject = (Map<String, String[][]>) ParserCacheSerializer.readObject();
     } catch (Exception e) {
       // this file might not exist initially
-      LOG.warning("parsing  cache file does not exist (but should be created)");
+      LOG.warn("parsing cache file does not exist (but should be created)");
       sentence_parseObject = new HashMap<>();
     }
     if (sentence_parseObject == null)
@@ -124,8 +125,8 @@ public class ParserChunker2MatcherProcessor {
       initializeParser();
       initializeChunker();
     } catch (Exception e) { // a typical error when 'model' is not installed
-      LOG.warning("The model can't be read and we rely on cache");
-      System.err.println("Please install OpenNLP model files in 'src/test/resources' (folder 'model'");
+      LOG.warn("The model can't be read and we rely on cache");
+      LOG.warn("Please put OpenNLP model files in 'src/test/resources' (folder 'model')");
     }
   }
 
@@ -213,8 +214,7 @@ public class ParserChunker2MatcherProcessor {
     return parseSentenceNlp(sentence, true);
   }
 
-  public synchronized Parse parseSentenceNlp(String sentence,
-      boolean normalizeText) {
+  public synchronized Parse parseSentenceNlp(String sentence, boolean normalizeText) {
     // don't try to parse very short sentence, not much info in it anyway,
     // most likely a heading
     if (sentence == null || sentence.trim().length() < MIN_SENTENCE_LENGTH)
@@ -224,7 +224,7 @@ public class ParserChunker2MatcherProcessor {
     try {
       parseArray = ParserTool.parseLine(sentence, parser, 1);
     } catch (Throwable t) {
-      LOG.log(Level.WARNING, "failed to parse the sentence : '" + sentence); //, t);
+      LOG.warn("failed to parse the sentence : '{}'", sentence);
       return null;
     }
     // there should be only one result parse
@@ -243,8 +243,7 @@ public class ParserChunker2MatcherProcessor {
    *         (noun, verb etc.)
    */
 
-  public synchronized List<List<ParseTreeChunk>> formGroupedPhrasesFromChunksForPara(
-      String para) {
+  public synchronized List<List<ParseTreeChunk>> formGroupedPhrasesFromChunksForPara(String para) {
     List<List<ParseTreeChunk>> listOfChunksAccum = new ArrayList<>();
     String[] sentences = splitSentences(para);
     for (String sent : sentences) {
@@ -282,25 +281,24 @@ public class ParserChunker2MatcherProcessor {
     String[] tags; // posTagger.tag(toks);
     SentenceNode node = parseSentenceNode(sentence);
     if (node == null) {
-      LOG.info("Problem parsing sentence '" + sentence);
+      LOG.warn("Problem parsing sentence '{}'", sentence);
       return null;
     }
     List<String> POSlist = node.getOrderedPOSList();
 
     tags = POSlist.toArray(new String[0]);
     if (toks.length != tags.length) {
-      LOG.finest("disagreement between toks and tags; sent =  '" + sentence
-          + "'\n tags = " + tags
-          + "\n will now try this sentence in lower case");
+      LOG.trace("disagreement between toks and tags; sent =  '{}'\n" +
+              "{} \n will now try this sentence in lower case", sentence, tags);
       node = parseSentenceNode(sentence.toLowerCase());
       if (node == null) {
-        LOG.finest("Problem parsing sentence '" + sentence);
+        LOG.warn("Problem parsing sentence '{}'", sentence);
         return null;
       }
       POSlist = node.getOrderedPOSList();
       tags = POSlist.toArray(new String[0]);
       if (toks.length != tags.length) {
-        LOG.finest("AGAIN: disagreement between toks and tags for lower case! ");
+        LOG.trace("AGAIN: disagreement between toks and tags for lower case!");
         if (toks.length > tags.length) {
           String[] newToks = new String[tags.length];
           for (int i = 0; i < tags.length; i++) {
@@ -489,20 +487,18 @@ public class ParserChunker2MatcherProcessor {
       return null;
   }
 
-  public static List<SentenceNode> paragraphToSentenceNodes(
-      List<Parse> paragraphParses) {
+  public static List<SentenceNode> paragraphToSentenceNodes(List<Parse> paragraphParses) {
     if (paragraphParses == null || paragraphParses.size() == 0)
       return null;
 
-    List<SentenceNode> paragraphNodes = new ArrayList<>(
-            paragraphParses.size());
+    List<SentenceNode> paragraphNodes = new ArrayList<>(paragraphParses.size());
     for (Parse sentenceParse : paragraphParses) {
       SentenceNode sentenceNode;
       try {
         sentenceNode = sentenceToSentenceNode(sentenceParse);
       } catch (Exception e) {
         // don't fail the whole paragraph when a single sentence fails
-        LOG.severe("Failed to convert sentence to node. error: " + e);
+        LOG.warn("Failed to convert sentence to node. error: {}", e.getLocalizedMessage());
         sentenceNode = null;
       }
 
@@ -527,8 +523,7 @@ public class ParserChunker2MatcherProcessor {
     if (node instanceof SentenceNode)
       return (SentenceNode) node;
     else if (node instanceof PhraseNode) {
-      SentenceNode sn = new SentenceNode("sentence", node.getChildren());
-      return sn;
+      return new SentenceNode("sentence", node.getChildren());
     } else
       return null;
   }
@@ -581,51 +576,53 @@ public class ParserChunker2MatcherProcessor {
   }
 
   protected void initializeSentenceDetector() {
-    try (InputStream is = new FileInputStream(MODEL_DIR + "/en-sent.bin")) {
+    try (InputStream is = new BufferedInputStream(new FileInputStream(MODEL_DIR + "/en-sent.bin"))) {
       SentenceModel model = new SentenceModel(is);
       sentenceDetector = new SentenceDetectorME(model);
     } catch (IOException e) {
-      e.printStackTrace();
-    } 
+      // we swallow exception to support the cached run
+      LOG.debug(e.getLocalizedMessage(), e);
+    }
   }
 
   protected void initializeTokenizer() {
-    try (InputStream is = new FileInputStream(MODEL_DIR + "/en-token.bin")) {
+    try (InputStream is = new BufferedInputStream(new FileInputStream(MODEL_DIR + "/en-token.bin"))) {
       TokenizerModel model = new TokenizerModel(is);
       tokenizer = new TokenizerME(model);
     } catch (IOException e) {
       // we swallow exception to support the cached run
+      LOG.debug(e.getLocalizedMessage(), e);
     }
-    // we swallow exception to support the cached run
   }
 
   protected void initializePosTagger() {
-    try (InputStream is = new FileInputStream(MODEL_DIR + "/en-pos-maxent.bin")) {
+    try (InputStream is = new BufferedInputStream(new FileInputStream(MODEL_DIR + "/en-pos-maxent.bin"))) {
       POSModel model = new POSModel(is);
       posTagger = new POSTaggerME(model);
     } catch (IOException e) {
       // we swallow exception to support the cached run
+      LOG.debug(e.getLocalizedMessage(), e);
     }
   }
 
   protected void initializeParser() {
-    try (InputStream is = new FileInputStream(MODEL_DIR + "/en-parser-chunking.bin")) {
+    try (InputStream is = new BufferedInputStream(new FileInputStream(MODEL_DIR + "/en-parser-chunking.bin"))) {
       ParserModel model = new ParserModel(is);
       parser = ParserFactory.create(model);
     } catch (IOException e) {
-      //e.printStackTrace();
+      // we swallow exception to support the cached run
+      LOG.debug(e.getLocalizedMessage(), e);
     }
-    // we swallow exception to support the cached run
   }
 
   private void initializeChunker() {
-    try (InputStream is = new FileInputStream(MODEL_DIR + "/en-chunker.bin")) {
+    try (InputStream is = new BufferedInputStream(new FileInputStream(MODEL_DIR + "/en-chunker.bin"))) {
       ChunkerModel model = new ChunkerModel(is);
       chunker = new ChunkerME(model);
     } catch (IOException e) {
-      //e.printStackTrace();
+      // we swallow exception to support the cached run
+      LOG.debug(e.getLocalizedMessage(), e);
     }
-    // we swallow exception to support the cached run
   }
 
   /**

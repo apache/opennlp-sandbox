@@ -16,6 +16,7 @@
  */
 package opennlp.tools.parse_thicket.apps;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -26,18 +27,20 @@ import org.apache.commons.lang.StringUtils;
 import opennlp.tools.similarity.apps.GeneratedSentenceProcessor;
 import opennlp.tools.similarity.apps.utils.PageFetcher;
 import opennlp.tools.textsimilarity.TextProcessor;
-import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WebPageExtractor {
+
+	private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 	protected final PageFetcher pageFetcher = new PageFetcher();
 	
-	protected ParserChunker2MatcherProcessor nlProc;
 	protected final MostFrequentWordsFromPageGetter mostFrequentWordsFromPageGetter = new MostFrequentWordsFromPageGetter();
 
 	protected static final int SENT_THRESHOLD_LENGTH = 70;
 
-	public List<String[]> extractSentencesWithPotentialProductKeywords(String url)
-	{
+	public List<String[]> extractSentencesWithPotentialProductKeywords(String url) {
 		int maxSentsFromPage= 20;
 		List<String[]> results = new ArrayList<>();
 
@@ -60,12 +63,10 @@ public class WebPageExtractor {
 		if (headerSections.length<2)
 			headerSections = pageOrigHTML.split("<h3");
 		for(String section: headerSections){
-
 			String header = StringUtils.substringBetween(section, ">", "<");
 			if (header!=null && header.length()>20)
 				pageTitles.add(header);
 		}
-
 
 		downloadedPage= downloadedPage.replace("     ", "&");
 		downloadedPage = downloadedPage.replaceAll("(?:&)+", "#");
@@ -77,9 +78,7 @@ public class WebPageExtractor {
 					replace (". .",".").trim();
 			sentsList.add(new TextChunk(s, s.length()));
 		}
-
 		sentsList.sort(new TextChunkComparable());
-
 
 		String[] longestSents = new String[maxSentsFromPage];
 		int j=0;
@@ -100,22 +99,19 @@ public class WebPageExtractor {
 		return results;
 	}
 
-	protected String[] cleanListOfSents(String[] longestSents)
-	{
+	protected String[] cleanListOfSents(String[] longestSents) {
 		List<String> sentsClean = new ArrayList<>();
-		for (String sentenceOrMultSent : longestSents)
-		{
+		for (String sentenceOrMultSent : longestSents) {
 			List<String> furtherSplit = TextProcessor.splitToSentences(sentenceOrMultSent);
-			for(String s : furtherSplit){
+			for(String s : furtherSplit) {
 				if (s.replace('.','&').split("&").length>3)
 					continue;
 				if (s.indexOf('|')>-1)
 					continue;
 				if (s == null || s.trim().length() < SENT_THRESHOLD_LENGTH || s.length() < SENT_THRESHOLD_LENGTH + 10)
 					continue;
-				if (GeneratedSentenceProcessor.acceptableMinedSentence(s)==null){
-					// TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
-					// System.out.println("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = "+s);
+				if (GeneratedSentenceProcessor.acceptableMinedSentence(s)==null) {
+					LOG.debug("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = {}", s);
 					continue;
 				}
 				sentsClean.add(s);
@@ -144,10 +140,9 @@ public class WebPageExtractor {
 	
 	public static void main(String[] args){
 		WebPageExtractor extractor = new WebPageExtractor();
-		List<String[]> res = 
-				extractor.extractSentencesWithPotentialProductKeywords("http://www.sitbetter.com/view/chair/ofm-500-l/ofm--high-back-leather-office-chair/");
-		System.out.println(res.get(1));
-		
+		List<String[]> res = extractor.extractSentencesWithPotentialProductKeywords(
+						"http://www.sitbetter.com/view/chair/ofm-500-l/ofm--high-back-leather-office-chair/");
+		LOG.info(Arrays.toString(res.get(1)));
 	}
 
 }

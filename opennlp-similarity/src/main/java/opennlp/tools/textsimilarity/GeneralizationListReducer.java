@@ -17,15 +17,20 @@
 
 package opennlp.tools.textsimilarity;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
 public class GeneralizationListReducer {
-  public List<ParseTreeChunk> applyFilteringBySubsumption_OLD(
-      List<ParseTreeChunk> result) {
-    List<ParseTreeChunk> resultDupl = new ArrayList<>(new HashSet<>(result));
-    result = resultDupl;
+
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public List<ParseTreeChunk> applyFilteringBySubsumption_OLD(List<ParseTreeChunk> result) {
+    result = new ArrayList<>(new HashSet<>(result));
     if (result.size() < 2)
       return result; // nothing to reduce
     List<ParseTreeChunk> resultReduced = new ArrayList<>();
@@ -45,8 +50,7 @@ public class GeneralizationListReducer {
     }
 
     if (resultReduced.size() < 1) {
-      // TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
-      // System.err.println("Wrong subsumption reduction");
+      LOG.debug("Wrong subsumption reduction");
     }
 
     if (resultReduced.size() > 1) {
@@ -57,8 +61,7 @@ public class GeneralizationListReducer {
 
   }
 
-  public List<ParseTreeChunk> applyFilteringBySubsumptionOLD(
-      List<ParseTreeChunk> result) {
+  public List<ParseTreeChunk> applyFilteringBySubsumptionOLD(List<ParseTreeChunk> result) {
     List<ParseTreeChunk> resultDupl;
     if (result.size() < 2)
       return result; // nothing to reduce
@@ -86,8 +89,7 @@ public class GeneralizationListReducer {
     }
     resultReduced = resultDupl;
     if (resultReduced.size() < 1) {
-      // TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
-      // System.err.println("Wrong subsumption reduction");
+      LOG.debug("Wrong subsumption reduction");
     }
 
     if (resultReduced.size() > 1) {
@@ -98,8 +100,7 @@ public class GeneralizationListReducer {
 
   }
 
-  public List<ParseTreeChunk> applyFilteringBySubsumption(
-      List<ParseTreeChunk> result) {
+  public List<ParseTreeChunk> applyFilteringBySubsumption(List<ParseTreeChunk> result) {
     List<Integer> resultDuplIndex = new ArrayList<>();
     List<ParseTreeChunk> resultReduced = new ArrayList<>();
 
@@ -135,8 +136,7 @@ public class GeneralizationListReducer {
     }
 
     if (resultReduced.size() < 1) {
-      // TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
-      // System.err.println("Wrong subsumption reduction");
+      LOG.debug("Wrong subsumption reduction");
       resultReduced = result;
     }
 

@@ -17,6 +17,7 @@
  */
 package opennlp.tools.textsimilarity.chunker2matcher;
 
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
@@ -26,12 +27,16 @@ import org.junit.jupiter.api.Test;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
 import opennlp.tools.textsimilarity.ParseTreeChunkListScorer;
 import opennlp.tools.textsimilarity.TextSimilarityBagOfWords;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ParserChunker2MatcherProcessorTest {
+
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final TextSimilarityBagOfWords parserBOW = new TextSimilarityBagOfWords();
   private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
 
@@ -98,7 +103,7 @@ class ParserChunker2MatcherProcessorTest {
         + "This car has an amazingly good engine. "
         + "This car provides you a very good mileage.";
 
-    System.out.println(parser.assessRelevance(phrase1, phrase2).getMatchResult());
+    LOG.debug(parser.assessRelevance(phrase1, phrase2).getMatchResult().toString());
 
   }
 
@@ -115,7 +120,7 @@ class ParserChunker2MatcherProcessorTest {
     double matchScore = parseTreeChunkListScorer.getParseTreeChunkListScore(matchResult);
     double bagOfWordsScore = parserBOW.assessRelevanceAndGetScore(phrase1, phrase2);
     assertTrue(matchScore + 2 < bagOfWordsScore);
-    System.out.println("MatchScore is adequate ( = " + matchScore
+    LOG.debug("MatchScore is adequate ( = " + matchScore
         + ") and bagOfWordsScore = " + bagOfWordsScore + " is too high");
 
     // we now demonstrate how similarity can be captured by POS and cannot be
@@ -129,7 +134,7 @@ class ParserChunker2MatcherProcessorTest {
     matchScore = parseTreeChunkListScorer.getParseTreeChunkListScore(matchResult);
     bagOfWordsScore = parserBOW.assessRelevanceAndGetScore(phrase1, phrase2);
     assertTrue(matchScore > 2 * bagOfWordsScore);
-    System.out.println("MatchScore is adequate ( = " + matchScore + ") and bagOfWordsScore = " + bagOfWordsScore + " is too low");
+    LOG.debug("MatchScore is adequate ( = " + matchScore + ") and bagOfWordsScore = " + bagOfWordsScore + " is too low");
 
   }
 }

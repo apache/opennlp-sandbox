@@ -17,20 +17,24 @@
 
 package opennlp.tools.textsimilarity;
 
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 
 import opennlp.tools.parse_thicket.matching.LemmaGeneralizer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ParseTreeChunkListScorer {
+  
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   // find the single expression with the highest score
-  public double getParseTreeChunkListScore(
-      List<List<ParseTreeChunk>> matchResult) {
+  public double getParseTreeChunkListScore(List<List<ParseTreeChunk>> matchResult) {
     double currScore = 0.0;
     for (List<ParseTreeChunk> chunksGivenPhraseType : matchResult)
       for (ParseTreeChunk chunk : chunksGivenPhraseType) {
         double score = getScore(chunk);
-        // TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
-        // System.out.println(chunk+ " => score >>> "+score);
+        LOG.debug("{} => score >>> {}", chunk, score);
         if (score > currScore) {
           currScore = score;
         }
@@ -39,15 +43,13 @@ public class ParseTreeChunkListScorer {
   }
 
   // get max score per phrase type and then sum up
-  public double getParseTreeChunkListScoreAggregPhraseType(
-      List<List<ParseTreeChunk>> matchResult) {
+  public double getParseTreeChunkListScoreAggregPhraseType(List<List<ParseTreeChunk>> matchResult) {
     double currScoreTotal = 0.0;
     for (List<ParseTreeChunk> chunksGivenPhraseType : matchResult) {
       double currScorePT = 0.0;
       for (ParseTreeChunk chunk : chunksGivenPhraseType) {
         double score = getScore(chunk);
-        // TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
-        // System.out.println(chunk+ " => score >>> "+score);
+        LOG.debug("{} => score >>> {}", chunk, score);
         if (score > currScorePT) {
           currScorePT = score;
         }
@@ -78,15 +80,12 @@ public class ParseTreeChunkListScorer {
         }
       } else if (l.startsWith(LemmaGeneralizer.W2V_PREFIX) ){
     	  try {
-			float val = Float.parseFloat(l.substring(LemmaGeneralizer.W2V_PREFIX.length()));
-			  score+= 1- val;
-		} catch (NumberFormatException e) {
-			e.printStackTrace();
-		}
-      }
-      
-      else {
-
+          float val = Float.parseFloat(l.substring(LemmaGeneralizer.W2V_PREFIX.length()));
+            score+= 1- val;
+        } catch (NumberFormatException e) {
+          LOG.error(e.getLocalizedMessage(), e);
+        }
+      } else {
         if (pos.startsWith("NN") || pos.startsWith("NP")
             || pos.startsWith("CD") || pos.startsWith("RB")) {
           score += 1.0;

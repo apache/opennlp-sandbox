@@ -17,6 +17,7 @@
 
 package opennlp.tools.similarity.apps;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,13 +30,17 @@ import opennlp.tools.textsimilarity.ParseTreeChunk;
 import opennlp.tools.textsimilarity.ParseTreeChunkListScorer;
 import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * This class does content generation by using web mining and syntactic generalization to get sentences
+ * Generates content by using web mining and syntactic generalization to get sentences
  * from the web, convert and combine them in the form expected to be readable by humans and
  * not distinguishable from genuine content by search engines.
  */
 public class ContentGenerator /*extends RelatedSentenceFinder*/ {
+
+	private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 	private final PageFetcher pFetcher = new PageFetcher();
 	private final ParserChunker2MatcherProcessor sm = ParserChunker2MatcherProcessor.getInstance();
@@ -250,7 +255,7 @@ public class ContentGenerator /*extends RelatedSentenceFinder*/ {
 					mainAndFollowSent = ContentGeneratorSupport.getFullOriginalSentenceFromWebpageBySnippetFragment(
 							fragment.replace("_should_find_orig_", ""), sentsSortedByLength);
 				} catch (Exception e) {
-					e.printStackTrace();
+					LOG.error(e.getLocalizedMessage(), e);
 				}
 				// if the above gives null than try to match all sentences from snippet fragment
 				if (mainAndFollowSent==null || mainAndFollowSent[0]==null){
@@ -259,7 +264,7 @@ public class ContentGenerator /*extends RelatedSentenceFinder*/ {
 				}
 
 			} catch (Exception e) {
-				e.printStackTrace();
+				LOG.error(e.getLocalizedMessage(), e);
 			}
 		}
 		else
@@ -302,8 +307,7 @@ public class ContentGenerator /*extends RelatedSentenceFinder*/ {
 			}
 
 			syntScore = parseTreeChunkListScorer.getParseTreeChunkListScore(match);
-			System.out.println(parseTreeChunk.listToString(match) + " "
-					+ syntScore + "\n pre-processed sent = '" + pageSentence);
+			LOG.debug("{} {}\n pre-processed sent = '{}'", parseTreeChunk.listToString(match), syntScore, pageSentence);
 
 			if (syntScore < RELEVANCE_THRESHOLD){ // 1.5) { // trying other sents
 				for (String currSent : sentsAll) {
@@ -339,21 +343,19 @@ public class ContentGenerator /*extends RelatedSentenceFinder*/ {
 
 					pageSentenceProc = Utils.convertToASCII(pageSentenceProc);
 					result = new Fragment(pageSentenceProc, syntScore + measScore
-							+ mentalScore + (double) pageSentenceProc.length()
-							/ (double) 50);
+							+ mentalScore + (double) pageSentenceProc.length() / (double) 50);
 					result.setSourceURL(item.getUrl());
 					result.fragment = fragment;
 
-					System.out.println("Accepted sentence: " + pageSentenceProc
-							+ "| with title= " + title);
-					System.out.println("For fragment = " + fragment);
+					LOG.debug("Accepted sentence:  {} | with title = {}", pageSentenceProc, title);
+					LOG.debug("For fragment = {}", fragment);
 				} else
-					System.out.println("Rejected sentence due to wrong area at webpage: " + pageSentence);
+					LOG.debug("Rejected sentence due to wrong area at webpage: {}", pageSentence);
 			} else
-				System.out.println("Rejected sentence due to low score: " + pageSentence);
+				LOG.debug("Rejected sentence due to low score: {}", pageSentence);
 			// }
 		} catch (Throwable t) {
-			t.printStackTrace();
+			LOG.error(t.getLocalizedMessage(), t);
 		}
 		return result;
 	}
@@ -417,7 +419,7 @@ public class ContentGenerator /*extends RelatedSentenceFinder*/ {
 			// hits.get(0).getTitle(), hits);
 
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOG.error(e.getLocalizedMessage(), e);
 		}
 
 	}

@@ -16,19 +16,21 @@
  */
 package opennlp.tools.similarity.apps;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Logger;
 
 import opennlp.tools.textsimilarity.ParseTreeChunk;
 import opennlp.tools.textsimilarity.ParseTreeChunkListScorer;
 import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SpeechRecognitionResultsProcessor /*extends BingWebQueryRunner*/ {
-  private static final Logger LOG =
-          Logger.getLogger("opennlp.tools.similarity.apps.SpeechRecognitionResultsProcessor");
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
   private ParserChunker2MatcherProcessor sm;
   private final WebSearchEngineResultsScraper scraper = new WebSearchEngineResultsScraper();
@@ -71,8 +73,7 @@ public class SpeechRecognitionResultsProcessor /*extends BingWebQueryRunner*/ {
         }
         */
       } catch (Exception e) {
-        LOG.severe("Problem processing snapshot " + snapshot);
-        e.printStackTrace();
+        LOG.error("Problem processing snapshot " + snapshot, e);
       }
       totalMatchScore += score;
 
@@ -104,15 +105,13 @@ public class SpeechRecognitionResultsProcessor /*extends BingWebQueryRunner*/ {
       try {
         List<HitBase> resultList = scraper.runSearch(sentence);
         double scoreForSentence = calculateTotalMatchScoreForHits(resultList, sentence);
-        // TODO OPENNLP-1454 Candidate for logger.debug(...) if required/helpful
-        // System.out.println("Total meaningfulness score = " + scoreForSentence + " for sentence = " + sentence);
+        LOG.debug("Total meaningfulness score = {} for sentence = {}", scoreForSentence, sentence);
         if (scoreForSentence > bestSentScore) {
           bestSentScore = scoreForSentence;
         }
         res.add(new SentenceMeaningfullnessScore(sentence, scoreForSentence));
       } catch (Exception e) {
-        LOG.warning("No search results for query '" + sentence);
-        e.printStackTrace();
+        LOG.warn("No search results for query '{}' - reason: {}", sentence, e.getLocalizedMessage());
         return null;
       }
     }
@@ -129,6 +128,7 @@ public class SpeechRecognitionResultsProcessor /*extends BingWebQueryRunner*/ {
       score = sc;
     }
 
+    @Override
     public String toString() {
       return "Total meaningfulness score = " + score + " for sentence = "
           + sentence + "\n";
@@ -141,29 +141,29 @@ public class SpeechRecognitionResultsProcessor /*extends BingWebQueryRunner*/ {
 
   public static void main(String[] args) {
     SpeechRecognitionResultsProcessor proc = new SpeechRecognitionResultsProcessor();
-    proc.runSearchAndScoreMeaningfulness(Arrays.asList(new String[] {
-        "meeting with alex at you for not to come over to 8 pm",
-        "meeting with alex at you for not to come over to eat",
-        "meeting with alex at il fornaio tomorrow to 8 pm" }));
+    proc.runSearchAndScoreMeaningfulness(Arrays.asList(
+            "meeting with alex at you for not to come over to 8 pm",
+            "meeting with alex at you for not to come over to eat",
+            "meeting with alex at il fornaio tomorrow to 8 pm"));
 
-    proc.runSearchAndScoreMeaningfulness(Arrays.asList(new String[] {
-        "remember to buy milk tomorrow for details",
-        "remember to buy milk tomorrow from trader joes",
-        "remember to buy milk tomorrow from 3 to jones",
-        "remember to buy milk tomorrow for for details",
-        "remember to buy milk tomorrow from third to joes",
-        "remember to buy milk tomorrow from third to jones",
-        "remember to buy milk tomorrow from for d jones" }));
+    proc.runSearchAndScoreMeaningfulness(Arrays.asList(
+            "remember to buy milk tomorrow for details",
+            "remember to buy milk tomorrow from trader joes",
+            "remember to buy milk tomorrow from 3 to jones",
+            "remember to buy milk tomorrow for for details",
+            "remember to buy milk tomorrow from third to joes",
+            "remember to buy milk tomorrow from third to jones",
+            "remember to buy milk tomorrow from for d jones"));
 
-    proc.runSearchAndScoreMeaningfulness(Arrays.asList(new String[] {
-        "I'm off tomorrow to shop at trader joes",
-        "number to get milk tomorrow trader joes",
-        "number 2 finals tomorrow from trader joes",
-        "number 2 finals tomorrow trader joes",
-        "number to buy move tomorrow from trader joes",
-        "number to buy move tomorrow trader joes",
-        "define move tomorrow from trader joes",
-        "define move tomorrow trader joes", }));
+    proc.runSearchAndScoreMeaningfulness(Arrays.asList(
+            "I'm off tomorrow to shop at trader joes",
+            "number to get milk tomorrow trader joes",
+            "number 2 finals tomorrow from trader joes",
+            "number 2 finals tomorrow trader joes",
+            "number to buy move tomorrow from trader joes",
+            "number to buy move tomorrow trader joes",
+            "define move tomorrow from trader joes",
+            "define move tomorrow trader joes"));
   }
 
 }
