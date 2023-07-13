@@ -105,36 +105,17 @@ public class LuceneSearchService implements SearchService {
       File mappingTmpFile = File.createTempFile("lucas-mapping", corpusId + ".xml");
       mappingTmpFile.deleteOnExit();
 
-      InputStream mappingFileIn = new ByteArrayInputStream(corpusStore.getIndexMapping());
-      OutputStream mappingTmpOut = null;
-      
-      try {
-        mappingTmpOut = new FileOutputStream(mappingTmpFile);
-        
+      try (InputStream mappingFileIn = new ByteArrayInputStream(corpusStore.getIndexMapping());
+           OutputStream mappingTmpOut = new FileOutputStream(mappingTmpFile)) {
+
         byte[] buffer = new byte[1024];
         int len;
         while ((len = mappingFileIn.read(buffer)) > 0) {
           mappingTmpOut.write(buffer, 0, len);
         }
-      }
-      catch (IOException e) {
+      } catch (IOException e) {
         // TODO: Or just ignore it ?! and do not create the indexer for this corpus?!
         throw e;
-      }
-      finally {
-        if (mappingFileIn != null) {
-          try {
-            mappingFileIn.close();
-          }
-          catch (IOException e) {}
-        }
-        
-        if (mappingTmpOut != null) {
-          try {
-            mappingTmpOut.close();
-          }
-          catch (IOException e) {}
-        }
       }
       
       specifier.getAnalysisEngineMetaData().

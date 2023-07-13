@@ -18,7 +18,6 @@
 package org.apache.opennlp.caseditor;
 
 import org.apache.uima.cas.TypeSystem;
-import org.eclipse.jface.dialogs.IInputValidator;
 import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.swt.widgets.Shell;
 

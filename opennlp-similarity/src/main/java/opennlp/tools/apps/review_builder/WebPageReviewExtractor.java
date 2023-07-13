@@ -170,7 +170,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 	private List<String> cleanProductFeatures(List<String> productFeaturesList) {
 		List<String> results = new ArrayList<>();
 		for (String feature: productFeaturesList) {
-			if (feature.startsWith("Unlimited Free") || feature.startsWith("View Larger") || feature.startsWith("View Larger") || feature.indexOf("shipping")>0)
+			if (feature.startsWith("Unlimited Free") || feature.startsWith("View Larger") || feature.indexOf("shipping")>0)
 				continue;
 			results.add(feature);
 		}
@@ -324,7 +324,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 			if (count%2==0 && count<features.length)
 				if (features[count]!=null){
 					buf.append(features[count]);
-					if (!(features[count].endsWith("!") ||features[count].endsWith("?")||features[count].endsWith("?") 
+					if (!(features[count].endsWith("!") ||features[count].endsWith("?")
 							||features[count].endsWith(".\"") ))
 						buf.append(". ");
 				}
@@ -364,7 +364,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 			if (count%2==0 && count<features.length)
 				if (features[count]!=null){
 					bufs[currentRevIndex].append(features[count]);
-					if (!(features[count].endsWith("!") ||features[count].endsWith("?")||features[count].endsWith("?") 
+					if (!(features[count].endsWith("!") ||features[count].endsWith("?")
 							||features[count].endsWith(".\"") ))
 						bufs[currentRevIndex].append(". ");
 				}

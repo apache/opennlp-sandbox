@@ -95,7 +95,7 @@ public class SimilarityAccessorBase {
 
 	public List<String> getWordsThatShouldBeOnBothSidesEvents()
 	{
-/*
+		/*
 		names.addAll(Arrays.asList(new String[] { "woman", "man", "women", "men", "womans", "mans", "womens", "mens",
 			"boy", "girl", "boys", "girls", "men's", "women's", "woman's", "ice", // for disney
 			"flight", "intermediate", "advanced", "beginner",

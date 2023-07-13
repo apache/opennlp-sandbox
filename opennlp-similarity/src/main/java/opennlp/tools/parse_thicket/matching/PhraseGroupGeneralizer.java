@@ -37,7 +37,7 @@ public class PhraseGroupGeneralizer implements IGeneralizer<List<ParseTreeChunk>
    * 
    * @param o1
    * @param o2
-   * @return List<List<ParseTreeChunk>> list of POS-words pairs for each
+   * @return {@link List ParseTreeChunk} list of POS-words pairs for each
    *         resultant matched / overlapped phrase
    */
   @Override

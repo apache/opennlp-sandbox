@@ -63,8 +63,6 @@ public class SentenceOriginalizer {
 		this.sents = sents;
 	}
 
-	
-
 	private void substituteProsCons(){
 		for(int i = 0; i< sents.length; i++){
 			if (sents[i]==null)
@@ -181,8 +179,7 @@ public class SentenceOriginalizer {
 			if (vps.size()==1)
 				line = rePhraser.rePhrase(line);
 			else {
-				if (vps.size()>1)
-
+				if (vps.size()>1) {
 					for (ParseTreeChunk v: vps){
 						String verbLemma = v.getLemmas().get(0);
 						String newVerb = filter.getSynonym(verbLemma);
@@ -190,12 +187,13 @@ public class SentenceOriginalizer {
 								&& !newVerb.endsWith("ness") // empirical rule
 								&& !verbsShouldStayNoSubstition.contains(verbLemma) &&
 								!verbsShouldStayNoSubstition.contains(newVerb)	){
-							line = line.replace(verbLemma+" ", newVerb+" "); 	
-							line = line.replace(" "+verbLemma, " "+newVerb); 
+							line = line.replace(verbLemma+" ", newVerb+" ");
+							line = line.replace(" "+verbLemma, " "+newVerb);
 							System.out.println("Synonym for verb substitution: "+verbLemma + "->"+newVerb);
 							bVerbRule = true;
 						}
 					}
+				}
 				if (!bVerbRule && vps.size()==2 && Math.random()>0.8) // no other means of originalization worked, so do inverse translation
 					line = rePhraser.rePhrase(line);
 			}
@@ -225,7 +223,6 @@ public class SentenceOriginalizer {
 				}
 			}
 		}
-
 		return line;
 	}
 

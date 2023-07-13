@@ -63,7 +63,7 @@ public class ConceptLattice {
 	public ConceptLattice(String filename, boolean stats) throws IOException {
 		
 		FcaReader fr = new FcaReader();
-		fr.ReadContextFromCxt(filename);
+		fr.readContextFromCxt(filename);
 		this.objectCount = fr.getObjectsCount();
 		this.attributeCount = fr.getAttributesCount();
 		this.binaryContext = fr.getBinaryContext();

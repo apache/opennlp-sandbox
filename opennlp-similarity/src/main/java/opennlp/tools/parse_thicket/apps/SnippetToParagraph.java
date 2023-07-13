@@ -318,15 +318,6 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 		return sents;
 	}
 
-	private List<String> cleanProductFeatures(List<String> productFeaturesList) {
-		List<String> results = new ArrayList<>();
-		for(String feature: productFeaturesList){
-			if (feature.startsWith("Unlimited Free") || feature.startsWith("View Larger") || feature.startsWith("View Larger") || feature.indexOf("shipping")>0)
-				continue;
-			results.add(feature);
-		}
-		return results;
-	}
 	public static class TextChunk {
 		public TextChunk(String s, int length) {
 			this.text = s;

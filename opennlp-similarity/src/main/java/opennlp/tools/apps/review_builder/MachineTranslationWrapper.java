@@ -25,18 +25,16 @@ import java.net.URLConnection;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 public class MachineTranslationWrapper  {
-	private final String translatorURL = "http://mymemory.translated.net/api/get?q=";
+	private static final String TRANSLATOR_URL = "http://mymemory.translated.net/api/get?q=";
 	
 	public String translate(String sentence, String lang2lang){
 		if (sentence==null)
 			return null;
-		String request = translatorURL + sentence.replace(' ','+') + "&langpair="+lang2lang;//"en|es";
-		JSONArray arr=null, prodArr = null, searchURLviewArr = null;
+		String request = TRANSLATOR_URL + sentence.replace(' ','+') + "&langpair="+lang2lang;//"en|es";
 		try {
 			URL urlC = new URL(request);
 			URLConnection connection = urlC.openConnection();
@@ -53,20 +51,12 @@ public class MachineTranslationWrapper  {
 			JSONObject rootObject = new JSONObject(result.toString());
 			JSONObject  findObject = rootObject.getJSONObject("responseData");
 			String transl = findObject.getString("translatedText");
-			try {
-				transl = URLDecoder.decode(transl, StandardCharsets.UTF_8);
-			} catch (Exception e) {
-				
-			}
-			
-			return transl;
+			return URLDecoder.decode(transl, StandardCharsets.UTF_8);
 			
 		} catch (IOException | JSONException e) {
-
 			e.printStackTrace();
 			return null;
 		}
-
 	}
 	
 	public String rePhrase(String sentence){
@@ -79,16 +69,11 @@ public class MachineTranslationWrapper  {
 		else 
 			return sentence;
 	}
-	
-	
-	
+
 	public static void main(String[] args){
 		MachineTranslationWrapper rePhraser = new MachineTranslationWrapper();
-		
 		System.out.println(rePhraser.translate("I went to the nearest bookstore to buy a book written by my friend and his aunt", "en|ru"));
-		
 		System.out.println(rePhraser.rePhrase("I went to the nearest bookstore to buy a book written by my friend and his aunt"));
-
 	}
 		
 }

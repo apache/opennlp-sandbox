@@ -164,10 +164,10 @@ public class ValueSortMap {
     Map<K, V> hmTmpMap = new HashMap<>(iSize);
     Map<K, V> hmNullValueMap = new HashMap<>();
 
+    keySet = inMap.keySet();
+    itKeyList = keySet.iterator();// Add Null Values in the last of the LinkedHasMap
     if (bAllDistinct) {
       // There are no multiple same values of the passed map (without considering null)
-      keySet = inMap.keySet();
-      itKeyList = keySet.iterator();
       while (itKeyList.hasNext()) {
         key = itKeyList.next();
         value = inMap.get(key);
@@ -192,14 +192,8 @@ public class ValueSortMap {
         sortedMap.put(key, value);
       }
 
-      if (ascendingOrder == null || ascendingOrder) {
-        // Add Null Values in the last of the LinkedHasMap
-        sortedMap.putAll(hmNullValueMap);
-      }
     } else {
       // There are some multiple values (without considering null)
-      keySet = inMap.keySet();
-      itKeyList = keySet.iterator();
       while (itKeyList.hasNext()) {
         key = itKeyList.next();
         value = inMap.get(key);
@@ -234,10 +228,10 @@ public class ValueSortMap {
         }
       }
 
-      if (ascendingOrder == null || ascendingOrder) {
-        // Add Null Values in the last of the LinkedHasMap
-        sortedMap.putAll(hmNullValueMap);
-      }
+    }
+    if (ascendingOrder == null || ascendingOrder) {
+      // Add Null Values in the last of the LinkedHasMap
+      sortedMap.putAll(hmNullValueMap);
     }
 
     return sortedMap;

@@ -179,8 +179,10 @@ public class JSMLearnerOnLatticeWithDeduction extends JSMLearnerOnLatticeBase{
 		for(String posText:posTexts){
 			boolean multiwordOccurs = true;
 			for(String keyword: keywords){
-				if (!posText.contains(keyword))
+				if (!posText.contains(keyword)) {
 					multiwordOccurs = false;
+					break;
+				}
 				break;
 			}
 			if (multiwordOccurs)
@@ -191,8 +193,10 @@ public class JSMLearnerOnLatticeWithDeduction extends JSMLearnerOnLatticeBase{
 		for(String negText:negTexts){
 			boolean multiwordOccurs = true;
 			for(String keyword: keywords){
-				if (!negText.contains(keyword))
+				if (!negText.contains(keyword)) {
 					multiwordOccurs = false;
+					break;
+				}
 				break;
 			}
 			if (multiwordOccurs)

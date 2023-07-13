@@ -25,7 +25,7 @@ import java.nio.charset.StandardCharsets;
 
 public class FcaWriter {
 	
-	public void WriteAsCxt(String filename, ConceptLattice cl){
+	public void writeAsCxt(String filename, ConceptLattice cl){
 
 		try (Writer writer = new BufferedWriter(new OutputStreamWriter(
 						new FileOutputStream(filename), StandardCharsets.UTF_8))) {
@@ -50,7 +50,7 @@ public class FcaWriter {
 			}
 
 		} catch (IOException ex) {
-			System.err.println(ex.getMessage());
+			ex.printStackTrace();
 		}
 	}
 	
@@ -99,12 +99,10 @@ public class FcaWriter {
 		}
 	}
 	
-	
 	public static void main(String []args) throws IOException{
 		ConceptLattice cl = new ConceptLattice("sports.cxt",false);
 		FcaWriter writer = new FcaWriter();
-		writer.WriteAsCxt("res.cxt",cl);
-		
+		writer.writeAsCxt("res.cxt",cl);
 	}
 
 }

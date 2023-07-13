@@ -60,7 +60,6 @@ public class NL2ObjCreateAssign extends NL2Obj {
 			sentence = sentence.split(":")[0]+".";
 		}
 
-
 		List<ObjectPhrase> oPhrases = new ArrayList<>();
 		parser = ParserChunker2MatcherProcessor.getInstance();
 		List<List<ParseTreeChunk>> lingPhrases = 
@@ -79,8 +78,8 @@ public class NL2ObjCreateAssign extends NL2Obj {
 			List<String> lems = verbChunk.getLemmas();
 			String declarativeAction = verbChunk.getLemmas().get(0).toLowerCase();
 			if (declarativeAction.equals("define")){
-				if (verbChunk.getLemmas().get(1).toLowerCase().equals("class") ||
-						verbChunk.getLemmas().get(2).toLowerCase().equals("class")){
+				if (verbChunk.getLemmas().get(1).equalsIgnoreCase("class") ||
+						verbChunk.getLemmas().get(2).equalsIgnoreCase("class")){
 					// new class
 					String className = verbChunk.getLemmas().get(verbChunk.getLemmas().size()-1).toLowerCase();
 					className = className.substring(0, 1).toUpperCase()+className.substring(1, className.length());
@@ -91,12 +90,12 @@ public class NL2ObjCreateAssign extends NL2Obj {
 				}
 				String dataType = verbChunk.getLemmas().get(1).toLowerCase();
 
-				if (classBeingDefined && Arrays.asList(DATA_TYPES_LIST).contains(dataType) && verbChunk.getLemmas().get(2).toLowerCase().equals("attribute")){
+				if (classBeingDefined && Arrays.asList(DATA_TYPES_LIST).contains(dataType) && verbChunk.getLemmas().get(2).equalsIgnoreCase("attribute")){
 					op.setOperatorFor(dataType + " "+verbChunk.getLemmas().get(verbChunk.getLemmas().size()-1).toLowerCase());
 					classBeingDefined = true;
 					break;
 				}
-				if (Arrays.asList(DATA_TYPES_LIST).contains(dataType) && verbChunk.getLemmas().get(2).toLowerCase().equals("attribute")){
+				if (Arrays.asList(DATA_TYPES_LIST).contains(dataType) && verbChunk.getLemmas().get(2).equalsIgnoreCase("attribute")){
 					op.setOperatorFor(dataType + " "+verbChunk.getLemmas().get(verbChunk.getLemmas().size()-1).toLowerCase());
 					classBeingDefined = true;
 					break;
@@ -104,7 +103,7 @@ public class NL2ObjCreateAssign extends NL2Obj {
 			} else if (declarativeAction.equals("create")){
 
 				// now substituting array
-				if (verbChunk.getLemmas().get(1).toLowerCase().equals("array")){
+				if (verbChunk.getLemmas().get(1).equalsIgnoreCase("array")){
 
 					if(lems.contains("class")){
 						int indClass = lems.indexOf("class");

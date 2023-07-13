@@ -55,7 +55,7 @@ public class Measures {
 			min_delta = cl.attributeCount;
 			sum = 0;
 			FormalConcept fc = cl.conceptList.get(i);
-			for (Integer j: fc.children) {
+			for (int j: fc.children) {
 				delta = fc.getExtent().size() - cl.conceptList.get(j).getExtent().size();
 				if (delta<min_delta)
 					min_delta = delta;
@@ -104,10 +104,10 @@ public class Measures {
 	
 	public double intentProbability(ArrayList<Integer> intent){
 		double pB = 1;
-		for (Integer integer : intent) {
+		for (int integer : intent) {
 			pB *= attributeProbability(integer);
 		}
-	    return pB;
+		return pB;
 	}
 	
 	public void probability(){			

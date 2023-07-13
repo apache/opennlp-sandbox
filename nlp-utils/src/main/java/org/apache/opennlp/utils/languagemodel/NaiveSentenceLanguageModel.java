@@ -29,7 +29,7 @@ public class NaiveSentenceLanguageModel<T> implements LanguageModel<T[]> {
 
   @Override
   public double calculateProbability(Collection<T[]> vocabulary, T[] sentence) {
-    return vocabulary.isEmpty() ? 0 : Collections.frequency(vocabulary, sentence) / vocabulary.size();
+    return vocabulary.isEmpty() ? 0 : (double) Collections.frequency(vocabulary, sentence) / vocabulary.size();
   }
 
 }

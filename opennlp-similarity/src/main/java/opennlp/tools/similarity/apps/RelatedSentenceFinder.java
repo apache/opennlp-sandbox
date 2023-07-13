@@ -217,9 +217,12 @@ public class RelatedSentenceFinder {
 				boolean bAccept = true;
 				for (String w : qs) {
 					if (w.toLowerCase().equals(w)) // idf only two words then
-						// has to be person name,
-						// title or geolocation
+					// has to be person name,
+					// title or geolocation
+					{
 						bAccept = false;
+						break;
+					}
 				}
 				if (!bAccept)
 					continue;

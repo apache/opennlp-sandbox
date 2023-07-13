@@ -22,6 +22,7 @@ import org.apache.commons.lang.StringUtils;
 import opennlp.tools.similarity.apps.utils.Utils;
 
 public class MinedSentenceProcessor {
+
   public static String acceptableMinedSentence(String sent) {
     // if too many commas => seo text
 
@@ -54,7 +55,6 @@ public class MinedSentenceProcessor {
         return null;
     }
     
-    String[] pipes = StringUtils.split(sent, '|');
     if (StringUtils.split(sent, '|').length > 2
         || StringUtils.split(sent, '>').length > 2) {
       System.out.println("Rejection: too many |s or >s ");
@@ -93,7 +93,6 @@ public class MinedSentenceProcessor {
         || sentTry.contains("[edit")
         || sentTry.contains("edit categories")
         || sentTry.contains("free license")
-        || sentTry.contains("permission is granted")
         || sentTry.contains("under the terms")
         || sentTry.contains("rights reserved")
         || sentTry.contains("wikipedia") || sentTry.endsWith("the")
@@ -101,19 +100,19 @@ public class MinedSentenceProcessor {
         || sentTry.contains("recipient of") || sentTry.contains("this message")
         || sentTry.contains("mailing list") || sentTry.contains("purchase order")
         || sentTry.contains("mon-fri") || sentTry.contains("email us") || sentTry.contains("privacy pol") || sentTry.contains("back to top")
-        || sentTry.contains("click here") || sentTry.contains("for details") || sentTry.contains("assistance?") || sentTry.contains("chat live")
+        || sentTry.contains("for details") || sentTry.contains("assistance?") || sentTry.contains("chat live")
         || sentTry.contains("free shipping") || sentTry.contains("company info") || sentTry.contains("satisfaction g") || sentTry.contains("contact us")
-        ||sentTry.startsWith( "fax") ||sentTry.startsWith( "write") || sentTry.startsWith( "email")|| sentTry.contains("conditions") || sentTry.contains("chat live")
-        ||sentTry.startsWith( "we ") || sentTry.contains("the recipient") || sentTry.contains("day return") || sentTry.contains("days return")
+        ||sentTry.startsWith("write") || sentTry.startsWith( "email")|| sentTry.contains("conditions")
+        ||sentTry.startsWith("we ") || sentTry.contains("the recipient") || sentTry.contains("day return") || sentTry.contains("days return")
         
-        ||sentTry.startsWith( "fax") || sentTry.contains("refund it") || sentTry.contains("your money")
-        ||sentTry.startsWith( "free") || sentTry.contains("purchase orders")
-        ||sentTry.startsWith( "exchange it ") || sentTry.contains("return it") || sentTry.contains("credit card")
+        ||sentTry.startsWith("fax") || sentTry.contains("refund it") || sentTry.contains("your money")
+        ||sentTry.startsWith("free") || sentTry.contains("purchase orders")
+        ||sentTry.startsWith("exchange it ") || sentTry.contains("return it") || sentTry.contains("credit card")
         
         || sentTry.contains("storeshop") || sentTry.startsWith( "find") || sentTry.startsWith( "shop") || sentTry.startsWith( "unlimited")
         || sentTry.contains("for a limited time") || sentTry.contains("prime members") || sentTry.contains("amazon members") || sentTry.contains("unlimited free")
         || sentTry.contains("shipping") || sentTry.startsWith( "amazon")
-// not a script text
+        // not a script text
         || sentTry.contains("document.body") || sentTry.contains(" var ") || sentTry.contains("search suggestions") ||sentTry.startsWith( "Search")
         
     		)
@@ -192,9 +191,8 @@ public class MinedSentenceProcessor {
     return pageSentence;
   }
 
-  
   public static String normalizeForSentenceSplitting(String pageContent) {
-    pageContent.replace("Jan.", "January").replace("Feb.", "February")
+    pageContent = pageContent.replace("Jan.", "January").replace("Feb.", "February")
         .replace("Mar.", "March").replace("Apr.", "April")
         .replace("Jun.", "June").replace("Jul.", "July")
         .replace("Aug.", "August").replace("Sep.", "September")
@@ -202,6 +200,5 @@ public class MinedSentenceProcessor {
         .replace("Dec.", "December");
 
     return pageContent;
-
   }
 }

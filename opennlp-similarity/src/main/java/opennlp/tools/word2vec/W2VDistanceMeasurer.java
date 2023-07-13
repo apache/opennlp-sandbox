@@ -29,14 +29,12 @@ import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
-import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.sentenceiterator.FileSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.nd4j.common.primitives.Pair;
 
 public class W2VDistanceMeasurer {
 	static W2VDistanceMeasurer instance;
@@ -62,8 +60,7 @@ public class W2VDistanceMeasurer {
 		String pathToW2V = resourceDir + "/w2v/GoogleNews-vectors-negative300.bin.gz";
 		File gModel = new File(pathToW2V);
 		try {
-			Pair<InMemoryLookupTable, VocabCache> pair = WordVectorSerializer.loadTxt(Files.newInputStream(gModel.toPath()));
-			vec = WordVectorSerializer.fromPair(pair);
+			vec = WordVectorSerializer.fromPair(WordVectorSerializer.loadTxt(Files.newInputStream(gModel.toPath())));
 		} catch (IOException e) {
 			System.out.println("Word2vec model is not loaded");
 			vec = null;
