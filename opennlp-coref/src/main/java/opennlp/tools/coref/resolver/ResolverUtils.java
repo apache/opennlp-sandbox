@@ -547,10 +547,7 @@ public class ResolverUtils {
    */
   public static boolean definiteArticle(String tok, String tag) {
     tok = tok.toLowerCase();
-    if (tok.equals("the") || tok.equals("these") || tok.equals("these") || tag.equals("PRP$")) {
-      return (true);
-    }
-    return (false);
+    return tok.equals("the") || tok.equals("these") || tok.equals("those") || tag.equals("PRP$");
   }
 
   public static String getNumberCompatibilityFeature(MentionContext ec, DiscourseEntity de) {

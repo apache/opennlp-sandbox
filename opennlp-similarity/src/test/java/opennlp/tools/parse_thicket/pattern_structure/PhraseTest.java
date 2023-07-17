@@ -154,7 +154,7 @@ public class PhraseTest {
 				FcaWriter wt = new FcaWriter();
 				wt.WriteStatsToTxt("merkel_stats.txt", new_cl, 0);
 				wt.WriteStatsToCvs("merkel_stats.csv", new_cl, ps.conceptList.size());
-				wt.WriteAsCxt("merkel_lattice.cxt", new_cl);
+				wt.writeAsCxt("merkel_lattice.cxt", new_cl);
 				
 				PatternStructureWriter pswt = new PatternStructureWriter();
 				pswt.WriteStatsToTxt("ps_res.txt", ps);

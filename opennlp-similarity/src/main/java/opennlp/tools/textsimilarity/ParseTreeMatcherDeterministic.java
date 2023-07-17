@@ -212,7 +212,7 @@ public class ParseTreeMatcherDeterministic {
    * 
    * @param sent1
    * @param sent2
-   * @return List<List<ParseTreeChunk>> list of POS-words pairs for each resultant matched / overlapped phrase.
+   * @return {@link List ParseTreeChunk} list of POS-words pairs for each resultant matched / overlapped phrase.
    */
   public List<List<ParseTreeChunk>> matchTwoSentencesGroupedChunksDeterministic(
       List<List<ParseTreeChunk>> sent1, List<List<ParseTreeChunk>> sent2) {

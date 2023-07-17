@@ -34,10 +34,12 @@ import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcess
 /**
  * Results of taxonomy learning are two maps 0) For an entity like tax it gives
  * all lists of associated parameters obtained from the taxonomy kernel (done
- * manually) Now, given 0, we obtain the derived list of parameters as
+ * manually).
+ * <p>
+ * Now, given 0, we obtain the derived list of parameters as
  * commonalities of search results snapshots output map 1) for the entity,
- * derived list output map 2) for such manual list of words -> derived list of
- * words
+ * derived list output map 2) for such manual list of words - derived list of
+ * words.
  */
 public class TaxonomyExtenderViaMebMining extends BingQueryRunner {
 

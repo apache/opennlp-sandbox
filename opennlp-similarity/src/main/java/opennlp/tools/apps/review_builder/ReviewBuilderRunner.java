@@ -25,7 +25,7 @@ import opennlp.tools.parse_thicket.Triple;
 
 public class ReviewBuilderRunner {
 
-	private final List<Triple> input = new ArrayList<>();
+	private final List<Triple<String, Integer, String>> input = new ArrayList<>();
 
 	public ReviewBuilderRunner(){
 
@@ -168,14 +168,10 @@ public class ReviewBuilderRunner {
 		//ProductFinderInAWebPage init = new ProductFinderInAWebPage("C:/workspace/relevanceEngine/src/test/resources");
 		ReviewBuilderRunner r = new ReviewBuilderRunner();
 		WebPageReviewExtractor extractor = new WebPageReviewExtractor("C:/workspace/relevanceEngine/src/test/resources");
-		for(Triple query_ID : r.input ){
-			String query = (String) query_ID.getFirst();
+		for(Triple<String, Integer, String> query_ID : r.input ){
+			String query = query_ID.getFirst();
 			List<String> res = extractor.formReviewsForAProduct(query);
-
 			ProfileReaderWriter.writeReportListStr(res, "formedReviewSentences"+ query +".csv");
 		}
-
-
-
 	}
 }

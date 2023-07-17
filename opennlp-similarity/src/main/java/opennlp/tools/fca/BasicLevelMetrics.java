@@ -103,8 +103,6 @@ public class BasicLevelMetrics {
 	    return new double[] {simJ, simSMC};
 	}
 	
-	
-	
 	public double avgCohSMC (FormalConcept c){
 		double sum = 0;
 		if (c.extent.size() == 1)

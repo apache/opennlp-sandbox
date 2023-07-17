@@ -59,7 +59,7 @@ public class MultiSentenceSearchResultsProcessor  {
 			count++;
 			String[] pageSentsAndSnippet = formTextForReRankingFromHit(hit);
 					
-			Double score = 0.0;
+			double score = 0.0;
 			try {
 				SentencePairMatchResult match;
 				if (pageSentsAndSnippet!=null && pageSentsAndSnippet[0].length()>50){

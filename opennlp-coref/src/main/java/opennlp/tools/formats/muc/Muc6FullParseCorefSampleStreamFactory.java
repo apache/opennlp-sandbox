@@ -18,7 +18,6 @@
 package opennlp.tools.formats.muc;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;

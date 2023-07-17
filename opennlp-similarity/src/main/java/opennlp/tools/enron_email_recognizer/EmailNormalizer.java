@@ -76,13 +76,15 @@ public class EmailNormalizer {
 		for(String l: lines){
 			boolean bAccept = true;
 			for(String h: HEADERS){
-				if (l.startsWith(h)){
+				if (l.startsWith(h)) {
 					bAccept = false;
+					break;
 				}
 			}
 			for(String h: PROHIBITED_STRINGS){
-				if (l.indexOf(h)>0){
+				if (l.indexOf(h) > 0) {
 					bAccept = false;
+					break;
 				}
 			}
 			if (bAccept)

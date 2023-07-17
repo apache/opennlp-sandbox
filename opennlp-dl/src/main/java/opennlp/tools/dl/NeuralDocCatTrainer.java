@@ -52,6 +52,8 @@ import org.slf4j.LoggerFactory;
  */
 public class NeuralDocCatTrainer {
 
+    // Note: Arguments can't be declared 'final'
+    // See: https://github.com/apache/opennlp-sandbox/pull/109#discussion_r1262904650
     public static class Args {
 
         @Option(name = "-batchSize", usage = "Number of examples in minibatch")

@@ -136,12 +136,11 @@ public class SemcorReaderExtended {
                   if (nWord.getNodeName().equals(ELEMENT_WORDFORM)) {
 
                     Element eWord = (Element) nWord;
-
+                    String word = eWord.getTextContent();
+                    String cmd = eWord.getAttribute(ATTRIBUTE_CMD);
+                    String pos = eWord.getAttribute(ATTRIBUTE_POS);
                     if (eWord.getAttribute(ATTRIBUTE_CMD).equals("done")) {
                       // if the word is already disambiguated
-                      String word = eWord.getTextContent();
-                      String cmd = eWord.getAttribute(ATTRIBUTE_CMD);
-                      String pos = eWord.getAttribute(ATTRIBUTE_POS);
                       String lemma = eWord.getAttribute(ATTRIBUTE_LEMMA);
                       String wnsn = eWord.getAttribute(ATTRIBUTE_WNSN);
                       String lexsn = eWord.getAttribute(ATTRIBUTE_LEXSN);
@@ -149,21 +148,16 @@ public class SemcorReaderExtended {
                       Word iword = new Word(paragraphID, sentenceID, wnum,
                           Word.Type.WORD, word, cmd, pos, lemma, wnsn, lexsn);
                       isentence.addIword(iword);
-                      wnum++;
 
                       // System.out.println("*** " + iword.toString() + " ***");
 
                     } else {
                       // if the word is not disambiguated
-                      String word = eWord.getTextContent();
-                      String cmd = eWord.getAttribute(ATTRIBUTE_CMD);
-                      String pos = eWord.getAttribute(ATTRIBUTE_POS);
-
                       Word iword = new Word(paragraphID, sentenceID, wnum,
                           Word.Type.WORD, word, cmd, pos);
                       isentence.addIword(iword);
-                      wnum++;
                     }
+                    wnum++;
 
                   } else if (nWord.getNodeName().equals(ELEMENT_PUNCTUATION)) {
                     Element eWord = (Element) nWord;

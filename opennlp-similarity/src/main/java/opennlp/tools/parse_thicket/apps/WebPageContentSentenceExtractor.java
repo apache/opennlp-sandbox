@@ -26,9 +26,6 @@ import opennlp.tools.similarity.apps.HitBase;
 import org.apache.commons.lang.StringUtils;
 
 public class WebPageContentSentenceExtractor extends WebPageExtractor {
-	
-	
-	
 
 	public List<String> extractSentencesWithPotentialReviewPhrases(String url)
 	{
@@ -84,16 +81,6 @@ public class WebPageContentSentenceExtractor extends WebPageExtractor {
 			return sents;
 	}
 
-	private List<String> cleanProductFeatures(List<String> productFeaturesList) {
-		List<String> results = new ArrayList<>();
-		for(String feature: productFeaturesList){
-			if (feature.startsWith("Unlimited Free") || feature.startsWith("View Larger") || feature.startsWith("View Larger") || feature.indexOf("shipping")>0)
-				continue;
-			results.add(feature);
-		}
-		return results;
-	}
-
 	// extracts paragraphs from web page
 	protected String[] cleanListOfSents(String[] longestSents)
 	{
@@ -122,8 +109,6 @@ public class WebPageContentSentenceExtractor extends WebPageExtractor {
 
 		return sentsClean.toArray(new String[0]);
 	}
-
-	
 
 	private String startWithCapitalSent(String sent) {
 		String firstChar = sent.substring(0,1);

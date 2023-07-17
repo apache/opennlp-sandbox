@@ -143,7 +143,7 @@ public class PhraseProcessor {
 							&& phraseBeingFormed )
 						break;
 					else if (ch.getPOSs().get(i).startsWith("DT") || ch.getPOSs().get(i).startsWith("CC"))
-					continue;
+						continue;
 			}
 			query = new StringBuilder(query.toString().trim());
 			int len = query.toString().split(" ").length;

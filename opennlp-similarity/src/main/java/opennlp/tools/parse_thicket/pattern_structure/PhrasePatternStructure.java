@@ -163,14 +163,18 @@ public class PhrasePatternStructure {
 		List<ParseTreeChunk> nps = new ArrayList<>(), vps = new ArrayList<>(), pps = new ArrayList<>();
 		for(List<ParseTreeNode> ps:phrs) {
 			ParseTreeChunk ch = convertNodeListIntoChunk(ps);
-			String ptype = ps.get(0).getPhraseType();
 			LOG.debug(ps.toString());
-			if (ptype.equals("NP")){
-				nps.add(ch);
-			} else if (ptype.equals("VP")){
-				vps.add(ch);
-			} else if (ptype.equals("PP")){
-				pps.add(ch);
+			String ptype = ps.get(0).getPhraseType();
+			switch (ptype) {
+				case "NP":
+					nps.add(ch);
+					break;
+				case "VP":
+					vps.add(ch);
+					break;
+				case "PP":
+					pps.add(ch);
+					break;
 			}
 		}
 		results.add(nps); results.add(vps); results.add(pps);

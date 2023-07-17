@@ -86,9 +86,10 @@ public class SentencePairMatchResult {
 
     for (LemmaPair word : resForMinedSent1) {
       if (word.getPOS().startsWith("VB") && word.getStartPos() < 1
-          && word.getEndPos() < 1) {
+              && word.getEndPos() < 1) {
         imperativeVerb = true;
         // LOG.info("Found imperative verb=" + word);
+        break;
       }
     }
 

@@ -26,50 +26,37 @@ public class SentenceBeingOriginalized {
 	private Map<String, String> sentKey_value;
 	private String sentence;
 	private List<List<ParseTreeChunk>> groupedChunks;
-	
-	
-	
-	public Map<String, String> getSentKey_value() {
-		return sentKey_value;
-	}
-
-
-
-	public void setSentKey_value(Map<String, String> sentKey_value) {
-		this.sentKey_value = sentKey_value;
-	}
-
-
-
-	public String getSentence() {
-		return sentence;
-	}
-
-
-
-	public void setSentence(String sentence) {
-		this.sentence = sentence;
-	}
-
-
-
-	public List<List<ParseTreeChunk>> getGroupedChunks() {
-		return groupedChunks;
-	}
-
-
-
-	public void setGroupedChunks(List<List<ParseTreeChunk>> groupedChunks) {
-		this.groupedChunks = groupedChunks;
-	}
-
-
 
 	public SentenceBeingOriginalized(Map<String, String> sentKey_value,
-			String sentence, List<List<ParseTreeChunk>> groupedChunks) {
+																	 String sentence, List<List<ParseTreeChunk>> groupedChunks) {
 		super();
 		this.sentKey_value = sentKey_value;
 		this.sentence = sentence;
 		this.groupedChunks = groupedChunks;
 	}
+
+	public Map<String, String> getSentKey_value() {
+		return sentKey_value;
+	}
+
+	public void setSentKey_value(Map<String, String> sentKey_value) {
+		this.sentKey_value = sentKey_value;
+	}
+
+	public String getSentence() {
+		return sentence;
+	}
+
+	public void setSentence(String sentence) {
+		this.sentence = sentence;
+	}
+
+	public List<List<ParseTreeChunk>> getGroupedChunks() {
+		return groupedChunks;
+	}
+
+	public void setGroupedChunks(List<List<ParseTreeChunk>> groupedChunks) {
+		this.groupedChunks = groupedChunks;
+	}
+
 }
