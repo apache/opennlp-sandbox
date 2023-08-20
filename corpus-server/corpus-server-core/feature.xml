@@ -34,6 +34,6 @@
         <bundle>https://repo1.maven.org/maven2/org/codehaus/jackson/jackson-jaxrs/1.9.2/jackson-jaxrs-1.9.2.jar</bundle>
         <bundle>https://repo1.maven.org/maven2/org/codehaus/jackson/jackson-xc/1.9.2/jackson-xc-1.9.2.jar</bundle>
         <bundle>https://repo1.maven.org/maven2/org/codehaus/jackson/jackson-mapper-asl/1.9.2/jackson-mapper-asl-1.9.2.jar</bundle>
-        <bundle>mvn:org.apache.opennlp/corpus-server/2.2.1-SNAPSHOT</bundle>
+        <bundle>mvn:org.apache.opennlp/corpus-server/2.3.1-SNAPSHOT</bundle>
     </feature>
 </features>
