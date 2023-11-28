@@ -42,7 +42,8 @@ public class TreebankNameFinder {
 
   private final NameFinderME nameFinder;
   
-  /** Creates an English name finder using the specified model.
+  /**
+   * Creates an English name finder using the specified model.
    * @param mod The model used for finding names.
    */
   public TreebankNameFinder(TokenNameFinderModel mod) {
@@ -60,7 +61,7 @@ public class TreebankNameFinder {
     Span[][] nameSpans = new Span[finders.length][];
     
     for (String line = input.readLine(); null != line; line = input.readLine()) {
-      if (line.equals("")) {
+      if (line.isEmpty()) {
         System.out.println();
         clearPrevTokenMaps(finders);
         continue;
@@ -96,10 +97,10 @@ public class TreebankNameFinder {
       throws IOException {
     Span[][] nameSpans = new Span[finders.length][];
     String[][] nameOutcomes = new String[finders.length][];
-    opennlp.tools.tokenize.Tokenizer tokenizer = new SimpleTokenizer();
+    opennlp.tools.tokenize.Tokenizer tokenizer = SimpleTokenizer.INSTANCE;
     StringBuffer output = new StringBuffer();
     for (String line = input.readLine(); null != line; line = input.readLine()) {
-      if (line.equals("")) {
+      if (line.isEmpty()) {
         clearPrevTokenMaps(finders);
         System.out.println();
         continue;
