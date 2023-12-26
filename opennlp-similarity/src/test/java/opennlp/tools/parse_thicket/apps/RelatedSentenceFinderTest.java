@@ -39,7 +39,7 @@ class RelatedSentenceFinderTest {
     input.setTitle("Albert Einstein");
     HitBase result = finder.buildParagraphOfGeneratedText(input, "Swiss Patent Office", new ArrayList<>());
     assertNotNull(result.getOriginalSentences());
-    assertTrue(result.getOriginalSentences().size() > 0);
+    assertTrue(!result.getOriginalSentences().isEmpty());
     // TODO Investigate why the below to checks fail
     // assertTrue(result.getFragments().size()>0);
     // assertTrue(result.getFragments().get(0).getFragment().contains("Swiss Patent Office"));
@@ -70,8 +70,8 @@ class RelatedSentenceFinderTest {
     input.setTitle("Albert Einstein - Biographical");
     HitBase result = finder.buildParagraphOfGeneratedText(input, "Albert Einstein", new ArrayList<>());
     assertNotNull(result.getOriginalSentences());
-    assertTrue(result.getOriginalSentences().size() > 0);
-    assertTrue(result.getFragments().size() > 0);
+    assertTrue(!result.getOriginalSentences().isEmpty());
+    assertTrue(!result.getFragments().isEmpty());
     assertTrue(result.getFragments().get(0).getFragment().contains("Albert Einstein"));
   }
 	

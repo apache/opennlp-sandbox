@@ -32,7 +32,7 @@ class DocProcessorTest {
   private static DefaultDocProcessor dp;
 
   @BeforeAll
-  static void initEnv() throws Exception {
+  static void initEnv() {
     dp = new DefaultDocProcessor(DocProcessorTest.class.getResourceAsStream("/en-sent.bin"));
   }
 

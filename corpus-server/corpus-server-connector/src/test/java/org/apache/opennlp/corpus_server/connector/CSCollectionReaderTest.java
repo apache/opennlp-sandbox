@@ -79,7 +79,6 @@ class CSCollectionReaderTest extends AbstractCSTest {
       corporaStore.getCorpus("wikinews").addCAS("111", os.toByteArray());
       corporaStore.getCorpus("wikinews").addCAS("222", os.toByteArray());
     } catch (Exception e) {
-      e.printStackTrace();
       fail(e.getLocalizedMessage());
     }
   }
@@ -103,7 +102,6 @@ class CSCollectionReaderTest extends AbstractCSTest {
       cr.getNext(cas);
       assertFalse(cr.hasNext());
     } catch (Exception e) {
-      e.printStackTrace();
       fail(e.getLocalizedMessage());
     }
   }

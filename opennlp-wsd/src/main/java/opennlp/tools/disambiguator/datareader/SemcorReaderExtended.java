@@ -19,9 +19,14 @@
 
 package opennlp.tools.disambiguator.datareader;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.StringReader;
 import java.util.ArrayList;
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -36,6 +41,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
 
 /**
  * This class reads Semcor data.
@@ -63,38 +70,34 @@ public class SemcorReaderExtended {
   private static final String ATTRIBUTE_LEMMA = "lemma";
   private static final String ATTRIBUTE_WNSN = "wnsn";
   private static final String ATTRIBUTE_LEXSN = "lexsn";
-
   private static final String ELEMENT_PUNCTUATION = "punc";
 
-  private static String semcorDirectory = "src/test/resources/semcor3.0/";
+  private String semcorDirectory;
   private static final String[] folders = { "brown1", "brown2", "brownv" };
   private static final String tagfiles = "/tagfiles/";
-
   
-  public static String getSemcorDirectory() {
-    return semcorDirectory;
-  }
-
-  public static void setSemcorDirectory(String semcorDirectory) {
-    SemcorReaderExtended.semcorDirectory = semcorDirectory;
-  }
-
-  public SemcorReaderExtended() {
+  public SemcorReaderExtended(String semcorDirectory) {
     super();
+    setSemcorDirectory(semcorDirectory);
+  }
+
+  private void setSemcorDirectory(String semcorDirectory) {
+    this.semcorDirectory = semcorDirectory;
   }
 
   /**
    * This serves to read one Semcor XML file
    */
   private ArrayList<Sentence> readFile(String file) {
-
     ArrayList<Sentence> result = new ArrayList<>();
-
-    try {
-
-      File xmlFile = new File(file);
-      DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-      DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+    final EntityResolver noop = (publicId, systemId) -> new InputSource(new StringReader(""));
+    try (InputStream xmlFile = new BufferedInputStream(new FileInputStream(file))) {
+      DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+      dbf.setXIncludeAware(false);
+      dbf.setExpandEntityReferences(false);
+      dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+      DocumentBuilder dBuilder = dbf.newDocumentBuilder();
+      dBuilder.setEntityResolver(noop);
       Document doc = dBuilder.parse(xmlFile);
 
       doc.getDocumentElement().normalize();
@@ -167,9 +170,7 @@ public class SemcorReaderExtended {
                     isentence.addIword(iword);
                     wnum++;
                   }
-
                 }
-
               }
               result.add(isentence);
             }
@@ -177,6 +178,7 @@ public class SemcorReaderExtended {
         }
       }
     } catch (Exception e) {
+      WSDHelper.print("Reading " + file);
       e.printStackTrace();
     }
 
@@ -251,10 +253,8 @@ public class SemcorReaderExtended {
               WSDSample wtd = new WSDSample(words, tags, lemmas, index, senses.toArray(new String[0]));
               setInstances.add(wtd);
             }
-
           }
         }
-
       }
 
     } catch (Exception e) {

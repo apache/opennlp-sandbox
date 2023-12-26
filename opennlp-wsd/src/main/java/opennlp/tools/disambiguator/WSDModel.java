@@ -20,6 +20,7 @@ package opennlp.tools.disambiguator;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serial;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,8 +39,9 @@ import opennlp.tools.util.model.BaseModel;
 // TODO unify both supervised models
 public class WSDModel extends BaseModel {
 
+  @Serial
   private static final long serialVersionUID = 8597537955427934846L;
-  
+
   private static final String COMPONENT_NAME = "WSD";
   private static final String WSD_MODEL_ENTRY_NAME = "WSD.model";
 

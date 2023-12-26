@@ -22,7 +22,6 @@ package org.apache.opennlp.namefinder;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -91,7 +90,7 @@ class WordIndexerTest {
     String[] text = new String[] {"I wish I was born in Copenhagen Denmark",
         "Donald Trump died on his way to Tivoli Gardens in Denmark ."};
 
-    List<String[]> collect = Arrays.stream(text).map(s -> s.split("\\s+")).collect(Collectors.toList());
+    List<String[]> collect = Arrays.stream(text).map(s -> s.split("\\s+")).toList();
 
     TokenIds ids = indexer.toTokenIds(collect.toArray(new String[2][]));
 

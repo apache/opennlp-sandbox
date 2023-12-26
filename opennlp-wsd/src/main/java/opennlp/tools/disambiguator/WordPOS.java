@@ -22,7 +22,6 @@ package opennlp.tools.disambiguator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.ListIterator;
 
 import net.sf.extjwnl.JWNLException;
 import net.sf.extjwnl.data.IndexWord;
@@ -34,6 +33,8 @@ public class WordPOS {
 
   private final String word;
   private List<String> stems;
+  private transient List<String> stemsLowerCased;
+
   private final POS pos;
   private String posTag;
 
@@ -68,14 +69,17 @@ public class WordPOS {
 
   public List<String> getStems() {
     if (stems == null) {
-      return WSDHelper.Stem(this);
-    } else {
-      return stems;
+      stems = WSDHelper.Stem(this);
+      if (stems != null) {
+        stemsLowerCased = new ArrayList<>(stems);
+        stemsLowerCased.replaceAll(String::toLowerCase);
+      }
     }
+    return stems;
   }
 
   // Return the synsets (thus the senses) of the current word
-  public ArrayList<Synset> getSynsets() {
+  public List<Synset> getSynsets() {
 
     IndexWord indexWord;
     try {
@@ -96,23 +100,14 @@ public class WordPOS {
   // uses Stemming to check if two words are equivalent
   public boolean isStemEquivalent(WordPOS wordToCompare) {
     // check if there is intersection in the stems;
-    List<String> originalList = this.getStems();
     List<String> listToCompare = wordToCompare.getStems();
 
-    if (originalList == null || listToCompare == null) {
+    if (this.getStems() == null || listToCompare == null) {
       return false;
     } else {
-      ListIterator<String> iterator = originalList.listIterator();
-      while (iterator.hasNext()) {
-        iterator.set(iterator.next().toLowerCase());
-      }
-      iterator = listToCompare.listIterator();
-      while (iterator.hasNext()) {
-        iterator.set(iterator.next().toLowerCase());
-      }
-      return !Collections.disjoint(originalList, listToCompare);
+      listToCompare.replaceAll(String::toLowerCase);
+      return !Collections.disjoint(stemsLowerCased, listToCompare);
     }
-
   }
 
 }

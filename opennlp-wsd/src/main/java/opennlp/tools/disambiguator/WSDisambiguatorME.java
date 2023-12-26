@@ -81,7 +81,7 @@ public class WSDisambiguatorME extends WSDisambiguator {
         String[] context = CONTEXT_GENERATOR
           .getContext(sample, ((WSDDefaultParameters) params).ngram,
             ((WSDDefaultParameters) params).windowSize, surroundingContext);
-        Event ev = new Event(sense + "", context);
+        Event ev = new Event(sense, context);
         events.add(ev);
       } while ((sample = samples.read()) != null);
     }
@@ -145,7 +145,7 @@ public class WSDisambiguatorME extends WSDisambiguator {
           double[] outcomeProbs = model.getWSDMaxentModel().eval(context);
           outcome = model.getWSDMaxentModel().getBestOutcome(outcomeProbs);
 
-          if (outcome != null && !outcome.equals("")) {
+          if (outcome != null && !outcome.isEmpty()) {
 
             return this.getParams().getSenseSource().name() + " " + wordTag
               .split("\\.")[0] + "%" + outcome;
@@ -171,7 +171,7 @@ public class WSDisambiguatorME extends WSDisambiguator {
         double[] outcomeProbs = model.getWSDMaxentModel().eval(context);
         outcome = model.getWSDMaxentModel().getBestOutcome(outcomeProbs);
 
-        if (outcome != null && !outcome.equals("")) {
+        if (outcome != null && !outcome.isEmpty()) {
 
           return this.getParams().getSenseSource().name() + " " + wordTag
             .split("\\.")[0] + "%" + outcome;

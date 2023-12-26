@@ -47,7 +47,7 @@ class ProbabilisticContextFreeGrammarTest {
   private static Map<Rule, Double> rules;
 
   @BeforeAll
-  static void setUp() throws Exception {
+  static void setUp() {
     nonTerminals = new LinkedList<>();
     nonTerminals.add("S");
     nonTerminals.add("NP");
@@ -111,7 +111,7 @@ class ProbabilisticContextFreeGrammarTest {
   }
 
   @Test
-  void testIntermediateProbability() throws Exception {
+  void testIntermediateProbability() {
     ArrayList<String> sentence = new ArrayList<>();
     sentence.add("the");
     sentence.add("dog");
@@ -132,7 +132,7 @@ class ProbabilisticContextFreeGrammarTest {
   }
 
   @Test
-  void testFullSentenceCKY() throws Exception {
+  void testFullSentenceCKY() {
     ProbabilisticContextFreeGrammar pcfg = new ProbabilisticContextFreeGrammar(nonTerminals, terminals, rules, startSymbol, true);
 
     // fixed sentence one
@@ -191,7 +191,7 @@ class ProbabilisticContextFreeGrammarTest {
   }
 
   @Test
-  void testParseString() throws Exception {
+  void testParseString() {
     String string = "(S (VP (Adv last) (Vb tidy)) (NP (Adj biogenic) (NN Gainesville)))";
     Map<Rule, Double> rules = ProbabilisticContextFreeGrammar.parseRules(string);
     assertNotNull(rules);
@@ -199,7 +199,7 @@ class ProbabilisticContextFreeGrammarTest {
   }
 
   @Test
-  void testReadingItalianPennTreebankParseTreeSamples() throws Exception {
+  void testReadingItalianPennTreebankParseTreeSamples() {
     String newsSample = "( (S \n" +
         "    (VP (VMA~RE Slitta) \n" +
         "        (PP-LOC (PREP a) \n" +
@@ -277,7 +277,7 @@ class ProbabilisticContextFreeGrammarTest {
         sentence = new StringBuilder();
       }
     }
-    if (sentence.length() > 0) {
+    if (!sentence.isEmpty()) {
       sentences.add(sentence.toString());
     }
 

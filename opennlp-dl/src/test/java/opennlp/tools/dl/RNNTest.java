@@ -37,7 +37,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 public class RNNTest {
 
-  private Random r = new Random(42);
+  private final Random r = new Random(42);
   private String text;
   private List<String> words;
 

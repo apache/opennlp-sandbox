@@ -53,7 +53,8 @@ public abstract class WSDisambiguator {
 
   /**
    * @param params disambiguation implementation specific parameters.
-   * @throws InvalidParameterException
+   *
+   * @throws InvalidParameterException Thrown if specified parameters are invalid.
    */
   public void setParams(WSDParameters params) throws InvalidParameterException {
     this.params = params;
@@ -73,7 +74,7 @@ public abstract class WSDisambiguator {
   }
 
   /**
-   * The disambiguation method for all the words in a Span
+   * The disambiguation method for all the words in a {@link Span}.
    * 
    * @param tokenizedContext
    * @param tokenTags
@@ -86,19 +87,15 @@ public abstract class WSDisambiguator {
     List<String> senses = new ArrayList<>();
 
     int start = Math.max(0, ambiguousTokenIndexSpan.getStart());
-
-    int end = Math.max(start,
-        Math.min(tokenizedContext.length, ambiguousTokenIndexSpan.getEnd()));
+    int end = Math.max(start, Math.min(tokenizedContext.length, ambiguousTokenIndexSpan.getEnd()));
 
     for (int i = start; i < end + 1; i++) {
 
       if (WSDHelper.isRelevantPOSTag(tokenTags[i])) {
-        WSDSample sample = new WSDSample(tokenizedContext, tokenTags, lemmas,
-            i);
+        WSDSample sample = new WSDSample(tokenizedContext, tokenTags, lemmas, i);
         String sense = disambiguate(sample);
         senses.add(sense);
       } else {
-
         if (WSDHelper.getNonRelevWordsDef(tokenTags[i]) != null) {
           String sense = WSDParameters.SenseSource.WSDHELPER.name() + " "
               + WSDHelper.getNonRelevWordsDef(tokenTags[i]);
@@ -114,14 +111,11 @@ public abstract class WSDisambiguator {
   }
 
   /**
-   * The disambiguation method for all the words of the context
+   * The disambiguation method for all the words of the context.
    * 
-   * @param tokenizedContext
-   *          : the text containing the word to disambiguate
-   * @param tokenTags
-   *          : the tags corresponding to the context
-   * @param lemmas
-   *          : the lemmas of ALL the words in the context
+   * @param tokenizedContext the text containing the word to disambiguate
+   * @param tokenTags the tags corresponding to the context
+   * @param lemmas the lemmas of ALL the words in the context
    * @return a List of arrays, each corresponding to the senses of each word of
    *         the context which are to be disambiguated
    */
@@ -133,8 +127,7 @@ public abstract class WSDisambiguator {
     for (int i = 0; i < tokenizedContext.length; i++) {
 
       if (WSDHelper.isRelevantPOSTag(tokenTags[i])) {
-        WSDSample sample = new WSDSample(tokenizedContext, tokenTags, lemmas,
-            i);
+        WSDSample sample = new WSDSample(tokenizedContext, tokenTags, lemmas, i);
         senses.add(disambiguate(sample));
       } else {
 
@@ -146,7 +139,6 @@ public abstract class WSDisambiguator {
           senses.add(null);
         }
       }
-
     }
 
     return senses;

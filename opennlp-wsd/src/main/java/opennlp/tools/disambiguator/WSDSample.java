@@ -18,13 +18,14 @@
 package opennlp.tools.disambiguator;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 import net.sf.extjwnl.JWNLException;
+import net.sf.extjwnl.data.IndexWord;
 import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.data.Synset;
-import net.sf.extjwnl.dictionary.Dictionary;
 import opennlp.tools.tokenize.WhitespaceTokenizer;
 import opennlp.tools.util.InvalidFormatException;
 
@@ -37,8 +38,11 @@ public class WSDSample {
   private String[] senseIDs;
   private int targetPosition;
 
-  public WSDSample(String[] sentence, String[] tags, String[] lemmas,
-      int targetPosition, int senseID) {
+  public WSDSample(String[] sentence, String[] tags, String[] lemmas, int targetPosition) {
+    this(sentence, tags, lemmas, targetPosition, null);
+  }
+  
+  public WSDSample(String[] sentence, String[] tags, String[] lemmas, int targetPosition, int senseID) {
     this.sentence = sentence;
     this.tags = tags;
     this.targetPosition = targetPosition;
@@ -47,13 +51,7 @@ public class WSDSample {
     checkArguments();
   }
 
-  public WSDSample(String[] sentence, String[] tags, String[] lemmas,
-      int targetPosition) {
-    this(sentence, tags, lemmas, targetPosition, null);
-  }
-
-  public WSDSample(String[] sentence, String[] tags, String[] lemmas,
-      int targetPosition, String[] senseIDs) {
+  public WSDSample(String[] sentence, String[] tags, String[] lemmas, int targetPosition, String[] senseIDs) {
     this.sentence = sentence;
     this.tags = tags;
     this.targetPosition = targetPosition;
@@ -149,8 +147,7 @@ public class WSDSample {
   /*
    * Parses a sample of format : TargetIndex TargetLemma Token Tag Token Tag ...
    */
-  public static WSDSample parse(String sentenceString)
-      throws InvalidFormatException {
+  public static WSDSample parse(String sentenceString) throws InvalidFormatException {
 
     String[] tokenTags = WhitespaceTokenizer.INSTANCE.tokenize(sentenceString);
 
@@ -199,11 +196,15 @@ public class WSDSample {
 
   // Return the synsets (thus the senses) of the current target word
   public List<Synset> getSynsets() {
+
     try {
-      return Dictionary.getDefaultResourceInstance()
-          .lookupIndexWord(WSDHelper.getPOS(this.getTargetTag()),
-              this.getTargetWord())
-          .getSenses();
+      IndexWord iw = WSDHelper.getDictionary().lookupIndexWord(
+              WSDHelper.getPOS(this.getTargetTag()), this.getTargetWord());
+      if (iw != null) {
+        return iw.getSenses();
+      } else {
+        return Collections.emptyList();
+      }
     } catch (JWNLException e) {
       e.printStackTrace();
     }
@@ -212,18 +213,18 @@ public class WSDSample {
 
   public String getTargetWordTag() {
 
-    String wordBaseForm = this.getLemmas()[this.getTargetPosition()];
-
+    String wordBaseForm = getLemmas()[getTargetPosition()];
     String ref = "";
 
-    if ((WSDHelper.getPOS(this.getTargetTag()) != null)) {
-      if (WSDHelper.getPOS(this.getTargetTag()).equals(POS.VERB)) {
+    POS pos = WSDHelper.getPOS(getTargetTag());
+    if (pos != null) {
+      if (pos.equals(POS.VERB)) {
         ref = wordBaseForm + ".v";
-      } else if (WSDHelper.getPOS(this.getTargetTag()).equals(POS.NOUN)) {
+      } else if (pos.equals(POS.NOUN)) {
         ref = wordBaseForm + ".n";
-      } else if (WSDHelper.getPOS(this.getTargetTag()).equals(POS.ADJECTIVE)) {
+      } else if (pos.equals(POS.ADJECTIVE)) {
         ref = wordBaseForm + ".a";
-      } else if (WSDHelper.getPOS(this.getTargetTag()).equals(POS.ADVERB)) {
+      } else if (pos.equals(POS.ADVERB)) {
         ref = wordBaseForm + ".r";
       }
     }
