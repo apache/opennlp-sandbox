@@ -24,7 +24,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -205,7 +206,7 @@ public class WordDocBuilder{
     }
 
     public static void saveImageFromTheWeb(String imageUrl, String destinationFile) {
-			File f = new File(destinationFile);
+			final File f = new File(destinationFile);
 			if (!f.exists()) {
 				try {
 					f.createNewFile();
@@ -213,17 +214,16 @@ public class WordDocBuilder{
 					throw new RuntimeException(e);
 				}
 			}
-			try (InputStream is = new URL(imageUrl).openStream();
+			try (InputStream is = new URI(imageUrl).toURL().openStream();
 					 OutputStream os = new FileOutputStream(destinationFile)) {
 
 				byte[] b = new byte[2048];
 				int length;
-
 				while ((length = is.read(b)) != -1) {
 					os.write(b, 0, length);
 				}
 
-			} catch (IOException e) {
+			} catch (IOException | URISyntaxException e) {
 				e.printStackTrace();
 			}
 		}

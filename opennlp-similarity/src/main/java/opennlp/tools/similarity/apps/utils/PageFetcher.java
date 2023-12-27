@@ -20,7 +20,8 @@ package opennlp.tools.similarity.apps.utils;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLConnection;
 import java.util.logging.Logger;
 
@@ -31,6 +32,7 @@ import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.sax.BodyContentHandler;
+import org.xml.sax.SAXException;
 
 public class PageFetcher {
   private static final Logger LOG = Logger.getLogger("opennlp.tools.similarity.apps.utils.PageFetcher");
@@ -50,7 +52,7 @@ public class PageFetcher {
 	  String pageContent = null;
     URLConnection connection;
     try {
-      connection = new URL(fetchURL).openConnection();
+      connection = new URI(fetchURL).toURL().openConnection();
       connection.setReadTimeout(DEFAULT_TIMEOUT);
       // parse method parameters
       Parser parser = new AutoDetectParser();
@@ -62,23 +64,22 @@ public class PageFetcher {
       parser.parse(connection.getInputStream(), handler, metadata, context);
 
       pageContent = handler.toString();
-    } catch (Exception e) {
+    } catch (IOException | URISyntaxException | SAXException | TikaException e) {
       LOG.severe(e.getMessage() + "\n" + e);
     }
-    return  pageContent;
+    return pageContent;
   }
-  
 
   public String fetchPage(final String url, final int timeout) {
     String fetchURL = addHttp(url);
     String pageContent = null;
     URLConnection connection;
     try {
-      connection = new URL(fetchURL).openConnection();
-      connection.setReadTimeout(DEFAULT_TIMEOUT);
+      connection = new URI(fetchURL).toURL().openConnection();
+      connection.setReadTimeout(timeout);
       pageContent = tika.parseToString(connection.getInputStream())
           .replace('\n', ' ').replace('\t', ' ');
-    } catch (IOException | TikaException e) {
+    } catch (IOException | URISyntaxException | TikaException e) {
       LOG.severe(e.getMessage() + "\n" + e);
     }
     return pageContent;
@@ -100,38 +101,20 @@ public class PageFetcher {
     LOG.info("fetch url " + url);
     StringBuilder buf = new StringBuilder();
     try {
-      URLConnection connection = new URL(url).openConnection();
+      URLConnection connection = new URI(url).toURL().openConnection();
       connection.setReadTimeout(DEFAULT_TIMEOUT);
-      connection
-          .setRequestProperty(
-              "User-Agent",
+      connection.setRequestProperty("User-Agent",
               "Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3");
       String line;
-      BufferedReader reader = null;
-      try {
-        reader = new BufferedReader(new InputStreamReader(
-            connection.getInputStream()));
-      } catch (Exception e) {
-        // we don't always need to log trial web pages if access fails
-        LOG.severe(e.toString());
+      try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+        while ((line = reader.readLine()) != null) {
+          buf.append(line);
+        }
       }
-
-      while ((line = reader.readLine()) != null) {
-        buf.append(line);
-      }
-
+    } catch (Exception e) {
+      // we don't always need to log trial web pages if access fails
+      LOG.severe(e.toString());
     }
-    // normal case when a hypothetical page does not exist
-    catch (Exception e) {
-
-      // LOG.error(e.getMessage(), e);
-      // System.err.println("error fetching url " + url);
-    }
-/*    try {
-      Thread.sleep(50); // do nothing 4 sec
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    } */
     return buf.toString();
   }
   
@@ -139,8 +122,7 @@ public class PageFetcher {
 	  PageFetcher fetcher = new PageFetcher();
 	  String content = fetcher.fetchPageAutoDetectParser("http://www.elastica.net/");
 	  System.out.println(content);
-	  content = fetcher.
-			  fetchPageAutoDetectParser("http://www.cnn.com");
+	  content = fetcher.fetchPageAutoDetectParser("http://www.cnn.com");
 	  System.out.println(content);
 	  content = new PageFetcher().fetchPage("https://github.com");
 	  System.out.println(content);

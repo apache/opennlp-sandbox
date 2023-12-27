@@ -60,7 +60,7 @@
             <subscribe>users-subscribe@opennlp.apache.org</subscribe>
             <unsubscribe>users-unsubscribe@opennlp.apache.org</unsubscribe>
             <post>users@opennlp.apache.org</post>
-            <archive>http://mail-archives.apache.org/mod_mbox/opennlp-users/</archive>
+            <archive>https://mail-archives.apache.org/mod_mbox/opennlp-users/</archive>
         </mailingList>
 
         <mailingList>
@@ -68,21 +68,21 @@
             <subscribe>dev-subscribe@opennlp.apache.org</subscribe>
             <unsubscribe>dev-unsubscribe@opennlp.apache.org</unsubscribe>
             <post>dev@opennlp.apache.org</post>
-            <archive>http://mail-archives.apache.org/mod_mbox/opennlp-dev/</archive>
+            <archive>https://mail-archives.apache.org/mod_mbox/opennlp-dev/</archive>
         </mailingList>
 
         <mailingList>
             <name>Apache OpenNLP Commits</name>
             <subscribe>commits-subscribe@opennlp.apache.org</subscribe>
             <unsubscribe>commits-unsubscribe@opennlp.apache.org</unsubscribe>
-            <archive>http://mail-archives.apache.org/mod_mbox/opennlp-commits/</archive>
+            <archive>https://mail-archives.apache.org/mod_mbox/opennlp-commits/</archive>
         </mailingList>
 
         <mailingList>
             <name>Apache OpenNLP Issues</name>
             <subscribe>issues-subscribe@opennlp.apache.org</subscribe>
             <unsubscribe>issues-unsubscribe@opennlp.apache.org</unsubscribe>
-            <archive>http://mail-archives.apache.org/mod_mbox/opennlp-issues/</archive>
+            <archive>https://mail-archives.apache.org/mod_mbox/opennlp-issues/</archive>
         </mailingList>
     </mailingLists>
 
@@ -124,11 +124,11 @@
         <log4j2.version>2.20.0</log4j2.version>
 
         <uimaj.version>3.4.1</uimaj.version>
-        <jersey-client.version>2.39.1</jersey-client.version>
-        <jersey-server.version>2.39.1</jersey-server.version>
+        <jersey-client.version>2.41</jersey-client.version>
+        <jersey-server.version>2.41</jersey-server.version>
         <jettison.version>1.5.4</jettison.version>
         
-        <junit.version>5.9.2</junit.version>
+        <junit.version>5.10.1</junit.version>
 
         <enforcer.plugin.version>3.0.0-M3</enforcer.plugin.version>
         <checkstyle.plugin.version>3.2.0</checkstyle.plugin.version>
@@ -136,6 +136,7 @@
         <jacoco.maven.plugin>0.7.9</jacoco.maven.plugin>
         <maven.surefire.plugin>3.0.0-M5</maven.surefire.plugin>
         <maven.failsafe.plugin>3.0.0-M5</maven.failsafe.plugin>
+        <forbiddenapis.plugin>3.6</forbiddenapis.plugin>
         <mockito.version>3.9.0</mockito.version>
     </properties>
 
@@ -377,7 +378,7 @@
                 <plugin>
                     <groupId>de.thetaphi</groupId>
                     <artifactId>forbiddenapis</artifactId>
-                    <version>3.5.1</version>
+                    <version>${forbiddenapis.plugin}</version>
                     <configuration>
                         <failOnUnsupportedJava>false</failOnUnsupportedJava>
                         <bundledSignatures>
@@ -405,7 +406,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.10.1</version>
+                <version>3.11.0</version>
                 <configuration>
                     <release>${java.version}</release>
                     <compilerArgument>-Xlint</compilerArgument>

@@ -21,10 +21,11 @@ package opennlp.tools.parse_thicket;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,7 +42,8 @@ import edu.mit.jverbnet.index.VerbIndex;
 public class VerbNetProcessor implements IGeneralizer<Map<String, List<String>>> {
 
 	static VerbNetProcessor instance;
-	static private String pathToVerbnet = null; //new File( "." ).getCanonicalPath()+"/src/test/resources";
+	private static String pathToVerbnet = null;
+	
 	public static VerbNetProcessor getInstance(String resourceDir) {
 		if (resourceDir==null)
 			try {
@@ -61,39 +63,13 @@ public class VerbNetProcessor implements IGeneralizer<Map<String, List<String>>>
 	private VerbNetProcessor() {
 
 		try {
-			URL url = new URL ("file", null , pathToVerbnet ) ;
+			URL url = new URI("file", null , pathToVerbnet).toURL() ;
 			index = new VerbIndex ( url ) ;
 			index.open() ;
-
-		} catch (IOException e) {
+		} catch (IOException | URISyntaxException e) {
 			e.printStackTrace();
 		}
 	}
-
-
-	public IVerbClass getVerbNetForAVerb_____New(String verb){
-		Iterator<IVerbClass> iter = index.iterator();
-		while(iter.hasNext()){
-			IVerbClass v = iter.next();
-
-			if (v.getID().startsWith(verb))
-				return v;
-		}
-		iter = index.iterator();
-		while(iter.hasNext()){
-			IVerbClass v = iter.next();
-			if (!v.getMembers().isEmpty()){
-				for(IMember m: v.getMembers()) {
-					if (m.getName().equals(verb)){
-						return v;
-					}
-				}
-			}
-		}
-		return null;
-	}
-
-
 
 	public IVerbClass getVerbNetForAVerb(String verb){
 		for (IVerbClass v : index) {
@@ -113,9 +89,10 @@ public class VerbNetProcessor implements IGeneralizer<Map<String, List<String>>>
 			v1 = getVerbNetForAVerb((String) o1);
 			v2 = getVerbNetForAVerb((String) o2);		
 			return generalize(v1, v2);
-		} else
+		} else {
+			v1 = (IVerbClass) o1;
+		}
 
-			v1 = (IVerbClass)o1;
 		v2 = (IVerbClass)o2;
 		List<Map<String, List<String>>> resList = new ArrayList<>();
 
@@ -256,8 +233,5 @@ public class VerbNetProcessor implements IGeneralizer<Map<String, List<String>>>
 		res = proc.generalize("alert", "warn");
 		System.out.println (res);
 	}
-
-
-
 
 }

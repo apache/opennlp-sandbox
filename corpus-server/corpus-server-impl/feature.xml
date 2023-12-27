@@ -22,7 +22,8 @@
 <features>
 	<!-- This feature.xml should be automatically be generated, all dependencies are duplicated here! -->
     <feature name="opennlp-corpus-server-impl" version="0.0.1.SNAPSHOT">
-        <bundle>mvn:org.apache.derby/derby/10.14.2.0</bundle>
+        <bundle>mvn:org.apache.derby/derby/10.17.1.0</bundle>
+        <bundle>mvn:org.apache.derby/derbytools/10.17.1.0</bundle>
         <bundle>mvn:org.apache.opennlp/corpus-server-impl/2.3.2-SNAPSHOT</bundle>
     </feature>
 </features>

@@ -41,7 +41,10 @@
 	</modules>
 
   <properties>
-    <derby.version>10.14.2.0</derby.version>
+    <derby.version>10.17.1.0</derby.version>
+    <!-- A minimum JDK version of 21 is required for modern Derby versions -->
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
   </properties>
 
   <dependencyManagement>

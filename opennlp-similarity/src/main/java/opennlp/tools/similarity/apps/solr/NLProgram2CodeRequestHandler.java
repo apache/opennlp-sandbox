@@ -36,8 +36,7 @@ public class NLProgram2CodeRequestHandler extends SearchHandler {
 	private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
 	private final int MAX_QUERY_LENGTH_NOT_TO_RERANK = 3;
 	private static final String RESOURCES = "C:/workspace/TestSolr/src/test/resources";
-	//"/data1/solr/example/src/test/resources";
-	
+
 	final NL2Obj compiler = new NL2ObjCreateAssign(RESOURCES);
 
 	public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp){

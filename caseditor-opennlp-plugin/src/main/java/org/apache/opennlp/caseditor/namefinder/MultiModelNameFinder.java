@@ -19,6 +19,7 @@ package org.apache.opennlp.caseditor.namefinder;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -109,7 +110,7 @@ public class MultiModelNameFinder implements TokenNameFinder {
         sequenceValidators[i] = new RestrictedSequencesValidator(modelTypes[i]);
         nameFinders[i] = new NameFinderME(model);
       } 
-      catch (IOException e) {
+      catch (IOException | URISyntaxException e) {
         // Error message should include model type
         throw new IOException("Failed to load a model, path:\n" + modelPathes[i] +
             "\nError Message:\n" + e.getMessage());
