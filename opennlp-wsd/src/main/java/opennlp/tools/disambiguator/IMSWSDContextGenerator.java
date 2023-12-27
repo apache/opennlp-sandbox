@@ -136,7 +136,7 @@ public class IMSWSDContextGenerator implements WSDContextGenerator {
       i++;
     }
     for (String word : model) {
-      if (surroundingWords.contains(word.toString())) {
+      if (surroundingWords.contains(word)) {
         serializedFeatures[i] = "F" + i + "=1";
       } else {
         serializedFeatures[i] = "F" + i + "=0";

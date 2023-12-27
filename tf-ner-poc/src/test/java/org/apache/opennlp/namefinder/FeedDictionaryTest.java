@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,7 +55,7 @@ class FeedDictionaryTest {
 
     String[] text2 = new String[] {"I wish I was born in Copenhagen Denmark",
         "Donald Trump died on his way to Tivoli Gardens in Denmark ."};
-    List<String[]> collect = Arrays.stream(text2).map(s -> s.split("\\s+")).collect(Collectors.toList());
+    List<String[]> collect = Arrays.stream(text2).map(s -> s.split("\\s+")).toList();
     TokenIds twoSentences = indexer.toTokenIds(collect.toArray(new String[2][]));
     assertNotNull(twoSentences);
     assertEquals(8, twoSentences.getWordIds()[0].length, "Expect 8 tokenIds");

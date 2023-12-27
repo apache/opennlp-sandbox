@@ -435,6 +435,7 @@
                                 <exclude>**/src/test/resources/**/*.xml</exclude>
                                 <exclude>**/src/test/resources/**/*.sensemap</exclude>
                                 <exclude>**/src/test/resources/**/*.bin</exclude>
+                                <exclude>**/src/test/resources/**/tagfiles/*</exclude>
                                 <!-- These files do not allow a license header -->
                                 <exclude>**/src/main/resources/opennlp/cfg/an/*.txt</exclude>
                                 <exclude>**/src/main/resources/opennlp/cfg/wn/*.txt</exclude>

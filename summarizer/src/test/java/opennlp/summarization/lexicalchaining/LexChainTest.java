@@ -30,6 +30,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class LexChainTest {
 
@@ -57,7 +58,7 @@ class LexChainTest {
     List<LexicalChain> vh = lcs.buildLexicalChains(ARTICLE, sent);
     assertNotNull(vh);
     Collections.sort(vh);
-    assertTrue(vh.size() > 0);
+    assertTrue(!vh.isEmpty());
 
     List<Sentence> s = dp.getSentencesFromStr(ARTICLE);
     Hashtable<String, Boolean> comp = new Hashtable<>();
@@ -101,7 +102,7 @@ class LexChainTest {
       assertEquals(WordRelation.MED_RELATION, rel2.relation);
       assertEquals(WordRelation.MED_RELATION, rel3.relation);
     } catch (Exception e) {
-      e.printStackTrace();
+      fail(e.getLocalizedMessage());
     }
   }
 

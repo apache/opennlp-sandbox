@@ -31,28 +31,28 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 class RuleTest {
 
   @Test
-  void testEquals() throws Exception {
+  void testEquals() {
     Rule r1 = new Rule("NP", "NP", "PP");
     Rule r2 = new Rule("NP", "NP", "PP");
     assertEquals(r1, r2);
   }
 
   @Test
-  void testNotEquals() throws Exception {
+  void testNotEquals() {
     Rule r1 = new Rule("NP", "DT", "NN");
     Rule r2 = new Rule("NP", "NP", "PP");
     assertNotEquals(r1, r2);
   }
 
   @Test
-  void testHashcode() throws Exception {
+  void testHashcode() {
     Rule r1 = new Rule("NP", "DT", "NN");
     Rule r2 = new Rule("NP", "NP", "PP");
     assertNotEquals(r1.hashCode(), r2.hashCode());
   }
 
   @Test
-  void testCompare() throws Exception {
+  void testCompare() {
     TreeSet<Rule> rules = new TreeSet<>();
     Rule r1 = new Rule("NP", "DT", "NN");
     Rule r2 = new Rule("NP", "NP", "PP");

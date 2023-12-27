@@ -22,7 +22,9 @@ package opennlp.tools.disambiguator;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -37,84 +39,73 @@ import static org.junit.jupiter.api.Assertions.fail;
 // TODO improve the tests improve parameters
 class WSDEvaluatorTest extends AbstractEvaluatorTest {
 
-  static SensevalReader seReader;
-
-  static String trainingDataDirectory = "src/test/resources/supervised/models/";
-
-  static WSDDefaultParameters params = new WSDDefaultParameters("");
   static WSDisambiguatorME wsdME;
   static WSDModel model;
 
-  static ArrayList<String> testWords;
+  static List<String> testWords;
 
-  @Test
-  @Disabled // TODO OPENNLP-1446: Investigate why test fails while parsing 'EnglishLS.train'
-  void testTraining() {
-
-    WSDHelper.print("Evaluation Started");
-
-    seReader = new SensevalReader();
+  /*
+   * Setup the testing variables
+   */
+  @BeforeAll
+  static void setUpAndTraining() {
     testWords = seReader.getSensevalWords();
-    params = new WSDDefaultParameters("");
-    params.setTrainingDataDirectory(trainingDataDirectory);
 
-    TrainingParameters trainingParams = new TrainingParameters();
-    SemcorReaderExtended sr = new SemcorReaderExtended();
+    ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+    File file = new File(classLoader.getResource("models").getPath());
 
-    WSDHelper.print("Training Started");
+    WSDDefaultParameters params = new WSDDefaultParameters(
+            file.getPath() + File.separatorChar + "supervised" + File.separatorChar);
+    final TrainingParameters trainingParams = new TrainingParameters();
+    final SemcorReaderExtended sr = new SemcorReaderExtended(SEMCOR_DIR);
+
     for (String word : testWords) {
       // don't take verbs because they are not from WordNet
-      if (!word.split("\\.")[1].equals("v")) {
+      if (!SPLIT.split(word)[1].equals("v")) {
 
-        ArrayList<WSDSample> instances = seReader.getSensevalData(word);
+        List<WSDSample> instances = seReader.getSensevalData(word);
         if (instances != null && instances.size() > 1) {
-          WSDHelper.print("------------------" + word + "------------------");
           ObjectStream<WSDSample> sampleStream = sr.getSemcorDataStream(word);
-
-          WSDModel writeModel = null;
           /*
            * Tests training the disambiguator We test both writing and reading a model
            * file trained by semcor
            */
           File outFile;
           try {
-            writeModel = WSDisambiguatorME
-                .train("en", sampleStream, trainingParams, params);
+            WSDModel writeModel = WSDisambiguatorME.train("en", sampleStream, trainingParams, params);
             assertNotNull(writeModel, "Checking the model to be written");
             writeModel.writeModel(params.getTrainingDataDirectory() + word);
-            outFile = new File(
-                params.getTrainingDataDirectory() + word + ".wsd.model");
+            outFile = new File(params.getTrainingDataDirectory() + word + ".wsd.model");
             model = new WSDModel(outFile);
             assertNotNull(model, "Checking the read model");
             wsdME = new WSDisambiguatorME(model, params);
             assertNotNull(wsdME, "Checking the disambiguator");
           } catch (IOException e1) {
-            e1.printStackTrace();
             fail("Exception in training");
           }
         }
       }
     }
+
   }
 
   @Test
-  @Disabled  // Make this work once we have migrated to JUnit5 in the sandbox components
   void testDisambiguationEval() {
 
     WSDHelper.print("Evaluation Started");
 
     for (String word : testWords) {
       WSDEvaluator evaluator = new WSDEvaluator(wsdME);
-
       // don't take verbs because they are not from WordNet
-      if (!word.split("\\.")[1].equals("v")) {
+      if (!SPLIT.split(word)[1].equals("v")) {
 
-        ArrayList<WSDSample> instances = seReader.getSensevalData(word);
+        List<WSDSample> instances = seReader.getSensevalData(word);
+        assertNotNull(instances);
+
         if (instances != null && instances.size() > 1) {
           WSDHelper.print("------------------" + word + "------------------");
           for (WSDSample instance : instances) {
-            if (instance.getSenseIDs() != null && !instance.getSenseIDs()[0]
-                .equals("null")) {
+            if (instance.getSenseIDs() != null && !instance.getSenseIDs()[0].equals("null")) {
               evaluator.evaluateSample(instance);
             }
           }

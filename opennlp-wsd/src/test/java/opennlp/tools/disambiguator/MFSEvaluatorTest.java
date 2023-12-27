@@ -19,32 +19,44 @@
 
 package opennlp.tools.disambiguator;
 
-import java.util.ArrayList;
+import java.util.List;
 
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import opennlp.tools.disambiguator.datareader.SensevalReader;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class MFSEvaluatorTest extends AbstractEvaluatorTest {
 
-  static SensevalReader seReader = new SensevalReader();
+  private static List<String> words;
+
+  private MFS mfs;
+
+  @BeforeAll
+  public static void initResources() {
+    words = seReader.getSensevalWords();
+    assertNotNull(words);
+    assertFalse(words.isEmpty());
+  }
+
+  @BeforeEach
+  public void setup() {
+    mfs = new MFS();
+  }
 
   @Test
-  @Disabled // TODO OPENNLP-1446: Investigate why test fails while parsing 'EnglishLS.train'
   void testEvaluation() {
     WSDHelper.print("Evaluation Started");
-
-    MFS mfs = new MFS();
-    ArrayList<String> words = seReader.getSensevalWords();
 
     for (String word : words) {
       WSDEvaluator evaluator = new WSDEvaluator(mfs);
 
       // don't take verbs because they are not from WordNet
-      if (!word.split("\\.")[1].equals("v")) {
+      if (!SPLIT.split(word)[1].equals("v")) {
 
-        ArrayList<WSDSample> instances = seReader.getSensevalData(word);
+        List<WSDSample> instances = seReader.getSensevalData(word);
 
         if (instances != null && instances.size() > 1) {
           WSDHelper.print("------------------" + word + "------------------");

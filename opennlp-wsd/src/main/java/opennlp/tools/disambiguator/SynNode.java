@@ -20,6 +20,7 @@
 package opennlp.tools.disambiguator;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import net.sf.extjwnl.JWNLException;
 import net.sf.extjwnl.data.PointerUtils;
@@ -27,6 +28,7 @@ import net.sf.extjwnl.data.Synset;
 import net.sf.extjwnl.data.Word;
 import net.sf.extjwnl.data.list.PointerTargetNode;
 import net.sf.extjwnl.data.list.PointerTargetNodeList;
+import opennlp.tools.tokenize.Tokenizer;
 
 /**
  * Convenience class to access some features.
@@ -36,7 +38,7 @@ public class SynNode {
   public Synset parent;
   public final Synset synset;
 
-  protected ArrayList<WordPOS> senseRelevantWords;
+  private List<WordPOS> senseRelevantWords;
 
   public final ArrayList<Synset> hypernyms = new ArrayList<>();
   public final ArrayList<Synset> hyponyms = new ArrayList<>();
@@ -62,23 +64,22 @@ public class SynNode {
     this.senseRelevantWords = senseRelevantWords;
   }
 
-  public ArrayList<WordPOS> getSenseRelevantWords() {
+  public List<WordPOS> getSenseRelevantWords() {
     return senseRelevantWords;
   }
 
-  public void setSenseRelevantWords(ArrayList<WordPOS> senseRelevantWords) {
+  public void setSenseRelevantWords(List<WordPOS> senseRelevantWords) {
     this.senseRelevantWords = senseRelevantWords;
   }
 
   public void setHypernyms() {
-    // PointerUtils pointerUtils = PointerUtils.get();
     PointerTargetNodeList phypernyms = new PointerTargetNodeList();
     try {
       phypernyms = PointerUtils.getDirectHypernyms(this.synset);
     } catch (JWNLException e) {
       e.printStackTrace();
     } catch (NullPointerException e) {
-      System.err.println("Error finding the  hypernyms");
+      System.err.println("Error finding the hypernyms");
       e.printStackTrace();
     }
 
@@ -89,7 +90,6 @@ public class SynNode {
   }
 
   public void setMeronyms() {
-    // PointerUtils pointerUtils = PointerUtils.getInstance();
     PointerTargetNodeList pmeronyms = new PointerTargetNodeList();
     try {
       pmeronyms = PointerUtils.getMeronyms(this.synset);
@@ -106,7 +106,6 @@ public class SynNode {
   }
 
   public void setHolonyms() {
-    // PointerUtils pointerUtils = PointerUtils.getInstance();
     PointerTargetNodeList pholonyms = new PointerTargetNodeList();
     try {
       pholonyms = PointerUtils.getHolonyms(this.synset);
@@ -124,7 +123,6 @@ public class SynNode {
   }
 
   public void setHyponyms() {
-    // PointerUtils pointerUtils = PointerUtils.getInstance();
     PointerTargetNodeList phyponyms = new PointerTargetNodeList();
     try {
       phyponyms = PointerUtils.getDirectHyponyms(this.synset);
@@ -141,7 +139,6 @@ public class SynNode {
   }
 
   public void setEntailements() {
-    // PointerUtils pointerUtils = PointerUtils.get();
     PointerTargetNodeList pentailments = new PointerTargetNodeList();
     try {
       pentailments = PointerUtils.getEntailments(this.synset);
@@ -159,7 +156,6 @@ public class SynNode {
   }
 
   public void setCoordinateTerms() {
-    // PointerUtils pointerUtils = PointerUtils.get();
     PointerTargetNodeList pcoordinateTerms = new PointerTargetNodeList();
     try {
       pcoordinateTerms = PointerUtils.getCoordinateTerms(this.synset);
@@ -177,7 +173,6 @@ public class SynNode {
   }
 
   public void setCauses() {
-    // PointerUtils pointerUtils = PointerUtils.get();
     PointerTargetNodeList pcauses = new PointerTargetNodeList();
     try {
       pcauses = PointerUtils.getCauses(this.synset);
@@ -195,7 +190,6 @@ public class SynNode {
   }
 
   public void setAttributes() {
-    // PointerUtils pointerUtils = PointerUtils.get();
     PointerTargetNodeList pattributes = new PointerTargetNodeList();
     try {
       pattributes = PointerUtils.getAttributes(this.synset);
@@ -213,7 +207,6 @@ public class SynNode {
   }
 
   public void setPertainyms() {
-    // PointerUtils pointerUtils = PointerUtils.get();
     PointerTargetNodeList ppertainyms = new PointerTargetNodeList();
     try {
       ppertainyms = PointerUtils.getPertainyms(this.synset);
@@ -276,7 +269,7 @@ public class SynNode {
   }
 
   public String getGloss() {
-    return this.synset.getGloss().toString();
+    return this.synset.getGloss();
   }
 
   public long getSynsetID() {
@@ -292,10 +285,9 @@ public class SynNode {
   public static ArrayList<WordSense> updateSenses(ArrayList<SynNode> nodes) {
     ArrayList<WordSense> scoredSenses = new ArrayList<>();
 
+    final Tokenizer tokenizer = WSDHelper.getTokenizer();
     for (int i = 0; i < nodes.size(); i++) {
-      ArrayList<WordPOS> sensesComponents = WSDHelper
-          .getAllRelevantWords(WSDHelper.getTokenizer().tokenize(
-              nodes.get(i).getGloss()));
+      List<WordPOS> sensesComponents = WSDHelper.getAllRelevantWords(tokenizer.tokenize(nodes.get(i).getGloss()));
       WordSense wordSense = new WordSense();
       nodes.get(i).setSenseRelevantWords(sensesComponents);
       wordSense.setNode(nodes.get(i));

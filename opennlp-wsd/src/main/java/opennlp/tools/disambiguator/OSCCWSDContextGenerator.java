@@ -54,7 +54,7 @@ public class OSCCWSDContextGenerator implements WSDContextGenerator {
 
           if (lemma.length() > 1) {
             try {
-              ArrayList<Synset> synsets = word.getSynsets();
+              List<Synset> synsets = word.getSynsets();
               if (synsets != null && synsets.size() > 0) {
                 for (Synset syn : synsets) {
                   contextClusters.add(syn.getOffset() + "");
@@ -90,7 +90,7 @@ public class OSCCWSDContextGenerator implements WSDContextGenerator {
 
     int i = 0;
     for (String word : model) {
-      if (surroundingContextClusters.contains(word.toString())) {
+      if (surroundingContextClusters.contains(word)) {
         serializedFeatures[i] = "F" + i + "=1";
       } else {
         serializedFeatures[i] = "F" + i + "=0";

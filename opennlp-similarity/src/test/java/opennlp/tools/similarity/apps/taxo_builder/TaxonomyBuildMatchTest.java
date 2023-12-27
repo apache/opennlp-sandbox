@@ -27,7 +27,7 @@ class TaxonomyBuildMatchTest {
   void testTaxonomySeedImport() {
     AriAdapter ad = new AriAdapter();
     ad.getChainsFromARIfile("src/test/resources/taxonomies/irs_dom.ari");
-    assertTrue(ad.lemma_AssocWords.size() > 0);
+    assertTrue(!ad.lemma_AssocWords.isEmpty());
   }
 
   @Test
@@ -36,7 +36,7 @@ class TaxonomyBuildMatchTest {
     TaxonomyExtenderViaMebMining self = new TaxonomyExtenderViaMebMining();
     self.extendTaxonomy("src/test/resources/taxonomies/irs_dom.ari", "tax", "en");
     self.close();
-    assertTrue(self.getAssocWords_ExtendedAssocWords().size() > 0);
+    assertTrue(!self.getAssocWords_ExtendedAssocWords().isEmpty());
   }
 
   @Test

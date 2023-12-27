@@ -34,8 +34,6 @@ public class WSDSampleStream extends FilterObjectStream<String, WSDSample> {
    *
    * @param sentences
    *          An {@link ObjectStream} with sentences
-   * @throws IOException
-   *           IOException
    */
   public WSDSampleStream(ObjectStream<String> sentences) {
     super(sentences);

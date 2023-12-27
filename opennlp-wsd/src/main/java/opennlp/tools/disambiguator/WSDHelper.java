@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
 import net.sf.extjwnl.JWNLException;
@@ -36,13 +37,15 @@ import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.dictionary.Dictionary;
 import net.sf.extjwnl.dictionary.MorphologicalProcessor;
 
-import opennlp.tools.cmdline.postag.POSModelLoader;
 import opennlp.tools.lemmatizer.DictionaryLemmatizer;
+import opennlp.tools.postag.POSModel;
 import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.tokenize.TokenizerModel;
 
 public class WSDHelper {
+
+  protected static final Pattern NUMBERS_PATTERN = Pattern.compile(".*[0-9].*");
 
   protected static TokenizerME tokenizer;
   protected static POSTaggerME tagger;
@@ -55,7 +58,7 @@ public class WSDHelper {
   protected static String lemmatizerDictionaryPath;
 
   // local caches for faster lookup
-  private static Map<String, Object> stemCache;
+  private static Map<String, Map<String, Object>> stemCache;
   private static Map<String, Object> stopCache;
   private static Map<String, Object> relvCache;
 
@@ -177,11 +180,11 @@ public class WSDHelper {
     return stopCache;
   }
 
-  public static Map<String, Object> getStemCache() {
+  public static Map<String, Map<String, Object>> getStemCache() {
     if (stemCache == null || stemCache.keySet().isEmpty()) {
       stemCache = new HashMap<>();
-      for (Object pos : POS.getAllPOS()) {
-        stemCache.put(((POS) pos).getKey(), new HashMap<String, Object>());
+      for (POS pos : POS.getAllPOS()) {
+        stemCache.put(pos.getKey(), new HashMap<>());
       }
     }
     return stemCache;
@@ -285,16 +288,17 @@ public class WSDHelper {
       } catch (IOException e) {
         throw new RuntimeException("Error opening or loading a Lemmatizer from specified resource file!", e);
       }
-
     }
-
     return lemmatizer;
   }
 
   public static POSTaggerME getTagger() {
     if (tagger == null) {
-      tagger = new POSTaggerME(new POSModelLoader().load(new File(
-          taggerModelPath)));
+      try {
+        tagger = new POSTaggerME(new POSModel(new File(taggerModelPath)));
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
     }
     return tagger;
   }
@@ -307,7 +311,6 @@ public class WSDHelper {
       } catch (IOException e) {
         e.printStackTrace();
       }
-
     }
     return tokenizer;
   }
@@ -331,7 +334,7 @@ public class WSDHelper {
    * checks if the word is or contains a number
    */
   public static boolean containsNumbers(String word) {
-    return word.matches(".*[0-9].*");
+    return NUMBERS_PATTERN.matcher(word).matches();
   }
 
   // Print a text in the console
@@ -356,14 +359,8 @@ public class WSDHelper {
               .name())) {
 
             try {
-              print("score : "
-                  + score
-                  + " for sense "
-                  + " : "
-                  + sensekey
-                  + " : "
-                  + getDictionary().getWordBySenseKey(sensekey).getSynset()
-                      .getGloss());
+              print("score : " + score + " for sense " + " : " + sensekey + " : "
+                  + getDictionary().getWordBySenseKey(sensekey).getSynset().getGloss());
 
             } catch (JWNLException e) {
               e.printStackTrace();
@@ -381,16 +378,11 @@ public class WSDHelper {
           parts = result.split(" ");
           sensekey = parts[1];
 
-          if (parts[0].equalsIgnoreCase(WSDParameters.SenseSource.WORDNET
-              .name())) {
+          if (parts[0].equalsIgnoreCase(WSDParameters.SenseSource.WORDNET.name())) {
 
             try {
-              print("sense "
-                  + " : "
-                  + sensekey
-                  + " : "
-                  + getDictionary().getWordBySenseKey(sensekey).getSynset()
-                      .getGloss());
+              print("sense " + " : " + sensekey + " : "
+                  + getDictionary().getWordBySenseKey(sensekey).getSynset().getGloss());
             } catch (JWNLException e) {
               e.printStackTrace();
             }
@@ -441,7 +433,7 @@ public class WSDHelper {
    * Extract the list of ALL English words
    * 
    * @param dict
-   *          this file is the same that is used in the simple Lemmatizer
+   *          this file is the same that is used in the DictionaryLemmatizer
    *          (i.e.,"en-lemmatizer.dict")
    * 
    * @return a Map of all the English words
@@ -631,12 +623,11 @@ public class WSDHelper {
       return null;
     ArrayList<String> stems = new ArrayList<>();
     try {
-      for (Object pos : POS.getAllPOS()) {
-        stems.addAll(WSDHelper.getMorph().lookupAllBaseForms((POS) pos,
-            wordToStem.getWord()));
+      for (POS pos : POS.getAllPOS()) {
+        stems.addAll(WSDHelper.getMorph().lookupAllBaseForms(pos, wordToStem.getWord()));
       }
 
-      if (stems.size() > 0)
+      if (!stems.isEmpty())
         return stems;
       else {
         return null;
@@ -649,27 +640,28 @@ public class WSDHelper {
   }
 
   /**
-   * Stem a single word tries to look up the word in the stemCache HashMap If
-   * the word is not found it is stemmed with WordNet and put into stemCache
+   * Stem a single word tries to look up the word in the stemCache map. If
+   * the word is not found, it is stemmed with WordNet and put into stemCache.
    * 
    * @param wordToStem
    *          word to be stemmed
-   * @return stemmed word list, null means the word is incorrect
+   * @return stemmed word list, {@code null} means the word is incorrect
    */
-  public static ArrayList<String> Stem(WordPOS wordToStem) {
+  public static List<String> Stem(WordPOS wordToStem) {
     if (wordToStem.getPOS() == null) {
       WSDHelper.print("the word is " + wordToStem.getWord());
     }
+
+    Map<String, Map<String, Object>> cache = WSDHelper.getStemCache();
     // check if we already cached the stem map
-    HashMap posMap = (HashMap) WSDHelper.getStemCache().get(
-        wordToStem.getPOS().getKey());
+    Map<String, Object> posMap = cache.get(wordToStem.getPOS().getKey());
 
     // don't check words with digits in them
     if (WSDHelper.containsNumbers(wordToStem.getWord())) {
       return null;
     }
 
-    ArrayList<String> stemList = (ArrayList<String>) posMap.get(wordToStem.getWord());
+    List<String> stemList = (List<String>) posMap.get(wordToStem.getWord());
     if (stemList != null) { // return it if we already cached it
       return stemList;
 
@@ -679,13 +671,13 @@ public class WSDHelper {
         // word was recognized and stemmed with wordnet:
         // add it to cache and return the stemmed list
         posMap.put(wordToStem.getWord(), stemList);
-        WSDHelper.getStemCache().put(wordToStem.getPOS().getKey(), posMap);
+        cache.put(wordToStem.getPOS().getKey(), posMap);
         return stemList;
       } else { // could not be stemmed add it anyway (as it is)
         stemList = new ArrayList<>();
         stemList.add(wordToStem.getWord());
         posMap.put(wordToStem.getWord(), stemList);
-        WSDHelper.getStemCache().put(wordToStem.getPOS().getKey(), posMap);
+        cache.put(wordToStem.getPOS().getKey(), posMap);
         return null;
       }
     }

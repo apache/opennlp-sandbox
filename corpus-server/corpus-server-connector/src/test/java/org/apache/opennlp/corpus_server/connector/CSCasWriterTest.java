@@ -57,7 +57,6 @@ class CSCasWriterTest extends AbstractCSTest {
       byte[] indexMapping = new byte[] {};
       corporaStore.createCorpus("wikinews", os.toByteArray(), indexMapping);
     } catch (Exception e) {
-      e.printStackTrace();
       fail(e.getLocalizedMessage());
     }
   }
@@ -77,7 +76,6 @@ class CSCasWriterTest extends AbstractCSTest {
       cas.setDocumentText("this cas needs to be stored");
       casConsumer.processCas(cas);
     } catch (Exception e) {
-      e.printStackTrace();
       fail(e.getLocalizedMessage());
     }
   }

@@ -16,19 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package opennlp.tools.disambiguator;
 
-import org.junit.jupiter.api.BeforeAll;
+import opennlp.tools.disambiguator.datareader.SensevalReader;
 
-public abstract class AbstractEvaluatorTest {
+import java.util.regex.Pattern;
 
-  private static final String MODELS_DIR = "src/test/resources/models/";
+public abstract class AbstractEvaluatorTest extends AbstractTest {
 
-  @BeforeAll
-  static void initEnv() {
-    WSDHelper.loadTokenizer(MODELS_DIR + "en-token.bin");
-    WSDHelper.loadTagger(MODELS_DIR + "en-pos-maxent.bin");
-    WSDHelper.loadLemmatizer(MODELS_DIR + "en-lemmatizer.dict.gz");
-  }
+  protected static final Pattern SPLIT = Pattern.compile("\\.");
+
+  protected static final SensevalReader seReader = new SensevalReader(SENSEVAL_DIR);
 }

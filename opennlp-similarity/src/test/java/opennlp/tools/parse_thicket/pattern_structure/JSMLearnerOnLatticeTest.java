@@ -92,17 +92,17 @@ class JSMLearnerOnLatticeTest {
         negIntersections = new ArrayList<>();
     List<List<ParseTreeChunk>> intersection;
     for (int iConcept = 0; iConcept < psPos.conceptList.size(); iConcept++) {
-      if (psPos.conceptList.get(iConcept).intent != null && psPos.conceptList.get(iConcept).intent.size() > 0) {
+      if (psPos.conceptList.get(iConcept).intent != null && !psPos.conceptList.get(iConcept).intent.isEmpty()) {
         intersection = md
             .matchTwoSentencesGroupedChunksDeterministic(psPos.conceptList.get(iConcept).intent, chunksUnknown);
-		  if (reduceList(intersection).size() > 0) {
+		  if (!reduceList(intersection).isEmpty()) {
 			  posIntersections.add(reduceList(intersection));
 		  }
       }
-      if (psNeg.conceptList.get(iConcept).intent != null && psNeg.conceptList.get(iConcept).intent.size() > 0) {
+      if (psNeg.conceptList.get(iConcept).intent != null && !psNeg.conceptList.get(iConcept).intent.isEmpty()) {
         intersection = md
             .matchTwoSentencesGroupedChunksDeterministic(psNeg.conceptList.get(iConcept).intent, chunksUnknown);
-		  if (reduceList(intersection).size() > 0) {
+		  if (!reduceList(intersection).isEmpty()) {
 			  negIntersections.add(reduceList(intersection));
 		  }
       }
@@ -122,7 +122,7 @@ class JSMLearnerOnLatticeTest {
       for (List<List<ParseTreeChunk>> negIntersection : negIntersections) {
         intersection = md
             .matchTwoSentencesGroupedChunksDeterministic(psNeg.conceptList.get(iConcept).intent, negIntersection);
-		  if (reduceList(intersection).size() > 0) {
+		  if (!reduceList(intersection).isEmpty()) {
 			  posIntersectionsUnderNeg.add(reduceList(intersection));
 		  }
       }
@@ -132,7 +132,7 @@ class JSMLearnerOnLatticeTest {
       for (List<List<ParseTreeChunk>> posIntersection : posIntersections) {
         intersection = md
             .matchTwoSentencesGroupedChunksDeterministic(psPos.conceptList.get(iConcept).intent, posIntersection);
-		  if (reduceList(intersection).size() > 0) {
+		  if (!reduceList(intersection).isEmpty()) {
 			  negIntersectionsUnderPos.add(reduceList(intersection));
 		  }
       }
@@ -162,7 +162,7 @@ class JSMLearnerOnLatticeTest {
 			  newGroup.add(ch);
 		  }
       }
-		if (newGroup.size() > 0) {
+		if (!newGroup.isEmpty()) {
 			newList.add(newGroup);
 		}
     }
@@ -177,7 +177,7 @@ class JSMLearnerOnLatticeTest {
     for (List<List<ParseTreeChunk>> member : listOfLists) {
       Set<ParseTreeChunk> newSet = new HashSet<>();
       for (List<ParseTreeChunk> group : member) {
-		  if (group.size() > 0) {
+		  if (!group.isEmpty()) {
 			  newSet.addAll(group);
 		  }
       }
@@ -192,7 +192,7 @@ class JSMLearnerOnLatticeTest {
     for (List<List<ParseTreeChunk>> member : listOfLists) {
       Set<ParseTreeChunk> newSet = new HashSet<>();
       for (List<ParseTreeChunk> group : member) {
-		  if (group.size() > 0) {
+		  if (!group.isEmpty()) {
 			  newSet.addAll(group);
 		  }
       }
@@ -290,11 +290,11 @@ class JSMLearnerOnLatticeTest {
 				newGroup.add(ch);
 			}
         }
-		  if (newGroup.size() > 0) {
+		  if (!newGroup.isEmpty()) {
 			  memberList.add(newGroup);
 		  }
       }
-		if (memberList.size() > 0) {
+		if (!memberList.isEmpty()) {
 			cleanedFromInconsPos.add(memberList);
 		}
     }
@@ -314,11 +314,11 @@ class JSMLearnerOnLatticeTest {
 				newGroup.add(ch);
 			}
         }
-		  if (newGroup.size() > 0) {
+		  if (!newGroup.isEmpty()) {
 			  memberList.add(newGroup);
 		  }
       }
-		if (memberList.size() > 0) {
+		if (!memberList.isEmpty()) {
 			cleanedFromInconsNeg.add(memberList);
 		}
     }

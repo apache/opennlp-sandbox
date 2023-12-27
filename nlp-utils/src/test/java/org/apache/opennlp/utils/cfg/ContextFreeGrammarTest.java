@@ -37,7 +37,7 @@ class ContextFreeGrammarTest {
   private static Collection<Rule> rules;
 
   @BeforeAll
-  static void setUp() throws Exception {
+  static void setUp() {
     nonTerminals = new LinkedList<>();
     nonTerminals.add("S");
     nonTerminals.add("NP");
@@ -109,7 +109,7 @@ class ContextFreeGrammarTest {
   }
 
   @Test
-  void testSingleSentenceExpansion() throws Exception {
+  void testSingleSentenceExpansion() {
     ContextFreeGrammar contextFreeGrammar = new ContextFreeGrammar(nonTerminals, terminals, rules, startSymbol);
     String[] expansion = contextFreeGrammar.leftMostDerivation("S");
     assertArrayEquals(new String[] {"the", "man", "works"}, expansion);
@@ -117,7 +117,7 @@ class ContextFreeGrammarTest {
   }
 
   @Test
-  void testSingleSentenceRandomExpansion() throws Exception {
+  void testSingleSentenceRandomExpansion() {
     ContextFreeGrammar contextFreeGrammar = new ContextFreeGrammar(nonTerminals, terminals, rules, startSymbol, true);
     String[] expansion = contextFreeGrammar.leftMostDerivation("S");
     checkExpansion(expansion);
@@ -125,7 +125,7 @@ class ContextFreeGrammarTest {
 
 
   @Test
-  void testMultipleSentencesExpansion() throws Exception {
+  void testMultipleSentencesExpansion() {
     ContextFreeGrammar contextFreeGrammar = new ContextFreeGrammar(nonTerminals, terminals, rules, startSymbol);
     String[] expansion = contextFreeGrammar.leftMostDerivation("S", "CJ", "S");
     assertArrayEquals(new String[] {"the", "man", "works", "and", "the", "man", "works"}, expansion);
@@ -137,7 +137,7 @@ class ContextFreeGrammarTest {
   }
 
   @Test
-  void testMultipleSentencesRandomExpansion() throws Exception {
+  void testMultipleSentencesRandomExpansion() {
     ContextFreeGrammar contextFreeGrammar = new ContextFreeGrammar(nonTerminals, terminals, rules, startSymbol, true);
     String[] expansion = contextFreeGrammar.leftMostDerivation("S", "CJ", "S");
     checkExpansion(expansion);

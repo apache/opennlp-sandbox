@@ -19,18 +19,13 @@
 
 package opennlp.tools.disambiguator;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import net.sf.extjwnl.JWNLException;
 import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.data.Synset;
 import net.sf.extjwnl.data.Word;
-import opennlp.tools.disambiguator.WSDHelper;
-import opennlp.tools.disambiguator.WSDParameters;
-import opennlp.tools.disambiguator.WSDSample;
-import opennlp.tools.disambiguator.WSDisambiguator;
-import opennlp.tools.disambiguator.WordPOS;
 
 /**
  * Implementation of the <b>Most Frequent Sense</b> baseline approach. This
@@ -38,6 +33,8 @@ import opennlp.tools.disambiguator.WordPOS;
  * is the most frequent.
  */
 public class MFS extends WSDisambiguator {
+
+  private static final Pattern SPLIT = Pattern.compile("\\.");
 
   public MFS() {
     super();
@@ -49,19 +46,19 @@ public class MFS extends WSDisambiguator {
   public static String getMostFrequentSense(WSDSample sample) {
 
     List<Synset> synsets = sample.getSynsets();
-    for (Word wd : synsets.get(0).getWords()) {
-      if (wd.getLemma()
-          .equalsIgnoreCase((sample.getLemmas()[sample.getTargetPosition()]))) {
-        try {
-          return WSDParameters.SenseSource.WORDNET.name() + " "
-              + wd.getSenseKey();
-        } catch (JWNLException e) {
-          e.printStackTrace();
+    if (!synsets.isEmpty()) {
+      String sampleLemma = sample.getLemmas()[sample.getTargetPosition()];
+      for (Word wd : synsets.get(0).getWords()) {
+        if (wd.getLemma().equalsIgnoreCase(sampleLemma)) {
+          try {
+            return WSDParameters.SenseSource.WORDNET.name() + " " + wd.getSenseKey();
+          } catch (JWNLException e) {
+            e.printStackTrace();
+          }
         }
       }
     }
     return "nonesense";
-
   }
 
   public static String[] getMostFrequentSenses(WSDSample sample) {
@@ -69,13 +66,12 @@ public class MFS extends WSDisambiguator {
     List<Synset> synsets = sample.getSynsets();
     String[] senseKeys = new String[synsets.size()];
 
+    String sampleLemma = sample.getLemmas()[sample.getTargetPosition()];
     for (int i = 0; i < synsets.size(); i++) {
       for (Word wd : synsets.get(i).getWords()) {
-        if (wd.getLemma().equalsIgnoreCase(
-            (sample.getLemmas()[sample.getTargetPosition()]))) {
+        if (wd.getLemma().equalsIgnoreCase(sampleLemma)) {
           try {
-            senseKeys[i] = WSDParameters.SenseSource.WORDNET.name() + " "
-                + wd.getSenseKey();
+            senseKeys[i] = WSDParameters.SenseSource.WORDNET.name() + " " + wd.getSenseKey();
             break;
           } catch (JWNLException e) {
             e.printStackTrace();
@@ -108,11 +104,12 @@ public class MFS extends WSDisambiguator {
 
   public String disambiguate(String wordTag) {
 
-    String word = wordTag.split("\\.")[0];
-    String tag = wordTag.split("\\.")[1];
+    String[] splitWordTag = SPLIT.split(wordTag);
+
+    String word = splitWordTag[0];
+    String tag = splitWordTag[1];
 
     POS pos;
-
     if (tag.equalsIgnoreCase("a")) {
       pos = POS.ADJECTIVE;
     } else if (tag.equalsIgnoreCase("r")) {
@@ -128,21 +125,27 @@ public class MFS extends WSDisambiguator {
 
       WordPOS wordPOS = new WordPOS(word, pos);
 
-      ArrayList<Synset> synsets = wordPOS.getSynsets();
+      List<Synset> synsets = wordPOS.getSynsets();
+      if (synsets != null) {
+        String sense = WSDParameters.SenseSource.WORDNET.name();
 
-      String sense = WSDParameters.SenseSource.WORDNET.name();
-
-      for (Word wd : synsets.get(0).getWords()) {
-        if (wd.getLemma().equals(word)) {
-          try {
-            sense = sense + " " + wd.getSenseKey();
-            break;
-          } catch (JWNLException e) {
-            e.printStackTrace();
+        for (Word wd : synsets.get(0).getWords()) {
+          if (wd.getLemma().equals(word)) {
+            try {
+              sense = sense + " " + wd.getSenseKey();
+              break;
+            } catch (JWNLException e) {
+              e.printStackTrace();
+            }
           }
         }
+        return sense;
+      } else {
+        WSDHelper.print(word + "    " + pos);
+        WSDHelper.print("The word has no definitions in WordNet !");
+        return null;
       }
-      return sense;
+
     } else {
       WSDHelper.print(word + "    " + pos);
       WSDHelper.print("The word has no definitions in WordNet !");
