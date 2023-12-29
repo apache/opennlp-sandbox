@@ -19,6 +19,8 @@ package org.apache.opennlp.caseditor;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 
 import org.eclipse.core.resources.IFile;
@@ -33,12 +35,11 @@ public class ModelUtil {
   //       used to detect an updated model, if model is updated,
   //       load it and replace the old one!
   
-  public static InputStream openModelIn(String modelPath) throws IOException {
+  public static InputStream openModelIn(String modelPath) throws IOException, URISyntaxException {
     InputStream modelIn = null;
     
     if (modelPath.startsWith("http://") || modelPath.startsWith("file://")) {
-      URL modelURL = new URL(modelPath);
-      
+      URL modelURL = new URI(modelPath).toURL();
       modelIn = modelURL.openStream();
     }
     else {

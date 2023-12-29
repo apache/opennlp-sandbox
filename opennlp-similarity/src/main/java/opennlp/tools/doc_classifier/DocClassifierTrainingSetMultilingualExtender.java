@@ -21,6 +21,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -184,7 +186,7 @@ public class DocClassifierTrainingSetMultilingualExtender {
 			}
 		}
 
-		try (InputStream is = new URL(docUrl).openStream();
+		try (InputStream is = new URI(docUrl).toURL().openStream();
 				 OutputStream os = new FileOutputStream(destinationFile)) {
 
 			byte[] b = new byte[2048];
@@ -193,7 +195,7 @@ public class DocClassifierTrainingSetMultilingualExtender {
 			while ((length = is.read(b)) != -1) {
 				os.write(b, 0, length);
 			}
-		} catch (IOException e) {
+		} catch (IOException | URISyntaxException e) {
 			e.printStackTrace();
 		}
 	}

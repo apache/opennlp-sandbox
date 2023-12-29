@@ -20,6 +20,8 @@ package opennlp.tools.apps.review_builder;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLDecoder;
@@ -31,12 +33,12 @@ import org.json.JSONObject;
 public class MachineTranslationWrapper  {
 	private static final String TRANSLATOR_URL = "http://mymemory.translated.net/api/get?q=";
 	
-	public String translate(String sentence, String lang2lang){
+	public String translate(String sentence, String lang2lang) {
 		if (sentence==null)
 			return null;
 		String request = TRANSLATOR_URL + sentence.replace(' ','+') + "&langpair="+lang2lang;//"en|es";
 		try {
-			URL urlC = new URL(request);
+			URL urlC = new URI(request).toURL();
 			URLConnection connection = urlC.openConnection();
 
 			String line;
@@ -53,7 +55,7 @@ public class MachineTranslationWrapper  {
 			String transl = findObject.getString("translatedText");
 			return URLDecoder.decode(transl, StandardCharsets.UTF_8);
 			
-		} catch (IOException | JSONException e) {
+		} catch (IOException | URISyntaxException | JSONException e) {
 			e.printStackTrace();
 			return null;
 		}

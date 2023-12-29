@@ -19,6 +19,7 @@ package org.apache.opennlp.caseditor.tokenize;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 
 import org.apache.opennlp.caseditor.ModelUtil;
 import org.apache.opennlp.caseditor.OpenNLPPlugin;
@@ -76,7 +77,7 @@ public class TokenizerJob extends Job {
         try (InputStream modelIn = ModelUtil.openModelIn(modelPath)) {
           TokenizerModel model = new TokenizerModel(modelIn);
           tokenizer = new TokenizerME(model);
-        } catch (IOException e1) {
+        } catch (IOException | URISyntaxException e1) {
           return new Status(IStatus.CANCEL, OpenNLPPlugin.ID, "Failed to load tokenizer model!");
         }
       }
