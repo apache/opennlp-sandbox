@@ -125,7 +125,7 @@
 
         <uimaj.version>3.4.1</uimaj.version>
         <jersey-client.version>2.41</jersey-client.version>
-        <jersey-server.version>2.41</jersey-server.version>
+        <jersey-server.version>3.1.7</jersey-server.version>
         <jettison.version>1.5.4</jettison.version>
         
         <junit.version>5.10.1</junit.version>
