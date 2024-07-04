@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import info.bliki.htmlcleaner.ContentToken;
 import info.bliki.htmlcleaner.TagNode;
@@ -48,35 +47,26 @@ import info.bliki.wiki.tags.WPATag;
  */
 public class AnnotatingMarkupParser implements ITextConverter {
 
-    public static final String HREF_ATTR_KEY = "href";
+    private static final String HREF_ATTR_KEY = "href";
 
-    public static final String WIKILINK_TITLE_ATTR_KEY = "title";
+    private static final String WIKILINK_TITLE_ATTR_KEY = "title";
+    private static final String WIKILINK_TARGET_ATTR_KEY = "href";
+    private static final String WIKIOBJECT_ATTR_KEY = "wikiobject";
 
-    public static final String WIKILINK_TARGET_ATTR_KEY = "href";
+    private static final Set<String> PARAGRAPH_TAGS = Set.of("p");
+    private static final Set<String> HEADING_TAGS = Set.of("h1", "h2", "h3", "h4", "h5", "h6");
 
-    public static final String WIKIOBJECT_ATTR_KEY = "wikiobject";
+    private final List<Annotation> wikilinks = new ArrayList<>();
+    private final List<Annotation> headers = new ArrayList<>();
+    private final List<Annotation> paragraphs = new ArrayList<>();
 
-    public static final Set<String> PARAGRAPH_TAGS = Set.of("p");
+    private String languageCode = "en";
 
-    public static final Set<String> HEADING_TAGS = Set.of("h1", "h2", "h3", "h4", "h5", "h6");
+    private final WikiModel model;
 
-    public static final Pattern INTERWIKI_PATTERN = Pattern.compile("http://[\\w-]+\\.wikipedia\\.org/wiki/.*");
+    private String redirect;
 
-    protected final List<Annotation> wikilinks = new ArrayList<>();
-
-    protected final List<Annotation> headers = new ArrayList<>();
-
-    protected final List<Annotation> paragraphs = new ArrayList<>();
-
-    protected String languageCode = "en";
-
-    protected final WikiModel model;
-
-    protected String redirect;
-
-    protected String text;
-
-    protected static final Pattern REDIRECT_PATTERN = Pattern.compile("^#REDIRECT \\[\\[([^\\]]*)\\]\\]");
+    private String text;
 
     public AnnotatingMarkupParser() {
         model = makeWikiModel(languageCode);
@@ -119,9 +109,8 @@ public class AnnotatingMarkupParser implements ITextConverter {
                     return;
                 }
                 for (Object node : nodes) {
-                    if (node instanceof WPATag) {
+                    if (node instanceof WPATag tag) {
                         // extract wikilink annotations
-                        WPATag tag = (WPATag) node;
                         String wikilinkLabel = tag.getAttributes().get(WIKILINK_TITLE_ATTR_KEY);
                         String wikilinkTarget = tag.getAttributes().get(WIKILINK_TARGET_ATTR_KEY);
                         if (wikilinkLabel != null) {
@@ -142,8 +131,7 @@ public class AnnotatingMarkupParser implements ITextConverter {
                             tag.getBodyString(countingBuffer);
                         }
 
-                    } else if (node instanceof ContentToken) {
-                        ContentToken contentToken = (ContentToken) node;
+                    } else if (node instanceof ContentToken contentToken) {
                         countingBuffer.append(contentToken.getContent());
                     } else if (node instanceof List) {
                     } else if (node instanceof WPList) {
@@ -152,8 +140,7 @@ public class AnnotatingMarkupParser implements ITextConverter {
                         // do not hold grammatically correct
                         // interesting sentences that are representative of the
                         // language.
-                    } else if (node instanceof TagNode) {
-                        TagNode tagNode = (TagNode) node;
+                    } else if (node instanceof TagNode tagNode) {
                         Map<String, String> attributes = tagNode.getAttributes();
                         Map<String, Object> oAttributes = tagNode.getObjectAttributes();
                         boolean hasSpecialHandling = false;

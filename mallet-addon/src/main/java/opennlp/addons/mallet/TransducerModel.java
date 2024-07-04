@@ -34,7 +34,7 @@ import cc.mallet.types.FeatureVector;
 import cc.mallet.types.FeatureVectorSequence;
 import cc.mallet.types.Sequence;
 
-public class TransducerModel<T> implements SequenceClassificationModel<T>, SerializableArtifact {
+public class TransducerModel implements SequenceClassificationModel, SerializableArtifact {
 
   private final Transducer model;
 
@@ -47,14 +47,14 @@ public class TransducerModel<T> implements SequenceClassificationModel<T>, Seria
   }
 
   @Override
-  public opennlp.tools.util.Sequence bestSequence(T[] sequence,
+  public <T> opennlp.tools.util.Sequence bestSequence(T[] sequence,
       Object[] additionalContext, BeamSearchContextGenerator<T> cg,
       SequenceValidator<T> validator) {
     return bestSequences(1, sequence, additionalContext, cg, validator)[0];
   }
 
   @Override
-  public opennlp.tools.util.Sequence[] bestSequences(int numSequences,
+  public <T> opennlp.tools.util.Sequence[] bestSequences(int numSequences,
       T[] sequence, Object[] additionalContext, double minSequenceScore,
       BeamSearchContextGenerator<T> cg, SequenceValidator<T> validator) {
     // TODO: How to implement min score filtering here? 
@@ -62,7 +62,7 @@ public class TransducerModel<T> implements SequenceClassificationModel<T>, Seria
   }
 
   @Override
-  public opennlp.tools.util.Sequence[] bestSequences(int numSequences,
+  public <T> opennlp.tools.util.Sequence[] bestSequences(int numSequences,
       T[] sequence, Object[] additionalContext,
       BeamSearchContextGenerator<T> cg, SequenceValidator<T> validator) {
 
