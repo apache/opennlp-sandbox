@@ -218,7 +218,7 @@
 		<dependency>
 			<groupId>com.memetix</groupId>
 			<artifactId>microsoft-translator-java-api</artifactId>
-			<version>0.3</version>
+			<version>0.6.2</version>
 		</dependency>
 
 		<dependency>
