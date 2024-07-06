@@ -133,7 +133,7 @@
         <enforcer.plugin.version>3.0.0-M3</enforcer.plugin.version>
         <checkstyle.plugin.version>3.2.0</checkstyle.plugin.version>
         <coveralls.maven.plugin>4.3.0</coveralls.maven.plugin>
-        <jacoco.maven.plugin>0.7.9</jacoco.maven.plugin>
+        <jacoco.maven.plugin>0.8.12</jacoco.maven.plugin>
         <maven.surefire.plugin>3.0.0-M5</maven.surefire.plugin>
         <maven.failsafe.plugin>3.0.0-M5</maven.failsafe.plugin>
         <forbiddenapis.plugin>3.7</forbiddenapis.plugin>
