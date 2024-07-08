@@ -33,7 +33,7 @@
   <properties>
     <wordnet-dict.version>3.1</wordnet-dict.version>
     
-    <maven.download.plugin>1.6.7</maven.download.plugin>
+    <maven.download.plugin>1.9.0</maven.download.plugin>
   </properties>
 
   <dependencies>
