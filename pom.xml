@@ -120,7 +120,7 @@
         <opennlp.tools.version>2.3.3</opennlp.tools.version>
         <opennlp.forkCount>1.0C</opennlp.forkCount>
 
-        <slf4j.version>1.7.36</slf4j.version>
+        <slf4j.version>2.0.13</slf4j.version>
         <log4j2.version>2.20.0</log4j2.version>
 
         <uimaj.version>3.4.1</uimaj.version>
