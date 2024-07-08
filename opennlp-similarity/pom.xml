@@ -251,7 +251,7 @@
 		<dependency>
 			<groupId>org.docx4j</groupId>
 			<artifactId>docx4j</artifactId>
-			<version>3.3.7</version>
+			<version>6.1.2</version>
 			<exclusions>
 				<!-- Exclusion here as log4j version 2 bindings are used during tests/runtime-->
 				<exclusion>
