@@ -20,6 +20,9 @@ package opennlp.tools.disambiguator;
 import opennlp.tools.util.eval.Evaluator;
 import opennlp.tools.util.eval.Mean;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * The {@link WSDEvaluator} measures the performance of the given
  * {@link WSDisambiguator} with the provided reference {@code WordToDisambiguate}.
@@ -28,6 +31,8 @@ import opennlp.tools.util.eval.Mean;
  * @see WSDisambiguator
  */
 public class WSDEvaluator extends Evaluator<WSDSample> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(WSDEvaluator.class);
 
   private final Mean accuracy = new Mean();
 
@@ -61,8 +66,7 @@ public class WSDEvaluator extends Evaluator<WSDSample> {
         reference.getTargetPosition());
 
     if (predictedSense == null) {
-      System.out
-          .println("There was no sense for : " + reference.getTargetWord());
+      LOG.debug("There was no sense for: {}", reference.getTargetWord());
       return null;
     }
     // get the senseKey from the result

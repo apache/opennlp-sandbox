@@ -39,6 +39,7 @@ import net.sf.extjwnl.dictionary.MorphologicalProcessor;
 
 import opennlp.tools.lemmatizer.DictionaryLemmatizer;
 import opennlp.tools.postag.POSModel;
+import opennlp.tools.postag.POSTagFormat;
 import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.tokenize.TokenizerModel;
@@ -295,7 +296,7 @@ public class WSDHelper {
   public static POSTaggerME getTagger() {
     if (tagger == null) {
       try {
-        tagger = new POSTaggerME(new POSModel(new File(taggerModelPath)));
+        tagger = new POSTaggerME(new POSModel(new File(taggerModelPath)), POSTagFormat.PENN);
       } catch (IOException e) {
         e.printStackTrace();
       }

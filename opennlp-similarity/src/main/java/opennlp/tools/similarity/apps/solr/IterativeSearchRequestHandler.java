@@ -30,7 +30,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -123,7 +122,6 @@ public class IterativeSearchRequestHandler extends SearchHandler {
 		rsp.setAllValues(rsp3.getValues());
 	}
 
-	@SuppressWarnings("unchecked")
 	public DocList filterResultsBySyntMatchReduceDocSet(DocList docList,
 																											SolrQueryRequest req, SolrParams params) {
 		//if (!docList.hasScores())
@@ -257,8 +255,7 @@ public class IterativeSearchRequestHandler extends SearchHandler {
 		rsp.add("response", results);
 	}
 
-	private Query buildFilter(String[] fqs, SolrQueryRequest req)
-	throws IOException, ParseException {
+	private Query buildFilter(String[] fqs, SolrQueryRequest req) {
 		if (fqs != null && fqs.length > 0) {
 			BooleanQuery.Builder fquery =  new BooleanQuery.Builder();
 			for (String fq : fqs) {
@@ -323,13 +320,12 @@ public class IterativeSearchRequestHandler extends SearchHandler {
 			alreadyFound.add(hit.doc);
 		}
 	}
-	public static class PairComparable implements Comparator<Pair> {
+	public static class PairComparable implements Comparator<Pair<Integer, Float>> {
 
 		@Override
 		public int compare(Pair o1, Pair o2) {
 			int b = -2;
 			if ( o1.getSecond() instanceof Float && o2.getSecond() instanceof Float){
-
 				b =  (((Float) o2.getSecond()).compareTo((Float) o1.getSecond()));
 			}
 			return b;
