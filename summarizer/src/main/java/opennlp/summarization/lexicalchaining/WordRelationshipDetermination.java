@@ -45,23 +45,21 @@ import edu.mit.jwi.RAMDictionary;
  */
 public class WordRelationshipDetermination {
 
-  private final IDictionary dictionary;
   private static final String DICTIONARY_FILE = "/wordnet/dict";
   private static final int MAX_DIST_MED_REL = 1000;
-
+  private final IDictionary dictionary;
   private final Pointer[] rels = {Pointer.ANTONYM, Pointer.HYPERNYM, Pointer.HYPONYM, Pointer.MERONYM_PART,
           Pointer.MERONYM_SUBSTANCE, Pointer.PARTICIPLE, Pointer.HYPERNYM_INSTANCE};
-  private final Hashtable<ISynsetID, ISynset> cache = new Hashtable<>();
   private final Hashtable<ISynset, List<IWord>> synsetWordCache = new Hashtable<>();
 
   public WordRelationshipDetermination() {
     dictionary = new RAMDictionary(WordRelationshipDetermination.class.getResource(DICTIONARY_FILE), ILoadPolicy.IMMEDIATE_LOAD);
-    ((RAMDictionary)dictionary).load();
+    ((RAMDictionary) dictionary).load();
     openDict();
   }
 
   private IWord isSynonym(String noun, Word w) {
-    WordnetWord ww = (WordnetWord)w;
+    WordnetWord ww = (WordnetWord) w;
     IWord ret;
     IIndexWord idxNoun = dictionary.getIndexWord(noun, POS.NOUN);
 
@@ -76,13 +74,14 @@ public class WordRelationshipDetermination {
 
       //Get the synset in which word is present.
       ISynset wordSynset;
-      if (ww.synonyms!=null)
+      if (ww.synonyms != null)
         wordSynset = ww.synonyms;
       else {
-        IWord word = dictionary.getWord((IWordID)w.getID());
+        IWord word = dictionary.getWord((IWordID) w.getID());
         wordSynset = word.getSynset();
         ww.synonyms = wordSynset;
       }
+
       IWord syn = inSynset(wordSynset, idxNoun);
       ret = syn;
 //				break;
@@ -94,6 +93,10 @@ public class WordRelationshipDetermination {
    * Returns true if the word represented by idxNoun is present in a synset.
    */
   private IWord inSynset(ISynset wordSynset, IIndexWord idxNoun) {
+    if (idxNoun == null) {
+      return null;
+    }
+
     IWord ret = null;
     List<IWord> wrds;
 
@@ -105,9 +108,9 @@ public class WordRelationshipDetermination {
 //		}
 
     //Returns all the words present in the synset wordSynset
-    for(IWord synonym : wrds) {
-      for(IWordID nounID : idxNoun.getWordIDs()) {
-        if(synonym.equals(dictionary.getWord(nounID))) {
+    for (IWord synonym : wrds) {
+      for (IWordID nounID : idxNoun.getWordIDs()) {
+        if (synonym.equals(dictionary.getWord(nounID))) {
           ret = synonym;
           break;
         }
@@ -122,34 +125,33 @@ public class WordRelationshipDetermination {
     WordnetWord ret = null;
     WordnetWord ww = (WordnetWord) w;
     IWord syn;
-    if((syn = this.isSynonym(noun, w))!=null) {
+    if ((syn = this.isSynonym(noun, w)) != null) {
       ret = new WordnetWord();
       ret.lexicon = noun;
       ret.id = syn.getID();
-      ret.wordSense = syn	.getSenseKey();
+      ret.wordSense = syn.getSenseKey();
     }
 
     //Construct an IWord object representing word associated with wordID
-    IWord word = dictionary.getWord((IWordID)w.getID());
+    IWord word = dictionary.getWord((IWordID) w.getID());
 
     IIndexWord idxNoun = dictionary.getIndexWord(noun, POS.NOUN);
     //Get the synset in which word is present.
     ISynset wordSynset = word.getSynset();
 
-    for(Pointer p : rels) {
+    for (Pointer p : rels) {
       List<ISynsetID> rels;
-      if (ww.rels.get(p)!=null)
+      if (ww.rels.get(p) != null)
         rels = ww.rels.get(p);
       else {
         rels = wordSynset.getRelatedSynsets(p);
         ww.rels.put(p, rels);
       }
 
-      for (ISynsetID id: rels) {
+      for (ISynsetID id : rels) {
         ISynset s = this.dictionary.getSynset(id);
         IWord mat = inSynset(s, idxNoun);
-        if(mat!=null)
-        {
+        if (mat != null) {
           ret = new WordnetWord();
           ret.lexicon = noun;
           ret.id = mat.getID();
@@ -157,7 +159,7 @@ public class WordRelationshipDetermination {
           break;
         }
       }
-      if(ret!=null) break;
+      if (ret != null) break;
     }
 
     return ret;
@@ -168,23 +170,18 @@ public class WordRelationshipDetermination {
    * Strong relation means exact match. Medium relation means synonym or hyponym
    */
   public WordRelation getRelation(LexicalChain l, String noun, boolean checkMed) {
-    WordRelation ret = new WordRelation();
-    ret.relation = WordRelation.NO_RELATION;
+    WordRelation ret = new WordRelation(null, null, WordRelation.NO_RELATION);
     for (Word w : l.word) {
       //Exact match is a string relation.
-      if(w.getLexicon().equalsIgnoreCase(noun)) {
-        ret.relation = WordRelation.STRONG_RELATION;
-        ret.src = w;
-        ret.dest = w;
+      if (w.getLexicon().equalsIgnoreCase(noun)) {
+        ret = new WordRelation(w, w, WordRelation.STRONG_RELATION);
         break;
       }
       //  else it is a Wordnet word and is it a synonym or hyponym of LCs (medium relation)
-      else if(w.getID()!=null && checkMed){
-        Word wrel = isMediumRel(noun, w) ;
-        if(wrel!=null) {
-          ret.relation = WordRelation.MED_RELATION;
-          ret.src = w;
-          ret.dest = wrel;
+      else if (w.getID() != null && checkMed) {
+        Word wrel = isMediumRel(noun, w);
+        if (wrel != null) {
+          ret = new WordRelation(w, wrel, WordRelation.MED_RELATION);
           break;
         }
       }
@@ -193,7 +190,7 @@ public class WordRelationshipDetermination {
   }
 
   private void openDict() {
-    if(!dictionary.isOpen())
+    if (!dictionary.isOpen())
       try {
         dictionary.open();
       } catch (IOException e) {
@@ -206,13 +203,13 @@ public class WordRelationshipDetermination {
     try {
       //		openDict();
       List<IWordID> wordIDs = this.dictionary.getIndexWord(noun, POS.NOUN).getWordIDs();
-      for(IWordID wid: wordIDs) {
+      for (IWordID wid : wordIDs) {
         Word w = new WordnetWord();
         w.setLexicon(noun);
         w.setID(wid);
         ret.add(w);
       }
-    } catch(Exception ex){
+    } catch (Exception ex) {
       //Not in dictionary
       Word w = new WordnetWord();
       w.setLexicon(noun);

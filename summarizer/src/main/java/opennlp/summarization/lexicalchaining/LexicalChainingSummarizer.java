@@ -35,15 +35,20 @@ import opennlp.summarization.Summarizer;
  * topic and so forth. A summary can then be formed by identifying the most important lexical chains
  * and "pulling" out sentences from them.
  */
-public class LexicalChainingSummarizer implements Summarizer{
+public class LexicalChainingSummarizer implements Summarizer {
 
-  private POSTagger tagger;
-  private DocProcessor dp;
+  private final POSTagger tagger;
+  private final DocProcessor docProcessor;
   private final WordRelationshipDetermination wordRel;
 
-  public LexicalChainingSummarizer(DocProcessor dp, InputStream posModelFile) throws Exception {
+  public LexicalChainingSummarizer(DocProcessor dp, OpenNLPPOSTagger posTagger) {
+    docProcessor = dp;
+    tagger = posTagger;
     wordRel = new WordRelationshipDetermination();
-    tagger = new OpenNLPPOSTagger(dp, posModelFile);
+  }
+
+  public LexicalChainingSummarizer(DocProcessor dp, InputStream posModelFile) throws Exception {
+    this(dp, new OpenNLPPOSTagger(dp, posModelFile));
   }
 
   //Build Lexical chains..
@@ -53,44 +58,42 @@ public class LexicalChainingSummarizer implements Summarizer{
     List<LexicalChain> lc = new ArrayList<>();
     // Build lexical chains
     // For each sentence
-    for(Sentence currSent : sent) {
+    for (Sentence currSent : sent) {
       String taggedSent = tagger.getTaggedString(currSent.getStringVal());
       List<String> nouns = tagger.getWordsOfType(taggedSent, POSTagger.NOUN);
       // 	For each noun
-      for(String noun : nouns) {
+      for (String noun : nouns) {
         int chainsAddCnt = 0;
         //  Loop through each LC
-        for(LexicalChain l: lc) {
+        for (LexicalChain l : lc) {
           try {
-            WordRelation rel = wordRel.getRelation(l, noun, (currSent.getSentId() - l.start)>7);
+            WordRelation rel = wordRel.getRelation(l, noun, (currSent.getSentId() - l.start) > 7);
             //  Is the noun an exact match to one of the current LCs (Strong relation)
             //  Add sentence to chain
-            if(rel.relation == WordRelation.STRONG_RELATION) {
-              addToChain(rel.dest, l, chains, currSent);
-              if(currSent.getSentId() - l.last > 10)
-              {
-                l.occurrences++; l.start = currSent.getSentId();
-              }
-              chainsAddCnt++;
-            }
-            else if(rel.relation == WordRelation.MED_RELATION) {
-              //  Add sentence to chain if it is 7 sentences away from start of chain
-              addToChain(rel.dest, l, chains, currSent);
-              chainsAddCnt++;
-              //If greater than 7 we will add it but call it a new occurrence of the lexical chain...
-              if(currSent.getSentId() - l.start > 7)
-              {
+            if (rel.relation() == WordRelation.STRONG_RELATION) {
+              addToChain(rel.dest(), l, chains, currSent);
+              if (currSent.getSentId() - l.last > 10) {
                 l.occurrences++;
                 l.start = currSent.getSentId();
               }
-            }
-            else if(rel.relation == WordRelation.WEAK_RELATION) {
-              if(currSent.getSentId() - l.start <= 3) {
-                addToChain(rel.dest, l, chains, currSent);
+              chainsAddCnt++;
+            } else if (rel.relation() == WordRelation.MED_RELATION) {
+              //  Add sentence to chain if it is 7 sentences away from start of chain
+              addToChain(rel.dest(), l, chains, currSent);
+              chainsAddCnt++;
+              //If greater than 7 we will add it but call it a new occurrence of the lexical chain...
+              if (currSent.getSentId() - l.start > 7) {
+                l.occurrences++;
+                l.start = currSent.getSentId();
+              }
+            } else if (rel.relation() == WordRelation.WEAK_RELATION) {
+              if (currSent.getSentId() - l.start <= 3) {
+                addToChain(rel.dest(), l, chains, currSent);
                 chainsAddCnt++;
               }
             }
-          } catch(Exception ex){}
+          } catch (Exception ex) {
+          }
           // add sentence and update last occurrence..
           //chaincnt++
           //  else 1 hop-relation in Wordnet (weak relation)
@@ -99,16 +102,16 @@ public class LexicalChainingSummarizer implements Summarizer{
           // End loop LC
         }
         //Could not add the word to any existing list. Start a new lexical chain with the word.
-        if(chainsAddCnt==0) {
+        if (chainsAddCnt == 0) {
           List<Word> senses = wordRel.getWordSenses(noun);
-          for(Word w : senses) {
+          for (Word w : senses) {
             LexicalChain newLc = new LexicalChain();
             newLc.start = currSent.getSentId();
             addToChain(w, newLc, chains, currSent);
             lc.add(newLc);
           }
         }
-        if(lc.size()> 20)
+        if (lc.size() > 20)
           purge(lc, currSent.getSentId(), sent.size());
       }
       //End sentence
@@ -127,40 +130,38 @@ public class LexicalChainingSummarizer implements Summarizer{
    */
   private void purge(List<LexicalChain> lc, int sentId, int totSents) {
     //Do nothing for the first 50 sentences.
-    if(lc.size()<20 ) return;
+    if (lc.size() < 20) return;
 
     Collections.sort(lc);
     double min = lc.get(0).score();
-    double max = lc.get(lc.size()-1).score();
+    double max = lc.get(lc.size() - 1).score();
 
-    int cutOff = Math.max(3, (int)min);
+    int cutOff = Math.max(3, (int) min);
     Hashtable<String, Boolean> words = new Hashtable<>();
     List<LexicalChain> toRem = new ArrayList<>();
-    for(int i=lc.size()-1; i>=0;i--)
-    {
+    for (int i = lc.size() - 1; i >= 0; i--) {
       LexicalChain l = lc.get(i);
-      if(l.score() < cutOff && (sentId - l.last) > totSents/3)//	 && containsAllWords(words, l.word))
+      if (l.score() < cutOff && (sentId - l.last) > totSents / 3)//	 && containsAllWords(words, l.word))
         toRem.add(l);
         //A different sense and added long back.
-      else if(words.containsKey(l.getWord().get(0).getLexicon()) && (sentId - l.start) > totSents/10)
+      else if (words.containsKey(l.getWord().get(0).getLexicon()) && (sentId - l.start) > totSents / 10)
         toRem.add(l);
-      else
-      {
+      else {
         //Check if this is from a word with different sense..
-        for(Word w: l.word)
+        for (Word w : l.word)
           words.put(w.getLexicon(), Boolean.TRUE);
       }
     }
 
-    for(LexicalChain l: toRem)
+    for (LexicalChain l : toRem)
       lc.remove(l);
   }
 
   private boolean containsAllWords(Hashtable<Word, Boolean> words,
                                    List<Word> word) {
     boolean ret = true;
-    for(Word w: word)
-      if(!words.containsKey(w)) return false;
+    for (Word w : word)
+      if (!words.containsKey(w)) return false;
 
     return ret;
   }
@@ -171,38 +172,30 @@ public class LexicalChainingSummarizer implements Summarizer{
     l.addWord(noun);
     l.addSentence(sent);
     l.last = sent.getSentId();
-    if(!chains.contains(noun))
+    if (!chains.contains(noun))
       chains.put(noun.getLexicon(), new ArrayList<>());
     chains.get(noun.getLexicon()).add(l);
   }
 
-  POSTagger getTagger() {
-    return tagger;
-  }
-
-  void setTagger(POSTagger tagger) {
-    this.tagger = tagger;
-  }
-
   @Override
-  public String summarize(String article, DocProcessor dp, int maxWords) {
-    List<Sentence> sent = dp.getSentencesFromStr(article);
+  public String summarize(String article, int maxWords) {
+    List<Sentence> sent = docProcessor.getSentencesFromStr(article);
     List<LexicalChain> lc = buildLexicalChains(article, sent);
     Collections.sort(lc);
-    int summSize=0;
-    List<Sentence>summ = new ArrayList<>();
+    int summSize = 0;
+    List<Sentence> summ = new ArrayList<>();
     StringBuilder sb = new StringBuilder();
-    for(int i=0;i<lc.size();i++) {
-      for(int j=0;j<lc.size();j++) {
+    for (int i = 0; i < lc.size(); i++) {
+      for (int j = 0; j < lc.size(); j++) {
         Sentence candidate = lc.get(i).sentences.get(j);
-        if(!summ.contains(candidate)) {
+        if (!summ.contains(candidate)) {
           summ.add(candidate);
           sb.append(candidate.getStringVal());
           summSize += candidate.getWordCnt();
           break;
         }
       }
-      if(summSize>=maxWords) break;
+      if (summSize >= maxWords) break;
     }
     return sb.toString();
   }

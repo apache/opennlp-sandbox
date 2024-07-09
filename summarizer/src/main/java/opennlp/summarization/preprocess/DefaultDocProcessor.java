@@ -20,6 +20,7 @@ package opennlp.summarization.preprocess;
 import java.io.BufferedInputStream;
 import java.io.FileReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.text.BreakIterator;
 import java.util.Collections;
@@ -39,12 +40,10 @@ import opennlp.tools.stemmer.PorterStemmer;
 import opennlp.tools.stemmer.Stemmer;
 
 /**
- * Parses a document to sentences..
+ * Parses a document to sentences.
  */
 public class DefaultDocProcessor implements DocProcessor {
-  private SentenceModel sentModel;
-  private final Stemmer stemmer;
-
+  private static final String REGEX = "\"|'";
   private final static Pattern REPLACEMENT_PATTERN =
           Pattern.compile("&#?[0-9 a-z A-Z][0-9 a-z A-Z][0-9 a-z A-Z]?;");
 
@@ -53,13 +52,16 @@ public class DefaultDocProcessor implements DocProcessor {
   private static final int SIMPLE = 2;
   private static final int SENTENCE_FRAG = OPEN_NLP;
 
+  private final Stemmer stemmer;
+  private SentenceModel sentModel;
+
   public DefaultDocProcessor(InputStream fragModelFile) {
     stemmer = new PorterStemmer();
 
-    try (InputStream modelIn = new BufferedInputStream(fragModelFile)){
+    try (InputStream modelIn = new BufferedInputStream(fragModelFile)) {
       sentModel = new SentenceModel(modelIn);
-    } catch(Exception ex){
-      Logger.getAnonymousLogger().info("Error while parsing.. Ignoring the line and marching on.. "+ ex.getMessage());
+    } catch (Exception ex) {
+      Logger.getAnonymousLogger().info("Error while parsing.. Ignoring the line and marching on.. " + ex.getMessage());
     }
   }
 
@@ -69,8 +71,6 @@ public class DefaultDocProcessor implements DocProcessor {
   // processedSent - Sentences after stemming and stopword removal..
   private void getSentences(String str, List<String> sentences,
                             Hashtable<String, List<Integer>> iidx, List<String> processedSent) {
-    int oldSentEndIdx = 0;
-    int sentEndIdx = 0;
     StopWords sw = StopWords.getInstance();
     BreakIterator iterator = BreakIterator.getSentenceInstance(Locale.US);
     BreakIterator wrdItr = BreakIterator.getWordInstance(Locale.US);
@@ -79,7 +79,7 @@ public class DefaultDocProcessor implements DocProcessor {
     int sentCnt = 0;
 
     for (int end = iterator.next(); end != BreakIterator.DONE; start = end, end = iterator.next()) {
-      String sentence = str.substring(start,end);//str.substring(oldSentEndIdx, sentEndIdx).trim();
+      String sentence = str.substring(start, end);//str.substring(oldSentEndIdx, sentEndIdx).trim();
 
       //Add the sentence as-is; do any processing at the word level
       //To lower case and trim all punctuations
@@ -88,25 +88,21 @@ public class DefaultDocProcessor implements DocProcessor {
       StringBuilder procSent = new StringBuilder();
       int wrdStrt = 0;
 
-      for(int wrdEnd = wrdItr.next(); wrdEnd != BreakIterator.DONE;
-          wrdStrt = wrdEnd, wrdEnd = wrdItr.next())
-      {
+      for (int wrdEnd = wrdItr.next(); wrdEnd != BreakIterator.DONE;
+           wrdStrt = wrdEnd, wrdEnd = wrdItr.next()) {
         String word = sentence.substring(wrdStrt, wrdEnd);//words[i].trim();
-        word = word.replaceAll("\"|'","");
+        word = word.replace(REGEX, "");
 
         //Skip stop words and stem the word
-        if(sw.isStopWord(word)) continue;
+        if (sw.isStopWord(word)) continue;
 
         String stemedWrd = stemmer.stem(word).toString();
 
         //update iidx by adding the current sentence to the list
-        if(iidx!=null)
-        {
-          if(stemedWrd.length()>1)
-          {
+        if (iidx != null) {
+          if (stemedWrd.length() > 1) {
             List<Integer> sentList = iidx.get(stemedWrd);
-            if(sentList==null)
-            {
+            if (sentList == null) {
               sentList = new ArrayList<>();
             }
 
@@ -119,7 +115,7 @@ public class DefaultDocProcessor implements DocProcessor {
       }
 
       sentCnt++;
-      if(processedSent!=null )
+      if (processedSent != null)
         processedSent.add(procSent.toString());
     }
   }
@@ -128,12 +124,13 @@ public class DefaultDocProcessor implements DocProcessor {
   public String docToString(String fileName) {
     StringBuilder docBuffer = new StringBuilder();
 
-    try (LineNumberReader lnr = new LineNumberReader(new FileReader(fileName))) {
+    try (InputStream in = DefaultDocProcessor.class.getResourceAsStream(fileName);
+         LineNumberReader lnr = new LineNumberReader(new InputStreamReader(in))) {
       String nextLine;
 
       while ((nextLine = lnr.readLine()) != null) {
         String trimmedLine = nextLine.trim();
-        if (!trimmedLine.isEmpty() ) {
+        if (!trimmedLine.isEmpty()) {
           docBuffer.append(REPLACEMENT_PATTERN.matcher(trimmedLine).replaceAll("")).append(" ");
         }
       }
@@ -149,7 +146,7 @@ public class DefaultDocProcessor implements DocProcessor {
 
     try (LineNumberReader lnr = new LineNumberReader(new FileReader(fileName))) {
       String nextLine;
-      int paraNo =0;
+      int paraNo = 0;
       int sentNo = 0;
       while ((nextLine = lnr.readLine()) != null) {
         String trimmedLine = nextLine.trim();
@@ -158,7 +155,7 @@ public class DefaultDocProcessor implements DocProcessor {
           List<String> cleanedSents = new ArrayList<>();
           this.getSentences(trimmedLine, sents, null, cleanedSents);
           int paraPos = 1;
-          for(String sen:sents) {
+          for (String sen : sents) {
             Sentence s = new Sentence();
             s.setSentId(sentNo++);
             s.setParagraph(paraNo);
@@ -183,17 +180,16 @@ public class DefaultDocProcessor implements DocProcessor {
     List<String> cleanedSents = new ArrayList<>();
 
     //Custom/simple method if specified or open nlp model was not found
-    if(sentModel==null || SENTENCE_FRAG==SIMPLE)
+    if (sentModel == null || SENTENCE_FRAG == SIMPLE)
       getSentences(text, sentStrs, null, cleanedSents);
-    else{
+    else {
       SentenceDetectorME sentenceDetector = new SentenceDetectorME(sentModel);
       String[] sentences = sentenceDetector.sentDetect(text);
       Collections.addAll(sentStrs, sentences);
     }
     int sentNo = 0;
 
-    for(String sen:sentStrs)
-    {
+    for (String sen : sentStrs) {
       Sentence s = new Sentence();
       s.setSentId(sentNo);
       s.setParagraph(1);
@@ -206,8 +202,7 @@ public class DefaultDocProcessor implements DocProcessor {
   }
 
   @Override
-  public String[] getWords(String sent)
-  {
+  public String[] getWords(String sent) {
     return sent.trim().split("\\s+");
   }
 

@@ -30,20 +30,19 @@ import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.tokenize.WhitespaceTokenizer;
 
 public class OpenNLPPOSTagger implements POSTagger {
-  private final POSTaggerME tagger;
-  private Hashtable<Integer, String[]> tagMap;
-  private final DocProcessor dp;
-  private final String[] nounTags = {"NOUN", "NN", "NNS","NNP","NNPS"};
 
-  public OpenNLPPOSTagger(DocProcessor dp, InputStream posModelFile) throws Exception {
+  private final POSTaggerME tagger;
+  private final DocProcessor dp;
+  private final String[] nounTags = {"NOUN", "NN", "NNS", "NNP", "NNPS"};
+  private Hashtable<Integer, String[]> tagMap;
+
+  public OpenNLPPOSTagger(DocProcessor dp, InputStream posModelFile) throws IOException {
     this.dp = dp;
     initTagMap();
+
     try (InputStream modelIn = new BufferedInputStream(posModelFile)) {
       POSModel model = new POSModel(modelIn);
       tagger = new POSTaggerME(model);
-    } catch (IOException e) {
-      // Model loading failed, handle the error
-      throw e;
     }
   }
 
@@ -56,7 +55,7 @@ public class OpenNLPPOSTagger implements POSTagger {
   public boolean isType(String typeStr, int type) {
     boolean ret = false;
     String[] tags = tagMap.get(type);
-    for(String tag: tags) {
+    for (String tag : tags) {
       if (typeStr.equalsIgnoreCase(tag)) {
         ret = true;
         break;
@@ -80,11 +79,10 @@ public class OpenNLPPOSTagger implements POSTagger {
   public List<String> getWordsOfType(String sent, int type) {
     List<String> ret = new ArrayList<>();
     String[] tokens = dp.getWords(sent);
-    for(String t:tokens) {
+    for (String t : tokens) {
       String[] wordPlusType = t.split("/");
-      if(wordPlusType.length ==2)
-      {
-        if(isType(wordPlusType[1], type))
+      if (wordPlusType.length == 2) {
+        if (isType(wordPlusType[1], type))
           ret.add(wordPlusType[0]);
       }
     }

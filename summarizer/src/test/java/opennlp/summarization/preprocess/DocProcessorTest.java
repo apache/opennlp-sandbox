@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package opennlp.summarization.preprocess;
 
 import java.util.List;

@@ -17,11 +17,15 @@
 
 package opennlp.summarization.textrank;
 
-import java.util.*;
 
-import opennlp.summarization.*;
-import opennlp.summarization.preprocess.IDFWordWeight;
-import opennlp.summarization.preprocess.WordWeight;
+import opennlp.summarization.DocProcessor;
+import opennlp.summarization.Score;
+import opennlp.summarization.Sentence;
+import opennlp.summarization.Summarizer;
+
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
 
 /*
  * A wrapper around the text rank algorithm.  This class
@@ -30,33 +34,31 @@ import opennlp.summarization.preprocess.WordWeight;
  */
 public class TextRankSummarizer implements Summarizer {
 
-  // An optional file to store idf of words. If idf is not available it uses a default equal weight for all words.
-  private final String idfFile = "resources/idf.csv";
-  public TextRankSummarizer() {
+  private final DocProcessor docProcessor;
+
+  public TextRankSummarizer(DocProcessor docProcessor) {
+    this.docProcessor = docProcessor;
   }
 
-  /*Sets up data and calls the TextRank algorithm..*/
-  public List<Score> rankSentences(String doc, List<Sentence> sentences,
-                                   DocProcessor dp, int maxWords ) {
+  /* Sets up data and calls the TextRank algorithm..*/
+  public List<Score> rankSentences(String doc, List<Sentence> sentences, int maxWords) {
     try {
       //Rank sentences
-      TextRank summ = new TextRank(dp);
+      TextRank summ = new TextRank(docProcessor);
       List<String> sentenceStrL = new ArrayList<>();
       List<String> processedSent = new ArrayList<>();
       Hashtable<String, List<Integer>> iidx = new Hashtable<>();
-      //     dp.getSentences(sentences, sentenceStrL, iidx, processedSent);
 
-      for(Sentence s : sentences){
+      for (Sentence s : sentences) {
         sentenceStrL.add(s.getStringVal());
         String stemmedSent = s.stem();
         processedSent.add(stemmedSent);
 
         String[] wrds = stemmedSent.split(" ");
-        for(String w: wrds)
-        {
-          if(iidx.get(w)!=null)
+        for (String w : wrds) {
+          if (iidx.get(w) != null)
             iidx.get(w).add(s.getSentId());
-          else{
+          else {
             List<Integer> l = new ArrayList<>();
             l.add(s.getSentId());
             iidx.put(w, l);
@@ -64,26 +66,21 @@ public class TextRankSummarizer implements Summarizer {
         }
       }
 
-      WordWeight wordWt = new IDFWordWeight(idfFile);////new
-
       List<Score> finalScores = summ.getRankedSentences(doc, sentenceStrL, iidx, processedSent);
-      List<String> sentenceStrList = summ.getSentences();
 
       // SentenceClusterer clust = new SentenceClusterer();
       //  clust.runClusterer(doc, summ.processedSent);
 
-      Hashtable<Integer,List<Integer>> links= summ.getLinks();
+      Hashtable<Integer, List<Integer>> links = summ.getLinks();
 
-      for(int i=0;i<sentences.size();i++)
-      {
+      for (int i = 0; i < sentences.size(); i++) {
         Sentence st = sentences.get(i);
 
         //Add links..
         List<Integer> currLnks = links.get(i);
-        if(currLnks==null) continue;
-        for(int j=0;j<currLnks.size();j++)
-        {
-          if(j<i) st.addLink(sentences.get(j));
+        if (currLnks == null) continue;
+        for (int j = 0; j < currLnks.size(); j++) {
+          if (j < i) st.addLink(sentences.get(j));
         }
       }
 
@@ -92,7 +89,7 @@ public class TextRankSummarizer implements Summarizer {
         st.setPageRankScore(s);
       }
 
-      List<Score> reRank = finalScores;//reRank(sentences, finalScores, iidx, wordWt, maxWords);
+      List<Score> reRank = finalScores; //reRank(sentences, finalScores, iidx, wordWt, maxWords);
 
       return reRank;
     } catch (Exception e) {
@@ -103,19 +100,17 @@ public class TextRankSummarizer implements Summarizer {
 
   //Returns the summary as a string.
   @Override
-  public String summarize(String article, DocProcessor dp, int maxWords) {
-    List<Sentence> sentences = dp.getSentencesFromStr(article);
-    List<Score> scores = this.rankSentences(article, sentences, dp, maxWords);
+  public String summarize(String article, int maxWords) {
+    List<Sentence> sentences = docProcessor.getSentencesFromStr(article);
+    List<Score> scores = rankSentences(article, sentences, maxWords);
     return scores2String(sentences, scores, maxWords);
   }
 
   /* Use the page rank scores to determine the summary.*/
   public String scores2String(List<Sentence> sentences, List<Score> scores, int maxWords) {
     StringBuilder b = new StringBuilder();
-    // for(int i=0;i< min(maxWords, scores.size()-1);i++)
-    int i=0;
-    while(b.length()< maxWords && i< scores.size())
-    {
+    int i = 0;
+    while (b.length() < maxWords && i < scores.size()) {
       String sent = sentences.get(scores.get(i).getSentId()).getStringVal();
       b.append(sent).append(scores.get(i));
       i++;
