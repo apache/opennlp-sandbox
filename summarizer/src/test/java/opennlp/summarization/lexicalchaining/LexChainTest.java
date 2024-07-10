@@ -96,11 +96,11 @@ class LexChainTest {
       // int rel = lcs.getRelation(l, "nation");
       WordRelation rel2 = lcs.getRelation(l, "tune", true);
       WordRelation rel3 = lcs.getRelation(l, "vocal", true);
-      assertEquals(1, rel2.relation);
-      assertEquals(1, rel3.relation);
+      assertEquals(1, rel2.relation());
+      assertEquals(1, rel3.relation());
       // assertEquals(rel, LexicalChainingSummarizer.STRONG_RELATION);
-      assertEquals(WordRelation.MED_RELATION, rel2.relation);
-      assertEquals(WordRelation.MED_RELATION, rel3.relation);
+      assertEquals(WordRelation.MED_RELATION, rel2.relation());
+      assertEquals(WordRelation.MED_RELATION, rel3.relation());
     } catch (Exception e) {
       fail(e.getLocalizedMessage());
     }

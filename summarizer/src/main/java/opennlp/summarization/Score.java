@@ -24,41 +24,36 @@ public class Score implements Comparable<Score> {
   private int sentId;
   private double score;
 
-  public Score()
-  {
+  public Score() {
     score = 0;
   }
 
-  public int getSentId(){
+  public int getSentId() {
     return sentId;
   }
 
-  public double getScore()
-  {
+  public void setSentId(int sentId) {
+    this.sentId = sentId;
+  }
+
+  public double getScore() {
     return score;
   }
 
-  public void setScore(double score)
-  {
+  public void setScore(double score) {
     this.score = score;
-  }
-
-  public void setSentId(int sentId)
-  {
-    this.sentId = sentId;
   }
 
   @Override
   public int compareTo(Score o) {
 
-    if(o.score > score) return 1;
+    if (o.score > score) return 1;
     else if (o.score < score) return -1;
     return 0;
   }
 
   @Override
-  public String toString()
-  {
-    return sentId +" "+score;
+  public String toString() {
+    return sentId + " " + score;
   }
 }

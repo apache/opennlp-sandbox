@@ -19,11 +19,10 @@ package opennlp.summarization.lexicalchaining;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import opennlp.summarization.Sentence;
 
-public class LexicalChain implements Comparable<LexicalChain>{
+public class LexicalChain implements Comparable<LexicalChain> {
   final List<Word> word;
   final List<Sentence> sentences;
 
@@ -36,57 +35,55 @@ public class LexicalChain implements Comparable<LexicalChain>{
     sentences = new ArrayList<>();
   }
 
-  public double score()
-  {
-    return length() ; //* homogeneity();
+  public double score() {
+    return length(); //* homogeneity();
   }
 
-  public int length(){
+  public int length() {
     return word.size();
   }
 
-  public float homogeneity()
-  {
-    return (1.0f - (float) occurrences /(float)length());
+  public float homogeneity() {
+    return (1.0f - (float) occurrences / (float) length());
   }
 
-  public void addWord(Word w)
-  {
+  public void addWord(Word w) {
     word.add(w);
   }
 
-  public void addSentence(Sentence sent)
-  {
-    if(!sentences.contains(sent))
+  public void addSentence(Sentence sent) {
+    if (!sentences.contains(sent))
       sentences.add(sent);
   }
 
-  public List<Word> getWord()
-  {
+  public List<Word> getWord() {
     return word;
   }
 
-  public List<Sentence>getSentences()
-  {
+  public List<Sentence> getSentences() {
     return this.sentences;
   }
 
   @Override
   public int compareTo(LexicalChain o) {
     double diff = (score() - o.score());
-    return diff == 0 ? 0: diff > 0 ? 1:-1;
+    return diff == 0 ? 0 : diff > 0 ? 1 : -1;
   }
 
   @Override
-  public boolean equals(Object o) {
+  public final boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    LexicalChain that = (LexicalChain) o;
+    if (!(o instanceof LexicalChain that)) return false;
+
     return start == that.start && last == that.last && score == that.score && occurrences == that.occurrences;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(start, last, score, occurrences);
+    int result = start;
+    result = 31 * result + last;
+    result = 31 * result + score;
+    result = 31 * result + occurrences;
+    return result;
   }
 }

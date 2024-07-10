@@ -1,0 +1,5 @@
+'*.story':
+=> Found here: https://machinelearningmastery.com/prepare-news-articles-text-summarization/
+
+'idf.csv':
+=> Adapted from: https://github.com/rutum/tf-idf

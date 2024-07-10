@@ -17,19 +17,18 @@
 
 package opennlp.summarization.meta;
 
-import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.logging.Logger;
 
 import opennlp.summarization.Score;
 import opennlp.summarization.Sentence;
+import opennlp.summarization.Summarizer;
 import opennlp.summarization.lexicalchaining.LexicalChain;
 import opennlp.summarization.lexicalchaining.LexicalChainingSummarizer;
-import opennlp.summarization.preprocess.DefaultDocProcessor;
+import opennlp.summarization.lexicalchaining.OpenNLPPOSTagger;
 import opennlp.summarization.textrank.TextRankSummarizer;
 
 import opennlp.summarization.DocProcessor;
@@ -39,17 +38,16 @@ import opennlp.summarization.DocProcessor;
  * It runs both algorithm and uses the lexical chains to identify the main topics and relative importance
  * and the text rank to pick sentences from lexical chains.
  */
-public class MetaSummarizer {
+public class MetaSummarizer implements Summarizer {
+
   private final DocProcessor dp;
   private final TextRankSummarizer textRank;
   private final LexicalChainingSummarizer lcs;
-  private static final String SENT_FRAG_MODEL = "/en-sent.bin";
 
-  public MetaSummarizer(String posModelFile) throws Exception {
-    Logger.getAnonymousLogger().info("Initializing Meta Summarizer");
-    dp = new DefaultDocProcessor(MetaSummarizer.class.getResourceAsStream(SENT_FRAG_MODEL));
-    textRank = new TextRankSummarizer();
-    lcs = new LexicalChainingSummarizer(dp, new FileInputStream(posModelFile));
+  public MetaSummarizer(DocProcessor docProcessor, OpenNLPPOSTagger posTagger) {
+    dp = docProcessor;
+    textRank = new TextRankSummarizer(dp);
+    lcs = new LexicalChainingSummarizer(dp, posTagger);
   }
 
   // A utility method to sort the ranked sentences by sentence order.
@@ -61,11 +59,11 @@ public class MetaSummarizer {
   // Rank sentences by merging the scores from lexical chaining and text rank.
   // maxWords -1 indicates rank all sentences.
   public int getBestSent(LexicalChain l, Hashtable<Integer, Score> pageRankScores) {
-    double bestScore = 0; int bestStr = -1;
-    for(Sentence s : l.getSentences()) {
+    double bestScore = 0;
+    int bestStr = -1;
+    for (Sentence s : l.getSentences()) {
       Score sc = pageRankScores.get(s.getSentId());
-      if(sc!=null && sc.getScore() > bestScore)
-      {
+      if (sc != null && sc.getScore() > bestScore) {
         bestScore = sc.getScore();
         bestStr = sc.getSentId();
       }
@@ -77,46 +75,45 @@ public class MetaSummarizer {
     List<LexicalChain> lc = lcs.buildLexicalChains(article, sent);
     Collections.sort(lc);
     Hashtable<Integer, Score> sentScores = new Hashtable<>();
-    try{
-      List<Score> scores = textRank.rankSentences(article, sent, dp, article.length());
-      for(Score s: scores) sentScores.put(s.getSentId(), s);
-    }catch(Exception ex){
+    try {
+      List<Score> scores = textRank.rankSentences(article, sent, article.length());
+      for (Score s : scores) sentScores.put(s.getSentId(), s);
+    } catch (Exception ex) {
       ex.printStackTrace();
     }
 
     Hashtable<Sentence, Boolean> summSents = new Hashtable<>();
     List<Score> finalSc = new ArrayList<>();
     int currWordCnt = 0;
-    for(int i=lc.size()-1;i>=0;i--)
-    {
+    for (int i = lc.size() - 1; i >= 0; i--) {
       LexicalChain l = lc.get(i);
-      while(l.getSentences().size()>0)
-      {
+      while (!l.getSentences().isEmpty()) {
         int sentId = getBestSent(l, sentScores);
-        if(sentId == -1) break;
+        if (sentId == -1) break;
 
         Sentence s = sent.get(sentId);
 
         //Sentence already added, try again..
-        if(summSents.containsKey(s))
+        if (summSents.containsKey(s))
           l.getSentences().remove(s);
-        else{
+        else {
           finalSc.add(sentScores.get(s.getSentId()));
           summSents.put(s, true);
           currWordCnt += s.getWordCnt();
           break;
         }
       }
-      if(maxWords>0 && currWordCnt>maxWords) break;
+      if (maxWords > 0 && currWordCnt > maxWords) break;
     }
 
     order(finalSc);
     return finalSc;
   }
 
-  //Default Summarization using only lexical chains..
+  // Default Summarization using only lexical chains..
+  @Override
   public String summarize(String article, int maxWords) {
-    //Build lexical Chains..
+    // Build lexical Chains..
     List<Sentence> sent = dp.getSentencesFromStr(article);
     List<Score> finalSc = rankSentences(article, sent, maxWords);
 
@@ -126,35 +123,5 @@ public class MetaSummarizer {
     }
     // Pick sentences
     return sb.toString();
-  }
-
-  public static void main(String[] args) {
-    try{
-      String posModelFileName = "en-pos-maxent.bin";
-      String sentFragModel = "en-sent.bin";
-      DefaultDocProcessor dp =new DefaultDocProcessor(MetaSummarizer.class.getResourceAsStream(sentFragModel));
-      MetaSummarizer lcs = new MetaSummarizer(posModelFileName);
-      String article = dp.docToString("test/tax.txt");
-      long strt = System.currentTimeMillis();
-      System.out.println(lcs.summarize(article, 50));
-      System.out.println(System.currentTimeMillis() - strt);
-
-      article = dp.docToString("test/houston-rep-nopara.txt");
-      strt = System.currentTimeMillis();
-      System.out.println(lcs.summarize(article, 50));
-      System.out.println(System.currentTimeMillis() - strt);
-
-      article = dp.docToString("gunman.txt");
-      strt = System.currentTimeMillis();
-      System.out.println(lcs.summarize(article, 50));
-      System.out.println(System.currentTimeMillis() - strt);
-
-      article = dp.docToString("satellite.txt");
-      strt = System.currentTimeMillis();
-      System.out.println(lcs.summarize(article, 50));
-      System.out.println(System.currentTimeMillis() - strt);
-    } catch(Exception ex) {
-      ex.printStackTrace();
-    }
   }
 }

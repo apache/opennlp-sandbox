@@ -23,7 +23,8 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.List;
 
-import opennlp.summarization.*;
+import opennlp.summarization.DocProcessor;
+import opennlp.summarization.Score;
 import opennlp.summarization.preprocess.IDFWordWeight;
 import opennlp.summarization.preprocess.StopWords;
 import opennlp.summarization.preprocess.WordWeight;
@@ -38,32 +39,27 @@ import opennlp.summarization.preprocess.WordWeight;
  * resource like Wordnet to match synonyms etc.
  */
 public class TextRank {
-  private final StopWords sw;
-  private String article;
-  private Hashtable<Integer, List<Integer>> links;
-  private List<String> sentences = new ArrayList<>();
-  private List<String> processedSent = new ArrayList<>();
-  private final WordWeight wordWt;
   private static final int NO_OF_IT = 100;
-  private final double maxErr = 0.1;
-  private DocProcessor docProc;
-
-  private final double title_wt = 0;
-  
-  // private Hashtable<Integer, String[]> wordsInSent;
-
   // DAMPING FACTOR..
   private static final double DF = 0.15;
   private static final boolean HIGHER_TITLE_WEIGHT = true;
   private static final double TITLE_WRD_WT = 2d;
+  private final StopWords sw;
+  private final WordWeight wordWt;
+  private final double maxErr = 0.1;
+  private final double title_wt = 0;
+  private String article;
+  private Hashtable<Integer, List<Integer>> links;
+  private List<String> sentences = new ArrayList<>();
+  private List<String> processedSent = new ArrayList<>();
+  private DocProcessor docProc;
 
   public TextRank(DocProcessor dp) {
     sw = new StopWords();
     setLinks(new Hashtable<>());
     processedSent = new ArrayList<>();
     docProc = dp;
-    String resources = "./resources";
-    wordWt = IDFWordWeight.getInstance(resources + "/idf.csv");
+    wordWt = IDFWordWeight.getInstance("/meta/idf.csv");
   }
 
   public TextRank(StopWords sw, WordWeight wordWts) {
@@ -71,22 +67,22 @@ public class TextRank {
     this.wordWt = wordWts;
   }
 
-  // Returns similarity of two sentences. Wrd wts contains tf-idf of the
-  // words..
+  // Returns similarity of two sentences. Wrd wts contains tf-idf of the words..
   public double getWeightedSimilarity(String sent1, String sent2,
                                       Hashtable<String, Double> wrdWts) {
-    String[] words1 = sent1.trim().split("\\s+");
-    String[] words2 = sent2.trim().split("\\s+");
+    String[] words1 = docProc.getWords(sent1);
+    String[] words2 = docProc.getWords(sent2);
     double wordsInCommon = 0;
     Hashtable<String, Boolean> dups = new Hashtable<>();
     for (String s : words1) {
       String currWrd1 = s.trim();
+      boolean emptyWrd1 = currWrd1.isEmpty();
+      boolean stopWordWrd1 = sw.isStopWord(currWrd1);
       // skip over duplicate words of sentence
       if (dups.get(currWrd1) == null) {
         dups.put(currWrd1, true);
         for (String value : words2) {
-          if (!sw.isStopWord(currWrd1) && !currWrd1.isEmpty()
-                  && s.equals(value)) {
+          if (!stopWordWrd1 && !emptyWrd1 && s.equals(value)) {
             Double wt;
 
             wt = wrdWts.get(currWrd1);
@@ -98,7 +94,7 @@ public class TextRank {
         }
       }
     }
-    return (wordsInCommon) /  (words1.length  +  words2.length);
+    return (wordsInCommon) / (words1.length + words2.length);
   }
 
   // Gets the current score from the list of scores passed ...
@@ -143,8 +139,7 @@ public class TextRank {
             // sum += getCurrentScore(rawScores,
             // sentId)/(getCurrentScore(rawScores, neigh)) *
             // getCurrentScore(currWtScores, neigh);
-            double wij = this.getWeightedSimilarity(sentences
-                    .get(sentId), sentences.get(j), wrdWts);
+            double wij = this.getWeightedSimilarity(sentences.get(sentId), sentences.get(j), wrdWts);
             double sigmawjk = getScoreFrom(rawScores, j);
             double txtRnkj = getScoreFrom(currWtScores, j);
             sum += wij / sigmawjk * txtRnkj;
@@ -173,7 +168,7 @@ public class TextRank {
 
     for (int i = 0; i < sentences.size(); i++) {
       String nextSent = sentences.get(i);
-      String[] words = nextSent.trim().split("\\s+");
+      String[] words = docProc.getWords(nextSent);
       Score s = new Score();
       s.setSentId(i);
 
@@ -187,8 +182,7 @@ public class TextRank {
         List<Integer> processed = new ArrayList<>();
         for (int idx : otherSents) {
           if (idx != i && !processed.contains(idx)) {
-            double currS = getWeightedSimilarity(sentences.get(i),
-                    sentences.get(idx), wts);
+            double currS = getWeightedSimilarity(sentences.get(i), sentences.get(idx), wts);
             s.setScore(s.getScore() + currS);
 
             if (currS > 0) {
@@ -205,8 +199,7 @@ public class TextRank {
 
   public List<Score> getWeightedScores(List<Score> rawScores,
                                        List<String> sentences, Hashtable<String, Double> wordWts) {
-    List<Score> weightedScores = this.getTextRankScore(rawScores,
-            sentences, wordWts);
+    List<Score> weightedScores = this.getTextRankScore(rawScores, sentences, wordWts);
     Collections.sort(weightedScores);
     return weightedScores;
   }
@@ -228,10 +221,8 @@ public class TextRank {
     this.processedSent = processedSent;
 
     Hashtable<String, Double> wrdWts = toWordWtHashtable(this.wordWt, iidx);// new
-    // Hashtable<String,
-    // Double>();
 
-    if (HIGHER_TITLE_WEIGHT && getSentences().size()>0) {
+    if (HIGHER_TITLE_WEIGHT && !getSentences().isEmpty()) {
       String sent = getSentences().get(0);
       String[] wrds = sent.trim().split("\\s+");
       for (String wrd : wrds)
@@ -251,28 +242,28 @@ public class TextRank {
     getLinks().put(i, endNodes);
   }
 
-  public void setSentences(List<String> sentences) {
-    this.sentences = sentences;
-  }
-
   public List<String> getSentences() {
     return sentences;
   }
 
-  public void setArticle(String article) {
-    this.article = article;
+  public void setSentences(List<String> sentences) {
+    this.sentences = sentences;
   }
 
   public String getArticle() {
     return article;
   }
 
-  private void setLinks(Hashtable<Integer, List<Integer>> links) {
-    this.links = links;
+  public void setArticle(String article) {
+    this.article = article;
   }
 
   public Hashtable<Integer, List<Integer>> getLinks() {
     return links;
+  }
+
+  private void setLinks(Hashtable<Integer, List<Integer>> links) {
+    this.links = links;
   }
 }
 
