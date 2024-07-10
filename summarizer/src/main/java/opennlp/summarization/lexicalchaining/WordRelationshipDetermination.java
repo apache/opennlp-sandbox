@@ -46,22 +46,26 @@ import edu.mit.jwi.RAMDictionary;
 public class WordRelationshipDetermination {
 
   private static final String DICTIONARY_FILE = "/wordnet/dict";
-  private static final int MAX_DIST_MED_REL = 1000;
-  private final IDictionary dictionary;
+  private static final IDictionary DICTIONARY;
   private final Pointer[] rels = {Pointer.ANTONYM, Pointer.HYPERNYM, Pointer.HYPONYM, Pointer.MERONYM_PART,
           Pointer.MERONYM_SUBSTANCE, Pointer.PARTICIPLE, Pointer.HYPERNYM_INSTANCE};
   private final Hashtable<ISynset, List<IWord>> synsetWordCache = new Hashtable<>();
 
-  public WordRelationshipDetermination() {
-    dictionary = new RAMDictionary(WordRelationshipDetermination.class.getResource(DICTIONARY_FILE), ILoadPolicy.IMMEDIATE_LOAD);
-    ((RAMDictionary) dictionary).load();
-    openDict();
+  static {
+    DICTIONARY = new RAMDictionary(WordRelationshipDetermination.class.getResource(DICTIONARY_FILE), ILoadPolicy.IMMEDIATE_LOAD);
+    ((RAMDictionary) DICTIONARY).load();
+    if (!DICTIONARY.isOpen())
+      try {
+        DICTIONARY.open();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
   }
 
   private IWord isSynonym(String noun, Word w) {
     WordnetWord ww = (WordnetWord) w;
     IWord ret;
-    IIndexWord idxNoun = dictionary.getIndexWord(noun, POS.NOUN);
+    IIndexWord idxNoun = DICTIONARY.getIndexWord(noun, POS.NOUN);
 
     /*
      * getWordIDs() returns all the WordID associated with an index
@@ -77,7 +81,7 @@ public class WordRelationshipDetermination {
       if (ww.synonyms != null)
         wordSynset = ww.synonyms;
       else {
-        IWord word = dictionary.getWord((IWordID) w.getID());
+        IWord word = DICTIONARY.getWord((IWordID) w.getID());
         wordSynset = word.getSynset();
         ww.synonyms = wordSynset;
       }
@@ -110,7 +114,7 @@ public class WordRelationshipDetermination {
     //Returns all the words present in the synset wordSynset
     for (IWord synonym : wrds) {
       for (IWordID nounID : idxNoun.getWordIDs()) {
-        if (synonym.equals(dictionary.getWord(nounID))) {
+        if (synonym.equals(DICTIONARY.getWord(nounID))) {
           ret = synonym;
           break;
         }
@@ -133,9 +137,9 @@ public class WordRelationshipDetermination {
     }
 
     //Construct an IWord object representing word associated with wordID
-    IWord word = dictionary.getWord((IWordID) w.getID());
+    IWord word = DICTIONARY.getWord((IWordID) w.getID());
 
-    IIndexWord idxNoun = dictionary.getIndexWord(noun, POS.NOUN);
+    IIndexWord idxNoun = DICTIONARY.getIndexWord(noun, POS.NOUN);
     //Get the synset in which word is present.
     ISynset wordSynset = word.getSynset();
 
@@ -149,7 +153,7 @@ public class WordRelationshipDetermination {
       }
 
       for (ISynsetID id : rels) {
-        ISynset s = this.dictionary.getSynset(id);
+        ISynset s = this.DICTIONARY.getSynset(id);
         IWord mat = inSynset(s, idxNoun);
         if (mat != null) {
           ret = new WordnetWord();
@@ -189,20 +193,11 @@ public class WordRelationshipDetermination {
     return ret;
   }
 
-  private void openDict() {
-    if (!dictionary.isOpen())
-      try {
-        dictionary.open();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-  }
-
   public List<Word> getWordSenses(String noun) {
     List<Word> ret = new ArrayList<>();
     try {
       //		openDict();
-      List<IWordID> wordIDs = this.dictionary.getIndexWord(noun, POS.NOUN).getWordIDs();
+      List<IWordID> wordIDs = this.DICTIONARY.getIndexWord(noun, POS.NOUN).getWordIDs();
       for (IWordID wid : wordIDs) {
         Word w = new WordnetWord();
         w.setLexicon(noun);
