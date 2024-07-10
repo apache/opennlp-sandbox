@@ -34,6 +34,9 @@ import opennlp.summarization.Summarizer;
  * that share a word that are very closely related. Thus, the longest chain represents the most important
  * topic and so forth. A summary can then be formed by identifying the most important lexical chains
  * and "pulling" out sentences from them.
+ *
+ * @see LexicalChain
+ * @see Summarizer
  */
 public class LexicalChainingSummarizer implements Summarizer {
 
@@ -186,11 +189,12 @@ public class LexicalChainingSummarizer implements Summarizer {
     List<Sentence> summ = new ArrayList<>();
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < lc.size(); i++) {
-      for (int j = 0; j < lc.size(); j++) {
-        Sentence candidate = lc.get(i).sentences.get(j);
+      LexicalChain chain = lc.get(i);
+      for (int j = 0; j < chain.sentences.size(); j++) {
+        Sentence candidate = chain.sentences.get(j);
         if (!summ.contains(candidate)) {
           summ.add(candidate);
-          sb.append(candidate.getStringVal());
+          sb.append(candidate.getStringVal()).append(" ");
           summSize += candidate.getWordCnt();
           break;
         }
