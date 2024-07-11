@@ -36,6 +36,7 @@ public class MachineTranslationWrapper  {
 	public String translate(String sentence, String lang2lang) {
 		if (sentence==null)
 			return null;
+		
 		String request = TRANSLATOR_URL + sentence.replace(' ','+') + "&langpair="+lang2lang;//"en|es";
 		try {
 			URL urlC = new URI(request).toURL();
@@ -43,17 +44,18 @@ public class MachineTranslationWrapper  {
 
 			String line;
 			StringBuilder result = new StringBuilder();
-			BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-			int count = 0;
-			while ((line = reader.readLine()) != null)
-			{
-				result.append(line);
-				count++;
+			try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+				int count = 0;
+				while ((line = reader.readLine()) != null)
+				{
+					result.append(line);
+					count++;
+				}
+				JSONObject rootObject = new JSONObject(result.toString());
+				JSONObject  findObject = rootObject.getJSONObject("responseData");
+				String transl = findObject.getString("translatedText");
+				return URLDecoder.decode(transl, StandardCharsets.UTF_8);
 			}
-			JSONObject rootObject = new JSONObject(result.toString());
-			JSONObject  findObject = rootObject.getJSONObject("responseData");
-			String transl = findObject.getString("translatedText");
-			return URLDecoder.decode(transl, StandardCharsets.UTF_8);
 			
 		} catch (IOException | URISyntaxException | JSONException e) {
 			e.printStackTrace();

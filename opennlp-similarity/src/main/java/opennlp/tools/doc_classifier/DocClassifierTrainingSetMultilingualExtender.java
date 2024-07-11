@@ -33,7 +33,6 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-import org.json.JSONObject;
 
 /*
  * This utility gets 'training_corpus' as input and creates a new version of training_corpus with verified files.
@@ -56,7 +55,7 @@ public class DocClassifierTrainingSetMultilingualExtender {
 
 	public DocClassifierTrainingSetMultilingualExtender(String resource) {
 
-		classifier = new DocClassifier("", new JSONObject());
+		classifier = new DocClassifier("");
 
 	}
 	private final int FRAGMENT_LENGTH = 500;

@@ -421,11 +421,10 @@ public class ParseTreeChunk implements Serializable {
 	}
 	
 	public boolean equals(ParseTreeChunk ch) {
-		List<String> lems = ch.getLemmas();
-		List<String> poss = ch.POSs;
 		return ListUtils.isEqualList(ch.getLemmas(), this.lemmas) && ListUtils.isEqualList(ch.getPOSs(), this.POSs);
 	}
 
+	@Override
 	public String toString() {
 		StringBuilder buf = new StringBuilder(" [");
 		if (mainPOS != null)

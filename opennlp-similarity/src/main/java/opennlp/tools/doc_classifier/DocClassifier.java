@@ -29,8 +29,6 @@ import opennlp.tools.similarity.apps.utils.ValueSortMap;
 import opennlp.tools.textsimilarity.TextProcessor;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -44,30 +42,25 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DocClassifier {
 
-	private static final Log LOGGER = LogFactory.getLog(DocClassifier.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DocClassifier.class);
 	public static final String DOC_CLASSIFIER_KEY = "doc_class";
 	public static final String RESOURCE_DIR = null;
 	private Map<String, Float> scoredClasses;
 	
-
 	public static final Float MIN_TOTAL_SCORE_FOR_CATEGORY = 0.3f; //3.0f;
 	protected static IndexReader indexReader = null;
 	protected static IndexSearcher indexSearcher = null;
 	// resource directory plus the index folder
-	private static final String INDEX_PATH = RESOURCE_DIR
-			+ ClassifierTrainingSetIndexer.INDEX_PATH;
+	private static final String INDEX_PATH = RESOURCE_DIR + ClassifierTrainingSetIndexer.INDEX_PATH;
 
 	// http://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm
 	private static final int MAX_DOCS_TO_USE_FOR_CLASSIFY = 10, // 10 similar
-			// docs for
-			// nearest
-			// neighbor
-			// settings
-
+			// docs for nearest neighbor settings
 			MAX_CATEG_RESULTS = 2;
 	private static final float BEST_TO_NEX_BEST_RATIO = 2.0f;
 	// to accumulate classif results
@@ -112,7 +105,7 @@ public class DocClassifier {
 		}
 	}
 
-	public DocClassifier(String inputFilename, JSONObject inputJSON) {
+	public DocClassifier(String inputFilename) {
 		scoredClasses = new HashMap<>();
 	}
 
@@ -131,18 +124,15 @@ public class DocClassifier {
 		Query query;
 		try {
 			query = parser.parse(queryStr);
-
 		} catch (ParseException e2) {
-
 			return results;
 		}
 		TopDocs hits = null; // TopDocs search(Query, int)
 		// Finds the top n hits for query.
 		try {
-			hits = indexSearcher
-					.search(query, MAX_DOCS_TO_USE_FOR_CLASSIFY + 2);
+			hits = indexSearcher.search(query, MAX_DOCS_TO_USE_FOR_CLASSIFY + 2);
 		} catch (IOException e1) {
-			LOGGER.error("problem searching index \n" + e1);
+			LOGGER.error("problem searching index \n", e1);
 		}
 		LOGGER.debug("Found " + hits.totalHits + " hits for " + queryStr);
 		int count = 0;
@@ -175,8 +165,7 @@ public class DocClassifier {
 		}
 		try {
 			scoredClasses = ValueSortMap.sortMapByValue(scoredClasses, false);
-			List<String> resultsAll = new ArrayList<>(
-							scoredClasses.keySet()), resultsAboveThresh = new ArrayList<>();
+			List<String> resultsAll = new ArrayList<>(scoredClasses.keySet()), resultsAboveThresh = new ArrayList<>();
 			for (String key : resultsAll) {
 				if (scoredClasses.get(key) > MIN_TOTAL_SCORE_FOR_CATEGORY)
 					resultsAboveThresh.add(key);
@@ -211,15 +200,11 @@ public class DocClassifier {
 
 	}
 
-	
-
-	
 	public static String formClassifQuery(String pageContentReader, int maxRes) {
 
 		// We want to control which delimiters we substitute. For example '_' &
 		// \n we retain
-		pageContentReader = pageContentReader.replaceAll("[^A-Za-z0-9 _\\n]",
-				"");
+		pageContentReader = pageContentReader.replaceAll("[^A-Za-z0-9 _\\n]", "");
 
 		Scanner in = new Scanner(pageContentReader);
 		in.useDelimiter("\\s+");
@@ -258,11 +243,9 @@ public class DocClassifier {
 		}
 	}	
 	
-	
 	/*
 	 * Main entry point for classifying sentences
 	 */
-
 	public List<String> getEntityOrClassFromText(String content) {
 
 		List<String> sentences = TextProcessor.splitToSentences(content);
@@ -284,7 +267,6 @@ public class DocClassifier {
 					LOGGER.debug(sentence + " =>  " + classifResults);
 				}
 			}
-
 		} catch (Exception e) {
 			LOGGER.error("Problem classifying sentence\n " + e);
 		}
@@ -294,11 +276,10 @@ public class DocClassifier {
 
 			aggrResults = localCats.getFrequentTags();
 
-			LOGGER.debug(localCats.getFrequentTags());
+			LOGGER.debug(localCats.getFrequentTags().toString());
 		} catch (Exception e) {
-			LOGGER.error("Problem aggregating search results\n" + e);
+			LOGGER.error("Problem aggregating search results\n", e);
 		}
 		return aggrResults;
 	}
-
 }

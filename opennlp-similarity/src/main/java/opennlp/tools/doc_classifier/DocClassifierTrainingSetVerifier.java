@@ -26,33 +26,28 @@ import opennlp.tools.jsmlearning.ProfileReaderWriter;
 import org.apache.commons.io.FileUtils;
 import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
-import org.json.JSONObject;
 
 /*
  * This utility gets 'training_corpus' as input and creates a new version of training_corpus with verified files.
  * Verified => classified by existing training set as only belonging to its target category, no other categories, not empty.
  */
 public class DocClassifierTrainingSetVerifier {
+	
+	private static final int FRAGMENT_LENGTH = 500;
 	public static String projectHome = new File(".").getAbsolutePath();
-	public static String resourceDir = new File(".").getAbsolutePath().replace("/.", "") + "/src/main/resources";
+	public static String resourceDir = projectHome.replace("/.", "") + "/src/main/resources";
 	DocClassifier classifier;
 	private String sourceDir = null, destinationDir = null;
-	
 
 	protected final ArrayList<File> queue = new ArrayList<>();
-
 	protected final Tika tika = new Tika();
+
 	public DocClassifierTrainingSetVerifier(String resource) {
-
-		
-		classifier = new DocClassifier("", new JSONObject());
-
+		classifier = new DocClassifier("");
 	}
-	private static final int FRAGMENT_LENGTH = 500;
 
 
 	protected void addFiles(File file) {
-
 		try {
 			if (!file.exists()) {
 				System.out.println(file + " does not exist.");
@@ -90,8 +85,7 @@ public class DocClassifierTrainingSetVerifier {
 				
 				//if (f.getName().indexOf(".html")<0)
 					//continue;
-				classifier = new DocClassifier("", new JSONObject());
-
+				classifier = new DocClassifier("");
 
 				content = tika.parseToString(f);
 
