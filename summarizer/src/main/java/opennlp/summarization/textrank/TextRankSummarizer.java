@@ -27,10 +27,18 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 
-/*
- * A wrapper around the text rank algorithm.  This class
- * a) Sets up the data for the TextRank class
- * b) Takes the ranked sentences and does some basic rearranging (e.g. ordering) to provide a more reasonable summary.
+/**
+ * A wrapper {@link Summarizer} implementation around the {@link TextRank text rank} algorithm.
+ * <p>
+ * This implementation:
+ * <ol>
+ * <li>sets up the data for the {@link TextRank} class</li>
+ * <li>takes the ranked sentences and conducts rearranging (e.g. ordering) to provide
+ * a more reasonable summary.</li>
+ * </ol>
+ *
+ * @see TextRank
+ * @see Summarizer
  */
 public class TextRankSummarizer implements Summarizer {
 
@@ -98,7 +106,6 @@ public class TextRankSummarizer implements Summarizer {
     return null;
   }
 
-  //Returns the summary as a string.
   @Override
   public String summarize(String article, int maxWords) {
     List<Sentence> sentences = docProcessor.getSentencesFromStr(article);
@@ -112,7 +119,7 @@ public class TextRankSummarizer implements Summarizer {
     int i = 0;
     while (b.length() < maxWords && i < scores.size()) {
       String sent = sentences.get(scores.get(i).getSentId()).getStringVal();
-      b.append(sent).append(scores.get(i));
+      b.append(sent); //.append(scores.get(i));
       i++;
     }
     return b.toString();

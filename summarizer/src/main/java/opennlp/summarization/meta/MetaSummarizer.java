@@ -35,8 +35,11 @@ import opennlp.summarization.DocProcessor;
 
 /**
  * A summarizer that combines results from the text rank algorithm and the lexical chaining algorithm.
- * It runs both algorithm and uses the lexical chains to identify the main topics and relative importance
+ * It runs both algorithms and uses the lexical chains to identify the main topics and relative importance
  * and the text rank to pick sentences from lexical chains.
+ *
+ * @see TextRankSummarizer
+ * @see LexicalChainingSummarizer
  */
 public class MetaSummarizer implements Summarizer {
 

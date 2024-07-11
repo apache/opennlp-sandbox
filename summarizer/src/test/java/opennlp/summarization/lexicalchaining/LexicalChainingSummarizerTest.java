@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package opennlp.summarization.meta;
+package opennlp.summarization.lexicalchaining;
 
 import opennlp.summarization.AbstractSummarizerTest;
 import opennlp.summarization.Summarizer;
@@ -23,21 +23,21 @@ import opennlp.summarization.Summarizer;
 import org.junit.jupiter.api.BeforeEach;
 
 /**
- * Tests the implementation of {@link MetaSummarizer}.
+ * Tests the implementation of {@link LexicalChainingSummarizer}.
  */
-public class MetaSummarizerTest extends AbstractSummarizerTest {
+public class LexicalChainingSummarizerTest extends AbstractSummarizerTest {
 
   // SUT
-  private Summarizer metaSummarizer;
+  private Summarizer lexicalChainSummarizer;
 
   @BeforeEach
   void setUp() {
-    metaSummarizer = new MetaSummarizer(docProcessor, posTagger);
+    lexicalChainSummarizer = new LexicalChainingSummarizer(docProcessor, posTagger);
   }
 
   @Override
   public Summarizer getSummarizer() {
-    return metaSummarizer;
+    return lexicalChainSummarizer;
   }
 
 }
