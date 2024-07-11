@@ -17,7 +17,14 @@
 
 package opennlp.summarization.preprocess;
 
+/**
+ * Represents a type which can compute the weight of a word in a certain context, e.g. a sentence or a text.
+ */
 public interface WordWeight {
 
-  double getWordWeight(String s);
+  /**
+   * @param token The input token (word) to get a weight for. Must not be {@code null}.
+   * @return The associated weight for the specified {@code token}.
+   */
+  double getWordWeight(String token);
 }

@@ -17,6 +17,7 @@
 
 package opennlp.summarization.preprocess;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Hashtable;
@@ -29,12 +30,17 @@ import java.io.LineNumberReader;
  * @see WordWeight
  */
 public class IDFWordWeight implements WordWeight {
+
   private static IDFWordWeight instance;
   final Hashtable<String, Double> idf;
 
   public IDFWordWeight(String fileName) {
     idf = new Hashtable<>();
-    load(fileName);
+    try {
+      load(fileName);
+    } catch (IOException e) {
+      throw new RuntimeException("Could not load the file with IDF", e);
+    }
   }
 
   public static IDFWordWeight getInstance(String fileName) {
@@ -58,7 +64,7 @@ public class IDFWordWeight implements WordWeight {
    * Loads the IDF for words from given file. The file is required to have a simple format -
    * word, IDF.
    */
-  private void load(String fileName) {
+  private void load(String fileName) throws IOException {
     try (InputStream in = IDFWordWeight.class.getResourceAsStream(fileName);
          LineNumberReader lnr = new LineNumberReader(new InputStreamReader(in))) {
 
@@ -72,9 +78,6 @@ public class IDFWordWeight implements WordWeight {
           idf.put(word, idfVal);
         }
       }
-    } catch (Exception ex) {
-      System.err.println("Could not load the file with IDF");
-      ex.printStackTrace();
     }
   }
 }

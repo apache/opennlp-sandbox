@@ -18,14 +18,15 @@
 package opennlp.summarization;
 
 /**
- * Stores the score of a sentence for ranking sentences within a document.
+ * Encapsulates the score of a sentence for the purpose of ranking sentences within a document.
  */
 public class Score implements Comparable<Score> {
   private int sentId;
   private double score;
 
-  public Score() {
-    score = 0;
+  public Score(int sentId, double score) {
+    this.sentId = sentId;
+    this.score = score;
   }
 
   public int getSentId() {
@@ -46,7 +47,6 @@ public class Score implements Comparable<Score> {
 
   @Override
   public int compareTo(Score o) {
-
     if (o.score > score) return 1;
     else if (o.score < score) return -1;
     return 0;

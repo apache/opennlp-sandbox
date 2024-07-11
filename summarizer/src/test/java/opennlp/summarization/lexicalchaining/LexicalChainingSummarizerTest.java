@@ -17,27 +17,58 @@
 
 package opennlp.summarization.lexicalchaining;
 
-import opennlp.summarization.AbstractSummarizerTest;
-import opennlp.summarization.Summarizer;
+import java.util.Collections;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-/**
- * Tests the implementation of {@link LexicalChainingSummarizer}.
- */
-public class LexicalChainingSummarizerTest extends AbstractSummarizerTest {
+import opennlp.summarization.Sentence;
 
-  // SUT
-  private Summarizer lexicalChainSummarizer;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+class LexicalChainingSummarizerTest extends AbstractLexicalChainTest {
+
+  private List<Sentence> sent;
 
   @BeforeEach
   void setUp() {
-    lexicalChainSummarizer = new LexicalChainingSummarizer(docProcessor, posTagger);
+    sent = dp.getSentences(ARTICLE);
+    assertNotNull(sent);
   }
 
-  @Override
-  public Summarizer getSummarizer() {
-    return lexicalChainSummarizer;
+  @Test
+  void testBuildLexicalChains() {
+    List<LexicalChain> vh = lcs.buildLexicalChains(sent);
+    assertNotNull(vh);
+    Collections.sort(vh);
+    assertFalse(vh.isEmpty());
+
+    Map<String, Boolean> comp = new Hashtable<>();
+
+    for (int i = vh.size() - 1; i >= Math.max(vh.size() - 50, 0); i--) {
+      LexicalChain lc = vh.get(i);
+      Word w = lc.getWords().get(0);
+      if (!(comp.containsKey(w.getLexicon()))) {
+        comp.put(w.getLexicon(), Boolean.TRUE);
+        /*
+        for(int j=0;j<lc.getWord().size();j++)
+          System.out.print(lc.getWord().get(j) + " -- ");
+        */
+
+        // assertEquals(1.0d, lc.score());
+        /*
+        System.out.println(lc + ": ");
+        for(Sentence sid : lc.getSentences()) {
+          //if(sid>=0 && sid<s.size())
+          System.out.println("\t" + sid + " [" + lc.score() + "]");
+        }
+        */
+      }
+    }
   }
 
 }

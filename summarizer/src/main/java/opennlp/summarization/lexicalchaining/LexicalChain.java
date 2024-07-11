@@ -22,17 +22,24 @@ import java.util.List;
 
 import opennlp.summarization.Sentence;
 
+/**
+ * Represents a lexical chain.
+ */
 public class LexicalChain implements Comparable<LexicalChain> {
-  final List<Word> word;
-  final List<Sentence> sentences;
 
-  int start, last;
-  int score;
+  private final List<Word> words = new ArrayList<>();
+  private final List<Sentence> sentences = new ArrayList<>();
+  private int score;
+
+  int start;
+  int last;
   int occurrences = 1;
 
   public LexicalChain() {
-    word = new ArrayList<>();
-    sentences = new ArrayList<>();
+  }
+
+  public LexicalChain(int start) {
+    this.start = start;
   }
 
   public double score() {
@@ -40,7 +47,7 @@ public class LexicalChain implements Comparable<LexicalChain> {
   }
 
   public int length() {
-    return word.size();
+    return words.size();
   }
 
   public float homogeneity() {
@@ -48,7 +55,7 @@ public class LexicalChain implements Comparable<LexicalChain> {
   }
 
   public void addWord(Word w) {
-    word.add(w);
+    words.add(w);
   }
 
   public void addSentence(Sentence sent) {
@@ -56,8 +63,8 @@ public class LexicalChain implements Comparable<LexicalChain> {
       sentences.add(sent);
   }
 
-  public List<Word> getWord() {
-    return word;
+  public List<Word> getWords() {
+    return words;
   }
 
   public List<Sentence> getSentences() {

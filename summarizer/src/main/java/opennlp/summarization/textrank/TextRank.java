@@ -30,46 +30,74 @@ import opennlp.summarization.preprocess.StopWords;
 import opennlp.summarization.preprocess.WordWeight;
 
 /**
- * Implements the TextRank algorithm by Mihalcea et al.
- * <p>
+ * Implements the TextRank algorithm by Rada Mihalcea and Paul Tarau: <br/>
+ * <a href="https://aclanthology.org/W04-3252/">TextRank: Bringing Order into Text</a>
+ * <br/><br/>
  * This basically applies the page rank algorithm to a graph where each sentence is a node
  * and a connection between sentences indicates that a word is shared between them.
+ * <p>
  * It returns a ranking of sentences where the highest rank means most important etc.
  * Currently, only stemming is done to the words; a more sophisticated way might use a
  * resource like Wordnet to match synonyms etc.
  */
 public class TextRank {
+
   private static final int NO_OF_IT = 100;
   // DAMPING FACTOR..
   private static final double DF = 0.15;
   private static final boolean HIGHER_TITLE_WEIGHT = true;
   private static final double TITLE_WRD_WT = 2d;
+
+  private final DocProcessor docProc;
   private final StopWords sw;
   private final WordWeight wordWt;
+
   private final double maxErr = 0.1;
   private final double title_wt = 0;
-  private String article;
-  private Hashtable<Integer, List<Integer>> links;
+
+  private Hashtable<Integer, List<Integer>> links = new Hashtable<>();
   private List<String> sentences = new ArrayList<>();
   private List<String> processedSent = new ArrayList<>();
-  private DocProcessor docProc;
 
+  /**
+   * Instantiates a {@link TextRank} with the specified {@link DocProcessor}.
+   *
+   * @param dp A valid {@link DocProcessor}. Must not be {@code null}.
+   *
+   * @throws IllegalArgumentException Thrown if parameters are invalid.
+   */
   public TextRank(DocProcessor dp) {
-    sw = new StopWords();
-    setLinks(new Hashtable<>());
-    processedSent = new ArrayList<>();
-    docProc = dp;
-    wordWt = IDFWordWeight.getInstance("/meta/idf.csv");
+    this(dp, new StopWords(), IDFWordWeight.getInstance("/idf.csv"));
   }
 
-  public TextRank(StopWords sw, WordWeight wordWts) {
-    this.sw = sw;
-    this.wordWt = wordWts;
+  /**
+   * Instantiates a {@link TextRank} with the specified {@link DocProcessor}.
+   *
+   * @param dp A valid {@link DocProcessor}. Must not be {@code null}.
+   * @param stopWords The {@link StopWords} instance to use. Must not be {@code null}.
+   * @param wordWeights The {@link WordWeight} instance to use. Must not be {@code null}.
+   *                    
+   * @throws IllegalArgumentException Thrown if parameters are invalid.
+   */
+  public TextRank(DocProcessor dp, StopWords stopWords, WordWeight wordWeights) {
+    if (dp == null) throw new IllegalArgumentException("parameter 'dp' must not be null");
+    if (stopWords == null) throw new IllegalArgumentException("parameter 'stopWords' must not be null");
+    if (wordWeights == null) throw new IllegalArgumentException("parameter 'wordWeights' must not be null");
+    this.docProc = dp;
+    this.sw = stopWords;
+    this.wordWt = wordWeights;
   }
 
-  // Returns similarity of two sentences. Wrd wts contains tf-idf of the words..
-  public double getWeightedSimilarity(String sent1, String sent2,
-                                      Hashtable<String, Double> wrdWts) {
+  /**
+   * Computes the similarity of two sentences.
+   *
+   * @param sent1 The first sentence. If {@code null} or empty the computation will result in {@code 0.0}.
+   * @param sent2 The second sentence. If {@code null} or empty the computation will result in {@code 0.0}.
+   * @param wrdWts The mapping table contains tf-idf of the words.
+   * @return The computed similarity. If no similarity exist, the resulting value equals {@code 0.0}.
+   */
+  public double getWeightedSimilarity(String sent1, String sent2, Hashtable<String, Double> wrdWts) {
+
     String[] words1 = docProc.getWords(sent1);
     String[] words2 = docProc.getWords(sent2);
     double wordsInCommon = 0;
@@ -97,13 +125,17 @@ public class TextRank {
     return (wordsInCommon) / (words1.length + words2.length);
   }
 
-  // Gets the current score from the list of scores passed ...
+  /**
+   * @param scores A list of {@link Score} instances.
+   * @param id The sentence id to check for.
+   * @return Gets the element from {@code scores} that matches the passed sentence {@code id}.
+   */
   public double getScoreFrom(List<Score> scores, int id) {
     for (Score s : scores) {
       if (s.getSentId() == id)
         return s.getScore();
     }
-    return 1;
+    return 1; // Why is the default score "1" here?
   }
 
   // This method runs the page rank algorithm for the sentences.
@@ -114,9 +146,7 @@ public class TextRank {
     List<Score> currWtScores = new ArrayList<>();
     // Start with equal weights for all sentences
     for (int i = 0; i < rawScores.size(); i++) {
-      Score ns = new Score();
-      ns.setSentId(rawScores.get(i).getSentId());
-      ns.setScore((1 - title_wt) / (rawScores.size()));// this.getSimilarity();
+      Score ns = new Score(rawScores.get(i).getSentId(), (1 - title_wt) / (rawScores.size())); // this.getSimilarity();
       currWtScores.add(ns);
     }
     // currWtScores.get(0).score = this.title_wt;
@@ -129,8 +159,6 @@ public class TextRank {
       // Update the scores for the current iteration..
       for (Score rs : rawScores) {
         int sentId = rs.getSentId();
-        Score ns = new Score();
-        ns.setSentId(sentId);
 
         List<Integer> neighbors = getLinks().get(sentId);
         double sum = 0;
@@ -145,7 +173,7 @@ public class TextRank {
             sum += wij / sigmawjk * txtRnkj;
           }
         }
-        ns.setScore((1d - DF) + sum * DF);// * rs.score
+        Score ns = new Score(sentId, (1d - DF) + sum * DF); // * rs.score
         totErr += ns.getScore() - getScoreFrom(rawScores, sentId);
         newWtScores.add(ns);
       }
@@ -169,8 +197,7 @@ public class TextRank {
     for (int i = 0; i < sentences.size(); i++) {
       String nextSent = sentences.get(i);
       String[] words = docProc.getWords(nextSent);
-      Score s = new Score();
-      s.setSentId(i);
+      Score s = new Score(i, 0d);
 
       for (String word : words) {
         String currWrd = docProc.getStemmer().stem(word).toString(); //stemmer.toString();
@@ -215,12 +242,12 @@ public class TextRank {
     return wrdWt;
   }
 
-  public List<Score> getRankedSentences(String doc, List<String> sentences,
+  public List<Score> getRankedSentences(List<String> sentences,
                                         Hashtable<String, List<Integer>> iidx, List<String> processedSent) {
     this.sentences = sentences;
     this.processedSent = processedSent;
 
-    Hashtable<String, Double> wrdWts = toWordWtHashtable(this.wordWt, iidx);// new
+    Hashtable<String, Double> wrdWts = toWordWtHashtable(this.wordWt, iidx); // new
 
     if (HIGHER_TITLE_WEIGHT && !getSentences().isEmpty()) {
       String sent = getSentences().get(0);
@@ -250,14 +277,6 @@ public class TextRank {
     this.sentences = sentences;
   }
 
-  public String getArticle() {
-    return article;
-  }
-
-  public void setArticle(String article) {
-    this.article = article;
-  }
-
   public Hashtable<Integer, List<Integer>> getLinks() {
     return links;
   }
@@ -265,14 +284,5 @@ public class TextRank {
   private void setLinks(Hashtable<Integer, List<Integer>> links) {
     this.links = links;
   }
-}
 
-/*
- * public double getScore(String sent1, String sent2, boolean toPrint) {
- * String[] words1 = sent1.split("\\s+"); String[] words2 = sent2.split("\\s+");
- * double wordsInCommon = 0; for(int i=0;i< words1.length;i++) { for(int
- * j=0;j<words2.length;j++) { if(!sw.isStopWord(words1[i]) &&
- * !words1[i].trim().isEmpty() && words1[i].equals(words2[j])) { wordsInCommon+=
- * wordWt.getWordWeight(words1[i]); } } } return ((double)wordsInCommon) /
- * (Math.log(1+words1.length) + Math.log(1+words2.length)); }
- */
+}

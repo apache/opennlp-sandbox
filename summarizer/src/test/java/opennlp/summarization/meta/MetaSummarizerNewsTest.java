@@ -15,27 +15,29 @@
  * limitations under the License.
  */
 
-package opennlp.summarization.lexicalchaining;
+package opennlp.summarization.meta;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import opennlp.summarization.AbstractSummarizerTest;
+import opennlp.summarization.Summarizer;
+
+import org.junit.jupiter.api.BeforeEach;
 
 /**
- * Uses the lexical chaining algorithm to extract keywords.
+ * Tests the implementation of {@link MetaSummarizer} via a small news texts sample.
  */
-public class LexChainingKeywordExtractor {
+public class MetaSummarizerNewsTest extends AbstractSummarizerTest {
 
-  // Simple logic to pull out the keyword based on longest lexical chains..
-  public List<String> getKeywords(List<LexicalChain> lexicalChains, int noOfKeywords) {
-    Collections.sort(lexicalChains);
-    List<String> ret = new ArrayList<>();
-    for (int i = 0; i < Math.min(lexicalChains.size(), noOfKeywords); i++) {
-      List<Word> words = lexicalChains.get(i).getWord();
-      if (!words.isEmpty() && !ret.contains(words.get(0).getLexicon())) {
-        ret.add(words.get(0).getLexicon());
-      }
-    }
-    return ret;
+  // SUT
+  private Summarizer metaSummarizer;
+
+  @BeforeEach
+  void setUp() {
+    metaSummarizer = new MetaSummarizer(docProcessor, posTagger);
   }
+
+  @Override
+  public Summarizer getSummarizer() {
+    return metaSummarizer;
+  }
+
 }

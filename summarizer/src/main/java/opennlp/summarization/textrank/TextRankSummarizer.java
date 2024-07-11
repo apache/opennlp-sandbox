@@ -17,7 +17,6 @@
 
 package opennlp.summarization.textrank;
 
-
 import opennlp.summarization.DocProcessor;
 import opennlp.summarization.Score;
 import opennlp.summarization.Sentence;
@@ -49,67 +48,60 @@ public class TextRankSummarizer implements Summarizer {
   }
 
   /* Sets up data and calls the TextRank algorithm..*/
-  public List<Score> rankSentences(String doc, List<Sentence> sentences, int maxWords) {
-    try {
-      //Rank sentences
-      TextRank summ = new TextRank(docProcessor);
-      List<String> sentenceStrL = new ArrayList<>();
-      List<String> processedSent = new ArrayList<>();
-      Hashtable<String, List<Integer>> iidx = new Hashtable<>();
+  public List<Score> rankSentences(List<Sentence> sentences, int maxWords) {
+    final TextRank summ = new TextRank(docProcessor);
+    final List<String> sentenceStrL = new ArrayList<>();
+    final List<String> processedSent = new ArrayList<>();
+    final Hashtable<String, List<Integer>> iidx = new Hashtable<>();
 
-      for (Sentence s : sentences) {
-        sentenceStrL.add(s.getStringVal());
-        String stemmedSent = s.stem();
-        processedSent.add(stemmedSent);
+    //Rank sentences
+    for (Sentence s : sentences) {
+      sentenceStrL.add(s.getStringVal());
+      String stemmedSent = s.stem();
+      processedSent.add(stemmedSent);
 
-        String[] wrds = stemmedSent.split(" ");
-        for (String w : wrds) {
-          if (iidx.get(w) != null)
-            iidx.get(w).add(s.getSentId());
-          else {
-            List<Integer> l = new ArrayList<>();
-            l.add(s.getSentId());
-            iidx.put(w, l);
-          }
+      String[] wrds = stemmedSent.split("\\s+");
+      for (String w : wrds) {
+        if (iidx.get(w) != null)
+          iidx.get(w).add(s.getSentId());
+        else {
+          List<Integer> l = new ArrayList<>();
+          l.add(s.getSentId());
+          iidx.put(w, l);
         }
       }
-
-      List<Score> finalScores = summ.getRankedSentences(doc, sentenceStrL, iidx, processedSent);
-
-      // SentenceClusterer clust = new SentenceClusterer();
-      //  clust.runClusterer(doc, summ.processedSent);
-
-      Hashtable<Integer, List<Integer>> links = summ.getLinks();
-
-      for (int i = 0; i < sentences.size(); i++) {
-        Sentence st = sentences.get(i);
-
-        //Add links..
-        List<Integer> currLnks = links.get(i);
-        if (currLnks == null) continue;
-        for (int j = 0; j < currLnks.size(); j++) {
-          if (j < i) st.addLink(sentences.get(j));
-        }
-      }
-
-      for (Score s : finalScores) {
-        Sentence st = sentences.get(s.getSentId());
-        st.setPageRankScore(s);
-      }
-
-      List<Score> reRank = finalScores; //reRank(sentences, finalScores, iidx, wordWt, maxWords);
-
-      return reRank;
-    } catch (Exception e) {
-      e.printStackTrace();
     }
-    return null;
+
+    List<Score> finalScores = summ.getRankedSentences(sentenceStrL, iidx, processedSent);
+
+    // SentenceClusterer clust = new SentenceClusterer();
+    //  clust.runClusterer(doc, summ.processedSent);
+
+    Hashtable<Integer, List<Integer>> links = summ.getLinks();
+
+    for (int i = 0; i < sentences.size(); i++) {
+      Sentence st = sentences.get(i);
+
+      // Add links..
+      List<Integer> currLnks = links.get(i);
+      if (currLnks == null) continue;
+      for (int j = 0; j < currLnks.size(); j++) {
+        if (j < i) st.addLink(sentences.get(j));
+      }
+    }
+
+    for (Score s : finalScores) {
+      Sentence st = sentences.get(s.getSentId());
+      st.setPageRankScore(s);
+    }
+
+    return finalScores; //reRank(sentences, finalScores, iidx, wordWt, maxWords);
   }
 
   @Override
   public String summarize(String article, int maxWords) {
-    List<Sentence> sentences = docProcessor.getSentencesFromStr(article);
-    List<Score> scores = rankSentences(article, sentences, maxWords);
+    List<Sentence> sentences = docProcessor.getSentences(article);
+    List<Score> scores = rankSentences(sentences, maxWords);
     return scores2String(sentences, scores, maxWords);
   }
 

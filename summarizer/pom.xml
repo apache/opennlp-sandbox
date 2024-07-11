@@ -31,10 +31,18 @@
   <name>Apache OpenNLP Summarizer</name>
 
   <properties>
+    <wordnet.version>2.4.0</wordnet.version>
     <wordnet-dict.version>3.1</wordnet-dict.version>
     
     <maven.download.plugin>1.9.0</maven.download.plugin>
   </properties>
+  <repositories>
+    <repository>
+      <id>maven.aksw.org</id>
+      <url>https://maven.aksw.org/repository/internal/</url>
+      <releases/>
+    </repository>
+  </repositories>
 
   <dependencies>
     <dependency>
@@ -45,7 +53,7 @@
     <dependency>
       <groupId>edu.mit</groupId>
       <artifactId>jwi</artifactId>
-      <version>2.2.3</version>
+      <version>${wordnet.version}</version>
     </dependency>
 
     <dependency>

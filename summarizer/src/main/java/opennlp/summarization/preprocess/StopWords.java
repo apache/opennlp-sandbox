@@ -215,7 +215,7 @@ public class StopWords {
     h.add("your");
     h.add("yours");
     h.add("yourself");
-    h.add("yourselves ");
+    h.add("yourselves");
   }
 
   public static StopWords getInstance() {

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package opennlp.summarization.meta;
+package opennlp.summarization.textrank;
 
 import opennlp.summarization.AbstractSummarizerTest;
 import opennlp.summarization.Summarizer;
@@ -23,21 +23,20 @@ import opennlp.summarization.Summarizer;
 import org.junit.jupiter.api.BeforeEach;
 
 /**
- * Tests the implementation of {@link MetaSummarizer}.
+ * Tests the implementation of {@link TextRankSummarizer} via a small news texts sample.
  */
-public class MetaSummarizerTest extends AbstractSummarizerTest {
+public class TextRankSummarizerNewsTest extends AbstractSummarizerTest {
 
   // SUT
-  private Summarizer metaSummarizer;
+  private Summarizer textRankSummarizer;
 
   @BeforeEach
   void setUp() {
-    metaSummarizer = new MetaSummarizer(docProcessor, posTagger);
+    textRankSummarizer = new TextRankSummarizer(docProcessor);
   }
 
   @Override
   public Summarizer getSummarizer() {
-    return metaSummarizer;
+    return textRankSummarizer;
   }
-
 }

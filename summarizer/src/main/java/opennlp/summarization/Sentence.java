@@ -32,32 +32,42 @@ import opennlp.tools.stemmer.PorterStemmer;
 public class Sentence {
 
   private static final String SPACE = " ";
-  private final List<Sentence> links;
+  private final List<Sentence> links = new ArrayList<>();
+  private final int sentId;
+
   // sentId is always position of sentence in doc.
-  private int sentId;
   private String stringVal;
   private Score pageRankScore;
   private int paragraph;
   private int paraPos;
   private boolean hasQuote;
-  private double wordWt = 0;
-  private int wordCnt;
+  private double wordWeight = 0;
+  private int wordCound = 0;
 
-  public Sentence() {
-    links = new ArrayList<>();
-  }
+  /**
+   * Instantiates a plain {@link Sentence} via a set of parameters.
+   *
+   * @param id A numeric identifier with a postive value.
+   * @param stringVal The string representation of the sentence.
+   * @param paragraph TODO clarify exact meaning of and constraints for this parameter.
+   * @param paraPos clarify exact meaning of and constraints for this parameter.
+   * @throws IllegalArgumentException Thrown if parameters are invalid.
+   */
+  public Sentence(int id, String stringVal, int paragraph, int paraPos) {
+    if (id < 0) throw new IllegalArgumentException("Parameter 'id' cannot be negative");
+    if (stringVal == null || stringVal.isBlank())
+      throw new IllegalArgumentException("Parameter 'stringVal' must not be null");
+    if (paragraph < 0) throw new IllegalArgumentException("Parameter 'paragraph' cannot be negative");
+    if (paraPos < 0) throw new IllegalArgumentException("Parameter 'paraPos' cannot be negative");
 
-  public Sentence(int id) {
-    this();
     this.sentId = id;
-  }
+    setParagraph(paragraph);
+    setStringVal(stringVal);
+    setParaPos(paraPos);
+  };
 
   public int getSentId() {
     return sentId;
-  }
-
-  public void setSentId(int sentId) {
-    this.sentId = sentId;
   }
 
   public Score getPageRankScore() {
@@ -84,7 +94,7 @@ public class Sentence {
     this.paraPos = paraPos;
   }
 
-  private int calcWrdCnt(String stringVal2) {
+  private int calcWordCount(String stringVal2) {
     int ret = 0;
     StopWords sw = StopWords.getInstance();
     String[] wrds = stringVal.split("\\s+");
@@ -102,7 +112,7 @@ public class Sentence {
   public void setStringVal(String stringVal) {
     this.stringVal = stringVal;
     if (stringVal.contains("\"")) this.hasQuote = true;
-    this.wordCnt = calcWrdCnt(stringVal);
+    this.wordCound = calcWordCount(stringVal);
   }
 
   public void addLink(Sentence s) {
@@ -113,38 +123,21 @@ public class Sentence {
     return this.links;
   }
 
-  public double getWordWt() {
-    return wordWt;
+  public double getWordWeight() {
+    return wordWeight;
   }
 
-  public void setWordWt(double wordWt) {
-    this.wordWt = wordWt;
+  public void setWordWeight(double wordWt) {
+    this.wordWeight = wordWt;
   }
 
-  public int getWordCnt() {
-    return wordCnt == 0 ? this.getStringVal().split("\\s+").length : wordCnt;
+  public int getWordCount() {
+    return wordCound;
   }
 
-  // Should add an article id to the sentence class. For now returns true if the ids are the same.
-
-  @Override
-  public final boolean equals(Object o) {
-    if (this == o) return true;
-    if (!(o instanceof Sentence sentence)) return false;
-
-    return sentId == sentence.sentId;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(sentId);
-  }
-
-  @Override
-  public String toString() {
-    return this.stringVal;//+ "("+ this.paragraph +", "+this.paraPos+")";
-  }
-
+  /**
+   * @return Applies stemming to each word and returns a fully-stemmed representation of a sentence.
+   */
   public String stem() {
     PorterStemmer stemmer = new PorterStemmer();
     StopWords sw = StopWords.getInstance();
@@ -166,5 +159,24 @@ public class Sentence {
       b.append(SPACE);
     }
     return b.toString();
+  }
+
+  // Should add an article id to the sentence class. For now returns true if the ids are the same.
+  @Override
+  public final boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof Sentence sentence)) return false;
+
+    return sentId == sentence.sentId;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(sentId);
+  }
+
+  @Override
+  public String toString() {
+    return this.stringVal; // + "("+ this.paragraph +", "+this.paraPos+")";
   }
 }

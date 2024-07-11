@@ -28,7 +28,7 @@ import opennlp.summarization.Sentence;
 import opennlp.summarization.Summarizer;
 import opennlp.summarization.lexicalchaining.LexicalChain;
 import opennlp.summarization.lexicalchaining.LexicalChainingSummarizer;
-import opennlp.summarization.lexicalchaining.OpenNLPPOSTagger;
+import opennlp.summarization.lexicalchaining.NounPOSTagger;
 import opennlp.summarization.textrank.TextRankSummarizer;
 
 import opennlp.summarization.DocProcessor;
@@ -47,7 +47,7 @@ public class MetaSummarizer implements Summarizer {
   private final TextRankSummarizer textRank;
   private final LexicalChainingSummarizer lcs;
 
-  public MetaSummarizer(DocProcessor docProcessor, OpenNLPPOSTagger posTagger) {
+  public MetaSummarizer(DocProcessor docProcessor, NounPOSTagger posTagger) {
     dp = docProcessor;
     textRank = new TextRankSummarizer(dp);
     lcs = new LexicalChainingSummarizer(dp, posTagger);
@@ -75,11 +75,11 @@ public class MetaSummarizer implements Summarizer {
   }
 
   public List<Score> rankSentences(String article, List<Sentence> sent, int maxWords) {
-    List<LexicalChain> lc = lcs.buildLexicalChains(article, sent);
+    List<LexicalChain> lc = lcs.buildLexicalChains(sent);
     Collections.sort(lc);
     Hashtable<Integer, Score> sentScores = new Hashtable<>();
     try {
-      List<Score> scores = textRank.rankSentences(article, sent, article.length());
+      List<Score> scores = textRank.rankSentences(sent, article.length());
       for (Score s : scores) sentScores.put(s.getSentId(), s);
     } catch (Exception ex) {
       ex.printStackTrace();
@@ -102,7 +102,7 @@ public class MetaSummarizer implements Summarizer {
         else {
           finalSc.add(sentScores.get(s.getSentId()));
           summSents.put(s, true);
-          currWordCnt += s.getWordCnt();
+          currWordCnt += s.getWordCount();
           break;
         }
       }
@@ -117,7 +117,7 @@ public class MetaSummarizer implements Summarizer {
   @Override
   public String summarize(String article, int maxWords) {
     // Build lexical Chains..
-    List<Sentence> sent = dp.getSentencesFromStr(article);
+    List<Sentence> sent = dp.getSentences(article);
     List<Score> finalSc = rankSentences(article, sent, maxWords);
 
     StringBuilder sb = new StringBuilder();
