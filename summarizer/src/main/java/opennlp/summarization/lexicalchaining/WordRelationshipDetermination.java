@@ -58,7 +58,7 @@ public class WordRelationshipDetermination {
       try {
         DICTIONARY.open();
       } catch (IOException e) {
-        e.printStackTrace();
+        throw new RuntimeException(e);
       }
   }
 
@@ -130,10 +130,7 @@ public class WordRelationshipDetermination {
     WordnetWord ww = (WordnetWord) w;
     IWord syn;
     if ((syn = this.isSynonym(noun, w)) != null) {
-      ret = new WordnetWord();
-      ret.lexicon = noun;
-      ret.id = syn.getID();
-      ret.wordSense = syn.getSenseKey();
+      ret = new WordnetWord(noun, syn.getSenseKey(), syn.getID());
     }
 
     //Construct an IWord object representing word associated with wordID
@@ -156,10 +153,7 @@ public class WordRelationshipDetermination {
         ISynset s = this.DICTIONARY.getSynset(id);
         IWord mat = inSynset(s, idxNoun);
         if (mat != null) {
-          ret = new WordnetWord();
-          ret.lexicon = noun;
-          ret.id = mat.getID();
-          ret.wordSense = mat.getSenseKey();
+          ret = new WordnetWord(noun, mat.getSenseKey(), mat.getID());
           break;
         }
       }
@@ -175,7 +169,7 @@ public class WordRelationshipDetermination {
    */
   public WordRelation getRelation(LexicalChain l, String noun, boolean checkMed) {
     WordRelation ret = new WordRelation(null, null, WordRelation.NO_RELATION);
-    for (Word w : l.word) {
+    for (Word w : l.getWords()) {
       //Exact match is a string relation.
       if (w.getLexicon().equalsIgnoreCase(noun)) {
         ret = new WordRelation(w, w, WordRelation.STRONG_RELATION);
@@ -199,15 +193,12 @@ public class WordRelationshipDetermination {
       //		openDict();
       List<IWordID> wordIDs = this.DICTIONARY.getIndexWord(noun, POS.NOUN).getWordIDs();
       for (IWordID wid : wordIDs) {
-        Word w = new WordnetWord();
-        w.setLexicon(noun);
-        w.setID(wid);
+        Word w = new WordnetWord(noun, wid);
         ret.add(w);
       }
     } catch (Exception ex) {
       //Not in dictionary
-      Word w = new WordnetWord();
-      w.setLexicon(noun);
+      Word w = new WordnetWord(noun);
       ret.add(w);
     }
     return ret;

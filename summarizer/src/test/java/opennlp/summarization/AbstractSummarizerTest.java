@@ -17,7 +17,7 @@
 
 package opennlp.summarization;
 
-import opennlp.summarization.lexicalchaining.OpenNLPPOSTagger;
+import opennlp.summarization.lexicalchaining.NounPOSTagger;
 import opennlp.summarization.preprocess.DefaultDocProcessor;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -37,12 +37,12 @@ public abstract class AbstractSummarizerTest {
   private static final Logger log = LoggerFactory.getLogger(AbstractSummarizerTest.class);
 
   protected static DefaultDocProcessor docProcessor;
-  protected static OpenNLPPOSTagger posTagger;
+  protected static NounPOSTagger posTagger;
 
   @BeforeAll
   static void initEnv() throws IOException {
-    docProcessor = new DefaultDocProcessor(AbstractSummarizerTest.class.getResourceAsStream("/en-sent.bin"));
-    posTagger = new OpenNLPPOSTagger(docProcessor, AbstractSummarizerTest.class.getResourceAsStream("/en-pos-maxent.bin"));
+    docProcessor = new DefaultDocProcessor("en");
+    posTagger = new NounPOSTagger("en");
   }
 
   /**
@@ -52,17 +52,17 @@ public abstract class AbstractSummarizerTest {
 
   @ParameterizedTest(name = "news story {index}")
   @ValueSource(strings = {
-          "/meta/0a2035f3f73b06a5150a6f01cffdf45d027bbbed.story",
-          "/meta/0a2278bec4a80aec1bc3e9e7a9dac10ac1b6425b.story",
-          "/meta/0a3040b6c1bba95efca727158f128a19c44ec8ba.story",
-          "/meta/0a3479b53796863a664c32ca20d8672583335d2a.story",
-          "/meta/0a3639cb86487e72e2ba084211f99799918aedf8.story",
-          "/meta/0a4092bef1801863296777ebcfeceb1aec23c78f.story",
-          "/meta/0a5458d3427b290524a8df11d8503a5b57b32747.story",
-          "/meta/0a5691b8fe654b6b2cdace5ab87aff2ee4c23577.story",
-          "/meta/0a6790f886a42a76945d4a21ed27c4ebd9ca1025.story"
+          "/news/0a2035f3f73b06a5150a6f01cffdf45d027bbbed.story",
+          "/news/0a2278bec4a80aec1bc3e9e7a9dac10ac1b6425b.story",
+          "/news/0a3040b6c1bba95efca727158f128a19c44ec8ba.story",
+          "/news/0a3479b53796863a664c32ca20d8672583335d2a.story",
+          "/news/0a3639cb86487e72e2ba084211f99799918aedf8.story",
+          "/news/0a4092bef1801863296777ebcfeceb1aec23c78f.story",
+          "/news/0a5458d3427b290524a8df11d8503a5b57b32747.story",
+          "/news/0a5691b8fe654b6b2cdace5ab87aff2ee4c23577.story",
+          "/news/0a6790f886a42a76945d4a21ed27c4ebd9ca1025.story"
   })
-  public void testSummarize(String filename) {
+  public void testSummarize(String filename) throws IOException {
     String article = docProcessor.docToString(filename);
     String summary = getSummarizer().summarize(article, 20);
     assertNotNull(summary);

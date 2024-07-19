@@ -17,15 +17,18 @@
 
 package opennlp.summarization;
 
+/**
+ * Describes the API of a component which summarizes the content of news, articles or books.
+ */
 public interface Summarizer {
 
   /**
-   * Summarizes a given {@code article}. The length of the summary is
+   * Summarizes a given {@code text}. The length of the summary is
    * influenced by the specified {@code maxWords} parameter.
    *
-   * @param article  The text to summarize. Must not be {@code null} and not be blank.
+   * @param text  The content to summarize. Must not be {@code null} and not be blank.
    * @param maxWords The maximum number of words. Must be larger than {@code zero}.
    * @return The summary or an {@code empty} String if no summary could be derived.
    */
-  String summarize(String article, int maxWords);
+  String summarize(String text, int maxWords);
 }

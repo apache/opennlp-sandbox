@@ -19,6 +19,10 @@ package opennlp.summarization.lexicalchaining;
 
 import java.util.List;
 
+/**
+ * A basic POS tagger which describes functionality to tag text and
+ * filter tokens for certain word classes.
+ */
 public interface POSTagger {
 
   //Tagger types..
@@ -28,7 +32,26 @@ public interface POSTagger {
   int ADVERB = 3;
   int PRONOUN = 4;
 
+  /**
+   * Tags a given {@code input} text so that word classes are appended to each token.
+   *
+   * @param input The text to process. Must not be {@code null}. If empty, an empty String is returned.
+   * @return The POS tagged text. May be empty.
+   * @throws IllegalArgumentException Thrown if parameters are invalid.
+   */
   String getTaggedString(String input);
 
-  List<String> getWordsOfType(String sent, int type);
+  /**
+   * Extracts words from POS-tagged {@code tokens} which equal a certain word class ({@code type}).
+   *
+   * @param tokens An array of words to filter for its word class ({@code type}). Must not be {@code null}.
+   *               Must be in a tagged form, that is, separated into {@code token/word-class} pairs.
+   * @param type One of the supported types: {@link #NOUN}, {@link #VERB}, {@link #ADJECTIVE},
+   *             {@link #ADVERB}, or {@link #PRONOUN}. Must not be less than {@code zero}
+   *             and not be more than {@link #PRONOUN}.
+   * @return A list of words that match the given {@code type}. May be empty, yet guaranteed to be non-{@code null}.
+   *
+   * @throws IllegalArgumentException Thrown if parameters are invalid.
+   */
+  List<String> getWordsOfType(String[] tokens, int type);
 }

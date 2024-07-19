@@ -18,6 +18,7 @@ package opennlp.summarization.lexicalchaining;
 
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Objects;
 
 import edu.mit.jwi.item.IPointer;
 import edu.mit.jwi.item.ISenseKey;
@@ -25,16 +26,58 @@ import edu.mit.jwi.item.ISynset;
 import edu.mit.jwi.item.ISynsetID;
 import edu.mit.jwi.item.IWordID;
 
+/**
+ * A {@link Word} implementation based on Wordnet concepts.
+ */
 public class WordnetWord implements Word {
-  final Hashtable<IPointer, List<ISynsetID>> rels;
-  String lexicon;
-  ISenseKey wordSense;
-  IWordID id;
-  //Cache..
+
+  private String lexicon;
+  private IWordID id;
+  private ISenseKey wordSense;
+
+  final Hashtable<IPointer, List<ISynsetID>> rels = new Hashtable<>();
+  // Cache..
   ISynset synonyms;
 
-  public WordnetWord() {
-    rels = new Hashtable<>();
+  /**
+   * Instantiates a {@link WordnetWord} via its lexicon term.
+   *
+   * @param lexicon Must not be {@code null} and not be an empty string.
+   * @throws IllegalArgumentException Thrown if parameters are invalid.
+   */
+  public WordnetWord(String lexicon) {
+    if (lexicon == null || lexicon.isBlank()) throw new IllegalArgumentException("parameter 'lexicon' must not be null or empty");
+    setLexicon(lexicon);
+  }
+
+  /**
+   * Instantiates a {@link WordnetWord} via its lexicon term and a {@link IWordID}.
+   *
+   * @param lexicon Must not be {@code null} and not be an empty string.
+   * @param id A unique identifier sufficient to retrieve a particular word from the Wordnet database.
+   *           Must not be {@code null}.
+   * @throws IllegalArgumentException Thrown if parameters are invalid.
+   */
+  public WordnetWord(String lexicon, IWordID id) {
+    this(lexicon);
+    if (id == null) throw new IllegalArgumentException("parameter 'id' must not be null");
+    setID(id);
+  }
+
+  /**
+   * Instantiates a {@link WordnetWord} via its lexicon term and a {@link IWordID}.
+   *
+   * @param lexicon Must not be {@code null} and not be an empty string.
+   * @param wordSense A sense key is a unique string that identifies a Wordnet word.
+   *                  Must not be {@code null}.
+   * @param id A unique identifier sufficient to retrieve a particular word from the Wordnet database.
+   *           Must not be {@code null}.
+   * @throws IllegalArgumentException Thrown if parameters are invalid.
+   */
+  public WordnetWord(String lexicon, ISenseKey wordSense, IWordID id) {
+    this(lexicon, id);
+    if (wordSense == null) throw new IllegalArgumentException("parameter 'wordSense' must not be null");
+    setSense(wordSense);
   }
 
   @Override
@@ -73,7 +116,17 @@ public class WordnetWord implements Word {
   }
 
   @Override
+  public final boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof WordnetWord that)) return false;
+
+    return Objects.equals(lexicon, that.lexicon) && Objects.equals(id, that.id);
+  }
+
+  @Override
   public int hashCode() {
-    return toString().hashCode();
+    int result = Objects.hashCode(lexicon);
+    result = 31 * result + Objects.hashCode(id);
+    return result;
   }
 }

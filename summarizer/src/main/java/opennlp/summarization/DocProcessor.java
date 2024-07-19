@@ -31,12 +31,20 @@ import opennlp.tools.stemmer.Stemmer;
 public interface DocProcessor {
 
   /**
-   * Extracts sentences from a string representing an article.
+   * Extracts {@link Sentence sentences} from a string representing an article.
+   *
+   * @param text The text to process; if {@code null} or empty, an empty list is returned.
+   *
+   * @return The resulting list of detected {@link Sentence sentences}.
    */
-  List<Sentence> getSentencesFromStr(String text);
+  List<Sentence> getSentences(String text);
 
   /**
-   * Parses out words from a specified {@link String sent}.
+   * Extracts words from a specified {@link String sent}.
+   *
+   * @param sent The sentence to process; if {@code null} or empty, an zero length array is returned.
+   *
+   * @return An array of tokens (words) contained in the given {@code sent}.
    */
   String[] getWords(String sent);
 

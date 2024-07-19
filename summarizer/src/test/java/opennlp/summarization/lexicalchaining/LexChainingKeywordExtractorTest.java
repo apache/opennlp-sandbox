@@ -17,43 +17,69 @@
 
 package opennlp.summarization.lexicalchaining;
 
+import java.util.Collections;
 import java.util.List;
 
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
 import opennlp.summarization.Sentence;
-import opennlp.summarization.preprocess.DefaultDocProcessor;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class LexChainingKeywordExtractorTest {
+class LexChainingKeywordExtractorTest extends AbstractLexicalChainTest {
 
-  private static final String ARTICLE =
-      "US President Barack Obama has welcomed an agreement between the US and Russia under which Syria's chemical weapons must be destroyed or removed by mid-2014 as an \"important step\"."
-          + "But a White House statement cautioned that the US expected Syria to live up to its public commitments. "
-          + "The US-Russian framework document stipulates that Syria must provide details of its stockpile within a week. "
-          + "If Syria fails to comply, the deal could be enforced by a UN resolution. "
-          + "China, France, the UK, the UN and Nato have all expressed satisfaction at the agreement. "
-          + "In Beijing, Foreign Minister Wang Yi said on Sunday that China welcomes the general agreement between the US and Russia.";
+  private static List<LexicalChain> chains;
 
-  private static DefaultDocProcessor dp;
-  private static LexicalChainingSummarizer lcs;
+  // SUT
+  private LexicalChainingKeywordExtractor keywordExtractor;
 
   @BeforeAll
   static void initEnv() throws Exception {
-    dp = new DefaultDocProcessor(LexChainingKeywordExtractorTest.class.getResourceAsStream("/en-sent.bin"));
-    lcs = new LexicalChainingSummarizer(dp, LexChainingKeywordExtractorTest.class.getResourceAsStream("/en-pos-maxent.bin"));
+    AbstractLexicalChainTest.initEnv();
+    // Prep
+    List<Sentence> sent = dp.getSentences(ARTICLE);
+    assertNotNull(sent);
+    assertFalse(sent.isEmpty());
+    chains = lcs.buildLexicalChains(sent);
+    assertNotNull(chains);
+    assertFalse(chains.isEmpty());
+  }
+
+  @BeforeEach
+  public void setUp() {
+    keywordExtractor = new LexicalChainingKeywordExtractor();
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {1, 5, 42, Integer.MAX_VALUE})
+  void testExtractKeywords(int noOfKeywords) {
+    List<String> keywords = keywordExtractor.extractKeywords(chains, noOfKeywords);
+    assertNotNull(keywords);
+    assertFalse(keywords.isEmpty());
   }
 
   @Test
-  void testGetKeywords() {
-    List<Sentence> sent = dp.getSentencesFromStr(ARTICLE);
-    List<LexicalChain> vh = lcs.buildLexicalChains(ARTICLE, sent);
-    LexChainingKeywordExtractor ke = new LexChainingKeywordExtractor();
-    List<String> keywords = ke.getKeywords(vh, 5);
+  void testExtractKeywordsWithEmptyInput() {
+    List<String> keywords = keywordExtractor.extractKeywords(Collections.emptyList(), 5);
     assertNotNull(keywords);
-    assertFalse(keywords.isEmpty());
+    assertTrue(keywords.isEmpty());
+  }
+
+  @Test
+  void testExtractKeywordsInvalid1() {
+    assertThrows(IllegalArgumentException.class, () -> keywordExtractor.extractKeywords(null, 5));
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {Integer.MIN_VALUE, -1, 0})
+  void testExtractKeywordsInvalid2(int noOfKeywords) {
+    assertThrows(IllegalArgumentException.class, () -> keywordExtractor.extractKeywords(chains, noOfKeywords));
   }
 }

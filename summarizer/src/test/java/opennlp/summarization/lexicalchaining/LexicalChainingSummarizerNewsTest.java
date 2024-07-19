@@ -15,28 +15,32 @@
  * limitations under the License.
  */
 
-package opennlp.summarization.textrank;
+package opennlp.summarization.lexicalchaining;
 
 import opennlp.summarization.AbstractSummarizerTest;
 import opennlp.summarization.Summarizer;
 
 import org.junit.jupiter.api.BeforeEach;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 /**
- * Tests the implementation of {@link TextRankSummarizer}.
+ * Tests the implementation of {@link LexicalChainingSummarizer} via a small news texts sample.
  */
-public class TextRankSummarizerTest extends AbstractSummarizerTest {
+public class LexicalChainingSummarizerNewsTest extends AbstractSummarizerTest {
 
   // SUT
-  private Summarizer textRankSummarizer;
+  private LexicalChainingSummarizer lexicalChainSummarizer;
 
   @BeforeEach
   void setUp() {
-    textRankSummarizer = new TextRankSummarizer(docProcessor);
+    lexicalChainSummarizer = new LexicalChainingSummarizer(docProcessor, posTagger);
   }
 
   @Override
   public Summarizer getSummarizer() {
-    return textRankSummarizer;
+    return lexicalChainSummarizer;
   }
 }

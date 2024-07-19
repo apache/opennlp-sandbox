@@ -17,8 +17,7 @@
 
 package opennlp.summarization.preprocess;
 
-import java.io.BufferedInputStream;
-import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -28,8 +27,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Hashtable;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import opennlp.summarization.Sentence;
@@ -38,6 +35,7 @@ import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
 import opennlp.tools.stemmer.PorterStemmer;
 import opennlp.tools.stemmer.Stemmer;
+import opennlp.tools.util.DownloadUtil;
 
 /**
  * Parses a document to sentences.
@@ -53,16 +51,21 @@ public class DefaultDocProcessor implements DocProcessor {
   private static final int SENTENCE_FRAG = OPEN_NLP;
 
   private final Stemmer stemmer;
-  private SentenceModel sentModel;
+  private final SentenceModel sentModel;
 
-  public DefaultDocProcessor(InputStream fragModelFile) {
+  /**
+   * Instantiates a {@link DocProcessor} for a Sentence detection model for the specified {@code languageCode}.
+   *
+   * @param languageCode An ISO-language code for obtaining a {@link SentenceModel}.
+   *                     Must not be {@code null} and not be blank.
+   * @throws IOException Thrown if IO errors occurred.
+   * @throws IllegalArgumentException Thrown if parameters are invalid.
+   */
+  public DefaultDocProcessor(String languageCode) throws IOException {
+    if (languageCode == null || languageCode.isBlank())
+      throw new IllegalArgumentException("Parameter 'languageCode' must not be null or blank");
     stemmer = new PorterStemmer();
-
-    try (InputStream modelIn = new BufferedInputStream(fragModelFile)) {
-      sentModel = new SentenceModel(modelIn);
-    } catch (Exception ex) {
-      Logger.getAnonymousLogger().info("Error while parsing.. Ignoring the line and marching on.. " + ex.getMessage());
-    }
+    sentModel = DownloadUtil.downloadModel(languageCode, DownloadUtil.ModelType.SENTENCE_DETECTOR, SentenceModel.class);
   }
 
   // Str - Document or para
@@ -81,8 +84,8 @@ public class DefaultDocProcessor implements DocProcessor {
     for (int end = iterator.next(); end != BreakIterator.DONE; start = end, end = iterator.next()) {
       String sentence = str.substring(start, end);//str.substring(oldSentEndIdx, sentEndIdx).trim();
 
-      //Add the sentence as-is; do any processing at the word level
-      //To lower case and trim all punctuations
+      // Add the sentence as-is; do any processing at the word level
+      // To lower case and trim all punctuations
       sentences.add(sentence);
       wrdItr.setText(sentence);
       StringBuilder procSent = new StringBuilder();
@@ -93,12 +96,12 @@ public class DefaultDocProcessor implements DocProcessor {
         String word = sentence.substring(wrdStrt, wrdEnd);//words[i].trim();
         word = word.replace(REGEX, "");
 
-        //Skip stop words and stem the word
+        // Skip stop words and stem the word
         if (sw.isStopWord(word)) continue;
 
         String stemedWrd = stemmer.stem(word).toString();
 
-        //update iidx by adding the current sentence to the list
+        // update iidx by adding the current sentence to the list
         if (iidx != null) {
           if (stemedWrd.length() > 1) {
             List<Integer> sentList = iidx.get(stemedWrd);
@@ -107,7 +110,7 @@ public class DefaultDocProcessor implements DocProcessor {
             }
 
             sentList.add(sentCnt);
-            //Save it back
+            // Save it back
             iidx.put(stemedWrd, sentList);
           }
         }
@@ -121,60 +124,77 @@ public class DefaultDocProcessor implements DocProcessor {
   }
 
 
-  public String docToString(String fileName) {
-    StringBuilder docBuffer = new StringBuilder();
+  /**
+   * Reads a document's content from a file.
+   *
+   * @param fileName The path relative file reference of the resource to read in.
+   *                 If {@code null} or empty, an empty String is returned.
+   * @return A string representation of the file's contents.
+   */
+  public String docToString(String fileName) throws IOException {
+    if (fileName == null || fileName.isBlank()) {
+      return "";
+    } else {
+      StringBuilder docBuffer = new StringBuilder();
+      try (InputStream in = DefaultDocProcessor.class.getResourceAsStream(fileName);
+           LineNumberReader lnr = new LineNumberReader(new InputStreamReader(in))) {
+        String nextLine;
 
-    try (InputStream in = DefaultDocProcessor.class.getResourceAsStream(fileName);
-         LineNumberReader lnr = new LineNumberReader(new InputStreamReader(in))) {
-      String nextLine;
-
-      while ((nextLine = lnr.readLine()) != null) {
-        String trimmedLine = nextLine.trim();
-        if (!trimmedLine.isEmpty()) {
-          docBuffer.append(REPLACEMENT_PATTERN.matcher(trimmedLine).replaceAll("")).append(" ");
-        }
-      }
-    } catch (Exception ex) {
-      Logger.getLogger(DefaultDocProcessor.class.getName()).log(Level.SEVERE, null, ex);
-    }
-    return docBuffer.toString();
-  }
-
-  //List of sentences form a document
-  public List<Sentence> docToSentList(String fileName) {
-    List<Sentence> sentList = new ArrayList<>();
-
-    try (LineNumberReader lnr = new LineNumberReader(new FileReader(fileName))) {
-      String nextLine;
-      int paraNo = 0;
-      int sentNo = 0;
-      while ((nextLine = lnr.readLine()) != null) {
-        String trimmedLine = nextLine.trim();
-        if (!trimmedLine.isEmpty()) {
-          List<String> sents = new ArrayList<>();
-          List<String> cleanedSents = new ArrayList<>();
-          this.getSentences(trimmedLine, sents, null, cleanedSents);
-          int paraPos = 1;
-          for (String sen : sents) {
-            Sentence s = new Sentence();
-            s.setSentId(sentNo++);
-            s.setParagraph(paraNo);
-            s.setStringVal(sen);
-            s.setParaPos(paraPos++);
-            sentList.add(s);
+        while ((nextLine = lnr.readLine()) != null) {
+          String trimmedLine = nextLine.trim();
+          if (!trimmedLine.isEmpty()) {
+            docBuffer.append(REPLACEMENT_PATTERN.matcher(trimmedLine).replaceAll("")).append(" ");
           }
-          paraNo++;
         }
       }
-
-    } catch (Exception ex) {
-      Logger.getLogger(DefaultDocProcessor.class.getName()).log(Level.SEVERE, null, ex);
+      return docBuffer.toString();
     }
-    return sentList;
   }
 
+  /**
+   * Reads a document's content from a file.
+   *
+   * @param fileName The path relative file reference of the resource to read in.
+   *                 If {@code null} or empty, an empty List is returned.
+   * @return A list {@link Sentence sentences} representing the file's contents.
+   */
+  public List<Sentence> docToSentences(String fileName) throws IOException {
+    if (fileName == null || fileName.isBlank()) {
+      return Collections.emptyList();
+    } else {
+      List<Sentence> sentList = new ArrayList<>();
+      try (InputStream in = DefaultDocProcessor.class.getResourceAsStream(fileName);
+           LineNumberReader lnr = new LineNumberReader(new InputStreamReader(in))) {
+        String nextLine;
+        int paraNo = 0;
+        int sentNo = 0;
+        while ((nextLine = lnr.readLine()) != null) {
+          String trimmedLine = nextLine.trim();
+          if (!trimmedLine.isEmpty()) {
+            List<String> sents = new ArrayList<>();
+            List<String> cleanedSents = new ArrayList<>();
+            this.getSentences(trimmedLine, sents, null, cleanedSents);
+            int paraPos = 1;
+            for (String sen : sents) {
+              Sentence s = new Sentence(sentNo++, sen, paraNo, paraPos++);
+              sentList.add(s);
+            }
+            paraNo++;
+          }
+        }
+      }
+      return sentList;
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
   @Override
-  public List<Sentence> getSentencesFromStr(String text) {
+  public List<Sentence> getSentences(String text) {
+    if (text == null || text.isBlank()) {
+      return Collections.emptyList();
+    }
     List<Sentence> ret = new ArrayList<>();
     List<String> sentStrs = new ArrayList<>();
     List<String> cleanedSents = new ArrayList<>();
@@ -188,24 +208,28 @@ public class DefaultDocProcessor implements DocProcessor {
       Collections.addAll(sentStrs, sentences);
     }
     int sentNo = 0;
-
     for (String sen : sentStrs) {
-      Sentence s = new Sentence();
-      s.setSentId(sentNo);
-      s.setParagraph(1);
-      s.setStringVal(sen);
-      s.setParaPos(sentNo);
+      Sentence s = new Sentence(sentNo, sen, 1, sentNo);
       ret.add(s);
       sentNo++;
     }
     return ret;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public String[] getWords(String sent) {
+    if (sent == null || sent.isBlank()) {
+      return new String[0];
+    }
     return sent.trim().split("\\s+");
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public Stemmer getStemmer() {
     return stemmer;
