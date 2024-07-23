@@ -20,14 +20,15 @@ package opennlp.tools.textsimilarity;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 public class ParseTreeMatcher {
 
   private static final int NUMBER_OF_ITERATIONS = 2;
 
-  private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
-  private POSManager posManager = new POSManager();
-  private LemmaFormManager lemmaFormManager = new LemmaFormManager();
+  private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
+  private final POSManager posManager = new POSManager();
+  private final LemmaFormManager lemmaFormManager = new LemmaFormManager();
 
   public ParseTreeMatcher() {
 
@@ -38,9 +39,9 @@ public class ParseTreeMatcher {
     List<String> pos1 = chunk1.getPOSs();
     List<String> pos2 = chunk1.getPOSs();
 
-    List<String> commonPOS = new ArrayList<String>(), commonLemmas = new ArrayList<String>();
+    List<String> commonPOS = new ArrayList<>(), commonLemmas = new ArrayList<>();
     int k1 = 0, k2 = 0;
-    Boolean incrFirst = true;
+    boolean incrFirst = true;
     while (k1 < pos1.size() && k2 < pos2.size()) {
       // first check if the same POS
       String sim = posManager.similarPOS(pos1.get(k1), pos2.get(k2));
@@ -73,7 +74,7 @@ public class ParseTreeMatcher {
   // into {A B {X Y} C}
   // should only be applied to a noun phrase
   public ParseTreeChunk prepositionalNNSTransform(ParseTreeChunk ch) {
-    List<String> transfPOS = new ArrayList<String>(), transfLemmas = new ArrayList<String>();
+    List<String> transfPOS = new ArrayList<>(), transfLemmas = new ArrayList<>();
     if (!ch.getPOSs().contains("IN"))
       return ch;
     int indexIN = ch.getPOSs().lastIndexOf("IN");
@@ -114,7 +115,7 @@ public class ParseTreeMatcher {
     ParseTreeChunk chRes3 = generalizeTwoGroupedPhrasesRandomSelectHighestScore(
         prepositionalNNSTransform(chunk2), chunk1);
 
-    ParseTreeChunk chRes = null;
+    ParseTreeChunk chRes;
     if (parseTreeChunkListScorer.getScore(chRes1) > parseTreeChunkListScorer
         .getScore(chRes2))
       if (parseTreeChunkListScorer.getScore(chRes1) > parseTreeChunkListScorer
@@ -139,18 +140,19 @@ public class ParseTreeMatcher {
     // Double> ();
     int timesRepetitiveRun = NUMBER_OF_ITERATIONS;
 
-    Double globalScore = -1.0;
+    double globalScore = -1.0;
     ParseTreeChunk result = null;
 
     for (int timesRun = 0; timesRun < timesRepetitiveRun; timesRun++) {
-      List<String> commonPOS = new ArrayList<String>(), commonLemmas = new ArrayList<String>();
+      List<String> commonPOS = new ArrayList<>(), commonLemmas = new ArrayList<>();
       int k1 = 0, k2 = 0;
-      Double score = 0.0;
+      double score;
       while (k1 < pos1.size() && k2 < pos2.size()) {
         // first check if the same POS
         String sim = posManager.similarPOS(pos1.get(k1), pos2.get(k2));
         String lemmaMatch = lemmaFormManager.matchLemmas(null, chunk1
             .getLemmas().get(k1), chunk2.getLemmas().get(k2), sim);
+	Random rand = new Random();
         // if (LemmaFormManager.acceptableLemmaAndPOS(sim, lemmaMatch)){
         if ((sim != null)
             && (lemmaMatch == null || (lemmaMatch != null && !lemmaMatch
@@ -168,7 +170,7 @@ public class ParseTreeMatcher {
           }
           k1++;
           k2++;
-        } else if (Math.random() > 0.5) {
+        } else if (rand.nextDouble() > 0.5) {
           k1++;
         } else {
           k2++;
@@ -187,9 +189,9 @@ public class ParseTreeMatcher {
     }
 
     for (int timesRun = 0; timesRun < timesRepetitiveRun; timesRun++) {
-      List<String> commonPOS = new ArrayList<String>(), commonLemmas = new ArrayList<String>();
+      List<String> commonPOS = new ArrayList<>(), commonLemmas = new ArrayList<>();
       int k1 = pos1.size() - 1, k2 = pos2.size() - 1;
-      Double score = 0.0;
+      double score;
       while (k1 >= 0 && k2 >= 0) {
         // first check if the same POS
         String sim = posManager.similarPOS(pos1.get(k1), pos2.get(k2));

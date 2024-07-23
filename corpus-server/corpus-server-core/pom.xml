@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+   Licensed to the Apache Software Foundation (ASF) under one
+   or more contributor license agreements.  See the NOTICE file
+   distributed with this work for additional information
+   regarding copyright ownership.  The ASF licenses this file
+   to you under the Apache License, Version 2.0 (the
+   "License"); you may not use this file except in compliance
+   with the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing,
+   software distributed under the License is distributed on an
+   "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+   KIND, either express or implied.  See the License for the
+   specific language governing permissions and limitations
+   under the License.
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.apache.opennlp</groupId>
+    <artifactId>corpus-server</artifactId>
+    <version>2.3.4-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>corpus-server-core</artifactId>
+  <name>Apache OpenNLP Corpus Server Core</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.compendium</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.glassfish.jersey.containers</groupId>
+      <artifactId>jersey-container-servlet</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.glassfish.jersey.media</groupId>
+      <artifactId>jersey-media-json-jackson</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.glassfish.jersey.media</groupId>
+      <artifactId>jersey-media-json-jettison</artifactId>
+      <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.codehaus.jettison</groupId>
+          <artifactId>jettison</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.glassfish.jersey.core</groupId>
+      <artifactId>jersey-client</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.codehaus.jettison</groupId>
+      <artifactId>jettison</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+      </plugin>
+
+      <!-- to generate the MANIFEST-FILE required by the bundle -->
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>5.1.8</version>
+        <extensions>true</extensions>
+        <executions>
+          <execution>
+            <id>bundle-manifest</id>
+            <phase>process-classes</phase>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <manifestLocation>${project.build.directory}/META-INF</manifestLocation>
+          <instructions>
+            <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+            <Import-Package>
+              !javax.persistence.*,
+              !javax.servlet.annotation,
+              !javax.servlet.jsp.*,
+              !javax.microedition.*,
+              !javax.mail.*,
+              !javax.transaction.xa,
+              !javax.jms,
+              !javax.interceptor,!javax.inject,
+              !javax.enterprise.*,
+              !javax.annotation.security,
+              !javax.ejb,
+              !com.sun.xml.fastinfoset.*,
+              !org.jvnet.*,
+              !org.apache.derby.impl.drda,
+              !com.ibm.jvm,
+              !com.sun.jdmk.comm,
+              !com.sun.net.httpserver,
+              !sun.misc,
+              javax.servlet,
+              *,
+              com.sun.jersey.json.impl.provider.entity.*,
+              com.sun.jersey.json.*,
+              org.codehaus.jackson.*,
+              org.codehaus.jackson.xc,
+              org.apache.opennlp.corpus_server,
+              com.sun.jersey.api.core,
+              com.sun.jersey.spi.container.servlet</Import-Package>
+            <!-- Import-Package>org.apache.derby.jdbc, !com.ibm.jvm,!com.sun.jdmk.comm,!com.sun.net.httpserver,*,com.sun.jersey.api.core,com.sun.jersey.spi.container.servlet</Import-Package-->
+            <Export-Package>org.apache.opennlp.corpus_server.*, org.apache.opennlp.corpus_server.search</Export-Package>
+            <Webapp-Context>rest</Webapp-Context>
+            <Web-ContextPath>rest</Web-ContextPath>
+            <Bundle-Activator>org.apache.opennlp.corpus_server.CorpusServerBundle</Bundle-Activator>
+          </instructions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

@@ -32,7 +32,7 @@ import opennlp.tools.util.ReverseListIterator;
  */
 public abstract class DiscourseElement {
 
-  private List<MentionContext> extents;
+  private final List<MentionContext> extents;
   private int id = -1;
   private MentionContext lastExtent;
 
@@ -42,7 +42,7 @@ public abstract class DiscourseElement {
    * @param mention The mention which begins this discourse element.
    */
   public DiscourseElement(MentionContext mention) {
-    extents = new ArrayList<MentionContext>(1);
+    extents = new ArrayList<>(1);
     lastExtent = mention;
     extents.add(mention);
   }
@@ -53,7 +53,7 @@ public abstract class DiscourseElement {
    * @return the {@link Iterator}.
    */
   public Iterator<MentionContext> getRecentMentions() {
-    return new ReverseListIterator<MentionContext>(extents);
+    return new ReverseListIterator<>(extents);
   }
 
   /**

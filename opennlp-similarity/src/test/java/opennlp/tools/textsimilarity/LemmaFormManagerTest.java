@@ -17,33 +17,33 @@
 
 package opennlp.tools.textsimilarity;
 
-import static junit.framework.Assert.assertNotNull;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class LemmaFormManagerTest extends TestCase {
+class LemmaFormManagerTest {
 
-  private LemmaFormManager lemmaFormManager = new LemmaFormManager();
+  private final LemmaFormManager lemmaFormManager = new LemmaFormManager();
 
-  public void testNotNull() {
+  @BeforeEach
+  void setup() {
     assertNotNull(lemmaFormManager);
   }
 
-  public void testMatches() {
+  @Test
+  void testMatches() {
     assertEquals(lemmaFormManager.matchLemmas(null, "loud", "loudness", "NN"),
         "loud");
-    assertEquals(lemmaFormManager.matchLemmas(null, "24", "12", "CD"), null);
+    assertNull(lemmaFormManager.matchLemmas(null, "24", "12", "CD"));
     assertEquals(lemmaFormManager.matchLemmas(null, "loud", "loudly", "NN"),
         "loud");
-    assertEquals(
-        lemmaFormManager.matchLemmas(null, "!upgrade", "upgrade", "NN"),
+    assertEquals(lemmaFormManager.matchLemmas(null, "!upgrade", "upgrade", "NN"),
         "!upgrade");
-    assertEquals(
-        lemmaFormManager.matchLemmas(null, "!upgrade", "upgrades", "NN"), null);
-    assertEquals(lemmaFormManager.matchLemmas(null, "!upgrade", "get", "NN"),
-        null);
+    assertNull(lemmaFormManager.matchLemmas(null, "!upgrade", "upgrades", "NN"));
+    assertNull(lemmaFormManager.matchLemmas(null, "!upgrade", "get", "NN"));
   }
 
 }

@@ -24,13 +24,13 @@ import opennlp.tools.disambiguator.WSDHelper;
 // TODO extend Word from Wordnet
 public class Word {
 
-  public static enum Type {
+  public enum Type {
     WORD(1, "word"), PUNCTUATIONMARK(2, "pm");
 
-    public int code;
-    public String type;
+    public final int code;
+    public final String type;
 
-    private Type(int code, String type) {
+    Type(int code, String type) {
       this.code = code;
       this.type = type;
     }
@@ -71,7 +71,7 @@ public class Word {
    * @param wnum
    *          id of the word in the sentence
    * @param type
-   *          the type in this case is {@link Type.DWORD}
+   *          the type in this case is {@link Type#WORD}
    * @param word
    *          The raw word, as it appears in the sentence
    * @param cmd
@@ -112,7 +112,7 @@ public class Word {
    * @param snum
    *          id of the sentence
    * @param type
-   *          the type in this case is {@link Type.DWORD}
+   *          the type in this case is {@link Type#WORD}
    * @param word
    *          The raw word, as it appears in the sentence
    * @param cmd

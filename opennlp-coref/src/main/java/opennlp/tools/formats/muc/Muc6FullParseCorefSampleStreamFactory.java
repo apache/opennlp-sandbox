@@ -18,8 +18,7 @@
 package opennlp.tools.formats.muc;
 
 import java.io.File;
-import java.io.FileFilter;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,7 +49,7 @@ import opennlp.tools.util.ObjectStream;
  * Factory creates a stream which can parse MUC 6 Coref data and outputs CorefSample
  * objects which are enhanced with a full parse and are suitable to train the Coreference component.
  */
-public class Muc6FullParseCorefSampleStreamFactory extends AbstractSampleStreamFactory<CorefSample> {
+public class Muc6FullParseCorefSampleStreamFactory extends AbstractSampleStreamFactory<CorefSample, Muc6FullParseCorefSampleStreamFactory.Parameters> {
 
   interface Parameters extends BasicFormatParams {
 
@@ -73,6 +72,7 @@ public class Muc6FullParseCorefSampleStreamFactory extends AbstractSampleStreamF
     super(Parameters.class);
   }
 
+  @Override
   public ObjectStream<CorefSample> create(String[] args) {
     
     Parameters params = ArgumentParser.parse(args, Parameters.class);
@@ -84,39 +84,31 @@ public class Muc6FullParseCorefSampleStreamFactory extends AbstractSampleStreamF
     Tokenizer tokenizer = new TokenizerME(tokenizerModel);
     
     ObjectStream<String> mucDocStream = new FileToStringSampleStream(
-        new DirectorySampleStream(params.getData(), new FileFilter() {
-          
-          public boolean accept(File file) {
-            return file.getName().toLowerCase().endsWith(".sgm");
-          }
-        }, false), Charset.forName("UTF-8"));
+        new DirectorySampleStream(params.getData(), file -> file.getName().toLowerCase().endsWith(".sgm"), false), StandardCharsets.UTF_8);
     
-    ObjectStream<RawCorefSample> rawSamples = 
-        new MucCorefSampleStream(tokenizer, mucDocStream);
+    ObjectStream<RawCorefSample> rawSamples = new MucCorefSampleStream(tokenizer, mucDocStream);
     
     ObjectStream<RawCorefSample> parsedSamples = new FullParseCorefEnhancerStream(parser, rawSamples);
     
     
     // How to load all these nameFinder models ?! 
-    // Lets make a param per model, not that nice, but ok!
+    // Let's make a param per model, not that nice, but ok!
     
-    Map<String, File> modelFileTagMap = new HashMap<String, File>();
+    Map<String, File> modelFileTagMap = new HashMap<>();
     
     modelFileTagMap.put("person", params.getPersonModel());
     modelFileTagMap.put("organization", params.getOrganizationModel());
     
-    List<TokenNameFinder> nameFinders = new ArrayList<TokenNameFinder>();
-    List<String> tags = new ArrayList<String>();
+    List<TokenNameFinder> nameFinders = new ArrayList<>();
+    List<String> tags = new ArrayList<>();
     
     for (Map.Entry<String, File> entry : modelFileTagMap.entrySet()) {
-      nameFinders.add(new NameFinderME(
-          new TokenNameFinderModelLoader().load(entry.getValue())));
+      nameFinders.add(new NameFinderME(new TokenNameFinderModelLoader().load(entry.getValue())));
       tags.add(entry.getKey());
     }
     
     return new MucMentionInserterStream(new NameFinderCorefEnhancerStream(nameFinders.toArray(
-        new TokenNameFinder[nameFinders.size()]),
-        tags.toArray(new String[tags.size()]), parsedSamples));
+            new TokenNameFinder[0]), tags.toArray(new String[0]), parsedSamples));
   }
   
   public static void registerFactory() {

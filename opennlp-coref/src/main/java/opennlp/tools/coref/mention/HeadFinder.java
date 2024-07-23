@@ -26,10 +26,10 @@ public interface HeadFinder {
    * Returns the child parse which contains the lexical head of the specified parse.
    * 
    * @param parse The parse in which to find the head.
-   * @return The parse containing the lexical head of the specified parse.  If no head is
-   * available or the constituent has no sub-components that are eligible heads then null is returned.
+   * @return The parse containing the lexical head of the specified parse. If no head is
+   * available or the constituent has no subcomponents that are eligible heads then null is returned.
    */
-  public Parse getHead(Parse parse);
+  Parse getHead(Parse parse);
 
   /** 
    * Returns which index the specified list of token is the head word.
@@ -37,7 +37,7 @@ public interface HeadFinder {
    * @param parse The parse in which to find the head index.
    * @return The index of the head token.
    */
-  public int getHeadIndex(Parse parse);
+  int getHeadIndex(Parse parse);
 
   /** 
    * Returns the parse bottom-most head of a <code>Parse</code>. If no
@@ -46,7 +46,7 @@ public interface HeadFinder {
    * @param p Parse to find the head of.
    * @return bottom-most head of p.
    */
-  public Parse getLastHead(Parse p);
+  Parse getLastHead(Parse p);
 
   /** 
    * Returns head token for the specified np parse.
@@ -54,5 +54,5 @@ public interface HeadFinder {
    * @param np The noun parse to get head from.
    * @return head token parse.
    */
-  public Parse getHeadToken(Parse np);
+  Parse getHeadToken(Parse np);
 }

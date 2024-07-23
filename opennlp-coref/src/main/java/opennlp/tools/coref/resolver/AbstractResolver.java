@@ -18,12 +18,13 @@
 package opennlp.tools.coref.resolver;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import opennlp.tools.coref.DiscourseEntity;
 import opennlp.tools.coref.DiscourseModel;
 import opennlp.tools.coref.mention.MentionContext;
 import opennlp.tools.coref.mention.Parse;
-import opennlp.tools.util.CountedSet;
 
 /**
  * Default implementation of some methods in the {@link Resolver} interface.
@@ -33,7 +34,7 @@ public abstract class AbstractResolver implements Resolver {
   /** 
    * The number of previous entities that resolver should consider.
    */
-  protected int numEntitiesBack;
+  protected final int numEntitiesBack;
   
   /** 
    * Debugging variable which specifies whether error output is generated
@@ -46,7 +47,7 @@ public abstract class AbstractResolver implements Resolver {
    * Debugging variable which holds statistics about mention distances
    * during training.
    */
-  protected CountedSet<Integer> distances;
+  protected final Map<Integer, Integer> distances;
   
   /** 
    * The number of sentences back this resolver should look for a referent.
@@ -56,7 +57,7 @@ public abstract class AbstractResolver implements Resolver {
   public AbstractResolver(int neb) {
     numEntitiesBack = neb;
     showExclusions = true;
-    distances = new CountedSet<Integer>();
+    distances = new HashMap<>();
   }
 
   /**
@@ -144,7 +145,7 @@ public abstract class AbstractResolver implements Resolver {
   }
 
   /**
-   * Excludes entities which you are not compatible with the entity under consideration.  The default
+   * Excludes entities which you are not compatible with the entity under consideration. The default
    * implementation excludes entities whose last extent contains the extent under consideration.
    * This prevents possessive pronouns from referring to the noun phrases they modify and other
    * undesirable things.
@@ -169,11 +170,12 @@ public abstract class AbstractResolver implements Resolver {
       DiscourseEntity cde = dm.getEntity(ei);
       MentionContext cec = cde.getLastExtent(); // candidate extent context
       if (cec.getId() == mention.getId()) {
-        distances.add(ei);
+        // incrementing count for key 'ei'
+        distances.merge(ei, 1, Integer::sum);
         return cde;
       }
     }
-    //System.err.println("AbstractResolver.retain: non-refering entity with id: "+ec.toText()+" id="+ec.id);
+    //System.err.println("AbstractResolver.retain: non-referring entity with id: "+ec.toText()+" id="+ec.id);
     return null;
   }
 
@@ -195,5 +197,5 @@ public abstract class AbstractResolver implements Resolver {
   }
 
 
-  public void train() throws IOException {};
+  public void train() throws IOException {}
 }

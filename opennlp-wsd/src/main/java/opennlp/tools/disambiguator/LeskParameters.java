@@ -29,7 +29,7 @@ public class LeskParameters extends WSDParameters {
    * Enum of all types of implemented variations of Lesk
    *
    */
-  public static enum LESK_TYPE {
+  public enum LESK_TYPE {
     LESK_BASIC, LESK_BASIC_CTXT, LESK_EXT, LESK_EXT_CTXT, LESK_EXT_EXP, LESK_EXT_EXP_CTXT
   }
 
@@ -57,7 +57,7 @@ public class LeskParameters extends WSDParameters {
    * Meronyms 4 : Holonyms 5 : Entailments 6 : Coordinate Terms 7 : Causes 8 :
    * Attributes 9 : Pertainyms
    */
-  protected boolean features[];
+  protected boolean[] features;
 
   public LESK_TYPE getLeskType() {
     return leskType;

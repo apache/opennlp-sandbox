@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -19,35 +19,44 @@
 
 package opennlp.tools.disambiguator;
 
-import java.util.ArrayList;
+import java.util.List;
 
-import opennlp.tools.disambiguator.datareader.SensevalReader;
-import opennlp.tools.disambiguator.MFS;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class MFSEvaluatorTest {
+class MFSEvaluatorTest extends AbstractEvaluatorTest {
 
-  static SensevalReader seReader = new SensevalReader();
+  private static List<String> words;
+
+  private MFS mfs;
+
+  @BeforeAll
+  public static void initResources() {
+    words = seReader.getSensevalWords();
+    assertNotNull(words);
+    assertFalse(words.isEmpty());
+  }
+
+  @BeforeEach
+  public void setup() {
+    mfs = new MFS();
+  }
 
   @Test
-  public static void main(String[] args) {
+  void testEvaluation() {
     WSDHelper.print("Evaluation Started");
-    String modelsDir = "src/test/resources/models/";
-    WSDHelper.loadTokenizer(modelsDir + "en-token.bin");
-    WSDHelper.loadLemmatizer(modelsDir + "en-lemmatizer.dict");
-    WSDHelper.loadTagger(modelsDir + "en-pos-maxent.bin");
-    MFS mfs = new MFS();
-
-    ArrayList<String> words = seReader.getSensevalWords();
 
     for (String word : words) {
       WSDEvaluator evaluator = new WSDEvaluator(mfs);
 
       // don't take verbs because they are not from WordNet
-      if (!word.split("\\.")[1].equals("v")) {
+      if (!SPLIT.split(word)[1].equals("v")) {
 
-        ArrayList<WSDSample> instances = seReader.getSensevalData(word);
+        List<WSDSample> instances = seReader.getSensevalData(word);
 
         if (instances != null && instances.size() > 1) {
           WSDHelper.print("------------------" + word + "------------------");
@@ -62,9 +71,7 @@ public class MFSEvaluatorTest {
           WSDHelper.print("null instances");
         }
       }
-
     }
-
   }
 
 }

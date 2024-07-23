@@ -16,30 +16,38 @@
 package opennlp.addons.modelbuilder.impls;
 
 import java.io.BufferedOutputStream;
-import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import opennlp.addons.modelbuilder.Modelable;
 import opennlp.tools.namefind.NameFinderME;
 import opennlp.tools.namefind.NameSample;
 import opennlp.tools.namefind.NameSampleDataStream;
+import opennlp.tools.namefind.TokenNameFinderFactory;
 import opennlp.tools.namefind.TokenNameFinderModel;
+import opennlp.tools.util.InputStreamFactory;
+import opennlp.tools.util.MarkableFileInputStreamFactory;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.PlainTextByLineStream;
+import opennlp.tools.util.TrainingParameters;
 
 /**
- * Creates annotations, writes annotations to file, and creates a model and writes to a file
+ * Creates annotations, writes annotations to file, and creates a model and writes to a file.
  */
 public class GenericModelableImpl implements Modelable {
 
-  private Set<String> annotatedSentences = new HashSet<String>();
+  private Set<String> annotatedSentences = new HashSet<>();
   BaseModelBuilderParams params;
 
   @Override
@@ -49,20 +57,17 @@ public class GenericModelableImpl implements Modelable {
 
   @Override
   public String annotate(String sentence, String namedEntity, String entityType) {
-    String annotation = sentence.replace(namedEntity, " <START:" + entityType + "> " + namedEntity + " <END> ");
-    return annotation;
+    return sentence.replace(namedEntity, " <START:" + entityType + "> " + namedEntity + " <END> ");
   }
 
   @Override
   public void writeAnnotatedSentences() {
-    try {
-
-      FileWriter writer = new FileWriter(params.getAnnotatedTrainingDataFile(), false);
-
+    final Path p = params.getAnnotatedTrainingDataFile().toPath();
+    try (Writer writer = Files.newBufferedWriter(p, StandardCharsets.UTF_8,
+            StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
       for (String s : annotatedSentences) {
         writer.write(s.replace("\n", " ").trim() + "\n");
       }
-      writer.close();
     } catch (IOException ex) {
       ex.printStackTrace();
     }
@@ -85,34 +90,36 @@ public class GenericModelableImpl implements Modelable {
 
   @Override
   public void buildModel(String entityType) {
+    final InputStreamFactory factory;
     try {
+      factory = new MarkableFileInputStreamFactory(params.getAnnotatedTrainingDataFile());
+    } catch (FileNotFoundException e) {
+      throw new RuntimeException("Error finding and reading the training data file!", e);
+    }
+
+    final TrainingParameters trainParams = TrainingParameters.defaultParams();
+
+    TokenNameFinderModel model;
+    try (ObjectStream<NameSample> samples =
+                 new NameSampleDataStream(new PlainTextByLineStream(factory, StandardCharsets.UTF_8));
+         OutputStream modelOut = new BufferedOutputStream(new FileOutputStream(params.getModelFile()))) {
+
       System.out.println("\tBuilding Model using " + annotatedSentences.size() + " annotations");
       System.out.println("\t\treading training data...");
-      Charset charset = Charset.forName("UTF-8");
-      ObjectStream<String> lineStream =
-              new PlainTextByLineStream(new FileInputStream(params.getAnnotatedTrainingDataFile()), charset);
-      ObjectStream<NameSample> sampleStream = new NameSampleDataStream(lineStream);
-
-      TokenNameFinderModel model;
-      model = NameFinderME.train("en", entityType, sampleStream, null);
-      sampleStream.close();
-      OutputStream modelOut = new BufferedOutputStream(new FileOutputStream(params.getModelFile()));
+      model = NameFinderME.train("en", entityType, samples, trainParams, new TokenNameFinderFactory());
       model.serialize(modelOut);
-      if (modelOut != null) {
-        modelOut.close();
-      }
+
       System.out.println("\tmodel generated");
     } catch (Exception e) {
+      throw new RuntimeException("Error building model! " + e.getLocalizedMessage(), e);
     }
   }
 
   @Override
   public TokenNameFinderModel getModel() {
-
-
     TokenNameFinderModel nerModel = null;
     try {
-      nerModel = new TokenNameFinderModel(new FileInputStream(params.getModelFile()));
+      nerModel = new TokenNameFinderModel(params.getModelFile());
     } catch (IOException ex) {
       Logger.getLogger(GenericModelableImpl.class.getName()).log(Level.SEVERE, null, ex);
     }
@@ -122,6 +129,5 @@ public class GenericModelableImpl implements Modelable {
   @Override
   public String[] tokenizeSentenceToWords(String sentence) {
     return sentence.split(" ");
-
   }
 }

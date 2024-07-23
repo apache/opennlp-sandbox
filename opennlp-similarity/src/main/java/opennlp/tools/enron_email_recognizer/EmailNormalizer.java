@@ -1,13 +1,32 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package opennlp.tools.enron_email_recognizer;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 import org.apache.commons.io.FileUtils;
 
 public class EmailNormalizer {
-	protected ArrayList<File> queue = new ArrayList<File>();
+
+	protected final ArrayList<File> queue = new ArrayList<>();
 	
 	protected void addFilesPos(File file) {
 
@@ -24,64 +43,60 @@ public class EmailNormalizer {
 		}
 	}
 	
-	public static final String[] headers = new String[] {
+	static final String[] HEADERS = new String[] {
 		"Message-ID:",
-	"Date:",
-	"From:",
-	"To:",
-	"Subject:",
-	"Mime-Version:",
-	"Content-T",
-	"X-From:",
-	"X-To:",
-	"X-cc:",
-	"X-bcc:",
-	"X-Folder:",
-	"X-Origin:",
-	"X-FileName",
-	"cc:",
-	"----",
+		"Date:",
+		"From:",
+		"To:",
+		"Subject:",
+		"Mime-Version:",
+		"Content-T",
+		"X-From:",
+		"X-To:",
+		"X-cc:",
+		"X-bcc:",
+		"X-Folder:",
+		"X-Origin:",
+		"X-FileName",
+		"cc:",
+		"----",
 	};
 	
-	public static final String[] prohibitedStrings = new String[] {
-		"@", "<", ">"
-	};
+	static final String[] PROHIBITED_STRINGS = new String[] {"@", "<", ">"};
 
-	private String OrigFolder = "maildir_ENRON_EMAILS", NewFolder = "data";
-
-	
-	
 	public void normalizeAndWriteIntoANewFile(File f){
-		String content="";
-        try {
-	        content = FileUtils.readFileToString(f);
-        } catch (IOException e) {
-	        // TODO Auto-generated catch block
-	        e.printStackTrace();
-        }
+		String content = "";
+		try {
+			content = FileUtils.readFileToString(f, StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		String[] lines = content.split("\n");
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		for(String l: lines){
 			boolean bAccept = true;
-			for(String h: headers){
-				if (l.startsWith(h)){
+			for(String h: HEADERS){
+				if (l.startsWith(h)) {
 					bAccept = false;
+					break;
 				}
 			}
-			for(String h: prohibitedStrings){
-				if (l.indexOf(h)>0){
+			for(String h: PROHIBITED_STRINGS){
+				if (l.indexOf(h) > 0) {
 					bAccept = false;
+					break;
 				}
 			}
 			if (bAccept)
-				buf.append(l+"\n");
+				buf.append(l).append("\n");
 		}
-		String directoryNew = f.getAbsolutePath().replace(OrigFolder, NewFolder);
+		String origFolder = "maildir_ENRON_EMAILS";
+		String newFolder = "data";
+		String directoryNew = f.getAbsolutePath().replace(origFolder, newFolder);
 		try {
 			String fullFileNameNew = directoryNew +"txt";
-	        FileUtils.writeStringToFile(new File(fullFileNameNew), buf.toString());
+	        FileUtils.writeStringToFile(new File(fullFileNameNew), buf.toString(), StandardCharsets.UTF_8);
         } catch (IOException e) {
-	        // TODO Auto-generated catch block
 	        e.printStackTrace();
         }
 	}

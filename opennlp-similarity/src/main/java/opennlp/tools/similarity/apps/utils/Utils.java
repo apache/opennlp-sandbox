@@ -17,183 +17,172 @@
 
 package opennlp.tools.similarity.apps.utils;
 
-import java.awt.Graphics2D;
-import java.awt.geom.AffineTransform;
-import java.awt.image.BufferedImage;
-import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.imageio.ImageIO;
 
 import org.apache.commons.lang.StringUtils;
 
 public class Utils {
 
-  private static final Logger LOG = Logger
-      .getLogger("opennlp.tools.similarity.apps.utils.Utils");
-
-  protected static final ArrayList<String[]> characterMappings = new ArrayList<String[]>();
+  protected static final ArrayList<String[]> CHARACTER_MAPPINGS = new ArrayList<>();
 
   static {
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[ÃƒÆ’Ã‚Â ÃƒÆ’Ã‚Â¡ÃƒÆ’Ã‚Â¢ÃƒÆ’Ã‚Â£ÃƒÆ’Ã‚Â¤ÃƒÆ’Ã‚Â¥ÃƒÂ¯Ã‚Â¿Ã‚Â½?Ãƒâ€žÃ†â€™Ãƒâ€žÃ¢â‚¬Â¦Ãƒï¿½Ã‚Â°]",
             " " }); // was a
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[ÃƒÆ’Ã¢â€šÂ¬ÃƒÂ¯Ã‚Â¿Ã‚Â½?ÃƒÆ’Ã¢â‚¬Å¡ÃƒÆ’Ã†â€™ÃƒÆ’Ã¢â‚¬Å¾ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€žÃ¢â€šÂ¬Ãƒâ€žÃ¢â‚¬Å¡Ãƒâ€žÃ¢â‚¬Å¾ÃƒÂ¯Ã‚Â¿Ã‚Â½?]",
             "A" });
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[ÃƒÆ’Ã‚Â§Ãƒâ€žÃ¢â‚¬Â¡Ãƒâ€žÃ¢â‚¬Â°Ãƒâ€žÃ¢â‚¬Â¹ÃƒÂ¯Ã‚Â¿Ã‚Â½?]",
             "c" });
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[ÃƒÆ’Ã¢â‚¬Â¡Ãƒâ€žÃ¢â‚¬Â Ãƒâ€žÃ‹â€ Ãƒâ€žÃ…Â Ãƒâ€žÃ…â€™]",
             "C" });
-    characterMappings.add(new String[] {
+    CHARACTER_MAPPINGS.add(new String[] {
         "[ÃƒÂ¯Ã‚Â¿Ã‚Â½?Ãƒâ€žÃ¢â‚¬Ëœ]", "d" });
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[ÃƒÂ¯Ã‚Â¿Ã‚Â½?Ãƒâ€žÃ…Â½ÃƒÂ¯Ã‚Â¿Ã‚Â½?]",
             "D" });
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[ÃƒÆ’Ã‚Â¨ÃƒÆ’Ã‚Â©ÃƒÆ’Ã‚ÂªÃƒÆ’Ã‚Â«ÃƒÆ’Ã‚Â¦Ãƒâ€žÃ¢â€žÂ¢Ãƒâ€žÃ¢â‚¬Å“Ãƒâ€žÃ¢â‚¬Â¢Ãƒâ€žÃ¢â‚¬â€�Ãƒâ€žÃ¢â€žÂ¢Ãƒâ€žÃ¢â‚¬Âº]",
             " " }); // was e
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[ÃƒÆ’Ã‹â€ ÃƒÆ’Ã¢â‚¬Â°ÃƒÆ’Ã…Â ÃƒÆ’Ã¢â‚¬Â¹ÃƒÆ’Ã¢â‚¬Â Ãƒâ€žÃ¢â‚¬â„¢Ãƒâ€žÃ¢â‚¬ï¿½Ãƒâ€žÃ¢â‚¬â€œÃƒâ€žÃ‹Å“Ãƒâ€žÃ…Â¡]",
             "'" }); // was E
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[ÃƒÂ¯Ã‚Â¿Ã‚Â½?Ãƒâ€žÃ…Â¸Ãƒâ€žÃ‚Â¡Ãƒâ€žÃ‚Â£]",
             "g" });
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[Ãƒâ€žÃ…â€œÃƒâ€žÃ…Â¾Ãƒâ€žÃ‚Â Ãƒâ€žÃ‚Â¢Ãƒâ€ Ã¢â‚¬Å“]",
             "G" });
-    characterMappings.add(new String[] {
+    CHARACTER_MAPPINGS.add(new String[] {
         "[Ãƒâ€žÃ‚Â¥Ãƒâ€žÃ‚Â§]", "h" });
-    characterMappings.add(new String[] {
+    CHARACTER_MAPPINGS.add(new String[] {
         "[Ãƒâ€žÃ‚Â¤Ãƒâ€žÃ‚Â¦]", "H" });
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[ÃƒÆ’Ã‚Â¬ÃƒÆ’Ã‚Â­ÃƒÆ’Ã‚Â®ÃƒÆ’Ã‚Â¯Ãƒâ€žÃ‚Â©Ãƒâ€žÃ‚Â«Ãƒâ€žÃ‚Â­Ãƒâ€žÃ‚Â®Ãƒâ€žÃ‚Â¯Ãƒâ€žÃ‚Â±Ãƒâ€žÃ‚Â³Ãƒâ€žÃ‚Âµ]",
             "i" });
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[ÃƒÆ’Ã…â€™ÃƒÂ¯Ã‚Â¿Ã‚Â½?ÃƒÆ’Ã…Â½ÃƒÂ¯Ã‚Â¿Ã‚Â½?Ãƒâ€žÃ‚Â¨Ãƒâ€žÃ‚ÂªÃƒâ€žÃ‚Â¬Ãƒâ€žÃ‚Â°Ãƒâ€žÃ‚Â²Ãƒâ€žÃ‚Â´Ãƒâ€žÃ‚Âµ]",
             "I" });
-    characterMappings.add(new String[] {
+    CHARACTER_MAPPINGS.add(new String[] {
         "[Ãƒâ€žÃ‚Â·Ãƒâ€žÃ‚Â¸]", "k" });
-    characterMappings.add(new String[] { "[Ãƒâ€žÃ‚Â¶]", "K" });
-    characterMappings
+    CHARACTER_MAPPINGS.add(new String[] { "[Ãƒâ€žÃ‚Â¶]", "K" });
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[ÃƒÆ’Ã‚Â¸Ãƒâ€¦Ã¢â‚¬ËœÃƒÆ’Ã‚Â°ÃƒÆ’Ã‚Â²ÃƒÆ’Ã‚Â³ÃƒÆ’Ã‚Â´ÃƒÆ’Ã‚ÂµÃƒÆ’Ã‚Â¶ÃƒÂ¯Ã‚Â¿Ã‚Â½?ÃƒÂ¯Ã‚Â¿Ã‚Â½?Ãƒâ€¦Ã¢â‚¬ËœÃƒâ€¦Ã¢â‚¬Å“Ãƒâ€ Ã‚Â¡]",
             "o" });
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[ÃƒÆ’Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å“ÃƒÆ’Ã¢â‚¬ï¿½ÃƒÆ’Ã¢â‚¬Â¢ÃƒÆ’Ã¢â‚¬â€œÃƒÆ’Ã‹Å“Ãƒâ€¦Ã…â€™Ãƒâ€¦Ã…Â½ÃƒÂ¯Ã‚Â¿Ã‚Â½?Ãƒâ€¦Ã¢â‚¬â„¢Ãƒâ€ Ã‚Â ]",
             "O" });
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[ÃƒÆ’Ã‚Â±Ãƒâ€¦Ã¢â‚¬Å¾Ãƒâ€¦Ã¢â‚¬Â Ãƒâ€¦Ã‹â€ Ãƒâ€¦Ã¢â‚¬Â°Ãƒâ€¦Ã¢â‚¬Â¹]",
             "n" });
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[ÃƒÆ’Ã¢â‚¬ËœÃƒâ€¦Ã†â€™Ãƒâ€¦Ã¢â‚¬Â¦Ãƒâ€¦Ã¢â‚¬Â¡Ãƒâ€¦Ã…Â Ãƒâ€¦Ã¢â‚¬Â¹]",
             "N" });
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[Ãƒâ€žÃ‚ÂºÃƒâ€žÃ‚Â¼Ãƒâ€žÃ‚Â¾Ãƒâ€¦Ã¢â€šÂ¬Ãƒâ€¦Ã¢â‚¬Å¡]",
             "l" });
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[Ãƒâ€žÃ‚Â¹Ãƒâ€žÃ‚Â»Ãƒâ€žÃ‚Â½Ãƒâ€žÃ‚Â¿ÃƒÂ¯Ã‚Â¿Ã‚Â½?]",
             "L" });
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[ÃƒÆ’Ã‚Â¹ÃƒÆ’Ã‚ÂºÃƒÆ’Ã‚Â»ÃƒÆ’Ã‚Â¼Ãƒâ€¦Ã‚Â©Ãƒâ€¦Ã‚Â«Ãƒâ€¦Ã‚Â­Ãƒâ€¦Ã‚Â¯Ãƒâ€¦Ã‚Â±Ãƒâ€¦Ã‚Â³Ãƒâ€ Ã‚Â°]",
             "u" });
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[ÃƒÆ’Ã¢â€žÂ¢ÃƒÆ’Ã…Â¡ÃƒÆ’Ã¢â‚¬ÂºÃƒÆ’Ã…â€œÃƒâ€¦Ã‚Â¨Ãƒâ€¦Ã‚ÂªÃƒâ€¦Ã‚Â¬Ãƒâ€¦Ã‚Â®Ãƒâ€¦Ã‚Â°Ãƒâ€¦Ã‚Â²Ãƒâ€ Ã‚Â¯]",
             "U" });
-    characterMappings.add(new String[] {
+    CHARACTER_MAPPINGS.add(new String[] {
         "[ÃƒÆ’Ã‚Â½ÃƒÆ’Ã‚Â¿Ãƒâ€¦Ã‚Â·]", "y" });
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[ÃƒÂ¯Ã‚Â¿Ã‚Â½?Ãƒâ€¦Ã‚Â¶Ãƒâ€¦Ã‚Â¸]",
             "Y" });
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[Ãƒâ€¦Ã¢â‚¬Â¢Ãƒâ€¦Ã¢â‚¬â€�Ãƒâ€¦Ã¢â€žÂ¢]",
             "r" });
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[Ãƒâ€¦Ã¢â‚¬ï¿½Ãƒâ€¦Ã¢â‚¬â€œÃƒâ€¦Ã‹Å“]",
             "R" });
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[Ãƒâ€¦Ã‚Â¡Ãƒâ€¦Ã¢â‚¬ÂºÃƒÂ¯Ã‚Â¿Ã‚Â½?Ãƒâ€¦Ã…Â¸Ãƒâ€¦Ã‚Â¡Ãƒâ€¦Ã‚Â¿]",
             "s" });
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[Ãƒâ€¦Ã‚Â Ãƒâ€¦Ã…Â¡Ãƒâ€¦Ã…â€œÃƒâ€¦Ã…Â¾Ãƒâ€¦Ã‚Â Ãƒâ€¦Ã‚Â¿]",
             "S" });
-    characterMappings.add(new String[] { "ÃƒÆ’Ã…Â¸", "ss" });
-    characterMappings.add(new String[] { "ÃƒÆ’Ã…Â¾", "th" });
-    characterMappings.add(new String[] { "ÃƒÆ’Ã‚Â¾", "Th" });
-    characterMappings
+    CHARACTER_MAPPINGS.add(new String[] { "ÃƒÆ’Ã…Â¸", "ss" });
+    CHARACTER_MAPPINGS.add(new String[] { "ÃƒÆ’Ã…Â¾", "th" });
+    CHARACTER_MAPPINGS.add(new String[] { "ÃƒÆ’Ã‚Â¾", "Th" });
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[Ãƒâ€¦Ã‚Â£Ãƒâ€¦Ã‚Â¥Ãƒâ€¦Ã‚Â§]",
             "t" });
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[Ãƒâ€¦Ã‚Â¢Ãƒâ€¦Ã‚Â¤Ãƒâ€¦Ã‚Â¦]",
             "T" });
-    characterMappings.add(new String[] { "[Ãƒâ€¦Ã‚Âµ]", "w" });
-    characterMappings.add(new String[] { "[Ãƒâ€¦Ã‚Â´]", "W" });
-    characterMappings
+    CHARACTER_MAPPINGS.add(new String[] { "[Ãƒâ€¦Ã‚Âµ]", "w" });
+    CHARACTER_MAPPINGS.add(new String[] { "[Ãƒâ€¦Ã‚Â´]", "W" });
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[Ãƒâ€¦Ã‚Â¾Ãƒâ€¦Ã‚ÂºÃƒâ€¦Ã‚Â¼Ãƒâ€¦Ã‚Â¾Ãƒâ€ Ã‚Â¶]",
             "z" });
-    characterMappings
+    CHARACTER_MAPPINGS
         .add(new String[] {
             "[Ãƒâ€¦Ã‚Â½Ãƒâ€¦Ã‚Â½Ãƒâ€¦Ã‚Â¹Ãƒâ€¦Ã‚Â»Ãƒâ€¦Ã‚Â½Ãƒâ€ Ã‚Âµ]",
             "Z" });
-    characterMappings.add(new String[] {
+    CHARACTER_MAPPINGS.add(new String[] {
         "[ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢]", "'" });
-    characterMappings.add(new String[] {
+    CHARACTER_MAPPINGS.add(new String[] {
         "[ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“]", "'" });
-    characterMappings.add(new String[] { "&#39;", "'" });
-    characterMappings.add(new String[] { "Ãƒâ€še", "Ã‚Â«" });
-    characterMappings.add(new String[] { "'AG", "Ã¢â‚¬Å“" });
-    characterMappings.add(new String[] { "AÃ¯Â¿Â½", " " });
-    characterMappings.add(new String[] { "&quot;", "\"" });
-    characterMappings.add(new String[] { "&amp;", "&" });
-    characterMappings.add(new String[] { "&nbsp;", " " });
-    characterMappings.add(new String[] {
+    CHARACTER_MAPPINGS.add(new String[] { "&#39;", "'" });
+    CHARACTER_MAPPINGS.add(new String[] { "Ãƒâ€še", "Ã‚Â«" });
+    CHARACTER_MAPPINGS.add(new String[] { "'AG", "Ã¢â‚¬Å“" });
+    CHARACTER_MAPPINGS.add(new String[] { "AÃ¯Â¿Â½", " " });
+    CHARACTER_MAPPINGS.add(new String[] { "&quot;", "\"" });
+    CHARACTER_MAPPINGS.add(new String[] { "&amp;", "&" });
+    CHARACTER_MAPPINGS.add(new String[] { "&nbsp;", " " });
+    CHARACTER_MAPPINGS.add(new String[] {
         "ÃƒÂ®Ã¢â€šÂ¬Ã¢â€šÂ¬", " " });
-    characterMappings.add(new String[] { "ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢",
+    CHARACTER_MAPPINGS.add(new String[] { "ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢",
         " " });
-    characterMappings.add(new String[] {
+    CHARACTER_MAPPINGS.add(new String[] {
         "ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬ï¿½", "" });
-    characterMappings.add(new String[] { "â€™", "'" });
+    CHARACTER_MAPPINGS.add(new String[] { "â€™", "'" });
   }
 
   public static String stripNonAsciiChars(String s) {
-    StringBuffer b = new StringBuffer();
+    StringBuilder b = new StringBuilder();
     if (s != null) {
       for (int i = 0; i < s.length(); i++) {
         if (((int) s.charAt(i)) <= 256) {
@@ -212,7 +201,7 @@ public class Utils {
     s = s.replaceAll("â€™", "__apostrophe__");
     String tmp = s;
     if (tmp != null) {
-      for (String[] mapping : characterMappings) {
+      for (String[] mapping : CHARACTER_MAPPINGS) {
         tmp = tmp.replaceAll(mapping[0], mapping[1]);
       }
     }
@@ -220,49 +209,22 @@ public class Utils {
   }
 
   public static class KeyValue {
-    public Object key = null;
+    public final Object key;
 
-    public float value = 0;
+    public final float value;
 
     public KeyValue(Object o, Float i) {
       this.key = o;
       this.value = i;
     }
 
-    public static class SortByValue implements Comparator {
-      public int compare(Object obj1, Object obj2) {
-        float i1 = ((KeyValue) obj1).value;
-        float i2 = ((KeyValue) obj2).value;
+    public static class SortByValue implements Comparator<KeyValue> {
 
-        if (i1 < i2)
-          return 1;
-        return -1;
+      @Override
+      public int compare(KeyValue obj1, KeyValue obj2) {
+        return Float.compare(obj1.value, obj2.value);
       }
     }
-  }
-
-  public static boolean createResizedCopy(String originalImage,
-      String newImage, int scaledWidth, int scaledHeight) {
-    boolean retVal = true;
-    try {
-      File o = new File(originalImage);
-      BufferedImage bsrc = ImageIO.read(o);
-      BufferedImage bdest = new BufferedImage(scaledWidth, scaledHeight,
-          BufferedImage.TYPE_INT_RGB);
-
-      Graphics2D g = bdest.createGraphics();
-      AffineTransform at = AffineTransform.getScaleInstance(
-          (double) scaledWidth / bsrc.getWidth(),
-          (double) scaledHeight / bsrc.getHeight());
-      g.drawRenderedImage(bsrc, at);
-      ImageIO.write(bdest, "jpeg", new File(newImage));
-
-    } catch (Exception e) {
-      retVal = false;
-      LOG.severe("Failed creating thumbnail for image: " + originalImage + e);
-    }
-
-    return retVal;
   }
 
   private static int minimum(int a, int b, int c) {
@@ -280,7 +242,7 @@ public class Utils {
   }
 
   public static int computeEditDistance(String s, String t) {
-    int d[][]; // matrix
+    int[][] d; // matrix
     int n; // length of s
     int m; // length of t
     int i; // iterates through s
@@ -328,19 +290,19 @@ public class Utils {
   }
 
   public static ArrayList<KeyValue> sortByValue(HashMap<Object, Float> h) {
-    ArrayList<KeyValue> res = new ArrayList<KeyValue>();
+    ArrayList<KeyValue> res = new ArrayList<>();
     for (Object o : h.keySet()) {
       // form a pair
       res.add(new KeyValue(o, h.get(o)));
     }
 
-    Collections.sort(res, new KeyValue.SortByValue());
+    res.sort(new KeyValue.SortByValue());
 
     return res;
   }
 
   public static String convertKeyValueToString(ArrayList<KeyValue> l) {
-    StringBuffer retVal = new StringBuffer();
+    StringBuilder retVal = new StringBuilder();
     for (KeyValue kv : l) {
       retVal.append(kv.key);
       retVal.append("-");
@@ -352,7 +314,7 @@ public class Utils {
   }
 
   public static String convertStringArrayToString(ArrayList<String> l) {
-    StringBuffer b = new StringBuffer();
+    StringBuilder b = new StringBuilder();
     for (String s : l) {
       b.append(s);
       b.append(", ");
@@ -362,7 +324,7 @@ public class Utils {
   }
 
   public static String convertStringArrayToPlainString(ArrayList<String> l) {
-    StringBuffer b = new StringBuffer();
+    StringBuilder b = new StringBuilder();
     for (String s : l) {
       b.append(s);
       b.append(" ");
@@ -420,7 +382,7 @@ public class Utils {
   }
 
   public static String convertHashMapToString(HashMap<String, Integer> m) {
-    StringBuffer s = new StringBuffer();
+    StringBuilder s = new StringBuilder();
     for (String x : m.keySet()) {
       s.append(x);
       s.append("-");
@@ -450,7 +412,7 @@ public class Utils {
   }
 
   public static String CleanCharacter(String txt, int uValue) {
-    StringBuffer retVal = new StringBuffer();
+    StringBuilder retVal = new StringBuilder();
     for (int i = 0; i < txt.length(); i++) {
       int uChar = (txt.charAt(i));
       if (uChar != uValue) {
@@ -486,16 +448,14 @@ public class Utils {
     Pattern p = java.util.regex.Pattern.compile("\\<SCRIPT.*?</SCRIPT>",
         Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
     Matcher matcher = p.matcher(text);
-    String tmp = matcher.replaceAll("");
-    return tmp;
+    return matcher.replaceAll("");
   }
 
   public static String stripNoScriptTags(String text) {
     Pattern p = java.util.regex.Pattern.compile("\\<NOSCRIPT.*?</NOSCRIPT>",
         Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
     Matcher matcher = p.matcher(text);
-    String tmp = matcher.replaceAll("");
-    return tmp;
+    return matcher.replaceAll("");
   }
 
   public static String stripHTMLMultiLine(String text,
@@ -531,15 +491,13 @@ public class Utils {
   public static String stripHTMLMultiLine(String text) {
     Pattern p = java.util.regex.Pattern.compile("\\<.*?>", Pattern.DOTALL);
     Matcher matcher = p.matcher(text);
-    String tmp = matcher.replaceAll("");
-    return tmp;
+    return matcher.replaceAll("");
   }
 
   public static String stripHTMLCommentsMultiLine(String text) {
     Pattern p = java.util.regex.Pattern.compile("\\<!--.*?-->", Pattern.DOTALL);
     Matcher matcher = p.matcher(text);
-    String tmp = matcher.replaceAll("");
-    return tmp;
+    return matcher.replaceAll("");
   }
 
   public static boolean isFlagSet(Integer flags, Integer flagToCheck) {
@@ -560,11 +518,10 @@ public class Utils {
 
   public static Integer setFlag(Integer flags, Integer flagToCheck) {
     if (flags == null) {
-      flags = new Integer(0);
+      flags = 0;
     }
     if (!isFlagSet(flags, flagToCheck)) {
       flags = flags + flagToCheck;
-      ;
     }
     return flags;
   }
@@ -572,7 +529,7 @@ public class Utils {
   public static Integer resetFlag(Integer flags, Integer flagToCheck) {
     if (flags == null) {
       // nothing to reset
-      flags = new Integer(0);
+      flags = 0;
       return flags;
     }
 
@@ -583,11 +540,11 @@ public class Utils {
   }
 
   public static String truncateOnSpace(String text, Integer length) {
-    String retVal = "";
+    String retVal;
     if (text.length() <= length) {
       retVal = text;
     } else {
-      StringBuffer b = new StringBuffer();
+      StringBuilder b = new StringBuilder();
       for (int i = 0; i < text.length(); i++) {
         if (b.length() >= length && Character.isWhitespace(text.charAt(i))) { // iterate
           // until
@@ -615,7 +572,7 @@ public class Utils {
   }
 
   public static String makeStringUrlSafe(String text) {
-    StringBuffer b = new StringBuffer();
+    StringBuilder b = new StringBuilder();
     for (int i = 0; i < text.length(); i++) {
       if (StringUtils.isAlphanumericSpace(String.valueOf(text.charAt(i)))) {
         b.append(text.charAt(i));
@@ -636,10 +593,10 @@ public class Utils {
     return eventId;
   }
 
-  public static String buildCommaSeparatedIds(List ids) {
+  public static String buildCommaSeparatedIds(List<?> ids) {
 
     if (ids != null && ids.size() > 0) {
-      StringBuffer sbuf = new StringBuffer();
+      StringBuilder sbuf = new StringBuilder();
 
       for (int count = 0; count < ids.size(); count++) {
         if (count > 0) {
@@ -655,7 +612,7 @@ public class Utils {
 
   public static float computeScoreForRanking(List<Float> scores,
       int desiredRanking) {
-    float newScore = 0f;
+    float newScore;
 
     if (desiredRanking == 1) {
       newScore = scores.get(0) + 50000;
@@ -680,13 +637,12 @@ public class Utils {
     Pattern p = java.util.regex.Pattern.compile("\\<STYLE.*?</STYLE>",
         Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
     Matcher matcher = p.matcher(text);
-    String tmp = matcher.replaceAll("");
-    return tmp;
+    return matcher.replaceAll("");
   }
 
   public static boolean isLatinWord(String word) {
     for (int i = 0; i < word.length(); i++) {
-      int asciiCode = (int) word.charAt(i);
+      int asciiCode = word.charAt(i);
       if (asciiCode > 128)
         return false;
     }

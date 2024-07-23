@@ -29,14 +29,14 @@ public class Sentence {
 
   public Sentence() {
     super();
-    this.iwords = new ArrayList<Word>();
+    this.iwords = new ArrayList<>();
   }
 
   public Sentence(int pnum, int snum) {
     super();
     this.pnum = pnum;
     this.snum = snum;
-    this.iwords = new ArrayList<Word>();
+    this.iwords = new ArrayList<>();
   }
 
   public Sentence(int pnum, int snum, ArrayList<Word> iwords) {
@@ -76,9 +76,9 @@ public class Sentence {
 
   @Override
   public String toString() {
-    String sentence = "";
-    for (int i = 0; i < this.iwords.size(); i++) {
-      sentence = sentence + " " + this.iwords.get(i).toString();
+    StringBuilder sentence = new StringBuilder();
+    for (Word iword : this.iwords) {
+      sentence.append(" ").append(iword.toString());
     }
     return sentence.substring(1, sentence.length());
 

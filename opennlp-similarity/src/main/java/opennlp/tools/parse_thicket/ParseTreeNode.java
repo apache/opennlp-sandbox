@@ -1,3 +1,22 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package opennlp.tools.parse_thicket;
 
 import java.util.ArrayList;
@@ -81,7 +100,7 @@ public class ParseTreeNode implements IGeneralizer<ParseTreeNode>{
 	}
 
 	public enum PhraseType {NP("NP"), VP("VP"), PRP("PRP");
-	private PhraseType(final String text) {
+	PhraseType(final String text) {
 		this.text = text;
 	}
 	private final String text;
@@ -135,38 +154,38 @@ public class ParseTreeNode implements IGeneralizer<ParseTreeNode>{
 	} 
 
 	public String toString(){
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		if (id!=null)
-			buf.append("<"+id+">");
+			buf.append("<").append(id).append(">");
 		if(phraseType!=null)
 			buf.append(phraseType);
 		if(word!=null)
-			buf.append("'"+word+"'");
+			buf.append("'").append(word).append("'");
 		if (pos!=null)
-			buf.append(":"+pos);
+			buf.append(":").append(pos);
 		return buf.toString();
 	}
 
 	public static String toTreeRepresentationString(List<ParseTreeNode> chList){
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		for(ParseTreeNode ch: chList){
 			if (ch.getPos().startsWith(".") || ch.getPos().startsWith(",") || ch.getPos().startsWith(";") || ch.getPos().startsWith("!"))
 				continue;
-			buf.append( "("+ch.getWord()+ " " + ch.getPos() + ")" );
+			buf.append("(").append(ch.getWord()).append(" ").append(ch.getPos()).append(")");
 		}
 		return buf.toString().trim();
 	}
 	public static String toWordString(List<ParseTreeNode> chList){
-		String buf = "";
+		StringBuilder buf = new StringBuilder();
 		for(ParseTreeNode ch: chList){
-			buf+=ch.getWord()+ " ";
+			buf.append(ch.getWord()).append(" ");
 		}
-		return buf.trim();
+		return buf.toString().trim();
 	}
 
 	@Override
 	public List<ParseTreeNode> generalize(Object o1, Object o2) {
-		List<ParseTreeNode> result = new ArrayList<ParseTreeNode>();
+		List<ParseTreeNode> result = new ArrayList<>();
 
 		ParseTreeNode w1 = (ParseTreeNode) o1;
 		ParseTreeNode w2 = (ParseTreeNode) o2;
@@ -183,8 +202,6 @@ public class ParseTreeNode implements IGeneralizer<ParseTreeNode>{
 		if (lemma1.equals(lemma2))
 			return lemma1;
 		if (lemma1.equals("*"))
-			return "*";
-		if (lemma2.equals("*"))
 			return "*";
 		//TODO
 		return "*";
@@ -232,5 +249,5 @@ public class ParseTreeNode implements IGeneralizer<ParseTreeNode>{
 	}
 
 
-};
+}
 

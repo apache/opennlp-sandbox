@@ -22,6 +22,9 @@ package opennlp.tools.disambiguator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 import net.sf.extjwnl.data.Synset;
 
@@ -34,22 +37,24 @@ public class OSCCWSDContextGenerator implements WSDContextGenerator {
     String[] tags, String[] lemmas, int windowSize) {
 
     // TODO consider windowSize
-    ArrayList<String> contextClusters = new ArrayList<String>();
+    ArrayList<String> contextClusters = new ArrayList<>();
+
+    final Pattern pattern = Pattern.compile("[^a-z_]");
 
     for (int i = 0; i < toks.length; i++) {
       if (lemmas != null) {
 
-        if (!WSDHelper.stopWords.contains(toks[i].toLowerCase()) && (index
+        if (!WSDHelper.STOP_WORDS.contains(toks[i].toLowerCase()) && (index
           != i)) {
 
-          String lemma = lemmas[i].toLowerCase().replaceAll("[^a-z_]", "")
-            .trim();
+          String lemma = lemmas[i].toLowerCase();
+          lemma = pattern.matcher(lemma).replaceAll("").trim();
 
           WordPOS word = new WordPOS(lemma, tags[i]);
 
           if (lemma.length() > 1) {
             try {
-              ArrayList<Synset> synsets = word.getSynsets();
+              List<Synset> synsets = word.getSynsets();
               if (synsets != null && synsets.size() > 0) {
                 for (Synset syn : synsets) {
                   contextClusters.add(syn.getOffset() + "");
@@ -64,7 +69,7 @@ public class OSCCWSDContextGenerator implements WSDContextGenerator {
       }
     }
 
-    return contextClusters.toArray(new String[contextClusters.size()]);
+    return contextClusters.toArray(new String[0]);
 
   }
 
@@ -73,19 +78,19 @@ public class OSCCWSDContextGenerator implements WSDContextGenerator {
    *
    * @return The OSCC context of the word to disambiguate
    */
-  @Override public String[] getContext(int index, String[] toks, String[] tags,
-    String[] lemmas, int ngram, int windowSize, ArrayList<String> model) {
+  @Override
+  public String[] getContext(int index, String[] toks, String[] tags,
+    String[] lemmas, int ngram, int windowSize, List<String> model) {
 
-    HashSet<String> surroundingContextClusters = new HashSet<>();
-    surroundingContextClusters.addAll(Arrays.asList(
-      extractSurroundingContext(index, toks, tags, lemmas,
-        windowSize)));
+    Set<String> surroundingContextClusters = new HashSet<>(Arrays.asList(
+            extractSurroundingContext(index, toks, tags, lemmas,
+                    windowSize)));
 
     String[] serializedFeatures = new String[model.size()];
 
     int i = 0;
     for (String word : model) {
-      if (surroundingContextClusters.contains(word.toString())) {
+      if (surroundingContextClusters.contains(word)) {
         serializedFeatures[i] = "F" + i + "=1";
       } else {
         serializedFeatures[i] = "F" + i + "=0";
@@ -96,8 +101,8 @@ public class OSCCWSDContextGenerator implements WSDContextGenerator {
     return serializedFeatures;
   }
 
-  public String[] getContext(WSDSample sample, int ngram, int windowSize,
-    ArrayList<String> model) {
+  @Override
+  public String[] getContext(WSDSample sample, int ngram, int windowSize, List<String> model) {
     return getContext(sample.getTargetPosition(), sample.getSentence(),
       sample.getTags(), sample.getLemmas(), 0, windowSize, model);
   }

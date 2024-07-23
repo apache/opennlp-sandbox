@@ -20,14 +20,15 @@ package org.apache.opennlp.corpus_server.caseditor;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.ILabelProviderListener;
-import org.eclipse.jface.viewers.IOpenListener;
-import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ITableLabelProvider;
-import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
@@ -44,26 +45,21 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.part.ViewPart;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-
 /**
  * A task queue view to retrieve the next annotation task subject from the corpus server.
  */
 public class TaskQueueView extends ViewPart {
 
-  private Composite explorerComposite;
   private Text serverUrl;
   
   private TableViewer historyViewer;
   
-  private List<IEditorInput> lastInputElements = new ArrayList<IEditorInput>();
+  private final List<IEditorInput> lastInputElements = new ArrayList<>();
       
   @Override
   public void createPartControl(Composite parent) {
 
-    explorerComposite = new Composite(parent, SWT.NONE);
+    Composite explorerComposite = new Composite(parent, SWT.NONE);
     GridLayout explorerLayout = new GridLayout();
     explorerLayout.numColumns = 2;
     explorerComposite.setLayout(explorerLayout);
@@ -76,10 +72,10 @@ public class TaskQueueView extends ViewPart {
     GridDataFactory.swtDefaults().align(SWT.FILL, SWT.CENTER).grab(true, false)
         .applyTo(serverUrl);
     
-    // TOOD: Should be stored in some way, or just done more sophisticated ..
+    // TODO: Should be stored in some way, or just done more sophisticated ..
     serverUrl.setText("http://localhost:8080/corpus-server/rest/queues/ObamaNerTask");
     
-    // Button for next cas (gets nexts and closes current one,
+    // Button for next cas (gets next and closes current one,
     // if not saved user is asked for it)
     Button nextDocument = new Button(explorerComposite, SWT.BORDER);
     nextDocument.setText("Next");
@@ -91,17 +87,16 @@ public class TaskQueueView extends ViewPart {
       @Override
       public void widgetSelected(SelectionEvent event) {
 
-        Client c = Client.create();
-        
-        WebResource queueWebResource = c.resource(serverUrl.getText());
-        
-        ClientResponse response2 = queueWebResource
+        Client c = ClientBuilder.newClient();
+        WebTarget queueWebResource = c.target(serverUrl.getText());
+
+        Response response2 = queueWebResource
             .path("_nextTask")
-            .accept(MediaType.APPLICATION_JSON)
+            .request(MediaType.APPLICATION_JSON)
             .header("Content-Type", MediaType.TEXT_XML)
-            .get(ClientResponse.class);
-        
-        String casId = response2.getEntity(String.class);
+            .get();
+
+        String casId = response2.readEntity(String.class);
         
         // How to get the corpus uri for the item returned from the queue ???
         // Queue could always return full URI ...
@@ -109,7 +104,7 @@ public class TaskQueueView extends ViewPart {
         // we also need to corpus the cas id belongs too ...
         IWorkbenchPage page = TaskQueueView.this.getSite().getPage();
         
-        // TODO: Thats a short cut, we need to make this work properly ...
+        // TODO: That's a short cut, we need to make this work properly ...
         IEditorInput input = new CorpusServerCasEditorInput(
             "http://localhost:8080/corpus-server/rest/corpora/wikinews", casId);
 
@@ -169,23 +164,19 @@ public class TaskQueueView extends ViewPart {
       GridDataFactory.swtDefaults().align(SWT.FILL, SWT.FILL).grab(true, true)
         .span(2, 1).applyTo(historyViewer.getTable());
     
-      historyViewer.addOpenListener(new IOpenListener() {
-        
-        @Override
-        public void open(OpenEvent event) {
-          
-          StructuredSelection selection = (StructuredSelection) event.getSelection();
-          
-          if (!selection.isEmpty()) {
-            IWorkbenchPage page = TaskQueueView.this.getSite().getPage();
-            
-            IEditorInput input = (IEditorInput) selection.getFirstElement();
+      historyViewer.addOpenListener(event -> {
 
-            try {
-              page.openEditor(input, "org.apache.uima.caseditor.editor");
-            } catch (PartInitException e) {
-              e.printStackTrace();
-            }
+        StructuredSelection selection = (StructuredSelection) event.getSelection();
+
+        if (!selection.isEmpty()) {
+          IWorkbenchPage page = TaskQueueView.this.getSite().getPage();
+
+          IEditorInput input = (IEditorInput) selection.getFirstElement();
+
+          try {
+            page.openEditor(input, "org.apache.uima.caseditor.editor");
+          } catch (PartInitException e) {
+            e.printStackTrace();
           }
         }
       });

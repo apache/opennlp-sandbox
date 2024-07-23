@@ -29,7 +29,7 @@ import opennlp.tools.coref.mention.MentionContext;
  */
 public class PluralPronounResolver extends MaxentResolver {
 
-  int NUM_SENTS_BACK_PRONOUNS = 2;
+  final int NUM_SENTS_BACK_PRONOUNS = 2;
 
   public PluralPronounResolver(String projectName, ResolverMode m) throws IOException {
     super(projectName, "tmodel", m, 30);
@@ -42,8 +42,7 @@ public class PluralPronounResolver extends MaxentResolver {
 
   @Override
   protected List<String> getFeatures(MentionContext mention, DiscourseEntity entity) {
-    List<String> features = new ArrayList<String>();
-    features.addAll(super.getFeatures(mention,entity));
+    List<String> features = new ArrayList<>(super.getFeatures(mention, entity));
     //features.add("eid="+pc.id);
     if (entity != null) { //generate pronoun w/ referent features
       features.addAll(ResolverUtils.getPronounMatchFeatures(mention,entity));
@@ -91,6 +90,6 @@ public class PluralPronounResolver extends MaxentResolver {
   public boolean canResolve(MentionContext mention) {
     String tag = mention.getHeadTokenTag();
     return (tag != null && tag.startsWith("PRP")
-        && ResolverUtils.pluralThirdPersonPronounPattern.matcher(mention.getHeadTokenText()).matches());
+        && ResolverUtils.PLURAL_THIRD_PERSON_PRONOUN_PATTERN.matcher(mention.getHeadTokenText()).matches());
   }
 }

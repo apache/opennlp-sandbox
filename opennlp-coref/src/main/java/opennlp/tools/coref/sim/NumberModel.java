@@ -17,34 +17,33 @@
 
 package opennlp.tools.coref.sim;
 
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import opennlp.tools.coref.resolver.ResolverUtils;
-import opennlp.tools.ml.maxent.GIS;
-import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelReader;
-import opennlp.tools.ml.maxent.io.SuffixSensitiveGISModelWriter;
+import opennlp.tools.ml.maxent.GISModel;
+import opennlp.tools.ml.maxent.GISTrainer;
+import opennlp.tools.ml.maxent.io.BinaryGISModelReader;
+import opennlp.tools.ml.maxent.io.BinaryGISModelWriter;
 import opennlp.tools.ml.model.Event;
 import opennlp.tools.ml.model.MaxentModel;
-import opennlp.tools.util.HashList;
 import opennlp.tools.util.ObjectStreamUtils;
-
-//import opennlp.maxent.GIS;
-//import opennlp.maxent.io.SuffixSensitiveGISModelReader;
-//import opennlp.maxent.io.SuffixSensitiveGISModelWriter;
-//import opennlp.model.Event;
-//import opennlp.model.MaxentModel;
+import opennlp.tools.util.TrainingParameters;
 
 /**
  * Class which models the number of particular mentions and the entities made up of mentions.
  */
 public class NumberModel implements TestNumberModel, TrainSimilarityModel {
 
-  private String modelName;
-  private String modelExtension = ".bin.gz";
+  private final String modelName;
+  private final String modelExtension = ".bin.gz";
   private MaxentModel testModel;
   private List<Event> events;
 
@@ -52,33 +51,30 @@ public class NumberModel implements TestNumberModel, TrainSimilarityModel {
   private int pluralIndex;
 
   public static TestNumberModel testModel(String name) throws IOException {
-    NumberModel nm = new NumberModel(name, false);
-    return nm;
+    return new NumberModel(name, false);
   }
 
   public static TrainSimilarityModel trainModel(String modelName) throws IOException {
-    NumberModel gm = new NumberModel(modelName, true);
-    return gm;
+    return new NumberModel(modelName, true);
   }
 
   private NumberModel(String modelName, boolean train) throws IOException {
     this.modelName = modelName;
     if (train) {
-      events = new ArrayList<Event>();
+      events = new ArrayList<>();
     }
     else {
-      //if (MaxentResolver.loadAsResource()) {
-      //  testModel = (new PlainTextGISModelReader(new BufferedReader(new InputStreamReader(
-      // this.getClass().getResourceAsStream(modelName))))).getModel();
-      //}
-      testModel = (new SuffixSensitiveGISModelReader(new File(modelName + modelExtension))).getModel();
+      try (DataInputStream dis = new DataInputStream(
+              new BufferedInputStream(new FileInputStream(modelName + modelExtension)))) {
+        testModel = new BinaryGISModelReader(dis).getModel();
+      }
       singularIndex = testModel.getIndex(NumberEnum.SINGULAR.toString());
       pluralIndex = testModel.getIndex(NumberEnum.PLURAL.toString());
     }
   }
 
   private List<String> getFeatures(Context np1) {
-    List<String> features = new ArrayList<String>();
+    List<String> features = new ArrayList<>();
     features.add("default");
     Object[] npTokens = np1.getTokens();
     for (int ti = 0, tl = npTokens.length - 1; ti < tl; ti++) {
@@ -91,14 +87,14 @@ public class NumberModel implements TestNumberModel, TrainSimilarityModel {
 
   private void addEvent(String outcome, Context np1) {
     List<String> feats = getFeatures(np1);
-    events.add(new Event(outcome, feats.toArray(new String[feats.size()])));
+    events.add(new Event(outcome, feats.toArray(new String[0])));
   }
 
   public NumberEnum getNumber(Context ec) {
-    if (ResolverUtils.singularPronounPattern.matcher(ec.getHeadTokenText()).matches()) {
+    if (ResolverUtils.SINGULAR_PRONOUN_PATTERN.matcher(ec.getHeadTokenText()).matches()) {
       return NumberEnum.SINGULAR;
     }
-    else if (ResolverUtils.pluralPronounPattern.matcher(ec.getHeadTokenText()).matches()) {
+    else if (ResolverUtils.PLURAL_PRONOUN_PATTERN.matcher(ec.getHeadTokenText()).matches()) {
       return NumberEnum.PLURAL;
     }
     else {
@@ -107,8 +103,7 @@ public class NumberModel implements TestNumberModel, TrainSimilarityModel {
   }
 
   private NumberEnum getNumber(List<Context> entity) {
-    for (Iterator<Context> ci = entity.iterator(); ci.hasNext();) {
-      Context ec = ci.next();
+    for (Context ec : entity) {
       NumberEnum ne = getNumber(ec);
       if (ne != NumberEnum.UNKNOWN) {
         return ne;
@@ -117,72 +112,73 @@ public class NumberModel implements TestNumberModel, TrainSimilarityModel {
     return NumberEnum.UNKNOWN;
   }
 
+  @Override
   @SuppressWarnings("unchecked")
   public void setExtents(Context[] extentContexts) {
-    HashList entities = new HashList();
-    List<Context> singletons = new ArrayList<Context>();
-    for (int ei = 0, el = extentContexts.length; ei < el; ei++) {
-      Context ec = extentContexts[ei];
+    Map<Integer,Context> entities = new HashMap<>();
+    List<Context> singletons = new ArrayList<>();
+    for (Context ec : extentContexts) {
       //System.err.println("NumberModel.setExtents: ec("+ec.getId()+") "+ec.toText());
       if (ec.getId() != -1) {
         entities.put(ec.getId(), ec);
-      }
-      else {
+      } else {
         singletons.add(ec);
       }
     }
-    List<Context> singles = new ArrayList<Context>();
-    List<Context> plurals = new ArrayList<Context>();
+    List<Context> singles = new ArrayList<>();
+    List<Context> plurals = new ArrayList<>();
     // coref entities
-    for (Iterator<Integer> ei = entities.keySet().iterator(); ei.hasNext();) {
-      Integer key = ei.next();
+    for (Integer key : entities.keySet()) {
       List<Context> entityContexts = (List<Context>) entities.get(key);
       NumberEnum number = getNumber(entityContexts);
       if (number == NumberEnum.SINGULAR) {
         singles.addAll(entityContexts);
-      }
-      else if (number == NumberEnum.PLURAL) {
+      } else if (number == NumberEnum.PLURAL) {
         plurals.addAll(entityContexts);
       }
     }
     // non-coref entities.
-    for (Iterator<Context> ei = singletons.iterator(); ei.hasNext();) {
-      Context ec = ei.next();
+    for (Context ec : singletons) {
       NumberEnum number = getNumber(ec);
       if (number == NumberEnum.SINGULAR) {
         singles.add(ec);
-      }
-      else if (number == NumberEnum.PLURAL) {
+      } else if (number == NumberEnum.PLURAL) {
         plurals.add(ec);
       }
     }
 
-    for (Iterator<Context> si = singles.iterator(); si.hasNext();) {
-      Context ec = si.next();
+    for (Context ec : singles) {
       addEvent(NumberEnum.SINGULAR.toString(), ec);
     }
-    for (Iterator<Context> fi = plurals.iterator(); fi.hasNext();) {
-      Context ec = fi.next();
-      addEvent(NumberEnum.PLURAL.toString(),ec);
+    for (Context ec : plurals) {
+      addEvent(NumberEnum.PLURAL.toString(), ec);
     }
   }
 
+  @Override
   public double[] numberDist(Context c) {
     List<String> feats = getFeatures(c);
-    return testModel.eval(feats.toArray(new String[feats.size()]));
+    return testModel.eval(feats.toArray(new String[0]));
   }
 
+  @Override
   public int getSingularIndex() {
     return singularIndex;
   }
 
+  @Override
   public int getPluralIndex() {
     return pluralIndex;
   }
 
+  @Override
   public void trainModel() throws IOException {
-    new SuffixSensitiveGISModelWriter(GIS.trainModel(
-        ObjectStreamUtils.createObjectStream(events),100,10),
-        new File(modelName + modelExtension)).persist();
+    TrainingParameters params = TrainingParameters.defaultParams();
+    params.put(TrainingParameters.ITERATIONS_PARAM, 100);
+    params.put(TrainingParameters.CUTOFF_PARAM, 10);
+    GISTrainer trainer = new GISTrainer();
+    trainer.init(params, null);
+    GISModel trainedModel = trainer.trainModel(ObjectStreamUtils.createObjectStream(events));
+    new BinaryGISModelWriter(trainedModel, new File(modelName + modelExtension)).persist();
   }
 }

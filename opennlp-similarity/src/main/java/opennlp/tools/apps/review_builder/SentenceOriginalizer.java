@@ -1,9 +1,27 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package opennlp.tools.apps.review_builder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -15,13 +33,13 @@ import opennlp.tools.textsimilarity.ParseTreeChunk;
 public class SentenceOriginalizer {
 	private String[] sents; 
 	private SentenceBeingOriginalized[] sentenceBeingOriginalized;
-	public List<String> formedPhrases = new ArrayList<String>();
+	public List<String> formedPhrases = new ArrayList<>();
 
-	private MachineTranslationWrapper rePhraser = new MachineTranslationWrapper();
-	private SentimentVocab sVocab = SentimentVocab.getInstance();
-	PhraseProcessor pProc = new PhraseProcessor();
+	private final MachineTranslationWrapper rePhraser = new MachineTranslationWrapper();
+	private final SentimentVocab sVocab = SentimentVocab.getInstance();
+	final PhraseProcessor pProc = new PhraseProcessor();
 	SynonymListFilter filter = null;
-	private List<String> verbsShouldStayNoSubstition = Arrays.asList(new String[]{
+	private final List<String> verbsShouldStayNoSubstition = Arrays.asList(new String[]{
 			"might", "can", "power", "bonk", "screw", "victimization", "victimize", "victimised", "victimized", "victimise",
 			"hump", "sluttish", "wanton"
 	});
@@ -35,7 +53,7 @@ public class SentenceOriginalizer {
 
 	public SentenceOriginalizer(String dir){
 		filter = new  SynonymListFilter(dir);
-	};
+	}
 
 	public String[] getSents() {
 		return sents;
@@ -44,8 +62,6 @@ public class SentenceOriginalizer {
 	public void setSents(String[] sents) {
 		this.sents = sents;
 	}
-
-	
 
 	private void substituteProsCons(){
 		for(int i = 0; i< sents.length; i++){
@@ -87,8 +103,9 @@ public class SentenceOriginalizer {
 		prodName = StringUtils.trim(prodName.toLowerCase());
 				
 		for(int i = 0; i< sents.length; i++){
-			double flag = Math.random();
-			String prodNameCurr = null;
+			Random rand = new Random();
+			double flag = rand.nextDouble();
+			String prodNameCurr;
 			if (flag>0.4)
 				prodNameCurr = prodName;
 				else
@@ -162,8 +179,7 @@ public class SentenceOriginalizer {
 			if (vps.size()==1)
 				line = rePhraser.rePhrase(line);
 			else {
-				if (vps.size()>1)
-
+				if (vps.size()>1) {
 					for (ParseTreeChunk v: vps){
 						String verbLemma = v.getLemmas().get(0);
 						String newVerb = filter.getSynonym(verbLemma);
@@ -171,12 +187,13 @@ public class SentenceOriginalizer {
 								&& !newVerb.endsWith("ness") // empirical rule
 								&& !verbsShouldStayNoSubstition.contains(verbLemma) &&
 								!verbsShouldStayNoSubstition.contains(newVerb)	){
-							line = line.replace(verbLemma+" ", newVerb+" "); 	
-							line = line.replace(" "+verbLemma, " "+newVerb); 
+							line = line.replace(verbLemma+" ", newVerb+" ");
+							line = line.replace(" "+verbLemma, " "+newVerb);
 							System.out.println("Synonym for verb substitution: "+verbLemma + "->"+newVerb);
 							bVerbRule = true;
 						}
 					}
+				}
 				if (!bVerbRule && vps.size()==2 && Math.random()>0.8) // no other means of originalization worked, so do inverse translation
 					line = rePhraser.rePhrase(line);
 			}
@@ -206,12 +223,11 @@ public class SentenceOriginalizer {
 				}
 			}
 		}
-
 		return line;
 	}
 
 	private void extractNounPhrasesWithSentiments(List<ParseTreeChunk> list) {
-		List<String> phrasesWithSentiments = new ArrayList<String>();
+		List<String> phrasesWithSentiments = new ArrayList<>();
 		for(ParseTreeChunk ch: list){
 			List<String> lemmas = ch.getLemmas();
 			for(String l:lemmas){
@@ -231,48 +247,42 @@ public class SentenceOriginalizer {
 		try {
 			substituteProsCons();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		try {
 			//insertProductNameForRefs(name);
 			insertProductNameForRefsFullNameKeywords(name, keywordsName);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		try {
 			turnTenseToPast();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		try {
 			turnCounterFactual();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
 		try {
 			substituteSynonymVerbs();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		// remove dupes
-		this.formedPhrases = new ArrayList<String>(new HashSet<String>(this.formedPhrases));
+		this.formedPhrases = new ArrayList<>(new HashSet<>(this.formedPhrases));
 
 		return sents;
 
 	}
 
 	public static void main(String[] args){
-		//ProductFinderInAWebPage init = new ProductFinderInAWebPage("C:/workspace/productsearchfe/src/test/resources");
 		SentenceOriginalizer orig = new SentenceOriginalizer("src/test/resources");
 		String[] sents = new String[] {
 				"Leave the bulky stabilization rig at home and take smooth handheld videos from any angle thanks to Optical SteadyShot image stabilization with Active Mode."
-				//"Other then that, it works well, and the chain stops instantly when you let go of the trigger, or push the safety bar."	
+				//"Other than that, it works well, and the chain stops instantly when you let go of the trigger, or push the safety bar."
 		};
 		String[] res = orig.convert(sents, "VIP Product", "vv propro");
 		System.out.println(Arrays.asList(res));
@@ -281,7 +291,7 @@ public class SentenceOriginalizer {
 }
 
 /*
- * 1.	Some Amazon specific text keeps showing up so we might want to put a filter on recurring phrases such as:
+ * 1.	Some Amazon specific text keeps showing up, so we might want to put a filter on recurring phrases such as:
 1.	Unlimited Free Two-Day Shipping
 2.	View Larger
 3.	What's in the box
@@ -294,7 +304,7 @@ public class SentenceOriginalizer {
 3.	Saw some HTML formatting occasionally, such as <em></em>
 4.	Redundancy with choice phrases appearing multiple times in a single review
 5.	Specific issue with words being added at the end of the letter "s," creating nonsensical words:
-1.	It mispronouncesulphur virtually every caller'sulphur name in waysulphur that..
+1.	It mispronouncesulphur virtually every caller'sulphur name in waysulphur that.
 2.	In fact, it'southward a rare feature that I recollect southwardhould be commonplace in any southwardurround receiver.
 6.	Adding -iness to make nonsensical words: mightinessiness, powerinessiness
 
@@ -303,7 +313,7 @@ public class SentenceOriginalizer {
 
 
 /*
- * After using a gasoline powered chain saw for many years had to stop using because of dust and fumes made my copd worse this electric saw is great has surprising amount of power without the gas fumes..
+ * After using a gasoline powered chain saw for many years had to stop using because of dust and fumes made my copd worse this electric saw is great has surprising amount of power without the gas fumes.
 Nice chainsaw, works great, well built.
 The instant-stop chain is very safe, but a bit abrupt when releasing the trigger.
 I wish there were a half-way release that turned off the motor but did not engage the instant stop break.
@@ -311,7 +321,7 @@ Pros .
 inexpensive compared to gas chainsaws, lightweight, cuts with good power, will do most anything that a gas chainsaw will do. like the automatic chain oiler and easy tension adjustment.
 Cons .
 If you are cutting larger branches and trees, a gas is better.
-However this will work on 8-10" size very well.
+However, this will work on 8-10" size very well.
 Bought this McCulloch electric chainsaw to replace an old Craftsman electric chain saw. (the Craftsman got ran over by a car).
 Compared to my old Craftsman electric chain saw, the McCulloch seems to be wonderful.
 The first test was to cut a 16" diameter oak branch, cut thru it like hot butter.

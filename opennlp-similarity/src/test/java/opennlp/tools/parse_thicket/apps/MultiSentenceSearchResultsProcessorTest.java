@@ -20,14 +20,21 @@ import java.util.List;
 
 import opennlp.tools.similarity.apps.HitBase;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
-public class MultiSentenceSearchResultsProcessorTest extends TestCase {
-	MultiSentenceSearchResultsProcessor proc = new MultiSentenceSearchResultsProcessor();
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-	public void testSearchOrder() {
-		List<HitBase> res; HitBase first = null;
-		String query ;
+class MultiSentenceSearchResultsProcessorTest {
+
+  private final MultiSentenceSearchResultsProcessor proc = new MultiSentenceSearchResultsProcessor();
+
+  @Test
+  @Disabled // TODO OPENNLP-1455 This test case fails with: "UnknownHostException: api.datamarket.azure.com: nodename nor servname provided, or not known"
+  void testSearchOrder() {
+    List<HitBase> res;
+    HitBase first = null;
+    String query;
 		/*
 		query = "I am now living abroad and have health insurance from Russia. How can I avoid penalty for not having health insurance in US";
 		res = proc.runSearchViaAPI(query);
@@ -35,28 +42,27 @@ public class MultiSentenceSearchResultsProcessorTest extends TestCase {
 		System.out.println(res);
 		first = res.get(0);
 		assertTrue(first.getGenerWithQueryScore() > 2.0f);
-*/
-		
-		
-		query = "Furious about reports that the IRS was used to target conservative groups, President Obama said that acting IRS Director Steve T. Miller was asked to resign. "+
-				"IRS actions were inexcusable. Americans are right to be angry about it. Obama will not tolerate this type of behavior by IRS";
-		res = proc.runSearchViaAPI(query);
-		// we verify that top answers have high similarity score
-		System.out.println(res);
-		first = res.get(0);
-		assertTrue(first.getGenerWithQueryScore() > 000f);
+	  */
 
 
-		query = " I see no meaningful distinction between complacency or complicity in the military's latest failure to uphold their own " +
-				"standards of conduct. Nor do I see a distinction between the service member who orchestrated this offense and the chain of " +
-				"command that was either oblivious to or tolerant of criminal behavior";
-		res = proc.runSearchViaAPI(query);
-		first = res.get(0);
-		assertTrue(first.getGenerWithQueryScore() > 1.69);
-		// assertTrue(second.getTitle().indexOf("living abroad")>-1);
-		proc.close();
+    query = "Furious about reports that the IRS was used to target conservative groups, President Obama said that acting IRS Director Steve T. Miller was asked to resign. " +
+        "IRS actions were inexcusable. Americans are right to be angry about it. Obama will not tolerate this type of behavior by IRS";
+    res = proc.runSearchViaAPI(query);
+    // we verify that top answers have high similarity score
+    System.out.println(res);
+    first = res.get(0);
+    assertTrue(first.getGenerWithQueryScore() > 000f);
 
-	}
+    query = " I see no meaningful distinction between complacency or complicity in the military's latest failure to uphold their own " +
+        "standards of conduct. Nor do I see a distinction between the service member who orchestrated this offense and the chain of " +
+        "command that was either oblivious to or tolerant of criminal behavior";
+    res = proc.runSearchViaAPI(query);
+    first = res.get(0);
+    assertTrue(first.getGenerWithQueryScore() > 1.69);
+    // assertTrue(second.getTitle().indexOf("living abroad")>-1);
+    proc.close();
+
+  }
 
 	/*public void testSimpleQuery(){
 		List<HitBase> res = proc.runSearchViaAPI("How can I pay tax on my income abroad");

@@ -16,6 +16,7 @@
  */
 package opennlp.tools.parse_thicket.pattern_structure;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -23,17 +24,18 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import opennlp.tools.fca.ConceptLattice;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LinguisticPatternStructure extends PhrasePatternStructure {
 
+	private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 	public LinguisticPatternStructure(int objectCounts, int attributeCounts) {
 		super(objectCounts, attributeCounts);
-		
-		ConceptLattice cl = null;
 	}
-	
+
 	public void AddExtentToAncestors(LinkedHashSet<Integer>extent, int curNode) {
 		//
 		if (conceptList.get(curNode).parents.size()>0){
@@ -41,40 +43,39 @@ public class LinguisticPatternStructure extends PhrasePatternStructure {
 				conceptList.get(parent).addExtents(extent);
 				AddExtentToAncestors(extent, parent);
 			}
-		}	
+		}
 	}
-	
+
 	public int AddIntent(List<List<ParseTreeChunk>> intent, LinkedHashSet<Integer>extent,int generator) {
-		System.out.println("debug");
-		System.out.println("called for " + intent);
+		LOG.debug("debug called for {}", intent);
 		//printLattice();
 		int generator_tmp = GetMaximalConcept(intent, generator);
 		generator = generator_tmp;
 		if (conceptList.get(generator).intent.equals(intent)) {
-			System.out.println("at generator:" + conceptList.get(generator).intent);
-			System.out.println("to add:" + intent);
-			System.out.println("already generated");
-			AddExtentToAncestors(extent, generator);	
+			LOG.debug("at generator: {}", conceptList.get(generator).intent);
+			LOG.debug("to add: {}", intent);
+			LOG.debug("already generated");
+			AddExtentToAncestors(extent, generator);
 			return generator;
 		}
 		Set<Integer> generatorParents = conceptList.get(generator).parents;
-		Set<Integer> newParents = new HashSet<Integer>();
+		Set<Integer> newParents = new HashSet<>();
 		for (int candidate : generatorParents) {
 			if (!intent.containsAll(conceptList.get(candidate).intent)) {
 				List<List<ParseTreeChunk>> intersection = md
 				.matchTwoSentencesGroupedChunksDeterministic(intent, conceptList.get(candidate).intent);
-				LinkedHashSet<Integer> new_extent = new LinkedHashSet<Integer>();
+				LinkedHashSet<Integer> new_extent = new LinkedHashSet<>();
 				new_extent.addAll(conceptList.get(candidate).extent);
 				new_extent.addAll(extent);
 				if (intent.size()!=intersection.size()){
-					System.out.println("recursive call (inclusion)");
-					System.out.println(intent + "----" + intersection);
+					LOG.debug("recursive call (inclusion)");
+					LOG.debug("{}----{}", intent, intersection);
 					candidate = AddIntent(intersection,new_extent, candidate);
 				}
 			}
-			
+
 			boolean addParents = true;
-			System.out.println("now iterating over parents");
+			// System.out.println("now iterating over parents");
 			Iterator<Integer> iterator = newParents.iterator();
 			while (iterator.hasNext()) {
 				Integer parent = iterator.next();
@@ -92,69 +93,67 @@ public class LinguisticPatternStructure extends PhrasePatternStructure {
 				newParents.add(candidate);
 			}
 		}
-		System.out.println("size of lattice: " + conceptList.size());
+		LOG.debug("size of lattice: {}", conceptList.size());
 		PhraseConcept newConcept = new PhraseConcept();
 		newConcept.setIntent(intent);
 
-		LinkedHashSet<Integer> new_extent = new LinkedHashSet<Integer>();
+		LinkedHashSet<Integer> new_extent = new LinkedHashSet<>();
 		new_extent.addAll(conceptList.get(generator).extent);
 		new_extent.addAll(extent);
 		newConcept.addExtents(new_extent);
-		
+
 		newConcept.setPosition(conceptList.size());
 		conceptList.add(newConcept);
 		conceptList.get(generator).parents.add(newConcept.position);
-		conceptList.get(newConcept.position).childs.add(generator);
+		conceptList.get(newConcept.position).children.add(generator);
 		for (int newParent: newParents) {
 			if (conceptList.get(generator).parents.contains(newParent)) {
 				conceptList.get(generator).parents.remove(newParent);
-				conceptList.get(newParent).childs.remove(generator);
+				conceptList.get(newParent).children.remove(generator);
 			}
 			conceptList.get(newConcept.position).parents.add(newParent);
 			conceptList.get(newParent).addExtents(new_extent);
 			AddExtentToAncestors(new_extent, newParent);
-			conceptList.get(newParent).childs.add(newConcept.position);
+			conceptList.get(newParent).children.add(newConcept.position);
 		}
 		return newConcept.position;
 	}
-	
+
 	public void printLatticeExtended() {
 		for (int i = 0; i < conceptList.size(); ++i) {
 			printConceptByPositionExtended(i);
 		}
 	}
-	
+
 	public void printConceptByPositionExtended(int index) {
-		System.out.println("Concept at position " + index);
+		LOG.debug("Concept at position {}", index);
 		conceptList.get(index).printConceptExtended();
 	}
-	
-	
-	public int [][] toContext(int extentCardinality){
-		
+
+	public int [][] toContext(int extentCardinality) {
+
 		int newAttrCount = conceptList.size();
-		ArrayList<PhraseConcept> cList = new ArrayList<PhraseConcept>();
-		cList.addAll(conceptList);	
+		ArrayList<PhraseConcept> cList = new ArrayList<>(conceptList);
 		boolean run = true;
-		int k=0;
-		while (run && k<conceptList.size()){
-			if (conceptList.get(k).intent.size() == attributeCount){
+		int k = 0;
+		while (run && k<conceptList.size()) {
+			if (conceptList.get(k).intent.size() == attributeCount) {
 				if (conceptList.get(k).extent.size() == 0)
 					for (Integer i:conceptList.get(k).parents)
 						cList.remove(i);
 				cList.remove(k);
-				run=false;
+				run = false;
 			}
 			else
-				k+=1;	
+				k+=1;
 		}
-		
+
 		run = true;
 		k=0;
 		while (run && k<=newAttrCount){
 			if (cList.get(k).extent.size()==0)
 				k++;
-				run = false;
+			run = false;
 		}
 		newAttrCount = cList.size();
 		Set<Integer> nodeExtend;
@@ -167,24 +166,21 @@ public class LinguisticPatternStructure extends PhrasePatternStructure {
 		}
 		return binaryContext;
 	}
-	
-	
-	
+
 	public void logStability(){
-		int min_delta = -1, delta = -1;
-		float sum = 0;
-		for (int i = 0; i < conceptList.size(); ++i) {
+		int min_delta, delta;
+		float sum;
+		for (PhraseConcept phraseConcept : conceptList) {
 			min_delta = Integer.MAX_VALUE;
 			sum = 0;
-			PhraseConcept pc = conceptList.get(i);
-			Set<Integer> childs = pc.childs;
-			for (Integer j: childs) {
+			PhraseConcept pc = phraseConcept;
+			for (Integer j : pc.children) {
 				delta = pc.extent.size() - conceptList.get(j).extent.size();
-				if (delta<min_delta)
+				if (delta < min_delta)
 					min_delta = delta;
 				sum += Math.pow(2, -delta);
 			}
-			pc.intLogStabilityBottom=-(Math.log(sum)/Math.log(2.0));
+			pc.intLogStabilityBottom = -(Math.log(sum) / Math.log(2.0));
 			pc.intLogStabilityUp = min_delta;
 		}
 	}

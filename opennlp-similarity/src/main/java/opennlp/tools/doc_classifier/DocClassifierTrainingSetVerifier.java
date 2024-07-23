@@ -26,33 +26,28 @@ import opennlp.tools.jsmlearning.ProfileReaderWriter;
 import org.apache.commons.io.FileUtils;
 import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
-import org.json.JSONObject;
 
 /*
  * This utility gets 'training_corpus' as input and creates a new version of training_corpus with verified files.
  * Verified => classified by existing training set as only belonging to its target category, no other categories, not empty.
  */
 public class DocClassifierTrainingSetVerifier {
-	public static String projectHome = new File(".").getAbsolutePath();
-	public static String resourceDir = new File(".").getAbsolutePath().replace("/.", "") + "/src/main/resources";
-	DocClassifier classifier = null;
-	private String sourceDir = null, destinationDir = null;
 	
+	private static final int FRAGMENT_LENGTH = 500;
+	public static String projectHome = new File(".").getAbsolutePath();
+	public static String resourceDir = projectHome.replace("/.", "") + "/src/main/resources";
+	DocClassifier classifier;
+	private String sourceDir = null, destinationDir = null;
 
-	protected ArrayList<File> queue = new ArrayList<File>();
+	protected final ArrayList<File> queue = new ArrayList<>();
+	protected final Tika tika = new Tika();
 
-	protected Tika tika = new Tika();
 	public DocClassifierTrainingSetVerifier(String resource) {
-
-		
-		classifier = new DocClassifier("", new JSONObject());
-
+		classifier = new DocClassifier("");
 	}
-	private int FRAGMENT_LENGTH = 500;
 
 
 	protected void addFiles(File file) {
-
 		try {
 			if (!file.exists()) {
 				System.out.println(file + " does not exist.");
@@ -73,7 +68,7 @@ public class DocClassifierTrainingSetVerifier {
 	}
 
 	public void processDirectory(String fileName) throws IOException {
-		List<String[]> report = new ArrayList<String[]>();
+		List<String[]> report = new ArrayList<>();
 		report.add(new String[] { "filename", "category",
 				"confirmed?" ,
 		});
@@ -84,20 +79,19 @@ public class DocClassifierTrainingSetVerifier {
 		
 
 		for (File f : queue) {
-			String content = null;
+			String content;
 			try {
 				System.out.println("processing "+f.getName());
 				
 				//if (f.getName().indexOf(".html")<0)
 					//continue;
-				classifier = new DocClassifier("", new JSONObject());
-
+				classifier = new DocClassifier("");
 
 				content = tika.parseToString(f);
 
 				//classifier.runExpressionsOnContent(content);
 				List<String> resultsClassif = classifier.getEntityOrClassFromText(content);
-				Boolean bRejected = true;
+				boolean bRejected = true;
 				if (resultsClassif.size()==1 
 						&& resultsClassif.get(0).equals(
 								ClassifierTrainingSetIndexer.getCategoryFromFilePath(f.getAbsolutePath()))){
@@ -114,7 +108,7 @@ public class DocClassifierTrainingSetVerifier {
 					fragment = content.substring(0, FRAGMENT_LENGTH);
 				fragment = fragment.replaceAll("\n", " ").trim();
 				report.add(new String[] { f.getName(),  resultsClassif.toString(), ClassifierTrainingSetIndexer.getCategoryFromFilePath(f.getAbsolutePath()),
-						(bRejected).toString(),   
+								Boolean.toString((bRejected)),
 						fragment});
 				ProfileReaderWriter.writeReport(report,  "DocClassifierMultiLingRpt.csv");
 

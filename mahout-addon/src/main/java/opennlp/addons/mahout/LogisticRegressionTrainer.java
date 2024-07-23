@@ -23,16 +23,11 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import opennlp.tools.ml.AbstractEventTrainer;
 import opennlp.tools.ml.model.DataIndexer;
 import opennlp.tools.ml.model.MaxentModel;
 
 import org.apache.mahout.classifier.sgd.AdaptiveLogisticRegression;
 import org.apache.mahout.classifier.sgd.L1;
-import org.apache.mahout.classifier.sgd.OnlineLogisticRegression;
-import org.apache.mahout.classifier.sgd.PassiveAggressive;
-import org.apache.mahout.math.RandomAccessSparseVector;
-import org.apache.mahout.math.Vector;
 
 public class LogisticRegressionTrainer extends AbstractOnlineLearnerTrainer {
   
@@ -45,7 +40,7 @@ public class LogisticRegressionTrainer extends AbstractOnlineLearnerTrainer {
     
     // TODO: Lets use the predMap here as well for encoding
     
-    int outcomes[] = indexer.getOutcomeList();
+    int[] outcomes = indexer.getOutcomeList();
     
     int cardinality = indexer.getPredLabels().length;
     
@@ -78,9 +73,9 @@ public class LogisticRegressionTrainer extends AbstractOnlineLearnerTrainer {
     
     pa.close();
     
-    Map<String, Integer> predMap = new HashMap<String, Integer>();
+    Map<String, Integer> predMap = new HashMap<>();
     
-    String predLabels[] = indexer.getPredLabels();
+    String[] predLabels = indexer.getPredLabels();
     for (int i = 0; i < predLabels.length; i++) {
       predMap.put(predLabels[i], i);
     }

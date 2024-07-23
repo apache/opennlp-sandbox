@@ -17,14 +17,13 @@
 
 package opennlp.tools.textsimilarity;
 
-import java.util.List;
+import opennlp.tools.stemmer.Stemmer;
 
-import opennlp.tools.stemmer.PStemmer;
+import java.util.List;
 
 public class LemmaFormManager {
 
-  public String matchLemmas(PStemmer ps, String lemma1, String lemma2,
-      String POS) {
+  public String matchLemmas(Stemmer ps, String lemma1, String lemma2, String POS) {
     if (POS == null) {
       return null;
     }

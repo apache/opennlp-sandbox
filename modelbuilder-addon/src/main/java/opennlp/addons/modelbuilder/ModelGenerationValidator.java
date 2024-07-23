@@ -15,19 +15,18 @@
  */
 package opennlp.addons.modelbuilder;
 
+import opennlp.addons.modelbuilder.impls.BaseModelBuilderParams;
+
 import java.util.Collection;
 
 /**
- *
-Validates results from the iterative namefinding
+ * Validates results from the iterative namefinding
  */
-public interface ModelGenerationValidator extends ModelParameter {
+public interface ModelGenerationValidator extends ModelParameter<BaseModelBuilderParams> {
 
   Boolean validSentence(String sentence);
 
   Boolean validNamedEntity(String namedEntity);
-  
-
 
   Collection<String> getBlackList();
 }

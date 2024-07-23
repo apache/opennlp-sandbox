@@ -34,14 +34,15 @@ public class VectorClassifierModel implements MaxentModel {
   private final String[] outcomeLabels;
   private final Map<String, Integer> predMap;
   
-  public VectorClassifierModel(AbstractVectorClassifier pa, String outcomeLabels[],
-      Map<String, Integer> predMap) {
+  public VectorClassifierModel(AbstractVectorClassifier pa, String[] outcomeLabels,
+                               Map<String, Integer> predMap) {
     this.classifier = pa;
     // TODO: We should make a copy, so the model is immutable ...
     this.outcomeLabels = outcomeLabels;
     this.predMap = predMap;
   }
 
+  @Override
   public double[] eval(String[] features) {
     Vector vector = new RandomAccessSparseVector(predMap.size());
     
@@ -55,7 +56,7 @@ public class VectorClassifierModel implements MaxentModel {
     
     Vector resultVector = classifier.classifyFull(vector);
     
-    double outcomes[] = new double[classifier.numCategories()];
+    double[] outcomes = new double[classifier.numCategories()];
     
     for (int i = 0; i < outcomes.length; i++) {
       outcomes[i] = resultVector.get(i);
@@ -64,10 +65,12 @@ public class VectorClassifierModel implements MaxentModel {
     return outcomes;
   }
 
+  @Override
   public double[] eval(String[] context, double[] probs) {
     return eval(context);
   }
 
+  @Override
   public double[] eval(String[] context, float[] values) {
     return eval(context);
   }

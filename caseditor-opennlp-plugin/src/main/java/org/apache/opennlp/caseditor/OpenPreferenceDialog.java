@@ -31,8 +31,8 @@ import org.eclipse.ui.internal.dialogs.PropertyDialog;
 
 public class OpenPreferenceDialog extends Action {
   
-  private Shell shell;
-  private AnnotationEditor editor;
+  private final Shell shell;
+  private final AnnotationEditor editor;
 
   public OpenPreferenceDialog(Shell shell, ICasEditor editor) {
     this.shell = shell;
@@ -65,8 +65,8 @@ public class OpenPreferenceDialog extends Action {
     mgr.addToRoot(new PreferenceNode("1", nameFinderPage));
     
     PropertyDialog dialog = new PropertyDialog(shell, mgr, null);
-    dialog.setPreferenceStore(((AnnotationEditor) editor).
-        getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput()));
+    dialog.setPreferenceStore(( editor).getCasDocumentProvider().
+            getTypeSystemPreferenceStore(editor.getEditorInput()));
     dialog.create();
     dialog.setMessage(nameFinderPage.getTitle());
     dialog.open();

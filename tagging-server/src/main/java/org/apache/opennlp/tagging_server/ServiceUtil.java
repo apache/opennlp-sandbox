@@ -27,9 +27,6 @@ public class ServiceUtil {
 
   private ServiceUtil() {
   }
-  
-  
-  
 
   public static ServiceReference getModelServiceReference(
       Class<?> serviceClazz, String modelName) {
@@ -41,8 +38,7 @@ public class ServiceUtil {
 
     ServiceReference[] serviceReferences;
     try {
-      serviceReferences = context.getServiceReferences(
-          null, filter);
+      serviceReferences = context.getServiceReferences(null, filter);
     } catch (InvalidSyntaxException e) {
       throw new IllegalArgumentException("modelName can't be used as value in filter!", e);
     }

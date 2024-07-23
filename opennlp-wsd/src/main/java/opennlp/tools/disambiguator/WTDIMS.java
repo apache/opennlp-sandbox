@@ -19,12 +19,7 @@
 
 package opennlp.tools.disambiguator;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import net.sf.extjwnl.data.POS;
-import opennlp.tools.disambiguator.WSDHelper;
-import opennlp.tools.disambiguator.WSDSample;
 
 public class WTDIMS {
 
@@ -146,18 +141,15 @@ public class WTDIMS {
 
     String ref = "";
 
-    if ((WSDHelper.getPOS(this.getPosTags()[this.getWordIndex()]) != null)) {
-      if (WSDHelper.getPOS(this.getPosTags()[this.getWordIndex()])
-        .equals(POS.VERB)) {
+    POS pos = WSDHelper.getPOS(this.getPosTags()[this.getWordIndex()]);
+    if (pos != null) {
+      if (pos.equals(POS.VERB)) {
         ref = wordBaseForm + ".v";
-      } else if (WSDHelper.getPOS(this.getPosTags()[this.getWordIndex()])
-        .equals(POS.NOUN)) {
+      } else if (pos.equals(POS.NOUN)) {
         ref = wordBaseForm + ".n";
-      } else if (WSDHelper.getPOS(this.getPosTags()[this.getWordIndex()])
-        .equals(POS.ADJECTIVE)) {
+      } else if (pos.equals(POS.ADJECTIVE)) {
         ref = wordBaseForm + ".a";
-      } else if (WSDHelper.getPOS(this.getPosTags()[this.getWordIndex()])
-        .equals(POS.ADVERB)) {
+      } else if (pos.equals(POS.ADVERB)) {
         ref = wordBaseForm + ".r";
       }
     }

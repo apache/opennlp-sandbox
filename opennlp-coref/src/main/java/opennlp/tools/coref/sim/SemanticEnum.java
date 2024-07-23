@@ -19,7 +19,7 @@ package opennlp.tools.coref.sim;
 
 public class SemanticEnum {
 
-  private String compatibility;
+  private final String compatibility;
 
   /** Semantically compatible. */
   public static final SemanticEnum COMPATIBLE = new SemanticEnum("compatible");

@@ -24,16 +24,12 @@ import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.viewers.ILabelProviderListener;
-import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ITableLabelProvider;
-import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.KeyListener;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Image;
@@ -112,28 +108,24 @@ public class CorpusExplorerView extends ViewPart {
       @Override
       public void done(final IJobChangeEvent event) {
         
-        Display.getDefault().asyncExec(new Runnable() {
+        Display.getDefault().asyncExec(() -> {
+          if (event.getResult().isOK()) {
 
-          @Override
-          public void run() {
-            if (event.getResult().isOK()) {
-              
-              setMessage(null);
-              
-              searchResultViewer.setItemCount(0);
-              JSONArray searchResult = searchJob.getSearchResult();
-              
-              for (int i = 0; i < searchResult.length(); i++) {
-                try {
-                  searchResultViewer.add(searchResult.getString(i));
-                } catch (JSONException e) {
-                  setMessage("Error, failed to parse results.");
-                }
+            setMessage(null);
+
+            searchResultViewer.setItemCount(0);
+            JSONArray searchResult = searchJob.getSearchResult();
+
+            for (int i = 0; i < searchResult.length(); i++) {
+              try {
+                searchResultViewer.add(searchResult.getString(i));
+              } catch (JSONException e) {
+                setMessage("Error, failed to parse results.");
               }
             }
-            else {
-              setMessage("Fetching search results from server failed!");
-            }
+          }
+          else {
+            setMessage("Fetching search results from server failed!");
           }
         });
       }
@@ -166,13 +158,7 @@ public class CorpusExplorerView extends ViewPart {
     
     serverUrl.setText(lastUsedServer);
     
-    serverUrl.addModifyListener(new ModifyListener() {
-      
-      @Override
-      public void modifyText(ModifyEvent event) {
-        store.setValue(CorpusServerPreferenceConstants.LAST_USED_SERVER_ADDRESS, serverUrl.getText());
-      }
-    });
+    serverUrl.addModifyListener(event -> store.setValue(CorpusServerPreferenceConstants.LAST_USED_SERVER_ADDRESS, serverUrl.getText()));
     
     // Search field to view content of corpus
     Label queryLabel = new Label(explorerComposite, SWT.NONE);
@@ -192,16 +178,15 @@ public class CorpusExplorerView extends ViewPart {
       lastUsedSearchQueriesString = "*:*";
     }
     
-    String lastUsedQueries[] = lastUsedSearchQueriesString.split(LUCENE_QUERY_DELIMITER);
+    String[] lastUsedQueries = lastUsedSearchQueriesString.split(LUCENE_QUERY_DELIMITER);
     
     if (lastUsedQueries.length > 0)
       queryText.setText(lastUsedQueries[0]);
-    
-    for (int i = 0; i < lastUsedQueries.length; i++) {
-      queryText.add(lastUsedQueries[i]);
+
+    for (String lastUsedQuery : lastUsedQueries) {
+      queryText.add(lastUsedQuery);
     }
-    
-    
+
     queryText.addSelectionListener(new SelectionListener() {
       
       @Override
@@ -254,7 +239,7 @@ public class CorpusExplorerView extends ViewPart {
 
     // List with casIds in the corpus ... (might be later replaced with a title)
     // The table should later be virtual, and be able to scroll through very huge
-    // lits of CASes ... might be connected to a repository with million of documents
+    // lits of CASes ... might be connected to a repository with millions of documents
     searchResultViewer = new TableViewer(book);
     GridDataFactory.swtDefaults().align(SWT.FILL, SWT.FILL).grab(true, true)
         .span(2, 1).applyTo(searchResultViewer.getControl());
@@ -288,28 +273,24 @@ public class CorpusExplorerView extends ViewPart {
         return arg0.toString();
       }});
     
-    searchResultViewer.addOpenListener(new IOpenListener() {
-      
-      @Override
-      public void open(OpenEvent event) {
-        
-        IWorkbenchPage page = CorpusExplorerView.this.getSite().getPage();
-        
-        StructuredSelection selection = (StructuredSelection) searchResultViewer.getSelection();
-        
-        if (selection.isEmpty())
-          return;
-        
-        String selectedCAS = (String) selection.getFirstElement();
-        
-        // Hard code it for now, lets work on retrieval code first ...
-        IEditorInput input = new CorpusServerCasEditorInput(serverUrl.getText(), selectedCAS);
-        
-        try {
-          page.openEditor(input, "org.apache.uima.caseditor.editor");
-        } catch (PartInitException e) {
-          e.printStackTrace();
-        }
+    searchResultViewer.addOpenListener(event -> {
+
+      IWorkbenchPage page = CorpusExplorerView.this.getSite().getPage();
+
+      StructuredSelection selection = (StructuredSelection) searchResultViewer.getSelection();
+
+      if (selection.isEmpty())
+        return;
+
+      String selectedCAS = (String) selection.getFirstElement();
+
+      // Hard code it for now, lets work on retrieval code first ...
+      IEditorInput input = new CorpusServerCasEditorInput(serverUrl.getText(), selectedCAS);
+
+      try {
+        page.openEditor(input, "org.apache.uima.caseditor.editor");
+      } catch (PartInitException e) {
+        e.printStackTrace();
       }
     });
 

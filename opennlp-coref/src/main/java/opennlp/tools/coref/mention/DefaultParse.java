@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.Stack;
 
 import opennlp.tools.parser.Parse;
 import opennlp.tools.parser.chunking.Parser;
@@ -36,12 +35,12 @@ import opennlp.tools.util.Span;
  */
 public class DefaultParse extends AbstractParse {
 
-  public static String[] NAME_TYPES = {"person", "organization", "location", "date",
+  public static final String[] NAME_TYPES = {"person", "organization", "location", "date",
       "time", "percentage", "money"};
   
-  private Parse parse;
-  private int sentenceNumber;
-  private static Set<String> entitySet = new HashSet<String>(Arrays.asList(NAME_TYPES));
+  private final Parse parse;
+  private final int sentenceNumber;
+  private static final Set<String> ENTITY_SET = new HashSet<>(Arrays.asList(NAME_TYPES));
   
   /**
    * Initializes the current instance.
@@ -56,45 +55,50 @@ public class DefaultParse extends AbstractParse {
     // Should we just maintain a parse id map !?
   }
 
+  @Override
   public int getSentenceNumber() {
     return sentenceNumber;
   }
 
+  @Override
   public List<opennlp.tools.coref.mention.Parse> getNamedEntities() {
-    List<Parse> names = new ArrayList<Parse>();
-    List<Parse> kids = new LinkedList<Parse>(Arrays.asList(parse.getChildren()));
+    List<Parse> names = new ArrayList<>();
+    List<Parse> kids = new LinkedList<>(Arrays.asList(parse.getChildren()));
     while (kids.size() > 0) {
       Parse p = kids.remove(0);
-      if (entitySet.contains(p.getType())) {
+      if (ENTITY_SET.contains(p.getType())) {
         names.add(p);
       }
       else {
         kids.addAll(Arrays.asList(p.getChildren()));
       }
     }
-    return createParses(names.toArray(new Parse[names.size()]));
+    return createParses(names.toArray(new Parse[0]));
   }
 
+  @Override
   public List<opennlp.tools.coref.mention.Parse> getChildren() {
     return createParses(parse.getChildren());
   }
 
+  @Override
   public List<opennlp.tools.coref.mention.Parse> getSyntacticChildren() {
-    List<Parse> kids = new ArrayList<Parse>(Arrays.asList(parse.getChildren()));
+    List<Parse> kids = new ArrayList<>(Arrays.asList(parse.getChildren()));
     for (int ci = 0; ci < kids.size(); ci++) {
       Parse kid = kids.get(ci);
-      if (entitySet.contains(kid.getType())) {
+      if (ENTITY_SET.contains(kid.getType())) {
         kids.remove(ci);
         kids.addAll(ci, Arrays.asList(kid.getChildren()));
         ci--;
       }
     }
-    return createParses(kids.toArray(new Parse[kids.size()]));
+    return createParses(kids.toArray(new Parse[0]));
   }
 
+  @Override
   public List<opennlp.tools.coref.mention.Parse> getTokens() {
-    List<Parse> tokens = new ArrayList<Parse>();
-    List<Parse> kids = new LinkedList<Parse>(Arrays.asList(parse.getChildren()));
+    List<Parse> tokens = new ArrayList<>();
+    List<Parse> kids = new LinkedList<>(Arrays.asList(parse.getChildren()));
     while (kids.size() > 0) {
       Parse p = kids.remove(0);
       if (p.isPosTag()) {
@@ -104,11 +108,12 @@ public class DefaultParse extends AbstractParse {
         kids.addAll(0,Arrays.asList(p.getChildren()));
       }
     }
-    return createParses(tokens.toArray(new Parse[tokens.size()]));
+    return createParses(tokens.toArray(new Parse[0]));
   }
 
+  @Override
   public String getSyntacticType() {
-    if (entitySet.contains(parse.getType())) {
+    if (ENTITY_SET.contains(parse.getType())) {
       return null;
     }
     else if (parse.getType().contains("#")) {
@@ -122,15 +127,16 @@ public class DefaultParse extends AbstractParse {
   private List<opennlp.tools.coref.mention.Parse> createParses(Parse[] parses) {
     List<opennlp.tools.coref.mention.Parse> newParses = new ArrayList<>(parses.length);
 
-    for (int pi = 0, pn = parses.length; pi < pn;pi++) {
-      newParses.add(new DefaultParse(parses[pi],sentenceNumber));
+    for (Parse pars : parses) {
+      newParses.add(new DefaultParse(pars, sentenceNumber));
     }
 
     return newParses;
   }
 
+  @Override
   public String getEntityType() {
-    if (entitySet.contains(parse.getType())) {
+    if (ENTITY_SET.contains(parse.getType())) {
       return parse.getType();
     }
     else {
@@ -138,6 +144,7 @@ public class DefaultParse extends AbstractParse {
     }
   }
 
+  @Override
   public boolean isParentNAC() {
     Parse parent = parse.getParent();
     while (parent != null) {
@@ -149,6 +156,7 @@ public class DefaultParse extends AbstractParse {
     return false;
   }
 
+  @Override
   public opennlp.tools.coref.mention.Parse getParent() {
     Parse parent = parse.getParent();
     if (parent == null) {
@@ -159,32 +167,32 @@ public class DefaultParse extends AbstractParse {
     }
   }
 
+  @Override
   public boolean isNamedEntity() {
     
     // TODO: We should use here a special tag to, where
     // the type can be extracted from. Then it just depends
     // on the training data and not the values inside NAME_TYPES.
-    
-    if (entitySet.contains(parse.getType())) {
-      return true;
-    }
-    else {
-      return false;
-    }
+
+    return ENTITY_SET.contains(parse.getType());
   }
 
+  @Override
   public boolean isNounPhrase() {
     return parse.getType().equals("NP") || parse.getType().startsWith("NP#");
   }
 
+  @Override
   public boolean isSentence() {
     return parse.getType().equals(Parser.TOP_NODE);
   }
 
+  @Override
   public boolean isToken() {
     return parse.isPosTag();
   }
 
+  @Override
   public int getEntityId() {
     
     String type = parse.getType();
@@ -198,16 +206,17 @@ public class DefaultParse extends AbstractParse {
     }
   }
 
+  @Override
   public Span getSpan() {
     return parse.getSpan();
   }
 
+  @Override
   public int compareTo(opennlp.tools.coref.mention.Parse p) {
 
     if (p == this) {
       return 0;
     }
-
     if (getSentenceNumber() < p.getSentenceNumber()) {
       return -1;
     }
@@ -220,11 +229,6 @@ public class DefaultParse extends AbstractParse {
           parse.getSpan().getEnd() == p.getSpan().getEnd()) {
 
         System.out.println("Maybe incorrect measurement!");
-        
-        Stack<Parse> parents = new Stack<Parse>();
-        
-        
-        
         
         // get parent and update distance
         // if match return distance
@@ -241,6 +245,7 @@ public class DefaultParse extends AbstractParse {
   }
 
 
+  @Override
   public opennlp.tools.coref.mention.Parse getPreviousToken() {
     Parse parent = parse.getParent();
     Parse node = parse;
@@ -267,6 +272,7 @@ public class DefaultParse extends AbstractParse {
     }
   }
 
+  @Override
   public opennlp.tools.coref.mention.Parse getNextToken() {
     Parse parent = parse.getParent();
     Parse node = parse;

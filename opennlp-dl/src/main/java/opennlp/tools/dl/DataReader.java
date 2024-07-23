@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,7 +46,7 @@ import java.util.function.Function;
  * In addition to reading the content, it
  * (1) vectorizes the text using embeddings such as Glove, and
  * (2) divides the datasets into mini batches of specified size.
- *
+ * <p>
  * The data is expected to be organized as per the following convention:
  * <pre>
  * data-dir/
@@ -90,18 +91,19 @@ import java.util.function.Function;
 public class DataReader implements DataSetIterator {
 
     private static final Logger LOG = LoggerFactory.getLogger(DataReader.class);
+    private static final long serialVersionUID = 6405541399655356439L;
 
-    private File dataDir;
+    private final File dataDir;
     private List<File> records;
     private List<Integer> labels;
     private Map<String, Integer> labelToId;
-    private String extension = ".txt";
-    private GlobalVectors embedder;
+    private final String extension = ".txt";
+    private final GlobalVectors embedder;
     private int cursor = 0;
-    private int batchSize;
-    private int vectorLen;
-    private int maxSeqLen;
-    private int numLabels;
+    private final int batchSize;
+    private final int vectorLen;
+    private final int maxSeqLen;
+    private final int numLabels;
     // default tokenizer
     private Function<String, String[]> tokenizer = s -> s.toLowerCase().split(" ");
 
@@ -109,7 +111,7 @@ public class DataReader implements DataSetIterator {
     /**
      * Creates a reader with the specified arguments
      * @param dataDirPath data directory
-     * @param labelNames list of labels (names should match sub directory names)
+     * @param labelNames list of labels (names should match subdirectory names)
      * @param embedder embeddings to convert words to vectors
      * @param batchSize mini batch size for DL4j training
      * @param maxSeqLength truncate sequences that are longer than this.
@@ -188,9 +190,9 @@ public class DataReader implements DataSetIterator {
         INDArray labelsMask = Nd4j.zeros(batchSize, maxSeqLen);
 
         // Optimizations to speed up this code block by reusing memory
-        int _2dIndex[] = new int[2];
-        int _3dIndex[] = new int[3];
-        INDArrayIndex _3dNdIndex[] = new INDArrayIndex[]{null, NDArrayIndex.all(), null};
+        int[] _2dIndex = new int[2];
+        int[] _3dIndex = new int[3];
+        INDArrayIndex[] _3dNdIndex = new INDArrayIndex[]{null, NDArrayIndex.all(), null};
 
         for (int i = 0; i < batchSize && cursor < records.size(); i++, cursor++) {
             _2dIndex[0] = i;
@@ -201,7 +203,7 @@ public class DataReader implements DataSetIterator {
                 // Read
                 File file = records.get(cursor);
                 int labelIdx = this.labels.get(cursor);
-                String text = FileUtils.readFileToString(file);
+                String text = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
                 // Tokenize and Filter
                 String[] tokens = tokenizer.apply(text);
                 tokens = Arrays.stream(tokens).filter(embedder::hasWord).toArray(String[]::new);

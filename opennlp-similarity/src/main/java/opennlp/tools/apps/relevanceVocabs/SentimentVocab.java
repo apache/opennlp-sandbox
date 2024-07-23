@@ -17,10 +17,10 @@
 
 package opennlp.tools.apps.relevanceVocabs;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-
 
 public class SentimentVocab {
 	private static final String[] POSITIVE_ADJECTTIVE_LIST = { "accessible",
@@ -103,17 +103,17 @@ public class SentimentVocab {
 	public static final int SENTIMENT_UNKNOWN = 0;
 	public static final int SENTIMENT_NEGATIVE = -1;
 
-	private static SentimentVocab instance = new SentimentVocab();
+	private static final SentimentVocab INSTANCE = new SentimentVocab();
 
 	// complete sentiment word map, key = word, value = sentiment object
-	private Map<String, Sentiment> sentimentMap = new HashMap<String, Sentiment>();
+	private final Map<String, Sentiment> sentimentMap = new HashMap<>();
 
 	// sentiment word sets, key = POS type, value = word set
-	private Map<String, HashSet<String>> wordSetMap = new HashMap<String, HashSet<String>>();
+	private final Map<String, HashSet<String>> wordSetMap = new HashMap<>();
 
 	public static class Sentiment {
-		public String posType;
-		public int sentimentType;
+		public final String posType;
+		public final int sentimentType;
 
 		Sentiment(String posType, int sentimentType) {
 			this.posType = posType;
@@ -122,14 +122,14 @@ public class SentimentVocab {
 	}
 
 	public static SentimentVocab getInstance() {
-		return instance;
+		return INSTANCE;
 	}
 
 	public Sentiment getSentiment(String word) {
 		if (word == null)
 			return null;
 
-		// get the normalized form of the word
+		// get the normalized form
 		//word = WordDictionary.getInstance().getLemmaOrWord(word);
 
 		return sentimentMap.get(word);
@@ -139,7 +139,7 @@ public class SentimentVocab {
 		if (word == null)
 			return null;
 
-		// get the normalized form of the word
+		// get the normalized form
 		//word = WordDictionary.getInstance().getLemmaOrWord(word, posType);
 
 		return sentimentMap.get(word);
@@ -154,7 +154,7 @@ public class SentimentVocab {
 		if (sentiment == null)
 			return false;
 
-		return sentiment.posType == posType;
+		return sentiment.posType.equals(posType);
 	}
 
 	public HashSet<String> getSentimentWordSet(String posType) {
@@ -206,11 +206,9 @@ public class SentimentVocab {
 		// add the word to the corresponding sentiment word set
 		HashSet<String> wordSet = wordSetMap.get(posType);
 		if (wordSet == null) {
-			wordSet = new HashSet<String>();
+			wordSet = new HashSet<>();
 			wordSetMap.put(posType, wordSet);
 		}
-		for (String word : words) {
-			wordSet.add(word);
-		}
+    wordSet.addAll(Arrays.asList(words));
 	}
 }

@@ -24,7 +24,7 @@ package org.apache.opennlp.utils.regression;
 public interface Hypothesis {
 
   /**
-   * calculate the output given some inputs according to the underlying model.
+   * Calculates the output given some inputs according to the underlying model.
    *
    * @param inputs an array of inputs as <code>double</code>
    * @return a <code>double</code> representing the output

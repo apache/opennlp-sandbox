@@ -24,8 +24,8 @@ import org.eclipse.ui.IPersistableElement;
 // Serialization must be supported, right?!
 public class CorpusServerCasEditorInput implements IEditorInput {
 
-  private String corpusUrl;
-  private String casId;
+  private final String corpusUrl;
+  private final String casId;
   
   CorpusServerCasEditorInput(String corpusUrl, String casId) {
     this.corpusUrl = corpusUrl;
@@ -33,11 +33,11 @@ public class CorpusServerCasEditorInput implements IEditorInput {
   }
   
   @Override
-  public Object getAdapter(@SuppressWarnings("rawtypes") Class clazz) {
+  public Object getAdapter(Class clazz) {
     return null;
   }
 
-  // can be checked through an http lookup
+  // can be checked through an HTTP lookup
   @Override
   public boolean exists() {
     return false;

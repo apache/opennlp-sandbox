@@ -28,7 +28,7 @@ import opennlp.tools.coref.mention.MentionContext;
  */
 public class DiscourseModel {
 
-  private List<DiscourseEntity> entities;
+  private final List<DiscourseEntity> entities;
 
   int nextEntityId = 1;
 
@@ -36,7 +36,7 @@ public class DiscourseModel {
    * Creates a new discourse model.
    */
   public DiscourseModel() {
-    entities = new ArrayList<DiscourseEntity>();
+    entities = new ArrayList<>();
   }
 
   /**

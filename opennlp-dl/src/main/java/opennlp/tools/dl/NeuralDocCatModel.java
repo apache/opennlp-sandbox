@@ -1,4 +1,28 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package opennlp.tools.dl;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -9,17 +33,11 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.util.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
-
 /**
  * This class is a wrapper for DL4J's {@link MultiLayerNetwork}, and {@link GlobalVectors}
  * that provides features to serialize and deserialize necessary data to a zip file.
- *
- * This cane be used by a Neural Trainer tool to serialize the network and a predictor tool to restore the same network
+ * <p>
+ * This can be used by a Neural Trainer tool to serialize the network and a predictor tool to restore the same network
  * with the weights.
  *
  * <br/>
@@ -46,8 +64,8 @@ public class NeuralDocCatModel {
 
     /**
      *
-     * @param stream Input stream of a Zip File
-     * @throws IOException
+     * @param stream Input stream of a Zip file.
+     * @throws IOException Thrown if IO errors occurred.
      */
     public NeuralDocCatModel(InputStream stream) throws IOException {
         ZipInputStream zipIn = new ZipInputStream(stream);
@@ -65,7 +83,7 @@ public class NeuralDocCatModel {
                     manifest.load(zipIn);
                     break;
                 case NETWORK:
-                    String json = IOUtils.toString(new UnclosableInputStream(zipIn));
+                    String json = IOUtils.toString(new UnclosableInputStream(zipIn), StandardCharsets.UTF_8);
                     model = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json));
                     break;
                 case WEIGHTS:
@@ -88,11 +106,10 @@ public class NeuralDocCatModel {
 
         assert manifest.containsKey(LABELS);
         String[] labels = manifest.getProperty(LABELS).split(",");
-        this.labels = Collections.unmodifiableList(Arrays.asList(labels));
+        this.labels = List.of(labels);
 
         assert manifest.containsKey(MAX_SEQ_LEN);
         this.maxSeqLen = Integer.parseInt(manifest.getProperty(MAX_SEQ_LEN));
-
     }
 
     /**
@@ -129,16 +146,17 @@ public class NeuralDocCatModel {
     }
 
     /**
-     * Zips the current state of the model and writes it stream
-     * @param stream stream to write
-     * @throws IOException
+     * Zips the current state of the model and writes it into the specified stream.
+     * 
+     * @param stream Output stream to write to.
+     * @throws IOException Thrown if IO errors occurred.
      */
     public void saveModel(OutputStream stream) throws IOException {
         try (ZipOutputStream zipOut = new ZipOutputStream(new BufferedOutputStream(stream))) {
             // Write out manifest
             zipOut.putNextEntry(new ZipEntry(MANIFEST));
 
-            String comments = "Created-By:" + System.getenv("USER") + " at " + new Date().toString()
+            String comments = "Created-By:" + System.getenv("USER") + " at " + new Date()
                     + "\nModel-Version: " + VERSION
                     + "\nModel-Schema:" + MODEL_NAME;
 
@@ -166,10 +184,11 @@ public class NeuralDocCatModel {
     }
 
     /**
-     * creates a model from file on the local file system
+     * Creates a model from file on the local file system.
+     *
      * @param modelPath path to model file
      * @return an instance of this class
-     * @throws IOException
+     * @throws IOException Thrown if IO errors occurred.
      */
     public static NeuralDocCatModel loadModel(String modelPath) throws IOException {
         try (InputStream modelStream = new FileInputStream(modelPath)) {

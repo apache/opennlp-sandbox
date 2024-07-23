@@ -98,8 +98,8 @@ public class WSDDefaultParameters extends WSDParameters {
     this.trainingDataDirectory = trainingDataDirectory;
   }
 
-  @Override public boolean areValid() {
-    // TODO recheck this pattern
+  @Override
+  public boolean areValid() {
     return true;
   }
 

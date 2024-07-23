@@ -19,17 +19,11 @@ package opennlp.tools.similarity.apps.taxo_builder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
-import opennlp.tools.similarity.apps.utils.FileHandler;
 import opennlp.tools.textsimilarity.TextProcessor;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
-
-//import com.thoughtworks.xstream.XStream;
 
 /**
  * This class can be used to generate scores based on the overlapping between a
@@ -38,12 +32,10 @@ import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcess
  */
 public class TaxoQuerySnapshotMatcher {
 
-  ParserChunker2MatcherProcessor sm;
+  final ParserChunker2MatcherProcessor sm;
   // XStream xStream= new XStream();
   Map<String, List<List<String>>> lemma_ExtendedAssocWords;
-  TaxonomySerializer taxo;
-  private static Logger LOG = Logger
-      .getLogger("opennlp.tools.similarity.apps.taxo_builder.TaxoQuerySnapshotMatcher");
+  final TaxonomySerializer taxo;
 
   public TaxoQuerySnapshotMatcher(String taxoFileName) {
     sm = ParserChunker2MatcherProcessor.getInstance();
@@ -62,12 +54,11 @@ public class TaxoQuerySnapshotMatcher {
    */
   public int getTaxoScore(String query, String snapshot) {
 
-    lemma_ExtendedAssocWords = (HashMap<String, List<List<String>>>) taxo
-        .getLemma_ExtendedAssocWords();
+    lemma_ExtendedAssocWords = taxo.getLemma_ExtendedAssocWords();
 
     query = query.toLowerCase();
     snapshot = snapshot.toLowerCase();
-    String[] queryWords = null, snapshotWords = null;
+    String[] queryWords, snapshotWords;
     try {
       queryWords = sm.getTokenizer().tokenize(query);
       snapshotWords = sm.getTokenizer().tokenize(snapshot);
@@ -79,18 +70,18 @@ public class TaxoQuerySnapshotMatcher {
     List<String> queryList = Arrays.asList(queryWords);
     List<String> snapshotList = Arrays.asList(snapshotWords);
 
-    List<String> commonBetweenQuerySnapshot = (new ArrayList<String>(queryList));
+    List<String> commonBetweenQuerySnapshot = (new ArrayList<>(queryList));
     commonBetweenQuerySnapshot.retainAll(snapshotList);// Still could be
                                                        // duplicated words (even
                                                        // more if I would retain
                                                        // all the opposite ways)
 
     int score = 0;
-    List<String> accumCommonParams = new ArrayList<String>();
+    List<String> accumCommonParams = new ArrayList<>();
     for (String qWord : commonBetweenQuerySnapshot) {
       if (!lemma_ExtendedAssocWords.containsKey(qWord))
         continue;
-      List<List<String>> foundParams = new ArrayList<List<String>>();
+      List<List<String>> foundParams;
       foundParams = lemma_ExtendedAssocWords.get(qWord);
 
       for (List<String> paramsForGivenMeaning : foundParams) {
@@ -107,14 +98,14 @@ public class TaxoQuerySnapshotMatcher {
     return score;
   }
 
-  /**
+  /*
    * It loads a serialized taxonomy in .dat format and serializes it into a much
    * more readable XML format.
    * 
-   * @param taxonomyPath
    * @param taxonomyXML_Path
-   * 
-
+   * @param taxo
+   */
+  /*
   public void convertDatToXML(String taxonomyXML_Path, TaxonomySerializer taxo) {
     XStream xStream = new XStream();
     FileHandler fileHandler = new FileHandler();
@@ -124,9 +115,10 @@ public class TaxoQuerySnapshotMatcher {
       e.printStackTrace();
       LOG.info(e.toString());
     }
-
   }
+  */
 
+  /*
   public void xmlWork() {
     TaxoQuerySnapshotMatcher matcher = new TaxoQuerySnapshotMatcher(
         "src/test/resources/taxonomies/irs_domTaxo.dat");
@@ -135,7 +127,8 @@ public class TaxoQuerySnapshotMatcher {
     matcher.taxo = (TaxonomySerializer) xStream.fromXML(fileHandler
         .readFromTextFile("src/test/resources/taxo_English.xml"));
   }
-*/
+  */
+
   public void close() {
     sm.close();
   }

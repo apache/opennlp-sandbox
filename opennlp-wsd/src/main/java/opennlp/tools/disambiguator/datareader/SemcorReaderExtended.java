@@ -19,14 +19,21 @@
 
 package opennlp.tools.disambiguator.datareader;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.StringReader;
 import java.util.ArrayList;
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import opennlp.tools.disambiguator.WSDHelper;
 import opennlp.tools.disambiguator.WSDSample;
+import opennlp.tools.lemmatizer.Lemmatizer;
+import opennlp.tools.postag.POSTagger;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.ObjectStreamUtils;
 
@@ -34,6 +41,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
 
 /**
  * This class reads Semcor data.
@@ -61,38 +70,34 @@ public class SemcorReaderExtended {
   private static final String ATTRIBUTE_LEMMA = "lemma";
   private static final String ATTRIBUTE_WNSN = "wnsn";
   private static final String ATTRIBUTE_LEXSN = "lexsn";
-
   private static final String ELEMENT_PUNCTUATION = "punc";
 
-  private static String semcorDirectory = "src/test/resources/semcor3.0/";
-  private static String[] folders = { "brown1", "brown2", "brownv" };
-  private static String tagfiles = "/tagfiles/";
-
+  private String semcorDirectory;
+  private static final String[] folders = { "brown1", "brown2", "brownv" };
+  private static final String tagfiles = "/tagfiles/";
   
-  public static String getSemcorDirectory() {
-    return semcorDirectory;
-  }
-
-  public static void setSemcorDirectory(String semcorDirectory) {
-    SemcorReaderExtended.semcorDirectory = semcorDirectory;
-  }
-
-  public SemcorReaderExtended() {
+  public SemcorReaderExtended(String semcorDirectory) {
     super();
+    setSemcorDirectory(semcorDirectory);
+  }
+
+  private void setSemcorDirectory(String semcorDirectory) {
+    this.semcorDirectory = semcorDirectory;
   }
 
   /**
    * This serves to read one Semcor XML file
    */
   private ArrayList<Sentence> readFile(String file) {
-
-    ArrayList<Sentence> result = new ArrayList<Sentence>();
-
-    try {
-
-      File xmlFile = new File(file);
-      DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-      DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+    ArrayList<Sentence> result = new ArrayList<>();
+    final EntityResolver noop = (publicId, systemId) -> new InputSource(new StringReader(""));
+    try (InputStream xmlFile = new BufferedInputStream(new FileInputStream(file))) {
+      DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+      dbf.setXIncludeAware(false);
+      dbf.setExpandEntityReferences(false);
+      dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+      DocumentBuilder dBuilder = dbf.newDocumentBuilder();
+      dBuilder.setEntityResolver(noop);
       Document doc = dBuilder.parse(xmlFile);
 
       doc.getDocumentElement().normalize();
@@ -134,12 +139,11 @@ public class SemcorReaderExtended {
                   if (nWord.getNodeName().equals(ELEMENT_WORDFORM)) {
 
                     Element eWord = (Element) nWord;
-
+                    String word = eWord.getTextContent();
+                    String cmd = eWord.getAttribute(ATTRIBUTE_CMD);
+                    String pos = eWord.getAttribute(ATTRIBUTE_POS);
                     if (eWord.getAttribute(ATTRIBUTE_CMD).equals("done")) {
                       // if the word is already disambiguated
-                      String word = eWord.getTextContent();
-                      String cmd = eWord.getAttribute(ATTRIBUTE_CMD);
-                      String pos = eWord.getAttribute(ATTRIBUTE_POS);
                       String lemma = eWord.getAttribute(ATTRIBUTE_LEMMA);
                       String wnsn = eWord.getAttribute(ATTRIBUTE_WNSN);
                       String lexsn = eWord.getAttribute(ATTRIBUTE_LEXSN);
@@ -147,21 +151,16 @@ public class SemcorReaderExtended {
                       Word iword = new Word(paragraphID, sentenceID, wnum,
                           Word.Type.WORD, word, cmd, pos, lemma, wnsn, lexsn);
                       isentence.addIword(iword);
-                      wnum++;
 
                       // System.out.println("*** " + iword.toString() + " ***");
 
                     } else {
                       // if the word is not disambiguated
-                      String word = eWord.getTextContent();
-                      String cmd = eWord.getAttribute(ATTRIBUTE_CMD);
-                      String pos = eWord.getAttribute(ATTRIBUTE_POS);
-
                       Word iword = new Word(paragraphID, sentenceID, wnum,
                           Word.Type.WORD, word, cmd, pos);
                       isentence.addIword(iword);
-                      wnum++;
                     }
+                    wnum++;
 
                   } else if (nWord.getNodeName().equals(ELEMENT_PUNCTUATION)) {
                     Element eWord = (Element) nWord;
@@ -171,9 +170,7 @@ public class SemcorReaderExtended {
                     isentence.addIword(iword);
                     wnum++;
                   }
-
                 }
-
               }
               result.add(isentence);
             }
@@ -181,6 +178,7 @@ public class SemcorReaderExtended {
         }
       }
     } catch (Exception e) {
+      WSDHelper.print("Reading " + file);
       e.printStackTrace();
     }
 
@@ -200,7 +198,7 @@ public class SemcorReaderExtended {
    */
   private ArrayList<WSDSample> getSemcorOneFileData(String file, String wordTag) {
 
-    ArrayList<WSDSample> setInstances = new ArrayList<WSDSample>();
+    ArrayList<WSDSample> setInstances = new ArrayList<>();
 
     try {
 
@@ -238,29 +236,25 @@ public class SemcorReaderExtended {
                   + isentences.get(j + 1).toString();
               index = isentences.get(j - 1).getIwords().size() + k;
             }
-            ArrayList<String> senses = new ArrayList<String>();
+            ArrayList<String> senses = new ArrayList<>();
             String sense = iword.getLexsn();
             if (sense != null) {
               senses.add(sense);
             }
 
             if (!senses.isEmpty()) {
-              String[] words = sentence.split("\\s");
-              String[] tags = WSDHelper.getTagger().tag(words);
-              String[] lemmas = new String[words.length];
+              final Lemmatizer lemmatizer = WSDHelper.getLemmatizer();
+              final POSTagger tagger = WSDHelper.getTagger();
 
-              for (int i = 0; i < words.length; i++) {
-                lemmas[i] = WSDHelper.getLemmatizer().lemmatize(words[i],
-                    tags[i]);
-              }
+              final String[] words = sentence.split("\\s");
+              final String[] tags = tagger.tag(words);
+              String[] lemmas = lemmatizer.lemmatize(words, tags);
 
               WSDSample wtd = new WSDSample(words, tags, lemmas, index, senses.toArray(new String[0]));
               setInstances.add(wtd);
             }
-
           }
         }
-
       }
 
     } catch (Exception e) {
@@ -285,7 +279,7 @@ public class SemcorReaderExtended {
    */
   private ArrayList<WSDSample> getSemcorFolderData(String folder, String wordTag) {
 
-    ArrayList<WSDSample> result = new ArrayList<WSDSample>();
+    ArrayList<WSDSample> result = new ArrayList<>();
 
     String directory = semcorDirectory + folder + tagfiles;
     File tempFolder = new File(directory);
@@ -316,7 +310,7 @@ public class SemcorReaderExtended {
    */
   public ArrayList<WSDSample> getSemcorData(String wordTag) {
 
-    ArrayList<WSDSample> result = new ArrayList<WSDSample>();
+    ArrayList<WSDSample> result = new ArrayList<>();
 
     for (String folder : folders) {
       ArrayList<WSDSample> list = getSemcorFolderData(folder, wordTag);

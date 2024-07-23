@@ -20,9 +20,11 @@ package opennlp.tools.disambiguator;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serial;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -37,6 +39,9 @@ import opennlp.tools.util.model.BaseModel;
 // TODO unify both supervised models
 public class WSDModel extends BaseModel {
 
+  @Serial
+  private static final long serialVersionUID = 8597537955427934846L;
+
   private static final String COMPONENT_NAME = "WSD";
   private static final String WSD_MODEL_ENTRY_NAME = "WSD.model";
 
@@ -45,12 +50,12 @@ public class WSDModel extends BaseModel {
   private static final String NGRAM = "ngram";
   private static final String CONTEXT = "context";
 
-  private ArrayList<String> contextEntries = new ArrayList<String>();
+  private List<String> contextEntries = new ArrayList<>();
   private String wordTag;
   private int windowSize;
   private int ngram;
 
-  public ArrayList<String> getContextEntries() {
+  public List<String> getContextEntries() {
     return contextEntries;
   }
 
@@ -103,17 +108,17 @@ public class WSDModel extends BaseModel {
       null);
   }
 
-  public WSDModel(InputStream in) throws IOException, InvalidFormatException {
+  public WSDModel(InputStream in) throws IOException {
     super(COMPONENT_NAME, in);
     updateAttributes();
   }
 
-  public WSDModel(File modelFile) throws IOException, InvalidFormatException {
+  public WSDModel(File modelFile) throws IOException {
     super(COMPONENT_NAME, modelFile);
     updateAttributes();
   }
 
-  public WSDModel(URL modelURL) throws IOException, InvalidFormatException {
+  public WSDModel(URL modelURL) throws IOException {
     super(COMPONENT_NAME, modelURL);
     updateAttributes();
   }
@@ -125,7 +130,8 @@ public class WSDModel extends BaseModel {
     return true;
   }
 
-  @Override protected void validateArtifactMap() throws InvalidFormatException {
+  @Override
+  protected void validateArtifactMap() throws InvalidFormatException {
     super.validateArtifactMap();
 
     if (!(artifactMap.get(WSD_MODEL_ENTRY_NAME) instanceof AbstractModel)) {
@@ -145,7 +151,7 @@ public class WSDModel extends BaseModel {
     Properties manifest = (Properties) artifactMap.get(MANIFEST_ENTRY);
     String surroundings = (String) manifest.get(CONTEXT);
 
-    this.contextEntries = new ArrayList(Arrays.asList(surroundings.split(",")));
+    this.contextEntries = Arrays.asList(surroundings.split(","));
     this.wordTag = (String) manifest.get(WORDTAG);
     this.windowSize = Integer.parseInt((String) manifest.get(WINSIZE));
     this.ngram = Integer.parseInt((String) manifest.get(NGRAM));

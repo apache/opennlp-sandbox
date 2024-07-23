@@ -34,7 +34,7 @@ class MucCorefContentHandler extends SgmlParser.ContentHandler {
   static class CorefMention {
     Span span;
     int id;
-    String min;
+    final String min;
     
     CorefMention(Span span, int id, String min) {
       this.span = span;
@@ -49,11 +49,11 @@ class MucCorefContentHandler extends SgmlParser.ContentHandler {
   private final List<RawCorefSample> samples;
   
   boolean isInsideContentElement = false;
-  private final List<String> text = new ArrayList<String>();
-  private Stack<CorefMention> mentionStack = new Stack<CorefMention>();
-  private List<CorefMention> mentions = new ArrayList<MucCorefContentHandler.CorefMention>();
+  private final List<String> text = new ArrayList<>();
+  private final Stack<CorefMention> mentionStack = new Stack<>();
+  private final List<CorefMention> mentions = new ArrayList<>();
 
-  private Map<Integer, Integer> idMap = new HashMap<Integer, Integer>();
+  private final Map<Integer, Integer> idMap = new HashMap<>();
 
   private RawCorefSample sample;
   
@@ -91,8 +91,8 @@ class MucCorefContentHandler extends SgmlParser.ContentHandler {
     
     if (MucElementNames.DOC_ELEMENT.equals(name)) {
       idMap.clear();
-      sample = new RawCorefSample(new ArrayList<String>(),
-          new ArrayList<MucCorefContentHandler.CorefMention[]>());
+      sample = new RawCorefSample(new ArrayList<>(),
+              new ArrayList<>());
     }
     
     if (MucElementNames.CONTENT_ELEMENTS.contains(name)) {
@@ -147,8 +147,8 @@ class MucCorefContentHandler extends SgmlParser.ContentHandler {
     
     if (MucElementNames.CONTENT_ELEMENTS.contains(name)) {
       
-      sample.getTexts().add(text.toArray(new String[text.size()]));
-      sample.getMentions().add(mentions.toArray(new CorefMention[mentions.size()]));
+      sample.getTexts().add(text.toArray(new String[0]));
+      sample.getMentions().add(mentions.toArray(new CorefMention[0]));
       
       mentions.clear();
       text.clear();
@@ -158,8 +158,8 @@ class MucCorefContentHandler extends SgmlParser.ContentHandler {
     if (MucElementNames.DOC_ELEMENT.equals(name)) {
       
       for (CorefMention[] mentions : sample.getMentions()) {
-        for (int i = 0; i < mentions.length; i++) {
-          mentions[i].id = resolveId(mentions[i].id);
+        for (CorefMention mention : mentions) {
+          mention.id = resolveId(mention.id);
         }
       }
       

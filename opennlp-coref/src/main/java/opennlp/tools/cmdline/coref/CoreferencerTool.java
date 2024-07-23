@@ -18,7 +18,7 @@
 package opennlp.tools.cmdline.coref;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,13 +30,14 @@ import opennlp.tools.cmdline.BasicCmdLineTool;
 import opennlp.tools.cmdline.CLI;
 import opennlp.tools.cmdline.CmdLineUtil;
 import opennlp.tools.cmdline.PerformanceMonitor;
+import opennlp.tools.cmdline.SystemInputStreamFactory;
 import opennlp.tools.cmdline.TerminateToolException;
 import opennlp.tools.coref.DiscourseEntity;
 import opennlp.tools.coref.LinkerMode;
+import opennlp.tools.coref.TreebankLinker;
 import opennlp.tools.coref.mention.DefaultParse;
 import opennlp.tools.coref.mention.Mention;
 import opennlp.tools.coref.mention.MentionContext;
-import opennlp.tools.lang.english.TreebankLinker;
 import opennlp.tools.parser.Parse;
 import opennlp.tools.parser.chunking.Parser;
 import opennlp.tools.util.ObjectStream;
@@ -45,14 +46,14 @@ import opennlp.tools.util.Span;
 
 public class CoreferencerTool extends BasicCmdLineTool {
 
-  class CorefParse {
+  static class CorefParse {
 
-    private Map<Parse, Integer> parseMap;
-    private List<Parse> parses;
+    private final Map<Parse, Integer> parseMap;
+    private final List<Parse> parses;
 
     public CorefParse(List<Parse> parses, DiscourseEntity[] entities) {
       this.parses = parses;
-      parseMap = new HashMap<Parse, Integer>();
+      parseMap = new HashMap<>();
       for (int ei = 0, en = entities.length; ei < en;ei++) {
         if (entities[ei].getNumMentions() > 1) {
           for (Iterator<MentionContext> mi = entities[ei].getMentions(); mi.hasNext();) {
@@ -65,8 +66,7 @@ public class CoreferencerTool extends BasicCmdLineTool {
     }
 
     public void show() {
-      for (int pi = 0, pn = parses.size(); pi < pn;pi++) {
-        Parse p = parses.get(pi);
+      for (Parse p : parses) {
         show(p);
         System.out.println();
       }
@@ -85,8 +85,7 @@ public class CoreferencerTool extends BasicCmdLineTool {
         System.out.print(" ");
       }
       Parse[] children = p.getChildren();
-      for (int pi = 0, pn = children.length; pi < pn;pi++) {
-        Parse c = children[pi];
+      for (Parse c : children) {
         Span s = c.getSpan();
         if (start < s.getStart()) {
           System.out.print(p.getText().substring(start, s.getStart()));
@@ -104,7 +103,8 @@ public class CoreferencerTool extends BasicCmdLineTool {
   public String getShortDescription() {
     return "learnable noun phrase coreferencer";
   }
-  
+
+  @Override
   public void run(String[] args) {
     if (args.length != 1) {
       System.out.println(getHelp());
@@ -118,26 +118,24 @@ public class CoreferencerTool extends BasicCmdLineTool {
         throw new TerminateToolException(-1, "Failed to load all coreferencer models!", e);
       }
       
-      ObjectStream<String> lineStream =
-          new PlainTextByLineStream(new InputStreamReader(System.in));
-      
       PerformanceMonitor perfMon = new PerformanceMonitor(System.err, "parses");
       perfMon.start();
       
-      try {
+      try (ObjectStream<String> lineStream = new PlainTextByLineStream(
+              new SystemInputStreamFactory(), StandardCharsets.UTF_8)) {
         
         int sentenceNumber = 0;
-        List<Mention> document = new ArrayList<Mention>();
-        List<Parse> parses = new ArrayList<Parse>();
+        List<Mention> document = new ArrayList<>();
+        List<Parse> parses = new ArrayList<>();
         
         String line;
         while ((line = lineStream.read()) != null) {
 
           if (line.equals("")) {
             DiscourseEntity[] entities =
-                treebankLinker.getEntities(document.toArray(new Mention[document.size()]));
+                treebankLinker.getEntities(document.toArray(new Mention[0]));
             //showEntities(entities);
-            new CorefParse(parses,entities).show();
+            new CorefParse(parses, entities).show();
             sentenceNumber = 0;
             document.clear();
             parses.clear();
@@ -148,14 +146,14 @@ public class CoreferencerTool extends BasicCmdLineTool {
             Mention[] extents =
                 treebankLinker.getMentionFinder().getMentions(new DefaultParse(p,sentenceNumber));
             //construct new parses for mentions which don't have constituents.
-            for (int ei = 0, en = extents.length; ei < en;ei++) {
+            for (Mention extent : extents) {
               //System.err.println("PennTreebankLiner.main: "+ei+" "+extents[ei]);
 
-              if (extents[ei].getParse() == null) {
-                //not sure how to get head index, but its not used at this point.
-                Parse snp = new Parse(p.getText(),extents[ei].getSpan(),"NML",1.0,0);
+              if (extent.getParse() == null) {
+                //not sure how to get head index, but it's not used at this point.
+                Parse snp = new Parse(p.getText(), extent.getSpan(), "NML", 1.0, 0);
                 p.insert(snp);
-                extents[ei].setParse(new DefaultParse(snp,sentenceNumber));
+                extent.setParse(new DefaultParse(snp, sentenceNumber));
               }
 
             }
@@ -174,6 +172,7 @@ public class CoreferencerTool extends BasicCmdLineTool {
     }
   }
 
+  @Override
   public String getHelp() {
     return "Usage: " + CLI.CMD + " " + getName() + " model_directory < parses";
   }

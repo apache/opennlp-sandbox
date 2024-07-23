@@ -20,8 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ObjectPhraseListForSentence {
-  List<ObjectPhrase> oPhrases;
-  ObjectControlOp contrOp;
+  final List<ObjectPhrase> oPhrases;
+  final ObjectControlOp contrOp;
 
   public ObjectPhraseListForSentence(List<ObjectPhrase> oPhrases2,
       ObjectControlOp op) {
@@ -60,7 +60,7 @@ public class ObjectPhraseListForSentence {
           ObjectPhrase o1new = new ObjectPhrase();
           o1new.setObjectName(o1.getObjectName());
           o1new.setMethod(o1.getMethod());
-          List<String> paramValues = new ArrayList<String>();
+          List<String> paramValues = new ArrayList<>();
           paramValues.add(newArgs);
           o1new.setParamValues(paramValues);
           oPhrases.set(i, o1new);
@@ -79,7 +79,7 @@ public class ObjectPhraseListForSentence {
           ObjectPhrase o1new = new ObjectPhrase();
           o1new.setObjectName(o1.getObjectName());
           o1new.setMethod(o1.getMethod());
-          List<String> paramValues = new ArrayList<String>();
+          List<String> paramValues = new ArrayList<>();
           paramValues.add(newArgs);
           o1new.setParamValues(paramValues);
           oPhrases.set(i, o1new);

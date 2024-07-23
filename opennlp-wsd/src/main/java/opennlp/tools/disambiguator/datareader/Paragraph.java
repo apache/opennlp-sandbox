@@ -28,13 +28,13 @@ public class Paragraph {
 
   public Paragraph() {
     super();
-    this.isentences = new ArrayList<Sentence>();
+    this.isentences = new ArrayList<>();
   }
 
   public Paragraph(int pnum) {
     super();
     this.pnum = pnum;
-    this.isentences = new ArrayList<Sentence>();
+    this.isentences = new ArrayList<>();
   }
 
   public Paragraph(int pnum, ArrayList<Sentence> sentences) {
@@ -65,28 +65,27 @@ public class Paragraph {
 
   @Override
   public String toString() {
-    String paragraph = "";
-    for (int i = 0; i < this.isentences.size(); i++) {
-      paragraph = paragraph + " " + this.isentences.get(i).toString();
+    StringBuilder paragraph = new StringBuilder();
+    for (Sentence isentence : this.isentences) {
+      paragraph.append(" ").append(isentence.toString());
     }
     return paragraph.substring(1, paragraph.length());
 
   }
 
   /**
-   * This return TRUE only and only if the paragraph contains the word and it is
+   * Returns {@code true} only and only if the paragraph contains the word, and it is
    * sense-tagged
    * 
    * @param wordTag
-   * @return {@value Boolean.true} if the word exists in the paragraph and is
-   *         sense-tagged
+   * @return {@code true} if the word exists in the paragraph and is sense-tagged.
    * 
    */
   public boolean contains(String wordTag) {
 
     for (Sentence isentence : this.getSsentences()) {
       for (Word iword : isentence.getIwords()) {
-        if (iword.equals(iword))
+        if (iword.equals(wordTag))
           return true;
       }
     }

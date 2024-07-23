@@ -28,15 +28,15 @@ import java.util.Set;
 public final class PTBHeadFinder implements HeadFinder {
 
   private static PTBHeadFinder instance;
-  private static Set<String> skipSet = new HashSet<String>();
+  private static final Set<String> SKIP_SET = new HashSet<>();
   static {
-    skipSet.add("POS");
-    skipSet.add(",");
-    skipSet.add(":");
-    skipSet.add(".");
-    skipSet.add("''");
-    skipSet.add("-RRB-");
-    skipSet.add("-RCB-");
+    SKIP_SET.add("POS");
+    SKIP_SET.add(",");
+    SKIP_SET.add(":");
+    SKIP_SET.add(".");
+    SKIP_SET.add("''");
+    SKIP_SET.add("-RRB-");
+    SKIP_SET.add("-RCB-");
   }
 
   private PTBHeadFinder() {}
@@ -92,8 +92,7 @@ public final class PTBHeadFinder implements HeadFinder {
         }
       }
       //all other NPs
-      for (int pi = 0; pi < parts.size(); pi++) {
-        Parse child = parts.get(pi);
+      for (Parse child : parts) {
         //System.err.println("PTBHeadFinder.getHead: "+p.getSyntacticType()+" "+p
         // +" child "+pi+"="+child.getSyntacticType()+" "+child);
         if (child.isNounPhrase()) {
@@ -134,7 +133,7 @@ public final class PTBHeadFinder implements HeadFinder {
     }
     for (int ti = toks.size() - tokenCount - 1; ti >= 0; ti--) {
       Parse tok = toks.get(ti);
-      if (!skipSet.contains(tok.getSyntacticType())) {
+      if (!SKIP_SET.contains(tok.getSyntacticType())) {
         return ti;
       }
     }

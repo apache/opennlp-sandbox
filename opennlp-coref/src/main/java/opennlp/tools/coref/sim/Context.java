@@ -17,6 +17,7 @@
 
 package opennlp.tools.coref.sim;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -67,7 +68,7 @@ public class Context extends Mention {
     List<Parse> tokenList = head.getTokens();
     headTokenIndex = headFinder.getHeadIndex(head);
     Parse headToken = headFinder.getHeadToken(head);
-    tokens = tokenList.toArray(new Parse[tokenList.size()]);
+    tokens = tokenList.toArray(new Parse[0]);
     this.headTokenTag = headToken.getSyntacticType();
     this.headTokenText = headToken.toString();
     if (headTokenTag.startsWith("NN") && !headTokenTag.startsWith("NNP")) {
@@ -91,8 +92,8 @@ public class Context extends Mention {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    for (int ti = 0, tl = tokens.length; ti < tl; ti++) {
-      sb.append(tokens[ti]).append(" ");
+    for (Object token : tokens) {
+      sb.append(token).append(" ");
     }
     return sb.toString();
   }
@@ -126,18 +127,16 @@ public class Context extends Mention {
   }
 
   private static Set<String> getSynsetSet(Context c) {
-    Set<String> synsetSet = new HashSet<String>();
+    Set<String> synsetSet = new HashSet<>();
     String[] lemmas = getLemmas(c);
     Dictionary dict = DictionaryFactory.getDictionary();
     //System.err.println(lemmas.length+" lemmas for "+c.headToken);
-    for (int li = 0; li < lemmas.length; li++) {
-      String senseKey = dict.getSenseKey(lemmas[li],"NN",0);
+    for (String lemma : lemmas) {
+      String senseKey = dict.getSenseKey(lemma, "NN", 0);
       if (senseKey != null) {
         synsetSet.add(senseKey);
-        String[] synsets = dict.getParentSenseKeys(lemmas[li],"NN",0);
-        for (int si = 0, sn = synsets.length; si < sn;si++) {
-          synsetSet.add(synsets[si]);
-        }
+        String[] synsets = dict.getParentSenseKeys(lemma, "NN", 0);
+        synsetSet.addAll(Arrays.asList(synsets));
       }
     }
     return synsetSet;

@@ -18,21 +18,14 @@ package opennlp.tools.parse_thicket.apps;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import opennlp.tools.similarity.apps.GeneratedSentenceProcessor;
 import opennlp.tools.similarity.apps.HitBase;
-import opennlp.tools.similarity.apps.utils.StringDistanceMeasurer;
-import opennlp.tools.similarity.apps.utils.Utils;
-import opennlp.tools.textsimilarity.TextProcessor;
 
 import org.apache.commons.lang.StringUtils;
 
 public class WebPageContentSentenceExtractor extends WebPageExtractor {
-	
-	
-	
 
 	public List<String> extractSentencesWithPotentialReviewPhrases(String url)
 	{
@@ -45,7 +38,7 @@ public class WebPageContentSentenceExtractor extends WebPageExtractor {
 		downloadedPage= downloadedPage.replace("     ", "&");
 		downloadedPage = downloadedPage.replaceAll("(?:&)+", "#");
 		String[] sents = downloadedPage.split("#");
-		List<TextChunk> sentsList = new ArrayList<TextChunk>();
+		List<TextChunk> sentsList = new ArrayList<>();
 		for(String s: sents){
 			s = s.trim().replace("  ", ". ").replace("..", ".").replace(". . .", " ")
 					.replace(": ", ". ").replace("- ", ". ").
@@ -53,7 +46,7 @@ public class WebPageContentSentenceExtractor extends WebPageExtractor {
 			sentsList.add(new TextChunk(s, s.length()));
 		}
 		
-		Collections.sort(sentsList, new TextChunkComparable());
+		sentsList.sort(new TextChunkComparable());
 		
 		String[] longestSents = new String[maxSentsFromPage];
 		int j=0;														// -1 removed
@@ -88,26 +81,16 @@ public class WebPageContentSentenceExtractor extends WebPageExtractor {
 			return sents;
 	}
 
-	private List<String> cleanProductFeatures(List<String> productFeaturesList) {
-		List<String> results = new ArrayList<String>();
-		for(String feature: productFeaturesList){
-			if (feature.startsWith("Unlimited Free") || feature.startsWith("View Larger") || feature.startsWith("View Larger") || feature.indexOf("shipping")>0)
-				continue;
-			results.add(feature);
-		}
-		return results;
-	}
-
 	// extracts paragraphs from web page
 	protected String[] cleanListOfSents(String[] longestSents)
 	{
 		float minFragmentLength = 40, minFragmentLengthSpace=4;
 
-		List<String> sentsClean = new ArrayList<String>();
+		List<String> sentsClean = new ArrayList<>();
 		for (String sentenceOrMultSent : longestSents)
 		{
 			if (GeneratedSentenceProcessor.acceptableMinedSentence(sentenceOrMultSent)==null){
-				System.out.println("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = "+sentenceOrMultSent);
+				// System.out.println("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = "+sentenceOrMultSent);
 				continue;
 			}
 			// aaa. hhh hhh.  kkk . kkk ll hhh. lll kkk n.
@@ -124,10 +107,8 @@ public class WebPageContentSentenceExtractor extends WebPageExtractor {
 			sentsClean.add(sentenceOrMultSent);
 		}
 
-		return (String[]) sentsClean.toArray(new String[0]);
+		return sentsClean.toArray(new String[0]);
 	}
-
-	
 
 	private String startWithCapitalSent(String sent) {
 		String firstChar = sent.substring(0,1);

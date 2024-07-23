@@ -60,10 +60,10 @@ public class HitBase {
 	}
 
 	public HitBase(String orig, String[] generateds) {
-		originalSentences = new ArrayList<String>();
+		originalSentences = new ArrayList<>();
 		originalSentences.add(orig);
 
-		fragments = new ArrayList<Fragment>();
+		fragments = new ArrayList<>();
 		for (String sent : generateds) {
 			Fragment f = new Fragment(sent, 0.0);
 			fragments.add(f);
@@ -165,15 +165,15 @@ public class HitBase {
 	}
 
 	public static String toString(List<HitBase> hits) {
-		StringBuffer buf = new StringBuffer();
-		Boolean pBreak = true;
+		StringBuilder buf = new StringBuilder();
+		boolean pBreak = true;
 		for (HitBase hit : hits) {
 			String fragm = (hit.toString());
 			if (fragm.length() > 15) {
 				if (pBreak)
-					buf.append(fragm + " | ");
+					buf.append(fragm).append(" | ");
 				else
-					buf.append(fragm + " | \n");
+					buf.append(fragm).append(" | \n");
 				// switch to opposite
 				if (pBreak)
 					pBreak = false;
@@ -186,8 +186,8 @@ public class HitBase {
 	}
 
 	public static String toResultantString(List<HitBase> hits) {
-		StringBuffer buf = new StringBuffer();
-		Boolean pBreak = true;
+		StringBuilder buf = new StringBuilder();
+		boolean pBreak = true;
 		for (HitBase hit : hits) {
 			try {
 				if (hit.getFragments()==null)	
@@ -195,9 +195,9 @@ public class HitBase {
 				String fragm = hit.getFragments().toString();
 				if (fragm.length() > 15) {
 					if (pBreak)
-						buf.append(fragm + " | 	");
+						buf.append(fragm).append(" | 	");
 					else
-						buf.append(fragm + " | <br>\n");
+						buf.append(fragm).append(" | <br>\n");
 					// switch to opposite
 					if (pBreak)
 						pBreak = false;
@@ -215,7 +215,7 @@ public class HitBase {
 	}
 	
 	public static String produceReferenceSection(List<HitBase> hits) {
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		for (HitBase hit : hits) {
 			try {
 				if (hit.getUrl()==null)	
@@ -233,8 +233,8 @@ public class HitBase {
 	public static List<HitBase> removeDuplicates(List<HitBase> hits) {
 		StringDistanceMeasurer meas = new StringDistanceMeasurer();
 		double imageDupeThresh = 0.8; // if more similar, then considered dupes
-		List<Integer> idsToRemove = new ArrayList<Integer>();
-		List<HitBase> hitsDedup = new ArrayList<HitBase>();
+		List<Integer> idsToRemove = new ArrayList<>();
+		List<HitBase> hitsDedup = new ArrayList<>();
 		try {
 			for (int i = 0; i < hits.size(); i++)
 				for (int j = i + 1; j < hits.size(); j++) {

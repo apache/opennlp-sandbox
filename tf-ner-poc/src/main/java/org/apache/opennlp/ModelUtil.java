@@ -29,21 +29,21 @@ public class ModelUtil {
   public static Path writeModelToTmpDir(InputStream modelIn) throws IOException {
     Path tmpDir = Files.createTempDirectory("opennlp2");
 
-    ZipInputStream zis = new ZipInputStream(modelIn);
-    ZipEntry zipEntry = zis.getNextEntry();
-    while(zipEntry != null){
-      Path newFile = tmpDir.resolve(zipEntry.getName());
+    try (ZipInputStream zis = new ZipInputStream(modelIn)) {
+      ZipEntry zipEntry = zis.getNextEntry();
+      while(zipEntry != null){
+        Path newFile = tmpDir.resolve(zipEntry.getName());
 
-      Files.createDirectories(newFile.getParent());
-      Files.copy(zis, newFile);
+        Files.createDirectories(newFile.getParent());
+        Files.copy(zis, newFile);
 
-      // TODO: How to delete the tmp directory after we are done loading from it ?!
-      newFile.toFile().deleteOnExit();
+        // TODO: How to delete the tmp directory after we are done loading from it ?!
+        newFile.toFile().deleteOnExit();
 
-      zipEntry = zis.getNextEntry();
+        zipEntry = zis.getNextEntry();
+      }
+      zis.closeEntry();
     }
-    zis.closeEntry();
-    zis.close();
 
     return tmpDir;
   }

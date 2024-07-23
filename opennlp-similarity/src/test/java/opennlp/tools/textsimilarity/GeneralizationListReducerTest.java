@@ -20,34 +20,42 @@ package opennlp.tools.textsimilarity;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class GeneralizationListReducerTest extends TestCase {
-  private GeneralizationListReducer generalizationListReducer = new GeneralizationListReducer();
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-  public void notNull() {
+class GeneralizationListReducerTest {
+  private final GeneralizationListReducer generalizationListReducer = new GeneralizationListReducer();
+
+  @BeforeEach
+  void setup() {
     assertNotNull(generalizationListReducer);
   }
 
-  public void test() {
-    ParseTreeChunk ch1 = new ParseTreeChunk("VP", new String[] { "run",
-        "around", "tigers", "zoo" }, new String[] { "VB", "IN", "NP", "NP" });
+  @Test
+  void test() {
+    ParseTreeChunk ch1 = new ParseTreeChunk("VP", new String[] {"run",
+        "around", "tigers", "zoo"}, new String[] {"VB", "IN", "NP", "NP"});
 
-    ParseTreeChunk ch2 = new ParseTreeChunk("NP", new String[] { "run",
-        "around", "tigers" }, new String[] { "VB", "IN", "NP", });
+    ParseTreeChunk ch2 = new ParseTreeChunk("NP", new String[] {"run",
+        "around", "tigers"}, new String[] {"VB", "IN", "NP",});
 
-    ParseTreeChunk ch3 = new ParseTreeChunk("NP", new String[] { "the",
-        "tigers" }, new String[] { "DT", "NP", });
+    ParseTreeChunk ch3 = new ParseTreeChunk("NP", new String[] {"the",
+        "tigers"}, new String[] {"DT", "NP",});
 
-    ParseTreeChunk ch4 = new ParseTreeChunk("NP", new String[] { "the", "*",
-        "flying", "car" }, new String[] { "DT", "NN", "VBG", "NN" });
+    ParseTreeChunk ch4 = new ParseTreeChunk("NP", new String[] {"the", "*",
+        "flying", "car"}, new String[] {"DT", "NN", "VBG", "NN"});
 
-    ParseTreeChunk ch5 = new ParseTreeChunk("NP", new String[] { "the", "*" },
-        new String[] { "DT", "NN", });
+    ParseTreeChunk ch5 = new ParseTreeChunk("NP", new String[] {"the", "*"},
+        new String[] {"DT", "NN",});
 
     // [DT-the NN-* VBG-flying NN-car ], [], [], [DT-the NN-* ]]
 
-    List<ParseTreeChunk> inp = new ArrayList<ParseTreeChunk>();
+    List<ParseTreeChunk> inp = new ArrayList<>();
     inp.add(ch1);
     inp.add(ch2);
     inp.add(ch5);
@@ -68,12 +76,9 @@ public class GeneralizationListReducerTest extends TestCase {
     assertFalse(ch5.isASubChunk(ch3));
     assertFalse(ch3.isASubChunk(ch5));
 
-    List<ParseTreeChunk> res = generalizationListReducer
-        .applyFilteringBySubsumption(inp);
-    assertEquals(
-        res.toString(),
+    List<ParseTreeChunk> res = generalizationListReducer.applyFilteringBySubsumption(inp);
+    assertEquals(res.toString(),
         "[VP [VB-run IN-around NP-tigers NP-zoo ], NP [DT-the NP-tigers ], NP [DT-the NN-* VBG-flying NN-car ]]");
-    System.out.println(res);
 
   }
 }

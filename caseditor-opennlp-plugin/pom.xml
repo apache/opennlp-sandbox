@@ -20,51 +20,39 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-
 	<parent>
-		<groupId>org.apache</groupId>
-		<artifactId>apache</artifactId>
-		<version>9</version>
-		<relativePath />
+		<groupId>org.apache.opennlp</groupId>
+		<artifactId>opennlp-sandbox</artifactId>
+		<version>2.3.4-SNAPSHOT</version>
 	</parent>
 
-	<groupId>org.apache.opennlp</groupId>
-
-	<artifactId>opennlp-caseditor</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<artifactId>caseditor-opennlp-plugin</artifactId>
+	<version>2.3.4-SNAPSHOT</version>
 	<packaging>jar</packaging>
-	<name>OpenNLP CasEditor Plugin</name>
-	
-	<repositories>
-    <repository>
-      <id>eclipsePlugins</id>
-      <name>Eclipse components</name>
-      <layout>default</layout>
-      <url>http://repo1.maven.org/eclipse</url>
-      
-      <releases>
-        <updatePolicy>never</updatePolicy>
-        <checksumPolicy>fail</checksumPolicy>
-      </releases>
-      
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    </repositories>
-    
-	<dependencies>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.5</version>
-			<scope>test</scope>
-		</dependency>
+	<name>Apache OpenNLP CasEditor Plugin</name>
 
+	<repositories>
+		<repository>
+			<id>eclipsePlugins</id>
+			<name>Eclipse components</name>
+			<layout>default</layout>
+			<url>https://repo.eclipse.org</url>
+
+			<releases>
+				<updatePolicy>never</updatePolicy>
+				<checksumPolicy>fail</checksumPolicy>
+			</releases>
+
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
+
+	<dependencies>
 		<dependency>
 		  <groupId>org.apache.opennlp</groupId>
 		  <artifactId>opennlp-tools</artifactId>
-		  <version>1.5.2-incubating</version>
 		</dependency>
 
 		<!-- UIMA dependencies -->
@@ -72,22 +60,22 @@
 		<dependency>
 			<groupId>org.apache.uima</groupId>
 			<artifactId>uimaj-core</artifactId>
-			<version>2.4.0</version>
-			<scope>compile</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.apache.uima</groupId>
-			<artifactId>uimaj-tools</artifactId>
-			<version>2.4.0</version>
+			<version>${uimaj.version}</version>
 			<scope>compile</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.uima</groupId>
 			<artifactId>uimaj-ep-cas-editor</artifactId>
-			<version>2.4.0</version>
+			<version>${uimaj.version}</version>
 			<scope>compile</scope>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.apache.uima</groupId>
+			<artifactId>uimaj-tools</artifactId>
+			<version>${uimaj.version}</version>
+			<scope>runtime</scope>
 		</dependency>
 		
 		<!-- Eclipse dependencies -->
@@ -114,20 +102,11 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.eclipse.swt</groupId>
-			<artifactId>org.eclipse.swt.win32.win32.x86</artifactId>
-			<!-- changing the lower version number to 3.2.0, was 3.3.0 because only 
-				3.2.0 and 3.2.1 are in repo -->
-			<version>[3.2.0.0,4.0.0)</version>
-			<scope>provided</scope>
-		</dependency>
-
-		<!-- dependency>
-			<groupId>org.eclipse.ui</groupId>
-			<artifactId>ide</artifactId>
+			<groupId>org.eclipse.swt.win32.win32</groupId>
+			<artifactId>x86</artifactId>
 			<version>[3.3.0.0,4.0.0)</version>
 			<scope>provided</scope>
-		</dependency -->
+		</dependency>
 
 		<dependency>
 			<groupId>org.eclipse.ui</groupId>
@@ -151,12 +130,27 @@
 			<version>[3.3.0.0,4.0.0)</version>
 			<scope>provided</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-api</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-params</artifactId>
+		</dependency>
 	</dependencies>
 
 	<build>
 		<!-- don't use artifactId as first part of finalName, follow instead the 
 			eclipse convention -->
-		<finalName>org.apache.opennlp.caseditor_0.0.1</finalName>
+		<finalName>org.apache.opennlp.caseditor_2.1.1</finalName>
 		<resources>
 			<resource>
 				<directory>.</directory>
@@ -175,8 +169,9 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
+					<source>${maven.compiler.source}</source>
+					<target>${maven.compiler.target}</target>
+					<compilerArgument>-Xlint</compilerArgument>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -190,10 +185,11 @@
 			<plugin>
 				<groupId>org.apache.felix</groupId>
 				<artifactId>maven-bundle-plugin</artifactId>
+				<version>5.1.8</version>
 				<executions>
 					<execution>
-    	                 <goals><goal>manifest</goal></goals>
-		                 <phase>process-classes</phase>
+						<goals><goal>manifest</goal></goals>
+						<phase>process-classes</phase>
 						<configuration>
 							<manifestLocation>META-INF/</manifestLocation>
 							<instructions>
@@ -213,7 +209,6 @@
 									org.eclipse.ui.workbench,
 									org.eclipse.core.runtime,
 									org.eclipse.core.resources,
-									org.junit4;bundle-version="4.5.0";resolution:=optional
 								</Require-Bundle>
 								<Import-Package>
 									!org.eclipse.jface.text,

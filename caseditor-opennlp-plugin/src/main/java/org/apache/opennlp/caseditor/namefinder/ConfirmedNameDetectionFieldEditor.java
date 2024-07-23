@@ -17,23 +17,19 @@
 
 package org.apache.opennlp.caseditor.namefinder;
 
-
-import static  org.apache.opennlp.caseditor.OpenNLPPreferenceConstants.*;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.FieldEditor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
-import org.eclipse.swt.widgets.Listener;
+
+import static  org.apache.opennlp.caseditor.OpenNLPPreferenceConstants.*;
 
 public class ConfirmedNameDetectionFieldEditor extends FieldEditor {
 
   private Button forceDetectionButton;
-
-  private Composite optionButtons;
 
   private Button ignoreShortTokensButton;
   private Button onlyConsiderAllLetterTokensButton;
@@ -63,14 +59,9 @@ public class ConfirmedNameDetectionFieldEditor extends FieldEditor {
 
     forceDetectionButton = new Button(buttonGroup, SWT.CHECK);
     forceDetectionButton.setText("Force the detection of existing names");
-    forceDetectionButton.addListener(SWT.Selection, new Listener(){
+    forceDetectionButton.addListener(SWT.Selection, event -> checkState());
 
-      @Override
-      public void handleEvent(Event event) {
-        checkState();
-      }});
-
-    optionButtons = new Composite(buttonGroup, SWT.NONE);
+    Composite optionButtons = new Composite(buttonGroup, SWT.NONE);
     optionButtons.setLayout(new GridLayout());
 
     // Ignore short tokens

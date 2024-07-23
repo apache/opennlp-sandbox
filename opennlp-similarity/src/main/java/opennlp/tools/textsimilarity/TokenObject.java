@@ -100,24 +100,17 @@ public class TokenObject {
   }
 
   public static class sortByDocFreq implements Comparator<TokenObject> {
+    @Override
     public int compare(TokenObject a, TokenObject b) {
-
-      if (a.docFreq > b.docFreq) {
-        return 1;
-      } else {
-        return -1;
-      }
+      return Float.compare(a.docFreq, b.docFreq);
     }
   }
 
   public static class sortByTFIDF implements Comparator<TokenObject> {
-    public int compare(TokenObject a, TokenObject b) {
 
-      if (a.tfidf < b.tfidf) {
-        return 1;
-      } else {
-        return -1;
-      }
+    @Override
+    public int compare(TokenObject a, TokenObject b) {
+      return Float.compare(a.tfidf, b.tfidf);
     }
   }
 }

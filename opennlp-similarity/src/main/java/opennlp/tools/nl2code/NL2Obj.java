@@ -43,7 +43,7 @@ public class NL2Obj {
 	    parser = ParserChunker2MatcherProcessor.getInstance();
 	  }
 
-  public static String[] epistemicStatesList = new String[] {
+  static final String[] EPISTEMIC_STATES_LIST = new String[] {
     "select", "verify", "find", "start", "stop", "go", "check"
   };
 
@@ -55,12 +55,12 @@ public class NL2Obj {
   };
 
   protected ParserChunker2MatcherProcessor parser;
-  private TextSimilarityBagOfWords parserBOW = new TextSimilarityBagOfWords();
-  private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
+  private final TextSimilarityBagOfWords parserBOW = new TextSimilarityBagOfWords();
+  private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
 
   public ObjectPhraseListForSentence convertSentenceToControlObjectPhrase(String sentence){
 
-    List<ObjectPhrase> oPhrases = new  ArrayList<ObjectPhrase>();
+    List<ObjectPhrase> oPhrases = new ArrayList<>();
     parser = ParserChunker2MatcherProcessor.getInstance();
     List<List<ParseTreeChunk>> lingPhrases = 
       parser.formGroupedPhrasesFromChunksForSentence(sentence);
@@ -156,7 +156,7 @@ public class NL2Obj {
   }
 
   private boolean isControlOp(String methodOrControlOp) {
-    return Arrays.asList(epistemicStatesList).contains(methodOrControlOp);
+    return Arrays.asList(EPISTEMIC_STATES_LIST).contains(methodOrControlOp);
   }
 
   protected List<ParseTreeChunk> applyWhichRuleOnVP(List<ParseTreeChunk> actionWithObject) {

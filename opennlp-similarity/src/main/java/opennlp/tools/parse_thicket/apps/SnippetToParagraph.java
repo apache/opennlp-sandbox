@@ -16,42 +16,39 @@
  */
 package opennlp.tools.parse_thicket.apps;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
-
 
 import opennlp.tools.similarity.apps.ContentGeneratorSupport;
 import opennlp.tools.similarity.apps.Fragment;
 import opennlp.tools.similarity.apps.GeneratedSentenceProcessor;
 import opennlp.tools.similarity.apps.HitBase;
-import opennlp.tools.similarity.apps.RelatedSentenceFinder;
 import opennlp.tools.similarity.apps.utils.PageFetcher;
 import opennlp.tools.similarity.apps.utils.StringDistanceMeasurer;
 import opennlp.tools.similarity.apps.utils.Utils;
 import opennlp.tools.textsimilarity.TextProcessor;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenceFinder */{
-	private PageFetcher pFetcher = new PageFetcher();
-	private static Logger LOG = Logger
-			.getLogger("com.become.parse_thicket.apps.SnippetToParagraph");
+	private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+	private final PageFetcher pFetcher = new PageFetcher();
 
 	public HitBase formTextFromOriginalPageGivenSnippetDirect(HitBase item) {
 
 		// put orig sentence in structure
-		List<String> origs = new ArrayList<String>();
+		List<String> origs = new ArrayList<>();
 
 		item.setOriginalSentences(origs);
 		String title = item.getTitle().replace("<b>", " ").replace("</b>", " ")
 				.replace("  ", " ").replace("  ", " ");
 		// generation results for this sentence
-		List<Fragment> result = new ArrayList<Fragment>();
+		List<Fragment> result = new ArrayList<>();
 		// form plain text from snippet
 		String snapshot = item.getAbstractText().replace("<b>", " ")
 				.replace("</b>", " ").replace("  ", " ").replace("  ", " ");
@@ -59,10 +56,9 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 		String snapshotMarked = snapshot.replace("...",
 				" _should_find_orig_ . _should_find_orig_");
 		List<String> fragments = TextProcessor.splitToSentences(snapshotMarked);
-		List<String> allFragms = new ArrayList<String>();
-		allFragms.addAll(fragments);
+		List<String> allFragms = new ArrayList<>(fragments);
 
-		List<String> sents = new ArrayList<String>();
+		List<String> sents = new ArrayList<>();
 		String downloadedPage;
 		try {
 			if (snapshotMarked.length() != snapshot.length()) {
@@ -86,10 +82,7 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 				}
 			}
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			// e.printStackTrace();
-			System.err
-			.println("Problem downloading  the page and splitting into sentences");
+			System.err.println("Problem downloading  the page and splitting into sentences");
 			return item;
 		}
 
@@ -99,18 +92,16 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 				continue;
 			String pageSentence = "";
 			// try to find original sentence from webpage
-			if (fragment.indexOf("_should_find_orig_") > -1 && sents != null
+			if (fragment.contains("_should_find_orig_") && sents != null
 					&& sents.size() > 0)
 				try {
 					String[] mainAndFollowSent = getFullOriginalSentenceFromWebpageBySnippetFragment(
-							fragment.replace("_should_find_orig_", ""), (String[])sents.toArray(new String[]{}));
+							fragment.replace("_should_find_orig_", ""), sents.toArray(new String[]{}));
 					pageSentence = mainAndFollowSent[0];
 					followSent = mainAndFollowSent[1];
 
 				} catch (Exception e) {
-
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					LOG.error(e.getLocalizedMessage(), e);
 				}
 			else
 				// or get original snippet
@@ -132,13 +123,10 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 				f.setSourceURL(item.getUrl());
 				f.fragment = fragment;
 				result.add(f);
-				System.out.println("Accepted sentence: " + pageSentenceProc
-						+ "| with title= " + title);
-				System.out.println("For fragment = " + fragment);
+				LOG.debug("Accepted sentence: {} | with title = {}", pageSentenceProc, title);
+				LOG.debug("For fragment = {}", fragment);
 			} else
-				System.out
-				.println("Rejected sentence due to wrong area at webpage: "
-						+ pageSentence);
+				LOG.debug("Rejected sentence due to wrong area at webpage: {}", pageSentence);
 		} 
 
 
@@ -153,7 +141,7 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 		String title = item.getTitle().replace("<b>", " ").replace("</b>", " ")
 				.replace("  ", " ").replace("  ", " ");
 		// generation results for this sentence
-		List<String> result = new ArrayList<String>();
+		List<String> result = new ArrayList<>();
 		// form plain text from snippet
 		String snapshot = item.getAbstractText().replace("<b>", " ")
 				.replace("</b>", " ").replace("  ", " ").replace("  ", " ").replace("\"", "");
@@ -170,25 +158,23 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 			String followSent = null;
 			if (f.length() < 50)
 				continue;
-			String pageSentence = "";
+			String pageSentence;
 			// try to find original sentence from webpage
 
 			try {
-				String[] mainAndFollowSent = getFullOriginalSentenceFromWebpageBySnippetFragment(
-						f, sents);
+				String[] mainAndFollowSent = getFullOriginalSentenceFromWebpageBySnippetFragment(f, sents);
 				pageSentence = mainAndFollowSent[0];
 				followSent = mainAndFollowSent[1];
 				if (pageSentence!=null)
 					result.add(pageSentence);
 				else {
 					result.add(f);
-					LOG.info("Could not find the original sentence \n"+f +"\n in the page " );
+					LOG.warn("Could not find the original sentence \n {} \n in the page ", f);
 				}
 				//if (followSent !=null)
 				//	result.add(followSent);
 			} catch (Exception e) {
-
-				e.printStackTrace();
+				LOG.error(e.getLocalizedMessage(), e);
 			}
 		}
 		item.setOriginalSentences(result);
@@ -196,7 +182,7 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 	}
 
 	public  List<String> cleanListOfSents(List<String> sents) {
-		List<String> sentsClean = new ArrayList<String>();
+		List<String> sentsClean = new ArrayList<>();
 		for (String s : sents) {
 			if (s == null || s.trim().length() < 30 || s.length() < 20)
 				continue;
@@ -205,25 +191,19 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 		return sentsClean;
 	}
 
-
-
-	private String[] removeDuplicates(String[] hits)
-	{
+	private String[] removeDuplicates(String[] hits) {
 		StringDistanceMeasurer meas = new StringDistanceMeasurer();
 
-		List<Integer> idsToRemove = new ArrayList<Integer>();
-		List<String> hitsDedup = new ArrayList<String>();
-		try
-		{
+		List<Integer> idsToRemove = new ArrayList<>();
+		List<String> hitsDedup = new ArrayList<>();
+		try {
 			for (int i = 0; i < hits.length; i++)
-				for (int j = i + 1; j < hits.length; j++)
-				{
+				for (int j = i + 1; j < hits.length; j++) {
 					String title1 = hits[i];
 					String title2 = hits[j];
 					if (StringUtils.isEmpty(title1) || StringUtils.isEmpty(title2))
 						continue;
-					if (meas.measureStringDistance(title1, title2) > 0.7)
-					{
+					if (meas.measureStringDistance(title1, title2) > 0.7) {
 						idsToRemove.add(j); // dupes found, later list member to
 						// be deleted
 					}
@@ -231,14 +211,12 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 			for (int i = 0; i < hits.length; i++)
 				if (!idsToRemove.contains(i))
 					hitsDedup.add(hits[i]);
-			if (hitsDedup.size() < hits.length)
-			{
+			if (hitsDedup.size() < hits.length) {
 				System.out.println("Removed duplicates from relevant search results, including "
 						+ hits[idsToRemove.get(0)]);
 			}
 		}
-		catch (Exception e)
-		{
+		catch (Exception e) {
 			System.out.println("Problem removing duplicates from relevant images");
 		}
 
@@ -246,15 +224,13 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 
 	}
 
-	public String[] extractSentencesFromPage(String url)
-	{
+	public String[] extractSentencesFromPage(String url) {
 
 		int maxSentsFromPage= 100;
-		List<String[]> results = new ArrayList<String[]>();
+		List<String[]> results = new ArrayList<>();
 
 		String downloadedPage = pFetcher.fetchPage(url, 20000);
-		if (downloadedPage == null || downloadedPage.length() < 100)
-		{
+		if (downloadedPage == null || downloadedPage.length() < 100) {
 			return null;
 		}
 
@@ -263,7 +239,7 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 		downloadedPage= downloadedPage.replace("     ", "&");
 		downloadedPage = downloadedPage.replaceAll("(?:&)+", "#");
 		String[] sents = downloadedPage.split("#");
-		List<TextChunk> sentsList = new ArrayList<TextChunk>();
+		List<TextChunk> sentsList = new ArrayList<>();
 		for(String s: sents){
 			s = s.trim().replace("  ", ". ").replace("..", ".").replace(". . .", " ")
 					.replace(": ", ". ").replace("- ", ". ").
@@ -271,7 +247,7 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 			sentsList.add(new TextChunk(s, s.length()));
 		}
 
-		Collections.sort(sentsList, new TextChunkComparable());
+		sentsList.sort(new TextChunkComparable());
 		String[] longestSents = new String[maxSentsFromPage];
 		int j=0;
 		int initIndex = sentsList.size()-1 -maxSentsFromPage;
@@ -293,13 +269,12 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 	protected String[] cleanSplitListOfSents(String[] longestSents){
 	float minFragmentLength = 40, minFragmentLengthSpace=4;
 
-	List<String> sentsClean = new ArrayList<String>();
-	for (String sentenceOrMultSent : longestSents)
-	{
+	List<String> sentsClean = new ArrayList<>();
+	for (String sentenceOrMultSent : longestSents) {
 		if (sentenceOrMultSent==null || sentenceOrMultSent.length()<20)
 			continue;
 		if (GeneratedSentenceProcessor.acceptableMinedSentence(sentenceOrMultSent)==null){
-			System.out.println("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = "+sentenceOrMultSent);
+			LOG.debug("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = {}", sentenceOrMultSent);
 			continue;
 		}
 		// aaa. hhh hhh.  kkk . kkk ll hhh. lll kkk n.
@@ -319,8 +294,8 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 		// disused - Feb 26 13
 		//furtherSplit = furtherMakeSentencesShorter(furtherSplit);
 		furtherSplit.remove(furtherSplit.size()-1);
-		for(String s : furtherSplit){
-			if (s.indexOf('|')>-1)
+		for(String s : furtherSplit) {
+			if (s.indexOf('|') >- 1)
 				continue;
 			s = s.replace("<em>"," ").replace("</em>"," ");
 			s = Utils.convertToASCII(s);
@@ -328,10 +303,10 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 		}
 	}
 
-	return (String[]) sentsClean.toArray(new String[0]);
+	return sentsClean.toArray(new String[0]);
 }
 	private String[] verifyEnforceStartsUpperCase(String[] sents) {
-		for(int i=0; i<sents.length; i++){
+		for(int i=0; i<sents.length; i++) {
 			String s = sents[i];
 			s = StringUtils.trim(s);
 			String sFirstChar = s.substring(0, 1);
@@ -343,39 +318,21 @@ public class SnippetToParagraph extends ContentGeneratorSupport /*RelatedSentenc
 		return sents;
 	}
 
-	private List<String> cleanProductFeatures(List<String> productFeaturesList) {
-		List<String> results = new ArrayList<String>();
-		for(String feature: productFeaturesList){
-			if (feature.startsWith("Unlimited Free") || feature.startsWith("View Larger") || feature.startsWith("View Larger") || feature.indexOf("shipping")>0)
-				continue;
-			results.add(feature);
-		}
-		return results;
-	}
-	public class TextChunk {
+	public static class TextChunk {
 		public TextChunk(String s, int length) {
 			this.text = s;
 			this.len = length;
 		}
-		public String text;
-		public int len;
+		public final String text;
+		public final int len;
 	}
 
-	public class TextChunkComparable implements Comparator<TextChunk>
-	{
-		public int compare(TextChunk ch1, TextChunk ch2)
-		{
-			if (ch1.len>ch2.len)
-				return 1;
-			else if (ch1.len<ch2.len)
-				return  -1;
-			else return 0;
+	public static class TextChunkComparable implements Comparator<TextChunk> {
 
+		@Override
+		public int compare(TextChunk ch1, TextChunk ch2) {
+			return Integer.compare(ch1.len, ch2.len);
 		}
-	}
-	
-	public static void main(String[] args){
-		
 	}
 
 }

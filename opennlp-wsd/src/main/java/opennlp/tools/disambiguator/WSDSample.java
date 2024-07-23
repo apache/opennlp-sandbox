@@ -17,15 +17,15 @@
 
 package opennlp.tools.disambiguator;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import net.sf.extjwnl.JWNLException;
+import net.sf.extjwnl.data.IndexWord;
 import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.data.Synset;
-import net.sf.extjwnl.dictionary.Dictionary;
 import opennlp.tools.tokenize.WhitespaceTokenizer;
 import opennlp.tools.util.InvalidFormatException;
 
@@ -38,8 +38,11 @@ public class WSDSample {
   private String[] senseIDs;
   private int targetPosition;
 
-  public WSDSample(String[] sentence, String[] tags, String[] lemmas,
-      int targetPosition, int senseID) {
+  public WSDSample(String[] sentence, String[] tags, String[] lemmas, int targetPosition) {
+    this(sentence, tags, lemmas, targetPosition, null);
+  }
+  
+  public WSDSample(String[] sentence, String[] tags, String[] lemmas, int targetPosition, int senseID) {
     this.sentence = sentence;
     this.tags = tags;
     this.targetPosition = targetPosition;
@@ -48,13 +51,7 @@ public class WSDSample {
     checkArguments();
   }
 
-  public WSDSample(String[] sentence, String[] tags, String[] lemmas,
-      int targetPosition) {
-    this(sentence, tags, lemmas, targetPosition, null);
-  }
-
-  public WSDSample(String[] sentence, String[] tags, String[] lemmas,
-      int targetPosition, String[] senseIDs) {
+  public WSDSample(String[] sentence, String[] tags, String[] lemmas, int targetPosition, String[] senseIDs) {
     this.sentence = sentence;
     this.tags = tags;
     this.targetPosition = targetPosition;
@@ -129,7 +126,7 @@ public class WSDSample {
   public String toString() {
 
     StringBuilder result = new StringBuilder();
-    result.append("target at : " + this.targetPosition + " in : ");
+    result.append("target at : ").append(this.targetPosition).append(" in : ");
     for (int i = 0; i < getSentence().length; i++) {
       result.append(i);
       result.append(".");
@@ -150,15 +147,14 @@ public class WSDSample {
   /*
    * Parses a sample of format : TargetIndex TargetLemma Token Tag Token Tag ...
    */
-  public static WSDSample parse(String sentenceString)
-      throws InvalidFormatException {
+  public static WSDSample parse(String sentenceString) throws InvalidFormatException {
 
-    String tokenTags[] = WhitespaceTokenizer.INSTANCE.tokenize(sentenceString);
+    String[] tokenTags = WhitespaceTokenizer.INSTANCE.tokenize(sentenceString);
 
     int position = Integer.parseInt(tokenTags[0]);
-    String sentence[] = new String[tokenTags.length - 1];
-    String tags[] = new String[tokenTags.length - 1];
-    String lemmas[] = new String[tokenTags.length - 1];
+    String[] sentence = new String[tokenTags.length - 1];
+    String[] tags = new String[tokenTags.length - 1];
+    String[] lemmas = new String[tokenTags.length - 1];
 
     for (int i = 1; i < tokenTags.length; i++) {
       int split = tokenTags[i].lastIndexOf("_");
@@ -190,13 +186,25 @@ public class WSDSample {
     }
   }
 
+  @Override
+  public int hashCode() {
+    int result = Objects.hash(targetPosition);
+    result = 31 * result + Arrays.hashCode(sentence);
+    result = 31 * result + Arrays.hashCode(tags);
+    return result;
+  }
+
   // Return the synsets (thus the senses) of the current target word
   public List<Synset> getSynsets() {
+
     try {
-      return Dictionary.getDefaultResourceInstance()
-          .lookupIndexWord(WSDHelper.getPOS(this.getTargetTag()),
-              this.getTargetWord())
-          .getSenses();
+      IndexWord iw = WSDHelper.getDictionary().lookupIndexWord(
+              WSDHelper.getPOS(this.getTargetTag()), this.getTargetWord());
+      if (iw != null) {
+        return iw.getSenses();
+      } else {
+        return Collections.emptyList();
+      }
     } catch (JWNLException e) {
       e.printStackTrace();
     }
@@ -205,18 +213,18 @@ public class WSDSample {
 
   public String getTargetWordTag() {
 
-    String wordBaseForm = this.getLemmas()[this.getTargetPosition()];
-
+    String wordBaseForm = getLemmas()[getTargetPosition()];
     String ref = "";
 
-    if ((WSDHelper.getPOS(this.getTargetTag()) != null)) {
-      if (WSDHelper.getPOS(this.getTargetTag()).equals(POS.VERB)) {
+    POS pos = WSDHelper.getPOS(getTargetTag());
+    if (pos != null) {
+      if (pos.equals(POS.VERB)) {
         ref = wordBaseForm + ".v";
-      } else if (WSDHelper.getPOS(this.getTargetTag()).equals(POS.NOUN)) {
+      } else if (pos.equals(POS.NOUN)) {
         ref = wordBaseForm + ".n";
-      } else if (WSDHelper.getPOS(this.getTargetTag()).equals(POS.ADJECTIVE)) {
+      } else if (pos.equals(POS.ADJECTIVE)) {
         ref = wordBaseForm + ".a";
-      } else if (WSDHelper.getPOS(this.getTargetTag()).equals(POS.ADVERB)) {
+      } else if (pos.equals(POS.ADVERB)) {
         ref = wordBaseForm + ".r";
       }
     }

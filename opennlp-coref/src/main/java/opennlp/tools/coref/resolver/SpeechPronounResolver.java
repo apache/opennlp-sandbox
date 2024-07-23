@@ -46,8 +46,7 @@ public class SpeechPronounResolver extends MaxentResolver {
 
   @Override
   protected List<String> getFeatures(MentionContext mention, DiscourseEntity entity) {
-    List<String> features = new ArrayList<String>();
-    features.addAll(super.getFeatures(mention, entity));
+    List<String> features = new ArrayList<>(super.getFeatures(mention, entity));
     if (entity != null) {
       features.addAll(ResolverUtils.getPronounMatchFeatures(mention,entity));
       List<String> contexts = ResolverUtils.getContextFeatures(mention);
@@ -56,16 +55,12 @@ public class SpeechPronounResolver extends MaxentResolver {
         features.add(mention.getHeadTokenText() + "," + cec.getHeadTokenText());
       }
       else if (mention.getHeadTokenText().startsWith("NNP")) {
-        for (int ci = 0, cl = contexts.size(); ci < cl; ci++) {
-          features.add(contexts.get(ci));
-        }
+        features.addAll(contexts);
         features.add(mention.getNameType() + "," + cec.getHeadTokenText());
       }
       else {
         List<String> ccontexts = ResolverUtils.getContextFeatures(cec);
-        for (int ci = 0, cl = ccontexts.size(); ci < cl; ci++) {
-          features.add(ccontexts.get(ci));
-        }
+        features.addAll(ccontexts);
         features.add(cec.getNameType() + "," + mention.getHeadTokenText());
       }
     }
@@ -81,7 +76,7 @@ public class SpeechPronounResolver extends MaxentResolver {
   public boolean canResolve(MentionContext mention) {
     String tag = mention.getHeadTokenTag();
     boolean fpp = tag != null && tag.startsWith("PRP")
-        && ResolverUtils.speechPronounPattern.matcher(mention.getHeadTokenText()).matches();
+        && ResolverUtils.SPEECH_PRONOUN_PATTERN.matcher(mention.getHeadTokenText()).matches();
     boolean pn = tag != null && tag.startsWith("NNP");
     return (fpp || pn);
   }
@@ -107,7 +102,7 @@ public class SpeechPronounResolver extends MaxentResolver {
       }
     }
     else if (mention.getHeadTokenTag().startsWith("PRP")) { // mention is a speech pronoun
-      // cec can be either a speech pronoun or a propernoun
+      // cec can be either a speech pronoun or a proper noun
       if (cec.getHeadTokenTag().startsWith("NNP")) {
         //exclude antecedents not in the same sentence when they are not pronoun
         return (mention.getSentenceNumber() - cec.getSentenceNumber() != 0);
@@ -116,12 +111,12 @@ public class SpeechPronounResolver extends MaxentResolver {
         return false;
       }
       else {
-        System.err.println("Unexpected candidate exluded: " + cec.toText());
+        System.err.println("Unexpected candidate excluded: " + cec.toText());
         return true;
       }
     }
     else {
-      System.err.println("Unexpected mention exluded: " + mention.toText());
+      System.err.println("Unexpected mention excluded: " + mention.toText());
       return true;
     }
   }

@@ -1,235 +1,234 @@
 /*
- 	* Licensed to the Apache Software Foundation (ASF) under one or more
- 	* contributor license agreements. See the NOTICE file distributed with
- 	* this work for additional information regarding copyright ownership.
- 	* The ASF licenses this file to You under the Apache License, Version 2.0
- 	* (the "License"); you may not use this file except in compliance with
- 	* the License. You may obtain a copy of the License at
- 	*
- 	* http://www.apache.org/licenses/LICENSE-2.0
- 	*
- 	* Unless required by applicable law or agreed to in writing, software
- 	* distributed under the License is distributed on an "AS IS" BASIS,
- 	* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- 	* See the License for the specific language governing permissions and
- 	* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package opennlp.summarization.preprocess;
 
-import java.util.Hashtable;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
- *
  * @author rtww
  */
 public class StopWords {
-    private Hashtable<String, Boolean> h;
-    private static StopWords instance;
- 	
-    public StopWords()
-    {
-        h = new Hashtable<String, Boolean>();
-        h.put("0", true);
-        h.put("1", true);
-        h.put("2", true);
-        h.put("3", true);
-        h.put("4", true);
-        h.put("5", true);
-        h.put("6", true);
-        h.put("7", true);
-        h.put("8", true);
-        h.put("9", true);
+  private static StopWords instance;
+  private final Set<String> h;
 
-        h.put("a", true);
-        h.put("about", true);
-        h.put("above", true);
-        h.put("after", true);
-        h.put("again", true);
-        h.put("against", true);
-        h.put("all", true);
-        h.put("am", true);
-        h.put("an", true);
-        h.put("and", true);
-        h.put("any", true);
-        h.put("are", true);
-        h.put("aren't", true);
-        h.put("as", true);
-        h.put("at", true);
-        h.put("be", true);
-        h.put("because", true);
-        h.put("been", true);
-        h.put("before", true);
-        h.put("being", true);
-        h.put("below", true);
-        h.put("between", true);
-        h.put("both", true);
-        h.put("but", true);
-        h.put("by", true);
-        h.put("can't", true);
-        h.put("cannot", true);
-        h.put("could", true);
-        h.put("couldn't", true);
-        h.put("did", true);
-        h.put("didn't", true);
-        h.put("do", true);
-        h.put("does", true);
-        h.put("doesn't", true);
-        h.put("doing", true);
-        h.put("don't", true);
-        h.put("down", true);
-        h.put("during", true);
-        h.put("each", true);
-        h.put("few", true);
-        h.put("for", true);
-        h.put("from", true);
-        h.put("further", true);
-        h.put("had", true);
-        h.put("hadn't", true);
-        h.put("has", true);
-        h.put("hasn't", true);
-        h.put("have", true);
-        h.put("haven't", true);
-        h.put("having", true);
-        h.put("he", true);
-        h.put("he'd", true);
-        h.put("he'll", true);
-        h.put("he's", true);
-        h.put("her", true);
-        h.put("here", true);
-        h.put("here's", true);
-        h.put("hers", true);
-        h.put("herself", true);
-        h.put("him", true);
-        h.put("himself", true);
-        h.put("his", true);
-        h.put("how", true);
-        h.put("how's", true);
-        h.put("i", true);
-        h.put("i'd", true);
-        h.put("i'll", true);
-        h.put("i'm", true);
-        h.put("i've", true);
-        h.put("if", true);
-        h.put("in", true);
-        h.put("into", true);
-        h.put("is", true);
-        h.put("isn't", true);
-        h.put("it", true);
-        h.put("it's", true);
-        h.put("its", true);
-        h.put("itself", true);
-        h.put("let's", true);
-        h.put("me", true);
-        h.put("more", true);
-        h.put("most", true);
-        h.put("mustn't", true);
-        h.put("my", true);
-        h.put("myself", true);
-        h.put("no", true);
-        h.put("nor", true);
-        h.put("not", true);
-        h.put("of", true);
-        h.put("off", true);
-        h.put("on", true);
-        h.put("once", true);
-        h.put("only", true);
-        h.put("or", true);
-        h.put("other", true);
-        h.put("ought", true);
-        h.put("our", true);
-        h.put("ours ", true);
-        h.put(" ourselves", true);
-        h.put("out", true);
-        h.put("over", true);
-        h.put("own", true);
-        h.put("same", true);
-        h.put("shan't", true);
-        h.put("she", true);
-        h.put("she'd", true);
-        h.put("she'll", true);
-        h.put("she's", true);
-        h.put("should", true);
-        h.put("shouldn't", true);
-        h.put("so", true);
-        h.put("some", true);
-        h.put("say", true);
-        h.put("said", true);
-        h.put("such", true);
-        h.put("than", true);
-        h.put("that", true);
-        h.put("that's", true);
-        h.put("the", true);
-        h.put("their", true);
-        h.put("theirs", true);
-        h.put("them", true);
-        h.put("themselves", true);
-        h.put("then", true);
-        h.put("there", true);
-        h.put("there's", true);
-        h.put("these", true);
-        h.put("they", true);
-        h.put("they'd", true);
-        h.put("they'll", true);
-        h.put("they're", true);
-        h.put("they've", true);
-        h.put("this", true);
-        h.put("those", true);
-        h.put("through", true);
-        h.put("to", true);
-        h.put("too", true);
-        h.put("under", true);
-        h.put("until", true);
-        h.put("up", true);
-        h.put("very", true);
-        h.put("was", true);
-        h.put("wasn't", true);
-        h.put("we", true);
-        h.put("we'd", true);
-        h.put("we'll", true);
-        h.put("we're", true);
-        h.put("we've", true);
-        h.put("were", true);
-        h.put("weren't", true);
-        h.put("what", true);
-        h.put("what's", true);
-        h.put("when", true);
-        h.put("when's", true);
-        h.put("where", true);
-        h.put("where's", true);
-        h.put("which", true);
-        h.put("while", true);
-        h.put("who", true);
-        h.put("who's", true);
-        h.put("whom", true);
-        h.put("why", true);
-        h.put("why's", true);
-        h.put("with", true);
-        h.put("won't", true);
-        h.put("would", true);
-        h.put("wouldn't", true);
-        h.put("you", true);
-        h.put("you'd", true);
-        h.put("you'll", true);
-        h.put("you're", true);
-        h.put("you've", true);
-        h.put("your", true);
-        h.put("yours", true);
-        h.put("yourself", true);
-        h.put("yourselves ", true);
+  public StopWords() {
+    h = new HashSet<>();
+    h.add("0");
+    h.add("1");
+    h.add("2");
+    h.add("3");
+    h.add("4");
+    h.add("5");
+    h.add("6");
+    h.add("7");
+    h.add("8");
+    h.add("9");
+
+    h.add("a");
+    h.add("about");
+    h.add("above");
+    h.add("after");
+    h.add("again");
+    h.add("against");
+    h.add("all");
+    h.add("am");
+    h.add("an");
+    h.add("and");
+    h.add("any");
+    h.add("are");
+    h.add("aren't");
+    h.add("as");
+    h.add("at");
+    h.add("be");
+    h.add("because");
+    h.add("been");
+    h.add("before");
+    h.add("being");
+    h.add("below");
+    h.add("between");
+    h.add("both");
+    h.add("but");
+    h.add("by");
+    h.add("can't");
+    h.add("cannot");
+    h.add("could");
+    h.add("couldn't");
+    h.add("did");
+    h.add("didn't");
+    h.add("do");
+    h.add("does");
+    h.add("doesn't");
+    h.add("doing");
+    h.add("don't");
+    h.add("down");
+    h.add("during");
+    h.add("each");
+    h.add("few");
+    h.add("for");
+    h.add("from");
+    h.add("further");
+    h.add("had");
+    h.add("hadn't");
+    h.add("has");
+    h.add("hasn't");
+    h.add("have");
+    h.add("haven't");
+    h.add("having");
+    h.add("he");
+    h.add("he'd");
+    h.add("he'll");
+    h.add("he's");
+    h.add("her");
+    h.add("here");
+    h.add("here's");
+    h.add("hers");
+    h.add("herself");
+    h.add("him");
+    h.add("himself");
+    h.add("his");
+    h.add("how");
+    h.add("how's");
+    h.add("i");
+    h.add("i'd");
+    h.add("i'll");
+    h.add("i'm");
+    h.add("i've");
+    h.add("if");
+    h.add("in");
+    h.add("into");
+    h.add("is");
+    h.add("isn't");
+    h.add("it");
+    h.add("it's");
+    h.add("its");
+    h.add("itself");
+    h.add("let's");
+    h.add("me");
+    h.add("more");
+    h.add("most");
+    h.add("mustn't");
+    h.add("my");
+    h.add("myself");
+    h.add("no");
+    h.add("nor");
+    h.add("not");
+    h.add("of");
+    h.add("off");
+    h.add("on");
+    h.add("once");
+    h.add("only");
+    h.add("or");
+    h.add("other");
+    h.add("ought");
+    h.add("our");
+    h.add("ours ");
+    h.add(" ourselves");
+    h.add("out");
+    h.add("over");
+    h.add("own");
+    h.add("same");
+    h.add("shan't");
+    h.add("she");
+    h.add("she'd");
+    h.add("she'll");
+    h.add("she's");
+    h.add("should");
+    h.add("shouldn't");
+    h.add("so");
+    h.add("some");
+    h.add("say");
+    h.add("said");
+    h.add("such");
+    h.add("than");
+    h.add("that");
+    h.add("that's");
+    h.add("the");
+    h.add("their");
+    h.add("theirs");
+    h.add("them");
+    h.add("themselves");
+    h.add("then");
+    h.add("there");
+    h.add("there's");
+    h.add("these");
+    h.add("they");
+    h.add("they'd");
+    h.add("they'll");
+    h.add("they're");
+    h.add("they've");
+    h.add("this");
+    h.add("those");
+    h.add("through");
+    h.add("to");
+    h.add("too");
+    h.add("under");
+    h.add("until");
+    h.add("up");
+    h.add("very");
+    h.add("was");
+    h.add("wasn't");
+    h.add("we");
+    h.add("we'd");
+    h.add("we'll");
+    h.add("we're");
+    h.add("we've");
+    h.add("were");
+    h.add("weren't");
+    h.add("what");
+    h.add("what's");
+    h.add("when");
+    h.add("when's");
+    h.add("where");
+    h.add("where's");
+    h.add("which");
+    h.add("while");
+    h.add("who");
+    h.add("who's");
+    h.add("whom");
+    h.add("why");
+    h.add("why's");
+    h.add("with");
+    h.add("won't");
+    h.add("would");
+    h.add("wouldn't");
+    h.add("you");
+    h.add("you'd");
+    h.add("you'll");
+    h.add("you're");
+    h.add("you've");
+    h.add("your");
+    h.add("yours");
+    h.add("yourself");
+    h.add("yourselves");
+  }
+
+  public static StopWords getInstance() {
+    if (instance == null)
+      instance = new StopWords();
+    return instance;
+  }
+
+  public boolean isStopWord(String s) {
+    if (s.length() <= 1) {
+      return true;
+    } else {
+      return h.contains(s);
     }
-
-    public boolean isStopWord(String s)
-    {
-        boolean ret = h.get(s)==null? false: true;
-        if(s.length()==1) ret = true;
-        return ret;
-    }
-
-    public static StopWords getInstance()
-    {
-		if(instance == null)
-			instance = new StopWords();
-		return instance;	
-    } 
+  }
 }

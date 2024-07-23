@@ -35,18 +35,19 @@ import cc.mallet.types.LabelVector;
 
 class ClassifierModel implements MaxentModel, SerializableArtifact {
 
-  private Classifier classifer;
+  private final Classifier classifier;
 
-  public ClassifierModel(Classifier classifer) {
-    this.classifer = classifer;
+  public ClassifierModel(Classifier classifier) {
+    this.classifier = classifier;
   }
 
-  Classifier getClassifer() {
-    return classifer;
+  Classifier getClassifier() {
+    return classifier;
   }
-  
+
+  @Override
   public double[] eval(String[] features) {
-    Alphabet dataAlphabet = classifer.getAlphabet();
+    Alphabet dataAlphabet = classifier.getAlphabet();
 
     List<Integer> malletFeatureList = new ArrayList<>(features.length);
 
@@ -57,22 +58,22 @@ class ClassifierModel implements MaxentModel, SerializableArtifact {
       }
     }
 
-    int malletFeatures[] = new int[malletFeatureList.size()];
+    int[] malletFeatures = new int[malletFeatureList.size()];
     for (int i = 0; i < malletFeatureList.size(); i++) {
       malletFeatures[i] = malletFeatureList.get(i);
     }
 
-    FeatureVector fv = new FeatureVector(classifer.getAlphabet(),
+    FeatureVector fv = new FeatureVector(classifier.getAlphabet(),
         malletFeatures);
     Instance instance = new Instance(fv, null, null, null);
 
-    Classification result = classifer.classify(instance);
+    Classification result = classifier.classify(instance);
 
     LabelVector labeling = result.getLabelVector();
 
-    LabelAlphabet targetAlphabet = classifer.getLabelAlphabet();
+    LabelAlphabet targetAlphabet = classifier.getLabelAlphabet();
 
-    double outcomes[] = new double[targetAlphabet.size()];
+    double[] outcomes = new double[targetAlphabet.size()];
     for (int i = 0; i < outcomes.length; i++) {
 
       Label label = targetAlphabet.lookupLabel(i);
@@ -84,10 +85,12 @@ class ClassifierModel implements MaxentModel, SerializableArtifact {
     return outcomes;
   }
 
+  @Override
   public double[] eval(String[] context, double[] probs) {
     return eval(context);
   }
 
+  @Override
   public double[] eval(String[] context, float[] values) {
     return eval(context);
   }
@@ -109,17 +112,17 @@ class ClassifierModel implements MaxentModel, SerializableArtifact {
 
   @Override
   public String getOutcome(int i) {
-    return classifer.getLabelAlphabet().lookupLabel(i).getEntry().toString();
+    return classifier.getLabelAlphabet().lookupLabel(i).getEntry().toString();
   }
 
   @Override
   public int getIndex(String outcome) {
-    return classifer.getLabelAlphabet().lookupIndex(outcome);
+    return classifier.getLabelAlphabet().lookupIndex(outcome);
   }
 
   @Override
   public int getNumOutcomes() {
-    return classifer.getLabelAlphabet().size();
+    return classifier.getLabelAlphabet().size();
   }
 
   @Override

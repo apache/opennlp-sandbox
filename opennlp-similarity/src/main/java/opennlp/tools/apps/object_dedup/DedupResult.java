@@ -20,11 +20,9 @@ package opennlp.tools.apps.object_dedup;
 public class DedupResult {
 
 	public DedupResult(String string, int i, boolean b) {
-		// TODO Auto-generated constructor stub
 	}
 
 	public Boolean isDecision() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 

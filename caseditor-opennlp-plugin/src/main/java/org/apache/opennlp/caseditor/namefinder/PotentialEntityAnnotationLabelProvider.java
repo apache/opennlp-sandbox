@@ -26,22 +26,27 @@ import org.eclipse.swt.graphics.Image;
 
 public class PotentialEntityAnnotationLabelProvider implements ITableLabelProvider {
 
-  private DecimalFormat df = new DecimalFormat("#.#");
-  
+  private final DecimalFormat df = new DecimalFormat("#.#");
+
+  @Override
   public void addListener(ILabelProviderListener listener) {
   }
 
+  @Override
   public void removeListener(ILabelProviderListener listener) {
   }
 
+  @Override
   public boolean isLabelProperty(Object element, String property) {
     return false;
   }
 
+  @Override
   public Image getColumnImage(Object element, int columnIndex) {
     return null;
   }
 
+  @Override
   public String getColumnText(Object element, int columnIndex) {
     String result = null;
     
@@ -59,7 +64,7 @@ public class PotentialEntityAnnotationLabelProvider implements ITableLabelProvid
     else if (columnIndex == 2) {
       // TODO: Improve this ...
       if (entity.getType() != null && entity.getType() != null) {
-        String parts[] = entity.getType().split("\\.");
+        String[] parts = entity.getType().split("\\.");
         result = parts[parts.length - 1];
       } else
         result = "";
@@ -68,6 +73,7 @@ public class PotentialEntityAnnotationLabelProvider implements ITableLabelProvid
     return result;
   }
 
+  @Override
   public void dispose() {
   }
 }

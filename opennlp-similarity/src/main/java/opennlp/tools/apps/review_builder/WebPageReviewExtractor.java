@@ -1,8 +1,25 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package opennlp.tools.apps.review_builder;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import opennlp.tools.jsmlearning.ProfileReaderWriter;
@@ -14,48 +31,45 @@ import opennlp.tools.textsimilarity.TextProcessor;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WebPageReviewExtractor extends WebPageExtractor {
-	
-	BingAPIProductSearchManager prodman = new BingAPIProductSearchManager();
-	SentenceOriginalizer orig = null;
+
+	private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+	private final BingAPIProductSearchManager prodman = new BingAPIProductSearchManager();
+	private final SentenceOriginalizer orig;
 		
 	public WebPageReviewExtractor(String resourceDir) {
 		orig = new SentenceOriginalizer(resourceDir);
 	}
 
-	public String[] removeDuplicates(String[] hits)
-	{
+	public String[] removeDuplicates(String[] hits) {
 		StringDistanceMeasurer meas = new StringDistanceMeasurer();
 
-		List<Integer> idsToRemove = new ArrayList<Integer>();
-		List<String> hitsDedup = new ArrayList<String>();
-		try
-		{
+		List<Integer> idsToRemove = new ArrayList<>();
+		List<String> hitsDedup = new ArrayList<>();
+		try {
 			for (int i = 0; i < hits.length; i++)
-				for (int j = i + 1; j < hits.length; j++)
-				{
+				for (int j = i + 1; j < hits.length; j++) {
 					String title1 = hits[i];
 					String title2 = hits[j];
 					if (StringUtils.isEmpty(title1) || StringUtils.isEmpty(title2))
 						continue;
-					if (meas.measureStringDistance(title1, title2) > 0.7)
-					{
-						idsToRemove.add(j); // dupes found, later list member to
-											// be deleted
+					if (meas.measureStringDistance(title1, title2) > 0.7) {
+						idsToRemove.add(j); // dupes found, later list member to be deleted
 					}
 				}
 			for (int i = 0; i < hits.length; i++)
 				if (!idsToRemove.contains(i))
 					hitsDedup.add(hits[i]);
-			if (hitsDedup.size() < hits.length)
-			{
+			if (hitsDedup.size() < hits.length) {
 				System.out.println("Removed duplicates from relevant search results, including "
 					+ hits[idsToRemove.get(0)]);
 			}
 		}
-		catch (Exception e)
-		{
+		catch (Exception e) {
 			System.out.println("Problem removing duplicates from relevant images");
 		}
 
@@ -63,11 +77,9 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 
 	}
 
-	public ReviewObj extractSentencesWithPotentialReviewPhrases(String url)
-	{
+	public ReviewObj extractSentencesWithPotentialReviewPhrases(String url) {
 		ReviewObj reviewObj = new ReviewObj();
 		int maxSentsFromPage= 20;
-		List<String[]> results = new ArrayList<String[]>();
 
 		String downloadedPage = pageFetcher.fetchPage(url, 20000);
 		if (downloadedPage == null || downloadedPage.length() < 100)
@@ -77,15 +89,15 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 
 		String pageOrigHTML = pageFetcher.fetchOrigHTML(url);
 
-		List<String> productFeaturesList = new ArrayList<String> ();
+		List<String> productFeaturesList = new ArrayList<>();
 		String[] productFeatures = StringUtils.substringsBetween(pageOrigHTML, "<li>", "</li>" );
 		if (productFeatures!=null){
 			for(String item: productFeatures ){
-				if (item.indexOf("class")>-1 || item.indexOf("www.")>-1 || item.indexOf("href")>-1)
+				if (item.contains("class") || item.contains("www.") || item.contains("href"))
 					continue;
 				item = item.replace("<span>","").replace("</span>","").replace("<b>","").replace("</b>","");
 				if (item.length()>80 && MinedSentenceProcessor.acceptableMinedSentence(item)==null){
-					System.out.println("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = "+item);
+					LOG.debug("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = {}", item);
 					continue;
 				}
 				productFeaturesList .add(item);
@@ -96,7 +108,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 		
 		String startArea = StringUtils.substringBetween(pageOrigHTML, "reviewHistoPop", "t of 5 stars");
 		String item =  StringUtils.substringBetween(startArea, "title=\"","ou" );
-		if (item==null){//title="4.0 out of 5 stars" ><span>4.0 out of 5 stars</span>
+		if (item==null) { //title="4.0 out of 5 stars" ><span>4.0 out of 5 stars</span>
 			int index = pageOrigHTML.indexOf("of 5 stars\"");
 			startArea = StringUtils.substringBetween(pageOrigHTML, "of 5 stars\"", "of 5 stars");
 			item =  StringUtils.substringBetween(startArea, "<span>","ou" );
@@ -108,8 +120,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 				float rating = Float.parseFloat(item);
 				reviewObj.setRating(rating);
 			} catch (NumberFormatException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				LOG.error(e.getLocalizedMessage(), e);
 			}
 		}
 		//productFeaturesList .add(item);
@@ -117,24 +128,23 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 		downloadedPage= downloadedPage.replace("     ", "&");
 		downloadedPage = downloadedPage.replaceAll("(?:&)+", "#");
 		String[] sents = downloadedPage.split("#");
-		List<TextChunk> sentsList = new ArrayList<TextChunk>();
-		for(String s: sents){
+		List<TextChunk> sentsList = new ArrayList<>();
+		for(String s: sents) {
 			s = s.trim().replace("  ", ". ").replace("..", ".").replace(". . .", " ")
 					.replace(": ", ". ").replace("- ", ". ").
 					replace (". .",".").trim();
 			sentsList.add(new TextChunk(s, s.length()));
 		}
 
-		Collections.sort(sentsList, new TextChunkComparable());
+		sentsList.sort(new TextChunkComparable());
 		String[] longestSents = new String[maxSentsFromPage];
 		int j=0;														// -1 removed
-		for(int i=sentsList.size()-1 -maxSentsFromPage; i< sentsList.size()&& j<longestSents.length; i++){
+		for (int i=sentsList.size()-1 -maxSentsFromPage; i< sentsList.size()&& j<longestSents.length; i++) {
 			longestSents[j] = sentsList.get(i).text;
 			j++;
 		}
 
 		sents = cleanListOfSents(longestSents);
-		
 		sents = removeDuplicates(sents);
 		sents = verifyEnforceStartsUpperCase(sents);
 
@@ -145,7 +155,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 	}
 
 	private String[] verifyEnforceStartsUpperCase(String[] sents) {
-		for(int i=0; i<sents.length; i++){
+		for (int i=0; i<sents.length; i++) {
 			String s = sents[i];
 			s = StringUtils.trim(s);
 			String sFirstChar = s.substring(0, 1);
@@ -158,24 +168,22 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 	}
 
 	private List<String> cleanProductFeatures(List<String> productFeaturesList) {
-		List<String> results = new ArrayList<String>();
-		for(String feature: productFeaturesList){
-			if (feature.startsWith("Unlimited Free") || feature.startsWith("View Larger") || feature.startsWith("View Larger") || feature.indexOf("shipping")>0)
+		List<String> results = new ArrayList<>();
+		for (String feature: productFeaturesList) {
+			if (feature.startsWith("Unlimited Free") || feature.startsWith("View Larger") || feature.indexOf("shipping")>0)
 				continue;
 			results.add(feature);
 		}
 		return results;
 	}
 
-	protected String[] cleanListOfSents(String[] longestSents)
-	{
+	protected String[] cleanListOfSents(String[] longestSents) {
 		float minFragmentLength = 40, minFragmentLengthSpace=4;
 
-		List<String> sentsClean = new ArrayList<String>();
-		for (String sentenceOrMultSent : longestSents)
-		{
+		List<String> sentsClean = new ArrayList<>();
+		for (String sentenceOrMultSent : longestSents) {
 			if (MinedSentenceProcessor.acceptableMinedSentence(sentenceOrMultSent)==null){
-				System.out.println("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = "+sentenceOrMultSent);
+				// System.out.println("Rejected sentence by GeneratedSentenceProcessor.acceptableMinedSentence = "+sentenceOrMultSent);
 				continue;
 			}
 			// aaa. hhh hhh.  kkk . kkk ll hhh. lll kkk n.
@@ -195,7 +203,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 			// disused - Feb 26 13
 			//furtherSplit = furtherMakeSentencesShorter(furtherSplit);
 			furtherSplit.remove(furtherSplit.size()-1);
-			for(String s : furtherSplit){
+			for (String s : furtherSplit) {
 				if (s.indexOf('|')>-1)
 					continue;
 				s = s.replace("<em>"," ").replace("</em>"," ");
@@ -204,12 +212,12 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 			}
 		}
 
-		return (String[]) sentsClean.toArray(new String[0]);
+		return sentsClean.toArray(new String[0]);
 	}
 
 	private List<String> furtherMakeSentencesShorter(List<String> furtherSplit) {
 		int MIN_LENGTH_TO_SPLIT = 80;
-		List<String> results = new ArrayList<String>();
+		List<String> results = new ArrayList<>();
 		for(String sent: furtherSplit) {
 			sent = startWithCapitalSent(sent);
 			int len = sent.length(); 
@@ -219,7 +227,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 				try {
 					int commaIndex = StringUtils.indexOf(sent, ',');
 					int lastCommaIndex = StringUtils.lastIndexOf(sent, ',');
-					int splitIndex = -1;
+					int splitIndex;
 					if (Math.abs(commaIndex- len/2) > Math.abs(lastCommaIndex- len/2))
 						splitIndex = commaIndex;
 					else
@@ -233,7 +241,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 					}
 				} catch (Exception e) {
 					results.add(sent);
-					e.printStackTrace();
+					LOG.error(e.getLocalizedMessage(), e);
 				}
 
 			}
@@ -272,22 +280,23 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 					reviewObjTotal.setSentimentPhrases(buf);
 				}
 
-		/*		buf = reviewObjTotal.getOriginalizedSentences();
-				if (buf!=null && afterOriginalization!=null && afterOriginalization.length>0){
-					List<String> b1 = Arrays.asList(afterOriginalization);
-					List<String> b2 = new ArrayList<String>();
-					b2.addAll(buf);
-					b2.addAll(new ArrayList<String>(b1));
-					reviewObjTotal.setOriginalizedSentences(b2);
-				}
-*/
+				/*
+				buf = reviewObjTotal.getOriginalizedSentences();
+					if (buf!=null && afterOriginalization!=null && afterOriginalization.length>0){
+						List<String> b1 = Arrays.asList(afterOriginalization);
+						List<String> b2 = new ArrayList<String>();
+						b2.addAll(buf);
+						b2.addAll(new ArrayList<String>(b1));
+						reviewObjTotal.setOriginalizedSentences(b2);
+					}
+				*/
 			}
-			if (reviewObjTotal==null) return new ArrayList<String>();
+			if (reviewObjTotal==null) return new ArrayList<>();
 			
 			List<String> textReviews = buildManyReviewTexts(reviewObjTotal);
 
-			
-		/*	String textReview = buildText(reviewObjTotal);
+			/*
+			String textReview = buildText(reviewObjTotal);
 			try {
 				if (textReview!=null && textReview.length()>60)
 					ser.saveReviewsToDB(textReview, bpid, pagesForAProduct.get(0).getUrl(), pagesForAProduct.get(0).getTitle(),
@@ -298,8 +307,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 			*/
 			
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LOG.error(e.getLocalizedMessage(), e);
 		} 
 		return reviewObjTotal.getOriginalizedSentences();
 	}
@@ -308,15 +316,15 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 
 		String[] features = reviewObj.getFeaturePhrases();
 		List<String> sentences =reviewObj.getOriginalizedSentences();
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		int count = 0;
 		for(String sent:sentences){
 			if (sent!=null)
-				buf.append(sent+" ");
+				buf.append(sent).append(" ");
 			if (count%2==0 && count<features.length)
 				if (features[count]!=null){
 					buf.append(features[count]);
-					if (!(features[count].endsWith("!") ||features[count].endsWith("?")||features[count].endsWith("?") 
+					if (!(features[count].endsWith("!") ||features[count].endsWith("?")
 							||features[count].endsWith(".\"") ))
 						buf.append(". ");
 				}
@@ -352,11 +360,11 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 		int currentRevIndex = 0;
 		for(String sent:sentences){
 			if (sent!=null)
-				bufs[currentRevIndex].append(sent+" ");
+				bufs[currentRevIndex].append(sent).append(" ");
 			if (count%2==0 && count<features.length)
 				if (features[count]!=null){
 					bufs[currentRevIndex].append(features[count]);
-					if (!(features[count].endsWith("!") ||features[count].endsWith("?")||features[count].endsWith("?") 
+					if (!(features[count].endsWith("!") ||features[count].endsWith("?")
 							||features[count].endsWith(".\"") ))
 						bufs[currentRevIndex].append(". ");
 				}
@@ -365,7 +373,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 				if (bufs[currentRevIndex].toString().split(".").length>4)
 					bufs[currentRevIndex].append("\n");
 			} catch (Exception e) {
-				e.printStackTrace();
+				LOG.error(e.getLocalizedMessage(), e);
 			}
 			
 			count++;
@@ -374,7 +382,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 				currentRevIndex=0;	
 		}
 		
-		List<String> results = new ArrayList<String>();
+		List<String> results = new ArrayList<>();
 		for(StringBuffer b:bufs){
 			String sent = b.toString().replace("!.","!").replace("?.","?");
 			results.add(sent);
@@ -389,7 +397,7 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 		//ProductFinderInAWebPage init = new ProductFinderInAWebPage("C:/workspace/relevanceEngine/src/test/resources");
 
 		WebPageReviewExtractor extractor = new WebPageReviewExtractor(resourceDir);
-		String res1[] = extractor.verifyEnforceStartsUpperCase(new String[]{ "hhhh !", "Klyn mng hghj ."});
+		String[] res1 = extractor.verifyEnforceStartsUpperCase(new String[]{ "hhhh !", "Klyn mng hghj ."});
 				
 		List<String> res = extractor.formReviewsForAProduct(//"McCulloch 16-Inch 3.5 HP Electric Chain Saw");
 				//	"WORX Electric JawSaw with Extension Handle");

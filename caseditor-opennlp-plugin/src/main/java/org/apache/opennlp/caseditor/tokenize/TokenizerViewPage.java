@@ -20,8 +20,6 @@ package org.apache.opennlp.caseditor.tokenize;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import opennlp.tools.util.Span;
-
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.cas.Type;
@@ -37,9 +35,11 @@ import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.actions.BaseSelectionListenerAction;
 import org.eclipse.ui.part.Page;
 
+import opennlp.tools.util.Span;
+
 public class TokenizerViewPage extends Page {
   
-  private ICasEditor editor;
+  private final ICasEditor editor;
 
   private Label workInProgress;
   
@@ -83,13 +83,13 @@ public class TokenizerViewPage extends Page {
           e.printStackTrace();
         }
         
-        Span tokens[] = tokenizerJob.getTokens();
+        Span[] tokens = tokenizerJob.getTokens();
         
         CAS cas = editor.getDocument().getCAS();
         
         Type tokenType = cas.getTypeSystem().getType(prefStore.getString(OpenNLPPreferenceConstants.TOKEN_TYPE));
         
-        Collection<AnnotationFS> tokenAnnotations = new ArrayList<AnnotationFS>(tokens.length);
+        Collection<AnnotationFS> tokenAnnotations = new ArrayList<>(tokens.length);
         
         for (Span token : tokens) {
           tokenAnnotations.add(cas.createAnnotation(tokenType, token.getStart(), token.getEnd()));

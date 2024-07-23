@@ -1,7 +1,7 @@
 # OpenNLP.Similarity Component
 
 It is a project under Apache OpenNLP which subjects results of parsing, part-of-speech tagging and rhetoric parsing to machine learning.
-It is leveraged in search, content generation & enrichment, chat bots and other text processing domains where relevance assessment task is a key.
+It is leveraged in search, content generation & enrichment, chatbots and other text processing domains where relevance assessment task is a key.
 
 ## What is OpenNLP.Similarity?
 
@@ -19,7 +19,7 @@ OpenNLP.Similarity is an NLP engine which solves a number of text processing and
 
 OpenNLP similarity provides a series of techniques to support the overall content pipeline, from text collection to cleaning, classification, personalization and distribution. Technology and implementation of content pipeline developed at eBay is described [here](https://github.com/bgalitsky/relevance-based-on-parse-trees/tree/master/examples/ContentPipeline.pdf). 
 ## Installation
- 0) Do [`git clone`](https://github.com/bgalitsky/relevance-based-on-parse-trees.git) to setup the environment including resources. Besides what you get from git, `/resources` directory requires some additional work:
+ 0) Do [`git clone`](https://github.com/bgalitsky/relevance-based-on-parse-trees.git) to set up the environment including resources. Besides what you get from git, `/resources` directory requires some additional work:
  
  1) Download the main [jar](https://github.com/bgalitsky/relevance-based-on-parse-trees/blob/master/opennlp-similarity.11.jar).
  
@@ -36,7 +36,7 @@ OpenNLP similarity provides a series of techniques to support the overall conten
  - new_vn.zip needs to be unzipped
  - OpenNLP models need to be downloaded into the directory 'models' from [here](http://opennlp.sourceforge.net/models-1.5/)
   
-  As a result the following folders should be in in /resources:
+  As a result the following folders should be in /resources:
   As obtained [from git](https://github.com/bgalitsky/relevance-based-on-parse-trees/tree/master/src/test/resources):
  <li>/new_vn (VerbNet)</li>
  <li>/maps (some lookup files such as products, brands, first names etc.)</li>
@@ -66,7 +66,7 @@ It takes two texts and returns the cardinality of a maximum common subgraph repr
 
 function which returns the list of [common phrases between these paragraph]s.
 
-To avoid re-parsing the same strings and improve the speed, use
+To avoid reparsing the same strings and improve the speed, use
 
 `List<List<ParseTreeChunk>> assessRelevanceCache(String para1, String para2)`
 
@@ -147,11 +147,11 @@ Here's the link to the book on [question-answering](https://www.amazon.com/Natur
 
 and [research papers](https://scholar.google.com/citations?hl=ru&user=kR_M3HIAAAAJ).
 
-Also the recent [book related to reasoning and linguistics in humans & machines](https://www.amazon.com/Computational-Autism-Human-Computer-Interaction-Galitsky/dp/3319399713)
+also the recent [book related to reasoning and linguistics in humans & machines](https://www.amazon.com/Computational-Autism-Human-Computer-Interaction-Galitsky/dp/3319399713)
 
 ## Configuring OpenNLP.Similarity component
 
-VerbNet model is included by default, so that the hand-coded meanings of the verb are used when simularity between verb phrases are computed.
+VerbNet model is included by default, so that the hand-coded meanings of the verb are used when similarity between verb phrases are computed.
 
 To include word2vector model, [download it](https://deeplearning4j.org/) and make sure the following path is valid:
 `resourceDir + "/w2v/GoogleNews-vectors-negative300.bin.gz"`

@@ -16,22 +16,22 @@
  */
 package opennlp.tools.fca;
 
-
-import org.apache.commons.math3.special.*;
 import java.util.ArrayList;
 import java.util.Set;
 
+import org.apache.commons.math3.special.Gamma;
+
 public class Measures {
 		
-	ConceptLattice cl;
+	final ConceptLattice cl;
 	
 	public Measures(ConceptLattice cl) {
 		this.cl = cl;
 	}
 	
 	public void logStabilityInt(){
-		int min_delta = -1, delta = -1;
-		float sum = 0;
+		int min_delta, delta;
+		float sum;
 		for (int i = 0; i < cl.conceptList.size(); ++i) {
 			min_delta = cl.attributeCount;
 			sum = 0;
@@ -49,14 +49,13 @@ public class Measures {
 	}
 	
 	public void logStabilityExt(){
-		int min_delta = -1, delta = -1;
-		float sum = 0;
+		int min_delta, delta;
+		float sum;
 		for (int i = 0; i < cl.conceptList.size(); ++i) {
 			min_delta = cl.attributeCount;
 			sum = 0;
 			FormalConcept fc = cl.conceptList.get(i);
-			Set<Integer> childs = fc.childs;
-			for (Integer j: childs) {
+			for (int j: fc.children) {
 				delta = fc.getExtent().size() - cl.conceptList.get(j).getExtent().size();
 				if (delta<min_delta)
 					min_delta = delta;
@@ -70,8 +69,8 @@ public class Measures {
 	public void separation(){
 		ArrayList<Integer> intent;
 		Set<Integer> extentMembers;
-		int extentVolume = 0, intentVolume = 0;
-		double sz = 0;
+		int extentVolume, intentVolume;
+		double sz;
 		for (int i = 0; i < cl.conceptList.size(); ++i) {
 			intent = cl.conceptList.get(i).getIntent();
 			extentMembers = cl.conceptList.get(i).extent;
@@ -82,10 +81,10 @@ public class Measures {
 					extentVolume += cl.binaryContext[ext][attr];
 				}				
 			}
-			for (int attr = 0; attr<intent.size();attr++ ){
-				for (int obj = 0; obj < cl.objectCount; obj++){
-					intentVolume += cl.binaryContext[obj][intent.get(attr)];
-				}				
+			for (Integer integer : intent) {
+				for (int obj = 0; obj < cl.objectCount; obj++) {
+					intentVolume += cl.binaryContext[obj][integer];
+				}
 			}			
 			sz = intent.size()*extentMembers.size();
 			if (extentVolume+extentVolume-sz!=0)
@@ -105,10 +104,10 @@ public class Measures {
 	
 	public double intentProbability(ArrayList<Integer> intent){
 		double pB = 1;
-	    for (int i=0;i<intent.size();i++){
-	    	pB*=attributeProbability(intent.get(i));
-	    }
-	    return pB;
+		for (int integer : intent) {
+			pB *= attributeProbability(integer);
+		}
+		return pB;
 	}
 	
 	public void probability(){			
@@ -117,27 +116,27 @@ public class Measures {
 			ArrayList<Integer> intent = cl.conceptList.get(i).getIntent();
 			// out of concept intent
 			double pB = intentProbability(intent);
-			ArrayList<Integer> outOfIntent = new ArrayList<Integer>();
-			ArrayList<Double> outOfIntentAttrProb = new ArrayList<Double>();
+			ArrayList<Integer> outOfIntent = new ArrayList<>();
+			ArrayList<Double> outOfIntentAttrProb = new ArrayList<>();
 			for (int j=0;j<cl.attributeCount; j++){
 				outOfIntent.add(j);
 			}
 			for (int j=intent.size()-1;j>=0;j--){
 				outOfIntent.remove(intent.get(j));
 			}
-			for (int j=0;j<outOfIntent.size();j++){
-				outOfIntentAttrProb.add(attributeProbability(outOfIntent.get(j)));
+			for (Integer integer : outOfIntent) {
+				outOfIntentAttrProb.add(attributeProbability(integer));
 			}
-			double prob = 0,  mult = 1, mult1=1;
+			double prob = 0,  mult, mult1;
 			int n = cl.objectCount;
 			for (int k=0; k<= n; k++){
 				mult = 1;
 				mult1 = 1;
-				for (int j=0;j<outOfIntentAttrProb.size();j++){
-					mult*=(1-Math.pow(outOfIntentAttrProb.get(j),k));
+				for (Double aDouble : outOfIntentAttrProb) {
+					mult *= (1 - Math.pow(aDouble, k));
 				}				
 				mult1 = Math.pow(pB,k)*Math.pow(1-pB,n-k);
-				prob+=mult1*mult*Gamma.digamma(n+1)/Gamma.digamma(k+1)/Gamma.digamma(n-k+1);				
+				prob+=mult1*mult* Gamma.digamma(n+1)/Gamma.digamma(k+1)/Gamma.digamma(n-k+1);
 			}
 			
 			cl.conceptList.get(i).probability = prob;			

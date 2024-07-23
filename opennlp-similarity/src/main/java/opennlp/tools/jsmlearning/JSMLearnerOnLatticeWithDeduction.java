@@ -19,20 +19,17 @@ package opennlp.tools.jsmlearning;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.commons.collections.ListUtils;
-import org.apache.commons.lang.StringUtils;
 
 import opennlp.tools.parse_thicket.pattern_structure.LinguisticPatternStructure;
 import opennlp.tools.similarity.apps.utils.Pair;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
 
 public class JSMLearnerOnLatticeWithDeduction extends JSMLearnerOnLatticeBase{
-	List<JSMDecision> accumulatedJSMResults = new ArrayList<JSMDecision>();
+	final List<JSMDecision> accumulatedJSMResults = new ArrayList<>();
 
 
 
@@ -44,34 +41,34 @@ public class JSMLearnerOnLatticeWithDeduction extends JSMLearnerOnLatticeBase{
 			posTexts = pair.getFirst(); negTexts = 	pair.getSecond();
 		}
 
-		List<List<List<ParseTreeChunk>>> lingRepsPos = new ArrayList<List<List<ParseTreeChunk>>>(),
-				lingRepsNeg = new ArrayList<List<List<ParseTreeChunk>>>();
+		List<List<List<ParseTreeChunk>>> lingRepsPos = new ArrayList<>(),
+				lingRepsNeg = new ArrayList<>();
 		for(String text: posTexts)
 			lingRepsPos.add(chunk_maker.formGroupedPhrasesFromChunksForPara(text));
 
 		for(String text: negTexts)
 			lingRepsNeg.add(chunk_maker.formGroupedPhrasesFromChunksForPara(text));
 
-		LinkedHashSet<Integer> obj = null;
+		LinkedHashSet<Integer> obj;
 		int i=0;
 		for(List<List<ParseTreeChunk>> chunk: lingRepsPos){
-			obj = new LinkedHashSet<Integer>();
+			obj = new LinkedHashSet<>();
 			obj.add(i);
 			psPos.AddIntent(chunk, obj, 0);
 			i++;
 		}
 		i=0;
 		for(List<List<ParseTreeChunk>> chunk: lingRepsNeg){
-			obj = new LinkedHashSet<Integer>();
+			obj = new LinkedHashSet<>();
 			obj.add(i);
 			psNeg.AddIntent(chunk, obj, 0);
 			i++;
 		}
 
 		List<List<ParseTreeChunk>> chunksUnknown = chunk_maker.formGroupedPhrasesFromChunksForPara(unknown);
-		List<List<List<ParseTreeChunk>>> posIntersections = new ArrayList<List<List<ParseTreeChunk>>>(), 
-				negIntersections = new ArrayList<List<List<ParseTreeChunk>>>();
-		List<List<ParseTreeChunk>> intersection = null;
+		List<List<List<ParseTreeChunk>>> posIntersections = new ArrayList<>(),
+				negIntersections = new ArrayList<>();
+		List<List<ParseTreeChunk>> intersection;
 		for(int iConcept = 0; iConcept<psPos.conceptList.size(); iConcept++){
 			if (psPos.conceptList.get(iConcept).intent!=null && psPos.conceptList.get(iConcept).intent.size()>0){
 				intersection =  computeIntersectionWithIntentExtendedByDeduction(psPos, iConcept, chunksUnknown);
@@ -94,23 +91,23 @@ public class JSMLearnerOnLatticeWithDeduction extends JSMLearnerOnLatticeBase{
 		posIntersections = pair.getFirst();
 		negIntersections = pair.getSecond();
 
-		List<List<List<ParseTreeChunk>>> posIntersectionsUnderNeg = new ArrayList<List<List<ParseTreeChunk>>>(), 
-				negIntersectionsUnderPos = new ArrayList<List<List<ParseTreeChunk>>>();
+		List<List<List<ParseTreeChunk>>> posIntersectionsUnderNeg = new ArrayList<>(),
+				negIntersectionsUnderPos = new ArrayList<>();
 
 		for(int iConcept = 0; iConcept<psNeg.conceptList.size(); iConcept++){
-			for(int iConceptJ = 0; iConceptJ<negIntersections.size(); iConceptJ++){
+			for (List<List<ParseTreeChunk>> negIntersection : negIntersections) {
 				intersection = md
-						.matchTwoSentencesGroupedChunksDeterministic(psNeg.conceptList.get(iConcept).intent, negIntersections.get(iConceptJ));
-				if (reduceList(intersection).size()>0)
+								.matchTwoSentencesGroupedChunksDeterministic(psNeg.conceptList.get(iConcept).intent, negIntersection);
+				if (reduceList(intersection).size() > 0)
 					posIntersectionsUnderNeg.add(reduceList(intersection));
 			}
 		}
 
 		for(int iConcept = 0; iConcept<psPos.conceptList.size(); iConcept++){
-			for(int iConceptJ = 0; iConceptJ<posIntersections.size(); iConceptJ++){
+			for (List<List<ParseTreeChunk>> posIntersection : posIntersections) {
 				intersection = md
-						.matchTwoSentencesGroupedChunksDeterministic(psPos.conceptList.get(iConcept).intent, posIntersections.get(iConceptJ));
-				if (reduceList(intersection).size()>0)
+								.matchTwoSentencesGroupedChunksDeterministic(psPos.conceptList.get(iConcept).intent, posIntersection);
+				if (reduceList(intersection).size() > 0)
 					negIntersectionsUnderPos.add(reduceList(intersection));
 			}
 		}
@@ -142,11 +139,11 @@ public class JSMLearnerOnLatticeWithDeduction extends JSMLearnerOnLatticeBase{
 			List<List<ParseTreeChunk>> chunksUnknown) {
 		
 		List<List<ParseTreeChunk>> intent = psPos.conceptList.get(iConcept).intent, 
-				intentExtendedByDeduction = new ArrayList<List<ParseTreeChunk>>();
+				intentExtendedByDeduction = new ArrayList<>();
 		
 	
 		for(  List<ParseTreeChunk> group: intent){
-			List<ParseTreeChunk> newGroup = new ArrayList<ParseTreeChunk>();
+			List<ParseTreeChunk> newGroup = new ArrayList<>();
 			for(ParseTreeChunk ch: group){
 					newGroup.add(ch);
 					List<String> lemmas = ch.getLemmas();
@@ -178,12 +175,14 @@ public class JSMLearnerOnLatticeWithDeduction extends JSMLearnerOnLatticeBase{
 	}
 
 	public Pair<List<String>, List<String>>  reGroupByOccurrenceOfSeparationKeyword(List<String> posTexts, List<String> negTexts, String[] keywords){
-		List<String> posTextsNew = new ArrayList<String>(), negTextsNew = new ArrayList<String>();
+		List<String> posTextsNew = new ArrayList<>(), negTextsNew = new ArrayList<>();
 		for(String posText:posTexts){
-			Boolean multiwordOccurs = true;
+			boolean multiwordOccurs = true;
 			for(String keyword: keywords){
-				if (posText.indexOf(keyword)<0)
+				if (!posText.contains(keyword)) {
 					multiwordOccurs = false;
+					break;
+				}
 				break;
 			}
 			if (multiwordOccurs)
@@ -192,10 +191,12 @@ public class JSMLearnerOnLatticeWithDeduction extends JSMLearnerOnLatticeBase{
 				negTextsNew.add(posText);
 		}
 		for(String negText:negTexts){
-			Boolean multiwordOccurs = true;
+			boolean multiwordOccurs = true;
 			for(String keyword: keywords){
-				if (negText.indexOf(keyword)<0)
+				if (!negText.contains(keyword)) {
 					multiwordOccurs = false;
+					break;
+				}
 				break;
 			}
 			if (multiwordOccurs)
@@ -205,7 +206,7 @@ public class JSMLearnerOnLatticeWithDeduction extends JSMLearnerOnLatticeBase{
 		}
 
 
-		return new Pair<List<String>, List<String>>(posTextsNew , negTextsNew);
+		return new Pair<>(posTextsNew, negTextsNew);
 	}
 
 	

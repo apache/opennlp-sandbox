@@ -56,9 +56,8 @@ public abstract class AbstractMentionFinder implements MentionFinder {
    *  @return mapping from noun phrases and the child np which is their head
    **/
   protected Map<Parse, Parse> constructHeadMap(List<Parse> nps) {
-    Map<Parse, Parse> headMap = new HashMap<Parse, Parse>();
-    for (int ni = 0; ni < nps.size(); ni++) {
-      Parse np = nps.get(ni);
+    Map<Parse, Parse> headMap = new HashMap<>();
+    for (Parse np : nps) {
       gatherHeads(np, headMap);
     }
     return headMap;
@@ -122,14 +121,12 @@ public abstract class AbstractMentionFinder implements MentionFinder {
     List<Parse> parts = np.getSyntacticChildren();
     boolean allToken = true;
     boolean hasConjunction = false;
-    for (int ti = 0; ti < parts.size(); ti++) {
-      Parse c = parts.get(ti);
+    for (Parse c : parts) {
       if (c.isToken()) {
         if (c.getSyntacticType().equals("CC")) {
           hasConjunction = true;
         }
-      }
-      else {
+      } else {
         allToken = false;
         break;
       }
@@ -141,8 +138,7 @@ public abstract class AbstractMentionFinder implements MentionFinder {
     //System.err.println("collectCoordNp: "+np);
     //exclude nps with UCPs inside.
     List<Parse> sc = np.getSyntacticChildren();
-    for (Iterator<Parse> sci = sc.iterator();sci.hasNext();) {
-      Parse scp = sci.next();
+    for (Parse scp : sc) {
       if (scp.getSyntacticType().equals("UCP") || scp.getSyntacticType().equals("NX")) {
         return;
       }
@@ -191,9 +187,9 @@ public abstract class AbstractMentionFinder implements MentionFinder {
   }
 
   private boolean handledPronoun(String tok) {
-    return ResolverUtils.singularThirdPersonPronounPattern.matcher(tok).find() ||
-                 ResolverUtils.pluralThirdPersonPronounPattern.matcher(tok).find() ||
-                 ResolverUtils.speechPronounPattern.matcher(tok).find();
+    return ResolverUtils.SINGULAR_THIRD_PERSON_PRONOUN_PATTERN.matcher(tok).find() ||
+                 ResolverUtils.PLURAL_THIRD_PERSON_PRONOUN_PATTERN.matcher(tok).find() ||
+                 ResolverUtils.SPEECH_PRONOUN_PATTERN.matcher(tok).find();
   }
 
   private void collectPossesivePronouns(Parse np, List<Mention> entities) {
@@ -261,24 +257,18 @@ public abstract class AbstractMentionFinder implements MentionFinder {
 
   private void clearMentions(Set<Parse> mentions, Parse np) {
     Span npSpan = np.getSpan();
-    for (Iterator<Parse> mi = mentions.iterator(); mi.hasNext();) {
-      Parse mention = mi.next();
-      if (!mention.getSpan().contains(npSpan)) {
-        //System.err.println("clearing "+mention+" for "+np);
-        mi.remove();
-      }
-    }
+    //System.err.println("clearing "+mention+" for "+np);
+    mentions.removeIf(mention -> !mention.getSpan().contains(npSpan));
   }
 
   private Mention[] collectMentions(List<Parse> nps, Map<Parse, Parse> headMap) {
-    List<Mention> mentions = new ArrayList<Mention>(nps.size());
-    Set<Parse> recentMentions = new HashSet<Parse>();
+    List<Mention> mentions = new ArrayList<>(nps.size());
+    Set<Parse> recentMentions = new HashSet<>();
     //System.err.println("AbtractMentionFinder.collectMentions: "+headMap);
-    for (int npi = 0, npl = nps.size(); npi < npl; npi++) {
-      Parse np = nps.get(npi);
+    for (Parse np : nps) {
       //System.err.println("AbstractMentionFinder: collectMentions: np[" + npi + "]="
       //    + np + " head=" + headMap.get(np));
-      if (!isHeadOfExistingMention(np,headMap, recentMentions)) {
+      if (!isHeadOfExistingMention(np, headMap, recentMentions)) {
         clearMentions(recentMentions, np);
         if (!isPartOfName(np)) {
           Parse head = headFinder.getLastHead(np);
@@ -291,13 +281,11 @@ public abstract class AbstractMentionFinder implements MentionFinder {
           if (entityType != null) {
             extent.setNameType(entityType);
           }
-        }
-        else {
+        } else {
           //System.err.println(
           //    "AbstractMentionFinder.collectMentions excluding np as part of name. np=" + np);
         }
-      }
-      else {
+      } else {
         //System.err.println(
         //    "AbstractMentionFinder.collectMentions excluding np as head of previous mention. np=" + np);
       }
@@ -309,18 +297,17 @@ public abstract class AbstractMentionFinder implements MentionFinder {
           collectCoordinatedNounPhraseMentions(np, mentions);
         }
         collectPossesivePronouns(np, mentions);
-      }
-      else {
+      } else {
         // Could use to get NP -> tokens CON structures for basal nps including NP -> NAC tokens
         //collectComplexNounPhrases(np,mentions);
       }
     }
     Collections.sort(mentions);
     removeDuplicates(mentions);
-    return mentions.toArray(new Mention[mentions.size()]);
+    return mentions.toArray(new Mention[0]);
   }
 
-  /**
+  /*
    * Adds a mention for the non-treebank-labeled possesive noun phrases.
    * @param possesiveNounPhrase The possesive noun phase which may require an additional mention.
    * @param mentions The list of mentions into which a new mention can be added.
@@ -348,11 +335,10 @@ public abstract class AbstractMentionFinder implements MentionFinder {
     Parse htoken = headFinder.getHeadToken(np);
     List<Parse> nes = np.getNamedEntities();
     Span headTokenSpan = htoken.getSpan();
-    for (int nei = 0, nel = nes.size(); nei < nel; nei++) {
-      Parse ne = nes.get(nei);
+    for (Parse ne : nes) {
       if (!ne.getSpan().contains(headTokenSpan)) {
         //System.err.println("adding extent for prenominal ne: "+ne);
-        Mention extent = new Mention(ne.getSpan(), ne.getSpan(), ne.getEntityId(),null,"NAME");
+        Mention extent = new Mention(ne.getSpan(), ne.getSpan(), ne.getEntityId(), null, "NAME");
         extent.setNameType(ne.getEntityType());
         extents.add(extent);
       }

@@ -16,8 +16,8 @@
  */
 package opennlp.tools.similarity.apps;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,29 +27,23 @@ import org.apache.commons.lang.StringUtils;
 import opennlp.tools.similarity.apps.utils.PageFetcher;
 
 public class GoogleAutoCompleteQueryRunner {
-	protected PageFetcher pageFetcher = new PageFetcher();
-	private static String searchRequest = "http://google.com/complete/search?q=",
-			suffix = "&output=toolbar";
+	protected final PageFetcher pageFetcher = new PageFetcher();
+	private final static String searchRequest = "http://google.com/complete/search?q=", suffix = "&output=toolbar";
 	
 	
 	public List<String> getAutoCompleteExpression(String rawExpr){
 		// insert spaces into camel cases
 		rawExpr= rawExpr.replaceAll("([a-z][a-z])([A-Z][a-z])", "$1 $2");
 		String query = rawExpr.replace(' ', '+');
-		try {
-			query = URLEncoder.encode(query, "UTF-8");
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
+		query = URLEncoder.encode(query, StandardCharsets.UTF_8);
+
 		String pageOrigHTML = pageFetcher.fetchOrigHTML(searchRequest +query+suffix);
 		String[] results = StringUtils.substringsBetween(pageOrigHTML, "<CompleteSuggestion>", "</CompleteSuggestion>");
-		List<List<String>> accum = new ArrayList<List<String>>();
+		List<List<String>> accum = new ArrayList<>();
 		if (results==null)
 				return null;
 		for(String wrapped: results){
-			List<String> accumCase = new ArrayList<String>();
+			List<String> accumCase;
 			String[] words = null;
 			try {
 				words = StringUtils.substringBetween(wrapped, "\"").split(" ");
@@ -64,8 +58,8 @@ public class GoogleAutoCompleteQueryRunner {
 		
 		//TODO make more noise-resistant algo
 		if (accum.size()>1){
-			List<String> first = new ArrayList<String>(accum.get(0));
-			List<String> second = new ArrayList<String>(accum.get(1));
+			List<String> first = new ArrayList<>(accum.get(0));
+			List<String> second = new ArrayList<>(accum.get(1));
 			
 			first.retainAll(second);
 			if (first.size()>0)

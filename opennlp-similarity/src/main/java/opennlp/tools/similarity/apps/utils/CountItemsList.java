@@ -30,7 +30,7 @@ public class CountItemsList<E> extends ArrayList<E> {
   private static final long serialVersionUID = 1L;
 
   // This is private. It is not visible from outside.
-  private Map<E, Integer> count = new HashMap<E, Integer>();
+  private final Map<E, Integer> count = new HashMap<>();
 
   // There are several entry points to this class
   // this is just to show one of them.
@@ -54,7 +54,7 @@ public class CountItemsList<E> extends ArrayList<E> {
 
   public List<E> getFrequentTags() {
     Map<E, Integer> sortedMap = ValueSortMap.sortMapByValue(count, false);
-    List<E> vals = new ArrayList<E>(sortedMap.keySet());
+    List<E> vals = new ArrayList<>(sortedMap.keySet());
     if (vals.size() > 3) {
       vals = vals.subList(0, 3);
     }

@@ -16,11 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package opennlp.tools.dl;
 
-import opennlp.tools.doccat.DocumentCategorizer;
-import opennlp.tools.tokenize.Tokenizer;
-import opennlp.tools.tokenize.WhitespaceTokenizer;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.kohsuke.args4j.CmdLineException;
@@ -28,12 +31,10 @@ import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
+import opennlp.tools.doccat.DocumentCategorizer;
+import opennlp.tools.tokenize.Tokenizer;
+import opennlp.tools.tokenize.WhitespaceTokenizer;
 
 /**
  * An implementation of {@link DocumentCategorizer} using Neural Networks.
@@ -42,9 +43,7 @@ import java.util.*;
  */
 public class NeuralDocCat implements DocumentCategorizer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(NeuralDocCat.class);
-
-    private NeuralDocCatModel model;
+    private final NeuralDocCatModel model;
 
     public NeuralDocCat(NeuralDocCatModel model) {
         this.model = model;
@@ -122,7 +121,7 @@ public class NeuralDocCat implements DocumentCategorizer {
         throw new NotImplementedException("Not implemented");
     }
 
-    public static void main(String[] argss) throws CmdLineException, IOException {
+    public static void main(String[] args) throws IOException {
         class Args {
 
             @Option(name = "-model", required = true, usage = "Path to NeuralDocCatModel stored file")
@@ -133,24 +132,24 @@ public class NeuralDocCat implements DocumentCategorizer {
             List<File> files;
         }
 
-        Args args = new Args();
-        CmdLineParser parser = new CmdLineParser(args);
+        Args arguments = new Args();
+        CmdLineParser parser = new CmdLineParser(arguments);
         try {
-            parser.parseArgument(argss);
+            parser.parseArgument(args);
         } catch (CmdLineException e) {
             System.out.println(e.getMessage());
             e.getParser().printUsage(System.out);
             System.exit(1);
         }
 
-        NeuralDocCatModel model = NeuralDocCatModel.loadModel(args.modelPath);
+        NeuralDocCatModel model = NeuralDocCatModel.loadModel(arguments.modelPath);
         NeuralDocCat classifier = new NeuralDocCat(model);
 
         System.out.println("Labels:" + model.getLabels());
         Tokenizer tokenizer = WhitespaceTokenizer.INSTANCE;
 
-        for (File file: args.files) {
-            String text = FileUtils.readFileToString(file);
+        for (File file: arguments.files) {
+            String text = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
             String[] tokens = tokenizer.tokenize(text.toLowerCase());
             double[] probs = classifier.categorize(tokens);
             System.out.println(">>" + file);

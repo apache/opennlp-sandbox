@@ -19,13 +19,7 @@ package org.apache.opennlp.caseditor.tokenize;
 
 import java.io.IOException;
 import java.io.InputStream;
-
-import opennlp.tools.tokenize.SimpleTokenizer;
-import opennlp.tools.tokenize.Tokenizer;
-import opennlp.tools.tokenize.TokenizerME;
-import opennlp.tools.tokenize.TokenizerModel;
-import opennlp.tools.tokenize.WhitespaceTokenizer;
-import opennlp.tools.util.Span;
+import java.net.URISyntaxException;
 
 import org.apache.opennlp.caseditor.ModelUtil;
 import org.apache.opennlp.caseditor.OpenNLPPlugin;
@@ -34,6 +28,13 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+
+import opennlp.tools.tokenize.SimpleTokenizer;
+import opennlp.tools.tokenize.Tokenizer;
+import opennlp.tools.tokenize.TokenizerME;
+import opennlp.tools.tokenize.TokenizerModel;
+import opennlp.tools.tokenize.WhitespaceTokenizer;
+import opennlp.tools.util.Span;
 
 public class TokenizerJob extends Job {
 
@@ -73,30 +74,13 @@ public class TokenizerJob extends Job {
       tokenizer = SimpleTokenizer.INSTANCE;
     } else if (OpenNLPPreferenceConstants.TOKENIZER_ALGO_STATISTICAL.equals(algorithm)) {
       if (tokenizer == null) {
-        InputStream modelIn;
-        try {
-          modelIn = ModelUtil.openModelIn(modelPath);
-        } catch (IOException e1) {
-          return new Status(IStatus.CANCEL, OpenNLPPlugin.ID, "Failed to load tokenizer model!");
-        }
-        
-        try {
+        try (InputStream modelIn = ModelUtil.openModelIn(modelPath)) {
           TokenizerModel model = new TokenizerModel(modelIn);
           tokenizer = new TokenizerME(model);
-        } catch (IOException e) {
-          e.printStackTrace();
-        } finally {
-          if (modelIn != null) {
-            try {
-              modelIn.close();
-            } catch (IOException e) {
-            }
-          }
+        } catch (IOException | URISyntaxException e1) {
+          return new Status(IStatus.CANCEL, OpenNLPPlugin.ID, "Failed to load tokenizer model!");
         }
       }
-    }
-    else {
-      // TODO: Report an error!
     }
     
     tokens = tokenizer.tokenizePos(text);

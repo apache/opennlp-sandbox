@@ -17,8 +17,6 @@
 
 package opennlp.tools.apps.object_dedup;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -38,15 +36,14 @@ import org.slf4j.LoggerFactory;
 
 /* This is a template class for deduplicator */
 
-public class SimilarityAccessorBase
-{
+public class SimilarityAccessorBase {
 	private static final Logger LOG = LoggerFactory.getLogger(SimilarityAccessorBase.class);
 
 	public static final int MAX_EV_TO_RECOMM = 6;
 
 	private List<String> namesBothSides;
 
-	protected static final String[] englishPrepositions = new String[] { "a", "aboard", "about", "above", "absent",
+	private static final String[] ENGLISH_PREPOSITIONS = new String[] { "a", "aboard", "about", "above", "absent",
 		"across", "after", "against", "along", "alongside", "among", "around", "as", "at", "before", "behind", "below",
 		"beneath", "between", "beyond", "but", "by", "despite", "down", "during", "except", "excluding", "failing",
 		"following", "for", "from", "in", "including", "inside", "into", "like", "near", "next", "of", "off", "on",
@@ -54,28 +51,27 @@ public class SimilarityAccessorBase
 		"thru", "till", "to", "toward", "under", "up", "upon", "versus", "with", "within", "you", "must", "know",
 		"when" };
 
-	protected List<String> commonWordsInEventTitles = Arrays.asList(new String[] { "community", "party", "film",
-		"music", "exhibition", "kareoke", "guitar", "quartet", "reggae", "r&b", "band", "dj ", "piano", "pray",
-		"worship", "god", "training", "class", "development", "training", "class", "course", "our", "comedy", ",fun",
-		"musical", "group", "alliance", "session", "feeding", "introduction", "school", "conversation", "learning",
-		"nursery", "unity", "trivia", "chat", "conference", "tuition", "technology", "teen", "communication",
-		"reception", "management", "beginner", "beginning", "collabora", "reuninon", "political", "course", "age",
-		"ages", "through", "grade", "networking", "workshop", "demonstration", "tuning", "program", "summit",
-		"convention", "day", "night", "one", "two", "outfest", "three", "online", "writing", "seminar", "coach",
-		",expo", "advanced", "beginner", "intermediate", "earn", "free", "ii", "iii", "skills", "skill", "artist",
-		"summer", "winter", "autumn", "spring", "camp", "vacation", "miscrosoft", "kid", "child", "kids", "children",
-		"every", "everyone", "dancer", "dancers", "senior", "seniors", "basic", "elementary", "outfest", "2008",
-		"2009", "2010", "2011", "2012", "monday", "tuesday", "wednesday", "thirsday", "friday", "saturday", "sunday",
-		"mondays", "tuesdays", "wednesdays", "thirsdays", "fridays", "saturdays", "sundays", "men" // ?
-	});
+	private static final List<String> COMMON_WORDS_IN_EVENT_TITLES = Arrays.asList("community", "party", "film",
+					"music", "exhibition", "kareoke", "guitar", "quartet", "reggae", "r&b", "band", "dj ", "piano", "pray",
+					"worship", "god", "training", "class", "development", "training", "class", "course", "our", "comedy", ",fun",
+					"musical", "group", "alliance", "session", "feeding", "introduction", "school", "conversation", "learning",
+					"nursery", "unity", "trivia", "chat", "conference", "tuition", "technology", "teen", "communication",
+					"reception", "management", "beginner", "beginning", "collabora", "reuninon", "political", "course", "age",
+					"ages", "through", "grade", "networking", "workshop", "demonstration", "tuning", "program", "summit",
+					"convention", "day", "night", "one", "two", "outfest", "three", "online", "writing", "seminar", "coach",
+					",expo", "advanced", "beginner", "intermediate", "earn", "free", "ii", "iii", "skills", "skill", "artist",
+					"summer", "winter", "autumn", "spring", "camp", "vacation", "miscrosoft", "kid", "child", "kids", "children",
+					"every", "everyone", "dancer", "dancers", "senior", "seniors", "basic", "elementary", "outfest", "2008",
+					"2009", "2010", "2011", "2012", "monday", "tuesday", "wednesday", "thirsday", "friday", "saturday", "sunday",
+					"mondays", "tuesdays", "wednesdays", "thirsdays", "fridays", "saturdays", "sundays", "men" // ?
+	);
 
-	private BingQueryRunner webSearch = new BingQueryRunner();
+	private final BingQueryRunner webSearch = new BingQueryRunner();
 
-	private StringDistanceMeasurer stringDistanceMeasurer = new StringDistanceMeasurer();
+	private final StringDistanceMeasurer stringDistanceMeasurer = new StringDistanceMeasurer();
 
 
-	public SimilarityAccessorBase()
-	{
+	public SimilarityAccessorBase() {
 	}
 
 
@@ -86,7 +82,7 @@ public class SimilarityAccessorBase
 
 	protected List<String> removeDollarWordAndNonAlphaFromList(List<String> list)
 	{
-		List<String> result = new ArrayList<String>();
+		List<String> result = new ArrayList<>();
 		Pattern p = Pattern.compile("^\\$(\\d{1,3}(\\,\\d{3})*|(\\d+))(\\.\\d{2})?$");
 		for (String w : list)
 		{
@@ -99,7 +95,7 @@ public class SimilarityAccessorBase
 
 	public List<String> getWordsThatShouldBeOnBothSidesEvents()
 	{
-/*
+		/*
 		names.addAll(Arrays.asList(new String[] { "woman", "man", "women", "men", "womans", "mans", "womens", "mens",
 			"boy", "girl", "boys", "girls", "men's", "women's", "woman's", "ice", // for disney
 			"flight", "intermediate", "advanced", "beginner",
@@ -110,9 +106,7 @@ public class SimilarityAccessorBase
 
 	}
 
-	protected Boolean applySemanticNameSimilarityRule(Object es1,
-		Object es2)
-	{
+	protected Boolean applySemanticNameSimilarityRule(Object es1, Object es2) {
 		
 		//TODO check attributes of objects
 		/*
@@ -172,9 +166,8 @@ public class SimilarityAccessorBase
 		List<String> name1Tokens = TextProcessor.fastTokenize(name1.toLowerCase(), false);
 		List<String> name2Tokens = TextProcessor.fastTokenize(name2.toLowerCase(), false);
 		// get unique names
-		List<String> name1TokensC = new ArrayList<String>(name1Tokens), name2TokensC = new ArrayList<String>(
-			name2Tokens);
-		;
+		List<String> name1TokensC = new ArrayList<>(name1Tokens), name2TokensC = new ArrayList<>(
+						name2Tokens);
 		name1TokensC.removeAll(name2Tokens);
 		name2TokensC.removeAll(name1Tokens);
 		// get all unique names
@@ -197,7 +190,7 @@ public class SimilarityAccessorBase
 	protected List<String> tokenizeAndStem(String input)
 	{
 
-		List<String> results = new ArrayList<String>();
+		List<String> results = new ArrayList<>();
 		List<String> toks = TextProcessor.fastTokenize(input.toLowerCase(), false);
 		for (String word : toks)
 		{
@@ -218,7 +211,7 @@ public class SimilarityAccessorBase
 	protected List<String> stemList(List<String> toks)
 	{
 
-		List<String> results = new ArrayList<String>();
+		List<String> results = new ArrayList<>();
 		for (String word : toks)
 		{
 			try
@@ -237,7 +230,7 @@ public class SimilarityAccessorBase
 
 	public List<String> removeVenuePart(ArrayList<String> toks)
 	{
-		List<String> results = new ArrayList<String>();
+		List<String> results = new ArrayList<>();
 		boolean bVenuePart = false;
 		for (String word : toks)
 		{
@@ -264,7 +257,7 @@ public class SimilarityAccessorBase
 			if (word.length() < 2) // '-', '|', ':'
 				break;
 
-			if (word.equals(word.toLowerCase()) && (!Arrays.asList(englishPrepositions).contains(word))
+			if (word.equals(word.toLowerCase()) && (!Arrays.asList(ENGLISH_PREPOSITIONS).contains(word))
 				&& word.length() > 3 && StringUtils.isAlphanumeric(word))
 				continue; // was return false;
 			if (count > 3)
@@ -276,13 +269,13 @@ public class SimilarityAccessorBase
 
 	protected List<String> extractMainNounPhrase(List<String> name1Tokens)
 	{
-		List<String> results = new ArrayList<String>();
+		List<String> results = new ArrayList<>();
 		int ofPos = name1Tokens.indexOf("of");
 		List<String> ofList = name1Tokens.subList(ofPos + 1, name1Tokens.size() - 1);
 		// now iterate till next preposition towards the end of noun phrase
 		for (String preposCand : ofList)
 		{
-			if (Arrays.asList(englishPrepositions).contains(preposCand))
+			if (Arrays.asList(ENGLISH_PREPOSITIONS).contains(preposCand))
 				break;
 			results.add(preposCand);
 		}
@@ -323,7 +316,6 @@ public class SimilarityAccessorBase
 		}
 		catch (Exception e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return true;
@@ -388,9 +380,8 @@ public class SimilarityAccessorBase
 		List<String> name1Tokens = TextProcessor.fastTokenize(name1.toLowerCase(), false);
 		List<String> name2Tokens = TextProcessor.fastTokenize(name2.toLowerCase(), false);
 		// get unique names
-		List<String> name1TokensC = new ArrayList<String>(name1Tokens), name2TokensC = new ArrayList<String>(
-			name2Tokens);
-		;
+		List<String> name1TokensC = new ArrayList<>(name1Tokens), name2TokensC = new ArrayList<>(
+						name2Tokens);
 		name1TokensC.removeAll(name2Tokens);
 		name2TokensC.removeAll(name1Tokens);
 		// get all unique names
@@ -412,8 +403,8 @@ public class SimilarityAccessorBase
 		{ // all words should be the
 			// same
 			name1Tokens.removeAll(name2Tokens);
-			name1Tokens.removeAll(Arrays.asList(englishPrepositions));
-			name1Tokens.removeAll(Arrays.asList(commonWordsInEventTitles));
+			name1Tokens.removeAll(Arrays.asList(ENGLISH_PREPOSITIONS));
+			name1Tokens.removeAll(Arrays.asList(COMMON_WORDS_IN_EVENT_TITLES));
 			if (name1Tokens.size() < 1)
 				return true;
 
@@ -435,11 +426,11 @@ public class SimilarityAccessorBase
 			|| name1Tokens.contains("lang") || name2Tokens.contains("lang")) // special group 'lang lang'
 		{ // all words should be the
 			// same
-			List<String> name1TokensClone = new ArrayList<String>(name1Tokens);
+			List<String> name1TokensClone = new ArrayList<>(name1Tokens);
 			name1Tokens.removeAll(name2Tokens);
 			name2Tokens.removeAll(name1TokensClone);
 			name1Tokens.addAll(name2Tokens);
-			name1Tokens.removeAll(Arrays.asList(this.englishPrepositions));
+			name1Tokens.removeAll(Arrays.asList(ENGLISH_PREPOSITIONS));
 			// name1Tokens.removeAll(Arrays.asList(this.commonWordsInEventTitles));
 			if (name1Tokens.size() < 1)
 				return true;
@@ -454,13 +445,13 @@ public class SimilarityAccessorBase
 	public int getAttemptedNameMerge(String name1, String name2)
 	{
 		name1 = name1.replaceAll("[a-z][A-Z]", "$0&$0").replaceAll(".&.", " ");
-		; // suspected word merge if higher case is in the middle of word
+		// suspected word merge if higher case is in the middle of word
 		name2 = name2.replaceAll("[a-z][A-Z]", "$0&$0").replaceAll(".&.", " ");
 
 		name1 = name1.toLowerCase();
 		name2 = name2.toLowerCase();
 		if (name1.equals(name2) || name1.startsWith(name2) || name2.startsWith(name1) || name1.endsWith(name2)
-			|| name1.endsWith(name2) || name1.indexOf(name2) > -1 || name1.indexOf(name2) > -1) // ??
+			|| name1.endsWith(name2) || name1.contains(name2) || name1.contains(name2)) // ??
 			return 2;
 		String name2r = name2.replace(" ", "");
 		if (name1.equals(name2r) || name1.startsWith(name2r) || name1.startsWith(name2r) || name1.endsWith(name2r)
@@ -507,7 +498,7 @@ public class SimilarityAccessorBase
 		if (bShortTitlesSimilarInWebSpace)
 			return new DedupResult("Accepted as short title by web mining", 2, true);
 
-		StringBuffer reason = new StringBuffer();
+		StringBuilder reason = new StringBuilder();
 		List<String> venueToks = removeVenuePart(TextProcessor.fastTokenize(venue.toLowerCase(), false));
 
 		LOG.info("\nComputing similarity between name = '" + name1 + "' and name = '" + name2 + "'");
@@ -515,7 +506,7 @@ public class SimilarityAccessorBase
 		List<String> name1Tokens = removeVenuePart(TextProcessor.fastTokenize(name1.toLowerCase(), true));
 		List<String> name2Tokens = removeVenuePart(TextProcessor.fastTokenize(name2.toLowerCase(), true));
 		// applySubPhraseExtractionRule()
-		Boolean bSameAttrib = verifyEventAttributesPost(name1Tokens, name2Tokens)
+		boolean bSameAttrib = verifyEventAttributesPost(name1Tokens, name2Tokens)
 			&& verifyEventAttributesPre(name1Tokens, name2Tokens);
 		if (!bSameAttrib)
 		{
@@ -548,8 +539,8 @@ public class SimilarityAccessorBase
 		name1Tokens.retainAll(name2Tokens);
 		name1Tokens.removeAll(venueToks);
 
-		name1Tokens.removeAll(commonWordsInEventTitles);
-		name1Tokens.removeAll(Arrays.asList(englishPrepositions));
+		name1Tokens.removeAll(COMMON_WORDS_IN_EVENT_TITLES);
+		name1Tokens.removeAll(Arrays.asList(ENGLISH_PREPOSITIONS));
 		name1Tokens = removeDollarWordAndNonAlphaFromList(name1Tokens);
 		// todo : to use full string measure
 		// boundary case: too many words => just do counts
@@ -605,7 +596,7 @@ public class SimilarityAccessorBase
 		}
 		// accept common expression
 		LOG.info("Formed common entity = " + entityExpression);
-		reason.append("Formed common entity = " + entityExpression + "\n");
+		reason.append("Formed common entity = ").append(entityExpression).append("\n");
 		// now go to the web / bing api with this common expression
 		List<HitBase> searchResult = webSearch.runSearch(entityExpression);
 		float entityScore = 0f;
@@ -616,7 +607,7 @@ public class SimilarityAccessorBase
 			{
 				String lookup = item.getTitle();
 				LOG.info("Bing hit title = '" + lookup + "'");
-				reason.append("Bing hit title = '" + lookup + "'\n");
+				reason.append("Bing hit title = '").append(lookup).append("'\n");
 				if (count > 4)
 					break;
 				count++;
@@ -663,7 +654,7 @@ public class SimilarityAccessorBase
 		name1 = normalizeGenderAndOtherAttributes(name1);
 		name2 = normalizeGenderAndOtherAttributes(name2);
 
-		StringBuffer reason = new StringBuffer();
+		StringBuilder reason = new StringBuilder();
 
 		boolean bSportsOrOrchestra = !succeededMenWomenSportsRule(name1, name2);
 		if (bSportsOrOrchestra)
@@ -677,7 +668,7 @@ public class SimilarityAccessorBase
 
 		List<String> name1Tokens = TextProcessor.fastTokenize(name1.toLowerCase(), true);
 		List<String> name2Tokens = TextProcessor.fastTokenize(name2.toLowerCase(), true);
-		Boolean bSameAttrib = verifyEventAttributesPost(name1Tokens, name2Tokens)
+		boolean bSameAttrib = verifyEventAttributesPost(name1Tokens, name2Tokens)
 			&& verifyEventAttributesPre(name1Tokens, name2Tokens);
 		if (!bSameAttrib)
 		{
@@ -692,7 +683,7 @@ public class SimilarityAccessorBase
 		{
 			for (HitBase item1 : searchResult1)
 			{
-				if (item1.getUrl().indexOf("myspace") > -1 || item1.getUrl().indexOf("wiki") > -1)
+				if (item1.getUrl().contains("myspace") || item1.getUrl().contains("wiki"))
 					continue;
 				for (HitBase item2 : searchResult2)
 				{
@@ -700,7 +691,7 @@ public class SimilarityAccessorBase
 						.replace("MySpace", "");
 					String lookup2 = item2.getTitle().replace("Facebook", "").replace("LinkedIn", "")
 						.replace("MySpace", "");
-					double d = 0;
+					double d;
 					if (bStem)
 						d = stringDistanceMeasurer.measureStringDistance(lookup1, lookup2);
 					else
@@ -708,8 +699,7 @@ public class SimilarityAccessorBase
 					if (d > thresh) // 0.8)
 					{
 
-						reason.append("Found common search result title for group names '" + lookup1 + " < > "
-							+ lookup2 + " sim = " + d + "\n");
+						reason.append("Found common search result title for group names '").append(lookup1).append(" < > ").append(lookup2).append(" sim = ").append(d).append("\n");
 						LOG.info(("Found common search result title for group names '" + lookup1 + " < > " + lookup2
 							+ " sim = " + d));
 						score++;
@@ -719,7 +709,7 @@ public class SimilarityAccessorBase
 			}
 		}
 
-		Boolean bothSidesSuccess = applyBothSidesRule(name1, name2);
+		boolean bothSidesSuccess = applyBothSidesRule(name1, name2);
 		if (!bothSidesSuccess)
 		{
 			score = 1;
@@ -727,7 +717,7 @@ public class SimilarityAccessorBase
 		}
 		if (score > 0)
 		{
-			Boolean bDifferentGroup = bDifferentGroupOneSubnameOfAnother(name1, name2);
+			boolean bDifferentGroup = bDifferentGroupOneSubnameOfAnother(name1, name2);
 			if (bDifferentGroup)
 			{
 				score = 1;

@@ -65,7 +65,7 @@ public class ProperNounResolver extends MaxentResolver {
   }
 
   private void initAcronyms(String name) {
-    acroMap = new HashMap<String, Set<String>>(15000);
+    acroMap = new HashMap<>(15000);
     try {
       BufferedReader str;
       str = new BufferedReader(new FileReader(name));
@@ -77,13 +77,13 @@ public class ProperNounResolver extends MaxentResolver {
         String full = st.nextToken();
         Set<String> exSet = acroMap.get(acro);
         if (exSet == null) {
-          exSet = new HashSet<String>();
+          exSet = new HashSet<>();
           acroMap.put(acro, exSet);
         }
         exSet.add(full);
         exSet = acroMap.get(full);
         if (exSet == null) {
-          exSet = new HashSet<String>();
+          exSet = new HashSet<>();
           acroMap.put(full, exSet);
         }
         exSet.add(acro);
@@ -108,7 +108,7 @@ public class ProperNounResolver extends MaxentResolver {
     String xecStrip = ResolverUtils.stripNp(xec);
     if (ecStrip != null && xecStrip != null) {
       if (isAcronym(ecStrip, xecStrip)) {
-        List<String> features = new ArrayList<String>(1);
+        List<String> features = new ArrayList<>(1);
         features.add("knownAcronym");
         return features;
       }
@@ -119,8 +119,7 @@ public class ProperNounResolver extends MaxentResolver {
   @Override
   protected List<String> getFeatures(MentionContext mention, DiscourseEntity entity) {
     //System.err.println("ProperNounResolver.getFeatures: "+mention.toText()+" -> "+entity);
-    List<String> features = new ArrayList<String>();
-    features.addAll(super.getFeatures(mention, entity));
+    List<String> features = new ArrayList<>(super.getFeatures(mention, entity));
     if (entity != null) {
       features.addAll(ResolverUtils.getStringMatchFeatures(mention, entity));
       features.addAll(getAcronymFeatures(mention, entity));

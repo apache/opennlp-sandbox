@@ -16,32 +16,23 @@
  */
 package opennlp.tools.parse_thicket.apps;
 
-
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
-import opennlp.tools.similarity.apps.HitBase;
-import opennlp.tools.similarity.apps.RelatedSentenceFinder;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
 import opennlp.tools.similarity.apps.StoryDiscourseNavigator;
-import junit.framework.TestCase;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class StoryDiscourseNavigatorTest extends TestCase {
-	RelatedSentenceFinder finder = new RelatedSentenceFinder();
+class StoryDiscourseNavigatorTest {
 
-	
-	public void testGeneratedExtednsionKeywords(){
-		String[] res = new StoryDiscourseNavigator().obtainAdditionalKeywordsForAnEntity("Albert Einstein");
-		System.out.println(Arrays.asList(res));
-		assertTrue(res.length>0);
-		assertTrue(Arrays.asList(res).toString().indexOf("physics")>-1);
-		assertTrue(Arrays.asList(res).toString().indexOf("relativity")>-1);
-		
-		
-		
-	} 
-
+  @Test
+  @Disabled // TODO OPENNLP-1455 This test fails with "UnknownHostException: api.datamarket.azure.com: nodename nor servname provided, or not known"
+  void testGeneratedExtensionKeywords() {
+    String[] res = new StoryDiscourseNavigator().obtainAdditionalKeywordsForAnEntity("Albert Einstein");
+    assertTrue(res.length > 0);
+    assertTrue(Arrays.asList(res).toString().contains("physics"));
+    assertTrue(Arrays.asList(res).toString().contains("relativity"));
+  }
 }
-
-//[Albert Einstein (/ælbrt anstan/; German. albt antan ( listen); 14 March 1879 18 April 1955) was a German-born theoretical physicist who developed the general theory of relativity, one of the two pillars of modern physics (alongside quantum mechanics). 2 3 While best known for his massenergy equivalence formula E = mc2 (which has been dubbed "the world's most famous equation"), 4 he received the 1921 Nobel Prize in Physics "for his services to theoretical physics, and especially for his discovery of the law of the photoelectric effect". 5 The latter was pivotal in establishing quantum theory. nullNear the beginning of his career, Einstein thought that Newtonian mechanics was no longer enough to reconcile the laws of classical mechanics with the laws of the electromagnetic field. This led to the development of his special theory of relativity.,

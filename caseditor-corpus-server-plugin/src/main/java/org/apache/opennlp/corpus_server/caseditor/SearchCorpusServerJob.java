@@ -17,7 +17,12 @@
 
 package org.apache.opennlp.corpus_server.caseditor;
 
+import javax.ws.rs.ProcessingException;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.codehaus.jettison.json.JSONArray;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -25,9 +30,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import org.glassfish.jersey.client.ClientProperties;
 
 /**
  * A job to retrieve search results from the corpus server.
@@ -53,30 +56,25 @@ public class SearchCorpusServerJob extends Job {
   @Override
   protected IStatus run(IProgressMonitor monitor) {
     
-    Client c = Client.create();
-    c.setConnectTimeout(10000);
-    WebResource r = c.resource(serverAddress);
-    
-    ClientResponse response;
-    
+    Client c = ClientBuilder.newClient();
+    c.property(ClientProperties.READ_TIMEOUT, 10000);
+    WebTarget r = c.target(serverAddress);
+
     try {
-      response = r
-          .path("_search")
+      Response response = r.path("_search")
           .queryParam("q", searchQuery)
-          .accept(MediaType.APPLICATION_JSON)
-          .get(ClientResponse.class);
+          .request(MediaType.APPLICATION_JSON)
+          .get();
+      if (response.getStatusInfo().getStatusCode() != 200) {
+        return new Status(IStatus.WARNING, CorpusServerPlugin.PLUGIN_ID, "Failed to retrieve results from server!");
+      }
+
+      searchResult = response.readEntity(JSONArray.class);
+      return new Status(IStatus.OK, CorpusServerPlugin.PLUGIN_ID, "OK");
     }
-    catch (com.sun.jersey.api.client.ClientHandlerException e) {
+    catch (ProcessingException e) {
       return new Status(IStatus.WARNING, CorpusServerPlugin.PLUGIN_ID, "Failed to connect to server!");
     }
-    
-    if (response.getClientResponseStatus().getStatusCode() != 200) {
-      return new Status(IStatus.WARNING, CorpusServerPlugin.PLUGIN_ID, "Failed to retrieve results from server!");
-    }
-    
-    searchResult = response.getEntity(JSONArray.class);
-    
-    return new Status(IStatus.OK, CorpusServerPlugin.PLUGIN_ID, "OK");
   }
   
   JSONArray getSearchResult() {

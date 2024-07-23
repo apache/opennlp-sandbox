@@ -118,7 +118,7 @@ public class SequenceTagging implements TokenNameFinder, AutoCloseable {
         }
       }
 
-      for (Tensor t : run) {
+      for (Tensor<?> t : run) {
         t.close();
       }
 

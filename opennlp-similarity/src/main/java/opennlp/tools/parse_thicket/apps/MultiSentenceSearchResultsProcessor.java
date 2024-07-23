@@ -17,31 +17,27 @@
 package opennlp.tools.parse_thicket.apps;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
 
-
-import opennlp.tools.jsmlearning.ProfileReaderWriter;
 import opennlp.tools.similarity.apps.BingQueryRunner;
 import opennlp.tools.similarity.apps.HitBase;
 import opennlp.tools.similarity.apps.HitBaseComparable;
 import opennlp.tools.similarity.apps.WebSearchEngineResultsScraper;
-import opennlp.tools.textsimilarity.ParseTreeChunk;
 import opennlp.tools.textsimilarity.ParseTreeChunkListScorer;
 import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
 public class MultiSentenceSearchResultsProcessor  {
-	private static Logger LOG = Logger
+	private static final Logger LOG = Logger
 			.getLogger("opennlp.tools.similarity.apps.SearchResultsProcessor");
 
-	private WebSearchEngineResultsScraper scraper = new WebSearchEngineResultsScraper();
-	private ParserChunker2MatcherProcessor matcher = ParserChunker2MatcherProcessor.getInstance();
-	private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
-	private BingQueryRunner bingSearcher = new BingQueryRunner();
-	private SnippetToParagraph snp = new SnippetToParagraph();
+	private final WebSearchEngineResultsScraper scraper = new WebSearchEngineResultsScraper();
+	private final ParserChunker2MatcherProcessor matcher = ParserChunker2MatcherProcessor.getInstance();
+	private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
+	private final BingQueryRunner bingSearcher = new BingQueryRunner();
+	private final SnippetToParagraph snp = new SnippetToParagraph();
 
 	protected static final int NUM_OF_SEARCH_RESULTS = 10;
 
@@ -55,7 +51,7 @@ public class MultiSentenceSearchResultsProcessor  {
 	protected List<HitBase> calculateMatchScoreResortHits(List<HitBase> hits,
 			String searchQuery) {
 
-		List<HitBase> newHitList = new ArrayList<HitBase>();
+		List<HitBase> newHitList = new ArrayList<>();
 		int count = 0;
 		for (HitBase hit : hits) {
 			if (count>10)
@@ -63,9 +59,9 @@ public class MultiSentenceSearchResultsProcessor  {
 			count++;
 			String[] pageSentsAndSnippet = formTextForReRankingFromHit(hit);
 					
-			Double score = 0.0;
+			double score = 0.0;
 			try {
-				SentencePairMatchResult match = null;
+				SentencePairMatchResult match;
 				if (pageSentsAndSnippet!=null && pageSentsAndSnippet[0].length()>50){
 					match = matcher.assessRelevance(pageSentsAndSnippet[0] ,
 							searchQuery);
@@ -92,7 +88,7 @@ public class MultiSentenceSearchResultsProcessor  {
 			System.out.println(hit.getOriginalSentences().toString() + " => "+hit.getGenerWithQueryScore());
 			System.out.println("match = "+hit.getSource());
 		}
-		Collections.sort(newHitList, new HitBaseComparable());
+		newHitList.sort(new HitBaseComparable());
 
 		System.out.println("\n\n ============= NEW ORDER ================= ");
 		for (HitBase hit : newHitList) {
@@ -147,9 +143,9 @@ public class MultiSentenceSearchResultsProcessor  {
 
 
 	public List<HitBase> runSearchViaAPI(String query) {
-		List<String[]> reportData = new ArrayList<String[]>(); 
+		List<String[]> reportData = new ArrayList<>();
 		reportData.add(new String[]{query});
-		List<HitBase> hits = null;
+		List<HitBase> hits;
 		try {
 			List<HitBase> resultList = bingSearcher.runSearch(query, NUM_OF_SEARCH_RESULTS);
 			reportData.add(convertListHitBaseIntoStringAr(resultList));
@@ -167,7 +163,7 @@ public class MultiSentenceSearchResultsProcessor  {
 	}
 	
 	private String[] convertListHitBaseIntoStringAr(List<HitBase> list){
-		List<String> results = new  ArrayList<String>(); 
+		List<String> results = new ArrayList<>();
 		for(HitBase h: list ){
 			results.add(h.getTitle()+ " | "+h.getAbstractText());
 		}

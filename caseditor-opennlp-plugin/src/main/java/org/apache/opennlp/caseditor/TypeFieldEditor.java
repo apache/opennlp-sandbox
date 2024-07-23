@@ -27,7 +27,7 @@ import org.eclipse.swt.widgets.Composite;
  */
 public class TypeFieldEditor extends StringButtonFieldEditor {
 
-  private TypeSystem ts;
+  private final TypeSystem ts;
 
   public TypeFieldEditor(String name, String labelText, TypeSystem ts, Composite parent) {
     super(name, labelText, parent);

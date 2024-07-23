@@ -20,25 +20,26 @@ package org.apache.opennlp.utils.regression;
 
 import org.apache.opennlp.utils.TrainingExample;
 import org.apache.opennlp.utils.TrainingSet;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Testcase for {@link org.apache.opennlp.utils.regression.RegressionModelUtils}
  */
-public class RegressionModelUtilsTest {
+class RegressionModelUtilsTest {
 
   @Test
-  public void testLMS() throws Exception {
+  void testLMS() {
     TrainingSet trainingSet = new TrainingSet();
-    trainingSet.add(new TrainingExample(new double[]{10, 10}, 1));
+    trainingSet.add(new TrainingExample(new double[] {10, 10}, 1));
     LinearCombinationHypothesis hypothesis = new LinearCombinationHypothesis(1, 1);
-    double[] updatedParameters = RegressionModelUtils.batchLeastMeanSquareUpdate(new double[]{1, 1}, 0.1, trainingSet, hypothesis);
+    double[] updatedParameters = RegressionModelUtils.batchLeastMeanSquareUpdate(
+        new double[] {1, 1}, 0.1, trainingSet, hypothesis);
     assertNotNull(updatedParameters);
-    assertTrue(updatedParameters.length == 2);
-    assertTrue(updatedParameters[0] == -18d);
-    assertTrue(updatedParameters[1] == -18d);
+    assertEquals(2, updatedParameters.length);
+    assertEquals(-18d, updatedParameters[0]);
+    assertEquals(-18d, updatedParameters[1]);
   }
 }

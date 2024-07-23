@@ -28,7 +28,7 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 public class SentenceDetectorPreferencePage extends FieldEditorPreferencePage
     implements IWorkbenchPreferencePage {
 
-  private TypeSystem ts;
+  private final TypeSystem ts;
 
   public SentenceDetectorPreferencePage(TypeSystem ts) {
     setDescription("Sentence Detector Preferences.");

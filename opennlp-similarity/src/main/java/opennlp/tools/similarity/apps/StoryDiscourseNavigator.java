@@ -27,20 +27,20 @@ import org.apache.commons.lang.StringUtils;
 
 import opennlp.tools.similarity.apps.utils.PageFetcher;
 import opennlp.tools.similarity.apps.utils.StringCleaner;
-import opennlp.tools.stemmer.PStemmer;
+import opennlp.tools.stemmer.PorterStemmer;
+import opennlp.tools.stemmer.Stemmer;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
 import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.TextProcessor;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
 public class StoryDiscourseNavigator {
-	protected BingQueryRunner yrunner = new BingQueryRunner();
-	ParserChunker2MatcherProcessor sm = ParserChunker2MatcherProcessor
-			.getInstance();
-	private PStemmer ps = new PStemmer();
-	PageFetcher pFetcher = new PageFetcher();
+	private final BingQueryRunner yrunner = new BingQueryRunner();
+	private final ParserChunker2MatcherProcessor sm = ParserChunker2MatcherProcessor.getInstance();
+	private final Stemmer ps = new PorterStemmer();
+	private final PageFetcher pFetcher = new PageFetcher();
 
-	public static final String[] frequentPerformingVerbs = {
+	public static final String[] FREQUENT_PERFORMING_VERBS = {
 		" born raised meet learn ", " graduated enter discover",
 		" facts inventions life ", "accomplishments childhood timeline",
 		" acquire befriend encounter", " achieve reache describe ",
@@ -62,19 +62,19 @@ public class StoryDiscourseNavigator {
 		yrunner.setKey("xdnRVcVf9m4vDvW1SkTAz5kS5DFYa19CrPYGelGJxnc");
 		List<HitBase> resultList = yrunner.runSearch(entity, 20);
 		HitBase h = null;
-		for (int i = 0; i < resultList.size(); i++) {
-			h = resultList.get(i);
-			if (h.getUrl().indexOf("wikipedia.")>-1)
+		for (HitBase hitBase : resultList) {
+			h = hitBase;
+			if (h.getUrl().contains("wikipedia."))
 				break;
 		}
 		String content = pFetcher.fetchOrigHTML(h.getUrl());
 		content = content.replace("\"><a href=\"#", "&_&_&_&");
 		String[] portions = StringUtils.substringsBetween(content, "&_&_&_&", "\"><span");
-		List<String> results = new ArrayList<String>();
-		for(int i = 0; i< portions.length; i++){
-			if (portions[i].indexOf("cite_note")>-1)
+		List<String> results = new ArrayList<>();
+		for (String portion : portions) {
+			if (portion.contains("cite_note"))
 				continue;
-			 results.add(entity + " " + portions[i].replace('_', ' ').replace('.',' '));
+			results.add(entity + " " + portion.replace('_', ' ').replace('.', ' '));
 		}
 	    return results.toArray(new String[0]);	
 	}
@@ -100,9 +100,8 @@ public class StoryDiscourseNavigator {
 		return res;
 	}
 
-	private List<List<ParseTreeChunk>> runSearchForTaxonomyPath(String query,
-			String domain, String lang, int numbOfHits) {
-		List<List<ParseTreeChunk>> genResult = new ArrayList<List<ParseTreeChunk>>();
+	private List<List<ParseTreeChunk>> runSearchForTaxonomyPath(String query, String domain, String lang, int numbOfHits) {
+		List<List<ParseTreeChunk>> genResult = new ArrayList<>();
 		try {
 			List<HitBase> resultList = yrunner.runSearch(query, numbOfHits);
 
@@ -129,11 +128,10 @@ public class StoryDiscourseNavigator {
 
 		return genResult;
 	}
-	private List<List<String>> getCommonWordsFromList_List_ParseTreeChunk(
-			List<List<ParseTreeChunk>> matchList) {
-		List<List<String>> res = new ArrayList<List<String>>();
+	private List<List<String>> getCommonWordsFromList_List_ParseTreeChunk(List<List<ParseTreeChunk>> matchList) {
+		List<List<String>> res = new ArrayList<>();
 		for (List<ParseTreeChunk> chunks : matchList) {
-			List<String> wordRes = new ArrayList<String>();
+			List<String> wordRes = new ArrayList<>();
 			for (ParseTreeChunk ch : chunks) {
 				List<String> lemmas = ch.getLemmas();
 				for (int w = 0; w < lemmas.size(); w++)
@@ -141,19 +139,20 @@ public class StoryDiscourseNavigator {
 							&& ((ch.getPOSs().get(w).startsWith("NN") || ch.getPOSs().get(w)
 									.startsWith("VB"))) && lemmas.get(w).length() > 2) {
 						String formedWord = lemmas.get(w);
-						String stemmedFormedWord = ps.stem(formedWord);
+						String stemmedFormedWord = ps.stem(formedWord).toString();
 						if (!stemmedFormedWord.startsWith("invalid"))
 							wordRes.add(formedWord);
 					}
 			}
-			wordRes = new ArrayList<String>(new HashSet<String>(wordRes));	   
+			wordRes = new ArrayList<>(new HashSet<>(wordRes));
 			if (wordRes.size() > 0) {
 				res.add(wordRes);
 			}
 		}
-		res = new ArrayList<List<String>>(new HashSet<List<String>>(res));
+		res = new ArrayList<>(new HashSet<>(res));
 		return res;
 	}
+	
 	public static void main(String[] args){
 		String[] res = new StoryDiscourseNavigator().obtainAdditionalKeywordsForAnEntity("Albert Einstein");
 		System.out.println(Arrays.asList(res));

@@ -24,10 +24,10 @@ import java.util.regex.Pattern;
 
 public class PredictionConfiguration {
 
-  private String vocabWords;
-  private String vocabChars;
-  private String vocabTags;
-  private String savedModel;
+  private final String vocabWords;
+  private final String vocabChars;
+  private final String vocabTags;
+  private final String savedModel;
 
   private boolean useLowerCaseEmbeddings;
   private boolean allowUNK;

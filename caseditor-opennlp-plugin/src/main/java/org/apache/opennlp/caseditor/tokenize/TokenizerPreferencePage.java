@@ -52,7 +52,7 @@ public class TokenizerPreferencePage extends FieldEditorPreferencePage
         "Algorithm", namesAndValues, getFieldEditorParent());
     addField(algorithmCombo);
 
-    // Activate only if statistical is selected .. how to do that?
+    // Activate only if statistical is selected - how to do that?
     StringFieldEditor modelPath = new StringFieldEditor(
         OpenNLPPreferenceConstants.TOKENIZER_MODEL_PATH,
         "Model Path", getFieldEditorParent());

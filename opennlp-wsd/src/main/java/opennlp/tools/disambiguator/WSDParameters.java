@@ -25,14 +25,14 @@ package opennlp.tools.disambiguator;
  */
 public abstract class WSDParameters {
 
-  public static enum SenseSource {
-    WORDNET, WSDHELPER, OTHER;
+  public enum SenseSource {
+    WORDNET, WSDHELPER, OTHER
   }
 
   protected SenseSource senseSource;
 
   /**
-   * @return if the disambiguation type is coarse grained or fine grained
+   * @return if the disambiguation type is coarse grained or fine-grained
    */
 
   public SenseSource getSenseSource() {

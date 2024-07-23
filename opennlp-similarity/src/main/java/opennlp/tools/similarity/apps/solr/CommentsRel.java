@@ -1,3 +1,22 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package opennlp.tools.similarity.apps.solr;
 
 import java.io.File;
@@ -20,11 +39,11 @@ import org.docx4j.wml.Comments;
 
 public class CommentsRel {
 	   
-	   private WordprocessingMLPackage wordMlPackage;
-	   private MainDocumentPart mainPart;
-	   private boolean relSet = false;
-	   private org.docx4j.wml.ObjectFactory wmlObjectFactory;
-	   private CommentsPart cmPart;
+	   private final WordprocessingMLPackage wordMlPackage;
+	   private final MainDocumentPart mainPart;
+	   private final boolean relSet = false;
+	   private final org.docx4j.wml.ObjectFactory wmlObjectFactory;
+	   private final CommentsPart cmPart;
 
 	   
 	   public CommentsRel(WordprocessingMLPackage wordMLPack) {
@@ -46,7 +65,6 @@ public class CommentsRel {
 	            
 	            wordMlPackage.getMainDocumentPart().addTargetPart(cp);
 	         } catch (InvalidFormatException e) {
-	            // TODO Auto-generated catch block
 	            e.printStackTrace();
 	         }
 	      }
@@ -78,7 +96,7 @@ public class CommentsRel {
 
 	//   WordprocessingMLPackage wordML;
 
-	   public static void main(String args[]) throws IOException {
+	   public static void main(String[] args) throws IOException {
 
 	      File document = new File("C:/workspace/TestSolr/mydoc.docx");
 
@@ -107,33 +125,23 @@ public class CommentsRel {
 	         
 	         endnote.setId(BigInteger.ONE.add(BigInteger.ONE));
 	         String endnoteBody = "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" ><w:pPr><w:pStyle w:val=\"EndnoteText\"/></w:pPr><w:r><w:rPr><w:rStyle w:val=\"EndnoteReference\"/></w:rPr><w:endnoteRef/></w:r><w:r><w:t xml:space=\"preserve\"> An endnote</w:t></w:r></w:p>";
-	         try {
-				endnote.getEGBlockLevelElts().add( XmlUtils.unmarshalString(endnoteBody));
-			} catch (JAXBException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-	         
+					 try {
+						 endnote.getEGBlockLevelElts().add( XmlUtils.unmarshalString(endnoteBody));
+				   } catch (JAXBException e) {
+					    e.printStackTrace();
+				   }
+
 	         // Add the body text referencing it
 	         String docBody = "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" ><w:r><w:t>the quick brown</w:t></w:r><w:r><w:rPr><w:rStyle w:val=\"EndnoteReference\"/></w:rPr><w:endnoteReference w:id=\"2\"/></w:r></w:p>";
 	         
-	         try {
-				mlPackage.getMainDocumentPart().addParagraph(docBody);
-			} catch (JAXBException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-	         
-	         
-	         
-	         
-	         
-	         
-	          mlPackage.save(new File("C:/workspace/TestSolr/mydoc.docx-OUT.docx"));
+					try {
+						mlPackage.getMainDocumentPart().addParagraph(docBody);
+					} catch (JAXBException e) {
+						e.printStackTrace();
+					}
+					mlPackage.save(new File("C:/workspace/TestSolr/mydoc.docx-OUT.docx"));
 	      } catch (Docx4JException e) {
-	         // TODO Auto-generated catch block
 	         e.printStackTrace();
 	      }
-
 	   }
 	}

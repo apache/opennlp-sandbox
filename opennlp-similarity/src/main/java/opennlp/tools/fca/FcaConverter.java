@@ -29,9 +29,8 @@ public class FcaConverter {
 	public int [][] latticeToContext(ConceptLattice cl){
 		
 		int newAttrCount = cl.conceptList.size();
-		int [][] binaryContext = null;
-		ArrayList<FormalConcept> cList = new ArrayList<FormalConcept>();
-		cList.addAll(cl.conceptList);
+		int [][] binaryContext;
+    ArrayList<FormalConcept> cList = new ArrayList<>(cl.conceptList);
 		boolean run = true;
 		int k=0;
 		while (run && k<cl.conceptList.size()){

@@ -1,28 +1,44 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package opennlp.tools.word2vec;
 
-import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
+import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.text.sentenceiterator.FileSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
-import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.springframework.core.io.ClassPathResource;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 
 public class W2VDistanceMeasurer {
 	static W2VDistanceMeasurer instance;
-	public Word2Vec vec = null;
-	private String resourceDir = null;
+	public Word2Vec vec;
 
 	public synchronized static W2VDistanceMeasurer getInstance() {
 		if (instance == null)
@@ -31,6 +47,7 @@ public class W2VDistanceMeasurer {
 	}
 
 	public W2VDistanceMeasurer(){
+		String resourceDir = null;
 		if (resourceDir ==null)
 			try {
 				resourceDir = new File( "." ).getCanonicalPath()+"/src/test/resources";
@@ -43,11 +60,10 @@ public class W2VDistanceMeasurer {
 		String pathToW2V = resourceDir + "/w2v/GoogleNews-vectors-negative300.bin.gz";
 		File gModel = new File(pathToW2V);
 		try {
-			vec = WordVectorSerializer.loadGoogleModel(gModel, true);
+			vec = WordVectorSerializer.fromPair(WordVectorSerializer.loadTxt(Files.newInputStream(gModel.toPath())));
 		} catch (IOException e) {
 			System.out.println("Word2vec model is not loaded");
 			vec = null;
-			return;
 		} 
 		
 	} 
@@ -63,29 +79,23 @@ public class W2VDistanceMeasurer {
 
 	public static void runCycle() {
 
-		String filePath=null;
+		SentenceIterator iter=null;
 		try {
-			filePath = new ClassPathResource("raw_sentences.txt").getFile().getAbsolutePath();
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
+			ClassLoader cl = Thread.currentThread().getContextClassLoader();
+			String filePath = new File(cl.getResource("/raw_sentences.txt").toURI()).getAbsolutePath();
+			// Strip white space before and after for each line
+			System.out.println("Load & Vectorize Sentences....");
+			iter = new FileSentenceIterator(new File(filePath));
+		} catch (URISyntaxException e1) {
 			e1.printStackTrace();
 		}
 
-		System.out.println("Load & Vectorize Sentences....");
-		// Strip white space before and after for each line
-		SentenceIterator iter=null;
-		try {
-			iter = UimaSentenceIterator.createWithPath(filePath);
-		} catch (Exception e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
 		// Split on white spaces in the line to get words
 		TokenizerFactory t = new DefaultTokenizerFactory();
 		t.setTokenPreProcessor(new CommonPreprocessor());
 
 		InMemoryLookupCache cache = new InMemoryLookupCache();
-		WeightLookupTable table = new InMemoryLookupTable.Builder()
+		WeightLookupTable<VocabWord> table = new InMemoryLookupTable.Builder<VocabWord>()
 		.vectorLength(100)
 		.useAdaGrad(false)
 		.cache(cache)
@@ -100,21 +110,11 @@ public class W2VDistanceMeasurer {
 		.windowSize(5).iterate(iter).tokenizerFactory(t).build();
 
 		System.out.println("Fitting Word2Vec model....");
-		try {
-			vec.fit();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		vec.fit();
 
 		System.out.println("Writing word vectors to text file....");
 		// Write word
-		try {
-			WordVectorSerializer.writeWordVectors(vec, "pathToWriteto.txt");
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		WordVectorSerializer.writeWord2VecModel(vec, "pathToWriteTo.txt");
 
 		System.out.println("Closest Words:");
 		Collection<String> lst = vec.wordsNearest("day", 10);

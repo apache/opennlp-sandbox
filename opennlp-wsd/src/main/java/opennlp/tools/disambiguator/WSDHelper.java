@@ -17,31 +17,40 @@
 
 package opennlp.tools.disambiguator;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 
 import net.sf.extjwnl.JWNLException;
 import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.dictionary.Dictionary;
 import net.sf.extjwnl.dictionary.MorphologicalProcessor;
-import opennlp.tools.cmdline.postag.POSModelLoader;
-import opennlp.tools.lemmatizer.SimpleLemmatizer;
+
+import opennlp.tools.lemmatizer.DictionaryLemmatizer;
+import opennlp.tools.postag.POSModel;
+import opennlp.tools.postag.POSTagFormat;
 import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.tokenize.TokenizerModel;
 
 public class WSDHelper {
 
+  protected static final Pattern NUMBERS_PATTERN = Pattern.compile(".*[0-9].*");
+
   protected static TokenizerME tokenizer;
   protected static POSTaggerME tagger;
-  protected static SimpleLemmatizer lemmatizer;
+  protected static DictionaryLemmatizer lemmatizer;
   protected static Dictionary dictionary;
   protected static MorphologicalProcessor morph;
 
@@ -50,30 +59,29 @@ public class WSDHelper {
   protected static String lemmatizerDictionaryPath;
 
   // local caches for faster lookup
-  private static HashMap<String, Object> stemCache;
-  private static HashMap<String, Object> stopCache;
-  private static HashMap<String, Object> relvCache;
+  private static Map<String, Map<String, Object>> stemCache;
+  private static Map<String, Object> stopCache;
+  private static Map<String, Object> relvCache;
 
-  private static HashMap<String, Object> englishWords;
-  private static HashMap<String, Object> nonRelevWordsDef;
+  private static Map<String, Object> englishWords;
+  private static Map<String, Object> nonRelevWordsDef;
 
   // List of all the PoS tags
-  public static String[] allPOS = { "CC", "CD", "DT", "EX", "FW", "IN", "JJ",
+  public static final String[] ALL_POS = { "CC", "CD", "DT", "EX", "FW", "IN", "JJ",
       "JJR", "JJS", "LS", "MD", "NN", "NNS", "NNP", "NNPS", "PDT", "POS",
       "PRP", "PRP$", "RB", "RBR", "RBS", "RP", "SYM", "TO", "UH", "VB", "VBD",
       "VBG", "VBN", "VBP", "VBZ", "WDT", "WP", "WP$", "WRB" };
 
   // List of the PoS tags of which the senses are to be extracted
-  public static String[] relevantPOS = { "JJ", "JJR", "JJS", "NN", "NNS", "RB",
+  public static final String[] RELEVANT_POS = { "JJ", "JJR", "JJS", "NN", "NNS", "RB",
       "RBR", "RBS", "VB", "VBD", "VBG", "VBN", "VBP", "VBZ" };
 
   // List of Negation Words
-  public static ArrayList<String> negationWords = new ArrayList<String>(
-      Arrays.asList("not", "no", "never", "none", "nor", "non"));
+  public static final List<String> NEGATION_WORDS = Arrays.asList("not", "no", "never", "none", "nor", "non");
 
   // List of Stop Words
-  public static ArrayList<String> stopWords = new ArrayList<String>(
-      Arrays.asList("a", "able", "about", "above", "according", "accordingly",
+  public static final List<String> STOP_WORDS = Arrays.asList(
+          "a", "able", "about", "above", "according", "accordingly",
           "across", "actually", "after", "afterwards", "again", "against",
           "ain't", "all", "allow", "allows", "almost", "alone", "along",
           "already", "also", "although", "always", "am", "among", "amongst",
@@ -151,39 +159,39 @@ public class WSDHelper {
           "who", "whoever", "whole", "whom", "who's", "whose", "why", "will",
           "willing", "wish", "with", "within", "without", "wonder", "won't",
           "would", "wouldn't", "yes", "yet", "you", "you'd", "you'll", "your",
-          "you're", "yours", "yourself", "yourselves", "you've", "zero"));
+          "you're", "yours", "yourself", "yourselves", "you've", "zero");
 
-  public static HashMap<String, Object> getRelvCache() {
+  public static Map<String, Object> getRelvCache() {
     if (relvCache == null || relvCache.keySet().isEmpty()) {
-      relvCache = new HashMap<String, Object>();
-      for (String t : relevantPOS) {
+      relvCache = new HashMap<>();
+      for (String t : RELEVANT_POS) {
         relvCache.put(t, null);
       }
     }
     return relvCache;
   }
 
-  public static HashMap<String, Object> getStopCache() {
+  public static Map<String, Object> getStopCache() {
     if (stopCache == null || stopCache.keySet().isEmpty()) {
-      stopCache = new HashMap<String, Object>();
-      for (String s : stopWords) {
+      stopCache = new HashMap<>();
+      for (String s : STOP_WORDS) {
         stopCache.put(s, null);
       }
     }
     return stopCache;
   }
 
-  public static HashMap<String, Object> getStemCache() {
+  public static Map<String, Map<String, Object>> getStemCache() {
     if (stemCache == null || stemCache.keySet().isEmpty()) {
-      stemCache = new HashMap<String, Object>();
-      for (Object pos : POS.getAllPOS()) {
-        stemCache.put(((POS) pos).getKey(), new HashMap());
+      stemCache = new HashMap<>();
+      for (POS pos : POS.getAllPOS()) {
+        stemCache.put(pos.getKey(), new HashMap<>());
       }
     }
     return stemCache;
   }
 
-  public static HashMap<String, Object> getEnglishWords() {
+  public static Map<String, Object> getEnglishWords() {
     if (englishWords == null || englishWords.keySet().isEmpty()) {
       englishWords = getEnglishWords(lemmatizerDictionaryPath);
     }
@@ -191,16 +199,16 @@ public class WSDHelper {
   }
 
   /**
-   * This initializes the Hashmap of non relevant words definitions, and returns
-   * the definition of the non relevant word based on its pos-tag
+   * This initializes the Hashmap of irrelevant words definitions, and returns
+   * the definition of the irrelevant word based on its pos-tag
    * 
    * @param posTag
-   *          the pos-tag of the non relevant word
+   *          the pos-tag of the irrelevant word
    * @return the definition of the word
    */
   public static String getNonRelevWordsDef(String posTag) {
     if (nonRelevWordsDef == null || nonRelevWordsDef.keySet().isEmpty()) {
-      nonRelevWordsDef = new HashMap<String, Object>();
+      nonRelevWordsDef = new HashMap<>();
 
       nonRelevWordsDef.put("CC", "coordinating conjunction");
       nonRelevWordsDef.put("CD", "cardinal number");
@@ -262,23 +270,36 @@ public class WSDHelper {
     return dictionary;
   }
 
-  public static SimpleLemmatizer getLemmatizer() {
+  public static DictionaryLemmatizer getLemmatizer() {
+    if (lemmatizerDictionaryPath == null) {
+      throw new IllegalStateException("Loading a Lemmatizer is not possible without setting the " +
+              "corresponding model file!");
+    }
     if (lemmatizer == null) {
+      final InputStream resource;
       try {
-        lemmatizer = new SimpleLemmatizer(new FileInputStream(
-            lemmatizerDictionaryPath));
+        if (lemmatizerDictionaryPath.endsWith(".dict.gz")) {
+          resource = new GZIPInputStream(new FileInputStream(lemmatizerDictionaryPath));
+        } else {
+          resource = new FileInputStream(lemmatizerDictionaryPath);
+        }
+        try (InputStream in = new BufferedInputStream(resource)) {
+          lemmatizer = new DictionaryLemmatizer(in);
+        }
       } catch (IOException e) {
-        e.printStackTrace();
+        throw new RuntimeException("Error opening or loading a Lemmatizer from specified resource file!", e);
       }
     }
-
     return lemmatizer;
   }
 
   public static POSTaggerME getTagger() {
     if (tagger == null) {
-      tagger = new POSTaggerME(new POSModelLoader().load(new File(
-          taggerModelPath)));
+      try {
+        tagger = new POSTaggerME(new POSModel(new File(taggerModelPath)), POSTagFormat.PENN);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
     }
     return tagger;
   }
@@ -291,7 +312,6 @@ public class WSDHelper {
       } catch (IOException e) {
         e.printStackTrace();
       }
-
     }
     return tokenizer;
   }
@@ -306,7 +326,7 @@ public class WSDHelper {
     return getTagger();
   }
 
-  public static SimpleLemmatizer loadLemmatizer(String path) {
+  public static DictionaryLemmatizer loadLemmatizer(String path) {
     lemmatizerDictionaryPath = path;
     return getLemmatizer();
   }
@@ -315,12 +335,11 @@ public class WSDHelper {
    * checks if the word is or contains a number
    */
   public static boolean containsNumbers(String word) {
-    return word.matches(".*[0-9].*");
+    return NUMBERS_PATTERN.matcher(word).matches();
   }
 
   // Print a text in the console
-  public static void printResults(WSDisambiguator disambiguator,
-      String result) {
+  public static void printResults(WSDisambiguator disambiguator, String result) {
 
     if (result != null) {
 
@@ -328,7 +347,7 @@ public class WSDHelper {
       String sensekey;
       if (disambiguator instanceof Lesk) {
 
-        Double score;
+        double score;
 
           parts = result.split(" ");
           sensekey = parts[1];
@@ -341,14 +360,8 @@ public class WSDHelper {
               .name())) {
 
             try {
-              print("score : "
-                  + score
-                  + " for sense "
-                  + " : "
-                  + sensekey
-                  + " : "
-                  + getDictionary().getWordBySenseKey(sensekey).getSynset()
-                      .getGloss());
+              print("score : " + score + " for sense " + " : " + sensekey + " : "
+                  + getDictionary().getWordBySenseKey(sensekey).getSynset().getGloss());
 
             } catch (JWNLException e) {
               e.printStackTrace();
@@ -366,16 +379,11 @@ public class WSDHelper {
           parts = result.split(" ");
           sensekey = parts[1];
 
-          if (parts[0].equalsIgnoreCase(WSDParameters.SenseSource.WORDNET
-              .name())) {
+          if (parts[0].equalsIgnoreCase(WSDParameters.SenseSource.WORDNET.name())) {
 
             try {
-              print("sense "
-                  + " : "
-                  + sensekey
-                  + " : "
-                  + getDictionary().getWordBySenseKey(sensekey).getSynset()
-                      .getGloss());
+              print("sense " + " : " + sensekey + " : "
+                  + getDictionary().getWordBySenseKey(sensekey).getSynset().getGloss());
             } catch (JWNLException e) {
               e.printStackTrace();
             }
@@ -426,23 +434,20 @@ public class WSDHelper {
    * Extract the list of ALL English words
    * 
    * @param dict
-   *          this file is the same that is used in the simple Lemmatizer
+   *          this file is the same that is used in the DictionaryLemmatizer
    *          (i.e.,"en-lemmatizer.dict")
    * 
-   * @return a list of all the English words
+   * @return a Map of all the English words
    */
-  public static HashMap<String, Object> getEnglishWords(String dict) {
+  public static Map<String, Object> getEnglishWords(String dict) {
 
-    HashMap<String, Object> words = new HashMap<String, Object>();
-
-    BufferedReader br = null;
+    Map<String, Object> words = new HashMap<>();
 
     File file = new File(lemmatizerDictionaryPath);
 
     if (file.exists()) {
 
-      try {
-        br = new BufferedReader(new FileReader(file));
+      try (BufferedReader br = new BufferedReader(new FileReader(file))) {
         String line = br.readLine();
         while (line != null) {
           line = br.readLine();
@@ -451,18 +456,8 @@ public class WSDHelper {
             words.put(word, null);
           }
         }
-      } catch (FileNotFoundException e) {
-        e.printStackTrace();
       } catch (IOException e) {
         e.printStackTrace();
-      } finally {
-        if (br != null) {
-          try {
-            br.close();
-          } catch (IOException e) {
-            e.printStackTrace();
-          }
-        }
       }
       return words;
     } else {
@@ -480,14 +475,10 @@ public class WSDHelper {
    */
   public static POS getPOS(String posTag) {
 
-    ArrayList<String> adjective = new ArrayList<String>(Arrays.asList("JJ",
-        "JJR", "JJS"));
-    ArrayList<String> adverb = new ArrayList<String>(Arrays.asList("RB", "RBR",
-        "RBS"));
-    ArrayList<String> noun = new ArrayList<String>(Arrays.asList("NN", "NNS",
-        "NNP", "NNPS"));
-    ArrayList<String> verb = new ArrayList<String>(Arrays.asList("VB", "VBD",
-        "VBG", "VBN", "VBP", "VBZ"));
+    List<String> adjective = Arrays.asList("JJ", "JJR", "JJS");
+    List<String> adverb = Arrays.asList("RB", "RBR", "RBS");
+    List<String> noun = Arrays.asList("NN", "NNS", "NNP", "NNPS");
+    List<String> verb = Arrays.asList("VB", "VBD", "VBG", "VBN", "VBP", "VBZ");
 
     if (adjective.contains(posTag))
       return POS.ADJECTIVE;
@@ -606,7 +597,7 @@ public class WSDHelper {
 
   public static ArrayList<WordPOS> getAllRelevantWords(String[] sentence) {
 
-    ArrayList<WordPOS> relevantWords = new ArrayList<WordPOS>();
+    ArrayList<WordPOS> relevantWords = new ArrayList<>();
 
     String[] tags = WSDHelper.getTagger().tag(sentence);
 
@@ -622,7 +613,7 @@ public class WSDHelper {
   }
 
   /**
-   * Stem a single word with WordNet dictionnary
+   * Stem a single word with WordNet dictionary.
    * 
    * @param wordToStem
    *          word to be stemmed
@@ -631,14 +622,13 @@ public class WSDHelper {
   public static ArrayList<String> StemWordWithWordNet(WordPOS wordToStem) {
     if (wordToStem == null)
       return null;
-    ArrayList<String> stems = new ArrayList<String>();
+    ArrayList<String> stems = new ArrayList<>();
     try {
-      for (Object pos : POS.getAllPOS()) {
-        stems.addAll(WSDHelper.getMorph().lookupAllBaseForms((POS) pos,
-            wordToStem.getWord()));
+      for (POS pos : POS.getAllPOS()) {
+        stems.addAll(WSDHelper.getMorph().lookupAllBaseForms(pos, wordToStem.getWord()));
       }
 
-      if (stems.size() > 0)
+      if (!stems.isEmpty())
         return stems;
       else {
         return null;
@@ -651,28 +641,28 @@ public class WSDHelper {
   }
 
   /**
-   * Stem a single word tries to look up the word in the stemCache HashMap If
-   * the word is not found it is stemmed with WordNet and put into stemCache
+   * Stem a single word tries to look up the word in the stemCache map. If
+   * the word is not found, it is stemmed with WordNet and put into stemCache.
    * 
    * @param wordToStem
    *          word to be stemmed
-   * @return stemmed word list, null means the word is incorrect
+   * @return stemmed word list, {@code null} means the word is incorrect
    */
-  public static ArrayList<String> Stem(WordPOS wordToStem) {
+  public static List<String> Stem(WordPOS wordToStem) {
     if (wordToStem.getPOS() == null) {
       WSDHelper.print("the word is " + wordToStem.getWord());
     }
+
+    Map<String, Map<String, Object>> cache = WSDHelper.getStemCache();
     // check if we already cached the stem map
-    HashMap posMap = (HashMap) WSDHelper.getStemCache().get(
-        wordToStem.getPOS().getKey());
+    Map<String, Object> posMap = cache.get(wordToStem.getPOS().getKey());
 
     // don't check words with digits in them
     if (WSDHelper.containsNumbers(wordToStem.getWord())) {
       return null;
     }
 
-    ArrayList<String> stemList = (ArrayList<String>) posMap.get(wordToStem
-        .getWord());
+    List<String> stemList = (List<String>) posMap.get(wordToStem.getWord());
     if (stemList != null) { // return it if we already cached it
       return stemList;
 
@@ -682,13 +672,13 @@ public class WSDHelper {
         // word was recognized and stemmed with wordnet:
         // add it to cache and return the stemmed list
         posMap.put(wordToStem.getWord(), stemList);
-        WSDHelper.getStemCache().put(wordToStem.getPOS().getKey(), posMap);
+        cache.put(wordToStem.getPOS().getKey(), posMap);
         return stemList;
       } else { // could not be stemmed add it anyway (as it is)
-        stemList = new ArrayList<String>();
+        stemList = new ArrayList<>();
         stemList.add(wordToStem.getWord());
         posMap.put(wordToStem.getWord(), stemList);
-        WSDHelper.getStemCache().put(wordToStem.getPOS().getKey(), posMap);
+        cache.put(wordToStem.getPOS().getKey(), posMap);
         return null;
       }
     }

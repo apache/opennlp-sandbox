@@ -20,24 +20,25 @@ package org.apache.opennlp.utils.cfg;
 
 import java.util.Collection;
 import java.util.LinkedList;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Testcase for {@link org.apache.opennlp.utils.cfg.ContextFreeGrammar}
  */
-public class ContextFreeGrammarTest {
+class ContextFreeGrammarTest {
 
   private static Collection<String> terminals;
   private static Collection<String> nonTerminals; // PoS + Parse tags
   private static String startSymbol;
   private static Collection<Rule> rules;
 
-  @BeforeClass
-  public static void setUp() throws Exception {
-    nonTerminals = new LinkedList<String>();
+  @BeforeAll
+  static void setUp() {
+    nonTerminals = new LinkedList<>();
     nonTerminals.add("S");
     nonTerminals.add("NP");
     nonTerminals.add("VP");
@@ -54,7 +55,7 @@ public class ContextFreeGrammarTest {
 
     startSymbol = "S";
 
-    terminals = new LinkedList<String>();
+    terminals = new LinkedList<>();
     terminals.add("works");
     terminals.add("saw");
     terminals.add("man");
@@ -75,7 +76,7 @@ public class ContextFreeGrammarTest {
     terminals.add("of");
     terminals.add("for");
 
-    rules = new LinkedList<Rule>();
+    rules = new LinkedList<>();
     rules.add(new Rule("S", "NP", "VP"));
     rules.add(new Rule("P", "S", "CJ", "S"));
     rules.add(new Rule("P", "S", "DJ", "S"));
@@ -108,15 +109,15 @@ public class ContextFreeGrammarTest {
   }
 
   @Test
-  public void testSingleSentenceExpansion() throws Exception {
+  void testSingleSentenceExpansion() {
     ContextFreeGrammar contextFreeGrammar = new ContextFreeGrammar(nonTerminals, terminals, rules, startSymbol);
     String[] expansion = contextFreeGrammar.leftMostDerivation("S");
-    assertArrayEquals(new String[]{"the", "man", "works"}, expansion);
+    assertArrayEquals(new String[] {"the", "man", "works"}, expansion);
     checkExpansion(expansion);
   }
 
   @Test
-  public void testSingleSentenceRandomExpansion() throws Exception {
+  void testSingleSentenceRandomExpansion() {
     ContextFreeGrammar contextFreeGrammar = new ContextFreeGrammar(nonTerminals, terminals, rules, startSymbol, true);
     String[] expansion = contextFreeGrammar.leftMostDerivation("S");
     checkExpansion(expansion);
@@ -124,19 +125,19 @@ public class ContextFreeGrammarTest {
 
 
   @Test
-  public void testMultipleSentencesExpansion() throws Exception {
+  void testMultipleSentencesExpansion() {
     ContextFreeGrammar contextFreeGrammar = new ContextFreeGrammar(nonTerminals, terminals, rules, startSymbol);
     String[] expansion = contextFreeGrammar.leftMostDerivation("S", "CJ", "S");
-    assertArrayEquals(new String[]{"the", "man", "works", "and", "the", "man", "works"}, expansion);
+    assertArrayEquals(new String[] {"the", "man", "works", "and", "the", "man", "works"}, expansion);
     checkExpansion(expansion);
     expansion = contextFreeGrammar.leftMostDerivation("S", "DJ", "S", "CJ", "P");
-    assertArrayEquals(new String[]{"the", "man", "works", "but", "the", "man", "works", "and", "the", "man", "works",
-            "and", "the", "man", "works"}, expansion);
+    assertArrayEquals(new String[] {"the", "man", "works", "but", "the", "man", "works", "and", "the", "man", "works",
+        "and", "the", "man", "works"}, expansion);
     checkExpansion(expansion);
   }
 
   @Test
-  public void testMultipleSentencesRandomExpansion() throws Exception {
+  void testMultipleSentencesRandomExpansion() {
     ContextFreeGrammar contextFreeGrammar = new ContextFreeGrammar(nonTerminals, terminals, rules, startSymbol, true);
     String[] expansion = contextFreeGrammar.leftMostDerivation("S", "CJ", "S");
     checkExpansion(expansion);
@@ -148,7 +149,7 @@ public class ContextFreeGrammarTest {
     assertNotNull(expansion);
     assertTrue(expansion.length > 0);
     for (String t : expansion) {
-      assertTrue("term " + t + " is not a terminal symbol", terminals.contains(t));
+      assertTrue(terminals.contains(t), "term " + t + " is not a terminal symbol");
     }
   }
 }

@@ -17,14 +17,12 @@
 
 package opennlp.tools.apps.review_builder;
 
-import java.util.Arrays;
-import java.util.List;
+import org.apache.commons.lang.StringUtils;
 
 import opennlp.tools.similarity.apps.utils.Utils;
 
-import org.apache.commons.lang.StringUtils;
-
 public class MinedSentenceProcessor {
+
   public static String acceptableMinedSentence(String sent) {
     // if too many commas => seo text
 
@@ -57,7 +55,6 @@ public class MinedSentenceProcessor {
         return null;
     }
     
-    String[] pipes = StringUtils.split(sent, '|');
     if (StringUtils.split(sent, '|').length > 2
         || StringUtils.split(sent, '>').length > 2) {
       System.out.println("Rejection: too many |s or >s ");
@@ -70,54 +67,53 @@ public class MinedSentenceProcessor {
       // suspicious
       return null;
 
-    if (sentTry.indexOf("click here") > -1 || sentTry.indexOf(" wikip") > -1
-        || sentTry.indexOf("copyright") > -1
-        || sentTry.indexOf("operating hours") > -1
-        || sentTry.indexOf("days per week") > -1
-        || sentTry.indexOf("click for") > -1 || sentTry.indexOf("photos") > -1
-        || sentTry.indexOf("find the latest") > -1
+    if (sentTry.contains("click here") || sentTry.contains(" wikip")
+        || sentTry.contains("copyright")
+        || sentTry.contains("operating hours")
+        || sentTry.contains("days per week")
+        || sentTry.contains("click for") || sentTry.contains("photos")
+        || sentTry.contains("find the latest")
         || sentTry.startsWith("subscribe")
-        || sentTry.indexOf("Terms of Service") > -1
-        || sentTry.indexOf("clicking here") > -1
-        || sentTry.indexOf("skip to") > -1 || sentTry.indexOf("sidebar") > -1
-        || sentTry.indexOf("Tags:") > -1 || sentTry.startsWith("Posted by")
-        || sentTry.indexOf("available online") > -1
-        || sentTry.indexOf("get online") > -1
-        || sentTry.indexOf("buy online") > -1
-        || sentTry.indexOf("not valid") > -1 || sentTry.indexOf("discount") > -1
-        || sentTry.indexOf("official site") > -1
-        || sentTry.indexOf("this video") > -1
-        || sentTry.indexOf("this book") > -1
-        || sentTry.indexOf("this product") > -1
-        || sentTry.indexOf("paperback") > -1 || sentTry.indexOf("hardcover") > -1
-        || sentTry.indexOf("audio cd") > -1
-        || sentTry.indexOf("related searches") > -1
-        || sentTry.indexOf("permission is granted") > -1
-        || sentTry.indexOf("[edit") > -1
-        || sentTry.indexOf("edit categories") > -1
-        || sentTry.indexOf("free license") > -1
-        || sentTry.indexOf("permission is granted") > -1
-        || sentTry.indexOf("under the terms") > -1
-        || sentTry.indexOf("rights reserved") > -1
-        || sentTry.indexOf("wikipedia") > -1 || sentTry.endsWith("the")
+        || sentTry.contains("Terms of Service")
+        || sentTry.contains("clicking here")
+        || sentTry.contains("skip to") || sentTry.contains("sidebar")
+        || sentTry.contains("Tags:") || sentTry.startsWith("Posted by")
+        || sentTry.contains("available online")
+        || sentTry.contains("get online")
+        || sentTry.contains("buy online")
+        || sentTry.contains("not valid") || sentTry.contains("discount")
+        || sentTry.contains("official site")
+        || sentTry.contains("this video")
+        || sentTry.contains("this book")
+        || sentTry.contains("this product")
+        || sentTry.contains("paperback") || sentTry.contains("hardcover")
+        || sentTry.contains("audio cd")
+        || sentTry.contains("related searches")
+        || sentTry.contains("permission is granted")
+        || sentTry.contains("[edit")
+        || sentTry.contains("edit categories")
+        || sentTry.contains("free license")
+        || sentTry.contains("under the terms")
+        || sentTry.contains("rights reserved")
+        || sentTry.contains("wikipedia") || sentTry.endsWith("the")
         || sentTry.endsWith("the.") || sentTry.startsWith("below") 
-        || sentTry.indexOf("recipient of")>-1 || sentTry.indexOf("this message")>-1 
-        ||sentTry.indexOf( "mailing list")>-1 ||sentTry.indexOf( "purchase order")>-1
-        ||sentTry.indexOf( "mon-fri")>-1 ||sentTry.indexOf( "email us")>-1 ||sentTry.indexOf( "privacy pol")>-1 ||sentTry.indexOf( "back to top")>-1 
-        ||sentTry.indexOf( "click here")>-1 ||sentTry.indexOf( "for details")>-1 ||sentTry.indexOf( "assistance?")>-1 ||sentTry.indexOf( "chat live")>-1
-        ||sentTry.indexOf( "free shipping")>-1 ||sentTry.indexOf( "company info")>-1 ||sentTry.indexOf( "satisfaction g")>-1 ||sentTry.indexOf( "contact us")>-1
-        ||sentTry.startsWith( "fax") ||sentTry.startsWith( "write") || sentTry.startsWith( "email")||sentTry.indexOf( "conditions")>-1 ||sentTry.indexOf( "chat live")>-1
-        ||sentTry.startsWith( "we ") ||sentTry.indexOf( "the recipient")>-1 ||sentTry.indexOf( "day return")>-1 ||sentTry.indexOf( "days return")>-1
+        || sentTry.contains("recipient of") || sentTry.contains("this message")
+        || sentTry.contains("mailing list") || sentTry.contains("purchase order")
+        || sentTry.contains("mon-fri") || sentTry.contains("email us") || sentTry.contains("privacy pol") || sentTry.contains("back to top")
+        || sentTry.contains("for details") || sentTry.contains("assistance?") || sentTry.contains("chat live")
+        || sentTry.contains("free shipping") || sentTry.contains("company info") || sentTry.contains("satisfaction g") || sentTry.contains("contact us")
+        ||sentTry.startsWith("write") || sentTry.startsWith( "email")|| sentTry.contains("conditions")
+        ||sentTry.startsWith("we ") || sentTry.contains("the recipient") || sentTry.contains("day return") || sentTry.contains("days return")
         
-        ||sentTry.startsWith( "fax") ||sentTry.indexOf( "refund it")>-1 || sentTry.indexOf( "your money")>-1
-        ||sentTry.startsWith( "free") ||sentTry.indexOf( "purchase orders")>-1
-        ||sentTry.startsWith( "exchange it ") ||sentTry.indexOf( "return it")>-1 ||sentTry.indexOf( "credit card")>-1 
+        ||sentTry.startsWith("fax") || sentTry.contains("refund it") || sentTry.contains("your money")
+        ||sentTry.startsWith("free") || sentTry.contains("purchase orders")
+        ||sentTry.startsWith("exchange it ") || sentTry.contains("return it") || sentTry.contains("credit card")
         
-        ||sentTry.indexOf( "storeshop")>-1 || sentTry.startsWith( "find") || sentTry.startsWith( "shop") || sentTry.startsWith( "unlimited") 
-        ||sentTry.indexOf( "for a limited time")>-1 ||sentTry.indexOf( "prime members")>-1 ||sentTry.indexOf( "amazon members")>-1 ||sentTry.indexOf( "unlimited free")>-1 
-        ||sentTry.indexOf( "shipping")>-1 || sentTry.startsWith( "amazon")
-// not a script text
-        ||sentTry.indexOf( "document.body")>-1 ||sentTry.indexOf( " var ")>-1         ||sentTry.indexOf( "search suggestions")>-1 ||sentTry.startsWith( "Search") 
+        || sentTry.contains("storeshop") || sentTry.startsWith( "find") || sentTry.startsWith( "shop") || sentTry.startsWith( "unlimited")
+        || sentTry.contains("for a limited time") || sentTry.contains("prime members") || sentTry.contains("amazon members") || sentTry.contains("unlimited free")
+        || sentTry.contains("shipping") || sentTry.startsWith( "amazon")
+        // not a script text
+        || sentTry.contains("document.body") || sentTry.contains(" var ") || sentTry.contains("search suggestions") ||sentTry.startsWith( "Search")
         
     		)
       return null;
@@ -195,9 +191,8 @@ public class MinedSentenceProcessor {
     return pageSentence;
   }
 
-  
   public static String normalizeForSentenceSplitting(String pageContent) {
-    pageContent.replace("Jan.", "January").replace("Feb.", "February")
+    pageContent = pageContent.replace("Jan.", "January").replace("Feb.", "February")
         .replace("Mar.", "March").replace("Apr.", "April")
         .replace("Jun.", "June").replace("Jul.", "July")
         .replace("Aug.", "August").replace("Sep.", "September")
@@ -205,6 +200,5 @@ public class MinedSentenceProcessor {
         .replace("Dec.", "December");
 
     return pageContent;
-
   }
 }

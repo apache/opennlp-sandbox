@@ -23,6 +23,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,14 +35,14 @@ public class WordIndexer {
   private final Map<Character, Integer> char2idx;
   private final Map<String, Integer> word2idx;
 
-  public static String UNK = "__UNK__";
-  public static String NUM = "__NUM__";
+  public static final String UNK = "__UNK__";
+  public static final String NUM = "__NUM__";
 
   private boolean lowerCase = false;
   private boolean allowUnk = true;
   private boolean allowNum = false;
 
-  private Pattern digitPattern = Pattern.compile("\\d+(,\\d+)*(\\.\\d+)?");
+  private final Pattern digitPattern = Pattern.compile("\\d+(,\\d+)*(\\.\\d+)?");
 
   public boolean isLowerCase() {
     return lowerCase;
@@ -96,17 +97,14 @@ public class WordIndexer {
 
   public WordIndexer(InputStream vocabWords, InputStream vocabChars) throws IOException {
     this.word2idx = new HashMap<>();
-    try(BufferedReader in = new BufferedReader(new InputStreamReader(vocabWords, "UTF8"))) {
-      String word;
-      int idx = 0;
-      while ((word = in.readLine()) != null) {
-        word2idx.put(word, idx);
-        idx += 1;
-      }
-    }
-
     this.char2idx = new HashMap<>();
-    try(BufferedReader in = new BufferedReader(new InputStreamReader(vocabChars, "UTF8"))) {
+
+    readVocabWords(vocabWords);
+    readVocacChars(vocabChars);
+  }
+
+  private void readVocacChars(InputStream vocabChars) throws IOException {
+    try(BufferedReader in = new BufferedReader(new InputStreamReader(vocabChars, StandardCharsets.UTF_8))) {
       String ch;
       int idx = 0;
       while ((ch = in.readLine()) != null) {
@@ -114,7 +112,17 @@ public class WordIndexer {
         idx += 1;
       }
     }
+  }
 
+  private void readVocabWords(InputStream vocabWords) throws IOException {
+    try(BufferedReader in = new BufferedReader(new InputStreamReader(vocabWords, StandardCharsets.UTF_8))) {
+      String word;
+      int idx = 0;
+      while ((word = in.readLine()) != null) {
+        word2idx.put(word, idx);
+        idx += 1;
+      }
+    }
   }
 
   public TokenIds toTokenIds(String[] tokens) {
@@ -206,7 +214,7 @@ public class WordIndexer {
     return tokenIds;
   }
 
-  public class Ids {
+  public static class Ids {
 
     private int[] chars;
     private int word;

@@ -18,14 +18,11 @@
 package opennlp.tools.textsimilarity;
 
 import java.util.List;
-import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
 
 public class SentencePairMatchResult {
-  public List<List<ParseTreeChunk>> matchResult;
-  private static Logger LOG = Logger
-      .getLogger("opennlp.tools.textsimilarity.SentencePairMatchResult");
+  private List<List<ParseTreeChunk>> matchResult;
 
   public List<List<ParseTreeChunk>> getMatchResult() {
     return matchResult;
@@ -61,9 +58,9 @@ public class SentencePairMatchResult {
 
   private List<LemmaPair> resForMinedSent1;
 
-  public boolean verbExists = false;
+  public boolean verbExists;
 
-  public boolean imperativeVerb = false;
+  public boolean imperativeVerb;
 
   public SentencePairMatchResult(List<List<ParseTreeChunk>> matchResult,
       List<LemmaPair> resForMinedSent1) {
@@ -89,9 +86,10 @@ public class SentencePairMatchResult {
 
     for (LemmaPair word : resForMinedSent1) {
       if (word.getPOS().startsWith("VB") && word.getStartPos() < 1
-          && word.getEndPos() < 1) {
+              && word.getEndPos() < 1) {
         imperativeVerb = true;
         // LOG.info("Found imperative verb=" + word);
+        break;
       }
     }
 

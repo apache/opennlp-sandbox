@@ -19,7 +19,6 @@ import java.io.File;
 import java.util.Map;
 
 /**
- *
  * Used to pass params through the processing
  */
 public class BaseModelBuilderParams {

@@ -21,15 +21,13 @@ package org.apache.opennlp.utils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Random;
-import org.junit.Ignore;
 
 /**
  * Utility class for tests
  */
-@Ignore
 public class TestUtils {
 
-  private static Random r = new Random();
+  private static final Random R = new Random();
 
   public static void fillTrainingSet(TrainingSet trainingSet, int size, int dimension) {
     for (int i = 0; i < size; i++) {
@@ -43,8 +41,8 @@ public class TestUtils {
   }
 
   public static Collection<String[]> generateRandomVocabulary() {
-    int size = r.nextInt(1000);
-    Collection<String[]> vocabulary = new ArrayList<String[]>(size);
+    int size = R.nextInt(1000);
+    Collection<String[]> vocabulary = new ArrayList<>(size);
     for (int i = 0; i < size; i++) {
       String[] sentence = generateRandomSentence();
       vocabulary.add(sentence);
@@ -53,10 +51,10 @@ public class TestUtils {
   }
 
   public static String[] generateRandomSentence() {
-    int dimension = r.nextInt(10);
+    int dimension = R.nextInt(10);
     String[] sentence = new String[dimension];
     for (int j = 0; j < dimension; j++) {
-      char c = (char) r.nextInt(10);
+      char c = (char) R.nextInt(10);
       sentence[j] = c + "-" + c + "-" + c;
     }
     return sentence;

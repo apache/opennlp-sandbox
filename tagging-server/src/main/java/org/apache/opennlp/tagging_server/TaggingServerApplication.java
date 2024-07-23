@@ -30,7 +30,7 @@ public class TaggingServerApplication extends Application {
   
   @Override
   public Set<Class<?>> getClasses() {
-    Set<Class<?>> result = new HashSet<Class<?>>();
+    Set<Class<?>> result = new HashSet<>();
     result.add(POSTaggerResource.class);
     result.add(NameFinderResource.class);
     result.add(BratNameFinderResource.class);

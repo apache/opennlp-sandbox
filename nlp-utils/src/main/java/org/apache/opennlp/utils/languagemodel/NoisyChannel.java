@@ -29,11 +29,11 @@ public abstract class NoisyChannel {
     this.dictionary = dictionary;
   }
 
-  public String findCorrection(String mispelledWord) {
-    Double val = 0d;
+  public String findCorrection(String misspelledWord) {
+    double val = 0d;
     String correctWord = null;
     for (String word : dictionary) {
-      Double curVal = calculateLikelihood(mispelledWord, word) * calculatePrior(word);
+      double curVal = calculateLikelihood(misspelledWord, word) * calculatePrior(word);
       if (curVal > val) {
         val = curVal;
         correctWord = word;

@@ -21,7 +21,6 @@ import opennlp.tools.ml.EventTrainer;
 import opennlp.tools.ml.TrainerFactory;
 import opennlp.tools.ml.model.Event;
 import opennlp.tools.ml.model.MaxentModel;
-import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.ObjectStreamUtils;
 import opennlp.tools.util.TrainingParameters;
@@ -29,13 +28,15 @@ import opennlp.tools.util.TrainingParameters;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 public class WSDisambiguatorME extends WSDisambiguator {
 
   protected WSDModel model;
 
-  protected static WSDContextGenerator cg = new IMSWSDContextGenerator();
+  protected static final WSDContextGenerator CONTEXT_GENERATOR = new IMSWSDContextGenerator();
 
   public WSDisambiguatorME(WSDParameters params) {
     this.params = params;
@@ -64,12 +65,12 @@ public class WSDisambiguatorME extends WSDisambiguator {
     ArrayList<String> surroundingContext = buildSurroundingContext(samples,
       ((WSDDefaultParameters) params).getWindowSize());
 
-    HashMap<String, String> manifestInfoEntries = new HashMap<String, String>();
+    HashMap<String, String> manifestInfoEntries = new HashMap<>();
 
-    MaxentModel meModel = null;
+    MaxentModel meModel;
 
-    ArrayList<Event> events = new ArrayList<Event>();
-    ObjectStream<Event> es = null;
+    List<Event> events = new ArrayList<>();
+    ObjectStream<Event> es;
 
     WSDSample sample = samples.read();
     String wordTag = "";
@@ -77,17 +78,16 @@ public class WSDisambiguatorME extends WSDisambiguator {
       wordTag = sample.getTargetWordTag();
       do {
         String sense = sample.getSenseIDs()[0];
-        String[] context = cg
+        String[] context = CONTEXT_GENERATOR
           .getContext(sample, ((WSDDefaultParameters) params).ngram,
             ((WSDDefaultParameters) params).windowSize, surroundingContext);
-        Event ev = new Event(sense + "", context);
+        Event ev = new Event(sense, context);
         events.add(ev);
       } while ((sample = samples.read()) != null);
     }
 
     es = ObjectStreamUtils.createObjectStream(events);
-    EventTrainer trainer = TrainerFactory
-      .getEventTrainer(mlParams.getSettings(), manifestInfoEntries);
+    EventTrainer trainer = TrainerFactory.getEventTrainer(mlParams, manifestInfoEntries);
 
     meModel = trainer.train(es);
 
@@ -100,7 +100,7 @@ public class WSDisambiguatorME extends WSDisambiguator {
   public static ArrayList<String> buildSurroundingContext(
     ObjectStream<WSDSample> samples, int windowSize) throws IOException {
     IMSWSDContextGenerator contextGenerator = new IMSWSDContextGenerator();
-    ArrayList<String> surroundingWordsModel = new ArrayList<String>();
+    ArrayList<String> surroundingWordsModel = new ArrayList<>();
     WSDSample sample;
     while ((sample = samples.read()) != null) {
       String[] words = contextGenerator
@@ -108,16 +108,15 @@ public class WSDisambiguatorME extends WSDisambiguator {
           sample.getSentence(), sample.getLemmas(), windowSize);
 
       if (words.length > 0) {
-        for (String word : words) {
-          surroundingWordsModel.add(word);
-        }
+        surroundingWordsModel.addAll(Arrays.asList(words));
       }
     }
     samples.reset();
     return surroundingWordsModel;
   }
 
-  @Override public String disambiguate(WSDSample sample) {
+  @Override
+  public String disambiguate(WSDSample sample) {
     if (WSDHelper.isRelevantPOSTag(sample.getTargetTag())) {
       String wordTag = sample.getTargetWordTag();
 
@@ -132,16 +131,13 @@ public class WSDisambiguatorME extends WSDisambiguator {
         if (file.exists() && !file.isDirectory()) {
           try {
             setModel(new WSDModel(file));
-
-          } catch (InvalidFormatException e) {
-            e.printStackTrace();
           } catch (IOException e) {
             e.printStackTrace();
           }
 
-          String outcome = "";
+          String outcome;
 
-          String[] context = cg
+          String[] context = CONTEXT_GENERATOR
             .getContext(sample, ((WSDDefaultParameters) this.params).ngram,
               ((WSDDefaultParameters) this.params).windowSize,
               this.model.getContextEntries());
@@ -149,7 +145,7 @@ public class WSDisambiguatorME extends WSDisambiguator {
           double[] outcomeProbs = model.getWSDMaxentModel().eval(context);
           outcome = model.getWSDMaxentModel().getBestOutcome(outcomeProbs);
 
-          if (outcome != null && !outcome.equals("")) {
+          if (outcome != null && !outcome.isEmpty()) {
 
             return this.getParams().getSenseSource().name() + " " + wordTag
               .split("\\.")[0] + "%" + outcome;
@@ -165,9 +161,9 @@ public class WSDisambiguatorME extends WSDisambiguator {
           return mfs.disambiguate(wordTag);
         }
       } else {
-        String outcome = "";
+        String outcome;
 
-        String[] context = cg
+        String[] context = CONTEXT_GENERATOR
           .getContext(sample, ((WSDDefaultParameters) this.params).ngram,
             ((WSDDefaultParameters) this.params).windowSize,
             this.model.getContextEntries());
@@ -175,7 +171,7 @@ public class WSDisambiguatorME extends WSDisambiguator {
         double[] outcomeProbs = model.getWSDMaxentModel().eval(context);
         outcome = model.getWSDMaxentModel().getBestOutcome(outcomeProbs);
 
-        if (outcome != null && !outcome.equals("")) {
+        if (outcome != null && !outcome.isEmpty()) {
 
           return this.getParams().getSenseSource().name() + " " + wordTag
             .split("\\.")[0] + "%" + outcome;
@@ -207,6 +203,7 @@ public class WSDisambiguatorME extends WSDisambiguator {
    * @param index            : the index of the word to disambiguate
    * @return an array of the senses of the word to disambiguate
    */
+  @Override
   public String disambiguate(String[] tokenizedContext, String[] tokenTags,
     String[] lemmas, int index) {
     return disambiguate(

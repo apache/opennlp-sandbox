@@ -26,8 +26,6 @@ import org.apache.uima.caseditor.editor.AnnotationEditor;
 import org.apache.uima.caseditor.editor.ICasEditor;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IToolBarManager;
-import org.eclipse.jface.viewers.ISelectionChangedListener;
-import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
@@ -47,17 +45,15 @@ public class SentenceDetectorViewPage extends Page {
   
   private static final String QUICK_ANNOTATE_ACTION_ID = "QuickAnnotate";
 
-  private ICasEditor editor;
+  private final ICasEditor editor;
   
   private PageBook book;
     
   private Text messageText;
   
-  private TableViewer sentenceList; 
-  
-  private SentenceContentProvider contentProvider;
+  private TableViewer sentenceList;
 
-  private SentenceDetectorView sentenceDetectorView;
+  private final SentenceDetectorView sentenceDetectorView;
   
   public SentenceDetectorViewPage(SentenceDetectorView sentenceDetectorView, ICasEditor editor) {
     this.sentenceDetectorView = sentenceDetectorView;
@@ -93,31 +89,27 @@ public class SentenceDetectorViewPage extends Page {
     sentenceList.setLabelProvider(new SentenceLabelProvider());
     
     SentenceDetectorJob sentenceDetector = new SentenceDetectorJob();
-    
-    contentProvider = new SentenceContentProvider(this, (AnnotationEditor) editor,
-        sentenceDetector, sentenceList);
+
+    SentenceContentProvider contentProvider = new SentenceContentProvider(this, (AnnotationEditor) editor,
+            sentenceDetector, sentenceList);
     
     sentenceList.setContentProvider(contentProvider);
     getSite().setSelectionProvider(sentenceList);
     sentenceList.setInput(editor.getDocument());
 
-    sentenceList.addSelectionChangedListener(new ISelectionChangedListener() {
+    sentenceList.addSelectionChangedListener(event -> {
+      // if confirmed, send selection event for FS
+      // else, do selectAndReveal
+      StructuredSelection selection = (StructuredSelection) event
+          .getSelection();
 
-      @Override
-      public void selectionChanged(SelectionChangedEvent event) {
-        // if confirmed, send selection event for FS
-        // else, do selectAndReveal
-        StructuredSelection selection = (StructuredSelection) event
-            .getSelection();
+      if (!selection.isEmpty()) {
+        PotentialAnnotation entity = (PotentialAnnotation) selection.getFirstElement();
 
-        if (!selection.isEmpty()) {
-          PotentialAnnotation entity = (PotentialAnnotation) selection.getFirstElement();
-
-          if (editor instanceof AnnotationEditor) {
-            ((AnnotationEditor) editor).selectAndReveal(
-                entity.getBeginIndex(),
-                entity.getEndIndex() - entity.getBeginIndex());
-          }
+        if (editor instanceof AnnotationEditor) {
+          ((AnnotationEditor) editor).selectAndReveal(
+              entity.getBeginIndex(),
+              entity.getEndIndex() - entity.getBeginIndex());
         }
       }
     });

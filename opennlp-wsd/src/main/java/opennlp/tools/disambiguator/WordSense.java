@@ -19,10 +19,7 @@
 
 package opennlp.tools.disambiguator;
 
-import opennlp.tools.disambiguator.WSDSample;
-import opennlp.tools.disambiguator.SynNode;
-
-public class WordSense implements Comparable {
+public class WordSense implements Comparable<WordSense> {
 
   protected WSDSample sample;
   protected SynNode node;
@@ -71,8 +68,9 @@ public class WordSense implements Comparable {
     this.id = id;
   }
 
-  public int compareTo(Object o) {
-    return (this.score - ((WordSense) o).score) < 0 ? 1 : -1;
+  @Override
+  public int compareTo(WordSense o) {
+    return Double.compare(this.score, o.score);
   }
 
   public String getGloss() {

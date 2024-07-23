@@ -19,33 +19,26 @@ package opennlp.tools.similarity.apps;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
+
+import net.billylieurance.azuresearch.AzureSearchResultSet;
+import net.billylieurance.azuresearch.AzureSearchWebResult;
 
 import opennlp.tools.jsmlearning.ProfileReaderWriter;
 import opennlp.tools.parse_thicket.Triple;
 
-import net.billylieurance.azuresearch.AzureSearchImageQuery;
-import net.billylieurance.azuresearch.AzureSearchImageResult;
-import net.billylieurance.azuresearch.AzureSearchResultSet;
-import net.billylieurance.azuresearch.AzureSearchWebQuery;
-import net.billylieurance.azuresearch.AzureSearchWebResult;
-
 public class YahooAnswersMiner extends BingQueryRunner{
 
-	private static final Logger LOG = Logger
-			.getLogger("opennlp.tools.similarity.apps.YahooAnswersMiner");
 	private int page = 0;
-	private static final int hitsPerPage = 50;
+	private static final int HITS_PER_PAGE = 50;
 
 	public List<HitBase> runSearch(String query) {
 		aq.setAppid(BING_KEY);
-		aq.setQuery("site:answers.yahoo.com "+
-				query);		
-		aq.setPerPage(hitsPerPage);
+		aq.setQuery("site:answers.yahoo.com "+ query);
+		aq.setPerPage(HITS_PER_PAGE);
 		aq.setPage(page);
 
 		aq.doQuery();
-		List<HitBase> results = new ArrayList<HitBase> ();
+		List<HitBase> results = new ArrayList<> ();
 		AzureSearchResultSet<AzureSearchWebResult> ars = aq.getQueryResult();
 
 		for (AzureSearchWebResult anr : ars){
@@ -60,11 +53,10 @@ public class YahooAnswersMiner extends BingQueryRunner{
 		return results;
 	}
 
-
 	public List<HitBase> runSearch(String query, int totalPages) {
 		int count=0;
-		List<HitBase> results = new ArrayList<HitBase>();
-		while(totalPages>page*hitsPerPage){
+		List<HitBase> results = new ArrayList<>();
+		while(totalPages>page* HITS_PER_PAGE){
 			List<HitBase> res = runSearch(query);
 			results.addAll(res);
 			if (count>10)
@@ -75,7 +67,6 @@ public class YahooAnswersMiner extends BingQueryRunner{
 		return results;
 	}
 
-
 	public static void main(String[] args) {
 		YahooAnswersMiner self = new YahooAnswersMiner();
 		RelatedSentenceFinder extractor = new RelatedSentenceFinder();
@@ -84,27 +75,20 @@ public class YahooAnswersMiner extends BingQueryRunner{
 		List<HitBase> resp = self
 				.runSearch(topic, 150);
 		System.out.print(resp.get(0));
-		List<String[]> data = new ArrayList<String[]>();
-
+		List<String[]> data = new ArrayList<>();
 
 		for(HitBase item: resp){	      
 			Triple<List<String>, String, String[]> fragmentExtractionResults = 
 					extractor.formCandidateFragmentsForPage(item, topic, null);
 
-			List<String> allFragms = (List<String>)fragmentExtractionResults.getFirst();
-			String downloadedPage = (String)fragmentExtractionResults.getSecond();
-			String[] sents = (String[])fragmentExtractionResults.getThird();
-
+			List<String> allFragms = fragmentExtractionResults.getFirst();
 			for (String fragment : allFragms) {
 				String[] candidateSentences = extractor.formCandidateSentences(fragment, fragmentExtractionResults);
 				System.out.println(candidateSentences);
 				data.add(candidateSentences);
 			}
-			
 		}
-
 		ProfileReaderWriter.writeReport(data, "multi_sentence_queries.csv");
-
 	}
 
 }

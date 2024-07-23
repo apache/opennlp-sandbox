@@ -24,18 +24,22 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.apache.uima.ResourceSpecifierFactory;
 import org.apache.uima.UIMAFramework;
 import org.apache.uima.cas.CAS;
-import org.apache.uima.caseditor.editor.DocumentFormat;
+import org.apache.uima.cas.SerialFormat;
 import org.apache.uima.caseditor.editor.DocumentUimaImpl;
 import org.apache.uima.caseditor.editor.ICasDocument;
 import org.apache.uima.caseditor.editor.ICasEditor;
@@ -48,27 +52,30 @@ import org.apache.uima.util.CasCreationUtils;
 import org.apache.uima.util.InvalidXMLException;
 import org.apache.uima.util.XMLInputSource;
 import org.apache.uima.util.XMLParser;
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.PreferenceStore;
 import org.eclipse.swt.widgets.Composite;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import org.glassfish.jersey.client.ClientProperties;
+import org.glassfish.jersey.client.ClientResponse;
 
 public class DefaultCasDocumentProvider extends
         org.apache.uima.caseditor.editor.CasDocumentProvider {
 
   private static final int READ_TIMEOUT = 30000;
   
-  private Map<Object, PreferenceStore> tsPreferenceStores =
-      new HashMap<Object, PreferenceStore>();
+  private final Map<Object, PreferenceStore> tsPreferenceStores = new HashMap<>();
   
-  private Map<String, IPreferenceStore> sessionPreferenceStores = new HashMap<String, IPreferenceStore>();
+  private final Map<String, IPreferenceStore> sessionPreferenceStores = new HashMap<>();
   
   private static TypeSystemDescription createTypeSystemDescription(InputStream in) throws IOException {
 
@@ -77,21 +84,18 @@ public class DefaultCasDocumentProvider extends
     // resolving a referenced type system will fail
 
     XMLInputSource xmlTypeSystemSource = new XMLInputSource(in, new File(""));
-
     XMLParser xmlParser = UIMAFramework.getXMLParser();
 
-    TypeSystemDescription typeSystemDesciptor;
+    TypeSystemDescription typeSystemDescriptor;
 
     try {
-      typeSystemDesciptor = (TypeSystemDescription) xmlParser
-          .parse(xmlTypeSystemSource);
-
-      typeSystemDesciptor.resolveImports();
+      typeSystemDescriptor = (TypeSystemDescription) xmlParser.parse(xmlTypeSystemSource);
+      typeSystemDescriptor.resolveImports();
     } catch (InvalidXMLException e) {
       throw new IOException(e);
     }
 
-    return typeSystemDesciptor;
+    return typeSystemDescriptor;
   }
   
   private static CAS createEmptyCAS(TypeSystemDescription typeSystem) {
@@ -100,15 +104,15 @@ public class DefaultCasDocumentProvider extends
     TypePriorities typePriorities = resourceSpecifierFactory
         .createTypePriorities();
 
-    FsIndexDescription indexDesciptor = new FsIndexDescription_impl();
-    indexDesciptor.setLabel("TOPIndex");
-    indexDesciptor.setTypeName("uima.cas.TOP");
-    indexDesciptor.setKind(FsIndexDescription.KIND_SORTED);
+    FsIndexDescription indexDescriptor = new FsIndexDescription_impl();
+    indexDescriptor.setLabel("TOPIndex");
+    indexDescriptor.setTypeName("uima.cas.TOP");
+    indexDescriptor.setKind(FsIndexDescription.KIND_SORTED);
 
     CAS cas;
     try {
       cas = CasCreationUtils.createCas(typeSystem, typePriorities,
-          new FsIndexDescription[] { indexDesciptor });
+          new FsIndexDescription[] { indexDescriptor });
     } catch (ResourceInitializationException e) {
       e.printStackTrace();
       cas = null;
@@ -126,26 +130,22 @@ public class DefaultCasDocumentProvider extends
       //       the user if downloading the CAS fails?
       
       CorpusServerCasEditorInput casInput = (CorpusServerCasEditorInput) element;
-      
-      Client client = Client.create();
-      client.setReadTimeout(READ_TIMEOUT);
-      WebResource webResource = client.resource(casInput.getServerUrl());
-      
+
+      Client c = ClientBuilder.newClient();
+      c.property(ClientProperties.READ_TIMEOUT, READ_TIMEOUT);
+      WebTarget webResource = c.target(casInput.getServerUrl());
+
       // Note: The type system could be cached to avoid downloading it
       //       for every opened CAS, a time stamp can be used to detect
       //       if it has been changed or not.
       
-      ClientResponse tsResponse = webResource
-              .path("_typesystem")
-              .accept(MediaType.TEXT_XML)
-              // TODO: How to fix this? Shouldn't accept do it?
+      ClientResponse tsResponse = webResource.path("_typesystem")
+              .request(MediaType.TEXT_XML)
               .header("Content-Type", MediaType.TEXT_XML)
               .get(ClientResponse.class);
       
-      InputStream tsIn = tsResponse.getEntityInputStream();
       TypeSystemDescription tsDesc = null;
-      
-      try {
+      try (InputStream tsIn = tsResponse.getEntityStream()) {
         tsDesc = createTypeSystemDescription(tsIn);
       }
       catch (IOException e) {
@@ -155,42 +155,28 @@ public class DefaultCasDocumentProvider extends
         // TODO: Stop here, and display some kind of
         // error message to the user
       }
-      finally {
-        try {
-          tsIn.close();
-        } catch (IOException e) {
-        }
-      }
-      // create an empty cas ..
+
+      // create an empty cas...
       CAS cas = createEmptyCAS(tsDesc);
       
       ClientResponse casResponse;
-      try {
-        casResponse = webResource
-            .path(URLEncoder.encode(casInput.getName(), "UTF-8"))
-            .accept(MediaType.TEXT_XML)
-            // TODO: How to fix this? Shouldn't accept do it?
-            .header("Content-Type", MediaType.TEXT_XML)
-            .get(ClientResponse.class);
-      } catch (UnsupportedEncodingException e) {
-        throw new RuntimeException("Should never fail, UTF-8 encoding is available on every JRE!", e);
+      casResponse = webResource.path(URLEncoder.encode(casInput.getName(), StandardCharsets.UTF_8))
+          .request(MediaType.TEXT_XML)
+          .header("Content-Type", MediaType.TEXT_XML)
+          .get(ClientResponse.class);
+
+      org.apache.uima.caseditor.editor.ICasDocument doc;
+      try (InputStream casIn = casResponse.getEntityStream()) {
+        IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+        IPath pluginStatePath = CorpusServerPlugin.getDefault().getStateLocation();
+        IPath tempPath = pluginStatePath.append(casInput.getName()).addFileExtension(MediaType.TEXT_XML);
+        IFile casFile = root.getFile(tempPath);
+        casFile.setContents(casIn, IResource.FORCE, new NullProgressMonitor());
+        doc = new DocumentUimaImpl(cas, casFile, SerialFormat.XMI.name());
+      } catch (IOException e) {
+        throw new RuntimeException(e.getLocalizedMessage(), e);
       }
-      
-      InputStream casIn = casResponse.getEntityInputStream();
-      
-      org.apache.uima.caseditor.editor.ICasDocument doc = null;
-      
-      try {
-        doc = new DocumentUimaImpl(cas, casIn, DocumentFormat.XMI);
-      }
-      // TODO: Catch exception here, and display error message?!
-      finally {
-        try {
-          casIn.close();
-        } catch (IOException e) {
-        }
-      }
-      
+
       return doc;
     }
 
@@ -215,26 +201,21 @@ public class DefaultCasDocumentProvider extends
         ByteArrayOutputStream outStream = new ByteArrayOutputStream(40000); 
         documentImpl.serialize(outStream);
         
-        Client client = Client.create();
-        client.setReadTimeout(READ_TIMEOUT);
-        WebResource webResource = client.resource(casInput.getServerUrl());
+        Client c = ClientBuilder.newClient();
+        c.property(ClientProperties.READ_TIMEOUT, READ_TIMEOUT);
+        WebTarget webResource = c.target(casInput.getServerUrl());
         
-        byte xmiBytes[] = outStream.toByteArray();
+        byte[] xmiBytes = outStream.toByteArray();
         
-        String encodedCasId;
-        try {
-          encodedCasId = URLEncoder.encode(casInput.getName(), "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-          throw new CoreException(new Status(Status.ERROR, CorpusServerPlugin.PLUGIN_ID,
-              "Severe error, should never happen, UTF-8 encoding is not supported!"));
-        }
-        
-        ClientResponse response = webResource
-                .path(encodedCasId)
-                .accept(MediaType.TEXT_XML)
-                // TODO: How to fix this? Shouldn't accept do it?
-                .header("Content-Type", MediaType.TEXT_XML)
-                .put(ClientResponse.class, xmiBytes);
+        String encodedCasId = URLEncoder.encode(casInput.getName(), StandardCharsets.UTF_8);
+        String contentDisposition = "attachment; filename=\"" + encodedCasId + "\"";
+
+        Response response = webResource.path(encodedCasId)
+                .request(MediaType.TEXT_XML)
+                .header("Content-Type", MediaType.APPLICATION_OCTET_STREAM_TYPE)
+                .header("Content-Disposition", contentDisposition)
+                .header("Content-Length", xmiBytes.length)
+                .put(Entity.entity(xmiBytes, MediaType.APPLICATION_OCTET_STREAM_TYPE));
         
         if (response.getStatus() != 204) {
           throw new CoreException(new Status(Status.ERROR, CorpusServerPlugin.PLUGIN_ID,
@@ -288,15 +269,12 @@ public class DefaultCasDocumentProvider extends
     if (tsStore == null) {
       
       IPreferenceStore store = CorpusServerPlugin.getDefault().getPreferenceStore();
-      
       String tsStoreString = store.getString(getTypeSystemId((CorpusServerCasEditorInput) element));
       
       tsStore = new PreferenceStore();
       
       if (tsStoreString.length() != 0) { 
-        InputStream tsStoreIn = new ByteArrayInputStream(tsStoreString.getBytes(Charset.forName("UTF-8")));
-        
-        try {
+        try (InputStream tsStoreIn = new ByteArrayInputStream(tsStoreString.getBytes(StandardCharsets.UTF_8))) {
           tsStore.load(tsStoreIn);
         } catch (IOException e) {
           e.printStackTrace();
@@ -305,8 +283,6 @@ public class DefaultCasDocumentProvider extends
       
       tsPreferenceStores.put(element, tsStore);
     }
-    
-    
     return tsStore;
   }
 
@@ -316,18 +292,14 @@ public class DefaultCasDocumentProvider extends
     PreferenceStore tsStore = tsPreferenceStores.get(element);
     
     if (tsStore != null) {
-      ByteArrayOutputStream tsStoreBytes = new ByteArrayOutputStream();
-      try {
+      try (ByteArrayOutputStream tsStoreBytes = new ByteArrayOutputStream()) {
         tsStore.save(tsStoreBytes, "");
+        IPreferenceStore store = CorpusServerPlugin.getDefault().getPreferenceStore();
+        store.putValue(getTypeSystemId((CorpusServerCasEditorInput) element),
+                tsStoreBytes.toString(StandardCharsets.UTF_8));
       } catch (IOException e) {
-        // TODO Auto-generated catch block
         e.printStackTrace();
       }
-      
-      IPreferenceStore store = CorpusServerPlugin.getDefault().getPreferenceStore();
-      store.putValue(getTypeSystemId((CorpusServerCasEditorInput) element), 
-          new String(tsStoreBytes.toByteArray(), Charset.forName("UTF-8")));
     }
-    
   }
 }

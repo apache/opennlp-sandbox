@@ -21,13 +21,13 @@ package opennlp.tools.coref.sim;
  * Enumeration of gender types.
  */
 public class GenderEnum {
-  private String gender;
+  private final String gender;
 
   /** Male gender. */
   public static final GenderEnum MALE = new GenderEnum("male");
   /** Female gender. */
   public static final GenderEnum FEMALE = new GenderEnum("female");
-  /** Nueter gender. */
+  /** Neuter gender. */
   public static final GenderEnum NEUTER = new GenderEnum("neuter");
   /** Unknown gender. */
   public static final GenderEnum UNKNOWN = new GenderEnum("unknown");

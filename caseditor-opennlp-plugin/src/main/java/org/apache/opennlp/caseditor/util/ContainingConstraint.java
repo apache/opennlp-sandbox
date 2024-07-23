@@ -1,6 +1,6 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreemnets.  See the NOTICE file distributed with
+ * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
@@ -18,7 +18,6 @@
 package org.apache.opennlp.caseditor.util;
 
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.LinkedList;
 
 import org.apache.uima.cas.FSMatchConstraint;
@@ -31,8 +30,7 @@ import org.apache.uima.cas.text.AnnotationFS;
 public final class ContainingConstraint implements FSMatchConstraint {
   private static final long serialVersionUID = 1;
 
-  private Collection<AnnotationFS> mContainingAnnotations = 
-      new LinkedList<AnnotationFS>();
+  private final Collection<AnnotationFS> mContainingAnnotations = new LinkedList<>();
 
   /**
    * Initializes a new instance.
@@ -43,8 +41,6 @@ public final class ContainingConstraint implements FSMatchConstraint {
 
   /**
    * Initializes a new instance.
-   * 
-   * @param containingAnnotation 
    */
   public ContainingConstraint(AnnotationFS containingAnnotation) {
     mContainingAnnotations.add(containingAnnotation);
@@ -60,8 +56,7 @@ public final class ContainingConstraint implements FSMatchConstraint {
 
     AnnotationFS annotation = (AnnotationFS) featureStructure;
 
-    for (Iterator<AnnotationFS> it = mContainingAnnotations.iterator(); it.hasNext(); ) {
-      AnnotationFS containingAnnotation = it.next(); 
+    for (AnnotationFS containingAnnotation : mContainingAnnotations) {
       if (isContaining(annotation, containingAnnotation)) {
         return true;
       }
@@ -71,12 +66,8 @@ public final class ContainingConstraint implements FSMatchConstraint {
   }
 
   private boolean isContaining(AnnotationFS annotation, AnnotationFS containing) {
-    if ((containing.getBegin() <= annotation.getBegin())
-        && (containing.getEnd() >= annotation.getEnd())) {
-      return true;
-    } else {
-      return false;
-    }
+    return (containing.getBegin() <= annotation.getBegin())
+            && (containing.getEnd() >= annotation.getEnd());
   }
 
 }

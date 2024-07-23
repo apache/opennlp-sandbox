@@ -28,46 +28,41 @@ import org.docx4j.openpackaging.parts.WordprocessingML.MainDocumentPart;
 import org.docx4j.relationships.Relationship;
 import org.docx4j.relationships.Relationships;
 import org.docx4j.wml.Comments;
-import org.docx4j.wml.ObjectFactory;
-
-//import util.RelationshipName;
 
 public class Comment {
 
-    private WordprocessingMLPackage wordMlPackage;
-    private boolean relSet = false;
+  private final WordprocessingMLPackage wordMlPackage;
+  private final boolean relSet = false;
 
-    public Comment(WordprocessingMLPackage wordMLPack) {
-        this.wordMlPackage = wordMLPack;
-        setCommentRel();
+  public Comment(WordprocessingMLPackage wordMLPack) {
+    this.wordMlPackage = wordMLPack;
+    setCommentRel();
+  }
+
+  private void setCommentRel() {
+    if (!commentRelSet()) {
+      CommentsPart cp;
+      try {
+        cp = new CommentsPart();
+        // Part must have minimal contents
+        wordMlPackage.getMainDocumentPart().addTargetPart(cp);
+      } catch (InvalidFormatException e) {
+        e.printStackTrace();
+      }
     }
+  }
 
-    private void setCommentRel() {
-        if (!commentRelSet()) {
-            CommentsPart cp;
-            try {
-                cp = new CommentsPart();
-                // Part must have minimal contents
-                org.docx4j.wml.ObjectFactory wmlObjectFactory = new ObjectFactory();
-                wordMlPackage.getMainDocumentPart().addTargetPart(cp);
-            } catch (InvalidFormatException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
-    }
+  private boolean commentRelSet() {
+    Relationship relShip;
+    boolean relSet = false;
+    if (!relSet) {
+      JaxbXmlPart<Relationships> jxpRelShips = wordMlPackage
+              .getMainDocumentPart().getOwningRelationshipPart();
+      Relationships pk = jxpRelShips.getJaxbElement();
 
-    private boolean commentRelSet() {
-        Relationship relShip;
-        boolean relSet = false;
-        if (!relSet) {
-            JaxbXmlPart<Relationships> jxpRelShips = wordMlPackage
-                    .getMainDocumentPart().getOwningRelationshipPart();
-            Relationships pk = jxpRelShips.getJaxbElement();
+      List<Relationship> mc = pk.getRelationship();
 
-            List<Relationship> mc = pk.getRelationship();
-
-            Iterator<Relationship> it = mc.iterator();
+      Iterator<Relationship> it = mc.iterator();
        /*     while (it.hasNext() && !relSet) {
                 relShip = it.next();
                 if (relShip.getValue().equalsIgnoreCase(
@@ -75,44 +70,37 @@ public class Comment {
                     relSet = true;
                 }
             }*/
-        }
-        return relSet;
     }
-    
-    public static void main(String[] args) throws Exception {
+    return relSet;
+  }
 
-        // Create a package
-        WordprocessingMLPackage wmlPack = new WordprocessingMLPackage();
+  public static void main(String[] args) throws Exception {
 
-        // Create main document part
-        MainDocumentPart wordDocumentPart = new MainDocumentPart();      
-        
-        // Create main document part content
-        org.docx4j.wml.ObjectFactory factory = Context.getWmlObjectFactory();
-        org.docx4j.wml.Body  body = factory.createBody();      
-        org.docx4j.wml.Document wmlDocumentEl = factory.createDocument();
-        
-        wmlDocumentEl.setBody(body);
-        wordDocumentPart.setJaxbElement(wmlDocumentEl);
-        wmlPack.addTargetPart(wordDocumentPart);
-        
-        CommentsPart cp = new CommentsPart();
-        // Part must have minimal contents
-        Comments comments = factory.createComments();
-        cp.setJaxbElement(comments);
-        
-        wordDocumentPart.addTargetPart(cp);
-        
-        // Now you can add comments to your comments part,
-        // and comment refs in your main document part   
-        
-        
-        
-        
-        
-        
-              
-        wmlPack.save(new java.io.File(System.getProperty("user.dir")+ "/out-m.docx"));       
-      }
-    
+    // Create a package
+    WordprocessingMLPackage wmlPack = new WordprocessingMLPackage();
+
+    // Create main document part
+    MainDocumentPart wordDocumentPart = new MainDocumentPart();
+
+    // Create main document part content
+    org.docx4j.wml.ObjectFactory factory = Context.getWmlObjectFactory();
+    org.docx4j.wml.Body  body = factory.createBody();
+    org.docx4j.wml.Document wmlDocumentEl = factory.createDocument();
+
+    wmlDocumentEl.setBody(body);
+    wordDocumentPart.setJaxbElement(wmlDocumentEl);
+    wmlPack.addTargetPart(wordDocumentPart);
+
+    CommentsPart cp = new CommentsPart();
+    // Part must have minimal contents
+    Comments comments = factory.createComments();
+    cp.setJaxbElement(comments);
+
+    wordDocumentPart.addTargetPart(cp);
+
+    // Now you can add comments to your comments part,
+    // and comment refs in your main document part
+
+    wmlPack.save(new java.io.File(System.getProperty("user.dir")+ "/out-m.docx"));
+  }
 }

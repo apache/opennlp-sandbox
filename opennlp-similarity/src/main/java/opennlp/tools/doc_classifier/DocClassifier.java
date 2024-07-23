@@ -29,8 +29,6 @@ import opennlp.tools.similarity.apps.utils.ValueSortMap;
 import opennlp.tools.textsimilarity.TextProcessor;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -44,36 +42,31 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.Version;
-import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DocClassifier {
-	public static final String DOC_CLASSIFIER_KEY = "doc_class";
-	public static String resourceDir = null;
-	public static final Log logger = LogFactory.getLog(DocClassifier.class);
-	private Map<String, Float> scoredClasses = new HashMap<String, Float>();
-	
 
-	public static Float MIN_TOTAL_SCORE_FOR_CATEGORY = 0.3f; //3.0f;
+	private static final Logger LOGGER = LoggerFactory.getLogger(DocClassifier.class);
+	public static final String DOC_CLASSIFIER_KEY = "doc_class";
+	public static final String RESOURCE_DIR = null;
+	private Map<String, Float> scoredClasses;
+	
+	public static final Float MIN_TOTAL_SCORE_FOR_CATEGORY = 0.3f; //3.0f;
 	protected static IndexReader indexReader = null;
 	protected static IndexSearcher indexSearcher = null;
 	// resource directory plus the index folder
-	private static final String INDEX_PATH = resourceDir
-			+ ClassifierTrainingSetIndexer.INDEX_PATH;
+	private static final String INDEX_PATH = RESOURCE_DIR + ClassifierTrainingSetIndexer.INDEX_PATH;
 
 	// http://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm
 	private static final int MAX_DOCS_TO_USE_FOR_CLASSIFY = 10, // 10 similar
-			// docs for
-			// nearest
-			// neighbor
-			// settings
-
+			// docs for nearest neighbor settings
 			MAX_CATEG_RESULTS = 2;
 	private static final float BEST_TO_NEX_BEST_RATIO = 2.0f;
 	// to accumulate classif results
-	private CountItemsList<String> localCats = new CountItemsList<String>();
-	private int MAX_TOKENS_TO_FORM = 30;
-	private String CAT_COMPUTING = "computing";
+	private final CountItemsList<String> localCats = new CountItemsList<>();
+	private static final int MAX_TOKENS_TO_FORM = 30;
+	private final String CAT_COMPUTING = "computing";
 	public static final String DOC_CLASSIFIER_MAP = "doc_classifier_map";
 	private static final int MIN_SENTENCE_LENGTH_TO_CATEGORIZE = 60; // if
 	// sentence
@@ -86,74 +79,71 @@ public class DocClassifier {
 	// for
 	// classification
 	private static final int MIN_CHARS_IN_QUERY = 30; // if combination of
-	// keywords is shorter,
+	// keywords are shorter,
 	// should not be used
 	// for classification
 
 	// these are categories from the index
-	public static final String[] categories = new String[] { "legal", "health",
-		"finance", "computing", "engineering", "business" };
+	public static final String[] CATEGORIES = new String[]
+					{ "legal", "health", "finance", "computing", "engineering", "business" };
 
 	static {
 		synchronized (DocClassifier.class) {
 			Directory indexDirectory = null;
 
 			try {
-				indexDirectory = FSDirectory.open(new File(INDEX_PATH));
+				indexDirectory = FSDirectory.open(new File(INDEX_PATH).toPath());
 			} catch (IOException e2) {
-				logger.error("problem opening index " + e2);
+				LOGGER.error("problem opening index " + e2);
 			}
 			try {
 				indexReader = DirectoryReader.open(indexDirectory);
 				indexSearcher = new IndexSearcher(indexReader);
 			} catch (IOException e2) {
-				logger.error("problem reading index \n" + e2);
+				LOGGER.error("problem reading index \n" + e2);
 			}
 		}
 	}
 
-	public DocClassifier(String inputFilename, JSONObject inputJSON) {
-		scoredClasses = new HashMap<String, Float>();
+	public DocClassifier(String inputFilename) {
+		scoredClasses = new HashMap<>();
 	}
 
 	/* returns the class name for a sentence */
 	private List<String> classifySentence(String queryStr) {
 
-		List<String> results = new ArrayList<String>();
+		List<String> results = new ArrayList<>();
 		// too short of a query
 		if (queryStr.length() < MIN_CHARS_IN_QUERY) {
 			return results;
 		}
 
-		Analyzer std = new StandardAnalyzer(Version.LUCENE_46);
-		QueryParser parser = new QueryParser(Version.LUCENE_46, "text", std);
+		Analyzer std = new StandardAnalyzer();
+		QueryParser parser = new QueryParser("text", std);
 		parser.setDefaultOperator(QueryParser.Operator.OR);
-		Query query = null;
+		Query query;
 		try {
 			query = parser.parse(queryStr);
-
 		} catch (ParseException e2) {
-
 			return results;
 		}
-		TopDocs hits = null; // TopDocs search(Query query, int n)
+		TopDocs hits = null; // TopDocs search(Query, int)
 		// Finds the top n hits for query.
 		try {
-			hits = indexSearcher
-					.search(query, MAX_DOCS_TO_USE_FOR_CLASSIFY + 2);
+			hits = indexSearcher.search(query, MAX_DOCS_TO_USE_FOR_CLASSIFY + 2);
 		} catch (IOException e1) {
-			logger.error("problem searching index \n" + e1);
+			LOGGER.error("problem searching index \n", e1);
 		}
-		logger.debug("Found " + hits.totalHits + " hits for " + queryStr);
+		LOGGER.debug("Found " + hits.totalHits + " hits for " + queryStr);
 		int count = 0;
 		
 
 		for (ScoreDoc scoreDoc : hits.scoreDocs) {
-			Document doc = null;
+			Document doc;
 			try {
 				doc = indexSearcher.doc(scoreDoc.doc);
 			} catch (IOException e) {
-				logger.error("Problem searching training set for classif \n"
+				LOGGER.error("Problem searching training set for classif \n"
 						+ e);
 				continue;
 			}
@@ -165,7 +155,7 @@ public class DocClassifier {
 			else
 				scoredClasses.put(flag, scoreForClass + scoreDoc.score);
 
-			logger.debug(" <<categorized as>> " + flag + " | score="
+			LOGGER.debug(" <<categorized as>> " + flag + " | score="
 					+ scoreDoc.score + " \n text =" + doc.get("text") + "\n");
 
 			if (count > MAX_DOCS_TO_USE_FOR_CLASSIFY) {
@@ -175,13 +165,12 @@ public class DocClassifier {
 		}
 		try {
 			scoredClasses = ValueSortMap.sortMapByValue(scoredClasses, false);
-			List<String> resultsAll = new ArrayList<String>(
-					scoredClasses.keySet()), resultsAboveThresh = new ArrayList<String>();
+			List<String> resultsAll = new ArrayList<>(scoredClasses.keySet()), resultsAboveThresh = new ArrayList<>();
 			for (String key : resultsAll) {
 				if (scoredClasses.get(key) > MIN_TOTAL_SCORE_FOR_CATEGORY)
 					resultsAboveThresh.add(key);
 				else
-					logger.debug("Too low score of " + scoredClasses.get(key)
+					LOGGER.debug("Too low score of " + scoredClasses.get(key)
 							+ " for category = " + key);
 			}
 
@@ -193,7 +182,7 @@ public class DocClassifier {
 			else
 				results = resultsAboveThresh;
 		} catch (Exception e) {
-			logger.error("Problem aggregating search results\n" + e);
+			LOGGER.error("Problem aggregating search results\n" + e);
 		}
 		if (results.size() < 2)
 			return results;
@@ -211,19 +200,15 @@ public class DocClassifier {
 
 	}
 
-	
-
-	
 	public static String formClassifQuery(String pageContentReader, int maxRes) {
 
 		// We want to control which delimiters we substitute. For example '_' &
 		// \n we retain
-		pageContentReader = pageContentReader.replaceAll("[^A-Za-z0-9 _\\n]",
-				"");
+		pageContentReader = pageContentReader.replaceAll("[^A-Za-z0-9 _\\n]", "");
 
 		Scanner in = new Scanner(pageContentReader);
 		in.useDelimiter("\\s+");
-		Map<String, Integer> words = new HashMap<String, Integer>();
+		Map<String, Integer> words = new HashMap<>();
 
 		while (in.hasNext()) {
 			String word = in.next();
@@ -238,7 +223,7 @@ public class DocClassifier {
 		}
 		in.close();
 		words = ValueSortMap.sortMapByValue(words, false);
-		List<String> resultsAll = new ArrayList<String>(words.keySet()), results = null;
+		List<String> resultsAll = new ArrayList<>(words.keySet()), results;
 
 		int len = resultsAll.size();
 		if (len > maxRes)
@@ -254,15 +239,13 @@ public class DocClassifier {
 		try {
 			indexReader.close();
 		} catch (IOException e) {
-			logger.error("Problem closing index \n" + e);
+			LOGGER.error("Problem closing index \n" + e);
 		}
 	}	
-	
 	
 	/*
 	 * Main entry point for classifying sentences
 	 */
-
 	public List<String> getEntityOrClassFromText(String content) {
 
 		List<String> sentences = TextProcessor.splitToSentences(content);
@@ -280,27 +263,23 @@ public class DocClassifier {
 				String query = formClassifQuery(sentence, MAX_TOKENS_TO_FORM);
 				classifResults = classifySentence(query);
 				if (classifResults != null && classifResults.size() > 0) {
-					for (String c : classifResults) {
-						localCats.add(c);
-					}
-					logger.debug(sentence + " =>  " + classifResults);
+					localCats.addAll(classifResults);
+					LOGGER.debug(sentence + " =>  " + classifResults);
 				}
 			}
-
 		} catch (Exception e) {
-			logger.error("Problem classifying sentence\n " + e);
+			LOGGER.error("Problem classifying sentence\n " + e);
 		}
 		
-		List<String> aggrResults = new ArrayList<String>();
+		List<String> aggrResults = new ArrayList<>();
 		try {
 
 			aggrResults = localCats.getFrequentTags();
 
-			logger.debug(localCats.getFrequentTags());
+			LOGGER.debug(localCats.getFrequentTags().toString());
 		} catch (Exception e) {
-			logger.error("Problem aggregating search results\n" + e);
+			LOGGER.error("Problem aggregating search results\n", e);
 		}
 		return aggrResults;
 	}
-
 }

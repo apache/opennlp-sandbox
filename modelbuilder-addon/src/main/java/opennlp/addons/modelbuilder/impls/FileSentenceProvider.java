@@ -17,15 +17,14 @@ package opennlp.addons.modelbuilder.impls;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import opennlp.addons.modelbuilder.SentenceProvider;
 
 /**
@@ -33,30 +32,18 @@ import opennlp.addons.modelbuilder.SentenceProvider;
  */
 public class FileSentenceProvider implements SentenceProvider {
 
+  private final Set<String> sentences = new HashSet<>();
   BaseModelBuilderParams params ;
-  Set<String> sentences = new HashSet<String>();
 
+  @Override
   public Set<String> getSentences() {
      if (sentences.isEmpty()) {
-      try {
-        InputStream fis;
-        BufferedReader br;
+      try (BufferedReader br = new BufferedReader(new InputStreamReader(
+              new FileInputStream(params.getSentenceFile()), StandardCharsets.UTF_8))) {
         String line;
-
-        fis = new FileInputStream(params.getSentenceFile());
-        br = new BufferedReader(new InputStreamReader(fis, Charset.forName("UTF-8")));
-        int i=0;
         while ((line = br.readLine()) != null) {
-         
           sentences.add(line);
         }
-
-        // Done with the file
-        br.close();
-        br = null;
-        fis = null;
-      } catch (FileNotFoundException ex) {
-        Logger.getLogger(FileKnownEntityProvider.class.getName()).log(Level.SEVERE, null, ex);
       } catch (IOException ex) {
         Logger.getLogger(FileKnownEntityProvider.class.getName()).log(Level.SEVERE, null, ex);
       }
@@ -64,7 +51,8 @@ public class FileSentenceProvider implements SentenceProvider {
     return sentences;
   }
 
- public void setParameters(BaseModelBuilderParams params) {
+  @Override
+  public void setParameters(BaseModelBuilderParams params) {
     this.params = params;
   }
 }

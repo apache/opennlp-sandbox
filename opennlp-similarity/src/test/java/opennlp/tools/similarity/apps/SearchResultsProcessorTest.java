@@ -18,16 +18,18 @@ package opennlp.tools.similarity.apps;
 
 import java.util.List;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 
-public class SearchResultsProcessorTest extends TestCase {
-  SearchResultsProcessor proc = new SearchResultsProcessor();
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-  public void testSearchOrder() {
+class SearchResultsProcessorTest {
+  private final SearchResultsProcessor proc = new SearchResultsProcessor();
+
+  @Test
+  void testSearchOrder() {
     List<HitBase> res = proc.runSearch("How can I pay tax on my income abroad");
 
     // we verify that top answers have high similarity score
-    System.out.println(res);
     HitBase first = res.get(0);
     assertTrue(first.getGenerWithQueryScore() > 2.79);
     // assertTrue(first.getTitle().indexOf("Foreign")>-1 &&
@@ -40,11 +42,10 @@ public class SearchResultsProcessorTest extends TestCase {
 
   }
 
-  public void testSearchOrder2() {
-    List<HitBase> res = proc
-        .runSearch("Can I estimate what my income tax would be by using my last pay");
+  @Test
+  void testSearchOrder2() {
+    List<HitBase> res = proc.runSearch("Can I estimate what my income tax would be by using my last pay");
 
-    System.out.println(res);
     HitBase first = res.get(0);
     assertTrue(first.getGenerWithQueryScore() > 1.9);
 

@@ -39,12 +39,10 @@ import net.billylieurance.azuresearch.AzureSearchRelatedSearchResult;
 import net.billylieurance.azuresearch.AzureSearchResultSet;
 import net.billylieurance.azuresearch.AzureSearchSpellingSuggestionQuery;
 import net.billylieurance.azuresearch.AzureSearchSpellingSuggestionResult;
-import net.billylieurance.azuresearch.AzureSearchWebQuery;
-import net.billylieurance.azuresearch.AzureSearchWebResult;
 
 public class BingRelatedSpellingQueryRunner extends BingQueryRunner{
-	private AzureSearchRelatedSearchQuery aq = new AzureSearchRelatedSearchQuery ();
-	private AzureSearchSpellingSuggestionQuery  ssq = new AzureSearchSpellingSuggestionQuery ();
+	private final AzureSearchRelatedSearchQuery aq = new AzureSearchRelatedSearchQuery ();
+	private final AzureSearchSpellingSuggestionQuery  ssq = new AzureSearchSpellingSuggestionQuery ();
 	
 	
 	public List<HitBase> runSearch(String query, int nRes) {
@@ -53,7 +51,7 @@ public class BingRelatedSpellingQueryRunner extends BingQueryRunner{
 		aq.setPerPage(nRes);
 		aq.doQuery();
 		
-		List<HitBase> results = new ArrayList<HitBase> ();
+		List<HitBase> results = new ArrayList<>();
 		AzureSearchResultSet<AzureSearchRelatedSearchResult> ars = aq.getQueryResult();
 		
 		for (AzureSearchRelatedSearchResult anr : ars){
@@ -71,7 +69,7 @@ public class BingRelatedSpellingQueryRunner extends BingQueryRunner{
 		ssq.setPerPage(nRes);
 		ssq.doQuery();
 		
-		List<HitBase> results = new ArrayList<HitBase> ();
+		List<HitBase> results = new ArrayList<>();
 		AzureSearchResultSet<AzureSearchSpellingSuggestionResult> ars = ssq.getQueryResult();
 		
 		for ( AzureSearchSpellingSuggestionResult anr : ars){
@@ -98,7 +96,6 @@ public class BingRelatedSpellingQueryRunner extends BingQueryRunner{
 		          .runSSSearch("clear Sess", 10);
 		      System.out.print(resp.get(0));
 	    } catch (Exception e) {
-	      // TODO Auto-generated catch block
 	      e.printStackTrace();
 	    }
 	}

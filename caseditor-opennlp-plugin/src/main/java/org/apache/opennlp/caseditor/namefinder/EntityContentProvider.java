@@ -22,8 +22,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import opennlp.tools.util.Span;
-
 import org.apache.opennlp.caseditor.AbstractCasChangeTrigger;
 import org.apache.opennlp.caseditor.OpenNLPPlugin;
 import org.apache.opennlp.caseditor.OpenNLPPreferenceConstants;
@@ -49,6 +47,8 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.widgets.Display;
+
+import opennlp.tools.util.Span;
 
 /**
  * The EntityContentProvider is responsible to trigger the detection of entities
@@ -209,93 +209,89 @@ public class EntityContentProvider implements IStructuredContentProvider {
   private class NameFinderJobListener extends JobChangeAdapter {
     public void done(final IJobChangeEvent event) {
       
-      Display.getDefault().asyncExec(new Runnable() {
-        
-        @Override
-        public void run() {
-          
-          // TODO: Check if view is still available, that might be called after view is disposed.
-          
-          IStatus status = event.getResult();
-          
-          if (status.isOK()) {
-            EntityContentProvider.this.nameFinderView.setMessage(null);
-            
-            List<PotentialAnnotation> detectedEntities = EntityContentProvider.this.nameFinder.getNames();
-            
-            // Remove all detected entities from the last run which are not detected anymore
-            for (Iterator<PotentialAnnotation> it = candidateEntities.iterator(); it.hasNext();) {
-              PotentialAnnotation entity = it.next();
-              if (searchEntity(detectedEntities, entity.getBeginIndex(),
-                  entity.getEndIndex(), entity.getType()) == null)  {
-                
-                // TODO: Create an array of entities that should be removed, much faster ...
-                EntityContentProvider.this.entityListViewer.remove(entity);
-                
-                // Can safely be removed, since it can only be an un-confirmed entity
-                it.remove();
-              }
-            }
-            
-            // Update if entity already exist, or add it
-            for (PotentialAnnotation detectedEntity : detectedEntities) {
-              
-              // Bug: 
-              // There can be multiple entities in this span!
-              // In this case we want to keep the first, update it, and discard the others!
-              
-              // Case: One entity spanning two tokens replaces 
-              
-              PotentialAnnotation entity = searchEntity(candidateEntities, detectedEntity.getBeginIndex(),
-                  detectedEntity.getEndIndex(), detectedEntity.getType());
-              
-              // A confirmed entity already exists, update its confidence score
-              if (entity != null) {
-                  entity.setBeginIndex(detectedEntity.getBeginIndex());
-                  entity.setEndIndex(detectedEntity.getEndIndex());
-                  entity.setEntityText(detectedEntity.getEntityText());
-                  entity.setConfidence(detectedEntity.getConfidence());
-                  
-                  EntityContentProvider.this.entityListViewer.refresh(entity);
-              }
-              else {
-                // Only add if it is not a confirmed entity!
-                if (searchEntity(confirmedEntities, detectedEntity.getBeginIndex(),
-                  detectedEntity.getEndIndex(), detectedEntity.getType()) == null) {
-                  EntityContentProvider.this.entityListViewer.add(detectedEntity);
-                  candidateEntities.add(detectedEntity);
-                }
-              }
+      Display.getDefault().asyncExec(() -> {
+
+        // TODO: Check if view is still available, that might be called after view is disposed.
+
+        IStatus status = event.getResult();
+
+        if (status.isOK()) {
+          EntityContentProvider.this.nameFinderView.setMessage(null);
+
+          List<PotentialAnnotation> detectedEntities = EntityContentProvider.this.nameFinder.getNames();
+
+          // Remove all detected entities from the last run which are not detected anymore
+          for (Iterator<PotentialAnnotation> it = candidateEntities.iterator(); it.hasNext();) {
+            PotentialAnnotation entity = it.next();
+            if (searchEntity(detectedEntities, entity.getBeginIndex(),
+                entity.getEndIndex(), entity.getType()) == null)  {
+
+              // TODO: Create an array of entities that should be removed, much faster ...
+              EntityContentProvider.this.entityListViewer.remove(entity);
+
+              // Can safely be removed, since it can only be an un-confirmed entity
+              it.remove();
             }
           }
-          else {
-            EntityContentProvider.this.nameFinderView.setMessage(status.getMessage());
+
+          // Update if entity already exist, or add it
+          for (PotentialAnnotation detectedEntity : detectedEntities) {
+
+            // Bug:
+            // There can be multiple entities in this span!
+            // In this case we want to keep the first, update it, and discard the others!
+
+            // Case: One entity spanning two tokens replaces
+
+            PotentialAnnotation entity = searchEntity(candidateEntities, detectedEntity.getBeginIndex(),
+                detectedEntity.getEndIndex(), detectedEntity.getType());
+
+            // A confirmed entity already exists, update its confidence score
+            if (entity != null) {
+                entity.setBeginIndex(detectedEntity.getBeginIndex());
+                entity.setEndIndex(detectedEntity.getEndIndex());
+                entity.setEntityText(detectedEntity.getEntityText());
+                entity.setConfidence(detectedEntity.getConfidence());
+
+                EntityContentProvider.this.entityListViewer.refresh(entity);
+            }
+            else {
+              // Only add if it is not a confirmed entity!
+              if (searchEntity(confirmedEntities, detectedEntity.getBeginIndex(),
+                detectedEntity.getEndIndex(), detectedEntity.getType()) == null) {
+                EntityContentProvider.this.entityListViewer.add(detectedEntity);
+                candidateEntities.add(detectedEntity);
+              }
+            }
           }
         }
+        else {
+          EntityContentProvider.this.nameFinderView.setMessage(status.getMessage());
+        }
       });
-    };
+    }
   }
   
-  private NameFinderJob nameFinder;
+  private final NameFinderJob nameFinder;
   
-  private CasChangeNameFinderTrigger casChangeTrigger = new CasChangeNameFinderTrigger();
-  private PreferenceChangeNameFinderTrigger preferenceChangeTrigger = new PreferenceChangeNameFinderTrigger();
-  private ConfirmedEntityListener casChangeListener = new ConfirmedEntityListener();
+  private final CasChangeNameFinderTrigger casChangeTrigger = new CasChangeNameFinderTrigger();
+  private final PreferenceChangeNameFinderTrigger preferenceChangeTrigger = new PreferenceChangeNameFinderTrigger();
+  private final ConfirmedEntityListener casChangeListener = new ConfirmedEntityListener();
   
-  private TableViewer entityListViewer;
+  private final TableViewer entityListViewer;
   
   private ICasDocument input;
   
-  private AnnotationEditor editor;
+  private final AnnotationEditor editor;
   
   // contains all existing entity annotations and is synchronized!
   // needed by name finder to calculate updates ... 
-  private List<PotentialAnnotation> candidateEntities = new ArrayList<PotentialAnnotation>();
-  private List<PotentialAnnotation> confirmedEntities = new ArrayList<PotentialAnnotation>();
+  private final List<PotentialAnnotation> candidateEntities = new ArrayList<>();
+  private final List<PotentialAnnotation> confirmedEntities = new ArrayList<>();
   
-  private String nameTypeNames[];
+  private String[] nameTypeNames;
 
-  private NameFinderViewPage nameFinderView;
+  private final NameFinderViewPage nameFinderView;
   
   EntityContentProvider(NameFinderViewPage nameFinderView, AnnotationEditor editor, TableViewer entityList) {
     this.nameFinder = new NameFinderJob();
@@ -308,7 +304,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
     store.addPropertyChangeListener(preferenceChangeTrigger);
   }
   
-  private static boolean contains(String array[], String element) {
+  private static boolean contains(String[] array, String element) {
     
     for (String arrayElement : array) {
       if (element.equals(arrayElement))
@@ -317,7 +313,8 @@ public class EntityContentProvider implements IStructuredContentProvider {
     
     return false;
   }
-  
+
+  @Override
   public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 
     // Problem: "The viewer should not be updated during this call, as it might be in 
@@ -333,7 +330,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
     if (newInput != null) {
       input = (ICasDocument) newInput;
       
-      // Note: Name Finder might run to often ... 
+      // Note: Name Finder might run too often ...
       input.addChangeListener(casChangeListener);
       input.addChangeListener(casChangeTrigger);
       
@@ -373,16 +370,13 @@ public class EntityContentProvider implements IStructuredContentProvider {
       
       FSIndex<AnnotationFS> nameAnnotations = input.getCAS()
           .getAnnotationIndex(nameType);
-      
-      for (Iterator<AnnotationFS> nameIterator = nameAnnotations
-          .iterator(); nameIterator.hasNext();) {
-        
-        AnnotationFS nameAnnotation = (AnnotationFS) nameIterator.next();
-        
+
+      for (AnnotationFS nameAnnotation : nameAnnotations) {
+
         // TODO: Entity must have a type ...
         PotentialAnnotation entity = new PotentialAnnotation(nameAnnotation.getBegin(),
-            nameAnnotation.getEnd(), nameAnnotation.getCoveredText(), null,
-            nameAnnotation.getType().getName());
+                nameAnnotation.getEnd(), nameAnnotation.getCoveredText(), null,
+                nameAnnotation.getType().getName());
         confirmedEntities.add(entity); // TODO: This needs to go into a second list!
       }
     }
@@ -396,7 +390,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
       return;
     }
     
-    String modelPathes[] = store.getString(OpenNLPPreferenceConstants.NAME_FINDER_MODEL_PATH).split(",");
+    String[] modelPathes = store.getString(OpenNLPPreferenceConstants.NAME_FINDER_MODEL_PATH).split(",");
     
     for (int i = 0; i < modelPathes.length; i++) {
       modelPathes[i] = modelPathes[i].trim();
@@ -415,7 +409,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
 
     if (text != null) {
 
-      Type sentenceTypes[] = UIMAUtil.splitTypes(
+      Type[] sentenceTypes = UIMAUtil.splitTypes(
           sentenceTypeName + "," +  additionalSentenceTypes, ',', cas.getTypeSystem());
       
       if (sentenceTypes == null) {
@@ -437,15 +431,14 @@ public class EntityContentProvider implements IStructuredContentProvider {
         return;
       }
       
-      List<Span> sentences = new ArrayList<Span>();
-      List<Span> tokens = new ArrayList<Span>();
+      List<Span> sentences = new ArrayList<>();
+      List<Span> tokens = new ArrayList<>();
       
       for (Iterator<AnnotationFS> sentenceIterator = 
           UIMAUtil.createMultiTypeIterator(cas, sentenceTypes);
           sentenceIterator.hasNext();) {
         
-        AnnotationFS sentenceAnnotation = (AnnotationFS) sentenceIterator
-            .next();
+        AnnotationFS sentenceAnnotation = sentenceIterator.next();
         
         // TODO: Add code to detect overlapping sentences ... not allowed!
         
@@ -464,13 +457,13 @@ public class EntityContentProvider implements IStructuredContentProvider {
             allTokens.iterator(), containingConstraint);
         
         while (containingTokens.hasNext()) {
-          AnnotationFS token = (AnnotationFS) containingTokens.next();
+          AnnotationFS token = containingTokens.next();
           
           tokens.add(new Span(token.getBegin(), token.getEnd()));
         }
       }
       
-      List<Span> nameSpans = new ArrayList<Span>();
+      List<Span> nameSpans = new ArrayList<>();
 
       for (String nameTypeName : nameTypeNames) {
         
@@ -483,14 +476,10 @@ public class EntityContentProvider implements IStructuredContentProvider {
         
         FSIndex<AnnotationFS> nameAnnotations = cas
             .getAnnotationIndex(nameType);
-  
-        for (Iterator<AnnotationFS> nameIterator = nameAnnotations
-            .iterator(); nameIterator.hasNext();) {
-  
-          AnnotationFS nameAnnotation = (AnnotationFS) nameIterator.next();
-  
+
+        for (AnnotationFS nameAnnotation : nameAnnotations) {
           nameSpans.add(new Span(nameAnnotation.getBegin(), nameAnnotation.getEnd(),
-              nameAnnotation.getType().getName()));
+                  nameAnnotation.getType().getName()));
         }
       }
       
@@ -503,14 +492,14 @@ public class EntityContentProvider implements IStructuredContentProvider {
         return;
       }
       
-      nameFinder.setSentences(sentences.toArray(new Span[sentences.size()]));
+      nameFinder.setSentences(sentences.toArray(new Span[0]));
       
       if (tokens.size() == 0) {
         nameFinderView.setMessage("CAS must at least contain one token within a sentence!");
         return;
       }
       
-      nameFinder.setTokens(tokens.toArray(new Span[tokens.size()]));
+      nameFinder.setTokens(tokens.toArray(new Span[0]));
       nameFinder.setModelPath(modelPathes, nameTypeNames);
       
       if (!nameFinder.isSystem()) {
@@ -521,7 +510,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
           store.getBoolean(OpenNLPPreferenceConstants.ENABLE_CONFIRMED_NAME_DETECTION);
       
       if (isRecallBoostingEnabled) {
-        nameFinder.setVerifiedNames(nameSpans.toArray(new Span[nameSpans.size()]));
+        nameFinder.setVerifiedNames(nameSpans.toArray(new Span[0]));
       }
       else {
         nameFinder.setVerifiedNames(null);
@@ -539,7 +528,8 @@ public class EntityContentProvider implements IStructuredContentProvider {
       nameFinder.schedule();
     }
   }
-  
+
+  @Override
   public Object[] getElements(Object inputElement) {
     // Note: 
     // Called directly after showing the view, the
@@ -547,7 +537,8 @@ public class EntityContentProvider implements IStructuredContentProvider {
     // which will be added to the viewer
     return candidateEntities.toArray();
   }
-  
+
+  @Override
   public void dispose() {
     IPreferenceStore store = editor.getCasDocumentProvider().getTypeSystemPreferenceStore(editor.getEditorInput());
     store.removePropertyChangeListener(preferenceChangeTrigger);
@@ -555,7 +546,7 @@ public class EntityContentProvider implements IStructuredContentProvider {
   
   static List<PotentialAnnotation> searchEntities(List<PotentialAnnotation> entities, int begin, int end) {
     
-    List<PotentialAnnotation> intersectingEntities = new ArrayList<PotentialAnnotation>();
+    List<PotentialAnnotation> intersectingEntities = new ArrayList<>();
     
     Span testSpan = new Span(begin, end);
     

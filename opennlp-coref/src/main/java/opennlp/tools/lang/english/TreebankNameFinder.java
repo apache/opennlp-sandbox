@@ -40,9 +40,10 @@ public class TreebankNameFinder {
   public static String[] NAME_TYPES =
       {"person", "organization", "location", "date", "time", "percentage", "money"};
 
-  private NameFinderME nameFinder;
+  private final NameFinderME nameFinder;
   
-  /** Creates an English name finder using the specified model.
+  /**
+   * Creates an English name finder using the specified model.
    * @param mod The model used for finding names.
    */
   public TreebankNameFinder(TokenNameFinderModel mod) {
@@ -50,8 +51,8 @@ public class TreebankNameFinder {
   }
 
   private static void clearPrevTokenMaps(TreebankNameFinder[] finders) {
-    for (int mi = 0; mi < finders.length; mi++) {
-      finders[mi].nameFinder.clearAdaptiveData();
+    for (TreebankNameFinder finder : finders) {
+      finder.nameFinder.clearAdaptiveData();
     }
   }
 
@@ -60,7 +61,7 @@ public class TreebankNameFinder {
     Span[][] nameSpans = new Span[finders.length][];
     
     for (String line = input.readLine(); null != line; line = input.readLine()) {
-      if (line.equals("")) {
+      if (line.isEmpty()) {
         System.out.println();
         clearPrevTokenMaps(finders);
         continue;
@@ -96,10 +97,10 @@ public class TreebankNameFinder {
       throws IOException {
     Span[][] nameSpans = new Span[finders.length][];
     String[][] nameOutcomes = new String[finders.length][];
-    opennlp.tools.tokenize.Tokenizer tokenizer = new SimpleTokenizer();
+    opennlp.tools.tokenize.Tokenizer tokenizer = SimpleTokenizer.INSTANCE;
     StringBuffer output = new StringBuffer();
     for (String line = input.readLine(); null != line; line = input.readLine()) {
-      if (line.equals("")) {
+      if (line.isEmpty()) {
         clearPrevTokenMaps(finders);
         System.out.println();
         continue;
@@ -109,7 +110,7 @@ public class TreebankNameFinder {
       String[] tokens = Span.spansToStrings(spans,line);
       for (int fi = 0, fl = finders.length; fi < fl; fi++) {
         nameSpans[fi] = finders[fi].nameFinder.find(tokens);
-        //System.err.println("EnglighNameFinder.processText: "+tags[fi] + " "
+        //System.err.println("EnglishNameFinder.processText: "+tags[fi] + " "
         // + java.util.Arrays.asList(finderTags[fi]));
         nameOutcomes[fi] = NameFinderEventStream.generateOutcomes(nameSpans[fi], null, tokens.length);
       }

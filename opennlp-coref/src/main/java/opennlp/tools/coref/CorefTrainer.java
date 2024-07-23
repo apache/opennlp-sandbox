@@ -47,32 +47,32 @@ public class CorefTrainer {
   
   private static Mention[] getMentions(CorefSample sample, MentionFinder mentionFinder) {
     
-    List<Mention> mentions = new ArrayList<Mention>();
+    List<Mention> mentions = new ArrayList<>();
     
     for (opennlp.tools.coref.mention.Parse corefParse : sample.getParses()) {
 
       Parse p = ((DefaultParse) corefParse).getParse();
       
       Mention[] extents = mentionFinder.getMentions(corefParse);
-      
-      for (int ei = 0, en = extents.length; ei < en; ei++) {
 
-        if (extents[ei].getParse() == null) {
+      for (Mention extent : extents) {
 
-          Stack<Parse> nodes = new Stack<Parse>();
+        if (extent.getParse() == null) {
+
+          Stack<Parse> nodes = new Stack<>();
           nodes.add(p);
-          
+
           while (!nodes.isEmpty()) {
-            
+
             Parse node = nodes.pop();
-            
-            if (node.getSpan().equals(extents[ei].getSpan()) && node.getType().startsWith("NML")) {
+
+            if (node.getSpan().equals(extent.getSpan()) && node.getType().startsWith("NML")) {
               DefaultParse corefParseNode = new DefaultParse(node, corefParse.getSentenceNumber());
-              extents[ei].setParse(corefParseNode);
-              extents[ei].setId(corefParseNode.getEntityId());
+              extent.setParse(corefParseNode);
+              extent.setId(corefParseNode.getEntityId());
               break;
             }
-            
+
             nodes.addAll(Arrays.asList(node.getChildren()));
           }
         }
@@ -81,7 +81,7 @@ public class CorefTrainer {
       mentions.addAll(Arrays.asList(extents));
     }
     
-    return mentions.toArray(new Mention[mentions.size()]);
+    return mentions.toArray(new Mention[0]);
   }
   
   public static void train(String modelDirectory, ObjectStream<CorefSample> samples,

@@ -29,7 +29,6 @@ public class TreeKernelRunner {
 		try {
 			mStartProcess = r.exec( command, null, new File(runPath));
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -39,7 +38,6 @@ public class TreeKernelRunner {
 		try {
 			int returnCode = mStartProcess.waitFor();
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -66,9 +64,9 @@ public class TreeKernelRunner {
 		runEXE(runString, dir);
 	}
 
-	class StreamLogger extends Thread{
+	static class StreamLogger extends Thread{
 
-		private InputStream mInputStream;
+		private final InputStream mInputStream;
 
 		public StreamLogger(InputStream is) {
 			this.mInputStream = is;
@@ -78,7 +76,7 @@ public class TreeKernelRunner {
 			try {
 				InputStreamReader isr = new InputStreamReader(mInputStream);
 				BufferedReader br = new BufferedReader(isr);
-				String line = null;
+				String line;
 				while ((line = br.readLine()) != null) {
 					System.out.println(line);
 				}

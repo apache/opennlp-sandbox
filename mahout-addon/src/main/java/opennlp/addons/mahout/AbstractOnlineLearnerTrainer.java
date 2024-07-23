@@ -19,18 +19,15 @@
 
 package opennlp.addons.mahout;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import opennlp.tools.ml.AbstractEventTrainer;
-import opennlp.tools.ml.model.DataIndexer;
-import opennlp.tools.ml.model.MaxentModel;
-
-import org.apache.mahout.classifier.sgd.AdaptiveLogisticRegression;
-import org.apache.mahout.classifier.sgd.L1;
 import org.apache.mahout.math.RandomAccessSparseVector;
 import org.apache.mahout.math.Vector;
+
+import opennlp.tools.ml.AbstractEventTrainer;
+import opennlp.tools.ml.model.DataIndexer;
+import opennlp.tools.util.TrainingParameters;
 
 abstract class AbstractOnlineLearnerTrainer extends AbstractEventTrainer {
 
@@ -39,30 +36,23 @@ abstract class AbstractOnlineLearnerTrainer extends AbstractEventTrainer {
   public AbstractOnlineLearnerTrainer() {
   }
 
-  public void init(Map<String, String> trainParams,
-	      Map<String, String> reportMap) {
-	  String iterationsValue = trainParams.get("Iterations");
-	  
-	  if (iterationsValue != null) {
-		  iterations = Integer.parseInt(iterationsValue);
-	  }
-	  else {
-		  iterations = 20;
-	  }
+  @Override
+  public void init(TrainingParameters trainParams, Map<String,String> reportMap) {
+	  iterations = trainParams.getIntParameter("Iterations", 20);
   }
   
   protected void trainOnlineLearner(DataIndexer indexer, org.apache.mahout.classifier.OnlineLearner pa) {
     int cardinality = indexer.getPredLabels().length;
-    int outcomes[] = indexer.getOutcomeList();
+    int[] outcomes = indexer.getOutcomeList();
     
     for (int i = 0; i < indexer.getContexts().length; i++) {
 
       Vector vector = new RandomAccessSparseVector(cardinality);
       
-      int features[] = indexer.getContexts()[i];
-      
-      for (int fi = 0; fi < features.length; fi++) {
-        vector.set(features[fi], indexer.getNumTimesEventsSeen()[i]);
+      int[] features = indexer.getContexts()[i];
+
+      for (int feature : features) {
+        vector.set(feature, indexer.getNumTimesEventsSeen()[i]);
       } 
       
       pa.train(outcomes[i], vector);
@@ -70,9 +60,9 @@ abstract class AbstractOnlineLearnerTrainer extends AbstractEventTrainer {
   }
 
   protected Map<String, Integer> createPrepMap(DataIndexer indexer) {
-    Map<String, Integer> predMap = new HashMap<String, Integer>();
+    Map<String, Integer> predMap = new HashMap<>();
     
-    String predLabels[] = indexer.getPredLabels();
+    String[] predLabels = indexer.getPredLabels();
     for (int i = 0; i < predLabels.length; i++) {
       predMap.put(predLabels[i], i);
     }

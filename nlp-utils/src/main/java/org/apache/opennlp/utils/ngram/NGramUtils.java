@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.HashSet;
 
 /**
- * utility class for calculating probabilities of tri/bi/uni-grams
+ * A utility class for calculating probabilities of tri/bi/uni-grams.
  */
 public class NGramUtils {
 
@@ -115,7 +115,7 @@ public class NGramUtils {
   }
 
   private static <T> Collection<T> flatSet(Collection<T[]> set) {
-    Collection<T> flatSet = new HashSet<T>();
+    Collection<T> flatSet = new HashSet<>();
     for (T[] sentence : set) {
       flatSet.addAll(Arrays.asList(sentence));
     }
@@ -123,8 +123,8 @@ public class NGramUtils {
   }
 
   public static <T> Double calculateMissingBigramProbabilityMass(T x1, Double discount, Collection<T[]> set) {
-    Double missingMass = 0d;
-    Double countWord = count(x1, set);
+    double missingMass = 0d;
+    double countWord = count(x1, set);
     for (T word : flatSet(set)) {
       missingMass += (count(word, x1, set) - discount) / countWord;
     }

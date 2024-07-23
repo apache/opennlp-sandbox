@@ -33,7 +33,7 @@ public enum LinkerMode {
    */
   TRAIN,
 
-  /** Evaluation mode, used to evaluate identifed coreference relationships based on annotated text. */
+  /** Evaluation mode, used to evaluate identified coreference relationships based on annotated text. */
   EVAL,
 
   /**

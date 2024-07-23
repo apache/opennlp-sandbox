@@ -20,23 +20,26 @@ package opennlp.tools.disambiguator;
 import opennlp.tools.util.eval.Evaluator;
 import opennlp.tools.util.eval.Mean;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * The {@link WSDEvaluator} measures the performance of the given
- * {@link WSDisambiguator} with the provided reference
- * {@link WordToDisambiguate}.
+ * {@link WSDisambiguator} with the provided reference {@code WordToDisambiguate}.
  *
  * @see Evaluator
  * @see WSDisambiguator
- * @see WordToDisambiguate
  */
 public class WSDEvaluator extends Evaluator<WSDSample> {
 
-  private Mean accuracy = new Mean();
+  private static final Logger LOG = LoggerFactory.getLogger(WSDEvaluator.class);
+
+  private final Mean accuracy = new Mean();
 
   /**
    * The {@link WSDisambiguator} used to create the disambiguated senses.
    */
-  private WSDisambiguator disambiguator;
+  private final WSDisambiguator disambiguator;
 
   /**
    * Initializes the current instance with the given {@link WSDisambiguator}.
@@ -52,7 +55,7 @@ public class WSDEvaluator extends Evaluator<WSDSample> {
     this.disambiguator = disambiguator;
   }
 
-  // @Override
+  @Override
   protected WSDSample processSample(WSDSample reference) {
 
     String[] referenceSenses = reference.getSenseIDs();
@@ -63,8 +66,7 @@ public class WSDEvaluator extends Evaluator<WSDSample> {
         reference.getTargetPosition());
 
     if (predictedSense == null) {
-      System.out
-          .println("There was no sense for : " + reference.getTargetWord());
+      LOG.debug("There was no sense for: {}", reference.getTargetWord());
       return null;
     }
     // get the senseKey from the result
@@ -82,7 +84,7 @@ public class WSDEvaluator extends Evaluator<WSDSample> {
 
   /**
    * Retrieves the WSD accuracy.
-   *
+   * <p>
    * This is defined as: WSD accuracy = correctly disambiguated / total words
    *
    * @return the WSD accuracy
@@ -101,7 +103,7 @@ public class WSDEvaluator extends Evaluator<WSDSample> {
   }
 
   /**
-   * Represents this objects as human readable {@link String}.
+   * Represents this objects as human-readable {@link String}.
    */
   @Override
   public String toString() {

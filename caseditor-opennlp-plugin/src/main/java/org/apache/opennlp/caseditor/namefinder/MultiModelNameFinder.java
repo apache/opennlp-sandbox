@@ -19,6 +19,7 @@ package org.apache.opennlp.caseditor.namefinder;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,9 +38,9 @@ public class MultiModelNameFinder implements TokenNameFinder {
 
   static class RestrictedSequencesValidator extends NameFinderSequenceValidator {
     
-    private String modelType;
+    private final String modelType;
     
-    private Map<Integer, String> nameIndex = new HashMap<Integer, String>();
+    private Map<Integer, String> nameIndex = new HashMap<>();
     
     private Set<String> nameOnlyTokens;
     
@@ -64,7 +65,7 @@ public class MultiModelNameFinder implements TokenNameFinder {
       if (valid && nameIndex.get(i) != null) {
         
         // TODO: That could be improved!
-        String parts[] = nameIndex.get(i).split("-");
+        String[] parts = nameIndex.get(i).split("-");
         String nameModelType = parts[0];
         String desiredOutcome = parts[1];
         
@@ -87,14 +88,13 @@ public class MultiModelNameFinder implements TokenNameFinder {
     }
   }
   
-  
-  private NameFinderME nameFinders[];
-  private String modelTypes[];
+  private final NameFinderME[] nameFinders;
+  private final String[] modelTypes;
   
   // TODO: We need one per name finder instance ...
-  private RestrictedSequencesValidator sequenceValidators[];
+  private final RestrictedSequencesValidator[] sequenceValidators;
   
-  MultiModelNameFinder(String modelPathes[], String modelTypes[]) throws IOException {
+  MultiModelNameFinder(String[] modelPathes, String[] modelTypes) throws IOException {
     
     this.modelTypes = modelTypes;
     
@@ -104,26 +104,16 @@ public class MultiModelNameFinder implements TokenNameFinder {
     for (int i = 0; i < modelPathes.length; i++) {
       
       String modelPath = modelPathes[i];
-      
-      InputStream modelIn = ModelUtil.openModelIn(modelPath);
-      
-      try {
+
+      try (InputStream modelIn = ModelUtil.openModelIn(modelPath)) {
         TokenNameFinderModel model = new TokenNameFinderModel(modelIn);
         sequenceValidators[i] = new RestrictedSequencesValidator(modelTypes[i]);
-        nameFinders[i] = new NameFinderME(model, null, 5, sequenceValidators[i]);
+        nameFinders[i] = new NameFinderME(model);
       } 
-      catch (IOException e) {
+      catch (IOException | URISyntaxException e) {
         // Error message should include model type
         throw new IOException("Failed to load a model, path:\n" + modelPathes[i] +
             "\nError Message:\n" + e.getMessage());
-      }
-      finally {
-        if (modelIn != null) {
-          try {
-            modelIn.close();
-          } catch (IOException e) {
-          }
-        }
       }
     }
     
@@ -153,12 +143,12 @@ public class MultiModelNameFinder implements TokenNameFinder {
   @Override
   public ConfidenceSpan[] find(String[] sentence) {
     
-    List<ConfidenceSpan> names = new ArrayList<ConfidenceSpan>();
+    List<ConfidenceSpan> names = new ArrayList<>();
     
     for (int i = 0; i < nameFinders.length; i++) {
       NameFinderME nameFinder = nameFinders[i];
-      Span detectedNames[] = nameFinder.find(sentence);
-      double confidence[] = nameFinder.probs();
+      Span[] detectedNames = nameFinder.find(sentence);
+      double[] confidence = nameFinder.probs();
       
       for (int j = 0; j < detectedNames.length; j++) {
         // TODO: Also add type ...
@@ -169,6 +159,6 @@ public class MultiModelNameFinder implements TokenNameFinder {
     
     // TODO: Merge names here ...
     
-    return names.toArray(new ConfidenceSpan[names.size()]);
+    return names.toArray(new ConfidenceSpan[0]);
   }
 }

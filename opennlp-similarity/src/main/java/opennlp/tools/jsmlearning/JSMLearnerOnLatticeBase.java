@@ -31,9 +31,9 @@ import opennlp.tools.textsimilarity.ParseTreeMatcherDeterministic;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
 public class JSMLearnerOnLatticeBase {
-	ParserChunker2MatcherProcessor chunk_maker = ParserChunker2MatcherProcessor.getInstance();
+	final ParserChunker2MatcherProcessor chunk_maker = ParserChunker2MatcherProcessor.getInstance();
 	LinguisticPatternStructure psPos = new LinguisticPatternStructure(0,0), psNeg = new LinguisticPatternStructure(0,0);
-	ParseTreeMatcherDeterministic md = new ParseTreeMatcherDeterministic(); 
+	final ParseTreeMatcherDeterministic md = new ParseTreeMatcherDeterministic();
 	
 
 
@@ -47,25 +47,25 @@ public class JSMLearnerOnLatticeBase {
 			posTexts = pair.getFirst(); negTexts = 	pair.getSecond();
 		}
 
-		List<List<List<ParseTreeChunk>>> lingRepsPos = new ArrayList<List<List<ParseTreeChunk>>>(),
-				lingRepsNeg = new ArrayList<List<List<ParseTreeChunk>>>();
+		List<List<List<ParseTreeChunk>>> lingRepsPos = new ArrayList<>(),
+				lingRepsNeg = new ArrayList<>();
 		for(String text: posTexts)
 			lingRepsPos.add(chunk_maker.formGroupedPhrasesFromChunksForPara(text));
 
 		for(String text: negTexts)
 			lingRepsNeg.add(chunk_maker.formGroupedPhrasesFromChunksForPara(text));
 
-		LinkedHashSet<Integer> obj = null;
+		LinkedHashSet<Integer> obj;
 		int i=0;
 		for(List<List<ParseTreeChunk>> chunk: lingRepsPos){
-			obj = new LinkedHashSet<Integer>();
+			obj = new LinkedHashSet<>();
 			obj.add(i);
 			psPos.AddIntent(chunk, obj, 0);
 			i++;
 		}
 		i=0;
 		for(List<List<ParseTreeChunk>> chunk: lingRepsNeg){
-			obj = new LinkedHashSet<Integer>();
+			obj = new LinkedHashSet<>();
 			obj.add(i);
 			psNeg.AddIntent(chunk, obj, 0);
 			i++;
@@ -74,9 +74,9 @@ public class JSMLearnerOnLatticeBase {
 
 
 		List<List<ParseTreeChunk>> chunksUnknown = chunk_maker.formGroupedPhrasesFromChunksForPara(unknown);
-		List<List<List<ParseTreeChunk>>> posIntersections = new ArrayList<List<List<ParseTreeChunk>>>(), 
-				negIntersections = new ArrayList<List<List<ParseTreeChunk>>>();
-		List<List<ParseTreeChunk>> intersection = null;
+		List<List<List<ParseTreeChunk>>> posIntersections = new ArrayList<>(),
+				negIntersections = new ArrayList<>();
+		List<List<ParseTreeChunk>> intersection;
 		for(int iConcept = 0; iConcept<psPos.conceptList.size(); iConcept++){
 			if (psPos.conceptList.get(iConcept).intent!=null && psPos.conceptList.get(iConcept).intent.size()>0){
 				intersection = computeIntersectionWithIntentExtendedByDeduction(psPos, iConcept, chunksUnknown);
@@ -98,23 +98,23 @@ public class JSMLearnerOnLatticeBase {
 		posIntersections = pair.getFirst();
 		negIntersections = pair.getSecond();
 
-		List<List<List<ParseTreeChunk>>> posIntersectionsUnderNeg = new ArrayList<List<List<ParseTreeChunk>>>(), 
-				negIntersectionsUnderPos = new ArrayList<List<List<ParseTreeChunk>>>();
+		List<List<List<ParseTreeChunk>>> posIntersectionsUnderNeg = new ArrayList<>(),
+				negIntersectionsUnderPos = new ArrayList<>();
 
 		for(int iConcept = 0; iConcept<psNeg.conceptList.size(); iConcept++){
-			for(int iConceptJ = 0; iConceptJ<negIntersections.size(); iConceptJ++){
+			for (List<List<ParseTreeChunk>> negIntersection : negIntersections) {
 				intersection = md
-						.matchTwoSentencesGroupedChunksDeterministic(psNeg.conceptList.get(iConcept).intent, negIntersections.get(iConceptJ));
-				if (reduceList(intersection).size()>0)
+								.matchTwoSentencesGroupedChunksDeterministic(psNeg.conceptList.get(iConcept).intent, negIntersection);
+				if (reduceList(intersection).size() > 0)
 					posIntersectionsUnderNeg.add(reduceList(intersection));
 			}
 		}
 
 		for(int iConcept = 0; iConcept<psPos.conceptList.size(); iConcept++){
-			for(int iConceptJ = 0; iConceptJ<posIntersections.size(); iConceptJ++){
+			for (List<List<ParseTreeChunk>> posIntersection : posIntersections) {
 				intersection = md
-						.matchTwoSentencesGroupedChunksDeterministic(psPos.conceptList.get(iConcept).intent, posIntersections.get(iConceptJ));
-				if (reduceList(intersection).size()>0)
+								.matchTwoSentencesGroupedChunksDeterministic(psPos.conceptList.get(iConcept).intent, posIntersection);
+				if (reduceList(intersection).size() > 0)
 					negIntersectionsUnderPos.add(reduceList(intersection));
 			}
 		}
@@ -152,17 +152,17 @@ public class JSMLearnerOnLatticeBase {
 	public Pair<List<String>, List<String>>  reGroupByOccurrenceOfSeparationKeyword(List<String> posTexts, List<String> negTexts, String[] keywords){
 		// do nothing in base class
 
-		return new Pair<List<String>, List<String>>(posTexts, negTexts);
+		return new Pair<>(posTexts, negTexts);
 	}
 
 	public List<List<ParseTreeChunk>> reduceList(List<List<ParseTreeChunk>> list){
 		float minScore = 1.3f;
-		List<List<ParseTreeChunk>> newList = new ArrayList<List<ParseTreeChunk>>();
+		List<List<ParseTreeChunk>> newList = new ArrayList<>();
 
 
 		ParseTreeChunkListScorer scorer = new ParseTreeChunkListScorer();
 		for(  List<ParseTreeChunk> group: list){
-			List<ParseTreeChunk> newGroup = new ArrayList<ParseTreeChunk>();
+			List<ParseTreeChunk> newGroup = new ArrayList<>();
 			for(ParseTreeChunk ch: group){
 				if (scorer.getScore(ch) > minScore)
 					newGroup.add(ch);
@@ -176,27 +176,27 @@ public class JSMLearnerOnLatticeBase {
 	}
 
 	public List<List<ParseTreeChunk>> flattenParseTreeChunkListList(List<List<List<ParseTreeChunk>>> listOfLists){
-		List<List<ParseTreeChunk>> newList = new ArrayList<List<ParseTreeChunk>>();
+		List<List<ParseTreeChunk>> newList = new ArrayList<>();
 
 		for(  List<List<ParseTreeChunk>> member: listOfLists){
-			Set<ParseTreeChunk> newSet= new HashSet<ParseTreeChunk>();
+			Set<ParseTreeChunk> newSet= new HashSet<>();
 			for(  List<ParseTreeChunk> group: member){
 				if (group.size()>0)
 					newSet.addAll(group);
 			}
-			newList.add(new ArrayList<ParseTreeChunk>(newSet));
+			newList.add(new ArrayList<>(newSet));
 		}
 
 		return newList;  
 	}
 
 	public List<ParseTreeChunk> flattenParseTreeChunkLst(List<List<List<ParseTreeChunk>>> listOfLists){
-		List<ParseTreeChunk> newList = new ArrayList<ParseTreeChunk>();
-		Set<ParseTreeChunk> newSetAll = new HashSet<ParseTreeChunk>();
+		List<ParseTreeChunk> newList = new ArrayList<>();
+		Set<ParseTreeChunk> newSetAll = new HashSet<>();
 
 
 		for(  List<List<ParseTreeChunk>> member: listOfLists){
-			Set<ParseTreeChunk> newSet= new HashSet<ParseTreeChunk>();
+			Set<ParseTreeChunk> newSet= new HashSet<>();
 			for(  List<ParseTreeChunk> group: member){
 				if (group.size()>0)
 					newSet.addAll(group);
@@ -204,18 +204,18 @@ public class JSMLearnerOnLatticeBase {
 			newSetAll.addAll(newSet);
 		}
 
-		return removeDuplicates(new ArrayList<ParseTreeChunk>(newSetAll));  
+		return removeDuplicates(new ArrayList<>(newSetAll));
 	}
 
 	public List<ParseTreeChunk> removeDuplicates(List<ParseTreeChunk> dupes){
-		List<Integer> toDelete = new ArrayList<Integer>();
+		List<Integer> toDelete = new ArrayList<>();
 		for(int i=0; i<dupes.size(); i++)
 			for(int j=i+1; j<dupes.size(); j++){
 				if (dupes.get(i).equals(dupes.get(j))){
 					toDelete.add(j);
 				}
 			}
-		List<ParseTreeChunk> cleaned = new ArrayList<ParseTreeChunk>();
+		List<ParseTreeChunk> cleaned = new ArrayList<>();
 		for(int i=0; i<dupes.size(); i++){
 			if (!toDelete.contains(i))
 				cleaned.add(dupes.get(i));
@@ -224,14 +224,14 @@ public class JSMLearnerOnLatticeBase {
 	}
 
 	public List<ParseTreeChunk> subtract(List<ParseTreeChunk> main, List<ParseTreeChunk> toSubtract){
-		List<Integer> toDelete = new ArrayList<Integer>();
+		List<Integer> toDelete = new ArrayList<>();
 		for(int i=0; i<main.size(); i++)
-			for(int j=0; j<toSubtract.size(); j++){
-				if (main.get(i).equals(toSubtract.get(j))){
+			for (ParseTreeChunk parseTreeChunk : toSubtract) {
+				if (main.get(i).equals(parseTreeChunk)) {
 					toDelete.add(i);
 				}
 			}
-		List<ParseTreeChunk> cleaned = new ArrayList<ParseTreeChunk>();
+		List<ParseTreeChunk> cleaned = new ArrayList<>();
 		for(int i=0; i<main.size(); i++){
 			if (!toDelete.contains(i))
 				cleaned.add(main.get(i));
@@ -239,14 +239,14 @@ public class JSMLearnerOnLatticeBase {
 		return cleaned;
 	}
 	public List<ParseTreeChunk> intesectParseTreeChunkLists(List<ParseTreeChunk> a, List<ParseTreeChunk> b){
-		List<Integer> inters = new ArrayList<Integer>();
+		List<Integer> inters = new ArrayList<>();
 		for(int i=0; i<a.size(); i++)
-			for(int j=0; j<b.size(); j++){
-				if (a.get(i).equals(b.get(j))){
+			for (ParseTreeChunk parseTreeChunk : b) {
+				if (a.get(i).equals(parseTreeChunk)) {
 					inters.add(i);
 				}
 			}
-		List<ParseTreeChunk> cleaned = new ArrayList<ParseTreeChunk>();
+		List<ParseTreeChunk> cleaned = new ArrayList<>();
 		for(int i=0; i<a.size(); i++){
 			if (inters.contains(i))
 				cleaned.add(a.get(i));
@@ -263,8 +263,8 @@ public class JSMLearnerOnLatticeBase {
 
 		List<ParseTreeChunk> intersParseTreeChunkLists = intesectParseTreeChunkLists(posIntersectionsFl, negIntersectionsFl);
 
-		List<List<List<ParseTreeChunk>>> cleanedFromInconsPos = new ArrayList<List<List<ParseTreeChunk>>>(), 
-				cleanedFromInconsNeg = new ArrayList<List<List<ParseTreeChunk>>>();
+		List<List<List<ParseTreeChunk>>> cleanedFromInconsPos = new ArrayList<>(),
+				cleanedFromInconsNeg = new ArrayList<>();
 		/*
 		System.out.println("pos = "+ pos);
 		System.out.println("neg = "+ neg);
@@ -274,9 +274,9 @@ public class JSMLearnerOnLatticeBase {
 		 */
 
 		for(  List<List<ParseTreeChunk>> member: pos){
-			List<List<ParseTreeChunk>> memberList = new ArrayList<List<ParseTreeChunk>>();
+			List<List<ParseTreeChunk>> memberList = new ArrayList<>();
 			for( List<ParseTreeChunk> group: member){
-				List<ParseTreeChunk> newGroup = new ArrayList<ParseTreeChunk>();
+				List<ParseTreeChunk> newGroup = new ArrayList<>();
 				for(ParseTreeChunk ch: group){
 					boolean bSkip = false;	 
 					for(ParseTreeChunk check: intersParseTreeChunkLists){
@@ -294,9 +294,9 @@ public class JSMLearnerOnLatticeBase {
 		}
 
 		for(  List<List<ParseTreeChunk>> member: neg){
-			List<List<ParseTreeChunk>> memberList = new ArrayList<List<ParseTreeChunk>>();
+			List<List<ParseTreeChunk>> memberList = new ArrayList<>();
 			for( List<ParseTreeChunk> group: member){
-				List<ParseTreeChunk> newGroup = new ArrayList<ParseTreeChunk>();
+				List<ParseTreeChunk> newGroup = new ArrayList<>();
 				for(ParseTreeChunk ch: group){
 					boolean bSkip = false;	 
 					for(ParseTreeChunk check: intersParseTreeChunkLists){
@@ -312,7 +312,7 @@ public class JSMLearnerOnLatticeBase {
 			if (memberList.size()>0)
 				cleanedFromInconsNeg.add(memberList);
 		}
-		return  new Pair<List<List<List<ParseTreeChunk>>>, List<List<List<ParseTreeChunk>>>>(cleanedFromInconsPos, cleanedFromInconsNeg);
+		return new Pair<>(cleanedFromInconsPos, cleanedFromInconsNeg);
 	}
 
 

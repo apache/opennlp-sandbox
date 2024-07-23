@@ -19,13 +19,10 @@ package org.apache.opennlp.caseditor.sentdetect;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import opennlp.tools.sentdetect.SentenceDetectorME;
-import opennlp.tools.sentdetect.SentenceModel;
-import opennlp.tools.util.Span;
 
 import org.apache.opennlp.caseditor.ModelUtil;
 import org.apache.opennlp.caseditor.OpenNLPPlugin;
@@ -34,6 +31,10 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+
+import opennlp.tools.sentdetect.SentenceDetectorME;
+import opennlp.tools.sentdetect.SentenceModel;
+import opennlp.tools.util.Span;
 
 public class SentenceDetectorJob extends Job {
 
@@ -73,7 +74,7 @@ public class SentenceDetectorJob extends Job {
   
   public void setExclusionSpans(List<Span> exclusionSpans) {
     
-    this.exclusionSpans = new ArrayList<Span>();
+    this.exclusionSpans = new ArrayList<>();
     this.exclusionSpans.addAll(exclusionSpans);
     Collections.sort(this.exclusionSpans);
   }
@@ -83,28 +84,18 @@ public class SentenceDetectorJob extends Job {
     
     // lazy load model
     if (sentenceDetector == null) {
-      InputStream modelIn = null;
-      try {
-        modelIn = ModelUtil.openModelIn(modelPath);
+      try (InputStream modelIn = ModelUtil.openModelIn(modelPath)) {
         SentenceModel model = new SentenceModel(modelIn);
         sentenceDetector = new SentenceDetectorME(model);
-      } catch (IOException e1) {
+      } catch (IOException | URISyntaxException e1) {
         return new Status(IStatus.CANCEL, OpenNLPPlugin.ID, "Failed to load sentence detector model!");
-      }
-      finally {
-        if (modelIn != null) {
-          try {
-            modelIn.close();
-          } catch (IOException e) {
-          }
-        }
       }
     }
     
-    detectedSentences = new ArrayList<PotentialAnnotation>();
+    detectedSentences = new ArrayList<>();
     for (Span para : paragraphs) {
 
-      List<Span> textBlocks = new ArrayList<Span>();
+      List<Span> textBlocks = new ArrayList<>();
 
       int textBlockBeginIndex = 0;
       
@@ -126,10 +117,10 @@ public class SentenceDetectorJob extends Job {
       }
       
       for (Span textBlock : textBlocks) {
-        Span sentenceSpans[] = sentenceDetector.sentPosDetect(
+        Span[] sentenceSpans = sentenceDetector.sentPosDetect(
             textBlock.getCoveredText(text).toString());
         
-        double confidence[] = sentenceDetector.getSentenceProbabilities();
+        double[] confidence = sentenceDetector.getSentenceProbabilities();
         
         for (int i = 0; i < sentenceSpans.length; i++) {
           Span sentenceSpan = sentenceSpans[i];
@@ -146,6 +137,6 @@ public class SentenceDetectorJob extends Job {
   }
 
   PotentialAnnotation[] getDetectedSentences() {
-    return detectedSentences.toArray(new PotentialAnnotation[detectedSentences.size()]);
+    return detectedSentences.toArray(new PotentialAnnotation[0]);
   }
 }

@@ -18,13 +18,11 @@
 package opennlp.tools.parse_thicket.pattern_structure;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 
 import opennlp.tools.fca.ConceptLattice;
 import opennlp.tools.fca.FcaWriter;
-import opennlp.tools.fca.FormalConcept;
 import opennlp.tools.similarity.apps.BingWebQueryRunner;
 import opennlp.tools.similarity.apps.HitBase;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
@@ -140,7 +138,7 @@ public class PhraseTest {
 								.getAbstractText();
 					
 					LinkedHashSet<Integer> obj = null;
-					obj = new LinkedHashSet<Integer>();
+					obj = new LinkedHashSet<>();
 					obj.add(i);
 					chunks = chunk_maker.formGroupedPhrasesFromChunksForPara(text_result);
 					ps.AddIntent(chunks,obj, 0);
@@ -156,7 +154,7 @@ public class PhraseTest {
 				FcaWriter wt = new FcaWriter();
 				wt.WriteStatsToTxt("merkel_stats.txt", new_cl, 0);
 				wt.WriteStatsToCvs("merkel_stats.csv", new_cl, ps.conceptList.size());
-				wt.WriteAsCxt("merkel_lattice.cxt", new_cl);
+				wt.writeAsCxt("merkel_lattice.cxt", new_cl);
 				
 				PatternStructureWriter pswt = new PatternStructureWriter();
 				pswt.WriteStatsToTxt("ps_res.txt", ps);

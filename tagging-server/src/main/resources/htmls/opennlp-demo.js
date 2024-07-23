@@ -59,7 +59,7 @@
 					
 				    $("div#opennlp-demo-result").empty();
 					
-				    // Extract tokens and names from the array array
+				    // Extract tokens and names from the array
 					var tokens = [];
 					var annotations = [];
 

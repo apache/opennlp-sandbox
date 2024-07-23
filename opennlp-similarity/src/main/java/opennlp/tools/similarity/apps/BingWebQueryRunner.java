@@ -35,14 +35,14 @@ public class BingWebQueryRunner {
   private static final Logger LOG = Logger
       .getLogger("opennlp.tools.similarity.apps.BingWebQueryRunner");
     public static final String BING_KEY = "TyfmF/4t1qbnA5X6sBXiTf80l29cSn+7IT0fPw2FNsU=";
-	private AzureSearchWebQuery aq = new AzureSearchWebQuery();
+	private final AzureSearchWebQuery aq = new AzureSearchWebQuery();
   
 	public List<HitBase> runSearch(String query, int nRes) {
 	aq.setAppid(BING_KEY);
 	aq.setQuery(query);		                        
 	aq.doQuery();
 	
-	List<HitBase> results = new ArrayList<HitBase> ();
+	List<HitBase> results = new ArrayList<>();
 	AzureSearchResultSet<AzureSearchWebResult> ars = aq.getQueryResult();
 	
 	for (AzureSearchWebResult anr : ars){
@@ -61,8 +61,8 @@ public class BingWebQueryRunner {
       double imageDupeThresh) {
     StringDistanceMeasurer meas = new StringDistanceMeasurer();
 
-    List<Integer> idsToRemove = new ArrayList<Integer>();
-    List<HitBase> hitsDedup = new ArrayList<HitBase>();
+    List<Integer> idsToRemove = new ArrayList<>();
+    List<HitBase> hitsDedup = new ArrayList<>();
     try {
       for (int i = 0; i < hits.size(); i++)
         for (int j = i + 1; j < hits.size(); j++) {

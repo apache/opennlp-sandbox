@@ -19,7 +19,6 @@ package opennlp.tools.cmdline.disambiguator;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
 
 import opennlp.tools.cmdline.ArgumentParser;
 import opennlp.tools.cmdline.CLI;
@@ -33,14 +32,17 @@ import opennlp.tools.util.ObjectStream;
 
 public final class DisambiguatorEvaluatorTool extends CmdLineTool {
 
+  @Override
   public String getName() {
     return "DisambiguatorEvaluator";
   }
 
+  @Override
   public String getShortDescription() {
     return "Disambiguator Evaluation Tool";
   }
 
+  @Override
   public String getHelp() {
     return "Usage: " + CLI.CMD + " " + getName() + " "
         + ArgumentParser.createUsage(DisambiguatorEvaluatorParams.class);
@@ -59,35 +61,22 @@ public final class DisambiguatorEvaluatorTool extends CmdLineTool {
     File testData = params.getData();
     CmdLineUtil.checkInputFile("Test data", testData);
 
-    Charset encoding = params.getEncoding();
-
     WSDisambiguator disambiguator = DisambiguatorTool.makeTool(params);
-
     WSDEvaluator evaluator = new WSDEvaluator(disambiguator);
 
     System.out.print("Evaluating ... ");
 
-    ObjectStream<WSDSample> sampleStream = DisambiguatorTool.openSampleData(
-        "Test", testData, encoding);
-
-    try {
-      evaluator.evaluate(sampleStream);
-    } catch (IOException e) {
-      System.err.println("failed");
-      System.err.println("Reading test data error " + e.getMessage());
-      throw new TerminateToolException(-1);
-    } finally {
-      try {
-        sampleStream.close();
+    try (ObjectStream<WSDSample> sampleStream = DisambiguatorTool.openSampleData(
+            "Test", testData, params.getEncoding())) {
+        evaluator.evaluate(sampleStream);
       } catch (IOException e) {
-        // sorry that this can fail
-      }
+        System.err.println("failed");
+        System.err.println("Reading test data error " + e.getMessage());
+        throw new TerminateToolException(-1);
     }
 
     System.out.println("done");
-
     System.out.println();
-
     System.out.println("Accuracy: " + evaluator.getAccuracy());
   }
 }

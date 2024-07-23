@@ -25,12 +25,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * This class is used to show how you can sort a java.uti.Map for values. This
- * also takes care of null and duplicate values present in the map.
+ * Sorts a {@link Map} by its values.
+ * Also takes care of {@code null} and duplicate values present in the map.
  */
 public class ValueSortMap {
 
@@ -38,17 +39,17 @@ public class ValueSortMap {
   }
 
   /**
-   * This method returns the new LinkedHashMap sorted with values for passed
-   * Comparater. If null values exist they will be put in the last of the
+   * Returns the new {@link LinkedHashMap} sorted with values for passed
+   * {@link Comparator}. If null values exist they will be put in the last of the
    * returned LinkedHashMap. If there are duplicate values they will come
-   * together at the values ordering order but ordering between same multiple
-   * values is ramdom. Passed Map will be intect.
+   * together at the values ordering, but ordering between same multiple
+   * values is random. Passed Map will be intect.
    * 
    * @param inMap
    *          Map to be sorted
    * @param comparator
-   *          Values will be sorted as per passed Comparater
-   * @return LinkedHashMap Sorted new LinkedHashMap
+   *          Values will be sorted as per passed {@link Comparator}
+   * @return A sorted new {@link LinkedHashMap} instance.
    */
   public static <K, V> LinkedHashMap<K, V> sortMapByValue(Map<K, V> inMap,
       Comparator<V> comparator) {
@@ -56,18 +57,18 @@ public class ValueSortMap {
   }
 
   /**
-   * This method returns the new LinkedHashMap sorted with values for passed
+   * Returns the new {@link LinkedHashMap} sorted with values for passed
    * ascendingOrder. If null values exist they will be put in the last for true
-   * value of ascendingOrder or will be put on top of the returned LinkedHashMap
+   * value of ascendingOrder or will be put on top of the returned {@link LinkedHashMap}
    * for false value of ascendingOrder. If there are duplicate values they will
-   * come together at the values ordering order but ordering between same
-   * multiple values is ramdom. Passed Map will be intect.
+   * come together at the values ordering but ordering between same
+   * multiple values is random. Passed Map will be intect.
    * 
    * @param inMap
    *          Map to be sorted
    * @param ascendingOrder
    *          Values will be sorted as per value of ascendingOrder
-   * @return LinkedHashMap Sorted new LinkedHashMap
+   * @return A sorted new {@link LinkedHashMap} instance.
    */
   public static <K, V> LinkedHashMap<K, V> sortMapByValue(Map<K, V> inMap,
       boolean ascendingOrder) {
@@ -75,55 +76,54 @@ public class ValueSortMap {
   }
 
   /**
-   * This method returns the new LinkedHashMap sorted with values in ascending
+   * This method returns the new {@link LinkedHashMap} sorted with values in ascending
    * order. If null values exist they will be put in the last of the returned
-   * LinkedHashMap. If there are duplicate values they will come together at the
-   * values ordering order but ordering between same multiple values is ramdom.
+   * {@link LinkedHashMap}. If there are duplicate values they will come together at the
+   * values ordering but ordering between same multiple values is random.
    * Passed Map will be intect.
    * 
    * @param inMap
    *          Map to be sorted
-   * @return LinkedHashMap Sorted new LinkedHashMap
+   * @return A sorted new {@link LinkedHashMap} instance.
    */
   public static <K, V> LinkedHashMap<K, V> sortMapByValue(Map<K, V> inMap) {
     return sortMapByValue(inMap, null, null);
   }
 
   /**
-   * This method returns the new LinkedHashMap sorted with values. Values will
+   * This method returns the new {@link LinkedHashMap} sorted with values. Values will
    * be sorted as value of passed comparator if ascendingOrder is null or in
    * order of passed ascendingOrder if it is not null. If null values exist they
    * will be put in the last for true value of ascendingOrder or will be put on
-   * top of the returned LinkedHashMap for false value of ascendingOrder. If
-   * there are duplicate values they will come together at the values ordering
-   * order but ordering between same multiple values is ramdom. Passed Map will
+   * top of the returned {@link LinkedHashMap} for false value of ascendingOrder. If
+   * there are duplicate values they will come together at the values
+   * order but ordering between same multiple values is random. Passed Map will
    * be intect.
    * 
    * @param inMap
    *          Map to be sorted
    * @param comparator
-   *          Values will be sorted as per passed Comparater
+   *          Values will be sorted as per passed {@link Comparator}
    * @param ascendingOrder
    *          Values will be sorted as per value of ascendingOrder
-   * @return LinkedHashMap Sorted new LinkedHashMap
+   * @return A sorted new {@link LinkedHashMap} instance.
    */
   private static <K, V> LinkedHashMap<K, V> sortMapByValue(Map<K, V> inMap,
       Comparator<V> comparator, Boolean ascendingOrder) {
     int iSize = inMap.size();
 
     // Create new LinkedHashMap that need to be returned
-    LinkedHashMap sortedMap = new LinkedHashMap(iSize);
+    LinkedHashMap<K, V> sortedMap = new LinkedHashMap<>(iSize);
 
-    Collection values = inMap.values();
-    ArrayList valueList = new ArrayList(values); // To get List of all values in
+    Collection<V> values = inMap.values();
+    List<V> valueList = new ArrayList<>(values); // To get List of all values in
                                                  // passed Map
-    HashSet distinctValues = new HashSet(values); // To know the distinct values
+    Set<V> distinctValues = new HashSet<>(values); // To know the distinct values
                                                   // in passed Map
 
-    // Do handing for null values. remove them from the list that will be used
+    // Handling for null values: remove them from the list that will be used
     // for sorting
-    int iNullValueCount = 0; // Total number of null values present in passed
-                             // Map
+    int iNullValueCount = 0; // Total number of null values present in passed Map
     if (distinctValues.contains(null)) {
       distinctValues.remove(null);
       for (int i = 0; i < valueList.size(); i++) {
@@ -131,7 +131,6 @@ public class ValueSortMap {
           valueList.remove(i);
           iNullValueCount++;
           i--;
-          continue;
         }
       }
     }
@@ -140,15 +139,15 @@ public class ValueSortMap {
     if (ascendingOrder == null) {
       // If Boolean ascendingOrder is null, use passed comparator for order of
       // sorting values
-      Collections.sort(valueList, comparator);
-    } else if (ascendingOrder.booleanValue()) {
+      valueList.sort(comparator);
+    } else if (ascendingOrder) {
       // If Boolean ascendingOrder is not null and is true, sort values in
       // ascending order
-      Collections.sort(valueList);
+      valueList.sort(comparator);
     } else {
       // If Boolean ascendingOrder is not null and is false, sort values in
       // descending order
-      Collections.sort(valueList);
+      valueList.sort(comparator);
       Collections.reverse(valueList);
     }
 
@@ -158,72 +157,62 @@ public class ValueSortMap {
     if (iSize != (distinctValues.size() + iNullValueCount))
       bAllDistinct = false;
 
-    Object key = null, value = null, sortedValue;
-    Set keySet = null;
-    Iterator itKeyList = null;
-    HashMap hmTmpMap = new HashMap(iSize);
-    HashMap hmNullValueMap = new HashMap();
+    K key;
+    V value, sortedValue;
+    Set<K> keySet;
+    Iterator<K> itKeyList;
+    Map<K, V> hmTmpMap = new HashMap<>(iSize);
+    Map<K, V> hmNullValueMap = new HashMap<>();
 
+    keySet = inMap.keySet();
+    itKeyList = keySet.iterator();// Add Null Values in the last of the LinkedHasMap
     if (bAllDistinct) {
-      // There are no multiple same values in the passed map (without consedring
-      // null)
-      keySet = inMap.keySet();
-      itKeyList = keySet.iterator();
+      // There are no multiple same values of the passed map (without considering null)
       while (itKeyList.hasNext()) {
         key = itKeyList.next();
         value = inMap.get(key);
 
         if (value != null)
-          hmTmpMap.put(value, key); // Prepare new temp HashMap with value=key
-                                    // combination
+          hmTmpMap.put((K) value, (V) key); // Prepare new temp HashMap with value=key combination
         else
-          hmNullValueMap.put(key, value); // Keep all null values in a new temp
-                                          // Map
+          hmNullValueMap.put(key, value); // Keep all null values in a new temp Map
       }
 
-      if (ascendingOrder != null && !ascendingOrder.booleanValue()) {
+      if (ascendingOrder != null && !ascendingOrder) {
         // As it is descending order, Add Null Values in first place of the
         // LinkedHasMap
         sortedMap.putAll(hmNullValueMap);
       }
 
       // Put all not null values in returning LinkedHashMap
-      for (int i = 0; i < valueList.size(); i++) {
-        value = valueList.get(i);
-        key = hmTmpMap.get(value);
+      for (V o : valueList) {
+        value = o;
+        key = (K) hmTmpMap.get((V) value);
 
         sortedMap.put(key, value);
       }
 
-      if (ascendingOrder == null || ascendingOrder.booleanValue()) {
-        // Add Null Values in the last of the LinkedHasMap
-        sortedMap.putAll(hmNullValueMap);
-      }
     } else {
-      // There are some multiple values (with out considering null)
-      keySet = inMap.keySet();
-      itKeyList = keySet.iterator();
+      // There are some multiple values (without considering null)
       while (itKeyList.hasNext()) {
         key = itKeyList.next();
         value = inMap.get(key);
 
         if (value != null)
-          hmTmpMap.put(key, value); // Prepare new temp HashMap with key=value
-                                    // combination
+          hmTmpMap.put(key, value); // Prepare new temp HashMap with key=value combination
         else
-          hmNullValueMap.put(key, value); // Keep all null values in a new temp
-                                          // Map
+          hmNullValueMap.put(key, value); // Keep all null values in a new temp Map
       }
 
-      if (ascendingOrder != null && !ascendingOrder.booleanValue()) {
+      if (ascendingOrder != null && !ascendingOrder) {
         // As it is descending order, Add Null Values in first place of the
         // LinkedHasMap
         sortedMap.putAll(hmNullValueMap);
       }
 
       // Put all not null values in returning LinkedHashMap
-      for (int i = 0; i < valueList.size(); i++) {
-        sortedValue = valueList.get(i);
+      for (V o : valueList) {
+        sortedValue = o;
 
         // Search this value in temp HashMap and if found remove it
         keySet = hmTmpMap.keySet();
@@ -239,48 +228,13 @@ public class ValueSortMap {
         }
       }
 
-      if (ascendingOrder == null || ascendingOrder.booleanValue()) {
-        // Add Null Values in the last of the LinkedHasMap
-        sortedMap.putAll(hmNullValueMap);
-      }
+    }
+    if (ascendingOrder == null || ascendingOrder) {
+      // Add Null Values in the last of the LinkedHasMap
+      sortedMap.putAll(hmNullValueMap);
     }
 
     return sortedMap;
   }
 
-  public static void main(String[] args) {
-    HashMap hmValue = new HashMap();
-
-    hmValue.put("ZNU", "Zuki Ndulo");
-    hmValue.put("YSH", "Yogesh Sharma");
-    hmValue.put("HHU", "Hiram Hugesh");
-    hmValue.put("MLE", "Marry Lee");
-    hmValue.put("FST", "Faran Stott");
-    hmValue.put("HET", null);
-    hmValue.put("SID", null);
-    hmValue.put("AFR", "Alice Fryer");
-    hmValue.put("KIQ", null);
-    hmValue.put("JBE", "Jim Bell");
-    hmValue.put("MAU", null);
-    hmValue.put("KAE", null);
-    hmValue.put("JBA", "Jim Bader");
-    hmValue.put("RAN", "Robert Anthony");
-    hmValue.put("CLE", "Carole Lee");
-    hmValue.put("JMD", "Jim Bader");
-    hmValue.put("ALI", null);
-    hmValue.put("GMI", "Gracia Millan");
-    hmValue.put("MAL", "Marry Lee");
-    hmValue.put("CLE", "Carole Lee");
-    hmValue.put("APE", "Annin Peck");
-    hmValue.put("HUA", null);
-
-    System.out.println("============ Before Sorting ===============");
-    System.out.println(hmValue);
-
-    // Call method to sort the hmValue Map for it's Values
-    Map sortedMap = sortMapByValue(hmValue, false);
-
-    System.out.println("============ After Sorting ===============");
-    System.out.println(sortedMap);
-  }
 }

@@ -1,3 +1,5 @@
+*.iml
+.idea
 target
 .classpath
 .project
@@ -5,6 +7,6 @@ target
 nbactions.xml
 nb-configuration.xml
 *.DS_Store
-
-.idea
-*.iml
+.checkstyle
+*.onnx
+vocab.txt

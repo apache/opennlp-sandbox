@@ -29,25 +29,26 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Testcase for {@link org.apache.opennlp.utils.cfg.ProbabilisticContextFreeGrammar}
  */
-public class ProbabilisticContextFreeGrammarTest {
+class ProbabilisticContextFreeGrammarTest {
 
   private static LinkedList<String> nonTerminals;
   private static String startSymbol;
   private static LinkedList<String> terminals;
   private static Map<Rule, Double> rules;
 
-  @BeforeClass
-  public static void setUp() throws Exception {
-    nonTerminals = new LinkedList<String>();
+  @BeforeAll
+  static void setUp() {
+    nonTerminals = new LinkedList<>();
     nonTerminals.add("S");
     nonTerminals.add("NP");
     nonTerminals.add("VP");
@@ -61,7 +62,7 @@ public class ProbabilisticContextFreeGrammarTest {
 
     startSymbol = "S";
 
-    terminals = new LinkedList<String>();
+    terminals = new LinkedList<>();
     terminals.add("works");
     terminals.add("saw");
     terminals.add("man");
@@ -84,7 +85,7 @@ public class ProbabilisticContextFreeGrammarTest {
     terminals.add("badly");
     terminals.add("nicely");
 
-    rules = new HashMap<Rule, Double>();
+    rules = new HashMap<>();
     rules.put(new Rule("S", "NP", "VP"), 1d);
     rules.put(new Rule("VP", "Vi", "Adv"), 0.3);
     rules.put(new Rule("VP", "Vt", "NP"), 0.7);
@@ -110,8 +111,8 @@ public class ProbabilisticContextFreeGrammarTest {
   }
 
   @Test
-  public void testIntermediateProbability() throws Exception {
-    ArrayList<String> sentence = new ArrayList<String>();
+  void testIntermediateProbability() {
+    ArrayList<String> sentence = new ArrayList<>();
     sentence.add("the");
     sentence.add("dog");
     sentence.add("saw");
@@ -124,18 +125,18 @@ public class ProbabilisticContextFreeGrammarTest {
     ProbabilisticContextFreeGrammar pcfg = new ProbabilisticContextFreeGrammar(nonTerminals, terminals, rules, startSymbol);
 
     double pi = pcfg.pi(sentence, 0, 1, pcfg.getStartSymbol()).getProbability();
-    assertEquals(0.3d, pi, 0d);
+    assertEquals(0.3d, pi);
 
     pi = pcfg.pi(sentence, 2, 4, "VP").getProbability();
-    assertEquals(0.35d, pi, 0d);
+    assertEquals(0.35d, pi);
   }
 
   @Test
-  public void testFullSentenceCKY() throws Exception {
+  void testFullSentenceCKY() {
     ProbabilisticContextFreeGrammar pcfg = new ProbabilisticContextFreeGrammar(nonTerminals, terminals, rules, startSymbol, true);
 
     // fixed sentence one
-    List<String> sentence = new ArrayList<String>();
+    List<String> sentence = new ArrayList<>();
     sentence.add("the");
     sentence.add("dog");
     sentence.add("saw");
@@ -146,7 +147,7 @@ public class ProbabilisticContextFreeGrammarTest {
     check(pcfg, parseTree, sentence);
 
     // fixed sentence two
-    sentence = new ArrayList<String>();
+    sentence = new ArrayList<>();
     sentence.add("the");
     sentence.add("man");
     sentence.add("works");
@@ -183,14 +184,14 @@ public class ProbabilisticContextFreeGrammarTest {
       return Arrays.asList(parseTree.getRule().getExpansion());
     }
 
-    ArrayList<String> list = new ArrayList<String>();
+    ArrayList<String> list = new ArrayList<>();
     list.addAll(getTerminals(parseTree.getLeftTree()));
     list.addAll(getTerminals(parseTree.getRightTree()));
     return list;
   }
 
   @Test
-  public void testParseString() throws Exception {
+  void testParseString() {
     String string = "(S (VP (Adv last) (Vb tidy)) (NP (Adj biogenic) (NN Gainesville)))";
     Map<Rule, Double> rules = ProbabilisticContextFreeGrammar.parseRules(string);
     assertNotNull(rules);
@@ -198,30 +199,30 @@ public class ProbabilisticContextFreeGrammarTest {
   }
 
   @Test
-  public void testReadingItalianPennTreebankParseTreeSamples() throws Exception {
+  void testReadingItalianPennTreebankParseTreeSamples() {
     String newsSample = "( (S \n" +
-            "    (VP (VMA~RE Slitta) \n" +
-            "        (PP-LOC (PREP a) \n" +
-            "            (NP (NOU~PR Tirana))) \n" +
-            "         (NP-EXTPSBJ-433 \n" +
-            "             (NP (ART~DE la) (NOU~CS decisione)) \n" +
-            "             (PP (PREP sullo) \n" +
-            "                 (NP \n" +
-            "                     (NP (ART~DE sullo) (NOU~CS stato)) \n" +
-            "                     (PP (PREP di) \n" +
-            "                         (NP (NOU~CS emergenza))))))) \n" +
-            "          (NP-SBJ (-NONE- *-433)) \n" +
-            "          (. .)) ) ";
+        "    (VP (VMA~RE Slitta) \n" +
+        "        (PP-LOC (PREP a) \n" +
+        "            (NP (NOU~PR Tirana))) \n" +
+        "         (NP-EXTPSBJ-433 \n" +
+        "             (NP (ART~DE la) (NOU~CS decisione)) \n" +
+        "             (PP (PREP sullo) \n" +
+        "                 (NP \n" +
+        "                     (NP (ART~DE sullo) (NOU~CS stato)) \n" +
+        "                     (PP (PREP di) \n" +
+        "                         (NP (NOU~CS emergenza))))))) \n" +
+        "          (NP-SBJ (-NONE- *-433)) \n" +
+        "          (. .)) ) ";
     Map<Rule, Double> rules = new HashMap<>();
     ProbabilisticContextFreeGrammar.parseRules(rules, true, newsSample);
     assertNotNull(rules);
 
     String newsSample2 = "( (S \n" +
-            "    (NP-SBJ (ART~DE La) (NOU~CS mafia) (ADJ~QU italiana)) \n" +
-            "    (VP (VMA~RE opera) \n" +
-            "        (PP-LOC (PREP in) \n" +
-            "            (NP (NOU~PR Albania)))) \n" +
-            "      (. .)) ) ";
+        "    (NP-SBJ (ART~DE La) (NOU~CS mafia) (ADJ~QU italiana)) \n" +
+        "    (VP (VMA~RE opera) \n" +
+        "        (PP-LOC (PREP in) \n" +
+        "            (NP (NOU~PR Albania)))) \n" +
+        "      (. .)) ) ";
     Map<Rule, Double> rules2 = new HashMap<>();
     ProbabilisticContextFreeGrammar.parseRules(rules2, true, newsSample2);
     assertNotNull(rules2);
@@ -238,13 +239,13 @@ public class ProbabilisticContextFreeGrammarTest {
     assertTrue(derivation.length > 1);
   }
 
-  @Ignore
+  @Disabled
   @Test
-  public void testReadingItalianPennTreebankParseTree() throws Exception {
+  void testReadingItalianPennTreebankParseTree() throws Exception {
     InputStream resourceAsStream = getClass().getResourceAsStream("/it-tb-news.txt");
     BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(resourceAsStream));
     Collection<String> sentences = parseSentences(bufferedReader);
-    ProbabilisticContextFreeGrammar cfg = ProbabilisticContextFreeGrammar.parseGrammar(sentences.toArray(new String[sentences.size()]));
+    ProbabilisticContextFreeGrammar cfg = ProbabilisticContextFreeGrammar.parseGrammar(sentences.toArray(new String[0]));
     assertNotNull(cfg);
     String[] derivation = cfg.leftMostDerivation("S");
     assertNotNull(derivation);
@@ -267,7 +268,7 @@ public class ProbabilisticContextFreeGrammarTest {
     while ((line = bufferedReader.readLine()) != null) {
       if (line.contains("(") || line.contains(")")) {
         sentence.append(line);
-      } else if (line.contains("*****")){
+      } else if (line.contains("*****")) {
         // only use single sentences
         String s = sentence.toString();
         if (s.trim().split("\\(S ").length == 2 && s.trim().startsWith("( (S")) {
@@ -276,7 +277,7 @@ public class ProbabilisticContextFreeGrammarTest {
         sentence = new StringBuilder();
       }
     }
-    if (sentence.length() > 0) {
+    if (!sentence.isEmpty()) {
       sentences.add(sentence.toString());
     }
 

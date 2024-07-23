@@ -21,49 +21,44 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.ResultContext;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryParsing;
 
-
 public class IterativeQueryComponent extends QueryComponent{
 	public static final String COMPONENT_NAME = "iterative_query";
-	public static final String[] fieldSequence = new String[]{"cat", "name", "content", "author"}; 
+	private static final String[] FIELD_SEQUENCE = new String[]{"cat", "name", "content", "author"};
 
 	/**
-	 * Run the query multiple times againts various fields, trying to recognize search intention
+	 * Run the query multiple times against various fields, trying to recognize search intention
 	 */
 	@Override
 	public void process(ResponseBuilder rb) throws IOException {
 
-		NamedList nameValuePairs = rb.rsp.getValues();
+		NamedList<Object> nameValuePairs = rb.rsp.getValues();
 		nameValuePairs.remove("response");
 		rb.rsp.setAllValues(nameValuePairs);
-		rb = substituteField(rb, fieldSequence[0] );
+		rb = substituteField(rb, FIELD_SEQUENCE[0] );
 		super.process(rb);
 
-		for(int iter = 1; iter<fieldSequence.length; iter++){
+		for(int iter = 1; iter< FIELD_SEQUENCE.length; iter++){
 			nameValuePairs = rb.rsp.getValues();
 			ResultContext c = (ResultContext) nameValuePairs.get("response");
 			if (c!=null){			
-				DocList dList = c.docs;
+				DocList dList = c.getDocList();
 				if (dList.size()<1){
 					nameValuePairs.remove("response");
 					rb.rsp.setAllValues(nameValuePairs);
-					rb = substituteField(rb, fieldSequence[iter] );
+					rb = substituteField(rb, FIELD_SEQUENCE[iter] );
 
 					super.process(rb);
 				}
@@ -110,10 +105,10 @@ public class IterativeQueryComponent extends QueryComponent{
 		String currField = StringUtils.substringBetween(" "+query, " ", ":");
 		if ( currField !=null && newFieldName!=null)
 			query = query.replace(currField, newFieldName);
-		NamedList values = params.toNamedList();
+		NamedList<Object> values = params.toNamedList();
 		values.remove("q");
 		values.add("q", query);
-		params = SolrParams.toSolrParams(values);
+		params = values.toSolrParams();
 		rb.req.setParams(params);
 		rb.setQueryString(query);
 
@@ -133,40 +128,37 @@ public class IterativeQueryComponent extends QueryComponent{
 		try {
 			parser = QParser.getParser(rb.getQueryString(), defType, rb.req);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		Query q = null;
 		try {
 			q = parser.getQuery();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		if (q == null) {
 			// normalize a null query to a query that matches nothing
-			q = new BooleanQuery();        
+			q = new BooleanQuery.Builder().build();
 		}
 		rb.setQuery( q );
 		try {
-			rb.setSortSpec( parser.getSort(true) );
+			rb.setSortSpec(parser.getSortSpec(true));
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		rb.setQparser(parser);
-	/*	try {
-			rb.setScoreDoc(parser.getPaging());
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		/*
+		try {
+				rb.setScoreDoc(parser.getPaging());
+			} catch (Exception e) {
+				e.printStackTrace();
 		}
-*/
+		*/
 		String[] fqs = rb.req.getParams().getParams(CommonParams.FQ);
 		if (fqs!=null && fqs.length!=0) {
 			List<Query> filters = rb.getFilters();
 			if (filters==null) {
-				filters = new ArrayList<Query>(fqs.length);
+				filters = new ArrayList<>(fqs.length);
 			}
 			for (String fq : fqs) {
 				if (fq != null && fq.trim().length()!=0) {
@@ -174,13 +166,11 @@ public class IterativeQueryComponent extends QueryComponent{
 					try {
 						fqp = QParser.getParser(fq, null, rb.req);
 					} catch (Exception e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 					try {
 						filters.add(fqp.getQuery());
 					} catch (Exception e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}
@@ -192,9 +182,6 @@ public class IterativeQueryComponent extends QueryComponent{
 				rb.setFilters( filters );
 			}
 		}
-
-
 		return rb;
 	}
-
 }

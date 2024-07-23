@@ -18,11 +18,10 @@
 package opennlp.tools.similarity.apps.utils;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLConnection;
 import java.util.logging.Logger;
 
@@ -33,12 +32,11 @@ import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.sax.BodyContentHandler;
-
+import org.xml.sax.SAXException;
 
 public class PageFetcher {
-  private static final Logger log = Logger
-      .getLogger("opennlp.tools.similarity.apps.utils.PageFetcher");
-  Tika tika = new Tika();
+  private static final Logger LOG = Logger.getLogger("opennlp.tools.similarity.apps.utils.PageFetcher");
+  private final Tika tika = new Tika();
 
   private static int DEFAULT_TIMEOUT = 1500;
   private void setTimeout(int to){
@@ -52,48 +50,37 @@ public class PageFetcher {
   public String fetchPageAutoDetectParser(final String url ){
 	  String fetchURL = addHttp(url);
 	  String pageContent = null;
-	    URLConnection connection;
-	    try {
-	      log.info("fetch url  auto detect parser " + url);
-	      connection = new URL(fetchURL).openConnection();
-	      connection.setReadTimeout(DEFAULT_TIMEOUT);
-	      
-	    //parse method parameters
-	      Parser parser = new AutoDetectParser();
-	      BodyContentHandler handler = new BodyContentHandler();
-	      Metadata metadata = new Metadata();
-	      ParseContext context = new ParseContext();
-	      
-	      //parsing the file
-	      parser.parse(connection.getInputStream(), handler, metadata, context);
-	      
-	      pageContent = handler.toString();
-	    } catch (Exception e) {
-	      log.info(e.getMessage() + "\n" + e);
-	    }
-	    return  pageContent;
+    URLConnection connection;
+    try {
+      connection = new URI(fetchURL).toURL().openConnection();
+      connection.setReadTimeout(DEFAULT_TIMEOUT);
+      // parse method parameters
+      Parser parser = new AutoDetectParser();
+      BodyContentHandler handler = new BodyContentHandler();
+      Metadata metadata = new Metadata();
+      ParseContext context = new ParseContext();
+
+      // parsing the file
+      parser.parse(connection.getInputStream(), handler, metadata, context);
+
+      pageContent = handler.toString();
+    } catch (IOException | URISyntaxException | SAXException | TikaException e) {
+      LOG.severe(e.getMessage() + "\n" + e);
+    }
+    return pageContent;
   }
-  
 
   public String fetchPage(final String url, final int timeout) {
     String fetchURL = addHttp(url);
-
-    log.info("fetch url " + fetchURL);
-
     String pageContent = null;
     URLConnection connection;
     try {
-      connection = new URL(fetchURL).openConnection();
-      connection.setReadTimeout(DEFAULT_TIMEOUT);
-      
+      connection = new URI(fetchURL).toURL().openConnection();
+      connection.setReadTimeout(timeout);
       pageContent = tika.parseToString(connection.getInputStream())
           .replace('\n', ' ').replace('\t', ' ');
-    } catch (MalformedURLException e) {
-      log.severe(e.getMessage() + "\n" + e);
-    } catch (IOException e) {
-      log.severe(e.getMessage() + "\n" + e);
-    } catch (TikaException e) {
-      log.severe(e.getMessage() + "\n" + e);
+    } catch (IOException | URISyntaxException | TikaException e) {
+      LOG.severe(e.getMessage() + "\n" + e);
     }
     return pageContent;
   }
@@ -111,41 +98,23 @@ public class PageFetcher {
   }
 
   public String fetchOrigHTML(String url) {
-    log.info("fetch url " + url);
-    StringBuffer buf = new StringBuffer();
+    LOG.info("fetch url " + url);
+    StringBuilder buf = new StringBuilder();
     try {
-      URLConnection connection = new URL(url).openConnection();
+      URLConnection connection = new URI(url).toURL().openConnection();
       connection.setReadTimeout(DEFAULT_TIMEOUT);
-      connection
-          .setRequestProperty(
-              "User-Agent",
+      connection.setRequestProperty("User-Agent",
               "Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3");
       String line;
-      BufferedReader reader = null;
-      try {
-        reader = new BufferedReader(new InputStreamReader(
-            connection.getInputStream()));
-      } catch (Exception e) {
-        // we dont always need to log trial web pages if access fails
-        log.severe(e.toString());
+      try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+        while ((line = reader.readLine()) != null) {
+          buf.append(line);
+        }
       }
-
-      while ((line = reader.readLine()) != null) {
-        buf.append(line);
-      }
-
+    } catch (Exception e) {
+      // we don't always need to log trial web pages if access fails
+      LOG.severe(e.toString());
     }
-    // normal case when a hypothetical page does not exist
-    catch (Exception e) {
-
-      // LOG.error(e.getMessage(), e);
-      // System.err.println("error fetching url " + url);
-    }
-/*    try {
-      Thread.sleep(50); // do nothing 4 sec
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    } */
     return buf.toString();
   }
   
@@ -153,8 +122,7 @@ public class PageFetcher {
 	  PageFetcher fetcher = new PageFetcher();
 	  String content = fetcher.fetchPageAutoDetectParser("http://www.elastica.net/");
 	  System.out.println(content);
-	  content = fetcher.
-			  fetchPageAutoDetectParser("http://www.cnn.com");
+	  content = fetcher.fetchPageAutoDetectParser("http://www.cnn.com");
 	  System.out.println(content);
 	  content = new PageFetcher().fetchPage("https://github.com");
 	  System.out.println(content);

@@ -20,8 +20,8 @@ package opennlp.tools.coref.sim;
  * Class which models the number of an entity and the confidence of that association.
  */
 public class Number {
-  private NumberEnum type;
-  private double confidence;
+  private final NumberEnum type;
+  private final double confidence;
 
   public Number(NumberEnum type,double confidence) {
     this.type = type;

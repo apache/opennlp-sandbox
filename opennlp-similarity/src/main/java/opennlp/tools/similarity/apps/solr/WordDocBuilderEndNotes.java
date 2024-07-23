@@ -18,40 +18,21 @@ package opennlp.tools.similarity.apps.solr;
 
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.math.BigInteger;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.bind.JAXBException;
 
-import net.billylieurance.azuresearch.AzureSearchImageResult;
-import net.billylieurance.azuresearch.AzureSearchResultSet;
-import net.billylieurance.azuresearch.AzureSearchWebResult;
-
 import org.apache.commons.lang.StringUtils;
 import org.docx4j.XmlUtils;
-import org.docx4j.dml.wordprocessingDrawing.Inline;
 import org.docx4j.jaxb.Context;
-import org.docx4j.openpackaging.exceptions.Docx4JException;
 import org.docx4j.openpackaging.exceptions.InvalidFormatException;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
-import org.docx4j.openpackaging.parts.WordprocessingML.BinaryPartAbstractImage;
 import org.docx4j.openpackaging.parts.WordprocessingML.EndnotesPart;
 import org.docx4j.wml.CTEndnotes;
 import org.docx4j.wml.CTFtnEdn;
-import org.docx4j.wml.Drawing;
-import org.docx4j.wml.P;
-import org.docx4j.wml.R;
 
-import opennlp.tools.similarity.apps.BingQueryRunner;
 import opennlp.tools.similarity.apps.Fragment;
 import opennlp.tools.similarity.apps.HitBase;
 
@@ -59,9 +40,9 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 	
 	public String buildWordDoc(List<HitBase> content, String title){
 		
-		String outputDocFinename =  absPath+"written/"+ title.replace(' ','_').replace('\"', ' ').trim()+ ".docx";
+		String outputDocFilename =  absPath+"written/"+ title.replace(' ','_').replace('\"', ' ').trim()+ ".docx";
 		
-		WordprocessingMLPackage wordMLPackage=null;
+		WordprocessingMLPackage wordMLPackage;
 		
        
 		List<String> imageURLs = getAllImageSearchResults(title);
@@ -69,8 +50,7 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 		BigInteger refId = BigInteger.ONE;
 		try {
 			wordMLPackage = WordprocessingMLPackage.createPackage();
-			
-			
+
 			CTEndnotes endnotes = null;
 			try {
 				EndnotesPart ep = new EndnotesPart();
@@ -78,12 +58,8 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 				ep.setJaxbElement(endnotes);
 				wordMLPackage.getMainDocumentPart().addTargetPart(ep);
 			} catch (InvalidFormatException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
-			
-			
-			
 			
 			wordMLPackage.getMainDocumentPart().addStyledParagraphOfText("Title", title.toUpperCase());
 			for(HitBase para: content){
@@ -110,7 +86,6 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 			         try {
 						endnote.getEGBlockLevelElts().add( XmlUtils.unmarshalString(endnoteBody));
 					} catch (JAXBException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 			         
@@ -121,7 +96,6 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 			         try {
 			        	 wordMLPackage.getMainDocumentPart().addParagraph(docBody);
 					} catch (JAXBException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 					
@@ -132,7 +106,6 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 						//e.printStackTrace();
 					}
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				count++;
@@ -148,19 +121,16 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 					String paraText = para.getUrl();
 					wordMLPackage.getMainDocumentPart().addParagraphOfText(paraText);
 					
-					
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
 	
 	        
 			try {
-				wordMLPackage.save(new File(outputDocFinename));
-				System.out.println("Finished creating docx ="+outputDocFinename);
+				wordMLPackage.save(new File(outputDocFilename));
+				System.out.println("Finished creating docx ="+outputDocFilename);
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			
@@ -169,16 +139,14 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 				wordMLPackage.save(new File(fileNameToDownload));
 				System.out.println("Wrote a doc for download :"+fileNameToDownload);
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
-		return outputDocFinename;
+		return outputDocFilename;
 	}
 	
 	public static String processParagraphText(String title){
@@ -207,11 +175,11 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
     
     public static void main(String[] args){
     	WordDocBuilderEndNotes b = new WordDocBuilderEndNotes();
-    	List<HitBase> content = new ArrayList<HitBase>();
+    	List<HitBase> content = new ArrayList<>();
     	for(int i = 0; i<10; i++){
     		HitBase h = new HitBase();
     		h.setTitle("albert einstein "+i);
-    		List<Fragment> frs = new ArrayList<Fragment>();
+    		List<Fragment> frs = new ArrayList<>();
     		frs.add(new Fragment(" content "+i, 0));
     		h.setFragments(frs);
     		h.setUrl("http://www."+i+".com");

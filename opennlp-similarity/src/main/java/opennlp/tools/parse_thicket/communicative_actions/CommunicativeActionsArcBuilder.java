@@ -1,3 +1,22 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package opennlp.tools.parse_thicket.communicative_actions;
 
 import java.util.ArrayList;
@@ -7,59 +26,59 @@ import opennlp.tools.parse_thicket.IGeneralizer;
 import opennlp.tools.parse_thicket.Pair;
 import opennlp.tools.parse_thicket.ParseTreeNode;
 
+public class CommunicativeActionsArcBuilder implements IGeneralizer<Pair<String, Integer[]>> {
 
-public class CommunicativeActionsArcBuilder implements IGeneralizer<Pair<String, Integer[]>>{
-
-	private List<Pair<String, Integer[]>> commActionsAttr = new ArrayList<Pair<String, Integer[]>>();
+	private final List<Pair<String, Integer[]>> commActionsAttr = new ArrayList<>();
+	
 	public CommunicativeActionsArcBuilder(){
 
-		commActionsAttr.add(new Pair<String, Integer[]>("agree", new Integer[]{	1,	-1,	-1,	1,	-1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("accept", new Integer[]{	1,	-1,	-1,	1,	1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("explain", new Integer[]{	0,	-1,	1,	1,	-1}));
+		commActionsAttr.add(new Pair<>("agree", new Integer[]{	1,	-1,	-1,	1,	-1}));
+		commActionsAttr.add(new Pair<>("accept", new Integer[]{	1,	-1,	-1,	1,	1}));
+		commActionsAttr.add(new Pair<>("explain", new Integer[]{	0,	-1,	1,	1,	-1}));
 
-		commActionsAttr.add(new Pair<String, Integer[]>("suggest", new Integer[]{	1,	0,	1,	-1,	-1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("claim", new Integer[]{	1,	0,	1,	-1,	-1}));
+		commActionsAttr.add(new Pair<>("suggest", new Integer[]{	1,	0,	1,	-1,	-1}));
+		commActionsAttr.add(new Pair<>("claim", new Integer[]{	1,	0,	1,	-1,	-1}));
 
 		// bring-attention
-		commActionsAttr.add(new Pair<String, Integer[]>("bring_attention", new Integer[]{	1,	1,	1,	1,	1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("remind", new Integer[]{	-1,	0,	1,	1,	1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("allow", new Integer[]{	1,	-1,	-1,	-1,	-1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("try", new Integer[]{	1,	0,	-1,	-1,	-1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("request", new Integer[]{	0,	1,	-1,	1,	1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("understand", new Integer[]{	0,	-1,	-1,	1,	-1}));
+		commActionsAttr.add(new Pair<>("bring_attention", new Integer[]{	1,	1,	1,	1,	1}));
+		commActionsAttr.add(new Pair<>("remind", new Integer[]{	-1,	0,	1,	1,	1}));
+		commActionsAttr.add(new Pair<>("allow", new Integer[]{	1,	-1,	-1,	-1,	-1}));
+		commActionsAttr.add(new Pair<>("try", new Integer[]{	1,	0,	-1,	-1,	-1}));
+		commActionsAttr.add(new Pair<>("request", new Integer[]{	0,	1,	-1,	1,	1}));
+		commActionsAttr.add(new Pair<>("understand", new Integer[]{	0,	-1,	-1,	1,	-1}));
 
-		commActionsAttr.add(new Pair<String, Integer[]>("inform", new Integer[]{	0,	0,	1,	1,	-1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("notify", new Integer[]{	0,	0,	1,	1,	-1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("report", new Integer[]{	0,	0,	1,	1,	-1}));
+		commActionsAttr.add(new Pair<>("inform", new Integer[]{	0,	0,	1,	1,	-1}));
+		commActionsAttr.add(new Pair<>("notify", new Integer[]{	0,	0,	1,	1,	-1}));
+		commActionsAttr.add(new Pair<>("report", new Integer[]{	0,	0,	1,	1,	-1}));
 
 
-		commActionsAttr.add(new Pair<String, Integer[]>("confirm", new Integer[]{	0,	-1,	1,	1,	1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("ask", new Integer[]{	0,	1,	-1,	-1,	-1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("check", new Integer[]{	-1,	1,	-1,	-1,	1}));
+		commActionsAttr.add(new Pair<>("confirm", new Integer[]{	0,	-1,	1,	1,	1}));
+		commActionsAttr.add(new Pair<>("ask", new Integer[]{	0,	1,	-1,	-1,	-1}));
+		commActionsAttr.add(new Pair<>("check", new Integer[]{	-1,	1,	-1,	-1,	1}));
 
-		commActionsAttr.add(new Pair<String, Integer[]>("ignore", new Integer[]{	-1,	-1,	-1,	-1,	1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("wait", new Integer[]{	-1,	-1,	-1,	-1,	1}));
+		commActionsAttr.add(new Pair<>("ignore", new Integer[]{	-1,	-1,	-1,	-1,	1}));
+		commActionsAttr.add(new Pair<>("wait", new Integer[]{	-1,	-1,	-1,	-1,	1}));
 
-		commActionsAttr.add(new Pair<String, Integer[]>("convince", new Integer[]{	0,	1,	1,	1, -1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("disagree", new Integer[]{	-1,	-1,	-1,	1,	-1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("appeal", new Integer[]{	-1,	1,	1,	1,	1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("deny", new Integer[]{	-1,	-1,	-1,	1,	1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("threaten", new Integer[]{	-1,	1, -1,	1,	1}));
+		commActionsAttr.add(new Pair<>("convince", new Integer[]{	0,	1,	1,	1, -1}));
+		commActionsAttr.add(new Pair<>("disagree", new Integer[]{	-1,	-1,	-1,	1,	-1}));
+		commActionsAttr.add(new Pair<>("appeal", new Integer[]{	-1,	1,	1,	1,	1}));
+		commActionsAttr.add(new Pair<>("deny", new Integer[]{	-1,	-1,	-1,	1,	1}));
+		commActionsAttr.add(new Pair<>("threaten", new Integer[]{	-1,	1, -1,	1,	1}));
 
-		commActionsAttr.add(new Pair<String, Integer[]>("concern", new Integer[]{	1,	-1, -1,	1,	1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("afraid", new Integer[]{	1,	-1, -1,	1,	1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("worri", new Integer[]{	1,	-1, -1,	1,	1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("scare", new Integer[]{	1,	-1, -1,	1,	1}));
+		commActionsAttr.add(new Pair<>("concern", new Integer[]{	1,	-1, -1,	1,	1}));
+		commActionsAttr.add(new Pair<>("afraid", new Integer[]{	1,	-1, -1,	1,	1}));
+		commActionsAttr.add(new Pair<>("worri", new Integer[]{	1,	-1, -1,	1,	1}));
+		commActionsAttr.add(new Pair<>("scare", new Integer[]{	1,	-1, -1,	1,	1}));
 
-		commActionsAttr.add(new Pair<String, Integer[]>("want", new Integer[]{	1,	0,	-1,	-1,	-1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("know", new Integer[]{	0,	-1,	-1,	1,	-1}));
-		commActionsAttr.add(new Pair<String, Integer[]>("believe", new Integer[]{	0,	-1,	-1,	1,	-1}));
+		commActionsAttr.add(new Pair<>("want", new Integer[]{	1,	0,	-1,	-1,	-1}));
+		commActionsAttr.add(new Pair<>("know", new Integer[]{	0,	-1,	-1,	1,	-1}));
+		commActionsAttr.add(new Pair<>("believe", new Integer[]{	0,	-1,	-1,	1,	-1}));
 	}
 
 	public Pair<String, Integer[]> findCAInSentence(List<ParseTreeNode> sentence){
 		for(ParseTreeNode node: sentence){
 			for(Pair<String, Integer[]> ca: commActionsAttr){
-				String lemma = (String)ca.getFirst();
+				String lemma = ca.getFirst();
 				// canonical form lemma is a sub-string of an actual form in parseTreeNode
 				if (node.getWord().toLowerCase().startsWith(lemma))
 					return ca;
@@ -72,7 +91,7 @@ public class CommunicativeActionsArcBuilder implements IGeneralizer<Pair<String,
 		for(int index = 1; index< sentence.size(); index++){
 			ParseTreeNode node = sentence.get(index);
 			for(Pair<String, Integer[]> ca: commActionsAttr){
-				String lemma = (String)ca.getFirst();
+				String lemma = ca.getFirst();
 				String[] lemmas = lemma.split("_");
 				if (lemmas==null || lemmas.length<2){
 					if (node.getWord().toLowerCase().startsWith(lemma))
@@ -87,11 +106,12 @@ public class CommunicativeActionsArcBuilder implements IGeneralizer<Pair<String,
 	}
 
 
+	@Override
 	public List<Pair<String, Integer[]>> generalize(Object o1, Object o2) {
-		List<Pair<String, Integer[]>> results = new ArrayList<Pair<String, Integer[]>>();
+		List<Pair<String, Integer[]>> results = new ArrayList<>();
 
 
-		String ca1 = null, ca2=null;
+		String ca1, ca2;
 
 		if (o1 instanceof String){
 			ca1 = (String)o1;
@@ -101,11 +121,10 @@ public class CommunicativeActionsArcBuilder implements IGeneralizer<Pair<String,
 			ca2 = ((Pair<String, Integer[]>)o2).getFirst();
 		}
 
-
 		// find entry for ca1
 		Pair<String, Integer[]> caP1=null, caP2=null;
 		for(Pair<String, Integer[]> ca: commActionsAttr){
-			String lemma = (String)ca.getFirst();
+			String lemma = ca.getFirst();
 			if (lemma.equals(ca1)){
 				caP1=ca;
 				break;
@@ -114,7 +133,7 @@ public class CommunicativeActionsArcBuilder implements IGeneralizer<Pair<String,
 
 		// find entry for ca2
 		for(Pair<String, Integer[]> ca: commActionsAttr){
-			String lemma = (String)ca.getFirst();
+			String lemma = ca.getFirst();
 			if (lemma.equals(ca2)){
 				caP2=ca;
 				break;
@@ -128,36 +147,34 @@ public class CommunicativeActionsArcBuilder implements IGeneralizer<Pair<String,
 			// we take Integer[] which is a first element of as resultant list
 			Integer[] res = new CommunicativeActionsAttribute().
 					generalize(caP1.getSecond(), caP2.getSecond()).get(0);
-			results.add(new Pair<String, Integer[]>("", res ));
+			results.add(new Pair<>("", res ));
 		}
 
 		return results;
 	}
 
 
-
-
-	/*Pair<String, Integer[]>[] commActionsAttrAr = new Pair<String, Integer[]>[] {
-			new Pair<String, Integer[]>("agree", new Integer[]{	1,	-1,	-1,	1,	-1}),
-			new Pair<String, Integer[]>("accept", new Integer[]{	1,	-1,	-1,	1,	1}),
-			new Pair<String, Integer[]>("explain", new Integer[]{	0,	-1,	1,	1,	-1}),
-			new Pair<String, Integer[]>("suggest", new Integer[]{	1,	0,	1,	-1,	-1}),
-			new Pair<String, Integer[]>("bring attention", new Integer[]{	1,	1,	1,	1,	1}),
-			new Pair<String, Integer[]>("remind", new Integer[]{	-1,	0,	1,	1,	1}),
-		    new Pair<String, Integer[]>("allow", new Integer[]{	1,	-1,	-1,	-1,	-1}),
-			new Pair<String, Integer[]>("try", new Integer[]{	1,	0,	-1,	-1,	-1}),
-			new Pair<String, Integer[]>("request", new Integer[]{	0,	1,	-1,	1,	1}),
-			new Pair<String, Integer[]>("understand", new Integer[]{	0,	-1,	-1,	1,	-1}),
-			new Pair<String, Integer[]>("inform", new Integer[]{	0,	0,	1,	1,	-1}),
-			new Pair<String, Integer[]>("confirm", new Integer[]{	0,	-1,	1,	1,	1}),
-			new Pair<String, Integer[]>("ask", new Integer[]{	0,	1,	-1,	-1,	-1}),
-			new Pair<String, Integer[]>("check", new Integer[]{	-1,	1,	-1,	-1,	1}),
-			new Pair<String, Integer[]>("ignore", new Integer[]{	-1,	-1,	-1,	-1,	1}),
-			new Pair<String, Integer[]>("convince", new Integer[]{	0,	1,	1,	1, -1}),
-			new Pair<String, Integer[]>("disagree", new Integer[]{	-1,	-1,	-1,	1,	-1}),
-			new Pair<String, Integer[]>("appeal", new Integer[]{	-1,	1,	1,	1,	1}),
-			new Pair<String, Integer[]>("deny", new Integer[]{	-1,	-1,	-1,	1,	1}),
-			new Pair<String, Integer[]>("threaten", new Integer[]{	-1,	1, -1,	1,	1}),	
+	/*Pair<String, Integer[]>[] commActionsAttrAr = new Pair<>[] {
+			new Pair<>("agree", new Integer[]{	1,	-1,	-1,	1,	-1}),
+			new Pair<>("accept", new Integer[]{	1,	-1,	-1,	1,	1}),
+			new Pair<>("explain", new Integer[]{	0,	-1,	1,	1,	-1}),
+			new Pair<>("suggest", new Integer[]{	1,	0,	1,	-1,	-1}),
+			new Pair<>("bring attention", new Integer[]{	1,	1,	1,	1,	1}),
+			new Pair<>("remind", new Integer[]{	-1,	0,	1,	1,	1}),
+		    new Pair<>("allow", new Integer[]{	1,	-1,	-1,	-1,	-1}),
+			new Pair<>("try", new Integer[]{	1,	0,	-1,	-1,	-1}),
+			new Pair<>("request", new Integer[]{	0,	1,	-1,	1,	1}),
+			new Pair<>("understand", new Integer[]{	0,	-1,	-1,	1,	-1}),
+			new Pair<>("inform", new Integer[]{	0,	0,	1,	1,	-1}),
+			new Pair<>("confirm", new Integer[]{	0,	-1,	1,	1,	1}),
+			new Pair<>("ask", new Integer[]{	0,	1,	-1,	-1,	-1}),
+			new Pair<>("check", new Integer[]{	-1,	1,	-1,	-1,	1}),
+			new Pair<>("ignore", new Integer[]{	-1,	-1,	-1,	-1,	1}),
+			new Pair<>("convince", new Integer[]{	0,	1,	1,	1, -1}),
+			new Pair<>("disagree", new Integer[]{	-1,	-1,	-1,	1,	-1}),
+			new Pair<>("appeal", new Integer[]{	-1,	1,	1,	1,	1}),
+			new Pair<>("deny", new Integer[]{	-1,	-1,	-1,	1,	1}),
+			new Pair<>("threaten", new Integer[]{	-1,	1, -1,	1,	1}),
 	} */
 
 }

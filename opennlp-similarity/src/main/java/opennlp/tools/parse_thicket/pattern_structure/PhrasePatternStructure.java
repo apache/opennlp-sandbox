@@ -16,8 +16,7 @@
  */
 package opennlp.tools.parse_thicket.pattern_structure;
 
-
-
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -27,17 +26,20 @@ import java.util.Set;
 import opennlp.tools.parse_thicket.ParseTreeNode;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
 import opennlp.tools.textsimilarity.ParseTreeMatcherDeterministic;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PhrasePatternStructure {
-	int objectCount;
-	int attributeCount;
-	public List<PhraseConcept> conceptList;
-	ParseTreeMatcherDeterministic md; 
+	private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+	final int objectCount;
+	final int attributeCount;
+	public final List<PhraseConcept> conceptList;
+	final ParseTreeMatcherDeterministic md;
 	public PhrasePatternStructure(int objectCounts, int attributeCounts) {
 		objectCount = objectCounts;
 		attributeCount = attributeCounts;
-		conceptList = new ArrayList<PhraseConcept>();
+		conceptList = new ArrayList<>();
 		PhraseConcept bottom = new PhraseConcept();
 		md = new ParseTreeMatcherDeterministic();
 		/*Set<Integer> b_intent = new HashSet<Integer>();
@@ -62,20 +64,20 @@ public class PhrasePatternStructure {
 		}
 		return Generator;
 	}
+	
 	public int AddIntent(List<List<ParseTreeChunk>> intent, int generator) {
-		System.out.println("debug");
-		System.out.println("called for " + intent);
+		LOG.debug("debug called for {}", intent);
 		//printLattice();
 		int generator_tmp = GetMaximalConcept(intent, generator);
 		generator = generator_tmp;
 		if (conceptList.get(generator).intent.equals(intent)) {
-			System.out.println("at generator:" + conceptList.get(generator).intent);
-			System.out.println("to add:" + intent);
-			System.out.println("already generated");
+			LOG.debug("at generator: {}", conceptList.get(generator).intent);
+			LOG.debug("to add: {}", intent);
+			LOG.debug("already generated");
 			return generator;
 		}
 		Set<Integer> generatorParents = conceptList.get(generator).parents;
-		Set<Integer> newParents = new HashSet<Integer>();
+		Set<Integer> newParents = new HashSet<>();
 		for (int candidate : generatorParents) {
 			if (!intent.containsAll(conceptList.get(candidate).intent)) {
 				//if (!conceptList.get(candidate).intent.containsAll(intent)) {
@@ -84,14 +86,14 @@ public class PhrasePatternStructure {
 				//intersection.retainAll(intent);
 				List<List<ParseTreeChunk>> intersection = md
 						.matchTwoSentencesGroupedChunksDeterministic(intent, conceptList.get(candidate).intent);
-				System.out.println("recursive call (inclusion)");
+				LOG.debug("recursive call (inclusion)");
 				candidate = AddIntent(intersection, candidate);
 			}
 			boolean addParents = true;
-			System.out.println("now iterating over parents");
+			LOG.debug("now iterating over parents");
 			Iterator<Integer> iterator = newParents.iterator();
 			while (iterator.hasNext()) {
-				Integer parent = iterator.next();
+				int parent = iterator.next();
 				if (conceptList.get(parent).intent.containsAll(conceptList.get(candidate).intent)) {
 					addParents = false;
 					break;
@@ -121,7 +123,7 @@ public class PhrasePatternStructure {
 				newParents.add(candidate);
 			}
 		}
-		System.out.println("size of lattice: " + conceptList.size());
+		LOG.debug("size of lattice: {}", conceptList.size());
 		PhraseConcept newConcept = new PhraseConcept();
 		newConcept.setIntent(intent);
 		newConcept.setPosition(conceptList.size());
@@ -137,10 +139,10 @@ public class PhrasePatternStructure {
 	}
 
 	public void printLatticeStats() {
-		System.out.println("Lattice stats");
-		System.out.println("max_object_index = " + objectCount);
-		System.out.println("max_attribute_index = " + attributeCount);
-		System.out.println("Current concept count = " + conceptList.size());
+		LOG.info("Lattice stats:");
+		LOG.info("max_object_index = {}", objectCount);
+		LOG.info("max_attribute_index = {}", attributeCount);
+		LOG.info("Current concept count = {}", conceptList.size());
 
 	}
 
@@ -151,25 +153,28 @@ public class PhrasePatternStructure {
 	}
 
 	public void printConceptByPosition(int index) {
-		System.out.println("Concept at position " + index);
+		LOG.debug("Concept at position {}", index);
 		conceptList.get(index).printConcept();
 	}
 
 	public List<List<ParseTreeChunk>> formGroupedPhrasesFromChunksForPara(
 			List<List<ParseTreeNode>> phrs) {
-		List<List<ParseTreeChunk>> results = new ArrayList<List<ParseTreeChunk>>();
-		List<ParseTreeChunk> nps = new ArrayList<ParseTreeChunk>(), vps = new ArrayList<ParseTreeChunk>(), 
-				pps = new ArrayList<ParseTreeChunk>();
-		for(List<ParseTreeNode> ps:phrs){
+		List<List<ParseTreeChunk>> results = new ArrayList<>();
+		List<ParseTreeChunk> nps = new ArrayList<>(), vps = new ArrayList<>(), pps = new ArrayList<>();
+		for(List<ParseTreeNode> ps:phrs) {
 			ParseTreeChunk ch = convertNodeListIntoChunk(ps);
+			LOG.debug(ps.toString());
 			String ptype = ps.get(0).getPhraseType();
-			System.out.println(ps);
-			if (ptype.equals("NP")){
-				nps.add(ch);
-			} else if (ptype.equals("VP")){
-				vps.add(ch);
-			} else if (ptype.equals("PP")){
-				pps.add(ch);
+			switch (ptype) {
+				case "NP":
+					nps.add(ch);
+					break;
+				case "VP":
+					vps.add(ch);
+					break;
+				case "PP":
+					pps.add(ch);
+					break;
 			}
 		}
 		results.add(nps); results.add(vps); results.add(pps);
@@ -177,8 +182,8 @@ public class PhrasePatternStructure {
 	}
 
 	private ParseTreeChunk convertNodeListIntoChunk(List<ParseTreeNode> ps) {
-		List<String> lemmas = new ArrayList<String>(),  poss = new ArrayList<String>();
-		for(ParseTreeNode n: ps){
+		List<String> lemmas = new ArrayList<>(), poss = new ArrayList<>();
+		for(ParseTreeNode n: ps) {
 			lemmas.add(n.getWord());
 			poss.add(n.getPos());
 		}
@@ -186,7 +191,6 @@ public class PhrasePatternStructure {
 		ch.setMainPOS(ps.get(0).getPhraseType());
 		return ch;
 	}
-
 
 }
 

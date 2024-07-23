@@ -25,23 +25,24 @@ import java.util.LinkedList;
 import java.util.Map;
 
 /**
- * C = argmax( P(d|c) * P(c) )
- * where P(d|c) is called: likelihood
- * and P(c) is called: prior - we can count relative frequencies in a corpus
- * and d is a vector of features
- * <p/>
- * we assume:
- * 1. bag of words assumption: positions don't matter
- * 2. conditional independence: the feature probabilities are independent given a class
- * <p/>
- * thus P(d|c) == P(x1,..,xn|c) == P(x1|c)*...P(xn|c)
+ * {@code C = argmax( P(d|c) * P(c) )}
+ * where {@code P(d|c)} is called: likelihood
+ * and {@code P(c)} is called: prior - we can count relative frequencies in a corpus
+ * and {@code d} is a vector of features.
+ * <p>
+ * We assume:
+ * <ol>
+ * <li>bag of words assumption: positions don't matter</li>
+ * <li>conditional independence: the feature probabilities are independent given a class</li>
+ * </ol>
+ * thus {@code P(d|c) == P(x1,..,xn|c) == P(x1|c)*...P(xn|c)}
  */
 public class SimpleNaiveBayesClassifier implements NaiveBayesClassifier<String, String> {
 
   private static final String UNKNOWN_WORD_TOKEN = "_unk_word_";
 
   private Collection<String> vocabulary; // the bag of all the words in the corpus
-  private final Map<String, String> docsWithClass; // this is the trained corpus holding a the doc as a key and the class as a value
+  private final Map<String, String> docsWithClass; // this is the trained corpus holding the doc as a key and the class as a value
   private Map<String, String> classMegaDocMap; // key is the class, value is the megadoc
   //    private Map<String, String> preComputedWordClasses; // the key is the word, the value is its likelihood
   private Map<String, Double> priors;
@@ -57,7 +58,7 @@ public class SimpleNaiveBayesClassifier implements NaiveBayesClassifier<String, 
   }
 
   private void preComputePriors() {
-    priors = new HashMap<String, Double>();
+    priors = new HashMap<>();
     for (String cl : classMegaDocMap.keySet()) {
       priors.put(cl, calculatePrior(cl));
     }
@@ -71,8 +72,8 @@ public class SimpleNaiveBayesClassifier implements NaiveBayesClassifier<String, 
 //    }
 
   private void createMegaDocs() {
-    classMegaDocMap = new HashMap<String, String>();
-    Map<String, StringBuilder> mockClassMegaDocMap = new HashMap<String, StringBuilder>();
+    classMegaDocMap = new HashMap<>();
+    Map<String, StringBuilder> mockClassMegaDocMap = new HashMap<>();
     for (String doc : docsWithClass.keySet()) {
       String cl = docsWithClass.get(doc);
       StringBuilder megaDoc = mockClassMegaDocMap.get(cl);
@@ -90,7 +91,7 @@ public class SimpleNaiveBayesClassifier implements NaiveBayesClassifier<String, 
   }
 
   private void createVocabulary() {
-    vocabulary = new LinkedList<String>();
+    vocabulary = new LinkedList<>();
     for (String doc : docsWithClass.keySet()) {
       String[] split = tokenizeDoc(doc);
       vocabulary.addAll(Arrays.asList(split));
@@ -104,10 +105,10 @@ public class SimpleNaiveBayesClassifier implements NaiveBayesClassifier<String, 
 
   @Override
   public String calculateClass(String inputDocument) {
-    Double max = 0d;
+    double max = 0d;
     String foundClass = null;
     for (String cl : classMegaDocMap.keySet()) {
-      Double clVal = priors.get(cl) * calculateLikelihood(inputDocument, cl);
+      double clVal = priors.get(cl) * calculateLikelihood(inputDocument, cl);
       if (clVal > max) {
         max = clVal;
         foundClass = cl;
@@ -120,7 +121,7 @@ public class SimpleNaiveBayesClassifier implements NaiveBayesClassifier<String, 
   private Double calculateLikelihood(String document, String c) {
     String megaDoc = classMegaDocMap.get(c);
     // for each word
-    Double result = 1d;
+    double result = 1d;
     for (String word : tokenizeDoc(document)) {
       // num : count the no of times the word appears in documents of class c (+1)
       double num = count(word, megaDoc) + 1; // +1 is added because of add 1 smoothing

@@ -55,19 +55,18 @@ public class UimaUtil {
 
     XMLParser xmlParser = UIMAFramework.getXMLParser();
 
-    TypeSystemDescription typeSystemDesciptor;
+    TypeSystemDescription typeSystemDescriptor;
 
     try {
-      typeSystemDesciptor = (TypeSystemDescription) xmlParser
-          .parse(xmlTypeSystemSource);
+      typeSystemDescriptor = (TypeSystemDescription) xmlParser.parse(xmlTypeSystemSource);
 
-      typeSystemDesciptor.resolveImports();
+      typeSystemDescriptor.resolveImports();
     } catch (InvalidXMLException e) {
       e.printStackTrace();
-      typeSystemDesciptor = null;
+      typeSystemDescriptor = null;
     }
 
-    return typeSystemDesciptor;
+    return typeSystemDescriptor;
   }
 
   static CAS createEmptyCAS(TypeSystemDescription typeSystem) {
@@ -109,11 +108,10 @@ public class UimaUtil {
       throw new IllegalStateException("SAX error while creating parser!", e);
     }
 
-    XmiCasDeserializer dezerializer = new XmiCasDeserializer(
-        cas.getTypeSystem());
+    XmiCasDeserializer deserializer = new XmiCasDeserializer(cas.getTypeSystem());
 
     try {
-      saxParser.parse(xmiIn, dezerializer.getXmiCasHandler(cas));
+      saxParser.parse(xmiIn, deserializer.getXmiCasHandler(cas));
     } catch (SAXException e) {
       throw new IOException("Invalid XMI input!", e);
     }

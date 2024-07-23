@@ -19,40 +19,41 @@
 package org.apache.opennlp.utils.cfg;
 
 import java.util.TreeSet;
-import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 /**
  * Testcase for {@link Rule}
  */
-public class RuleTest {
+class RuleTest {
 
   @Test
-  public void testEquals() throws Exception {
+  void testEquals() {
     Rule r1 = new Rule("NP", "NP", "PP");
     Rule r2 = new Rule("NP", "NP", "PP");
     assertEquals(r1, r2);
   }
 
   @Test
-  public void testNotEquals() throws Exception {
+  void testNotEquals() {
     Rule r1 = new Rule("NP", "DT", "NN");
     Rule r2 = new Rule("NP", "NP", "PP");
     assertNotEquals(r1, r2);
   }
 
   @Test
-  public void testHashcode() throws Exception {
+  void testHashcode() {
     Rule r1 = new Rule("NP", "DT", "NN");
     Rule r2 = new Rule("NP", "NP", "PP");
     assertNotEquals(r1.hashCode(), r2.hashCode());
   }
 
   @Test
-  public void testCompare() throws Exception {
-    TreeSet<Rule> rules = new TreeSet<Rule>();
+  void testCompare() {
+    TreeSet<Rule> rules = new TreeSet<>();
     Rule r1 = new Rule("NP", "DT", "NN");
     Rule r2 = new Rule("NP", "NP", "PP");
     rules.add(r1);

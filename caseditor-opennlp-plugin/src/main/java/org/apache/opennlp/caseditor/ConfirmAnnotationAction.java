@@ -25,9 +25,9 @@ import org.eclipse.ui.actions.BaseSelectionListenerAction;
 
 public class ConfirmAnnotationAction extends BaseSelectionListenerAction {
   
-  private TableViewer entityList;
+  private final TableViewer entityList;
   
-  private ICasEditor editor;
+  private final ICasEditor editor;
   
   public ConfirmAnnotationAction(TableViewer entityList, ICasEditor editor) {
     super("Confirm");
@@ -54,7 +54,7 @@ public class ConfirmAnnotationAction extends BaseSelectionListenerAction {
     IStructuredSelection selection = 
         (IStructuredSelection) entityList.getSelection();
     
-    Object elements[] = selection.toArray();
+    Object[] elements = selection.toArray();
 
     if (elements.length > 0) {
       PotentialAnnotation selectedEntity = (PotentialAnnotation) elements[0];

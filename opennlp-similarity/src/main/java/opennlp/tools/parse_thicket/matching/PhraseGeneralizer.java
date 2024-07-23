@@ -20,37 +20,29 @@ package opennlp.tools.parse_thicket.matching;
 import java.util.ArrayList;
 import java.util.List;
 
-
-
-
-
-
 import opennlp.tools.parse_thicket.IGeneralizer;
 import opennlp.tools.parse_thicket.ParseTreeNode;
-import opennlp.tools.stemmer.PStemmer;
+import opennlp.tools.stemmer.PorterStemmer;
+import opennlp.tools.stemmer.Stemmer;
 import opennlp.tools.textsimilarity.GeneralizationListReducer;
-import opennlp.tools.textsimilarity.LemmaFormManager;
-import opennlp.tools.textsimilarity.POSManager;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
 
 public class PhraseGeneralizer implements IGeneralizer<ParseTreeChunk> {
 
-	private GeneralizationListReducer generalizationListReducer = new GeneralizationListReducer();
-	protected LemmaGeneralizer lemmaFormManager = new LemmaGeneralizer();
-	//protected LemmaFormManager lemmaFormManager = new LemmaFormManager();
+	private final GeneralizationListReducer generalizationListReducer = new GeneralizationListReducer();
+	protected final LemmaGeneralizer lemmaFormManager = new LemmaGeneralizer();
+
+	protected final PartOfSpeechGeneralizer posManager = new PartOfSpeechGeneralizer();
 	
-	
-	protected PartOfSpeechGeneralizer posManager = new PartOfSpeechGeneralizer();
-	
-	protected PStemmer ps = new PStemmer();
-	protected ParseTreeNodeGeneralizer nodeGen = new ParseTreeNodeGeneralizer();
+	private final Stemmer ps = new PorterStemmer();
+	protected final ParseTreeNodeGeneralizer nodeGen = new ParseTreeNodeGeneralizer();
 
 	/**
 	 * key matching function which takes two phrases, aligns them and finds a set
 	 * of maximum common sub-phrase
 	 * 
-	 * @param chunk1
-	 * @param chunk2
+	 * @param chunk1o
+	 * @param chunk2o
 	 * @return
 	 */
 	@Override
@@ -59,7 +51,7 @@ public class PhraseGeneralizer implements IGeneralizer<ParseTreeChunk> {
 
 		ParseTreeChunk chunk1 = (ParseTreeChunk)chunk1o, chunk2 = (ParseTreeChunk)chunk2o;
 
-		List<ParseTreeChunk> resultChunks = new ArrayList<ParseTreeChunk>();
+		List<ParseTreeChunk> resultChunks = new ArrayList<>();
 
 
 		List<String> pos1 = chunk1.getPOSs();
@@ -67,9 +59,8 @@ public class PhraseGeneralizer implements IGeneralizer<ParseTreeChunk> {
 		List<String> lem1 = chunk1.getLemmas();
 		List<String> lem2 = chunk2.getLemmas();
 
-		List<String> lem1stem = new ArrayList<String>();
-		List<String> lem2stem = new ArrayList<String>();
-
+		List<String> lem1stem = new ArrayList<>();
+		List<String> lem2stem = new ArrayList<>();
 
 		for (String word : lem1) {
 			try {
@@ -89,14 +80,14 @@ public class PhraseGeneralizer implements IGeneralizer<ParseTreeChunk> {
 			System.err.println("problem processing word " + lem2.toString());
 		}
 
-		List<String> overlap = new ArrayList<String>(lem1stem);
+		List<String> overlap = new ArrayList<>(lem1stem);
 		overlap.retainAll(lem2stem);
 
 		if (overlap == null || overlap.size() < 1)
 			return null;
 
 		// to accumulate starts of alignments
-		List<Integer> occur1 = new ArrayList<Integer>(), occur2 = new ArrayList<Integer>();
+		List<Integer> occur1 = new ArrayList<>(), occur2 = new ArrayList<>();
 
 		// for verbs find alignment even if no same verb lemmas, just any pair of verbs. Usually should be 0,0
 		if (chunk1.getMainPOS().startsWith("VP") && chunk2.getMainPOS().startsWith("VP")) {
@@ -133,9 +124,9 @@ public class PhraseGeneralizer implements IGeneralizer<ParseTreeChunk> {
 		// if at some position correspondence is inverse (one of two position
 		// decreases instead of increases)
 		// then we terminate current alignment accum and start a new one
-		List<List<int[]>> overlapsPlaus = new ArrayList<List<int[]>>();
+		List<List<int[]>> overlapsPlaus = new ArrayList<>();
 		// starts from 1, not 0
-		List<int[]> accum = new ArrayList<int[]>();
+		List<int[]> accum = new ArrayList<>();
 		accum.add(new int[] { occur1.get(0), occur2.get(0) });
 		for (int i = 1; i < occur1.size() && i< occur2.size(); i++) {
 
@@ -144,7 +135,7 @@ public class PhraseGeneralizer implements IGeneralizer<ParseTreeChunk> {
 				accum.add(new int[] { occur1.get(i), occur2.get(i) });
 			else {
 				overlapsPlaus.add(accum);
-				accum = new ArrayList<int[]>();
+				accum = new ArrayList<>();
 				accum.add(new int[] { occur1.get(i), occur2.get(i) });
 			}
 		}
@@ -154,19 +145,19 @@ public class PhraseGeneralizer implements IGeneralizer<ParseTreeChunk> {
 
 
 		for (List<int[]> occur : overlapsPlaus) {
-			List<ParseTreeNode> results = new ArrayList<ParseTreeNode>();
-			List<Integer> occr1 = new ArrayList<Integer>(), occr2 = new ArrayList<Integer>();
+			List<ParseTreeNode> results = new ArrayList<>();
+			List<Integer> occr1 = new ArrayList<>(), occr2 = new ArrayList<>();
 			for (int[] column : occur) {
 				occr1.add(column[0]);
 				occr2.add(column[1]);
 			}
 
 			int ov1 = 0, ov2 = 0; // iterators over common words;
-			List<String> commonPOS = new ArrayList<String>(), commonLemmas = new ArrayList<String>();
+			List<String> commonPOS = new ArrayList<>(), commonLemmas = new ArrayList<>();
 			// we start two words before first word
 			int k1 = occr1.get(ov1) - 2, k2 = occr2.get(ov2) - 2;
 			// if (k1<0) k1=0; if (k2<0) k2=0;
-			Boolean bReachedCommonWord = false;
+			boolean bReachedCommonWord = false;
 			while (k1 < 0 || k2 < 0) {
 				k1++;
 				k2++;
@@ -237,7 +228,7 @@ public class PhraseGeneralizer implements IGeneralizer<ParseTreeChunk> {
 						// behind
 						// current
 						// position,
-						// synchroneously
+						// synchronously
 						// move
 						// towards
 						// right
@@ -258,10 +249,8 @@ public class PhraseGeneralizer implements IGeneralizer<ParseTreeChunk> {
 			ParseTreeChunk currResult = new ParseTreeChunk(results);
 			//currResultOld = new ParseTreeChunk(commonLemmas, commonPOS, 0, 0);
 
-
 			resultChunks.add(currResult);
 		}
-
 		return resultChunks;
 	}
 

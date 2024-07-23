@@ -18,8 +18,10 @@
 package opennlp.tools.similarity.apps;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,39 +39,27 @@ public class WebSearchEngineResultsScraper {
 
   protected static String fetchPageSearchEngine(String url) {
     System.out.println("fetch url " + url);
-    String pageContent = null;
-    StringBuffer buf = new StringBuffer();
+    StringBuilder buf = new StringBuilder();
     try {
-      URLConnection connection = new URL(url).openConnection();
+      URLConnection connection = new URI(url).toURL().openConnection();
       connection.setReadTimeout(50000);
-      connection
-          .setRequestProperty(
-              "User-Agent",
+      connection.setRequestProperty("User-Agent",
               "Mozilla/5.0 (Windows; U; Windows NT 6.0; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3");
       String line;
-      BufferedReader reader = null;
-      try {
-        reader = new BufferedReader(new InputStreamReader(
-            connection.getInputStream()));
-      } catch (Exception e) {
-        System.err.println("Unable to complete search engine request "+url);
-        //e.printStackTrace();
+      try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+        while ((line = reader.readLine()) != null) {
+          buf.append(line);
+        }
+        return buf.toString();
       }
-
-      while ((line = reader.readLine()) != null) {
-        buf.append(line);
-      }
-
-    } catch (Exception e) {
-      // e.printStackTrace();
+    } catch (IOException | URISyntaxException e) {
       System.err.println("error fetching url " + url);
+      return null;
     }
-
-    return buf.toString();
   }
 
   private static List<String> extractURLsFromPage(String content, String domain) {
-    List<String> results = new ArrayList<String>();
+    List<String> results = new ArrayList<>();
     if (content == null)
       return results;
     content = StringUtils.substringBetween(content, ">Advanced</a></div>",
@@ -94,7 +84,7 @@ public class WebSearchEngineResultsScraper {
   }
 
   private static List<HitBase> extractSearchResultFromPage(String content) {
-    List<HitBase> results = new ArrayList<HitBase>();
+    List<HitBase> results = new ArrayList<>();
     if (content == null)
       return results;
     content = StringUtils.substringBetween(content, "<div id=\"results",
@@ -119,7 +109,7 @@ public class WebSearchEngineResultsScraper {
         hit.setTitle(title);
         results.add(hit);
       } catch (Exception e) {
-        //problem parsing SERP page; source - specific problem so we swallow exceptions here
+        //problem parsing SERP page; source - specific problem, so we swallow exceptions here
       }
     }
 
@@ -127,13 +117,11 @@ public class WebSearchEngineResultsScraper {
   }
   
   private static String formRequestURL(String query) {
-    String requestUrl = "http://www.hakia.com/search/web?q=" + query.replace(' ','+');
-    return requestUrl;
+    return "http://www.hakia.com/search/web?q=" + query.replace(' ','+');
   }
   
   private static String formRequestURLAlt(String query) {
-    String requestUrl = "https://www.google.com/search?q=" + query.replace(' ','+');
-    return requestUrl;
+    return "https://www.google.com/search?q=" + query.replace(' ','+');
   }
 
   public List<String> getURLsForWebDomain(String domain) {
@@ -141,17 +129,17 @@ public class WebSearchEngineResultsScraper {
   }
 
   public Set<String> getURLsForWebDomainIterations(String domain) {
-    List<String> results = new ArrayList<String>();
+    List<String> results = new ArrayList<>();
     List<String> res = extractURLsFromPage(
         fetchPageSearchEngine(formRequestURL(domain)), domain);
     for (String r : res)
       results.addAll(extractURLsFromPage(fetchPageSearchEngine(formRequestURL(r)), r));
 
-    return new HashSet<String>(results);
+    return new HashSet<>(results);
   }
   
   public List<HitBase> runSearch(String query) {
-    List<HitBase> hits = new ArrayList<HitBase>();
+    List<HitBase> hits = new ArrayList<>();
     /*  Actual external web search is commented out
     try {
       String serp = fetchPageSearchEngine(formRequestURL(query));
@@ -183,8 +171,7 @@ public class WebSearchEngineResultsScraper {
     System.out.println(scraper.runSearch("lady gaga in san francisco"));        
   }
   
-  Map<String, String[][]> cachedSearchEngineData = new HashMap<String, String[][]>();
-  
+  final Map<String, String[][]> cachedSearchEngineData = new HashMap<>();
   
   private void buildCache(){
     cachedSearchEngineData.put("remember+to+buy+milk+tomorrow+for+details", new String[][]{

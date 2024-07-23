@@ -19,13 +19,25 @@ package opennlp.tools.textsimilarity.chunker2matcher;
 
 import java.util.List;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
-public class PhraseNodeTest extends TestCase {
-  ParserChunker2MatcherProcessor proc = ParserChunker2MatcherProcessor
-      .getInstance();
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-  public void testPOSTagsExtraction() {
+class PhraseNodeTest {
+
+  private final ParserChunker2MatcherProcessor proc = ParserChunker2MatcherProcessor.getInstance();
+
+  @AfterEach
+  void cleanUp() {
+    if (proc != null) {
+      proc.close();
+    }
+  }
+
+  @Test
+  void testPOSTagsExtraction() {
 
     SentenceNode node = proc.parseSentenceNode("How can I get there");
 
@@ -42,7 +54,7 @@ public class PhraseNodeTest extends TestCase {
       pOSlist = node.getOrderedPOSList();
       assertEquals("[WRB, VBP, PRP]", pOSlist.toString());
     } catch (Exception e) { // for run without models, where init fails
-      assertEquals(node, null);
+      assertNull(node);
     }
   }
 

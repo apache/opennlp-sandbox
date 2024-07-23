@@ -51,15 +51,15 @@ import net.didion.jwnl.princeton.file.PrincetonRandomAccessDictionaryFile;
  */
 public class JWNLDictionary implements Dictionary {
 
-  private net.didion.jwnl.dictionary.Dictionary dict;
+  private final net.didion.jwnl.dictionary.Dictionary dict;
   private MorphologicalProcessor morphy;
-  private static String[] empty = new String[0];
+  private static final String[] EMPTY = new String[0];
 
   public JWNLDictionary(String searchDirectory) throws IOException, JWNLException {
     PointerType.initialize();
     Adjective.initialize();
     VerbFrame.initialize();
-    Map<POS, String[][]> suffixMap = new HashMap<POS, String[][]>();
+    Map<POS, String[][]> suffixMap = new HashMap<>();
     suffixMap.put(POS.NOUN,new String[][] {{"s",""},{"ses","s"},{"xes","x"},{"zes","z"},
         {"ches","ch"},{"shes","sh"},{"men","man"},{"ies","y"}});
     suffixMap.put(POS.VERB,new String[][] {{"s",""},{"ies","y"},{"es","e"},{"es",""},{"ed","e"},
@@ -104,7 +104,7 @@ public class JWNLDictionary implements Dictionary {
         pos = POS.NOUN;
       }
       List<String> lemmas = morphy.lookupAllBaseForms(pos,word);
-      return lemmas.toArray(new String[lemmas.size()]);
+      return lemmas.toArray(new String[0]);
     }
     catch (JWNLException e) {
       e.printStackTrace();
@@ -142,11 +142,11 @@ public class JWNLDictionary implements Dictionary {
 
   private void getParents(Synset synset, List<String> parents) throws JWNLException {
     Pointer[] pointers = synset.getPointers();
-    for (int pi = 0, pn = pointers.length; pi < pn;pi++) {
-      if (pointers[pi].getType() == PointerType.HYPERNYM) {
-        Synset parent = pointers[pi].getTargetSynset();
+    for (Pointer pointer : pointers) {
+      if (pointer.getType() == PointerType.HYPERNYM) {
+        Synset parent = pointer.getTargetSynset();
         parents.add(String.valueOf(parent.getOffset()));
-        getParents(parent,parents);
+        getParents(parent, parents);
       }
     }
   }
@@ -159,10 +159,10 @@ public class JWNLDictionary implements Dictionary {
         Synset synset = iw.getSense(sense + 1);
         List<String> parents = new ArrayList<>();
         getParents(synset,parents);
-        return parents.toArray(new String[parents.size()]);
+        return parents.toArray(new String[0]);
       }
       else {
-        return empty;
+        return EMPTY;
       }
     }
     catch (JWNLException e) {
@@ -178,10 +178,10 @@ public class JWNLDictionary implements Dictionary {
       Dictionary dict = new JWNLDictionary(System.getProperty("WNSEARCHDIR"));
       String word = args[0];
       String[] lemmas = dict.getLemmas(word,"NN");
-      for (int li = 0,ln = lemmas.length; li < ln;li++) {
-        for (int si = 0, sn = dict.getNumSenses(lemmas[li],"NN"); si < sn;si++) {
-          System.out.println(lemmas[li] + " (" + si + ")\t" +
-              Arrays.asList(dict.getParentSenseKeys(lemmas[li],"NN",si)));
+      for (String lemma : lemmas) {
+        for (int si = 0, sn = dict.getNumSenses(lemma, "NN"); si < sn; si++) {
+          System.out.println(lemma + " (" + si + ")\t" +
+                  Arrays.asList(dict.getParentSenseKeys(lemma, "NN", si)));
         }
       }
     }

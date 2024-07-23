@@ -20,19 +20,14 @@ package opennlp.tools.similarity.apps;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Logger;
+
 import opennlp.tools.similarity.apps.utils.Utils;
 import opennlp.tools.textsimilarity.TextProcessor;
 
-/*
+/**
  * This class does content generation in ES, DE etc
- * 
  */
-
 public class RelatedSentenceFinderML extends RelatedSentenceFinder{
-	private static Logger LOG = Logger
-			.getLogger("opennlp.tools.similarity.apps.RelatedSentenceFinderML");
-
 
 	public RelatedSentenceFinderML(int ms, int msr, float thresh, String key) {
 		this.MAX_STEPS = ms;
@@ -42,13 +37,11 @@ public class RelatedSentenceFinderML extends RelatedSentenceFinder{
 	}
 
 	public RelatedSentenceFinderML() {
-		// TODO Auto-generated constructor stub
 	}
 
 	public List<HitBase> generateContentAbout(String sentence) throws Exception {
-		List<HitBase> opinionSentencesToAdd = new ArrayList<HitBase>();
+		List<HitBase> opinionSentencesToAdd = new ArrayList<>();
 		System.out.println(" \n=== Entity to write about = " + sentence);
-		List<String> nounPhraseQueries = new ArrayList<String>();
 
 		List<HitBase> searchResult = yrunner.runSearch(sentence, 100);
 		if (MAX_SEARCH_RESULTS<searchResult.size())
@@ -75,28 +68,23 @@ public class RelatedSentenceFinderML extends RelatedSentenceFinder{
 	 * to be written and forms essey sentences from the title, abstract, and
 	 * possibly original page
 	 * 
-	 * @param HitBase
-	 *          item : search result
-	 * @param originalSentence
-	 *          : seed for the essay to be written
-	 * @param sentsAll
-	 *          : list<String> of other sentences in the seed if it is
-	 *          multi-sentence
+	 * @param item The search result
+	 * @param originalSentence The seed for the essay to be written
+	 * @param sentsAll A list<String> of other sentences in the seed if it is multi-sentence
 	 * @return search result
 	 */
-
 	public HitBase augmentWithMinedSentencesAndVerifyRelevance(HitBase item,
 			String originalSentence, List<String> sentsAll) {
 		if (sentsAll == null)
-			sentsAll = new ArrayList<String>();
+			sentsAll = new ArrayList<>();
 		// put orig sentence in structure
-		List<String> origs = new ArrayList<String>();
+		List<String> origs = new ArrayList<>();
 		origs.add(originalSentence);
 		item.setOriginalSentences(origs);
 		String title = item.getTitle().replace("<b>", " ").replace("</b>", " ")
 				.replace("  ", " ").replace("  ", " ");
 		// generation results for this sentence
-		List<Fragment> result = new ArrayList<Fragment>();
+		List<Fragment> result = new ArrayList<>();
 		// form plain text from snippet
 		String snapshot = item.getAbstractText().replace("<b>", " ")
 				.replace("</b>", " ").replace("  ", " ").replace("  ", " ");
@@ -107,8 +95,7 @@ public class RelatedSentenceFinderML extends RelatedSentenceFinder{
 		String snapshotMarked = snapshot.replace("...",
 				" _should_find_orig_ . _should_find_orig_");
 		String[] fragments = sm.splitSentences(snapshotMarked);
-		List<String> allFragms = new ArrayList<String>();
-		allFragms.addAll(Arrays.asList(fragments));
+		List<String> allFragms = new ArrayList<>(Arrays.asList(fragments));
 
 		String[] sents = null;
 		String downloadedPage = null;
@@ -130,10 +117,7 @@ public class RelatedSentenceFinderML extends RelatedSentenceFinder{
 				}
 			}
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			// e.printStackTrace();
-			System.err
-			.println("Problem downloading  the page and splitting into sentences");
+			System.err.println("Problem downloading  the page and splitting into sentences");
 			return item;
 		}
 
@@ -143,7 +127,7 @@ public class RelatedSentenceFinderML extends RelatedSentenceFinder{
 				continue;
 			String pageSentence = "";
 			// try to find original sentence from webpage
-			if (fragment.indexOf("_should_find_orig_") > -1 && sents != null
+			if (fragment.contains("_should_find_orig_") && sents != null
 					&& sents.length > 0)
 				try { 
 					// first try sorted sentences from page by lenght approach
@@ -154,7 +138,6 @@ public class RelatedSentenceFinderML extends RelatedSentenceFinder{
 						mainAndFollowSent = getFullOriginalSentenceFromWebpageBySnippetFragment(
 								fragment.replace("_should_find_orig_", ""), sentsSortedByLength);
 					} catch (Exception e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 					// if the above gives null than try to match all sentences from snippet fragment
@@ -165,8 +148,6 @@ public class RelatedSentenceFinderML extends RelatedSentenceFinder{
 
 
 				} catch (Exception e) {
-
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			else
@@ -182,7 +163,7 @@ public class RelatedSentenceFinderML extends RelatedSentenceFinder{
 
 				try { // get score from syntactic match between sentence in
 					// original text and mined sentence
-					double measScore = 0.0, syntScore = 0.0, mentalScore = 0.0;
+					double measScore, syntScore, mentalScore = 0.0;
 
 					syntScore = calculateKeywordScore(pageSentence + " " + title, originalSentence);
 
@@ -201,13 +182,13 @@ public class RelatedSentenceFinderML extends RelatedSentenceFinder{
 						}
 					}
 
-					measScore = stringDistanceMeasurer.measureStringDistance(
+					measScore = STRING_DISTANCE_MEASURER.measureStringDistance(
 							originalSentence, pageSentence);
 
 					// now possibly increase score by finding mental verbs
 					// indicating opinions
 					for (String s : MENTAL_VERBS) {
-						if (pageSentence.indexOf(s) > -1) {
+						if (pageSentence.contains(s)) {
 							mentalScore += 0.3;
 							break;
 						}
@@ -256,7 +237,7 @@ public class RelatedSentenceFinderML extends RelatedSentenceFinder{
 	private double calculateKeywordScore(String currSent, String pageSentence) {
 		List<String>  list1 =TextProcessor.fastTokenize(currSent, false);
 		List<String>  list2 =TextProcessor.fastTokenize(pageSentence, false);
-		List<String> overlap1 = new ArrayList<String>(list1);		
+		List<String> overlap1 = new ArrayList<>(list1);
 		overlap1.retainAll(list2);
 		return overlap1.size();
 
@@ -266,7 +247,7 @@ public class RelatedSentenceFinderML extends RelatedSentenceFinder{
 	public static void main(String[] args) {
 		RelatedSentenceFinderML f = new RelatedSentenceFinderML();
 
-		List<HitBase> hits = null;
+		List<HitBase> hits;
 		try {
 			// uncomment the sentence you would like to serve as a seed sentence for
 			// content generation for an event description

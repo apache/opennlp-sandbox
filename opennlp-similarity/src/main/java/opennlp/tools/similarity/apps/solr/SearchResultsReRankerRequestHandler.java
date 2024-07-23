@@ -16,64 +16,33 @@
  */
 package opennlp.tools.similarity.apps.solr;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.logging.Logger;
 
 import opennlp.tools.similarity.apps.HitBase;
-import opennlp.tools.similarity.apps.utils.Pair;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
 import opennlp.tools.textsimilarity.ParseTreeChunkListScorer;
 import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.CachingWrapperFilter;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-
-
 public class SearchResultsReRankerRequestHandler extends SearchHandler {
-	private static Logger LOG = Logger
-			.getLogger("com.become.search.requestHandlers.SearchResultsReRankerRequestHandler");
+	private static final Logger LOG =
+					Logger.getLogger("com.become.search.requestHandlers.SearchResultsReRankerRequestHandler");
 	private final static int MAX_SEARCH_RESULTS = 100;
-	private ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
+	private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
 	private ParserChunker2MatcherProcessor sm = null;
-	private int MAX_QUERY_LENGTH_NOT_TO_RERANK=3;
-	private static String resourceDir = "/home/solr/solr-4.4.0/example/src/test/resources";
+	private static final String RESOURCE_DIR = "/home/solr/solr-4.4.0/example/src/test/resources";
 	//"C:/workspace/TestSolr/src/test/resources";
-
 	//"/data1/solr/example/src/test/resources";
 
 	public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp){
@@ -90,20 +59,20 @@ public class SearchResultsReRankerRequestHandler extends SearchHandler {
 
 		SolrParams ps = req.getOriginalParams();
 		Iterator<String> iter =  ps.getParameterNamesIterator();
-		List<String> keys = new ArrayList<String>();
+		List<String> keys = new ArrayList<>();
 		while(iter.hasNext()){
 			keys.add(iter.next());
 		}
 
-		List<HitBase> searchResults = new ArrayList<HitBase>();
+		List<HitBase> searchResults = new ArrayList<>();
 
 
 
 
 
-		for ( Integer i=0; i< MAX_SEARCH_RESULTS; i++){
-			String title = req.getParams().get("t"+i.toString());
-			String descr = req.getParams().get("d"+i.toString());
+		for (int i = 0; i< MAX_SEARCH_RESULTS; i++){
+			String title = req.getParams().get("t"+i);
+			String descr = req.getParams().get("d"+i);
 
 			if(title==null || descr==null)
 				continue;
@@ -111,7 +80,7 @@ public class SearchResultsReRankerRequestHandler extends SearchHandler {
 			HitBase hit = new HitBase();
 			hit.setTitle(title);
 			hit.setAbstractText(descr);
-			hit.setSource(i.toString());
+			hit.setSource(Integer.toString(i));
 			searchResults.add(hit);
 		}
 
@@ -129,7 +98,7 @@ public class SearchResultsReRankerRequestHandler extends SearchHandler {
 					HitBase hit = new HitBase();
 					hit.setTitle("");
 					hit.setAbstractText(val);
-					hit.setSource(new Integer(count).toString());
+					hit.setSource(Integer.toString(count));
 					searchResults.add(hit);
 					count++;
 				}
@@ -138,7 +107,7 @@ public class SearchResultsReRankerRequestHandler extends SearchHandler {
 		}
 
 
-		List<HitBase> reRankedResults = null;
+		List<HitBase> reRankedResults;
 		query = query.replace('+', ' ');
 		if (tooFewKeywords(query)|| orQuery(query)){
 			reRankedResults = searchResults;
@@ -148,35 +117,33 @@ public class SearchResultsReRankerRequestHandler extends SearchHandler {
 			reRankedResults = calculateMatchScoreResortHits(searchResults, query);
 		/*
 		 * <scores>
-<score index="2">3.0005</score>
-<score index="1">2.101</score>
-<score index="3">2.1003333333333334</score>
-<score index="4">2.00025</score>
-<score index="5">1.1002</score>
-</scores>
-		 * 
-		 * 
+					<score index="2">3.0005</score>
+					<score index="1">2.101</score>
+					<score index="3">2.1003333333333334</score>
+					<score index="4">2.00025</score>
+					<score index="5">1.1002</score>
+			 </scores>
 		 */
-		StringBuffer buf = new StringBuffer(); 
+		StringBuilder buf = new StringBuilder();
 		buf.append("<scores>");
 		for(HitBase hit: reRankedResults){
-			buf.append("<score index=\""+hit.getSource()+"\">"+hit.getGenerWithQueryScore()+"</score>");				
+			buf.append("<score index=\"").append(hit.getSource()).append("\">").append(hit.getGenerWithQueryScore()).append("</score>");
 		}
 		buf.append("</scores>");
 
-		NamedList<Object> scoreNum = new NamedList<Object>();
+		NamedList<Object> scoreNum = new NamedList<>();
 		for(HitBase hit: reRankedResults){
 			scoreNum.add(hit.getSource(), hit.getGenerWithQueryScore());				
 		}
 		
-		StringBuffer bufNums = new StringBuffer(); 
+		StringBuilder bufNums = new StringBuilder();
 		bufNums.append("order>");
 		for(HitBase hit: reRankedResults){
-			bufNums.append(hit.getSource()+"_");				
+			bufNums.append(hit.getSource()).append("_");
 		}
 		bufNums.append("/order>");
 		
-		LOG.info("re-ranking results: "+buf.toString());
+		LOG.info("re-ranking results: "+ buf);
 		NamedList<Object> values = rsp.getValues();
 		values.remove("response");
 		values.add("response", scoreNum); 
@@ -186,14 +153,12 @@ public class SearchResultsReRankerRequestHandler extends SearchHandler {
 	}
 
 	private boolean orQuery(String query) {
-		if (query.indexOf('|')>-1)
-			return true;
-
-		return false;
+		return query.indexOf('|') > -1;
 	}
 
 	private boolean tooFewKeywords(String query) {
 		String[] parts = query.split(" ");
+		int MAX_QUERY_LENGTH_NOT_TO_RERANK = 3;
 		if (parts!=null && parts.length< MAX_QUERY_LENGTH_NOT_TO_RERANK)
 			return true;
 
@@ -203,18 +168,17 @@ public class SearchResultsReRankerRequestHandler extends SearchHandler {
 	private List<HitBase> calculateMatchScoreResortHits(List<HitBase> hits,
 			String searchQuery) {
 		try {
-			sm =  ParserChunker2MatcherProcessor.getInstance(resourceDir);
+			sm =  ParserChunker2MatcherProcessor.getInstance(RESOURCE_DIR);
 		} catch (Exception e){
 			LOG.severe(e.getMessage());
 		}
-		List<HitBase> newHitList = new ArrayList<HitBase>();
-
+		List<HitBase> newHitList = new ArrayList<>();
 
 		int count=1;
 		for (HitBase hit : hits) {
 			String snapshot = hit.getAbstractText();
 			snapshot += " . " + hit.getTitle();
-			Double score = 0.0;
+			double score = 0.0;
 			try {
 				SentencePairMatchResult matchRes = sm.assessRelevance(snapshot,
 						searchQuery);
@@ -229,15 +193,16 @@ public class SearchResultsReRankerRequestHandler extends SearchHandler {
 			newHitList.add(hit);
 			count++;
 		}
-		Collections.sort(newHitList, new HitBaseComparable());
+		newHitList.sort(new HitBaseComparable());
 		LOG.info(newHitList.toString());
 
 		return newHitList;
 	}
 
 
-	public class HitBaseComparable implements Comparator<HitBase> {
-		// @Override
+	public static class HitBaseComparable implements Comparator<HitBase> {
+
+		@Override
 		public int compare(HitBase o1, HitBase o2) {
 			return (o1.getGenerWithQueryScore() > o2.getGenerWithQueryScore() ? -1
 					: (o1 == o2 ? 0 : 1));

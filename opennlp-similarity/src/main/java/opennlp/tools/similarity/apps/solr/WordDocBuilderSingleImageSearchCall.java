@@ -16,113 +16,84 @@
  */
 package opennlp.tools.similarity.apps.solr;
 
-
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
 import net.billylieurance.azuresearch.AzureSearchImageResult;
 import net.billylieurance.azuresearch.AzureSearchResultSet;
-import net.billylieurance.azuresearch.AzureSearchWebResult;
 
-import org.apache.commons.lang.StringUtils;
-//import org.docx4j.Docx4J;
-//import org.docx4j.convert.out.FOSettings;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
+import org.docx4j.openpackaging.parts.WordprocessingML.MainDocumentPart;
 
 import opennlp.tools.similarity.apps.ContentGeneratorSupport;
 import opennlp.tools.similarity.apps.Fragment;
 import opennlp.tools.similarity.apps.HitBase;
 
-
-
 public class WordDocBuilderSingleImageSearchCall extends WordDocBuilder{
-	
+
+	@Override
 	public String buildWordDoc(List<HitBase> content, String title){
 		
-		String outputDocFinename =  absPath+"/written/"+ title.replace(' ','_').replace('\"', ' ').trim()+ ".docx";
+		String outputDocFilename =  absPath+"/written/"+ title.replace(' ','_').replace('\"', ' ').trim()+ ".docx";
 		
 		WordprocessingMLPackage wordMLPackage;
 		List<String> imageURLs = getAllImageSearchResults(title);
 		int count=0;
 		try {
 			wordMLPackage = WordprocessingMLPackage.createPackage();
-			wordMLPackage.getMainDocumentPart().addStyledParagraphOfText("Title", title.toUpperCase());
+			MainDocumentPart mdp = wordMLPackage.getMainDocumentPart();
+			mdp.addStyledParagraphOfText("Title", title.toUpperCase());
 			for(HitBase para: content){
 				if (para.getFragments()==null || para.getFragments().size()<1) // no found content in this hit
 						continue;
 				try {
 					if (!para.getTitle().endsWith("..") /*|| StringUtils.isAlphanumeric(para.getTitle())*/){
 						String sectTitle = ContentGeneratorSupport.getPortionOfTitleWithoutDelimiters(para.getTitle());
-						wordMLPackage.getMainDocumentPart().addStyledParagraphOfText("Subtitle",
-							sectTitle);
+						mdp.addStyledParagraphOfText("Subtitle", sectTitle);
 					}
 					String paraText = para.getFragments().toString().replace("[", "").replace("]", "").replace(" | ", "")
 							.replace(".,", ".").replace(".\"", "\"").replace(". .", ".")
 							.replace(",.", ".");
-					wordMLPackage.getMainDocumentPart().addParagraphOfText(paraText);
+					mdp.addParagraphOfText(paraText);
 					
 					try {
 						addImageByImageURLToPackage(count, wordMLPackage, imageURLs);
 					} catch (Exception e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				count++;
 			}
 			// now add URLs
-			wordMLPackage.getMainDocumentPart().addStyledParagraphOfText("Subtitle", "REFERENCES");
+			mdp.addStyledParagraphOfText("Subtitle", "REFERENCES");
 			for(HitBase para: content){
 				if (para.getFragments()==null || para.getFragments().size()<1) // no found content in this hit
 						continue;
 				try {
-					wordMLPackage.getMainDocumentPart().addStyledParagraphOfText("Subtitle",
-							para.getTitle());
+					mdp.addStyledParagraphOfText("Subtitle", para.getTitle());
 					String paraText = para.getUrl();
-					wordMLPackage.getMainDocumentPart().addParagraphOfText(paraText);
-					
-					
+					mdp.addParagraphOfText(paraText);
+
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
-	
 	        
-			wordMLPackage.save(new File(outputDocFinename));
-			System.out.println("Finished creating docx ="+outputDocFinename);
-		//TODO pdf export
-			/*
-			FOSettings foSettings = Docx4J.createFOSettings();
-            foSettings.setWmlPackage(wordMLPackage);
-            OutputStream os = new java.io.FileOutputStream(outputDocFinename.replace(".docx", ".pdf"));
-            Docx4J.toFO(foSettings, os, Docx4J.FLAG_NONE);
-        	System.out.println("Finished creating docx's PDF ="+outputDocFinename);
-    	*/	
+			wordMLPackage.save(new File(outputDocFilename));
+			System.out.println("Finished creating docx ="+outputDocFilename);
 			
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
-		return outputDocFinename;
+		return outputDocFilename;
 	}
 	
-	protected void addImageByImageURLToPackage(int count,
-			WordprocessingMLPackage wordMLPackage,
-			List<String>  imageURLs) {
+	protected void addImageByImageURLToPackage(int count, WordprocessingMLPackage wordMLPackage,
+																						 List<String>  imageURLs) {
 		if (count>imageURLs.size()-1)
 			return;
 		
@@ -130,24 +101,17 @@ public class WordDocBuilderSingleImageSearchCall extends WordDocBuilder{
 		String destinationFile = url.replace("http://", "").replace("/", "_");
 		saveImageFromTheWeb(url, absPath+IMG_REL_PATH+destinationFile);
 		File file = new File(absPath+IMG_REL_PATH+destinationFile);
-        try {
+		try {
 			byte[] bytes = convertImageToByteArray(file);
 			addImageToPackage(wordMLPackage, bytes);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 	}
 
 	protected List<String>  getAllImageSearchResults(String title) {
-		List<String> imageURLs = new ArrayList<String>();
+		List<String> imageURLs = new ArrayList<>();
 		AzureSearchResultSet<AzureSearchImageResult> res = imageSearcher.runImageSearch(title);
 		for(AzureSearchImageResult imResult: res){
 			imageURLs.add(imResult.getMediaUrl());
@@ -155,20 +119,19 @@ public class WordDocBuilderSingleImageSearchCall extends WordDocBuilder{
 		return imageURLs;
 		
 	}
-
     
-    public static void main(String[] args){
-    	WordDocBuilderSingleImageSearchCall b = new WordDocBuilderSingleImageSearchCall();
-    	List<HitBase> content = new ArrayList<HitBase>();
-    	for(int i = 0; i<10; i++){
-    		HitBase h = new HitBase();
-    		h.setTitle("albert einstein "+i);
-    		List<Fragment> frs = new ArrayList<Fragment>();
-    		frs.add(new Fragment(" content "+i, 0));
-    		h.setFragments(frs);
-    		content.add(h);
-    	}
-    	
-    	b.buildWordDoc(content, "albert einstein");
-    }
+	public static void main(String[] args){
+		WordDocBuilderSingleImageSearchCall b = new WordDocBuilderSingleImageSearchCall();
+		List<HitBase> content = new ArrayList<>();
+		for(int i = 0; i<10; i++){
+			HitBase h = new HitBase();
+			h.setTitle("albert einstein "+i);
+			List<Fragment> frs = new ArrayList<>();
+			frs.add(new Fragment(" content "+i, 0));
+			h.setFragments(frs);
+			content.add(h);
+		}
+
+		b.buildWordDoc(content, "albert einstein");
+	}
 }

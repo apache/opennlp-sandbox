@@ -45,7 +45,7 @@ import opennlp.tools.textsimilarity.TextProcessor;
 
 public class ParserPure2MatcherProcessor extends ParserChunker2MatcherProcessor {
   protected static ParserPure2MatcherProcessor pinstance;
-  private static Logger LOG = Logger
+  private static final Logger LOG = Logger
       .getLogger("opennlp.tools.textsimilarity.chunker2matcher.ParserPure2MatcherProcessor");
 
   public synchronized static ParserPure2MatcherProcessor getInstance() {
@@ -77,10 +77,10 @@ public class ParserPure2MatcherProcessor extends ParserChunker2MatcherProcessor 
     List<String> POSlist = node.getOrderedPOSList();
     List<String> TokList = node.getOrderedLemmaList();
 
-    List<List<ParseTreeChunk>> listOfChunks = new ArrayList<List<ParseTreeChunk>>();
-    List<ParseTreeChunk> nounPhr = new ArrayList<ParseTreeChunk>(), prepPhr = new ArrayList<ParseTreeChunk>(), verbPhr = new ArrayList<ParseTreeChunk>(), adjPhr = new ArrayList<ParseTreeChunk>(),
+    List<List<ParseTreeChunk>> listOfChunks = new ArrayList<>();
+    List<ParseTreeChunk> nounPhr = new ArrayList<>(), prepPhr = new ArrayList<>(), verbPhr = new ArrayList<>(), adjPhr = new ArrayList<>(),
     // to store the whole sentence
-    wholeSentence = new ArrayList<ParseTreeChunk>();
+    wholeSentence = new ArrayList<>();
 
     wholeSentence.add(new ParseTreeChunk("SENTENCE", TokList, POSlist));
     for (ParseTreeChunk phr : ptcList) {

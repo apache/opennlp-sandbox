@@ -24,9 +24,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
@@ -36,9 +34,9 @@ import org.eclipse.swt.widgets.Text;
 // TODO: Add validation
 public class NameFinderModelInputDialog extends Dialog {
 
-  private TypeSystem ts;
+  private final TypeSystem ts;
 
-  private String dialogTitle;
+  private final String dialogTitle;
 
   private String modelTextValue = "";
   private String typeNameTextValue = "";
@@ -81,12 +79,7 @@ public class NameFinderModelInputDialog extends Dialog {
     modelText.setLayoutData(GridDataFactory.swtDefaults().
         align(SWT.FILL, SWT.CENTER).grab(true,  false).create());
     modelText.setText(modelTextValue);
-    modelText.addListener(SWT.Modify, new Listener(){
-
-      @Override
-      public void handleEvent(Event event) {
-        modelTextValue = modelText.getText();
-      }});
+    modelText.addListener(SWT.Modify, event -> modelTextValue = modelText.getText());
 
 // TODO: Implement browse button
 //    Button browseButton = new Button(dialogArea, SWT.PUSH);
@@ -99,13 +92,7 @@ public class NameFinderModelInputDialog extends Dialog {
     typeNameText.setLayoutData(GridDataFactory.swtDefaults().
         align(SWT.FILL, SWT.CENTER).grab(true,  false).create());
     typeNameText.setText(typeNameTextValue);
-    typeNameText.addListener(SWT.Modify, new Listener() {
-
-      @Override
-      public void handleEvent(Event event) {
-        typeNameTextValue = typeNameText.getText();
-      }
-    });
+    typeNameText.addListener(SWT.Modify, event -> typeNameTextValue = typeNameText.getText());
 
     return dialogArea;
   }

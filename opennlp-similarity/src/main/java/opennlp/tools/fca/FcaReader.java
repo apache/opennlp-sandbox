@@ -17,11 +17,9 @@
 package opennlp.tools.fca;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class FcaReader {
 	
@@ -31,13 +29,12 @@ public class FcaReader {
 	int objectsNumber = 0;
 	int attributesNumber = 0;
 	
-	public void ReadContextFromCxt(String filename) throws FileNotFoundException, IOException{
+	public void readContextFromCxt(String filename) {
 
-		obNames = new ArrayList<String>();
-		atNames = new ArrayList<String>();
+		obNames = new ArrayList<>();
+		atNames = new ArrayList<>();
 					
-		BufferedReader br = new BufferedReader(new FileReader(filename));
-		try	{
+		try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
 		    String line;		    
 		    br.readLine(); //B
 		    br.readLine();
@@ -84,10 +81,9 @@ public class FcaReader {
 	}
 	
 	
-	public static void main(String []args) throws FileNotFoundException, IOException{
-		
+	public static void main(String []args) throws IOException{
 		FcaReader loader = new FcaReader();
-		loader.ReadContextFromCxt("C://Users/Tanya/Desktop/�����/1 �������/������������� ��������� � ������� ������/�������/sports.cxt");
+		loader.readContextFromCxt("C://Users/Tanya/Desktop/�����/1 �������/������������� ��������� � ������� ������/�������/sports.cxt");
 		
 	}
 	

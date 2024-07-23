@@ -78,8 +78,8 @@ public class NameCategorizer {
 
     int maxLength = Arrays.stream(names).mapToInt(String::length).max().getAsInt();
 
-    int charIds[][] = new int[names.length][maxLength];
-    int nameLengths[] = new int[names.length];
+    int[][] charIds = new int[names.length][maxLength];
+    int[] nameLengths = new int[names.length];
 
     for (int nameIndex = 0; nameIndex < names.length; nameIndex++) {
       for (int charIndex = 0; charIndex < names[nameIndex].length(); charIndex++) {
