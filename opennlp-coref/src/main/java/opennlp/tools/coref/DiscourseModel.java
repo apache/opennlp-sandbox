@@ -24,13 +24,16 @@ import java.util.List;
 import opennlp.tools.coref.mention.MentionContext;
 
 /**
- * Represents the elements which are part of a discourse.
+ * Represents the {@link DiscourseElement elements} which are part of a discourse.
+ *
+ * @see DiscourseEntity
+ * @see DiscourseElement
  */
 public class DiscourseModel {
 
   private final List<DiscourseEntity> entities;
 
-  int nextEntityId = 1;
+  private int nextEntityId = 1;
 
   /**
    * Creates a new discourse model.
@@ -54,19 +57,15 @@ public class DiscourseModel {
   }
 
   /**
-   * Returns the number of entities in this discourse model.
-   * 
-   * @return the number of entities in this discourse model.
+   * @return Retrieves the number of entities in this discourse model.
    */
   public int getNumEntities() {
     return entities.size();
   }
 
   /**
-   * Returns the entity at the specified index.
-   * 
    * @param i The index of the entity to be returned.
-   * @return the entity at the specified index.
+   * @return Retrieves the entity at the specified index.
    */
   public DiscourseEntity getEntity(int i) {
     return entities.get(i);
@@ -99,9 +98,7 @@ public class DiscourseModel {
   }
 
   /**
-   * Returns the entities in the discourse model.
-   * 
-   * @return the entities in the discourse model.
+   * @return Retrieves the entities in the discourse model.
    */
   public DiscourseEntity[] getEntities() {
     DiscourseEntity[] des = new DiscourseEntity[entities.size()];

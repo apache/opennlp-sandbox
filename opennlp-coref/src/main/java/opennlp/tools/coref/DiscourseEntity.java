@@ -22,7 +22,9 @@ import opennlp.tools.coref.sim.GenderEnum;
 import opennlp.tools.coref.sim.NumberEnum;
 
 /**
- * Represents an entity in a discourse model.
+ * Represents an entity in a {@link DiscourseModel}.
+ *
+ * @see DiscourseModel
  */
 public class DiscourseEntity extends DiscourseElement {
 

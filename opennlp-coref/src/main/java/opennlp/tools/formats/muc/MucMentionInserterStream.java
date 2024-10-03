@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Set;
 
 import opennlp.tools.coref.CorefSample;
-import opennlp.tools.coref.mention.DefaultParse;
+import opennlp.tools.coref.DefaultParse;
 import opennlp.tools.coref.mention.Mention;
 import opennlp.tools.coref.mention.MentionFinder;
 import opennlp.tools.coref.mention.PTBHeadFinder;

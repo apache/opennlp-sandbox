@@ -19,7 +19,7 @@ package opennlp.tools.cmdline.coref;
 
 import opennlp.tools.cmdline.AbstractConverterTool;
 import opennlp.tools.coref.CorefSample;
-import opennlp.tools.formats.CorefSampleStreamFactory;
+import opennlp.tools.coref.CorefSampleStreamFactory;
 
 public class CoreferenceConverterTool extends AbstractConverterTool<CorefSample, CorefSampleStreamFactory.Parameters>  {
 

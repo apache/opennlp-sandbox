@@ -23,7 +23,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 
-import opennlp.tools.coref.mention.DefaultParse;
+import opennlp.tools.coref.linker.DefaultLinker;
+import opennlp.tools.coref.linker.Linker;
+import opennlp.tools.coref.linker.LinkerMode;
+import opennlp.tools.coref.linker.TreebankLinker;
 import opennlp.tools.coref.mention.Mention;
 import opennlp.tools.coref.mention.MentionContext;
 import opennlp.tools.coref.mention.MentionFinder;

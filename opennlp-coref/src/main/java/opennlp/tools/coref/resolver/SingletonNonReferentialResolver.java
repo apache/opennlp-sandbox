@@ -23,20 +23,23 @@ import java.io.IOException;
 /**
  * This class allows you to share a single instance of a non-referential resolver
  * among several resolvers.
+ *
+ * @see NonReferentialResolver
+ * @see DefaultNonReferentialResolver
  */
 public class SingletonNonReferentialResolver extends DefaultNonReferentialResolver {
 
   private static SingletonNonReferentialResolver resolver;
   private static boolean trained;
 
-  private SingletonNonReferentialResolver(String projectName, ResolverMode mode) throws IOException {
-    super(projectName, "nonref", mode);
+  private SingletonNonReferentialResolver(String modelDirectory, ResolverMode mode) throws IOException {
+    super(modelDirectory, "nonref", mode);
   }
 
-  public static SingletonNonReferentialResolver getInstance(String modelName, ResolverMode mode)
+  public static SingletonNonReferentialResolver getInstance(String modelDirectory, ResolverMode mode)
       throws IOException {
     if (resolver == null) {
-      resolver = new SingletonNonReferentialResolver(modelName, mode);
+      resolver = new SingletonNonReferentialResolver(modelDirectory, mode);
     }
     return resolver;
   }

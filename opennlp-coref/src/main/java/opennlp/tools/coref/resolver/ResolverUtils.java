@@ -84,7 +84,6 @@ public class ResolverUtils {
   public static final Pattern DESIGNATORS_PATTERN =
       Pattern.compile("[a-z]\\.$|^[A-Z][b-df-hj-np-tv-xz]+$|^Co(rp)?$");
 
-  
   private static final String NUM_COMPATIBLE = "num.compatible";
   private static final String NUM_INCOMPATIBLE = "num.incompatible";
   private static final String NUM_UNKNOWN = "num.unknown";
@@ -96,10 +95,7 @@ public class ResolverUtils {
   private static final String SIM_INCOMPATIBLE = "sim.incompatible";
   private static final String SIM_UNKNOWN = "sim.unknown";
 
-  
   private static final double MIN_SIM_PROB = 0.60;
-
-
 
   /**
    * Returns a list of features based on the surrounding context of the specified mention.

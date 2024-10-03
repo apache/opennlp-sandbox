@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import opennlp.tools.coref.Linker;
+import opennlp.tools.coref.linker.Linker;
 import opennlp.tools.coref.resolver.ResolverUtils;
 import opennlp.tools.util.Span;
 
@@ -50,11 +50,12 @@ public abstract class AbstractMentionFinder implements MentionFinder {
     }
   }
 
-  /** Assigns head relations between noun phrases and the child np
+  /**
+   * Assigns head relations between noun phrases and the child np
    *  which is their head.
    *  @param nps List of valid nps for this mention finder.
    *  @return mapping from noun phrases and the child np which is their head
-   **/
+   */
   protected Map<Parse, Parse> constructHeadMap(List<Parse> nps) {
     Map<Parse, Parse> headMap = new HashMap<>();
     for (Parse np : nps) {
@@ -63,10 +64,12 @@ public abstract class AbstractMentionFinder implements MentionFinder {
     return headMap;
   }
 
+  @Override
   public boolean isPrenominalNamedEntityCollection() {
     return collectPrenominalNamedEntities;
   }
 
+  @Override
   public void setPrenominalNamedEntityCollection(boolean b) {
     collectPrenominalNamedEntities = b;
   }
@@ -396,6 +399,7 @@ public abstract class AbstractMentionFinder implements MentionFinder {
     return p.getNamedEntities();
   }
 
+  @Override
   public Mention[] getMentions(Parse p) {
     List<Parse> nps = p.getNounPhrases();
     Collections.sort(nps);
@@ -406,10 +410,12 @@ public abstract class AbstractMentionFinder implements MentionFinder {
     return mentions;
   }
 
+  @Override
   public boolean isCoordinatedNounPhraseCollection() {
     return collectCoordinatedNounPhrases;
   }
 
+  @Override
   public void setCoordinatedNounPhraseCollection(boolean b) {
     collectCoordinatedNounPhrases = b;
   }

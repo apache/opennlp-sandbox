@@ -20,7 +20,6 @@ package opennlp.tools.coref;
 import java.util.ArrayList;
 import java.util.List;
 
-import opennlp.tools.coref.mention.DefaultParse;
 import opennlp.tools.parser.Parse;
 
 public class CorefSample {
@@ -33,8 +32,7 @@ public class CorefSample {
   
   public List<opennlp.tools.coref.mention.Parse> getParses() {
     
-    List<opennlp.tools.coref.mention.Parse> corefParses =
-            new ArrayList<>();
+    List<opennlp.tools.coref.mention.Parse> corefParses = new ArrayList<>();
     
     int sentNumber = 0;
     for (Parse parse : parses) {

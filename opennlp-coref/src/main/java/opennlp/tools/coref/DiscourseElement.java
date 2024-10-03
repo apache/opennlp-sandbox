@@ -25,10 +25,10 @@ import opennlp.tools.coref.mention.MentionContext;
 import opennlp.tools.util.ReverseListIterator;
 
 /**
- * Represents an item in which can be put into the discourse model.  Object which are
- * to be placed in the discourse model should extend this class.
+ * Represents an item in which can be put into a {@link DiscourseModel}.
+ * Objects which are to be placed in such a model should extend this class.
  *
- * @see opennlp.tools.coref.DiscourseModel
+ * @see DiscourseModel
  */
 public abstract class DiscourseElement {
 
@@ -37,7 +37,7 @@ public abstract class DiscourseElement {
   private MentionContext lastExtent;
 
   /**
-   * Creates a new discourse element which contains the specified mention.
+   * Creates a {@link DiscourseElement} which contains the specified {@link MentionContext mention}.
    *
    * @param mention The mention which begins this discourse element.
    */

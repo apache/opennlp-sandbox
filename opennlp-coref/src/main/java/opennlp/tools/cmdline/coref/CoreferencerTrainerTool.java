@@ -28,7 +28,7 @@ import opennlp.tools.coref.CorefTrainer;
 
 public class CoreferencerTrainerTool extends AbstractTrainerTool<CorefSample, TrainerToolParams> {
 
-  interface TrainerToolParams extends TrainingParams, TrainingToolParams {
+  public interface TrainerToolParams extends TrainingParams, TrainingToolParams {
   }
   
   public CoreferencerTrainerTool() {
@@ -46,6 +46,10 @@ public class CoreferencerTrainerTool extends AbstractTrainerTool<CorefSample, Tr
       throw new TerminateToolException(-1, "IO error while reading training data or indexing data: " +
           e.getMessage(), e);
     }
+  }
+
+  public static void main(String[] args) {
+    new CoreferencerTrainerTool();
   }
   
 }

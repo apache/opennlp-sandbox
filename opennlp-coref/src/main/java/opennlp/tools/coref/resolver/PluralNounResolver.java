@@ -24,20 +24,21 @@ import java.util.List;
 import opennlp.tools.coref.DiscourseEntity;
 import opennlp.tools.coref.mention.MentionContext;
 
-
 /**
  * Resolves coreference between plural nouns.
+ *
+ * @see MaxentResolver
  */
 public class PluralNounResolver extends MaxentResolver {
 
-  public PluralNounResolver(String projectName, ResolverMode m) throws IOException {
-    super(projectName,"plmodel", m, 80, true);
+  public PluralNounResolver(String modelDirectory, ResolverMode m) throws IOException {
+    super(modelDirectory, "plmodel", m, 80, true);
     showExclusions = false;
   }
 
-  public PluralNounResolver(String projectName, ResolverMode m, NonReferentialResolver nrr)
+  public PluralNounResolver(String modelDirectory, ResolverMode m, NonReferentialResolver nrr)
       throws IOException {
-    super(projectName,"plmodel", m, 80, true,nrr);
+    super(modelDirectory, "plmodel", m, 80, true, nrr);
     showExclusions = false;
   }
 
@@ -53,12 +54,12 @@ public class PluralNounResolver extends MaxentResolver {
     return features;
   }
 
+  @Override
   public boolean canResolve(MentionContext mention) {
     String firstTok = mention.getFirstTokenText().toLowerCase();
     String firstTokTag = mention.getFirstToken().getSyntacticType();
-    boolean rv = mention.getHeadTokenTag().equals("NNS")
+    return mention.getHeadTokenTag().equals("NNS")
         && !ResolverUtils.definiteArticle(firstTok, firstTokTag);
-    return rv;
   }
 
   @Override

@@ -23,6 +23,8 @@ import opennlp.tools.coref.mention.MentionContext;
 
 /**
  * Implementation of non-referential classifier which uses a fixed-value threshold.
+ *
+ * @see NonReferentialResolver
  */
 public class FixedNonReferentialResolver implements NonReferentialResolver {
 
@@ -32,11 +34,14 @@ public class FixedNonReferentialResolver implements NonReferentialResolver {
     this.nonReferentialProbability = nonReferentialProbability;
   }
 
+  @Override
   public double getNonReferentialProbability(MentionContext mention) {
     return this.nonReferentialProbability;
   }
 
+  @Override
   public void addEvent(MentionContext mention) {}
 
+  @Override
   public void train() throws IOException {}
 }

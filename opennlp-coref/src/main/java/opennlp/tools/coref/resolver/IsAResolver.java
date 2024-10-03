@@ -26,27 +26,29 @@ import opennlp.tools.coref.DiscourseEntity;
 import opennlp.tools.coref.mention.MentionContext;
 
 /**
- *  Resolves coreference between appositives.
+ * Resolves coreference between appositives.
+ *
+ * @see MaxentResolver
  */
 public class IsAResolver extends MaxentResolver {
 
   Pattern predicativePattern;
 
-  public IsAResolver(String projectName, ResolverMode m) throws IOException {
-    super(projectName, "/imodel", m, 20);
+  public IsAResolver(String modelDirectory, ResolverMode m) throws IOException {
+    super(modelDirectory, "/imodel", m, 20);
     showExclusions = false;
     //predicativePattern = Pattern.compile("^(,|am|are|is|was|were|--)$");
     predicativePattern = Pattern.compile("^(,|--)$");
   }
 
-  public IsAResolver(String projectName, ResolverMode m, NonReferentialResolver nrr) throws IOException {
-    super(projectName, "/imodel", m, 20,nrr);
+  public IsAResolver(String modelDirectory, ResolverMode m, NonReferentialResolver nrr) throws IOException {
+    super(modelDirectory, "/imodel", m, 20, nrr);
     showExclusions = false;
     //predicativePattern = Pattern.compile("^(,|am|are|is|was|were|--)$");
     predicativePattern = Pattern.compile("^(,|--)$");
   }
 
-
+  @Override
   public boolean canResolve(MentionContext ec) {
     if (ec.getHeadTokenTag().startsWith("NN")) {
       return ec.getPreviousToken() != null

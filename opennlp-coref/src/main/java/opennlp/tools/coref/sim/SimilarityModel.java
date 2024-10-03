@@ -53,7 +53,7 @@ import opennlp.tools.util.TrainingParameters;
 public class SimilarityModel implements TestSimilarityModel, TrainSimilarityModel {
 
   private final String modelName;
-  private final String modelExtension = ".bin.gz";
+  private final String modelExtension = ".bin";
   private MaxentModel testModel;
   private List<Event> events;
   private int SAME_INDEX;
