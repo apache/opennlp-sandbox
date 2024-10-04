@@ -26,6 +26,8 @@ import opennlp.tools.coref.mention.MentionContext;
 import opennlp.tools.parser.Parse;
 import opennlp.tools.parser.chunking.Parser;
 import opennlp.tools.util.Span;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A container class encapsulating results of a co-reference parse operation.
@@ -34,6 +36,8 @@ import opennlp.tools.util.Span;
  * @see DiscourseEntity
  */
 public class CorefParse {
+
+  private static final Logger logger = LoggerFactory.getLogger(CorefParse.class);
 
   private final Map<Parse, Integer> parseMap;
   private final List<Parse> parses;
@@ -47,7 +51,7 @@ public class CorefParse {
           MentionContext mc = mi.next();
           Parse mentionParse = ((DefaultParse) mc.getParse()).getParse();
           parseMap.put(mentionParse, ei + 1);
-          //System.err.println("CorefParse: "+mc.getParse().hashCode()+" -> "+ (ei+1));
+          logger.debug("CorefParse: {} -> {}", mc.getParse().hashCode(), ei+1);
         }
       }
     }
@@ -79,7 +83,6 @@ public class CorefParse {
       if (parseMap.containsKey(p)) {
         System.out.print("#" + parseMap.get(p));
       }
-      //System.out.print(p.hashCode()+"-"+parseMap.containsKey(p));
       System.out.print(" ");
     }
     Parse[] children = p.getChildren();

@@ -31,7 +31,7 @@ import opennlp.tools.coref.mention.MentionContext;
  */
 public class PluralPronounResolver extends MaxentResolver {
 
-  final int NUM_SENTS_BACK_PRONOUNS = 2;
+  private static final int NUM_SENTS_BACK_PRONOUNS = 2;
 
   public PluralPronounResolver(String modelDirectory, ResolverMode m) throws IOException {
     super(modelDirectory, "tmodel", m, 30);
@@ -77,22 +77,19 @@ public class PluralPronounResolver extends MaxentResolver {
       }
       */
     }
-    return (features);
+    return features;
   }
 
   @Override
   protected boolean outOfRange(MentionContext mention, DiscourseEntity entity) {
     MentionContext cec = entity.getLastExtent();
-    //System.err.println("MaxentPluralPronounResolver.outOfRange: ["+ec.toText()+" ("+ec.id+")]
-    // ["+cec.toText()+" ("+cec.id+")] ec.sentenceNumber=("+ec.sentenceNumber+")-cec.sentenceNumber
-    // =("+cec.sentenceNumber+") > "+NUM_SENTS_BACK_PRONOUNS);
-    return (mention.getSentenceNumber() - cec.getSentenceNumber() > NUM_SENTS_BACK_PRONOUNS);
+    return mention.getSentenceNumber() - cec.getSentenceNumber() > NUM_SENTS_BACK_PRONOUNS;
   }
 
   @Override
   public boolean canResolve(MentionContext mention) {
     String tag = mention.getHeadTokenTag();
-    return (tag != null && tag.startsWith("PRP")
-        && ResolverUtils.PLURAL_THIRD_PERSON_PRONOUN_PATTERN.matcher(mention.getHeadTokenText()).matches());
+    return tag != null && tag.startsWith("PRP")
+        && ResolverUtils.PLURAL_THIRD_PERSON_PRONOUN_PATTERN.matcher(mention.getHeadTokenText()).matches();
   }
 }

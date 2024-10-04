@@ -21,13 +21,17 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.FileSystems;
 
+import opennlp.tools.coref.sim.SimilarityModel;
 import opennlp.tools.namefind.NameFinderEventStream;
 import opennlp.tools.namefind.NameFinderME;
 import opennlp.tools.namefind.TokenNameFinderModel;
 import opennlp.tools.parser.Parse;
 import opennlp.tools.tokenize.SimpleTokenizer;
 import opennlp.tools.util.Span;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Class is used to create a name finder for English.
@@ -36,7 +40,9 @@ import opennlp.tools.util.Span;
  */
 @Deprecated
 public class TreebankNameFinder {
-  
+
+  private static final Logger logger = LoggerFactory.getLogger(TreebankNameFinder.class);
+
   public static String[] NAME_TYPES =
       {"person", "organization", "location", "date", "time", "percentage", "money"};
 
@@ -72,11 +78,8 @@ public class TreebankNameFinder {
       for (int ti = 0; ti < tagNodes.length; ti++) {
         tokens[ti] = tagNodes[ti].getCoveredText();
       }
-      //System.err.println(java.util.Arrays.asList(tokens));
       for (int fi = 0, fl = finders.length; fi < fl; fi++) {
         nameSpans[fi] = finders[fi].nameFinder.find(tokens);
-        //System.err.println("english.NameFinder.processParse: "+tags[fi] + " "
-        // + java.util.Arrays.asList(nameSpans[fi]));
       }
       
       for (int fi = 0, fl = finders.length; fi < fl; fi++) {
@@ -110,8 +113,6 @@ public class TreebankNameFinder {
       String[] tokens = Span.spansToStrings(spans,line);
       for (int fi = 0, fl = finders.length; fi < fl; fi++) {
         nameSpans[fi] = finders[fi].nameFinder.find(tokens);
-        //System.err.println("EnglishNameFinder.processText: "+tags[fi] + " "
-        // + java.util.Arrays.asList(finderTags[fi]));
         nameOutcomes[fi] = NameFinderEventStream.generateOutcomes(nameSpans[fi], null, tokens.length);
       }
       
@@ -158,9 +159,10 @@ public class TreebankNameFinder {
 
   public static void main(String[] args) throws IOException {
     if (args.length == 0) {
-      System.err.println("Usage NameFinder -[parse] model1 model2 ... modelN < sentences");
-      System.err.println(" -parse: Use this option to find names on parsed input.  " +
-          "Un-tokenized sentence text is the default.");
+      logger.info("""
+              Usage NameFinder -[parse] model1 model2 ... modelN < sentences\s
+               -parse: Use this option to find names on parsed input.\s
+              Un-tokenized sentence text is the default.""");
       System.exit(1);
     }
     int ai = 0;
@@ -168,9 +170,8 @@ public class TreebankNameFinder {
     while (args[ai].startsWith("-") && ai < args.length) {
       if (args[ai].equals("-parse")) {
         parsedInput = true;
-      }
-      else {
-        System.err.println("Ignoring unknown option " + args[ai]);
+      } else {
+        logger.warn("Ignoring unknown option {}", args[ai]);
       }
       ai++;
     }
@@ -179,22 +180,18 @@ public class TreebankNameFinder {
     for (int fi = 0; ai < args.length; ai++,fi++) {
       String modelName = args[ai];
       finders[fi] = new TreebankNameFinder(new TokenNameFinderModel(new FileInputStream(modelName)));
-      int nameStart = modelName.lastIndexOf(System.getProperty("file.separator")) + 1;
+      int nameStart = modelName.lastIndexOf(FileSystems.getDefault().getSeparator()) + 1;
       int nameEnd = modelName.indexOf('.', nameStart);
       if (nameEnd == -1) {
         nameEnd = modelName.length();
       }
       names[fi] = modelName.substring(nameStart, nameEnd);
     }
-    //long t1 = System.currentTimeMillis();
     BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
     if (parsedInput) {
       processParse(finders,names,in);
-    }
-    else {
+    } else {
       processText(finders,names,in);
     }
-    //long t2 = System.currentTimeMillis();
-    //System.err.println("Time "+(t2-t1));
   }
 }

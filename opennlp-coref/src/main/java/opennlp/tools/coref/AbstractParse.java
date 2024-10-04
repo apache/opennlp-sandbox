@@ -49,7 +49,6 @@ public abstract class AbstractParse implements Parse {
     while (!parts.isEmpty()) {
       List<Parse> newParts = new ArrayList<>();
       for (Parse cp : parts) {
-        //System.err.println("AbstractParse.getNounPhrases "+parts.get(pi).getClass());
         if (cp.isNounPhrase()) {
           nps.add(cp);
         }

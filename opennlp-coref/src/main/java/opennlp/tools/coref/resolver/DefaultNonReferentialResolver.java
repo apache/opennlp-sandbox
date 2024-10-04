@@ -128,7 +128,8 @@ public class DefaultNonReferentialResolver implements NonReferentialResolver {
   protected List<String> getNonReferentialFeatures(MentionContext mention) {
     List<String> features = new ArrayList<>();
     Parse[] mtokens = mention.getTokenParses();
-    //System.err.println("getNonReferentialFeatures: mention has "+mtokens.length+" tokens");
+    logger.debug("Mention has {} tokens", mtokens.length);
+    
     for (int ti = 0; ti <= mention.getHeadTokenIndex(); ti++) {
       Parse tok = mtokens[ti];
       List<String> wfs = ResolverUtils.getWordFeatures(tok);

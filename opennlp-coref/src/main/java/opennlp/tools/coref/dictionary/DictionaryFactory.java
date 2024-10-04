@@ -18,6 +18,9 @@
 package opennlp.tools.coref.dictionary;
 
 import net.sf.extjwnl.JWNLException;
+import opennlp.tools.coref.linker.AbstractLinker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -28,6 +31,8 @@ import java.io.IOException;
  */
 public class DictionaryFactory {
 
+  private static final Logger logger = LoggerFactory.getLogger(DictionaryFactory.class);
+
   private static Dictionary dictionary;
 
   /**
@@ -37,9 +42,8 @@ public class DictionaryFactory {
     if (dictionary == null) {
       try {
         dictionary = new JWNLDictionary();
-      }
-      catch (IOException | JWNLException e) {
-        System.err.println(e);
+      } catch (JWNLException e) {
+        logger.error(e.getLocalizedMessage(), e);
       }
     }
     return dictionary;

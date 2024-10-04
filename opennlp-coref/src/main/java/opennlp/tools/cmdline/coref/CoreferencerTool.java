@@ -44,7 +44,12 @@ import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.PlainTextByLineStream;
 import opennlp.tools.util.Span;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CoreferencerTool extends BasicCmdLineTool {
+
+  private static final Logger logger = LoggerFactory.getLogger(CoreferencerTool.class);
 
   static class CorefParse {
 
@@ -131,9 +136,8 @@ public class CoreferencerTool extends BasicCmdLineTool {
         String line;
         while ((line = lineStream.read()) != null) {
 
-          if (line.equals("")) {
-            DiscourseEntity[] entities =
-                treebankLinker.getEntities(document.toArray(new Mention[0]));
+          if (line.isEmpty()) {
+            DiscourseEntity[] entities = treebankLinker.getEntities(document.toArray(new Mention[0]));
             //showEntities(entities);
             new CorefParse(parses, entities).show();
             sentenceNumber = 0;
@@ -143,31 +147,25 @@ public class CoreferencerTool extends BasicCmdLineTool {
           else {
             Parse p = Parse.parseParse(line);
             parses.add(p);
-            Mention[] extents =
-                treebankLinker.getMentionFinder().getMentions(new DefaultParse(p,sentenceNumber));
-            //construct new parses for mentions which don't have constituents.
+            Mention[] extents = treebankLinker.getMentionFinder().getMentions(new DefaultParse(p,sentenceNumber));
+            // construct new parses for mentions which don't have constituents.
             for (Mention extent : extents) {
-              //System.err.println("PennTreebankLiner.main: "+ei+" "+extents[ei]);
-
+              logger.debug("Constructing new parse for: {}", extent);
               if (extent.getParse() == null) {
-                //not sure how to get head index, but it's not used at this point.
+                // not sure how to get head index, but it's not used at this point.
                 Parse snp = new Parse(p.getText(), extent.getSpan(), "NML", 1.0, 0);
                 p.insert(snp);
                 extent.setParse(new DefaultParse(snp, sentenceNumber));
               }
-
             }
             document.addAll(Arrays.asList(extents));
             sentenceNumber++;
           }
-          
           perfMon.incrementCounter();
         }
-      }
-      catch (IOException e) {
+      } catch (IOException e) {
         CmdLineUtil.handleStdinIoError(e);
       }
-      
       perfMon.stopAndPrintFinalResult();
     }
   }

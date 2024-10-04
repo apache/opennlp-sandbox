@@ -24,12 +24,17 @@ import java.util.List;
 import opennlp.tools.coref.DiscourseEntity;
 import opennlp.tools.coref.mention.MentionContext;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Resolves pronouns specific to quoted speech such as "you", "me", and "I".
  *
  * @see MaxentResolver
  */
 public class SpeechPronounResolver extends MaxentResolver {
+
+  private static final Logger logger = LoggerFactory.getLogger(SpeechPronounResolver.class);
 
   public SpeechPronounResolver(String modelDirectory, ResolverMode m) throws IOException {
     super(modelDirectory, "fmodel", m, 30);
@@ -74,6 +79,7 @@ public class SpeechPronounResolver extends MaxentResolver {
     return (mention.getSentenceNumber() - cec.getSentenceNumber() > numSentencesBack);
   }
 
+  @Override
   public boolean canResolve(MentionContext mention) {
     String tag = mention.getHeadTokenTag();
     boolean fpp = tag != null && tag.startsWith("PRP")
@@ -112,14 +118,13 @@ public class SpeechPronounResolver extends MaxentResolver {
         return false;
       }
       else {
-        System.err.println("Unexpected candidate excluded: " + cec.toText());
+        logger.warn("Unexpected candidate excluded: {}", cec.toText());
         return true;
       }
     }
     else {
-      System.err.println("Unexpected mention excluded: " + mention.toText());
+      logger.warn("Unexpected mention excluded: {}", mention.toText());
       return true;
     }
   }
-
 }

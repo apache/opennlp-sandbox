@@ -45,12 +45,16 @@ import opennlp.tools.ml.model.Event;
 import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.util.ObjectStreamUtils;
 import opennlp.tools.util.TrainingParameters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Models semantic similarity between two mentions and returns a score based on
  * how semantically comparable the mentions are with one another.
  */
 public class SimilarityModel implements TestSimilarityModel, TrainSimilarityModel {
+
+  private static final Logger logger = LoggerFactory.getLogger(SimilarityModel.class);
 
   private final String modelName;
   private final String modelExtension = ".bin";
@@ -86,14 +90,13 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
   private void addEvent(boolean same, Context np1, Context np2) {
     if (same) {
       List<String> feats = getFeatures(np1, np2);
-      //System.err.println(SAME+" "+np1.headTokenText+" ("+np1.id+") -> "+np2.headTokenText+"
-      // ("+np2.id+") "+feats);
+      logger.debug("{} {} ({}) -> {} + ({}) {}",
+              SAME, np1.headTokenText, np1.getId(), np2.headTokenText, np2.getId(), feats);
       events.add(new Event(SAME, feats.toArray(new String[0])));
-    }
-    else {
+    } else {
       List<String> feats = getFeatures(np1, np2);
-      //System.err.println(DIFF+" "+np1.headTokenText+" ("+np1.id+") -> "+np2.headTokenText+"
-      // ("+np2.id+") "+feats);
+      logger.debug("{} {} ({}) -> {} + ({}) {}",
+              DIFF, np1.headTokenText, np1.getId(), np2.headTokenText, np2.getId(), feats);
       events.add(new Event(DIFF, feats.toArray(new String[0])));
     }
   }
@@ -249,7 +252,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
   }
 
   private boolean inSuperClass(Context ec, Context cec) {
-    if (ec.getSynsets().size() == 0 || cec.getSynsets().size() == 0) {
+    if (ec.getSynsets().isEmpty() || cec.getSynsets().isEmpty()) {
       return false;
     }
     else {
@@ -271,12 +274,6 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
     }
   }
 
-  /*
-  private boolean isPronoun(MentionContext mention) {
-    return mention.getHeadTokenTag().startsWith("PRP");
-  }
-  */
-
   @Override
   @SuppressWarnings("unchecked")
   public void setExtents(Context[] extentContexts) {
@@ -284,9 +281,9 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
     /* Extents which are not in a coreference chain. */
     List<Context> singletons = new ArrayList<>();
     List<Context> allExtents = new ArrayList<>();
-    //populate data structures
+    // populate data structures
     for (Context ec : extentContexts) {
-      //System.err.println("SimilarityModel: setExtents: ec("+ec.getId()+") "+ec.getNameType()+" "+ec);
+      logger.debug("Set extents: ec({}) {} {}", ec.getId(), ec.getNameType(), ec);
       if (ec.getId() == -1) {
         singletons.add(ec);
       } else {
@@ -307,6 +304,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
       List<Context> entityContexts = (List<Context>) entities.get(key);
       Set<Context> exclusionSet = constructExclusionSet(key, entities, headSets, nameSets, singletons);
       if (entityContexts.size() == 1) {
+        // ?
       }
       for (int xi1 = 0, xl = entityContexts.size(); xi1 < xl; xi1++) {
         Context ec1 = entityContexts.get(xi1);
@@ -324,8 +322,9 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
             Context sec1 = allExtents.get(axi);
             axi = (axi + 1) % allExtents.size();
             if (!exclusionSet.contains(sec1)) {
-              if (debugOn) System.err.println(ec1.toString() + " " + entityNameSet + " "
-                      + sec1.toString() + " " + nameSets.get(sec1.getId()));
+              if (debugOn) {
+                logger.debug("{} {} {} {}", ec1.toString(), entityNameSet, sec1.toString(), nameSets.get(sec1.getId()));
+              }
               addEvent(false, ec1, sec1);
               break;
             }
@@ -349,7 +348,9 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
   @Override
   public double compatible(Context mention1, Context mention2) {
     List<String> feats = getFeatures(mention1, mention2);
-    if (debugOn) System.err.println("SimilarityModel.compatible: feats=" + feats);
+    if (debugOn) {
+      logger.debug("Compatible: feats={}", feats);
+    }
     return (testModel.eval(feats.toArray(new String[0]))[SAME_INDEX]);
   }
 
@@ -490,11 +491,11 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
     Set<String> synsets1 = common1.getSynsets();
     Set<String> synsets2 = common2.getSynsets();
 
-    if (synsets1.size() == 0) {
+    if (synsets1.isEmpty()) {
       //features.add("missing_"+common1.headToken);
       return features;
     }
-    if (synsets2.size() == 0) {
+    if (synsets2.isEmpty()) {
       //features.add("missing_"+common2.headToken);
       return features;
     }
@@ -517,7 +518,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
     }
     else if (numCommonSynsets == synsets2.size()) {
       features.add("1isa2");
-      //features.add("1isa2-"+(synsets1.size() - numCommonSynsets));
+      // features.add("1isa2-"+(synsets1.size() - numCommonSynsets));
     }
     return features;
   }
@@ -538,7 +539,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
   private List<String> getFeatures(Context np1, Context np2) {
     List<String> features = new ArrayList<>();
     features.add("default");
-    //  semantic categories
+    // semantic categories
     String w1 = np1.getHeadTokenText().toLowerCase();
     String w2 = np2.getHeadTokenText().toLowerCase();
     if (w1.compareTo(w2) < 0) {
@@ -550,7 +551,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
     if (w1.equals(w2)) {
       features.add("sameHead");
     }
-    //features.add("tt="+np1.headTag+","+np2.headTag);
+    // features.add("tt="+np1.headTag+","+np2.headTag);
     if (isName(np1)) {
       if (isName(np2)) {
         features.addAll(getNameNameFeatures(np1, np2));
@@ -579,7 +580,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
         features.addAll(getCommonNumberFeatures(np1, np2));
       }
       else {
-        //System.err.println("unknown group for " + np1.headTokenText + " -> " + np2.headTokenText);
+        logger.warn("unknown group for: {} -> {}", np1.headTokenText, np2.headTokenText);
       }
     }
     else if (isPronoun(np1)) {
@@ -596,7 +597,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
         features.addAll(getNumberPronounFeatures(np2, np1));
       }
       else {
-        //System.err.println("unknown group for " + np1.headTokenText + " -> " + np2.headTokenText);
+        logger.warn("unknown group for: {} -> {}", np1.headTokenText, np2.headTokenText);
       }
     }
     else if (isNumber(np1)) {
@@ -612,18 +613,19 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
       else if (isNumber(np2)) {
       }
       else {
-        //System.err.println("unknown group for " + np1.headTokenText + " -> " + np2.headTokenText);
+        logger.warn("unknown group for: {} -> {}", np1.headTokenText, np2.headTokenText);
       }
     }
     else {
-      //System.err.println("unknown group for " + np1.headToken);
+      logger.warn("unknown group for: {}", np1.headTokenText);
     }
     return (features);
   }
 
+  // TODO Extract a Test case from this example
   public static void main(String[] args) throws IOException {
     if (args.length == 0) {
-      System.err.println("Usage: SimilarityModel modelName < tiger/NN bear/NN");
+      logger.info("Usage: SimilarityModel modelName < tiger/NN bear/NN");
       System.exit(1);
     }
     String modelName = args[0];

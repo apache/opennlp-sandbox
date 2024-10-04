@@ -25,6 +25,9 @@ import java.util.regex.Pattern;
 import opennlp.tools.coref.DiscourseEntity;
 import opennlp.tools.coref.mention.MentionContext;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Resolves coreference between appositives.
  *
@@ -32,7 +35,9 @@ import opennlp.tools.coref.mention.MentionContext;
  */
 public class IsAResolver extends MaxentResolver {
 
-  Pattern predicativePattern;
+  private static final Logger logger = LoggerFactory.getLogger(IsAResolver.class);
+
+  private final Pattern predicativePattern;
 
   public IsAResolver(String modelDirectory, ResolverMode m) throws IOException {
     super(modelDirectory, "/imodel", m, 20);
@@ -60,31 +65,31 @@ public class IsAResolver extends MaxentResolver {
   @Override
   protected boolean excluded(MentionContext ec, DiscourseEntity de) {
     MentionContext cec = de.getLastExtent();
-    //System.err.println("IsAResolver.excluded?: ec.span="+ec.getSpan()+" cec.span="+cec.getSpan()
-    //    +" cec="+cec.toText()+" lastToken="+ec.getNextToken());
+    logger.debug("Excluded: ec.span={} cec.span={} cec={} lastToken={}",
+            ec.getSpan(), cec.getSpan(), cec.toText(), ec.getNextToken());
+    
     if (ec.getSentenceNumber() != cec.getSentenceNumber()) {
-      //System.err.println("IsAResolver.excluded: (true) not same sentence");
-      return (true);
+      logger.debug("Excluded: (true) not same sentence");
+      return true;
     }
-    //shallow parse appositives
-    //System.err.println("IsAResolver.excluded: ec="+ec.toText()+" "
-    //    +ec.span+" cec="+cec.toText()+" "+cec.span);
+    // shallow parse appositives
+    logger.debug("Excluded: ec={} {} cec={} {}", ec.toText(), ec.getSpan(), cec.toText(), cec.getSpan());
     if (cec.getIndexSpan().getEnd() == ec.getIndexSpan().getStart() - 2) {
-      return (false);
+      return false;
     }
-    //full parse w/o trailing comma
+    // full parse w/o trailing comma
     if (cec.getIndexSpan().getEnd() == ec.getIndexSpan().getEnd()) {
-      //System.err.println("IsAResolver.excluded: (false) spans share end");
-      return (false);
+      logger.debug("Excluded: (false) spans share end");
+      return false;
     }
-    //full parse w/ trailing comma or period
+    // full parse w/ trailing comma or period
     if (cec.getIndexSpan().getEnd() <= ec.getIndexSpan().getEnd() + 2 && (ec.getNextToken() != null
         && (ec.getNextToken().toString().equals(",") || ec.getNextToken().toString().equals(".")))) {
-      //System.err.println("IsAResolver.excluded: (false) spans end + punct");
-      return (false);
+      logger.debug("Excluded: (false) spans end + punct");
+      return false;
     }
-    //System.err.println("IsAResolver.excluded: (true) default");
-    return (true);
+    logger.debug("Excluded: (true) default");
+    return true;
   }
 
   @Override
@@ -95,7 +100,7 @@ public class IsAResolver extends MaxentResolver {
 
   @Override
   protected boolean defaultReferent(DiscourseEntity de) {
-    return (true);
+    return true;
   }
 
   @Override
@@ -113,101 +118,8 @@ public class IsAResolver extends MaxentResolver {
       }
       features.add("hts" + ant.getHeadTokenTag() + "," + mention.getHeadTokenTag());
     }
-    /*
-    if (entity != null) {
-      //System.err.println("MaxentIsResolver.getFeatures:
-       [ "+ec2.toText()+"] -> ["+de.getLastExtent().toText()+"]");
-      //previous word and tag
-      if (ant.prevToken != null) {
-        features.add("pw=" + ant.prevToken);
-        features.add("pt=" + ant.prevToken.getSyntacticType());
-      }
-      else {
-        features.add("pw=<none>");
-        features.add("pt=<none>");
-      }
 
-      //next word and tag
-      if (mention.nextToken != null) {
-        features.add("nw=" + mention.nextToken);
-        features.add("nt=" + mention.nextToken.getSyntacticType());
-      }
-      else {
-        features.add("nw=<none>");
-        features.add("nt=<none>");
-      }
-
-      //modifier word and tag for c1
-      int i = 0;
-      List c1toks = ant.tokens;
-      for (; i < ant.headTokenIndex; i++) {
-        features.add("mw=" + c1toks.get(i));
-        features.add("mt=" + ((Parse) c1toks.get(i)).getSyntacticType());
-      }
-      //head word and tag for c1
-      features.add("mh=" + c1toks.get(i));
-      features.add("mt=" + ((Parse) c1toks.get(i)).getSyntacticType());
-
-      //modifier word and tag for c2
-      i = 0;
-      List c2toks = mention.tokens;
-      for (; i < mention.headTokenIndex; i++) {
-        features.add("mw=" + c2toks.get(i));
-        features.add("mt=" + ((Parse) c2toks.get(i)).getSyntacticType());
-      }
-      //head word and tag for n2
-      features.add("mh=" + c2toks.get(i));
-      features.add("mt=" + ((Parse) c2toks.get(i)).getSyntacticType());
-
-      //word/tag pairs
-      for (i = 0; i < ant.headTokenIndex; i++) {
-        for (int j = 0; j < mention.headTokenIndex; j++) {
-          features.add("w=" + c1toks.get(i) + "|" + "w=" + c2toks.get(j));
-          features.add("w=" + c1toks.get(i) + "|" + "t=" + ((Parse) c2toks.get(j)).getSyntacticType());
-          features.add("t=" + ((Parse) c1toks.get(i)).getSyntacticType() + "|" + "w=" + c2toks.get(j));
-          features.add("t=" + ((Parse) c1toks.get(i)).getSyntacticType() + "|" + "t=" +
-              ((Parse) c2toks.get(j)).getSyntacticType());
-        }
-      }
-      features.add("ht=" + ant.headTokenTag + "|" + "ht=" + mention.headTokenTag);
-      features.add("ht1=" + ant.headTokenTag);
-      features.add("ht2=" + mention.headTokenTag);
-     */
-      //semantic categories
-      /*
-      if (ant.neType != null) {
-        if (re.neType != null) {
-          features.add("sc="+ant.neType+","+re.neType);
-        }
-        else if (!re.headTokenTag.startsWith("NNP") && re.headTokenTag.startsWith("NN")) {
-          Set synsets = re.synsets;
-          for (Iterator si=synsets.iterator();si.hasNext();) {
-            features.add("sc="+ant.neType+","+si.next());
-          }
-        }
-      }
-      else if (!ant.headTokenTag.startsWith("NNP") && ant.headTokenTag.startsWith("NN")) {
-        if (re.neType != null) {
-          Set synsets = ant.synsets;
-          for (Iterator si=synsets.iterator();si.hasNext();) {
-            features.add("sc="+re.neType+","+si.next());
-          }
-        }
-        else if (!re.headTokenTag.startsWith("NNP") && re.headTokenTag.startsWith("NN")) {
-          //System.err.println("MaxentIsaResolover.getFeatures: both common re="+re.parse+" ant="+ant.parse);
-          Set synsets1 = ant.synsets;
-          Set synsets2 = re.synsets;
-          for (Iterator si=synsets1.iterator();si.hasNext();) {
-            Object synset = si.next();
-            if (synsets2.contains(synset)) {
-              features.add("sc="+synset);
-            }
-          }
-        }
-      }
-    }
-    */
-    //System.err.println("MaxentIsResolver.getFeatures: "+features.toString());
-    return (features);
+    logger.debug("GetFeatures: {}", features);
+    return features;
   }
 }

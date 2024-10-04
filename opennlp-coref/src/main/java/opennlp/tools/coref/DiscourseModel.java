@@ -22,6 +22,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import opennlp.tools.coref.mention.MentionContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Represents the {@link DiscourseElement elements} which are part of a discourse.
@@ -30,6 +32,8 @@ import opennlp.tools.coref.mention.MentionContext;
  * @see DiscourseElement
  */
 public class DiscourseModel {
+
+  private static final Logger logger = LoggerFactory.getLogger(DiscourseModel.class);
 
   private final List<DiscourseEntity> entities;
 
@@ -43,16 +47,15 @@ public class DiscourseModel {
   }
 
   /**
-   * Indicates that the specified entity has been mentioned.
+   * Indicates that the specified {@link DiscourseEntity} has been mentioned.
    * 
    * @param e The entity which has been mentioned.
    */
   public void mentionEntity(DiscourseEntity e) {
     if (entities.remove(e)) {
-      entities.add(0,e);
-    }
-    else {
-      System.err.println("DiscourseModel.mentionEntity: failed to remove " + e);
+      entities.add(0, e);
+    } else {
+      logger.warn("Failed to remove {}", e);
     }
   }
 
@@ -93,8 +96,8 @@ public class DiscourseModel {
     for (Iterator<MentionContext> ei = e2.getMentions(); ei.hasNext();) {
       e1.addMention(ei.next());
     }
-    //System.err.println("DiscourseModel.mergeEntities: removing "+e2);
     entities.remove(e2);
+    logger.debug("Removed entity during entity merge operation: {}", e2);
   }
 
   /**

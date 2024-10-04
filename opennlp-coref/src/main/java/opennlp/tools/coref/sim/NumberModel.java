@@ -37,10 +37,15 @@ import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.util.ObjectStreamUtils;
 import opennlp.tools.util.TrainingParameters;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Class which models the number of particular mentions and the entities made up of mentions.
  */
 public class NumberModel implements TestNumberModel, TrainSimilarityModel {
+
+  private static final Logger logger = LoggerFactory.getLogger(NumberModel.class);
 
   private final String modelName;
   private final String modelExtension = ".bin";
@@ -118,7 +123,7 @@ public class NumberModel implements TestNumberModel, TrainSimilarityModel {
     Map<Integer,Context> entities = new HashMap<>();
     List<Context> singletons = new ArrayList<>();
     for (Context ec : extentContexts) {
-      //System.err.println("NumberModel.setExtents: ec("+ec.getId()+") "+ec.toText());
+      logger.debug("NumberModel.setExtents: ec({}) {}", ec.getId(), ec);
       if (ec.getId() != -1) {
         entities.put(ec.getId(), ec);
       } else {

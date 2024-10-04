@@ -75,7 +75,7 @@ public class ProperNounResolver extends MaxentResolver {
   private void initAcronyms(String name) {
     acroMap = new HashMap<>(15000);
     try (BufferedReader str = new BufferedReader(new FileReader(name))) {
-      //System.err.println("Reading acronyms database: " + file + " ");
+      logger.debug("Reading acronyms database: {}", name);
       String line;
       while (null != (line = str.readLine())) {
         StringTokenizer st = new StringTokenizer(line, "\t");
@@ -95,16 +95,13 @@ public class ProperNounResolver extends MaxentResolver {
         exSet.add(acro);
       }
     } catch (IOException e) {
-      logger.warn("ProperNounResolver.initAcronyms: Acronym Database not found: " + e.getMessage(), e);
+      logger.error("Acronym Database not found: {}", e.getMessage(), e);
     }
   }
 
   private boolean isAcronym(String ecStrip, String xecStrip) {
     Set<String> exSet = acroMap.get(ecStrip);
-    if (exSet != null && exSet.contains(xecStrip)) {
-      return true;
-    }
-    return false;
+    return exSet != null && exSet.contains(xecStrip);
   }
 
   protected List<String> getAcronymFeatures(MentionContext mention, DiscourseEntity entity) {
@@ -123,7 +120,7 @@ public class ProperNounResolver extends MaxentResolver {
 
   @Override
   protected List<String> getFeatures(MentionContext mention, DiscourseEntity entity) {
-    //System.err.println("ProperNounResolver.getFeatures: "+mention.toText()+" -> "+entity);
+    logger.debug("Getting features: mention = {} -> entity = {}", mention.toText(), entity);
     List<String> features = new ArrayList<>(super.getFeatures(mention, entity));
     if (entity != null) {
       features.addAll(ResolverUtils.getStringMatchFeatures(mention, entity));
@@ -142,7 +139,7 @@ public class ProperNounResolver extends MaxentResolver {
       MentionContext xec = ei.next();
       if (xec.getHeadTokenTag().startsWith("NNP")) {
         // || initialCaps.matcher(xec.headToken.toString()).find()) {
-        //System.err.println("MaxentProperNounResolver.exclude: kept "+xec.toText()+" with "+xec.headTag);
+        logger.debug("Kept {} with {}", xec.toText(), xec.getHeadTokenTag());
         return false;
       }
     }

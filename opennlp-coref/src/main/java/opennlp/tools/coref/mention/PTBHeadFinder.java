@@ -17,18 +17,23 @@
 
 package opennlp.tools.coref.mention;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 
 /**
  * Finds head information from Penn Treebank style parses.
  */
 public final class PTBHeadFinder implements HeadFinder {
 
+  private static final Logger logger = LoggerFactory.getLogger(PTBHeadFinder.class);
+
   private static PTBHeadFinder instance;
   private static final Set<String> SKIP_SET = new HashSet<>();
+
   static {
     SKIP_SET.add("POS");
     SKIP_SET.add(",");
@@ -42,8 +47,7 @@ public final class PTBHeadFinder implements HeadFinder {
   private PTBHeadFinder() {}
 
   /**
-   * Returns an instance of this head finder.
-   * @return an instance of this head finder.
+   * @return Retrieves an instance of this head finder.
    */
   public static HeadFinder getInstance() {
     if (instance == null) {
@@ -52,13 +56,14 @@ public final class PTBHeadFinder implements HeadFinder {
     return instance;
   }
 
+  @Override
   public Parse getHead(Parse p) {
     if (p == null) {
       return null;
     }
     if (p.isNounPhrase()) {
       List<Parse> parts = p.getSyntacticChildren();
-      //shallow parse POS
+      // shallow parse POS
       if (parts.size() > 2) {
         Parse child0 = parts.get(0);
         Parse child1 = parts.get(1);
@@ -68,13 +73,13 @@ public final class PTBHeadFinder implements HeadFinder {
           return child2;
         }
       }
-      //full parse POS
+      // full parse POS
       if (parts.size() > 1) {
         Parse child0 = parts.get(0);
         if (child0.isNounPhrase()) {
           List<Parse> ctoks = child0.getTokens();
-          if (ctoks.size() == 0) {
-            System.err.println("PTBHeadFinder: NP " + child0 + " with no tokens");
+          if (ctoks.isEmpty()) {
+            logger.debug("NP {} with no tokens.", child0);
           }
           Parse tok = ctoks.get(ctoks.size() - 1);
           if (tok.getSyntacticType().equals("POS")) {
@@ -82,7 +87,7 @@ public final class PTBHeadFinder implements HeadFinder {
           }
         }
       }
-      //coordinated nps are their own entities
+      // coordinated nps are their own entities
       if (parts.size() > 1) {
         for (int pi = 1; pi < parts.size() - 1; pi++) {
           Parse child = parts.get(pi);
@@ -91,10 +96,9 @@ public final class PTBHeadFinder implements HeadFinder {
           }
         }
       }
-      //all other NPs
+      // all other NPs
       for (Parse child : parts) {
-        //System.err.println("PTBHeadFinder.getHead: "+p.getSyntacticType()+" "+p
-        // +" child "+pi+"="+child.getSyntacticType()+" "+child);
+        logger.debug("Getting head : {} {} - type {} child {}", p.getSyntacticType(), p, child.getSyntacticType(), child);
         if (child.isNounPhrase()) {
           return child;
         }
@@ -106,21 +110,21 @@ public final class PTBHeadFinder implements HeadFinder {
     }
   }
 
+  @Override
   public int getHeadIndex(Parse p) {
     List<Parse> sChildren = p.getSyntacticChildren();
     boolean countTokens = false;
     int tokenCount = 0;
-    //check for NP -> NN S type structures and return last token before S as head.
+    // check for NP -> NN S type structures and return last token before S as head.
     for (int sci = 0, scn = sChildren.size(); sci < scn;sci++) {
       Parse sc = sChildren.get(sci);
-      //System.err.println("PTBHeadFinder.getHeadIndex "+p+" "+p.getSyntacticType()
-      // +" sChild "+sci+" type = "+sc.getSyntacticType());
+      logger.debug("Getting head index: {} {} - sChild {} type {}", p, p.getSyntacticType(), sci, sc.getSyntacticType());
       if (sc.getSyntacticType().startsWith("S")) {
         if (sci != 0) {
           countTokens = true;
         }
         else {
-          //System.err.println("PTBHeadFinder.getHeadIndex(): NP -> S production assuming right-most head");
+          logger.debug("Getting head index: NP -> S production assuming right-most head");
         }
       }
       if (countTokens) {
@@ -128,8 +132,8 @@ public final class PTBHeadFinder implements HeadFinder {
       }
     }
     List<Parse> toks = p.getTokens();
-    if (toks.size() == 0) {
-      System.err.println("PTBHeadFinder.getHeadIndex(): empty tok list for parse " + p);
+    if (toks.isEmpty()) {
+      logger.debug("Empty tok list for parse {}",  p);
     }
     for (int ti = toks.size() - tokenCount - 1; ti >= 0; ti--) {
       Parse tok = toks.get(ti);
@@ -137,29 +141,32 @@ public final class PTBHeadFinder implements HeadFinder {
         return ti;
       }
     }
-    //System.err.println("PTBHeadFinder.getHeadIndex: "+p+" hi="+toks.size()+"-"+tokenCount
-    // +" -1 = "+(toks.size()-tokenCount -1));
     return toks.size() - tokenCount - 1;
   }
 
-  /** Returns the bottom-most head of a <code>Parse</code>.  If no
-      head is available which is a child of <code>p</code> then
-      <code>p</code> is returned. */
+  /**
+   * Returns the bottom-most head of a {@link Parse}.
+   * If no head is available which is a child of <code>p</code> then
+   * <code>p</code> is returned.
+   *
+   * @param p The parse to check for a bottom-most head.
+   */
+  @Override
   public Parse getLastHead(Parse p) {
     Parse head;
-    //System.err.print("EntityFinder.getLastHead: "+p);
+    logger.debug("Getting last head: {}", p);
 
     while (null != (head = getHead(p))) {
-      //System.err.print(" -> "+head);
-     //if (p.getEntityId() != -1 && head.getEntityId() != p.getEntityId()) {
-      // System.err.println(p+" ("+p.getEntityId()+") -> "+head+" ("+head.getEntityId()+")");
-      // }
+      logger.debug(" -> {}", head);
+      if (p.getEntityId() != -1 && head.getEntityId() != p.getEntityId()) {
+        logger.debug("{} ({}) -> {} ({})", p, p.getEntityId(), head, head.getEntityId());
+      }
       p = head;
     }
-    //System.err.println(" -> null");
     return p;
   }
 
+  @Override
   public Parse getHeadToken(Parse p) {
     List<Parse> toks = p.getTokens();
     return toks.get(getHeadIndex(p));
