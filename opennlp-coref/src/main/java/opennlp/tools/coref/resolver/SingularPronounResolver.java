@@ -21,28 +21,25 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import opennlp.tools.coref.DiscourseEntity;
 import opennlp.tools.coref.mention.MentionContext;
 
 /**
  * This class resolver singular pronouns such as "he", "she", "it" and their various forms.
+ *
+ * @see MaxentResolver
  */
 public class SingularPronounResolver extends MaxentResolver {
 
-  int mode;
-
-  Pattern PronounPattern;
-
-  public SingularPronounResolver(String projectName, ResolverMode m) throws IOException {
-    super(projectName, "pmodel", m, 30);
+  public SingularPronounResolver(String modelDirectory, ResolverMode m) throws IOException {
+    super(modelDirectory, "pmodel", m, 30);
     this.numSentencesBack = 2;
   }
 
-  public SingularPronounResolver(String projectName, ResolverMode m,
+  public SingularPronounResolver(String modelDirectory, ResolverMode m,
                                  NonReferentialResolver nonReferentialResolver) throws IOException {
-    super(projectName, "pmodel", m, 30,nonReferentialResolver);
+    super(modelDirectory, "pmodel", m, 30,nonReferentialResolver);
     this.numSentencesBack = 2;
   }
 

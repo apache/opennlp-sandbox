@@ -26,23 +26,24 @@ import opennlp.tools.coref.mention.MentionContext;
 
 /**
  * Resolves pronouns specific to quoted speech such as "you", "me", and "I".
+ *
+ * @see MaxentResolver
  */
 public class SpeechPronounResolver extends MaxentResolver {
 
-  public SpeechPronounResolver(String projectName, ResolverMode m) throws IOException {
-    super(projectName,"fmodel", m, 30);
+  public SpeechPronounResolver(String modelDirectory, ResolverMode m) throws IOException {
+    super(modelDirectory, "fmodel", m, 30);
     this.numSentencesBack = 0;
     showExclusions = false;
     preferFirstReferent = true;
   }
 
-  public SpeechPronounResolver(String projectName, ResolverMode m, NonReferentialResolver nrr)
+  public SpeechPronounResolver(String modelDirectory, ResolverMode m, NonReferentialResolver nrr)
       throws IOException {
-    super(projectName,"fmodel", m, 30,nrr);
+    super(modelDirectory, "fmodel", m, 30, nrr);
     showExclusions = false;
     preferFirstReferent = true;
   }
-
 
   @Override
   protected List<String> getFeatures(MentionContext mention, DiscourseEntity entity) {

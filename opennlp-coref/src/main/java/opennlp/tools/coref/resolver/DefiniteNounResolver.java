@@ -26,31 +26,29 @@ import opennlp.tools.coref.mention.MentionContext;
 
 /**
  * Resolves coreference between definite noun-phrases.
+ *
+ * @see MaxentResolver
  */
 public class DefiniteNounResolver extends MaxentResolver {
 
-  public DefiniteNounResolver(String projectName, ResolverMode m) throws IOException {
-    super(projectName, "defmodel", m, 80);
-    //preferFirstReferent = true;
+  public DefiniteNounResolver(String modelDirectory, ResolverMode m) throws IOException {
+    super(modelDirectory, "defmodel", m, 80);
+    // preferFirstReferent = true;
   }
 
-  public DefiniteNounResolver(String projectName, ResolverMode m, NonReferentialResolver nrr)
+  public DefiniteNounResolver(String modelDirectory, ResolverMode m, NonReferentialResolver nrr)
       throws IOException {
-    super(projectName, "defmodel", m, 80,nrr);
-    //preferFirstReferent = true;
+    super(modelDirectory, "defmodel", m, 80,nrr);
+    // preferFirstReferent = true;
   }
 
-
+  @Override
   public boolean canResolve(MentionContext mention) {
     Object[] mtokens = mention.getTokens();
 
     String firstTok = mention.getFirstTokenText().toLowerCase();
-    boolean rv = mtokens.length > 1 && !mention.getHeadTokenTag().startsWith("NNP")
+    return mtokens.length > 1 && !mention.getHeadTokenTag().startsWith("NNP")
         && ResolverUtils.definiteArticle(firstTok, mention.getFirstTokenTag());
-    //if (rv) {
-    //  System.err.println("defNp "+ec);
-    //}
-    return (rv);
   }
 
   @Override

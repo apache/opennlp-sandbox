@@ -23,8 +23,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import opennlp.tools.coref.mention.Dictionary;
-import opennlp.tools.coref.mention.DictionaryFactory;
+import opennlp.tools.coref.dictionary.Dictionary;
+import opennlp.tools.coref.dictionary.DictionaryFactory;
 import opennlp.tools.coref.mention.HeadFinder;
 import opennlp.tools.coref.mention.Mention;
 import opennlp.tools.coref.mention.Parse;
@@ -32,6 +32,8 @@ import opennlp.tools.util.Span;
 
 /**
  * Specifies the context of a mention for computing gender, number, and semantic compatibility.
+ *
+ * @see Mention
  */
 public class Context extends Mention {
 
@@ -147,8 +149,8 @@ public class Context extends Mention {
     return DictionaryFactory.getDictionary().getLemmas(word,"NN");
   }
 
-  /** Returns the token index into the mention for the head word.
-   * @return the token index into the mention for the head word.
+  /**
+   * @return Retrieves the token index into the mention for the head word.
    */
   public int getHeadTokenIndex() {
     return headTokenIndex;

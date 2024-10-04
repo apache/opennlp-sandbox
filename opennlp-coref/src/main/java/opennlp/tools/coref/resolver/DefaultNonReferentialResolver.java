@@ -18,10 +18,15 @@
 package opennlp.tools.coref.resolver;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -29,6 +34,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 import opennlp.tools.coref.mention.MentionContext;
 import opennlp.tools.coref.mention.Parse;
@@ -37,35 +43,41 @@ import opennlp.tools.ml.maxent.GISTrainer;
 import opennlp.tools.ml.maxent.io.BinaryGISModelReader;
 import opennlp.tools.ml.maxent.io.BinaryGISModelWriter;
 import opennlp.tools.ml.model.Event;
+import opennlp.tools.ml.model.FileEventStream;
 import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.util.ObjectStreamUtils;
 import opennlp.tools.util.TrainingParameters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Default implementation of the {@link NonReferentialResolver} interface.
  */
 public class DefaultNonReferentialResolver implements NonReferentialResolver {
 
+  private static final Logger logger = LoggerFactory.getLogger(DefaultNonReferentialResolver.class);
+
   private MaxentModel model;
   private List<Event> events;
   private boolean loadAsResource;
-  private final boolean debugOn = false;
+  private static final boolean DEBUG = false;
   private final ResolverMode mode;
   private final String modelName;
-  private final String modelExtension = ".bin.gz";
+  private final String modelExtension = ".bin";
   private int nonRefIndex;
 
-  public DefaultNonReferentialResolver(String projectName, String name, ResolverMode mode)
+  public DefaultNonReferentialResolver(String modelDirectory, String name, ResolverMode mode)
       throws IOException {
     this.mode = mode;
-    this.modelName = projectName + "/" + name + ".nr";
+    this.modelName = modelDirectory + "/" + name + ".nr";
     if (mode == ResolverMode.TRAIN) {
       events = new ArrayList<>();
     }
     else if (mode == ResolverMode.TEST) {
       if (loadAsResource) {
-        model = new BinaryGISModelReader(new DataInputStream(
-            this.getClass().getResourceAsStream(modelName))).getModel();
+        try (DataInputStream dis = new DataInputStream(this.getClass().getResourceAsStream(modelName))) {
+          model = new BinaryGISModelReader(dis).getModel();
+        }
       }
       else {
         try (DataInputStream dis = new DataInputStream(
@@ -84,7 +96,9 @@ public class DefaultNonReferentialResolver implements NonReferentialResolver {
   public double getNonReferentialProbability(MentionContext mention) {
     List<String> features = getFeatures(mention);
     double r = model.eval(features.toArray(new String[0]))[nonRefIndex];
-    if (debugOn) System.err.println(this + " " + mention.toText() + " ->  null " + r + " " + features);
+    if (DEBUG) {
+      logger.debug(this + " {} ->  null {} {}", mention.toText(), r, features);
+    }
     return r;
   }
 
@@ -129,8 +143,24 @@ public class DefaultNonReferentialResolver implements NonReferentialResolver {
   @Override
   public void train() throws IOException {
     if (ResolverMode.TRAIN == mode) {
-      System.err.println(this + " referential");
-      if (debugOn) {
+      if (events.isEmpty()) {
+        String inputPath;
+        if (modelName.endsWith(".nr")) {
+          inputPath = modelName.replace(".nr", "");
+        } else {
+          inputPath = modelName;
+        }
+
+        try (InputStream gzipStream = new GZIPInputStream(new FileInputStream(inputPath + ".events.gz"));
+             Reader decoder = new InputStreamReader(gzipStream, StandardCharsets.UTF_8);
+             FileEventStream fes = new FileEventStream(new BufferedReader(decoder))) {
+          Event e;
+          while ((e = fes.read()) != null) {
+            events.add(e);
+          }
+        }
+      }
+      if (DEBUG) {
         Path p = Path.of(modelName + ".events");
         try (Writer writer = Files.newBufferedWriter(p, StandardCharsets.UTF_8,
                 StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {

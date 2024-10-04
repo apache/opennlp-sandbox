@@ -30,6 +30,7 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -58,7 +59,7 @@ public class GenderModel implements TestGenderModel, TrainSimilarityModel {
   private int neuterIndex;
 
   private final String modelName;
-  private final String modelExtension = ".bin.gz";
+  private final String modelExtension = ".bin";
   private MaxentModel testModel;
   private Collection<Event> events;
   private final boolean debugOn = true;
@@ -66,21 +67,22 @@ public class GenderModel implements TestGenderModel, TrainSimilarityModel {
   private final Set<String> maleNames;
   private final Set<String> femaleNames;
 
-  public static TestGenderModel testModel(String name) throws IOException {
+  public static GenderModel testModel(String name) throws IOException {
     return new GenderModel(name, false);
   }
 
-  public static TrainSimilarityModel trainModel(String name) throws IOException {
+  public static GenderModel trainModel(String name) throws IOException {
     return new GenderModel(name, true);
   }
 
   private Set<String> readNames(String nameFile) throws IOException {
     Set<String> names = new HashSet<>();
-    BufferedReader nameReader = new BufferedReader(new FileReader(nameFile));
-    for (String line = nameReader.readLine(); line != null; line = nameReader.readLine()) {
-      names.add(line);
+    try (BufferedReader nameReader = new BufferedReader(new FileReader(nameFile))) {
+      for (String line = nameReader.readLine(); line != null; line = nameReader.readLine()) {
+        names.add(line);
+      }
+      return names;
     }
-    return names;
   }
 
   private GenderModel(String modelName, boolean train) throws IOException {

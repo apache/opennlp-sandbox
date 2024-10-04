@@ -17,6 +17,8 @@
 
 package opennlp.tools.coref.sim;
 
+import opennlp.tools.coref.linker.LinkerMode;
+
 import java.io.IOException;
 
 /**
@@ -27,14 +29,19 @@ public class MaxentCompatibilityModel {
   private final double minGenderProb = 0.66;
   private final double minNumberProb = 0.66;
 
-  private static TestGenderModel genModel;
-  private static TestNumberModel numModel;
+  private static GenderModel genModel;
+  private static NumberModel numModel;
 
   private final boolean debugOn = false;
 
-  public MaxentCompatibilityModel(String corefProject) throws IOException {
-    genModel = GenderModel.testModel(corefProject + "/gen");
-    numModel = NumberModel.testModel(corefProject + "/num");
+  public MaxentCompatibilityModel(String corefProject, LinkerMode mode) throws IOException {
+    if (LinkerMode.TEST == mode) {
+      genModel = GenderModel.testModel(corefProject + "/gen");
+      numModel = NumberModel.testModel(corefProject + "/num");
+    } else if (LinkerMode.TRAIN == mode) {
+      genModel = GenderModel.trainModel(corefProject + "/gen");
+      numModel = NumberModel.trainModel(corefProject + "/num");
+    }
   }
 
   public Gender computeGender(Context c) {

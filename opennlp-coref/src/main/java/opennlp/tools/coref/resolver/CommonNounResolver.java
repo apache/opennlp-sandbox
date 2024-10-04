@@ -26,18 +26,20 @@ import opennlp.tools.coref.mention.MentionContext;
 
 /**
  * Resolves coreference between common nouns.
+ *
+ * @see MaxentResolver
  */
 public class CommonNounResolver extends MaxentResolver {
 
-  public CommonNounResolver(String projectName, ResolverMode m) throws IOException {
-    super(projectName,"cmodel", m, 80, true);
+  public CommonNounResolver(String modelDirectory, ResolverMode m) throws IOException {
+    super(modelDirectory,"cmodel", m, 80, true);
     showExclusions = false;
     preferFirstReferent = true;
   }
 
-  public CommonNounResolver(String projectName, ResolverMode m, NonReferentialResolver nrr)
+  public CommonNounResolver(String modelDirectory, ResolverMode m, NonReferentialResolver nrr)
       throws IOException {
-    super(projectName,"cmodel", m, 80, true,nrr);
+    super(modelDirectory,"cmodel", m, 80, true, nrr);
     showExclusions = false;
     preferFirstReferent = true;
   }

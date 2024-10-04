@@ -33,42 +33,48 @@ import java.util.StringTokenizer;
 import opennlp.tools.coref.DiscourseEntity;
 import opennlp.tools.coref.mention.MentionContext;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Resolves coreference between proper nouns.
+ *
+ * @see MaxentResolver
  */
 public class ProperNounResolver extends MaxentResolver {
+
+  private static final Logger logger = LoggerFactory.getLogger(ProperNounResolver.class);
 
   private static Map<String, Set<String>> acroMap;
   private static boolean acroMapLoaded = false;
 
-  public ProperNounResolver(String projectName, ResolverMode m) throws IOException {
-    super(projectName,"pnmodel", m, 500);
+  public ProperNounResolver(String modelDirectory, ResolverMode m) throws IOException {
+    super(modelDirectory,"pnmodel", m, 500);
     if (!acroMapLoaded) {
-      initAcronyms(projectName + "/acronyms");
+      initAcronyms(modelDirectory + "/acronyms");
       acroMapLoaded = true;
     }
     showExclusions = false;
   }
 
-  public ProperNounResolver(String projectName, ResolverMode m,NonReferentialResolver nonRefResolver)
+  public ProperNounResolver(String modelDirectory, ResolverMode m,NonReferentialResolver nonRefResolver)
       throws IOException {
-    super(projectName,"pnmodel", m, 500,nonRefResolver);
+    super(modelDirectory,"pnmodel", m, 500,nonRefResolver);
     if (!acroMapLoaded) {
-      initAcronyms(projectName + "/acronyms");
+      initAcronyms(modelDirectory + "/acronyms");
       acroMapLoaded = true;
     }
     showExclusions = false;
   }
 
+  @Override
   public boolean canResolve(MentionContext mention) {
     return (mention.getHeadTokenTag().startsWith("NNP") || mention.getHeadTokenTag().startsWith("CD"));
   }
 
   private void initAcronyms(String name) {
     acroMap = new HashMap<>(15000);
-    try {
-      BufferedReader str;
-      str = new BufferedReader(new FileReader(name));
+    try (BufferedReader str = new BufferedReader(new FileReader(name))) {
       //System.err.println("Reading acronyms database: " + file + " ");
       String line;
       while (null != (line = str.readLine())) {
@@ -88,9 +94,8 @@ public class ProperNounResolver extends MaxentResolver {
         }
         exSet.add(acro);
       }
-    }
-    catch (IOException e) {
-      System.err.println("ProperNounResolver.initAcronyms: Acronym Database not found: " + e);
+    } catch (IOException e) {
+      logger.warn("ProperNounResolver.initAcronyms: Acronym Database not found: " + e.getMessage(), e);
     }
   }
 

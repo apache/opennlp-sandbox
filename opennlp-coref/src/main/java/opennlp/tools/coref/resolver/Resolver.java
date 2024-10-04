@@ -29,24 +29,24 @@ import opennlp.tools.coref.mention.MentionContext;
 public interface Resolver {
 
   /** 
-   * Returns true if this resolver is able to resolve the referring expression of the same type
+   * Returns {@code true} if this resolver is able to resolve the referring expression of the same type
    * as the specified mention.
    * 
    * @param mention The mention being considered for resolution.
    * 
-   * @return true if the resolver handles this type of referring
-   * expression, false otherwise.
+   * @return {@code true} if the resolver handles this type of referring
+   * expression, {@code false} otherwise.
    */
   boolean canResolve(MentionContext mention);
 
   /** 
-   * Resolve this referring expression to a discourse entity in the discourse model.
+   * Resolve this referring expression to a {@link DiscourseEntity} in the discourse model.
    * 
    * @param ec the referring expression.
    * @param dm the discourse model.
    * 
-   * @return the discourse entity which the resolver believes this
-   * referring expression refers to or null if no discourse entity is
+   * @return A {@link DiscourseEntity} which the resolver believes this
+   * referring expression refers to or {@code null} if no discourse entity is
    * co-referent with the referring expression.
    */
   DiscourseEntity resolve(MentionContext ec, DiscourseModel dm);
@@ -59,15 +59,15 @@ public interface Resolver {
    * @param mention The mention which is being used for training.
    * @param model the discourse model.
    * 
-   * @return the discourse entity which is referred to by the referring
-   * expression or null if no discourse entity is referenced.
+   * @return A {@link DiscourseEntity} which is referred to by the referring
+   * expression or {@code null} if no discourse entity is referenced.
    */
   DiscourseEntity retain(MentionContext mention, DiscourseModel model);
 
   /** 
    * Retrains model on examples for which retain was called.
    * 
-   * @throws IOException
+   * @throws IOException Thrown if IO errors occurred.
    */
   void train() throws IOException;
 }

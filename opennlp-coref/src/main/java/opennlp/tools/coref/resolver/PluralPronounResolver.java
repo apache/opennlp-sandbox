@@ -26,18 +26,20 @@ import opennlp.tools.coref.mention.MentionContext;
 
 /**
  * Resolves coreference between plural pronouns and their referents.
+ *
+ * @see MaxentResolver
  */
 public class PluralPronounResolver extends MaxentResolver {
 
   final int NUM_SENTS_BACK_PRONOUNS = 2;
 
-  public PluralPronounResolver(String projectName, ResolverMode m) throws IOException {
-    super(projectName, "tmodel", m, 30);
+  public PluralPronounResolver(String modelDirectory, ResolverMode m) throws IOException {
+    super(modelDirectory, "tmodel", m, 30);
   }
 
-  public PluralPronounResolver(String projectName, ResolverMode m,NonReferentialResolver nrr)
+  public PluralPronounResolver(String modelDirectory, ResolverMode m, NonReferentialResolver nrr)
       throws IOException {
-    super(projectName, "tmodel", m, 30,nrr);
+    super(modelDirectory, "tmodel", m, 30, nrr);
   }
 
   @Override
@@ -87,6 +89,7 @@ public class PluralPronounResolver extends MaxentResolver {
     return (mention.getSentenceNumber() - cec.getSentenceNumber() > NUM_SENTS_BACK_PRONOUNS);
   }
 
+  @Override
   public boolean canResolve(MentionContext mention) {
     String tag = mention.getHeadTokenTag();
     return (tag != null && tag.startsWith("PRP")

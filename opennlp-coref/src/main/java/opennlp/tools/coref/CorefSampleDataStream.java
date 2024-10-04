@@ -22,16 +22,27 @@ import java.io.IOException;
 import opennlp.tools.util.FilterObjectStream;
 import opennlp.tools.util.ObjectStream;
 
+/**
+ * A specialized {@link FilterObjectStream} implementation to process {@link CorefSample samples}.
+ *
+ * @see CorefSample
+ * @see FilterObjectStream
+ */
 public class CorefSampleDataStream extends FilterObjectStream<String, CorefSample> {
 
-  public CorefSampleDataStream(ObjectStream<String> in) {
-    super(in);
+  /**
+   * Initializes an {@link CorefSampleDataStream}.
+   *
+   * @param samples The {@link ObjectStream stream} of samples to filter.
+   *                Must not be {@code null}.
+   */
+  public CorefSampleDataStream(ObjectStream<String> samples) {
+    super(samples);
   }
-  
+
+  @Override
   public CorefSample read() throws IOException {
-    
     String document = samples.read();
-    
     if (document != null) {
       return CorefSample.parse(document);
     }

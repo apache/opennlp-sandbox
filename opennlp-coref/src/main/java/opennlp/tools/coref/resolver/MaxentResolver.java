@@ -18,10 +18,15 @@
 package opennlp.tools.coref.resolver;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -29,6 +34,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 import opennlp.tools.coref.DiscourseEntity;
 import opennlp.tools.coref.DiscourseModel;
@@ -39,6 +45,7 @@ import opennlp.tools.ml.maxent.GISTrainer;
 import opennlp.tools.ml.maxent.io.BinaryGISModelReader;
 import opennlp.tools.ml.maxent.io.BinaryGISModelWriter;
 import opennlp.tools.ml.model.Event;
+import opennlp.tools.ml.model.FileEventStream;
 import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.util.ObjectStreamUtils;
 import opennlp.tools.util.TrainingParameters;
@@ -65,20 +72,23 @@ public abstract class MaxentResolver extends AbstractResolver {
   private ResolverMode mode;
   private List<opennlp.tools.ml.model.Event> events;
 
-  /** When true, this designates that the resolver should use the first referent encountered which it
-   * more preferable than non-reference.  When false all non-excluded referents within this resolvers range
+  /**
+   * If {@code true}, this designates that the resolver should use the first referent encountered which it
+   * more preferable than non-reference. When {@code false} all non-excluded referents within this resolvers range
    * are considered.
    */
   protected boolean preferFirstReferent;
+
   /**
-   * When true, this designates that training should consist of a single
+   * If {@code true}, this designates that training should consist of a single
    * positive and a single negative example (when possible) for each mention.
    */
   protected boolean pairedSampleSelection;
   
-  /** When true, this designates that the same maximum entropy model should be used non-reference
+  /**
+   * If {@code true}, this designates that the same maximum entropy model should be used non-reference
    * events (the pairing of a mention and the "null" reference) as is used for potentially
-   * referential pairs.  When false a separate model is created for these events.
+   * referential pairs. When {@code false} a separate model is created for these events.
    */
   protected boolean useSameModelForNonRef;
 
@@ -87,7 +97,7 @@ public abstract class MaxentResolver extends AbstractResolver {
   /** The model for computing non-referential probabilities. */
   protected NonReferentialResolver nonReferentialResolver;
 
-  private static final String MODEL_EXTENSION = ".bin.gz";
+  private static final String MODEL_EXTENSION = ".bin";
 
   /**
    * Creates a maximum-entropy-based resolver which will look the specified number of
@@ -106,13 +116,13 @@ public abstract class MaxentResolver extends AbstractResolver {
    * Creates a maximum-entropy-based resolver with the specified model name, using the
    * specified mode, which will look the specified number of entities back for a referent and
    * prefer the first referent if specified.
+   *
    * @param modelDirectory The name of the directory where the resolver models are stored.
    * @param name The name of the file where this model will be read or written.
    * @param mode The mode this resolver is being using in (training, testing).
-   * @param numberOfEntitiesBack The number of entities back in the text that this resolver will look
-   * for a referent.
-   * @param preferFirstReferent Set to true if the resolver should prefer the first referent which is more
-   * likely than non-reference.  This only affects testing.
+   * @param numberOfEntitiesBack The number of entities back in the text that this resolver will look for a referent.
+   * @param preferFirstReferent Set to {@code true} if the resolver should prefer the first referent which is more
+   *                            likely than non-reference. This only affects testing.
    * @param nonReferentialResolver Determines how likely it is that this entity is non-referential.
    * @throws IOException If the model file is not found or can not be written to.
    */
@@ -144,28 +154,25 @@ public abstract class MaxentResolver extends AbstractResolver {
   /**
    * Creates a maximum-entropy-based resolver with the specified model name, using the
    * specified mode, which will look the specified number of entities back for a referent.
-   * @param modelDirectory The name of the directory where the resover models are stored.
+   *
+   * @param modelDirectory The name of the directory where the resolver models are stored.
    * @param modelName The name of the file where this model will be read or written.
    * @param mode The mode this resolver is being using in (training, testing).
-   * @param numberEntitiesBack The number of entities back in the text that this resolver will look
-   * for a referent.
+   * @param numberEntitiesBack The number of entities back in the text that this resolver will look for a referent.
    * @throws IOException If the model file is not found or can not be written to.
    */
-  public MaxentResolver(String modelDirectory, String modelName, ResolverMode mode,
-                        int numberEntitiesBack) throws IOException {
+  public MaxentResolver(String modelDirectory, String modelName, ResolverMode mode, int numberEntitiesBack) throws IOException {
     this(modelDirectory, modelName, mode, numberEntitiesBack, false);
   }
 
   public MaxentResolver(String modelDirectory, String modelName, ResolverMode mode,
                         int numberEntitiesBack, NonReferentialResolver nonReferentialResolver)
       throws IOException {
-    this(modelDirectory, modelName, mode, numberEntitiesBack, false,nonReferentialResolver);
+    this(modelDirectory, modelName, mode, numberEntitiesBack, false, nonReferentialResolver);
   }
 
   public MaxentResolver(String modelDirectory, String modelName, ResolverMode mode,
                         int numberEntitiesBack, boolean preferFirstReferent) throws IOException {
-    //this(projectName, modelName, mode, numberEntitiesBack, preferFirstReferent,
-    // SingletonNonReferentialResolver.getInstance(projectName,mode));
     this(modelDirectory, modelName, mode, numberEntitiesBack, preferFirstReferent,
         new DefaultNonReferentialResolver(modelDirectory, modelName, mode));
   }
@@ -173,8 +180,6 @@ public abstract class MaxentResolver extends AbstractResolver {
   public MaxentResolver(String modelDirectory, String modelName, ResolverMode mode,
                         int numberEntitiesBack, boolean preferFirstReferent,
                         double nonReferentialProbability) throws IOException {
-    //this(projectName, modelName, mode, numberEntitiesBack, preferFirstReferent,
-    // SingletonNonReferentialResolver.getInstance(projectName,mode));
     this(modelDirectory, modelName, mode, numberEntitiesBack, preferFirstReferent,
         new FixedNonReferentialResolver(nonReferentialProbability));
   }
@@ -242,8 +247,9 @@ public abstract class MaxentResolver extends AbstractResolver {
    * Returns whether the specified entity satisfies the criteria for being a default referent.
    * These criteria are used to perform sample selection on the training data and to select a single
    * non-referent entity. Typically, the criteria is a heuristic for a likely referent.
+   * 
    * @param de The discourse entity being considered for non-reference.
-   * @return True if the entity should be used as a default referent, false otherwise.
+   * @return {@code true} if the entity should be used as a default referent, {@code false} otherwise.
    */
   protected boolean defaultReferent(DiscourseEntity de) {
     MentionContext ec = de.getLastExtent();
@@ -328,6 +334,7 @@ public abstract class MaxentResolver extends AbstractResolver {
   /**
    * Returns a list of features for deciding whether the specified mention refers to the
    * specified discourse entity.
+   * 
    * @param mention the mention being considers as possibly referential.
    * @param entity The discourse entity with which the mention is being considered referential.
    * @return a list of features used to predict reference between the specified mention and entity.
@@ -342,6 +349,16 @@ public abstract class MaxentResolver extends AbstractResolver {
   @Override
   public void train() throws IOException {
     if (ResolverMode.TRAIN == mode) {
+      if (events.isEmpty()) {
+        try (InputStream gzipStream = new GZIPInputStream(new FileInputStream(modelName + ".events.gz"));
+             Reader decoder = new InputStreamReader(gzipStream, StandardCharsets.UTF_8);
+             FileEventStream fes = new FileEventStream(new BufferedReader(decoder))) {
+          Event e;
+          while ((e = fes.read()) != null) {
+            events.add(e);
+          }
+        }
+      }
       if (DEBUG) {
         System.err.println(this + " referential");
         Path p = Path.of(modelName + ".events");

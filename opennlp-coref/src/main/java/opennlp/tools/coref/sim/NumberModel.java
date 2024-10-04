@@ -43,18 +43,18 @@ import opennlp.tools.util.TrainingParameters;
 public class NumberModel implements TestNumberModel, TrainSimilarityModel {
 
   private final String modelName;
-  private final String modelExtension = ".bin.gz";
+  private final String modelExtension = ".bin";
   private MaxentModel testModel;
   private List<Event> events;
 
   private int singularIndex;
   private int pluralIndex;
 
-  public static TestNumberModel testModel(String name) throws IOException {
+  public static NumberModel testModel(String name) throws IOException {
     return new NumberModel(name, false);
   }
 
-  public static TrainSimilarityModel trainModel(String modelName) throws IOException {
+  public static NumberModel trainModel(String modelName) throws IOException {
     return new NumberModel(modelName, true);
   }
 

@@ -443,6 +443,10 @@
                                 <exclude>**/src/main/resources/opennlp/cfg/wn/*.txt</exclude>
                                 <exclude>**/src/main/java/opennlp/tools/similarity/apps/taxo_builder/taxonomy.txt</exclude>
                                 <exclude>**/src/main/java/opennlp/tools/similarity/apps/gen.txt</exclude>
+                                <!-- These files are required for testing the coref component -->
+                                <exclude>**/src/test/resources/models/coref/en/acronyms</exclude>
+                                <exclude>**/src/test/resources/models/coref/en/gen.fem</exclude>
+                                <exclude>**/src/test/resources/models/coref/en/gen.mas</exclude>
                                 <!-- These files are samples in wikinews-importer -->
                                 <exclude>**/samples/*.xmi</exclude>
                                 <!-- This is a log file of DerbyDB being created during test runs -->
