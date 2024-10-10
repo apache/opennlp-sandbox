@@ -29,6 +29,8 @@ import opennlp.tools.coref.mention.HeadFinder;
 import opennlp.tools.coref.mention.Mention;
 import opennlp.tools.coref.mention.Parse;
 import opennlp.tools.util.Span;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Specifies the context of a mention for computing gender, number, and semantic compatibility.
@@ -36,6 +38,8 @@ import opennlp.tools.util.Span;
  * @see Mention
  */
 public class Context extends Mention {
+
+  private static final Logger logger = LoggerFactory.getLogger(Context.class);
 
   protected String headTokenText;
   protected String headTokenTag;
@@ -132,7 +136,7 @@ public class Context extends Mention {
     Set<String> synsetSet = new HashSet<>();
     String[] lemmas = getLemmas(c);
     Dictionary dict = DictionaryFactory.getDictionary();
-    //System.err.println(lemmas.length+" lemmas for "+c.headToken);
+    logger.debug("{} lemmas for {}", lemmas.length, c.getHeadTokenText());
     for (String lemma : lemmas) {
       String senseKey = dict.getSenseKey(lemma, "NN", 0);
       if (senseKey != null) {

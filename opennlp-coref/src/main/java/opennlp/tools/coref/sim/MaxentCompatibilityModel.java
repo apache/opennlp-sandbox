@@ -18,6 +18,8 @@
 package opennlp.tools.coref.sim;
 
 import opennlp.tools.coref.linker.LinkerMode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -25,6 +27,8 @@ import java.io.IOException;
  * Model of mention compatibility using a maxent model.
  */
 public class MaxentCompatibilityModel {
+
+  private static final Logger logger = LoggerFactory.getLogger(MaxentCompatibilityModel.class);
 
   private final double minGenderProb = 0.66;
   private final double minNumberProb = 0.66;
@@ -48,9 +52,8 @@ public class MaxentCompatibilityModel {
     Gender gender;
     double[] gdist = genModel.genderDistribution(c);
     if (debugOn) {
-      System.err.println("MaxentCompatibilityModel.computeGender: "
-          + c.toString() + " m=" + gdist[genModel.getMaleIndex()] + " f="
-          + gdist[genModel.getFemaleIndex()] + " n=" + gdist[genModel.getNeuterIndex()]);
+      logger.debug("Computing Gender: {} - m={} f={} n={}", c, gdist[genModel.getMaleIndex()],
+              gdist[genModel.getFemaleIndex()], gdist[genModel.getNeuterIndex()]);
     }
     if (genModel.getMaleIndex() >= 0 && gdist[genModel.getMaleIndex()] > minGenderProb) {
       gender = new Gender(GenderEnum.MALE,gdist[genModel.getMaleIndex()]);
@@ -70,8 +73,7 @@ public class MaxentCompatibilityModel {
   public Number computeNumber(Context c) {
     double[] dist = numModel.numberDist(c);
     Number number;
-    //System.err.println("MaxentCompatibiltyResolver.computeNumber: "+c+" sing="
-    // +dist[numModel.getSingularIndex()]+" plural="+dist[numModel.getPluralIndex()]);
+    logger.debug("Computing number: {} sing={} plural={}", c, dist[numModel.getSingularIndex()], dist[numModel.getPluralIndex()]);
     if (dist[numModel.getSingularIndex()] > minNumberProb) {
       number = new Number(NumberEnum.SINGULAR,dist[numModel.getSingularIndex()]);
     }

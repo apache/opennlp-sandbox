@@ -36,11 +36,16 @@ import opennlp.tools.util.FilterObjectStream;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.Span;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * The mention insert is responsible to insert the mentions from the training data
  * into the parse trees.
  */
 public class MucMentionInserterStream extends FilterObjectStream<RawCorefSample, CorefSample> {
+
+  private static final Logger logger = LoggerFactory.getLogger(MucMentionInserterStream.class);
 
   private static final Set<String> ENTITY_SET = new HashSet<>(Arrays.asList(DefaultParse.NAME_TYPES));
   
@@ -56,7 +61,6 @@ public class MucMentionInserterStream extends FilterObjectStream<RawCorefSample,
     String min = mention.min;
     
     if (min != null) {
-      
       int startOffset = p.toString().indexOf(min);
       int endOffset = startOffset + min.length();
       
@@ -85,7 +89,6 @@ public class MucMentionInserterStream extends FilterObjectStream<RawCorefSample,
   }
   
   public static boolean addMention(int id, Span mention, Parse[] tokens) {
-
     boolean failed = false;
     
     Parse startToken = tokens[mention.getStart()];
@@ -97,15 +100,12 @@ public class MucMentionInserterStream extends FilterObjectStream<RawCorefSample,
       
       if (ENTITY_SET.contains(commonParent.getType())) {
         commonParent.getParent().setType("NP#" + id);            
-      }
-      else if (commonParent.getType().equals("NML")) {
+      } else if (commonParent.getType().equals("NML")) {
         commonParent.setType("NML#" + id);
-      }
-      else if (commonParent.getType().equals("NP")) {
+      } else if (commonParent.getType().equals("NP")) {
         commonParent.setType("NP#" + id);
-      }
-      else {
-        System.out.println("Inserting mention failed: " + commonParent.getType() + " Failed id: " + id);
+      } else {
+        logger.warn("Inserting mention failed: {} - failed id: {}", commonParent.getType(), id);
         failed = true;
       }
     }
@@ -115,15 +115,14 @@ public class MucMentionInserterStream extends FilterObjectStream<RawCorefSample,
     
     return !failed;
   }
-  
+
+  @Override
   public CorefSample read() throws IOException {
     
     RawCorefSample sample = samples.read();
     
     if (sample != null) {
-
       List<Parse> mentionParses = new ArrayList<>();
-      
       List<CorefMention[]> allMentions = sample.getMentions();
       List<Parse> allParses = sample.getParses();
       
@@ -140,7 +139,6 @@ public class MucMentionInserterStream extends FilterObjectStream<RawCorefSample,
         }
         
         Parse[] tokens = p.getTagNodes();
-        
         for (CorefMention mention : mentions) {
           Span min = getMinSpan(p, mention);
           
@@ -150,12 +148,9 @@ public class MucMentionInserterStream extends FilterObjectStream<RawCorefSample,
           
           addMention(mention.id, min, tokens);
         }
-        
         p.show();
-        
         mentionParses.add(p);
       }
-      
       return new CorefSample(mentionParses);
     }
     else {

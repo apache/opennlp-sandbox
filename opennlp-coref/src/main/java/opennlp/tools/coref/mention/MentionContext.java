@@ -19,17 +19,22 @@ package opennlp.tools.coref.mention;
 
 import java.util.List;
 
+import opennlp.tools.coref.resolver.AbstractResolver;
 import opennlp.tools.coref.sim.Context;
 import opennlp.tools.coref.sim.GenderEnum;
 import opennlp.tools.coref.sim.NumberEnum;
 import opennlp.tools.util.Span;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** 
  * Data structure representation of a mention with additional contextual information. 
  * The contextual information is used in performing coreference resolution.
  */
 public class MentionContext extends Context {
- 
+
+  private static final Logger logger = LoggerFactory.getLogger(MentionContext.class);
+
   /** 
    * The index of first token which is not part of a descriptor.  This is 0 if no descriptor is present. 
    */
@@ -123,7 +128,7 @@ public class MentionContext extends Context {
   public MentionContext(Span span, Span headSpan, int entityId, Parse parse, String extentType,
                         String nameType, int mentionIndex, int mentionsInSentence,
                         int mentionIndexInDocument, int sentenceIndex, HeadFinder headFinder) {
-    super(span,headSpan,entityId,parse,extentType,nameType,headFinder);
+    super(span, headSpan, entityId, parse, extentType, nameType, headFinder);
     nounLocation = mentionIndex;
     maxNounLocation = mentionsInSentence;
     nounNumber = mentionIndexInDocument;
@@ -135,14 +140,15 @@ public class MentionContext extends Context {
     List<Parse> headTokens = head.getTokens();
     tokens = headTokens.toArray(new Parse[0]);
     basalNextToken = head.getNextToken();
-    //System.err.println("MentionContext.init: "+ent+" "+ent.getEntityId()+" head="+head);
+    logger.debug("Constructing MentionContext for '{}' id={} head={}", parse, parse.getEntityId(), head);
     nonDescriptorStart = 0;
     initHeads(headFinder.getHeadIndex(head));
     gender = GenderEnum.UNKNOWN;
-    this.genderProb = 0d;
     number = NumberEnum.UNKNOWN;
+    this.genderProb = 0d;
     this.numberProb = 0d;
   }
+
   /**
    * Constructs context information for the specified mention.
    * 
@@ -160,51 +166,6 @@ public class MentionContext extends Context {
         mentionIndexInDocument, sentenceIndex, headFinder);
   }
 
-
-  /*
-   * Constructs context information for the specified mention.
-   * 
-   * @param mentionParse Mention parse structure for which context is to be constructed.
-   * @param mentionIndex mention position in sentence.
-   * @param mentionsInSentence Number of mentions in the sentence.
-   * @param mentionsInDocument Number of mentions in the document.
-   * @param sentenceIndex Sentence number for this mention.
-   * @param nameType The named-entity type for this mention.
-   * @param headFinder Object which provides head information.
-   */
-  /*
-  public MentionContext(Parse mentionParse, int mentionIndex, int mentionsInSentence,
-  int mentionsInDocument, int sentenceIndex, String nameType, HeadFinder headFinder) {
-    nounLocation = mentionIndex;
-    maxNounLocation = mentionsInDocument;
-    sentenceNumber = sentenceIndex;
-    parse = mentionParse;
-    indexSpan = mentionParse.getSpan();
-    prevToken = mentionParse.getPreviousToken();
-    nextToken = mentionParse.getNextToken();
-    head = headFinder.getLastHead(mentionParse);
-    List headTokens = head.getTokens();
-    tokens = (Parse[]) headTokens.toArray(new Parse[headTokens.size()]);
-    basalNextToken = head.getNextToken();
-    //System.err.println("MentionContext.init: "+ent+" "+ent.getEntityId()+" head="+head);
-    indexHeadSpan = head.getSpan();
-    nonDescriptorStart = 0;
-    initHeads(headFinder.getHeadIndex(head));
-    this.neType= nameType;
-    if (getHeadTokenTag().startsWith("NN") && !getHeadTokenTag().startsWith("NNP")) {
-      //if (headTokenTag.startsWith("NNP") && neType != null) {
-      this.synsets = getSynsetSet(this);
-    }
-    else {
-      this.synsets=Collections.EMPTY_SET;
-    }
-    gender = GenderEnum.UNKNOWN;
-    this.genderProb = 0d;
-    number = NumberEnum.UNKNOWN;
-    this.numberProb = 0d;
-  }
-  */
-
   private void initHeads(int headIndex) {
     this.headTokenIndex = headIndex;
     this.headToken = (Parse) tokens[getHeadTokenIndex()];
@@ -216,9 +177,7 @@ public class MentionContext extends Context {
   }
 
   /**
-   * Returns the parse of the head token for this mention.
-   * 
-   * @return the parse of the head token for this mention.
+   * @return Retrieves the parse of the head token for this mention.
    */
   public Parse getHeadTokenParse() {
     return headToken;
@@ -241,28 +200,24 @@ public class MentionContext extends Context {
   }
 
   /**
-   * Returns a sentence-based token span for this mention.  If this mention consist
+   * Returns a sentence-based token span for this mention. If this mention consist
    * of the third, fourth, and fifth token, then this span will be 2..4.
    * 
-   * @return a sentence-based token span for this mention.
+   * @return Retrieves a sentence-based token span for this mention.
    */
   public Span getIndexSpan() {
     return indexSpan;
   }
 
   /**
-   * Returns the index of the noun phrase for this mention in a sentence.
-   * 
-   * @return the index of the noun phrase for this mention in a sentence.
+   * @return Retrieves the index of the noun phrase for this mention in a sentence.
    */
   public int getNounPhraseSentenceIndex() {
     return nounLocation;
   }
 
   /**
-   * Returns the index of the noun phrase for this mention in a document.
-   * 
-   * @return the index of the noun phrase for this mention in a document.
+   * @return Retrieves the index of the noun phrase for this mention in a document.
    */
   public int getNounPhraseDocumentIndex() {
     return nounNumber;
@@ -291,36 +246,28 @@ public class MentionContext extends Context {
   }
 
   /**
-   * Returns the index of the sentence which contains this mention.
-   * 
-   * @return the index of the sentence which contains this mention.
+   * @return Retrieves the index of the sentence which contains this mention.
    */
   public int getSentenceNumber() {
     return sentenceNumber;
   }
 
   /** 
-   * Returns the parse for the first token in this mention.
-   * 
-   * @return The parse for the first token in this mention.
+   * @return Retrieves the parse for the first token in this mention.
    */
   public Parse getFirstToken() {
     return firstToken;
   }
 
   /** 
-   * Returns the text for the first token of the mention.
-   * 
-   * @return The text for the first token of the mention.
+   * @return Retrieves the text for the first token of the mention.
    */
   public String getFirstTokenText() {
     return firstTokenText;
   }
 
   /**
-   * Returns the pos-tag of the first token of this mention.
-   * 
-   * @return the pos-tag of the first token of this mention.
+   * @return Retrieves the pos-tag of the first token of this mention.
    */
   public String getFirstTokenTag() {
     return firstTokenTag;
@@ -344,27 +291,6 @@ public class MentionContext extends Context {
     return parse.toString();
   }
 
-  /*
-  private static String[] getLemmas(MentionContext xec) {
-    //TODO: Try multi-word lemmas first.
-    String word = xec.getHeadTokenText();
-    return DictionaryFactory.getDictionary().getLemmas(word,"NN");
-  }
-
-  private static Set getSynsetSet(MentionContext xec) {
-    //System.err.println("getting synsets for mention:"+xec.toText());
-    Set synsetSet = new HashSet();
-    String[] lemmas = getLemmas(xec);
-    for (int li = 0; li < lemmas.length; li++) {
-      String[] synsets = DictionaryFactory.getDictionary().getParentSenseKeys(lemmas[li],"NN",0);
-      for (int si=0,sn=synsets.length;si<sn;si++) {
-        synsetSet.add(synsets[si]);
-      }
-    }
-    return (synsetSet);
-  }
-  */
-
   /**
    * Assigns the specified gender with the specified probability to this mention.
    * 
@@ -377,18 +303,14 @@ public class MentionContext extends Context {
   }
 
   /**
-   * Returns the gender of this mention.
-   * 
-   * @return The gender of this mention.
+   * @return Retrieves the gender of this mention.
    */
   public GenderEnum getGender() {
     return gender;
   }
 
   /**
-   * Returns the probability associated with the gender assignment.
-   * 
-   * @return The probability associated with the gender assignment.
+   * @return Retrieves the probability associated with the gender assignment.
    */
   public double getGenderProb() {
     return genderProb;
@@ -406,18 +328,14 @@ public class MentionContext extends Context {
   }
 
   /**
-   * Returns the number of this mention.
-   * 
-   * @return The number of this mention.
+   * @return Retrieves the number of this mention.
    */
   public NumberEnum getNumber() {
     return number;
   }
 
   /**
-   * Returns the probability associated with the number assignment.
-   * 
-   * @return The probability associated with the number assignment.
+   * @return Retrieves the probability associated with the number assignment.
    */
   public double getNumberProb() {
     return numberProb;

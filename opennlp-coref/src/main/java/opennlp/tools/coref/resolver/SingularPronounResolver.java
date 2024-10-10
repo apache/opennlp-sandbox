@@ -25,12 +25,17 @@ import java.util.List;
 import opennlp.tools.coref.DiscourseEntity;
 import opennlp.tools.coref.mention.MentionContext;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * This class resolver singular pronouns such as "he", "she", "it" and their various forms.
  *
  * @see MaxentResolver
  */
 public class SingularPronounResolver extends MaxentResolver {
+
+  private static final Logger logger = LoggerFactory.getLogger(SingularPronounResolver.class);
 
   public SingularPronounResolver(String modelDirectory, ResolverMode m) throws IOException {
     super(modelDirectory, "pmodel", m, 30);
@@ -43,8 +48,9 @@ public class SingularPronounResolver extends MaxentResolver {
     this.numSentencesBack = 2;
   }
 
+  @Override
   public boolean canResolve(MentionContext mention) {
-    //System.err.println("MaxentSingularPronounResolver.canResolve: ec= ("+mention.id+") "+ mention.toText());
+    logger.debug("CanResolve: ec=({}) {}", mention.getId(), mention.toText());
     String tag = mention.getHeadTokenTag();
     return tag != null && tag.startsWith("PRP")
         && ResolverUtils.SINGULAR_THIRD_PERSON_PRONOUN_PATTERN.matcher(mention.getHeadTokenText()).matches();
@@ -94,13 +100,13 @@ public class SingularPronounResolver extends MaxentResolver {
       }
       */
     }
-    return (features);
+    return features;
   }
 
   @Override
   public boolean excluded(MentionContext mention, DiscourseEntity entity) {
     if (super.excluded(mention, entity)) {
-      return (true);
+      return true;
     }
     String mentionGender = null;
 
@@ -114,20 +120,16 @@ public class SingularPronounResolver extends MaxentResolver {
         }
         String entityGender = ResolverUtils.getPronounGender(entityMention.getHeadTokenText());
         if (!entityGender.equals("u") && !mentionGender.equals(entityGender)) {
-          return (true);
+          return true;
         }
       }
     }
-    return (false);
+    return false;
   }
 
   @Override
   protected boolean outOfRange(MentionContext mention, DiscourseEntity entity) {
     MentionContext cec = entity.getLastExtent();
-    //System.err.println("MaxentSingularPronounresolve.outOfRange: ["+entity.getLastExtent().toText()
-    // +" ("+entity.getId()+")] ["+mention.toText()+" ("+mention.getId()+")] entity.sentenceNumber=("
-    // +entity.getLastExtent().getSentenceNumber()+")-mention.sentenceNumber=("
-    // +mention.getSentenceNumber()+") > "+numSentencesBack);
-    return (mention.getSentenceNumber() - cec.getSentenceNumber() > numSentencesBack);
+    return mention.getSentenceNumber() - cec.getSentenceNumber() > numSentencesBack;
   }
 }

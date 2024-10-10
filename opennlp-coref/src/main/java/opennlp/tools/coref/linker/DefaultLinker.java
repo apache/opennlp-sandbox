@@ -42,6 +42,9 @@ import opennlp.tools.coref.sim.MaxentCompatibilityModel;
 import opennlp.tools.coref.sim.Number;
 import opennlp.tools.coref.sim.SimilarityModel;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * This class perform coreference for treebank style parses or for noun-phrase chunked data.
  * <p>
@@ -52,6 +55,8 @@ import opennlp.tools.coref.sim.SimilarityModel;
  * @see Linker
  */
 public class DefaultLinker extends AbstractLinker {
+
+  private static final Logger logger = LoggerFactory.getLogger(DefaultLinker.class);
 
   protected MaxentCompatibilityModel mcm;
 
@@ -164,7 +169,7 @@ public class DefaultLinker extends AbstractLinker {
       resolvers[8] = new PerfectResolver();
     }
     else {
-      System.err.println("DefaultLinker: Invalid Mode");
+      logger.warn("Invalid linker mode '{}' detected during creation of DefaultLinker", mode);
     }
   }
 

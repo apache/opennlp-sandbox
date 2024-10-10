@@ -25,11 +25,15 @@ import opennlp.tools.coref.DiscourseEntity;
 import opennlp.tools.coref.DiscourseModel;
 import opennlp.tools.coref.mention.MentionContext;
 import opennlp.tools.coref.mention.Parse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Default implementation of some methods in the {@link Resolver} interface.
  */
 public abstract class AbstractResolver implements Resolver {
+
+  private static final Logger logger = LoggerFactory.getLogger(AbstractResolver.class);
 
   /** 
    * The number of previous entities that resolver should consider.
@@ -175,7 +179,7 @@ public abstract class AbstractResolver implements Resolver {
         return cde;
       }
     }
-    //System.err.println("AbstractResolver.retain: non-referring entity with id: "+ec.toText()+" id="+ec.id);
+    logger.debug("Non-referring entity with id={}: {}", mention.getId(), mention.toText());
     return null;
   }
 

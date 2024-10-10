@@ -33,11 +33,16 @@ import opennlp.tools.coref.sim.GenderEnum;
 import opennlp.tools.coref.sim.NumberEnum;
 import opennlp.tools.coref.sim.TestSimilarityModel;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * This class provides a set of utilities for turning mentions into normalized strings and features.
  */
 public class ResolverUtils {
-  
+
+  private static final Logger logger = LoggerFactory.getLogger(ResolverUtils.class);
+
   private static final Pattern ENDS_WITH_PERIOD = Pattern.compile("\\.$");
   private static final Pattern INITIAL_CAPS = Pattern.compile("^[A-Z]");
 
@@ -210,7 +215,7 @@ public class ResolverUtils {
   }
 
   public static String getExactMatchFeature(MentionContext ec, MentionContext xec) {
-    //System.err.println("getExactMatchFeature: ec="+mentionString(ec)+" mc="+mentionString(xec));
+    logger.debug("GetExactMatchFeature: ec={} mc={}", mentionString(ec), mentionString(xec));
     if (mentionString(ec).equals(mentionString(xec))) {
       return "exactMatch";
     }
@@ -263,11 +268,7 @@ public class ResolverUtils {
       }
       Parse[] xtoks = entityMention.getTokenParses();
       int headIndex = entityMention.getHeadTokenIndex();
-      //if (!mention.getHeadTokenTag().equals(entityMention.getHeadTokenTag())) {
-      //  //System.err.println("skipping "+mention.headTokenText+" with "+xec.headTokenText
-      // +" because "+mention.headTokenTag+" != "+xec.headTokenTag);
-      //  continue;
-      //}  want to match NN NNP
+
       String entityMentionHeadString = entityMention.getHeadTokenText().toLowerCase();
       // model lexical similarity
       if (mentionHeadString.equals(entityMentionHeadString)) {
@@ -315,7 +316,7 @@ public class ResolverUtils {
   }
 
   public static boolean isSubstring(String ecStrip, String xecStrip) {
-    //System.err.println("MaxentResolver.isSubstring: ec="+ecStrip+" xec="+xecStrip);
+    logger.debug("IsSubstring: ec={} xec={}", ecStrip, xecStrip);
     int io = xecStrip.indexOf(ecStrip);
     if (io != -1) {
       //check boundries
@@ -339,7 +340,7 @@ public class ResolverUtils {
       String token = mtokens[ti].toString();
       sb.append(" ").append(token);
     }
-    //System.err.println("mentionString "+ec+" == "+sb.toString()+" mtokens.length="+mtokens.length);
+    logger.debug("mentionString {} == {} mtokens.length={}", ec, sb, mtokens.length);
     return sb.toString();
   }
 
@@ -357,7 +358,7 @@ public class ResolverUtils {
     Parse[] mtokens = mention.getTokenParses();
     int end = mention.getHeadTokenIndex() + 1;
     if (start == end) {
-      //System.err.println("stripNp: return null 1");
+      logger.trace("stripNp: return null 1");
       return null;
     }
     //strip determiners
@@ -365,7 +366,7 @@ public class ResolverUtils {
       start++;
     }
     if (start == end) {
-      //System.err.println("stripNp: return null 2");
+      logger.trace("stripNp: return null 2");
       return null;
     }
     //get to first NNP
@@ -378,16 +379,16 @@ public class ResolverUtils {
       start++;
     }
     if (start == end) {
-      //System.err.println("stripNp: return null 3");
+      logger.trace("stripNp: return null 3");
       return null;
     }
     if (start + 1 != end) { // don't do this on head words, to keep "U.S."
-      //strip off honorifics in begining
+      //strip off honorifics in beginning
       if (HONORIFICS_PATTERN.matcher(mtokens[start].toString()).find()) {
         start++;
       }
       if (start == end) {
-        //System.err.println("stripNp: return null 4");
+        logger.trace("stripNp: return null 4");
         return null;
       }
       //strip off and honerifics on the end
@@ -396,7 +397,7 @@ public class ResolverUtils {
       }
     }
     if (start == end) {
-      //System.err.println("stripNp: return null 5");
+      logger.trace("stripNp: return null 5");
       return null;
     }
     StringBuilder strip = new StringBuilder();
@@ -462,7 +463,7 @@ public class ResolverUtils {
     boolean foundIncompatiblePronoun = false;
     if (mention.getHeadTokenTag().startsWith("PRP")) {
       Map<String, String> pronounMap = getPronounFeatureMap(mention.getHeadTokenText());
-      //System.err.println("getPronounMatchFeatures.pronounMap:"+pronounMap);
+      logger.debug("PronounMap: {}", pronounMap);
       for (Iterator<MentionContext> mi = entity.getMentions();mi.hasNext();) {
         MentionContext candidateMention = mi.next();
         if (candidateMention.getHeadTokenTag().startsWith("PRP")) {
@@ -471,9 +472,8 @@ public class ResolverUtils {
             break;
           }
           else {
-            Map<String, String> candidatePronounMap =
-                getPronounFeatureMap(candidateMention.getHeadTokenText());
-            //System.err.println("getPronounMatchFeatures.candidatePronounMap:"+candidatePronounMap);
+            Map<String, String> candidatePronounMap = getPronounFeatureMap(candidateMention.getHeadTokenText());
+            logger.debug("CandidatePronounMap: {}", candidatePronounMap);
             boolean allKeysMatch = true;
             for (String key : pronounMap.keySet()) {
               String cfv = candidatePronounMap.get(key);
@@ -505,9 +505,10 @@ public class ResolverUtils {
 
   /**
    * Returns distance features for the specified mention and entity.
-   * @param mention The mention.
-   * @param entity The entity.
-   * @return list of distance features for the specified mention and entity.
+   * 
+   * @param mention The {@link MentionContext mention}.
+   * @param entity The {@link DiscourseEntity entity}.
+   * @return A list of distance features for the specified mention and entity.
    */
   public static List<String> getDistanceFeatures(MentionContext mention, DiscourseEntity entity) {
     List<String> features = new ArrayList<>();
@@ -590,7 +591,7 @@ public class ResolverUtils {
 
   public static String getGenderCompatibilityFeature(MentionContext ec, DiscourseEntity de) {
     GenderEnum eg = de.getGender();
-    //System.err.println("getGenderCompatibility: mention="+ec.getGender()+" entity="+eg);
+    logger.debug("GenderCompatibility: mention={} entity={}", ec.getGender(), eg);
     if (eg == GenderEnum.UNKNOWN || ec.getGender() == GenderEnum.UNKNOWN) {
       return GEN_UNKNOWN;
     }
@@ -622,9 +623,8 @@ public class ResolverUtils {
       else {
         return SIM_INCOMPATIBLE;
       }
-    }
-    else {
-      System.err.println("MaxentResolver: Uninitialized Semantic Model");
+    } else {
+      logger.warn("Uninitialized Semantic Model");
       return SIM_UNKNOWN;
     }
   }

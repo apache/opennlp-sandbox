@@ -31,48 +31,16 @@ public class ShallowParseMentionFinder extends AbstractMentionFinder {
   }
 
   /**
-   * Retrieves the one and only existing instance.
-   *
-   * @param hf
-   * @return one and only existing instance
+   * @param hf A valid {@link HeadFinder} to assign if no instance exists.
+   * @return Retrieves the one and only existing instance.
    */
   public static ShallowParseMentionFinder getInstance(HeadFinder hf) {
     if (instance == null) {
       instance = new ShallowParseMentionFinder(hf);
-    }
-    else if (instance.headFinder != hf) {
+    } else if (instance.headFinder != hf) {
       instance = new ShallowParseMentionFinder(hf);
     }
     return instance;
   }
 
-  /*
-  protected final List getNounPhrases(Parse p) {
-    List nps = p.getNounPhrases();
-    List basals = new ArrayList();
-    for (int ni=0,ns=nps.size();ni<ns;ni++) {
-      Parse np = (Parse) nps.get(ni);
-      //System.err.println("getNounPhrases: np="+np);
-      if (isBasalNounPhrase(np)) {
-        //System.err.println("basal");
-        basals.add(np);
-      }
-      else if (isPossessive(np)) {
-        //System.err.println("pos np");
-        basals.add(np);
-        basals.addAll(getNounPhrases(np));
-      }
-      else if (isOfPrepPhrase(np)) {
-        //System.err.println("of np");
-        basals.add(np);
-        basals.addAll(getNounPhrases(np));
-      }
-      else {
-        //System.err.println("big np");
-        basals.addAll(getNounPhrases(np));
-      }
-    }
-    return(basals);
-  }
-  */
 }

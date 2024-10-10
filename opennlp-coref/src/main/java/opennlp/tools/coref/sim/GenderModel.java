@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package opennlp.tools.coref.sim;
 
 import java.io.BufferedInputStream;
@@ -30,7 +29,6 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,6 +38,7 @@ import java.util.List;
 import java.util.Set;
 
 import opennlp.tools.coref.resolver.ResolverUtils;
+import opennlp.tools.coref.resolver.SpeechPronounResolver;
 import opennlp.tools.ml.maxent.GISModel;
 import opennlp.tools.ml.maxent.GISTrainer;
 import opennlp.tools.ml.maxent.io.BinaryGISModelReader;
@@ -48,11 +47,15 @@ import opennlp.tools.ml.model.Event;
 import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.util.ObjectStreamUtils;
 import opennlp.tools.util.TrainingParameters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Class which models the gender of a particular mentions and entities made up of mentions.
  */
 public class GenderModel implements TestGenderModel, TrainSimilarityModel {
+
+  private static final Logger logger = LoggerFactory.getLogger(GenderModel.class);
 
   private int maleIndex;
   private int femaleIndex;
@@ -113,16 +116,16 @@ public class GenderModel implements TestGenderModel, TrainSimilarityModel {
     features.add("n=" + np1.getNameType());
     if (np1.getNameType() != null && np1.getNameType().equals("person")) {
       Object[] tokens = np1.getTokens();
-      //System.err.println("GenderModel.getFeatures: person name="+np1);
+      logger.debug("GetFeatures: person name={}", np1);
       for (int ti = 0; ti < np1.getHeadTokenIndex() || ti == 0; ti++) {
         String name = tokens[ti].toString().toLowerCase();
         if (femaleNames.contains(name)) {
           features.add("fem");
-          //System.err.println("GenderModel.getFeatures: person (fem) "+np1);
+          logger.debug("GenderModel.getFeatures: person (fem) {}", np1);
         }
         if (maleNames.contains(name)) {
           features.add("mas");
-          //System.err.println("GenderModel.getFeatures: person (mas) "+np1);
+          logger.debug("GenderModel.getFeatures: person (mas) {}", np1);
         }
       }
     }
@@ -178,12 +181,13 @@ public class GenderModel implements TestGenderModel, TrainSimilarityModel {
     return GenderEnum.UNKNOWN;
   }
 
+  @Override
   @SuppressWarnings("unchecked")
   public void setExtents(Context[] extentContexts) {
     HashMap<Integer,Context> entities = new HashMap<>();
     List<Context> singletons = new ArrayList<>();
     for (Context ec : extentContexts) {
-      //System.err.println("GenderModel.setExtents: ec("+ec.getId()+") "+ec.toText());
+      logger.debug("GenderModel.setExtents: ec({}) {}", ec.getId(), ec);
       if (ec.getId() != -1) {
         entities.put(ec.getId(), ec);
       } else {
@@ -229,9 +233,10 @@ public class GenderModel implements TestGenderModel, TrainSimilarityModel {
     }
   }
 
+  // TODO Extract a Test case from this example
   public static void main(String[] args) throws IOException {
     if (args.length == 0) {
-      System.err.println("Usage: GenderModel modelName < tiger/NN bear/NN");
+      logger.info("Usage: GenderModel modelName < tiger/NN bear/NN");
       System.exit(1);
     }
     String modelName = args[0];
@@ -242,15 +247,15 @@ public class GenderModel implements TestGenderModel, TrainSimilarityModel {
     for (String line = in.readLine(); line != null; line = in.readLine()) {
       String[] words = line.split(" ");
       double[] dist = model.genderDistribution(Context.parseContext(words[0]));
-      System.out.println("m=" + dist[model.getMaleIndex()] + " f=" + dist[model.getFemaleIndex()]
-          + " n=" + dist[model.getNeuterIndex()] + " " + model.getFeatures(Context.parseContext(words[0])));
+      logger.debug("m={} f={} n={} {}", dist[model.getMaleIndex()], dist[model.getFemaleIndex()],
+              dist[model.getNeuterIndex()], model.getFeatures(Context.parseContext(words[0])));
     }
   }
 
   @Override
   public double[] genderDistribution(Context np1) {
     List<String> features = getFeatures(np1);
-    //System.err.println("GenderModel.genderDistribution: "+features);
+    logger.debug("GenderDistribution: {}", features);
     return testModel.eval(features.toArray(new String[0]));
   }
 

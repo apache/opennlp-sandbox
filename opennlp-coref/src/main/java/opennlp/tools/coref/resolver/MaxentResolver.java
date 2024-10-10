@@ -39,6 +39,7 @@ import java.util.zip.GZIPInputStream;
 import opennlp.tools.coref.DiscourseEntity;
 import opennlp.tools.coref.DiscourseModel;
 import opennlp.tools.coref.mention.MentionContext;
+import opennlp.tools.coref.mention.PTBHeadFinder;
 import opennlp.tools.coref.sim.TestSimilarityModel;
 import opennlp.tools.ml.maxent.GISModel;
 import opennlp.tools.ml.maxent.GISTrainer;
@@ -49,12 +50,16 @@ import opennlp.tools.ml.model.FileEventStream;
 import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.util.ObjectStreamUtils;
 import opennlp.tools.util.TrainingParameters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *  Provides common functionality used by classes which implement the {@link Resolver} class
  *  and use maximum entropy models to make resolution decisions.
  */
 public abstract class MaxentResolver extends AbstractResolver {
+
+  private static final Logger logger = LoggerFactory.getLogger(MaxentResolver.class);
 
   /** Outcomes when two mentions are coreferent. */
   public static final String SAME = "same";
@@ -111,7 +116,6 @@ public abstract class MaxentResolver extends AbstractResolver {
     this.preferFirstReferent = preferFirstReferent;
   }
 
-
   /**
    * Creates a maximum-entropy-based resolver with the specified model name, using the
    * specified mode, which will look the specified number of entities back for a referent and
@@ -145,7 +149,7 @@ public abstract class MaxentResolver extends AbstractResolver {
       events = new ArrayList<>();
     }
     else {
-      System.err.println("Unknown mode: " + this.mode);
+      logger.warn("Invalid resolver mode '{}' detected during resolve in MaxentResolver", this.mode);
     }
     //add one for non-referent possibility
     candProbs = new double[getNumEntities() + 1];
@@ -190,7 +194,7 @@ public abstract class MaxentResolver extends AbstractResolver {
     int ei = 0;
     double nonReferentialProbability = nonReferentialResolver.getNonReferentialProbability(ec);
     if (DEBUG) {
-      System.err.println(this + ".resolve: " + ec.toText() + " -> " +  "null " + nonReferentialProbability);
+      logger.debug("Resolve: {} -> null {}", ec.toText(), nonReferentialProbability);
     }
     for (; ei < getNumEntities(dm); ei++) {
       de = dm.getEntity(ei);
@@ -200,23 +204,20 @@ public abstract class MaxentResolver extends AbstractResolver {
       if (excluded(ec, de)) {
         candProbs[ei] = 0;
         if (DEBUG) {
-          System.err.println("excluded " + this + ".resolve: " + ec.toText() + " -> " + de + " "
-              + candProbs[ei]);
+          logger.debug("Excluded during resolve: {} -> {} {}", ec.toText(), de, candProbs[ei]);
         }
       }
       else {
-
         List<String> lfeatures = getFeatures(ec, de);
         String[] features = lfeatures.toArray(new String[0]);
         try {
           candProbs[ei] = model.eval(features)[sameIndex];
-        }
-        catch (ArrayIndexOutOfBoundsException e) {
+        } catch (ArrayIndexOutOfBoundsException e) {
           candProbs[ei] = 0;
         }
         if (DEBUG) {
-          System.err.println(this + ".resolve: " + ec.toText() + " -> " + de + " ("
-              + ec.getGender() + "," + de.getGender() + ") " + candProbs[ei] + " " + lfeatures);
+          logger.debug("Resolve: {} -> {} ({}, {}) {} {}",
+                  ec.toText(), de, ec.getGender(), de.getGender(), candProbs[ei], lfeatures);
         }
       }
       if (preferFirstReferent && candProbs[ei] > nonReferentialProbability) {
@@ -261,7 +262,6 @@ public abstract class MaxentResolver extends AbstractResolver {
 
   @Override
   public DiscourseEntity retain(MentionContext mention, DiscourseModel dm) {
-    //System.err.println(this+".retain("+ec+") "+mode);
     if (ResolverMode.TRAIN == mode) {
       DiscourseEntity de = null;
       boolean referentFound = false;
@@ -272,16 +272,16 @@ public abstract class MaxentResolver extends AbstractResolver {
         MentionContext entityMention = cde.getLastExtent();
         if (outOfRange(mention, cde)) {
           if (mention.getId() != -1 && !referentFound) {
-            //System.err.println("retain: Referent out of range: "+ec.toText()+" "+ec.parse.getSpan());
+            // what is or was 'ec' here?
+            // logger.debug("Referent out of range: {} {}", ec.toText(), ec.parse.getSpan());
           }
           break;
         }
         if (excluded(mention, cde)) {
           if (showExclusions) {
             if (mention.getId() != -1 && entityMention.getId() == mention.getId()) {
-              System.err.println(this + ".retain: Referent excluded: (" + mention.getId() + ") "
-                  + mention.toText() + " " + mention.getIndexSpan() + " -> (" + entityMention.getId()
-                  + ") " + entityMention.toText() + " " + entityMention.getSpan() + " " + this);
+              logger.debug("Referent excluded: ({}) {} {} -> ({}) {} {}", mention.getId(), mention.toText(),
+                      mention.getIndexSpan(), entityMention.getId(), entityMention.toText(), entityMention.getSpan());
             }
           }
         }
@@ -292,17 +292,16 @@ public abstract class MaxentResolver extends AbstractResolver {
           // || (!nonReferentFound && useAsDifferentExample)) {
             List<String> features = getFeatures(mention, cde);
 
-            //add Event to Model
+            // add Event to Model
             if (DEBUG) {
-              System.err.println(this + ".retain: " + mention.getId() + " " + mention.toText()
-                  + " -> " + entityMention.getId() + " " + cde);
+              logger.debug("Retain: {} {}  -> {} {}", mention.getId(), mention.toText(), entityMention.getId(), cde);
             }
 
             if (mention.getId() != -1 && entityMention.getId() == mention.getId()) {
               referentFound = true;
               events.add(new Event(SAME, features.toArray(new String[0])));
               de = cde;
-              //System.err.println("MaxentResolver.retain: resolved at "+ei);
+              logger.debug("Retain: resolved at {}", ei);
               // incrementing count for key 'ei'
               distances.merge(ei, 1, Integer::sum);
             }
@@ -360,7 +359,6 @@ public abstract class MaxentResolver extends AbstractResolver {
         }
       }
       if (DEBUG) {
-        System.err.println(this + " referential");
         Path p = Path.of(modelName + ".events");
         try (Writer writer = Files.newBufferedWriter(p, StandardCharsets.UTF_8,
                 StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {

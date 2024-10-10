@@ -17,7 +17,6 @@
 
 package opennlp.tools.coref.dictionary;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,19 +26,23 @@ import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.data.Pointer;
 import net.sf.extjwnl.data.PointerType;
 import net.sf.extjwnl.data.Synset;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * An implementation of the Dictionary interface using the JWNL library.
+ * An implementation of the {@link Dictionary} using the JWNL library.
  *
  * @see Dictionary
  */
 public class JWNLDictionary implements Dictionary {
 
+  private static final Logger logger = LoggerFactory.getLogger(JWNLDictionary.class);
+
   private final net.sf.extjwnl.dictionary.Dictionary dict;
   private final net.sf.extjwnl.dictionary.MorphologicalProcessor morphy;
   private static final String[] EMPTY = new String[0];
 
-  public JWNLDictionary() throws IOException, JWNLException {
+  public JWNLDictionary() throws JWNLException {
     dict = net.sf.extjwnl.dictionary.Dictionary.getDefaultResourceInstance();
     morphy = dict.getMorphologicalProcessor();
   }
@@ -67,22 +70,22 @@ public class JWNLDictionary implements Dictionary {
       return lemmas.toArray(new String[0]);
     }
     catch (JWNLException e) {
-      e.printStackTrace();
+      logger.warn("Problem retrieving lemmas for word '{}' (tag='{}'): {}", word, tag, e.getMessage());
       return null;
     }
   }
 
   @Override
-  public String getSenseKey(String lemma, String pos,int sense) {
+  public String getSenseKey(String lemma, String pos, int sense) {
     try {
-      IndexWord iw = dict.getIndexWord(POS.NOUN,lemma);
+      IndexWord iw = dict.getIndexWord(POS.NOUN, lemma);
       if (iw == null) {
         return null;
       }
       return String.valueOf(iw.getSynsetOffsets()[sense]);
     }
     catch (JWNLException e) {
-      e.printStackTrace();
+      logger.warn("Problem retrieving sense key for lemma '{}': {}", lemma, e.getMessage());
       return null;
     }
   }
@@ -97,6 +100,7 @@ public class JWNLDictionary implements Dictionary {
       return iw.getSynsetOffsets().length;
     }
     catch (JWNLException e) {
+      logger.warn("Problem retrieving number of senses for lemma '{}': {}", lemma, e.getMessage());
       return 0;
     }
   }
@@ -127,7 +131,7 @@ public class JWNLDictionary implements Dictionary {
       }
     }
     catch (JWNLException e) {
-      e.printStackTrace();
+      logger.warn("Problem retrieving parent sense keys for lemma '{}' (pos='{}'): {}", lemma, pos, e.getMessage());
       return null;
     }
   }
