@@ -27,7 +27,7 @@ public interface TrainSimilarityModel {
   void trainModel() throws IOException;
   /**
    * Creates similarity training pairs based on the specified extents.
-   * Extents are considered compatible is they are in the same coreference chain,
+   * Extents are considered compatible if they are in the same coreference chain,
    * have the same named-entity tag, or share a common head word.
    * <p>
    * Incompatible extents are chosen at random from the set of extents which don't meet these criteria.

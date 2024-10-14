@@ -31,16 +31,24 @@ public class MucCorefSampleStream extends FilterObjectStream<String, RawCorefSam
   private final Tokenizer tokenizer;
   
   private final List<RawCorefSample> documents = new ArrayList<>();
-  
+
+  /**
+   * Initializes a {@link MucCorefSampleStream}.
+   *
+   * @param tokenizer The {@link Tokenizer} to use. Must not be {@code null}.
+   * @param documents The {@link ObjectStream<String> documents} as input. Must not be {@code null}.
+   *
+   * @throws IllegalArgumentException Thrown if parameters are invalid.
+   */
   public MucCorefSampleStream(Tokenizer tokenizer, ObjectStream<String> documents) {
     super(new DocumentSplitterStream(documents));
     this.tokenizer = tokenizer;
   }
 
+  @Override
   public RawCorefSample read() throws IOException {
     
     if (documents.isEmpty()) {
-      
       String document = samples.read();
       
       if (document != null) {

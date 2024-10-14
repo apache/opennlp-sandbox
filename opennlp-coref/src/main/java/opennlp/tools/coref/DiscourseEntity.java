@@ -22,8 +22,9 @@ import opennlp.tools.coref.sim.GenderEnum;
 import opennlp.tools.coref.sim.NumberEnum;
 
 /**
- * Represents an entity in a {@link DiscourseModel}.
+ * A specialized {@link DiscourseElement} representing an entity in a {@link DiscourseModel}.
  *
+ * @see DiscourseElement
  * @see DiscourseModel
  */
 public class DiscourseEntity extends DiscourseElement {
@@ -35,13 +36,14 @@ public class DiscourseEntity extends DiscourseElement {
   private double numberProb;
 
   /**
-   * Creates a new entity based on the specified mention and its specified gender and number properties.
+   * Instantiates a {@link DiscourseEntity} based on the specified mention and its specified gender and
+   * number properties.
    *
    * @param mention The first mention of this entity.
-   * @param gender The gender of this entity.
-   * @param genderProb The probability that the specified gender is correct.
-   * @param number The number for this entity.
-   * @param numberProb The probability that the specified number is correct.
+   * @param gender The {@link GenderEnum gender} of this entity.
+   * @param genderProb The probability that the specified gender is correct, in the range from {@code [0.0, ..., 1.0]}.
+   * @param number The {@link NumberEnum number} for this entity.
+   * @param numberProb The probability that the specified number is correct, in the range from {@code [0.0, ..., 1.0]}.
    */
   public DiscourseEntity(MentionContext mention, GenderEnum gender, double genderProb,
                          NumberEnum number, double numberProb) {
@@ -53,14 +55,13 @@ public class DiscourseEntity extends DiscourseElement {
   }
 
   /**
-   * Creates a new entity based on the specified mention.
+   * Instantiates a {@link DiscourseEntity} with unknown {@link GenderEnum gender}
+   * and {@link NumberEnum number} properties.
    *
    * @param mention The first mention of this entity.
    */
   public DiscourseEntity(MentionContext mention) {
-    super(mention);
-    gender = GenderEnum.UNKNOWN;
-    number = NumberEnum.UNKNOWN;
+    this(mention, GenderEnum.UNKNOWN, 0.0d, NumberEnum.UNKNOWN, 0.0d);
   }
 
   /**
@@ -83,43 +84,35 @@ public class DiscourseEntity extends DiscourseElement {
   }
 
   /**
-   * Returns the gender associated with this entity.
-   *
-   * @return the gender associated with this entity.
+   * @return Retrieves the {@link GenderEnum gender} associated with this entity.
    */
   public GenderEnum getGender() {
     return gender;
   }
 
   /**
-   * Returns the probability for the gender associated with this entity.
-   *
-   * @return the probability for the gender associated with this entity.
+   * @return Retrieves the probability for the {@link GenderEnum gender} associated with this entity.
    */
   public double getGenderProbability() {
     return genderProb;
   }
 
   /**
-   * Returns the number associated with this entity.
-   *
-   * @return the number associated with this entity.
+   * @return Retrieves the {@link NumberEnum number} associated with this entity.
    */
   public NumberEnum getNumber() {
     return number;
   }
 
   /**
-   * Returns the probability for the number associated with this entity.
-   *
-   * @return the probability for the number associated with this entity.
+   * @return Retrieves the probability for the {@link NumberEnum number} associated with this entity.
    */
   public double getNumberProbability() {
     return numberProb;
   }
 
   /**
-   * Specifies the gender of this entity.
+   * Specifies the {@link GenderEnum gender} of this entity.
    *
    * @param gender The gender.
    */
@@ -128,27 +121,27 @@ public class DiscourseEntity extends DiscourseElement {
   }
 
   /**
-   * Specifies the probability of the gender of this entity.
+   * Specifies the probability of the {@link GenderEnum gender} of this entity.
    *
-   * @param p the probability of the gender of this entity.
+   * @param p the probability of the gender, in the range from {@code [0.0, ..., 1.0]}.
    */
   public void setGenderProbability(double p) {
     genderProb = p;
   }
 
   /**
-   * Specifies the number of this entity.
+   * Specifies the {@link NumberEnum number} of this entity.
    *
-   * @param number
+   * @param number The {@link NumberEnum number}.
    */
   public void setNumber(NumberEnum number) {
     this.number = number;
   }
 
   /**
-   * Specifies the probability of the number of this entity.
+   * Specifies the probability of the {@link NumberEnum number} of this entity.
    *
-   * @param p the probability of the number of this entity.
+   * @param p the probability of the number, in the range from {@code [0.0, ..., 1.0]}.
    */
   public void setNumberProbability(double p) {
     numberProb = p;

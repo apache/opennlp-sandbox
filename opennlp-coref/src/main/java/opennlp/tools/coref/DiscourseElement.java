@@ -25,8 +25,7 @@ import opennlp.tools.coref.mention.MentionContext;
 import opennlp.tools.util.ReverseListIterator;
 
 /**
- * Represents an item in which can be put into a {@link DiscourseModel}.
- * Objects which are to be placed in such a model should extend this class.
+ * Abstract form of an item which can be put into a {@link DiscourseModel}.
  *
  * @see DiscourseModel
  */
@@ -48,28 +47,23 @@ public abstract class DiscourseElement {
   }
 
   /**
-   * Returns an iterator over the mentions which iterates through them
-   * based on which were most recently mentioned.
-   * @return the {@link Iterator}.
+   * @return Retrieves an {@link Iterator} over the mentions which iterates through them
+   * based on which were most recently mentioned..
    */
   public Iterator<MentionContext> getRecentMentions() {
     return new ReverseListIterator<>(extents);
   }
 
   /**
-   * Returns an iterator over the mentions which iterates through them based on
-   * their occurrence in the document.
-   *
-   * @return the {@link Iterator}
+   * @return Retrieves an {@link Iterator} over the mentions which iterates through them
+   * based on their occurrence in the document.
    */
   public Iterator<MentionContext> getMentions() {
     return extents.listIterator();
   }
 
   /**
-   * Returns the number of mentions in this element.
-   *
-   * @return number of mentions
+   * @return Retrieves the number of mentions in this element.
    */
   public int getNumMentions() {
     return extents.size();
@@ -85,7 +79,7 @@ public abstract class DiscourseElement {
   }
 
   /**
-   * Returns the last mention for this element.  For appositives this will be the
+   * Returns the last mention for this element. For appositives this will be the
    * first part of the appositive.
    * @return the last mention for this element.
    */
@@ -102,9 +96,7 @@ public abstract class DiscourseElement {
   }
 
   /**
-   * Returns the id associated with this element.
-   *
-   * @return the id associated with this element.
+   * @return Retrieves the id associated with this element.
    */
   public int getId() {
     return id;

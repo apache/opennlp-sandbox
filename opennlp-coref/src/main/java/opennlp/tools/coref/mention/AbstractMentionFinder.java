@@ -162,7 +162,7 @@ public abstract class AbstractMentionFinder implements MentionFinder {
           if (ti - 1 >= 0 && (npTokens.get(ti - 1)).getSyntacticType().startsWith("NN")) {
             Span npSpan = new Span((npTokens.get(ti + 1)).getSpan().getStart(),
                 npTokens.get(lastNpTokenIndex).getSpan().getEnd());
-            Mention snpExtent = new Mention(npSpan, npSpan, tok.getEntityId(), null,"CNP");
+            Mention snpExtent = new Mention(npSpan, npSpan, tok.getEntityId(), tok, "CNP");
             entities.add(snpExtent);
             logger.debug("Adding extent for conjunction in: {} preceded by {}",
                     np, npTokens.get(ti-1).getSyntacticType());
@@ -178,7 +178,7 @@ public abstract class AbstractMentionFinder implements MentionFinder {
         if (lastNpTokenIndex != ti) {
           Span npSpan = new Span((npTokens.get(ti + 1)).getSpan().getStart(),
               npTokens.get(lastNpTokenIndex).getSpan().getEnd());
-          Mention snpExtent = new Mention(npSpan, npSpan, tok.getEntityId(), null,"CNP");
+          Mention snpExtent = new Mention(npSpan, npSpan, tok.getEntityId(), tok ,"CNP");
           entities.add(snpExtent);
           logger.debug("Adding extent for comma in: {}", np);
         }
@@ -187,7 +187,7 @@ public abstract class AbstractMentionFinder implements MentionFinder {
       else if (inCoordinatedNounPhrase && ti == 0 && lastNpTokenIndex >= 0) {
         Span npSpan = new Span((npTokens.get(ti)).getSpan().getStart(),
             npTokens.get(lastNpTokenIndex).getSpan().getEnd());
-        Mention snpExtent = new Mention(npSpan, npSpan, tok.getEntityId(), null,"CNP");
+        Mention snpExtent = new Mention(npSpan, npSpan, tok.getEntityId(), tok, "CNP");
         entities.add(snpExtent);
         logger.debug("Adding extent for start coord in: {}", np);
       }
@@ -226,7 +226,7 @@ public abstract class AbstractMentionFinder implements MentionFinder {
         }
         if (tok.getSyntacticType().startsWith("PRP") && handledPronoun(tok.toString())) {
           Mention ppExtent = new Mention(tok.getSpan(), tok.getSpan(),
-              tok.getEntityId(), null,Linker.PRONOUN_MODIFIER);
+              tok.getEntityId(), tok, Linker.PRONOUN_MODIFIER);
           logger.debug("CollectPossessivePronouns: adding possessive pronoun: {} {}", tok, tok.getEntityId());
           entities.add(ppExtent);
           logger.debug("Adding pos-pro: {}", ppExtent);
