@@ -31,7 +31,7 @@ import opennlp.tools.util.Span;
 // Take care for special @ sign handling (identifies a table or something else that should be ignored)
 class MucCorefContentHandler extends SgmlParser.ContentHandler {
 
-  static class CorefMention {
+  public static class CorefMention {
     Span span;
     int id;
     final String min;
@@ -56,32 +56,35 @@ class MucCorefContentHandler extends SgmlParser.ContentHandler {
   private final Map<Integer, Integer> idMap = new HashMap<>();
 
   private RawCorefSample sample;
-  
+
+  /**
+   * Initializes a {@link MucCorefContentHandler}.
+   *
+   * @param tokenizer The {@link Tokenizer} to use. Must not be {@code null}.
+   * @param samples The {@link List< RawCorefSample > samples} as input.
+   *                      Must not be {@code null}.
+   */
   MucCorefContentHandler(Tokenizer tokenizer, List<RawCorefSample> samples) {
     this.tokenizer = tokenizer;
     this.samples = samples;
   }
   
   /**
-   * Resolve an id via the references to the root id.
+   * Resolves an id via the references to the root {@code id}.
    * 
    * @param id the id or reference to be resolved
    * 
-   * @return the resolved id or -1 if id cannot be resolved
+   * @return the resolved {@code id} or {@code -1} if id cannot be resolved.
    */
   private int resolveId(int id) {
-    
     Integer refId = idMap.get(id);
-    
     if (refId != null) {
       if (id == refId) {
         return id;
-      }
-      else {
+      } else {
         return resolveId(refId);
       }
-    }
-    else {
+    } else {
       return -1;
     }
   }

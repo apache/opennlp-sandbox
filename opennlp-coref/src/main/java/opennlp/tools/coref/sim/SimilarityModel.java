@@ -283,13 +283,15 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
     List<Context> allExtents = new ArrayList<>();
     // populate data structures
     for (Context ec : extentContexts) {
-      logger.debug("Set extents: ec({}) {} {}", ec.getId(), ec.getNameType(), ec);
-      if (ec.getId() == -1) {
-        singletons.add(ec);
-      } else {
-        entities.put(ec.getId(), ec);
+      if (ec != null) {
+        logger.debug("Set extents: ec({}) {} {}", ec.getId(), ec.getNameType(), ec);
+        if (ec.getId() == -1) {
+          singletons.add(ec);
+        } else {
+          entities.put(ec.getId(), ec);
+        }
+        allExtents.add(ec);
       }
-      allExtents.add(ec);
     }
 
     int axi = 0;

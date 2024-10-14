@@ -24,6 +24,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import opennlp.tools.parser.Parse;
 import opennlp.tools.parser.chunking.Parser;
 import opennlp.tools.util.Span;
@@ -35,9 +38,11 @@ import opennlp.tools.util.Span;
  */
 public class DefaultParse extends AbstractParse {
 
+  private static final Logger logger = LoggerFactory.getLogger(DefaultParse.class);
+
   public static final String[] NAME_TYPES = {"person", "organization", "location", "date",
       "time", "percentage", "money"};
-  
+
   private final Parse parse;
   private final int sentenceNumber;
   private static final Set<String> ENTITY_SET = new HashSet<>(Arrays.asList(NAME_TYPES));
@@ -163,7 +168,7 @@ public class DefaultParse extends AbstractParse {
       return null;
     }
     else {
-      return new DefaultParse(parent,sentenceNumber);
+      return new DefaultParse(parent, sentenceNumber);
     }
   }
 
@@ -171,8 +176,8 @@ public class DefaultParse extends AbstractParse {
   public boolean isNamedEntity() {
     
     // TODO: We should use here a special tag to, where
-    // the type can be extracted from. Then it just depends
-    // on the training data and not the values inside NAME_TYPES.
+    //  the type can be extracted from. Then it just depends
+    //  on the training data and not the values inside NAME_TYPES.
 
     return ENTITY_SET.contains(parse.getType());
   }
@@ -228,7 +233,7 @@ public class DefaultParse extends AbstractParse {
       if (parse.getSpan().getStart() == p.getSpan().getStart() &&
           parse.getSpan().getEnd() == p.getSpan().getEnd()) {
 
-        System.out.println("Maybe incorrect measurement!");
+        logger.trace("Maybe incorrect measurement!");
         
         // get parent and update distance
         // if match return distance

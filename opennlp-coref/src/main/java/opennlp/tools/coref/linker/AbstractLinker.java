@@ -246,33 +246,35 @@ public abstract class AbstractLinker implements Linker {
     MentionContext[] contexts = new MentionContext[mentions.length];
     for (int mi = 0,mn = mentions.length;mi < mn; mi++) {
       Parse mentionParse = mentions[mi].getParse();
-      logger.debug("Constructing MentionContexts: mentionParse = {}", mentionParse);
       if (mentionParse == null) {
-        logger.warn("no parse for {}", mentions[mi]);
-      }
-      int sentenceIndex = mentionParse.getSentenceNumber();
-      if (sentenceIndex != prevSentenceIndex) {
-        mentionInSentenceIndex = 0;
-        prevSentenceIndex = sentenceIndex;
-        numMentionsInSentence = 0;
-        for (int msi = mi; msi < mentions.length; msi++) {
-          if (sentenceIndex != mentions[msi].getParse().getSentenceNumber()) {
-            break;
+        logger.warn("No parse for {}", mentions[mi]);
+      } else {
+        logger.debug("Constructing MentionContexts: mentionParse = {}", mentionParse);
+        int sentenceIndex = mentionParse.getSentenceNumber();
+        if (sentenceIndex != prevSentenceIndex) {
+          mentionInSentenceIndex = 0;
+          prevSentenceIndex = sentenceIndex;
+          numMentionsInSentence = 0;
+          for (int msi = mi; msi < mentions.length; msi++) {
+            Parse p = mentions[msi].getParse();
+            if (p != null && sentenceIndex != p.getSentenceNumber()) {
+              break;
+            }
+            numMentionsInSentence++;
           }
-          numMentionsInSentence++;
         }
-      }
-      contexts[mi] = new MentionContext(mentions[mi], mentionInSentenceIndex,
-          numMentionsInSentence, mi, sentenceIndex, getHeadFinder());
-      logger.debug("Constructing MentionContexts:: mi={} sn={} extent={} parse={} mc={}",
-              mi, mentionParse.getSentenceNumber(), mentions[mi], mentionParse.getSpan(), contexts[mi].toText());
-      contexts[mi].setId(mentions[mi].getId());
-      mentionInSentenceIndex++;
-      if (mode != LinkerMode.SIM) {
-        Gender g  = computeGender(contexts[mi]);
-        contexts[mi].setGender(g.getType(),g.getConfidence());
-        Number n = computeNumber(contexts[mi]);
-        contexts[mi].setNumber(n.getType(),n.getConfidence());
+        contexts[mi] = new MentionContext(mentions[mi], mentionInSentenceIndex,
+                numMentionsInSentence, mi, sentenceIndex, getHeadFinder());
+        logger.debug("Constructing MentionContexts:: mi={} sn={} extent={} parse={} mc={}",
+                mi, mentionParse.getSentenceNumber(), mentions[mi], mentionParse.getSpan(), contexts[mi].toText());
+        contexts[mi].setId(mentions[mi].getId());
+        mentionInSentenceIndex++;
+        if (mode != LinkerMode.SIM) {
+          Gender g  = computeGender(contexts[mi]);
+          contexts[mi].setGender(g.getType(),g.getConfidence());
+          Number n = computeNumber(contexts[mi]);
+          contexts[mi].setNumber(n.getType(),n.getConfidence());
+        }
       }
     }
     return (contexts);

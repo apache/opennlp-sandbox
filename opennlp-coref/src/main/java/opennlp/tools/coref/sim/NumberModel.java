@@ -123,11 +123,13 @@ public class NumberModel implements TestNumberModel, TrainSimilarityModel {
     Map<Integer,Context> entities = new HashMap<>();
     List<Context> singletons = new ArrayList<>();
     for (Context ec : extentContexts) {
-      logger.debug("NumberModel.setExtents: ec({}) {}", ec.getId(), ec);
-      if (ec.getId() != -1) {
-        entities.put(ec.getId(), ec);
-      } else {
-        singletons.add(ec);
+      if (ec != null) {
+        logger.debug("NumberModel.setExtents: ec({}) {}", ec.getId(), ec);
+        if (ec.getId() != -1) {
+          entities.put(ec.getId(), ec);
+        } else {
+          singletons.add(ec);
+        }
       }
     }
     List<Context> singles = new ArrayList<>();

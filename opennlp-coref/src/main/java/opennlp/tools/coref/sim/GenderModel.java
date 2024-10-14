@@ -187,11 +187,13 @@ public class GenderModel implements TestGenderModel, TrainSimilarityModel {
     HashMap<Integer,Context> entities = new HashMap<>();
     List<Context> singletons = new ArrayList<>();
     for (Context ec : extentContexts) {
-      logger.debug("GenderModel.setExtents: ec({}) {}", ec.getId(), ec);
-      if (ec.getId() != -1) {
-        entities.put(ec.getId(), ec);
-      } else {
-        singletons.add(ec);
+      if (ec != null) {
+        logger.debug("GenderModel.setExtents: ec({}) {}", ec.getId(), ec);
+        if (ec.getId() != -1) {
+          entities.put(ec.getId(), ec);
+        } else {
+          singletons.add(ec);
+        }
       }
     }
     List<Context> males = new ArrayList<>();

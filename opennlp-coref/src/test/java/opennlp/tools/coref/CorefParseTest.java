@@ -17,36 +17,33 @@
 
 package opennlp.tools.coref;
 
-import java.io.IOException;
+import opennlp.tools.cmdline.parser.ParserTool;
+import opennlp.tools.coref.linker.AbstractLinkerTest;
+import opennlp.tools.parser.Parse;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import opennlp.tools.util.FilterObjectStream;
-import opennlp.tools.util.ObjectStream;
+import java.util.Arrays;
+import java.util.List;
 
-/**
- * A specialized {@link FilterObjectStream} implementation to process {@link CorefSample samples}.
- *
- * @see CorefSample
- * @see FilterObjectStream
- */
-public class CorefSampleDataStream extends FilterObjectStream<String, CorefSample> {
+public class CorefParseTest extends AbstractLinkerTest {
 
-  /**
-   * Initializes an {@link CorefSampleDataStream}.
-   *
-   * @param samples The {@link ObjectStream stream} of samples to filter.
-   *                Must not be {@code null}.
-   */
-  public CorefSampleDataStream(ObjectStream<String> samples) {
-    super(samples);
+  private static final String example = "The test may come today . ";
+  //        "(TOP (S (NP (DT The) (NN test)) (VP (MD may) (VP (VB come) (NP (NN today)))) (. .)))";
+
+
+  private List<Parse> parses;
+
+  @BeforeEach
+  public void setUp() {
+    parses = Arrays.stream(ParserTool.parseLine(example, parserEN, 1)).toList();
   }
 
-  @Override
-  public CorefSample read() throws IOException {
-    String document = samples.read();
-    if (document != null) {
-      return CorefSample.parse(document);
-    } else {
-      return null;
-    }
+  @Test
+  // TODO make this a solid test -> DiscourseEntity
+  void testConstruct() {
+    CorefParse cp = new CorefParse(parses, new DiscourseEntity[0]);
+    cp.show();
   }
+
 }

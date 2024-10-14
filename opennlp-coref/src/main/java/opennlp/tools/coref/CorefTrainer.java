@@ -94,8 +94,6 @@ public class CorefTrainer {
     TrainSimilarityModel genTrain = GenderModel.trainModel(modelDirectory + "/coref/gen");
     TrainSimilarityModel numTrain = NumberModel.trainModel(modelDirectory + "/coref/num");
     
-    useTreebank = true; 
-    
     Linker simLinker;
     
     if (useTreebank) {
