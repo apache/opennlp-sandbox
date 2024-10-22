@@ -25,7 +25,7 @@
     <parent>
         <groupId>org.apache</groupId>
         <artifactId>apache</artifactId>
-        <version>31</version>
+        <version>33</version>
         <relativePath />
     </parent>
 
@@ -130,12 +130,9 @@
         
         <junit.version>5.11.2</junit.version>
 
-        <enforcer.plugin.version>3.0.0-M3</enforcer.plugin.version>
-        <checkstyle.plugin.version>3.2.0</checkstyle.plugin.version>
         <coveralls.maven.plugin>4.3.0</coveralls.maven.plugin>
         <jacoco.maven.plugin>0.8.12</jacoco.maven.plugin>
-        <maven.surefire.plugin>3.0.0-M5</maven.surefire.plugin>
-        <maven.failsafe.plugin>3.0.0-M5</maven.failsafe.plugin>
+        <maven.failsafe.plugin>3.5.1</maven.failsafe.plugin>
         <forbiddenapis.plugin>3.8</forbiddenapis.plugin>
         <mockito.version>3.9.0</mockito.version>
     </properties>
@@ -341,7 +338,6 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>${maven.surefire.plugin}</version>
                     <configuration>
                         <argLine>-Xmx2048m -Dfile.encoding=UTF-8</argLine>
                         <forkCount>${opennlp.forkCount}</forkCount>
@@ -406,7 +402,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
+                <version>3.13.0</version>
                 <configuration>
                     <release>${java.version}</release>
                     <compilerArgument>-Xlint</compilerArgument>
@@ -459,7 +455,6 @@
 
             <plugin>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.5.0</version>
                 <configuration>
                     <doclint>none</doclint>
                     <source>${java.version}</source>
@@ -507,7 +502,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>${enforcer.plugin.version}</version>
                 <executions>
                     <execution>
                         <id>enforce-java</id>
@@ -543,7 +537,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>${checkstyle.plugin.version}</version>
             </plugin>
         </plugins>
     </build>
