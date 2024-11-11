@@ -31,7 +31,7 @@
 
     <groupId>org.apache.opennlp</groupId>
     <artifactId>opennlp-sandbox</artifactId>
-    <version>2.4.1-SNAPSHOT</version>
+    <version>2.5.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Apache OpenNLP Sandbox</name>
@@ -118,7 +118,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <opennlp.tools.version>2.4.0</opennlp.tools.version>
+        <opennlp.tools.version>2.5.0</opennlp.tools.version>
         <opennlp.forkCount>1.0C</opennlp.forkCount>
 
         <slf4j.version>2.0.16</slf4j.version>
@@ -496,7 +496,7 @@
                 <version>2.10</version>
                 <configuration>
                     <workspace>../</workspace>
-                    <workspaceCodeStylesURL>http://opennlp.apache.org/code-formatter/OpenNLP-Eclipse-Formatter.xml</workspaceCodeStylesURL>
+                    <workspaceCodeStylesURL>https://opennlp.apache.org/code-formatter/OpenNLP-Eclipse-Formatter.xml</workspaceCodeStylesURL>
                 </configuration>
             </plugin>
 
