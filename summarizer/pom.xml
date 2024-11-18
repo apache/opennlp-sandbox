@@ -34,7 +34,7 @@
     <wordnet.version>2.4.0</wordnet.version>
     <wordnet-dict.version>3.1</wordnet-dict.version>
     
-    <maven.download.plugin>1.11.2</maven.download.plugin>
+    <maven.download.plugin>1.11.5</maven.download.plugin>
   </properties>
   <repositories>
     <repository>
