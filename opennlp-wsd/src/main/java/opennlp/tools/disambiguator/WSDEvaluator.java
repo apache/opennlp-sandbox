@@ -25,10 +25,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The {@link WSDEvaluator} measures the performance of the given
- * {@link WSDisambiguator} with the provided reference {@code WordToDisambiguate}.
+ * {@link Disambiguator} with the provided reference {@code WordToDisambiguate}.
  *
  * @see Evaluator
- * @see WSDisambiguator
+ * @see Disambiguator
+ * @see AbstractWSDisambiguator
  */
 public class WSDEvaluator extends Evaluator<WSDSample> {
 
@@ -37,49 +38,47 @@ public class WSDEvaluator extends Evaluator<WSDSample> {
   private final Mean accuracy = new Mean();
 
   /**
-   * The {@link WSDisambiguator} used to create the disambiguated senses.
+   * The {@link Disambiguator} used to create the disambiguated senses.
    */
-  private final WSDisambiguator disambiguator;
+  private final Disambiguator disambiguator;
 
   /**
-   * Initializes the current instance with the given {@link WSDisambiguator}.
+   * Initializes the current instance with the given {@link AbstractWSDisambiguator}.
    *
    * @param disambiguator
-   *          the {@link WSDisambiguator} to evaluate.
+   *          the {@link AbstractWSDisambiguator} to evaluate.
    * @param listeners
    *          evaluation sample listeners
    */
-  public WSDEvaluator(WSDisambiguator disambiguator,
-      WSDEvaluationMonitor... listeners) {
+  public WSDEvaluator(Disambiguator disambiguator, WSDEvaluationMonitor... listeners) {
     super(listeners);
     this.disambiguator = disambiguator;
   }
 
   @Override
-  protected WSDSample processSample(WSDSample reference) {
+  protected WSDSample processSample(WSDSample ref) {
 
-    String[] referenceSenses = reference.getSenseIDs();
+    String[] referenceSenses = ref.getSenseIDs();
 
     // get the best predicted sense
-    String predictedSense = disambiguator.disambiguate(reference.getSentence(),
-        reference.getTags(), reference.getLemmas(),
-        reference.getTargetPosition());
+    String predictedSense = disambiguator.disambiguate(ref.getSentence(),
+        ref.getTags(), ref.getLemmas(), ref.getTargetPosition());
 
     if (predictedSense == null) {
-      LOG.debug("There was no sense for: {}", reference.getTargetWord());
+      LOG.debug("There was no sense for: {}", ref.getTargetWord());
       return null;
     }
     // get the senseKey from the result
-    String senseKey = predictedSense.split(" ")[1];
+    String[] parts = predictedSense.split(" ");
 
-    if (referenceSenses[0].equals(senseKey)) {
+    if (parts.length > 1 && referenceSenses[0].equals(parts[1])) {
       accuracy.add(1);
     } else {
       accuracy.add(0);
     }
 
-    return new WSDSample(reference.getSentence(), reference.getTags(),
-        reference.getLemmas(), reference.getTargetPosition());
+    return new WSDSample(ref.getSentence(), ref.getTags(),
+        ref.getLemmas(), ref.getTargetPosition());
   }
 
   /**

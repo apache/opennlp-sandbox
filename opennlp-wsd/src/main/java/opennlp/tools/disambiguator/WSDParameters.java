@@ -39,10 +39,6 @@ public abstract class WSDParameters {
     return senseSource;
   }
 
-  public void setSenseSource(SenseSource senseSource) {
-    this.senseSource = senseSource;
-  }
-
   public WSDParameters() {
     this.senseSource = SenseSource.WORDNET;
   }

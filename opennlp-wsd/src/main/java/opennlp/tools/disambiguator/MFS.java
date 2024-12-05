@@ -26,25 +26,34 @@ import net.sf.extjwnl.JWNLException;
 import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.data.Synset;
 import net.sf.extjwnl.data.Word;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Implementation of the <b>Most Frequent Sense</b> baseline approach. This
- * approach returns the senses in order of frequency in WordNet. The first sense
- * is the most frequent.
+ * A {@link Disambiguator} implementation of the <b>Most Frequent Sense</b> (MFS) approach.
+ * <p>
+ * This approach returns the senses in order of frequency in WordNet.
+ * The first sense is the most frequent.
+ *
+ * @see Disambiguator
+ * @see WSDParameters
  */
-public class MFS extends WSDisambiguator {
+public class MFS extends AbstractWSDisambiguator {
 
-  private static final Pattern SPLIT = Pattern.compile("\\.");
+  private static final Logger LOG = LoggerFactory.getLogger(MFS.class);
 
   public MFS() {
     super();
   }
 
-  /*
-   * @return the most frequent senses from wordnet
+  /**
+   * Extracts the most frequent sense for a specified {@link WSDSample}.
+   *
+   * @param sample The {@link WSDSample sample} to extract the sense for.
+   *               Must not be {@code null}.
+   * @return The most frequent senses from wordnet
    */
   public static String getMostFrequentSense(WSDSample sample) {
-
     List<Synset> synsets = sample.getSynsets();
     if (!synsets.isEmpty()) {
       String sampleLemma = sample.getLemmas()[sample.getTargetPosition()];
@@ -53,7 +62,7 @@ public class MFS extends WSDisambiguator {
           try {
             return WSDParameters.SenseSource.WORDNET.name() + " " + wd.getSenseKey();
           } catch (JWNLException e) {
-            e.printStackTrace();
+            LOG.error(e.getLocalizedMessage(), e);
           }
         }
       }
@@ -61,8 +70,14 @@ public class MFS extends WSDisambiguator {
     return "nonesense";
   }
 
+  /**
+   * Extracts the most frequent senses for a specified {@link WSDSample}.
+   *
+   * @param sample The {@link WSDSample sample} to extract the sense for.
+   *               Must not be {@code null}.
+   * @return The most frequent senses from wordnet
+   */
   public static String[] getMostFrequentSenses(WSDSample sample) {
-
     List<Synset> synsets = sample.getSynsets();
     String[] senseKeys = new String[synsets.size()];
 
@@ -74,7 +89,7 @@ public class MFS extends WSDisambiguator {
             senseKeys[i] = WSDParameters.SenseSource.WORDNET.name() + " " + wd.getSenseKey();
             break;
           } catch (JWNLException e) {
-            e.printStackTrace();
+            LOG.error(e.getLocalizedMessage(), e);
           }
           break;
 
@@ -85,72 +100,21 @@ public class MFS extends WSDisambiguator {
 
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public String disambiguate(WSDSample sample) {
-
-    if (WSDHelper.isRelevantPOSTag(sample.getTargetTag())) {
+    String targetTag = sample.getTargetTag();
+    if (WSDHelper.isRelevantPOSTag(targetTag)) {
       return disambiguate(sample.getTargetWordTag());
-
     } else {
-      if (WSDHelper.getNonRelevWordsDef(sample.getTargetTag()) != null) {
-        return WSDParameters.SenseSource.WSDHELPER.name() + " "
-            + sample.getTargetTag();
+      if (WSDHelper.getNonRelevWordsDef(targetTag) != null) {
+        return WSDParameters.SenseSource.WSDHELPER.name() + " " + targetTag;
       } else {
         return null;
       }
     }
   }
-
-
-  public String disambiguate(String wordTag) {
-
-    String[] splitWordTag = SPLIT.split(wordTag);
-
-    String word = splitWordTag[0];
-    String tag = splitWordTag[1];
-
-    POS pos;
-    if (tag.equalsIgnoreCase("a")) {
-      pos = POS.ADJECTIVE;
-    } else if (tag.equalsIgnoreCase("r")) {
-      pos = POS.ADVERB;
-    } else if (tag.equalsIgnoreCase("n")) {
-      pos = POS.NOUN;
-    } else if (tag.equalsIgnoreCase("v")) {
-      pos = POS.VERB;
-    } else
-      pos = null;
-
-    if (pos != null) {
-
-      WordPOS wordPOS = new WordPOS(word, pos);
-
-      List<Synset> synsets = wordPOS.getSynsets();
-      if (synsets != null) {
-        String sense = WSDParameters.SenseSource.WORDNET.name();
-
-        for (Word wd : synsets.get(0).getWords()) {
-          if (wd.getLemma().equals(word)) {
-            try {
-              sense = sense + " " + wd.getSenseKey();
-              break;
-            } catch (JWNLException e) {
-              e.printStackTrace();
-            }
-          }
-        }
-        return sense;
-      } else {
-        WSDHelper.print(word + "    " + pos);
-        WSDHelper.print("The word has no definitions in WordNet !");
-        return null;
-      }
-
-    } else {
-      WSDHelper.print(word + "    " + pos);
-      WSDHelper.print("The word has no definitions in WordNet !");
-      return null;
-    }
-
-  }
+  
 }

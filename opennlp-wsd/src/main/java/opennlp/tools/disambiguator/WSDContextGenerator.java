@@ -22,7 +22,7 @@ package opennlp.tools.disambiguator;
 import java.util.List;
 
 /**
- * Interface for {@link WSDisambiguator} context generators.
+ * Interface for {@link AbstractWSDisambiguator} context generators.
  */
 public interface WSDContextGenerator {
 

@@ -41,6 +41,8 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import opennlp.tools.lemmatizer.Lemmatizer;
 import opennlp.tools.postag.POSTagger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -61,6 +63,8 @@ import org.xml.sax.SAXException;
  */
 public class SensevalReader {
 
+  private static final Logger LOG = LoggerFactory.getLogger(SensevalReader.class);
+
   private String sensemapFile;
   private String data;
   private String wordList;
@@ -69,6 +73,7 @@ public class SensevalReader {
 
   public SensevalReader(String sensevalDirectory) {
     super();
+    LOG.warn("Reading from: {} ...", sensevalDirectory);
     setSensevalDirectory(sensevalDirectory);
     try {
       initTrainDocument();
@@ -119,11 +124,9 @@ public class SensevalReader {
 
     HashMap<Integer, ArrayList<String>> mappedSenses = new HashMap<>();
 
-    try (BufferedReader wordsList = new BufferedReader(new FileReader(
-        sensemapFile))) {
+    try (BufferedReader wordsList = new BufferedReader(new FileReader(sensemapFile))) {
 
       int index = 0;
-
       String line;
 
       while ((line = wordsList.readLine()) != null) {
@@ -144,7 +147,7 @@ public class SensevalReader {
       }
 
     } catch (IOException e) {
-      e.printStackTrace();
+      throw new RuntimeException("Error reading Senseval data from specified resource file!", e);
     }
 
     return mappedSenses;
@@ -158,9 +161,9 @@ public class SensevalReader {
    *         set
    */
   public List<String> getSensevalWords() {
+    LOG.debug("Getting senseval words...");
 
     List<String> wordTags = new ArrayList<>();
-
     final InputStream resource;
     try {
       if (wordList.endsWith(".train.key.gz")) {
@@ -182,7 +185,7 @@ public class SensevalReader {
       }
 
     } catch (IOException e) {
-      e.printStackTrace();
+      LOG.error("Problems reading {}: {}", wordList, e.getLocalizedMessage(), e);
     }
 
     return wordTags;
@@ -201,6 +204,9 @@ public class SensevalReader {
    */
   public List<WSDSample> getSensevalData(String wordTag) {
 
+    final Lemmatizer lemmatizer = WSDHelper.getLemmatizer();
+    final POSTagger tagger = WSDHelper.getTagger();
+    
     List<WSDSample> setInstances = new ArrayList<>();
 
     NodeList lexelts = trainDoc.getElementsByTagName("lexelt");
@@ -221,7 +227,7 @@ public class SensevalReader {
             Node nInstance = nInstances.item(j);
 
             if (nInstance.getNodeType() == Node.ELEMENT_NODE) {
-              ArrayList<String> senseIDs = new ArrayList<>();
+              List<String> senseIDs = new ArrayList<>();
               String rawWord;
               String[] finalText = null;
               int index = 0;
@@ -234,10 +240,8 @@ public class SensevalReader {
                 if (nChild.getNodeName().equals("answer")) {
                   // String answer =
                   // nChild.getAttributes().item(0).getTextContent();
-                  String senseid = nChild.getAttributes().item(1)
-                      .getTextContent();
 
-                  String temp = senseid;
+                  String temp = nChild.getAttributes().item(1).getTextContent();
                   // String[] temp = { answer, senseid };
                   senseIDs.add(temp);
                 }
@@ -277,8 +281,6 @@ public class SensevalReader {
                 }
 
               }
-              final Lemmatizer lemmatizer = WSDHelper.getLemmatizer();
-              final POSTagger tagger = WSDHelper.getTagger();
 
               final String[] words = finalText;
               final String[] tags = tagger.tag(finalText);

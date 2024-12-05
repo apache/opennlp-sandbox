@@ -20,6 +20,7 @@
 package opennlp.tools.disambiguator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.List;
 
@@ -38,7 +39,7 @@ import opennlp.tools.util.Span;
  * performance of the disambiguator.
  */
 // TODO write more tests
-class LeskTest extends AbstractWSDTest {
+class LeskTest extends AbstractDisambiguatorTest {
 
   static Lesk lesk;
 
@@ -61,7 +62,7 @@ class LeskTest extends AbstractWSDTest {
   @Test
   void testOneWordDisambiguation() {
     String sense = lesk.disambiguate(sentence1, tags1, lemmas1, 8);
-    assertEquals("WORDNET please%2:37:00:: -1", sense, "Check 'please' sense ID");
+    assertEquals("WORDNET please%4:02:00:: -1", sense, "Check 'please' sense ID");
   }
 
   /*
@@ -77,8 +78,9 @@ class LeskTest extends AbstractWSDTest {
     assertEquals(5, senses.size(), "Check number of returned words");
     assertEquals("WORDNET highly%4:02:05:: 1.0", senses.get(0), "Check 'highly' sense ID");
     assertEquals("WORDNET radioactive%3:00:00:: 6.0", senses.get(1), "Check 'radioactive' sense ID");
-    assertEquals("WSDHELPER to", senses.get(2), "Check preposition");
+    assertEquals("WSDHELPER preposition / subordinating conjunction", senses.get(2), "Check 'to' as preposition");
     assertEquals("WSDHELPER determiner", senses.get(3), "Check determiner");
+    assertEquals("WORDNET point%1:09:00:: -1", senses.get(4), "Check 'point' sense ID");
   }
 
   /*
@@ -88,8 +90,10 @@ class LeskTest extends AbstractWSDTest {
   void testAllWordsDisambiguation() {
     List<String> senses = lesk.disambiguate(sentence3, tags3, lemmas3);
 
-    assertEquals(15, senses.size(), "Check number of returned words");
-    assertEquals("WSDHELPER personal pronoun", senses.get(6), "Check preposition");
+    assertEquals(16, senses.size(), "Check number of returned words");
+    String sensePosSix = senses.get(6);
+    assertNotNull(sensePosSix);
+    assertEquals("WSDHELPER personal pronoun", sensePosSix, "Check preposition");
   }
 
 }
