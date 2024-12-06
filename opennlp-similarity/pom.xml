@@ -30,7 +30,7 @@
     <dl4j.version>1.0.0-M2.1</dl4j.version>
     <hdf5.version>1.14.3-1.5.10</hdf5.version>
     <javacpp.version>1.5.11</javacpp.version>
-    <openblas.version>0.3.26-1.5.10</openblas.version>
+    <openblas.version>0.3.28-1.5.11</openblas.version>
   </properties>
 
   <repositories>
