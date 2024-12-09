@@ -17,45 +17,46 @@
 
 package opennlp.tools.disambiguator;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-import java.util.zip.GZIPInputStream;
 
 import net.sf.extjwnl.JWNLException;
 import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.dictionary.Dictionary;
 import net.sf.extjwnl.dictionary.MorphologicalProcessor;
 
-import opennlp.tools.lemmatizer.DictionaryLemmatizer;
-import opennlp.tools.postag.POSModel;
+import opennlp.tools.lemmatizer.Lemmatizer;
+import opennlp.tools.lemmatizer.LemmatizerModel;
+import opennlp.tools.lemmatizer.ThreadSafeLemmatizerME;
 import opennlp.tools.postag.POSTagFormat;
-import opennlp.tools.postag.POSTaggerME;
-import opennlp.tools.tokenize.TokenizerME;
-import opennlp.tools.tokenize.TokenizerModel;
+import opennlp.tools.postag.POSTagger;
+import opennlp.tools.postag.ThreadSafePOSTaggerME;
+import opennlp.tools.tokenize.ThreadSafeTokenizerME;
+import opennlp.tools.tokenize.Tokenizer;
+import opennlp.tools.util.DownloadUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WSDHelper {
 
+  private static final Logger LOG = LoggerFactory.getLogger(WSDHelper.class);
+
   protected static final Pattern NUMBERS_PATTERN = Pattern.compile(".*[0-9].*");
 
-  protected static TokenizerME tokenizer;
-  protected static POSTaggerME tagger;
-  protected static DictionaryLemmatizer lemmatizer;
+  protected static Tokenizer tokenizer;
+  protected static POSTagger tagger;
+  protected static Lemmatizer lemmatizer;
   protected static Dictionary dictionary;
   protected static MorphologicalProcessor morph;
 
-  protected static String tokenizerModelPath;
-  protected static String taggerModelPath;
   protected static String lemmatizerDictionaryPath;
 
   // local caches for faster lookup
@@ -67,14 +68,14 @@ public class WSDHelper {
   private static Map<String, Object> nonRelevWordsDef;
 
   // List of all the PoS tags
-  public static final String[] ALL_POS = { "CC", "CD", "DT", "EX", "FW", "IN", "JJ",
-      "JJR", "JJS", "LS", "MD", "NN", "NNS", "NNP", "NNPS", "PDT", "POS",
-      "PRP", "PRP$", "RB", "RBR", "RBS", "RP", "SYM", "TO", "UH", "VB", "VBD",
-      "VBG", "VBN", "VBP", "VBZ", "WDT", "WP", "WP$", "WRB" };
+  public static final String[] ALL_POS = {"CC", "CD", "DT", "EX", "FW", "IN", "JJ",
+          "JJR", "JJS", "LS", "MD", "NN", "NNS", "NNP", "NNPS", "PDT", "POS",
+          "PRP", "PRP$", "RB", "RBR", "RBS", "RP", "SYM", "TO", "UH", "VB", "VBD",
+          "VBG", "VBN", "VBP", "VBZ", "WDT", "WP", "WP$", "WRB"};
 
   // List of the PoS tags of which the senses are to be extracted
-  public static final String[] RELEVANT_POS = { "JJ", "JJR", "JJS", "NN", "NNS", "RB",
-      "RBR", "RBS", "VB", "VBD", "VBG", "VBN", "VBP", "VBZ" };
+  public static final String[] RELEVANT_POS = {"JJ", "JJR", "JJS", "NN", "NNS", "RB",
+          "RBR", "RBS", "UH", "VB", "VBD", "VBG", "VBN", "VBP", "VBZ"};
 
   // List of Negation Words
   public static final List<String> NEGATION_WORDS = Arrays.asList("not", "no", "never", "none", "nor", "non");
@@ -162,7 +163,7 @@ public class WSDHelper {
           "you're", "yours", "yourself", "yourselves", "you've", "zero");
 
   public static Map<String, Object> getRelvCache() {
-    if (relvCache == null || relvCache.keySet().isEmpty()) {
+    if (relvCache == null || relvCache.isEmpty()) {
       relvCache = new HashMap<>();
       for (String t : RELEVANT_POS) {
         relvCache.put(t, null);
@@ -172,7 +173,7 @@ public class WSDHelper {
   }
 
   public static Map<String, Object> getStopCache() {
-    if (stopCache == null || stopCache.keySet().isEmpty()) {
+    if (stopCache == null || stopCache.isEmpty()) {
       stopCache = new HashMap<>();
       for (String s : STOP_WORDS) {
         stopCache.put(s, null);
@@ -182,7 +183,7 @@ public class WSDHelper {
   }
 
   public static Map<String, Map<String, Object>> getStemCache() {
-    if (stemCache == null || stemCache.keySet().isEmpty()) {
+    if (stemCache == null || stemCache.isEmpty()) {
       stemCache = new HashMap<>();
       for (POS pos : POS.getAllPOS()) {
         stemCache.put(pos.getKey(), new HashMap<>());
@@ -192,7 +193,7 @@ public class WSDHelper {
   }
 
   public static Map<String, Object> getEnglishWords() {
-    if (englishWords == null || englishWords.keySet().isEmpty()) {
+    if (englishWords == null || englishWords.isEmpty()) {
       englishWords = getEnglishWords(lemmatizerDictionaryPath);
     }
     return englishWords;
@@ -201,9 +202,8 @@ public class WSDHelper {
   /**
    * This initializes the Hashmap of irrelevant words definitions, and returns
    * the definition of the irrelevant word based on its pos-tag
-   * 
-   * @param posTag
-   *          the pos-tag of the irrelevant word
+   *
+   * @param posTag the pos-tag of the irrelevant word
    * @return the definition of the word
    */
   public static String getNonRelevWordsDef(String posTag) {
@@ -264,28 +264,22 @@ public class WSDHelper {
       try {
         dictionary = Dictionary.getDefaultResourceInstance();
       } catch (JWNLException e) {
-        e.printStackTrace();
+        throw new RuntimeException(e);
       }
     }
     return dictionary;
   }
 
-  public static DictionaryLemmatizer getLemmatizer() {
-    if (lemmatizerDictionaryPath == null) {
-      throw new IllegalStateException("Loading a Lemmatizer is not possible without setting the " +
-              "corresponding model file!");
-    }
+  public static Lemmatizer getLemmatizer() {
+    return getLemmatizer("en");
+  }
+
+  private static Lemmatizer getLemmatizer(String lang) {
     if (lemmatizer == null) {
-      final InputStream resource;
       try {
-        if (lemmatizerDictionaryPath.endsWith(".dict.gz")) {
-          resource = new GZIPInputStream(new FileInputStream(lemmatizerDictionaryPath));
-        } else {
-          resource = new FileInputStream(lemmatizerDictionaryPath);
-        }
-        try (InputStream in = new BufferedInputStream(resource)) {
-          lemmatizer = new DictionaryLemmatizer(in);
-        }
+          LemmatizerModel lm = DownloadUtil.downloadModel(lang,
+                  DownloadUtil.ModelType.LEMMATIZER, LemmatizerModel.class);
+          lemmatizer = new ThreadSafeLemmatizerME(lm);
       } catch (IOException e) {
         throw new RuntimeException("Error opening or loading a Lemmatizer from specified resource file!", e);
       }
@@ -293,42 +287,46 @@ public class WSDHelper {
     return lemmatizer;
   }
 
-  public static POSTaggerME getTagger() {
+  public static POSTagger getTagger() {
+    return getTagger("en");
+  }
+
+  private static POSTagger getTagger(String language) {
     if (tagger == null) {
       try {
-        tagger = new POSTaggerME(new POSModel(new File(taggerModelPath)), POSTagFormat.PENN);
+        tagger = new ThreadSafePOSTaggerME(language, POSTagFormat.PENN);
       } catch (IOException e) {
-        e.printStackTrace();
+        throw new RuntimeException("Error opening or loading a Tokenizer for specified language!", e);
       }
     }
     return tagger;
   }
 
-  public static TokenizerME getTokenizer() {
+  public static Tokenizer getTokenizer() {
+    return getTokenizer("en");
+  }
+
+  private static Tokenizer getTokenizer(String language) {
     if (tokenizer == null) {
       try {
-        tokenizer = new TokenizerME(new TokenizerModel(new FileInputStream(
-            tokenizerModelPath)));
+        tokenizer = new ThreadSafeTokenizerME(language);
       } catch (IOException e) {
-        e.printStackTrace();
+        throw new RuntimeException("Error opening or loading a Tokenizer for specified language!", e);
       }
     }
     return tokenizer;
   }
 
-  public static TokenizerME loadTokenizer(String path) {
-    tokenizerModelPath = path;
-    return getTokenizer();
+  public static Tokenizer loadTokenizer(String language) {
+    return getTokenizer(language);
   }
 
-  public static POSTaggerME loadTagger(String path) {
-    taggerModelPath = path;
-    return getTagger();
+  public static POSTagger loadTagger(String language) {
+    return getTagger(language);
   }
 
-  public static DictionaryLemmatizer loadLemmatizer(String path) {
-    lemmatizerDictionaryPath = path;
-    return getLemmatizer();
+  public static Lemmatizer loadLemmatizer(String language) {
+    return getLemmatizer(language);
   }
 
   /*
@@ -339,7 +337,7 @@ public class WSDHelper {
   }
 
   // Print a text in the console
-  public static void printResults(WSDisambiguator disambiguator, String result) {
+  public static void printResults(Disambiguator disambiguator, String result) {
 
     if (result != null) {
 
@@ -356,23 +354,16 @@ public class WSDHelper {
           } else {
             score = Double.parseDouble(parts[2]);
           }
-          if (parts[0].equalsIgnoreCase(WSDParameters.SenseSource.WORDNET
-              .name())) {
-
+          if (parts[0].equalsIgnoreCase(WSDParameters.SenseSource.WORDNET.name())) {
             try {
-              print("score : " + score + " for sense " + " : " + sensekey + " : "
-                  + getDictionary().getWordBySenseKey(sensekey).getSynset().getGloss());
-
+              String gloss = getDictionary().getWordBySenseKey(sensekey).getSynset().getGloss();
+              LOG.debug("Score : {} for sense  : {} : {}", score, sensekey, gloss);
             } catch (JWNLException e) {
-              e.printStackTrace();
+              LOG.error(e.getLocalizedMessage(), e);
             }
           } else {
-            if (parts[0].equalsIgnoreCase(WSDParameters.SenseSource.WSDHELPER
-                .name())) {
-
-              print("This word is a " + sensekey + " : "
-                  + WSDHelper.getNonRelevWordsDef(sensekey));
-
+            if (parts[0].equalsIgnoreCase(WSDParameters.SenseSource.WSDHELPER.name())) {
+              LOG.debug("This word is a {} : {}", sensekey, getNonRelevWordsDef(sensekey));
             }
           }
       } else {
@@ -380,54 +371,18 @@ public class WSDHelper {
           sensekey = parts[1];
 
           if (parts[0].equalsIgnoreCase(WSDParameters.SenseSource.WORDNET.name())) {
-
             try {
-              print("sense " + " : " + sensekey + " : "
-                  + getDictionary().getWordBySenseKey(sensekey).getSynset().getGloss());
+              String gloss = getDictionary().getWordBySenseKey(sensekey).getSynset().getGloss();
+              LOG.debug("Sense  : {} : {}", sensekey, gloss);
             } catch (JWNLException e) {
-              e.printStackTrace();
+              LOG.error(e.getLocalizedMessage(), e);
             }
-          } else if (parts[0]
-              .equalsIgnoreCase(WSDParameters.SenseSource.WSDHELPER.name())) {
-
-            print("This word is a " + sensekey + " : "
-                + WSDHelper.getNonRelevWordsDef(sensekey));
-
+          } else if (parts[0].equalsIgnoreCase(WSDParameters.SenseSource.WSDHELPER.name())) {
+            LOG.debug("This word is a {} : {}", sensekey, WSDHelper.getNonRelevWordsDef(sensekey));
           }
       }
     }
 
-  }
-
-  public static void print(Object in) {
-    if (in == null) {
-      System.out.println("object is null");
-    } else {
-      System.out.println(in);
-    }
-  }
-
-  public static void print(Object[] array) {
-    if (array == null) {
-      System.out.println("object is null");
-    } else {
-      System.out.println(Arrays.asList(array));
-    }
-  }
-
-  public static void print(Object[][] array) {
-    if (array == null) {
-      System.out.println("object is null");
-    } else {
-      System.out.print("[");
-      for (int i = 0; i < array.length; i++) {
-        print(array[i]);
-        if (i != array.length - 1) {
-          System.out.print("\n");
-        }
-        print("]");
-      }
-    }
   }
 
   /**
@@ -476,7 +431,7 @@ public class WSDHelper {
   public static POS getPOS(String posTag) {
 
     List<String> adjective = Arrays.asList("JJ", "JJR", "JJS");
-    List<String> adverb = Arrays.asList("RB", "RBR", "RBS");
+    List<String> adverb = Arrays.asList("RB", "RBR", "RBS", "UH");
     List<String> noun = Arrays.asList("NN", "NNS", "NNP", "NNPS");
     List<String> verb = Arrays.asList("VB", "VBD", "VBG", "VBN", "VBP", "VBZ");
 
@@ -599,7 +554,7 @@ public class WSDHelper {
 
     ArrayList<WordPOS> relevantWords = new ArrayList<>();
 
-    String[] tags = WSDHelper.getTagger().tag(sentence);
+    String[] tags = getTagger().tag(sentence);
 
     for (int i = 0; i < sentence.length; i++) {
       if (!WSDHelper.getStopCache().containsKey(sentence[i])) {
@@ -619,10 +574,10 @@ public class WSDHelper {
    *          word to be stemmed
    * @return stemmed list of words
    */
-  public static ArrayList<String> StemWordWithWordNet(WordPOS wordToStem) {
+  public static List<String> stemWordWithWordNet(WordPOS wordToStem) {
     if (wordToStem == null)
       return null;
-    ArrayList<String> stems = new ArrayList<>();
+    List<String> stems = new ArrayList<>();
     try {
       for (POS pos : POS.getAllPOS()) {
         stems.addAll(WSDHelper.getMorph().lookupAllBaseForms(pos, wordToStem.getWord()));
@@ -648,37 +603,40 @@ public class WSDHelper {
    *          word to be stemmed
    * @return stemmed word list, {@code null} means the word is incorrect
    */
-  public static List<String> Stem(WordPOS wordToStem) {
-    if (wordToStem.getPOS() == null) {
-      WSDHelper.print("the word is " + wordToStem.getWord());
+  public static List<String> stem(WordPOS wordToStem) {
+    final POS pos = wordToStem.getPOS();
+    final String word = wordToStem.getWord();
+    
+    if (pos == null) {
+      LOG.trace("The word is {}", wordToStem.getWord());
     }
 
     Map<String, Map<String, Object>> cache = WSDHelper.getStemCache();
     // check if we already cached the stem map
-    Map<String, Object> posMap = cache.get(wordToStem.getPOS().getKey());
+    Map<String, Object> posMap = cache.get(pos.getKey());
 
     // don't check words with digits in them
-    if (WSDHelper.containsNumbers(wordToStem.getWord())) {
+    if (WSDHelper.containsNumbers(word)) {
       return null;
     }
 
-    List<String> stemList = (List<String>) posMap.get(wordToStem.getWord());
+    List<String> stemList = (List<String>) posMap.get(word);
     if (stemList != null) { // return it if we already cached it
       return stemList;
 
     } else { // unCached list try to stem it
-      stemList = StemWordWithWordNet(wordToStem);
+      stemList = stemWordWithWordNet(wordToStem);
       if (stemList != null) {
         // word was recognized and stemmed with wordnet:
         // add it to cache and return the stemmed list
-        posMap.put(wordToStem.getWord(), stemList);
-        cache.put(wordToStem.getPOS().getKey(), posMap);
+        posMap.put(word, stemList);
+        cache.put(pos.getKey(), posMap);
         return stemList;
       } else { // could not be stemmed add it anyway (as it is)
         stemList = new ArrayList<>();
-        stemList.add(wordToStem.getWord());
-        posMap.put(wordToStem.getWord(), stemList);
-        cache.put(wordToStem.getPOS().getKey(), posMap);
+        stemList.add(word);
+        posMap.put(word, stemList);
+        cache.put(pos.getKey(), posMap);
         return null;
       }
     }

@@ -25,10 +25,20 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
 
 import opennlp.tools.disambiguator.WSDHelper;
 import opennlp.tools.disambiguator.WSDSample;
@@ -37,18 +47,12 @@ import opennlp.tools.postag.POSTagger;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.ObjectStreamUtils;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.EntityResolver;
-import org.xml.sax.InputSource;
-
 /**
  * This class reads Semcor data.
- *
  */
 public class SemcorReaderExtended {
+
+  private static final Logger LOG = LoggerFactory.getLogger(SemcorReaderExtended.class);
 
   private static final String ELEMENT_CONTEXTFILE = "contextfile";
   private static final String ATTRIBUTE_CONCORDANCE = "concordance";
@@ -78,6 +82,7 @@ public class SemcorReaderExtended {
   
   public SemcorReaderExtended(String semcorDirectory) {
     super();
+    LOG.debug("Reading from: {} ...", semcorDirectory);
     setSemcorDirectory(semcorDirectory);
   }
 
@@ -88,8 +93,8 @@ public class SemcorReaderExtended {
   /**
    * This serves to read one Semcor XML file
    */
-  private ArrayList<Sentence> readFile(String file) {
-    ArrayList<Sentence> result = new ArrayList<>();
+  private List<Sentence> readFile(String file) {
+    List<Sentence> result = new ArrayList<>();
     final EntityResolver noop = (publicId, systemId) -> new InputSource(new StringReader(""));
     try (InputStream xmlFile = new BufferedInputStream(new FileInputStream(file))) {
       DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -178,8 +183,7 @@ public class SemcorReaderExtended {
         }
       }
     } catch (Exception e) {
-      WSDHelper.print("Reading " + file);
-      e.printStackTrace();
+      LOG.error("Problems reading {}: {}", file, e.getLocalizedMessage(), e);
     }
 
     return result;
@@ -196,16 +200,19 @@ public class SemcorReaderExtended {
    *          The word, of which we are looking for the instances
    * @return the list of the {@link WSDSample} instances
    */
-  private ArrayList<WSDSample> getSemcorOneFileData(String file, String wordTag) {
+  private List<WSDSample> getSemcorOneFileData(String file, String wordTag) {
 
-    ArrayList<WSDSample> setInstances = new ArrayList<>();
+    LOG.debug("Getting Semcor one file data: {}...", file);
+
+    final Lemmatizer lemmatizer = WSDHelper.getLemmatizer();
+    final POSTagger tagger = WSDHelper.getTagger();
+    List<WSDSample> setInstances = new ArrayList<>();
 
     try {
-
-      ArrayList<Sentence> isentences = readFile(file);
+      List<Sentence> isentences = readFile(file);
       for (int j = 0; j < isentences.size(); j++) {
         Sentence isentence = isentences.get(j);
-        ArrayList<Word> iwords = isentence.getIwords();
+        List<Word> iwords = isentence.getIwords();
         for (int k = 0; k < iwords.size(); k++) {
           Word iword = iwords.get(k);
           if (iword.isInstanceOf(wordTag)) {
@@ -243,9 +250,6 @@ public class SemcorReaderExtended {
             }
 
             if (!senses.isEmpty()) {
-              final Lemmatizer lemmatizer = WSDHelper.getLemmatizer();
-              final POSTagger tagger = WSDHelper.getTagger();
-
               final String[] words = sentence.split("\\s");
               final String[] tags = tagger.tag(words);
               String[] lemmas = lemmatizer.lemmatize(words, tags);
@@ -258,11 +262,9 @@ public class SemcorReaderExtended {
       }
 
     } catch (Exception e) {
-      e.printStackTrace();
+      LOG.error("Problems reading {}: {}", file, e.getLocalizedMessage(), e);
     }
-
     return setInstances;
-
   }
 
   /**
@@ -277,9 +279,9 @@ public class SemcorReaderExtended {
    *          The word, of which we are looking for the instances
    * @return the list of the {@link WSDSample} instances
    */
-  private ArrayList<WSDSample> getSemcorFolderData(String folder, String wordTag) {
+  private List<WSDSample> getSemcorFolderData(String folder, String wordTag) {
 
-    ArrayList<WSDSample> result = new ArrayList<>();
+    List<WSDSample> result = new ArrayList<>();
 
     String directory = semcorDirectory + folder + tagfiles;
     File tempFolder = new File(directory);
@@ -288,9 +290,7 @@ public class SemcorReaderExtended {
     if (tempFolder.isDirectory()) {
       listOfFiles = tempFolder.listFiles();
       for (File file : listOfFiles) {
-
-        ArrayList<WSDSample> list = getSemcorOneFileData(
-            directory + file.getName(), wordTag);
+        List<WSDSample> list = getSemcorOneFileData(directory + file.getName(), wordTag);
         result.addAll(list);
       }
     }
@@ -308,12 +308,12 @@ public class SemcorReaderExtended {
    * @return the list of the {@link WSDSample} instances of the word to
    *         disambiguate
    */
-  public ArrayList<WSDSample> getSemcorData(String wordTag) {
+  public List<WSDSample> getSemcorData(String wordTag) {
 
-    ArrayList<WSDSample> result = new ArrayList<>();
+    List<WSDSample> result = new ArrayList<>();
 
     for (String folder : folders) {
-      ArrayList<WSDSample> list = getSemcorFolderData(folder, wordTag);
+      List<WSDSample> list = getSemcorFolderData(folder, wordTag);
       result.addAll(list);
     }
 

@@ -20,6 +20,7 @@
 package opennlp.tools.disambiguator;
 
 import java.io.File;
+import java.nio.file.Path;
 
 /**
  * This class contains the parameters for the IMS approach as well as the
@@ -31,71 +32,62 @@ public class WSDDefaultParameters extends WSDParameters {
   protected int windowSize;
   protected int ngram;
 
-  protected String trainingDataDirectory;
+  protected Path trainingDataDir;
 
   protected static final int DFLT_WIN_SIZE = 3;
   protected static final int DFLT_NGRAM = 2;
-  protected static final String DFLT_LANG_CODE = "En";
+  protected static final String DFLT_LANG_CODE = "en";
   protected static final SenseSource DFLT_SOURCE = SenseSource.WORDNET;
 
   /**
-   * This constructor takes only two parameters. The default language used is
-   * <i>English</i>
+   * Initializes a new set of {@link WSDDefaultParameters}.
+   * The default language used is <i>English</i>.
    *
    * @param windowSize  the size of the window used for the extraction of the features
    *                    qualified of Surrounding Words
    * @param ngram       the number words used for the extraction of features qualified of
    *                    Local Collocations
    * @param senseSource the source of the training data
+   * @param trainingDataDir The {@link Path} where to place or lookup trained models.
    */
-  public WSDDefaultParameters(int windowSize, int ngram,
-    SenseSource senseSource, String trainingDataDirectory) {
+  public WSDDefaultParameters(int windowSize, int ngram, SenseSource senseSource, Path trainingDataDir) {
 
     this.languageCode = DFLT_LANG_CODE;
     this.windowSize = windowSize;
     this.ngram = ngram;
     this.senseSource = senseSource;
-    this.trainingDataDirectory = trainingDataDirectory;
+    this.trainingDataDir = trainingDataDir;
 
-    File folder = new File(trainingDataDirectory);
+    File folder = trainingDataDir.toFile();
     if (!folder.exists())
       folder.mkdirs();
   }
 
-  public WSDDefaultParameters(String trainingDataDirectory) {
-    this(DFLT_WIN_SIZE, DFLT_NGRAM, DFLT_SOURCE, trainingDataDirectory);
+  /**
+   * Initializes a new set of {@link WSDDefaultParameters}.
+   * The default language used is <i>English</i>, the window size is {@link #DFLT_WIN_SIZE},
+   * and the ngram length is initialized as {@link #DFLT_NGRAM}.
+   *
+   * @param trainingDataDir The {@link Path} where to place or lookup trained models.
+   */
+  public WSDDefaultParameters(Path trainingDataDir) {
+    this(DFLT_WIN_SIZE, DFLT_NGRAM, DFLT_SOURCE, trainingDataDir);
   }
 
   public String getLanguageCode() {
     return languageCode;
   }
 
-  public void setLanguageCode(String languageCode) {
-    this.languageCode = languageCode;
-  }
-
   public int getWindowSize() {
     return windowSize;
-  }
-
-  public void setWindowSize(int windowSize) {
-    this.windowSize = windowSize;
   }
 
   public int getNgram() {
     return ngram;
   }
 
-  public void setNgram(int ngram) {
-    this.ngram = ngram;
-  }
-
-  public String getTrainingDataDirectory() {
-    return trainingDataDirectory;
-  }
-
-  public void setTrainingDataDirectory(String trainingDataDirectory) {
-    this.trainingDataDirectory = trainingDataDirectory;
+  public Path getTrainingDataDirectory() {
+    return trainingDataDir;
   }
 
   @Override

@@ -25,12 +25,24 @@ public class WSDisambiguatorFactory extends BaseToolFactory {
 
   /**
    * Creates a {@link WSDisambiguatorFactory} that provides the default implementation of
-   * the resources.
+   * the resources. Use this constructor to programmatically create a factory.
    */
   public WSDisambiguatorFactory() {
 
   }
 
+  /**
+   * Instantiates a {@link WSDisambiguatorFactory} via a given {@code subclassName}.
+   *
+   * @param subclassName The class name used for instantiation. If {@code null}, an
+   *                     instance of {@link WSDisambiguatorFactory} will be returned
+   *                     per default. Otherwise, the {@link ExtensionLoader} mechanism
+   *                     is applied to load the requested {@code subclassName}.
+   *
+   * @return A valid {@link WSDisambiguatorFactory} instance.
+   * @throws InvalidFormatException Thrown if the {@link ExtensionLoader} mechanism failed to
+   *                                create the factory associated with {@code subclassName}.
+   */
   public static WSDisambiguatorFactory create(String subclassName)
     throws InvalidFormatException {
     if (subclassName == null) {
@@ -38,14 +50,10 @@ public class WSDisambiguatorFactory extends BaseToolFactory {
       return new WSDisambiguatorFactory();
     }
     try {
-      WSDisambiguatorFactory theFactory = ExtensionLoader
-        .instantiateExtension(WSDisambiguatorFactory.class, subclassName);
-      return theFactory;
+      return ExtensionLoader.instantiateExtension(WSDisambiguatorFactory.class, subclassName);
     } catch (Exception e) {
       String msg = "Could not instantiate the " + subclassName
         + ". The initialization throw an exception.";
-      System.err.println(msg);
-      e.printStackTrace();
       throw new InvalidFormatException(msg, e);
     }
   }

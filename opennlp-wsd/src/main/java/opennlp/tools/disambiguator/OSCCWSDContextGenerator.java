@@ -37,7 +37,7 @@ public class OSCCWSDContextGenerator implements WSDContextGenerator {
     String[] tags, String[] lemmas, int windowSize) {
 
     // TODO consider windowSize
-    ArrayList<String> contextClusters = new ArrayList<>();
+    List<String> contextClusters = new ArrayList<>();
 
     final Pattern pattern = Pattern.compile("[^a-z_]");
 
@@ -79,12 +79,11 @@ public class OSCCWSDContextGenerator implements WSDContextGenerator {
    * @return The OSCC context of the word to disambiguate
    */
   @Override
-  public String[] getContext(int index, String[] toks, String[] tags,
-    String[] lemmas, int ngram, int windowSize, List<String> model) {
+  public String[] getContext(int index, String[] toks, String[] tags, String[] lemmas,
+                             int ngram, int windowSize, List<String> model) {
 
     Set<String> surroundingContextClusters = new HashSet<>(Arrays.asList(
-            extractSurroundingContext(index, toks, tags, lemmas,
-                    windowSize)));
+            extractSurroundingContext(index, toks, tags, lemmas, windowSize)));
 
     String[] serializedFeatures = new String[model.size()];
 
