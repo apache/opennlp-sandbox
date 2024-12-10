@@ -16,15 +16,11 @@
  */
 package opennlp.tools.similarity.apps.solr;
 
-
 import java.io.File;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.xml.bind.JAXBException;
-
-import org.apache.commons.lang.StringUtils;
 import org.docx4j.XmlUtils;
 import org.docx4j.jaxb.Context;
 import org.docx4j.openpackaging.exceptions.InvalidFormatException;
@@ -69,7 +65,7 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 					String processedParaTitle = processParagraphTitle(para.getTitle());
 					
 					if (processedParaTitle!=null && 
-							!processedParaTitle.endsWith("..") || StringUtils.isAlphanumeric(processedParaTitle)){
+							!processedParaTitle.endsWith("..") || processedParaTitle.chars().allMatch(this::isAlphanumeric)){
 						wordMLPackage.getMainDocumentPart().addStyledParagraphOfText("Subtitle",processedParaTitle);
 					}
 					String paraText = processParagraphText(para.getFragments().toString());
@@ -85,7 +81,7 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 			         		"<w:rStyle w:val=\"EndnoteReference\"/></w:rPr><w:endnoteRef/></w:r><w:r><w:t xml:space=\"preserve\"> "+ url + "</w:t></w:r></w:p>";
 			         try {
 						endnote.getEGBlockLevelElts().add( XmlUtils.unmarshalString(endnoteBody));
-					} catch (JAXBException e) {
+					} catch (Exception e) {
 						e.printStackTrace();
 					}
 			         
@@ -95,7 +91,7 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 			         
 			         try {
 			        	 wordMLPackage.getMainDocumentPart().addParagraph(docBody);
-					} catch (JAXBException e) {
+					} catch (Exception e) {
 						e.printStackTrace();
 					}
 					
@@ -172,20 +168,25 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 		return bestPart;
 	}
 
+	private boolean isAlphanumeric(final int codePoint) {
+		return (codePoint >= 65 && codePoint <= 90) ||
+						(codePoint >= 97 && codePoint <= 122) ||
+						(codePoint >= 48 && codePoint <= 57);
+	}
     
-    public static void main(String[] args){
-    	WordDocBuilderEndNotes b = new WordDocBuilderEndNotes();
-    	List<HitBase> content = new ArrayList<>();
-    	for(int i = 0; i<10; i++){
-    		HitBase h = new HitBase();
-    		h.setTitle("albert einstein "+i);
-    		List<Fragment> frs = new ArrayList<>();
-    		frs.add(new Fragment(" content "+i, 0));
-    		h.setFragments(frs);
-    		h.setUrl("http://www."+i+".com");
-    		content.add(h);
-    	}
-    	
-    	b.buildWordDoc(content, "albert einstein");
-    }
+	public static void main(String[] args){
+		WordDocBuilderEndNotes b = new WordDocBuilderEndNotes();
+		List<HitBase> content = new ArrayList<>();
+		for(int i = 0; i<10; i++){
+			HitBase h = new HitBase();
+			h.setTitle("albert einstein "+i);
+			List<Fragment> frs = new ArrayList<>();
+			frs.add(new Fragment(" content "+i, 0));
+			h.setFragments(frs);
+			h.setUrl("http://www."+i+".com");
+			content.add(h);
+		}
+
+		b.buildWordDoc(content, "albert einstein");
+	}
 }

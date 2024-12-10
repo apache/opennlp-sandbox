@@ -20,9 +20,8 @@ package opennlp.tools.enron_email_recognizer;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
-
-import org.apache.commons.io.FileUtils;
 
 public class EmailNormalizer {
 
@@ -67,7 +66,7 @@ public class EmailNormalizer {
 	public void normalizeAndWriteIntoANewFile(File f){
 		String content = "";
 		try {
-			content = FileUtils.readFileToString(f, StandardCharsets.UTF_8);
+			content = Files.readString(f.toPath(), StandardCharsets.UTF_8);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -95,10 +94,10 @@ public class EmailNormalizer {
 		String directoryNew = f.getAbsolutePath().replace(origFolder, newFolder);
 		try {
 			String fullFileNameNew = directoryNew +"txt";
-	        FileUtils.writeStringToFile(new File(fullFileNameNew), buf.toString(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-	        e.printStackTrace();
-        }
+			Files.writeString(new File(fullFileNameNew).toPath(), buf.toString(), StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public void normalizeDirectory(File f){

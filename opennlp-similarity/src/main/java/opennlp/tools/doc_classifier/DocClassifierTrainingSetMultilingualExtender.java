@@ -27,11 +27,11 @@ import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 
 /*
@@ -86,7 +86,7 @@ public class DocClassifierTrainingSetMultilingualExtender {
 		List<String> filteredEntries = new ArrayList<>();
 		String content=null;
 		try {
-			content = FileUtils.readFileToString(new File(filename), StandardCharsets.UTF_8);
+			content = Files.readString(new File(filename).toPath(), StandardCharsets.UTF_8);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -127,7 +127,7 @@ public class DocClassifierTrainingSetMultilingualExtender {
 					continue;
 				
 				System.out.println("processing "+f.getName());
-				content = FileUtils.readFileToString(f, "utf-8");
+				content = Files.readString(f.toPath(), StandardCharsets.UTF_8);
 				int langIndex =0;
 				for(String[] begEnd: MULTILINGUAL_TOKENS){
 					String urlDirty = StringUtils.substringBetween(content, begEnd[0], begEnd[1]);
