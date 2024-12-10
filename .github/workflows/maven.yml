@@ -15,7 +15,15 @@
 
 name: Java CI
 
-on: [push, pull_request]
+on:
+  # Run CI on Pushes to "master"" or on pull requests targeting "master".
+  push:
+    branches:
+      - master
+      - 'experimental/**'
+  pull_request:
+    branches:
+      - master
 
 jobs:
   build:
