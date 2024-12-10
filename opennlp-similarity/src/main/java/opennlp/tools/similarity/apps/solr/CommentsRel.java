@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 
 import org.docx4j.XmlUtils;
 import org.docx4j.jaxb.Context;

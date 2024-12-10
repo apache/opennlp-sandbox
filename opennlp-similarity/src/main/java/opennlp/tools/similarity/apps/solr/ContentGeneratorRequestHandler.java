@@ -25,8 +25,8 @@ import java.io.InputStreamReader;
 import java.util.List;
 import java.util.logging.Logger;
 
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
 
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.SearchHandler;

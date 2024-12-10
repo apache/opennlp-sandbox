@@ -18,12 +18,12 @@ package opennlp.tools.doc_classifier;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
 import opennlp.tools.jsmlearning.ProfileReaderWriter;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
 
@@ -96,7 +96,7 @@ public class DocClassifierTrainingSetVerifier {
 						&& resultsClassif.get(0).equals(
 								ClassifierTrainingSetIndexer.getCategoryFromFilePath(f.getAbsolutePath()))){
 					String destFileName = f.getAbsolutePath().replace(sourceDir, destinationDir);
-					FileUtils.copyFile(f, new File(destFileName));
+					Files.copy(f.toPath(), new File(destFileName).toPath());
 					bRejected = false;
 				} else {
 					System.out.println("File "+ f.getAbsolutePath() + "\n classified as "+

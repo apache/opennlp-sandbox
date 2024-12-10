@@ -18,17 +18,17 @@ package opennlp.tools.similarity.apps;
 
 import java.util.List;
 
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
 
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
 public class ContentGeneratorRunner {
 	public static void main(String[] args) {
-		ParserChunker2MatcherProcessor sm = null;
-	    	    
+
 		try {
 			String resourceDir = args[2];
+			ParserChunker2MatcherProcessor sm;
 			if (resourceDir!=null)
 				sm = ParserChunker2MatcherProcessor.getInstance(resourceDir);
 			else
