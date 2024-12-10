@@ -18,22 +18,29 @@
 package opennlp.tools.disambiguator;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import opennlp.tools.util.FilterObjectStream;
 import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.ObjectStream;
 
+/**
+ * This class is a stream filter which reads a sentence by line samples from
+ * a {@link FilterObjectStream} and converts them into {@link WSDSample} objects.
+ *
+ * @see WSDSample
+ * @see FilterObjectStream
+ */
 public class WSDSampleStream extends FilterObjectStream<String, WSDSample> {
 
-  private static final Logger LOG = Logger.getLogger(WSDSampleStream.class.getName());
+  private static final Logger LOG = LoggerFactory.getLogger(WSDSampleStream.class.getName());
 
   /**
-   * Initializes the current instance.
+   * Initializes a {@link WSDSampleStream instance}.
    *
-   * @param sentences
-   *          An {@link ObjectStream} with sentences
+   * @param sentences A plain text {@link ObjectStream line stream}.
    */
   public WSDSampleStream(ObjectStream<String> sentences) {
     super(sentences);
@@ -41,12 +48,14 @@ public class WSDSampleStream extends FilterObjectStream<String, WSDSample> {
 
   /**
    * Parses the next sentence and return the next {@link WSDSample} object.
-   * <p> 
-   * If an error occurs an empty {@link WSDSample} object is returned and a
+   * <p>
+   *
+   * @implNote If an error occurred an empty {@link WSDSample} object is returned and a
    * warning message is logged. Usually it does not matter if one of many
    * sentences is ignored.
+   *
+   * @return A {@link WSDSample} or {@code null} if nothing could be read.
    */
-   // TODO: An exception in error case should be thrown.
   @Override
   public WSDSample read() throws IOException {
 
@@ -57,11 +66,7 @@ public class WSDSampleStream extends FilterObjectStream<String, WSDSample> {
       try {
         sample = WSDSample.parse(sentence);
       } catch (InvalidFormatException e) {
-
-        if (LOG.isLoggable(Level.WARNING)) {
-          LOG.warning("Error during parsing, ignoring sentence: " + sentence);
-        }
-
+        LOG.warn("Problem during parsing, ignoring sentence: {}", sentence);
         sample = null; // new WSDSample(new String[]{}, new String[]{},0);
       }
 

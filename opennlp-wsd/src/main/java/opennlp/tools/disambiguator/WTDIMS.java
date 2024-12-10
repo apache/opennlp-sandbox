@@ -38,49 +38,36 @@ public class WTDIMS {
   protected String[] features;
 
   public WTDIMS(String[] sentence, String[] posTags, String[] lemmas,
-    int wordIndex) {
-    this.sentence = sentence;
-    this.posTags = posTags;
-    this.wordIndex = wordIndex;
-    this.lemmas = lemmas;
+                int wordIndex) {
+    setSentence(sentence);
+    setPosTags(posTags);
+    setLemmas(lemmas);
+    setWordIndex(wordIndex);
   }
 
   public WTDIMS(String[] sentence, String[] posTags, String[] lemmas,
-    int wordIndex, String[] senseIDs) {
-    this.sentence = sentence;
-    this.posTags = posTags;
-    this.wordIndex = wordIndex;
-    this.lemmas = lemmas;
-    this.senseIDs = senseIDs;
-
+                int wordIndex, String[] senseIDs) {
+    this(sentence, posTags, lemmas, wordIndex);
+    setSenseIDs(senseIDs);
   }
 
   public WTDIMS(String[] sentence, String[] posTags, String[] lemmas,
-    String word, String[] senseIDs) {
-    super();
-
-    this.sentence = sentence;
-    this.posTags = posTags;
-    this.lemmas = lemmas;
+                String word, String[] senseIDs) {
+    setSentence(sentence);
+    setPosTags(posTags);
+    setLemmas(lemmas);
+    setSenseIDs(senseIDs);
 
     for (int i = 0; i < sentence.length; i++) {
       if (word.equals(sentence[i])) {
-        this.wordIndex = i;
+        setWordIndex(i);
         break;
       }
     }
-
-    this.senseIDs = senseIDs;
-
   }
 
-  public WTDIMS(WSDSample sample) {
-    this.sentence = sample.getSentence();
-    this.posTags = sample.getTags();
-    this.lemmas = sample.getLemmas();
-    this.wordIndex = sample.getTargetPosition();
-    this.senseIDs = sample.getSenseIDs();
-
+  public WTDIMS(WSDSample s) {
+    this(s.getSentence(), s.getTags(), s.getLemmas(), s.getTargetPosition(), s.getSenseIDs());
   }
 
   public String[] getSentence() {
@@ -137,11 +124,11 @@ public class WTDIMS {
 
   public String getWordTag() {
 
-    String wordBaseForm = this.getLemmas()[this.getWordIndex()];
+    String wordBaseForm = lemmas[wordIndex];
 
     String ref = "";
 
-    POS pos = WSDHelper.getPOS(this.getPosTags()[this.getWordIndex()]);
+    POS pos = WSDHelper.getPOS(posTags[wordIndex]);
     if (pos != null) {
       if (pos.equals(POS.VERB)) {
         ref = wordBaseForm + ".v";

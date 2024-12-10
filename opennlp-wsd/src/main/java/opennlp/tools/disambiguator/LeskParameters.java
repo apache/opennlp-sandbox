@@ -20,14 +20,12 @@
 package opennlp.tools.disambiguator;
 
 /**
- * Lesk specific parameter set
- *
+ * Lesk specific parameter set.
  */
 public class LeskParameters extends WSDParameters {
 
   /**
    * Enum of all types of implemented variations of Lesk
-   *
    */
   public enum LESK_TYPE {
     LESK_BASIC, LESK_BASIC_CTXT, LESK_EXT, LESK_EXT_CTXT, LESK_EXT_EXP, LESK_EXT_EXP_CTXT
@@ -143,27 +141,23 @@ public class LeskParameters extends WSDParameters {
     this.features = a;
   }
 
-  /*
-   * (non-Javadoc)
-   * 
-   * @see opennlp.tools.disambiguator.WSDParameters#isValid()
-   */
+  @Override
   public boolean areValid() {
 
     switch (this.leskType) {
-    case LESK_BASIC:
-    case LESK_BASIC_CTXT:
-      return (this.win_b_size == this.win_f_size) && this.win_b_size >= 0;
-    case LESK_EXT:
-    case LESK_EXT_CTXT:
-      return (this.depth >= 0) && (this.depth_weight >= 0)
-          && (this.win_b_size >= 0) && (this.win_f_size >= 0);
-    case LESK_EXT_EXP:
-    case LESK_EXT_EXP_CTXT:
-      return (this.depth >= 0) && (this.dexp >= 0) && (this.iexp >= 0)
-          && (this.win_b_size >= 0) && (this.win_f_size >= 0);
-    default:
-      return false;
+      case LESK_BASIC:
+      case LESK_BASIC_CTXT:
+        return (this.win_b_size == this.win_f_size) && this.win_b_size >= 0;
+      case LESK_EXT:
+      case LESK_EXT_CTXT:
+        return (this.depth >= 0) && (this.depth_weight >= 0)
+            && (this.win_b_size >= 0) && (this.win_f_size >= 0);
+      case LESK_EXT_EXP:
+      case LESK_EXT_EXP_CTXT:
+        return (this.depth >= 0) && (this.dexp >= 0) && (this.iexp >= 0)
+            && (this.win_b_size >= 0) && (this.win_f_size >= 0);
+      default:
+        return false;
     }
   }
 
