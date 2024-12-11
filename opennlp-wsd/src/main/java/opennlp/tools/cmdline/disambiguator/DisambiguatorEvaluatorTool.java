@@ -25,9 +25,9 @@ import opennlp.tools.cmdline.CLI;
 import opennlp.tools.cmdline.CmdLineTool;
 import opennlp.tools.cmdline.CmdLineUtil;
 import opennlp.tools.cmdline.TerminateToolException;
+import opennlp.tools.disambiguator.Disambiguator;
 import opennlp.tools.disambiguator.WSDEvaluator;
 import opennlp.tools.disambiguator.WSDSample;
-import opennlp.tools.disambiguator.WSDisambiguator;
 import opennlp.tools.util.ObjectStream;
 
 public final class DisambiguatorEvaluatorTool extends CmdLineTool {
@@ -61,7 +61,7 @@ public final class DisambiguatorEvaluatorTool extends CmdLineTool {
     File testData = params.getData();
     CmdLineUtil.checkInputFile("Test data", testData);
 
-    WSDisambiguator disambiguator = DisambiguatorTool.makeTool(params);
+    Disambiguator disambiguator = DisambiguatorTool.makeTool(params);
     WSDEvaluator evaluator = new WSDEvaluator(disambiguator);
 
     System.out.print("Evaluating ... ");

@@ -22,28 +22,33 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serial;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 
-import org.apache.commons.lang3.StringUtils;
-
-import opennlp.tools.cmdline.CmdLineUtil;
 import opennlp.tools.ml.model.AbstractModel;
 import opennlp.tools.ml.model.MaxentModel;
+import opennlp.tools.util.BaseToolFactory;
 import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.model.BaseModel;
 
-// TODO unify both supervised models
+/**
+ * The {@link WSDModel} is the model used by a learnable {@link WSDisambiguatorME}.
+ *
+ * @see BaseModel
+ * @see WSDisambiguatorME
+ */
 public class WSDModel extends BaseModel {
 
   @Serial
-  private static final long serialVersionUID = 8597537955427934846L;
+  private static final long serialVersionUID = 2961852011373749729L;
 
   private static final String COMPONENT_NAME = "WSD";
-  private static final String WSD_MODEL_ENTRY_NAME = "WSD.model";
+  private static final String WSD_MODEL_ENTRY = "WSD.model";
 
   private static final String WORDTAG = "wordtag";
   private static final String WINSIZE = "winsize";
@@ -51,110 +56,154 @@ public class WSDModel extends BaseModel {
   private static final String CONTEXT = "context";
 
   private List<String> contextEntries = new ArrayList<>();
-  private String wordTag;
-  private int windowSize;
-  private int ngram;
 
-  public List<String> getContextEntries() {
-    return contextEntries;
-  }
-
-  public int getWindowSize() {
-    return windowSize;
-  }
-
-  public void setWindowSize(int windowSize) {
-    this.windowSize = windowSize;
-  }
-
-  public int getNgram() {
-    return ngram;
-  }
-
-  public void setNgram(int ngram) {
-    this.ngram = ngram;
-  }
-
-  public void setContextEntries(ArrayList<String> contextEntries) {
-    this.contextEntries = contextEntries;
-  }
-
-  public String getWordTag() {
-    return wordTag;
-  }
-
-  public void setWordTag(String wordTag) {
-    this.wordTag = wordTag;
-  }
-
-  public WSDModel(String languageCode, String wordTag, int windowSize,
-    int ngram, MaxentModel wsdModel, ArrayList<String> contextEntries,
-    Map<String, String> manifestInfoEntries) {
+  /**
+   * Initializes a {@link WSDModel} instance via a {@link MaxentModel} and related resources.
+   *
+   * @param languageCode        The ISO language code for this model. Must not be {@code null}.
+   * @param wordTag             A combination of word and POS tag, separated by a {@code .} character.
+   *                            Specifies what the corresponding model shall detect.
+   * @param ngram               The number corresponding to the length of the n-gram, e.g. 2, 3, etc.
+   * @param windowSize          The window size to use. Must be greater than {@code zero}.
+   * @param wsdModel            The {@link MaxentModel model} to be used.
+   * @param contextEntries      A {@link List} of entries representing context.
+   * @param manifestInfoEntries Additional information kept in the manifest.
+   */
+  public WSDModel(String languageCode, String wordTag, int windowSize, int ngram,
+                  MaxentModel wsdModel, List<String> contextEntries,
+                  Map<String, String> manifestInfoEntries) {
     super(COMPONENT_NAME, languageCode, manifestInfoEntries);
 
-    artifactMap.put(WSD_MODEL_ENTRY_NAME, wsdModel);
-    this.setManifestProperty(WORDTAG, wordTag);
-    this.setManifestProperty(WINSIZE, windowSize + "");
-    this.setManifestProperty(NGRAM, ngram + "");
-    this.setManifestProperty(CONTEXT, StringUtils.join(contextEntries, ","));
+    artifactMap.put(WSD_MODEL_ENTRY, wsdModel);
+    setManifestProperty(WORDTAG, wordTag);
+    setManifestProperty(WINSIZE, String.valueOf(windowSize));
+    setManifestProperty(NGRAM, String.valueOf(ngram));
+    setManifestProperty(CONTEXT, String.join(",", contextEntries));
 
     this.contextEntries = contextEntries;
     checkArtifactMap();
   }
 
-  public WSDModel(String languageCode, String wordTag, int windowSize,
-    int ngram, MaxentModel wsdModel, ArrayList<String> surroundingWords) {
-    this(languageCode, wordTag, windowSize, ngram, wsdModel, surroundingWords,
-      null);
-  }
-
+  /**
+   * Initializes a {@link WSDModel} instance via a valid {@link InputStream}.
+   *
+   * @param in The {@link InputStream} used for loading the model.
+   *
+   * @throws IOException Thrown if IO errors occurred during initialization.
+   */
   public WSDModel(InputStream in) throws IOException {
     super(COMPONENT_NAME, in);
-    updateAttributes();
+    updateAttributes((Properties) artifactMap.get(MANIFEST_ENTRY));
   }
 
+  /**
+   * Initializes a {@link WSDModel} instance via a valid {@link InputStream}.
+   *
+   * @param modelFile The {@link File} used for loading the model.
+   *
+   * @throws IOException Thrown if IO errors occurred during initialization.
+   */
   public WSDModel(File modelFile) throws IOException {
     super(COMPONENT_NAME, modelFile);
-    updateAttributes();
+    updateAttributes((Properties) artifactMap.get(MANIFEST_ENTRY));
   }
 
+  /**
+   * Initializes a {@link WSDModel} instance via a valid {@link Path}.
+   *
+   * @param modelPath The {@link Path} used for loading the model.
+   *
+   * @throws IOException Thrown if IO errors occurred during initialization.
+   */
+  public WSDModel(Path modelPath) throws IOException {
+    this(modelPath.toFile());
+  }
+
+  /**
+   * Initializes a {@link WSDModel} instance via a valid {@link InputStream}.
+   *
+   * @param modelURL The {@link URL} used for loading the model.
+   *
+   * @throws IOException Thrown if IO errors occurred during initialization.
+   */
   public WSDModel(URL modelURL) throws IOException {
     super(COMPONENT_NAME, modelURL);
-    updateAttributes();
+    updateAttributes((Properties) artifactMap.get(MANIFEST_ENTRY));
   }
 
-  // path must include the word.tag i.e. : write.v
-  public boolean writeModel(String path) {
-    File outFile = new File(path + ".wsd.model");
-    CmdLineUtil.writeModel("wsd model", outFile, this);
-    return true;
+  /**
+   * @return Retrieves the {@link List} of entries representing context.
+   */
+  public List<String> getContextEntries() {
+    return contextEntries;
+  }
+  
+  /**
+   * @return Retrieves the current window size value.
+   */
+  public int getWindowSize() {
+    return Integer.parseInt(getManifestProperty(WINSIZE));
+  }
+
+  /**
+   * @return Retrieves the current n-gram value.
+   */
+  public int getNgram() {
+    return Integer.parseInt(getManifestProperty(NGRAM));
+  }
+
+  /**
+   * @return Retrieves the {@code word.tag} value.
+   */
+  public String getWordTag() {
+    return getManifestProperty(WORDTAG);
+  }
+
+  @Override
+  protected Class<? extends BaseToolFactory> getDefaultFactory() {
+    return WSDisambiguatorFactory.class;
   }
 
   @Override
   protected void validateArtifactMap() throws InvalidFormatException {
     super.validateArtifactMap();
 
-    if (!(artifactMap.get(WSD_MODEL_ENTRY_NAME) instanceof AbstractModel)) {
+    if (!(artifactMap.get(WSD_MODEL_ENTRY) instanceof AbstractModel)) {
       throw new InvalidFormatException("WSD model is incomplete!");
     }
   }
 
-  public MaxentModel getWSDMaxentModel() {
-    if (artifactMap.get(WSD_MODEL_ENTRY_NAME) instanceof MaxentModel) {
-      return (MaxentModel) artifactMap.get(WSD_MODEL_ENTRY_NAME);
+  MaxentModel getWSDMaxentModel() {
+    if (artifactMap.get(WSD_MODEL_ENTRY) instanceof MaxentModel) {
+      return (MaxentModel) artifactMap.get(WSD_MODEL_ENTRY);
     } else {
       return null;
     }
   }
 
-  public void updateAttributes() {
-    Properties manifest = (Properties) artifactMap.get(MANIFEST_ENTRY);
+  private void updateAttributes(Properties manifest) {
     String surroundings = (String) manifest.get(CONTEXT);
-
     this.contextEntries = Arrays.asList(surroundings.split(","));
-    this.wordTag = (String) manifest.get(WORDTAG);
-    this.windowSize = Integer.parseInt((String) manifest.get(WINSIZE));
-    this.ngram = Integer.parseInt((String) manifest.get(NGRAM));
   }
 
+  @Override
+  public int hashCode() {
+    return Objects.hash(artifactMap.get(MANIFEST_ENTRY), artifactMap.get(WSD_MODEL_ENTRY));
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == this) {
+      return true;
+    }
+
+    if (obj instanceof WSDModel model) {
+      Map<String, Object> artifactMapToCheck = model.artifactMap;
+      AbstractModel abstractModel = (AbstractModel) artifactMapToCheck.get(WSD_MODEL_ENTRY);
+
+      return artifactMap.get(MANIFEST_ENTRY).equals(artifactMapToCheck.get(MANIFEST_ENTRY)) &&
+              artifactMap.get(WSD_MODEL_ENTRY).equals(abstractModel);
+    }
+    return false;
+  }
 }

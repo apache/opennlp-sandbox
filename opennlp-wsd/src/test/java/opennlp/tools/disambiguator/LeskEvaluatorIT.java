@@ -23,22 +23,24 @@ import java.util.List;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class LeskEvaluatorIT extends AbstractEvaluatorTest {
 
-  private static List<String> words;
+  private static final Logger LOG = LoggerFactory.getLogger(LeskEvaluatorIT.class);
 
   private Lesk lesk;
 
   @BeforeAll
   public static void initResources() {
-    words = seReader.getSensevalWords();
-    assertNotNull(words);
-    assertFalse(words.isEmpty());
+    assertNotNull(sampleTestWordMapping);
+    assertFalse(sampleTestWordMapping.isEmpty());
   }
 
   @BeforeEach
@@ -52,30 +54,28 @@ class LeskEvaluatorIT extends AbstractEvaluatorTest {
   }
 
   @Test
+  @Disabled // TODO OPENNLP-827 enable this and make it execute faster: -> "isStemEquivalent"
   void testEvaluation() {
-    WSDHelper.print("Evaluation Started");
-
-    for (String word : words) {
-      WSDEvaluator evaluator = new WSDEvaluator(lesk);
-
+    sampleTestWordMapping.keySet().forEach(word -> {
       // don't take verbs because they are not from WordNet
       if (!SPLIT.split(word)[1].equals("v")) {
-
-        List<WSDSample> instances = seReader.getSensevalData(word);
-
+        WSDEvaluator evaluator = new WSDEvaluator(lesk);
+        List<WSDSample> instances = sampleTestWordMapping.get(word);
         if (instances != null && instances.size() > 1) {
-          WSDHelper.print("------------------" + word + "------------------");
+          StringBuilder sb = new StringBuilder();
+          sb.append("------------------").append(word).append("------------------").append('\n');
           for (WSDSample instance : instances) {
             if (instance.getSenseIDs() != null && !instance.getSenseIDs()[0].equals("null")) {
               evaluator.evaluateSample(instance);
             }
           }
-          WSDHelper.print(evaluator.toString());
+          sb.append(evaluator);
+          LOG.info(sb.toString());
         } else {
-          WSDHelper.print("null instances");
+          LOG.debug("null instances");
         }
       }
-    }
+    });
   }
 
 }

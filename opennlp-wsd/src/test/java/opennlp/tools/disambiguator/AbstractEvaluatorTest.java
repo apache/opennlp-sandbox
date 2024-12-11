@@ -18,13 +18,23 @@
  */
 package opennlp.tools.disambiguator;
 
+import opennlp.tools.AbstractTest;
 import opennlp.tools.disambiguator.datareader.SensevalReader;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 public abstract class AbstractEvaluatorTest extends AbstractTest {
 
   protected static final Pattern SPLIT = Pattern.compile("\\.");
-
   protected static final SensevalReader seReader = new SensevalReader(SENSEVAL_DIR);
+  protected static final Map<String, List<WSDSample>> sampleTestWordMapping = new LinkedHashMap<>();
+
+  static {
+    for (String testWord : seReader.getSensevalWords()) {
+      sampleTestWordMapping.put(testWord, seReader.getSensevalData(testWord));
+    }
+  }
 }

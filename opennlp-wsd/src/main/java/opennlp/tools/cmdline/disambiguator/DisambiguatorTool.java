@@ -32,11 +32,11 @@ import opennlp.tools.cmdline.CmdLineUtil;
 import opennlp.tools.cmdline.PerformanceMonitor;
 import opennlp.tools.cmdline.SystemInputStreamFactory;
 import opennlp.tools.cmdline.TerminateToolException;
+import opennlp.tools.disambiguator.Disambiguator;
 import opennlp.tools.disambiguator.Lesk;
 import opennlp.tools.disambiguator.WSDHelper;
 import opennlp.tools.disambiguator.WSDSample;
 import opennlp.tools.disambiguator.WSDSampleStream;
-import opennlp.tools.disambiguator.WSDisambiguator;
 import opennlp.tools.disambiguator.MFS;
 import opennlp.tools.util.MarkableFileInputStreamFactory;
 import opennlp.tools.util.ObjectStream;
@@ -75,7 +75,7 @@ public class DisambiguatorTool extends CmdLineTool {
     DisambiguatorToolParams params = ArgumentParser.parse(args,
         DisambiguatorToolParams.class);
 
-    WSDisambiguator disambiguator = makeTool(params);
+    Disambiguator disambiguator = makeTool(params);
 
     PerformanceMonitor perfMon = new PerformanceMonitor(System.err, "sent");
 
@@ -101,9 +101,9 @@ public class DisambiguatorTool extends CmdLineTool {
 
   }
 
-  public static WSDisambiguator makeTool(DisambiguatorToolParams params) {
+  public static Disambiguator makeTool(DisambiguatorToolParams params) {
 
-    WSDisambiguator wsd = null;
+    Disambiguator wsd = null;
 
     if (params.getType().equalsIgnoreCase("mfs")) {
       wsd = new MFS();
