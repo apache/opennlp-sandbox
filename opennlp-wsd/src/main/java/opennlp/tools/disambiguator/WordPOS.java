@@ -37,7 +37,7 @@ public class WordPOS {
 
   private final String word;
   private final POS pos;
-  private List<String> stems;
+  private transient List<String> stems;
   private transient List<String> stemsLowerCased;
 
   /**
@@ -54,12 +54,12 @@ public class WordPOS {
   /**
    * Instantiates a {@link WordPOS} via a {@code word} and related {@code tag}.
    *
-   * @param word The token to use. It must not be {@code null}.
+   * @param word The token to use. It must not be {@code null} and not be empty.
    * @param pos The {@link POS pos tag} to use. It must not be {@code null}.
    * @throws IllegalArgumentException Thrown if parameters are invalid.
    */
   public WordPOS(String word, POS pos) {
-    if (word == null || pos == null) {
+    if (word == null || word.isBlank() || pos == null) {
       throw new IllegalArgumentException("Args are null");
     }
     this.word = word;

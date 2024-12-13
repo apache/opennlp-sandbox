@@ -21,25 +21,31 @@ package opennlp.tools.disambiguator;
 
 public class WordSense implements Comparable<WordSense> {
 
+  private final SynNode node;
+  private final int id;
   private WSDSample sample;
-  private SynNode node;
-  private int id;
   private double score;
 
-  public WordSense() {
-    super();
-  }
-
   public WordSense(int id, SynNode node) {
-    this();
     this.id = id;
-    setNode(node);
+    this.node = node;
   }
 
   public WordSense(WSDSample sample, SynNode node) {
-    this();
+    this(sample.getSenseID(), node);
     this.sample = sample;
-    this.node = node;
+  }
+
+  public int getId() {
+    return id;
+  }
+
+  public String getGloss() {
+    return node.getGloss();
+  }
+
+  public SynNode getNode() {
+    return node;
   }
 
   public WSDSample getWSDSample() {
@@ -50,14 +56,6 @@ public class WordSense implements Comparable<WordSense> {
     this.sample = sample;
   }
 
-  public SynNode getNode() {
-    return node;
-  }
-
-  public void setNode(SynNode node) {
-    this.node = node;
-  }
-
   public double getScore() {
     return score;
   }
@@ -66,17 +64,9 @@ public class WordSense implements Comparable<WordSense> {
     this.score = score;
   }
 
-  public int getId() {
-    return id;
-  }
-
   @Override
   public int compareTo(WordSense o) {
     return Double.compare(this.score, o.score);
-  }
-
-  public String getGloss() {
-    return node.getGloss();
   }
 
 }

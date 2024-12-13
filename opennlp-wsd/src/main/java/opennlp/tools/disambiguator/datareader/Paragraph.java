@@ -20,25 +20,18 @@
 package opennlp.tools.disambiguator.datareader;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class Paragraph {
 
-  protected int pnum;
-  protected ArrayList<Sentence> isentences;
-
-  public Paragraph() {
-    super();
-    this.isentences = new ArrayList<>();
-  }
+  private final int pnum;
+  private final List<Sentence> isentences;
 
   public Paragraph(int pnum) {
-    super();
-    this.pnum = pnum;
-    this.isentences = new ArrayList<>();
+    this(pnum, new ArrayList<>());
   }
 
-  public Paragraph(int pnum, ArrayList<Sentence> sentences) {
-    super();
+  public Paragraph(int pnum, List<Sentence> sentences) {
     this.pnum = pnum;
     this.isentences = sentences;
   }
@@ -47,19 +40,11 @@ public class Paragraph {
     return pnum;
   }
 
-  public void setPnum(int pnum) {
-    this.pnum = pnum;
-  }
-
-  public ArrayList<Sentence> getSsentences() {
+  public List<Sentence> getSentences() {
     return isentences;
   }
 
-  public void setIsentences(ArrayList<Sentence> isentences) {
-    this.isentences = isentences;
-  }
-
-  public void addIsentence(Sentence isentence) {
+  public void addSentence(Sentence isentence) {
     this.isentences.add(isentence);
   }
 
@@ -74,23 +59,24 @@ public class Paragraph {
   }
 
   /**
-   * Returns {@code true} only and only if the paragraph contains the word, and it is
-   * sense-tagged
-   * 
-   * @param wordTag
-   * @return {@code true} if the word exists in the paragraph and is sense-tagged.
-   * 
+   * @param wordTag A word-tag combination, separated by a {@code .} between both parts.
+   * @return {@code true} only and only if the word exists in a
+   *         paragraph and is sense-tagged, {@code false} otherwise.
    */
   public boolean contains(String wordTag) {
-
-    for (Sentence isentence : this.getSsentences()) {
-      for (Word iword : isentence.getIwords()) {
-        if (iword.equals(wordTag))
-          return true;
+    if (wordTag == null || wordTag.isBlank()) {
+      return false;
+    } else {
+      final String[] parts = wordTag.split("\\.");
+      final String word = parts[0];
+      for (Sentence isentence : this.getSentences()) {
+        for (Word iword : isentence.getIwords()) {
+          if (iword.getWord().equals(word))
+            return true;
+        }
       }
+      return false;
     }
-
-    return false;
   }
 
 }

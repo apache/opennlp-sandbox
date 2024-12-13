@@ -21,18 +21,20 @@ package opennlp.tools.disambiguator;
 
 /**
  * Lesk specific parameter set.
+ *
+ * @see WSDParameters
  */
 public class LeskParameters extends WSDParameters {
 
   /**
    * Enum of all types of implemented variations of Lesk
    */
-  public enum LESK_TYPE {
+  public enum LeskType {
     LESK_BASIC, LESK_BASIC_CTXT, LESK_EXT, LESK_EXT_CTXT, LESK_EXT_EXP, LESK_EXT_EXP_CTXT
   }
 
   // DEFAULTS
-  protected static final LESK_TYPE DFLT_LESK_TYPE = LESK_TYPE.LESK_EXT_EXP_CTXT;
+  protected static final LeskType DFLT_LESK_TYPE = LeskType.LESK_EXT_EXP_CTXT;
   protected static final SenseSource DFLT_SOURCE = SenseSource.WORDNET;
   protected static final int DFLT_WIN_SIZE = 10;
   protected static final int DFLT_DEPTH = 1;
@@ -40,45 +42,59 @@ public class LeskParameters extends WSDParameters {
   protected static final double DFLT_IEXP = 0.3;
   protected static final double DFLT_DEXP = 0.3;
 
-  protected LESK_TYPE leskType;
+  protected LeskType type;
 
   protected SenseSource source;
-  protected int win_f_size;
-  protected int win_b_size;
+  protected int winFSize;
+  protected int winBSize;
   protected int depth;
   protected double depth_weight;
   protected double iexp;
   protected double dexp;
 
-  /*
-   * 10 possible features for lesk 0 : Synonyms 1 : Hypernyms 2 : Hyponyms 3 :
-   * Meronyms 4 : Holonyms 5 : Entailments 6 : Coordinate Terms 7 : Causes 8 :
-   * Attributes 9 : Pertainyms
+  public LeskParameters() {
+    this.setDefaults();
+  }
+
+  /**
+   * Ten features are possible for Lesk.
+   * <ul>
+   * <li>0: Synonyms</li>
+   * <li>1: Hypernyms</li>
+   * <li>2: Hyponyms</li>
+   * <li>3: Meronyms</li>
+   * <li>4: Holonyms</li>
+   * <li>5: Entailments</li>
+   * <li>6: Coordinate Terms</li>
+   * <li>7: Causes</li>
+   * <li>8: Attributes</li>
+   * <li>9: Pertainyms</li>
+   * </ul>
    */
   protected boolean[] features;
 
-  public LESK_TYPE getLeskType() {
-    return leskType;
+  public LeskType getType() {
+    return type;
   }
 
-  public void setLeskType(LESK_TYPE leskType) {
-    this.leskType = leskType;
+  public void setType(LeskType type) {
+    this.type = type;
   }
 
-  public int getWin_f_size() {
-    return win_f_size;
+  public int getWinFSize() {
+    return winFSize;
   }
 
-  public void setWin_f_size(int win_f_size) {
-    this.win_f_size = win_f_size;
+  public void setWinFSize(int winFSize) {
+    this.winFSize = winFSize;
   }
 
-  public int getWin_b_size() {
-    return win_b_size;
+  public int getWinBSize() {
+    return winBSize;
   }
 
-  public void setWin_b_size(int win_b_size) {
-    this.win_b_size = win_b_size;
+  public void setWinBSize(int winBSize) {
+    this.winBSize = winBSize;
   }
 
   public int getDepth() {
@@ -89,7 +105,7 @@ public class LeskParameters extends WSDParameters {
     this.depth = depth;
   }
 
-  public double getDepth_weight() {
+  public double getDepthWeight() {
     return depth_weight;
   }
 
@@ -121,41 +137,37 @@ public class LeskParameters extends WSDParameters {
     this.features = features;
   }
 
-  public LeskParameters() {
-    this.setDefaults();
-  }
-
   /**
    * Sets default parameters
    */
-  public void setDefaults() {
-    this.leskType = LeskParameters.DFLT_LESK_TYPE;
+  void setDefaults() {
+    setType(LeskParameters.DFLT_LESK_TYPE);
+    setWinFSize(LeskParameters.DFLT_WIN_SIZE);
+    setWinBSize(LeskParameters.DFLT_WIN_SIZE);
+    setDepth(LeskParameters.DFLT_DEPTH);
+    setDepth_weight(LeskParameters.DFLT_DEPTH_WEIGHT);
+    setIexp(LeskParameters.DFLT_IEXP);
+    setDexp(LeskParameters.DFLT_DEXP);
     this.source = LeskParameters.DFLT_SOURCE;
-    this.win_f_size = LeskParameters.DFLT_WIN_SIZE;
-    this.win_b_size = LeskParameters.DFLT_WIN_SIZE;
-    this.depth = LeskParameters.DFLT_DEPTH;
-    this.depth_weight = LeskParameters.DFLT_DEPTH_WEIGHT;
-    this.iexp = LeskParameters.DFLT_IEXP;
-    this.dexp = LeskParameters.DFLT_DEXP;
-    boolean[] a = { true, true, true, true, true, true, true, true, true, true };
-    this.features = a;
+    this.features = new boolean[]
+            { true, true, true, true, true, true, true, true, true, true };
   }
 
   @Override
   public boolean areValid() {
 
-    switch (this.leskType) {
+    switch (this.type) {
       case LESK_BASIC:
       case LESK_BASIC_CTXT:
-        return (this.win_b_size == this.win_f_size) && this.win_b_size >= 0;
+        return (this.winBSize == this.winFSize) && this.winBSize >= 0;
       case LESK_EXT:
       case LESK_EXT_CTXT:
         return (this.depth >= 0) && (this.depth_weight >= 0)
-            && (this.win_b_size >= 0) && (this.win_f_size >= 0);
+            && (this.winBSize >= 0) && (this.winFSize >= 0);
       case LESK_EXT_EXP:
       case LESK_EXT_EXP_CTXT:
         return (this.depth >= 0) && (this.dexp >= 0) && (this.iexp >= 0)
-            && (this.win_b_size >= 0) && (this.win_f_size >= 0);
+            && (this.winBSize >= 0) && (this.winFSize >= 0);
       default:
         return false;
     }

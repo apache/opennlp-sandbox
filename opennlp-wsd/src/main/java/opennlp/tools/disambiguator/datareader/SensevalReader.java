@@ -21,17 +21,20 @@ package opennlp.tools.disambiguator.datareader;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Collections;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
 import javax.xml.XMLConstants;
@@ -65,22 +68,46 @@ public class SensevalReader {
 
   private static final Logger LOG = LoggerFactory.getLogger(SensevalReader.class);
 
-  private String sensemapFile;
-  private String data;
-  private String wordList;
+  private final String sensemapFile;
+  private final String data;
+  private final String wordList;
 
   private Document trainDoc;
 
-  public SensevalReader(String sensevalDirectory) {
-    super();
-    LOG.warn("Reading from: {} ...", sensevalDirectory);
-    setSensevalDirectory(sensevalDirectory);
+  /**
+   * Initializes a {@link SensevalReader} via a {@link Path}
+   * referencing the senseval data directory.
+   *
+   * @param sensevalPath Must not be {@code null} and not be empty.
+   * @throws IllegalArgumentException Thrown if parameters are invalid.
+   */
+  public SensevalReader(Path sensevalPath) {
+    this(sensevalPath.toAbsolutePath() + File.separator);
+  }
+
+  /**
+   * Initializes a {@link SensevalReader} via a reference
+   * to the senseval data directory.
+   *
+   * @param sensevalDir Must not be {@code null} and not be empty.
+   * @throws IllegalArgumentException Thrown if parameters are invalid.
+   */
+  public SensevalReader(String sensevalDir) {
+    if (sensevalDir == null || sensevalDir.isBlank()) {
+      throw new IllegalArgumentException("sensevalDir must not be null or empty!");
+    }
+    LOG.warn("Reading from: {} ...", sensevalDir);
+    this.data = sensevalDir + "EnglishLS.train.gz";
+    this.wordList = sensevalDir + "EnglishLS.train.key.gz";
+    this.sensemapFile = sensevalDir + "EnglishLS.sensemap";
+
     try {
       initTrainDocument();
     } catch (IOException | ParserConfigurationException | SAXException e) {
       throw new RuntimeException(e);
     }
   }
+
 
   private void initTrainDocument() throws IOException, ParserConfigurationException, SAXException {
     final InputStream resource;
@@ -107,12 +134,6 @@ public class SensevalReader {
     }
   }
 
-  private void setSensevalDirectory(String sensevalDirectory) {
-    this.data = sensevalDirectory + "EnglishLS.train.gz";
-    this.wordList = sensevalDirectory + "EnglishLS.train.key.gz";
-    this.sensemapFile = sensevalDirectory + "EnglishLS.sensemap";
-  }
-
   /**
    * This extracts the equivalent senses. This serves in the case of the
    * coarse-grained disambiguation
@@ -120,30 +141,24 @@ public class SensevalReader {
    * @return a {@link HashMap} conaining the new sense ID ({@link Integer}) and
    *         an {@link ArrayList} of the equivalent senses original IDs
    */
-  public HashMap<Integer, ArrayList<String>> getEquivalentSense() {
+  public Map<Integer, List<String>> getEquivalentSense() {
 
-    HashMap<Integer, ArrayList<String>> mappedSenses = new HashMap<>();
-
+    Map<Integer, List<String>> mappedSenses = new HashMap<>();
     try (BufferedReader wordsList = new BufferedReader(new FileReader(sensemapFile))) {
-
       int index = 0;
       String line;
-
       while ((line = wordsList.readLine()) != null) {
 
         String[] temp = line.split("\\s");
 
-        ArrayList<String> tempSenses = new ArrayList<>();
-
+        List<String> tempSenses = new ArrayList<>();
         for (String sense : temp) {
           if (sense.length() > 1) {
             tempSenses.add(sense);
           }
         }
-
         mappedSenses.put(index, tempSenses);
         index++;
-
       }
 
     } catch (IOException e) {
@@ -155,7 +170,7 @@ public class SensevalReader {
   }
 
   /**
-   * This returns the list of words available in the Senseval data
+   * Retrieves the list of words available in the Senseval data.
    * 
    * @return {@link ArrayList} of the words available on the current Senseval
    *         set
@@ -183,33 +198,28 @@ public class SensevalReader {
           wordTags.add(word);
         }
       }
-
     } catch (IOException e) {
       LOG.error("Problems reading {}: {}", wordList, e.getLocalizedMessage(), e);
     }
 
     return wordTags;
-
   }
 
   /**
-   * Main Senseval Reader: This checks if the data corresponding to the words to
-   * disambiguate exist in the folder, and extract the {@link WSDSample}
-   * instances
-   * 
-   * @param wordTag
-   *          The word, of which we are looking for the instances
-   * @return the list of the {@link WSDSample} instances of the word to
-   *         disambiguate
+   * Extract the {@link WSDSample} instances for the given {@code wordTag}.
+   *
+   * @implNote This checks if the data corresponding to the
+   * words to disambiguate exist in the folder.
+   *
+   * @param wordTag The word, of which we are looking for the instances
+   * @return The list of the {@link WSDSample} instances of the word to disambiguate.
    */
   public List<WSDSample> getSensevalData(String wordTag) {
 
     final Lemmatizer lemmatizer = WSDHelper.getLemmatizer();
     final POSTagger tagger = WSDHelper.getTagger();
-    
-    List<WSDSample> setInstances = new ArrayList<>();
-
-    NodeList lexelts = trainDoc.getElementsByTagName("lexelt");
+    final List<WSDSample> setInstances = new ArrayList<>();
+    final NodeList lexelts = trainDoc.getElementsByTagName("lexelt");
 
     for (int i = 0; i < lexelts.getLength(); i++) {
 
@@ -249,9 +259,10 @@ public class SensevalReader {
                 if (nChild.getNodeName().equals("context")) {
 
                   if (nChild.hasChildNodes()) {
-                    String textBefore = nChild.getChildNodes().item(0).getTextContent();
-                    rawWord = nChild.getChildNodes().item(1).getTextContent();
-                    String textAfter = nChild.getChildNodes().item(2).getTextContent();
+                    NodeList children = nChild.getChildNodes();
+                    String textBefore = children.item(0).getTextContent();
+                    rawWord = children.item(1).getTextContent();
+                    String textAfter = children.item(2).getTextContent();
 
                     List<String> textBeforeTokenized = Arrays.asList(textBefore.split("\\s"));
                     List<String> textAfterTokenized = Arrays.asList(textAfter.split("\\s"));
@@ -276,15 +287,13 @@ public class SensevalReader {
                       finalText[l] = tempWord;
                       l++;
                     }
-
                   }
                 }
-
               }
 
               final String[] words = finalText;
               final String[] tags = tagger.tag(finalText);
-              String[] lemmas = lemmatizer.lemmatize(words, tags);
+              final String[] lemmas = lemmatizer.lemmatize(words, tags);
 
               WSDSample wtd = new WSDSample(words, tags, lemmas, index, senseIDs.toArray(new String[0]));
               setInstances.add(wtd);
@@ -296,16 +305,17 @@ public class SensevalReader {
     }
 
     return setInstances;
-
   }
 
   /**
-   * Main Senseval Reader: This checks if the data corresponding to the words to
-   * disambiguate exist in the folder, and extract the
-   * 
-   * @param wordTag
-   *          The word, of which we are looking for the instances
-   * @return the stream of {@link WSDSample} of the word to disambiguate
+   * Extract the {@link WSDSample} instances for the given {@code wordTag}
+   * as {@link ObjectStream}.
+   *
+   * @implNote This checks if the data corresponding to the
+   * words to disambiguate exist in the folder.
+   *
+   * @param wordTag  The word, of which we are looking for the instances.
+   * @return The stream of {@link WSDSample} of the word to disambiguate.
    */
   public ObjectStream<WSDSample> getSensevalDataStream(String wordTag) {
     return ObjectStreamUtils.createObjectStream(getSensevalData(wordTag));

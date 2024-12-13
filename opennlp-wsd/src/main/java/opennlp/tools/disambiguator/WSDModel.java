@@ -168,13 +168,13 @@ public class WSDModel extends BaseModel {
   protected void validateArtifactMap() throws InvalidFormatException {
     super.validateArtifactMap();
 
-    if (!(artifactMap.get(WSD_MODEL_ENTRY) instanceof AbstractModel)) {
+    if (!(getArtifact(WSD_MODEL_ENTRY) instanceof AbstractModel)) {
       throw new InvalidFormatException("WSD model is incomplete!");
     }
   }
 
   MaxentModel getWSDMaxentModel() {
-    if (artifactMap.get(WSD_MODEL_ENTRY) instanceof MaxentModel) {
+    if (getArtifact(WSD_MODEL_ENTRY) instanceof MaxentModel) {
       return (MaxentModel) artifactMap.get(WSD_MODEL_ENTRY);
     } else {
       return null;

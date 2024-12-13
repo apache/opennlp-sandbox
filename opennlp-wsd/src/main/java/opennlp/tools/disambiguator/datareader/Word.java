@@ -19,6 +19,9 @@
 
 package opennlp.tools.disambiguator.datareader;
 
+import java.util.Objects;
+import net.sf.extjwnl.data.POS;
+
 import opennlp.tools.disambiguator.WSDHelper;
 
 // TODO extend Word from Wordnet
@@ -36,158 +39,107 @@ public class Word {
     }
   }
 
-  protected int pnum;
-  protected int snum;
-  protected int wnum;
+  private final int pnum;
+  private final int snum;
+  private final int wnum;
 
   // Type refers to the type of word in the sentence
-  protected Type type;
+  private final Type type;
 
-  protected String word;
-  protected String cmd;
-  protected String pos;
-  protected String lemma;
-  protected String wnsn;
-  protected String lexsn;
-
-  public Word() {
-    super();
-  }
-
-  public Word(String lemma, String pos) {
-    super();
-    this.word = lemma;
-    this.lemma = lemma;
-    this.pos = pos;
-  }
+  private final String word;
+  private final POS pos;
+  
+  private String cmd;
+  private String lemma;
+  private String wnsn;
+  private String lexsn;
 
   /**
-   * This serves to create a DISAMBIGUATED word instance
-   * 
-   * @param pnum
-   *          id of the paragraph
-   * @param snum
-   *          id of the sentence
-   * @param wnum
-   *          id of the word in the sentence
-   * @param type
-   *          the type in this case is {@link Type#WORD}
-   * @param word
-   *          The raw word, as it appears in the sentence
-   * @param cmd
-   *          Whether it is semantically disambiguated or not (or to be
-   *          disambiguated)
-   * @param pos
-   *          The PoS Tag of the word
-   * @param lemma
-   *          The lemma of the word
-   * @param wnsn
-   *          The integer sense number corresponding to the WordNet output
-   *          display
-   * @param lexsn
-   *          The "Sense_key" that indicates the WordNet sense to which word
-   *          should be linked
-   * 
+   * Initializes a DISAMBIGUATED {@link Word} instance.
+   *
+   * @param pnum  The id of the paragraph
+   * @param snum  The id of the sentence
+   * @param wnum  The id of the word
+   * @param type  The type in this case is {@link Type#WORD}
+   * @param word  The plain word, as it appears in the sentence
+   * @param cmd   Whether it is semantically disambiguated or not
+   *              (or to be disambiguated)
+   * @param pos   The PoS Tag of the word
+   * @param lemma The lemma of the word
+   * @param wnsn  The integer sense number corresponding to the WordNet output display
+   * @param lexsn The "Sense_key" that indicates the WordNet sense to which word
+   *              should be linked
    */
   public Word(int pnum, int snum, int wnum, Type type, String word,
-      String cmd, String pos, String lemma, String wnsn, String lexsn) {
-    super();
+              String cmd, String pos, String lemma, String wnsn, String lexsn) {
     this.pnum = pnum;
     this.snum = snum;
     this.wnum = wnum;
     this.type = type;
     this.word = word;
-    this.cmd = cmd;
-    this.pos = pos;
-    this.lemma = lemma;
-    this.wnsn = wnsn;
-    this.lexsn = lexsn;
+    if (pos != null) {
+      this.pos = WSDHelper.getPOS(pos);
+    } else {
+      this.pos = null;
+    }
+    setCmd(cmd);
+    setLemma(lemma);
+    setWnsn(wnsn);
+    setLexsn(lexsn);
   }
 
   /**
-   * This serves to create a NON DISAMBIGUATED word instance
+   * Initializes a NON DISAMBIGUATED {@link Word} instance.
    * 
-   * @param pnum
-   *          id of the paragraph
-   * @param snum
-   *          id of the sentence
-   * @param type
-   *          the type in this case is {@link Type#WORD}
-   * @param word
-   *          The raw word, as it appears in the sentence
-   * @param cmd
-   *          Whether it is semantically disambiguated or not (or to be
-   *          disambiguated)
-   * @param pos
-   *          The PoS Tag of the word
-   * 
+   * @param pnum The id of the paragraph
+   * @param snum The id of the sentence
+   * @param wnum The id of the word
+   * @param type The type in this case is {@link Type#WORD}
+   * @param word The raw word, as it appears in the sentence
+   * @param cmd Whether it is semantically disambiguated or not
+   *            (or to be disambiguated)
+   * @param pos The PoS Tag of the word
    */
-  public Word(int pnum, int snum, int wnum, Type type, String word,
-      String cmd, String pos) {
-    super();
-    this.wnum = wnum;
-    this.pnum = pnum;
-    this.snum = snum;
-    this.type = type;
-    this.word = word;
-    this.cmd = cmd;
-    this.pos = pos;
+  public Word(int pnum, int snum, int wnum, Type type,
+              String word, String cmd, String pos) {
+    this(pnum, snum, wnum, type, word, cmd, pos, null, null, null);
   }
 
   /**
-   * This serves to create a punctuation instances
-   * 
-   * @param type
-   *          The type as in {@link Type}
-   * @param word
-   *          The punctuation mark, as it appears in the sentence
+   * Initializes a punctuation {@link Word} instance.
+   *
+   * @param pnum The id of the paragraph
+   * @param snum The id of the sentence
+   * @param wnum The id of the word
+   * @param type The type in this case is {@link Type#WORD}
+   * @param word The punctuation mark, as it appears in the sentence
    */
   public Word(int pnum, int snum, int wnum, Type type, String word) {
-    super();
-    this.pnum = pnum;
-    this.snum = snum;
-    this.type = type;
-    this.word = word;
+    this(pnum, snum, wnum, type, word, null, null, null, null, null);
   }
 
   public int getPnum() {
     return pnum;
   }
 
-  public void setPnum(int pnum) {
-    this.pnum = pnum;
-  }
-
   public int getSnum() {
     return snum;
-  }
-
-  public void setSnum(int snum) {
-    this.snum = snum;
   }
 
   public int getWnum() {
     return wnum;
   }
 
-  public void setWnum(int wnum) {
-    this.wnum = wnum;
-  }
-
   public String getWord() {
     return word;
-  }
-
-  public void setWord(String word) {
-    this.word = word;
   }
 
   public Type getType() {
     return type;
   }
 
-  public void setType(Type type) {
-    this.type = type;
+  public POS getPos() {
+    return pos;
   }
 
   public String getCmd() {
@@ -196,14 +148,6 @@ public class Word {
 
   public void setCmd(String cmd) {
     this.cmd = cmd;
-  }
-
-  public String getPos() {
-    return pos;
-  }
-
-  public void setPos(String pos) {
-    this.pos = pos;
   }
 
   public String getLemma() {
@@ -230,45 +174,10 @@ public class Word {
     this.lexsn = lexsn;
   }
 
-  @Override
-  public String toString() {
-    return this.word;
-  }
-
-  public boolean equals(Object oword) {
-
-    if (!(oword instanceof Word))
-      return false;
-    if (oword == this)
-      return true;
-
-    Word iword = (Word) oword;
-
-    if (this.lemma != null && iword.getLemma() != null) {
-      if (iword.getLemma().equals(this.getLemma())
-          && WSDHelper.getPOS(iword.getPos()).equals(
-              WSDHelper.getPOS(this.getPos()))) {
-        return true;
-      }
-    } else {
-      if (this.word.equals(iword.getWord())
-          && WSDHelper.getPOSabbreviation(this.getPos()).equals(
-              WSDHelper.getPOSabbreviation(iword.getPos()))) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   public boolean isInstanceOf(String wordTag) {
-
-    String tag = WSDHelper.getPOSabbreviation(this.getPos());
-
-    String oword = wordTag.split("\\.")[0];
-    String otag = wordTag.split("\\.")[1];
-
     if (this.lemma != null) {
-      if (this.lemma.equals(oword) && tag.equals(otag)) {
+      String[] parts = wordTag.split("\\."); // word.tag
+      if (this.lemma.equals(parts[0]) && pos.getKey().equals(parts[1])) {
         if (this.lexsn != null) {
           return true;
         }
@@ -278,22 +187,46 @@ public class Word {
   }
 
   public boolean senseEquals(Object oword) {
-
-    if (!(oword instanceof Word))
-      return false;
     if (oword == this)
       return true;
+    if (!(oword instanceof Word iword))
+      return false;
 
-    Word iword = (Word) oword;
-
-    if (iword.getLemma().equals(this.getLemma())
-        && WSDHelper.getPOS(iword.getPos()).equals(
-            WSDHelper.getPOS(this.getPos()))
-        && iword.getLexsn().equals(this.getLexsn())) {
-      return true;
+    if (lemma != null && iword.getLemma() != null &&
+            lexsn != null && iword.getLexsn() != null) {
+      return lemma.equals(iword.getLemma()) && pos.equals(iword.getPos())
+              && lexsn.equals(iword.getLexsn());
+    } else {
+      return false;
     }
+  }
 
-    return false;
+  @Override
+  public String toString() {
+    return this.word;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = Objects.hashCode(word);
+    result = 31 * result + Objects.hashCode(pos);
+    result = 31 * result + Objects.hashCode(lemma);
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object oword) {
+
+    if (oword == this)
+      return true;
+    if (!(oword instanceof Word iword))
+      return false;
+
+    if (this.lemma != null && iword.getLemma() != null) {
+      return lemma.equals(iword.getLemma()) && pos.equals(iword.getPos());
+    } else {
+      return this.word.equals(iword.getWord()) && pos.equals(iword.pos);
+    }
   }
 
 }

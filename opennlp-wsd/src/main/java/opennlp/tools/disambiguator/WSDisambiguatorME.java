@@ -47,7 +47,7 @@ public class WSDisambiguatorME extends AbstractWSDisambiguator {
 
   protected static final WSDContextGenerator CONTEXT_GENERATOR = new IMSWSDContextGenerator();
 
-  protected WSDModel model;
+  private final WSDModel model;
 
   /**
    * Instantiates a {@link WSDisambiguatorME} with the specified {@code model} and {@code params}.
@@ -70,11 +70,7 @@ public class WSDisambiguatorME extends AbstractWSDisambiguator {
   public WSDModel getModel() {
     return model;
   }
-
-  void setModel(WSDModel model) {
-    this.model = model;
-  }
-
+  
   /**
    * Trains a {@link WSDModel model} for a {@link WSDisambiguatorME}.
    *
@@ -125,7 +121,7 @@ public class WSDisambiguatorME extends AbstractWSDisambiguator {
   private static List<String> buildSurroundingContext(ObjectStream<WSDSample> samples,
                                                       int windowSize) throws IOException {
     IMSWSDContextGenerator contextGenerator = new IMSWSDContextGenerator();
-    ArrayList<String> surroundingWordsModel = new ArrayList<>();
+    List<String> surroundingWordsModel = new ArrayList<>();
     WSDSample sample;
     while ((sample = samples.read()) != null) {
       String[] words = contextGenerator.extractSurroundingContext(sample.getTargetPosition(),
@@ -157,33 +153,8 @@ public class WSDisambiguatorME extends AbstractWSDisambiguator {
     final String wordTag = sample.getTargetWordTag();
 
     if (WSDHelper.isRelevantPOSTag(sample.getTargetTag())) {
-      if (model == null || !model.getWordTag().equals(wordTag)) {
-        // TODO externalize model loading compensation code
-        String tFile = defParams.getTrainingDataDirectory() + wordTag;
-        File file = new File(tFile + ".wsd.model");
-        if (file.exists() && !file.isDirectory()) {
-          try {
-            setModel(new WSDModel(file));
-          } catch (IOException e) {
-            e.printStackTrace();
-          }
-
-          String[] context = CONTEXT_GENERATOR.getContext(sample,
-                  defParams.ngram, defParams.windowSize, this.model.getContextEntries());
-          double[] outcomeProbs = model.getWSDMaxentModel().eval(context);
-          String outcome = model.getWSDMaxentModel().getBestOutcome(outcomeProbs);
-          
-          if (outcome != null && !outcome.isEmpty()) {
-
-            return params.getSenseSource().name() + " " + wordTag.split("\\.")[0] + "%" + outcome;
-
-          } else {
-            return disambiguate(wordTag);
-          }
-
-        } else {
-          return disambiguate(wordTag);
-        }
+      if (!model.getWordTag().equals(wordTag)) {
+        return disambiguate(wordTag);
       } else {
         String[] context = CONTEXT_GENERATOR.getContext(sample,
                 defParams.ngram, defParams.windowSize, this.model.getContextEntries());

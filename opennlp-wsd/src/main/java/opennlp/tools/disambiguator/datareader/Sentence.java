@@ -20,26 +20,19 @@
 package opennlp.tools.disambiguator.datareader;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class Sentence {
 
-  protected int pnum;
-  protected int snum;
-  protected ArrayList<Word> iwords;
-
-  public Sentence() {
-    super();
-    this.iwords = new ArrayList<>();
-  }
+  private final int pnum;
+  private final int snum;
+  private List<Word> iwords;
 
   public Sentence(int pnum, int snum) {
-    super();
-    this.pnum = pnum;
-    this.snum = snum;
-    this.iwords = new ArrayList<>();
+    this(pnum, snum, new ArrayList<>());
   }
 
-  public Sentence(int pnum, int snum, ArrayList<Word> iwords) {
+  public Sentence(int pnum, int snum, List<Word> iwords) {
     super();
     this.pnum = pnum;
     this.snum = snum;
@@ -50,27 +43,15 @@ public class Sentence {
     return pnum;
   }
 
-  public void setPnum(int pnum) {
-    this.pnum = pnum;
-  }
-
   public int getSnum() {
     return snum;
   }
 
-  public void setSnum(int snum) {
-    this.snum = snum;
-  }
-
-  public ArrayList<Word> getIwords() {
+  public List<Word> getIwords() {
     return iwords;
   }
 
-  public void setIwords(ArrayList<Word> iwords) {
-    this.iwords = iwords;
-  }
-
-  public void addIword(Word iword) {
+  public void addWord(Word iword) {
     this.iwords.add(iword);
   }
 
@@ -81,7 +62,6 @@ public class Sentence {
       sentence.append(" ").append(iword.toString());
     }
     return sentence.substring(1, sentence.length());
-
   }
 
 }

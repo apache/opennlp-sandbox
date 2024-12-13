@@ -29,6 +29,7 @@ import java.io.OutputStream;
 import java.nio.file.Path;
 
 import opennlp.tools.AbstractTest;
+import opennlp.tools.ml.model.MaxentModel;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.CleanupMode;
@@ -43,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -118,6 +120,30 @@ class WSDModelTest extends AbstractTest {
     assertDoesNotThrow(() -> new WSDModel(modelFile.toURI().toURL()));
   }
 
+  @Test
+  void testEqualsWithSame() {
+    assertEquals(trainedModel, trainedModel); // on purpose!
+  }
 
+  @Test
+  void testEqualsWithDifferentObject() {
+    assertNotEquals(trainedModel, "foo"); // on purpose!
+  }
   
+  @Test
+  void testHashCodeWithSame() {
+    assertEquals(trainedModel.hashCode(), trainedModel.hashCode()); // on purpose!
+  }
+
+  @Test
+  void testHashCodeWithDifferentObject() {
+    assertNotEquals(trainedModel.hashCode(), "foo".hashCode()); // on purpose!
+  }
+
+  @Test
+  void testGetMaxentModel() {
+    final MaxentModel maxentModel = trainedModel.getWSDMaxentModel();
+    assertNotNull(maxentModel);
+  }
+
 }

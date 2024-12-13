@@ -30,6 +30,8 @@
     <Loggers>
         <Logger name="opennlp.tools.ml" level="warn"/>
         <Logger name="opennlp.tools.cmdline" level="warn"/>
+        <Logger name="opennlp.tools.disambiguator" level="error"/>
+        <Logger name="opennlp.tools.disambiguator.datareader" level="error"/>
         <Root level="INFO">
             <AppenderRef ref="STDOUT"/>
         </Root>
