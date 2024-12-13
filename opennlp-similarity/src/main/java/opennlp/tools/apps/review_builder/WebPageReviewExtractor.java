@@ -28,7 +28,6 @@ import opennlp.tools.similarity.apps.HitBase;
 import opennlp.tools.similarity.apps.utils.StringDistanceMeasurer;
 import opennlp.tools.similarity.apps.utils.Utils;
 import opennlp.tools.textsimilarity.TextProcessor;
-import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -392,7 +391,6 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 
 	public static void main(String[] args){
 		String resourceDir = "C:/stanford-corenlp/src/test/resources/";
-		ParserChunker2MatcherProcessor proc = ParserChunker2MatcherProcessor.getInstance(resourceDir); 
 			
 		//ProductFinderInAWebPage init = new ProductFinderInAWebPage("C:/workspace/relevanceEngine/src/test/resources");
 

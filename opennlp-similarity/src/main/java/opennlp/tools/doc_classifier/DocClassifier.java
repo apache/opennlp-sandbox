@@ -24,10 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
-import opennlp.tools.similarity.apps.utils.CountItemsList;
-import opennlp.tools.similarity.apps.utils.ValueSortMap;
-import opennlp.tools.textsimilarity.TextProcessor;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -45,6 +41,10 @@ import org.apache.lucene.store.FSDirectory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import opennlp.tools.similarity.apps.utils.CountItemsList;
+import opennlp.tools.similarity.apps.utils.ValueSortMap;
+import opennlp.tools.textsimilarity.TextProcessor;
+
 public class DocClassifier {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DocClassifier.class);
@@ -60,8 +60,8 @@ public class DocClassifier {
 
 	// http://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm
 	private static final int MAX_DOCS_TO_USE_FOR_CLASSIFY = 10, // 10 similar
-			// docs for nearest neighbor settings
-			MAX_CATEG_RESULTS = 2;
+	// docs for nearest neighbor settings
+	MAX_CATEG_RESULTS = 2;
 	private static final float BEST_TO_NEX_BEST_RATIO = 2.0f;
 	// to accumulate classif results
 	private final CountItemsList<String> localCats = new CountItemsList<>();

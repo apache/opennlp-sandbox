@@ -17,12 +17,12 @@
 
 package opennlp.tools.apps.utils.email;
 
-import javax.mail.PasswordAuthentication;
+import jakarta.mail.PasswordAuthentication;
 
 /**
  * This contains the required information for the smtp authorization!
  */
-public class SMTPAuthenticator extends javax.mail.Authenticator {
+public class SMTPAuthenticator extends jakarta.mail.Authenticator {
 	
 	private final String username;
 	private final String password;

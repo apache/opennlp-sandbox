@@ -16,31 +16,29 @@
  */
 package opennlp.tools.similarity.apps.solr;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
-import java.util.logging.Logger;
 
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
 
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import opennlp.tools.similarity.apps.HitBase;
 import opennlp.tools.similarity.apps.RelatedSentenceFinder;
 import opennlp.tools.similarity.apps.RelatedSentenceFinderML;
-import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
 public class ContentGeneratorRequestHandler extends SearchHandler {
-	private static final Logger LOG =
-					Logger.getLogger("com.become.search.requestHandlers.SearchResultsReRankerRequestHandler");
+	private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 	private final WordDocBuilderEndNotes docBuilder = new WordDocBuilderEndNotes ();
 
 	public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp){
@@ -97,43 +95,12 @@ public class ContentGeneratorRequestHandler extends SearchHandler {
 
 	}
 
-	static class StreamLogger extends Thread{
-
-		private final InputStream mInputStream;
-
-		public StreamLogger(InputStream is) {
-			this.mInputStream = is;
-		}
-
-		public void run() {
-			try {
-				InputStreamReader isr = new InputStreamReader(mInputStream);
-				BufferedReader br = new BufferedReader(isr);
-				String line;
-				while ((line = br.readLine()) != null) {
-					System.out.println(line);
-				}
-			} catch (IOException ioe) {
-				ioe.printStackTrace();
-			}
-		}
-	}
-
 	public String cgRunner(String[] args) {
-		int count=0; 
+
+		int count=0;
 		for(String a: args){
 			System.out.print(count+">>" + a + " | ");
 			count++;
-		}
-		try {
-			String resourceDir = args[2];
-			ParserChunker2MatcherProcessor sm = null;
-			if (resourceDir!=null)
-				sm = ParserChunker2MatcherProcessor.getInstance(resourceDir);
-			else
-				sm = ParserChunker2MatcherProcessor.getInstance();
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
 
 		String bingKey = args[7];

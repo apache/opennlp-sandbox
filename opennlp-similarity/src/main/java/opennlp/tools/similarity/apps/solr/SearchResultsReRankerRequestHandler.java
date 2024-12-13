@@ -16,11 +16,11 @@
  */
 package opennlp.tools.similarity.apps.solr;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Logger;
 
 import opennlp.tools.similarity.apps.HitBase;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
@@ -34,16 +34,16 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SearchResultsReRankerRequestHandler extends SearchHandler {
-	private static final Logger LOG =
-					Logger.getLogger("com.become.search.requestHandlers.SearchResultsReRankerRequestHandler");
+
+	private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 	private final static int MAX_SEARCH_RESULTS = 100;
 	private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
 	private ParserChunker2MatcherProcessor sm = null;
-	private static final String RESOURCE_DIR = "/home/solr/solr-4.4.0/example/src/test/resources";
-	//"C:/workspace/TestSolr/src/test/resources";
-	//"/data1/solr/example/src/test/resources";
 
 	public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp){
 		// get query string
@@ -65,10 +65,6 @@ public class SearchResultsReRankerRequestHandler extends SearchHandler {
 		}
 
 		List<HitBase> searchResults = new ArrayList<>();
-
-
-
-
 
 		for (int i = 0; i< MAX_SEARCH_RESULTS; i++){
 			String title = req.getParams().get("t"+i);
@@ -105,7 +101,6 @@ public class SearchResultsReRankerRequestHandler extends SearchHandler {
 
 			}
 		}
-
 
 		List<HitBase> reRankedResults;
 		query = query.replace('+', ' ');
@@ -165,12 +160,11 @@ public class SearchResultsReRankerRequestHandler extends SearchHandler {
 		return false;
 	}
 
-	private List<HitBase> calculateMatchScoreResortHits(List<HitBase> hits,
-			String searchQuery) {
+	private List<HitBase> calculateMatchScoreResortHits(List<HitBase> hits, String searchQuery) {
 		try {
-			sm =  ParserChunker2MatcherProcessor.getInstance(RESOURCE_DIR);
-		} catch (Exception e){
-			LOG.severe(e.getMessage());
+			sm =  ParserChunker2MatcherProcessor.getInstance();
+		} catch (RuntimeException e){
+			LOG.error(e.getMessage(), e);
 		}
 		List<HitBase> newHitList = new ArrayList<>();
 

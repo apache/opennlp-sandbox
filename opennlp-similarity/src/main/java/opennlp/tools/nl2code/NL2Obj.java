@@ -30,18 +30,15 @@ public class NL2Obj {
   ObjectControlOp prevOp;
 
   public NL2Obj(String path) {
-    prevOp = new ObjectControlOp();
-    prevOp.setOperatorIf("");
-    prevOp.setOperatorFor("");
-    parser = ParserChunker2MatcherProcessor.getInstance(path);
+    this();
   }
   
   public NL2Obj() {
-	    prevOp = new ObjectControlOp();
-	    prevOp.setOperatorIf("");
-	    prevOp.setOperatorFor("");
-	    parser = ParserChunker2MatcherProcessor.getInstance();
-	  }
+    prevOp = new ObjectControlOp();
+    prevOp.setOperatorIf("");
+    prevOp.setOperatorFor("");
+    parser = ParserChunker2MatcherProcessor.getInstance();
+  }
 
   static final String[] EPISTEMIC_STATES_LIST = new String[] {
     "select", "verify", "find", "start", "stop", "go", "check"
