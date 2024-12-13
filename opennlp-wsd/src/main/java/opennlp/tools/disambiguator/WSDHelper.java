@@ -17,9 +17,6 @@
 
 package opennlp.tools.disambiguator;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,6 +29,8 @@ import net.sf.extjwnl.JWNLException;
 import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.dictionary.Dictionary;
 import net.sf.extjwnl.dictionary.MorphologicalProcessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import opennlp.tools.lemmatizer.Lemmatizer;
 import opennlp.tools.lemmatizer.LemmatizerModel;
@@ -42,46 +41,47 @@ import opennlp.tools.postag.ThreadSafePOSTaggerME;
 import opennlp.tools.tokenize.ThreadSafeTokenizerME;
 import opennlp.tools.tokenize.Tokenizer;
 import opennlp.tools.util.DownloadUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class WSDHelper {
 
   private static final Logger LOG = LoggerFactory.getLogger(WSDHelper.class);
 
-  protected static final Pattern NUMBERS_PATTERN = Pattern.compile(".*[0-9].*");
+  private static final Pattern NUMBERS_PATTERN = Pattern.compile(".*[0-9].*");
 
-  protected static Tokenizer tokenizer;
-  protected static POSTagger tagger;
-  protected static Lemmatizer lemmatizer;
-  protected static Dictionary dictionary;
-  protected static MorphologicalProcessor morph;
-
-  protected static String lemmatizerDictionaryPath;
+  private static Tokenizer tokenizer;
+  private static POSTagger tagger;
+  private static Lemmatizer lemmatizer;
+  private static Dictionary dictionary;
+  private static MorphologicalProcessor morph;
 
   // local caches for faster lookup
   private static Map<String, Map<String, Object>> stemCache;
   private static Map<String, Object> stopCache;
   private static Map<String, Object> relvCache;
 
-  private static Map<String, Object> englishWords;
   private static Map<String, Object> nonRelevWordsDef;
 
+  // Lists of word groups
+  private static final List<String> TAGS_ADJECTIVE = Arrays.asList("JJ", "JJR", "JJS");
+  private static final List<String> TAGS_ADVERB = Arrays.asList("RB", "RBR", "RBS", "UH");
+  private static final List<String> TAGS_NOUN = Arrays.asList("NN", "NNS", "NNP", "NNPS");
+  private static final List<String> TAGS_VERB = Arrays.asList("VB", "VBD", "VBG", "VBN", "VBP", "VBZ");
+
   // List of all the PoS tags
-  public static final String[] ALL_POS = {"CC", "CD", "DT", "EX", "FW", "IN", "JJ",
+  private static final String[] ALL_POS = {"CC", "CD", "DT", "EX", "FW", "IN", "JJ",
           "JJR", "JJS", "LS", "MD", "NN", "NNS", "NNP", "NNPS", "PDT", "POS",
           "PRP", "PRP$", "RB", "RBR", "RBS", "RP", "SYM", "TO", "UH", "VB", "VBD",
           "VBG", "VBN", "VBP", "VBZ", "WDT", "WP", "WP$", "WRB"};
 
   // List of the PoS tags of which the senses are to be extracted
-  public static final String[] RELEVANT_POS = {"JJ", "JJR", "JJS", "NN", "NNS", "RB",
+  private static final String[] RELEVANT_POS = {"JJ", "JJR", "JJS", "NN", "NNS", "RB",
           "RBR", "RBS", "UH", "VB", "VBD", "VBG", "VBN", "VBP", "VBZ"};
 
   // List of Negation Words
-  public static final List<String> NEGATION_WORDS = Arrays.asList("not", "no", "never", "none", "nor", "non");
+  private static final List<String> NEGATION_WORDS = Arrays.asList("not", "no", "never", "none", "nor", "non");
 
   // List of Stop Words
-  public static final List<String> STOP_WORDS = Arrays.asList(
+  protected static final List<String> STOP_WORDS = Arrays.asList(
           "a", "able", "about", "above", "according", "accordingly",
           "across", "actually", "after", "afterwards", "again", "against",
           "ain't", "all", "allow", "allows", "almost", "alone", "along",
@@ -192,13 +192,6 @@ public class WSDHelper {
     return stemCache;
   }
 
-  public static Map<String, Object> getEnglishWords() {
-    if (englishWords == null || englishWords.isEmpty()) {
-      englishWords = getEnglishWords(lemmatizerDictionaryPath);
-    }
-    return englishWords;
-  }
-
   /**
    * This initializes the Hashmap of irrelevant words definitions, and returns
    * the definition of the irrelevant word based on its pos-tag
@@ -207,7 +200,7 @@ public class WSDHelper {
    * @return the definition of the word
    */
   public static String getNonRelevWordsDef(String posTag) {
-    if (nonRelevWordsDef == null || nonRelevWordsDef.keySet().isEmpty()) {
+    if (nonRelevWordsDef == null || nonRelevWordsDef.isEmpty()) {
       nonRelevWordsDef = new HashMap<>();
 
       nonRelevWordsDef.put("CC", "coordinating conjunction");
@@ -317,16 +310,16 @@ public class WSDHelper {
     return tokenizer;
   }
 
-  public static Tokenizer loadTokenizer(String language) {
-    return getTokenizer(language);
+  public static void loadTokenizer(String language) {
+    getTokenizer(language);
   }
 
-  public static POSTagger loadTagger(String language) {
-    return getTagger(language);
+  public static void loadTagger(String language) {
+    getTagger(language);
   }
 
-  public static Lemmatizer loadLemmatizer(String language) {
-    return getLemmatizer(language);
+  public static void loadLemmatizer(String language) {
+    getLemmatizer(language);
   }
 
   /*
@@ -386,42 +379,6 @@ public class WSDHelper {
   }
 
   /**
-   * Extract the list of ALL English words
-   * 
-   * @param dict
-   *          this file is the same that is used in the DictionaryLemmatizer
-   *          (i.e.,"en-lemmatizer.dict")
-   * 
-   * @return a Map of all the English words
-   */
-  public static Map<String, Object> getEnglishWords(String dict) {
-
-    Map<String, Object> words = new HashMap<>();
-
-    File file = new File(lemmatizerDictionaryPath);
-
-    if (file.exists()) {
-
-      try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-        String line = br.readLine();
-        while (line != null) {
-          line = br.readLine();
-          if (line != null) {
-            String word = line.split("\\t")[0];
-            words.put(word, null);
-          }
-        }
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-      return words;
-    } else {
-      return null;
-    }
-
-  }
-
-  /**
    * return the PoS (Class POS) out of the PoS-tag
    * 
    * @param posTag
@@ -430,22 +387,16 @@ public class WSDHelper {
    */
   public static POS getPOS(String posTag) {
 
-    List<String> adjective = Arrays.asList("JJ", "JJR", "JJS");
-    List<String> adverb = Arrays.asList("RB", "RBR", "RBS", "UH");
-    List<String> noun = Arrays.asList("NN", "NNS", "NNP", "NNPS");
-    List<String> verb = Arrays.asList("VB", "VBD", "VBG", "VBN", "VBP", "VBZ");
-
-    if (adjective.contains(posTag))
+    if (TAGS_ADJECTIVE.contains(posTag))
       return POS.ADJECTIVE;
-    else if (adverb.contains(posTag))
+    else if (TAGS_ADVERB.contains(posTag))
       return POS.ADVERB;
-    else if (noun.contains(posTag))
+    else if (TAGS_NOUN.contains(posTag))
       return POS.NOUN;
-    else if (verb.contains(posTag))
+    else if (TAGS_VERB.contains(posTag))
       return POS.VERB;
     else
       return null;
-
   }
 
   /**
@@ -550,9 +501,9 @@ public class WSDHelper {
 
   }
 
-  public static ArrayList<WordPOS> getAllRelevantWords(String[] sentence) {
+  public static List<WordPOS> getAllRelevantWords(String[] sentence) {
 
-    ArrayList<WordPOS> relevantWords = new ArrayList<>();
+    List<WordPOS> relevantWords = new ArrayList<>();
 
     String[] tags = getTagger().tag(sentence);
 

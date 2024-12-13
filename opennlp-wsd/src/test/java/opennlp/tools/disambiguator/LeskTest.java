@@ -25,10 +25,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import opennlp.tools.disambiguator.LeskParameters.LESK_TYPE;
+import opennlp.tools.disambiguator.LeskParameters.LeskType;
 import opennlp.tools.util.Span;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 /**
  * This is the test class for {@link Lesk}.
@@ -38,29 +41,40 @@ import opennlp.tools.util.Span;
  * feature generation or other mistakes which decrease the disambiguation
  * performance of the disambiguator.
  */
-// TODO write more tests
 class LeskTest extends AbstractDisambiguatorTest {
 
-  static Lesk lesk;
+  private static final boolean[] FEATURES = {true, true, true, true, true, true, true, true, true, true};
+
+  private static LeskParameters params;
+
+  // SUT
+  private static Lesk lesk;
+
 
   /*
    * Setup the testing variables
    */
   @BeforeAll
-  static void setUp() {
+  static void initEnv() {
     lesk = new Lesk();
-    LeskParameters params = new LeskParameters();
-    params.setLeskType(LESK_TYPE.LESK_EXT);
-    boolean[] a = {true, true, true, true, true, true, true, true, true, true};
-    params.setFeatures(a);
+    params = new LeskParameters();
+    params.setFeatures(FEATURES);
     lesk.setParams(params);
+  }
+
+  @BeforeEach
+  void setUp() {
+    // set the default type, in case it was changed for type-based testing
+    params.setType(LeskType.LESK_EXT);
   }
 
   /*
    * Tests disambiguating only one word : The ambiguous word "please"
    */
-  @Test
-  void testOneWordDisambiguation() {
+  @ParameterizedTest
+  @EnumSource(LeskType.class)
+  void testDisambiguateWithOneWord(LeskType type) {
+    params.setType(type);
     String sense = lesk.disambiguate(sentence1, tags1, lemmas1, 8);
     assertEquals("WORDNET please%4:02:00:: -1", sense, "Check 'please' sense ID");
   }
@@ -71,7 +85,7 @@ class LeskTest extends AbstractDisambiguatorTest {
    * as determiners
    */
   @Test
-  void testWordSpanDisambiguation() {
+  void testDisambiguateWithWordSpan() {
     Span span = new Span(3, 7);
     List<String> senses = lesk.disambiguate(sentence2, tags2, lemmas2, span);
 
@@ -87,7 +101,7 @@ class LeskTest extends AbstractDisambiguatorTest {
    * Tests disambiguating all the words
    */
   @Test
-  void testAllWordsDisambiguation() {
+  void testDisambiguateWithAllWords() {
     List<String> senses = lesk.disambiguate(sentence3, tags3, lemmas3);
 
     assertEquals(16, senses.size(), "Check number of returned words");

@@ -20,10 +20,8 @@
 package opennlp.tools.disambiguator;
 
 import java.util.List;
-import java.util.regex.Pattern;
 
 import net.sf.extjwnl.JWNLException;
-import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.data.Synset;
 import net.sf.extjwnl.data.Word;
 import org.slf4j.Logger;
@@ -41,6 +39,8 @@ import org.slf4j.LoggerFactory;
 public class MFS extends AbstractWSDisambiguator {
 
   private static final Logger LOG = LoggerFactory.getLogger(MFS.class);
+
+  public static final String NONESENSE = "nonesense";
 
   public MFS() {
     super();
@@ -67,7 +67,7 @@ public class MFS extends AbstractWSDisambiguator {
         }
       }
     }
-    return "nonesense";
+    return NONESENSE;
   }
 
   /**

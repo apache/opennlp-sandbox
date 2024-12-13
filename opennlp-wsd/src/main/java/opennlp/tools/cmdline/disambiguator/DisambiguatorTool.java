@@ -34,10 +34,12 @@ import opennlp.tools.cmdline.SystemInputStreamFactory;
 import opennlp.tools.cmdline.TerminateToolException;
 import opennlp.tools.disambiguator.Disambiguator;
 import opennlp.tools.disambiguator.Lesk;
+import opennlp.tools.disambiguator.WSDDefaultParameters;
 import opennlp.tools.disambiguator.WSDHelper;
 import opennlp.tools.disambiguator.WSDSample;
 import opennlp.tools.disambiguator.WSDSampleStream;
 import opennlp.tools.disambiguator.MFS;
+import opennlp.tools.disambiguator.WSDisambiguatorME;
 import opennlp.tools.util.MarkableFileInputStreamFactory;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.ParagraphStream;
@@ -72,13 +74,10 @@ public class DisambiguatorTool extends CmdLineTool {
       throw new TerminateToolException(1);
     }
 
-    DisambiguatorToolParams params = ArgumentParser.parse(args,
-        DisambiguatorToolParams.class);
-
+    DisambiguatorToolParams params = ArgumentParser.parse(args, DisambiguatorToolParams.class);
     Disambiguator disambiguator = makeTool(params);
 
-    PerformanceMonitor perfMon = new PerformanceMonitor(System.err, "sent");
-
+    PerformanceMonitor perfMon = new PerformanceMonitor(System.err, "disambiguator");
     perfMon.start();
 
     try (ObjectStream<String> lineStream = new PlainTextByLineStream(
@@ -87,9 +86,7 @@ public class DisambiguatorTool extends CmdLineTool {
       while ((line = lineStream.read()) != null) {
 
         WSDSample sample = WSDSample.parse(line);
-
-        WSDHelper.printResults(disambiguator,
-            disambiguator.disambiguate(sample));
+        WSDHelper.printResults(disambiguator, disambiguator.disambiguate(sample));
 
         perfMon.incrementCounter();
       }
@@ -110,6 +107,8 @@ public class DisambiguatorTool extends CmdLineTool {
     } else if (params.getType().equalsIgnoreCase("lesk")) {
       wsd = new Lesk();
     } else if (params.getType().equalsIgnoreCase("ims")) {
+      // TODO Set a "default" model for ENG -> future!?
+      wsd = new WSDisambiguatorME(null, new WSDDefaultParameters());
     }
     return wsd;
 

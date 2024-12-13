@@ -21,14 +21,14 @@ public class IMSWSDSequenceValidator {
 
   private boolean validOutcome(String outcome, String prevOutcome) {
     if (outcome.startsWith("I-")) {
-      if (prevOutcome == null) {
-        return (false);
+      if (prevOutcome == null || prevOutcome.isBlank()) {
+        return false;
       } else {
         if (prevOutcome.equals("O")) {
-          return (false);
+          return false;
         }
         if (!prevOutcome.substring(2).equals(outcome.substring(2))) {
-          return (false);
+          return false;
         }
       }
     }
@@ -43,8 +43,7 @@ public class IMSWSDSequenceValidator {
     return validOutcome(outcome, prevOutcome);
   }
 
-  public boolean validSequence(int i, String[] sequence, String[] s,
-    String outcome) {
+  public boolean validSequence(String outcome, String[] s) {
     return validOutcome(outcome, s);
   }
 }

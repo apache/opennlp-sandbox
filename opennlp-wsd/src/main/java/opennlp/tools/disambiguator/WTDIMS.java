@@ -21,6 +21,12 @@ package opennlp.tools.disambiguator;
 
 import net.sf.extjwnl.data.POS;
 
+/**
+ * Represents a word to disambiguate (WTD) in the 'It Makes Sense' (IMS) approach.
+ *
+ * @see: <a href="https://aclanthology.org/P10-4014.pdf">
+ *   https://aclanthology.org/P10-4014.pdf</a>
+ */
 public class WTDIMS {
 
   // Attributes related to the context
@@ -37,20 +43,52 @@ public class WTDIMS {
   protected String[] localCollocations;
   protected String[] features;
 
-  public WTDIMS(String[] sentence, String[] posTags, String[] lemmas,
-                int wordIndex) {
+  /**
+   * Initializes a {@link WTDIMS} instance with the specified parameters.
+   *
+   * @param sentence The tokens representing a sentence. Must not be {@code null}.
+   * @param posTags  The POS tags related to the tokens in {@code sentence}. Must not be {@code null}.
+   * @param lemmas   The lemmas related to the tokens in {@code sentence}. Must not be {@code null}.
+   * @param wordIndex The positional index of a target token.
+   *
+   * @throws IllegalArgumentException Thrown if the parameters are inconsistent.
+   */
+  public WTDIMS(String[] sentence, String[] posTags, String[] lemmas, int wordIndex) {
     setSentence(sentence);
     setPosTags(posTags);
     setLemmas(lemmas);
     setWordIndex(wordIndex);
+    checkArguments();
   }
 
+  /**
+   * Initializes a {@link WTDIMS} instance with the specified parameters.
+   *
+   * @param sentence The tokens representing a sentence. Must not be {@code null}.
+   * @param posTags  The POS tags related to the tokens in {@code sentence}. Must not be {@code null}.
+   * @param lemmas   The lemmas related to the tokens in {@code sentence}. Must not be {@code null}.
+   * @param wordIndex The positional index of a target token.
+   * @param senseIDs  One or more Wordnet senses (IDs) at the {@code wordIndex}.
+   *
+   * @throws IllegalArgumentException Thrown if the parameters are inconsistent.
+   */
   public WTDIMS(String[] sentence, String[] posTags, String[] lemmas,
                 int wordIndex, String[] senseIDs) {
     this(sentence, posTags, lemmas, wordIndex);
     setSenseIDs(senseIDs);
   }
 
+  /**
+   * Initializes a {@link WTDIMS} instance with the specified parameters.
+   *
+   * @param sentence The tokens representing a sentence. Must not be {@code null}.
+   * @param posTags  The POS tags related to the tokens in {@code sentence}. Must not be {@code null}.
+   * @param lemmas   The lemmas related to the tokens in {@code sentence}. Must not be {@code null}.
+   * @param word     The word that represents a target token within the {@code sentence}.
+   * @param senseIDs One or more Wordnet senses (IDs) at the {@code wordIndex}.
+   *
+   * @throws IllegalArgumentException Thrown if the parameters are inconsistent.
+   */
   public WTDIMS(String[] sentence, String[] posTags, String[] lemmas,
                 String word, String[] senseIDs) {
     setSentence(sentence);
@@ -64,10 +102,21 @@ public class WTDIMS {
         break;
       }
     }
+    checkArguments();
   }
 
+  /**
+   * Initializes a {@link WTDIMS} instance with the specified parameters.
+   * @param s A valid {@link WSDSample}. It must not be {@code null}.
+   */
   public WTDIMS(WSDSample s) {
     this(s.getSentence(), s.getTags(), s.getLemmas(), s.getTargetPosition(), s.getSenseIDs());
+  }
+
+  private void checkArguments() {
+    if (sentence.length != posTags.length || posTags.length != lemmas.length
+            || wordIndex < 0 || wordIndex >= posTags.length)
+      throw new IllegalArgumentException("Some parameters are not correct");
   }
 
   public String[] getSentence() {
@@ -122,6 +171,10 @@ public class WTDIMS {
     return this.getSentence()[this.getWordIndex()];
   }
 
+  /**
+   * @return Retrieves a combination of the target word and POS tag,
+   *         separated by a {@code .} character.
+   */
   public String getWordTag() {
 
     String wordBaseForm = lemmas[wordIndex];

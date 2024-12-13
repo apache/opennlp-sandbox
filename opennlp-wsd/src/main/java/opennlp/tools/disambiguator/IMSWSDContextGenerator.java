@@ -21,17 +21,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.regex.Pattern;
+import java.util.Set;
 
+/**
+ * The default Context Generator of the IMS approach.
+ *
+ * @see WSDContextGenerator
+ */
 public class IMSWSDContextGenerator implements WSDContextGenerator {
 
-  private String[] extractPosOfSurroundingWords(int index, String[] tags,
-    int windowSize) {
+  private String[] extractPosOfSurroundingWords(int index, String[] tags, int windowSize) {
 
     String[] windowTags = new String[2 * windowSize + 1];
 
     int j = 0;
-
     for (int i = index - windowSize; i < index + windowSize; i++) {
       if (i < 0 || i >= tags.length) {
         windowTags[j] = "null";
@@ -44,38 +47,34 @@ public class IMSWSDContextGenerator implements WSDContextGenerator {
     return windowTags;
   }
 
-  public String[] extractSurroundingContext(int index, String[] toks, String[] lemmas, int windowSize) {
+  // TODO consider the windowSize
+  String[] extractSurroundingContext(int index, String[] toks, String[] lemmas, int windowSize) {
 
-    // TODO consider the windowSize
     List<String> contextWords = new ArrayList<>();
-
-    final Pattern pattern = Pattern.compile("[^a-z_]");
 
     for (int i = 0; i < toks.length; i++) {
       if (lemmas != null) {
         if (!WSDHelper.STOP_WORDS.contains(toks[i].toLowerCase()) && (index != i)) {
 
           String lemma = lemmas[i].toLowerCase();
-          lemma = pattern.matcher(lemma).replaceAll("").trim();
+          lemma = PATTERN.matcher(lemma).replaceAll("").trim();
 
           if (lemma.length() > 1) {
             contextWords.add(lemma);
           }
-
         }
       }
     }
-
     return contextWords.toArray(new String[0]);
   }
 
   private String[] extractLocalCollocations(int index, String[] sentence, int ngram) {
+
     /*
      * Here the author used only 11 features of this type. the range was set to
      * 3 (bigrams extracted in a way that they are at max separated by 1 word).
      */
-
-    ArrayList<String> localCollocations = new ArrayList<>();
+    List<String> localCollocations = new ArrayList<>();
 
     for (int i = index - ngram; i <= index + ngram; i++) {
 
@@ -97,32 +96,18 @@ public class IMSWSDContextGenerator implements WSDContextGenerator {
     return res;
   }
 
-  /**
-   * Get Context of a word To disambiguate
-   *
-   * @param index      The index of the word to disambiguate
-   * @param tokens     The tokens of the sentence / context
-   * @param tags       The POS-tags of the sentence / context
-   * @param lemmas     The lemmas of the sentence / context
-   * @param ngram      The ngram to consider for context
-   * @param windowSize The context window
-   * @param model      The list of unigrams
-   * @return The IMS context of the word to disambiguate
-   */
   @Override
   public String[] getContext(int index, String[] tokens,
     String[] tags, String[] lemmas, int ngram, int windowSize, List<String> model) {
 
-    String[] posOfSurroundingWords = extractPosOfSurroundingWords(index, tokens,
-      windowSize);
-
-    HashSet<String> surroundingWords = new HashSet<>(Arrays
-            .asList(extractSurroundingContext(index, tokens, lemmas, windowSize)));
-
+    String[] posOfSurroundingWords =
+            extractPosOfSurroundingWords(index, tokens, windowSize);
+    Set<String> surroundingWords = new HashSet<>(Arrays.asList(
+            extractSurroundingContext(index, tokens, lemmas, windowSize)));
     String[] localCollocations = extractLocalCollocations(index, tokens, ngram);
 
     String[] serializedFeatures = new String[posOfSurroundingWords.length
-      + localCollocations.length + model.size()];
+            + localCollocations.length + model.size()];
 
     int i = 0;
 
@@ -146,18 +131,9 @@ public class IMSWSDContextGenerator implements WSDContextGenerator {
     return serializedFeatures;
   }
 
-  /**
-   * Get Context of a word To disambiguate
-   *
-   * @param sample     The sample of the word to disambiguate
-   * @param ngram      The ngram to consider for context
-   * @param windowSize The context window
-   * @param model      The list of unigrams
-   * @return The IMS context of the word to disambiguate
-   */
   @Override
-  public String[] getContext(WSDSample sample, int ngram,
-    int windowSize, List<String> model) {
+  public String[] getContext(WSDSample sample, int ngram, int windowSize,
+                             List<String> model) {
     return getContext(sample.getTargetPosition(), sample.getSentence(),
       sample.getTags(), sample.getLemmas(), ngram, windowSize, model);
   }

@@ -20,15 +20,39 @@
 package opennlp.tools.disambiguator;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Interface for {@link AbstractWSDisambiguator} context generators.
  */
 public interface WSDContextGenerator {
 
-  String[] getContext(int index, String[] toks, String[] tags,
-    String[] lemmas, int ngram, int windowSize, List<String> model);
+  Pattern PATTERN = Pattern.compile("[^a-z_]");
 
+  /**
+   * Computes the context of a word to disambiguate.
+   *
+   * @param index      The index of the word to disambiguate.
+   * @param toks       The tokens of the sentence / context.
+   * @param tags       The POS-tags of the sentence / context.
+   * @param lemmas     The lemmas of the sentence / context.
+   * @param ngram      The ngram to consider for context. Must be greater than {@code 0}.
+   * @param windowSize The context window. Must be greater than {@code 0}.
+   * @param model      The list of unigrams.
+   * @return The IMS context of the word to disambiguate.
+   */
+  String[] getContext(int index, String[] toks, String[] tags, String[] lemmas,
+                      int ngram, int windowSize, List<String> model);
+
+  /**
+   * Computes the context of a word to disambiguate.
+   *
+   * @param sample     The sample of the word to disambiguate.
+   * @param ngram      The ngram to consider for context. Must be greater than {@code 0}.
+   * @param windowSize The context window. Must be greater than {@code 0}.
+   * @param model      The list of unigrams.
+   * @return The IMS context of the word to disambiguate.
+   */
   String[] getContext(WSDSample sample, int ngram, int windowSize, List<String> model);
 
 }

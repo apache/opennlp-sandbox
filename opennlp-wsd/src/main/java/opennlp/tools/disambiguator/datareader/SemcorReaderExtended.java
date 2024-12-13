@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -76,18 +77,33 @@ public class SemcorReaderExtended {
   private static final String ATTRIBUTE_LEXSN = "lexsn";
   private static final String ELEMENT_PUNCTUATION = "punc";
 
-  private String semcorDirectory;
   private static final String[] folders = { "brown1", "brown2", "brownv" };
   private static final String tagfiles = "/tagfiles/";
-  
-  public SemcorReaderExtended(String semcorDirectory) {
-    super();
-    LOG.debug("Reading from: {} ...", semcorDirectory);
-    setSemcorDirectory(semcorDirectory);
+
+  private final String semcorDirectory;
+
+  /**
+   * Initializes a {@link SemcorReaderExtended} via a {@link Path}
+   * referencing the semcor data directory.
+   *
+   * @param semcorDir Must not be {@code null} and not be empty.
+   */
+  public SemcorReaderExtended(Path semcorDir) {
+    this(semcorDir.toAbsolutePath() + File.separator);
   }
 
-  private void setSemcorDirectory(String semcorDirectory) {
-    this.semcorDirectory = semcorDirectory;
+  /**
+   * Initializes a {@link SemcorReaderExtended} via a reference
+   * to the semcor data directory.
+   *
+   * @param semcorDir Must not be {@code null} and not be empty.
+   */
+  public SemcorReaderExtended(String semcorDir) {
+    if (semcorDir == null || semcorDir.isBlank()) {
+      throw new IllegalArgumentException("semcorDir must not be null or empty!");
+    }
+    LOG.debug("Reading from: {} ...", semcorDir);
+    this.semcorDirectory = semcorDir;
   }
 
   /**
@@ -155,7 +171,7 @@ public class SemcorReaderExtended {
 
                       Word iword = new Word(paragraphID, sentenceID, wnum,
                           Word.Type.WORD, word, cmd, pos, lemma, wnsn, lexsn);
-                      isentence.addIword(iword);
+                      isentence.addWord(iword);
 
                       // System.out.println("*** " + iword.toString() + " ***");
 
@@ -163,7 +179,7 @@ public class SemcorReaderExtended {
                       // if the word is not disambiguated
                       Word iword = new Word(paragraphID, sentenceID, wnum,
                           Word.Type.WORD, word, cmd, pos);
-                      isentence.addIword(iword);
+                      isentence.addWord(iword);
                     }
                     wnum++;
 
@@ -172,7 +188,7 @@ public class SemcorReaderExtended {
                     String word = eWord.getTextContent();
                     Word iword = new Word(paragraphID, sentenceID, wnum,
                         Word.Type.PUNCTUATIONMARK, word);
-                    isentence.addIword(iword);
+                    isentence.addWord(iword);
                     wnum++;
                   }
                 }
@@ -313,8 +329,7 @@ public class SemcorReaderExtended {
     List<WSDSample> result = new ArrayList<>();
 
     for (String folder : folders) {
-      List<WSDSample> list = getSemcorFolderData(folder, wordTag);
-      result.addAll(list);
+      result.addAll(getSemcorFolderData(folder, wordTag));
     }
 
     return result;

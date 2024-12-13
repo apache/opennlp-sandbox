@@ -20,6 +20,7 @@
 package opennlp.tools.disambiguator;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import net.sf.extjwnl.JWNLException;
@@ -28,10 +29,13 @@ import net.sf.extjwnl.data.Synset;
 import net.sf.extjwnl.data.Word;
 import net.sf.extjwnl.data.list.PointerTargetNode;
 import net.sf.extjwnl.data.list.PointerTargetNodeList;
+
 import opennlp.tools.tokenize.Tokenizer;
 
 /**
- * Convenience class to access some features.
+ * Convenience class to access some features via {@link Synset synsets}.
+ *
+ * @see Synset
  */
 public class SynNode {
 
@@ -51,11 +55,26 @@ public class SynNode {
   private final List<Synset> pertainyms = new ArrayList<>();
   private final List<WordPOS> synonyms = new ArrayList<>();
 
+  /**
+   * Initializes a {@link SynNode} via specified {@link Synset} and
+   * {@code senseRelevantWords}.
+   *
+   * @param synSet The {@link Synset} to associate with.
+   * @param senseRelevantWords The {@link WordPOS elements} to consider relevant.
+   */
   public SynNode(Synset synSet, List<WordPOS> senseRelevantWords) {
     this.synset = synSet;
     this.senseRelevantWords = senseRelevantWords;
   }
 
+  /**
+   * Initializes a {@link SynNode} via specified {@link Synset} and
+   * {@code senseRelevantWords}.
+   *
+   * @param parent The {@link Synset} to associate with as a parent element.
+   * @param synSet The {@link Synset} to associate with.
+   * @param senseRelevantWords The {@link WordPOS elements} to consider relevant.
+   */
   public SynNode(Synset parent, Synset synSet, List<WordPOS> senseRelevantWords) {
     this(synSet, senseRelevantWords);
     this.parent = parent;
@@ -65,11 +84,7 @@ public class SynNode {
     return senseRelevantWords;
   }
 
-  public void setSenseRelevantWords(List<WordPOS> senseRelevantWords) {
-    this.senseRelevantWords = senseRelevantWords;
-  }
-
-  public void setHypernyms() {
+  void addHypernyms() {
     PointerTargetNodeList phypernyms;
     try {
       phypernyms = PointerUtils.getDirectHypernyms(this.synset);
@@ -77,11 +92,11 @@ public class SynNode {
         this.hypernyms.add(ptn.getSynset());
       }
     } catch (JWNLException e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
   }
 
-  public void setMeronyms() {
+  void addMeronyms() {
     PointerTargetNodeList pmeronyms;
     try {
       pmeronyms = PointerUtils.getMeronyms(this.synset);
@@ -89,11 +104,11 @@ public class SynNode {
         this.meronyms.add(ptn.getSynset());
       }
     } catch (JWNLException e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
   }
 
-  public void setHolonyms() {
+  void addHolonyms() {
     PointerTargetNodeList pholonyms;
     try {
       pholonyms = PointerUtils.getHolonyms(this.synset);
@@ -101,11 +116,11 @@ public class SynNode {
         this.holonyms.add(ptn.getSynset());
       }
     } catch (JWNLException e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
   }
 
-  public void setHyponyms() {
+  void addHyponyms() {
     PointerTargetNodeList phyponyms;
     try {
       phyponyms = PointerUtils.getDirectHyponyms(this.synset);
@@ -113,11 +128,11 @@ public class SynNode {
         this.hyponyms.add(ptn.getSynset());
       }
     } catch (JWNLException e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
   }
 
-  public void setEntailements() {
+  void addEntailements() {
     PointerTargetNodeList pentailments;
     try {
       pentailments = PointerUtils.getEntailments(this.synset);
@@ -125,11 +140,11 @@ public class SynNode {
         this.entailments.add(ptn.getSynset());
       }
     } catch (JWNLException e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
   }
 
-  public void setCoordinateTerms() {
+  void addCoordinateTerms() {
     PointerTargetNodeList pcoordinateTerms;
     try {
       pcoordinateTerms = PointerUtils.getCoordinateTerms(this.synset);
@@ -137,11 +152,11 @@ public class SynNode {
         this.coordinateTerms.add(ptn.getSynset());
       }
     } catch (JWNLException e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
   }
 
-  public void setCauses() {
+  void addCauses() {
     PointerTargetNodeList pcauses;
     try {
       pcauses = PointerUtils.getCauses(this.synset);
@@ -149,11 +164,11 @@ public class SynNode {
         this.causes.add(ptn.getSynset());
       }
     } catch (JWNLException e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
   }
 
-  public void setAttributes() {
+  void addAttributes() {
     PointerTargetNodeList pattributes;
     try {
       pattributes = PointerUtils.getAttributes(this.synset);
@@ -161,11 +176,11 @@ public class SynNode {
         this.attributes.add(ptn.getSynset());
       }
     } catch (JWNLException e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
   }
 
-  public void setPertainyms() {
+  void addPertainyms() {
     PointerTargetNodeList ppertainyms;
     try {
       ppertainyms = PointerUtils.getPertainyms(this.synset);
@@ -173,53 +188,53 @@ public class SynNode {
         this.pertainyms.add(ptn.getSynset());
       }
     } catch (JWNLException e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
   }
 
-  public void setSynonyms() {
+  void addSynonyms() {
     for (Word word : synset.getWords())
       synonyms.add(new WordPOS(word.toString(), word.getPOS()));
   }
 
   public List<Synset> getHypernyms() {
-    return hypernyms;
+    return Collections.unmodifiableList(hypernyms);
   }
 
   public List<Synset> getHyponyms() {
-    return hyponyms;
+    return Collections.unmodifiableList(hyponyms);
   }
 
   public List<Synset> getMeronyms() {
-    return meronyms;
+    return Collections.unmodifiableList(meronyms);
   }
 
   public List<Synset> getHolonyms() {
-    return holonyms;
+    return Collections.unmodifiableList(holonyms);
   }
 
   public List<Synset> getEntailments() {
-    return entailments;
+    return Collections.unmodifiableList(entailments);
   }
 
   public List<Synset> getCoordinateTerms() {
-    return coordinateTerms;
+    return Collections.unmodifiableList(coordinateTerms);
   }
 
   public List<Synset> getCauses() {
-    return causes;
+    return Collections.unmodifiableList(causes);
   }
 
   public List<Synset> getAttributes() {
-    return attributes;
+    return Collections.unmodifiableList(attributes);
   }
 
   public List<Synset> getPertainyms() {
-    return pertainyms;
+    return Collections.unmodifiableList(pertainyms);
   }
 
   public List<WordPOS> getSynonyms() {
-    return synonyms;
+    return Collections.unmodifiableList(synonyms);
   }
 
   public String getGloss() {
@@ -242,8 +257,8 @@ public class SynNode {
     final Tokenizer tokenizer = WSDHelper.getTokenizer();
     for (int i = 0; i < nodes.size(); i++) {
       SynNode sn = nodes.get(i);
-      sn.setSenseRelevantWords(WSDHelper.getAllRelevantWords(tokenizer.tokenize(sn.getGloss())));
-      WordSense wordSense = new WordSense(i, nodes.get(i));
+      sn.senseRelevantWords = WSDHelper.getAllRelevantWords(tokenizer.tokenize(sn.getGloss()));
+      WordSense wordSense = new WordSense(i, sn);
       scoredSenses.add(wordSense);
     }
     return scoredSenses;

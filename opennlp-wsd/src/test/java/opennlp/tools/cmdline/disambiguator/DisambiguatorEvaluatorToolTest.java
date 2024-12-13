@@ -17,26 +17,37 @@
 
 package opennlp.tools.cmdline.disambiguator;
 
-import java.io.File;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import opennlp.tools.cmdline.ArgumentParser.OptionalParameter;
-import opennlp.tools.cmdline.ArgumentParser.ParameterDescription;
-import opennlp.tools.cmdline.params.EncodingParameter;
-import opennlp.tools.cmdline.params.LanguageParams;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Parameters for DisambiguatorTool.
- * <p>
- * Note: Do not use this class, internal use only!
- */
-public interface DisambiguatorToolParams extends LanguageParams,EncodingParameter {
+public class DisambiguatorEvaluatorToolTest {
 
-  @ParameterDescription(valueName = "mfs|lesk|ims", description = "The type of the disambiguator approach. One of mfs|lesk|ims.")
-  @OptionalParameter(defaultValue = "mfs")
-  String getType();
-     
-  @ParameterDescription(valueName = "testData", description = "the data to be used during evaluation")
-  @OptionalParameter
-  File getData();
+  private DisambiguatorEvaluatorTool tool;
 
+  @BeforeEach
+  void setUp() {
+    tool = new DisambiguatorEvaluatorTool();
+  }
+
+  @Test
+  void testGetName() {
+    assertEquals("DisambiguatorEvaluator", tool.getName());
+  }
+
+  @Test
+  void testGetShortDescription() {
+    assertEquals("Disambiguator Evaluation Tool",
+            tool.getShortDescription());
+  }
+
+  @Test
+  void testGetHelp() {
+    assertTrue(tool.getHelp().startsWith(
+      "Usage: opennlp DisambiguatorEvaluator -data testData [-model model] " +
+              "[-encoding charsetName] [-type mfs|lesk|ims] -lang language"));
+  }
+  
 }

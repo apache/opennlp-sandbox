@@ -51,16 +51,25 @@ public class WSDDefaultParameters extends WSDParameters {
    * @param trainingDataDir The {@link Path} where to place or lookup trained models.
    */
   public WSDDefaultParameters(int windowSize, int ngram, SenseSource senseSource, Path trainingDataDir) {
-
     this.languageCode = DFLT_LANG_CODE;
     this.windowSize = windowSize;
     this.ngram = ngram;
     this.senseSource = senseSource;
     this.trainingDataDir = trainingDataDir;
+    if (trainingDataDir != null) {
+      File folder = trainingDataDir.toFile();
+      if (!folder.exists())
+        folder.mkdirs();
+    }
+  }
 
-    File folder = trainingDataDir.toFile();
-    if (!folder.exists())
-      folder.mkdirs();
+  /**
+   * Initializes a new set of {@link WSDDefaultParameters}.
+   * The default language used is <i>English</i>, the window size is {@link #DFLT_WIN_SIZE},
+   * and the ngram length is initialized as {@link #DFLT_NGRAM}.
+   */
+  public WSDDefaultParameters() {
+    this(DFLT_WIN_SIZE, DFLT_NGRAM, DFLT_SOURCE, null);
   }
 
   /**

@@ -49,7 +49,7 @@ class LeskEvaluatorIT extends AbstractEvaluatorTest {
     LeskParameters leskParams = new LeskParameters();
     boolean[] a = {true, true, true, true, true, false, false, false, false, false};
     leskParams.setFeatures(a);
-    leskParams.setLeskType(LeskParameters.LESK_TYPE.LESK_EXT_CTXT);
+    leskParams.setType(LeskParameters.LeskType.LESK_EXT_CTXT);
     lesk.setParams(leskParams);
   }
 

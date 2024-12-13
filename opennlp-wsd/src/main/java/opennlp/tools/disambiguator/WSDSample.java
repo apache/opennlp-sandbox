@@ -103,7 +103,7 @@ public class WSDSample implements Sample {
   private void checkArguments() {
     if (sentence.length != tags.length || tags.length != lemmas.length
         || targetPosition < 0 || targetPosition >= tags.length)
-      throw new IllegalArgumentException("Some inputs are not correct");
+      throw new IllegalArgumentException("Some parameters are not correct");
   }
 
   public String[] getSentence() {
@@ -175,12 +175,16 @@ public class WSDSample implements Sample {
    */
   public List<Synset> getSynsets() {
     try {
-      IndexWord iw = WSDHelper.getDictionary().lookupIndexWord(
-              WSDHelper.getPOS(this.getTargetTag()), this.getTargetWord());
-      if (iw != null) {
-        return iw.getSenses();
-      } else {
+      POS pos = WSDHelper.getPOS(this.getTargetTag());
+      if (pos == null) {
         return Collections.emptyList();
+      } else {
+        IndexWord iw = WSDHelper.getDictionary().lookupIndexWord(pos,  this.getTargetWord());
+        if (iw != null) {
+          return iw.getSenses();
+        } else {
+          return Collections.emptyList();
+        }
       }
     } catch (JWNLException e) {
       throw new RuntimeException(e);

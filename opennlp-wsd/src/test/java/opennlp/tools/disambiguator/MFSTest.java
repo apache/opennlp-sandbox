@@ -21,6 +21,7 @@ package opennlp.tools.disambiguator;
 
 import java.util.List;
 
+import opennlp.tools.util.InvalidFormatException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -28,6 +29,7 @@ import opennlp.tools.util.Span;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * This is the test class for {@link MFS}.
@@ -37,12 +39,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * generation or other mistakes which decrease the disambiguation performance of
  * the disambiguator.
  */
-// TODO write more tests
-// TODO modify when we fix the parameter model
 class MFSTest extends AbstractDisambiguatorTest {
 
-  static MFS mfs;
-
+  private static MFS mfs;
 
   /*
    * Setup the testing variables and the training files
@@ -91,5 +90,29 @@ class MFSTest extends AbstractDisambiguatorTest {
     String sensePosSix = senses.get(6);
     assertNotNull(sensePosSix);
     assertEquals("WSDHELPER personal pronoun", sensePosSix, "Check preposition");
+  }
+
+  @Test
+  void testGetMostFrequentSense() throws InvalidFormatException {
+    WSDSample sample = WSDSample.parse("1 The_DT day_NN has_VBZ just_RB started_VBN ._.");
+    String mfSenses = MFS.getMostFrequentSense(sample);
+    assertNotNull(mfSenses);
+    assertTrue(mfSenses.contains("day"));
+  }
+
+  @Test
+  void testGetMostFrequentSenseWithNoSense() throws InvalidFormatException {
+    WSDSample sample = WSDSample.parse("0 The_DT");
+    String mfSense = MFS.getMostFrequentSense(sample);
+    assertNotNull(mfSense);
+    assertEquals(MFS.NONESENSE, mfSense);
+  }
+
+  @Test
+  void testGetMostFrequentSenses() throws InvalidFormatException {
+    WSDSample sample = WSDSample.parse("1 The_DT day_NN has_VBZ just_RB started_VBN ._.");
+    String[] mfSenses = MFS.getMostFrequentSenses(sample);
+    assertNotNull(mfSenses);
+    assertEquals(10, mfSenses.length);
   }
 }
