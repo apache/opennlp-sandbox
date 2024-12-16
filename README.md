@@ -60,6 +60,7 @@ Currently, the library has different packages:
 * `modelbuilder-addon`: A set of classes to build models.
 * `nlp-utils`: A set of OpenNLP util classes.
 * `opennlp-dl`: An adapter component for [deeplearning4j](https://deeplearning4j.konduit.ai).
+* `opennlp-grpc`: An implementation of a gRPC backend for OpenNLP.
 * `opennlp-similarity`: A set of components that solve a number of text processing and search tasks, see further details in this [README.md](opennlp-similarity/README.md).
 * `opennlp-wsd`: A set of components that allow for word sense disambiguation.
 * `summarizer`: A set of classes providing text summarization.

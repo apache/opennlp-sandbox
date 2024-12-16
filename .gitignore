@@ -10,3 +10,7 @@ nb-configuration.xml
 .checkstyle
 *.onnx
 vocab.txt
+extlib
+*.jar
+
+.python-version

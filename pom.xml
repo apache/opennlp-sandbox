@@ -105,6 +105,7 @@
         <module>opennlp-brat-annotator</module>
         <module>opennlp-coref</module>
         <module>opennlp-dl</module>
+        <module>opennlp-grpc</module>
         <module>opennlp-similarity</module>
         <module>opennlp-wsd</module>
         <module>tf-ner-poc</module>
