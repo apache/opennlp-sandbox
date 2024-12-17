@@ -17,7 +17,6 @@
  * under the License.
  */
 
-
 package opennlp;
 
 public final class OpenNLPService {
@@ -2195,6 +2194,2886 @@ public final class OpenNLPService {
 
     @java.lang.Override
     public opennlp.OpenNLPService.TagWithContextRequest getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
+  }
+
+  public interface TokenizeRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:opennlp.TokenizeRequest)
+      com.google.protobuf.MessageOrBuilder {
+
+    /**
+     * <code>string sentence = 1;</code>
+     * @return The sentence.
+     */
+    java.lang.String getSentence();
+    /**
+     * <code>string sentence = 1;</code>
+     * @return The bytes for sentence.
+     */
+    com.google.protobuf.ByteString
+        getSentenceBytes();
+
+    /**
+     * <code>string model_hash = 2;</code>
+     * @return The modelHash.
+     */
+    java.lang.String getModelHash();
+    /**
+     * <code>string model_hash = 2;</code>
+     * @return The bytes for modelHash.
+     */
+    com.google.protobuf.ByteString
+        getModelHashBytes();
+  }
+  /**
+   * Protobuf type {@code opennlp.TokenizeRequest}
+   */
+  public static final class TokenizeRequest extends
+      com.google.protobuf.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:opennlp.TokenizeRequest)
+      TokenizeRequestOrBuilder {
+  private static final long serialVersionUID = 0L;
+    // Use TokenizeRequest.newBuilder() to construct.
+    private TokenizeRequest(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
+      super(builder);
+    }
+    private TokenizeRequest() {
+      sentence_ = "";
+      modelHash_ = "";
+    }
+
+    @java.lang.Override
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        UnusedPrivateParameter unused) {
+      return new TokenizeRequest();
+    }
+
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+    getUnknownFields() {
+      return this.unknownFields;
+    }
+    private TokenizeRequest(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            case 10: {
+              java.lang.String s = input.readStringRequireUtf8();
+
+              sentence_ = s;
+              break;
+            }
+            case 18: {
+              java.lang.String s = input.readStringRequireUtf8();
+
+              modelHash_ = s;
+              break;
+            }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (com.google.protobuf.UninitializedMessageException e) {
+        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return opennlp.OpenNLPService.internal_static_opennlp_TokenizeRequest_descriptor;
+    }
+
+    @java.lang.Override
+    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return opennlp.OpenNLPService.internal_static_opennlp_TokenizeRequest_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              opennlp.OpenNLPService.TokenizeRequest.class, opennlp.OpenNLPService.TokenizeRequest.Builder.class);
+    }
+
+    public static final int SENTENCE_FIELD_NUMBER = 1;
+    private volatile java.lang.Object sentence_;
+    /**
+     * <code>string sentence = 1;</code>
+     * @return The sentence.
+     */
+    @java.lang.Override
+    public java.lang.String getSentence() {
+      java.lang.Object ref = sentence_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        sentence_ = s;
+        return s;
+      }
+    }
+    /**
+     * <code>string sentence = 1;</code>
+     * @return The bytes for sentence.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getSentenceBytes() {
+      java.lang.Object ref = sentence_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        sentence_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int MODEL_HASH_FIELD_NUMBER = 2;
+    private volatile java.lang.Object modelHash_;
+    /**
+     * <code>string model_hash = 2;</code>
+     * @return The modelHash.
+     */
+    @java.lang.Override
+    public java.lang.String getModelHash() {
+      java.lang.Object ref = modelHash_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        modelHash_ = s;
+        return s;
+      }
+    }
+    /**
+     * <code>string model_hash = 2;</code>
+     * @return The bytes for modelHash.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getModelHashBytes() {
+      java.lang.Object ref = modelHash_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        modelHash_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    private byte memoizedIsInitialized = -1;
+    @java.lang.Override
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    @java.lang.Override
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(sentence_)) {
+        com.google.protobuf.GeneratedMessageV3.writeString(output, 1, sentence_);
+      }
+      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(modelHash_)) {
+        com.google.protobuf.GeneratedMessageV3.writeString(output, 2, modelHash_);
+      }
+      unknownFields.writeTo(output);
+    }
+
+    @java.lang.Override
+    public int getSerializedSize() {
+      int size = memoizedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(sentence_)) {
+        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(1, sentence_);
+      }
+      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(modelHash_)) {
+        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(2, modelHash_);
+      }
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
+      return size;
+    }
+
+    @java.lang.Override
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof opennlp.OpenNLPService.TokenizeRequest)) {
+        return super.equals(obj);
+      }
+      opennlp.OpenNLPService.TokenizeRequest other = (opennlp.OpenNLPService.TokenizeRequest) obj;
+
+      if (!getSentence()
+          .equals(other.getSentence())) return false;
+      if (!getModelHash()
+          .equals(other.getModelHash())) return false;
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      hash = (37 * hash) + SENTENCE_FIELD_NUMBER;
+      hash = (53 * hash) + getSentence().hashCode();
+      hash = (37 * hash) + MODEL_HASH_FIELD_NUMBER;
+      hash = (53 * hash) + getModelHash().hashCode();
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
+    }
+
+    public static opennlp.OpenNLPService.TokenizeRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static opennlp.OpenNLPService.TokenizeRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static opennlp.OpenNLPService.TokenizeRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static opennlp.OpenNLPService.TokenizeRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static opennlp.OpenNLPService.TokenizeRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static opennlp.OpenNLPService.TokenizeRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static opennlp.OpenNLPService.TokenizeRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static opennlp.OpenNLPService.TokenizeRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static opennlp.OpenNLPService.TokenizeRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
+    }
+    public static opennlp.OpenNLPService.TokenizeRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static opennlp.OpenNLPService.TokenizeRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static opennlp.OpenNLPService.TokenizeRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+
+    @java.lang.Override
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
+    }
+    public static Builder newBuilder(opennlp.OpenNLPService.TokenizeRequest prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code opennlp.TokenizeRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:opennlp.TokenizeRequest)
+        opennlp.OpenNLPService.TokenizeRequestOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return opennlp.OpenNLPService.internal_static_opennlp_TokenizeRequest_descriptor;
+      }
+
+      @java.lang.Override
+      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return opennlp.OpenNLPService.internal_static_opennlp_TokenizeRequest_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                opennlp.OpenNLPService.TokenizeRequest.class, opennlp.OpenNLPService.TokenizeRequest.Builder.class);
+      }
+
+      // Construct using opennlp.OpenNLPService.TokenizeRequest.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
+        }
+      }
+      @java.lang.Override
+      public Builder clear() {
+        super.clear();
+        sentence_ = "";
+
+        modelHash_ = "";
+
+        return this;
+      }
+
+      @java.lang.Override
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return opennlp.OpenNLPService.internal_static_opennlp_TokenizeRequest_descriptor;
+      }
+
+      @java.lang.Override
+      public opennlp.OpenNLPService.TokenizeRequest getDefaultInstanceForType() {
+        return opennlp.OpenNLPService.TokenizeRequest.getDefaultInstance();
+      }
+
+      @java.lang.Override
+      public opennlp.OpenNLPService.TokenizeRequest build() {
+        opennlp.OpenNLPService.TokenizeRequest result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      @java.lang.Override
+      public opennlp.OpenNLPService.TokenizeRequest buildPartial() {
+        opennlp.OpenNLPService.TokenizeRequest result = new opennlp.OpenNLPService.TokenizeRequest(this);
+        result.sentence_ = sentence_;
+        result.modelHash_ = modelHash_;
+        onBuilt();
+        return result;
+      }
+
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          com.google.protobuf.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          com.google.protobuf.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof opennlp.OpenNLPService.TokenizeRequest) {
+          return mergeFrom((opennlp.OpenNLPService.TokenizeRequest)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(opennlp.OpenNLPService.TokenizeRequest other) {
+        if (other == opennlp.OpenNLPService.TokenizeRequest.getDefaultInstance()) return this;
+        if (!other.getSentence().isEmpty()) {
+          sentence_ = other.sentence_;
+          onChanged();
+        }
+        if (!other.getModelHash().isEmpty()) {
+          modelHash_ = other.modelHash_;
+          onChanged();
+        }
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
+        return this;
+      }
+
+      @java.lang.Override
+      public final boolean isInitialized() {
+        return true;
+      }
+
+      @java.lang.Override
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        opennlp.OpenNLPService.TokenizeRequest parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (opennlp.OpenNLPService.TokenizeRequest) e.getUnfinishedMessage();
+          throw e.unwrapIOException();
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+
+      private java.lang.Object sentence_ = "";
+      /**
+       * <code>string sentence = 1;</code>
+       * @return The sentence.
+       */
+      public java.lang.String getSentence() {
+        java.lang.Object ref = sentence_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          sentence_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>string sentence = 1;</code>
+       * @return The bytes for sentence.
+       */
+      public com.google.protobuf.ByteString
+          getSentenceBytes() {
+        java.lang.Object ref = sentence_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          sentence_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>string sentence = 1;</code>
+       * @param value The sentence to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSentence(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        sentence_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string sentence = 1;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearSentence() {
+        
+        sentence_ = getDefaultInstance().getSentence();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string sentence = 1;</code>
+       * @param value The bytes for sentence to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSentenceBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        sentence_ = value;
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object modelHash_ = "";
+      /**
+       * <code>string model_hash = 2;</code>
+       * @return The modelHash.
+       */
+      public java.lang.String getModelHash() {
+        java.lang.Object ref = modelHash_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          modelHash_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>string model_hash = 2;</code>
+       * @return The bytes for modelHash.
+       */
+      public com.google.protobuf.ByteString
+          getModelHashBytes() {
+        java.lang.Object ref = modelHash_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          modelHash_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>string model_hash = 2;</code>
+       * @param value The modelHash to set.
+       * @return This builder for chaining.
+       */
+      public Builder setModelHash(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        modelHash_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string model_hash = 2;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearModelHash() {
+        
+        modelHash_ = getDefaultInstance().getModelHash();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string model_hash = 2;</code>
+       * @param value The bytes for modelHash to set.
+       * @return This builder for chaining.
+       */
+      public Builder setModelHashBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        modelHash_ = value;
+        onChanged();
+        return this;
+      }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:opennlp.TokenizeRequest)
+    }
+
+    // @@protoc_insertion_point(class_scope:opennlp.TokenizeRequest)
+    private static final opennlp.OpenNLPService.TokenizeRequest DEFAULT_INSTANCE;
+    static {
+      DEFAULT_INSTANCE = new opennlp.OpenNLPService.TokenizeRequest();
+    }
+
+    public static opennlp.OpenNLPService.TokenizeRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static final com.google.protobuf.Parser<TokenizeRequest>
+        PARSER = new com.google.protobuf.AbstractParser<TokenizeRequest>() {
+      @java.lang.Override
+      public TokenizeRequest parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return new TokenizeRequest(input, extensionRegistry);
+      }
+    };
+
+    public static com.google.protobuf.Parser<TokenizeRequest> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<TokenizeRequest> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public opennlp.OpenNLPService.TokenizeRequest getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
+  }
+
+  public interface TokenizePosRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:opennlp.TokenizePosRequest)
+      com.google.protobuf.MessageOrBuilder {
+
+    /**
+     * <code>string sentence = 1;</code>
+     * @return The sentence.
+     */
+    java.lang.String getSentence();
+    /**
+     * <code>string sentence = 1;</code>
+     * @return The bytes for sentence.
+     */
+    com.google.protobuf.ByteString
+        getSentenceBytes();
+
+    /**
+     * <code>string model_hash = 2;</code>
+     * @return The modelHash.
+     */
+    java.lang.String getModelHash();
+    /**
+     * <code>string model_hash = 2;</code>
+     * @return The bytes for modelHash.
+     */
+    com.google.protobuf.ByteString
+        getModelHashBytes();
+  }
+  /**
+   * Protobuf type {@code opennlp.TokenizePosRequest}
+   */
+  public static final class TokenizePosRequest extends
+      com.google.protobuf.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:opennlp.TokenizePosRequest)
+      TokenizePosRequestOrBuilder {
+  private static final long serialVersionUID = 0L;
+    // Use TokenizePosRequest.newBuilder() to construct.
+    private TokenizePosRequest(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
+      super(builder);
+    }
+    private TokenizePosRequest() {
+      sentence_ = "";
+      modelHash_ = "";
+    }
+
+    @java.lang.Override
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        UnusedPrivateParameter unused) {
+      return new TokenizePosRequest();
+    }
+
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+    getUnknownFields() {
+      return this.unknownFields;
+    }
+    private TokenizePosRequest(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            case 10: {
+              java.lang.String s = input.readStringRequireUtf8();
+
+              sentence_ = s;
+              break;
+            }
+            case 18: {
+              java.lang.String s = input.readStringRequireUtf8();
+
+              modelHash_ = s;
+              break;
+            }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (com.google.protobuf.UninitializedMessageException e) {
+        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return opennlp.OpenNLPService.internal_static_opennlp_TokenizePosRequest_descriptor;
+    }
+
+    @java.lang.Override
+    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return opennlp.OpenNLPService.internal_static_opennlp_TokenizePosRequest_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              opennlp.OpenNLPService.TokenizePosRequest.class, opennlp.OpenNLPService.TokenizePosRequest.Builder.class);
+    }
+
+    public static final int SENTENCE_FIELD_NUMBER = 1;
+    private volatile java.lang.Object sentence_;
+    /**
+     * <code>string sentence = 1;</code>
+     * @return The sentence.
+     */
+    @java.lang.Override
+    public java.lang.String getSentence() {
+      java.lang.Object ref = sentence_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        sentence_ = s;
+        return s;
+      }
+    }
+    /**
+     * <code>string sentence = 1;</code>
+     * @return The bytes for sentence.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getSentenceBytes() {
+      java.lang.Object ref = sentence_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        sentence_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int MODEL_HASH_FIELD_NUMBER = 2;
+    private volatile java.lang.Object modelHash_;
+    /**
+     * <code>string model_hash = 2;</code>
+     * @return The modelHash.
+     */
+    @java.lang.Override
+    public java.lang.String getModelHash() {
+      java.lang.Object ref = modelHash_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        modelHash_ = s;
+        return s;
+      }
+    }
+    /**
+     * <code>string model_hash = 2;</code>
+     * @return The bytes for modelHash.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getModelHashBytes() {
+      java.lang.Object ref = modelHash_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        modelHash_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    private byte memoizedIsInitialized = -1;
+    @java.lang.Override
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    @java.lang.Override
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(sentence_)) {
+        com.google.protobuf.GeneratedMessageV3.writeString(output, 1, sentence_);
+      }
+      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(modelHash_)) {
+        com.google.protobuf.GeneratedMessageV3.writeString(output, 2, modelHash_);
+      }
+      unknownFields.writeTo(output);
+    }
+
+    @java.lang.Override
+    public int getSerializedSize() {
+      int size = memoizedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(sentence_)) {
+        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(1, sentence_);
+      }
+      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(modelHash_)) {
+        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(2, modelHash_);
+      }
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
+      return size;
+    }
+
+    @java.lang.Override
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof opennlp.OpenNLPService.TokenizePosRequest)) {
+        return super.equals(obj);
+      }
+      opennlp.OpenNLPService.TokenizePosRequest other = (opennlp.OpenNLPService.TokenizePosRequest) obj;
+
+      if (!getSentence()
+          .equals(other.getSentence())) return false;
+      if (!getModelHash()
+          .equals(other.getModelHash())) return false;
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      hash = (37 * hash) + SENTENCE_FIELD_NUMBER;
+      hash = (53 * hash) + getSentence().hashCode();
+      hash = (37 * hash) + MODEL_HASH_FIELD_NUMBER;
+      hash = (53 * hash) + getModelHash().hashCode();
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
+    }
+
+    public static opennlp.OpenNLPService.TokenizePosRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static opennlp.OpenNLPService.TokenizePosRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static opennlp.OpenNLPService.TokenizePosRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static opennlp.OpenNLPService.TokenizePosRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static opennlp.OpenNLPService.TokenizePosRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static opennlp.OpenNLPService.TokenizePosRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static opennlp.OpenNLPService.TokenizePosRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static opennlp.OpenNLPService.TokenizePosRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static opennlp.OpenNLPService.TokenizePosRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
+    }
+    public static opennlp.OpenNLPService.TokenizePosRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static opennlp.OpenNLPService.TokenizePosRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static opennlp.OpenNLPService.TokenizePosRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+
+    @java.lang.Override
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
+    }
+    public static Builder newBuilder(opennlp.OpenNLPService.TokenizePosRequest prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code opennlp.TokenizePosRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:opennlp.TokenizePosRequest)
+        opennlp.OpenNLPService.TokenizePosRequestOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return opennlp.OpenNLPService.internal_static_opennlp_TokenizePosRequest_descriptor;
+      }
+
+      @java.lang.Override
+      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return opennlp.OpenNLPService.internal_static_opennlp_TokenizePosRequest_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                opennlp.OpenNLPService.TokenizePosRequest.class, opennlp.OpenNLPService.TokenizePosRequest.Builder.class);
+      }
+
+      // Construct using opennlp.OpenNLPService.TokenizePosRequest.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
+        }
+      }
+      @java.lang.Override
+      public Builder clear() {
+        super.clear();
+        sentence_ = "";
+
+        modelHash_ = "";
+
+        return this;
+      }
+
+      @java.lang.Override
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return opennlp.OpenNLPService.internal_static_opennlp_TokenizePosRequest_descriptor;
+      }
+
+      @java.lang.Override
+      public opennlp.OpenNLPService.TokenizePosRequest getDefaultInstanceForType() {
+        return opennlp.OpenNLPService.TokenizePosRequest.getDefaultInstance();
+      }
+
+      @java.lang.Override
+      public opennlp.OpenNLPService.TokenizePosRequest build() {
+        opennlp.OpenNLPService.TokenizePosRequest result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      @java.lang.Override
+      public opennlp.OpenNLPService.TokenizePosRequest buildPartial() {
+        opennlp.OpenNLPService.TokenizePosRequest result = new opennlp.OpenNLPService.TokenizePosRequest(this);
+        result.sentence_ = sentence_;
+        result.modelHash_ = modelHash_;
+        onBuilt();
+        return result;
+      }
+
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          com.google.protobuf.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          com.google.protobuf.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof opennlp.OpenNLPService.TokenizePosRequest) {
+          return mergeFrom((opennlp.OpenNLPService.TokenizePosRequest)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(opennlp.OpenNLPService.TokenizePosRequest other) {
+        if (other == opennlp.OpenNLPService.TokenizePosRequest.getDefaultInstance()) return this;
+        if (!other.getSentence().isEmpty()) {
+          sentence_ = other.sentence_;
+          onChanged();
+        }
+        if (!other.getModelHash().isEmpty()) {
+          modelHash_ = other.modelHash_;
+          onChanged();
+        }
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
+        return this;
+      }
+
+      @java.lang.Override
+      public final boolean isInitialized() {
+        return true;
+      }
+
+      @java.lang.Override
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        opennlp.OpenNLPService.TokenizePosRequest parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (opennlp.OpenNLPService.TokenizePosRequest) e.getUnfinishedMessage();
+          throw e.unwrapIOException();
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+
+      private java.lang.Object sentence_ = "";
+      /**
+       * <code>string sentence = 1;</code>
+       * @return The sentence.
+       */
+      public java.lang.String getSentence() {
+        java.lang.Object ref = sentence_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          sentence_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>string sentence = 1;</code>
+       * @return The bytes for sentence.
+       */
+      public com.google.protobuf.ByteString
+          getSentenceBytes() {
+        java.lang.Object ref = sentence_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          sentence_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>string sentence = 1;</code>
+       * @param value The sentence to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSentence(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        sentence_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string sentence = 1;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearSentence() {
+        
+        sentence_ = getDefaultInstance().getSentence();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string sentence = 1;</code>
+       * @param value The bytes for sentence to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSentenceBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        sentence_ = value;
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object modelHash_ = "";
+      /**
+       * <code>string model_hash = 2;</code>
+       * @return The modelHash.
+       */
+      public java.lang.String getModelHash() {
+        java.lang.Object ref = modelHash_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          modelHash_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>string model_hash = 2;</code>
+       * @return The bytes for modelHash.
+       */
+      public com.google.protobuf.ByteString
+          getModelHashBytes() {
+        java.lang.Object ref = modelHash_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          modelHash_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>string model_hash = 2;</code>
+       * @param value The modelHash to set.
+       * @return This builder for chaining.
+       */
+      public Builder setModelHash(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        modelHash_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string model_hash = 2;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearModelHash() {
+        
+        modelHash_ = getDefaultInstance().getModelHash();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string model_hash = 2;</code>
+       * @param value The bytes for modelHash to set.
+       * @return This builder for chaining.
+       */
+      public Builder setModelHashBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        modelHash_ = value;
+        onChanged();
+        return this;
+      }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:opennlp.TokenizePosRequest)
+    }
+
+    // @@protoc_insertion_point(class_scope:opennlp.TokenizePosRequest)
+    private static final opennlp.OpenNLPService.TokenizePosRequest DEFAULT_INSTANCE;
+    static {
+      DEFAULT_INSTANCE = new opennlp.OpenNLPService.TokenizePosRequest();
+    }
+
+    public static opennlp.OpenNLPService.TokenizePosRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static final com.google.protobuf.Parser<TokenizePosRequest>
+        PARSER = new com.google.protobuf.AbstractParser<TokenizePosRequest>() {
+      @java.lang.Override
+      public TokenizePosRequest parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return new TokenizePosRequest(input, extensionRegistry);
+      }
+    };
+
+    public static com.google.protobuf.Parser<TokenizePosRequest> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<TokenizePosRequest> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public opennlp.OpenNLPService.TokenizePosRequest getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
+  }
+
+  public interface SentDetectRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:opennlp.SentDetectRequest)
+      com.google.protobuf.MessageOrBuilder {
+
+    /**
+     * <code>string sentence = 1;</code>
+     * @return The sentence.
+     */
+    java.lang.String getSentence();
+    /**
+     * <code>string sentence = 1;</code>
+     * @return The bytes for sentence.
+     */
+    com.google.protobuf.ByteString
+        getSentenceBytes();
+
+    /**
+     * <code>string model_hash = 2;</code>
+     * @return The modelHash.
+     */
+    java.lang.String getModelHash();
+    /**
+     * <code>string model_hash = 2;</code>
+     * @return The bytes for modelHash.
+     */
+    com.google.protobuf.ByteString
+        getModelHashBytes();
+  }
+  /**
+   * Protobuf type {@code opennlp.SentDetectRequest}
+   */
+  public static final class SentDetectRequest extends
+      com.google.protobuf.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:opennlp.SentDetectRequest)
+      SentDetectRequestOrBuilder {
+  private static final long serialVersionUID = 0L;
+    // Use SentDetectRequest.newBuilder() to construct.
+    private SentDetectRequest(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
+      super(builder);
+    }
+    private SentDetectRequest() {
+      sentence_ = "";
+      modelHash_ = "";
+    }
+
+    @java.lang.Override
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        UnusedPrivateParameter unused) {
+      return new SentDetectRequest();
+    }
+
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+    getUnknownFields() {
+      return this.unknownFields;
+    }
+    private SentDetectRequest(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            case 10: {
+              java.lang.String s = input.readStringRequireUtf8();
+
+              sentence_ = s;
+              break;
+            }
+            case 18: {
+              java.lang.String s = input.readStringRequireUtf8();
+
+              modelHash_ = s;
+              break;
+            }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (com.google.protobuf.UninitializedMessageException e) {
+        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return opennlp.OpenNLPService.internal_static_opennlp_SentDetectRequest_descriptor;
+    }
+
+    @java.lang.Override
+    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return opennlp.OpenNLPService.internal_static_opennlp_SentDetectRequest_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              opennlp.OpenNLPService.SentDetectRequest.class, opennlp.OpenNLPService.SentDetectRequest.Builder.class);
+    }
+
+    public static final int SENTENCE_FIELD_NUMBER = 1;
+    private volatile java.lang.Object sentence_;
+    /**
+     * <code>string sentence = 1;</code>
+     * @return The sentence.
+     */
+    @java.lang.Override
+    public java.lang.String getSentence() {
+      java.lang.Object ref = sentence_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        sentence_ = s;
+        return s;
+      }
+    }
+    /**
+     * <code>string sentence = 1;</code>
+     * @return The bytes for sentence.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getSentenceBytes() {
+      java.lang.Object ref = sentence_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        sentence_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int MODEL_HASH_FIELD_NUMBER = 2;
+    private volatile java.lang.Object modelHash_;
+    /**
+     * <code>string model_hash = 2;</code>
+     * @return The modelHash.
+     */
+    @java.lang.Override
+    public java.lang.String getModelHash() {
+      java.lang.Object ref = modelHash_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        modelHash_ = s;
+        return s;
+      }
+    }
+    /**
+     * <code>string model_hash = 2;</code>
+     * @return The bytes for modelHash.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getModelHashBytes() {
+      java.lang.Object ref = modelHash_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        modelHash_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    private byte memoizedIsInitialized = -1;
+    @java.lang.Override
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    @java.lang.Override
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(sentence_)) {
+        com.google.protobuf.GeneratedMessageV3.writeString(output, 1, sentence_);
+      }
+      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(modelHash_)) {
+        com.google.protobuf.GeneratedMessageV3.writeString(output, 2, modelHash_);
+      }
+      unknownFields.writeTo(output);
+    }
+
+    @java.lang.Override
+    public int getSerializedSize() {
+      int size = memoizedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(sentence_)) {
+        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(1, sentence_);
+      }
+      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(modelHash_)) {
+        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(2, modelHash_);
+      }
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
+      return size;
+    }
+
+    @java.lang.Override
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof opennlp.OpenNLPService.SentDetectRequest)) {
+        return super.equals(obj);
+      }
+      opennlp.OpenNLPService.SentDetectRequest other = (opennlp.OpenNLPService.SentDetectRequest) obj;
+
+      if (!getSentence()
+          .equals(other.getSentence())) return false;
+      if (!getModelHash()
+          .equals(other.getModelHash())) return false;
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      hash = (37 * hash) + SENTENCE_FIELD_NUMBER;
+      hash = (53 * hash) + getSentence().hashCode();
+      hash = (37 * hash) + MODEL_HASH_FIELD_NUMBER;
+      hash = (53 * hash) + getModelHash().hashCode();
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
+    }
+
+    public static opennlp.OpenNLPService.SentDetectRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static opennlp.OpenNLPService.SentDetectRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static opennlp.OpenNLPService.SentDetectRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static opennlp.OpenNLPService.SentDetectRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static opennlp.OpenNLPService.SentDetectRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static opennlp.OpenNLPService.SentDetectRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static opennlp.OpenNLPService.SentDetectRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static opennlp.OpenNLPService.SentDetectRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static opennlp.OpenNLPService.SentDetectRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
+    }
+    public static opennlp.OpenNLPService.SentDetectRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static opennlp.OpenNLPService.SentDetectRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static opennlp.OpenNLPService.SentDetectRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+
+    @java.lang.Override
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
+    }
+    public static Builder newBuilder(opennlp.OpenNLPService.SentDetectRequest prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code opennlp.SentDetectRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:opennlp.SentDetectRequest)
+        opennlp.OpenNLPService.SentDetectRequestOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return opennlp.OpenNLPService.internal_static_opennlp_SentDetectRequest_descriptor;
+      }
+
+      @java.lang.Override
+      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return opennlp.OpenNLPService.internal_static_opennlp_SentDetectRequest_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                opennlp.OpenNLPService.SentDetectRequest.class, opennlp.OpenNLPService.SentDetectRequest.Builder.class);
+      }
+
+      // Construct using opennlp.OpenNLPService.SentDetectRequest.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
+        }
+      }
+      @java.lang.Override
+      public Builder clear() {
+        super.clear();
+        sentence_ = "";
+
+        modelHash_ = "";
+
+        return this;
+      }
+
+      @java.lang.Override
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return opennlp.OpenNLPService.internal_static_opennlp_SentDetectRequest_descriptor;
+      }
+
+      @java.lang.Override
+      public opennlp.OpenNLPService.SentDetectRequest getDefaultInstanceForType() {
+        return opennlp.OpenNLPService.SentDetectRequest.getDefaultInstance();
+      }
+
+      @java.lang.Override
+      public opennlp.OpenNLPService.SentDetectRequest build() {
+        opennlp.OpenNLPService.SentDetectRequest result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      @java.lang.Override
+      public opennlp.OpenNLPService.SentDetectRequest buildPartial() {
+        opennlp.OpenNLPService.SentDetectRequest result = new opennlp.OpenNLPService.SentDetectRequest(this);
+        result.sentence_ = sentence_;
+        result.modelHash_ = modelHash_;
+        onBuilt();
+        return result;
+      }
+
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          com.google.protobuf.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          com.google.protobuf.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof opennlp.OpenNLPService.SentDetectRequest) {
+          return mergeFrom((opennlp.OpenNLPService.SentDetectRequest)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(opennlp.OpenNLPService.SentDetectRequest other) {
+        if (other == opennlp.OpenNLPService.SentDetectRequest.getDefaultInstance()) return this;
+        if (!other.getSentence().isEmpty()) {
+          sentence_ = other.sentence_;
+          onChanged();
+        }
+        if (!other.getModelHash().isEmpty()) {
+          modelHash_ = other.modelHash_;
+          onChanged();
+        }
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
+        return this;
+      }
+
+      @java.lang.Override
+      public final boolean isInitialized() {
+        return true;
+      }
+
+      @java.lang.Override
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        opennlp.OpenNLPService.SentDetectRequest parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (opennlp.OpenNLPService.SentDetectRequest) e.getUnfinishedMessage();
+          throw e.unwrapIOException();
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+
+      private java.lang.Object sentence_ = "";
+      /**
+       * <code>string sentence = 1;</code>
+       * @return The sentence.
+       */
+      public java.lang.String getSentence() {
+        java.lang.Object ref = sentence_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          sentence_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>string sentence = 1;</code>
+       * @return The bytes for sentence.
+       */
+      public com.google.protobuf.ByteString
+          getSentenceBytes() {
+        java.lang.Object ref = sentence_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          sentence_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>string sentence = 1;</code>
+       * @param value The sentence to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSentence(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        sentence_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string sentence = 1;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearSentence() {
+        
+        sentence_ = getDefaultInstance().getSentence();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string sentence = 1;</code>
+       * @param value The bytes for sentence to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSentenceBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        sentence_ = value;
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object modelHash_ = "";
+      /**
+       * <code>string model_hash = 2;</code>
+       * @return The modelHash.
+       */
+      public java.lang.String getModelHash() {
+        java.lang.Object ref = modelHash_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          modelHash_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>string model_hash = 2;</code>
+       * @return The bytes for modelHash.
+       */
+      public com.google.protobuf.ByteString
+          getModelHashBytes() {
+        java.lang.Object ref = modelHash_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          modelHash_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>string model_hash = 2;</code>
+       * @param value The modelHash to set.
+       * @return This builder for chaining.
+       */
+      public Builder setModelHash(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        modelHash_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string model_hash = 2;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearModelHash() {
+        
+        modelHash_ = getDefaultInstance().getModelHash();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string model_hash = 2;</code>
+       * @param value The bytes for modelHash to set.
+       * @return This builder for chaining.
+       */
+      public Builder setModelHashBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        modelHash_ = value;
+        onChanged();
+        return this;
+      }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:opennlp.SentDetectRequest)
+    }
+
+    // @@protoc_insertion_point(class_scope:opennlp.SentDetectRequest)
+    private static final opennlp.OpenNLPService.SentDetectRequest DEFAULT_INSTANCE;
+    static {
+      DEFAULT_INSTANCE = new opennlp.OpenNLPService.SentDetectRequest();
+    }
+
+    public static opennlp.OpenNLPService.SentDetectRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static final com.google.protobuf.Parser<SentDetectRequest>
+        PARSER = new com.google.protobuf.AbstractParser<SentDetectRequest>() {
+      @java.lang.Override
+      public SentDetectRequest parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return new SentDetectRequest(input, extensionRegistry);
+      }
+    };
+
+    public static com.google.protobuf.Parser<SentDetectRequest> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<SentDetectRequest> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public opennlp.OpenNLPService.SentDetectRequest getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
+  }
+
+  public interface SentDetectPosRequestOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:opennlp.SentDetectPosRequest)
+      com.google.protobuf.MessageOrBuilder {
+
+    /**
+     * <code>string sentence = 1;</code>
+     * @return The sentence.
+     */
+    java.lang.String getSentence();
+    /**
+     * <code>string sentence = 1;</code>
+     * @return The bytes for sentence.
+     */
+    com.google.protobuf.ByteString
+        getSentenceBytes();
+
+    /**
+     * <code>string model_hash = 2;</code>
+     * @return The modelHash.
+     */
+    java.lang.String getModelHash();
+    /**
+     * <code>string model_hash = 2;</code>
+     * @return The bytes for modelHash.
+     */
+    com.google.protobuf.ByteString
+        getModelHashBytes();
+  }
+  /**
+   * Protobuf type {@code opennlp.SentDetectPosRequest}
+   */
+  public static final class SentDetectPosRequest extends
+      com.google.protobuf.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:opennlp.SentDetectPosRequest)
+      SentDetectPosRequestOrBuilder {
+  private static final long serialVersionUID = 0L;
+    // Use SentDetectPosRequest.newBuilder() to construct.
+    private SentDetectPosRequest(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
+      super(builder);
+    }
+    private SentDetectPosRequest() {
+      sentence_ = "";
+      modelHash_ = "";
+    }
+
+    @java.lang.Override
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        UnusedPrivateParameter unused) {
+      return new SentDetectPosRequest();
+    }
+
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+    getUnknownFields() {
+      return this.unknownFields;
+    }
+    private SentDetectPosRequest(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            case 10: {
+              java.lang.String s = input.readStringRequireUtf8();
+
+              sentence_ = s;
+              break;
+            }
+            case 18: {
+              java.lang.String s = input.readStringRequireUtf8();
+
+              modelHash_ = s;
+              break;
+            }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (com.google.protobuf.UninitializedMessageException e) {
+        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return opennlp.OpenNLPService.internal_static_opennlp_SentDetectPosRequest_descriptor;
+    }
+
+    @java.lang.Override
+    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return opennlp.OpenNLPService.internal_static_opennlp_SentDetectPosRequest_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              opennlp.OpenNLPService.SentDetectPosRequest.class, opennlp.OpenNLPService.SentDetectPosRequest.Builder.class);
+    }
+
+    public static final int SENTENCE_FIELD_NUMBER = 1;
+    private volatile java.lang.Object sentence_;
+    /**
+     * <code>string sentence = 1;</code>
+     * @return The sentence.
+     */
+    @java.lang.Override
+    public java.lang.String getSentence() {
+      java.lang.Object ref = sentence_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        sentence_ = s;
+        return s;
+      }
+    }
+    /**
+     * <code>string sentence = 1;</code>
+     * @return The bytes for sentence.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getSentenceBytes() {
+      java.lang.Object ref = sentence_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        sentence_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int MODEL_HASH_FIELD_NUMBER = 2;
+    private volatile java.lang.Object modelHash_;
+    /**
+     * <code>string model_hash = 2;</code>
+     * @return The modelHash.
+     */
+    @java.lang.Override
+    public java.lang.String getModelHash() {
+      java.lang.Object ref = modelHash_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        modelHash_ = s;
+        return s;
+      }
+    }
+    /**
+     * <code>string model_hash = 2;</code>
+     * @return The bytes for modelHash.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getModelHashBytes() {
+      java.lang.Object ref = modelHash_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        modelHash_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    private byte memoizedIsInitialized = -1;
+    @java.lang.Override
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    @java.lang.Override
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(sentence_)) {
+        com.google.protobuf.GeneratedMessageV3.writeString(output, 1, sentence_);
+      }
+      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(modelHash_)) {
+        com.google.protobuf.GeneratedMessageV3.writeString(output, 2, modelHash_);
+      }
+      unknownFields.writeTo(output);
+    }
+
+    @java.lang.Override
+    public int getSerializedSize() {
+      int size = memoizedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(sentence_)) {
+        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(1, sentence_);
+      }
+      if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(modelHash_)) {
+        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(2, modelHash_);
+      }
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
+      return size;
+    }
+
+    @java.lang.Override
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof opennlp.OpenNLPService.SentDetectPosRequest)) {
+        return super.equals(obj);
+      }
+      opennlp.OpenNLPService.SentDetectPosRequest other = (opennlp.OpenNLPService.SentDetectPosRequest) obj;
+
+      if (!getSentence()
+          .equals(other.getSentence())) return false;
+      if (!getModelHash()
+          .equals(other.getModelHash())) return false;
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      hash = (37 * hash) + SENTENCE_FIELD_NUMBER;
+      hash = (53 * hash) + getSentence().hashCode();
+      hash = (37 * hash) + MODEL_HASH_FIELD_NUMBER;
+      hash = (53 * hash) + getModelHash().hashCode();
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
+    }
+
+    public static opennlp.OpenNLPService.SentDetectPosRequest parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static opennlp.OpenNLPService.SentDetectPosRequest parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static opennlp.OpenNLPService.SentDetectPosRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static opennlp.OpenNLPService.SentDetectPosRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static opennlp.OpenNLPService.SentDetectPosRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static opennlp.OpenNLPService.SentDetectPosRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static opennlp.OpenNLPService.SentDetectPosRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static opennlp.OpenNLPService.SentDetectPosRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static opennlp.OpenNLPService.SentDetectPosRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
+    }
+    public static opennlp.OpenNLPService.SentDetectPosRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static opennlp.OpenNLPService.SentDetectPosRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static opennlp.OpenNLPService.SentDetectPosRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+
+    @java.lang.Override
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
+    }
+    public static Builder newBuilder(opennlp.OpenNLPService.SentDetectPosRequest prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code opennlp.SentDetectPosRequest}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:opennlp.SentDetectPosRequest)
+        opennlp.OpenNLPService.SentDetectPosRequestOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return opennlp.OpenNLPService.internal_static_opennlp_SentDetectPosRequest_descriptor;
+      }
+
+      @java.lang.Override
+      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return opennlp.OpenNLPService.internal_static_opennlp_SentDetectPosRequest_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                opennlp.OpenNLPService.SentDetectPosRequest.class, opennlp.OpenNLPService.SentDetectPosRequest.Builder.class);
+      }
+
+      // Construct using opennlp.OpenNLPService.SentDetectPosRequest.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
+        }
+      }
+      @java.lang.Override
+      public Builder clear() {
+        super.clear();
+        sentence_ = "";
+
+        modelHash_ = "";
+
+        return this;
+      }
+
+      @java.lang.Override
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return opennlp.OpenNLPService.internal_static_opennlp_SentDetectPosRequest_descriptor;
+      }
+
+      @java.lang.Override
+      public opennlp.OpenNLPService.SentDetectPosRequest getDefaultInstanceForType() {
+        return opennlp.OpenNLPService.SentDetectPosRequest.getDefaultInstance();
+      }
+
+      @java.lang.Override
+      public opennlp.OpenNLPService.SentDetectPosRequest build() {
+        opennlp.OpenNLPService.SentDetectPosRequest result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      @java.lang.Override
+      public opennlp.OpenNLPService.SentDetectPosRequest buildPartial() {
+        opennlp.OpenNLPService.SentDetectPosRequest result = new opennlp.OpenNLPService.SentDetectPosRequest(this);
+        result.sentence_ = sentence_;
+        result.modelHash_ = modelHash_;
+        onBuilt();
+        return result;
+      }
+
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          com.google.protobuf.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          com.google.protobuf.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof opennlp.OpenNLPService.SentDetectPosRequest) {
+          return mergeFrom((opennlp.OpenNLPService.SentDetectPosRequest)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(opennlp.OpenNLPService.SentDetectPosRequest other) {
+        if (other == opennlp.OpenNLPService.SentDetectPosRequest.getDefaultInstance()) return this;
+        if (!other.getSentence().isEmpty()) {
+          sentence_ = other.sentence_;
+          onChanged();
+        }
+        if (!other.getModelHash().isEmpty()) {
+          modelHash_ = other.modelHash_;
+          onChanged();
+        }
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
+        return this;
+      }
+
+      @java.lang.Override
+      public final boolean isInitialized() {
+        return true;
+      }
+
+      @java.lang.Override
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        opennlp.OpenNLPService.SentDetectPosRequest parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (opennlp.OpenNLPService.SentDetectPosRequest) e.getUnfinishedMessage();
+          throw e.unwrapIOException();
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+
+      private java.lang.Object sentence_ = "";
+      /**
+       * <code>string sentence = 1;</code>
+       * @return The sentence.
+       */
+      public java.lang.String getSentence() {
+        java.lang.Object ref = sentence_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          sentence_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>string sentence = 1;</code>
+       * @return The bytes for sentence.
+       */
+      public com.google.protobuf.ByteString
+          getSentenceBytes() {
+        java.lang.Object ref = sentence_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          sentence_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>string sentence = 1;</code>
+       * @param value The sentence to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSentence(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        sentence_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string sentence = 1;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearSentence() {
+        
+        sentence_ = getDefaultInstance().getSentence();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string sentence = 1;</code>
+       * @param value The bytes for sentence to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSentenceBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        sentence_ = value;
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object modelHash_ = "";
+      /**
+       * <code>string model_hash = 2;</code>
+       * @return The modelHash.
+       */
+      public java.lang.String getModelHash() {
+        java.lang.Object ref = modelHash_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          modelHash_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>string model_hash = 2;</code>
+       * @return The bytes for modelHash.
+       */
+      public com.google.protobuf.ByteString
+          getModelHashBytes() {
+        java.lang.Object ref = modelHash_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          modelHash_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>string model_hash = 2;</code>
+       * @param value The modelHash to set.
+       * @return This builder for chaining.
+       */
+      public Builder setModelHash(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        modelHash_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string model_hash = 2;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearModelHash() {
+        
+        modelHash_ = getDefaultInstance().getModelHash();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string model_hash = 2;</code>
+       * @param value The bytes for modelHash to set.
+       * @return This builder for chaining.
+       */
+      public Builder setModelHashBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        modelHash_ = value;
+        onChanged();
+        return this;
+      }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:opennlp.SentDetectPosRequest)
+    }
+
+    // @@protoc_insertion_point(class_scope:opennlp.SentDetectPosRequest)
+    private static final opennlp.OpenNLPService.SentDetectPosRequest DEFAULT_INSTANCE;
+    static {
+      DEFAULT_INSTANCE = new opennlp.OpenNLPService.SentDetectPosRequest();
+    }
+
+    public static opennlp.OpenNLPService.SentDetectPosRequest getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static final com.google.protobuf.Parser<SentDetectPosRequest>
+        PARSER = new com.google.protobuf.AbstractParser<SentDetectPosRequest>() {
+      @java.lang.Override
+      public SentDetectPosRequest parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return new SentDetectPosRequest(input, extensionRegistry);
+      }
+    };
+
+    public static com.google.protobuf.Parser<SentDetectPosRequest> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<SentDetectPosRequest> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public opennlp.OpenNLPService.SentDetectPosRequest getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
 
@@ -6513,6 +9392,26 @@ public final class OpenNLPService {
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_opennlp_TagWithContextRequest_fieldAccessorTable;
   private static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_opennlp_TokenizeRequest_descriptor;
+  private static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_opennlp_TokenizeRequest_fieldAccessorTable;
+  private static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_opennlp_TokenizePosRequest_descriptor;
+  private static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_opennlp_TokenizePosRequest_fieldAccessorTable;
+  private static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_opennlp_SentDetectRequest_descriptor;
+  private static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_opennlp_SentDetectRequest_fieldAccessorTable;
+  private static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_opennlp_SentDetectPosRequest_descriptor;
+  private static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_opennlp_SentDetectPosRequest_fieldAccessorTable;
+  private static final com.google.protobuf.Descriptors.Descriptor
     internal_static_opennlp_StringList_descriptor;
   private static final 
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
@@ -6557,20 +9456,37 @@ public final class OpenNLPService {
       "TagWithContextRequest\022\020\n\010sentence\030\001 \003(\t\022" +
       "\032\n\022additional_context\030\002 \003(\t\022%\n\006format\030\003 " +
       "\001(\0162\025.opennlp.POSTagFormat\022\022\n\nmodel_hash" +
-      "\030\004 \001(\t\"\034\n\nStringList\022\016\n\006values\030\001 \003(\t\")\n\010" +
-      "SpanList\022\035\n\006values\030\001 \003(\0132\r.opennlp.Span\"" +
-      ">\n\004Span\022\r\n\005start\030\001 \001(\005\022\013\n\003end\030\002 \001(\005\022\014\n\004p" +
-      "rob\030\003 \001(\001\022\014\n\004type\030\004 \001(\t\"1\n\017AvailableMode" +
-      "ls\022\036\n\006models\030\001 \003(\0132\016.opennlp.Model\"3\n\005Mo" +
-      "del\022\014\n\004hash\030\001 \001(\t\022\014\n\004name\030\002 \001(\t\022\016\n\006local" +
-      "e\030\003 \001(\t\"\007\n\005Empty*9\n\014POSTagFormat\022\006\n\002UD\020\000" +
-      "\022\010\n\004PENN\020\001\022\013\n\007UNKNOWN\020\002\022\n\n\006CUSTOM\020\0032\312\001\n\020" +
-      "PosTaggerService\022/\n\003Tag\022\023.opennlp.TagReq" +
-      "uest\032\023.opennlp.StringList\022E\n\016TagWithCont" +
-      "ext\022\036.opennlp.TagWithContextRequest\032\023.op" +
-      "ennlp.StringList\022>\n\022GetAvailableModels\022\016" +
-      ".opennlp.Empty\032\030.opennlp.AvailableModels" +
-      "B\031\n\007opennlpB\016OpenNLPServiceb\006proto3"
+      "\030\004 \001(\t\"7\n\017TokenizeRequest\022\020\n\010sentence\030\001 " +
+      "\001(\t\022\022\n\nmodel_hash\030\002 \001(\t\":\n\022TokenizePosRe" +
+      "quest\022\020\n\010sentence\030\001 \001(\t\022\022\n\nmodel_hash\030\002 " +
+      "\001(\t\"9\n\021SentDetectRequest\022\020\n\010sentence\030\001 \001" +
+      "(\t\022\022\n\nmodel_hash\030\002 \001(\t\"<\n\024SentDetectPosR" +
+      "equest\022\020\n\010sentence\030\001 \001(\t\022\022\n\nmodel_hash\030\002" +
+      " \001(\t\"\034\n\nStringList\022\016\n\006values\030\001 \003(\t\")\n\010Sp" +
+      "anList\022\035\n\006values\030\001 \003(\0132\r.opennlp.Span\">\n" +
+      "\004Span\022\r\n\005start\030\001 \001(\005\022\013\n\003end\030\002 \001(\005\022\014\n\004pro" +
+      "b\030\003 \001(\001\022\014\n\004type\030\004 \001(\t\"1\n\017AvailableModels" +
+      "\022\036\n\006models\030\001 \003(\0132\016.opennlp.Model\"3\n\005Mode" +
+      "l\022\014\n\004hash\030\001 \001(\t\022\014\n\004name\030\002 \001(\t\022\016\n\006locale\030" +
+      "\003 \001(\t\"\007\n\005Empty*9\n\014POSTagFormat\022\006\n\002UD\020\000\022\010" +
+      "\n\004PENN\020\001\022\013\n\007UNKNOWN\020\002\022\n\n\006CUSTOM\020\0032\312\001\n\020Po" +
+      "sTaggerService\022/\n\003Tag\022\023.opennlp.TagReque" +
+      "st\032\023.opennlp.StringList\022E\n\016TagWithContex" +
+      "t\022\036.opennlp.TagWithContextRequest\032\023.open" +
+      "nlp.StringList\022>\n\022GetAvailableModels\022\016.o" +
+      "pennlp.Empty\032\030.opennlp.AvailableModels2\322" +
+      "\001\n\026TokenizerTaggerService\0229\n\010Tokenize\022\030." +
+      "opennlp.TokenizeRequest\032\023.opennlp.String" +
+      "List\022=\n\013TokenizePos\022\033.opennlp.TokenizePo" +
+      "sRequest\032\021.opennlp.SpanList\022>\n\022GetAvaila" +
+      "bleModels\022\016.opennlp.Empty\032\030.opennlp.Avai" +
+      "lableModels2\333\001\n\027SentenceDetectorService\022" +
+      "=\n\nsentDetect\022\032.opennlp.SentDetectReques" +
+      "t\032\023.opennlp.StringList\022A\n\rsentPosDetect\022" +
+      "\035.opennlp.SentDetectPosRequest\032\021.opennlp" +
+      ".SpanList\022>\n\022GetAvailableModels\022\016.opennl" +
+      "p.Empty\032\030.opennlp.AvailableModelsB\031\n\007ope" +
+      "nnlpB\016OpenNLPServiceb\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -6588,38 +9504,62 @@ public final class OpenNLPService {
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_opennlp_TagWithContextRequest_descriptor,
         new java.lang.String[] { "Sentence", "AdditionalContext", "Format", "ModelHash", });
-    internal_static_opennlp_StringList_descriptor =
+    internal_static_opennlp_TokenizeRequest_descriptor =
       getDescriptor().getMessageTypes().get(2);
+    internal_static_opennlp_TokenizeRequest_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_opennlp_TokenizeRequest_descriptor,
+        new java.lang.String[] { "Sentence", "ModelHash", });
+    internal_static_opennlp_TokenizePosRequest_descriptor =
+      getDescriptor().getMessageTypes().get(3);
+    internal_static_opennlp_TokenizePosRequest_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_opennlp_TokenizePosRequest_descriptor,
+        new java.lang.String[] { "Sentence", "ModelHash", });
+    internal_static_opennlp_SentDetectRequest_descriptor =
+      getDescriptor().getMessageTypes().get(4);
+    internal_static_opennlp_SentDetectRequest_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_opennlp_SentDetectRequest_descriptor,
+        new java.lang.String[] { "Sentence", "ModelHash", });
+    internal_static_opennlp_SentDetectPosRequest_descriptor =
+      getDescriptor().getMessageTypes().get(5);
+    internal_static_opennlp_SentDetectPosRequest_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_opennlp_SentDetectPosRequest_descriptor,
+        new java.lang.String[] { "Sentence", "ModelHash", });
+    internal_static_opennlp_StringList_descriptor =
+      getDescriptor().getMessageTypes().get(6);
     internal_static_opennlp_StringList_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_opennlp_StringList_descriptor,
         new java.lang.String[] { "Values", });
     internal_static_opennlp_SpanList_descriptor =
-      getDescriptor().getMessageTypes().get(3);
+      getDescriptor().getMessageTypes().get(7);
     internal_static_opennlp_SpanList_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_opennlp_SpanList_descriptor,
         new java.lang.String[] { "Values", });
     internal_static_opennlp_Span_descriptor =
-      getDescriptor().getMessageTypes().get(4);
+      getDescriptor().getMessageTypes().get(8);
     internal_static_opennlp_Span_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_opennlp_Span_descriptor,
         new java.lang.String[] { "Start", "End", "Prob", "Type", });
     internal_static_opennlp_AvailableModels_descriptor =
-      getDescriptor().getMessageTypes().get(5);
+      getDescriptor().getMessageTypes().get(9);
     internal_static_opennlp_AvailableModels_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_opennlp_AvailableModels_descriptor,
         new java.lang.String[] { "Models", });
     internal_static_opennlp_Model_descriptor =
-      getDescriptor().getMessageTypes().get(6);
+      getDescriptor().getMessageTypes().get(10);
     internal_static_opennlp_Model_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_opennlp_Model_descriptor,
         new java.lang.String[] { "Hash", "Name", "Locale", });
     internal_static_opennlp_Empty_descriptor =
-      getDescriptor().getMessageTypes().get(7);
+      getDescriptor().getMessageTypes().get(11);
     internal_static_opennlp_Empty_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_opennlp_Empty_descriptor,

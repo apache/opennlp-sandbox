@@ -44,14 +44,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PosTaggerServiceIT {
+public class OpenNLPServerIT {
 
   private static OpenNLPServer server;
   private static ExecutorService executor;
   private static ManagedChannel channel;
-
-  public static final String[] SENTENCE = new String[] {"The", "driver", "got", "badly", "injured", "by", "the", "accident", "."};
-  public static final String[] EXPECTED = new String[] {"DET", "NOUN", "VERB", "ADV", "VERB", "ADP", "DET", "NOUN", "PUNCT"};
 
   @BeforeAll
   static void init() throws IOException, URISyntaxException {
@@ -111,6 +108,9 @@ public class PosTaggerServiceIT {
     assertFalse(channel.isTerminated(), "The server should be running and the channel open.");
     final String hash = "5af913a52fa0b014e22c4c4411e146720f1222bdebde9ce1f1a3174df974d26d";
 
+    final String[] sentence = new String[] {"The", "driver", "got", "badly", "injured", "by", "the", "accident", "."};
+    final String[] expected = new String[] {"DET", "NOUN", "VERB", "ADV", "VERB", "ADP", "DET", "NOUN", "PUNCT"};
+
     PosTaggerServiceGrpc.PosTaggerServiceStub service = PosTaggerServiceGrpc.newStub(channel);
 
     service.getAvailableModels(OpenNLPService.Empty.newBuilder().build(), new TestStreamObserver<>() {
@@ -128,11 +128,81 @@ public class PosTaggerServiceIT {
     //simulate a tagging session
     service.tagWithContext(OpenNLPService.TagWithContextRequest.newBuilder()
         .addAllAdditionalContext(List.of("test"))
-        .setModelHash(hash).addAllSentence(Arrays.stream(SENTENCE).toList()).build(), new TestStreamObserver<>() {
+        .setModelHash(hash).addAllSentence(Arrays.stream(sentence).toList()).build(), new TestStreamObserver<>() {
       @Override
       public void onNext(opennlp.OpenNLPService.StringList t) {
         assertNotNull(t);
-        assertArrayEquals(EXPECTED, t.getValuesList().toArray(new String[0]));
+        assertArrayEquals(expected, t.getValuesList().toArray(new String[0]));
+      }
+    });
+  }
+
+  @Test
+  void testTokenize() {
+    assertFalse(channel.isTerminated(), "The server should be running and the channel open.");
+
+    final String sentence = "The driver got badly injured by the accident.";
+    final String[] expected = new String[] {"The", "driver", "got", "badly", "injured", "by", "the", "accident", "."};
+
+    final String hash = "9e7e4149010a56417e0236c15daab01cb7543f6089a8f0e85a53dc1183a9b1d3";
+
+    TokenizerTaggerServiceGrpc.TokenizerTaggerServiceStub service = TokenizerTaggerServiceGrpc.newStub(channel);
+
+    service.getAvailableModels(OpenNLPService.Empty.newBuilder().build(), new TestStreamObserver<>() {
+      @Override
+      public void onNext(OpenNLPService.AvailableModels t) {
+        assertNotNull(t);
+        assertEquals(1, t.getModelsCount());
+        OpenNLPService.Model m = t.getModels(0);
+        assertNotNull(m);
+        assertEquals("opennlp-en-ud-ewt-tokens-1.2-2.5.0.bin", m.getName());
+        assertEquals(hash, m.getHash());
+      }
+    });
+
+    //simulate a tagging session
+    service.tokenize(OpenNLPService.TokenizeRequest.newBuilder()
+        .setSentence(sentence)
+        .setModelHash(hash).build(), new TestStreamObserver<>() {
+      @Override
+      public void onNext(OpenNLPService.StringList t) {
+        assertNotNull(t);
+        assertArrayEquals(expected, t.getValuesList().toArray(new String[0]));
+      }
+    });
+
+  }
+
+  @Test
+  void testSentenceDetection() {
+    assertFalse(channel.isTerminated(), "The server should be running and the channel open.");
+
+    final String sentence = "The driver got badly injured by the accident. He was taken to the hospital!";
+    final String[] expected = new String[] {"The driver got badly injured by the accident.", "He was taken to the hospital!"};
+
+    final String hash = "3735a5ae356c72ca028c93efcf4022f1d3a1c474337a379c474f07de990dd38b";
+
+    SentenceDetectorServiceGrpc.SentenceDetectorServiceStub service = SentenceDetectorServiceGrpc.newStub(channel);
+
+    service.getAvailableModels(OpenNLPService.Empty.newBuilder().build(), new TestStreamObserver<>() {
+      @Override
+      public void onNext(OpenNLPService.AvailableModels t) {
+        assertNotNull(t);
+        assertEquals(1, t.getModelsCount());
+        OpenNLPService.Model m = t.getModels(0);
+        assertNotNull(m);
+        assertEquals("opennlp-en-ud-ewt-sentence-1.2-2.5.0.bin", m.getName());
+        assertEquals(hash, m.getHash());
+      }
+    });
+
+    service.sentDetect(OpenNLPService.SentDetectRequest.newBuilder()
+        .setSentence(sentence)
+        .setModelHash(hash).build(), new TestStreamObserver<>() {
+      @Override
+      public void onNext(OpenNLPService.StringList t) {
+        assertNotNull(t);
+        assertArrayEquals(expected, t.getValuesList().toArray(new String[0]));
       }
     });
 

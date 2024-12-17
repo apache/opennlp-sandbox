@@ -123,6 +123,20 @@
                                     <type>jar</type>
                                     <outputDirectory>${project.build.testOutputDirectory}/models</outputDirectory>
                                 </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.apache.opennlp</groupId>
+                                    <artifactId>opennlp-models-tokenizer-en</artifactId>
+                                    <version>1.2.0</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.testOutputDirectory}/models</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.apache.opennlp</groupId>
+                                    <artifactId>opennlp-models-sentdetect-en</artifactId>
+                                    <version>1.2.0</version>
+                                    <type>jar</type>
+                                    <outputDirectory>${project.build.testOutputDirectory}/models</outputDirectory>
+                                </artifactItem>
                             </artifactItems>
                         </configuration>
                     </execution>

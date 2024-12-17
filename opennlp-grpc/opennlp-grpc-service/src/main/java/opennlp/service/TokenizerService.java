@@ -29,25 +29,26 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.LoggerFactory;
 
 import opennlp.OpenNLPService;
-import opennlp.PosTaggerServiceGrpc;
+import opennlp.SentenceDetectorServiceGrpc;
+import opennlp.TokenizerTaggerServiceGrpc;
 import opennlp.service.exception.ServiceException;
 import opennlp.tools.commons.ThreadSafe;
 import opennlp.tools.models.ClassPathModel;
-import opennlp.tools.postag.POSModel;
-import opennlp.tools.postag.POSTagFormat;
-import opennlp.tools.postag.POSTagger;
-import opennlp.tools.postag.ThreadSafePOSTaggerME;
+import opennlp.tools.tokenize.ThreadSafeTokenizerME;
+import opennlp.tools.tokenize.Tokenizer;
+import opennlp.tools.tokenize.TokenizerModel;
+import opennlp.tools.util.Span;
 
 /**
- * The {@code PosTaggerService} class implements a gRPC service for Part-of-Speech (POS) tagging
+ * The {@code Tokenizer} class implements a gRPC service for tokenization
  * using Apache OpenNLP models. It extends the auto-generated gRPC base class
- * {@link PosTaggerServiceGrpc.PosTaggerServiceImplBase}.
+ * {@link TokenizerTaggerServiceGrpc.TokenizerTaggerServiceImplBase}.
  *
  * <p>This service provides functionality for:
  * <ul>
- *   <li>Retrieving available POS models loaded from the classpath.</li>
- *   <li>Performing POS tagging on input sentences.</li>
- *   <li>Performing POS tagging with additional context.</li>
+ *   <li>Retrieving available tokenizer models loaded from the classpath.</li>
+ *   <li>Performing tokenization on an input string.</li>
+ *   <li>Performing positional tokenization on an input string.</li>
  * </ul>
  * </p>
  *
@@ -55,22 +56,22 @@ import opennlp.tools.postag.ThreadSafePOSTaggerME;
  * <ul>
  *   <li>{@code model.location}: Directory to search for models (default: "extlib").</li>
  *   <li>{@code model.recursive}: Whether to scan subdirectories (default: {@code true}).</li>
- *   <li>{@code model.pos.wildcard.pattern}: Wildcard pattern to identify POS models (default: "opennlp-models-pos-*.jar").</li>
+ *   <li>{@code model.tokenizer.wildcard.pattern}: Wildcard pattern to identify tokenization models (default: "opennlp-models-tokenizer-*.jar").</li>
  * </ul>
  *  </p>
  */
 @ThreadSafe
-public class PosTaggerService extends PosTaggerServiceGrpc.PosTaggerServiceImplBase
-    implements CacheAware<POSTagger>, AutoCloseable, ExceptionAware, ModelAware<POSTagger> {
+public class TokenizerService extends TokenizerTaggerServiceGrpc.TokenizerTaggerServiceImplBase
+    implements CacheAware<Tokenizer>, AutoCloseable, ExceptionAware, ModelAware<Tokenizer> {
 
   private static final org.slf4j.Logger logger =
-      LoggerFactory.getLogger(PosTaggerService.class);
+      LoggerFactory.getLogger(TokenizerService.class);
 
   private static final Map<String, ClassPathModel> MODEL_CACHE = new ConcurrentHashMap<>();
-  private static final Map<String, POSTagger> TAGGER_CACHE = new ConcurrentHashMap<>();
+  private static final Map<String, Tokenizer> TOKENIZER_CACHE = new ConcurrentHashMap<>();
 
   /**
-   * Initializes a Part-of-Speech (POS) Tagger service with the given configuration properties.
+   * Initializes a Tokenizer service with the given configuration properties.
    *
    * <p>The configuration properties are provided as a {@code Map<String, String>} and define various
    * parameters required for the service, such as model locations, recursive loading, and wildcard patterns.
@@ -80,17 +81,17 @@ public class PosTaggerService extends PosTaggerServiceGrpc.PosTaggerServiceImplB
    * server.enable_reflection = false
    * model.location = target/test-classes/models
    * model.recursive = true
-   * model.pos.wildcard.pattern = opennlp-models-pos-*.jar
+   * model.tokenizer.wildcard.pattern = opennlp-models-tokenizer-*.jar
    * }</pre>
    *
    * @param conf Configuration properties for the service (key-value format). Must not be {@code null}.
    *             If a property is missing, default values are used.
    * @throws RuntimeException if an {@link IOException} occurs during model cache initialization.
    */
-  public PosTaggerService(Map<String, String> conf) {
+  public TokenizerService(Map<String, String> conf) {
 
     try {
-      final Map<String, ClassPathModel> found = ModelFinderUtil.findModels(conf, "model.pos.wildcard.pattern", "opennlp-models-pos-*.jar");
+      final Map<String, ClassPathModel> found = ModelFinderUtil.findModels(conf, "model.tokenizer.wildcard.pattern", "opennlp-models-tokenizer-*.jar");
       for (Map.Entry<String, ClassPathModel> entry : found.entrySet()) {
         MODEL_CACHE.putIfAbsent(entry.getKey(), entry.getValue());
       }
@@ -101,52 +102,40 @@ public class PosTaggerService extends PosTaggerServiceGrpc.PosTaggerServiceImplB
 
   }
 
+ @Override
+  public void tokenize(opennlp.OpenNLPService.TokenizeRequest request,
+                       io.grpc.stub.StreamObserver<opennlp.OpenNLPService.StringList> responseObserver) {
+   try {
+     final Tokenizer tokenizer = getTokenizer(request.getModelHash());
+     final String[] tokens = tokenizer.tokenize(request.getSentence());
+     responseObserver.onNext(OpenNLPService.StringList.newBuilder().addAllValues(Arrays.asList(tokens)).build());
+     responseObserver.onCompleted();
+   } catch (Exception e) {
+     handleException(e, responseObserver);
+   }
+  }
+
   @Override
-  public void tag(opennlp.OpenNLPService.TagRequest request,
-                  io.grpc.stub.StreamObserver<OpenNLPService.StringList> responseObserver) {
+  public void tokenizePos(opennlp.OpenNLPService.TokenizePosRequest request,
+                          io.grpc.stub.StreamObserver<opennlp.OpenNLPService.SpanList> responseObserver) {
     try {
-      final POSTagger tagger = getTagger(request.getModelHash(), request.getFormat());
-      final String[] tags = tagger.tag(request.getSentenceList().toArray(new String[0]));
-      responseObserver.onNext(OpenNLPService.StringList.newBuilder().addAllValues(Arrays.asList(tags)).build());
+      final Tokenizer tokenizer = getTokenizer(request.getModelHash());
+      final Span[] spans = tokenizer.tokenizePos(request.getSentence());
+      final OpenNLPService.SpanList response = OpenNLPService.SpanList.newBuilder()
+          .addAllValues(Arrays.stream(spans)
+              .map(s -> OpenNLPService.Span.newBuilder()
+                  .setStart(s.getStart())
+                  .setEnd(s.getEnd())
+                  .setProb(s.getProb())
+                  .setType(s.getType() == null ? "" : s.getType())
+                  .build())
+              .toList())
+          .build();
+      responseObserver.onNext(response);
       responseObserver.onCompleted();
     } catch (Exception e) {
       handleException(e, responseObserver);
     }
-
-  }
-
-  @Override
-  public void tagWithContext(opennlp.OpenNLPService.TagWithContextRequest request,
-                             io.grpc.stub.StreamObserver<OpenNLPService.StringList> responseObserver) {
-
-    try {
-      final POSTagger tagger = getTagger(request.getModelHash(), request.getFormat());
-      final String[] tags = tagger.tag(
-          request.getSentenceList().toArray(new String[0]),
-          request.getAdditionalContextList().toArray(new String[0]));
-      responseObserver.onNext(OpenNLPService.StringList.newBuilder().addAllValues(Arrays.asList(tags)).build());
-      responseObserver.onCompleted();
-    } catch (Exception e) {
-      handleException(e, responseObserver);
-    }
-  }
-
-  private POSTagger getTagger(String hash, OpenNLPService.POSTagFormat posTagFormat) {
-    final POSTagFormat format = (posTagFormat == null) ? POSTagFormat.UD : POSTagFormat.valueOf(posTagFormat.name());
-
-    return TAGGER_CACHE.computeIfAbsent((hash), modelHash -> {
-      final ClassPathModel model = MODEL_CACHE.get(modelHash);
-
-      if (model == null) {
-        throw new ServiceException("Could not find the given model.");
-      }
-
-      try(BufferedInputStream bis = new BufferedInputStream(new ByteArrayInputStream(model.model()))) {
-        return new ThreadSafePOSTaggerME(new POSModel(bis), format);
-      } catch (IOException e) {
-        throw new ServiceException(e.getLocalizedMessage(), e);
-      }
-    });
   }
 
   @Override
@@ -155,14 +144,30 @@ public class PosTaggerService extends PosTaggerServiceGrpc.PosTaggerServiceImplB
     returnAvailableModels(request, responseObserver);
   }
 
+  private Tokenizer getTokenizer(String hash) {
+    return TOKENIZER_CACHE.computeIfAbsent((hash), modelHash -> {
+      final ClassPathModel model = MODEL_CACHE.get(modelHash);
+
+      if (model == null) {
+        throw new ServiceException("Could not find the given model.");
+      }
+
+      try(BufferedInputStream bis = new BufferedInputStream(new ByteArrayInputStream(model.model()))) {
+        return new ThreadSafeTokenizerME(new TokenizerModel(bis));
+      } catch (IOException e) {
+        throw new ServiceException(e.getLocalizedMessage(), e);
+      }
+    });
+  }
+
   @Override
   public Map<String, ClassPathModel> getModelCache() {
     return MODEL_CACHE;
   }
 
   @Override
-  public Map<String, POSTagger> getServiceCache() {
-    return TAGGER_CACHE;
+  public Map<String, Tokenizer> getServiceCache() {
+    return TOKENIZER_CACHE;
   }
 
   /**

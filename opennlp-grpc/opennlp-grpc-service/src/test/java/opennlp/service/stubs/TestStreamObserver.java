@@ -20,6 +20,8 @@ package opennlp.service.stubs;
 
 import io.grpc.stub.CallStreamObserver;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 public class TestStreamObserver<T> extends CallStreamObserver<T> {
   @Override
   public boolean isReady() {
@@ -53,7 +55,8 @@ public class TestStreamObserver<T> extends CallStreamObserver<T> {
 
   @Override
   public void onError(Throwable throwable) {
-
+    throwable.printStackTrace();
+    fail("Error: " + throwable.getMessage());
   }
 
   @Override
