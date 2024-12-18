@@ -1,6 +1,6 @@
 # OpenNLP gRPC - Proof of Concept
 
-This project demonstrates a proof of concept for creating a backend powered by Apache OpenNLP using gRPC. It comprises three main modules : 
+This project demonstrates a proof of concept for creating a backend powered by Apache OpenNLP using gRPC. It comprises of three main modules : 
 
 - **opennlp-grpc-api**
 - **opennlp-grpc-service**
