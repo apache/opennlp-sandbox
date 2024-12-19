@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import opennlp.OpenNLPService;
@@ -35,18 +34,10 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class PosTaggerServiceTest {
+public class PosTaggerServiceTest extends AbstractServiceTest {
 
   public static final String[] SENTENCE = new String[] {"The", "driver", "got", "badly", "injured", "by", "the", "accident", "."};
   public static final String[] EXPECTED = new String[] {"DET", "NOUN", "VERB", "ADV", "VERB", "ADP", "DET", "NOUN", "PUNCT"};
-
-  private static Path getModelDirectory() throws URISyntaxException {
-    return Paths.get(
-        Thread.currentThread().getContextClassLoader()
-            .getResource("models/marker.txt")
-            .toURI()
-    ).getParent().toAbsolutePath();
-  }
 
   @Test
   public void testGetAvailableModels() throws URISyntaxException {

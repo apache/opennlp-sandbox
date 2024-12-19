@@ -21,8 +21,6 @@ package opennlp.service;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -34,18 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class TokenizerServiceTest {
+public class TokenizerServiceTest extends AbstractServiceTest {
 
   public static final String SENTENCE = "The driver got badly injured by the accident.";
   public static final String[] EXPECTED = new String[] {"The", "driver", "got", "badly", "injured", "by", "the", "accident", "."};
-  
-  private static Path getModelDirectory() throws URISyntaxException {
-    return Paths.get(
-        Thread.currentThread().getContextClassLoader()
-            .getResource("models/marker.txt")
-            .toURI()
-    ).getParent().toAbsolutePath();
-  }
 
   @Test
   public void testGetAvailableModels() throws URISyntaxException {

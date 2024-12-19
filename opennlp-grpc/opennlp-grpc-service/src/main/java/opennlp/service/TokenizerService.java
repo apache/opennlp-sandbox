@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.LoggerFactory;
 
 import opennlp.OpenNLPService;
-import opennlp.SentenceDetectorServiceGrpc;
 import opennlp.TokenizerTaggerServiceGrpc;
 import opennlp.service.exception.ServiceException;
 import opennlp.tools.commons.ThreadSafe;
@@ -141,7 +140,7 @@ public class TokenizerService extends TokenizerTaggerServiceGrpc.TokenizerTagger
   @Override
   public void getAvailableModels(opennlp.OpenNLPService.Empty request,
                                  io.grpc.stub.StreamObserver<opennlp.OpenNLPService.AvailableModels> responseObserver) {
-    returnAvailableModels(request, responseObserver);
+    returnAvailableModels(responseObserver);
   }
 
   private Tokenizer getTokenizer(String hash) {

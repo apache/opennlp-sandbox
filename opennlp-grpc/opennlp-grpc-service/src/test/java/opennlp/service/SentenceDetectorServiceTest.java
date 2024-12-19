@@ -32,18 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class SentenceDetectorServiceTest {
+public class SentenceDetectorServiceTest extends AbstractServiceTest{
 
   public static final String SENTENCE = "The driver got badly injured by the accident. He was taken to the hospital!";
   public static final String[] EXPECTED = new String[] {"The driver got badly injured by the accident.", "He was taken to the hospital!"};
-  
-  private static Path getModelDirectory() throws URISyntaxException {
-    return Paths.get(
-        Thread.currentThread().getContextClassLoader()
-            .getResource("models/marker.txt")
-            .toURI()
-    ).getParent().toAbsolutePath();
-  }
 
   @Test
   public void testGetAvailableModels() throws URISyntaxException {

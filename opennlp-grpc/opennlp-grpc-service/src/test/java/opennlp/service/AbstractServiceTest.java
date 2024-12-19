@@ -16,50 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package opennlp.service.stubs;
+package opennlp.service;
 
-import io.grpc.stub.CallStreamObserver;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Objects;
 
-import static org.junit.jupiter.api.Assertions.fail;
+public abstract class AbstractServiceTest {
 
-public class TestStreamObserver<T> extends CallStreamObserver<T> {
-  @Override
-  public boolean isReady() {
-    return false;
-  }
-
-  @Override
-  public void setOnReadyHandler(Runnable runnable) {
-
-  }
-
-  @Override
-  public void disableAutoInboundFlowControl() {
-
-  }
-
-  @Override
-  public void request(int i) {
-
-  }
-
-  @Override
-  public void setMessageCompression(boolean b) {
-
-  }
-
-  @Override
-  public void onNext(T t) {
-
-  }
-
-  @Override
-  public void onError(Throwable throwable) {
-    fail("Error: " + throwable.getMessage(), throwable);
-  }
-
-  @Override
-  public void onCompleted() {
-
+  Path getModelDirectory() throws URISyntaxException {
+    return Paths.get(
+        Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
+                .getResource("models/marker.txt"))
+            .toURI()
+    ).getParent().toAbsolutePath();
   }
 }

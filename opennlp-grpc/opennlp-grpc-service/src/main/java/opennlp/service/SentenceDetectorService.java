@@ -29,16 +29,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.LoggerFactory;
 
 import opennlp.OpenNLPService;
-import opennlp.PosTaggerServiceGrpc;
 import opennlp.SentenceDetectorServiceGrpc;
-import opennlp.TokenizerTaggerServiceGrpc;
 import opennlp.service.exception.ServiceException;
 import opennlp.tools.commons.ThreadSafe;
 import opennlp.tools.models.ClassPathModel;
 import opennlp.tools.sentdetect.SentenceDetector;
 import opennlp.tools.sentdetect.SentenceModel;
 import opennlp.tools.sentdetect.ThreadSafeSentenceDetectorME;
-import opennlp.tools.tokenize.Tokenizer;
 import opennlp.tools.util.Span;
 
 /**
@@ -143,7 +140,7 @@ public class SentenceDetectorService extends SentenceDetectorServiceGrpc.Sentenc
   @Override
   public void getAvailableModels(OpenNLPService.Empty request,
                                  io.grpc.stub.StreamObserver<OpenNLPService.AvailableModels> responseObserver) {
-    returnAvailableModels(request, responseObserver);
+    returnAvailableModels(responseObserver);
   }
 
   private SentenceDetector getSentenceDetector(String hash) {

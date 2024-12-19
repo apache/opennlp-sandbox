@@ -40,8 +40,7 @@ public interface CacheAware<T> {
    * Clears the in-memory caches for services and models.
    *
    * <p>This method ensures that all cached services and {@link ClassPathModel} objects
-   * are removed from their respective caches, freeing up memory and resources. If a service
-   * instance implements {@link AutoCloseable}, its {@code close()} method is invoked before the instance is discarded.</p>
+   * are removed from their respective caches, freeing up memory and resources. </p>
    *
    * <p><b>Thread Safety:</b> The method synchronizes access to the underlying caches to ensure safe
    * removal of taggers in a multithreaded environment.</p>

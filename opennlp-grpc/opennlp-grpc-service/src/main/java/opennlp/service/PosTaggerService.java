@@ -152,7 +152,7 @@ public class PosTaggerService extends PosTaggerServiceGrpc.PosTaggerServiceImplB
   @Override
   public void getAvailableModels(opennlp.OpenNLPService.Empty request,
                                  io.grpc.stub.StreamObserver<opennlp.OpenNLPService.AvailableModels> responseObserver) {
-    returnAvailableModels(request, responseObserver);
+    returnAvailableModels(responseObserver);
   }
 
   @Override

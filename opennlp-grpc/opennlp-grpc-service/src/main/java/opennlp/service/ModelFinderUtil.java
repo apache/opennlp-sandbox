@@ -31,15 +31,15 @@ import opennlp.tools.models.ClassPathModelEntry;
 import opennlp.tools.models.ClassPathModelLoader;
 
 /**
- * Utility class for scanning and loading models..
+ * Utility class for scanning and loading models.
  *
  * <p>The {@code ModelFinderUtil} class provides a method to scan for models in a given directory,
  * load them into memory, and return a map of model identifiers (SHA-256 hashes) to the loaded
  * {@link ClassPathModel} instances. The search process supports wildcard matching and optional
  * recursive scanning of subdirectories.</p>
  *
- * <p>This utility simplifies model discovery and caching, allowing developers to dynamically
- * load models from a specified file location based on configuration.</p>
+ * <p>This utility simplifies model discovery and caching, allowing to dynamically
+ * load models from a specified file location based on a provided configuration.</p>
  *
  * @see DirectoryModelFinder
  * @see ClassPathModel
@@ -65,7 +65,7 @@ public class ModelFinderUtil {
    * </ul>
    *
    * @param conf                   A map of configuration properties containing model location,
-   *                               search settings, and wildcard patterns.
+   *                               scan settings, and wildcard patterns.
    * @param wildcardPatternKey     The configuration key for the wildcard pattern. Must not be {@code null}.
    * @param defaultWildcardPattern The default wildcard pattern to use if the key is not present. Must not be {@code null}.
    * @return A {@code Map} of SHA-256 model hashes to {@link ClassPathModel} objects.

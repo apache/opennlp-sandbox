@@ -79,7 +79,6 @@ public class OpenNLPServer implements Callable<Integer> {
 
   @Option(
       names = {"-c", "--config"},
-      required = false,
       paramLabel = "STRING",
       description = "key value configuration file")
   String config;

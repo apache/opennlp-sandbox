@@ -26,16 +26,7 @@ import opennlp.tools.models.ClassPathModel;
  * The {@code ModelAware} interface defines behavior for services that are aware of model management
  * and provides functionalities for accessing and handling cached models.
  *
- * <p>This interface extends the following:
- * <ul>
- *   <li>{@link CacheAware} - Provides caching behavior for services and models.</li>
- *   <li>{@link ExceptionAware} - Handles exception management during service operations.</li>
- * </ul>
- *
- * <p>The interface includes a default method to retrieve and return all available models in the cache
- * via a gRPC streaming response.</p>
- *
- * @param <T> The type of service or object that is managed and cached.
+ * @param <T> The type of service that is managed and cached.
  */
 public interface ModelAware<T> extends CacheAware<T>, ExceptionAware {
 
@@ -46,12 +37,10 @@ public interface ModelAware<T> extends CacheAware<T>, ExceptionAware {
    * {@link OpenNLPService.Model} objects. Each model includes its SHA-256 hash, name, and locale
    * (language). The resulting list is sent to the client using the provided gRPC response observer.</p>
    *
-   * @param request           The empty gRPC request object sent by the client.
    * @param responseObserver  The gRPC stream observer for sending the list of available models
    *                          back to the client.   *
    */
-  default void returnAvailableModels(opennlp.OpenNLPService.Empty request,
-                                     io.grpc.stub.StreamObserver<opennlp.OpenNLPService.AvailableModels> responseObserver) {
+  default void returnAvailableModels(io.grpc.stub.StreamObserver<opennlp.OpenNLPService.AvailableModels> responseObserver) {
 
     try {
       final OpenNLPService.AvailableModels.Builder response = OpenNLPService.AvailableModels.newBuilder();
