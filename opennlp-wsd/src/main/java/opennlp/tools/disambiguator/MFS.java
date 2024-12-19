@@ -42,10 +42,6 @@ public class MFS extends AbstractWSDisambiguator {
 
   public static final String NONESENSE = "nonesense";
 
-  public MFS() {
-    super();
-  }
-
   /**
    * Extracts the most frequent sense for a specified {@link WSDSample}.
    *

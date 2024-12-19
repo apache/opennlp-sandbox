@@ -30,7 +30,12 @@ import net.sf.extjwnl.data.Synset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO extend Word instead
+/**
+ * A container class that holds a token (word) and it's related POS tag.
+ * It provides methods to get {@link Synset synsets} or stem forms for it.
+ *
+ * @see POS
+ */
 public class WordPOS {
 
   private static final Logger LOG = LoggerFactory.getLogger(WordPOS.class);
@@ -45,6 +50,7 @@ public class WordPOS {
    *
    * @param word The token to use. It must not be {@code null}.
    * @param tag The POS tag to use. It must not be {@code null}.
+   *
    * @throws IllegalArgumentException Thrown if parameters are invalid.
    */
   public WordPOS(String word, String tag) {
@@ -56,6 +62,7 @@ public class WordPOS {
    *
    * @param word The token to use. It must not be {@code null} and not be empty.
    * @param pos The {@link POS pos tag} to use. It must not be {@code null}.
+   *            
    * @throws IllegalArgumentException Thrown if parameters are invalid.
    */
   public WordPOS(String word, POS pos) {
@@ -108,7 +115,13 @@ public class WordPOS {
     return Collections.emptyList();
   }
 
-  // uses Stemming to check if two words are equivalent
+  /**
+   * Applies stemming to check whether {@code wordToCompare} is equivalent
+   * to the current {@link WordPOS} instance.
+   *
+   * @param wordToCompare The {@link WordPOS} instance to compare against.
+   */
+  // TODO check the performance of the current implementation (!)
   public boolean isStemEquivalent(WordPOS wordToCompare) {
     // check if there is intersection in the stems;
     List<String> listToCompare = wordToCompare.getStems();

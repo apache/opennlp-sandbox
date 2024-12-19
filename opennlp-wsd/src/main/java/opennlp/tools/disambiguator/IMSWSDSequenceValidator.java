@@ -17,6 +17,10 @@
 
 package opennlp.tools.disambiguator;
 
+/**
+ * A {@link opennlp.tools.util.SequenceValidator} variant to check whether
+ * IMS-based sequence outcomes are valid or not.
+ */
 public class IMSWSDSequenceValidator {
 
   private boolean validOutcome(String outcome, String prevOutcome) {
@@ -43,6 +47,15 @@ public class IMSWSDSequenceValidator {
     return validOutcome(outcome, prevOutcome);
   }
 
+  /**
+   * Validates the provided {@code outcome} is valid in the context of
+   * the sequence {@code s}.
+   *
+   * @param outcome The candidate result to check.
+   * @param s       The tokens that cover the sequence {@code outcome}
+   *                shall be valid for.
+   * @return {@code True} if {@code outcome} is valid, {@code false} otherwise.
+   */
   public boolean validSequence(String outcome, String[] s) {
     return validOutcome(outcome, s);
   }

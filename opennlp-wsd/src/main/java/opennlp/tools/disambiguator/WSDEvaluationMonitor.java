@@ -20,7 +20,10 @@ package opennlp.tools.disambiguator;
 import opennlp.tools.util.eval.EvaluationMonitor;
 
 /**
- * A marker interface for evaluating {@link AbstractWSDisambiguator disambiguators}.
+ * A marker interface for evaluating {@link Disambiguator disambiguators}.
+ *
+ * @see WSDSample
+ * @see EvaluationMonitor
  */
 public interface WSDEvaluationMonitor extends EvaluationMonitor<WSDSample> {
 

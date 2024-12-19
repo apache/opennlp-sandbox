@@ -34,6 +34,9 @@ import opennlp.tools.tokenize.Tokenizer;
 
 /**
  * Convenience class to access some features via {@link Synset synsets}.
+ * A {@link Synset} represents a concept, and contains a set of words, each of which
+ * has a sense for that concept. Each element is thus synonymous with the other
+ * words contained in the Synset.
  *
  * @see Synset
  */
@@ -80,6 +83,9 @@ public class SynNode {
     this.parent = parent;
   }
 
+  /**
+   * @return Retrieves the associated {@link WordPOS elements}.
+   */
   public List<WordPOS> getSenseRelevantWords() {
     return senseRelevantWords;
   }
@@ -246,10 +252,10 @@ public class SynNode {
   }
 
   /**
-   * Gets the senses of the nodes
+   * Retrieves associated {@link WordSense senses} for specified {@code nodes}.
    * 
-   * @param nodes
-   * @return senses from the nodes
+   * @param nodes A list of {@link SynNode nodes} to score.
+   * @return The {@link WordSense senses} obtained for the {@code nodes}.
    */
   public static List<WordSense> updateSenses(List<SynNode> nodes) {
     List<WordSense> scoredSenses = new ArrayList<>();
@@ -262,6 +268,5 @@ public class SynNode {
       scoredSenses.add(wordSense);
     }
     return scoredSenses;
-
   }
 }

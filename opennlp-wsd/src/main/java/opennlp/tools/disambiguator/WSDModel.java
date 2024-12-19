@@ -159,11 +159,17 @@ public class WSDModel extends BaseModel {
     return getManifestProperty(WORDTAG);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   protected Class<? extends BaseToolFactory> getDefaultFactory() {
     return WSDisambiguatorFactory.class;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   protected void validateArtifactMap() throws InvalidFormatException {
     super.validateArtifactMap();
@@ -186,11 +192,17 @@ public class WSDModel extends BaseModel {
     this.contextEntries = Arrays.asList(surroundings.split(","));
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public int hashCode() {
     return Objects.hash(artifactMap.get(MANIFEST_ENTRY), artifactMap.get(WSD_MODEL_ENTRY));
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public boolean equals(Object obj) {
     if (obj == this) {

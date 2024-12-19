@@ -24,21 +24,29 @@ import opennlp.tools.util.Span;
 import java.util.List;
 
 /**
- * A word sense disambiguator that determines which sense of a word is meant in
- * a particular context. It is a classification task, where the classes are the
- * different senses of the ambiguous word. Disambiguation can be achieved in
- * either supervised or un-supervised approaches. A {@link Disambiguator} returns
- * a sense ID.
+ * Describes a word sense disambiguator that determines which sense of a word is
+ * meant in a particular context.
+ * It is a classification task, where the classes are the different senses of
+ * the ambiguous word. Disambiguation can be achieved in either supervised or
+ * un-supervised approaches. A {@link Disambiguator} returns a sense ID.
  * <p>
  * <b>How it works:</b><br/>
- * Just supply the context as an array of tokens and the
- * index of the target word to the disambiguate method.
+ * Just supply the {@code context} as an array of tokens and the index of the
+ * {@code target word} to the disambiguate method.
  * <p>
- * Otherwise, for multiple words, you can set a word span instead of simply one
- * index. For the moment the source of sense definitions is from WordNet.
+ * Otherwise, for multiple words, you can set a word {@link Span} instead of
+ * a single target index.
  */
 public interface Disambiguator {
 
+  /**
+   * Conducts disambiguation for a {@link WSDSample} context.
+   *
+   * @param sample    The {@link WSDSample} containing the word and POS tags to use.
+   * @return The sense of the {@code sample} to disambiguate.
+   */
+  String disambiguate(WSDSample sample);
+  
   /**
    * Conducts disambiguation for a single word located at {@code ambiguousTokenIndex}.
    *
@@ -47,26 +55,27 @@ public interface Disambiguator {
    * @param lemmas              The lemmas of ALL the words in the context.
    * @param ambiguousTokenIndex The index of the word to disambiguate.
    *                            Must not be less or equal to zero.
-   * @return The senses of the word to disambiguate.
+   * @return The sense of the word to disambiguate.
    */
   String disambiguate(String[] tokenizedContext, String[] tokenTags,
                       String[] lemmas, int ambiguousTokenIndex);
 
   /**
-   * Conducts disambiguation for a single word located at {@code ambiguousTokenIndex}.
+   * Conducts disambiguation for all word located at {@code ambiguousTokenSpan}.
    *
    * @param tokenizedContext    The text containing the word to disambiguate.
    * @param tokenTags           The tags corresponding to the context.
    * @param lemmas              The lemmas of ALL the words in the context.
    * @param ambiguousTokenSpan  The {@link Span} of the word(s) to disambiguate.
    *                            Must not be {@code null}.
-   * @return The senses of the word to disambiguate
+   * @return A List of senses, each corresponding to the senses of each word of
+   *         the context which are to be disambiguated.
    */
   List<String> disambiguate(String[] tokenizedContext, String[] tokenTags,
                             String[] lemmas, Span ambiguousTokenSpan);
 
   /**
-   * Conducts disambiguation for all the words of the context.
+   * Conducts disambiguation for all the words of the {@code tokenizedContext}.
    *
    * @param tokenizedContext    The text containing the word to disambiguate.
    * @param tokenTags           The tags corresponding to the context.
@@ -76,13 +85,5 @@ public interface Disambiguator {
    */
   List<String> disambiguate(String[] tokenizedContext, String[] tokenTags,
                             String[] lemmas);
-
-  /**
-   * Conducts disambiguation for a {@link WSDSample} context.
-   *
-   * @param sample    The {@link WSDSample} containing the word and POS tags to use.
-   * @return The senses of the {@code sample} to disambiguate.
-   */
-  String disambiguate(WSDSample sample);
 
 }

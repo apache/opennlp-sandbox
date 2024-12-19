@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 /**
- * Interface for {@link AbstractWSDisambiguator} context generators.
+ * Describes a context generator for word sense disambiguation.
  */
 public interface WSDContextGenerator {
 
@@ -39,7 +39,7 @@ public interface WSDContextGenerator {
    * @param ngram      The ngram to consider for context. Must be greater than {@code 0}.
    * @param windowSize The context window. Must be greater than {@code 0}.
    * @param model      The list of unigrams.
-   * @return The IMS context of the word to disambiguate.
+   * @return The context of the word to disambiguate at {@code index} in {@code toks}.
    */
   String[] getContext(int index, String[] toks, String[] tags, String[] lemmas,
                       int ngram, int windowSize, List<String> model);
@@ -51,7 +51,7 @@ public interface WSDContextGenerator {
    * @param ngram      The ngram to consider for context. Must be greater than {@code 0}.
    * @param windowSize The context window. Must be greater than {@code 0}.
    * @param model      The list of unigrams.
-   * @return The IMS context of the word to disambiguate.
+   * @return The context of the word to disambiguate at {@code index} in {@code sample}.
    */
   String[] getContext(WSDSample sample, int ngram, int windowSize, List<String> model);
 

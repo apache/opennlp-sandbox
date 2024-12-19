@@ -217,6 +217,9 @@ public class WSDSample implements Sample {
     return ref;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public boolean equals(Object obj) {
     if (this == obj) {
@@ -230,6 +233,9 @@ public class WSDSample implements Sample {
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public int hashCode() {
     int result = Objects.hash(targetPosition);
@@ -238,6 +244,9 @@ public class WSDSample implements Sample {
     return result;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public String toString() {
     StringBuilder result = new StringBuilder();
@@ -255,7 +264,6 @@ public class WSDSample implements Sample {
       // get rid of last space
       result.setLength(result.length() - 1);
     }
-
     return result.toString();
   }
 

@@ -20,8 +20,7 @@
 package opennlp.tools.disambiguator;
 
 /**
- * Disambiguation Parameters
- *
+ * Describes a set of parameters to configure word sense disambiguation.
  */
 public abstract class WSDParameters {
 
@@ -32,19 +31,24 @@ public abstract class WSDParameters {
   protected SenseSource senseSource;
 
   /**
-   * @return if the disambiguation type is coarse grained or fine-grained
+   * Initializes a default set of {@link WSDParameters} and chooses
+   * the {@link SenseSource#WORDNET} by default.
    */
-
-  public SenseSource getSenseSource() {
-    return senseSource;
-  }
-
   public WSDParameters() {
     this.senseSource = SenseSource.WORDNET;
   }
 
-  /*
-   * @return checks if the parameters are valid or not
+  /**
+   * @return if the disambiguation type is coarse grained or fine-grained
+   */
+  public SenseSource getSenseSource() {
+    return senseSource;
+  }
+
+  /**
+   * Checks if the parameters are valid or not.
+   * 
+   * @return {@code true} if valid, {@code false} otherwise.
    */
   public abstract boolean areValid();
 
