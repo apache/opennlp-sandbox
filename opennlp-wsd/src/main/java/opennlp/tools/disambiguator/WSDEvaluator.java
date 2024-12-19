@@ -43,18 +43,19 @@ public class WSDEvaluator extends Evaluator<WSDSample> {
   private final Disambiguator disambiguator;
 
   /**
-   * Initializes the current instance with the given {@link AbstractWSDisambiguator}.
+   * Initializes a {@link WSDEvaluator} with the given {@link Disambiguator}.
    *
-   * @param disambiguator
-   *          the {@link AbstractWSDisambiguator} to evaluate.
-   * @param listeners
-   *          evaluation sample listeners
+   * @param disambiguator The {@link Disambiguator} to evaluate.
+   * @param listeners The (optional) {@link WSDEvaluationMonitor evaluation sample listeners}.
    */
   public WSDEvaluator(Disambiguator disambiguator, WSDEvaluationMonitor... listeners) {
     super(listeners);
     this.disambiguator = disambiguator;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   protected WSDSample processSample(WSDSample ref) {
 
@@ -82,20 +83,16 @@ public class WSDEvaluator extends Evaluator<WSDSample> {
   }
 
   /**
-   * Retrieves the WSD accuracy.
-   * <p>
-   * This is defined as: WSD accuracy = correctly disambiguated / total words
+   * @implNote WSD accuracy = correctly disambiguated / total words
    *
-   * @return the WSD accuracy
+   * @return Retrieves the WSD accuracy.
    */
   public double getAccuracy() {
     return accuracy.mean();
   }
 
   /**
-   * Retrieves the total number of words considered in the evaluation.
-   *
-   * @return the word count
+   * @return Retrieves the total number of words considered in the evaluation
    */
   public long getWordCount() {
     return accuracy.count();

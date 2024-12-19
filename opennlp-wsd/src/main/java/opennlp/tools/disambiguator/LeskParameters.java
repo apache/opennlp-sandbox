@@ -20,14 +20,14 @@
 package opennlp.tools.disambiguator;
 
 /**
- * Lesk specific parameter set.
+ * Lesk specific {@link WSDParameters parameter set}.
  *
  * @see WSDParameters
  */
 public class LeskParameters extends WSDParameters {
 
   /**
-   * Enum of all types of implemented variations of Lesk
+   * Enum of all types of implemented variations of Lesk.
    */
   public enum LeskType {
     LESK_BASIC, LESK_BASIC_CTXT, LESK_EXT, LESK_EXT_CTXT, LESK_EXT_EXP, LESK_EXT_EXP_CTXT
@@ -77,7 +77,7 @@ public class LeskParameters extends WSDParameters {
     return type;
   }
 
-  public void setType(LeskType type) {
+  void setType(LeskType type) {
     this.type = type;
   }
 
@@ -85,7 +85,7 @@ public class LeskParameters extends WSDParameters {
     return winFSize;
   }
 
-  public void setWinFSize(int winFSize) {
+  void setWinFSize(int winFSize) {
     this.winFSize = winFSize;
   }
 
@@ -93,7 +93,7 @@ public class LeskParameters extends WSDParameters {
     return winBSize;
   }
 
-  public void setWinBSize(int winBSize) {
+  void setWinBSize(int winBSize) {
     this.winBSize = winBSize;
   }
 
@@ -101,7 +101,7 @@ public class LeskParameters extends WSDParameters {
     return depth;
   }
 
-  public void setDepth(int depth) {
+  void setDepth(int depth) {
     this.depth = depth;
   }
 
@@ -109,7 +109,7 @@ public class LeskParameters extends WSDParameters {
     return depth_weight;
   }
 
-  public void setDepth_weight(double depth_weight) {
+  void setDepth_weight(double depth_weight) {
     this.depth_weight = depth_weight;
   }
 
@@ -117,7 +117,7 @@ public class LeskParameters extends WSDParameters {
     return iexp;
   }
 
-  public void setIexp(double iexp) {
+  void setIexp(double iexp) {
     this.iexp = iexp;
   }
 
@@ -125,7 +125,7 @@ public class LeskParameters extends WSDParameters {
     return dexp;
   }
 
-  public void setDexp(double dexp) {
+  void setDexp(double dexp) {
     this.dexp = dexp;
   }
 
@@ -138,7 +138,7 @@ public class LeskParameters extends WSDParameters {
   }
 
   /**
-   * Sets default parameters
+   * Activates default Lesk feature parameters.
    */
   void setDefaults() {
     setType(LeskParameters.DFLT_LESK_TYPE);
@@ -153,6 +153,9 @@ public class LeskParameters extends WSDParameters {
             { true, true, true, true, true, true, true, true, true, true };
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public boolean areValid() {
 

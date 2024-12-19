@@ -21,6 +21,9 @@ import opennlp.tools.util.BaseToolFactory;
 import opennlp.tools.util.InvalidFormatException;
 import opennlp.tools.util.ext.ExtensionLoader;
 
+/**
+ * Implements a word sense disambiguation related {@link BaseToolFactory}.
+ */
 public class WSDisambiguatorFactory extends BaseToolFactory {
 
   /**
@@ -58,11 +61,19 @@ public class WSDisambiguatorFactory extends BaseToolFactory {
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public void validateArtifactMap() throws InvalidFormatException {
     // no additional artifacts
   }
 
+  /**
+   * @implNote By default, an {@link IMSWSDContextGenerator} will be instantiated.
+   *
+   * @return Retrieves the active {@link WSDContextGenerator}.
+   */
   public WSDContextGenerator getContextGenerator() {
     // default can be IMS
     return new IMSWSDContextGenerator();

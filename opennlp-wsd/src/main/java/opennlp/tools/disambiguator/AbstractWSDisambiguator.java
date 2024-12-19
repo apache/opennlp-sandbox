@@ -33,9 +33,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A base implementation of {@link Disambiguator}
+ * A base implementation of {@link Disambiguator}.
+ * <p>
+ * Hint:<br/>
+ * Examples on how to use different implementation approaches are provided
+ * in the corresponding tests.
  *
- * @implNote Examples on how to use each approach are provided in the test section.
+ * @implNote For the moment the source of sense definitions is from WordNet.
  *
  * @see Disambiguator
  * @see WSDParameters
