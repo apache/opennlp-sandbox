@@ -41,7 +41,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\ropennlp.proto\x12\x07opennlp\"Y\n\nTagRequest\x12\x10\n\x08sentence\x18\x01 \x03(\t\x12%\n\x06\x66ormat\x18\x02 \x01(\x0e\x32\x15.opennlp.POSTagFormat\x12\x12\n\nmodel_hash\x18\x03 \x01(\t\"\x80\x01\n\x15TagWithContextRequest\x12\x10\n\x08sentence\x18\x01 \x03(\t\x12\x1a\n\x12\x61\x64\x64itional_context\x18\x02 \x03(\t\x12%\n\x06\x66ormat\x18\x03 \x01(\x0e\x32\x15.opennlp.POSTagFormat\x12\x12\n\nmodel_hash\x18\x04 \x01(\t\"\x1c\n\nStringList\x12\x0e\n\x06values\x18\x01 \x03(\t\")\n\x08SpanList\x12\x1d\n\x06values\x18\x01 \x03(\x0b\x32\r.opennlp.Span\">\n\x04Span\x12\r\n\x05start\x18\x01 \x01(\x05\x12\x0b\n\x03\x65nd\x18\x02 \x01(\x05\x12\x0c\n\x04prob\x18\x03 \x01(\x01\x12\x0c\n\x04type\x18\x04 \x01(\t\"1\n\x0f\x41vailableModels\x12\x1e\n\x06models\x18\x01 \x03(\x0b\x32\x0e.opennlp.Model\"3\n\x05Model\x12\x0c\n\x04hash\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0e\n\x06locale\x18\x03 \x01(\t\"\x07\n\x05\x45mpty*9\n\x0cPOSTagFormat\x12\x06\n\x02UD\x10\x00\x12\x08\n\x04PENN\x10\x01\x12\x0b\n\x07UNKNOWN\x10\x02\x12\n\n\x06\x43USTOM\x10\x03\x32\xca\x01\n\x10PosTaggerService\x12/\n\x03Tag\x12\x13.opennlp.TagRequest\x1a\x13.opennlp.StringList\x12\x45\n\x0eTagWithContext\x12\x1e.opennlp.TagWithContextRequest\x1a\x13.opennlp.StringList\x12>\n\x12GetAvailableModels\x12\x0e.opennlp.Empty\x1a\x18.opennlp.AvailableModelsB\x19\n\x07opennlpB\x0eOpenNLPServiceb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\ropennlp.proto\x12\x07opennlp\"Y\n\nTagRequest\x12\x10\n\x08sentence\x18\x01 \x03(\t\x12%\n\x06\x66ormat\x18\x02 \x01(\x0e\x32\x15.opennlp.POSTagFormat\x12\x12\n\nmodel_hash\x18\x03 \x01(\t\"\x80\x01\n\x15TagWithContextRequest\x12\x10\n\x08sentence\x18\x01 \x03(\t\x12\x1a\n\x12\x61\x64\x64itional_context\x18\x02 \x03(\t\x12%\n\x06\x66ormat\x18\x03 \x01(\x0e\x32\x15.opennlp.POSTagFormat\x12\x12\n\nmodel_hash\x18\x04 \x01(\t\"7\n\x0fTokenizeRequest\x12\x10\n\x08sentence\x18\x01 \x01(\t\x12\x12\n\nmodel_hash\x18\x02 \x01(\t\":\n\x12TokenizePosRequest\x12\x10\n\x08sentence\x18\x01 \x01(\t\x12\x12\n\nmodel_hash\x18\x02 \x01(\t\"9\n\x11SentDetectRequest\x12\x10\n\x08sentence\x18\x01 \x01(\t\x12\x12\n\nmodel_hash\x18\x02 \x01(\t\"<\n\x14SentDetectPosRequest\x12\x10\n\x08sentence\x18\x01 \x01(\t\x12\x12\n\nmodel_hash\x18\x02 \x01(\t\"\x1c\n\nStringList\x12\x0e\n\x06values\x18\x01 \x03(\t\")\n\x08SpanList\x12\x1d\n\x06values\x18\x01 \x03(\x0b\x32\r.opennlp.Span\">\n\x04Span\x12\r\n\x05start\x18\x01 \x01(\x05\x12\x0b\n\x03\x65nd\x18\x02 \x01(\x05\x12\x0c\n\x04prob\x18\x03 \x01(\x01\x12\x0c\n\x04type\x18\x04 \x01(\t\"1\n\x0f\x41vailableModels\x12\x1e\n\x06models\x18\x01 \x03(\x0b\x32\x0e.opennlp.Model\"3\n\x05Model\x12\x0c\n\x04hash\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0e\n\x06locale\x18\x03 \x01(\t\"\x07\n\x05\x45mpty*9\n\x0cPOSTagFormat\x12\x06\n\x02UD\x10\x00\x12\x08\n\x04PENN\x10\x01\x12\x0b\n\x07UNKNOWN\x10\x02\x12\n\n\x06\x43USTOM\x10\x03\x32\xca\x01\n\x10PosTaggerService\x12/\n\x03Tag\x12\x13.opennlp.TagRequest\x1a\x13.opennlp.StringList\x12\x45\n\x0eTagWithContext\x12\x1e.opennlp.TagWithContextRequest\x1a\x13.opennlp.StringList\x12>\n\x12GetAvailableModels\x12\x0e.opennlp.Empty\x1a\x18.opennlp.AvailableModels2\xd2\x01\n\x16TokenizerTaggerService\x12\x39\n\x08Tokenize\x12\x18.opennlp.TokenizeRequest\x1a\x13.opennlp.StringList\x12=\n\x0bTokenizePos\x12\x1b.opennlp.TokenizePosRequest\x1a\x11.opennlp.SpanList\x12>\n\x12GetAvailableModels\x12\x0e.opennlp.Empty\x1a\x18.opennlp.AvailableModels2\xdb\x01\n\x17SentenceDetectorService\x12=\n\nsentDetect\x12\x1a.opennlp.SentDetectRequest\x1a\x13.opennlp.StringList\x12\x41\n\rsentPosDetect\x12\x1d.opennlp.SentDetectPosRequest\x1a\x11.opennlp.SpanList\x12>\n\x12GetAvailableModels\x12\x0e.opennlp.Empty\x1a\x18.opennlp.AvailableModelsB\x19\n\x07opennlpB\x0eOpenNLPServiceb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -49,24 +49,36 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'opennlp_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n\007opennlpB\016OpenNLPService'
-  _globals['_POSTAGFORMAT']._serialized_start=498
-  _globals['_POSTAGFORMAT']._serialized_end=555
+  _globals['_POSTAGFORMAT']._serialized_start=736
+  _globals['_POSTAGFORMAT']._serialized_end=793
   _globals['_TAGREQUEST']._serialized_start=26
   _globals['_TAGREQUEST']._serialized_end=115
   _globals['_TAGWITHCONTEXTREQUEST']._serialized_start=118
   _globals['_TAGWITHCONTEXTREQUEST']._serialized_end=246
-  _globals['_STRINGLIST']._serialized_start=248
-  _globals['_STRINGLIST']._serialized_end=276
-  _globals['_SPANLIST']._serialized_start=278
-  _globals['_SPANLIST']._serialized_end=319
-  _globals['_SPAN']._serialized_start=321
-  _globals['_SPAN']._serialized_end=383
-  _globals['_AVAILABLEMODELS']._serialized_start=385
-  _globals['_AVAILABLEMODELS']._serialized_end=434
-  _globals['_MODEL']._serialized_start=436
-  _globals['_MODEL']._serialized_end=487
-  _globals['_EMPTY']._serialized_start=489
-  _globals['_EMPTY']._serialized_end=496
-  _globals['_POSTAGGERSERVICE']._serialized_start=558
-  _globals['_POSTAGGERSERVICE']._serialized_end=760
+  _globals['_TOKENIZEREQUEST']._serialized_start=248
+  _globals['_TOKENIZEREQUEST']._serialized_end=303
+  _globals['_TOKENIZEPOSREQUEST']._serialized_start=305
+  _globals['_TOKENIZEPOSREQUEST']._serialized_end=363
+  _globals['_SENTDETECTREQUEST']._serialized_start=365
+  _globals['_SENTDETECTREQUEST']._serialized_end=422
+  _globals['_SENTDETECTPOSREQUEST']._serialized_start=424
+  _globals['_SENTDETECTPOSREQUEST']._serialized_end=484
+  _globals['_STRINGLIST']._serialized_start=486
+  _globals['_STRINGLIST']._serialized_end=514
+  _globals['_SPANLIST']._serialized_start=516
+  _globals['_SPANLIST']._serialized_end=557
+  _globals['_SPAN']._serialized_start=559
+  _globals['_SPAN']._serialized_end=621
+  _globals['_AVAILABLEMODELS']._serialized_start=623
+  _globals['_AVAILABLEMODELS']._serialized_end=672
+  _globals['_MODEL']._serialized_start=674
+  _globals['_MODEL']._serialized_end=725
+  _globals['_EMPTY']._serialized_start=727
+  _globals['_EMPTY']._serialized_end=734
+  _globals['_POSTAGGERSERVICE']._serialized_start=796
+  _globals['_POSTAGGERSERVICE']._serialized_end=998
+  _globals['_TOKENIZERTAGGERSERVICE']._serialized_start=1001
+  _globals['_TOKENIZERTAGGERSERVICE']._serialized_end=1211
+  _globals['_SENTENCEDETECTORSERVICE']._serialized_start=1214
+  _globals['_SENTENCEDETECTORSERVICE']._serialized_end=1433
 # @@protoc_insertion_point(module_scope)

@@ -201,3 +201,325 @@ class PosTaggerService(object):
             timeout,
             metadata,
             _registered_method=True)
+
+
+class TokenizerTaggerServiceStub(object):
+    """Missing associated documentation comment in .proto file."""
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.Tokenize = channel.unary_unary(
+                '/opennlp.TokenizerTaggerService/Tokenize',
+                request_serializer=opennlp__pb2.TokenizeRequest.SerializeToString,
+                response_deserializer=opennlp__pb2.StringList.FromString,
+                _registered_method=True)
+        self.TokenizePos = channel.unary_unary(
+                '/opennlp.TokenizerTaggerService/TokenizePos',
+                request_serializer=opennlp__pb2.TokenizePosRequest.SerializeToString,
+                response_deserializer=opennlp__pb2.SpanList.FromString,
+                _registered_method=True)
+        self.GetAvailableModels = channel.unary_unary(
+                '/opennlp.TokenizerTaggerService/GetAvailableModels',
+                request_serializer=opennlp__pb2.Empty.SerializeToString,
+                response_deserializer=opennlp__pb2.AvailableModels.FromString,
+                _registered_method=True)
+
+
+class TokenizerTaggerServiceServicer(object):
+    """Missing associated documentation comment in .proto file."""
+
+    def Tokenize(self, request, context):
+        """Splits a sentence into its atomic parts.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def TokenizePos(self, request, context):
+        """Finds the boundaries of atomic parts in a string.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetAvailableModels(self, request, context):
+        """Returns the available models which can be used for tokenization tagging.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_TokenizerTaggerServiceServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'Tokenize': grpc.unary_unary_rpc_method_handler(
+                    servicer.Tokenize,
+                    request_deserializer=opennlp__pb2.TokenizeRequest.FromString,
+                    response_serializer=opennlp__pb2.StringList.SerializeToString,
+            ),
+            'TokenizePos': grpc.unary_unary_rpc_method_handler(
+                    servicer.TokenizePos,
+                    request_deserializer=opennlp__pb2.TokenizePosRequest.FromString,
+                    response_serializer=opennlp__pb2.SpanList.SerializeToString,
+            ),
+            'GetAvailableModels': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetAvailableModels,
+                    request_deserializer=opennlp__pb2.Empty.FromString,
+                    response_serializer=opennlp__pb2.AvailableModels.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'opennlp.TokenizerTaggerService', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('opennlp.TokenizerTaggerService', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class TokenizerTaggerService(object):
+    """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def Tokenize(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/opennlp.TokenizerTaggerService/Tokenize',
+            opennlp__pb2.TokenizeRequest.SerializeToString,
+            opennlp__pb2.StringList.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def TokenizePos(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/opennlp.TokenizerTaggerService/TokenizePos',
+            opennlp__pb2.TokenizePosRequest.SerializeToString,
+            opennlp__pb2.SpanList.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetAvailableModels(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/opennlp.TokenizerTaggerService/GetAvailableModels',
+            opennlp__pb2.Empty.SerializeToString,
+            opennlp__pb2.AvailableModels.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+
+class SentenceDetectorServiceStub(object):
+    """Missing associated documentation comment in .proto file."""
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.sentDetect = channel.unary_unary(
+                '/opennlp.SentenceDetectorService/sentDetect',
+                request_serializer=opennlp__pb2.SentDetectRequest.SerializeToString,
+                response_deserializer=opennlp__pb2.StringList.FromString,
+                _registered_method=True)
+        self.sentPosDetect = channel.unary_unary(
+                '/opennlp.SentenceDetectorService/sentPosDetect',
+                request_serializer=opennlp__pb2.SentDetectPosRequest.SerializeToString,
+                response_deserializer=opennlp__pb2.SpanList.FromString,
+                _registered_method=True)
+        self.GetAvailableModels = channel.unary_unary(
+                '/opennlp.SentenceDetectorService/GetAvailableModels',
+                request_serializer=opennlp__pb2.Empty.SerializeToString,
+                response_deserializer=opennlp__pb2.AvailableModels.FromString,
+                _registered_method=True)
+
+
+class SentenceDetectorServiceServicer(object):
+    """Missing associated documentation comment in .proto file."""
+
+    def sentDetect(self, request, context):
+        """Detects sentences in a character sequence.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def sentPosDetect(self, request, context):
+        """Detects sentences in a character sequence.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetAvailableModels(self, request, context):
+        """Returns the available models which can be used for sentence detection.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_SentenceDetectorServiceServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'sentDetect': grpc.unary_unary_rpc_method_handler(
+                    servicer.sentDetect,
+                    request_deserializer=opennlp__pb2.SentDetectRequest.FromString,
+                    response_serializer=opennlp__pb2.StringList.SerializeToString,
+            ),
+            'sentPosDetect': grpc.unary_unary_rpc_method_handler(
+                    servicer.sentPosDetect,
+                    request_deserializer=opennlp__pb2.SentDetectPosRequest.FromString,
+                    response_serializer=opennlp__pb2.SpanList.SerializeToString,
+            ),
+            'GetAvailableModels': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetAvailableModels,
+                    request_deserializer=opennlp__pb2.Empty.FromString,
+                    response_serializer=opennlp__pb2.AvailableModels.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'opennlp.SentenceDetectorService', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('opennlp.SentenceDetectorService', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class SentenceDetectorService(object):
+    """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def sentDetect(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/opennlp.SentenceDetectorService/sentDetect',
+            opennlp__pb2.SentDetectRequest.SerializeToString,
+            opennlp__pb2.StringList.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def sentPosDetect(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/opennlp.SentenceDetectorService/sentPosDetect',
+            opennlp__pb2.SentDetectPosRequest.SerializeToString,
+            opennlp__pb2.SpanList.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetAvailableModels(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/opennlp.SentenceDetectorService/GetAvailableModels',
+            opennlp__pb2.Empty.SerializeToString,
+            opennlp__pb2.AvailableModels.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)

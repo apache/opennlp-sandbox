@@ -75,6 +75,8 @@ model.location=extlib
 model.recursive=true
 # A wildcard to search for models in the model.location folder.
 model.pos.wildcard.pattern=opennlp-models-pos-*.jar
+model.tokenizer.wildcard.pattern=opennlp-models-tokenizer-*.jar
+model.sentdetect.wildcard.pattern=opennlp-models-sentdetect-*.jar
 ```
 
 #### Models
@@ -90,5 +92,7 @@ Details can be found in the README of the [opennlp-grpc-api module](opennlp-grpc
 Currently, the server supports the following features:
 
 - POS Tagging (using the Universal Dependencies tag format)
+- Tokenization
+- Sentence Detection
 
 

@@ -7,15 +7,21 @@
     - [AvailableModels](#opennlp-AvailableModels)
     - [Empty](#opennlp-Empty)
     - [Model](#opennlp-Model)
+    - [SentDetectPosRequest](#opennlp-SentDetectPosRequest)
+    - [SentDetectRequest](#opennlp-SentDetectRequest)
     - [Span](#opennlp-Span)
     - [SpanList](#opennlp-SpanList)
     - [StringList](#opennlp-StringList)
     - [TagRequest](#opennlp-TagRequest)
     - [TagWithContextRequest](#opennlp-TagWithContextRequest)
+    - [TokenizePosRequest](#opennlp-TokenizePosRequest)
+    - [TokenizeRequest](#opennlp-TokenizeRequest)
   
     - [POSTagFormat](#opennlp-POSTagFormat)
   
     - [PosTaggerService](#opennlp-PosTaggerService)
+    - [SentenceDetectorService](#opennlp-SentenceDetectorService)
+    - [TokenizerTaggerService](#opennlp-TokenizerTaggerService)
   
 - [Scalar Value Types](#scalar-value-types)
 
@@ -79,6 +85,38 @@ under the License.
 | hash | [string](#string) |  |  |
 | name | [string](#string) |  |  |
 | locale | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="opennlp-SentDetectPosRequest"></a>
+
+### SentDetectPosRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sentence | [string](#string) |  |  |
+| model_hash | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="opennlp-SentDetectRequest"></a>
+
+### SentDetectRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sentence | [string](#string) |  |  |
+| model_hash | [string](#string) |  |  |
 
 
 
@@ -167,6 +205,38 @@ under the License.
 
 
 
+
+<a name="opennlp-TokenizePosRequest"></a>
+
+### TokenizePosRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sentence | [string](#string) |  |  |
+| model_hash | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="opennlp-TokenizeRequest"></a>
+
+### TokenizeRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sentence | [string](#string) |  |  |
+| model_hash | [string](#string) |  |  |
+
+
+
+
+
  
 
 
@@ -198,6 +268,30 @@ under the License.
 | Tag | [TagRequest](#opennlp-TagRequest) | [StringList](#opennlp-StringList) | Assigns the sentence of tokens POS tags. |
 | TagWithContext | [TagWithContextRequest](#opennlp-TagWithContextRequest) | [StringList](#opennlp-StringList) | Assigns the sentence of tokens POS tags with additional (string-based) context. |
 | GetAvailableModels | [Empty](#opennlp-Empty) | [AvailableModels](#opennlp-AvailableModels) | Returns the available models which can be used for POS tagging. |
+
+
+<a name="opennlp-SentenceDetectorService"></a>
+
+### SentenceDetectorService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| sentDetect | [SentDetectRequest](#opennlp-SentDetectRequest) | [StringList](#opennlp-StringList) | Detects sentences in a character sequence. |
+| sentPosDetect | [SentDetectPosRequest](#opennlp-SentDetectPosRequest) | [SpanList](#opennlp-SpanList) | Detects sentences in a character sequence. |
+| GetAvailableModels | [Empty](#opennlp-Empty) | [AvailableModels](#opennlp-AvailableModels) | Returns the available models which can be used for sentence detection. |
+
+
+<a name="opennlp-TokenizerTaggerService"></a>
+
+### TokenizerTaggerService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| Tokenize | [TokenizeRequest](#opennlp-TokenizeRequest) | [StringList](#opennlp-StringList) | Splits a sentence into its atomic parts. |
+| TokenizePos | [TokenizePosRequest](#opennlp-TokenizePosRequest) | [SpanList](#opennlp-SpanList) | Finds the boundaries of atomic parts in a string. |
+| GetAvailableModels | [Empty](#opennlp-Empty) | [AvailableModels](#opennlp-AvailableModels) | Returns the available models which can be used for tokenization tagging. |
 
  
 

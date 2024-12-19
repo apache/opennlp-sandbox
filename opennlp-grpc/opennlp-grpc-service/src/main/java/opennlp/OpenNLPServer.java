@@ -35,6 +35,8 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import opennlp.service.PosTaggerService;
+import opennlp.service.SentenceDetectorService;
+import opennlp.service.TokenizerService;
 
 /**
  * The {@code OpenNLPServer} class implements a gRPC server for providing OpenNLP-based services.
@@ -77,7 +79,6 @@ public class OpenNLPServer implements Callable<Integer> {
 
   @Option(
       names = {"-c", "--config"},
-      required = false,
       paramLabel = "STRING",
       description = "key value configuration file")
   String config;
@@ -142,7 +143,10 @@ public class OpenNLPServer implements Callable<Integer> {
         Boolean.parseBoolean(
             configuration.getOrDefault("server.enable_reflection", "false"));
 
-    final ServerBuilder<?> builder = ServerBuilder.forPort(port).addService(new PosTaggerService(configuration));
+    final ServerBuilder<?> builder = ServerBuilder.forPort(port)
+        .addService(new PosTaggerService(configuration))
+        .addService(new TokenizerService(configuration))
+        .addService(new SentenceDetectorService(configuration));
 
     if (enableReflection) {
       builder.addService(ProtoReflectionServiceV1.newInstance());

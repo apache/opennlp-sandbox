@@ -29,25 +29,25 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.LoggerFactory;
 
 import opennlp.OpenNLPService;
-import opennlp.PosTaggerServiceGrpc;
+import opennlp.SentenceDetectorServiceGrpc;
 import opennlp.service.exception.ServiceException;
 import opennlp.tools.commons.ThreadSafe;
 import opennlp.tools.models.ClassPathModel;
-import opennlp.tools.postag.POSModel;
-import opennlp.tools.postag.POSTagFormat;
-import opennlp.tools.postag.POSTagger;
-import opennlp.tools.postag.ThreadSafePOSTaggerME;
+import opennlp.tools.sentdetect.SentenceDetector;
+import opennlp.tools.sentdetect.SentenceModel;
+import opennlp.tools.sentdetect.ThreadSafeSentenceDetectorME;
+import opennlp.tools.util.Span;
 
 /**
- * The {@code PosTaggerService} class implements a gRPC service for Part-of-Speech (POS) tagging
+ * The {@code SentenceDetector} class implements a gRPC service for sentence detection
  * using Apache OpenNLP models. It extends the auto-generated gRPC base class
- * {@link PosTaggerServiceGrpc.PosTaggerServiceImplBase}.
+ * {@link SentenceDetectorServiceGrpc.SentenceDetectorServiceImplBase}.
  *
  * <p>This service provides functionality for:
  * <ul>
- *   <li>Retrieving available POS models loaded from the classpath.</li>
- *   <li>Performing POS tagging on input sentences.</li>
- *   <li>Performing POS tagging with additional context.</li>
+ *   <li>Retrieving available sentence detection models loaded from the classpath.</li>
+ *   <li>Performing sentence detection on an input string.</li>
+ *   <li>Performing positional sentence detection on an input string.</li>
  * </ul>
  * </p>
  *
@@ -55,22 +55,22 @@ import opennlp.tools.postag.ThreadSafePOSTaggerME;
  * <ul>
  *   <li>{@code model.location}: Directory to search for models (default: "extlib").</li>
  *   <li>{@code model.recursive}: Whether to scan subdirectories (default: {@code true}).</li>
- *   <li>{@code model.pos.wildcard.pattern}: Wildcard pattern to identify POS models (default: "opennlp-models-pos-*.jar").</li>
+ *   <li>{@code model.sentdetect.wildcard.pattern}: Wildcard pattern to identify sentence detection models (default: "opennlp-models-sentdetect-*.jar").</li>
  * </ul>
  *  </p>
  */
 @ThreadSafe
-public class PosTaggerService extends PosTaggerServiceGrpc.PosTaggerServiceImplBase
-    implements CacheAware<POSTagger>, AutoCloseable, ExceptionAware, ModelAware<POSTagger> {
+public class SentenceDetectorService extends SentenceDetectorServiceGrpc.SentenceDetectorServiceImplBase
+    implements CacheAware<SentenceDetector>, AutoCloseable, ExceptionAware, ModelAware<SentenceDetector> {
 
   private static final org.slf4j.Logger logger =
-      LoggerFactory.getLogger(PosTaggerService.class);
+      LoggerFactory.getLogger(SentenceDetectorService.class);
 
   private static final Map<String, ClassPathModel> MODEL_CACHE = new ConcurrentHashMap<>();
-  private static final Map<String, POSTagger> TAGGER_CACHE = new ConcurrentHashMap<>();
+  private static final Map<String, SentenceDetector> SENTENCE_DETECTOR_CACHE = new ConcurrentHashMap<>();
 
   /**
-   * Initializes a Part-of-Speech (POS) Tagger service with the given configuration properties.
+   * Initializes a Sentence Detector service with the given configuration properties.
    *
    * <p>The configuration properties are provided as a {@code Map<String, String>} and define various
    * parameters required for the service, such as model locations, recursive loading, and wildcard patterns.
@@ -80,17 +80,17 @@ public class PosTaggerService extends PosTaggerServiceGrpc.PosTaggerServiceImplB
    * server.enable_reflection = false
    * model.location = target/test-classes/models
    * model.recursive = true
-   * model.pos.wildcard.pattern = opennlp-models-pos-*.jar
+   * model.sentdetect.wildcard.pattern = opennlp-models-sentdetect-*.jar
    * }</pre>
    *
    * @param conf Configuration properties for the service (key-value format). Must not be {@code null}.
    *             If a property is missing, default values are used.
    * @throws RuntimeException if an {@link IOException} occurs during model cache initialization.
    */
-  public PosTaggerService(Map<String, String> conf) {
+  public SentenceDetectorService(Map<String, String> conf) {
 
     try {
-      final Map<String, ClassPathModel> found = ModelFinderUtil.findModels(conf, "model.pos.wildcard.pattern", "opennlp-models-pos-*.jar");
+      final Map<String, ClassPathModel> found = ModelFinderUtil.findModels(conf, "model.sentdetect.wildcard.pattern", "opennlp-models-sentdetect-*.jar");
       for (Map.Entry<String, ClassPathModel> entry : found.entrySet()) {
         MODEL_CACHE.putIfAbsent(entry.getKey(), entry.getValue());
       }
@@ -101,40 +101,50 @@ public class PosTaggerService extends PosTaggerServiceGrpc.PosTaggerServiceImplB
 
   }
 
+ @Override
+  public void sentDetect(OpenNLPService.SentDetectRequest request,
+                       io.grpc.stub.StreamObserver<OpenNLPService.StringList> responseObserver) {
+   try {
+     final SentenceDetector sentenceDetector = getSentenceDetector(request.getModelHash());
+     final String[] tokens = sentenceDetector.sentDetect(request.getSentence());
+     responseObserver.onNext(OpenNLPService.StringList.newBuilder().addAllValues(Arrays.asList(tokens)).build());
+     responseObserver.onCompleted();
+   } catch (Exception e) {
+     handleException(e, responseObserver);
+   }
+  }
+
   @Override
-  public void tag(opennlp.OpenNLPService.TagRequest request,
-                  io.grpc.stub.StreamObserver<OpenNLPService.StringList> responseObserver) {
+  public void sentPosDetect(OpenNLPService.SentDetectPosRequest request,
+                          io.grpc.stub.StreamObserver<OpenNLPService.SpanList> responseObserver) {
     try {
-      final POSTagger tagger = getTagger(request.getModelHash(), request.getFormat());
-      final String[] tags = tagger.tag(request.getSentenceList().toArray(new String[0]));
-      responseObserver.onNext(OpenNLPService.StringList.newBuilder().addAllValues(Arrays.asList(tags)).build());
+      final SentenceDetector sentenceDetector = getSentenceDetector(request.getModelHash());
+      final Span[] spans = sentenceDetector.sentPosDetect(request.getSentence());
+      final OpenNLPService.SpanList response = OpenNLPService.SpanList.newBuilder()
+          .addAllValues(Arrays.stream(spans)
+              .map(s -> OpenNLPService.Span.newBuilder()
+                  .setStart(s.getStart())
+                  .setEnd(s.getEnd())
+                  .setProb(s.getProb())
+                  .setType(s.getType() == null ? "" : s.getType())
+                  .build())
+              .toList())
+          .build();
+      responseObserver.onNext(response);
       responseObserver.onCompleted();
     } catch (Exception e) {
       handleException(e, responseObserver);
     }
-
   }
 
   @Override
-  public void tagWithContext(opennlp.OpenNLPService.TagWithContextRequest request,
-                             io.grpc.stub.StreamObserver<OpenNLPService.StringList> responseObserver) {
-
-    try {
-      final POSTagger tagger = getTagger(request.getModelHash(), request.getFormat());
-      final String[] tags = tagger.tag(
-          request.getSentenceList().toArray(new String[0]),
-          request.getAdditionalContextList().toArray(new String[0]));
-      responseObserver.onNext(OpenNLPService.StringList.newBuilder().addAllValues(Arrays.asList(tags)).build());
-      responseObserver.onCompleted();
-    } catch (Exception e) {
-      handleException(e, responseObserver);
-    }
+  public void getAvailableModels(OpenNLPService.Empty request,
+                                 io.grpc.stub.StreamObserver<OpenNLPService.AvailableModels> responseObserver) {
+    returnAvailableModels(responseObserver);
   }
 
-  private POSTagger getTagger(String hash, OpenNLPService.POSTagFormat posTagFormat) {
-    final POSTagFormat format = (posTagFormat == null) ? POSTagFormat.UD : POSTagFormat.valueOf(posTagFormat.name());
-
-    return TAGGER_CACHE.computeIfAbsent((hash), modelHash -> {
+  private SentenceDetector getSentenceDetector(String hash) {
+    return SENTENCE_DETECTOR_CACHE.computeIfAbsent((hash), modelHash -> {
       final ClassPathModel model = MODEL_CACHE.get(modelHash);
 
       if (model == null) {
@@ -142,17 +152,11 @@ public class PosTaggerService extends PosTaggerServiceGrpc.PosTaggerServiceImplB
       }
 
       try(BufferedInputStream bis = new BufferedInputStream(new ByteArrayInputStream(model.model()))) {
-        return new ThreadSafePOSTaggerME(new POSModel(bis), format);
+        return new ThreadSafeSentenceDetectorME(new SentenceModel(bis));
       } catch (IOException e) {
         throw new ServiceException(e.getLocalizedMessage(), e);
       }
     });
-  }
-
-  @Override
-  public void getAvailableModels(opennlp.OpenNLPService.Empty request,
-                                 io.grpc.stub.StreamObserver<opennlp.OpenNLPService.AvailableModels> responseObserver) {
-    returnAvailableModels(responseObserver);
   }
 
   @Override
@@ -161,8 +165,8 @@ public class PosTaggerService extends PosTaggerServiceGrpc.PosTaggerServiceImplB
   }
 
   @Override
-  public Map<String, POSTagger> getServiceCache() {
-    return TAGGER_CACHE;
+  public Map<String, SentenceDetector> getServiceCache() {
+    return SENTENCE_DETECTOR_CACHE;
   }
 
   /**

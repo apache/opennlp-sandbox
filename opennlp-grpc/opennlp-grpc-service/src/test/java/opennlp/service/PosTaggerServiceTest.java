@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import opennlp.OpenNLPService;
@@ -35,162 +34,160 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class PosTaggerServiceTest {
+public class PosTaggerServiceTest extends AbstractServiceTest {
 
   public static final String[] SENTENCE = new String[] {"The", "driver", "got", "badly", "injured", "by", "the", "accident", "."};
   public static final String[] EXPECTED = new String[] {"DET", "NOUN", "VERB", "ADV", "VERB", "ADP", "DET", "NOUN", "PUNCT"};
-
-  private static Path getModelDirectory() throws URISyntaxException {
-    return Paths.get(
-        Thread.currentThread().getContextClassLoader()
-            .getResource("models/marker.txt")
-            .toURI()
-    ).getParent().toAbsolutePath();
-  }
-
-  @AfterEach
-  public void clearCache() {
-    PosTaggerService.clearCaches();
-  }
 
   @Test
   public void testGetAvailableModels() throws URISyntaxException {
     final Path modelPath = getModelDirectory();
 
-    final PosTaggerService taggerService = new PosTaggerService(Map.of("model.location", modelPath.toString()));
+    try (final PosTaggerService taggerService = new PosTaggerService(Map.of("model.location", modelPath.toString()))) {
 
-    taggerService.getAvailableModels(OpenNLPService.Empty.newBuilder().build(), new TestStreamObserver<>() {
+      taggerService.getAvailableModels(OpenNLPService.Empty.newBuilder().build(), new TestStreamObserver<>() {
 
-      @Override
-      public void onNext(OpenNLPService.AvailableModels t) {
-        assertNotNull(t);
-        assertEquals(2, t.getModelsCount());
-      }
-    });
+        @Override
+        public void onNext(OpenNLPService.AvailableModels t) {
+          assertNotNull(t);
+          assertEquals(2, t.getModelsCount());
+        }
+      });
+
+    }
   }
 
   @Test
   public void testGetAvailableModelsCustomPattern() throws URISyntaxException {
     final Path modelPath = getModelDirectory();
 
-    final PosTaggerService taggerService = new PosTaggerService(
+    try (final PosTaggerService taggerService = new PosTaggerService(
         Map.of(
             "model.location", modelPath.toString(),
             "model.pos.wildcard.pattern", "opennlp-pos-*.jar",
             "model.model.recursive", "true"
-        ));
+        ))) {
 
-    taggerService.getAvailableModels(OpenNLPService.Empty.newBuilder().build(), new TestStreamObserver<>() {
+      taggerService.getAvailableModels(OpenNLPService.Empty.newBuilder().build(), new TestStreamObserver<>() {
 
-      @Override
-      public void onNext(OpenNLPService.AvailableModels t) {
-        assertNotNull(t);
-        assertEquals(1, t.getModelsCount());
-        OpenNLPService.Model m = t.getModels(0);
-        assertNotNull(m);
-        assertEquals("opennlp-de-test2.bin", m.getName());
-      }
-    });
+        @Override
+        public void onNext(OpenNLPService.AvailableModels t) {
+          assertNotNull(t);
+          assertEquals(1, t.getModelsCount());
+          OpenNLPService.Model m = t.getModels(0);
+          assertNotNull(m);
+          assertEquals("opennlp-de-test2.bin", m.getName());
+        }
+      });
+
+    }
   }
 
   @Test
   public void testGetAvailableModelsCustomPatternNotRecursive() throws URISyntaxException {
     final Path modelPath = getModelDirectory();
 
-    final PosTaggerService taggerService = new PosTaggerService(
+    try (final PosTaggerService taggerService = new PosTaggerService(
         Map.of(
             "model.location", modelPath.toString(),
             "model.pos.wildcard.pattern", "opennlp-pos-*.jar",
             "model.recursive", "false"
-        ));
+        ))) {
 
-    taggerService.getAvailableModels(OpenNLPService.Empty.newBuilder().build(), new TestStreamObserver<>() {
+      taggerService.getAvailableModels(OpenNLPService.Empty.newBuilder().build(), new TestStreamObserver<>() {
 
-      @Override
-      public void onNext(OpenNLPService.AvailableModels t) {
-        assertNotNull(t);
-        assertEquals(0, t.getModelsCount());
-      }
-    });
+        @Override
+        public void onNext(OpenNLPService.AvailableModels t) {
+          assertNotNull(t);
+          assertEquals(0, t.getModelsCount());
+        }
+      });
+
+    }
   }
 
   @Test
   public void testDoTagging() throws URISyntaxException {
     final Path modelPath = getModelDirectory();
 
-    final PosTaggerService taggerService = new PosTaggerService(
+    try (final PosTaggerService taggerService = new PosTaggerService(
         Map.of(
             "model.location", modelPath.toString(),
             "model.pos.wildcard.pattern", "opennlp-models-pos-en-*.jar",
             "model.recursive", "true"
-        ));
+        ))) {
 
-    final String hash = "5af913a52fa0b014e22c4c4411e146720f1222bdebde9ce1f1a3174df974d26d";
+      final String hash = "5af913a52fa0b014e22c4c4411e146720f1222bdebde9ce1f1a3174df974d26d";
 
-    //check if we have the EN tagger available
-    taggerService.getAvailableModels(OpenNLPService.Empty.newBuilder().build(), new TestStreamObserver<>() {
+      //check if we have the EN tagger available
+      taggerService.getAvailableModels(OpenNLPService.Empty.newBuilder().build(), new TestStreamObserver<>() {
 
-      @Override
-      public void onNext(OpenNLPService.AvailableModels t) {
-        assertNotNull(t);
-        assertEquals(1, t.getModelsCount());
-        OpenNLPService.Model m = t.getModels(0);
-        assertNotNull(m);
-        assertEquals("opennlp-en-ud-ewt-pos-1.2-2.5.0.bin", m.getName());
-        assertEquals(hash, m.getHash());
-      }
-    });
+        @Override
+        public void onNext(OpenNLPService.AvailableModels t) {
+          assertNotNull(t);
+          assertEquals(1, t.getModelsCount());
+          OpenNLPService.Model m = t.getModels(0);
+          assertNotNull(m);
+          assertEquals("opennlp-en-ud-ewt-pos-1.2-2.5.0.bin", m.getName());
+          assertEquals(hash, m.getHash());
+        }
+      });
 
-    //simulate a tagging session
-    taggerService.tag(OpenNLPService.TagRequest.newBuilder()
-        .setModelHash(hash)
-        .addAllSentence(Arrays.stream(SENTENCE).toList())
-        .build(), new TestStreamObserver<>() {
-      @Override
-      public void onNext(opennlp.OpenNLPService.StringList t) {
-        assertNotNull(t);
-        assertArrayEquals(EXPECTED, t.getValuesList().toArray(new String[0]));
-      }
-    });
+      //simulate a tagging session
+      taggerService.tag(OpenNLPService.TagRequest.newBuilder()
+          .setModelHash(hash)
+          .addAllSentence(Arrays.stream(SENTENCE).toList())
+          .build(), new TestStreamObserver<>() {
+        @Override
+        public void onNext(opennlp.OpenNLPService.StringList t) {
+          assertNotNull(t);
+          assertArrayEquals(EXPECTED, t.getValuesList().toArray(new String[0]));
+        }
+      });
+
+
+    }
   }
 
   @Test
   public void testDoTaggingWithContext() throws URISyntaxException {
     final Path modelPath = getModelDirectory();
 
-    final PosTaggerService taggerService = new PosTaggerService(
+    try (final PosTaggerService taggerService = new PosTaggerService(
         Map.of(
             "model.location", modelPath.toString(),
             "model.pos.wildcard.pattern", "opennlp-models-pos-en-*.jar",
             "model.recursive", "true"
-        ));
+        ))) {
 
-    final String hash = "5af913a52fa0b014e22c4c4411e146720f1222bdebde9ce1f1a3174df974d26d";
+      final String hash = "5af913a52fa0b014e22c4c4411e146720f1222bdebde9ce1f1a3174df974d26d";
 
-    //check if we have the EN tagger available
-    taggerService.getAvailableModels(OpenNLPService.Empty.newBuilder().build(), new TestStreamObserver<>() {
+      //check if we have the EN tagger available
+      taggerService.getAvailableModels(OpenNLPService.Empty.newBuilder().build(), new TestStreamObserver<>() {
 
-      @Override
-      public void onNext(OpenNLPService.AvailableModels t) {
-        assertNotNull(t);
-        assertEquals(1, t.getModelsCount());
-        OpenNLPService.Model m = t.getModels(0);
-        assertNotNull(m);
-        assertEquals("opennlp-en-ud-ewt-pos-1.2-2.5.0.bin", m.getName());
-        assertEquals(hash, m.getHash());
-      }
-    });
+        @Override
+        public void onNext(OpenNLPService.AvailableModels t) {
+          assertNotNull(t);
+          assertEquals(1, t.getModelsCount());
+          OpenNLPService.Model m = t.getModels(0);
+          assertNotNull(m);
+          assertEquals("opennlp-en-ud-ewt-pos-1.2-2.5.0.bin", m.getName());
+          assertEquals(hash, m.getHash());
+        }
+      });
 
-    //simulate a tagging session
-    taggerService.tagWithContext(OpenNLPService.TagWithContextRequest.newBuilder()
-        .addAllAdditionalContext(List.of("test"))
-        .setModelHash(hash).addAllSentence(Arrays.stream(SENTENCE).toList()).build(), new TestStreamObserver<>() {
-      @Override
-      public void onNext(opennlp.OpenNLPService.StringList t) {
-        assertNotNull(t);
-        assertArrayEquals(EXPECTED, t.getValuesList().toArray(new String[0]));
-      }
-    });
+      //simulate a tagging session
+      taggerService.tagWithContext(OpenNLPService.TagWithContextRequest.newBuilder()
+          .addAllAdditionalContext(List.of("test"))
+          .setModelHash(hash).addAllSentence(Arrays.stream(SENTENCE).toList()).build(), new TestStreamObserver<>() {
+        @Override
+        public void onNext(opennlp.OpenNLPService.StringList t) {
+          assertNotNull(t);
+          assertArrayEquals(EXPECTED, t.getValuesList().toArray(new String[0]));
+        }
+      });
+
+    }
   }
 
 }

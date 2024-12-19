@@ -44,6 +44,46 @@ message TagWithContextRequest {
   string model_hash = 4;
 }
 
+service TokenizerTaggerService {
+  // Splits a sentence into its atomic parts.
+  rpc Tokenize(TokenizeRequest) returns (StringList);
+  // Finds the boundaries of atomic parts in a string.
+  rpc TokenizePos(TokenizePosRequest) returns (SpanList);
+  // Returns the available models which can be used for tokenization tagging.
+  rpc GetAvailableModels(Empty) returns (AvailableModels);
+}
+
+message TokenizeRequest {
+  string sentence = 1;
+  string model_hash = 2;
+}
+
+message TokenizePosRequest {
+  string sentence = 1;
+  string model_hash = 2;
+}
+
+service SentenceDetectorService {
+  // Detects sentences in a character sequence.
+  rpc sentDetect(SentDetectRequest) returns (StringList);
+  // Detects sentences in a character sequence.
+  rpc sentPosDetect(SentDetectPosRequest) returns (SpanList);
+  // Returns the available models which can be used for sentence detection.
+  rpc GetAvailableModels(Empty) returns (AvailableModels);
+}
+
+message SentDetectRequest {
+  string sentence = 1;
+  string model_hash = 2;
+}
+
+message SentDetectPosRequest {
+  string sentence = 1;
+  string model_hash = 2;
+}
+
+// Generic parts
+
 message StringList {
   repeated string values = 1;
 }
