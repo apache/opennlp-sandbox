@@ -18,12 +18,10 @@
 package opennlp.tools.coref.sim;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -36,6 +34,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import opennlp.tools.coref.resolver.ResolverUtils;
 import opennlp.tools.ml.maxent.GISModel;
 import opennlp.tools.ml.maxent.GISTrainer;
@@ -45,19 +46,17 @@ import opennlp.tools.ml.model.Event;
 import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.util.ObjectStreamUtils;
 import opennlp.tools.util.TrainingParameters;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Models semantic similarity between two mentions and returns a score based on
  * how semantically comparable the mentions are with one another.
  */
-public class SimilarityModel implements TestSimilarityModel, TrainSimilarityModel {
+public class SimilarityModel implements TestSimilarityModel, TrainModel<SimilarityModel> {
 
   private static final Logger logger = LoggerFactory.getLogger(SimilarityModel.class);
 
   private final String modelName;
-  private final String modelExtension = ".bin";
+
   private MaxentModel testModel;
   private List<Event> events;
   private int SAME_INDEX;
@@ -65,11 +64,11 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
   private static final String DIFF = "diff";
   private final boolean debugOn = false;
 
-  public static TestSimilarityModel testModel(String name) throws IOException {
+  public static SimilarityModel testModel(String name) throws IOException {
     return new SimilarityModel(name, false);
   }
 
-  public static TrainSimilarityModel trainModel(String name) throws IOException {
+  public static SimilarityModel trainModel(String name) throws IOException {
     return new SimilarityModel(name, true);
   }
 
@@ -80,7 +79,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
     }
     else {
       try (DataInputStream dis = new DataInputStream(
-              new BufferedInputStream(new FileInputStream(modelName + modelExtension)))) {
+              new BufferedInputStream(new FileInputStream(modelName + MODEL_EXTENSION)))) {
         testModel = new BinaryGISModelReader(dis).getModel();
       }
       SAME_INDEX = testModel.getIndex(SAME);
@@ -158,16 +157,15 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
    * @return A set of mentions for all the entities which might be semantically compatible
    * with entity indicated by the specified key.
    */
-  @SuppressWarnings("unchecked")
   private Set<Context> constructExclusionSet(Integer entityKey, Map<Integer, Context> entities, Map<Integer,
       Set<String>> headSets, Map<Integer, Set<String>> nameSets, List<Context> singletons) {
     Set<Context> exclusionSet = new HashSet<>();
     Set<String> entityHeadSet = headSets.get(entityKey);
     Set<String> entityNameSet = nameSets.get(entityKey);
-    List<Context> entityContexts = (List<Context>) entities.get(entityKey);
+    List<Context> entityContexts = List.of(entities.get(entityKey));
     //entities
     for (Integer key : entities.keySet()) {
-      List<Context> candidateContexts = (List<Context>) entities.get(key);
+      List<Context> candidateContexts = List.of(entities.get(key));
       if (key.equals(entityKey)) {
         exclusionSet.addAll(candidateContexts);
       } else if (nameSets.get(key).isEmpty()) {
@@ -206,12 +204,11 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
    * @return a mapping between the keys of the specified entity mapping and the headset
    * generated from the mentions associated with that key.
    */
-  @SuppressWarnings("unchecked")
   private Map<Integer, Set<String>> constructHeadSets(Map<Integer, Context> entities) {
     Map<Integer, Set<String>> headSets = new HashMap<>();
     for (Integer key : entities.keySet()) {
-      List<Context> entityContexts = (List<Context>) entities.get(key);
-      headSets.put(key, constructHeadSet(entityContexts));
+      Context entityContext = entities.get(key);
+      headSets.put(key, constructHeadSet(List.of(entityContext)));
     }
     return headSets;
   }
@@ -241,12 +238,11 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
    * @return a mapping between each key in the specified entity map and the name types associated
    *         with each mention of that entity.
    */
-  @SuppressWarnings("unchecked")
   private Map<Integer, Set<String>> constructNameSets(Map<Integer, Context> entities) {
     Map<Integer, Set<String>> nameSets = new HashMap<>();
     for (Integer key : entities.keySet()) {
-      List<Context> entityContexts = (List<Context>) entities.get(key);
-      nameSets.put(key, constructNameSet(entityContexts));
+      Context entityContext = entities.get(key);
+      nameSets.put(key, constructNameSet(List.of(entityContext)));
     }
     return nameSets;
   }
@@ -275,7 +271,6 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public void setExtents(Context[] extentContexts) {
     Map<Integer, Context> entities = new HashMap<>();
     /* Extents which are not in a coreference chain. */
@@ -303,17 +298,14 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
       if (entityNameSet.isEmpty()) {
         continue;
       }
-      List<Context> entityContexts = (List<Context>) entities.get(key);
+      List<Context> entityContexts = List.of(entities.get(key));
       Set<Context> exclusionSet = constructExclusionSet(key, entities, headSets, nameSets, singletons);
-      if (entityContexts.size() == 1) {
-        // ?
-      }
       for (int xi1 = 0, xl = entityContexts.size(); xi1 < xl; xi1++) {
         Context ec1 = entityContexts.get(xi1);
         //if (isPronoun(ec1)) {
         //  continue;
         //}
-        for (int xi2 = xi1 + 1; xi2 < xl; xi2++) {
+        for (int xi2 = xi1; xi2 < xl; xi2++) {
           Context ec2 = entityContexts.get(xi2);
           //if (isPronoun(ec2)) {
           //  continue;
@@ -361,7 +353,7 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
    * @see #setExtents(Context[])
    */
   @Override
-  public void trainModel() throws IOException {
+  public SimilarityModel trainModel() throws IOException {
     if (debugOn) {
       Path p = Path.of(modelName + ".events");
       try (Writer writer = Files.newBufferedWriter(p, StandardCharsets.UTF_8,
@@ -377,7 +369,8 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
     GISTrainer trainer = new GISTrainer();
     trainer.init(params, null);
     GISModel trainedModel = trainer.trainModel(ObjectStreamUtils.createObjectStream(events));
-    new BinaryGISModelWriter(trainedModel, new File(modelName + modelExtension)).persist();
+    new BinaryGISModelWriter(trainedModel, new File(modelName + MODEL_EXTENSION)).persist();
+    return this;
   }
 
   private boolean isName(Context np) {
@@ -622,24 +615,5 @@ public class SimilarityModel implements TestSimilarityModel, TrainSimilarityMode
       logger.warn("unknown group for: {}", np1.headTokenText);
     }
     return (features);
-  }
-
-  // TODO Extract a Test case from this example
-  public static void main(String[] args) throws IOException {
-    if (args.length == 0) {
-      logger.info("Usage: SimilarityModel modelName < tiger/NN bear/NN");
-      System.exit(1);
-    }
-    String modelName = args[0];
-    SimilarityModel model = new SimilarityModel(modelName, false);
-    //Context.wn = new WordNet(System.getProperty("WNHOME"), true);
-    //Context.morphy = new Morphy(Context.wn);
-    BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-    for (String line = in.readLine(); line != null; line = in.readLine()) {
-      String[] words = line.split(" ");
-      double p = model.compatible(Context.parseContext(words[0]), Context.parseContext(words[1]));
-      System.out.println(p + " " + model.getFeatures(Context.parseContext(words[0]),
-          Context.parseContext(words[1])));
-    }
   }
 }

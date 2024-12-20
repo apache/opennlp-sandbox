@@ -57,7 +57,6 @@ public class NameFinderCorefEnhancerStream extends FilterObjectStream<RawCorefSa
       List<Parse> parses = new ArrayList<>();
       
       for (Parse p : sample.getParses()) {
-        
         Parse[] parseTokens = p.getTagNodes();
         String[] tokens = new String[parseTokens.length];
         

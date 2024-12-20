@@ -151,38 +151,37 @@ public abstract class AbstractLinker implements Linker {
   }
 
   /**
-   * Updates the specified discourse model with the specified mention as coreferent with the specified entity.
-   * @param dm The discourse model
-   * @param m The mention to be added to the specified entity.
-   * @param entity The entity which is mentioned by the specified mention.
-   * @param useDiscourseModel Whether the mentions should be kept as an entity or simply co-indexed.
+   * Updates the specified {@link DiscourseModel} with the specified mention as coreferent with the specified e.
+   * @param dm The {@link DiscourseModel}.
+   * @param m The {@link MentionContext mention} to be added to the specified {@code entity 'e'}.
+   * @param e The {@link DiscourseEntity} which is mentioned by the specified mention.
+   * @param useDiscourseModel Whether the mentions should be kept as an e or simply co-indexed.
    */
-  protected void updateExtent(DiscourseModel dm, MentionContext m, DiscourseEntity entity,
-                              boolean useDiscourseModel) {
+  protected void updateExtent(DiscourseModel dm, MentionContext m, DiscourseEntity e, boolean useDiscourseModel) {
     if (useDiscourseModel) {
-      if (entity != null) {
+      if (e != null) {
         logger.debug("Adding extent: {}", m.toText());
-        if (entity.getGenderProbability() < m.getGenderProb()) {
-          entity.setGender(m.getGender());
-          entity.setGenderProbability(m.getGenderProb());
+        if (e.getGenderProbability() < m.getGenderProb()) {
+          e.setGender(m.getGender());
+          e.setGenderProbability(m.getGenderProb());
         }
-        if (entity.getNumberProbability() < m.getNumberProb()) {
-          entity.setNumber(m.getNumber());
-          entity.setNumberProbability(m.getNumberProb());
+        if (e.getNumberProbability() < m.getNumberProb()) {
+          e.setNumber(m.getNumber());
+          e.setNumberProbability(m.getNumberProb());
         }
-        entity.addMention(m);
-        dm.mentionEntity(entity);
+        e.addMention(m);
+        dm.mentionEntity(e);
       } else {
         logger.debug("Creating Extent: {} {} {}", m.toText(), m.getGender(), m.getNumber());
-        entity = new DiscourseEntity(m, m.getGender(), m.getGenderProb(), m.getNumber(), m.getNumberProb());
-        dm.addEntity(entity);
+        e = new DiscourseEntity(m, m.getGender(), m.getGenderProb(), m.getNumber(), m.getNumberProb());
+        dm.addEntity(e);
       }
     } else {
-      if (entity != null) {
+      if (e != null) {
         DiscourseEntity newEntity =
                 new DiscourseEntity(m, m.getGender(), m.getGenderProb(), m.getNumber(), m.getNumberProb());
         dm.addEntity(newEntity);
-        newEntity.setId(entity.getId());
+        newEntity.setId(e.getId());
       }
       else {
         DiscourseEntity newEntity =

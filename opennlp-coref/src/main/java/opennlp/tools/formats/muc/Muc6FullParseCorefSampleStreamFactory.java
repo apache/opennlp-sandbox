@@ -46,10 +46,11 @@ import opennlp.tools.tokenize.TokenizerModel;
 import opennlp.tools.util.ObjectStream;
 
 /**
- * Factory creates a stream which can parse MUC 6 Coref data and outputs CorefSample
+ * Factory creates a stream which can parse MUC 6 Coref data and outputs {@link CorefSample}
  * objects which are enhanced with a full parse and are suitable to train the Coreference component.
  */
-public class Muc6FullParseCorefSampleStreamFactory extends AbstractSampleStreamFactory<CorefSample, Muc6FullParseCorefSampleStreamFactory.Parameters> {
+public class Muc6FullParseCorefSampleStreamFactory extends
+        AbstractSampleStreamFactory<CorefSample, Muc6FullParseCorefSampleStreamFactory.Parameters> {
 
   interface Parameters extends BasicFormatParams {
 
@@ -64,11 +65,9 @@ public class Muc6FullParseCorefSampleStreamFactory extends AbstractSampleStreamF
     
     @ParameterDescription(valueName = "modelFile")
     File getOrganizationModel();
-    
-    // TODO: Add other models here !!!
   }
   
-  protected Muc6FullParseCorefSampleStreamFactory() {
+  Muc6FullParseCorefSampleStreamFactory() {
     super(Parameters.class);
   }
 
@@ -76,26 +75,23 @@ public class Muc6FullParseCorefSampleStreamFactory extends AbstractSampleStreamF
   public ObjectStream<CorefSample> create(String[] args) {
     
     Parameters params = ArgumentParser.parse(args, Parameters.class);
-    
+
     ParserModel parserModel = new ParserModelLoader().load(params.getParserModel());
     Parser parser =  ParserFactory.create(parserModel);
     
     TokenizerModel tokenizerModel = new TokenizerModelLoader().load(params.getTokenizerModel());
     Tokenizer tokenizer = new TokenizerME(tokenizerModel);
     
-    ObjectStream<String> mucDocStream = new FileToStringSampleStream(
-        new DirectorySampleStream(params.getData(), file -> file.getName().toLowerCase().endsWith(".sgm"), false), StandardCharsets.UTF_8);
+    ObjectStream<String> mucDocStream = new FileToStringSampleStream(new DirectorySampleStream(params.getData(),
+                file -> file.getName().toLowerCase().endsWith(".sgml"), false), StandardCharsets.UTF_8);
     
     ObjectStream<RawCorefSample> rawSamples = new MucCorefSampleStream(tokenizer, mucDocStream);
-    
     ObjectStream<RawCorefSample> parsedSamples = new FullParseCorefEnhancerStream(parser, rawSamples);
-    
-    
+
     // How to load all these nameFinder models ?! 
     // Let's make a param per model, not that nice, but ok!
     
     Map<String, File> modelFileTagMap = new HashMap<>();
-    
     modelFileTagMap.put("person", params.getPersonModel());
     modelFileTagMap.put("organization", params.getOrganizationModel());
     

@@ -57,7 +57,7 @@ public class MucCorefSampleStream extends FilterObjectStream<String, RawCorefSam
       }
     }
     
-    if (documents.size() > 0) {
+    if (!documents.isEmpty()) {
       return documents.remove(0);
     }
     else {

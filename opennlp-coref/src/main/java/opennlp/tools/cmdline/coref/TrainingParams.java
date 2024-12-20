@@ -20,7 +20,7 @@ package opennlp.tools.cmdline.coref;
 import opennlp.tools.cmdline.params.BasicTrainingParams;
 
 /**
- * TrainingParameters for Name Finder.
+ * TrainingParameters for Co-Referencer
  * <p>
  * Note: Do not use this class, internal use only!
  */

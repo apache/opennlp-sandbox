@@ -20,7 +20,15 @@ package opennlp.tools.cmdline.coref;
 import opennlp.tools.cmdline.AbstractConverterTool;
 import opennlp.tools.coref.CorefSample;
 import opennlp.tools.coref.CorefSampleStreamFactory;
+import opennlp.tools.postag.POSSample;
 
+/**
+ * Tool to convert multiple data formats into native OpenNLP Coref training format.
+ *
+ * @see AbstractConverterTool
+ * @see CorefSample
+ * @see CorefSampleStreamFactory
+ */
 public class CoreferenceConverterTool extends AbstractConverterTool<CorefSample, CorefSampleStreamFactory.Parameters>  {
 
   public CoreferenceConverterTool() {

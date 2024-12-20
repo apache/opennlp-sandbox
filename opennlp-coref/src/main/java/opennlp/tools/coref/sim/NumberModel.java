@@ -27,6 +27,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import opennlp.tools.coref.resolver.ResolverUtils;
 import opennlp.tools.ml.maxent.GISModel;
 import opennlp.tools.ml.maxent.GISTrainer;
@@ -37,21 +40,20 @@ import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.util.ObjectStreamUtils;
 import opennlp.tools.util.TrainingParameters;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Class which models the number of particular mentions and the entities made up of mentions.
  */
-public class NumberModel implements TestNumberModel, TrainSimilarityModel {
+public class NumberModel implements TestNumberModel, TrainModel<NumberModel> {
 
   private static final Logger logger = LoggerFactory.getLogger(NumberModel.class);
+  private static final double MIN_NUMBER_PROB = 0.66;
 
   private final String modelName;
-  private final String modelExtension = ".bin";
-  private MaxentModel testModel;
+  private MaxentModel meModel;
   private List<Event> events;
 
+  // TODO: Note those need to be written / serialized to the binary model file
   private int singularIndex;
   private int pluralIndex;
 
@@ -67,14 +69,13 @@ public class NumberModel implements TestNumberModel, TrainSimilarityModel {
     this.modelName = modelName;
     if (train) {
       events = new ArrayList<>();
-    }
-    else {
+    } else {
       try (DataInputStream dis = new DataInputStream(
-              new BufferedInputStream(new FileInputStream(modelName + modelExtension)))) {
-        testModel = new BinaryGISModelReader(dis).getModel();
+              new BufferedInputStream(new FileInputStream(modelName + MODEL_EXTENSION)))) {
+        meModel = new BinaryGISModelReader(dis).getModel();
       }
-      singularIndex = testModel.getIndex(NumberEnum.SINGULAR.toString());
-      pluralIndex = testModel.getIndex(NumberEnum.PLURAL.toString());
+      singularIndex = meModel.getIndex(NumberEnum.SINGULAR.toString());
+      pluralIndex = meModel.getIndex(NumberEnum.PLURAL.toString());
     }
   }
 
@@ -107,18 +108,7 @@ public class NumberModel implements TestNumberModel, TrainSimilarityModel {
     }
   }
 
-  private NumberEnum getNumber(List<Context> entity) {
-    for (Context ec : entity) {
-      NumberEnum ne = getNumber(ec);
-      if (ne != NumberEnum.UNKNOWN) {
-        return ne;
-      }
-    }
-    return NumberEnum.UNKNOWN;
-  }
-
   @Override
-  @SuppressWarnings("unchecked")
   public void setExtents(Context[] extentContexts) {
     Map<Integer,Context> entities = new HashMap<>();
     List<Context> singletons = new ArrayList<>();
@@ -136,12 +126,12 @@ public class NumberModel implements TestNumberModel, TrainSimilarityModel {
     List<Context> plurals = new ArrayList<>();
     // coref entities
     for (Integer key : entities.keySet()) {
-      List<Context> entityContexts = (List<Context>) entities.get(key);
-      NumberEnum number = getNumber(entityContexts);
+      Context entityContext = entities.get(key);
+      NumberEnum number = getNumber(entityContext);
       if (number == NumberEnum.SINGULAR) {
-        singles.addAll(entityContexts);
+        singles.add(entityContext);
       } else if (number == NumberEnum.PLURAL) {
-        plurals.addAll(entityContexts);
+        plurals.add(entityContext);
       }
     }
     // non-coref entities.
@@ -165,7 +155,7 @@ public class NumberModel implements TestNumberModel, TrainSimilarityModel {
   @Override
   public double[] numberDist(Context c) {
     List<String> feats = getFeatures(c);
-    return testModel.eval(feats.toArray(new String[0]));
+    return meModel.eval(feats.toArray(new String[0]));
   }
 
   @Override
@@ -178,14 +168,32 @@ public class NumberModel implements TestNumberModel, TrainSimilarityModel {
     return pluralIndex;
   }
 
+  public Number computeNumber(Context c) {
+    double[] dist = numberDist(c);
+    Number number;
+    logger.debug("Computing number: {} sing={} plural={}", c, dist[getSingularIndex()], dist[getPluralIndex()]);
+    if (dist[getSingularIndex()] > MIN_NUMBER_PROB) {
+      number = new Number(NumberEnum.SINGULAR,dist[getSingularIndex()]);
+    }
+    else if (dist[getPluralIndex()] > MIN_NUMBER_PROB) {
+      number = new Number(NumberEnum.PLURAL,dist[getPluralIndex()]);
+    }
+    else {
+      number = new Number(NumberEnum.UNKNOWN, MIN_NUMBER_PROB);
+    }
+    return number;
+  }
+
   @Override
-  public void trainModel() throws IOException {
+  public NumberModel trainModel() throws IOException {
     TrainingParameters params = TrainingParameters.defaultParams();
     params.put(TrainingParameters.ITERATIONS_PARAM, 100);
     params.put(TrainingParameters.CUTOFF_PARAM, 10);
     GISTrainer trainer = new GISTrainer();
     trainer.init(params, null);
     GISModel trainedModel = trainer.trainModel(ObjectStreamUtils.createObjectStream(events));
-    new BinaryGISModelWriter(trainedModel, new File(modelName + modelExtension)).persist();
+    this.meModel = trainedModel;
+    new BinaryGISModelWriter(trainedModel, new File(modelName + MODEL_EXTENSION)).persist();
+    return this;
   }
 }

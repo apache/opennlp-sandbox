@@ -55,7 +55,7 @@ public class DefaultParseTest {
     assertEquals(parse, dp.getParse());
     assertEquals(1, dp.getSentenceNumber());
     assertTrue(dp.isSentence());
-    assertEquals(-1, dp.getEntityId());
+    assertEquals(1, dp.getEntityId());
     assertNull(dp.getParent());
     assertFalse(dp.isParentNAC());
     Span s = dp.getSpan();

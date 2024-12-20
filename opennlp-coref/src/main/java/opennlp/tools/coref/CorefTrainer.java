@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 
+import opennlp.tools.commons.Trainer;
 import opennlp.tools.coref.linker.DefaultLinker;
 import opennlp.tools.coref.linker.Linker;
 import opennlp.tools.coref.linker.LinkerMode;
@@ -30,15 +31,22 @@ import opennlp.tools.coref.linker.TreebankLinker;
 import opennlp.tools.coref.mention.Mention;
 import opennlp.tools.coref.mention.MentionContext;
 import opennlp.tools.coref.mention.MentionFinder;
-import opennlp.tools.coref.resolver.MaxentResolver;
 import opennlp.tools.coref.sim.GenderModel;
 import opennlp.tools.coref.sim.NumberModel;
 import opennlp.tools.coref.sim.SimilarityModel;
-import opennlp.tools.coref.sim.TrainSimilarityModel;
+import opennlp.tools.coref.sim.TrainModel;
+import opennlp.tools.ml.AbstractTrainer;
 import opennlp.tools.parser.Parse;
 import opennlp.tools.util.ObjectStream;
 
-public class CorefTrainer {
+/**
+ * A {@link Trainer} implementation for co-reference resolution models.
+ *
+ * @see Trainer
+ * @see CorefModel
+ * @see CorefSample
+ */
+public class CorefTrainer extends AbstractTrainer implements Trainer {
 
   private static boolean containsToken(String token, Parse p) {
     for (Parse node : p.getTagNodes()) {
@@ -49,50 +57,41 @@ public class CorefTrainer {
   }
   
   private static Mention[] getMentions(CorefSample sample, MentionFinder mentionFinder) {
-    
     List<Mention> mentions = new ArrayList<>();
-    
     for (opennlp.tools.coref.mention.Parse corefParse : sample.getParses()) {
-
       Parse p = ((DefaultParse) corefParse).getParse();
-      
       Mention[] extents = mentionFinder.getMentions(corefParse);
-
       for (Mention extent : extents) {
-
         if (extent.getParse() == null) {
-
           Stack<Parse> nodes = new Stack<>();
           nodes.add(p);
 
           while (!nodes.isEmpty()) {
-
             Parse node = nodes.pop();
-
             if (node.getSpan().equals(extent.getSpan()) && node.getType().startsWith("NML")) {
               DefaultParse corefParseNode = new DefaultParse(node, corefParse.getSentenceNumber());
               extent.setParse(corefParseNode);
               extent.setId(corefParseNode.getEntityId());
               break;
             }
-
             nodes.addAll(Arrays.asList(node.getChildren()));
           }
         }
       }
-      
       mentions.addAll(Arrays.asList(extents));
     }
-    
     return mentions.toArray(new Mention[0]);
   }
   
   public static void train(String modelDirectory, ObjectStream<CorefSample> samples,
       boolean useTreebank, boolean useDiscourseModel) throws IOException {
     
-    TrainSimilarityModel simTrain = SimilarityModel.trainModel(modelDirectory + "/coref/sim");
-    TrainSimilarityModel genTrain = GenderModel.trainModel(modelDirectory + "/coref/gen");
-    TrainSimilarityModel numTrain = NumberModel.trainModel(modelDirectory + "/coref/num");
+    TrainModel<SimilarityModel> simTrain =
+            SimilarityModel.trainModel(modelDirectory + "/coref/sim");
+    TrainModel<GenderModel> genTrain =
+            GenderModel.trainModel(modelDirectory + "/coref/gen");
+    TrainModel<NumberModel> numTrain =
+            NumberModel.trainModel(modelDirectory + "/coref/num");
     
     Linker simLinker;
     
@@ -113,35 +112,31 @@ public class CorefTrainer {
       genTrain.setExtents(extentContexts);
       numTrain.setExtents(extentContexts);
     }
-    
-    simTrain.trainModel();
-    genTrain.trainModel();
-    numTrain.trainModel();
-    
-    MaxentResolver.setSimilarityModel(SimilarityModel.testModel(modelDirectory + "/coref" + "/sim"));
-    
-    // Done with similarity training
-    
-    // Now train the linkers
+
+    final SimilarityModel simModel = simTrain.trainModel();
+    final GenderModel genderModel = genTrain.trainModel();
+    final NumberModel numberModel = numTrain.trainModel();
+
+    // Done with similarity training, now train the linkers
  
     // Training data needs to be read in again and the stream must be reset
     samples.reset();
     
-    // Now train linkers
+    // Now create linkers
     Linker trainLinker;
     if (useTreebank) {
-      trainLinker = new TreebankLinker(modelDirectory + "/coref/", LinkerMode.TRAIN, useDiscourseModel);
-    }
-    else {
-      trainLinker = new DefaultLinker(modelDirectory + "/coref/", LinkerMode.TRAIN, useDiscourseModel);
+      trainLinker = new TreebankLinker(modelDirectory, LinkerMode.TRAIN,
+              simModel, genderModel, numberModel, useDiscourseModel, -1);
+    } else {
+      trainLinker = new DefaultLinker(modelDirectory, LinkerMode.TRAIN,
+              simModel, genderModel, numberModel, useDiscourseModel, -1);
     }
     
     for (CorefSample sample = samples.read(); sample != null; sample = samples.read())  {
-      
       Mention[] mentions = getMentions(sample, trainLinker.getMentionFinder());
       trainLinker.setEntities(mentions);
     }
-    
     trainLinker.train();
   }
+
 }

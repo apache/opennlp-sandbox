@@ -20,16 +20,26 @@ package opennlp.tools.coref;
 import java.util.ArrayList;
 import java.util.List;
 
+import opennlp.tools.commons.Sample;
 import opennlp.tools.parser.Parse;
 
-public class CorefSample {
+/**
+ * Encapsulates {@link Parse parses} that originate from parsing operation on text.
+ */
+public class CorefSample implements Sample {
 
   private final List<Parse> parses;
 
   public CorefSample(List<Parse> parses) {
     this.parses = parses;
   }
-  
+
+  /**
+   * Converts the encapsulated {@link Parse parses} into
+   * {@link opennlp.tools.coref.mention.Parse Coref-related parse} instances.
+   *
+   * @return A list of converted Coref-related parses.
+   */
   public List<opennlp.tools.coref.mention.Parse> getParses() {
     
     List<opennlp.tools.coref.mention.Parse> corefParses = new ArrayList<>();
@@ -41,22 +51,13 @@ public class CorefSample {
     
     return corefParses;
   }
-  
-  @Override
-  public String toString() {
-    
-    StringBuffer sb = new StringBuffer();
-    
-    for (Parse parse : parses) {
-      parse.show(sb);
-      sb.append('\n');
-    }
-    
-    sb.append('\n');
-    
-    return sb.toString();
-  }
-  
+
+  /**
+   * Parses a given text sample into a {@link CorefSample}.
+   * 
+   * @param corefSampleString A non-empty text fragment which can have multiple lines.
+   * @return A valid {@link CorefSample} instance.
+   */
   public static CorefSample parse(String corefSampleString) {
     
     List<Parse> parses = new ArrayList<>();
@@ -66,5 +67,16 @@ public class CorefSample {
     }
     
     return new CorefSample(parses);
+  }
+
+  @Override
+  public String toString() {
+    StringBuffer sb = new StringBuffer();
+    for (Parse parse : parses) {
+      parse.show(sb);
+      sb.append('\n');
+    }
+    sb.append('\n');
+    return sb.toString();
   }
 }

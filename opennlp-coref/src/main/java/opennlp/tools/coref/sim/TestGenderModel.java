@@ -18,11 +18,15 @@
 package opennlp.tools.coref.sim;
 
 /**
- * Interface for testing a gender model.
+ * Defines methods for testing a {@link GenderModel}.
  */
 public interface TestGenderModel {
+
   double[] genderDistribution(Context np1);
+
   int getMaleIndex();
+
   int getFemaleIndex();
+
   int getNeuterIndex();
 }

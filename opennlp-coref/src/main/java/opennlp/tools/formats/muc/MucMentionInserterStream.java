@@ -46,15 +46,12 @@ import org.slf4j.LoggerFactory;
 public class MucMentionInserterStream extends FilterObjectStream<RawCorefSample, CorefSample> {
 
   private static final Logger logger = LoggerFactory.getLogger(MucMentionInserterStream.class);
-
   private static final Set<String> ENTITY_SET = new HashSet<>(Arrays.asList(DefaultParse.NAME_TYPES));
   
-  private final MentionFinder mentionFinder;
+  private final MentionFinder mentionFinder = PTBMentionFinder.getInstance(PTBHeadFinder.getInstance());
   
   protected MucMentionInserterStream(ObjectStream<RawCorefSample> samples) {
     super(samples);
-    
-    mentionFinder = PTBMentionFinder.getInstance(PTBHeadFinder.getInstance());
   }
 
   private static Span getMinSpan(Parse p, CorefMention mention) {
