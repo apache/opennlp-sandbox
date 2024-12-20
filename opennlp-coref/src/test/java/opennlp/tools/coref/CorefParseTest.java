@@ -15,41 +15,39 @@
  * limitations under the License.
  */
 
-package opennlp.tools.formats.muc;
+package opennlp.tools.coref;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
-import opennlp.tools.formats.muc.MucCorefContentHandler.CorefMention;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import opennlp.tools.cmdline.parser.ParserTool;
+import opennlp.tools.coref.linker.AbstractLinkerTest;
 import opennlp.tools.parser.Parse;
 
-/**
- * A coreference sample as it is extracted from MUC style training data.
- */
-public class RawCorefSample {
-  
-  private final List<String[]> texts;
-  private final List<CorefMention[]> mentions;
-  
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+public class CorefParseTest extends AbstractLinkerTest {
+
+  private static final String example = "The test may come today . ";
+  //        "(TOP (S (NP (DT The) (NN test)) (VP (MD may) (VP (VB come) (NP (NN today)))) (. .)))";
+
+
   private List<Parse> parses;
-  
-  RawCorefSample(List<String[]> texts, List<CorefMention[]> mentions) {
-    this.texts = texts;
-    this.mentions = mentions;
+
+  @BeforeEach
+  public void setUp() {
+    parses = Arrays.stream(ParserTool.parseLine(example, parserEN, 1)).toList();
   }
-  
-  public List<String[]> getTexts() {
-    return texts;
+
+  @Test
+  void testConstruct() {
+    CorefParse cp = new CorefParse(parses, new DiscourseEntity[0]);
+    Map<Parse, Integer> parseMap = cp.getParseMap();
+    assertNotNull(parseMap);
   }
-  
-  public List<CorefMention[]> getMentions() {
-    return mentions;
-  }
-  
-  void setParses(List<Parse> parses) {
-    this.parses = parses;
-  }
-  
-  List<Parse> getParses() {
-    return parses;
-  }
+
 }

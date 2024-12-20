@@ -137,10 +137,10 @@ public class MentionContext extends Context {
     prevToken = parse.getPreviousToken();
     nextToken = parse.getNextToken();
     head = headFinder.getLastHead(parse);
+    logger.debug("Constructing MentionContext for '{}' id={} head={}", parse, parse.getEntityId(), head);
     List<Parse> headTokens = head.getTokens();
     tokens = headTokens.toArray(new Parse[0]);
     basalNextToken = head.getNextToken();
-    logger.debug("Constructing MentionContext for '{}' id={} head={}", parse, parse.getEntityId(), head);
     nonDescriptorStart = 0;
     initHeads(headFinder.getHeadIndex(head));
     gender = GenderEnum.UNKNOWN;
@@ -188,7 +188,7 @@ public class MentionContext extends Context {
     for (Object token : tokens) {
       headText.append(" ").append(token.toString());
     }
-    return headText.toString().substring(1);
+    return headText.substring(1);
   }
 
   public Parse getHead() {
@@ -237,12 +237,12 @@ public class MentionContext extends Context {
     return basalNextToken;
   }
 
-  public Parse getPreviousToken() {
-    return prevToken;
-  }
-
   public Parse getNextToken() {
     return nextToken;
+  }
+
+  public Parse getPreviousToken() {
+    return prevToken;
   }
 
   /**

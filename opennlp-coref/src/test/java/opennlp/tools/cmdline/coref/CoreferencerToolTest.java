@@ -15,41 +15,36 @@
  * limitations under the License.
  */
 
-package opennlp.tools.formats.muc;
+package opennlp.tools.cmdline.coref;
 
-import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import opennlp.tools.formats.muc.MucCorefContentHandler.CorefMention;
-import opennlp.tools.parser.Parse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * A coreference sample as it is extracted from MUC style training data.
- */
-public class RawCorefSample {
-  
-  private final List<String[]> texts;
-  private final List<CorefMention[]> mentions;
-  
-  private List<Parse> parses;
-  
-  RawCorefSample(List<String[]> texts, List<CorefMention[]> mentions) {
-    this.texts = texts;
-    this.mentions = mentions;
+public class CoreferencerToolTest {
+
+  private CoreferencerTool tool;
+
+  @BeforeEach
+  void setUp() {
+    tool = new CoreferencerTool();
   }
-  
-  public List<String[]> getTexts() {
-    return texts;
+
+  @Test
+  void testGetName() {
+    assertEquals("Coreferencer", tool.getName());
   }
-  
-  public List<CorefMention[]> getMentions() {
-    return mentions;
+
+  @Test
+  void testGetShortDescription() {
+    assertEquals("Learnable Noun Phrase Coreferencer", tool.getShortDescription());
   }
-  
-  void setParses(List<Parse> parses) {
-    this.parses = parses;
-  }
-  
-  List<Parse> getParses() {
-    return parses;
+
+  @Test
+  void testGetHelp() {
+    assertEquals("Usage: opennlp Coreferencer model_directory < parses",
+            tool.getHelp());
   }
 }

@@ -21,7 +21,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import opennlp.tools.cmdline.ArgumentParser;
-import opennlp.tools.cmdline.CmdLineUtil;
 import opennlp.tools.cmdline.ObjectStreamFactory;
 import opennlp.tools.cmdline.StreamFactoryRegistry;
 import opennlp.tools.cmdline.params.BasicFormatParams;
@@ -55,16 +54,11 @@ public class CorefSampleStreamFactory extends AbstractSampleStreamFactory<CorefS
   public ObjectStream<CorefSample> create(String[] args) {
     Parameters params = ArgumentParser.parse(args, Parameters.class);
 
-    CmdLineUtil.checkInputFile("Data", params.getData());
-    final MarkableFileInputStreamFactory factory;
     try {
-      factory = new MarkableFileInputStreamFactory(params.getData());
+      final MarkableFileInputStreamFactory factory = new MarkableFileInputStreamFactory(params.getData());
+      return new CorefSampleDataStream(new ParagraphStream(new PlainTextByLineStream(factory, params.getEncoding())));
     } catch (FileNotFoundException e) {
       throw new RuntimeException("Error finding specified input file!", e);
-    }
-    try (ObjectStream<String> lineStream = new ParagraphStream(new PlainTextByLineStream(
-            factory, params.getEncoding()))) {
-      return new CorefSampleDataStream(lineStream);
     } catch (IOException e) {
       throw new RuntimeException("Error loading Coref samples from input data!", e);
     }

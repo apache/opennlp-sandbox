@@ -151,38 +151,37 @@ public abstract class AbstractLinker implements Linker {
   }
 
   /**
-   * Updates the specified discourse model with the specified mention as coreferent with the specified entity.
-   * @param dm The discourse model
-   * @param m The mention to be added to the specified entity.
-   * @param entity The entity which is mentioned by the specified mention.
-   * @param useDiscourseModel Whether the mentions should be kept as an entity or simply co-indexed.
+   * Updates the specified {@link DiscourseModel} with the specified mention as coreferent with the specified e.
+   * @param dm The {@link DiscourseModel}.
+   * @param m The {@link MentionContext mention} to be added to the specified {@code entity 'e'}.
+   * @param e The {@link DiscourseEntity} which is mentioned by the specified mention.
+   * @param useDiscourseModel Whether the mentions should be kept as an e or simply co-indexed.
    */
-  protected void updateExtent(DiscourseModel dm, MentionContext m, DiscourseEntity entity,
-                              boolean useDiscourseModel) {
+  protected void updateExtent(DiscourseModel dm, MentionContext m, DiscourseEntity e, boolean useDiscourseModel) {
     if (useDiscourseModel) {
-      if (entity != null) {
+      if (e != null) {
         logger.debug("Adding extent: {}", m.toText());
-        if (entity.getGenderProbability() < m.getGenderProb()) {
-          entity.setGender(m.getGender());
-          entity.setGenderProbability(m.getGenderProb());
+        if (e.getGenderProbability() < m.getGenderProb()) {
+          e.setGender(m.getGender());
+          e.setGenderProbability(m.getGenderProb());
         }
-        if (entity.getNumberProbability() < m.getNumberProb()) {
-          entity.setNumber(m.getNumber());
-          entity.setNumberProbability(m.getNumberProb());
+        if (e.getNumberProbability() < m.getNumberProb()) {
+          e.setNumber(m.getNumber());
+          e.setNumberProbability(m.getNumberProb());
         }
-        entity.addMention(m);
-        dm.mentionEntity(entity);
+        e.addMention(m);
+        dm.mentionEntity(e);
       } else {
         logger.debug("Creating Extent: {} {} {}", m.toText(), m.getGender(), m.getNumber());
-        entity = new DiscourseEntity(m, m.getGender(), m.getGenderProb(), m.getNumber(), m.getNumberProb());
-        dm.addEntity(entity);
+        e = new DiscourseEntity(m, m.getGender(), m.getGenderProb(), m.getNumber(), m.getNumberProb());
+        dm.addEntity(e);
       }
     } else {
-      if (entity != null) {
+      if (e != null) {
         DiscourseEntity newEntity =
                 new DiscourseEntity(m, m.getGender(), m.getGenderProb(), m.getNumber(), m.getNumberProb());
         dm.addEntity(newEntity);
-        newEntity.setId(entity.getId());
+        newEntity.setId(e.getId());
       }
       else {
         DiscourseEntity newEntity =
@@ -246,33 +245,35 @@ public abstract class AbstractLinker implements Linker {
     MentionContext[] contexts = new MentionContext[mentions.length];
     for (int mi = 0,mn = mentions.length;mi < mn; mi++) {
       Parse mentionParse = mentions[mi].getParse();
-      logger.debug("Constructing MentionContexts: mentionParse = {}", mentionParse);
       if (mentionParse == null) {
-        logger.warn("no parse for {}", mentions[mi]);
-      }
-      int sentenceIndex = mentionParse.getSentenceNumber();
-      if (sentenceIndex != prevSentenceIndex) {
-        mentionInSentenceIndex = 0;
-        prevSentenceIndex = sentenceIndex;
-        numMentionsInSentence = 0;
-        for (int msi = mi; msi < mentions.length; msi++) {
-          if (sentenceIndex != mentions[msi].getParse().getSentenceNumber()) {
-            break;
+        logger.warn("No parse for {}", mentions[mi]);
+      } else {
+        logger.debug("Constructing MentionContexts: mentionParse = {}", mentionParse);
+        int sentenceIndex = mentionParse.getSentenceNumber();
+        if (sentenceIndex != prevSentenceIndex) {
+          mentionInSentenceIndex = 0;
+          prevSentenceIndex = sentenceIndex;
+          numMentionsInSentence = 0;
+          for (int msi = mi; msi < mentions.length; msi++) {
+            Parse p = mentions[msi].getParse();
+            if (p != null && sentenceIndex != p.getSentenceNumber()) {
+              break;
+            }
+            numMentionsInSentence++;
           }
-          numMentionsInSentence++;
         }
-      }
-      contexts[mi] = new MentionContext(mentions[mi], mentionInSentenceIndex,
-          numMentionsInSentence, mi, sentenceIndex, getHeadFinder());
-      logger.debug("Constructing MentionContexts:: mi={} sn={} extent={} parse={} mc={}",
-              mi, mentionParse.getSentenceNumber(), mentions[mi], mentionParse.getSpan(), contexts[mi].toText());
-      contexts[mi].setId(mentions[mi].getId());
-      mentionInSentenceIndex++;
-      if (mode != LinkerMode.SIM) {
-        Gender g  = computeGender(contexts[mi]);
-        contexts[mi].setGender(g.getType(),g.getConfidence());
-        Number n = computeNumber(contexts[mi]);
-        contexts[mi].setNumber(n.getType(),n.getConfidence());
+        contexts[mi] = new MentionContext(mentions[mi], mentionInSentenceIndex,
+                numMentionsInSentence, mi, sentenceIndex, getHeadFinder());
+        logger.debug("Constructing MentionContexts:: mi={} sn={} extent={} parse={} mc={}",
+                mi, mentionParse.getSentenceNumber(), mentions[mi], mentionParse.getSpan(), contexts[mi].toText());
+        contexts[mi].setId(mentions[mi].getId());
+        mentionInSentenceIndex++;
+        if (mode != LinkerMode.SIM) {
+          Gender g  = computeGender(contexts[mi]);
+          contexts[mi].setGender(g.getType(),g.getConfidence());
+          Number n = computeNumber(contexts[mi]);
+          contexts[mi].setNumber(n.getType(),n.getConfidence());
+        }
       }
     }
     return (contexts);

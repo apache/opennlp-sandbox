@@ -45,8 +45,7 @@ public class CorefSampleDataStream extends FilterObjectStream<String, CorefSampl
     String document = samples.read();
     if (document != null) {
       return CorefSample.parse(document);
-    }
-    else {
+    } else {
       return null;
     }
   }
