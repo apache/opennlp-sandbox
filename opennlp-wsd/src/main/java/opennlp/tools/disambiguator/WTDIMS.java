@@ -123,7 +123,7 @@ public class WTDIMS {
     return sentence;
   }
 
-  public void setSentence(String[] sentence) {
+  private void setSentence(String[] sentence) {
     this.sentence = sentence;
   }
 
@@ -131,7 +131,7 @@ public class WTDIMS {
     return posTags;
   }
 
-  public void setPosTags(String[] posTags) {
+  private void setPosTags(String[] posTags) {
     this.posTags = posTags;
   }
 
@@ -139,7 +139,7 @@ public class WTDIMS {
     return wordIndex;
   }
 
-  public void setWordIndex(int wordIndex) {
+  private void setWordIndex(int wordIndex) {
     this.wordIndex = wordIndex;
   }
 
@@ -147,7 +147,7 @@ public class WTDIMS {
     return lemmas;
   }
 
-  public void setLemmas(String[] lemmas) {
+  private void setLemmas(String[] lemmas) {
     this.lemmas = lemmas;
   }
 
@@ -163,7 +163,7 @@ public class WTDIMS {
     return senseIDs;
   }
 
-  public void setSenseIDs(String[] senseIDs) {
+  private void setSenseIDs(String[] senseIDs) {
     this.senseIDs = senseIDs;
   }
 
@@ -201,7 +201,7 @@ public class WTDIMS {
     return posOfSurroundingWords;
   }
 
-  public void setPosOfSurroundingWords(String[] posOfSurroundingWords) {
+  protected void setPosOfSurroundingWords(String[] posOfSurroundingWords) {
     this.posOfSurroundingWords = posOfSurroundingWords;
   }
 
@@ -209,7 +209,7 @@ public class WTDIMS {
     return surroundingWords;
   }
 
-  public void setSurroundingWords(String[] surroundingWords) {
+  protected void setSurroundingWords(String[] surroundingWords) {
     this.surroundingWords = surroundingWords;
   }
 
@@ -217,7 +217,7 @@ public class WTDIMS {
     return localCollocations;
   }
 
-  public void setLocalCollocations(String[] localCollocations) {
+  protected void setLocalCollocations(String[] localCollocations) {
     this.localCollocations = localCollocations;
   }
 
@@ -225,7 +225,7 @@ public class WTDIMS {
     return this.features;
   }
 
-  public void setFeatures(String[] features) {
+  protected void setFeatures(String[] features) {
     this.features = features;
   }
 

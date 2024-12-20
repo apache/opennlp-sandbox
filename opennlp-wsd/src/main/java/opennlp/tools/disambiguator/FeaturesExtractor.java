@@ -40,9 +40,12 @@ import java.util.Map;
  * </ul>
  * 
  * The first methods serve to extract the features for the IMS algorithm. Three
- * families of features are to be extracted: - PoS of Surrounding Words: it
- * requires one parameter: "Window size" - Surrounding Words: no parameters are
- * required - Local Collocations: it requires one parameter: "the n-gram"
+ * families of features are to be extracted:
+ * <ul>
+ *   <li>PoS of Surrounding Words: it requires one parameter: "Window size"</li>
+ *   <li>Surrounding Words: no parameters are required</li>
+ *   <li>Local Collocations: it requires one parameter: the "n-gram" number</li>
+ * </ul>
  *
  * @see WTDIMS
  * @see <a href="https://aclanthology.org/P10-4014.pdf">
@@ -52,7 +55,7 @@ import java.util.Map;
 public class FeaturesExtractor {
 
   /*
-   * Extracts POS tags of surrounding words of a given WTDIMS instance.
+   * Extracts POS tags of surrounding words of a given wordToDisambiguate instance.
    */
   private String[] extractPosOfSurroundingWords(WTDIMS wordToDisambiguate, int windowSize) {
 
@@ -75,7 +78,7 @@ public class FeaturesExtractor {
   }
 
   /*
-   * Extracts surrounding lemmas of a given WTDIMS instance.
+   * Extracts surrounding lemmas of a given wordToDisambiguate instance.
    * Irrelevant stop words are skipped.
    */
   private String[] extractSurroundingWords(WTDIMS wordToDisambiguate) {
@@ -131,13 +134,13 @@ public class FeaturesExtractor {
   }
 
   /**
-   * Generates the full list of surrounding words, from the
-   * training data. These data will be later used for the generation of the
-   * features qualified of "Surrounding words".
+   * Generates the full list of surrounding words for the specified
+   * {@code trainingData}.
+   * These data will be used for the generation of features
+   * qualified for "Surrounding words".
    * 
-   * @param trainingData
-   *          list of the training samples (type {@link WTDIMS}
-   * @return the list of all the surrounding words from all the training data
+   * @param trainingData A list of the training samples (type {@link WTDIMS}.
+   * @return A list of all the surrounding words for the {@code trainingData}.
    */
   public List<String> extractTrainingSurroundingWords(List<WTDIMS> trainingData) {
 
@@ -155,31 +158,43 @@ public class FeaturesExtractor {
   }
 
   /**
-   * This method generates the different set of features related to the IMS
-   * approach and store them in the corresponding attributes of the {@link WTDIMS}.
+   * Generates the different set of features related to the IMS
+   * approach and puts them in the corresponding attributes of
+   * the {@link WTDIMS word to disambiguate} object.
    * 
    * @param wtd The {@link WTDIMS word to disambiguate}.
    * @param windowSize The parameter required to generate the features qualified of
    *                   "PoS of Surrounding Words".
    * @param ngram The parameter required to generate the features qualified of
    *              "Local Collocations".
+   *
+   * @throws IllegalArgumentException Thrown if parameters were invalid.
    */
   public void extractIMSFeatures(WTDIMS wtd, int windowSize, int ngram) {
+    if (wtd == null) {
+      throw new IllegalArgumentException("WTD must not be null");
+    }
     wtd.setPosOfSurroundingWords(extractPosOfSurroundingWords(wtd, windowSize));
     wtd.setSurroundingWords(extractSurroundingWords(wtd));
     wtd.setLocalCollocations(extractLocalCollocations(wtd, ngram));
   }
 
   /**
-   * This generates the context of IMS. It supposes that the features have
-   * already been extracted and stored in the {@link WTDIMS} object, therefore it
-   * doesn't require any parameters.
+   * Generates the context for the {@link WTDIMS word to disambiguate}.
    *
-   * @param wtd The {@link WTDIMS wtd to disambiguate}.
+   * @implNote It is assumed that the features have already been extracted and
+   * wrapped in the {@link WTDIMS word to disambiguate}.
+   * Therefore, it doesn't require any parameters.
+   *
+   * @param wtd The {@link WTDIMS word to disambiguate}.
    * @param listSurrWords The full list of surrounding words of the training data.
+   *
+   * @throws IllegalArgumentException Thrown if parameters were invalid.
    */
   public void serializeIMSFeatures(WTDIMS wtd, List<String> listSurrWords) {
-
+    if (wtd == null) {
+      throw new IllegalArgumentException("WTD must not be null");
+    }
     String[] posOfSurroundingWords = wtd.getPosOfSurroundingWords();
     List<String> surroundingWords = new ArrayList<>(
         Arrays.asList(wtd.getSurroundingWords()));

@@ -36,7 +36,22 @@ import opennlp.tools.tokenize.Tokenizer;
  * The main idea is to check for word overlaps in the sense definitions
  * of the surrounding context. An overlap is when two words have similar stems.
  * The more overlaps a word has the higher its score. Different variations of
- * the approach are included in this class.
+ * the approach are included in this class, as defined in {@link LeskParameters.LeskType}.
+ * <p>
+ * Ten features are possible for Lesk.
+ * <ul>
+ * <li>0: Synonyms</li>
+ * <li>1: Hypernyms</li>
+ * <li>2: Hyponyms</li>
+ * <li>3: Meronyms</li>
+ * <li>4: Holonyms</li>
+ * <li>5: Entailments</li>
+ * <li>6: Coordinate Terms</li>
+ * <li>7: Causes</li>
+ * <li>8: Attributes</li>
+ * <li>9: Pertainyms</li>
+ * </ul>
+ * Those are defined via {@link LeskParameters#features}.
  *
  * @see Disambiguator
  * @see LeskParameters
@@ -90,7 +105,7 @@ public class Lesk extends AbstractWSDisambiguator {
       if (params.areValid()) {
         this.params = (LeskParameters) params;
       } else {
-        throw new IllegalArgumentException("wrong params");
+        throw new IllegalArgumentException("Detected incorrect LeskParameter values!");
       }
     }
   }
@@ -105,10 +120,9 @@ public class Lesk extends AbstractWSDisambiguator {
 
   /**
    * The basic Lesk method where the entire context is considered for overlaps
-   * 
-   * @param sample
-   *          the word sample to disambiguate
-   * @return The array of WordSenses with their scores
+   *
+   * @param sample The {@link WSDSample} to disambiguate.
+   * @return The list of {@link WordSense word senses} with their scores.
    */
   public List<WordSense> basic(WSDSample sample) {
 
@@ -150,10 +164,9 @@ public class Lesk extends AbstractWSDisambiguator {
 
   /**
    * The basic Lesk method but applied to a default context windows
-   * 
-   * @param sample
-   *          the word sample to disambiguate
-   * @return The array of WordSenses with their scores
+   *
+   * @param sample The {@link WSDSample} to disambiguate.
+   * @return The list of {@link WordSense word senses} with their scores.
    */
   public List<WordSense> basicContextual(WSDSample sample) {
 
@@ -207,10 +220,9 @@ public class Lesk extends AbstractWSDisambiguator {
    * An extended version of the Lesk approach that takes into consideration
    * semantically related feature overlaps across the entire context The scoring
    * function uses linear weights.
-   * 
-   * @param sample
-   *          the word sample to disambiguate
-   * @return the list of WordSenses with their scores
+   *
+   * @param sample The {@link WSDSample} to disambiguate.
+   * @return The list of {@link WordSense word senses} with their scores.
    */
   public List<WordSense> extended(WSDSample sample) {
     params.setWinBSize(0);
@@ -222,10 +234,9 @@ public class Lesk extends AbstractWSDisambiguator {
    * An extended version of the Lesk approach that takes into consideration
    * semantically related feature overlaps in a default context window The
    * scoring function uses linear weights.
-   * 
-   * @param sample
-   *          the word sample to disambiguate
-   * @return the list of WordSenses with their scores
+   *
+   * @param sample The {@link WSDSample} to disambiguate.
+   * @return The list of {@link WordSense word senses} with their scores.
    */
   public List<WordSense> extendedContextual(WSDSample sample) {
     List<WordSense> scoredSenses;
@@ -234,81 +245,65 @@ public class Lesk extends AbstractWSDisambiguator {
     } else {
       scoredSenses = basicContextual(sample);
     }
-    for (WordSense wordSense : scoredSenses) {
-
-      if (getParams().getFeatures()[0]) {
-        wordSense.setScore(wordSense.getScore() + getParams().depth_weight
-            * assessSynonyms(wordSense.getNode().getSynonyms(), contextWords));
+    for (WordSense ws : scoredSenses) {
+      final SynNode synNode = ws.getNode();
+      final Synset synset =  synNode.synset;
+      if (params.getFeatures()[0]) {
+        ws.setScore(ws.getScore() + params.depth_weight
+            * assessSynonyms(synNode.getSynonyms(), contextWords));
       }
-
-      if (getParams().getFeatures()[1]) {
-        fathomHypernyms(wordSense, wordSense.getNode().synset, contextWords,
+      if (params.getFeatures()[1]) {
+        fathomHypernyms(ws, synset, contextWords,
             params.depth, params.depth, params.depth_weight);
       }
-
-      if (getParams().getFeatures()[2]) {
-        fathomHyponyms(wordSense, wordSense.getNode().synset, contextWords,
+      if (params.getFeatures()[2]) {
+        fathomHyponyms(ws, synset, contextWords,
             params.depth, params.depth, params.depth_weight);
       }
-
-      if (getParams().getFeatures()[3]) {
-        fathomMeronyms(wordSense, wordSense.getNode().synset, contextWords,
+      if (params.getFeatures()[3]) {
+        fathomMeronyms(ws, synset, contextWords,
             params.depth, params.depth, params.depth_weight);
-
       }
-
-      if (getParams().getFeatures()[4]) {
-        fathomHolonyms(wordSense, wordSense.getNode().synset, contextWords,
+      if (params.getFeatures()[4]) {
+        fathomHolonyms(ws, synset, contextWords,
             params.depth, params.depth, params.depth_weight);
-
       }
-
-      if (getParams().getFeatures()[5]) {
-        fathomEntailments(wordSense, wordSense.getNode().synset, contextWords,
+      if (params.getFeatures()[5]) {
+        fathomEntailments(ws, synset, contextWords,
             params.depth, params.depth, params.depth_weight);
-
       }
-      if (getParams().getFeatures()[6]) {
-        fathomCoordinateTerms(wordSense, wordSense.getNode().synset,
+      if (params.getFeatures()[6]) {
+        fathomCoordinateTerms(ws, synset,
             contextWords, params.depth, params.depth, params.depth_weight);
-
       }
-      if (getParams().getFeatures()[7]) {
-        fathomCauses(wordSense, wordSense.getNode().synset, contextWords,
+      if (params.getFeatures()[7]) {
+        fathomCauses(ws, synset, contextWords,
             params.depth, params.depth, params.depth_weight);
-
       }
-      if (getParams().getFeatures()[8]) {
-        fathomAttributes(wordSense, wordSense.getNode().synset, contextWords,
+      if (params.getFeatures()[8]) {
+        fathomAttributes(ws, synset, contextWords,
             params.depth, params.depth, params.depth_weight);
-
       }
-      if (getParams().getFeatures()[9]) {
-        fathomPertainyms(wordSense, wordSense.getNode().synset, contextWords,
+      if (params.getFeatures()[9]) {
+        fathomPertainyms(ws, synset, contextWords,
             params.depth, params.depth, params.depth_weight);
-
       }
-
     }
-
     return scoredSenses;
-
   }
 
   /**
    * An extended version of the Lesk approach that takes into consideration
    * semantically related feature overlaps in all the context. The scoring
    * function uses exponential weights.
-   * 
-   * @param sample the word sample to disambiguate
-   * 
-   * @return A list of {@link WordSense word senses} with their scores.
+   *
+   * @param sample The {@link WSDSample} to disambiguate.
+   * @return The list of {@link WordSense word senses} with their scores.
    */
   public List<WordSense> extendedExponential(WSDSample sample) {
     params.setWinBSize(0);
     params.setWinFSize(0);
     return extendedExponentialContextual(sample);
-
   }
 
   /**
@@ -316,9 +311,8 @@ public class Lesk extends AbstractWSDisambiguator {
    * semantically related feature overlaps in a custom window in the context.
    * The scoring function uses exponential weights.
    * 
-   * @param sample
-   *          the word sample to disambiguate
-   * @return the list of WordSenses with their scores
+   * @param sample The {@link WSDSample} to disambiguate.
+   * @return The list of {@link WordSense word senses} with their scores.
    */
   public List<WordSense> extendedExponentialContextual(WSDSample sample) {
     List<WordSense> scoredSenses;
@@ -328,74 +322,53 @@ public class Lesk extends AbstractWSDisambiguator {
       scoredSenses = basicContextual(sample);
     }
 
-    for (WordSense wordSense : scoredSenses) {
-
+    for (WordSense ws : scoredSenses) {
+      final SynNode synNode = ws.getNode();
+      final Synset synset =  synNode.synset;
       if (params.features[0]) {
-        wordSense.setScore(wordSense.getScore() + Math.pow(
-            assessSynonyms(wordSense.getNode().getSynonyms(), contextWords),
-            params.iexp));
+        ws.setScore(ws.getScore() + Math.pow(assessSynonyms(
+                synNode.getSynonyms(), contextWords), params.iexp));
       }
-
       if (params.features[1]) {
-        fathomHypernymsExponential(wordSense, wordSense.getNode().synset,
-            contextWords, params.depth, params.depth, params.iexp, params.dexp);
+        fathomHypernymsExponential(ws, synset, contextWords,
+                params.depth, params.depth, params.iexp, params.dexp);
       }
-
       if (params.features[2]) {
-        fathomHyponymsExponential(wordSense, wordSense.getNode().synset,
-            contextWords, params.depth, params.depth, params.iexp, params.dexp);
+        fathomHyponymsExponential(ws, synset, contextWords,
+                params.depth, params.depth, params.iexp, params.dexp);
       }
-
       if (params.features[3]) {
-        fathomMeronymsExponential(wordSense, wordSense.getNode().synset,
-            contextWords, params.depth, params.depth, params.iexp, params.dexp);
-
+        fathomMeronymsExponential(ws, synset, contextWords,
+                params.depth, params.depth, params.iexp, params.dexp);
       }
-
       if (params.features[4]) {
-        fathomHolonymsExponential(wordSense, wordSense.getNode().synset,
-            contextWords, params.depth, params.depth, params.iexp, params.dexp);
-
+        fathomHolonymsExponential(ws, synset, contextWords,
+                params.depth, params.depth, params.iexp, params.dexp);
       }
-
       if (params.features[5]) {
-        fathomEntailmentsExponential(wordSense, wordSense.getNode().synset,
-            contextWords, params.depth, params.depth, params.iexp, params.dexp);
+        fathomEntailmentsExponential(ws, synset, contextWords,
+                params.depth, params.depth, params.iexp, params.dexp);
       }
-
       if (params.features[6]) {
-        fathomCoordinateTermsExponential(wordSense, wordSense.getNode().synset,
-            contextWords, params.depth, params.depth, params.iexp, params.dexp);
-
+        fathomCoordinateTermsExponential(ws, synset, contextWords,
+                params.depth, params.depth, params.iexp, params.dexp);
       }
       if (params.features[7]) {
-        fathomCausesExponential(wordSense, wordSense.getNode().synset,
-            contextWords, params.depth, params.depth, params.iexp, params.dexp);
-
+        fathomCausesExponential(ws, synset, contextWords,
+                params.depth, params.depth, params.iexp, params.dexp);
       }
       if (params.features[8]) {
-        fathomAttributesExponential(wordSense, wordSense.getNode().synset,
-            contextWords, params.depth, params.depth, params.iexp, params.dexp);
-
+        fathomAttributesExponential(ws, synset, contextWords,
+                params.depth, params.depth, params.iexp, params.dexp);
       }
       if (params.features[9]) {
-        fathomPertainymsExponential(wordSense, wordSense.getNode().synset,
-            contextWords, params.depth, params.depth, params.iexp, params.dexp);
+        fathomPertainymsExponential(ws, synset, contextWords,
+                params.depth, params.depth, params.iexp, params.dexp);
       }
     }
     return scoredSenses;
   }
 
-  /**
-   * Recursively score the hypernym tree linearly.
-   * 
-   * @param wordSense
-   * @param child
-   * @param relvWords
-   * @param depth
-   * @param maxDepth
-   * @param depthScoreWeight
-   */
   private void fathomHypernyms(WordSense wordSense, Synset child, List<WordPOS> relvWords,
                                int depth, int maxDepth, double depthScoreWeight) {
     if (depth == 0)
@@ -415,17 +388,6 @@ public class Lesk extends AbstractWSDisambiguator {
     }
   }
 
-  /**
-   * Recursively score the hypernym tree exponentially.
-   * 
-   * @param wordSense
-   * @param child
-   * @param relvWords
-   * @param depth
-   * @param maxDepth
-   * @param intersectionExponent
-   * @param depthScoreExponent
-   */
   private void fathomHypernymsExponential(WordSense wordSense, Synset child, List<WordPOS> relvWords,
                                           int depth, int maxDepth, double intersectionExponent,
                                           double depthScoreExponent) {
@@ -446,16 +408,6 @@ public class Lesk extends AbstractWSDisambiguator {
     }
   }
 
-  /**
-   * Recursively score the hyponym tree linearly.
-   * 
-   * @param wordSense
-   * @param child
-   * @param relvWords
-   * @param depth
-   * @param maxDepth
-   * @param depthScoreWeight
-   */
   private void fathomHyponyms(WordSense wordSense, Synset child, List<WordPOS> relvWords,
                               int depth, int maxDepth, double depthScoreWeight) {
     if (depth == 0)
@@ -476,17 +428,6 @@ public class Lesk extends AbstractWSDisambiguator {
     }
   }
 
-  /**
-   * Recursively score the hyponym tree exponentially.
-   * 
-   * @param wordSense
-   * @param child
-   * @param relvWords
-   * @param depth
-   * @param maxDepth
-   * @param intersectionExponent
-   * @param depthScoreExponent
-   */
   private void fathomHyponymsExponential(WordSense wordSense, Synset child, List<WordPOS> relvWords,
                                          int depth, int maxDepth, double intersectionExponent, double depthScoreExponent) {
     if (depth == 0)
@@ -508,16 +449,6 @@ public class Lesk extends AbstractWSDisambiguator {
     }
   }
 
-  /**
-   * Recursively score the meronym tree linearly.
-   * 
-   * @param wordSense
-   * @param child
-   * @param relvWords
-   * @param depth
-   * @param maxDepth
-   * @param depthScoreWeight
-   */
   private void fathomMeronyms(WordSense wordSense, Synset child, List<WordPOS> relvWords,
                               int depth, int maxDepth, double depthScoreWeight) {
     if (depth == 0)
@@ -539,17 +470,6 @@ public class Lesk extends AbstractWSDisambiguator {
     }
   }
 
-  /**
-   * Recursively score the meronym tree exponentially.
-   * 
-   * @param wordSense
-   * @param child
-   * @param relvWords
-   * @param depth
-   * @param maxDepth
-   * @param intersectionExponent
-   * @param depthScoreExponent
-   */
   private void fathomMeronymsExponential(WordSense wordSense, Synset child, List<WordPOS> relvWords,
                                          int depth, int maxDepth, double intersectionExponent, double depthScoreExponent) {
     if (depth == 0)
@@ -569,16 +489,6 @@ public class Lesk extends AbstractWSDisambiguator {
     }
   }
 
-  /**
-   * Recursively score the holonym tree linearly.
-   * 
-   * @param wordSense
-   * @param child
-   * @param relvWords
-   * @param depth
-   * @param maxDepth
-   * @param depthScoreWeight
-   */
   private void fathomHolonyms(WordSense wordSense, Synset child, List<WordPOS> relvWords,
                               int depth, int maxDepth, double depthScoreWeight) {
     if (depth == 0)
@@ -598,17 +508,6 @@ public class Lesk extends AbstractWSDisambiguator {
     }
   }
 
-  /**
-   * Recursively score the holonym tree exponentially.
-   * 
-   * @param wordSense
-   * @param child
-   * @param relvWords
-   * @param depth
-   * @param maxDepth
-   * @param intersectionExponent
-   * @param depthScoreExponent
-   */
   private void fathomHolonymsExponential(WordSense wordSense, Synset child, List<WordPOS> relvWords,
                                          int depth, int maxDepth, double intersectionExponent, double depthScoreExponent) {
     if (depth == 0)
@@ -829,7 +728,7 @@ public class Lesk extends AbstractWSDisambiguator {
 
   }
 
-  /**
+  /*
    * Checks if the feature should be counted in the score.
    * 
    * @param featureSynsets
@@ -839,7 +738,7 @@ public class Lesk extends AbstractWSDisambiguator {
   private int assessFeature(List<Synset> featureSynsets, List<WordPOS> relevantWords) {
     int count = 0;
     for (Synset synset : featureSynsets) {
-      SynNode subNode = new SynNode(synset, relevantWords);
+      final SynNode subNode = new SynNode(synset, relevantWords);
 
       String[] tokenizedSense = tokenizer.tokenize(subNode.getGloss());
       List<WordPOS> relvSenseWords = WSDHelper.getAllRelevantWords(tokenizedSense);
@@ -855,7 +754,7 @@ public class Lesk extends AbstractWSDisambiguator {
     return count;
   }
 
-  /**
+  /*
    * Checks if the synonyms should be counted in the score.
    * 
    * @param synonyms

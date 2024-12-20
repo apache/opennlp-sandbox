@@ -24,12 +24,17 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * The default Context Generator of the IMS approach.
+ * The default Context Generator of the
+ * <a href="https://aclanthology.org/P10-4014.pdf"> IMS (It Makes Sense)</a> approach.
  *
  * @see WSDContextGenerator
  */
 public class IMSWSDContextGenerator implements WSDContextGenerator {
 
+  /*
+   * Extracts POS tags of surrounding words for the word at the specified index
+   * within the windowSize.
+   */
   private String[] extractPosOfSurroundingWords(int index, String[] tags, int windowSize) {
 
     String[] windowTags = new String[2 * windowSize + 1];
@@ -96,6 +101,9 @@ public class IMSWSDContextGenerator implements WSDContextGenerator {
     return res;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public String[] getContext(int index, String[] tokens,
     String[] tags, String[] lemmas, int ngram, int windowSize, List<String> model) {
@@ -131,6 +139,9 @@ public class IMSWSDContextGenerator implements WSDContextGenerator {
     return serializedFeatures;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public String[] getContext(WSDSample sample, int ngram, int windowSize,
                              List<String> model) {

@@ -42,6 +42,10 @@ import opennlp.tools.tokenize.ThreadSafeTokenizerME;
 import opennlp.tools.tokenize.Tokenizer;
 import opennlp.tools.util.DownloadUtil;
 
+/**
+ * A helper class that loads and organizes resources, and provides helper methods
+ * to avoid multiple copies of dealing with certain resources.
+ */
 public class WSDHelper {
 
   private static final Logger LOG = LoggerFactory.getLogger(WSDHelper.class);
