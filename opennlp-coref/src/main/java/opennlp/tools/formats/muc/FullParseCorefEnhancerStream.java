@@ -44,51 +44,40 @@ public class FullParseCorefEnhancerStream extends FilterObjectStream<RawCorefSam
     StringBuilder textBuilder = new StringBuilder();
     
     for (int i = 0; i < tokens.length; i++) {
-      
-      if (textBuilder.length() > 0) {
+      if (!textBuilder.isEmpty()) {
         textBuilder.append(' ');
       }
-      
       int startOffset = textBuilder.length();
       textBuilder.append(tokens[i]);
       tokenSpans[i] = new Span(startOffset, textBuilder.length());
     }
     
     String text = textBuilder.toString();
-    
     Parse p = new Parse(text, new Span(0, text.length()), AbstractBottomUpParser.INC_NODE, 0, 0);
-    
     for (int i = 0; i < tokenSpans.length; i++) {
       Span tokenSpan = tokenSpans[i];
       p.insert(new Parse(text, new Span(tokenSpan.getStart(), tokenSpan.getEnd()),
           AbstractBottomUpParser.TOK_NODE, 0, i));
     }
-    
     return p;
   }
-  
+
+  @Override
   public RawCorefSample read() throws IOException {
     
     RawCorefSample sample = samples.read();
-    
     if (sample != null) {
-
       List<Parse> enhancedParses = new ArrayList<>();
-      
       List<String[]> sentences = sample.getTexts();
-
       for (String[] sentence : sentences) {
-
         Parse incompleteParse = createIncompleteParse(sentence);
         Parse p = parser.parse(incompleteParse);
 
         // What to do when a parse cannot be found ?!
-
         enhancedParses.add(p);
       }
       
       sample.setParses(enhancedParses);
-      
       return sample;
     }
     else {

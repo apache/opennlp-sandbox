@@ -104,9 +104,10 @@ public class CoreferencerTool extends BasicCmdLineTool {
       }
     }
   }
-  
+
+  @Override
   public String getShortDescription() {
-    return "learnable noun phrase coreferencer";
+    return "Learnable Noun Phrase Coreferencer";
   }
 
   @Override

@@ -5,3 +5,4 @@
 (TOP (S (NP-SBJ-1 (NN Stock) (NN fund) (NNS redemptions) )(PP-TMP (IN during) (NP (DT the) (CD 1987) (NN debacle) ))(VP (VBD did) (RB n't) (VP (VB begin) (S (NP-SBJ (-NONE- *-1) )(VP (TO to) (VP (VB snowball) )))(PP-TMP (IN until) (SBAR (IN after) (S (NP-SBJ (DT the) (NN market) )(VP (VBD opened) (PP-TMP (IN on) (NP (NNP Black) (NNP Monday) ))))))))(. .) ))
 (TOP (S (CC But) (NP-SBJ (NN fund) (NNS managers) )(VP (VBP say) (SBAR (-NONE- 0) (S (NP-SBJ (PRP they) )(VP (VBP 're) (ADJP-PRD (JJ ready) )))))(. .) ))
 (TOP (S (NP-SBJ (JJ Many) )(VP (VBP have) (VP (VBN raised) (NP (NP (NN cash) (NNS levels) )(, ,) (SBAR (WHNP-1 (WDT which) )(S (NP-SBJ (-NONE- *T*-1) )(VP (VBP act) (PP-CLR (IN as) (NP (DT a) (NN buffer) ))(PP (IN against) (NP (JJ steep) (NN market) (NNS declines) ))))))))(. .) ))
+(TOP (S (NP-SBJ (NP#1 (PP He)) (VP (VBZ thinks)) (NP#2 (NN Mary)) (VP (VBD saw)) (NP#3 (DET the) (NN cat)) (VP (VB sit) (PP (IN on) (NP#4 (DT the) (NN mat)))))(. .) ))

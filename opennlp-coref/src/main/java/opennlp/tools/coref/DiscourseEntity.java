@@ -29,7 +29,6 @@ import opennlp.tools.coref.sim.NumberEnum;
  */
 public class DiscourseEntity extends DiscourseElement {
 
-  private String category = null;
   private GenderEnum gender;
   private double genderProb;
   private NumberEnum number;
@@ -62,25 +61,6 @@ public class DiscourseEntity extends DiscourseElement {
    */
   public DiscourseEntity(MentionContext mention) {
     this(mention, GenderEnum.UNKNOWN, 0.0d, NumberEnum.UNKNOWN, 0.0d);
-  }
-
-  /**
-   * Returns the semantic category of this entity.
-   * This field is used to associated named-entity categories with an entity.
-   *
-   * @return the semantic category of this entity.
-   */
-  public String getCategory() {
-    return (category);
-  }
-
-  /**
-   * Specifies the semantic category of this entity.
-   *
-   * @param cat The semantic category of the entity.
-   */
-  public void setCategory(String cat) {
-    category = cat;
   }
 
   /**

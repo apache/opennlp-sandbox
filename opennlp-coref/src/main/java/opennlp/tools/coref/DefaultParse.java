@@ -141,8 +141,9 @@ public class DefaultParse extends AbstractParse {
 
   @Override
   public String getEntityType() {
-    if (ENTITY_SET.contains(parse.getType())) {
-      return parse.getType();
+    String type = parse.getType();
+    if (ENTITY_SET.contains(type)) {
+      return type;
     }
     else {
       return null;
@@ -205,8 +206,9 @@ public class DefaultParse extends AbstractParse {
     if (type.contains("#")) {
       String numberString = type.substring(type.indexOf('#') + 1);
       return Integer.parseInt(numberString);
-    }
-    else {
+    } else if (sentenceNumber >= 0) {
+      return sentenceNumber; // compensation of no #<number> was present
+    } else {
       return -1;
     }
   }

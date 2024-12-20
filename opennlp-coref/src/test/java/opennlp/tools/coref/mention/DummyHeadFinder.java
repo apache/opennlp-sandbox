@@ -15,24 +15,28 @@
  * limitations under the License.
  */
 
-package opennlp.tools.coref.sim;
+package opennlp.tools.coref.mention;
 
-import java.io.IOException;
+// just a stub implementation
+class DummyHeadFinder implements HeadFinder {
 
-/**
- * Interface for training a similarity, gender, or number model.
- */
-public interface TrainSimilarityModel {
+  @Override
+  public opennlp.tools.coref.mention.Parse getHead(opennlp.tools.coref.mention.Parse parse) {
+    return null;
+  }
 
-  void trainModel() throws IOException;
-  /**
-   * Creates similarity training pairs based on the specified extents.
-   * Extents are considered compatible if they are in the same coreference chain,
-   * have the same named-entity tag, or share a common head word.
-   * <p>
-   * Incompatible extents are chosen at random from the set of extents which don't meet these criteria.
-   *
-   * @param extents
-   */
-  void setExtents(Context[] extents);
+  @Override
+  public int getHeadIndex(opennlp.tools.coref.mention.Parse parse) {
+    return 0;
+  }
+
+  @Override
+  public opennlp.tools.coref.mention.Parse getLastHead(opennlp.tools.coref.mention.Parse p) {
+    return null;
+  }
+
+  @Override
+  public opennlp.tools.coref.mention.Parse getHeadToken(opennlp.tools.coref.mention.Parse np) {
+    return null;
+  }
 }

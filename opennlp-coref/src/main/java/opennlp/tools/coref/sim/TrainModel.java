@@ -15,41 +15,27 @@
  * limitations under the License.
  */
 
-package opennlp.tools.formats.muc;
+package opennlp.tools.coref.sim;
 
-import java.util.List;
-
-import opennlp.tools.formats.muc.MucCorefContentHandler.CorefMention;
-import opennlp.tools.parser.Parse;
+import java.io.IOException;
 
 /**
- * A coreference sample as it is extracted from MUC style training data.
+ * Interface for training a similarity, gender, or number model.
  */
-public class RawCorefSample {
+public interface TrainModel<T>{
+
+  String MODEL_EXTENSION = ".bin";
+
+  T trainModel() throws IOException;
   
-  private final List<String[]> texts;
-  private final List<CorefMention[]> mentions;
-  
-  private List<Parse> parses;
-  
-  RawCorefSample(List<String[]> texts, List<CorefMention[]> mentions) {
-    this.texts = texts;
-    this.mentions = mentions;
-  }
-  
-  public List<String[]> getTexts() {
-    return texts;
-  }
-  
-  public List<CorefMention[]> getMentions() {
-    return mentions;
-  }
-  
-  void setParses(List<Parse> parses) {
-    this.parses = parses;
-  }
-  
-  List<Parse> getParses() {
-    return parses;
-  }
+  /**
+   * Creates similarity training pairs based on the specified extents.
+   * Extents are considered compatible if they are in the same coreference chain,
+   * have the same named-entity tag, or share a common head word.
+   * <p>
+   * Incompatible extents are chosen at random from the set of extents which don't meet these criteria.
+   *
+   * @param extents
+   */
+  void setExtents(Context[] extents);
 }

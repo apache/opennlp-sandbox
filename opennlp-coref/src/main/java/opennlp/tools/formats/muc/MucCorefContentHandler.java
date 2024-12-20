@@ -94,8 +94,7 @@ class MucCorefContentHandler extends SgmlParser.ContentHandler {
     
     if (MucElementNames.DOC_ELEMENT.equals(name)) {
       idMap.clear();
-      sample = new RawCorefSample(new ArrayList<>(),
-              new ArrayList<>());
+      sample = new RawCorefSample(new ArrayList<>(), new ArrayList<>());
     }
     
     if (MucElementNames.CONTENT_ELEMENTS.contains(name)) {

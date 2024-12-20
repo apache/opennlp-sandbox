@@ -57,7 +57,6 @@ public class CorefTrainerTest extends AbstractCorefTest {
             pTraining.resolve("acronyms").toAbsolutePath(), StandardCopyOption.REPLACE_EXISTING);
   }
 
-  @Disabled
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
   void testTrainByTreebank(Boolean withTreebank) throws IOException {

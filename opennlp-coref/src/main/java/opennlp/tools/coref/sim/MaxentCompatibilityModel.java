@@ -18,8 +18,6 @@
 package opennlp.tools.coref.sim;
 
 import opennlp.tools.coref.linker.LinkerMode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -28,15 +26,8 @@ import java.io.IOException;
  */
 public class MaxentCompatibilityModel {
 
-  private static final Logger logger = LoggerFactory.getLogger(MaxentCompatibilityModel.class);
-
-  private final double minGenderProb = 0.66;
-  private final double minNumberProb = 0.66;
-
   private static GenderModel genModel;
   private static NumberModel numModel;
-
-  private final boolean debugOn = false;
 
   public MaxentCompatibilityModel(String corefProject, LinkerMode mode) throws IOException {
     if (LinkerMode.TEST == mode) {
@@ -49,40 +40,10 @@ public class MaxentCompatibilityModel {
   }
 
   public Gender computeGender(Context c) {
-    Gender gender;
-    double[] gdist = genModel.genderDistribution(c);
-    if (debugOn) {
-      logger.debug("Computing Gender: {} - m={} f={} n={}", c, gdist[genModel.getMaleIndex()],
-              gdist[genModel.getFemaleIndex()], gdist[genModel.getNeuterIndex()]);
-    }
-    if (genModel.getMaleIndex() >= 0 && gdist[genModel.getMaleIndex()] > minGenderProb) {
-      gender = new Gender(GenderEnum.MALE,gdist[genModel.getMaleIndex()]);
-    }
-    else if (genModel.getFemaleIndex() >= 0 && gdist[genModel.getFemaleIndex()] > minGenderProb) {
-      gender = new Gender(GenderEnum.FEMALE,gdist[genModel.getFemaleIndex()]);
-    }
-    else if (genModel.getNeuterIndex() >= 0 && gdist[genModel.getNeuterIndex()] > minGenderProb) {
-      gender = new Gender(GenderEnum.NEUTER,gdist[genModel.getNeuterIndex()]);
-    }
-    else {
-      gender = new Gender(GenderEnum.UNKNOWN,minGenderProb);
-    }
-    return gender;
+    return genModel.computeGender(c);
   }
 
   public Number computeNumber(Context c) {
-    double[] dist = numModel.numberDist(c);
-    Number number;
-    logger.debug("Computing number: {} sing={} plural={}", c, dist[numModel.getSingularIndex()], dist[numModel.getPluralIndex()]);
-    if (dist[numModel.getSingularIndex()] > minNumberProb) {
-      number = new Number(NumberEnum.SINGULAR,dist[numModel.getSingularIndex()]);
-    }
-    else if (dist[numModel.getPluralIndex()] > minNumberProb) {
-      number = new Number(NumberEnum.PLURAL,dist[numModel.getPluralIndex()]);
-    }
-    else {
-      number = new Number(NumberEnum.UNKNOWN,minNumberProb);
-    }
-    return number;
+    return numModel.computeNumber(c);
   }
 }

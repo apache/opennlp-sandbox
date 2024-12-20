@@ -15,39 +15,43 @@
  * limitations under the License.
  */
 
-package opennlp.tools.coref;
+package opennlp.tools.cmdline.coref;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
+import opennlp.tools.coref.CorefSampleStreamFactory;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import opennlp.tools.cmdline.parser.ParserTool;
-import opennlp.tools.coref.linker.AbstractLinkerTest;
-import opennlp.tools.parser.Parse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+public class CoreferencerTrainerToolTest {
 
-public class CorefParseTest extends AbstractLinkerTest {
+  private CoreferencerTrainerTool tool;
 
-  private static final String example = "The test may come today . ";
-  //        "(TOP (S (NP (DT The) (NN test)) (VP (MD may) (VP (VB come) (NP (NN today)))) (. .)))";
-
-
-  private List<Parse> parses;
+  @BeforeAll
+  public static void initEnv() {
+    CorefSampleStreamFactory.registerFactory();
+  }
 
   @BeforeEach
-  public void setUp() {
-    parses = Arrays.stream(ParserTool.parseLine(example, parserEN, 1)).toList();
+  void setUp() {
+    tool = new CoreferencerTrainerTool();
   }
 
   @Test
-  void testConstruct() {
-    CorefParse cp = new CorefParse(parses, new DiscourseEntity[0]);
-    Map<Parse, Integer> parseMap = cp.getParseMap();
-    assertNotNull(parseMap);
+  void testGetName() {
+    assertEquals("CoreferencerTrainer", tool.getName());
   }
 
+  @Test
+  void testGetShortDescription() {
+    assertEquals("Trainer for a Learnable Noun Phrase Coreferencer",
+            tool.getShortDescription());
+  }
+
+  @Test
+  void testGetHelp() {
+    assertTrue(tool.getHelp().startsWith("Usage: opennlp CoreferencerTrainer"));
+  }
 }

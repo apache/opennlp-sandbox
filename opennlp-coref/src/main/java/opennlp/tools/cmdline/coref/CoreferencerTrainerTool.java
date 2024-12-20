@@ -20,15 +20,17 @@ package opennlp.tools.cmdline.coref;
 import java.io.IOException;
 
 import opennlp.tools.cmdline.AbstractTrainerTool;
+import opennlp.tools.cmdline.CmdLineUtil;
 import opennlp.tools.cmdline.TerminateToolException;
 import opennlp.tools.cmdline.coref.CoreferencerTrainerTool.TrainerToolParams;
 import opennlp.tools.cmdline.params.TrainingToolParams;
 import opennlp.tools.coref.CorefSample;
 import opennlp.tools.coref.CorefTrainer;
+import opennlp.tools.util.model.ModelUtil;
 
 public class CoreferencerTrainerTool extends AbstractTrainerTool<CorefSample, TrainerToolParams> {
 
-  public interface TrainerToolParams extends TrainingParams, TrainingToolParams {
+  interface TrainerToolParams extends TrainingParams, TrainingToolParams {
   }
   
   public CoreferencerTrainerTool() {
@@ -36,20 +38,26 @@ public class CoreferencerTrainerTool extends AbstractTrainerTool<CorefSample, Tr
   }
 
   @Override
+  public String getShortDescription() {
+    return "Trainer for a Learnable Noun Phrase Coreferencer";
+  }
+
+  @Override
   public void run(String format, String[] args) {
-    
     super.run(format, args);
     
+    mlParams = CmdLineUtil.loadTrainingParameters(params.getParams(), false);
+
+    if (mlParams == null) {
+      mlParams = ModelUtil.createDefaultTrainingParameters();
+    }
+
     try {
       CorefTrainer.train(params.getModel().toString(), sampleStream, true, true);
     } catch (IOException e) {
       throw new TerminateToolException(-1, "IO error while reading training data or indexing data: " +
           e.getMessage(), e);
     }
-  }
-
-  public static void main(String[] args) {
-    new CoreferencerTrainerTool();
   }
   
 }

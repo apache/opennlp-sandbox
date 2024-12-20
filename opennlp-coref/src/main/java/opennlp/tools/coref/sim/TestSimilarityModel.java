@@ -19,8 +19,9 @@ package opennlp.tools.coref.sim;
 
 
 /**
- * Interface for testing a similarity model.
+ * Defines methods for testing a {@link SimilarityModel}.
  */
 public interface TestSimilarityModel {
+
   double compatible(Context np1, Context np2);
 }

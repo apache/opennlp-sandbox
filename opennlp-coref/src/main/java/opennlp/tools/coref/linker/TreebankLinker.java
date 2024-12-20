@@ -20,6 +20,9 @@ package opennlp.tools.coref.linker;
 import java.io.IOException;
 
 import opennlp.tools.coref.mention.PTBMentionFinder;
+import opennlp.tools.coref.sim.GenderModel;
+import opennlp.tools.coref.sim.NumberModel;
+import opennlp.tools.coref.sim.SimilarityModel;
 
 /**
  * This class perform coreference for treebank style parses.
@@ -76,7 +79,28 @@ public class TreebankLinker extends DefaultLinker {
    */
   public TreebankLinker(String modelDir, LinkerMode mode, boolean useDiscourseModel,
                         double fixedNonReferentialProbability) throws IOException {
-    super(modelDir, mode, useDiscourseModel,fixedNonReferentialProbability);
+    super(modelDir, mode, useDiscourseModel, fixedNonReferentialProbability);
+  }
+
+  /**
+   * Instantiates a {@link TreebankLinker} with the specified model directory,
+   * running in the specified {@link LinkerMode mode} which uses a discourse model
+   * based on the specified parameter and uses the specified fixed non-referential probability.
+   *
+   * @param modelDir The directory in which the coref model files are located.
+   * @param mode The {@link LinkerMode mode} that this linker is running in.
+   * @param simModel The {@link SimilarityModel similarity model} to use.
+   * @param genModel The {@link GenderModel gender model} to use.
+   * @param numModel The {@link NumberModel number model} to use.
+   * @param useDiscourseModel Whether the model should use a discourse model or not.
+   * @param fixedNonRefProbability The probability which resolvers are
+   *                               required to exceed a positive coreference relationship.
+   * @throws IOException Thrown if the models can not be read or written to based on the mode.
+   */
+  public TreebankLinker(String modelDir, LinkerMode mode, SimilarityModel simModel,
+                       GenderModel genModel, NumberModel numModel,
+                       boolean useDiscourseModel, double fixedNonRefProbability) throws IOException {
+    super(modelDir, mode, simModel, genModel, numModel, useDiscourseModel, fixedNonRefProbability);
   }
 
   @Override

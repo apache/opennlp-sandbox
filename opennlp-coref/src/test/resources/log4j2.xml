@@ -22,6 +22,7 @@
     <Console name="STDOUT" target="SYSTEM_OUT">
       <!--
           The pattern can be adjusted as needed, see https://logging.apache.org/log4j/2.x/manual/layouts.html
+          Example: <PatternLayout pattern="%-5p [%t]: %m%n"/>
       -->
       <PatternLayout pattern="%m%n"/>
     </Console>
@@ -37,5 +38,9 @@
     <Logger name="opennlp.tools.coref.linker" level="INFO">
       <AppenderRef ref="STDOUT"/>
     </Logger>
+    <Logger name="opennlp.tools.coref.sim.SimilarityModel" level="error">
+      <AppenderRef ref="STDOUT"/>
+    </Logger>
+
   </Loggers>
 </Configuration>

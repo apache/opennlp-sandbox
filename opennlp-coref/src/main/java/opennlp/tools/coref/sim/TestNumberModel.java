@@ -18,12 +18,14 @@
 package opennlp.tools.coref.sim;
 
 /**
- * Interface for testing a number model.
+ * Defines methods for testing a {@link NumberModel}.
  *
  */
 public interface TestNumberModel {
+
   double[] numberDist(Context np1);
 
   int getSingularIndex();
+
   int getPluralIndex();
 }

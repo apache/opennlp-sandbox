@@ -20,19 +20,16 @@ package opennlp.tools.coref.sim;
 /**
  * Enumeration of gender types.
  */
-public class GenderEnum {
+public enum GenderEnum {
+
+  MALE("male"),
+  FEMALE("female"),
+  NEUTER("neuter"),
+  UNKNOWN("unknown");
+
   private final String gender;
 
-  /** Male gender. */
-  public static final GenderEnum MALE = new GenderEnum("male");
-  /** Female gender. */
-  public static final GenderEnum FEMALE = new GenderEnum("female");
-  /** Neuter gender. */
-  public static final GenderEnum NEUTER = new GenderEnum("neuter");
-  /** Unknown gender. */
-  public static final GenderEnum UNKNOWN = new GenderEnum("unknown");
-
-  private GenderEnum(String g) {
+  GenderEnum(String g) {
     gender = g;
   }
 
