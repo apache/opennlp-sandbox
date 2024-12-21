@@ -36,6 +36,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import opennlp.tools.AbstractTest;
 import opennlp.tools.disambiguator.WSDDefaultParameters;
+import opennlp.tools.disambiguator.WSDisambiguatorFactory;
 import opennlp.tools.disambiguator.WSDModel;
 import opennlp.tools.disambiguator.WSDSample;
 import opennlp.tools.disambiguator.WSDisambiguatorME;
@@ -64,18 +65,25 @@ public class WSDModelLoaderTest extends AbstractTest {
     Path workDir = tmpDir.resolve("models" + File.separatorChar);
     trainingDir = workDir.resolve("training" + File.separatorChar)
             .resolve("supervised" + File.separatorChar);
+    File folder = trainingDir.toFile();
+    if (!folder.exists()) {
+      assertTrue(folder.mkdirs());
+    }
+
     final TrainingParameters params = TrainingParameters.defaultParams();
     params.put(TrainingParameters.THREADS_PARAM, 4);
-
+    final WSDDefaultParameters wsdParams = WSDDefaultParameters.defaultParams();
+    wsdParams.putIfAbsent(WSDDefaultParameters.TRAINING_DIR_PARAM, trainingDir.toAbsolutePath().toString());
+    
+    final WSDisambiguatorFactory factory = new WSDisambiguatorFactory();
     final SemcorReaderExtended sr = new SemcorReaderExtended(SEMCOR_DIR);
     final ObjectStream<WSDSample> samples = sr.getSemcorDataStream(WORD_TAG);
 
     try {
-      WSDDefaultParameters wsdParams = new WSDDefaultParameters(trainingDir);
-      trainedModel = WSDisambiguatorME.train("en", samples, params, wsdParams);
+      trainedModel = WSDisambiguatorME.train("en", samples, params, wsdParams, factory);
       assertNotNull(trainedModel);
-      File modelFile = new File(wsdParams.getTrainingDataDirectory() +
-              Character.toString(File.separatorChar) + WORD_TAG + ".wsd.model");
+      File modelFile = new File(wsdParams.getStringParameter(
+              WSDDefaultParameters.TRAINING_DIR_PARAM, "") + File.separatorChar + WORD_TAG + ".wsd.model");
       try (OutputStream modelOut = new BufferedOutputStream(new FileOutputStream(modelFile))) {
         trainedModel.serialize(modelOut);
       }

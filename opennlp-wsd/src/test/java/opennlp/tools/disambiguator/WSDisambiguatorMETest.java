@@ -37,6 +37,7 @@ import opennlp.tools.util.TrainingParameters;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
@@ -66,8 +67,15 @@ class WSDisambiguatorMETest extends AbstractDisambiguatorTest {
     Path workDir = tmpDir.resolve("models" + File.separatorChar);
     Path trainingDir = workDir.resolve("training" + File.separatorChar)
                               .resolve("supervised" + File.separatorChar);
-    wsdParams = new WSDDefaultParameters(trainingDir);
+    File folder = trainingDir.toFile();
+    if (!folder.exists()) {
+      assertTrue(folder.mkdirs());
+    }
+    wsdParams = WSDDefaultParameters.defaultParams();
+    wsdParams.putIfAbsent(WSDDefaultParameters.TRAINING_DIR_PARAM, trainingDir.toAbsolutePath().toString());
+    
     final TrainingParameters trainingParams = TrainingParameters.defaultParams();
+    final WSDisambiguatorFactory factory = new WSDisambiguatorFactory();
     final SemcorReaderExtended sr = new SemcorReaderExtended(SEMCOR_DIR);
 
     final String test = "please.v";
@@ -78,7 +86,7 @@ class WSDisambiguatorMETest extends AbstractDisambiguatorTest {
      * We test both writing and reading a model file trained by semcor
     */
     try {
-      model= WSDisambiguatorME.train("en", sampleStream, trainingParams, wsdParams);
+      model= WSDisambiguatorME.train("en", sampleStream, trainingParams, wsdParams, factory);
       assertNotNull(model, "Checking the model");
     } catch (IOException e1) {
       fail("Exception in training: " + e1.getMessage());

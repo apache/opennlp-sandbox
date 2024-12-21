@@ -39,6 +39,7 @@ import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.TrainingParameters;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class WSDEvaluatorIT extends AbstractEvaluatorTest {
@@ -55,9 +56,15 @@ class WSDEvaluatorIT extends AbstractEvaluatorTest {
     Path workDir = tmpDir.resolve("models" + File.separatorChar);
     Path trainingDir = workDir.resolve("training" + File.separatorChar)
                               .resolve("supervised" + File.separatorChar);
-    wsdParams = new WSDDefaultParameters(trainingDir);
+    File folder = trainingDir.toFile();
+    if (!folder.exists()) {
+      assertTrue(folder.mkdirs());
+    }
+    wsdParams = WSDDefaultParameters.defaultParams();
+    wsdParams.putIfAbsent(WSDDefaultParameters.TRAINING_DIR_PARAM, trainingDir.toAbsolutePath().toString());
 
     final SemcorReaderExtended seReader = new SemcorReaderExtended(SEMCOR_DIR);
+    final WSDisambiguatorFactory factory = new WSDisambiguatorFactory();
 
     // train the models in parallel
     sampleTestWordMapping.keySet().parallelStream().forEach(word -> {
@@ -71,12 +78,12 @@ class WSDEvaluatorIT extends AbstractEvaluatorTest {
            * file trained by semcor
            */
           try {
-            final TrainingParameters trainingParams = TrainingParameters.defaultParams();
-            trainingParams.put(TrainingParameters.THREADS_PARAM, 4);
-            WSDModel trained = WSDisambiguatorME.train("en", sampleStream, trainingParams, wsdParams);
+            final TrainingParameters params = TrainingParameters.defaultParams();
+            params.put(TrainingParameters.THREADS_PARAM, 4);
+            WSDModel trained = WSDisambiguatorME.train("en", sampleStream, params, wsdParams, factory);
             assertNotNull(trained, "Checking the model to be written");
-            File modelFile = new File(wsdParams.getTrainingDataDirectory() +
-                    Character.toString(File.separatorChar) + word + ".wsd.model");
+            File modelFile = new File(wsdParams.getStringParameter(
+                    WSDDefaultParameters.TRAINING_DIR_PARAM, "") + File.separatorChar + word + ".wsd.model");
             try (OutputStream modelOut = new BufferedOutputStream(new FileOutputStream(modelFile))) {
               trained.serialize(modelOut);
             }
@@ -94,8 +101,9 @@ class WSDEvaluatorIT extends AbstractEvaluatorTest {
     sampleTestWordMapping.keySet().parallelStream().forEach(word -> {
       // don't take verbs because they are not from WordNet
       if (!SPLIT.split(word)[1].equals("v")) {
-        File modelFile = new File(wsdParams.getTrainingDataDirectory() +
-                Character.toString(File.separatorChar) + word + ".wsd.model");
+        File modelFile = new File(wsdParams.getStringParameter(
+                WSDDefaultParameters.TRAINING_DIR_PARAM, "") +
+                File.separatorChar + word + ".wsd.model");
         WSDModel model = null;
         try {
           model = new WSDModel(modelFile);
