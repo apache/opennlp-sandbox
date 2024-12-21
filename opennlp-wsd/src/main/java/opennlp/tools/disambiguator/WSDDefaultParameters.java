@@ -19,8 +19,14 @@
 
 package opennlp.tools.disambiguator;
 
-import java.io.File;
-import java.nio.file.Path;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Map;
+import java.util.Properties;
+import java.util.TreeMap;
+
+import opennlp.tools.cmdline.CmdLineUtil;
+import opennlp.tools.commons.Internal;
 
 /**
  * Defines the parameters for the <a href="https://aclanthology.org/P10-4014.pdf">
@@ -31,80 +37,61 @@ import java.nio.file.Path;
  */
 public class WSDDefaultParameters extends WSDParameters {
 
-  public static final int DFLT_WIN_SIZE = 3;
-  public static final int DFLT_NGRAM = 2;
-  public static final String DFLT_LANG_CODE = "en";
-  public static final SenseSource DFLT_SOURCE = SenseSource.WORDNET;
-
-  private final Path trainingDataDir;
-
-  private final String languageCode;
-  protected int windowSize;
-  protected int ngram;
+  public static final String WINDOW_SIZE_PARAM = "WindowSize";
+  public static final String NGRAM_PARAM = "NGram";
+  public static final String LANG_CODE = "LangCode";
+  public static final String SENSE_SOURCE_PARAM = "SenseSource";
+  public static final String TRAINING_DIR_PARAM = "TrainingDirectory";
 
   /**
-   * Initializes a new set of {@link WSDDefaultParameters}.
-   * The default language used is '<i>en</i>' (English).
-   *
-   * @param windowSize  The size of the window used for the extraction of the features
-   *                    qualified of Surrounding Words.
-   * @param ngram       The number words used for the extraction of features qualified of
-   *                    Local Collocations.
-   * @param senseSource The {@link SenseSource source} of the training data
-   * @param trainingDataDir The {@link Path} where to store or read trained models from.
+   * The default window size is 3.
    */
-  public WSDDefaultParameters(int windowSize, int ngram, SenseSource senseSource, Path trainingDataDir) {
-    this.languageCode = DFLT_LANG_CODE;
-    this.windowSize = windowSize;
-    this.ngram = ngram;
-    this.senseSource = senseSource;
-    this.trainingDataDir = trainingDataDir;
-    if (trainingDataDir != null) {
-      File folder = trainingDataDir.toFile();
-      if (!folder.exists())
-        folder.mkdirs();
+  public static final int WINDOW_SIZE_DEFAULT = 3;
+
+  /**
+   * The default ngram width is 2.
+   */
+  public static final int NGRAM_DEFAULT = 2;
+
+  /**
+   * The default ISO language code is 'en'.
+   */
+  public static final String LANG_CODE_DEFAULT = "en";
+
+  /**
+   * The default SenseSource is 'WORDNET'.
+   */
+  public static final SenseSource SOURCE_DEFAULT = SenseSource.WORDNET;
+
+  private final Map<String, Object> parameters = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+
+  /**
+   * No-arg constructor to create a basic {@link WSDDefaultParameters} instance.
+   */
+  @Internal
+  WSDDefaultParameters() {
+  }
+
+  /**
+   * Key-value based constructor to apply a {@link Map} based configuration initialization.
+   */
+  public WSDDefaultParameters(Map<String,Object> map) {
+    parameters.putAll(map);
+  }
+
+  /**
+   * {@link InputStream} based constructor that reads in {@link WSDDefaultParameters}.
+   *
+   * @param in The {@link InputStream} to a kay-value based file that defines {@link WSDParameters}.
+   * @throws IOException Thrown if IO errors occurred.
+   */
+  public WSDDefaultParameters(InputStream in) throws IOException {
+    final Properties properties = new Properties();
+    properties.load(in);
+
+    for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+      parameters.put((String) entry.getKey(), entry.getValue());
     }
-  }
-
-  /**
-   * Initializes a new set of {@link WSDDefaultParameters}.
-   * The default language used is '<i>en</i>' (English), the window size is {@link #DFLT_WIN_SIZE},
-   * and the ngram length is initialized as {@link #DFLT_NGRAM}.
-   *
-   * @implNote The training directory will be unset.
-   */
-  public WSDDefaultParameters() {
-    this(DFLT_WIN_SIZE, DFLT_NGRAM, DFLT_SOURCE, null);
-  }
-
-  /**
-   * Initializes a new set of {@link WSDDefaultParameters}.
-   * The default language used is '<i>en</i>' (English), the window size is {@link #DFLT_WIN_SIZE},
-   * and the ngram length is initialized as {@link #DFLT_NGRAM}.
-   *
-   * @param trainingDataDir The {@link Path} where to place or lookup trained models.
-   */
-  public WSDDefaultParameters(Path trainingDataDir) {
-    this(DFLT_WIN_SIZE, DFLT_NGRAM, DFLT_SOURCE, trainingDataDir);
-  }
-
-  public String getLanguageCode() {
-    return languageCode;
-  }
-
-  public int getWindowSize() {
-    return windowSize;
-  }
-
-  public int getNgram() {
-    return ngram;
-  }
-
-  /**
-   * @return The {@link Path} where to place or lookup trained models. May be {@code null}!
-   */
-  public Path getTrainingDataDirectory() {
-    return trainingDataDir;
   }
 
   /**
@@ -115,4 +102,411 @@ public class WSDDefaultParameters extends WSDParameters {
     return true;
   }
 
+  /**
+   * Puts a {@code value} into the current {@link WSDParameters} under a certain {@code key},
+   * if the value was not present before.
+   * The {@code namespace} can be used to prefix the {@code key}.
+   *
+   * @param namespace A prefix to declare or use a name space under which {@code key} shall be put.
+   *                  May be {@code null}.
+   * @param key The identifying key to put or retrieve a {@code value} with.
+   * @param value The {@link String} parameter to put into this {@link WSDParameters} instance.
+   */
+  public void putIfAbsent(String namespace, String key, String value) {
+    parameters.putIfAbsent(getKey(namespace, key), value);
+  }
+
+  /**
+   * Puts a {@code value} into the current {@link WSDParameters} under a certain {@code key},
+   * if the value was not present before.
+   *
+   * @param key The identifying key to put or retrieve a {@code value} with.
+   * @param value The {@link String} parameter to put into this {@link WSDParameters} instance.
+   */
+  public void putIfAbsent(String key, String value) {
+    putIfAbsent(null, key, value);
+  }
+
+  /**
+   * Puts a {@code value} into the current {@link WSDParameters} under a certain {@code key},
+   * if the value was not present before.
+   * The {@code namespace} can be used to prefix the {@code key}.
+   *
+   * @param namespace A prefix to declare or use a name space under which {@code key} shall be put.
+   *                  May be {@code null}.
+   * @param key The identifying key to put or retrieve a {@code value} with.
+   * @param value The {@link Integer} parameter to put into this {@link WSDParameters} instance.
+   */
+  public void putIfAbsent(String namespace, String key, int value) {
+    parameters.putIfAbsent(getKey(namespace, key), value);
+  }
+
+  /**
+   * Puts a {@code value} into the current {@link WSDParameters} under a certain {@code key},
+   * if the value was not present before.
+   *
+   * @param key The identifying key to put or retrieve a {@code value} with.
+   * @param value The {@link Integer} parameter to put into this {@link WSDParameters} instance.
+   */
+  public void putIfAbsent(String key, int value) {
+    putIfAbsent(null, key, value);
+  }
+
+  /**
+   * Puts a {@code value} into the current {@link WSDParameters} under a certain {@code key},
+   * if the value was not present before.
+   * The {@code namespace} can be used to prefix the {@code key}.
+   *
+   * @param namespace A prefix to declare or use a name space under which {@code key} shall be put.
+   *                  May be {@code null}.
+   * @param key The identifying key to put or retrieve a {@code value} with.
+   * @param value The {@link Double} parameter to put into this {@link WSDParameters} instance.
+   */
+  public void putIfAbsent(String namespace, String key, double value) {
+    parameters.putIfAbsent(getKey(namespace, key), value);
+  }
+
+  /**
+   * Puts a {@code value} into the current {@link WSDParameters} under a certain {@code key},
+   * if the value was not present before.
+   * The {@code namespace} can be used to prefix the {@code key}.
+   *
+   * @param key The identifying key to put or retrieve a {@code value} with.
+   * @param value The {@link Double} parameter to put into this {@link WSDParameters} instance.
+   */
+  public void putIfAbsent(String key, double value) {
+    putIfAbsent(null, key, value);
+  }
+
+  /**
+   * Puts a {@code value} into the current {@link WSDParameters} under a certain {@code key},
+   * if the value was not present before.
+   * The {@code namespace} can be used to prefix the {@code key}.
+   *
+   * @param namespace A prefix to declare or use a name space under which {@code key} shall be put.
+   *                  May be {@code null}.
+   * @param key The identifying key to put or retrieve a {@code value} with.
+   * @param value The {@link Boolean} parameter to put into this {@link WSDParameters} instance.
+   */
+  public void putIfAbsent(String namespace, String key, boolean value) {
+    parameters.putIfAbsent(getKey(namespace, key), value);
+  }
+
+  /**
+   * Puts a {@code value} into the current {@link WSDParameters} under a certain {@code key},
+   * if the value was not present before.
+   *
+   * @param key The identifying key to put or retrieve a {@code value} with.
+   * @param value The {@link Boolean} parameter to put into this {@link WSDParameters} instance.
+   */
+  public void putIfAbsent(String key, boolean value) {
+    putIfAbsent(null, key, value);
+  }
+
+  /**
+   * Puts a {@code value} into the current {@link WSDParameters} under a certain {@code key}.
+   * If the value was present before, the previous value will be overwritten with the specified one.
+   * The {@code namespace} can be used to prefix the {@code key}.
+   *
+   * @param namespace A prefix to declare or use a name space under which {@code key} shall be put.
+   *                  May be {@code null}.
+   * @param key The identifying key to put or retrieve a {@code value} with.
+   * @param value The {@link String} parameter to put into this {@link WSDParameters} instance.
+   */
+  public void put(String namespace, String key, String value) {
+    parameters.put(getKey(namespace, key), value);
+  }
+
+  /**
+   * Puts a {@code value} into the current {@link WSDParameters} under a certain {@code key}.
+   * If the value was present before, the previous value will be overwritten with the specified one.
+   *
+   * @param key The identifying key to put or retrieve a {@code value} with.
+   * @param value The {@link String} parameter to put into this {@link WSDParameters} instance.
+   */
+  public void put(String key, String value) {
+    put(null, key, value);
+  }
+
+  /**
+   * Puts a {@code value} into the current {@link WSDParameters} under a certain {@code key}.
+   * If the value was present before, the previous value will be overwritten with the specified one.
+   * The {@code namespace} can be used to prefix the {@code key}.
+   *
+   * @param namespace A prefix to declare or use a name space under which {@code key} shall be put.
+   *                  May be {@code null}.
+   * @param key The identifying key to put or retrieve a {@code value} with.
+   * @param value The {@link Integer} parameter to put into this {@link WSDParameters} instance.
+   */
+  public void put(String namespace, String key, int value) {
+    parameters.put(getKey(namespace, key), value);
+  }
+
+  /**
+   * Puts a {@code value} into the current {@link WSDParameters} under a certain {@code key}.
+   * If the value was present before, the previous value will be overwritten with the specified one.
+   *
+   * @param key The identifying key to put or retrieve a {@code value} with.
+   * @param value The {@link Integer} parameter to put into this {@link WSDParameters} instance.
+   */
+  public void put(String key, int value) {
+    put(null, key, value);
+  }
+
+  /**
+   * Puts a {@code value} into the current {@link WSDParameters} under a certain {@code key}.
+   * If the value was present before, the previous value will be overwritten with the specified one.
+   * The {@code namespace} can be used to prefix the {@code key}.
+   *
+   * @param namespace A prefix to declare or use a name space under which {@code key} shall be put.
+   *                  May be {@code null}.
+   * @param key The identifying key to put or retrieve a {@code value} with.
+   * @param value The {@link Double} parameter to put into this {@link WSDParameters} instance.
+   */
+  public void put(String namespace, String key, double value) {
+    parameters.put(getKey(namespace, key), value);
+  }
+
+  /**
+   * Puts a {@code value} into the current {@link WSDParameters} under a certain {@code key}.
+   * If the value was present before, the previous value will be overwritten with the specified one.
+   *
+   * @param key The identifying key to put or retrieve a {@code value} with.
+   * @param value The {@link Double} parameter to put into this {@link WSDParameters} instance.
+   */
+  public void put(String key, double value) {
+    put(null, key, value);
+  }
+
+  /**
+   * Puts a {@code value} into the current {@link WSDParameters} under a certain {@code key}.
+   * If the value was present before, the previous value will be overwritten with the specified one.
+   * The {@code namespace} can be used to prefix the {@code key}.
+   *
+   * @param namespace A prefix to declare or use a name space under which {@code key} shall be put.
+   *                  May be {@code null}.
+   * @param key The identifying key to put or retrieve a {@code value} with.
+   * @param value The {@link Boolean} parameter to put into this {@link WSDParameters} instance.
+   */
+  public void put(String namespace, String key, boolean value) {
+    parameters.put(getKey(namespace, key), value);
+  }
+
+  /**
+   * Puts a {@code value} into the current {@link WSDParameters} under a certain {@code key}.
+   * If the value was present before, the previous value will be overwritten with the specified one.
+   *
+   * @param key The identifying key to put or retrieve a {@code value} with.
+   * @param value The {@link Boolean} parameter to put into this {@link WSDParameters} instance.
+   */
+  public void put(String key, boolean value) {
+    put(null, key, value);
+  }
+
+  /**
+   * Obtains a training parameter value.
+   * <p>
+   * Note:
+   * {@link java.lang.ClassCastException} can be thrown if the value is not {@code String}
+   *
+   * @param key The identifying key to retrieve a {@code value} with.
+   * @param defaultValue The alternative value to use, if {@code key} was not present.
+   * @return The {@link String training value} associated with {@code key} if present,
+   *         or a {@code defaultValue} if not.
+   */
+  public String getStringParameter(String key, String defaultValue) {
+    return getStringParameter(null, key, defaultValue);
+  }
+
+  /**
+   * Obtains a training parameter value in the specified namespace.
+   * <p>
+   * Note:
+   * {@link java.lang.ClassCastException} can be thrown if the value is not {@link String}
+   * @param namespace A prefix to declare or use a name space under which {@code key} shall be searched.
+   *                  May be {@code null}.
+   * @param key The identifying key to retrieve a {@code value} with.
+   * @param defaultValue The alternative value to use, if {@code key} was not present.
+   *
+   * @return The {@link String training value} associated with {@code key} if present,
+   *         or a {@code defaultValue} if not.
+   */
+  public String getStringParameter(String namespace, String key, String defaultValue) {
+    Object value = parameters.get(getKey(namespace, key));
+    if (value == null) {
+      return defaultValue;
+    }
+    else {
+      return (String)value;
+    }
+  }
+
+  /**
+   * Obtains a training parameter value.
+   * <p>
+   *
+   * @param key The identifying key to retrieve a {@code value} with.
+   * @param defaultValue The alternative value to use, if {@code key} was not present.
+   * @return The {@link Integer training value} associated with {@code key} if present,
+   *         or a {@code defaultValue} if not.
+   */
+  public int getIntParameter(String key, int defaultValue) {
+    return getIntParameter(null, key, defaultValue);
+  }
+
+  /**
+   * Obtains a training parameter value in the specified namespace.
+   * <p>
+   * @param namespace A prefix to declare or use a name space under which {@code key} shall be searched.
+   *                  May be {@code null}.
+   * @param key The identifying key to retrieve a {@code value} with.
+   * @param defaultValue The alternative value to use, if {@code key} was not present.
+   *
+   * @return The {@link Integer training value} associated with {@code key} if present,
+   *         or a {@code defaultValue} if not.
+   */
+  public int getIntParameter(String namespace, String key, int defaultValue) {
+    Object value = parameters.get(getKey(namespace, key));
+    if (value == null) {
+      return defaultValue;
+    }
+    else {
+      try {
+        return (Integer) value;
+      }
+      catch (ClassCastException e) {
+        return Integer.parseInt((String)value);
+      }
+    }
+  }
+
+  /**
+   * Obtains a training parameter value.
+   * <p>
+   *
+   * @param key The identifying key to retrieve a {@code value} with.
+   * @param defaultValue The alternative value to use, if {@code key} was not present.
+   * @return The {@link Double training value} associated with {@code key} if present,
+   *         or a {@code defaultValue} if not.
+   */
+  public double getDoubleParameter(String key, double defaultValue) {
+    return getDoubleParameter(null, key, defaultValue);
+  }
+
+  /**
+   * Obtains a training parameter value in the specified namespace.
+   * <p>
+   * @param namespace A prefix to declare or use a name space under which {@code key} shall be searched.
+   *                  May be {@code null}.
+   * @param key The identifying key to retrieve a {@code value} with.
+   * @param defaultValue The alternative value to use, if {@code key} was not present.
+   *
+   * @return The {@link Double training value} associated with {@code key} if present,
+   *         or a {@code defaultValue} if not.
+   */
+  public double getDoubleParameter(String namespace, String key, double defaultValue) {
+    Object value = parameters.get(getKey(namespace, key));
+    if (value == null) {
+      return defaultValue;
+    }
+    else {
+      try {
+        return (Double) value;
+      }
+      catch (ClassCastException e) {
+        return Double.parseDouble((String)value);
+      }
+    }
+  }
+
+  /**
+   * Obtains a training parameter value.
+   * <p>
+   *
+   * @param key The identifying key to retrieve a {@code value} with.
+   * @param defaultValue The alternative value to use, if {@code key} was not present.
+   * @return The {@link Boolean training value} associated with {@code key} if present,
+   *         or a {@code defaultValue} if not.
+   */
+  public boolean getBooleanParameter(String key, boolean defaultValue) {
+    return getBooleanParameter(null, key, defaultValue);
+  }
+
+  /**
+   * Obtains a training parameter value in the specified namespace.
+   * <p>
+   * @param namespace A prefix to declare or use a name space under which {@code key} shall be searched.
+   *                  May be {@code null}.
+   * @param key The identifying key to retrieve a {@code value} with.
+   * @param defaultValue The alternative value to use, if {@code key} was not present.
+   *
+   * @return The {@link Boolean training value} associated with {@code key} if present,
+   *         or a {@code defaultValue} if not.
+   */
+  public boolean getBooleanParameter(String namespace, String key, boolean defaultValue) {
+    Object value = parameters.get(getKey(namespace, key));
+    if (value == null) {
+      return defaultValue;
+    }
+    else {
+      try {
+        return (Boolean) value;
+      }
+      catch (ClassCastException e) {
+        return Boolean.parseBoolean((String)value);
+      }
+    }
+  }
+
+  /**
+   * @return Retrieves a new {@link WSDDefaultParameters instance} initialized with default values.
+   */
+  public static WSDDefaultParameters defaultParams() {
+    WSDDefaultParameters wsdParams = new WSDDefaultParameters();
+    wsdParams.put(WSDDefaultParameters.LANG_CODE, LANG_CODE_DEFAULT);
+    wsdParams.put(WSDDefaultParameters.WINDOW_SIZE_PARAM, WINDOW_SIZE_DEFAULT);
+    wsdParams.put(WSDDefaultParameters.NGRAM_PARAM, NGRAM_DEFAULT);
+    wsdParams.put(WSDDefaultParameters.SENSE_SOURCE_PARAM, SOURCE_DEFAULT.name());
+    return wsdParams;
+  }
+
+  /**
+   * @param params The parameters to additionally apply into the new {@link WSDDefaultParameters instance}.
+   *
+   * @return Retrieves a new {@link WSDDefaultParameters instance} initialized with given parameter values.
+   */
+  public static WSDDefaultParameters setParams(String[] params) {
+    WSDDefaultParameters wsdParams = new WSDDefaultParameters();
+    wsdParams.put(WSDDefaultParameters.LANG_CODE, LANG_CODE_DEFAULT);
+    wsdParams.put(WSDDefaultParameters.SENSE_SOURCE_PARAM, SOURCE_DEFAULT.name());
+    wsdParams.put(WSDDefaultParameters.WINDOW_SIZE_PARAM ,
+            null != CmdLineUtil.getIntParameter("-" +
+                    WSDDefaultParameters.WINDOW_SIZE_PARAM.toLowerCase() , params) ?
+                    CmdLineUtil.getIntParameter("-" + WSDDefaultParameters.WINDOW_SIZE_PARAM.toLowerCase() , params) :
+                    WINDOW_SIZE_DEFAULT);
+    wsdParams.put(WSDDefaultParameters.NGRAM_PARAM ,
+            null != CmdLineUtil.getIntParameter("-" +
+                    WSDDefaultParameters.NGRAM_PARAM.toLowerCase() , params) ?
+                    CmdLineUtil.getIntParameter("-" + WSDDefaultParameters.NGRAM_PARAM.toLowerCase() , params) :
+                    NGRAM_DEFAULT);
+
+    return wsdParams;
+  }
+
+  /**
+   * @param namespace The namespace used as prefix or {@code null}.
+   *                  If {@code null} the {@code key} is left unchanged.
+   * @param key The identifying key to process.
+   *
+   * @return Retrieves a prefixed key in the specified {@code namespace}.
+   *         If no {@code namespace} was specified the returned String is equal to {@code key}.
+   */
+  static String getKey(String namespace, String key) {
+    if (namespace == null) {
+      return key;
+    }
+    else {
+      return namespace + "." + key;
+    }
+  }
 }

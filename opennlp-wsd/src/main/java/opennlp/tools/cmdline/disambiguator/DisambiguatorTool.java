@@ -108,7 +108,7 @@ public class DisambiguatorTool extends CmdLineTool {
       wsd = new Lesk();
     } else if (params.getType().equalsIgnoreCase("ims")) {
       // TODO Set a "default" model for ENG -> future!?
-      wsd = new WSDisambiguatorME(null, new WSDDefaultParameters());
+      wsd = new WSDisambiguatorME(null, WSDDefaultParameters.defaultParams());
     }
     return wsd;
 

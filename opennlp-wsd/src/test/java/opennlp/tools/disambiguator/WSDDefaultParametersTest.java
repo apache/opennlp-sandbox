@@ -45,15 +45,20 @@ public class WSDDefaultParametersTest {
 
   @Test
   void testCreate() {
-    WSDDefaultParameters params = new WSDDefaultParameters(trainingDir);
+    WSDDefaultParameters params = WSDDefaultParameters.defaultParams();
+    params.putIfAbsent(WSDDefaultParameters.TRAINING_DIR_PARAM, trainingDir.toAbsolutePath().toString());
     assertNotNull(params);
     assertInstanceOf(WSDParameters.class, params);
     assertTrue(params.areValid());
-    assertEquals(trainingDir, params.getTrainingDataDirectory());
 
-    assertEquals(WSDDefaultParameters.DFLT_NGRAM, params.getNgram());
-    assertEquals(WSDDefaultParameters.DFLT_WIN_SIZE, params.getWindowSize());
-    assertEquals(WSDDefaultParameters.DFLT_LANG_CODE, params.getLanguageCode());
-    assertEquals(WSDDefaultParameters.DFLT_SOURCE, params.getSenseSource());
+    assertEquals(WSDDefaultParameters.NGRAM_DEFAULT,
+            params.getIntParameter(WSDDefaultParameters.NGRAM_PARAM, WSDDefaultParameters.NGRAM_DEFAULT));
+    assertEquals(WSDDefaultParameters.WINDOW_SIZE_DEFAULT,
+            params.getIntParameter(WSDDefaultParameters.WINDOW_SIZE_PARAM, WSDDefaultParameters.WINDOW_SIZE_DEFAULT));
+    assertEquals(WSDDefaultParameters.LANG_CODE_DEFAULT,
+            params.getStringParameter(WSDDefaultParameters.LANG_CODE, WSDDefaultParameters.LANG_CODE_DEFAULT));
+    assertEquals(WSDDefaultParameters.SOURCE_DEFAULT,
+            WSDParameters.SenseSource.valueOf(
+                    params.getStringParameter(WSDDefaultParameters.SENSE_SOURCE_PARAM, WSDDefaultParameters.SOURCE_DEFAULT.name())));
   }
 }

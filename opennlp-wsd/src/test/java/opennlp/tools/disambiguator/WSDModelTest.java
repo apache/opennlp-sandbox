@@ -28,15 +28,15 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
 
-import opennlp.tools.AbstractTest;
-import opennlp.tools.ml.model.MaxentModel;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.CleanupMode;
 import org.junit.jupiter.api.io.TempDir;
 
+import opennlp.tools.AbstractTest;
 import opennlp.tools.disambiguator.datareader.SemcorReaderExtended;
 import opennlp.tools.ml.maxent.GISModel;
+import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.TrainingParameters;
 
@@ -61,20 +61,25 @@ class WSDModelTest extends AbstractTest {
 
   @BeforeAll
   static void createSimpleWSDModel(@TempDir(cleanup = CleanupMode.ALWAYS) Path tmpDir) {
-
     Path workDir = tmpDir.resolve("models" + File.separatorChar);
     trainingDir = workDir.resolve("training" + File.separatorChar)
             .resolve("supervised" + File.separatorChar);
+    File folder = trainingDir.toFile();
+    if (!folder.exists()) {
+      assertTrue(folder.mkdirs());
+    }
+
     final TrainingParameters params = TrainingParameters.defaultParams();
     params.put(TrainingParameters.THREADS_PARAM, 4);
+    final WSDDefaultParameters wsdParams = WSDDefaultParameters.defaultParams();
+    wsdParams.putIfAbsent(WSDDefaultParameters.TRAINING_DIR_PARAM, trainingDir.toAbsolutePath().toString());
 
+    final WSDisambiguatorFactory factory = new WSDisambiguatorFactory();
     final SemcorReaderExtended sr = new SemcorReaderExtended(SEMCOR_DIR);
-
     final ObjectStream<WSDSample> samples = sr.getSemcorDataStream(WORD_TAG);
 
     try {
-      trainedModel = WSDisambiguatorME.train("en", samples, params,
-              new WSDDefaultParameters(trainingDir));
+      trainedModel = WSDisambiguatorME.train("en", samples, params, wsdParams, factory);
       assertNotNull(trainedModel);
     } catch (IOException e1) {
       fail("Exception in training: " + e1.getMessage());

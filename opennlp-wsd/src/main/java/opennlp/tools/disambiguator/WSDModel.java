@@ -45,7 +45,7 @@ import opennlp.tools.util.model.BaseModel;
 public class WSDModel extends BaseModel {
 
   @Serial
-  private static final long serialVersionUID = 2961852011373749729L;
+  private static final long serialVersionUID = -5191919760365361954L;
 
   private static final String COMPONENT_NAME = "WSD";
   private static final String WSD_MODEL_ENTRY = "WSD.model";
@@ -157,6 +157,13 @@ public class WSDModel extends BaseModel {
    */
   public String getWordTag() {
     return getManifestProperty(WORDTAG);
+  }
+
+  /**
+   * @return Retrieves the active {@link WSDisambiguatorFactory}.
+   */
+  public WSDisambiguatorFactory getWSDFactory() {
+    return (WSDisambiguatorFactory) this.toolFactory;
   }
 
   /**
