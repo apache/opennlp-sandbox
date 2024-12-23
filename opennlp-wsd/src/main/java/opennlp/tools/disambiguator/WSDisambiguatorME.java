@@ -17,6 +17,13 @@
 
 package opennlp.tools.disambiguator;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import opennlp.tools.ml.EventTrainer;
 import opennlp.tools.ml.TrainerFactory;
 import opennlp.tools.ml.model.Event;
@@ -24,14 +31,6 @@ import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.ObjectStreamUtils;
 import opennlp.tools.util.TrainingParameters;
-
-import java.io.File;
-import java.io.IOException;
-import java.security.InvalidParameterException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
 
 /**
  * A {@link Disambiguator} implementation based on a Maximum Entropy (ME) approach.
@@ -45,8 +44,7 @@ import java.util.List;
  */
 public class WSDisambiguatorME extends AbstractWSDisambiguator {
 
-  protected static final WSDContextGenerator CONTEXT_GENERATOR = new IMSWSDContextGenerator();
-
+  private final WSDContextGenerator cg;
   private final WSDModel model;
 
   /**
@@ -60,8 +58,10 @@ public class WSDisambiguatorME extends AbstractWSDisambiguator {
     if (model == null || params == null) {
       throw new IllegalArgumentException("Parameters cannot be null!");
     }
-    this.model = model;
     super.params = params;
+    this.model = model;
+    WSDisambiguatorFactory factory = model.getWSDFactory();
+    cg = factory.getContextGenerator();
   }
 
   /**
@@ -84,47 +84,45 @@ public class WSDisambiguatorME extends AbstractWSDisambiguator {
    *           during training. Or if reading from the {@link ObjectStream} fails.
    */
   public static WSDModel train(String lang, ObjectStream<WSDSample> samples,
-                               TrainingParameters mlParams, WSDParameters params) throws IOException {
+                               TrainingParameters mlParams, WSDParameters params,
+                               WSDisambiguatorFactory factory) throws IOException {
 
-    WSDDefaultParameters defParams = ((WSDDefaultParameters) params);
-    List<String> surroundingContext = buildSurroundingContext(samples, defParams.getWindowSize());
-
-    HashMap<String, String> manifestInfoEntries = new HashMap<>();
-
-    MaxentModel meModel;
+    final WSDDefaultParameters defParams = ((WSDDefaultParameters) params);
+    final int wSize = defParams.getIntParameter(
+            WSDDefaultParameters.WINDOW_SIZE_PARAM, WSDDefaultParameters.WINDOW_SIZE_DEFAULT);
+    final int ngram = defParams.getIntParameter(
+            WSDDefaultParameters.NGRAM_PARAM, WSDDefaultParameters.NGRAM_DEFAULT);
+    List<String> surroundingContext = buildSurroundingContext(samples, wSize);
 
     List<Event> events = new ArrayList<>();
-    ObjectStream<Event> es;
-
     WSDSample sample = samples.read();
     String wordTag = "";
     if (sample != null) {
+      final WSDContextGenerator cg = factory.getContextGenerator();
       wordTag = sample.getTargetWordTag();
       do {
         String sense = sample.getSenseIDs()[0];
-        String[] context = CONTEXT_GENERATOR.getContext(sample,
-                defParams.ngram, defParams.windowSize, surroundingContext);
+        String[] context = cg.getContext(sample, ngram, wSize, surroundingContext);
         Event ev = new Event(sense, context);
         events.add(ev);
       } while ((sample = samples.read()) != null);
     }
 
-    es = ObjectStreamUtils.createObjectStream(events);
+    final Map<String, String> manifestInfoEntries = new HashMap<>();
+    ObjectStream<Event> es = ObjectStreamUtils.createObjectStream(events);
     EventTrainer trainer = TrainerFactory.getEventTrainer(mlParams, manifestInfoEntries);
+    MaxentModel meModel = trainer.train(es);
 
-    meModel = trainer.train(es);
-
-    return new WSDModel(lang, wordTag, defParams.windowSize, defParams.ngram,
-            meModel, surroundingContext, manifestInfoEntries);
+    return new WSDModel(lang, wordTag, wSize, ngram, meModel, surroundingContext, manifestInfoEntries);
   }
 
   private static List<String> buildSurroundingContext(ObjectStream<WSDSample> samples,
                                                       int windowSize) throws IOException {
-    IMSWSDContextGenerator contextGenerator = new IMSWSDContextGenerator();
+    IMSWSDContextGenerator cg = new IMSWSDContextGenerator();
     List<String> surroundingWordsModel = new ArrayList<>();
     WSDSample sample;
     while ((sample = samples.read()) != null) {
-      String[] words = contextGenerator.extractSurroundingContext(sample.getTargetPosition(),
+      String[] words = cg.extractSurroundingContext(sample.getTargetPosition(),
           sample.getSentence(), sample.getLemmas(), windowSize);
 
       if (words.length > 0) {
@@ -150,14 +148,17 @@ public class WSDisambiguatorME extends AbstractWSDisambiguator {
   @Override
   public String disambiguate(WSDSample sample) {
     final WSDDefaultParameters defParams = ((WSDDefaultParameters) params);
-    final String wordTag = sample.getTargetWordTag();
+    final int wSize = defParams.getIntParameter(
+            WSDDefaultParameters.WINDOW_SIZE_PARAM, WSDDefaultParameters.WINDOW_SIZE_DEFAULT);
+    final int ngram = defParams.getIntParameter(
+            WSDDefaultParameters.NGRAM_PARAM, WSDDefaultParameters.NGRAM_DEFAULT);
 
+    final String wordTag = sample.getTargetWordTag();
     if (WSDHelper.isRelevantPOSTag(sample.getTargetTag())) {
       if (!model.getWordTag().equals(wordTag)) {
         return disambiguate(wordTag);
       } else {
-        String[] context = CONTEXT_GENERATOR.getContext(sample,
-                defParams.ngram, defParams.windowSize, this.model.getContextEntries());
+        String[] context = cg.getContext(sample, wSize, ngram, this.model.getContextEntries());
         double[] outcomeProbs = model.getWSDMaxentModel().eval(context);
         String outcome = model.getWSDMaxentModel().getBestOutcome(outcomeProbs);
 
