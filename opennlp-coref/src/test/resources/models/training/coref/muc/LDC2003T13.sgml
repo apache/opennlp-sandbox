@@ -17,56 +17,57 @@
    under the License.    
 -->
 <!--
-Origin: https://catalog.ldc.upenn.edu/LDC2003T13
+This SGML file is based on the structure of https://catalog.ldc.upenn.edu/LDC2003T13
 -->
 <DOC>
-<DOCNO>  891102-0110. </DOCNO>
-<CODER> MartinMarrietta </CODER>
-<DD> = 891102 </DD>
-<AN> 891102-0110. </AN>
-<HL> International:
-@  U.S. to Prod Tokyo on Easing Investment
+<DOCNO>  123456-7890. </DOCNO>
+<CODER> LoremIpsumCorp </CODER>
+<DD> = 123456 </DD>
+<AN> 123456-7890. </AN>
+<HL> Lorem Ipsum:
+@  Dolor Sit Amet Consectetur
 @  ---
-@  Japanese Purchases Add
-@  To Cries of Unfair Barriers
+@  Adipiscing Elit, Sed Do Eiusmod
+@  Tempor Incididunt Ut Labore
 @  ----
-@  By Marcus W. Brauchli
-@  Staff Reporter of The Wall Street Journal </HL>
-<DD> 11/02/89 </DD>
-<SO> WALL STREET JOURNAL (J) </SO>
-<CO> JAPAN </CO>
-<IN> INTERNATIONAL ECONOMIC NEWS AND STATISTICS (IEN)
-TENDER OFFERS, MERGERS, ACQUISITIONS (TNM) </IN>
-<GV> TREASURY DEPARTMENT (TRE)
-COMMERCE DEPARTMENT (COM) </GV>
-<DATELINE> TOKYO  </DATELINE>
+@  By Lorem Ipsum
+@  Placeholder Text Author </HL>
+<DD> 12/12/21 </DD>
+<SO> LOREM IPSUM TIMES (LIT) </SO>
+<CO> UNKNOWN </CO>
+<IN> PLACEHOLDER TOPICS (PTP)
+TEMPORARY SUBJECTS (TMP) </IN>
+<GV> FAKE DEPARTMENT (FD)
+DUMMY ORGANIZATION (DO) </GV>
+<DATELINE> LOREMTOWN  </DATELINE>
 <TXT>
 <p>
-<s> Criticism in the U.S. over recent Japanese acquisitions is looming ever larger in the two countries' relations. </s>
+<s> Lorem ipsum dolor sit amet, consectetur adipiscing elit. </s>
 </p>
 <p>
-<s> Officials from both nations say the U.S. public's skittishness about Japanese investment could color a second round of bilateral economic talks scheduled for next week in Washington. </s>
-<s> Not that Washington and Tokyo disagree on the Japanese acquisitions; indeed, each has come out in favor of unfettered investment in the U.S. </s>
+<s> Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </s>
+<s> Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. </s>
 </p>
 <p>
-<s> Where they disagree is on the subject of U.S. direct investment in Japan. </s>
-<s> The U.S. wants the removal of what it perceives as barriers to investment; Japan denies there are real barriers. </s>
-<s> The heated talk stirred up by recent Japanese investments in the U.S. is focusing attention on the differences in investment climate, even though it's only one of many subjects to be covered in the bilateral talks, known as the Structural Impediments Initiative. </s>
+<s> Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. </s>
+<s> Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. </s>
 </p>
 <p>
-<s> The Japanese "should see this rhetoric as a signal of the need for a change in their own economy," says Charles Dallara, U.S. assistant Treasury secretary, who has been in Tokyo this week informally discussing the impending negotiations with government and business leaders. </s>
+<s> Phasellus faucibus scelerisque eleifend donec pretium vulputate sapien. </s>
+<s> Ultrices dui sapien eget mi proin sed libero enim. </s>
 </p>
 <p>
-<s> "We have a long history of maintaining an open direct-investment policy," Mr. Dallara says. </s>
-<s> "U.S. investors should have a greater opportunity at direct investment" in Japan. </s>
+<s> Non arcu risus quis varius quam quisque id diam vel. </s>
 </p>
 <p>
-<s> The Japanese fret openly about the U.S. public's rancor. </s>
-<s> One clear sign of Japan's nervousness came this week, when a spokesman for Japan's Foreign Ministry devoted nearly all of a regular, half-hour briefing for foreign journalists to the subject of recent Japanese investments in the U.S. </s>
+<s> Amet nisl suscipit adipiscing bibendum est ultricies integer quis. </s>
+<s> Elit eget gravida cum sociis natoque penatibus et magnis dis. </s>
 </p>
 <p>
-<s> "We believe that it is vitally important for those Japanese business interests {in the U.S.} to be more aware of the emotions and concerns of the American people," said the spokesman, Taizo Watanabe. </s>
-<s> At the same time, though, he chastised the media for paying such close attention to Japanese investment when other foreign countries, notably Britain, are acquiring more American assets. </s>
+<s> Orci eu lobortis elementum nibh tellus molestie nunc non. </s>
+<s> Vitae ultricies leo integer malesuada nunc vel risus commodo. </s>
 </p>
 <p>
+<s> Ultricies mi quis hendrerit dolor magna eget est lorem ipsum. </s>
+</p>
 </DOC>
