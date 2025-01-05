@@ -49,16 +49,16 @@ You can also follow our [mailing lists](http://opennlp.apache.org/mailing-lists.
 
 ## Overview
 
-Currently, the library has different packages:
+Currently, the library has different components:
 
 * `caseeditor-corpus-server-plugin`: A set of Java classes for [Apache UIMA](https://uima.apache.org) as Eclipse plugin to integrate corpora.
 * `caseeditor-opennlp-plugin`: An OpenNLP plugin for [Apache UIMA](https://uima.apache.org).
 * `corpus-server`: A multi-module component to create, search, remove, and serve multiple corpora.
 * `mahout-addon`: An addon for [Apache Mahout](https://mahout.apache.org).
 * `mallet-addon`: An addon for [Mallet](https://mimno.github.io/Mallet/topics.html) targeting topic modelling techniques.
-* `opennlp-coref`: A component to conduct co-reference resolution.
 * `modelbuilder-addon`: A set of classes to build models.
 * `nlp-utils`: A set of OpenNLP util classes.
+* `opennlp-coref`: A component to conduct co-reference resolution.
 * `opennlp-dl`: An adapter component for [deeplearning4j](https://deeplearning4j.konduit.ai).
 * `opennlp-grpc`: An implementation of a gRPC backend for OpenNLP.
 * `opennlp-similarity`: A set of components that solve a number of text processing and search tasks, see further details in this [README.md](opennlp-similarity/README.md).
