@@ -38,8 +38,10 @@ import opennlp.tools.coref.resolver.ResolverMode;
 import opennlp.tools.coref.resolver.SingularPronounResolver;
 import opennlp.tools.coref.resolver.SpeechPronounResolver;
 import opennlp.tools.coref.sim.Gender;
+import opennlp.tools.coref.sim.GenderModel;
 import opennlp.tools.coref.sim.MaxentCompatibilityModel;
 import opennlp.tools.coref.sim.Number;
+import opennlp.tools.coref.sim.NumberModel;
 import opennlp.tools.coref.sim.SimilarityModel;
 
 import org.slf4j.Logger;
@@ -58,7 +60,11 @@ public class DefaultLinker extends AbstractLinker {
 
   private static final Logger logger = LoggerFactory.getLogger(DefaultLinker.class);
 
-  protected MaxentCompatibilityModel mcm;
+  private final SimilarityModel similarityModel;
+  private final GenderModel genderModel;
+  private final NumberModel numberModel;
+
+  private MaxentCompatibilityModel mcm;
 
   /**
    * Instantiates a {@link DefaultLinker} with the specified model directory,
@@ -94,20 +100,44 @@ public class DefaultLinker extends AbstractLinker {
    * @param modelDir The directory in which the coref model files are located.
    * @param mode The {@link LinkerMode mode} that this linker is running in.
    * @param useDiscourseModel Whether the model should use a discourse model or not.
-   * @param fixedNonReferentialProbability The probability which resolvers are
-   *                                       required to exceed a positive coreference relationship.
+   * @param fixedNonRefProbability The probability which resolvers are
+   *                               required to exceed a positive coreference relationship.
    * @throws IOException Thrown if the models can not be read or written to based on the mode.
    */
   public DefaultLinker(String modelDir, LinkerMode mode, boolean useDiscourseModel,
-                       double fixedNonReferentialProbability) throws IOException {
-    super(modelDir, mode, useDiscourseModel);
+                       double fixedNonRefProbability) throws IOException {
+    this(modelDir, mode, null, null, null, useDiscourseModel, fixedNonRefProbability);
     if (mode != LinkerMode.SIM) {
       mcm = new MaxentCompatibilityModel(corefProject, mode);
     }
+  }
+
+  /**
+   * Instantiates a {@link DefaultLinker} with the specified model directory,
+   * running in the specified {@link LinkerMode mode} which uses a discourse model
+   * based on the specified parameter and uses the specified fixed non-referential probability.
+   *
+   * @param modelDir The directory in which the coref model files are located.
+   * @param mode The {@link LinkerMode mode} that this linker is running in.
+   * @param simModel The {@link SimilarityModel similarity model} to use.
+   * @param genModel The {@link GenderModel gender model} to use.
+   * @param numModel The {@link NumberModel number model} to use.
+   * @param useDiscourseModel Whether the model should use a discourse model or not.
+   * @param fixedNonRefProbability The probability which resolvers are
+   *                               required to exceed a positive coreference relationship.
+   * @throws IOException Thrown if the models can not be read or written to based on the mode.
+   */
+  public DefaultLinker(String modelDir, LinkerMode mode, SimilarityModel simModel,
+                       GenderModel genModel, NumberModel numModel,
+                       boolean useDiscourseModel, double fixedNonRefProbability) throws IOException {
+    super(modelDir, mode, useDiscourseModel);
+    this.similarityModel = simModel;
+    this.genderModel = genModel;
+    this.numberModel = numModel;
     initHeadFinder();
     initMentionFinder();
     if (mode != LinkerMode.SIM) {
-      initResolvers(mode, fixedNonReferentialProbability);
+      initResolvers(mode, fixedNonRefProbability);
       entities = new DiscourseEntity[resolvers.length];
     }
   }
@@ -189,11 +219,19 @@ public class DefaultLinker extends AbstractLinker {
 
   @Override
   protected Gender computeGender(MentionContext mention) {
-    return mcm.computeGender(mention);
+    if (genderModel != null) {
+      return genderModel.computeGender(mention);
+    } else {
+      return mcm.computeGender(mention);
+    }
   }
 
   @Override
   protected Number computeNumber(MentionContext mention) {
-    return mcm.computeNumber(mention);
+    if (numberModel != null) {
+      return numberModel.computeNumber(mention);
+    } else {
+      return mcm.computeNumber(mention);
+    }
   }
 }

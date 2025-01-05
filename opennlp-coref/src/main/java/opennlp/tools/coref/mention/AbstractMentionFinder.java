@@ -162,7 +162,7 @@ public abstract class AbstractMentionFinder implements MentionFinder {
           if (ti - 1 >= 0 && (npTokens.get(ti - 1)).getSyntacticType().startsWith("NN")) {
             Span npSpan = new Span((npTokens.get(ti + 1)).getSpan().getStart(),
                 npTokens.get(lastNpTokenIndex).getSpan().getEnd());
-            Mention snpExtent = new Mention(npSpan, npSpan, tok.getEntityId(), null,"CNP");
+            Mention snpExtent = new Mention(npSpan, npSpan, tok.getEntityId(), tok, "CNP");
             entities.add(snpExtent);
             logger.debug("Adding extent for conjunction in: {} preceded by {}",
                     np, npTokens.get(ti-1).getSyntacticType());
@@ -178,7 +178,7 @@ public abstract class AbstractMentionFinder implements MentionFinder {
         if (lastNpTokenIndex != ti) {
           Span npSpan = new Span((npTokens.get(ti + 1)).getSpan().getStart(),
               npTokens.get(lastNpTokenIndex).getSpan().getEnd());
-          Mention snpExtent = new Mention(npSpan, npSpan, tok.getEntityId(), null,"CNP");
+          Mention snpExtent = new Mention(npSpan, npSpan, tok.getEntityId(), tok ,"CNP");
           entities.add(snpExtent);
           logger.debug("Adding extent for comma in: {}", np);
         }
@@ -187,7 +187,7 @@ public abstract class AbstractMentionFinder implements MentionFinder {
       else if (inCoordinatedNounPhrase && ti == 0 && lastNpTokenIndex >= 0) {
         Span npSpan = new Span((npTokens.get(ti)).getSpan().getStart(),
             npTokens.get(lastNpTokenIndex).getSpan().getEnd());
-        Mention snpExtent = new Mention(npSpan, npSpan, tok.getEntityId(), null,"CNP");
+        Mention snpExtent = new Mention(npSpan, npSpan, tok.getEntityId(), tok, "CNP");
         entities.add(snpExtent);
         logger.debug("Adding extent for start coord in: {}", np);
       }
@@ -226,7 +226,7 @@ public abstract class AbstractMentionFinder implements MentionFinder {
         }
         if (tok.getSyntacticType().startsWith("PRP") && handledPronoun(tok.toString())) {
           Mention ppExtent = new Mention(tok.getSpan(), tok.getSpan(),
-              tok.getEntityId(), null,Linker.PRONOUN_MODIFIER);
+              tok.getEntityId(), tok, Linker.PRONOUN_MODIFIER);
           logger.debug("CollectPossessivePronouns: adding possessive pronoun: {} {}", tok, tok.getEntityId());
           entities.add(ppExtent);
           logger.debug("Adding pos-pro: {}", ppExtent);
@@ -271,22 +271,18 @@ public abstract class AbstractMentionFinder implements MentionFinder {
   private Mention[] collectMentions(List<Parse> nps, Map<Parse, Parse> headMap) {
     List<Mention> mentions = new ArrayList<>(nps.size());
     Set<Parse> recentMentions = new HashSet<>();
-    logger.debug("CollectMentions: {}", headMap);
     for (Parse np : nps) {
       logger.debug("CollectMentions: {} head={}", np, headMap.get(np));
       if (!isHeadOfExistingMention(np, headMap, recentMentions)) {
         clearMentions(recentMentions, np);
         if (!isPartOfName(np)) {
           Parse head = headFinder.getLastHead(np);
-          Mention extent = new Mention(np.getSpan(), head.getSpan(), head.getEntityId(), np, null);
+          // determine name-entity type
+          String nameType = headFinder.getHeadToken(head).getSyntacticType();
+          Mention extent = new Mention(np.getSpan(), head.getSpan(), head.getEntityId(), np, null, nameType);
           logger.debug("Adding {} with head {}", np, head);
           mentions.add(extent);
           recentMentions.add(np);
-          // determine name-entity type
-          String entityType = getEntityType(headFinder.getHeadToken(head));
-          if (entityType != null) {
-            extent.setNameType(entityType);
-          }
         } else {
           logger.debug("CollectMentions excluding np as part of name. np={}", np);
         }
@@ -318,14 +314,14 @@ public abstract class AbstractMentionFinder implements MentionFinder {
     for (Parse ne : nes) {
       if (!ne.getSpan().contains(headTokenSpan)) {
         logger.debug("Adding extent for prenominal ne: {}", ne);
-        Mention extent = new Mention(ne.getSpan(), ne.getSpan(), ne.getEntityId(), null, "NAME");
-        extent.setNameType(ne.getEntityType());
+        Mention extent = new Mention(ne.getSpan(), ne.getSpan(), ne.getEntityId(),
+                null, "NAME", ne.getEntityType());
         extents.add(extent);
       }
     }
   }
 
-  private String getEntityType(Parse headToken) {
+  String getEntityType(Parse headToken) {
     String entityType;
     for (Parse parent = headToken.getParent(); parent != null; parent = parent.getParent()) {
       entityType = parent.getEntityType();

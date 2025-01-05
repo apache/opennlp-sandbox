@@ -48,16 +48,13 @@ public class ShallowParseCorefEnhancerStream extends FilterObjectStream<RawCoref
     if (sample != null) {
       
       List<Parse> enhancedParses = new ArrayList<>();
-      
       List<String[]> sentences = sample.getTexts();
-      
       for (String[] sentence : sentences) {
         
         Parse p = FullParseCorefEnhancerStream.createIncompleteParse(sentence);
         p.setType(AbstractBottomUpParser.TOP_NODE);
-        
         Parse[] parseTokens = p.getChildren();
-        
+
         // construct incomplete parse here ..
         String[] tags = posTagger.tag(sentence);
         
@@ -74,12 +71,10 @@ public class ShallowParseCorefEnhancerStream extends FilterObjectStream<RawCoref
             p.insert(new Parse(p.getText(), new Span(0,0), chunk.getType(), 1d, p.getHeadIndex()));
           }
         }
-        
         enhancedParses.add(p);
       }
       
       sample.setParses(enhancedParses);      
-      
       return sample;
     }
     else {

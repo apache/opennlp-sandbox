@@ -57,11 +57,7 @@ public class Mention implements Comparable<Mention> {
   protected String nameType;
 
   public Mention(Span span, Span headSpan, int entityId, Parse parse, String extentType) {
-    this.span = span;
-    this.headSpan = headSpan;
-    this.id = entityId;
-    this.type = extentType;
-    this.parse = parse;
+    this(span, headSpan, entityId, parse, extentType, null);
   }
 
   public Mention(Span span, Span headSpan, int entityId, Parse parse, String extentType, String nameType) {
@@ -74,43 +70,33 @@ public class Mention implements Comparable<Mention> {
   }
 
   public Mention(Mention mention) {
-    this(mention.span,mention.headSpan,mention.id,mention.parse,mention.type,mention.nameType);
+    this(mention.span, mention.headSpan, mention.id, mention.parse, mention.type, mention.nameType);
   }
 
   /**
-   * Returns the character offsets for this extent.
-   * 
-   * @return The span representing the character offsets of this extent.
+   * @return The {@link Span} representing the character offsets of this extent.
    */
   public Span getSpan() {
     return span;
   }
 
   /**
-   * Returns the character offsets for the head of this extent.
-   * 
-   * @return The span representing the character offsets for the head of this extent.
+   * @return The {@link Span} representing the character offsets for the head of this extent.
    */
   public Span getHeadSpan() {
     return headSpan;
   }
 
   /**
-   * Returns the parse node that this extent is based on.
-   * 
-   * @return The parse node that this extent is based on or null if the extent is newly created.
+   * @return The {@link Parse} node that this extent is based on or {@code null}
+   * if the extent is newly created.
    */
   public Parse getParse() {
     return parse;
   }
 
-  @Override
-  public int compareTo(Mention e) {
-    return span.compareTo(e.span);
-  }
-
   /**
-   * Specifies the parse for this mention.
+   * Specifies the {@link Parse} for a mention.
    * @param parse The parse for this mention.
    */
   public void setParse(Parse parse) {
@@ -118,23 +104,12 @@ public class Mention implements Comparable<Mention> {
   }
 
   /**
-   * Returns the named-entity category associated with this mention.
-   * 
-   * @return the named-entity category associated with this mention.
+   * @return Retrieves the named-entity category associated with this mention.
    */
   public String getNameType() {
     return nameType;
   }
-
-  /**
-   * Specifies the named-entity category associated with this mention.
-   * 
-   * @param nameType the named-entity category associated with this mention.
-   */
-  protected void setNameType(String nameType) {
-    this.nameType = nameType;
-  }
-
+  
   /**
    * Associates an id with this mention.
    * 
@@ -145,12 +120,16 @@ public class Mention implements Comparable<Mention> {
   }
 
   /**
-   * Returns the id associated with this mention.
-   * 
-   * @return the id associated with this mention.
+   * @return Retrieves the id associated with this mention.
    */
   public int getId() {
     return id;
+  }
+
+
+  @Override
+  public int compareTo(Mention e) {
+    return span.compareTo(e.span);
   }
 
   @Override

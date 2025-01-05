@@ -22,7 +22,6 @@ import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -39,7 +38,6 @@ import java.util.zip.GZIPInputStream;
 import opennlp.tools.coref.DiscourseEntity;
 import opennlp.tools.coref.DiscourseModel;
 import opennlp.tools.coref.mention.MentionContext;
-import opennlp.tools.coref.mention.PTBHeadFinder;
 import opennlp.tools.coref.sim.TestSimilarityModel;
 import opennlp.tools.ml.maxent.GISModel;
 import opennlp.tools.ml.maxent.GISTrainer;
@@ -98,7 +96,7 @@ public abstract class MaxentResolver extends AbstractResolver {
   protected boolean useSameModelForNonRef;
 
   private static TestSimilarityModel simModel = null;
-  
+
   /** The model for computing non-referential probabilities. */
   protected NonReferentialResolver nonReferentialResolver;
 
@@ -379,6 +377,7 @@ public abstract class MaxentResolver extends AbstractResolver {
     }
   }
 
+  @Deprecated
   public static void setSimilarityModel(TestSimilarityModel sm) {
     simModel = sm;
   }

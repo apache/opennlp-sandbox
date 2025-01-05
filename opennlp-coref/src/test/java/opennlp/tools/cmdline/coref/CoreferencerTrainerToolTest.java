@@ -17,21 +17,41 @@
 
 package opennlp.tools.cmdline.coref;
 
-import opennlp.tools.cmdline.AbstractConverterTool;
-import opennlp.tools.coref.CorefSample;
 import opennlp.tools.coref.CorefSampleStreamFactory;
-import opennlp.tools.postag.POSSample;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-/**
- * Tool to convert multiple data formats into native OpenNLP Coref training format.
- *
- * @see AbstractConverterTool
- * @see CorefSample
- * @see CorefSampleStreamFactory
- */
-public class CoreferenceConverterTool extends AbstractConverterTool<CorefSample, CorefSampleStreamFactory.Parameters>  {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-  public CoreferenceConverterTool() {
-    super(CorefSample.class);
+public class CoreferencerTrainerToolTest {
+
+  private CoreferencerTrainerTool tool;
+
+  @BeforeAll
+  public static void initEnv() {
+    CorefSampleStreamFactory.registerFactory();
+  }
+
+  @BeforeEach
+  void setUp() {
+    tool = new CoreferencerTrainerTool();
+  }
+
+  @Test
+  void testGetName() {
+    assertEquals("CoreferencerTrainer", tool.getName());
+  }
+
+  @Test
+  void testGetShortDescription() {
+    assertEquals("Trainer for a Learnable Noun Phrase Coreferencer",
+            tool.getShortDescription());
+  }
+
+  @Test
+  void testGetHelp() {
+    assertTrue(tool.getHelp().startsWith("Usage: opennlp CoreferencerTrainer"));
   }
 }
