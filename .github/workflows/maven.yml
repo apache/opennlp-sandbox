@@ -36,7 +36,7 @@ jobs:
         java: [ 21 ]
         experimental: [false]
         include:
-          - java: 23-ea
+          - java: 24-ea
             os: ubuntu-latest
             experimental: true
 
