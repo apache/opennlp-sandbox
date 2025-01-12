@@ -140,12 +140,16 @@ public class FeaturesExtractor {
    * qualified for "Surrounding words".
    * 
    * @param trainingData A list of the training samples (type {@link WTDIMS}.
+   *                     Must not be {@code null}.
+   *
    * @return A list of all the surrounding words for the {@code trainingData}.
+   * @throws IllegalArgumentException Thrown if parameters were invalid.
    */
   public List<String> extractTrainingSurroundingWords(List<WTDIMS> trainingData) {
-
+    if (trainingData == null) {
+      throw new IllegalArgumentException("TrainingData must not be null!");
+    }
     Map<String, Object> words = new HashMap<>();
-
     for (WTDIMS word : trainingData) {
       for (String sWord : word.getSurroundingWords()) {
         if (!words.containsKey(sWord.toLowerCase()))
@@ -162,17 +166,20 @@ public class FeaturesExtractor {
    * approach and puts them in the corresponding attributes of
    * the {@link WTDIMS word to disambiguate} object.
    * 
-   * @param wtd The {@link WTDIMS word to disambiguate}.
+   * @param wtd The {@link WTDIMS word to disambiguate}. Must not be {@code null}.
    * @param windowSize The parameter required to generate the features qualified of
-   *                   "PoS of Surrounding Words".
+   *                   "PoS of Surrounding Words". Must be greater or equal to {@code 1}
    * @param ngram The parameter required to generate the features qualified of
-   *              "Local Collocations".
+   *              "Local Collocations". Must be greater or equal to {@code 1}.
    *
    * @throws IllegalArgumentException Thrown if parameters were invalid.
    */
   public void extractIMSFeatures(WTDIMS wtd, int windowSize, int ngram) {
     if (wtd == null) {
-      throw new IllegalArgumentException("WTD must not be null");
+      throw new IllegalArgumentException("Parameter wtd must not be null!");
+    }
+    if (windowSize < 1 || ngram < 1) {
+      throw new IllegalArgumentException("Parameter windowSize or ngram must be at least 1!");
     }
     wtd.setPosOfSurroundingWords(extractPosOfSurroundingWords(wtd, windowSize));
     wtd.setSurroundingWords(extractSurroundingWords(wtd));
@@ -186,14 +193,15 @@ public class FeaturesExtractor {
    * wrapped in the {@link WTDIMS word to disambiguate}.
    * Therefore, it doesn't require any parameters.
    *
-   * @param wtd The {@link WTDIMS word to disambiguate}.
+   * @param wtd The {@link WTDIMS word to disambiguate}. Must not be {@code null}.
    * @param listSurrWords The full list of surrounding words of the training data.
+   *                      Must not be {@code null}.
    *
    * @throws IllegalArgumentException Thrown if parameters were invalid.
    */
   public void serializeIMSFeatures(WTDIMS wtd, List<String> listSurrWords) {
-    if (wtd == null) {
-      throw new IllegalArgumentException("WTD must not be null");
+    if (wtd == null || listSurrWords == null) {
+      throw new IllegalArgumentException("Parameters must not be null!");
     }
     String[] posOfSurroundingWords = wtd.getPosOfSurroundingWords();
     List<String> surroundingWords = new ArrayList<>(

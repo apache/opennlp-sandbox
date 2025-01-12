@@ -71,16 +71,6 @@ public class Lesk extends AbstractWSDisambiguator {
   private static final Tokenizer tokenizer = WSDHelper.getTokenizer();
 
   /**
-   * Instantiates a {@link Lesk} instance without explicit parameters,
-   * resulting in a set of default being activated.
-   *
-   * @see LeskParameters
-   */
-  public Lesk() {
-    this(null);
-  }
-
-  /**
    * Instantiates a {@link Lesk} instance and sets the input parameters.
    *
    * @param params If the {@link LeskParameters} are {@code null}, set the default ones,
@@ -88,7 +78,8 @@ public class Lesk extends AbstractWSDisambiguator {
    * @throws IllegalArgumentException Thrown if specified parameters are invalid.
    */
   public Lesk(LeskParameters params) {
-    this.setParams(params);
+    super(params);
+    setParams(params);
   }
 
   /**
@@ -97,7 +88,6 @@ public class Lesk extends AbstractWSDisambiguator {
    *
    * @throws IllegalArgumentException Thrown if specified parameters are invalid.
    */
-  @Override
   public void setParams(WSDParameters params) {
     if (params == null) {
       this.params = new LeskParameters();
@@ -778,16 +768,10 @@ public class Lesk extends AbstractWSDisambiguator {
    * {@inheritDoc}
    */
   @Override
-  public String disambiguate(String[] tokenizedContext, String[] tokenTags,
-                             String[] lemmas, int ambiguousTokenIndex) {
-    return disambiguate(new WSDSample(tokenizedContext, tokenTags, lemmas, ambiguousTokenIndex));
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
   public String disambiguate(WSDSample sample) {
+    if (sample == null) {
+      throw new IllegalArgumentException("WSDSample object must not be null!");
+    }
     if (!WSDHelper.isRelevantPOSTag(sample.getTargetTag())) {
       if (WSDHelper.getNonRelevWordsDef(sample.getTargetTag()) != null) {
         return WSDParameters.SenseSource.WSDHELPER.name() + " " + sample.getTargetTag();

@@ -43,7 +43,9 @@ public interface Disambiguator {
    * Conducts disambiguation for a {@link WSDSample} context.
    *
    * @param sample    The {@link WSDSample} containing the word and POS tags to use.
+   *
    * @return The sense of the {@code sample} to disambiguate.
+   * @throws IllegalArgumentException Thrown if parameters were invalid.
    */
   String disambiguate(WSDSample sample);
   
@@ -51,11 +53,16 @@ public interface Disambiguator {
    * Conducts disambiguation for a single word located at {@code ambiguousTokenIndex}.
    *
    * @param tokenizedContext    The text containing the word to disambiguate.
+   *                            Must not be {@code null}.
    * @param tokenTags           The tags corresponding to the context.
+   *                            Must not be {@code null}.
    * @param lemmas              The lemmas of ALL the words in the context.
+   *                            Must not be {@code null}.
    * @param ambiguousTokenIndex The index of the word to disambiguate.
    *                            Must not be less or equal to zero.
+   *
    * @return The sense of the word to disambiguate.
+   * @throws IllegalArgumentException Thrown if parameters were invalid.
    */
   String disambiguate(String[] tokenizedContext, String[] tokenTags,
                       String[] lemmas, int ambiguousTokenIndex);
@@ -64,12 +71,17 @@ public interface Disambiguator {
    * Conducts disambiguation for all word located at {@code ambiguousTokenSpan}.
    *
    * @param tokenizedContext    The text containing the word to disambiguate.
+   *                            Must not be {@code null}.
    * @param tokenTags           The tags corresponding to the context.
+   *                            Must not be {@code null}.
    * @param lemmas              The lemmas of ALL the words in the context.
+   *                            Must not be {@code null}.
    * @param ambiguousTokenSpan  The {@link Span} of the word(s) to disambiguate.
    *                            Must not be {@code null}.
+   *                            
    * @return A List of senses, each corresponding to the senses of each word of
    *         the context which are to be disambiguated.
+   * @throws IllegalArgumentException Thrown if parameters were invalid.
    */
   List<String> disambiguate(String[] tokenizedContext, String[] tokenTags,
                             String[] lemmas, Span ambiguousTokenSpan);
@@ -78,10 +90,15 @@ public interface Disambiguator {
    * Conducts disambiguation for all the words of the {@code tokenizedContext}.
    *
    * @param tokenizedContext    The text containing the word to disambiguate.
+   *                            Must not be {@code null}.
    * @param tokenTags           The tags corresponding to the context.
+   *                            Must not be {@code null}.
    * @param lemmas              The lemmas of ALL the words in the context.
+   *                            Must not be {@code null}.
+   *
    * @return A List of senses, each corresponding to the senses of each word of
    *         the context which are to be disambiguated.
+   * @throws IllegalArgumentException Thrown if parameters were invalid.
    */
   List<String> disambiguate(String[] tokenizedContext, String[] tokenTags,
                             String[] lemmas);
