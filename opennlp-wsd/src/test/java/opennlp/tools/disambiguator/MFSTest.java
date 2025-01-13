@@ -29,6 +29,7 @@ import opennlp.tools.util.Span;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -48,7 +49,7 @@ class MFSTest extends AbstractDisambiguatorTest {
    */
   @BeforeAll
   static void setUpAndTraining() {
-    mfs = new MFS();
+    mfs = new MFS(WSDDefaultParameters.defaultParams());
   }
 
   /*
@@ -92,6 +93,11 @@ class MFSTest extends AbstractDisambiguatorTest {
     assertEquals("WSDHELPER personal pronoun", sensePosSix, "Check preposition");
   }
 
+  @Test
+  void testDisambiguateInvalid() {
+    assertThrows(IllegalArgumentException.class, () -> mfs.disambiguate((WSDSample) null));
+  }
+  
   @Test
   void testGetMostFrequentSense() throws InvalidFormatException {
     WSDSample sample = WSDSample.parse("1 The_DT day_NN has_VBZ just_RB started_VBN ._.");

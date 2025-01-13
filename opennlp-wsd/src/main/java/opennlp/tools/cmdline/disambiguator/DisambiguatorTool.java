@@ -34,6 +34,7 @@ import opennlp.tools.cmdline.SystemInputStreamFactory;
 import opennlp.tools.cmdline.TerminateToolException;
 import opennlp.tools.disambiguator.Disambiguator;
 import opennlp.tools.disambiguator.Lesk;
+import opennlp.tools.disambiguator.LeskParameters;
 import opennlp.tools.disambiguator.WSDDefaultParameters;
 import opennlp.tools.disambiguator.WSDHelper;
 import opennlp.tools.disambiguator.WSDSample;
@@ -103,9 +104,9 @@ public class DisambiguatorTool extends CmdLineTool {
     Disambiguator wsd = null;
 
     if (params.getType().equalsIgnoreCase("mfs")) {
-      wsd = new MFS();
+      wsd = new MFS(WSDDefaultParameters.defaultParams());
     } else if (params.getType().equalsIgnoreCase("lesk")) {
-      wsd = new Lesk();
+      wsd = new Lesk(new LeskParameters());
     } else if (params.getType().equalsIgnoreCase("ims")) {
       // TODO Set a "default" model for ENG -> future!?
       wsd = new WSDisambiguatorME(null, WSDDefaultParameters.defaultParams());

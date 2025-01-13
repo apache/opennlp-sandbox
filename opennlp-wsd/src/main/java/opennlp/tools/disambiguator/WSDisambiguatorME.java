@@ -55,10 +55,10 @@ public class WSDisambiguatorME extends AbstractWSDisambiguator {
    * @throws IllegalArgumentException Thrown if specified parameters are invalid.
    */
   public WSDisambiguatorME(WSDModel model, WSDParameters params) {
+    super(params);
     if (model == null || params == null) {
       throw new IllegalArgumentException("Parameters cannot be null!");
     }
-    super.params = params;
     this.model = model;
     WSDisambiguatorFactory factory = model.getWSDFactory();
     cg = factory.getContextGenerator();
@@ -132,22 +132,16 @@ public class WSDisambiguatorME extends AbstractWSDisambiguator {
     samples.reset();
     return surroundingWordsModel;
   }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public String disambiguate(String[] tokenizedContext, String[] tokenTags,
-                             String[] lemmas, int index) {
-    return disambiguate(new WSDSample(tokenizedContext, tokenTags, lemmas, index));
-  }
   
   /**
    * {@inheritDoc}
    */
   @Override
   public String disambiguate(WSDSample sample) {
-    final WSDDefaultParameters defParams = ((WSDDefaultParameters) params);
+    if (sample == null) {
+      throw new IllegalArgumentException("WSDSample object must not be null!");
+    }
+    final WSDDefaultParameters defParams = ((WSDDefaultParameters) getParams());
     final int wSize = defParams.getIntParameter(
             WSDDefaultParameters.WINDOW_SIZE_PARAM, WSDDefaultParameters.WINDOW_SIZE_DEFAULT);
     final int ngram = defParams.getIntParameter(
@@ -163,7 +157,7 @@ public class WSDisambiguatorME extends AbstractWSDisambiguator {
         String outcome = model.getWSDMaxentModel().getBestOutcome(outcomeProbs);
 
         if (outcome != null && !outcome.isEmpty()) {
-          return params.getSenseSource().name() + " " + wordTag.split("\\.")[0] + "%" + outcome;
+          return getParams().getSenseSource().name() + " " + wordTag.split("\\.")[0] + "%" + outcome;
         } else {
           return disambiguate(wordTag);
         }

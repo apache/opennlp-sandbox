@@ -19,7 +19,6 @@
 
 package opennlp.tools.disambiguator;
 
-import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -28,9 +27,10 @@ import net.sf.extjwnl.JWNLException;
 import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.data.Synset;
 import net.sf.extjwnl.data.Word;
-import opennlp.tools.util.Span;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import opennlp.tools.util.Span;
 
 /**
  * A base implementation of {@link Disambiguator}.
@@ -50,7 +50,11 @@ abstract class AbstractWSDisambiguator implements Disambiguator {
 
   private static final Pattern SPLIT = Pattern.compile("\\.");
 
-  protected WSDParameters params;
+  private final WSDParameters params;
+
+  protected AbstractWSDisambiguator(WSDParameters params) {
+    this.params = params;
+  }
 
   /**
    * @return Retrieves the parameters of the disambiguation algorithm.
@@ -60,20 +64,17 @@ abstract class AbstractWSDisambiguator implements Disambiguator {
   }
 
   /**
-   * @param params Sets the disambiguation implementation specific parameters.
-   *
-   * @throws InvalidParameterException Thrown if specified parameters are invalid.
-   */
-  public void setParams(WSDParameters params) throws InvalidParameterException {
-    this.params = params;
-  }
-
-  /**
    * {@inheritDoc}
    */
   @Override
   public String disambiguate(String[] tokenizedContext, String[] tokenTags,
                              String[] lemmas, int ambiguousTokenIndex) {
+    if (tokenizedContext == null || tokenTags == null || lemmas == null) {
+      throw new IllegalArgumentException("Parameters must not be null!");
+    }
+    if (ambiguousTokenIndex < 0) {
+      throw new IllegalArgumentException("Parameter ambiguousTokenIndex must not be negative!");
+    }
     return disambiguate(new WSDSample(tokenizedContext, tokenTags, lemmas, ambiguousTokenIndex));
   }
 
@@ -83,6 +84,10 @@ abstract class AbstractWSDisambiguator implements Disambiguator {
   @Override
   public List<String> disambiguate(String[] tokenizedContext, String[] tokenTags,
                                    String[] lemmas, Span ambiguousTokenIndexSpan) {
+    if (tokenizedContext == null || tokenTags == null || lemmas == null
+            || ambiguousTokenIndexSpan == null) {
+      throw new IllegalArgumentException("Parameters must not be null!");
+    }
     List<String> senses = new ArrayList<>();
 
     int start = Math.max(0, ambiguousTokenIndexSpan.getStart());
@@ -113,7 +118,9 @@ abstract class AbstractWSDisambiguator implements Disambiguator {
   @Override
   public List<String> disambiguate(String[] tokenizedContext, String[] tokenTags,
                                    String[] lemmas) {
-
+    if (tokenizedContext == null || tokenTags == null || lemmas == null) {
+      throw new IllegalArgumentException("Parameters must not be null!");
+    }
     List<String> senses = new ArrayList<>();
     for (int i = 0; i < tokenizedContext.length; i++) {
 

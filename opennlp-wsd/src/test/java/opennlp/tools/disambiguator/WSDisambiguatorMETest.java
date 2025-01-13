@@ -37,6 +37,7 @@ import opennlp.tools.util.TrainingParameters;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -139,4 +140,66 @@ class WSDisambiguatorMETest extends AbstractDisambiguatorTest {
     assertEquals("WSDHELPER personal pronoun", sensePosSix, "Check preposition");
   }
 
+  @Test
+  void testDisambiguateInvalid01() {
+    assertThrows(IllegalArgumentException.class, () -> wsdME.disambiguate((WSDSample) null));
+  }
+
+  @Test
+  void testDisambiguateInvalid02() {
+    assertThrows(IllegalArgumentException.class, () -> wsdME.disambiguate(null, tags1, lemmas1));
+  }
+
+  @Test
+  void testDisambiguateInvalid03() {
+    assertThrows(IllegalArgumentException.class, () -> wsdME.disambiguate(sentence1, null, lemmas1));
+  }
+
+  @Test
+  void testDisambiguateInvalid04() {
+    assertThrows(IllegalArgumentException.class, () -> wsdME.disambiguate(sentence1, tags1, null));
+  }
+
+  @Test
+  void testDisambiguateInvalid05() {
+    assertThrows(IllegalArgumentException.class, () -> wsdME.disambiguate(null, tags1, lemmas1, 1));
+  }
+
+  @Test
+  void testDisambiguateInvalid06() {
+    assertThrows(IllegalArgumentException.class, () -> wsdME.disambiguate(sentence1, null, lemmas1, 1));
+  }
+
+  @Test
+  void testDisambiguateInvalid07() {
+    assertThrows(IllegalArgumentException.class, () -> wsdME.disambiguate(sentence1, tags1, null, 1));
+  }
+
+  @Test
+  void testDisambiguateInvalid08() {
+    assertThrows(IllegalArgumentException.class, () -> wsdME.disambiguate(sentence1, tags1, lemmas1, -1));
+  }
+
+  @Test
+  void testDisambiguateInvalid09() {
+    Span span = new Span(3, 7);
+    assertThrows(IllegalArgumentException.class, () -> wsdME.disambiguate(null, tags2, lemmas2, span));
+  }
+
+  @Test
+  void testDisambiguateInvalid10() {
+    Span span = new Span(3, 7);
+    assertThrows(IllegalArgumentException.class, () -> wsdME.disambiguate(sentence2, null, lemmas2, span));
+  }
+
+  @Test
+  void testDisambiguateInvalid11() {
+    Span span = new Span(3, 7);
+    assertThrows(IllegalArgumentException.class, () -> wsdME.disambiguate(sentence2, tags2, null, span));
+  }
+
+  @Test
+  void testDisambiguateInvalid12() {
+    assertThrows(IllegalArgumentException.class, () -> wsdME.disambiguate(sentence2, tags2, lemmas2, null));
+  }
 }

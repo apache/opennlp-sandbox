@@ -42,6 +42,10 @@ public class MFS extends AbstractWSDisambiguator {
 
   public static final String NONESENSE = "nonesense";
 
+  public MFS(WSDParameters params) {
+    super(params);
+  }
+
   /**
    * Extracts the most frequent sense for a specified {@link WSDSample}.
    *
@@ -101,6 +105,9 @@ public class MFS extends AbstractWSDisambiguator {
    */
   @Override
   public String disambiguate(WSDSample sample) {
+    if (sample == null) {
+      throw new IllegalArgumentException("WSDSample object must not be null!");
+    }
     String targetTag = sample.getTargetTag();
     if (WSDHelper.isRelevantPOSTag(targetTag)) {
       return disambiguate(sample.getTargetWordTag());

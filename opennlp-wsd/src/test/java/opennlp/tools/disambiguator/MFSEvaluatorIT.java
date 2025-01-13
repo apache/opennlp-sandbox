@@ -44,7 +44,7 @@ class MFSEvaluatorIT extends AbstractEvaluatorTest {
 
   @BeforeEach
   public void setup() {
-    mfs = new MFS();
+    mfs = new MFS(WSDDefaultParameters.defaultParams());
   }
 
   @Test

@@ -19,19 +19,21 @@
 
 package opennlp.tools.disambiguator;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import opennlp.tools.disambiguator.LeskParameters.LeskType;
-import opennlp.tools.util.Span;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+
+import opennlp.tools.disambiguator.LeskParameters.LeskType;
+import opennlp.tools.util.Span;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * This is the test class for {@link Lesk}.
@@ -56,10 +58,9 @@ class LeskTest extends AbstractDisambiguatorTest {
    */
   @BeforeAll
   static void initEnv() {
-    lesk = new Lesk();
     params = new LeskParameters();
     params.setFeatures(FEATURES);
-    lesk.setParams(params);
+    lesk = new Lesk(params);
   }
 
   @BeforeEach
@@ -110,4 +111,8 @@ class LeskTest extends AbstractDisambiguatorTest {
     assertEquals("WSDHELPER personal pronoun", sensePosSix, "Check preposition");
   }
 
+  @Test
+  void testDisambiguateInvalid() {
+    assertThrows(IllegalArgumentException.class, () -> lesk.disambiguate((WSDSample) null));
+  }
 }

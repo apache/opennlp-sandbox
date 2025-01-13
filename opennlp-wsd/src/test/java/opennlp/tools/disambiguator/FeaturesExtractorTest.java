@@ -26,6 +26,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class FeaturesExtractorTest extends AbstractDisambiguatorTest {
 
@@ -58,6 +59,24 @@ public class FeaturesExtractorTest extends AbstractDisambiguatorTest {
   }
 
   @Test
+  void testExtractFeaturesInvalid1() {
+    assertThrows(IllegalArgumentException.class,
+            () -> extractor.extractIMSFeatures(null, 3, 2));
+  }
+
+  @Test
+  void testExtractFeaturesInvalid2() {
+    assertThrows(IllegalArgumentException.class,
+            () -> extractor.extractIMSFeatures(wtdims, 0, 2));
+  }
+
+  @Test
+  void testExtractFeaturesInvalid3() {
+    assertThrows(IllegalArgumentException.class,
+            () -> extractor.extractIMSFeatures(wtdims, 3, 0));
+  }
+
+  @Test
   void testSerializeFeatures() {
     // prepare
     extractor.extractIMSFeatures(wtdims, 3, 2);
@@ -69,6 +88,25 @@ public class FeaturesExtractorTest extends AbstractDisambiguatorTest {
   }
 
   @Test
+  void testSerializeFeaturesInvalid1() {
+    // prepare
+    extractor.extractIMSFeatures(wtdims, 3, 2);
+    // test
+    assertThrows(IllegalArgumentException.class,
+            () -> extractor.serializeIMSFeatures(
+                    null, extractor.extractTrainingSurroundingWords(List.of(wtdims))));
+  }
+
+  @Test
+  void testSerializeFeaturesInvalid2() {
+    // prepare
+    extractor.extractIMSFeatures(wtdims, 3, 2);
+    // test
+    assertThrows(IllegalArgumentException.class,
+            () -> extractor.serializeIMSFeatures(wtdims, null));
+  }
+
+  @Test
   void testExtractTrainingSurroundingWords() {
     // prepare
     extractor.extractIMSFeatures(wtdims, 3, 2);
@@ -76,5 +114,11 @@ public class FeaturesExtractorTest extends AbstractDisambiguatorTest {
     List<String> surroundingWords = extractor.extractTrainingSurroundingWords(List.of(wtdims));
     assertNotNull(surroundingWords);
     assertEquals(4, surroundingWords.size());
+  }
+
+  @Test
+  void testExtractTrainingSurroundingWordsInvalid1() {
+    assertThrows(IllegalArgumentException.class,
+            () -> extractor.extractTrainingSurroundingWords(null));
   }
 }
