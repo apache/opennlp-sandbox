@@ -22,6 +22,15 @@ updates:
       interval: weekly
       time: '04:00'
     open-pull-requests-limit: 10
+    ignore:
+        # Update strategy for secondary project components (sandbox & addons)
+        # ------------------------------------------------------------------
+        # The components' version should be aligned with primary components around 'opennlp-tools',
+        # that is, the SNAPSHOT version should match the current in-development version.
+        # Consequently, the opennlp-tools dependency can't be updated via dependabot and
+        # is thus excluded / ignored here, as additional (manual) steps are required.
+      - dependency-name: "org.apache.opennlp:opennlp-tools"
+        update-types: [ "version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch" ]
 
   - package-ecosystem: "github-actions"
     directory: "/"
