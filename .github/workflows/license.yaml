@@ -18,7 +18,7 @@ name: CI Master - Regenerate NOTICE
 on:
   push:
     branches:
-      - master
+      - main
   workflow_dispatch:
 
 jobs:
