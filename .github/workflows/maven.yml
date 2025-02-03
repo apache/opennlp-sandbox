@@ -19,11 +19,11 @@ on:
   # Run CI on Pushes to "master"" or on pull requests targeting "master".
   push:
     branches:
-      - master
+      - main
       - 'experimental/**'
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   build:
