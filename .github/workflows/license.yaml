@@ -55,7 +55,7 @@ jobs:
       - name: Create Pull Request after License Regeneration
         uses: peter-evans/create-pull-request@v7
         with:
-          base: master
+          base: main
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "Minor: Regenerated NOTICE File for ${{ github.sha }}"
           committer: GitHub <noreply@github.com>
