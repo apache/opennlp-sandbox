@@ -24,7 +24,7 @@ List of third-party dependencies grouped by their license type.
         * annotations-api (org.apache.tomcat:annotations-api:6.0.53 - http://tomcat.apache.org/)
         * Apache Calcite Avatica (org.apache.calcite.avatica:avatica-core:1.23.0 - https://calcite.apache.org/avatica)
         * Apache Calcite Avatica Metrics (org.apache.calcite.avatica:avatica-metrics:1.23.0 - https://calcite.apache.org/avatica)
-        * Apache Commons BeanUtils (commons-beanutils:commons-beanutils:1.10.0 - https://commons.apache.org/proper/commons-beanutils)
+        * Apache Commons BeanUtils (commons-beanutils:commons-beanutils:1.10.1 - https://commons.apache.org/proper/commons-beanutils)
         * Apache Commons CLI (commons-cli:commons-cli:1.4 - http://commons.apache.org/proper/commons-cli/)
         * Apache Commons Codec (commons-codec:commons-codec:1.18.0 - https://commons.apache.org/proper/commons-codec/)
         * Apache Commons Collections (commons-collections:commons-collections:3.2.2 - http://commons.apache.org/collections/)
