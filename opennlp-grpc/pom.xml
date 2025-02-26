@@ -41,7 +41,7 @@
         <grpc.version>1.70.0</grpc.version>
         <picocli.version>4.7.6</picocli.version>
         <junit5-system-exit.version>2.0.2</junit5-system-exit.version>
-        <awaitility.version>4.2.2</awaitility.version>
+        <awaitility.version>4.3.0</awaitility.version>
     </properties>
 
 </project>
