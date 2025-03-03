@@ -17,7 +17,6 @@ List of third-party dependencies grouped by their license type.
 
         * HttpClient (commons-httpclient:commons-httpclient:3.0.1 - http://jakarta.apache.org/commons/httpclient/)
         * HttpClient (commons-httpclient:commons-httpclient:3.1 - http://jakarta.apache.org/httpcomponents/httpclient-3.x/)
-        * Log4j Implemented Over SLF4J (org.slf4j:log4j-over-slf4j:2.0.16 - http://www.slf4j.org)
 
     Apache License, Version 2.0
 
@@ -159,6 +158,7 @@ List of third-party dependencies grouped by their license type.
         * libtensorflow_jni (org.tensorflow:libtensorflow_jni:1.15.0 - https://www.tensorflow.org/libtensorflow_jni)
         * libtensorflow (org.tensorflow:libtensorflow:1.15.0 - https://www.tensorflow.org/libtensorflow)
         * Log4j (log4j:log4j:1.2.14 - http://logging.apache.org/log4j/docs/)
+        * Log4j Implemented Over SLF4J (org.slf4j:log4j-over-slf4j:2.0.17 - http://www.slf4j.org)
         * Lucene Classification (org.apache.lucene:lucene-classification:8.11.3 - https://lucene.apache.org/lucene-parent/lucene-classification)
         * Lucene codecs (org.apache.lucene:lucene-codecs:8.11.3 - https://lucene.apache.org/lucene-parent/lucene-codecs)
         * Lucene Common Analyzers (org.apache.lucene:lucene-analyzers-common:4.6.1 - http://lucene.apache.org/lucene-parent/lucene-analyzers-common)
@@ -447,8 +447,8 @@ List of third-party dependencies grouped by their license type.
         * Java SemVer (com.github.zafarkhaja:java-semver:0.9.0 - https://github.com/zafarkhaja/jsemver)
         * jsoup Java HTML Parser (org.jsoup:jsoup:1.18.3 - https://jsoup.org/)
         * mbassador (net.engio:mbassador:1.3.2 - https://github.com/bennidi/mbassador)
-        * SLF4J API Module (org.slf4j:slf4j-api:2.0.16 - http://www.slf4j.org)
-        * SLF4J Simple Provider (org.slf4j:slf4j-simple:2.0.16 - http://www.slf4j.org)
+        * SLF4J API Module (org.slf4j:slf4j-api:2.0.17 - http://www.slf4j.org)
+        * SLF4J Simple Provider (org.slf4j:slf4j-simple:2.0.17 - http://www.slf4j.org)
 
     Mozilla Public License Version 2.0
 
