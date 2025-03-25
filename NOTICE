@@ -49,6 +49,8 @@ List of third-party dependencies grouped by their license type.
         * Apache HttpComponents Core HTTP/1.1 (org.apache.httpcomponents.core5:httpcore5:5.1.3 - https://hc.apache.org/httpcomponents-core-5.1.x/5.1.3/httpcore5/)
         * Apache HttpComponents Core HTTP/2 (org.apache.httpcomponents.core5:httpcore5-h2:5.1.3 - https://hc.apache.org/httpcomponents-core-5.1.x/5.1.3/httpcore5-h2/)
         * Apache HttpCore (org.apache.httpcomponents:httpcore:4.4.16 - http://hc.apache.org/httpcomponents-core-ga)
+        * Apache Log4j API (org.apache.logging.log4j:log4j-api:2.24.3 - https://logging.apache.org/log4j/2.x/log4j/log4j-api/)
+        * Apache Log4j Core (org.apache.logging.log4j:log4j-core:2.24.3 - https://logging.apache.org/log4j/2.x/log4j/log4j-core/)
         * Apache Solr Core (org.apache.solr:solr-core:8.11.3 - https://lucene.apache.org/solr-parent/solr-core)
         * Apache Solr Solrj (org.apache.solr:solr-solrj:8.11.3 - https://lucene.apache.org/solr-parent/solr-solrj)
         * Apache Tika core (org.apache.tika:tika-core:3.0.0 - https://tika.apache.org/)
