@@ -112,7 +112,7 @@ List of third-party dependencies grouped by their license type.
         * Gson (com.google.code.gson:gson:2.8.0 - https://github.com/google/gson/gson)
         * Guava: Google Core Libraries for Java (com.google.guava:guava:32.1.3-jre - https://github.com/google/guava)
         * Guava: Google Core Libraries for Java (com.google.guava:guava:33.3.1-android - https://github.com/google/guava)
-        * Guava: Google Core Libraries for Java (com.google.guava:guava:33.4.5-jre - https://github.com/google/guava)
+        * Guava: Google Core Libraries for Java (com.google.guava:guava:33.4.6-jre - https://github.com/google/guava)
         * guava (org.nd4j:guava:1.0.0-M2.1 - http://deeplearning4j.konduit.ai/nd4j/nd4j-shade/guava/)
         * Guava InternalFutureFailureAccess and InternalFutures (com.google.guava:failureaccess:1.0.1 - https://github.com/google/guava/failureaccess)
         * Guava InternalFutureFailureAccess and InternalFutures (com.google.guava:failureaccess:1.0.2 - https://github.com/google/guava/failureaccess)
