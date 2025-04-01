@@ -47,6 +47,6 @@ with grpc.insecure_channel(server_address) as channel:
         tag_response = stub.Tag(tag_request)
 
         # Output the response
-        print(f"Tag Response: {tag_response.tags}")
+        print(f"Tag Response: {tag_response.values}")
     except grpc.RpcError as e:
         print(f"Tag call failed: {e}")
