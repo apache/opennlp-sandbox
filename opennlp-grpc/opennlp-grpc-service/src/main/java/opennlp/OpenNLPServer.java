@@ -65,7 +65,7 @@ import opennlp.service.TokenizerService;
  * The server includes graceful shutdown handling using a shutdown hook to ensure resources are released
  * when the server is stopped.</p>
  */
-@Command(name = "OpenNLP Server", mixinStandardHelpOptions = true, version = "2.5.4-SNAPSHOT")
+@Command(name = "OpenNLP Server", mixinStandardHelpOptions = true, version = "2.5.5-SNAPSHOT")
 public class OpenNLPServer implements Callable<Integer> {
 
   private static final org.slf4j.Logger logger = LoggerFactory.getLogger(OpenNLPServer.class);
