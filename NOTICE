@@ -27,9 +27,7 @@ List of third-party dependencies grouped by their license type.
         * Apache Commons CLI (commons-cli:commons-cli:1.4 - http://commons.apache.org/proper/commons-cli/)
         * Apache Commons Codec (commons-codec:commons-codec:1.18.0 - https://commons.apache.org/proper/commons-codec/)
         * Apache Commons Collections (commons-collections:commons-collections:3.2.2 - http://commons.apache.org/collections/)
-        * Apache Commons Collections (org.apache.commons:commons-collections4:4.1 - http://commons.apache.org/proper/commons-collections/)
         * Apache Commons Collections (org.apache.commons:commons-collections4:4.4 - https://commons.apache.org/proper/commons-collections/)
-        * Apache Commons Compress (org.apache.commons:commons-compress:1.21 - https://commons.apache.org/proper/commons-compress/)
         * Apache Commons Compress (org.apache.commons:commons-compress:1.27.1 - https://commons.apache.org/proper/commons-compress/)
         * Apache Commons Configuration (org.apache.commons:commons-configuration2:2.8.0 - https://commons.apache.org/proper/commons-configuration/)
         * Apache Commons Exec (org.apache.commons:commons-exec:1.3 - http://commons.apache.org/proper/commons-exec/)
@@ -70,8 +68,6 @@ List of third-party dependencies grouped by their license type.
         * Calcite Core (org.apache.calcite:calcite-core:1.35.0 - https://calcite.apache.org)
         * Calcite Linq4j (org.apache.calcite:calcite-linq4j:1.35.0 - https://calcite.apache.org)
         * Commons BeanUtils Core (commons-beanutils:commons-beanutils-core:1.8.0 - http://commons.apache.org/beanutils/)
-        * Commons CLI (commons-cli:commons-cli:1.2 - http://commons.apache.org/cli/)
-        * Commons Compress (org.apache.commons:commons-compress:1.4.1 - http://commons.apache.org/compress/)
         * Commons Configuration (commons-configuration:commons-configuration:1.6 - http://commons.apache.org/${pom.artifactId.substring(8)}/)
         * Commons Lang (commons-lang:commons-lang:2.6 - http://commons.apache.org/lang/)
         * Commons Math (org.apache.commons:commons-math:2.1 - http://commons.apache.org/math/)
@@ -463,7 +459,6 @@ List of third-party dependencies grouped by their license type.
 
         * JSON in Java (org.json:json:20250107 - https://github.com/douglascrockford/JSON-java)
         * XML Pull Parsing API (xmlpull:xmlpull:1.1.3.1 - http://www.xmlpull.org)
-        * XZ for Java (org.tukaani:xz:1.0 - http://tukaani.org/xz/java.html)
 
     Similar to Apache License but with the acknowledgment clause removed
 
