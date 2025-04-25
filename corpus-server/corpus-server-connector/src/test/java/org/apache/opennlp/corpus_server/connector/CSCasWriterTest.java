@@ -35,7 +35,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-@Disabled
 class CSCasWriterTest extends AbstractCSTest {
 
   private static final String CCPATH = "/CSCasConsumerTestDescriptor.xml";

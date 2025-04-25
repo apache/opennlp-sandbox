@@ -29,10 +29,9 @@ import java.sql.Statement;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.sql.DataSource;
+import org.slf4j.LoggerFactory;
 
 import org.apache.derby.jdbc.EmbeddedConnectionPoolDataSource;
 import org.apache.derby.jdbc.EmbeddedDataSource;
@@ -42,7 +41,7 @@ import org.apache.opennlp.corpus_server.store.CorpusStore;
 
 public class DerbyCorporaStore extends AbstractCorporaStore {
 
-  private final static Logger LOGGER = Logger.getLogger(DerbyCorporaStore.class .getName());
+  private final static org.slf4j.Logger LOGGER = LoggerFactory.getLogger(DerbyCorporaStore.class.getName());
   public static final String DB_NAME = "XmiCasDB";
 
   private DataSource dataSource = null;
@@ -118,13 +117,11 @@ public class DerbyCorporaStore extends AbstractCorporaStore {
       }
 
     } catch (SQLException e) {
-      if (LOGGER.isLoggable(Level.SEVERE)) {
-        LOGGER.log(Level.SEVERE, "Failed to create corpus: " + corpusName, e);
-      }
+      LOGGER.error("Failed to create corpus: {}", corpusName, e);
       throw new IOException(e);
     }
-    
-    LOGGER.info("Created new corpus: " + corpusName);
+
+    LOGGER.info("Created new corpus: {}", corpusName);
 
     for (CorporaChangeListener listener : getListeners()) {
       // TODO: Maybe optimize this, or just pass the corpus id
@@ -149,9 +146,7 @@ public class DerbyCorporaStore extends AbstractCorporaStore {
       }
 
     } catch (SQLException e) {
-      if (LOGGER.isLoggable(Level.SEVERE)) {
-        LOGGER.log(Level.SEVERE, "Failed to retrieve corpus ids!", e);
-      }
+      LOGGER.error("Failed to retrieve corpus ids!", e);
       throw new IOException(e);
     }
     
@@ -168,9 +163,7 @@ public class DerbyCorporaStore extends AbstractCorporaStore {
 
       conn.commit();
     } catch (SQLException e) {
-      if (LOGGER.isLoggable(Level.SEVERE)) {
-        LOGGER.log(Level.SEVERE, "Failed to create corpus: " + corpusName, e);
-      }
+      LOGGER.error("Failed to create corpus: {}", corpusName, e);
       throw new IOException(e);
     }
 
@@ -205,10 +198,7 @@ public class DerbyCorporaStore extends AbstractCorporaStore {
         }
       }
     } catch (SQLException e) {
-      if (LOGGER.isLoggable(Level.SEVERE)) {
-        LOGGER.log(Level.SEVERE, "Failed to check if corpus exists!", e);
-      }
-      
+      LOGGER.error("Failed to check if corpus exists!", e);
       return null;
     }
     

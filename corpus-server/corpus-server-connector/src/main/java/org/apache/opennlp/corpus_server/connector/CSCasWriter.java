@@ -39,14 +39,16 @@ import org.apache.uima.cas.Type;
 import org.apache.uima.cas.TypeSystem;
 import org.apache.uima.cas.impl.XmiCasSerializer;
 import org.apache.uima.resource.ResourceInitializationException;
-import org.apache.uima.util.Level;
-import org.apache.uima.util.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 /**
  * The CSCasWriter writes a CAS into a Corpus Server.
  */
 public class CSCasWriter extends CasAnnotator_ImplBase {
+
+  private static final Logger LOG = LoggerFactory.getLogger(CSCasWriter.class);
 
   private String serverAddress;
   private String corpusName;
@@ -56,7 +58,6 @@ public class CSCasWriter extends CasAnnotator_ImplBase {
   
   private Type idType;
   private Feature idFeature;
-  private Logger logger;
 
   @Override
   public void initialize(UimaContext context) throws ResourceInitializationException {
@@ -64,8 +65,6 @@ public class CSCasWriter extends CasAnnotator_ImplBase {
 
     serverAddress = (String) context.getConfigParameterValue(CSQueueCollectionReader.SERVER_ADDRESS);
     corpusName = (String) context.getConfigParameterValue(CSQueueCollectionReader.CORPUS_NAME);
-    
-    logger = context.getLogger();
   }
 
   @Override
@@ -131,13 +130,9 @@ public class CSCasWriter extends CasAnnotator_ImplBase {
   private void logResponse(Response res, String casId) {
     int statusCode = res.getStatus();
     if (statusCode >= Response.Status.BAD_REQUEST.getStatusCode()) {
-      if (logger.isLoggable(Level.SEVERE)) {
-        logger.log(Level.SEVERE, "Error (" + statusCode + "), " + action + ", " + casId);
-      }
+      LOG.error("Error ({}), " + action + ", {}", statusCode, casId);
     } else {
-      if (logger.isLoggable(Level.FINE)) {
-        logger.log(Level.FINE, "OK (" + statusCode + "),  " + action + ", " + casId);
-      }
+      LOG.debug("OK ({}),  " + action + ", {}", statusCode, casId);
     }
   }
 }

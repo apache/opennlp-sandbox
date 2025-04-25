@@ -38,16 +38,18 @@ import org.apache.uima.cas.TypeSystem;
 import org.apache.uima.collection.CollectionException;
 import org.apache.uima.collection.CollectionReader_ImplBase;
 import org.apache.uima.resource.ResourceInitializationException;
-import org.apache.uima.util.Level;
-import org.apache.uima.util.Logger;
 import org.apache.uima.util.Progress;
 import org.glassfish.jersey.client.ClientResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link org.apache.uima.collection.CollectionReader} which reads {@link CAS CASes} from a corpus
  * stored in a {@code CorpusServer}.
  */
 public class CSQueueCollectionReader extends CollectionReader_ImplBase {
+
+  private static final Logger LOG = LoggerFactory.getLogger(CSQueueCollectionReader.class);
 
   static final String SERVER_ADDRESS = "ServerAddress";
   
@@ -66,14 +68,9 @@ public class CSQueueCollectionReader extends CollectionReader_ImplBase {
   
   private Iterator<String> casIds;
 
-  private Logger logger;
-
-
   @Override
   public void initialize() throws ResourceInitializationException {
     super.initialize();
-    
-    logger = getLogger();
     
     serverAddress = (String) getConfigParameterValue(SERVER_ADDRESS);
     
@@ -103,9 +100,7 @@ public class CSQueueCollectionReader extends CollectionReader_ImplBase {
                   new RuntimeException("Failed to create queue: " + response.getStatus()));
         }
 
-        if (logger.isLoggable(Level.INFO)) {
-          logger.log(Level.INFO, "Successfully created queue: " + queueName + " for corpus: " + corpusName);
-        }
+        LOG.info("Successfully created queue: {} for corpus: {}", queueName, corpusName);
       }
     }
     
@@ -115,7 +110,7 @@ public class CSQueueCollectionReader extends CollectionReader_ImplBase {
     WebTarget r = c.target(serverAddress + "/queues/" + queueName);
 
     while (true) {
-      System.out.println("Requesting next CAS ID!");
+      LOG.info("Requesting next CAS ID!");
 
       // TODO: Make query configurable ...
       try (Response response = r.path("_nextTask").request(MediaType.APPLICATION_JSON)
@@ -123,10 +118,10 @@ public class CSQueueCollectionReader extends CollectionReader_ImplBase {
 
         if (response.getStatus() == Response.Status.OK.getStatusCode()) {
             String casId = response.readEntity(String.class);
-            System.out.println("Received CAS ID: " + casId);
+            LOG.info("Received CAS ID: {}", casId);
             casIdList.add(casId);
         } else if (response.getStatus() == Response.Status.NO_CONTENT.getStatusCode()) {
-          System.out.println("##### FINISHED #####");
+          LOG.info("##### FINISHED #####");
           break;
         }
       }
@@ -161,7 +156,7 @@ public class CSQueueCollectionReader extends CollectionReader_ImplBase {
     try (InputStream casIn = casResponse.getEntityStream()) {
       UimaUtil.deserializeXmiCAS(cas, casIn);
     } catch (IOException e) {
-      logger.log(Level.SEVERE,"Failed to load CAS: " +  casId + " code: " + casResponse.getStatus());
+      LOG.error("Failed to load CAS: {} code: {}", casId, casResponse.getStatus());
       throw e;
     }
 

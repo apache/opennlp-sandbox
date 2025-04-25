@@ -17,9 +17,9 @@
 
 package org.apache.opennlp.corpus_server.connector;
 
-
 import org.apache.opennlp.corpus_server.impl.DerbyCorporaStore;
 import org.apache.opennlp.corpus_server.store.CorporaStore;
+import org.apache.opennlp.corpus_server.store.CorpusStore;
 import org.apache.uima.UIMAFramework;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.cas.impl.XmiCasSerializer;
@@ -46,7 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@Disabled
 class CSCollectionReaderTest extends AbstractCSTest {
 
   private static final String CRDPATH = "/CSCollectionReaderTestDescriptor.xml";
@@ -61,11 +60,10 @@ class CSCollectionReaderTest extends AbstractCSTest {
          ByteArrayOutputStream os = new ByteArrayOutputStream()) {
       TypeSystemDescription tsd = UimaUtil.createTypeSystemDescription(in);
       tsd.toXML(os);
-      CorporaStore corporaStore = new DerbyCorporaStore();
-
-      corporaStore.initialize(BASE_PATH.replace("file:", "").replace("/test-classes", ""));
+      CorporaStore cs = new DerbyCorporaStore();
+      cs.initialize(BASE_PATH.replace("file:", "").replace("/test-classes", ""));
       byte[] indexMapping = new byte[] {};
-      corporaStore.createCorpus("wikinews", os.toByteArray(), indexMapping);
+      cs.createCorpus("wikinews", os.toByteArray(), indexMapping);
 
       os.reset();
       CAS cas = UimaUtil.createEmptyCAS(tsd);
@@ -76,8 +74,9 @@ class CSCollectionReaderTest extends AbstractCSTest {
       a.addToIndexes();
       XmiCasSerializer.serialize(cas, os);
 
-      corporaStore.getCorpus("wikinews").addCAS("111", os.toByteArray());
-      corporaStore.getCorpus("wikinews").addCAS("222", os.toByteArray());
+      CorpusStore wikiNews = cs.getCorpus("wikinews");
+      wikiNews.addCAS("111", os.toByteArray());
+      wikiNews.addCAS("222", os.toByteArray());
     } catch (Exception e) {
       fail(e.getLocalizedMessage());
     }
@@ -85,8 +84,8 @@ class CSCollectionReaderTest extends AbstractCSTest {
 
   @Test
   @Disabled
-    // TODO Investigate why this test fails with:
-    //  No value has been assigned to the mandatory configuration parameter corpusName.
+  // TODO Investigate why this test fails with:
+  //  java.net.ConnectException: Connection refused
   void explicitCRTest() {
     try {
       XMLInputSource s = new XMLInputSource(CSCollectionReaderTest.class.getResource(CRDPATH));
@@ -102,7 +101,7 @@ class CSCollectionReaderTest extends AbstractCSTest {
       cr.getNext(cas);
       assertFalse(cr.hasNext());
     } catch (Exception e) {
-      fail(e.getLocalizedMessage());
+      fail(e.getLocalizedMessage(), e);
     }
   }
 

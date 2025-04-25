@@ -27,6 +27,14 @@ import java.util.Comparator;
 
 public abstract class AbstractCSTest {
 
+  static {
+    // Remove existing handlers
+    org.slf4j.bridge.SLF4JBridgeHandler.removeHandlersForRootLogger();
+
+    // Install SLF4J bridge
+    org.slf4j.bridge.SLF4JBridgeHandler.install();
+  }
+
   protected static final String BASE_PATH = CSCollectionReaderTest.class.getProtectionDomain().getCodeSource().getLocation().toExternalForm();
 
   protected static void cleanTestDB() throws IOException {

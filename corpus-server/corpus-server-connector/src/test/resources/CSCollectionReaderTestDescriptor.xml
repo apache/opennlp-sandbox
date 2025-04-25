@@ -22,12 +22,30 @@
   <implementationName>org.apache.opennlp.corpus_server.connector.CSQueueCollectionReader</implementationName>
   <processingResourceMetaData>
     <name>CSCollectionReaderDescriptor</name>
-    <description></description>
+    <description/>
     <version>1.0</version>
-    <vendor></vendor>
+    <vendor/>
     <configurationParameters>
       <configurationParameter>
-        <name>corpusName</name>
+        <name>ServerAddress</name>
+        <type>String</type>
+        <multiValued>false</multiValued>
+        <mandatory>true</mandatory>
+      </configurationParameter>
+      <configurationParameter>
+        <name>CorpusName</name>
+        <type>String</type>
+        <multiValued>false</multiValued>
+        <mandatory>true</mandatory>
+      </configurationParameter>
+      <configurationParameter>
+        <name>QueueName</name>
+        <type>String</type>
+        <multiValued>false</multiValued>
+        <mandatory>true</mandatory>
+      </configurationParameter>
+      <configurationParameter>
+        <name>SearchQuery</name>
         <type>String</type>
         <multiValued>false</multiValued>
         <mandatory>true</mandatory>
@@ -39,7 +57,38 @@
         <mandatory>true</mandatory>
       </configurationParameter>
     </configurationParameters>
-    <configurationParameterSettings/>
+    <configurationParameterSettings>
+      <nameValuePair>
+        <name>ServerAddress</name>
+        <value>
+          <string>http://localhost:8080</string>
+        </value>
+      </nameValuePair>
+      <nameValuePair>
+        <name>CorpusName</name>
+        <value>
+          <string>Test</string>
+        </value>
+      </nameValuePair>
+      <nameValuePair>
+        <name>QueueName</name>
+        <value>
+          <string>qn1</string>
+        </value>
+      </nameValuePair>
+      <nameValuePair>
+        <name>SearchQuery</name>
+        <value>
+          <string>sq1</string>
+        </value>
+      </nameValuePair>
+      <nameValuePair>
+        <name>casIds</name>
+        <value>
+          <array><string>Id1</string></array>
+        </value>
+      </nameValuePair>
+    </configurationParameterSettings>
     <typeSystemDescription/>
     <typePriorities/>
     <fsIndexCollection/>
