@@ -17,7 +17,11 @@
 
 package opennlp.tools.dl;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 
 import org.deeplearning4j.nn.conf.BackpropType;
@@ -51,6 +55,8 @@ import org.slf4j.LoggerFactory;
  * @author Thamme Gowda (thammegowda@apache.org)
  */
 public class NeuralDocCatTrainer {
+
+    private static final Logger LOG = LoggerFactory.getLogger(NeuralDocCatTrainer.class);
 
     // Note: Arguments can't be declared 'final'
     // See: https://github.com/apache/opennlp-sandbox/pull/109#discussion_r1262904650
@@ -116,13 +122,10 @@ public class NeuralDocCatTrainer {
         }
     }
 
-    private static final Logger LOG = LoggerFactory.getLogger(NeuralDocCatTrainer.class);
-
     private final NeuralDocCatModel model;
     private final Args args;
     private final DataReader trainSet;
     private DataReader validSet;
-
 
     public NeuralDocCatTrainer(Args args) throws IOException {
         this.args = args;
@@ -134,21 +137,21 @@ public class NeuralDocCatTrainer {
         }
 
         LOG.info("Training data from {}", args.trainDir);
-        this.trainSet = new DataReader(args.trainDir, args.labels, gloves, args.batchSize, args.maxSeqLen);
+        trainSet = new DataReader(args.trainDir, args.labels, gloves, args.batchSize, args.maxSeqLen);
         if (args.validDir != null) {
             LOG.info("Validation data from {}", args.validDir);
-            this.validSet = new DataReader(args.validDir, args.labels, gloves, args.batchSize, args.maxSeqLen);
+            validSet = new DataReader(args.validDir, args.labels, gloves, args.batchSize, args.maxSeqLen);
         }
 
         //create network
-        network = this.createNetwork(gloves.getVectorSize());
-        this.model = new NeuralDocCatModel(network, gloves, args.labels, args.maxSeqLen);
+        network = createNetwork(gloves.getVectorSize());
+        model = new NeuralDocCatModel(network, gloves, args.labels, args.maxSeqLen);
     }
 
-    public MultiLayerNetwork createNetwork(int vectorSize) {
+    private MultiLayerNetwork createNetwork(int vectorSize) {
         int totalOutcomes = this.trainSet.totalOutcomes();
         assert totalOutcomes >= 2;
-        LOG.info("Number of classes " + totalOutcomes);
+        LOG.info("Number of classes {}", totalOutcomes);
 
         //TODO: the below network params should be configurable from CLI or settings file
         //Set up network configuration

@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serial;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,9 +44,11 @@ import java.util.function.Function;
 
 /**
  * This class provides a reader capable of reading training and test datasets from file system for text classifiers.
- * In addition to reading the content, it
- * (1) vectorizes the text using embeddings such as Glove, and
- * (2) divides the datasets into mini batches of specified size.
+ * In addition to reading the content, it:
+ * <ol>
+ * <li>vectorizes the text using embeddings such as Glove, and</li>
+ * <li>divides the datasets into mini batches of specified size.</li>
+ * </ol>
  * <p>
  * The data is expected to be organized as per the following convention:
  * <pre>
@@ -90,26 +93,27 @@ import java.util.function.Function;
  */
 public class DataReader implements DataSetIterator {
 
+    @Serial
+    private static final long serialVersionUID = 8930860497053512907L;
     private static final Logger LOG = LoggerFactory.getLogger(DataReader.class);
-    private static final long serialVersionUID = 6405541399655356439L;
+    private final static String EXTENSION = ".txt";
 
     private final File dataDir;
-    private List<File> records;
-    private List<Integer> labels;
-    private Map<String, Integer> labelToId;
-    private final String extension = ".txt";
-    private final GlobalVectors embedder;
+    private transient List<File> records;
+    private transient List<Integer> labels;
+    private transient Map<String, Integer> labelToId;
+    private transient final GlobalVectors embedder;
     private int cursor = 0;
     private final int batchSize;
     private final int vectorLen;
     private final int maxSeqLen;
     private final int numLabels;
     // default tokenizer
-    private Function<String, String[]> tokenizer = s -> s.toLowerCase().split(" ");
-
+    private transient Function<String, String[]> tokenizer = s -> s.toLowerCase().split(" ");
 
     /**
-     * Creates a reader with the specified arguments
+     * Creates a reader with the specified arguments.
+     *
      * @param dataDirPath data directory
      * @param labelNames list of labels (names should match subdirectory names)
      * @param embedder embeddings to convert words to vectors
@@ -147,7 +151,7 @@ public class DataReader implements DataSetIterator {
                         + labelName + ". Looked at:" + labelDir);
             }
             File[] examples = labelDir.listFiles(f ->
-                    f.isFile() && f.getName().endsWith(this.extension));
+                    f.isFile() && f.getName().endsWith(EXTENSION));
             if (examples == null || examples.length == 0){
                 throw new IllegalStateException("No examples found for "
                         + labelName + ". Looked at:" + labelDir

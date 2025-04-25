@@ -30,10 +30,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Tests for {@link NeuralDocCat}
  */
-@Disabled
 class NeuralDocCatTest {
 
+  /*
+   * TODO : this fails with:
+   * java.lang.AssertionError
+   * at opennlp.tools.dl.GlobalVectors.<init>(GlobalVectors.java:92)
+   */
   @Test
+  @Disabled
   void testDocCatTrainingOnTweets() throws Exception {
     NeuralDocCatTrainer.Args args = new NeuralDocCatTrainer.Args();
     args.glovesPath = "/path/to/glove.6B/glove.6B.50d.txt";
@@ -46,10 +51,6 @@ class NeuralDocCatTest {
     String modelPath = modelPathPrefix + ".zip";
     trainer.saveModel(modelPath);
 
-    /* TODO : this fails with:
-     * java.lang.AssertionError
-     * at opennlp.tools.dl.GlobalVectors.<init>(GlobalVectors.java:92)
-     */
     NeuralDocCatModel neuralDocCatModel = NeuralDocCatModel.loadModel(modelPath);
     assertNotNull(neuralDocCatModel);
 

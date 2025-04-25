@@ -143,7 +143,7 @@ public class StackedRNN extends RNN {
       double newLoss = smoothLoss * 0.999 + loss * 0.001;
 
       if (newLoss > smoothLoss) {
-        learningRate *= 0.999 ;
+        learningRate *= 0.999f ;
       }
       smoothLoss = newLoss;
       if (Double.isNaN(smoothLoss) || Double.isInfinite(smoothLoss)) {

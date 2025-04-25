@@ -40,7 +40,7 @@ import opennlp.tools.util.ObjectStream;
 
 public class NameSampleDataSetIterator implements DataSetIterator {
 
-  private static final long serialVersionUID = -7252120980388575448L;
+  private static final long serialVersionUID = 3122563760808581425L;
 
   private static class NameSampleToDataSetStream extends FilterObjectStream<NameSample, DataSet> {
 
@@ -103,7 +103,7 @@ public class NameSampleDataSetIterator implements DataSetIterator {
 
   private int cursor = 0;
 
-  private final ObjectStream<DataSet> samples;
+  private transient final ObjectStream<DataSet> samples;
 
   NameSampleDataSetIterator(ObjectStream<NameSample> samples, WordVectors wordVectors, int windowSize,
                             String[] labels) throws IOException {
@@ -114,8 +114,7 @@ public class NameSampleDataSetIterator implements DataSetIterator {
 
     int total = 0;
 
-    DataSet sample;
-    while ((sample = this.samples.read()) != null) {
+    while (this.samples.read() != null) {
       total++;
     }
 
@@ -124,6 +123,7 @@ public class NameSampleDataSetIterator implements DataSetIterator {
     samples.reset();
   }
 
+  @Override
   public DataSet next(int num) {
     if (cursor >= totalExamples()) throw new NoSuchElementException();
 
