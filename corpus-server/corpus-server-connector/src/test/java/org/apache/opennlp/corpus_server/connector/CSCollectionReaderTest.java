@@ -22,6 +22,7 @@ import org.apache.opennlp.corpus_server.store.CorporaStore;
 import org.apache.opennlp.corpus_server.store.CorpusStore;
 import org.apache.uima.UIMAFramework;
 import org.apache.uima.cas.CAS;
+import org.apache.uima.cas.CASException;
 import org.apache.uima.cas.impl.XmiCasSerializer;
 import org.apache.uima.cas.text.AnnotationFS;
 import org.apache.uima.cas.text.AnnotationIndex;
@@ -34,10 +35,12 @@ import org.apache.uima.util.XMLInputSource;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.xml.sax.SAXException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -60,13 +63,12 @@ class CSCollectionReaderTest extends AbstractCSTest {
          ByteArrayOutputStream os = new ByteArrayOutputStream()) {
       TypeSystemDescription tsd = UimaUtil.createTypeSystemDescription(in);
       tsd.toXML(os);
-      CorporaStore cs = new DerbyCorporaStore();
-      cs.initialize(BASE_PATH.replace("file:", "").replace("/test-classes", ""));
-      byte[] indexMapping = new byte[] {};
-      cs.createCorpus("wikinews", os.toByteArray(), indexMapping);
+      final CorporaStore cs = new DerbyCorporaStore();
+      cs.initialize(getDBPath());
+      cs.createCorpus("wikinews", os.toByteArray(), new byte[] {});
 
       os.reset();
-      CAS cas = UimaUtil.createEmptyCAS(tsd);
+      final CAS cas = UimaUtil.createEmptyCAS(tsd);
       cas.setDocumentText("this is a test text");
       Annotation a = new Annotation(cas.getJCas());
       a.setBegin(0);
@@ -77,7 +79,7 @@ class CSCollectionReaderTest extends AbstractCSTest {
       CorpusStore wikiNews = cs.getCorpus("wikinews");
       wikiNews.addCAS("111", os.toByteArray());
       wikiNews.addCAS("222", os.toByteArray());
-    } catch (Exception e) {
+    } catch (CASException | IOException | SAXException | URISyntaxException e) {
       fail(e.getLocalizedMessage());
     }
   }

@@ -40,15 +40,10 @@ public abstract class AbstractCSTest {
   }
 
   protected static final URL BASE_LOCATION = AbstractCSTest.class.getProtectionDomain().getCodeSource().getLocation();
-  protected static final String BASE_PATH = BASE_LOCATION.toExternalForm();
 
   protected static void cleanTestDB() throws IOException {
     try {
-      URI baseURI = BASE_LOCATION.toURI();
-      String mainPath = Paths.get(baseURI).toString().
-              replace("file:", "").replace("/test-classes", "");
-      String dbDir = mainPath + File.separator + DerbyCorporaStore.DB_NAME;
-      Path p = Path.of(dbDir);
+      Path p = Path.of(getDBPathWithName());
       if (p.toFile().exists()) {
         try (var dirStream = Files.walk(p)) {
           dirStream.map(Path::toFile).sorted(Comparator.reverseOrder()).forEach(File::delete);
@@ -57,5 +52,15 @@ public abstract class AbstractCSTest {
     } catch (URISyntaxException e) {
       throw new IOException("Can't clean Test DB!", e);
     }
+  }
+
+  protected static String getDBPath() throws URISyntaxException {
+    URI baseURI = BASE_LOCATION.toURI();
+    return Paths.get(baseURI).toString().
+            replace("file:", "").replace("/test-classes", "") + File.separator;
+  }
+
+  private static String getDBPathWithName() throws URISyntaxException {
+    return getDBPath() + DerbyCorporaStore.DB_NAME;
   }
 }
