@@ -21,8 +21,12 @@ import org.apache.opennlp.corpus_server.impl.DerbyCorporaStore;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Comparator;
 
 public abstract class AbstractCSTest {
@@ -35,16 +39,23 @@ public abstract class AbstractCSTest {
     org.slf4j.bridge.SLF4JBridgeHandler.install();
   }
 
-  protected static final String BASE_PATH = CSCollectionReaderTest.class.getProtectionDomain().getCodeSource().getLocation().toExternalForm();
+  protected static final URL BASE_LOCATION = AbstractCSTest.class.getProtectionDomain().getCodeSource().getLocation();
+  protected static final String BASE_PATH = BASE_LOCATION.toExternalForm();
 
   protected static void cleanTestDB() throws IOException {
-    String baseDir = BASE_PATH.replace("file:", "").replace("/test-classes", "");
-    String dbDir = baseDir + DerbyCorporaStore.DB_NAME;
-    Path p = Path.of(dbDir);
-    if (p.toFile().exists()) {
-      try (var dirStream = Files.walk(p)) {
-        dirStream.map(Path::toFile).sorted(Comparator.reverseOrder()).forEach(File::delete);
+    try {
+      URI baseURI = BASE_LOCATION.toURI();
+      String mainPath = Paths.get(baseURI).toString().
+              replace("file:", "").replace("/test-classes", "");
+      String dbDir = mainPath + File.separator + DerbyCorporaStore.DB_NAME;
+      Path p = Path.of(dbDir);
+      if (p.toFile().exists()) {
+        try (var dirStream = Files.walk(p)) {
+          dirStream.map(Path::toFile).sorted(Comparator.reverseOrder()).forEach(File::delete);
+        }
       }
+    } catch (URISyntaxException e) {
+      throw new IOException("Can't clean Test DB!", e);
     }
   }
 }
