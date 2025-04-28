@@ -129,7 +129,7 @@
         <commons-cli.version>1.4</commons-cli.version>
         <commons-codec.version>1.18.0</commons-codec.version>
         <commons-collections.version>3.2.2</commons-collections.version>
-        <commons-collections4.version>4.4</commons-collections4.version>
+        <commons-collections4.version>4.5.0</commons-collections4.version>
         <commons-compress.version>1.27.1</commons-compress.version>
         <commons-io.version>2.19.0</commons-io.version>
         <commons-lang.version>2.6</commons-lang.version>
