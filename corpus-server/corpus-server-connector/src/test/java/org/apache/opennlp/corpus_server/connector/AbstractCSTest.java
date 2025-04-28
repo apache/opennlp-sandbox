@@ -55,9 +55,7 @@ public abstract class AbstractCSTest {
   }
 
   protected static String getDBPath() throws URISyntaxException {
-    URI baseURI = BASE_LOCATION.toURI();
-    return Paths.get(baseURI).toString().
-            replace("file:", "").replace("/test-classes", "") + File.separator;
+    return Paths.get(BASE_LOCATION.toURI()).toAbsolutePath().getParent().toString() + File.separator;
   }
 
   private static String getDBPathWithName() throws URISyntaxException {
