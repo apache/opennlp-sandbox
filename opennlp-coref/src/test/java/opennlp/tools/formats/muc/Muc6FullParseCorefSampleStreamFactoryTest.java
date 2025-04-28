@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import opennlp.tools.coref.AbstractCorefTest;
 import opennlp.tools.coref.CorefSample;
 import opennlp.tools.coref.mention.Parse;
+import opennlp.tools.models.ModelType;
 import opennlp.tools.tokenize.TokenizerModel;
 import opennlp.tools.util.DownloadUtil;
 import opennlp.tools.util.ObjectStream;
@@ -49,7 +50,7 @@ public class Muc6FullParseCorefSampleStreamFactoryTest extends AbstractCorefTest
   @BeforeAll
   public static void initEnv() throws IOException {
     Muc6FullParseCorefSampleStreamFactory.registerFactory();
-    DownloadUtil.downloadModel("en", DownloadUtil.ModelType.TOKENIZER, TokenizerModel.class);
+    DownloadUtil.downloadModel("en", ModelType.TOKENIZER, TokenizerModel.class);
     downloadVersion15Model(MODEL_PARSER);
     downloadVersion15Model(MODEL_NER_PER);
     downloadVersion15Model(MODEL_NER_ORG);

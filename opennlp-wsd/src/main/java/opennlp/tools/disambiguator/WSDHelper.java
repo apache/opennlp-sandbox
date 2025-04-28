@@ -35,12 +35,16 @@ import org.slf4j.LoggerFactory;
 import opennlp.tools.lemmatizer.Lemmatizer;
 import opennlp.tools.lemmatizer.LemmatizerModel;
 import opennlp.tools.lemmatizer.ThreadSafeLemmatizerME;
+import opennlp.tools.models.ModelType;
+import opennlp.tools.models.ClassPathModelProvider;
+import opennlp.tools.models.DefaultClassPathModelProvider;
+import opennlp.tools.postag.POSModel;
 import opennlp.tools.postag.POSTagFormat;
 import opennlp.tools.postag.POSTagger;
 import opennlp.tools.postag.ThreadSafePOSTaggerME;
 import opennlp.tools.tokenize.ThreadSafeTokenizerME;
 import opennlp.tools.tokenize.Tokenizer;
-import opennlp.tools.util.DownloadUtil;
+import opennlp.tools.tokenize.TokenizerModel;
 
 /**
  * A helper class that loads and organizes resources, and provides helper methods
@@ -51,6 +55,8 @@ public class WSDHelper {
   private static final Logger LOG = LoggerFactory.getLogger(WSDHelper.class);
 
   private static final Pattern NUMBERS_PATTERN = Pattern.compile(".*[0-9].*");
+
+  private static final ClassPathModelProvider MODEL_PROVIDER = new DefaultClassPathModelProvider();
 
   private static Tokenizer tokenizer;
   private static POSTagger tagger;
@@ -274,9 +280,9 @@ public class WSDHelper {
   private static Lemmatizer getLemmatizer(String lang) {
     if (lemmatizer == null) {
       try {
-          LemmatizerModel lm = DownloadUtil.downloadModel(lang,
-                  DownloadUtil.ModelType.LEMMATIZER, LemmatizerModel.class);
-          lemmatizer = new ThreadSafeLemmatizerME(lm);
+        final LemmatizerModel lm = MODEL_PROVIDER.load(
+                lang, ModelType.LEMMATIZER, LemmatizerModel.class);
+        lemmatizer = new ThreadSafeLemmatizerME(lm);
       } catch (IOException e) {
         throw new RuntimeException("Error opening or loading a Lemmatizer from specified resource file!", e);
       }
@@ -288,10 +294,11 @@ public class WSDHelper {
     return getTagger("en");
   }
 
-  private static POSTagger getTagger(String language) {
+  private static POSTagger getTagger(String lang) {
     if (tagger == null) {
       try {
-        tagger = new ThreadSafePOSTaggerME(language, POSTagFormat.PENN);
+        final POSModel pm = MODEL_PROVIDER.load(lang, ModelType.POS_GENERIC, POSModel.class);
+        tagger = new ThreadSafePOSTaggerME(pm, POSTagFormat.PENN);
       } catch (IOException e) {
         throw new RuntimeException("Error opening or loading a Tokenizer for specified language!", e);
       }
@@ -303,10 +310,11 @@ public class WSDHelper {
     return getTokenizer("en");
   }
 
-  private static Tokenizer getTokenizer(String language) {
+  private static Tokenizer getTokenizer(String lang) {
     if (tokenizer == null) {
       try {
-        tokenizer = new ThreadSafeTokenizerME(language);
+        final TokenizerModel tm = MODEL_PROVIDER.load(lang, ModelType.TOKENIZER, TokenizerModel.class);
+        tokenizer = new ThreadSafeTokenizerME(tm);
       } catch (IOException e) {
         throw new RuntimeException("Error opening or loading a Tokenizer for specified language!", e);
       }
