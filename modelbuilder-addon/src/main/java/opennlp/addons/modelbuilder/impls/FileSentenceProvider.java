@@ -28,12 +28,21 @@ import java.util.logging.Logger;
 import opennlp.addons.modelbuilder.SentenceProvider;
 
 /**
- * Provides user sentences via a simple text file
+ * Provides user sentences via a simple text file.
+ *
+ * @see SentenceProvider
  */
 public class FileSentenceProvider implements SentenceProvider {
 
   private final Set<String> sentences = new HashSet<>();
-  BaseModelBuilderParams params ;
+  private BaseModelBuilderParams params ;
+
+  public FileSentenceProvider(BaseModelBuilderParams params) {
+    if (params == null) {
+      throw new IllegalArgumentException("BaseModelBuilderParams cannot be null!");
+    }
+    this.params = params;
+  }
 
   @Override
   public Set<String> getSentences() {

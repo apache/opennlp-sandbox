@@ -30,11 +30,20 @@ import opennlp.addons.modelbuilder.ModelGenerationValidator;
 
 /**
  * Validates NER results input before inclusion into the model.
+ *
+ * @see ModelGenerationValidator
  */
 public class FileModelValidatorImpl implements ModelGenerationValidator {
 
-  private final Set<String> badentities = new HashSet<>();
-  BaseModelBuilderParams params;
+  private final Set<String> badEntities = new HashSet<>();
+  private BaseModelBuilderParams params;
+
+  public FileModelValidatorImpl(BaseModelBuilderParams params) {
+    if (params == null) {
+      throw new IllegalArgumentException("BaseModelBuilderParams cannot be null!");
+    }
+    this.params = params;
+  }
 
   @Override
   public void setParameters(BaseModelBuilderParams params) {
@@ -50,7 +59,7 @@ public class FileModelValidatorImpl implements ModelGenerationValidator {
   @Override
   public Boolean validNamedEntity(String namedEntity) {
 
-    if (badentities.isEmpty()) {
+    if (badEntities.isEmpty()) {
       getBlackList();
     }
 //
@@ -59,7 +68,7 @@ public class FileModelValidatorImpl implements ModelGenerationValidator {
 //      return false;
 //    }
     boolean b = true;
-    if (badentities.contains(namedEntity.toLowerCase())) {
+    if (badEntities.contains(namedEntity.toLowerCase())) {
       b = false;
     }
     return b;
@@ -68,19 +77,19 @@ public class FileModelValidatorImpl implements ModelGenerationValidator {
   @Override
   public Collection<String> getBlackList() {
     if (params.getKnownEntityBlacklist() == null) {
-      return badentities;
+      return badEntities;
     }
-    if (!badentities.isEmpty()) {
+    if (!badEntities.isEmpty()) {
       try (BufferedReader br = new BufferedReader(new InputStreamReader(
               new FileInputStream(params.getKnownEntityBlacklist()), StandardCharsets.UTF_8))) {
         String line;
         while ((line = br.readLine()) != null) {
-          badentities.add(line);
+          badEntities.add(line);
         }
       } catch (IOException ex) {
         Logger.getLogger(FileKnownEntityProvider.class.getName()).log(Level.SEVERE, null, ex);
       }
     }
-    return badentities;
+    return badEntities;
   }
 }

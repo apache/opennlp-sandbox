@@ -16,6 +16,7 @@
 package opennlp.addons.modelbuilder;
 
 import java.io.File;
+import java.util.Collections;
 
 import opennlp.addons.modelbuilder.impls.BaseModelBuilderParams;
 import opennlp.addons.modelbuilder.impls.FileKnownEntityProvider;
@@ -25,14 +26,16 @@ import opennlp.addons.modelbuilder.impls.GenericModelGenerator;
 import opennlp.addons.modelbuilder.impls.GenericModelableImpl;
 
 /**
- * Utilizes the file-based implementations to produce an NER model from user
+ * Utilizes the file-based implementations to produce an NER model from user.
  * The basic processing is such
- * read in the list of known entities
- * annotate the sentences based on the list of known entities
- * create a model from the annotations
- * perform NER with the model on the sentences
- * add the NER results to the annotations
- * rebuild the model loop defined data.
+ * <ol>
+ * <li>read in the list of known entities</li>
+ * <li>annotate the sentences based on the list of known entities</li>
+ * <li>create a model from the annotations</li>
+ * <li>perform NER with the model on the sentences</li>
+ * <li>add the NER results to the annotations, and</li>
+ * <li>rebuild the model loop defined data.</li>
+ * </ol>
  */
 public class DefaultModelBuilderUtil {
 
@@ -64,27 +67,22 @@ public class DefaultModelBuilderUtil {
    */
   public static void generateModel(File sentences, File knownEntities, File knownEntitiesBlacklist,
           File modelOutFile, File annotatedSentenceOutFile, String namedEntityType, int iterations) {
-    SemiSupervisedModelGenerator modelGenerator = new GenericModelGenerator();
-    BaseModelBuilderParams params = new BaseModelBuilderParams();
-    params.setAnnotatedTrainingDataFile(annotatedSentenceOutFile);
-    params.setSentenceFile(sentences);
-    params.setEntityType(namedEntityType);
-    params.setKnownEntitiesFile(knownEntities);
-    params.setModelFile(modelOutFile);
-    params.setKnownEntityBlacklist(knownEntitiesBlacklist);
+    final SemiSupervisedModelGenerator modelGenerator = new GenericModelGenerator();
+    final BaseModelBuilderParams params = new BaseModelBuilderParams(sentences, knownEntities,
+            knownEntitiesBlacklist, modelOutFile, annotatedSentenceOutFile, namedEntityType,
+            Collections.emptyMap());
+
     /*
      * sentence providers feed this process with user data derived sentences
      * this impl just reads line by line through a file
      */
-    SentenceProvider sentenceProvider = new FileSentenceProvider();
-    sentenceProvider.setParameters(params);
+    SentenceProvider sentenceProvider = new FileSentenceProvider(params);
     /*
      * KnownEntityProviders provide a seed list of known entities... such as
      * Barack Obama for person, or Germany for location obviously these would
      * want to be prolific, non-ambiguous names
      */
-    KnownEntityProvider knownEntityProvider = new FileKnownEntityProvider();
-    knownEntityProvider.setParameters(params);
+    KnownEntityProvider knownEntityProvider = new FileKnownEntityProvider(params);
     /*
      * ModelGenerationValidators try to weed out bad hits by the iterations of
      * the name finder. Since this is a recursive process, with each iteration
@@ -94,14 +92,12 @@ public class DefaultModelBuilderUtil {
      * etc...users can make this as specific as they need for their dat and
      * their use case
      */
-    ModelGenerationValidator validator = new FileModelValidatorImpl();
-    validator.setParameters(params);
+    ModelGenerationValidator validator = new FileModelValidatorImpl(params);
     /*
      * Modelable's write and read the annotated sentences, as well as create and
      * write the NER models
      */
-    Modelable modelable = new GenericModelableImpl();
-    modelable.setParameters(params);
+    Modelable modelable = new GenericModelableImpl(params);
 
     /*
      * the modelGenerator actually runs the process with a set number of
@@ -110,6 +106,5 @@ public class DefaultModelBuilderUtil {
      * sets this may be too much.
      */
     modelGenerator.build(sentenceProvider, knownEntityProvider, validator, modelable, iterations);
-
   }
 }

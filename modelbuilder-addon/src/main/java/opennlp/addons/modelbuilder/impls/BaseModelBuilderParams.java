@@ -19,71 +19,37 @@ import java.io.File;
 import java.util.Map;
 
 /**
- * Used to pass params through the processing
+ * Used to pass params through the processing.
  */
-public class BaseModelBuilderParams {
-
-  private File modelFile;
-  private File sentenceFile;
-  private File knownEntitiesFile;
-  private File knownEntityBlacklist;
-  private File annotatedTrainingDataFile;
-  private String entityType;
-  private Map<String, String> additionalParams;
+public record BaseModelBuilderParams (File sentenceFile, File knownEntitiesFile, File knownEntitiesBlacklist,
+                                      File modelFile, File annotatedTrainingDataFile, String entityType,
+                                      Map<String, String> additionalParams) {
 
   public File getModelFile() {
     return modelFile;
-  }
-
-  public void setModelFile(File modelFile) {
-    this.modelFile = modelFile;
   }
 
   public File getSentenceFile() {
     return sentenceFile;
   }
 
-  public void setSentenceFile(File sentenceFile) {
-    this.sentenceFile = sentenceFile;
-  }
-
   public File getKnownEntitiesFile() {
     return knownEntitiesFile;
   }
 
-  public void setKnownEntitiesFile(File knownEntitiesFile) {
-    this.knownEntitiesFile = knownEntitiesFile;
-  }
-
   public File getKnownEntityBlacklist() {
-    return knownEntityBlacklist;
-  }
-
-  public void setKnownEntityBlacklist(File knownEntityBlacklist) {
-    this.knownEntityBlacklist = knownEntityBlacklist;
+    return knownEntitiesBlacklist;
   }
 
   public Map<String, String> getAdditionalParams() {
     return additionalParams;
   }
-
-  public void setAdditionalParams(Map<String, String> additionalParams) {
-    this.additionalParams = additionalParams;
-  }
-
+  
   public String getEntityType() {
     return entityType;
   }
 
-  public void setEntityType(String entityType) {
-    this.entityType = entityType;
-  }
-
   public File getAnnotatedTrainingDataFile() {
     return annotatedTrainingDataFile;
-  }
-
-  public void setAnnotatedTrainingDataFile(File annotatedTrainingDataFile) {
-    this.annotatedTrainingDataFile = annotatedTrainingDataFile;
   }
 }

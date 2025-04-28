@@ -29,8 +29,15 @@ import opennlp.addons.modelbuilder.KnownEntityProvider;
 
 public class FileKnownEntityProvider implements KnownEntityProvider {
  
-  final Set<String> knownEntities = new HashSet<>();
-  BaseModelBuilderParams params;
+  private final Set<String> knownEntities = new HashSet<>();
+  private BaseModelBuilderParams params;
+
+  public FileKnownEntityProvider(BaseModelBuilderParams params) {
+    if (params == null) {
+      throw new IllegalArgumentException("BaseModelBuilderParams cannot be null!");
+    }
+    this.params = params;
+  }
 
   @Override
   public Set<String> getKnownEntities() {

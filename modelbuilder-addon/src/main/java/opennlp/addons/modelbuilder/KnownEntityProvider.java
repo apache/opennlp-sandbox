@@ -20,13 +20,12 @@ import opennlp.addons.modelbuilder.impls.BaseModelBuilderParams;
 import java.util.Set;
 
 /**
- * Supplies a list of known entities (a list of names or locations)
+ * Supplies a list of known entities (a list of names or locations).
  */
 public interface KnownEntityProvider extends ModelParameter<BaseModelBuilderParams> {
 
   /**
-   * Returns a list of known non-ambiguous entities.
-   * @return a set of entities
+   * @return Retrieves a list of known non-ambiguous entities.
    */
   Set<String> getKnownEntities();
 
@@ -37,8 +36,7 @@ public interface KnownEntityProvider extends ModelParameter<BaseModelBuilderPara
   void addKnownEntity(String unambiguousEntity);
 
   /**
-   * Defines the type of entity that the set contains, ie person, location, organization.
-   * @return
+   * @return Retrieves the type of entity that the set contains, ie person, location, organization.
    */
   String getKnownEntitiesType();
 

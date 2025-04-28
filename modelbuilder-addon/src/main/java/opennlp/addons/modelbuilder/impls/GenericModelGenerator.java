@@ -15,7 +15,6 @@
  */
 package opennlp.addons.modelbuilder.impls;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import opennlp.addons.modelbuilder.KnownEntityProvider;
@@ -27,12 +26,14 @@ import opennlp.tools.namefind.NameFinderME;
 import opennlp.tools.util.Span;
 
 /**
+ * Generic {@link SemiSupervisedModelGenerator} implementation that handles all
+ * processing using the default file implementations.
  *
- * Generic impl that handles all processing using the default file implementations
+ * @see SemiSupervisedModelGenerator
  */
 public class GenericModelGenerator implements SemiSupervisedModelGenerator {
 
-  private Map<String, String> params = new HashMap<>();
+  private Map<String, String> params;
 
   @Override
   public void setParameters(BaseModelBuilderParams params) {

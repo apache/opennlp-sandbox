@@ -44,12 +44,21 @@ import opennlp.tools.util.TrainingParameters;
 
 /**
  * Creates annotations, writes annotations to file, and creates a model and writes to a file.
+ *
+ * @see Modelable
  */
 public class GenericModelableImpl implements Modelable {
 
   private Set<String> annotatedSentences = new HashSet<>();
-  BaseModelBuilderParams params;
+  private BaseModelBuilderParams params;
 
+  public GenericModelableImpl(BaseModelBuilderParams params) {
+    if (params == null) {
+      throw new IllegalArgumentException("BaseModelBuilderParams cannot be null!");
+    }
+    this.params = params;
+  }
+  
   @Override
   public void setParameters(BaseModelBuilderParams params) {
     this.params = params;

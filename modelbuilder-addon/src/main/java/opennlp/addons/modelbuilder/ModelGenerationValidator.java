@@ -20,7 +20,7 @@ import opennlp.addons.modelbuilder.impls.BaseModelBuilderParams;
 import java.util.Collection;
 
 /**
- * Validates results from the iterative namefinding
+ * Validates results from the iterative name finding.
  */
 public interface ModelGenerationValidator extends ModelParameter<BaseModelBuilderParams> {
 
