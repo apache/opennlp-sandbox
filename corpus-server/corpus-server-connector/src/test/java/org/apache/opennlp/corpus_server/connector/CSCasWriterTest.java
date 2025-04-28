@@ -39,7 +39,6 @@ class CSCasWriterTest extends AbstractCSTest {
 
   private static final String CCPATH = "/CSCasConsumerTestDescriptor.xml";
 
-  private static final String BASE_PATH = CSCasWriterTest.class.getProtectionDomain().getCodeSource().getLocation().toExternalForm();
 
   @BeforeAll
   static void setUp() throws IOException {
@@ -52,7 +51,7 @@ class CSCasWriterTest extends AbstractCSTest {
       TypeSystemDescription tsd = UimaUtil.createTypeSystemDescription(in);
       tsd.toXML(os);
       CorporaStore corporaStore = new DerbyCorporaStore();
-      corporaStore.initialize(BASE_PATH.replace("file:", "").replace("/test-classes", ""));
+      corporaStore.initialize(getDBPath());
       byte[] indexMapping = new byte[] {};
       corporaStore.createCorpus("wikinews", os.toByteArray(), indexMapping);
     } catch (Exception e) {
