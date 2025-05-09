@@ -24,10 +24,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import opennlp.tools.models.ClassPathModelProvider;
+import opennlp.tools.models.DefaultClassPathModelProvider;
+import opennlp.tools.models.ModelType;
 import opennlp.tools.postag.POSModel;
 import opennlp.tools.postag.POSTaggerME;
+import opennlp.tools.postag.ThreadSafePOSTaggerME;
 import opennlp.tools.tokenize.WhitespaceTokenizer;
-import opennlp.tools.util.DownloadUtil;
 
 /**
  * A {@link POSTagger} wrapper implementation that relies on an OpenNLP {@link POSTaggerME}.
@@ -40,7 +43,9 @@ public class NounPOSTagger implements POSTagger {
   public static final String[] TAGS_NOUNS = {"NOUN", "NN", "NNS", "NNP", "NNPS"};
   private static final Set<String> EOS_CHARS = Set.of(".", "?", "!");
 
-  private final POSTaggerME tagger;
+  private static final ClassPathModelProvider MODEL_PROVIDER = new DefaultClassPathModelProvider();
+
+  private final ThreadSafePOSTaggerME tagger;
   private final Map<Integer, String[]> tagMap = new Hashtable<>();
 
   /**
@@ -56,8 +61,8 @@ public class NounPOSTagger implements POSTagger {
       throw new IllegalArgumentException("Parameter 'languageCode' must not be null");
     // init Tag map
     tagMap.put(POSTagger.NOUN, TAGS_NOUNS);
-    POSModel posModel = DownloadUtil.downloadModel(languageCode, DownloadUtil.ModelType.POS, POSModel.class);
-    tagger = new POSTaggerME(posModel);
+    final POSModel pm = MODEL_PROVIDER.load(languageCode, ModelType.POS_GENERIC, POSModel.class);
+    tagger = new ThreadSafePOSTaggerME(pm);
   }
 
   /**
@@ -105,8 +110,10 @@ public class NounPOSTagger implements POSTagger {
    */
   @Override
   public List<String> getWordsOfType(String[] tokens, int type) {
-    if (tokens == null) throw new IllegalArgumentException("Parameter 'tokens' must not be null");
-    if (type < 0 || type > PRONOUN) throw new IllegalArgumentException("Parameter 'type' must be in range [0, 4]");
+    if (tokens == null)
+      throw new IllegalArgumentException("Parameter 'tokens' must not be null");
+    if (type < 0 || type > PRONOUN)
+      throw new IllegalArgumentException("Parameter 'type' must be in range [0, 4]");
 
     List<String> ret = new ArrayList<>();
     for (String t : tokens) {

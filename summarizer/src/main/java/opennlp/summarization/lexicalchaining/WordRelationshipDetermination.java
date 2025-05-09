@@ -150,7 +150,7 @@ public class WordRelationshipDetermination {
       }
 
       for (ISynsetID id : rels) {
-        ISynset s = this.DICTIONARY.getSynset(id);
+        ISynset s = DICTIONARY.getSynset(id);
         IWord mat = inSynset(s, idxNoun);
         if (mat != null) {
           ret = new WordnetWord(noun, mat.getSenseKey(), mat.getID());
@@ -191,7 +191,7 @@ public class WordRelationshipDetermination {
     List<Word> ret = new ArrayList<>();
     try {
       //		openDict();
-      List<IWordID> wordIDs = this.DICTIONARY.getIndexWord(noun, POS.NOUN).getWordIDs();
+      List<IWordID> wordIDs = DICTIONARY.getIndexWord(noun, POS.NOUN).getWordIDs();
       for (IWordID wid : wordIDs) {
         Word w = new WordnetWord(noun, wid);
         ret.add(w);

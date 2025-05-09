@@ -37,6 +37,7 @@
     <hdf5.version>1.14.3-1.5.10</hdf5.version>
     <javacpp.version>1.5.11</javacpp.version>
     <openblas.version>0.3.28-1.5.11</openblas.version>
+    <httpclient.version>4.5.14</httpclient.version>
   </properties>
 
   <repositories>
@@ -59,12 +60,12 @@
 			<dependency>
 				<groupId>org.apache.httpcomponents</groupId>
 				<artifactId>httpclient</artifactId>
-				<version>4.5.14</version>
+				<version>${httpclient.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.apache.httpcomponents</groupId>
 				<artifactId>httpclient-cache</artifactId>
-				<version>4.5.14</version>
+				<version>${httpclient.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.apache.httpcomponents</groupId>
@@ -74,12 +75,12 @@
 			<dependency>
 				<groupId>org.apache.httpcomponents</groupId>
 				<artifactId>httpmime</artifactId>
-				<version>4.5.14</version>
+				<version>${httpclient.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.apache.httpcomponents</groupId>
 				<artifactId>fluent-hc</artifactId>
-				<version>4.5.14</version>
+				<version>${httpclient.version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
@@ -90,9 +91,31 @@
       <artifactId>opennlp-tools</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-math3</artifactId>
+      <groupId>org.apache.opennlp</groupId>
+      <artifactId>opennlp-tools-models</artifactId>
     </dependency>
+
+    <!-- Required English model resources at runtime -->
+    <dependency>
+      <groupId>org.apache.opennlp</groupId>
+      <artifactId>opennlp-models-tokenizer-en</artifactId>
+      <version>${opennlp.models.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.opennlp</groupId>
+      <artifactId>opennlp-models-pos-en</artifactId>
+      <version>${opennlp.models.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.opennlp</groupId>
+      <artifactId>opennlp-models-sentdetect-en</artifactId>
+      <version>${opennlp.models.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <!-- End model resources -->
+    
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>

@@ -49,6 +49,25 @@
       <groupId>org.apache.opennlp</groupId>
       <artifactId>opennlp-tools</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.apache.opennlp</groupId>
+      <artifactId>opennlp-tools-models</artifactId>
+    </dependency>
+
+    <!-- Required English model resources at runtime -->
+    <dependency>
+      <groupId>org.apache.opennlp</groupId>
+      <artifactId>opennlp-models-pos-en</artifactId>
+      <version>${opennlp.models.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.opennlp</groupId>
+      <artifactId>opennlp-models-sentdetect-en</artifactId>
+      <version>${opennlp.models.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <!-- End model resources -->
 
     <dependency>
       <groupId>edu.mit</groupId>

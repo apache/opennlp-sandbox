@@ -31,19 +31,24 @@ import java.util.regex.Pattern;
 
 import opennlp.summarization.Sentence;
 import opennlp.summarization.DocProcessor;
+import opennlp.tools.models.ClassPathModelProvider;
+import opennlp.tools.models.DefaultClassPathModelProvider;
+import opennlp.tools.models.ModelType;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
 import opennlp.tools.stemmer.PorterStemmer;
 import opennlp.tools.stemmer.Stemmer;
-import opennlp.tools.util.DownloadUtil;
 
 /**
  * Parses a document to sentences.
  */
 public class DefaultDocProcessor implements DocProcessor {
+
+  private static final ClassPathModelProvider MODEL_PROVIDER = new DefaultClassPathModelProvider();
+
   private static final String REGEX = "\"|'";
   private final static Pattern REPLACEMENT_PATTERN =
-          Pattern.compile("&#?[0-9 a-z A-Z][0-9 a-z A-Z][0-9 a-z A-Z]?;");
+          Pattern.compile("&#?[0-9a-zA-Z][0-9a-zA-Z][0-9a-zA-Z]?;");
 
   // Sentence fragmentation to use..
   private static final int OPEN_NLP = 1;
@@ -65,10 +70,10 @@ public class DefaultDocProcessor implements DocProcessor {
     if (languageCode == null || languageCode.isBlank())
       throw new IllegalArgumentException("Parameter 'languageCode' must not be null or blank");
     stemmer = new PorterStemmer();
-    sentModel = DownloadUtil.downloadModel(languageCode, DownloadUtil.ModelType.SENTENCE_DETECTOR, SentenceModel.class);
+    sentModel = MODEL_PROVIDER.load(languageCode, ModelType.SENTENCE_DETECTOR, SentenceModel.class);
   }
 
-  // Str - Document or para
+  // Str - Document or paragraph
   // sentences - List containing returned sentences
   // iidx - if not null update with the words in the sentence + sent id
   // processedSent - Sentences after stemming and stopword removal..
@@ -122,7 +127,6 @@ public class DefaultDocProcessor implements DocProcessor {
         processedSent.add(procSent.toString());
     }
   }
-
 
   /**
    * Reads a document's content from a file.

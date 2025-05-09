@@ -25,9 +25,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import opennlp.tools.chunker.ChunkerME;
 import opennlp.tools.chunker.ChunkerModel;
 import opennlp.tools.cmdline.parser.ParserTool;
+import opennlp.tools.models.ClassPathModelProvider;
+import opennlp.tools.models.DefaultClassPathModelProvider;
+import opennlp.tools.models.ModelType;
 import opennlp.tools.parser.AbstractBottomUpParser;
 import opennlp.tools.parser.Parse;
 import opennlp.tools.parser.Parser;
@@ -49,12 +55,12 @@ import opennlp.tools.tokenize.Tokenizer;
 import opennlp.tools.tokenize.TokenizerModel;
 import opennlp.tools.util.DownloadUtil;
 import opennlp.tools.util.Span;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ParserChunker2MatcherProcessor {
 
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final ClassPathModelProvider MODEL_PROVIDER = new DefaultClassPathModelProvider();
 
   static final int MIN_SENTENCE_LENGTH = 10;
   protected static ParserChunker2MatcherProcessor instance;
@@ -89,32 +95,27 @@ public class ParserChunker2MatcherProcessor {
   }
 
   protected void initializeSentenceDetector() throws IOException {
-    SentenceModel model = DownloadUtil.downloadModel(
-            "en", DownloadUtil.ModelType.SENTENCE_DETECTOR, SentenceModel.class);
-    sentenceDetector = new ThreadSafeSentenceDetectorME(model);
+    final SentenceModel sm = MODEL_PROVIDER.load("en", ModelType.SENTENCE_DETECTOR, SentenceModel.class);
+    sentenceDetector = new ThreadSafeSentenceDetectorME(sm);
   }
 
   protected void initializeTokenizer() throws IOException {
-    TokenizerModel model = DownloadUtil.downloadModel(
-            "en", DownloadUtil.ModelType.TOKENIZER, TokenizerModel.class);
-    tokenizer = new ThreadSafeTokenizerME(model);
+    final TokenizerModel tm = MODEL_PROVIDER.load("en", ModelType.TOKENIZER, TokenizerModel.class);
+    tokenizer = new ThreadSafeTokenizerME(tm);
   }
 
   protected void initializePosTagger() throws IOException {
-    POSModel model = DownloadUtil.downloadModel(
-            "en", DownloadUtil.ModelType.POS, POSModel.class);
-    posTagger = new ThreadSafePOSTaggerME(model);
+    final POSModel pm = MODEL_PROVIDER.load("en", ModelType.POS_GENERIC, POSModel.class);
+    posTagger = new ThreadSafePOSTaggerME(pm);
   }
 
   protected void initializeParser() throws IOException {
-    ParserModel model = DownloadUtil.downloadModel(
-            "en", DownloadUtil.ModelType.PARSER, ParserModel.class);
+    ParserModel model = DownloadUtil.downloadModel("en", ModelType.PARSER, ParserModel.class);
     parser = ParserFactory.create(model);
   }
 
   private void initializeChunker() throws IOException {
-    ChunkerModel model = DownloadUtil.downloadModel(
-            "en", DownloadUtil.ModelType.CHUNKER, ChunkerModel.class);
+    ChunkerModel model = DownloadUtil.downloadModel("en", ModelType.CHUNKER, ChunkerModel.class);
     chunker = new ChunkerME(model);
   }
 

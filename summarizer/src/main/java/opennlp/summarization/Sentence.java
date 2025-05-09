@@ -47,10 +47,10 @@ public class Sentence {
   /**
    * Instantiates a plain {@link Sentence} via a set of parameters.
    *
-   * @param id A numeric identifier with a postive value.
+   * @param id A numeric identifier with a positive value starting at {@code zero}.
    * @param stringVal The string representation of the sentence.
-   * @param paragraph TODO clarify exact meaning of and constraints for this parameter.
-   * @param paraPos clarify exact meaning of and constraints for this parameter.
+   * @param paragraph The n-th paragraph number within a document.
+   * @param paraPos The index position of the {@code paragraph}.
    * @throws IllegalArgumentException Thrown if parameters are invalid.
    */
   public Sentence(int id, String stringVal, int paragraph, int paraPos) {
