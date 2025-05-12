@@ -32,7 +32,7 @@
 
     <tika.version>3.1.0</tika.version>
     <solr.version>8.11.4</solr.version>
-    <docx4j.version>11.5.2</docx4j.version>
+    <docx4j.version>11.5.3</docx4j.version>
     <dl4j.version>1.0.0-M2.1</dl4j.version>
     <hdf5.version>1.14.3-1.5.10</hdf5.version>
     <javacpp.version>1.5.11</javacpp.version>
