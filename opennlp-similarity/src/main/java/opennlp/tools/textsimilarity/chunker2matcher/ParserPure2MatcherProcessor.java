@@ -41,9 +41,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import opennlp.tools.textsimilarity.LemmaPair;
 import opennlp.tools.textsimilarity.ParseTreeChunk;
-import opennlp.tools.textsimilarity.ParseTreeMatcherDeterministic;
 import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.TextProcessor;
 
@@ -51,13 +49,13 @@ public class ParserPure2MatcherProcessor extends ParserChunker2MatcherProcessor 
 
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected static ParserPure2MatcherProcessor pinstance;
+  private static ParserPure2MatcherProcessor pInstance;
 
   public synchronized static ParserPure2MatcherProcessor getInstance() {
-    if (pinstance == null)
-      pinstance = new ParserPure2MatcherProcessor();
+    if (pInstance == null)
+      pInstance = new ParserPure2MatcherProcessor();
 
-    return pinstance;
+    return pInstance;
   }
 
   private ParserPure2MatcherProcessor() {
@@ -71,8 +69,8 @@ public class ParserPure2MatcherProcessor extends ParserChunker2MatcherProcessor 
     }
   }
 
-  public synchronized List<List<ParseTreeChunk>> formGroupedPhrasesFromChunksForSentence(
-      String sentence) {
+  @Override
+  public synchronized List<List<ParseTreeChunk>> formGroupedPhrasesFromChunksForSentence(String sentence) {
     if (sentence == null || sentence.trim().length() < MIN_SENTENCE_LENGTH)
       return null;
 
@@ -118,25 +116,16 @@ public class ParserPure2MatcherProcessor extends ParserChunker2MatcherProcessor 
     return listOfChunks;
   }
 
+  @Override
   public SentencePairMatchResult assessRelevance(String para1, String para2) {
-
-    List<List<ParseTreeChunk>> sent1GrpLst = formGroupedPhrasesFromChunksForPara(para1), sent2GrpLst = formGroupedPhrasesFromChunksForPara(para2);
-
-    List<LemmaPair> origChunks1 = listListParseTreeChunk2ListLemmaPairs(sent1GrpLst);
-
-    ParseTreeMatcherDeterministic md = new ParseTreeMatcherDeterministic();
-    List<List<ParseTreeChunk>> res = md
-        .matchTwoSentencesGroupedChunksDeterministic(sent1GrpLst, sent2GrpLst);
-    return new SentencePairMatchResult(res, origChunks1);
-
+    return super.assessRelevance(para1, para2);
   }
 
   public static void main(String[] args) throws Exception {
     ParserPure2MatcherProcessor parser = ParserPure2MatcherProcessor.getInstance();
     String text = "Its classy design and the Mercedes name make it a very cool vehicle to drive. ";
 
-    List<List<ParseTreeChunk>> res = parser
-        .formGroupedPhrasesFromChunksForPara(text);
+    List<List<ParseTreeChunk>> res = parser.formGroupedPhrasesFromChunksForPara(text);
     System.out.println(res);
 
     String phrase1 = "Its classy design and the Mercedes name make it a very cool vehicle to drive. "

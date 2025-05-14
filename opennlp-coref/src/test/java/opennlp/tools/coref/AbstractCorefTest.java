@@ -17,9 +17,6 @@
 
 package opennlp.tools.coref;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,10 +26,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class AbstractCorefTest {
 
   private static final Logger logger = LoggerFactory.getLogger(AbstractCorefTest.class);
-  
+
   private static final String BASE_URL_MODELS_V15 = "https://opennlp.sourceforge.net/models-1.5/";
   protected static final Path OPENNLP_DIR = Paths.get(System.getProperty("user.home") + "/.opennlp/");
   protected static final String MODEL_DIR = "/models/coref/en";
