@@ -22,6 +22,7 @@ package opennlp.tools.disambiguator;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -105,6 +106,9 @@ class WSDisambiguatorMETest extends AbstractDisambiguatorTest {
    */
   @Test
   void testDisambiguateOneWord() {
+    System.out.println(Arrays.toString(sentence1));
+    System.out.println(Arrays.toString(tags1));
+    System.out.println(Arrays.toString(lemmas1));
     String sense = wsdME.disambiguate(sentence1, tags1, lemmas1, 8);
     assertEquals("WORDNET please%4:02:00::", sense, "Check 'please' sense ID");
   }
