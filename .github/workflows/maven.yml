@@ -28,18 +28,20 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
+    container:
+      image: eclipse-temurin:${{ matrix.java }}
+      options: --user root
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         java: [ 21 ]
         experimental: [false]
         include:
           - java: 24-ea
-            os: ubuntu-22.04
+            os: ubuntu-latest
             experimental: true
-
     steps:
     - uses: actions/checkout@v4
     - uses: actions/cache@v4
