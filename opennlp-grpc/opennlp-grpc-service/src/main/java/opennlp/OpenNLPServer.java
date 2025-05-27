@@ -143,10 +143,15 @@ public class OpenNLPServer implements Callable<Integer> {
         Boolean.parseBoolean(
             configuration.getOrDefault("server.enable_reflection", "false"));
 
+    final int maxInboundMessageSize =
+            Integer.parseInt(
+                    (configuration.getOrDefault("server.max_inbound_message_size", "10485760"))); // 10 MB
+
     final ServerBuilder<?> builder = ServerBuilder.forPort(port)
         .addService(new PosTaggerService(configuration))
         .addService(new TokenizerService(configuration))
-        .addService(new SentenceDetectorService(configuration));
+        .addService(new SentenceDetectorService(configuration))
+        .maxInboundMessageSize(maxInboundMessageSize);
 
     if (enableReflection) {
       builder.addService(ProtoReflectionServiceV1.newInstance());
