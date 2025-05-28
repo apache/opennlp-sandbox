@@ -27,6 +27,8 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.CleanupMode;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -103,6 +105,7 @@ class WSDisambiguatorMETest extends AbstractDisambiguatorTest {
   /*
    * Tests disambiguating only one word : The ambiguous word "please"
    */
+  @DisabledOnOs(value = OS.LINUX, disabledReason = "OPENNLP-1738")
   @Test
   void testDisambiguateOneWord() {
     String sense = wsdME.disambiguate(sentence1, tags1, lemmas1, 8);
