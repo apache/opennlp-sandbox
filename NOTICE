@@ -265,9 +265,9 @@ List of third-party dependencies grouped by their license type.
 
     Apache License, Version 2.0, GNU General Public License (GPL) version 2, or any later version, GPLv2 with Classpath exception
 
-        * JavaCPP (org.bytedeco:javacpp:1.5.11 - http://bytedeco.org/javacpp/)
+        * JavaCPP (org.bytedeco:javacpp:1.5.12 - http://bytedeco.org/javacpp/)
         * JavaCPP Presets for HDF5 (org.bytedeco:hdf5:1.14.3-1.5.10 - http://bytedeco.org/javacpp-presets/hdf5/)
-        * JavaCPP Presets for OpenBLAS (org.bytedeco:openblas:0.3.28-1.5.11 - http://bytedeco.org/javacpp-presets/openblas/)
+        * JavaCPP Presets for OpenBLAS (org.bytedeco:openblas:0.3.30-1.5.12 - http://bytedeco.org/javacpp-presets/openblas/)
 
     Apache License V2.0
 
