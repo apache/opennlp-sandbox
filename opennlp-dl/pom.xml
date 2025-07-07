@@ -34,7 +34,7 @@
     <nd4j.version>1.0.0-M2.1</nd4j.version>
     <nd4j.native.version>1.0.0-M2.1</nd4j.native.version>
     <javacpp.version>1.5.12</javacpp.version>
-    <openblas.version>0.3.28-1.5.11</openblas.version>
+    <openblas.version>0.3.30-1.5.12</openblas.version>
   </properties>
 
   <dependencies>
