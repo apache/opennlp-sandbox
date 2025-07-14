@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class Muc6FullParseCorefSampleStreamFactoryTest extends AbstractCorefTest {
 
-  private static final String MODEL_TOKENS = "opennlp-en-ud-ewt-tokens-1.2-2.5.0.bin";
+  private static final String MODEL_TOKENS = "opennlp-en-ud-ewt-tokens-1.3-2.5.4.bin";
   private static final String MODEL_PARSER = "en-parser-chunking.bin";
   private static final String MODEL_NER_PER = "en-ner-person.bin";
   private static final String MODEL_NER_ORG = "en-ner-organization.bin";

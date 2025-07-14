@@ -20,7 +20,6 @@ package opennlp.service;
 
 import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -34,10 +33,13 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class PosTaggerServiceTest extends AbstractServiceTest {
+class PosTaggerServiceTest extends AbstractServiceTest {
 
-  public static final String[] SENTENCE = new String[] {"The", "driver", "got", "badly", "injured", "by", "the", "accident", "."};
-  public static final String[] EXPECTED = new String[] {"DET", "NOUN", "VERB", "ADV", "VERB", "ADP", "DET", "NOUN", "PUNCT"};
+  private static final String MODEL_NAME = "opennlp-en-ud-ewt-pos-1.3-2.5.4.bin";
+  private static final String MODEL_HASH = "510b89087e7ef7ffb8c50c63e3e999122404ac9fa64790dfa93b38d1938c52ce";
+
+  static final String[] SENTENCE = new String[] {"The", "driver", "got", "badly", "injured", "by", "the", "accident", "."};
+  static final String[] EXPECTED = new String[] {"DET", "NOUN", "VERB", "ADV", "VERB", "ADP", "DET", "NOUN", "PUNCT"};
 
   @Test
   public void testGetAvailableModels() throws URISyntaxException {
@@ -117,8 +119,6 @@ public class PosTaggerServiceTest extends AbstractServiceTest {
             "model.recursive", "true"
         ))) {
 
-      final String hash = "5af913a52fa0b014e22c4c4411e146720f1222bdebde9ce1f1a3174df974d26d";
-
       //check if we have the EN tagger available
       taggerService.getAvailableModels(OpenNLPService.Empty.newBuilder().build(), new TestStreamObserver<>() {
 
@@ -128,14 +128,14 @@ public class PosTaggerServiceTest extends AbstractServiceTest {
           assertEquals(1, t.getModelsCount());
           OpenNLPService.Model m = t.getModels(0);
           assertNotNull(m);
-          assertEquals("opennlp-en-ud-ewt-pos-1.2-2.5.0.bin", m.getName());
-          assertEquals(hash, m.getHash());
+          assertEquals(MODEL_NAME, m.getName());
+          assertEquals(MODEL_HASH, m.getHash());
         }
       });
 
       //simulate a tagging session
       taggerService.tag(OpenNLPService.TagRequest.newBuilder()
-          .setModelHash(hash)
+          .setModelHash(MODEL_HASH)
           .addAllSentence(Arrays.stream(SENTENCE).toList())
           .build(), new TestStreamObserver<>() {
         @Override
@@ -160,7 +160,7 @@ public class PosTaggerServiceTest extends AbstractServiceTest {
             "model.recursive", "true"
         ))) {
 
-      final String hash = "5af913a52fa0b014e22c4c4411e146720f1222bdebde9ce1f1a3174df974d26d";
+      final String hash = "510b89087e7ef7ffb8c50c63e3e999122404ac9fa64790dfa93b38d1938c52ce";
 
       //check if we have the EN tagger available
       taggerService.getAvailableModels(OpenNLPService.Empty.newBuilder().build(), new TestStreamObserver<>() {
@@ -171,7 +171,7 @@ public class PosTaggerServiceTest extends AbstractServiceTest {
           assertEquals(1, t.getModelsCount());
           OpenNLPService.Model m = t.getModels(0);
           assertNotNull(m);
-          assertEquals("opennlp-en-ud-ewt-pos-1.2-2.5.0.bin", m.getName());
+          assertEquals(MODEL_NAME, m.getName());
           assertEquals(hash, m.getHash());
         }
       });

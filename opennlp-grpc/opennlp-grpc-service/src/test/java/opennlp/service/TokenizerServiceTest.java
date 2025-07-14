@@ -20,7 +20,6 @@ package opennlp.service;
 
 import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -32,10 +31,13 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class TokenizerServiceTest extends AbstractServiceTest {
+class TokenizerServiceTest extends AbstractServiceTest {
 
-  public static final String SENTENCE = "The driver got badly injured by the accident.";
-  public static final String[] EXPECTED = new String[] {"The", "driver", "got", "badly", "injured", "by", "the", "accident", "."};
+  private static final String MODEL_NAME = "opennlp-en-ud-ewt-tokens-1.3-2.5.4.bin";
+  private static final String MODEL_HASH = "95139111197ba9f1165fc12be8d4cbac05ea3912f995d167efa1a0e04e3e649a";
+
+  static final String SENTENCE = "The driver got badly injured by the accident.";
+  static final String[] EXPECTED = new String[] {"The", "driver", "got", "badly", "injured", "by", "the", "accident", "."};
 
   @Test
   public void testGetAvailableModels() throws URISyntaxException {
@@ -66,8 +68,6 @@ public class TokenizerServiceTest extends AbstractServiceTest {
             "model.recursive", "true"
         ))) {
 
-      final String hash = "9e7e4149010a56417e0236c15daab01cb7543f6089a8f0e85a53dc1183a9b1d3";
-
       service.getAvailableModels(OpenNLPService.Empty.newBuilder().build(), new TestStreamObserver<>() {
 
         @Override
@@ -76,13 +76,13 @@ public class TokenizerServiceTest extends AbstractServiceTest {
           assertEquals(1, t.getModelsCount());
           OpenNLPService.Model m = t.getModels(0);
           assertNotNull(m);
-          assertEquals("opennlp-en-ud-ewt-tokens-1.2-2.5.0.bin", m.getName());
-          assertEquals(hash, m.getHash());
+          assertEquals(MODEL_NAME, m.getName());
+          assertEquals(MODEL_HASH, m.getHash());
         }
       });
 
       service.tokenize(OpenNLPService.TokenizeRequest.newBuilder()
-          .setModelHash(hash)
+          .setModelHash(MODEL_HASH)
           .setSentence(SENTENCE)
           .build(), new TestStreamObserver<>() {
         @Override
@@ -105,8 +105,6 @@ public class TokenizerServiceTest extends AbstractServiceTest {
             "model.recursive", "true"
         ))) {
 
-      final String hash = "9e7e4149010a56417e0236c15daab01cb7543f6089a8f0e85a53dc1183a9b1d3";
-
       service.getAvailableModels(OpenNLPService.Empty.newBuilder().build(), new TestStreamObserver<>() {
 
         @Override
@@ -115,13 +113,13 @@ public class TokenizerServiceTest extends AbstractServiceTest {
           assertEquals(1, t.getModelsCount());
           OpenNLPService.Model m = t.getModels(0);
           assertNotNull(m);
-          assertEquals("opennlp-en-ud-ewt-tokens-1.2-2.5.0.bin", m.getName());
-          assertEquals(hash, m.getHash());
+          assertEquals(MODEL_NAME, m.getName());
+          assertEquals(MODEL_HASH, m.getHash());
         }
       });
 
      service.tokenizePos(OpenNLPService.TokenizePosRequest.newBuilder()
-          .setModelHash(hash)
+          .setModelHash(MODEL_HASH)
           .setSentence(SENTENCE)
           .build(), new TestStreamObserver<>() {
         @Override

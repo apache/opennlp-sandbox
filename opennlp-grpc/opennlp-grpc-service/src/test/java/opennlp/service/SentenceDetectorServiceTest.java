@@ -20,7 +20,6 @@ package opennlp.service;
 
 import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -32,10 +31,13 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class SentenceDetectorServiceTest extends AbstractServiceTest{
+class SentenceDetectorServiceTest extends AbstractServiceTest {
 
-  public static final String SENTENCE = "The driver got badly injured by the accident. He was taken to the hospital!";
-  public static final String[] EXPECTED = new String[] {"The driver got badly injured by the accident.", "He was taken to the hospital!"};
+  private static final String MODEL_NAME = "opennlp-en-ud-ewt-sentence-1.3-2.5.4.bin";
+  private static final String MODEL_HASH = "4de58d12b09421003c8b1ba13e8b58ec533b28e1f22a65272119dc0993d333e8";
+
+  static final String SENTENCE = "The driver got badly injured by the accident. He was taken to the hospital!";
+  static final String[] EXPECTED = new String[] {"The driver got badly injured by the accident.", "He was taken to the hospital!"};
 
   @Test
   public void testGetAvailableModels() throws URISyntaxException {
@@ -66,8 +68,6 @@ public class SentenceDetectorServiceTest extends AbstractServiceTest{
             "model.recursive", "true"
         ))) {
 
-      final String hash = "3735a5ae356c72ca028c93efcf4022f1d3a1c474337a379c474f07de990dd38b";
-
       service.getAvailableModels(OpenNLPService.Empty.newBuilder().build(), new TestStreamObserver<>() {
 
         @Override
@@ -76,13 +76,13 @@ public class SentenceDetectorServiceTest extends AbstractServiceTest{
           assertEquals(1, t.getModelsCount());
           OpenNLPService.Model m = t.getModels(0);
           assertNotNull(m);
-          assertEquals("opennlp-en-ud-ewt-sentence-1.2-2.5.0.bin", m.getName());
-          assertEquals(hash, m.getHash());
+          assertEquals(MODEL_NAME, m.getName());
+          assertEquals(MODEL_HASH, m.getHash());
         }
       });
 
       service.sentDetect(OpenNLPService.SentDetectRequest.newBuilder()
-          .setModelHash(hash)
+          .setModelHash(MODEL_HASH)
           .setSentence(SENTENCE)
           .build(), new TestStreamObserver<>() {
         @Override
@@ -105,8 +105,6 @@ public class SentenceDetectorServiceTest extends AbstractServiceTest{
             "model.recursive", "true"
         ))) {
 
-      final String hash = "3735a5ae356c72ca028c93efcf4022f1d3a1c474337a379c474f07de990dd38b";
-
       service.getAvailableModels(OpenNLPService.Empty.newBuilder().build(), new TestStreamObserver<>() {
 
         @Override
@@ -115,13 +113,13 @@ public class SentenceDetectorServiceTest extends AbstractServiceTest{
           assertEquals(1, t.getModelsCount());
           OpenNLPService.Model m = t.getModels(0);
           assertNotNull(m);
-          assertEquals("opennlp-en-ud-ewt-sentence-1.2-2.5.0.bin", m.getName());
-          assertEquals(hash, m.getHash());
+          assertEquals(MODEL_NAME, m.getName());
+          assertEquals(MODEL_HASH, m.getHash());
         }
       });
 
      service.sentPosDetect(OpenNLPService.SentDetectPosRequest.newBuilder()
-          .setModelHash(hash)
+          .setModelHash(MODEL_HASH)
           .setSentence(SENTENCE)
           .build(), new TestStreamObserver<>() {
         @Override

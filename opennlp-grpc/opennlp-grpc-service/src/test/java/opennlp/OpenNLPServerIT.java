@@ -121,7 +121,7 @@ public class OpenNLPServerIT {
         assertEquals(1, t.getModelsCount());
         OpenNLPService.Model m = t.getModels(0);
         assertNotNull(m);
-        assertEquals("opennlp-en-ud-ewt-pos-1.2-2.5.0.bin", m.getName());
+        assertEquals("opennlp-en-ud-ewt-pos-1.3-2.5.4.bin", m.getName());
         assertEquals(hash, m.getHash());
       }
     });
@@ -156,7 +156,7 @@ public class OpenNLPServerIT {
         assertEquals(1, t.getModelsCount());
         OpenNLPService.Model m = t.getModels(0);
         assertNotNull(m);
-        assertEquals("opennlp-en-ud-ewt-tokens-1.2-2.5.0.bin", m.getName());
+        assertEquals("opennlp-en-ud-ewt-tokens-1.3-2.5.4.bin", m.getName());
         assertEquals(hash, m.getHash());
       }
     });
@@ -192,7 +192,7 @@ public class OpenNLPServerIT {
         assertEquals(1, t.getModelsCount());
         OpenNLPService.Model m = t.getModels(0);
         assertNotNull(m);
-        assertEquals("opennlp-en-ud-ewt-sentence-1.2-2.5.0.bin", m.getName());
+        assertEquals("opennlp-en-ud-ewt-sentence-1.3-2.5.4.bin", m.getName());
         assertEquals(hash, m.getHash());
       }
     });

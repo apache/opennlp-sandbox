@@ -28,8 +28,7 @@ public abstract class AbstractServiceTest {
   Path getModelDirectory() throws URISyntaxException {
     return Paths.get(
         Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("models/marker.txt"))
-            .toURI()
+                .getResource("models/marker.txt")).toURI()
     ).getParent().toAbsolutePath();
   }
 }
