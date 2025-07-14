@@ -94,13 +94,10 @@ public class SentenceDetectorJob extends Job {
     
     detectedSentences = new ArrayList<>();
     for (Span para : paragraphs) {
-
       List<Span> textBlocks = new ArrayList<>();
 
       int textBlockBeginIndex = 0;
-      
       for (Span exclusionSpan : exclusionSpans) {
-        
         Span textBlockSpan = new Span(textBlockBeginIndex, exclusionSpan.getStart());
         
         // TODO: Filter out whitespace sentences ...
@@ -117,18 +114,20 @@ public class SentenceDetectorJob extends Job {
       }
       
       for (Span textBlock : textBlocks) {
-        Span[] sentenceSpans = sentenceDetector.sentPosDetect(
+        final Span[] sentenceSpans = sentenceDetector.sentPosDetect(
             textBlock.getCoveredText(text).toString());
-        
-        double[] confidence = sentenceDetector.getSentenceProbabilities();
+        final double[] confidence = sentenceDetector.probs();
         
         for (int i = 0; i < sentenceSpans.length; i++) {
-          Span sentenceSpan = sentenceSpans[i];
-          String sentenceText = text.substring(textBlock.getStart() + sentenceSpan.getStart(),
-              textBlock.getStart() + sentenceSpan.getEnd());
-          detectedSentences.add(new PotentialAnnotation(textBlock.getStart() + sentenceSpan.getStart(), 
-              textBlock.getStart() + sentenceSpan.getEnd(), sentenceText,
-              confidence[i], sentenceType));
+          final Span sentenceSpan = sentenceSpans[i];
+          int textStart = textBlock.getStart();
+          int spanStart = sentenceSpan.getStart();
+          int spanEnd = sentenceSpan.getEnd();
+          String sentenceText = this.text.substring(textStart + spanStart, textStart + spanEnd);
+          PotentialAnnotation pa = new PotentialAnnotation(
+                  textStart + spanStart, textStart + spanEnd,
+                  sentenceText, confidence[i], sentenceType);
+          detectedSentences.add(pa);
         }
       }
     }
