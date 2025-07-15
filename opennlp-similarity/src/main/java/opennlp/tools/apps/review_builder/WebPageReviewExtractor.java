@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import opennlp.tools.jsmlearning.ProfileReaderWriter;
 import opennlp.tools.parse_thicket.apps.WebPageExtractor;
 import opennlp.tools.similarity.apps.HitBase;
 import opennlp.tools.similarity.apps.utils.StringDistanceMeasurer;
@@ -37,7 +36,6 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 
 	private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-	private final BingAPIProductSearchManager prodman = new BingAPIProductSearchManager();
 	private final SentenceOriginalizer orig;
 		
 	public WebPageReviewExtractor(String resourceDir) {
@@ -255,10 +253,10 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 		return firstChar.toUpperCase()+remainder;
 	}
 
-	public List<String> formReviewsForAProduct(String name /*long bpid, String keywordsName*/){
+	public List<String> formReviewsForAProduct(String name){
 		ReviewObj reviewObjTotal = null;
 		try {
-			List<HitBase> pagesForAProduct = prodman.findProductByName(name, 1);
+			List<HitBase> pagesForAProduct = new ArrayList<>(); //prodman.findProductByName(name, 1);
 			reviewObjTotal = null; 
 
 			for(HitBase p: pagesForAProduct){
@@ -433,18 +431,6 @@ public class WebPageReviewExtractor extends WebPageExtractor {
 				//"brother ink pageyield yellow", 204743189);
 				// ?? "garmin 2200 gps navigator", 215167480);
 				"halo portable backup battery");
-
-		ProfileReaderWriter.writeReportListStr(res, "formedReviewSentences4.csv");
-
-
-		/*		
-			res=	extractor. extractSentencesWithPotentialReviewPhrases(//"http://www.sitbetter.com/view/chair/ofm-500-l/ofm--high-back-leather-office-chair/");
-		//"http://www.amazon.com/OFM-High-Back-Leather-Integral-Headrest/dp/B002SIW1E0/ref=sr_1_1?ie=UTF8&qid=1353370254&sr=8-1&keywords=OFM-High-Back-Leather-Integral-Headrest");
-		//"http://www.amazon.com/Oregon-511AX-Chain-Grinder-Sharpener/dp/B0000AX0CY/ref=sr_1_4?s=industrial&ie=UTF8&qid=1353373435&sr=1-4&keywords=chain+saws");
-			//			"http://www.amazon.com/Bearing-UCP204-12-Housing-Mounted-Bearings/dp/B002BBIYWM/ref=sr_1_1?s=industrial&ie=UTF8&qid=1353373786&sr=1-1&keywords=pillow+block+bearing");
-			"http://www.amazon.com/ShelterLogic-20--Feet-Auto-Shelter/dp/B001OFNK8O/ref=sr_1_1?s=lawn-garden&ie=UTF8&qid=1353376677&sr=1-1&keywords=shelterlogic+62680+autoshelter+portable+garage+carport");			
-						System.out.println(res);
-		 */			
 
 	}
 }

@@ -25,9 +25,8 @@ import opennlp.tools.textsimilarity.ParseTreeChunkListScorer;
 import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
-public class SearchResultsProcessor extends BingQueryRunner {
-  private static final Logger LOG =
-          Logger.getLogger("opennlp.tools.similarity.apps.SearchResultsProcessor");
+public class SearchResultsProcessor {
+  private static final Logger LOG = Logger.getLogger("opennlp.tools.similarity.apps.SearchResultsProcessor");
   private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
   ParserChunker2MatcherProcessor sm;
   final WebSearchEngineResultsScraper scraper = new WebSearchEngineResultsScraper();
@@ -37,8 +36,6 @@ public class SearchResultsProcessor extends BingQueryRunner {
    * between the question and each snippet. Ranks those snippets with higher
    * similarity score up
    */
-  
-  
   private List<HitBase> calculateMatchScoreResortHits(List<HitBase> hits,
       String searchQuery) {
 

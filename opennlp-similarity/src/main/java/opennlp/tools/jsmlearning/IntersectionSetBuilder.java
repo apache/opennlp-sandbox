@@ -16,6 +16,8 @@
  */
 package opennlp.tools.jsmlearning;
 
+import opennlp.tools.ProfileReaderWriter;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -73,7 +75,7 @@ public class IntersectionSetBuilder{
 	public void ruleVerifier(String dataFile, String ruleFile){
 
 
-		List<String[]> negativeSet = ProfileReaderWriter.readProfiles(dataFile); 
+		List<String[]> negativeSet = ProfileReaderWriter.readProfiles(dataFile);
 		List<String[]> positiveSet = ProfileReaderWriter.readProfiles(dataFile.replace("negative", "positive")); 
 		distProcessorPos = new FeatureSpaceCoverageProcessor(); distProcessorNeg = new FeatureSpaceCoverageProcessor();
 		distProcessorNeg.initParamMap( 	fieldsToAggr, negativeSet.get(0));		

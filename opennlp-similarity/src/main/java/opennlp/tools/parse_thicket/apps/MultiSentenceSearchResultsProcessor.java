@@ -20,8 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-
-import opennlp.tools.similarity.apps.BingQueryRunner;
 import opennlp.tools.similarity.apps.HitBase;
 import opennlp.tools.similarity.apps.HitBaseComparable;
 import opennlp.tools.similarity.apps.WebSearchEngineResultsScraper;
@@ -30,13 +28,11 @@ import opennlp.tools.textsimilarity.SentencePairMatchResult;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
 public class MultiSentenceSearchResultsProcessor  {
-	private static final Logger LOG = Logger
-			.getLogger("opennlp.tools.similarity.apps.SearchResultsProcessor");
+	private static final Logger LOG = Logger.getLogger("opennlp.tools.similarity.apps.SearchResultsProcessor");
 
 	private final WebSearchEngineResultsScraper scraper = new WebSearchEngineResultsScraper();
 	private final ParserChunker2MatcherProcessor matcher = ParserChunker2MatcherProcessor.getInstance();
 	private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
-	private final BingQueryRunner bingSearcher = new BingQueryRunner();
 	private final SnippetToParagraph snp = new SnippetToParagraph();
 
 	protected static final int NUM_OF_SEARCH_RESULTS = 10;
@@ -46,10 +42,7 @@ public class MultiSentenceSearchResultsProcessor  {
 	 * between the question and each snippet. Ranks those snippets with higher
 	 * similarity score up
 	 */
-
-
-	protected List<HitBase> calculateMatchScoreResortHits(List<HitBase> hits,
-			String searchQuery) {
+	protected List<HitBase> calculateMatchScoreResortHits(List<HitBase> hits, String searchQuery) {
 
 		List<HitBase> newHitList = new ArrayList<>();
 		int count = 0;
@@ -140,27 +133,6 @@ public class MultiSentenceSearchResultsProcessor  {
 		hits = calculateMatchScoreResortHits(hits, query);
 		return hits;
 	}
-
-
-	public List<HitBase> runSearchViaAPI(String query) {
-		List<String[]> reportData = new ArrayList<>();
-		reportData.add(new String[]{query});
-		List<HitBase> hits;
-		try {
-			List<HitBase> resultList = bingSearcher.runSearch(query, NUM_OF_SEARCH_RESULTS);
-			reportData.add(convertListHitBaseIntoStringAr(resultList));
-			
-			// now we apply our own relevance filter
-			hits = calculateMatchScoreResortHits(resultList, query);
-			reportData.add(convertListHitBaseIntoStringAr(resultList));
-		} catch (Exception e) {
-			e.printStackTrace();
-			LOG.info("No search results for query '" + query);
-			return null;
-		}
-		//ProfileReaderWriter.writeReport(reportData, "resultsForQuery_"+query.replace(' ', '_')+".csv");
-		return hits;
-	}
 	
 	private String[] convertListHitBaseIntoStringAr(List<HitBase> list){
 		List<String> results = new ArrayList<>();
@@ -175,7 +147,7 @@ public class MultiSentenceSearchResultsProcessor  {
 				"standards of conduct. Nor do I see a distinction between the service member who orchestrated this offense and the chain of " +
 				"command that was either oblivious to or tolerant of criminal behavior";
 
-		new MultiSentenceSearchResultsProcessor().runSearchViaAPI(query);
+		new MultiSentenceSearchResultsProcessor().runSearch(query);
 	}
 
 }
