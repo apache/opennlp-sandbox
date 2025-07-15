@@ -47,7 +47,6 @@ public class ContentGenerator /*extends RelatedSentenceFinder*/ {
 	private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
 	private final ParseTreeChunk parseTreeChunk = new ParseTreeChunk();
 	private static final StringDistanceMeasurer STRING_DISTANCE_MEASURER = new StringDistanceMeasurer();
-	protected final BingQueryRunner yrunner = new BingQueryRunner();
 	protected final ContentGeneratorSupport support = new ContentGeneratorSupport();
 	protected int MAX_STEPS = 1;
 	protected int MAX_SEARCH_RESULTS = 1;
@@ -59,18 +58,12 @@ public class ContentGenerator /*extends RelatedSentenceFinder*/ {
 		this.MAX_STEPS = ms;
 		this.MAX_SEARCH_RESULTS = msr;
 		this.RELEVANCE_THRESHOLD=thresh;
-		yrunner.setKey(key);
 	}
 
 	public ContentGenerator() {
 
 	}
 	
-	public void setLang(String lang) {
-		yrunner.setLang(lang);
-	}
-
-
 	/**
 	 * Main content generation function which takes a seed as a person, rock
 	 * group, or other entity name and produce a list of text fragments by web
@@ -82,15 +75,13 @@ public class ContentGenerator /*extends RelatedSentenceFinder*/ {
 	 *         (in terms of relevance) mined sentences, as well as original search
 	 *         results objects such as doc titles, abstracts, and urls.
 	 */
-
 	public List<HitBase> generateContentAbout(String sentence) throws Exception {
 		List<HitBase> opinionSentencesToAdd = new ArrayList<>();
 		System.out.println(" \n=== Entity to write about = " + sentence);
 	
 		int stepCount=0;
 		for (String verbAddition : StoryDiscourseNavigator.FREQUENT_PERFORMING_VERBS) {
-			List<HitBase> searchResult = yrunner.runSearch(sentence + " "
-					+ verbAddition, MAX_SEARCH_RESULTS); //100);
+			List<HitBase> searchResult = new ArrayList<>(); //yrunner.runSearch(sentence + " " + verbAddition, MAX_SEARCH_RESULTS); //100);
 			if (MAX_SEARCH_RESULTS<searchResult.size())
 				searchResult = searchResult.subList(0, MAX_SEARCH_RESULTS);
 			//TODO for shorter run

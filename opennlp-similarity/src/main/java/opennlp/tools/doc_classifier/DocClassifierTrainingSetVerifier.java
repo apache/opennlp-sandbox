@@ -22,7 +22,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
-import opennlp.tools.jsmlearning.ProfileReaderWriter;
+import opennlp.tools.ProfileReaderWriter;
 
 import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
