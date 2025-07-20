@@ -48,7 +48,7 @@ public abstract class DiscourseElement {
 
   /**
    * @return Retrieves an {@link Iterator} over the mentions which iterates through them
-   * based on which were most recently mentioned..
+   * based on which were most recently mentioned.
    */
   public Iterator<MentionContext> getRecentMentions() {
     return new ReverseListIterator<>(extents);

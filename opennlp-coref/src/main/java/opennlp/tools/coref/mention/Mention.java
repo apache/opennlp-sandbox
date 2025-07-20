@@ -36,8 +36,8 @@ public class Mention implements Comparable<Mention> {
   protected final String type;
   
   /** 
-   * The entity id indicating which entity this extent belongs to.  This is only
-   * used when training a coreference classifier.
+   * The entity id indicating which entity this extent belongs to.
+   * This is only used when training a coreference classifier.
    */
   private int id;
 
@@ -125,7 +125,6 @@ public class Mention implements Comparable<Mention> {
   public int getId() {
     return id;
   }
-
 
   @Override
   public int compareTo(Mention e) {

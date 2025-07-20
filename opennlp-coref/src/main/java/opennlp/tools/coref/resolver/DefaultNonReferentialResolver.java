@@ -22,7 +22,6 @@ import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -36,6 +35,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import opennlp.tools.coref.mention.MentionContext;
 import opennlp.tools.coref.mention.Parse;
 import opennlp.tools.ml.maxent.GISModel;
@@ -47,8 +49,6 @@ import opennlp.tools.ml.model.FileEventStream;
 import opennlp.tools.ml.model.MaxentModel;
 import opennlp.tools.util.ObjectStreamUtils;
 import opennlp.tools.util.TrainingParameters;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Default implementation of the {@link NonReferentialResolver} interface.
@@ -97,7 +97,7 @@ public class DefaultNonReferentialResolver implements NonReferentialResolver {
     List<String> features = getFeatures(mention);
     double r = model.eval(features.toArray(new String[0]))[nonRefIndex];
     if (DEBUG) {
-      logger.debug(this + " {} ->  null {} {}", mention.toText(), r, features);
+      logger.debug("{} {} ->  null {} {}", this, mention.toText(), r, features);
     }
     return r;
   }
@@ -121,9 +121,9 @@ public class DefaultNonReferentialResolver implements NonReferentialResolver {
   }
 
   /**
-   * Returns a list of features used to predict whether the specified mention is non-referential.
    * @param mention The mention under consideration.
-   * @return a list of features used to predict whether the specified mention is non-referential.
+   * @return Retrieves a list of features used to predict whether the
+   *         specified mention is non-referential.
    */
   protected List<String> getNonReferentialFeatures(MentionContext mention) {
     List<String> features = new ArrayList<>();

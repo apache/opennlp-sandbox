@@ -18,6 +18,8 @@
 package opennlp.tools.coref.sim;
 /**
  * Class which models the number of an entity and the confidence of that association.
+ *
+ * @see NumberEnum
  */
 public class Number {
   private final NumberEnum type;

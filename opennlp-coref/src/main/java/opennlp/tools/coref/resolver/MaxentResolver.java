@@ -106,8 +106,11 @@ public abstract class MaxentResolver extends AbstractResolver {
    * Creates a maximum-entropy-based resolver which will look the specified number of
    * entities back for a referent. This constructor is only used for unit testing.
    *
-   * @param numberOfEntitiesBack
-   * @param preferFirstReferent
+   * @param numberOfEntitiesBack The number of sentences back this resolver should look for a referent.
+   * @param preferFirstReferent  If {@code true}, this designates that the resolver should use the first
+   *                             referent encountered which it more preferable than non-reference.
+   *                             When {@code false} all non-excluded referents within this resolvers
+   *                             range are considered.
    */
   protected MaxentResolver(int numberOfEntitiesBack, boolean preferFirstReferent) {
     super(numberOfEntitiesBack);
@@ -163,7 +166,8 @@ public abstract class MaxentResolver extends AbstractResolver {
    * @param numberEntitiesBack The number of entities back in the text that this resolver will look for a referent.
    * @throws IOException If the model file is not found or can not be written to.
    */
-  public MaxentResolver(String modelDirectory, String modelName, ResolverMode mode, int numberEntitiesBack) throws IOException {
+  public MaxentResolver(String modelDirectory, String modelName, ResolverMode mode, int numberEntitiesBack)
+      throws IOException {
     this(modelDirectory, modelName, mode, numberEntitiesBack, false);
   }
 

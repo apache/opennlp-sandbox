@@ -28,17 +28,20 @@ import opennlp.tools.coref.mention.MentionContext;
  * Resolves coreference between plural nouns.
  *
  * @see MaxentResolver
+ * @see Resolver
  */
 public class PluralNounResolver extends MaxentResolver {
 
+  private static final String MODEL_NAME = "plmodel";
+
   public PluralNounResolver(String modelDirectory, ResolverMode m) throws IOException {
-    super(modelDirectory, "plmodel", m, 80, true);
+    super(modelDirectory, MODEL_NAME, m, 80, true);
     showExclusions = false;
   }
 
   public PluralNounResolver(String modelDirectory, ResolverMode m, NonReferentialResolver nrr)
       throws IOException {
-    super(modelDirectory, "plmodel", m, 80, true, nrr);
+    super(modelDirectory, MODEL_NAME, m, 80, true, nrr);
     showExclusions = false;
   }
 
@@ -58,8 +61,7 @@ public class PluralNounResolver extends MaxentResolver {
   public boolean canResolve(MentionContext mention) {
     String firstTok = mention.getFirstTokenText().toLowerCase();
     String firstTokTag = mention.getFirstToken().getSyntacticType();
-    return mention.getHeadTokenTag().equals("NNS")
-        && !ResolverUtils.definiteArticle(firstTok, firstTokTag);
+    return NNS.equals(mention.getHeadTokenTag()) && !ResolverUtils.definiteArticle(firstTok, firstTokTag);
   }
 
   @Override
@@ -69,7 +71,7 @@ public class PluralNounResolver extends MaxentResolver {
     }
     else {
       MentionContext cec = entity.getLastExtent();
-      return (!cec.getHeadTokenTag().equals("NNS") || super.excluded(mention, entity));
+      return (!NNS.equals(cec.getHeadTokenTag()) || super.excluded(mention, entity));
     }
   }
 }

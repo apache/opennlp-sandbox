@@ -23,22 +23,22 @@ import opennlp.tools.coref.mention.MentionContext;
 
 /**
  * Resolver used in training to update the discourse model based on the coreference annotation.
+ *
+ * @see AbstractResolver
+ * @see Resolver
  */
-public class PerfectResolver extends  AbstractResolver {
+public class PerfectResolver extends AbstractResolver {
 
   public PerfectResolver() {
     super(0);
   }
 
+  @Override
   public boolean canResolve(MentionContext ec) {
     return true;
   }
 
   @Override
-  protected boolean outOfRange(MentionContext ec, DiscourseEntity de) {
-    return false;
-  }
-
   public DiscourseEntity resolve(MentionContext ec, DiscourseModel dm) {
     return null;
   }

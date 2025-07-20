@@ -31,14 +31,16 @@ import opennlp.tools.coref.mention.MentionContext;
  */
 public class DefiniteNounResolver extends MaxentResolver {
 
+  private static final String MODEL_NAME = "defmodel";
+
   public DefiniteNounResolver(String modelDirectory, ResolverMode m) throws IOException {
-    super(modelDirectory, "defmodel", m, 80);
+    super(modelDirectory, MODEL_NAME, m, 80);
     // preferFirstReferent = true;
   }
 
   public DefiniteNounResolver(String modelDirectory, ResolverMode m, NonReferentialResolver nrr)
       throws IOException {
-    super(modelDirectory, "defmodel", m, 80,nrr);
+    super(modelDirectory, MODEL_NAME, m, 80,nrr);
     // preferFirstReferent = true;
   }
 

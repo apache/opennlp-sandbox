@@ -18,7 +18,10 @@
 package opennlp.tools.coref.mention;
 
 /**
- * Finds mentions from Penn Treebank style parses.
+ * A {@link MentionFinder} implementation that finds mentions from Penn Treebank style parses.
+ *
+ * @see AbstractMentionFinder
+ * @see MentionFinder
  */
 public class PTBMentionFinder extends AbstractMentionFinder {
 
@@ -35,10 +38,10 @@ public class PTBMentionFinder extends AbstractMentionFinder {
   }
 
   /**
-   * Retrives the one and only existing instance.
+   * Retrieves the one and only existing instance.
    *
-   * @param hf
-   * @return the one and only existing instance
+   * @param hf A valid {@link HeadFinder} to assign if no instance exists.
+   * @return The one and only existing {@link PTBMentionFinder} instance.
    */
   public static PTBMentionFinder getInstance(HeadFinder hf) {
     if (instance == null) {
@@ -49,9 +52,6 @@ public class PTBMentionFinder extends AbstractMentionFinder {
     }
     return instance;
   }
-
-
-
 
   /*
   private boolean isTraceNp(Parse np){

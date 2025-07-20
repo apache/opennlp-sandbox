@@ -35,7 +35,7 @@ public interface TrainModel<T>{
    * <p>
    * Incompatible extents are chosen at random from the set of extents which don't meet these criteria.
    *
-   * @param extents
+   * @param extents The {@link Context extents} to set and process.
    */
   void setExtents(Context[] extents);
 }

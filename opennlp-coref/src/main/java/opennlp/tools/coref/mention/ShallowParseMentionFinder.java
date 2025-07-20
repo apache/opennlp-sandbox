@@ -18,7 +18,10 @@
 package opennlp.tools.coref.mention;
 
 /**
- * Finds mentions from shallow np-chunking based parses.
+ * A {@link MentionFinder} implementation that finds mentions from shallow np-chunking based parses.
+ *
+ * @see AbstractMentionFinder
+ * @see MentionFinder
  */
 public class ShallowParseMentionFinder extends AbstractMentionFinder {
 
@@ -32,7 +35,7 @@ public class ShallowParseMentionFinder extends AbstractMentionFinder {
 
   /**
    * @param hf A valid {@link HeadFinder} to assign if no instance exists.
-   * @return Retrieves the one and only existing instance.
+   * @return Retrieves the one and only existing {@link ShallowParseMentionFinder} instance.
    */
   public static ShallowParseMentionFinder getInstance(HeadFinder hf) {
     if (instance == null) {

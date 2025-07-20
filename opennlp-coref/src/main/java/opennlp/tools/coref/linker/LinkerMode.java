@@ -19,7 +19,7 @@
 package opennlp.tools.coref.linker;
 
 /**
- * Enumeration of modes in which a linker can run.
+ * Enumeration of modes in which a {@link Linker} can run.
  */
 public enum LinkerMode {
 
@@ -33,7 +33,9 @@ public enum LinkerMode {
    */
   TRAIN,
 
-  /** Evaluation mode, used to evaluate identified coreference relationships based on annotated text. */
+  /**
+   * Evaluation mode, used to evaluate identified coreference relationships based on annotated text.
+   */
   EVAL,
 
   /**

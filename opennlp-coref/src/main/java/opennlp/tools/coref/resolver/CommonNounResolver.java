@@ -28,18 +28,21 @@ import opennlp.tools.coref.mention.MentionContext;
  * Resolves coreference between common nouns.
  *
  * @see MaxentResolver
+ * @see Resolver
  */
 public class CommonNounResolver extends MaxentResolver {
 
+  private static final String MODEL_NAME = "cmodel";
+
   public CommonNounResolver(String modelDirectory, ResolverMode m) throws IOException {
-    super(modelDirectory,"cmodel", m, 80, true);
+    super(modelDirectory, MODEL_NAME, m, 80, true);
     showExclusions = false;
     preferFirstReferent = true;
   }
 
   public CommonNounResolver(String modelDirectory, ResolverMode m, NonReferentialResolver nrr)
       throws IOException {
-    super(modelDirectory,"cmodel", m, 80, true, nrr);
+    super(modelDirectory, MODEL_NAME, m, 80, true, nrr);
     showExclusions = false;
     preferFirstReferent = true;
   }
@@ -54,12 +57,11 @@ public class CommonNounResolver extends MaxentResolver {
     return features;
   }
 
+  @Override
   public boolean canResolve(MentionContext mention) {
     String firstTok = mention.getFirstTokenText().toLowerCase();
     String firstTokTag = mention.getFirstToken().getSyntacticType();
-    boolean rv = mention.getHeadTokenTag().equals("NN")
-        && !ResolverUtils.definiteArticle(firstTok, firstTokTag);
-    return rv;
+    return mention.getHeadTokenTag().equals(NN) && !ResolverUtils.definiteArticle(firstTok, firstTokTag);
   }
 
   @Override

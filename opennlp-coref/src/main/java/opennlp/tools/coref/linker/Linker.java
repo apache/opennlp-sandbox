@@ -66,7 +66,6 @@ public interface Linker {
    */
   String PRONOUN_MODIFIER = "np";
 
- 
   /**
    * Indicated that the specified mentions can be used to train this linker.
    * This requires that the coreference relationship between the mentions have been labeled
@@ -85,12 +84,12 @@ public interface Linker {
   DiscourseEntity[] getEntities(Mention[] mentions);
 
   /**
-   * Creates mention contexts for the specified mention exents.
+   * Creates mention contexts for the specified mention extents.
    * These are used to compute coreference features over.
    *
    * @param mentions The mention of a document.
    * 
-   * @return mention contexts for the specified mention exents.
+   * @return mention contexts for the specified mention extents.
    */
   MentionContext[] constructMentionContexts(Mention[] mentions);
 
@@ -110,8 +109,6 @@ public interface Linker {
   MentionFinder getMentionFinder();
 
   /**
-   * Returns the head finder associated with this linker.
-   * 
    * @return The head finder associated with this linker.
    */
   HeadFinder getHeadFinder();

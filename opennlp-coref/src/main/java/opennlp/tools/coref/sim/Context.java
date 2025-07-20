@@ -28,6 +28,7 @@ import opennlp.tools.coref.dictionary.DictionaryFactory;
 import opennlp.tools.coref.mention.HeadFinder;
 import opennlp.tools.coref.mention.Mention;
 import opennlp.tools.coref.mention.Parse;
+import opennlp.tools.coref.resolver.Resolver;
 import opennlp.tools.util.Span;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,7 +78,7 @@ public class Context extends Mention {
     tokens = tokenList.toArray(new Parse[0]);
     this.headTokenTag = headToken.getSyntacticType();
     this.headTokenText = headToken.toString();
-    if (headTokenTag.startsWith("NN") && !headTokenTag.startsWith("NNP")) {
+    if (headTokenTag.startsWith(Resolver.NN) && !headTokenTag.startsWith(Resolver.NNP)) {
       this.synsets = getSynsetSet(this);
     }
     else {
@@ -138,10 +139,10 @@ public class Context extends Mention {
     Dictionary dict = DictionaryFactory.getDictionary();
     logger.debug("{} lemmas for {}", lemmas.length, c.getHeadTokenText());
     for (String lemma : lemmas) {
-      String senseKey = dict.getSenseKey(lemma, "NN", 0);
+      String senseKey = dict.getSenseKey(lemma, Resolver.NN, 0);
       if (senseKey != null) {
         synsetSet.add(senseKey);
-        String[] synsets = dict.getParentSenseKeys(lemma, "NN", 0);
+        String[] synsets = dict.getParentSenseKeys(lemma, Resolver.NN, 0);
         synsetSet.addAll(Arrays.asList(synsets));
       }
     }
@@ -150,7 +151,7 @@ public class Context extends Mention {
 
   private static String[] getLemmas(Context c) {
     String word = c.headTokenText.toLowerCase();
-    return DictionaryFactory.getDictionary().getLemmas(word,"NN");
+    return DictionaryFactory.getDictionary().getLemmas(word, Resolver.NN);
   }
 
   /**

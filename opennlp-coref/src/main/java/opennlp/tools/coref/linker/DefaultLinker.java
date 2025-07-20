@@ -52,7 +52,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Non-constituent entities such as pre-nominal named-entities and sub entities in simple coordinated
  * noun phases will be created. This {@link Linker} requires that named-entity information also be provided.
- * This information can be added to the parse using the -parse option with EnglishNameFinder.
+ * This information can be added to the parse using the {@code -parse} option with EnglishNameFinder.
  *
  * @see Linker
  */
@@ -170,14 +170,14 @@ public class DefaultLinker extends AbstractLinker {
       } else {
         NonReferentialResolver nrr = new FixedNonReferentialResolver(fixedNonReferentialProbability);
         resolvers = new MaxentResolver[] {
-            new SingularPronounResolver(corefProject, ResolverMode.TEST,nrr),
-            new ProperNounResolver(corefProject, ResolverMode.TEST,nrr),
-            new DefiniteNounResolver(corefProject, ResolverMode.TEST,nrr),
-            new IsAResolver(corefProject, ResolverMode.TEST,nrr),
-            new PluralPronounResolver(corefProject, ResolverMode.TEST,nrr),
-            new PluralNounResolver(corefProject, ResolverMode.TEST,nrr),
-            new CommonNounResolver(corefProject, ResolverMode.TEST,nrr),
-            new SpeechPronounResolver(corefProject, ResolverMode.TEST,nrr)
+            new SingularPronounResolver(corefProject, ResolverMode.TEST, nrr),
+            new ProperNounResolver(corefProject, ResolverMode.TEST, nrr),
+            new DefiniteNounResolver(corefProject, ResolverMode.TEST, nrr),
+            new IsAResolver(corefProject, ResolverMode.TEST, nrr),
+            new PluralPronounResolver(corefProject, ResolverMode.TEST, nrr),
+            new PluralNounResolver(corefProject, ResolverMode.TEST, nrr),
+            new CommonNounResolver(corefProject, ResolverMode.TEST, nrr),
+            new SpeechPronounResolver(corefProject, ResolverMode.TEST, nrr)
         };
       }
       if (LinkerMode.EVAL == mode) {

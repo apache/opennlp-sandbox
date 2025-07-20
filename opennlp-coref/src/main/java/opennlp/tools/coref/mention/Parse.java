@@ -109,28 +109,28 @@ public interface Parse extends Comparable<Parse> {
   /**
    * Specifies whether this parse is a named-entity.
    * 
-   * @return {@code True} if this parse is a named-entity; {@code false} otherwise.
+   * @return {@code true} if this parse is a named-entity; {@code false} otherwise.
    */
   boolean isNamedEntity();
 
   /**
    * Specifies whether this parse is a noun phrase.
    * 
-   * @return {@code True} if this parse is a noun phrase; {@code false} otherwise.
+   * @return {@code true} if this parse is a noun phrase; {@code false} otherwise.
    */
   boolean isNounPhrase();
 
   /**
    * Specifies whether this parse is a sentence.
    * 
-   * @return {@code True} if this parse is a sentence; {@code false} otherwise.
+   * @return {@code true} if this parse is a sentence; {@code false} otherwise.
    */
   boolean isSentence();
 
   /**
    * Specifies whether this parse is a coordinated noun phrase.
    * 
-   * @return {@code True} if this parse is a coordinated noun phrase; {@code false} otherwise.
+   * @return {@code true} if this parse is a coordinated noun phrase; {@code false} otherwise.
    */
   boolean isCoordinatedNounPhrase();
 
