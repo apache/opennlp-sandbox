@@ -18,11 +18,13 @@
 package opennlp.tools.cmdline.coref;
 
 import opennlp.tools.cmdline.params.BasicTrainingParams;
+import opennlp.tools.commons.Internal;
 
 /**
  * TrainingParameters for Co-Referencer
  * <p>
  * Note: Do not use this class, internal use only!
  */
+@Internal
 interface TrainingParams extends BasicTrainingParams {
 }

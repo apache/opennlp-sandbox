@@ -23,9 +23,11 @@ import opennlp.tools.coref.mention.MentionContext;
 
 /**
  * Provides the interface for an object to provide a resolver with a non-referential
- * probability.  Non-referential resolvers compute the probability that a particular mention refers
- * to no antecedent.  This probability can then compete with the probability that
+ * probability. Non-referential resolvers compute the probability that a particular mention refers
+ * to no antecedent. This probability can then compete with the probability that
  * a mention refers with a specific antecedent.
+ *
+ * @see MentionContext
  */
 public interface NonReferentialResolver {
   
@@ -40,13 +42,13 @@ public interface NonReferentialResolver {
   /**
    * Designates that the specified mention be used for training.
    * 
-   * @param mention The mention to be used.  The mention id is used to determine
+   * @param mention The mention to be used. The mention id is used to determine
    * whether this mention is referential or non-referential.
    */
   void addEvent(MentionContext mention);
 
   /**
-   * Trains a model based on the events given to this resolver via #addEvent.
+   * Trains a model based on the events given to this resolver via {@link #addEvent}.
    * 
    * @throws IOException When the model can not be written out.
    */

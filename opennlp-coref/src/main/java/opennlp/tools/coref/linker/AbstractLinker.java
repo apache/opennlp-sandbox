@@ -19,6 +19,9 @@ package opennlp.tools.coref.linker;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import opennlp.tools.coref.DiscourseEntity;
 import opennlp.tools.coref.DiscourseModel;
 import opennlp.tools.coref.mention.HeadFinder;
@@ -28,10 +31,9 @@ import opennlp.tools.coref.mention.MentionFinder;
 import opennlp.tools.coref.mention.Parse;
 import opennlp.tools.coref.resolver.AbstractResolver;
 import opennlp.tools.coref.sim.Gender;
+import opennlp.tools.coref.sim.GenderEnum;
 import opennlp.tools.coref.sim.Number;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import opennlp.tools.coref.sim.NumberEnum;
 
 /**
  * Provides a default implementation of many of the methods in {@link Linker} that
@@ -151,42 +153,42 @@ public abstract class AbstractLinker implements Linker {
   }
 
   /**
-   * Updates the specified {@link DiscourseModel} with the specified mention as coreferent with the specified e.
+   * Updates the specified {@link DiscourseModel} with the specified mention as coreferent
+   * with the specified {@code entity 'e'}.
+   * 
    * @param dm The {@link DiscourseModel}.
    * @param m The {@link MentionContext mention} to be added to the specified {@code entity 'e'}.
    * @param e The {@link DiscourseEntity} which is mentioned by the specified mention.
    * @param useDiscourseModel Whether the mentions should be kept as an e or simply co-indexed.
    */
   protected void updateExtent(DiscourseModel dm, MentionContext m, DiscourseEntity e, boolean useDiscourseModel) {
+    final NumberEnum n = m.getNumber();
+    final GenderEnum g = m.getGender();
+    final double gProb = m.getGenderProb();
+    final double nProb = m.getNumberProb();
     if (useDiscourseModel) {
       if (e != null) {
         logger.debug("Adding extent: {}", m.toText());
-        if (e.getGenderProbability() < m.getGenderProb()) {
-          e.setGender(m.getGender());
-          e.setGenderProbability(m.getGenderProb());
+        if (e.getGenderProbability() < gProb) {
+          e.setGender(g);
+          e.setGenderProbability(gProb);
         }
-        if (e.getNumberProbability() < m.getNumberProb()) {
-          e.setNumber(m.getNumber());
-          e.setNumberProbability(m.getNumberProb());
+        if (e.getNumberProbability() < nProb) {
+          e.setNumber(n);
+          e.setNumberProbability(nProb);
         }
         e.addMention(m);
         dm.mentionEntity(e);
       } else {
-        logger.debug("Creating Extent: {} {} {}", m.toText(), m.getGender(), m.getNumber());
-        e = new DiscourseEntity(m, m.getGender(), m.getGenderProb(), m.getNumber(), m.getNumberProb());
+        logger.debug("Creating Extent: {} {} {}", m.toText(), g, n);
+        e = new DiscourseEntity(m, g, gProb, n, nProb);
         dm.addEntity(e);
       }
     } else {
+      DiscourseEntity newEntity = new DiscourseEntity(m, g, gProb, n, nProb);
+      dm.addEntity(newEntity);
       if (e != null) {
-        DiscourseEntity newEntity =
-                new DiscourseEntity(m, m.getGender(), m.getGenderProb(), m.getNumber(), m.getNumberProb());
-        dm.addEntity(newEntity);
         newEntity.setId(e.getId());
-      }
-      else {
-        DiscourseEntity newEntity =
-                new DiscourseEntity(m, m.getGender(), m.getGenderProb(), m.getNumber(), m.getNumberProb());
-        dm.addEntity(newEntity);
       }
     }
   }
@@ -269,10 +271,10 @@ public abstract class AbstractLinker implements Linker {
         contexts[mi].setId(mentions[mi].getId());
         mentionInSentenceIndex++;
         if (mode != LinkerMode.SIM) {
-          Gender g  = computeGender(contexts[mi]);
-          contexts[mi].setGender(g.getType(),g.getConfidence());
+          Gender g = computeGender(contexts[mi]);
+          contexts[mi].setGender(g.getType(), g.getConfidence());
           Number n = computeNumber(contexts[mi]);
-          contexts[mi].setNumber(n.getType(),n.getConfidence());
+          contexts[mi].setNumber(n.getType(), n.getConfidence());
         }
       }
     }

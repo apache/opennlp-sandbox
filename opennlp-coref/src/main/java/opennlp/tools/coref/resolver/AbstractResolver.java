@@ -165,6 +165,7 @@ public abstract class AbstractResolver implements Resolver {
         mention.getIndexSpan().getEnd() <= cec.getIndexSpan().getEnd();
   }
 
+  @Override
   public DiscourseEntity retain(MentionContext mention, DiscourseModel dm) {
     int ei = 0;
     if (mention.getId() == -1) {
@@ -200,6 +201,6 @@ public abstract class AbstractResolver implements Resolver {
     return fs.toString();
   }
 
-
+  @Override
   public void train() throws IOException {}
 }

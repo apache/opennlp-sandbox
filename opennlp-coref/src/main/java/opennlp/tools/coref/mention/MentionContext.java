@@ -19,7 +19,6 @@ package opennlp.tools.coref.mention;
 
 import java.util.List;
 
-import opennlp.tools.coref.resolver.AbstractResolver;
 import opennlp.tools.coref.sim.Context;
 import opennlp.tools.coref.sim.GenderEnum;
 import opennlp.tools.coref.sim.NumberEnum;
@@ -36,7 +35,8 @@ public class MentionContext extends Context {
   private static final Logger logger = LoggerFactory.getLogger(MentionContext.class);
 
   /** 
-   * The index of first token which is not part of a descriptor.  This is 0 if no descriptor is present. 
+   * The index of first token which is not part of a descriptor.
+   * This is 0 if no descriptor is present.
    */
   private final int nonDescriptorStart;
   

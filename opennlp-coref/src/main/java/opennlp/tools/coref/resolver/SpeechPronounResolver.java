@@ -31,13 +31,15 @@ import org.slf4j.LoggerFactory;
  * Resolves pronouns specific to quoted speech such as "you", "me", and "I".
  *
  * @see MaxentResolver
+ * @see Resolver
  */
 public class SpeechPronounResolver extends MaxentResolver {
 
   private static final Logger logger = LoggerFactory.getLogger(SpeechPronounResolver.class);
+  private static final String MODEL_NAME = "fmodel";
 
   public SpeechPronounResolver(String modelDirectory, ResolverMode m) throws IOException {
-    super(modelDirectory, "fmodel", m, 30);
+    super(modelDirectory, MODEL_NAME, m, 30);
     this.numSentencesBack = 0;
     showExclusions = false;
     preferFirstReferent = true;
@@ -45,7 +47,7 @@ public class SpeechPronounResolver extends MaxentResolver {
 
   public SpeechPronounResolver(String modelDirectory, ResolverMode m, NonReferentialResolver nrr)
       throws IOException {
-    super(modelDirectory, "fmodel", m, 30, nrr);
+    super(modelDirectory, MODEL_NAME, m, 30, nrr);
     showExclusions = false;
     preferFirstReferent = true;
   }
@@ -57,10 +59,10 @@ public class SpeechPronounResolver extends MaxentResolver {
       features.addAll(ResolverUtils.getPronounMatchFeatures(mention,entity));
       List<String> contexts = ResolverUtils.getContextFeatures(mention);
       MentionContext cec = entity.getLastExtent();
-      if (mention.getHeadTokenTag().startsWith("PRP") && cec.getHeadTokenTag().startsWith("PRP")) {
+      if (mention.getHeadTokenTag().startsWith(PRP) && cec.getHeadTokenTag().startsWith(PRP)) {
         features.add(mention.getHeadTokenText() + "," + cec.getHeadTokenText());
       }
-      else if (mention.getHeadTokenText().startsWith("NNP")) {
+      else if (mention.getHeadTokenText().startsWith(NNP)) {
         features.addAll(contexts);
         features.add(mention.getNameType() + "," + cec.getHeadTokenText());
       }
@@ -82,9 +84,9 @@ public class SpeechPronounResolver extends MaxentResolver {
   @Override
   public boolean canResolve(MentionContext mention) {
     String tag = mention.getHeadTokenTag();
-    boolean fpp = tag != null && tag.startsWith("PRP")
+    boolean fpp = tag != null && tag.startsWith(PRP)
         && ResolverUtils.SPEECH_PRONOUN_PATTERN.matcher(mention.getHeadTokenText()).matches();
-    boolean pn = tag != null && tag.startsWith("NNP");
+    boolean pn = tag != null && tag.startsWith(NNP);
     return (fpp || pn);
   }
 
@@ -97,8 +99,8 @@ public class SpeechPronounResolver extends MaxentResolver {
     if (!canResolve(cec)) {
       return true;
     }
-    if (mention.getHeadTokenTag().startsWith("NNP")) { //mention is a propernoun
-      if (cec.getHeadTokenTag().startsWith("NNP")) {
+    if (mention.getHeadTokenTag().startsWith(NNP)) { //mention is a proper noun
+      if (cec.getHeadTokenTag().startsWith(NNP)) {
         return true; // both NNP
       }
       else {
@@ -108,13 +110,13 @@ public class SpeechPronounResolver extends MaxentResolver {
         return !canResolve(cec);
       }
     }
-    else if (mention.getHeadTokenTag().startsWith("PRP")) { // mention is a speech pronoun
+    else if (mention.getHeadTokenTag().startsWith(PRP)) { // mention is a speech pronoun
       // cec can be either a speech pronoun or a proper noun
-      if (cec.getHeadTokenTag().startsWith("NNP")) {
+      if (cec.getHeadTokenTag().startsWith(NNP)) {
         //exclude antecedents not in the same sentence when they are not pronoun
         return (mention.getSentenceNumber() - cec.getSentenceNumber() != 0);
       }
-      else if (cec.getHeadTokenTag().startsWith("PRP")) {
+      else if (cec.getHeadTokenTag().startsWith(PRP)) {
         return false;
       }
       else {

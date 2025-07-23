@@ -373,7 +373,7 @@ public class ResolverUtils {
     String type;
     for (int i = start; i < end;i++) {
       type = mtokens[start].getSyntacticType();
-      if (type.startsWith("NNP")) {
+      if (type.startsWith(Resolver.NNP)) {
         break;
       }
       start++;
@@ -412,7 +412,7 @@ public class ResolverUtils {
     for (Iterator<MentionContext> ei = de.getMentions(); ei.hasNext();) {
       MentionContext xec = ei.next();
       String xecHeadTag = xec.getHeadTokenTag();
-      if (xecHeadTag.startsWith("NNP") || INITIAL_CAPS.matcher(xec.getHeadTokenText()).find()) {
+      if (xecHeadTag.startsWith(Resolver.NNP) || INITIAL_CAPS.matcher(xec.getHeadTokenText()).find()) {
         return xec;
       }
     }
@@ -461,12 +461,12 @@ public class ResolverUtils {
   public static List<String> getPronounMatchFeatures(MentionContext mention, DiscourseEntity entity) {
     boolean foundCompatiblePronoun = false;
     boolean foundIncompatiblePronoun = false;
-    if (mention.getHeadTokenTag().startsWith("PRP")) {
+    if (mention.getHeadTokenTag().startsWith(Resolver.PRP)) {
       Map<String, String> pronounMap = getPronounFeatureMap(mention.getHeadTokenText());
       logger.debug("PronounMap: {}", pronounMap);
       for (Iterator<MentionContext> mi = entity.getMentions();mi.hasNext();) {
         MentionContext candidateMention = mi.next();
-        if (candidateMention.getHeadTokenTag().startsWith("PRP")) {
+        if (candidateMention.getHeadTokenTag().startsWith(Resolver.PRP)) {
           if (mention.getHeadTokenText().equalsIgnoreCase(candidateMention.getHeadTokenText())) {
             foundCompatiblePronoun = true;
             break;

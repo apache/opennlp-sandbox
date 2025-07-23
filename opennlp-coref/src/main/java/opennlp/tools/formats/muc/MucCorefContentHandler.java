@@ -31,6 +31,10 @@ import opennlp.tools.util.Span;
 // Take care for special @ sign handling (identifies a table or something else that should be ignored)
 class MucCorefContentHandler extends SgmlParser.ContentHandler {
 
+  private static final String ID = "ID";
+  private static final String REF = "REF";
+  private static final String MIN = "MIN";
+
   public static class CorefMention {
     Span span;
     int id;
@@ -58,11 +62,11 @@ class MucCorefContentHandler extends SgmlParser.ContentHandler {
   private RawCorefSample sample;
 
   /**
-   * Initializes a {@link MucCorefContentHandler}.
+   * Initializes a {@link MucCorefContentHandler} with the specified parameters.
    *
    * @param tokenizer The {@link Tokenizer} to use. Must not be {@code null}.
-   * @param samples The {@link List< RawCorefSample > samples} as input.
-   *                      Must not be {@code null}.
+   * @param samples The {@link RawCorefSample samples} as input.
+   *                Must not be {@code null}.
    */
   MucCorefContentHandler(Tokenizer tokenizer, List<RawCorefSample> samples) {
     this.tokenizer = tokenizer;
@@ -72,7 +76,7 @@ class MucCorefContentHandler extends SgmlParser.ContentHandler {
   /**
    * Resolves an id via the references to the root {@code id}.
    * 
-   * @param id the id or reference to be resolved
+   * @param id the id or reference to be resolved.
    * 
    * @return the resolved {@code id} or {@code -1} if id cannot be resolved.
    */
@@ -104,8 +108,8 @@ class MucCorefContentHandler extends SgmlParser.ContentHandler {
     if (COREF_ELEMENT.equals(name)) {
       int beginOffset = text.size();
       
-      String idString = attributes.get("ID");
-      String refString = attributes.get("REF");
+      String idString = attributes.get(ID);
+      String refString = attributes.get(REF);
       
       int id;
       if (idString != null) {
@@ -124,7 +128,7 @@ class MucCorefContentHandler extends SgmlParser.ContentHandler {
         // throw invalid format exception ...
       }
         
-      mentionStack.push(new CorefMention(new Span(beginOffset, beginOffset), id, attributes.get("MIN")));
+      mentionStack.push(new CorefMention(new Span(beginOffset, beginOffset), id, attributes.get(MIN)));
     }
   }
   

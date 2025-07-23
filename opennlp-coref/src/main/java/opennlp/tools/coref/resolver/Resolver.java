@@ -28,6 +28,11 @@ import opennlp.tools.coref.mention.MentionContext;
  */
 public interface Resolver {
 
+  String NN = "NN"; // tag for singular noun
+  String NNP = "NNP"; // tag for proper noun
+  String NNS = "NNS"; // tag for plural nouns
+  String PRP = "PRP"; // tag for pronoun
+
   /** 
    * Returns {@code true} if this resolver is able to resolve the referring expression of the same type
    * as the specified mention.

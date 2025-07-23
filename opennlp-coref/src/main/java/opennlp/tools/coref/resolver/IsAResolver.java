@@ -55,7 +55,7 @@ public class IsAResolver extends MaxentResolver {
 
   @Override
   public boolean canResolve(MentionContext ec) {
-    if (ec.getHeadTokenTag().startsWith("NN")) {
+    if (ec.getHeadTokenTag().startsWith(NN)) {
       return ec.getPreviousToken() != null
           && predicativePattern.matcher(ec.getPreviousToken().toString()).matches();
     }

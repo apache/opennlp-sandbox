@@ -32,19 +32,21 @@ import org.slf4j.LoggerFactory;
  * This class resolver singular pronouns such as "he", "she", "it" and their various forms.
  *
  * @see MaxentResolver
+ * @see Resolver
  */
 public class SingularPronounResolver extends MaxentResolver {
 
   private static final Logger logger = LoggerFactory.getLogger(SingularPronounResolver.class);
+  private static final String MODEL_NAME = "pmodel";
 
   public SingularPronounResolver(String modelDirectory, ResolverMode m) throws IOException {
-    super(modelDirectory, "pmodel", m, 30);
+    super(modelDirectory, MODEL_NAME, m, 30);
     this.numSentencesBack = 2;
   }
 
-  public SingularPronounResolver(String modelDirectory, ResolverMode m,
-                                 NonReferentialResolver nonReferentialResolver) throws IOException {
-    super(modelDirectory, "pmodel", m, 30,nonReferentialResolver);
+  public SingularPronounResolver(String modelDirectory, ResolverMode m, NonReferentialResolver nrr)
+      throws IOException {
+    super(modelDirectory, MODEL_NAME, m, 30, nrr);
     this.numSentencesBack = 2;
   }
 
@@ -52,7 +54,7 @@ public class SingularPronounResolver extends MaxentResolver {
   public boolean canResolve(MentionContext mention) {
     logger.debug("CanResolve: ec=({}) {}", mention.getId(), mention.toText());
     String tag = mention.getHeadTokenTag();
-    return tag != null && tag.startsWith("PRP")
+    return tag != null && tag.startsWith(PRP)
         && ResolverUtils.SINGULAR_THIRD_PERSON_PRONOUN_PATTERN.matcher(mention.getHeadTokenText()).matches();
   }
 
@@ -113,7 +115,7 @@ public class SingularPronounResolver extends MaxentResolver {
     for (Iterator<MentionContext> ei = entity.getMentions(); ei.hasNext();) {
       MentionContext entityMention = ei.next();
       String tag = entityMention.getHeadTokenTag();
-      if (tag != null && tag.startsWith("PRP")
+      if (tag != null && tag.startsWith(PRP)
           && ResolverUtils.SINGULAR_THIRD_PERSON_PRONOUN_PATTERN.matcher(mention.getHeadTokenText()).matches()) {
         if (mentionGender == null) { //lazy initialization
           mentionGender = ResolverUtils.getPronounGender(mention.getHeadTokenText());

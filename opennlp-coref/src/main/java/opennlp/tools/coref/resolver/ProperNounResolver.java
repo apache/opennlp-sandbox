@@ -40,16 +40,18 @@ import org.slf4j.LoggerFactory;
  * Resolves coreference between proper nouns.
  *
  * @see MaxentResolver
+ * @see Resolver
  */
 public class ProperNounResolver extends MaxentResolver {
 
   private static final Logger logger = LoggerFactory.getLogger(ProperNounResolver.class);
+  private static final String MODEL_NAME = "pnmodel";
 
   private static Map<String, Set<String>> acroMap;
   private static boolean acroMapLoaded = false;
 
   public ProperNounResolver(String modelDirectory, ResolverMode m) throws IOException {
-    super(modelDirectory,"pnmodel", m, 500);
+    super(modelDirectory, MODEL_NAME, m, 500);
     if (!acroMapLoaded) {
       initAcronyms(modelDirectory + "/acronyms");
       acroMapLoaded = true;
@@ -59,7 +61,7 @@ public class ProperNounResolver extends MaxentResolver {
 
   public ProperNounResolver(String modelDirectory, ResolverMode m,NonReferentialResolver nonRefResolver)
       throws IOException {
-    super(modelDirectory,"pnmodel", m, 500,nonRefResolver);
+    super(modelDirectory, MODEL_NAME, m, 500,nonRefResolver);
     if (!acroMapLoaded) {
       initAcronyms(modelDirectory + "/acronyms");
       acroMapLoaded = true;
@@ -69,7 +71,7 @@ public class ProperNounResolver extends MaxentResolver {
 
   @Override
   public boolean canResolve(MentionContext mention) {
-    return (mention.getHeadTokenTag().startsWith("NNP") || mention.getHeadTokenTag().startsWith("CD"));
+    return (mention.getHeadTokenTag().startsWith(NNP) || mention.getHeadTokenTag().startsWith("CD"));
   }
 
   private void initAcronyms(String name) {
@@ -137,7 +139,7 @@ public class ProperNounResolver extends MaxentResolver {
 
     for (Iterator<MentionContext> ei = entity.getMentions(); ei.hasNext();) {
       MentionContext xec = ei.next();
-      if (xec.getHeadTokenTag().startsWith("NNP")) {
+      if (xec.getHeadTokenTag().startsWith(NNP)) {
         // || initialCaps.matcher(xec.headToken.toString()).find()) {
         logger.debug("Kept {} with {}", xec.toText(), xec.getHeadTokenTag());
         return false;

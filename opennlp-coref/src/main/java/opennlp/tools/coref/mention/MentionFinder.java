@@ -20,46 +20,49 @@ package opennlp.tools.coref.mention;
 
 /**
  * Specifies the interface that Objects which determine the space of
- * mentions for coreference should implement.
+ * {@link Mention mentions} for coreference should implement.
+ *
+ * @see Mention
  */
 public interface MentionFinder {
 
   /**
-   * Specifies whether pre-nominal named-entities should be collected as mentions.
+   * Specifies whether pre-nominal named-entities should be collected as {@link Mention mentions}.
    *
-   * @param collectPrenominalNamedEntities true if pre-nominal named-entities
-   *                                       should be collected; false otherwise.
+   * @param collectPrenominalNamedEntities {@code true} if pre-nominal named-entities
+   *                                       should be collected; {@code false} otherwise.
    */
   void setPrenominalNamedEntityCollection(boolean collectPrenominalNamedEntities);
 
   /**
-   * Returns whether this mention finder collects pre-nominal named-entities as mentions.
+   * Returns whether this mention finder collects pre-nominal named-entities as {@link Mention mentions}.
    *
-   * @return true if this mention finder collects pre-nominal named-entities as mentions
+   * @return {@code true} if this mention finder collects pre-nominal named-entities as mentions.
    */
   boolean isPrenominalNamedEntityCollection();
 
   /**
-   * Returns whether this mention finder collects coordinated noun phrases as mentions.
+   * Returns whether this mention finder collects coordinated noun phrases as {@link Mention mentions}.
    *
-   * @return true if this mention finder collects coordinated noun phrases as mentions; false otherwise.
+   * @return {@code true} if this mention finder collects coordinated noun phrases as mentions;
+   *         {@code false} otherwise.
    */
   boolean isCoordinatedNounPhraseCollection();
 
   /**
-   * Specifies whether coordinated noun phrases should be collected as mentions.
+   * Specifies whether coordinated noun phrases should be collected as {@link Mention mentions}.
    *
-   * @param collectCoordinatedNounPhrases true if coordinated noun phrases should be collected;
-   *                                      false otherwise.
+   * @param collectCoordinatedNounPhrases {@code true} if coordinated noun phrases should be collected;
+   *                                      {@code false} otherwise.
    */
   void setCoordinatedNounPhraseCollection(boolean collectCoordinatedNounPhrases);
 
   /**
-   * Returns an array of mentions.
+   * Returns an array of {@link Mention mentions}.
    *
    * @param parse A top level parse from which mentions are gathered.
    *
-   * @return an array of mentions which implement the <code>Extent</code> interface.
+   * @return An array of {@link Mention mentions} which implement the <code>Extent</code> interface.
    */
   Mention[] getMentions(Parse parse);
 }

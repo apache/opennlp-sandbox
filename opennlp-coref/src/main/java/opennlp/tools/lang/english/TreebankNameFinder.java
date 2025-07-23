@@ -23,15 +23,15 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.FileSystems;
 
-import opennlp.tools.coref.sim.SimilarityModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import opennlp.tools.namefind.NameFinderEventStream;
 import opennlp.tools.namefind.NameFinderME;
 import opennlp.tools.namefind.TokenNameFinderModel;
 import opennlp.tools.parser.Parse;
 import opennlp.tools.tokenize.SimpleTokenizer;
 import opennlp.tools.util.Span;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Class is used to create a name finder for English.
@@ -42,6 +42,8 @@ import org.slf4j.LoggerFactory;
 public class TreebankNameFinder {
 
   private static final Logger logger = LoggerFactory.getLogger(TreebankNameFinder.class);
+  private static final String SYMBOL_LT = "<";
+  private static final String SYMBOL_GT = ">";
 
   public static String[] NAME_TYPES =
       {"person", "organization", "location", "date", "time", "percentage", "money"};
@@ -90,11 +92,13 @@ public class TreebankNameFinder {
   }
       
   /**
-   * Adds sgml style name tags to the specified input buffer and outputs this information to stdout. 
+   * Adds sgml style name {@code tags} to the specified {@code input} buffer and outputs this information to stdout.
+   *
    * @param finders The name finders to be used.
    * @param tags The tag names for the corresponding name finder.
-   * @param input The input reader.
-   * @throws IOException
+   * @param input The {@link BufferedReader input reader}.
+   *
+   * @throws IOException Thrown if IO errors occurred.
    */
   private static void processText(TreebankNameFinder[] finders, String[] tags, BufferedReader input)
       throws IOException {
@@ -124,7 +128,7 @@ public class TreebankNameFinder {
                 || nameOutcomes[fi][ti].equals(NameFinderME.OTHER))
                 && (nameOutcomes[fi][ti - 1].equals(NameFinderME.START)
                 || nameOutcomes[fi][ti - 1].equals(NameFinderME.CONTINUE))) {
-              output.append("</").append(tags[fi]).append(">");
+              output.append("</").append(tags[fi]).append(SYMBOL_GT);
             }
           }
         }
@@ -134,7 +138,7 @@ public class TreebankNameFinder {
         //check for start tags
         for (int fi = 0, fl = finders.length; fi < fl; fi++) {
           if (nameOutcomes[fi][ti].equals(NameFinderME.START)) {
-            output.append("<").append(tags[fi]).append(">");
+            output.append(SYMBOL_LT).append(tags[fi]).append(SYMBOL_GT);
           }
         }
         output.append(tokens[ti]);
@@ -144,7 +148,7 @@ public class TreebankNameFinder {
         for (int fi = 0, fl = finders.length; fi < fl; fi++) {
           if (nameOutcomes[fi][tokens.length - 1].equals(NameFinderME.START)
               || nameOutcomes[fi][tokens.length - 1].equals(NameFinderME.CONTINUE)) {
-            output.append("</").append(tags[fi]).append(">");
+            output.append("</").append(tags[fi]).append(SYMBOL_GT);
           }
         }
       }

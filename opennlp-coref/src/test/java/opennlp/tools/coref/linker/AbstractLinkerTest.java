@@ -54,7 +54,7 @@ public abstract class AbstractLinkerTest extends AbstractCorefTest {
 
   static void showEntities(DiscourseEntity[] entities) {
     for (int ei = 0, en = entities.length; ei < en; ei++) {
-      logger.debug(ei + " " + entities[ei]);
+      logger.debug("{} {}", ei, entities[ei]);
     }
   }
 }
