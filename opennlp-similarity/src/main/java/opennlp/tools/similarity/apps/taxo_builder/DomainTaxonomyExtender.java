@@ -16,6 +16,10 @@
  */
 package opennlp.tools.similarity.apps.taxo_builder;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,8 +27,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.LoggerFactory;
 
-import opennlp.tools.similarity.apps.BingQueryRunner;
 import opennlp.tools.similarity.apps.HitBase;
 import opennlp.tools.similarity.apps.utils.StringCleaner;
 import opennlp.tools.stemmer.PorterStemmer;
@@ -36,49 +40,38 @@ import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcess
 
 public class DomainTaxonomyExtender {
 
-	private final BingQueryRunner brunner = new BingQueryRunner();
-	private final ParserChunker2MatcherProcessor matcher = ParserChunker2MatcherProcessor.getInstance();
+	private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+	final static String TAXO_FILENAME = "taxo_data.dat";
 
-	protected static final String BING_KEY = "WFoNMM706MMJ5JYfcHaSEDP+faHj3xAxt28CPljUAHA";
-
-	private final static String TAXO_FILENAME = "taxo_data.dat";
-
-	private Map<String, List<List<String>>> lemma_ExtendedAssocWords = new HashMap<>();
+	private final Map<String, List<List<String>>> lemma_ExtendedAssocWords = new HashMap<>();
 	private final Map<List<String>, List<List<String>>> assocWords_ExtendedAssocWords = new HashMap<>();
 	private final Stemmer ps = new PorterStemmer();
 
-	final CsvAdapter adapter = new CsvAdapter();
+	private ParserChunker2MatcherProcessor matcher;
+	private CsvAdapter adapter;
 
-	public Map<List<String>, List<List<String>>> getAssocWords_ExtendedAssocWords() {
-		return assocWords_ExtendedAssocWords;
+	public DomainTaxonomyExtender(String fileName) {
+    try {
+			// XXX eliminate hard-coded resource path
+      String resourceDir = new File(".").getCanonicalPath() + "/src/test/resources";
+			adapter = new CsvAdapter(resourceDir, fileName);
+    } catch (IOException e) {
+			LOG.error(e.getLocalizedMessage(), e);
+    }
 	}
 
-	public Map<String, List<List<String>>> getLemma_ExtendedAssocWords() {
-		return lemma_ExtendedAssocWords;
-	}
-
-	public void setLemma_ExtendedAssocWords(
-			Map<String, List<List<String>>> lemma_ExtendedAssocWords) {
-		this.lemma_ExtendedAssocWords = lemma_ExtendedAssocWords;
-	}
-
-	public DomainTaxonomyExtender() {
-		adapter.importCSV();
-		brunner.setKey(BING_KEY);
-	}
-
-	private List<List<String>> getCommonWordsFromList_List_ParseTreeChunk(
-			List<List<ParseTreeChunk>> matchList, List<String> queryWordsToRemove, List<String> toAddAtEnd) {
-
+	private List<List<String>> getCommonWordsFromList_List_ParseTreeChunk(List<List<ParseTreeChunk>> matchList,
+																																				List<String> queryWordsToRemove,
+																																				List<String> toAddAtEnd) {
 		List<List<String>> res = new ArrayList<>();
 		for (List<ParseTreeChunk> chunks : matchList) {
 			List<String> wordRes = new ArrayList<>();
 			for (ParseTreeChunk ch : chunks) {
 				List<String> lemmas = ch.getLemmas();
 				for (int w = 0; w < lemmas.size(); w++)
-					if ((!lemmas.get(w).equals("*"))
-							&& ((ch.getPOSs().get(w).startsWith("NN") || ch.getPOSs().get(w).startsWith("JJ") || ch.getPOSs().get(w)
-									.startsWith("VB"))) && lemmas.get(w).length() > 2) {
+					if (!lemmas.get(w).equals("*")
+							&& (ch.getPOSs().get(w).startsWith("NN") || ch.getPOSs().get(w).startsWith("JJ") || ch.getPOSs().get(w)
+									.startsWith("VB")) && lemmas.get(w).length() > 2) {
 						String formedWord = lemmas.get(w);
 						String stemmedFormedWord = ps.stem(formedWord).toString();
 						if (!stemmedFormedWord.startsWith("invalid"))
@@ -101,97 +94,79 @@ public class DomainTaxonomyExtender {
 		return res;
 	}
 
-	public void extendTaxonomy(String fileNameWithTaxonomyRoot, String domain, String lang) {
-
-		List<String> entries = new ArrayList<>((adapter.lemma_AssocWords.keySet()));
+	public void extendTaxonomy(String domain, String lang, Path outputDir) {
+		List<String> entries = new ArrayList<>(adapter.getLemmaAssocWords().keySet());
 		try {
-			for (String entity : entries) { // .
-				List<List<String>> paths = adapter.lemma_AssocWords.get(entity);
+			for (String entity : entries) {
+				List<List<String>> paths = adapter.getLemmaAssocWords().get(entity);
 				for (List<String> taxoPath : paths) {
 					String query = taxoPath.toString() + " " + entity + " " + domain; 
 					query = query.replace('[', ' ').replace(']', ' ').replace(',', ' ')
 							.replace('_', ' ');
-					List<List<ParseTreeChunk>> matchList = runSearchForTaxonomyPath(
-							query, "", lang, 20); //30
-					List<String> toRemoveFromExtension = new ArrayList<>(taxoPath);
-					toRemoveFromExtension.add(entity);
-					toRemoveFromExtension.add(domain);
-					List<List<String>> resList = getCommonWordsFromList_List_ParseTreeChunk(
-							matchList, toRemoveFromExtension, taxoPath);
+					List<List<ParseTreeChunk>> matchList = runSearchForTaxonomyPath(query, "", lang, 20); //30
+					List<String> toRemove = new ArrayList<>(taxoPath);
+					toRemove.add(entity);
+					toRemove.add(domain);
+					List<List<String>> resList = getCommonWordsFromList_List_ParseTreeChunk(matchList, toRemove, taxoPath);
 					assocWords_ExtendedAssocWords.put(taxoPath, resList);
 					resList.add(taxoPath);
 					lemma_ExtendedAssocWords.put(entity, resList);
 
-					TaxonomySerializer ser = new TaxonomySerializer(lemma_ExtendedAssocWords,
-							assocWords_ExtendedAssocWords);
-					ser.writeTaxonomy(TAXO_FILENAME);
+					TaxonomySerializer ser = new TaxonomySerializer(lemma_ExtendedAssocWords, assocWords_ExtendedAssocWords);
+					ser.writeTaxonomy(outputDir, TAXO_FILENAME);
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
-			System.err.println("Problem taxonomy matching");
+			LOG.error("Problem taxonomy matching!", e);
 		}
-
-
 	}
 
-	public List<List<ParseTreeChunk>> runSearchForTaxonomyPath(String query,
-			String domain, String lang, int numbOfHits) {
+	public List<List<ParseTreeChunk>> runSearchForTaxonomyPath(String query, String domain, String lang, int numbOfHits) {
 		List<List<ParseTreeChunk>> genResult = new ArrayList<>();
 		try {
-			List<HitBase> resultList = brunner.runSearch(query, numbOfHits);
-
+			List<HitBase> resultList = new ArrayList<>(); // brunner.runSearch(query, numbOfHits);
 			for (int i = 0; i < resultList.size(); i++) {
-				{
-					for (int j = i + 1; j < resultList.size(); j++) {
-						HitBase h1 = resultList.get(i);
-						HitBase h2 = resultList.get(j);
-						String snapshot1 = StringCleaner.processSnapshotForMatching(h1
-								.getTitle() + " " + h1.getAbstractText());
-						String snapshot2 = StringCleaner.processSnapshotForMatching(h2
-								.getTitle() + " " + h2.getAbstractText());
-						 SentencePairMatchResult overlaps = matcher.assessRelevance(snapshot1, snapshot2);
-						genResult.addAll(overlaps.getMatchResult());
-					}
+				for (int j = i + 1; j < resultList.size(); j++) {
+					HitBase h1 = resultList.get(i);
+					HitBase h2 = resultList.get(j);
+					String snapshot1 = StringCleaner.processSnapshotForMatching(h1.getTitle() + " " + h1.getAbstractText());
+					String snapshot2 = StringCleaner.processSnapshotForMatching(h2.getTitle() + " " + h2.getAbstractText());
+					SentencePairMatchResult overlaps = getMatcher().assessRelevance(snapshot1, snapshot2);
+					genResult.addAll(overlaps.getMatchResult());
 				}
 			}
-
 		} catch (Exception e) {
-			e.printStackTrace();
-			System.err.print("Problem searching for "+query);
+			LOG.error("Problem searching for '{}'", query, e);
 		}
-
 		return genResult;
+	}
+
+	private ParserChunker2MatcherProcessor getMatcher() {
+		if (matcher == null) {
+			matcher = ParserChunker2MatcherProcessor.getInstance();
+		}
+		return matcher;
 	}
 
 	public List<String> runSearchForTaxonomyPathFlatten(String query, String domain, String lang, int numbOfHits) {
 		List<String> genResult = new ArrayList<>();
 		try {
-			List<HitBase> resultList = brunner.runSearch(query, numbOfHits);
-
+			List<HitBase> resultList = new ArrayList<>(); // brunner.runSearch(query, numbOfHits);
 			for (int i = 0; i < resultList.size(); i++) {
-				{
-					for (int j = i + 1; j < resultList.size(); j++) {
-						HitBase h1 = resultList.get(i);
-						HitBase h2 = resultList.get(j);
-						String snapshot1 = StringCleaner.processSnapshotForMatching(h1
-								.getTitle() + " " + h1.getAbstractText());
-						String snapshot2 = StringCleaner.processSnapshotForMatching(h2
-								.getTitle() + " " + h2.getAbstractText());
-						List<String> overlaps =assessKeywordOverlap(snapshot1, snapshot2);
-						genResult.addAll(overlaps);
-					}
+				for (int j = i + 1; j < resultList.size(); j++) {
+					HitBase h1 = resultList.get(i);
+					HitBase h2 = resultList.get(j);
+					String snapshot1 = StringCleaner.processSnapshotForMatching(h1.getTitle() + " " + h1.getAbstractText());
+					String snapshot2 = StringCleaner.processSnapshotForMatching(h2.getTitle() + " " + h2.getAbstractText());
+					List<String> overlaps =assessKeywordOverlap(snapshot1, snapshot2);
+					genResult.addAll(overlaps);
 				}
 			}
-
 		} catch (Exception e) {
-			System.err.print("Problem searching for "+query);
+			LOG.error("Problem searching for '{}'", query, e);
 		}
-
 		return genResult;
 	}
-
-
 
 	private List<String> assessKeywordOverlap(String snapshot1, String snapshot2) {
 		List<String> results = new ArrayList<>();
@@ -206,12 +181,6 @@ public class DomainTaxonomyExtender {
 			results.add(s);
 		}
 		return results;
-	}
-
-	public static void main(String[] args) {
-		DomainTaxonomyExtender self = new DomainTaxonomyExtender();
-		self.extendTaxonomy("", "music", "en");
-
 	}
 
 }

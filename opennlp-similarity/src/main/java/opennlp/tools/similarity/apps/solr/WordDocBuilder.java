@@ -16,7 +16,6 @@
  */
 package opennlp.tools.similarity.apps.solr;
 
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -29,9 +28,6 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.billylieurance.azuresearch.AzureSearchImageResult;
-import net.billylieurance.azuresearch.AzureSearchResultSet;
-
 import org.docx4j.dml.wordprocessingDrawing.Inline;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.docx4j.openpackaging.parts.WordprocessingML.BinaryPartAbstractImage;
@@ -41,13 +37,11 @@ import org.docx4j.wml.Drawing;
 import org.docx4j.wml.P;
 import org.docx4j.wml.R;
 
-import opennlp.tools.similarity.apps.BingQueryRunner;
 import opennlp.tools.similarity.apps.Fragment;
 import opennlp.tools.similarity.apps.HitBase;
 
 public class WordDocBuilder{
 	protected static final String IMG_REL_PATH = "images/";
-	protected final BingQueryRunner imageSearcher = new BingQueryRunner();
 	protected String absPath;
 	
 	public WordDocBuilder(){
@@ -72,9 +66,8 @@ public class WordDocBuilder{
 						.replace(",.", ".");
 				wordMLPackage.getMainDocumentPart().addParagraphOfText(paraText);
 				
-				addImageByImageTitleToPackage(wordMLPackage, para.getTitle());
 			}
-			
+
 			//File file = new File("C:/ma/personal/argCamp.png");
 	        //byte[] bytes = convertImageToByteArray(file);
 	        //addImageToPackage(wordMLPackage, bytes);
@@ -85,17 +78,6 @@ public class WordDocBuilder{
 		}
 		
 		return outputDocFilename;
-	}
-	
-	private void addImageByImageTitleToPackage(
-			WordprocessingMLPackage wordMLPackage, String title) {
-		AzureSearchResultSet<AzureSearchImageResult> res = imageSearcher.runImageSearch(title);
-		for (AzureSearchImageResult anr : res){
-			String url = anr.getMediaUrl();
-			addImageByURLToPackage( wordMLPackage, url);
-			return;
-		}
-		
 	}
 
 	private void addImageByURLToPackage(WordprocessingMLPackage wordMLPackage,

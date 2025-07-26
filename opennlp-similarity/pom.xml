@@ -29,6 +29,7 @@
   <properties>
     <jakarta.bind-api.version>4.0.2</jakarta.bind-api.version>
     <jakarta.mail.version>2.1.3</jakarta.mail.version>
+    <org.json.version>20250517</org.json.version>
 
     <tika.version>3.2.1</tika.version>
     <solr.version>8.11.4</solr.version>
@@ -39,21 +40,6 @@
     <openblas.version>0.3.30-1.5.12</openblas.version>
     <httpclient.version>4.5.14</httpclient.version>
   </properties>
-
-  <repositories>
-    <repository>
-      <id>central</id>
-      <name>Maven Central Repository</name>
-      <url>https://repo1.maven.org/maven2</url>
-    </repository>
-    <repository>
-      <id>billylieurance-net</id>
-      <url>https://www.billylieurance.net/maven2</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
 
 	<dependencyManagement>
 		<dependencies>
@@ -134,7 +120,7 @@
     <dependency>
       <groupId>org.json</groupId>
       <artifactId>json</artifactId>
-      <version>20250517</version>
+      <version>${org.json.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.tika</groupId>
@@ -170,12 +156,6 @@
           <artifactId>*</artifactId>
         </exclusion>
       </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>net.billylieurance.azuresearch</groupId>
-      <artifactId>azure-bing-search-java</artifactId>
-      <version>0.13.0</version>
     </dependency>
 
     <dependency>
@@ -280,8 +260,12 @@
     </dependency>
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-core</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>

@@ -36,12 +36,12 @@ public class WordDocBuilderEndNotes extends WordDocBuilderSingleImageSearchCall{
 	
 	public String buildWordDoc(List<HitBase> content, String title){
 		
-		String outputDocFilename =  absPath+"written/"+ title.replace(' ','_').replace('\"', ' ').trim()+ ".docx";
+		String outputDocFilename =  absPath + "written/" + title.replace(' ','_').replace('\"', ' ').trim()+ ".docx";
 		
 		WordprocessingMLPackage wordMLPackage;
 		
        
-		List<String> imageURLs = getAllImageSearchResults(title);
+		List<String> imageURLs = new ArrayList<>(); //getAllImageSearchResults(title);
 		int count=0;
 		BigInteger refId = BigInteger.ONE;
 		try {

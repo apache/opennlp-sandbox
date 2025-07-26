@@ -113,10 +113,7 @@ public class ContentGeneratorRequestHandler extends SearchHandler {
 		String lang = args[6];
 		if (lang.startsWith("es") || lang.startsWith("ru") || lang.startsWith("de")){
 			f = new RelatedSentenceFinderML(Integer.parseInt(args[3]), Integer.parseInt(args[4]), Float.parseFloat(args[5]), bingKey);
-			f.setLang(lang);
-		} else	    
-
-			if (args.length>4 && args[4]!=null)
+		} else if (args.length>4 && args[4]!=null)
 				f = new RelatedSentenceFinder(Integer.parseInt(args[3]), Integer.parseInt(args[4]), Float.parseFloat(args[5]), bingKey);
 			else
 				f = new RelatedSentenceFinder();

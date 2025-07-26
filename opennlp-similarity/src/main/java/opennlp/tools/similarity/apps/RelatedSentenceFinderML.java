@@ -27,13 +27,12 @@ import opennlp.tools.textsimilarity.TextProcessor;
 /**
  * This class does content generation in ES, DE etc
  */
-public class RelatedSentenceFinderML extends RelatedSentenceFinder{
+public class RelatedSentenceFinderML extends RelatedSentenceFinder {
 
 	public RelatedSentenceFinderML(int ms, int msr, float thresh, String key) {
 		this.MAX_STEPS = ms;
 		this.MAX_SEARCH_RESULTS = msr;
 		this.RELEVANCE_THRESHOLD=thresh;
-		yrunner.setKey(key);
 	}
 
 	public RelatedSentenceFinderML() {
@@ -43,7 +42,7 @@ public class RelatedSentenceFinderML extends RelatedSentenceFinder{
 		List<HitBase> opinionSentencesToAdd = new ArrayList<>();
 		System.out.println(" \n=== Entity to write about = " + sentence);
 
-		List<HitBase> searchResult = yrunner.runSearch(sentence, 100);
+		List<HitBase> searchResult = new ArrayList<>(); //yrunner.runSearch(sentence, 100);
 		if (MAX_SEARCH_RESULTS<searchResult.size())
 			searchResult = searchResult.subList(0, MAX_SEARCH_RESULTS);
 		//TODO for shorter run

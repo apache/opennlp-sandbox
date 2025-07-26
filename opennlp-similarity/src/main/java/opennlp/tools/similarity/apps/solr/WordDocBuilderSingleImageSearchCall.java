@@ -20,9 +20,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.billylieurance.azuresearch.AzureSearchImageResult;
-import net.billylieurance.azuresearch.AzureSearchResultSet;
-
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.docx4j.openpackaging.parts.WordprocessingML.MainDocumentPart;
 
@@ -30,15 +27,16 @@ import opennlp.tools.similarity.apps.ContentGeneratorSupport;
 import opennlp.tools.similarity.apps.Fragment;
 import opennlp.tools.similarity.apps.HitBase;
 
-public class WordDocBuilderSingleImageSearchCall extends WordDocBuilder{
+public class WordDocBuilderSingleImageSearchCall extends WordDocBuilder {
 
 	@Override
 	public String buildWordDoc(List<HitBase> content, String title){
 		
-		String outputDocFilename =  absPath+"/written/"+ title.replace(' ','_').replace('\"', ' ').trim()+ ".docx";
+		String outputDocFilename =  absPath + "/written/" +
+						title.replace(' ','_').replace('\"', ' ').trim()+ ".docx";
 		
 		WordprocessingMLPackage wordMLPackage;
-		List<String> imageURLs = getAllImageSearchResults(title);
+		List<String> imageURLs = new ArrayList<>(); //getAllImageSearchResults(title);
 		int count=0;
 		try {
 			wordMLPackage = WordprocessingMLPackage.createPackage();
@@ -108,16 +106,6 @@ public class WordDocBuilderSingleImageSearchCall extends WordDocBuilder{
 			e.printStackTrace();
 		}
 
-	}
-
-	protected List<String>  getAllImageSearchResults(String title) {
-		List<String> imageURLs = new ArrayList<>();
-		AzureSearchResultSet<AzureSearchImageResult> res = imageSearcher.runImageSearch(title);
-		for(AzureSearchImageResult imResult: res){
-			imageURLs.add(imResult.getMediaUrl());
-		}
-		return imageURLs;
-		
 	}
     
 	public static void main(String[] args){

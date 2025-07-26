@@ -60,9 +60,7 @@ public class ParserPure2MatcherProcessor extends ParserChunker2MatcherProcessor 
 
   private ParserPure2MatcherProcessor() {
     try {
-      initializeSentenceDetector();
       initializeTokenizer();
-      initializePosTagger();
       initializeParser();
     } catch (IOException e) {
       LOG.warn("A model can't be loaded: {}", e.getMessage());
@@ -93,13 +91,13 @@ public class ParserPure2MatcherProcessor extends ParserChunker2MatcherProcessor 
     wholeSentence.add(new ParseTreeChunk("SENTENCE", TokList, POSlist));
     for (ParseTreeChunk phr : ptcList) {
       String phrType = phr.getMainPOS();
-      if (phrType.startsWith("NP")) {
+      if (phrType.startsWith(NP)) {
         nounPhr.add(phr);
-      } else if (phrType.startsWith("VP")) {
+      } else if (phrType.startsWith(VP)) {
         verbPhr.add(phr);
-      } else if (phrType.startsWith("PP")) {
+      } else if (phrType.startsWith(PP)) {
         prepPhr.add(phr);
-      } else if (phrType.endsWith("ADJP")) {
+      } else if (phrType.endsWith(ADJP)) {
         adjPhr.add(phr);
       } else {
         // LOG.info("Unexpected phrase type found :"+ phr);
