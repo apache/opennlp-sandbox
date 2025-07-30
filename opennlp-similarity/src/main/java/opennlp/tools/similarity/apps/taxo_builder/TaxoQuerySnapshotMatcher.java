@@ -17,31 +17,58 @@
 
 package opennlp.tools.similarity.apps.taxo_builder;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import opennlp.tools.models.ClassPathModelProvider;
+import opennlp.tools.models.DefaultClassPathModelProvider;
+import opennlp.tools.models.ModelType;
 import opennlp.tools.textsimilarity.TextProcessor;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
+import opennlp.tools.tokenize.ThreadSafeTokenizerME;
+import opennlp.tools.tokenize.Tokenizer;
+import opennlp.tools.tokenize.TokenizerModel;
 
 /**
  * This class can be used to generate scores based on the overlapping between a
  * text and a given taxonomy.
- * 
  */
 public class TaxoQuerySnapshotMatcher {
 
-  final ParserChunker2MatcherProcessor sm;
-  // XStream xStream= new XStream();
-  Map<String, List<List<String>>> lemma_ExtendedAssocWords;
-  final TaxonomySerializer taxo;
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static final String PRIMARY_LOCALE = "en";
+  
+  private static final ClassPathModelProvider MODEL_PROVIDER = new DefaultClassPathModelProvider();
+
+  private final Tokenizer tokenizer;
+  private final ParserChunker2MatcherProcessor sm;
+  private final TaxonomySerializer taxo;
+
+  /**
+   * Initializes a {@link TaxoQuerySnapshotMatcher} with the specified taxonomy.
+   *
+   * @param taxoFileName The {@link java.io.File} that holds the taxonomy data.
+   */
   public TaxoQuerySnapshotMatcher(String taxoFileName) {
+    try {
+      TokenizerModel tm = MODEL_PROVIDER.load(PRIMARY_LOCALE, ModelType.TOKENIZER, TokenizerModel.class);
+      tokenizer = new ThreadSafeTokenizerME(tm);
+    } catch (IOException e) {
+      LOG.warn("A model can't be loaded: {}", e.getMessage());
+      throw new RuntimeException(e.getLocalizedMessage(), e);
+    }
     sm = ParserChunker2MatcherProcessor.getInstance();
-    taxo = TaxonomySerializer.readTaxonomy(taxoFileName); // "src/test/resources/taxonomies/irs_domTaxo.dat");
+    taxo = TaxonomySerializer.readTaxonomy(taxoFileName);
   }
-
+  
   /**
    * Can be used to generate scores based on the overlapping between a text and
    * a given taxonomy.
@@ -50,18 +77,19 @@ public class TaxoQuerySnapshotMatcher {
    *          The query string the user used for ask a question.
    * @param snapshot
    *          The abstract of a hit the system gave back
-   * @return
+   * @return The score, guaranteed to be greater or equal to zero.
    */
   public int getTaxoScore(String query, String snapshot) {
 
-    lemma_ExtendedAssocWords = taxo.getLemma_ExtendedAssocWords();
+    // XStream xStream= new XStream();
+    Map<String, List<List<String>>> lemma_ExtendedAssocWords = taxo.getLemma_ExtendedAssocWords();
 
     query = query.toLowerCase();
     snapshot = snapshot.toLowerCase();
     String[] queryWords, snapshotWords;
     try {
-      queryWords = sm.getTokenizer().tokenize(query);
-      snapshotWords = sm.getTokenizer().tokenize(snapshot);
+      queryWords = tokenizer.tokenize(query);
+      snapshotWords = tokenizer.tokenize(snapshot);
     } catch (Exception e) { // if OpenNLP model is unavailable, use different tokenizer
       queryWords = TextProcessor.fastTokenize(query, false).toArray(new String[0]);
       snapshotWords = TextProcessor.fastTokenize(snapshot, false).toArray(new String[0]);
@@ -70,11 +98,9 @@ public class TaxoQuerySnapshotMatcher {
     List<String> queryList = Arrays.asList(queryWords);
     List<String> snapshotList = Arrays.asList(snapshotWords);
 
-    List<String> commonBetweenQuerySnapshot = (new ArrayList<>(queryList));
-    commonBetweenQuerySnapshot.retainAll(snapshotList);// Still could be
-                                                       // duplicated words (even
-                                                       // more if I would retain
-                                                       // all the opposite ways)
+    List<String> commonBetweenQuerySnapshot = new ArrayList<>(queryList);
+    commonBetweenQuerySnapshot.retainAll(snapshotList);
+    // Still could be duplicated words (even more if I would retain all the opposite ways)
 
     int score = 0;
     List<String> accumCommonParams = new ArrayList<>();
@@ -98,57 +124,8 @@ public class TaxoQuerySnapshotMatcher {
     return score;
   }
 
-  /*
-   * It loads a serialized taxonomy in .dat format and serializes it into a much
-   * more readable XML format.
-   * 
-   * @param taxonomyXML_Path
-   * @param taxo
-   */
-  /*
-  public void convertDatToXML(String taxonomyXML_Path, TaxonomySerializer taxo) {
-    XStream xStream = new XStream();
-    FileHandler fileHandler = new FileHandler();
-    try {
-      fileHandler.writeToTextFile(xStream.toXML(taxo), taxonomyXML_Path, false);
-    } catch (Exception e) {
-      e.printStackTrace();
-      LOG.info(e.toString());
-    }
-  }
-  */
-
-  /*
-  public void xmlWork() {
-    TaxoQuerySnapshotMatcher matcher = new TaxoQuerySnapshotMatcher(
-        "src/test/resources/taxonomies/irs_domTaxo.dat");
-    XStream xStream = new XStream();
-    FileHandler fileHandler = new FileHandler();
-    matcher.taxo = (TaxonomySerializer) xStream.fromXML(fileHandler
-        .readFromTextFile("src/test/resources/taxo_English.xml"));
-  }
-  */
-
   public void close() {
     sm.close();
-  }
-
-  /**
-   * demonstrates the usage of the taxonomy matcher
-   * 
-   * @param args
-   */
-  static public void main(String[] args) {
-
-    TaxoQuerySnapshotMatcher matcher = new TaxoQuerySnapshotMatcher(
-        "src/test/resources/taxonomies/irs_domTaxo.dat");
-
-    System.out
-        .println("The score is: "
-            + matcher
-                .getTaxoScore(
-                    "Can Form 1040 EZ be used to claim the earned income credit.",
-                    "Can Form 1040EZ be used to claim the earned income credit? . Must I be entitled to claim a child as a dependent to claim the earned income credit based on the child being "));
   }
 
 }

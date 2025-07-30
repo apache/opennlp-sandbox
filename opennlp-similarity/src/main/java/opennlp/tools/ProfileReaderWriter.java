@@ -14,96 +14,74 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package opennlp.tools.jsmlearning;
+package opennlp.tools;
 
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import au.com.bytecode.opencsv.CSVReader;
 import au.com.bytecode.opencsv.CSVWriter;
+import org.slf4j.LoggerFactory;
 
 public class ProfileReaderWriter {
+
+	private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 	public static List<String[]> readProfiles(String filename) {
-		CSVReader reader;
-		List<String[]> profiles = null;
-		try	{
-			reader = new CSVReader(new FileReader(filename), ',');
-			profiles = reader.readAll();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return profiles;
+		return readProfiles(filename, ',');
 	}
 	
 	public static List<String[]> readProfiles(String filename, char delimiter) {
-		CSVReader reader;
 		List<String[]> profiles = null;
-		try	{
-			reader = new CSVReader(new FileReader(filename), delimiter);
+		try (CSVReader reader = new CSVReader(new FileReader(filename), delimiter))	{
 			profiles = reader.readAll();
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOG.error(e.getLocalizedMessage(), e);
 		}
 		return profiles;
 	}
 
-	public static void writeReportArr( String[][] allLines, String reportName){
-		List<String[]> rep = new ArrayList<>(Arrays.asList(allLines));
-		writeReport( rep, reportName);
+	public static void writeReportArr(String[][] allLines, String reportName) {
+		writeReport(Arrays.asList(allLines), reportName);
 	}
 
-	public static void writeReport( List<String[]> allLines, String reportName){
+	public static void writeReport(List<String[]> allLines, String reportName) {
 		try (CSVWriter writer = new CSVWriter(new PrintWriter(reportName))) {
 			writer.writeAll(allLines);
 			writer.flush();
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOG.error(e.getLocalizedMessage(), e);
 		}
 	}
 
-	public static void writeReport( List<String[]> allLines, String reportName, char delimiter){
-		try (CSVWriter writer = new CSVWriter(new PrintWriter(reportName), delimiter, delimiter, delimiter)) {
+	public static void writeReport(List<String[]> allLines, String reportName, char delimiter) {
+		try (CSVWriter writer = new CSVWriter(new PrintWriter(reportName), delimiter)) {
 			writer.writeAll(allLines);
 			writer.flush();
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOG.error(e.getLocalizedMessage(), e);
 		}
 	}
 	
-	public static void appendReport( List<String[]> allLines, String reportName, char delimiter){
+	public static void appendReport(List<String[]> allLines, String reportName, char delimiter) {
 		List<String[]> previous;
 		try {
 			previous = readProfiles(reportName);
 			allLines.addAll(previous);
-		} catch (Exception e1) {
-			System.out.println("Creating file "+reportName);
+		} catch (Exception e) {
+			LOG.error("Creating file {}: {}", reportName, e.getLocalizedMessage(), e);
 		}
 		
-		try (CSVWriter writer = new CSVWriter(new PrintWriter(reportName), delimiter, delimiter, delimiter)) {
+		try (CSVWriter writer = new CSVWriter(new PrintWriter(reportName), delimiter)) {
 			writer.writeAll(allLines);
 			writer.flush();
 		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	public static void appendReport( List<String[]> allLines, String reportName){
-		List<String[]> previous;
-		try {
-			previous = readProfiles(reportName);
-			allLines.addAll(previous);
-		} catch (Exception e1) {
-			System.out.println("Creating file "+reportName);
-		}
-		
-		try (CSVWriter writer = new CSVWriter(new PrintWriter(reportName))) {
-			writer.writeAll(allLines);
-			writer.flush();
-		} catch (IOException e) {
-			e.printStackTrace();
+			LOG.error(e.getLocalizedMessage(), e);
 		}
 	}
 

@@ -62,7 +62,6 @@ List of third-party dependencies grouped by their license type.
         * Apache XML Graphics Commons (org.apache.xmlgraphics:xmlgraphics-commons:2.11 - http://xmlgraphics.apache.org/commons/)
         * Apache ZooKeeper - Jute (org.apache.zookeeper:zookeeper-jute:3.6.2 - http://zookeeper.apache.org/zookeeper-jute)
         * Apache ZooKeeper - Server (org.apache.zookeeper:zookeeper:3.6.2 - http://zookeeper.apache.org/zookeeper)
-        * azure-bing-search-java (net.billylieurance.azuresearch:azure-bing-search-java:0.13.0 - https://github.com/peculater/azure-bing-search-java)
         * BeanShell (org.apache-extras.beanshell:bsh:2.0b6 - https://github.com/beanshell/beanshell/)
         * Byte Units (com.jakewharton.byteunits:byteunits:0.9.1 - http://nexus.sonatype.org/oss-repository-hosting.html/byteunits)
         * Caffeine cache (com.github.ben-manes.caffeine:caffeine:2.9.3 - https://github.com/ben-manes/caffeine)

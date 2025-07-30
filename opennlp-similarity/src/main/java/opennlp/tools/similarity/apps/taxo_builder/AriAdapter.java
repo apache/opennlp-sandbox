@@ -28,28 +28,31 @@ import java.util.Map;
  * This class makes it possible to use old prolog-files as the bases for
  * taxonomy-learner. It cleans the prolog files and returns with Strings which
  * can be used for the taxonomy extender process.
- * 
  */
 public class AriAdapter {
+
+  private static final Character AMPERSAND_CHAR = '&';
+  private static final String AMPERSAND = "&";
+  private static final String PERCENT = "%";
+  private static final String COLON = ":";
+
   // income_taks(state,company(cafeteria,_)):-do(71100).
   final Map<String, List<List<String>>> lemma_AssocWords = new HashMap<>();
 
   public void getChainsFromARIfile(String fileName) {
-
-    try {
-      BufferedReader br = new BufferedReader(new InputStreamReader(
-          new FileInputStream(fileName)));
+    final ClassLoader cl = Thread.currentThread().getContextClassLoader();
+    try (BufferedReader br = new BufferedReader(new InputStreamReader(cl.getResourceAsStream(fileName)))) {
       String line;
       while ((line = br.readLine()) != null) {
-        if (line.length() < 10 || line.startsWith("%") || line.startsWith(":"))
+        if (line.length() < 10 || line.startsWith(PERCENT) || line.startsWith(COLON))
           continue;
-        String chain0 = line.replace("_,", "&").replace("_)", "&")
-            .replace(":-do(", "&").replace(":-var", "&").replace("taks", "tax")
-            .replace(":- do(", "&").replace("X=", "&").replace(":-", "&")
-            .replace("[X|_]", "&").replace("nonvar", "&").replace("var", "&")
-            .replace('(', '&').replace(')', '&').replace(',', '&')
-            .replace('.', '&').replace("&&&", "&").replace("&&", "&")
-            .replace("&", " ");
+        String chain0 = line.replace("_,", AMPERSAND).replace("_)", AMPERSAND)
+            .replace(":-do(", AMPERSAND).replace(":-var", AMPERSAND).replace("taks", "tax")
+            .replace(":- do(", AMPERSAND).replace("X=", AMPERSAND).replace(":-", AMPERSAND)
+            .replace("[X|_]", AMPERSAND).replace("nonvar", AMPERSAND).replace("var", AMPERSAND)
+            .replace('(', AMPERSAND_CHAR).replace(')', AMPERSAND_CHAR).replace(',', AMPERSAND_CHAR)
+            .replace('.', AMPERSAND_CHAR).replace("&&&", AMPERSAND).replace("&&", AMPERSAND)
+            .replace(AMPERSAND, " ");
         String[] chains = chain0.split(" ");
         List<String> chainList = new ArrayList<>(); // Arrays.asList(chains);
         for (String word : chains) {
@@ -80,14 +83,6 @@ public class AriAdapter {
       e.printStackTrace();
 
     }
-  }
-
-  public static void main(String[] args) {
-
-    AriAdapter ad = new AriAdapter();
-    ad.getChainsFromARIfile("src/test/resources/taxonomies/irs_dom.ari");
-    System.out.println(ad.lemma_AssocWords);
-
   }
 
 }

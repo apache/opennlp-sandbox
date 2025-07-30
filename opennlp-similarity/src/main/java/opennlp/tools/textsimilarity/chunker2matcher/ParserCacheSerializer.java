@@ -42,6 +42,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,14 +51,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import au.com.bytecode.opencsv.CSVReader;
 import au.com.bytecode.opencsv.CSVWriter;
+import org.slf4j.LoggerFactory;
 
 public class ParserCacheSerializer {
-  private static final Logger LOG = Logger
-      .getLogger("opennlp.tools.textsimilarity.chunker2matcher.ParserCacheSerializer");
+
+  private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
   private static final boolean JAVA_OBJECT_SERIALIZATION = false;
   private static final String RESOURCE_DIR = "src/test/resources/";
   private static final String PARSE_CACHE_FILE_NAME = "sentence_parseObject.dat";
@@ -68,13 +70,12 @@ public class ParserCacheSerializer {
       String filename = RESOURCE_DIR + PARSE_CACHE_FILE_NAME;
       try(FileOutputStream fos = new FileOutputStream(filename);
           ObjectOutputStream out = new ObjectOutputStream(fos)) {
-        
+
         out.writeObject(objectToSerialize);
-      } catch (IOException ex) {
-        ex.printStackTrace();
+      } catch (IOException ioe) {
+        LOG.error(ioe.getMessage(), ioe);
       }
     } else {
-
       Map<String, String[][]> sentence_parseObject = (Map<String, String[][]>) objectToSerialize;
       final List<String> keys = new ArrayList<>(sentence_parseObject.keySet());
 
@@ -89,10 +90,9 @@ public class ParserCacheSerializer {
           writer.writeNext(triplet[2]);
         }
       } catch (IOException e) {
-        LOG.severe(e.getMessage());
+        LOG.error(e.getMessage());
       }
     }
-
   }
 
   public static Object readObject() {
@@ -104,23 +104,23 @@ public class ParserCacheSerializer {
 
         data = in.readObject();
       } catch (IOException ex) {
-        System.out.println("Cant find parsing cache file ");
+        LOG.error("Cant find parsing cache file {} due to: {}", filename, ex.getMessage());
       } catch (ClassNotFoundException ex) {
-        ex.printStackTrace();
+        LOG.error(ex.getMessage());
       }
       return data;
     } else {
       List<String[]> lines;
-
-      try (CSVReader reader = new CSVReader(new FileReader(RESOURCE_DIR
-              + PARSE_CACHE_FILE_NAME_CSV), ',')) {
+      final String fileName = RESOURCE_DIR + PARSE_CACHE_FILE_NAME_CSV;
+      
+      try (CSVReader reader = new CSVReader(new FileReader(fileName), ',')) {
         lines = reader.readAll();
       } catch (FileNotFoundException e) {
         if (JAVA_OBJECT_SERIALIZATION)
-          System.err.println("Cannot find cache file");
+          LOG.warn("Cannot find cache file");
         return null;
       } catch (IOException ioe) {
-        ioe.printStackTrace();
+        LOG.error(ioe.getMessage(), ioe);
         return null;
       }
       Map<String, String[][]> sentence_parseObject = new HashMap<>();
@@ -130,10 +130,7 @@ public class ParserCacheSerializer {
             lines.get(i + 3) };
         sentence_parseObject.put(key, value);
       }
-
       return sentence_parseObject;
     }
-
   }
-
 }

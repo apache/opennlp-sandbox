@@ -20,7 +20,7 @@ package opennlp.tools.apps.review_builder;
 import java.util.ArrayList;
 import java.util.List;
 
-import opennlp.tools.jsmlearning.ProfileReaderWriter;
+import opennlp.tools.ProfileReaderWriter;
 import opennlp.tools.parse_thicket.Triple;
 
 public class ReviewBuilderRunner {

@@ -35,7 +35,6 @@ import opennlp.tools.textsimilarity.TextProcessor;
 import opennlp.tools.textsimilarity.chunker2matcher.ParserChunker2MatcherProcessor;
 
 public class StoryDiscourseNavigator {
-	private final BingQueryRunner yrunner = new BingQueryRunner();
 	private final ParserChunker2MatcherProcessor sm = ParserChunker2MatcherProcessor.getInstance();
 	private final Stemmer ps = new PorterStemmer();
 	private final PageFetcher pFetcher = new PageFetcher();
@@ -59,8 +58,7 @@ public class StoryDiscourseNavigator {
 	};
 	
 	private String[] obtainKeywordsForAnEntityFromWikipedia(String entity){
-		yrunner.setKey("xdnRVcVf9m4vDvW1SkTAz5kS5DFYa19CrPYGelGJxnc");
-		List<HitBase> resultList = yrunner.runSearch(entity, 20);
+		List<HitBase> resultList = new ArrayList<>(); //yrunner.runSearch(entity, 20);
 		HitBase h = null;
 		for (HitBase hitBase : resultList) {
 			h = hitBase;
@@ -103,22 +101,20 @@ public class StoryDiscourseNavigator {
 	private List<List<ParseTreeChunk>> runSearchForTaxonomyPath(String query, String domain, String lang, int numbOfHits) {
 		List<List<ParseTreeChunk>> genResult = new ArrayList<>();
 		try {
-			List<HitBase> resultList = yrunner.runSearch(query, numbOfHits);
+			List<HitBase> resultList = new ArrayList<>(); // yrunner.runSearch(query, numbOfHits);
 
 			for (int i = 0; i < resultList.size(); i++) {
-				{
-					for (int j = i + 1; j < resultList.size(); j++) {
-						HitBase h1 = resultList.get(i);
-						HitBase h2 = resultList.get(j);
-						String snapshot1 = StringCleaner.processSnapshotForMatching(h1
-								.getTitle() + " . " + h1.getAbstractText());
-						String snapshot2 = StringCleaner.processSnapshotForMatching(h2
-								.getTitle() + " . " + h2.getAbstractText());
-						SentencePairMatchResult matchRes = sm.assessRelevance(snapshot1,
-								snapshot2);
-						List<List<ParseTreeChunk>> matchResult = matchRes.getMatchResult();
-						genResult.addAll(matchResult);
-					}
+				for (int j = i + 1; j < resultList.size(); j++) {
+					HitBase h1 = resultList.get(i);
+					HitBase h2 = resultList.get(j);
+					String snapshot1 = StringCleaner.processSnapshotForMatching(h1
+							.getTitle() + " . " + h1.getAbstractText());
+					String snapshot2 = StringCleaner.processSnapshotForMatching(h2
+							.getTitle() + " . " + h2.getAbstractText());
+					SentencePairMatchResult matchRes = sm.assessRelevance(snapshot1,
+							snapshot2);
+					List<List<ParseTreeChunk>> matchResult = matchRes.getMatchResult();
+					genResult.addAll(matchResult);
 				}
 			}
 
