@@ -117,15 +117,15 @@ List of third-party dependencies grouped by their license type.
         * hadoop-core (org.apache.hadoop:hadoop-core:1.2.1 - no url defined)
         * HPPC Collections (com.carrotsearch:hppc:0.8.1 - http://labs.carrotsearch.com/hppc.html/hppc)
         * htrace-core4 (org.apache.htrace:htrace-core4:4.1.0-incubating - http://incubator.apache.org/projects/htrace.html)
-        * io.grpc:grpc-api (io.grpc:grpc-api:1.74.0 - https://github.com/grpc/grpc-java)
-        * io.grpc:grpc-context (io.grpc:grpc-context:1.74.0 - https://github.com/grpc/grpc-java)
-        * io.grpc:grpc-core (io.grpc:grpc-core:1.74.0 - https://github.com/grpc/grpc-java)
-        * io.grpc:grpc-netty-shaded (io.grpc:grpc-netty-shaded:1.74.0 - https://github.com/grpc/grpc-java)
-        * io.grpc:grpc-protobuf (io.grpc:grpc-protobuf:1.74.0 - https://github.com/grpc/grpc-java)
-        * io.grpc:grpc-protobuf-lite (io.grpc:grpc-protobuf-lite:1.74.0 - https://github.com/grpc/grpc-java)
-        * io.grpc:grpc-services (io.grpc:grpc-services:1.74.0 - https://github.com/grpc/grpc-java)
-        * io.grpc:grpc-stub (io.grpc:grpc-stub:1.74.0 - https://github.com/grpc/grpc-java)
-        * io.grpc:grpc-util (io.grpc:grpc-util:1.74.0 - https://github.com/grpc/grpc-java)
+        * io.grpc:grpc-api (io.grpc:grpc-api:1.75.0 - https://github.com/grpc/grpc-java)
+        * io.grpc:grpc-context (io.grpc:grpc-context:1.75.0 - https://github.com/grpc/grpc-java)
+        * io.grpc:grpc-core (io.grpc:grpc-core:1.75.0 - https://github.com/grpc/grpc-java)
+        * io.grpc:grpc-netty-shaded (io.grpc:grpc-netty-shaded:1.75.0 - https://github.com/grpc/grpc-java)
+        * io.grpc:grpc-protobuf (io.grpc:grpc-protobuf:1.75.0 - https://github.com/grpc/grpc-java)
+        * io.grpc:grpc-protobuf-lite (io.grpc:grpc-protobuf-lite:1.75.0 - https://github.com/grpc/grpc-java)
+        * io.grpc:grpc-services (io.grpc:grpc-services:1.75.0 - https://github.com/grpc/grpc-java)
+        * io.grpc:grpc-stub (io.grpc:grpc-stub:1.75.0 - https://github.com/grpc/grpc-java)
+        * io.grpc:grpc-util (io.grpc:grpc-util:1.75.0 - https://github.com/grpc/grpc-java)
         * J2ObjC Annotations (com.google.j2objc:j2objc-annotations:1.3 - https://github.com/google/j2objc/)
         * J2ObjC Annotations (com.google.j2objc:j2objc-annotations:3.0.0 - https://github.com/google/j2objc/)
         * Jackson (org.codehaus.jackson:jackson-core-asl:1.9.12 - http://jackson.codehaus.org)
@@ -220,7 +220,7 @@ List of third-party dependencies grouped by their license type.
         * Proj4J (org.locationtech.proj4j:proj4j:1.1.5 - https://github.com/locationtech/proj4j)
         * project ':json-path' (com.jayway.jsonpath:json-path:2.7.0 - https://github.com/jayway/JsonPath)
         * protobuf (org.nd4j:protobuf:1.0.0-M2.1 - http://deeplearning4j.konduit.ai/nd4j/nd4j-shade/protobuf/)
-        * proto-google-common-protos (com.google.api.grpc:proto-google-common-protos:2.51.0 - https://github.com/googleapis/sdk-platform-java)
+        * proto-google-common-protos (com.google.api.grpc:proto-google-common-protos:2.59.2 - https://github.com/googleapis/sdk-platform-java)
         * QDox (com.thoughtworks.qdox:qdox:1.12 - http://qdox.codehaus.org)
         * resources (org.deeplearning4j:resources:1.0.0-M2.1 - http://deeplearning4j.konduit.ai/resources/)
         * RRD4J (org.rrd4j:rrd4j:3.5 - https://github.com/rrd4j/rrd4j/)
@@ -288,8 +288,8 @@ List of third-party dependencies grouped by their license type.
         * commons-compiler (org.codehaus.janino:commons-compiler:3.1.8 - http://janino-compiler.github.io/commons-compiler/)
         * janino (org.codehaus.janino:janino:3.1.8 - http://janino-compiler.github.io/janino/)
         * Java WordNet Library (net.sf.jwordnet:jwnl:1.4_rc3 - http://jwordnet.sf.net)
-        * Protocol Buffers [Core] (com.google.protobuf:protobuf-java:3.25.5 - https://developers.google.com/protocol-buffers/protobuf-java/)
-        * Protocol Buffers [Util] (com.google.protobuf:protobuf-java-util:3.25.5 - https://developers.google.com/protocol-buffers/protobuf-java-util/)
+        * Protocol Buffers [Core] (com.google.protobuf:protobuf-java:3.25.8 - https://developers.google.com/protocol-buffers/protobuf-java/)
+        * Protocol Buffers [Util] (com.google.protobuf:protobuf-java-util:3.25.8 - https://developers.google.com/protocol-buffers/protobuf-java-util/)
         * ThreeTen backport (org.threeten:threetenbp:1.3.3 - https://www.threeten.org/threetenbp)
         * XStream Core (com.thoughtworks.xstream:xstream:1.4.21 - http://x-stream.github.io/xstream)
 
@@ -356,7 +356,7 @@ List of third-party dependencies grouped by their license type.
 
     Eclipse Distribution License, Version 1.0, Eclipse Public License, Version 2.0, The GNU General Public License (GPL), Version 2, With Classpath Exception
 
-        * Jakarta Mail API (jakarta.mail:jakarta.mail-api:2.1.3 - https://projects.eclipse.org/projects/ee4j/jakarta.mail-api)
+        * Jakarta Mail API (jakarta.mail:jakarta.mail-api:2.1.4 - https://projects.eclipse.org/projects/ee4j/jakarta.mail-api)
 
     Eclipse Public License
 
