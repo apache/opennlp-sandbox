@@ -28,7 +28,7 @@
 
   <properties>
     <jakarta.bind-api.version>4.0.2</jakarta.bind-api.version>
-    <jakarta.mail.version>2.1.4</jakarta.mail.version>
+    <jakarta.mail.version>2.1.5</jakarta.mail.version>
     <org.json.version>20250517</org.json.version>
 
     <tika.version>3.2.2</tika.version>
