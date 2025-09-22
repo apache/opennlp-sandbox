@@ -27,7 +27,7 @@
   <name>Apache OpenNLP Similarity distribution</name>
 
   <properties>
-    <jakarta.bind-api.version>4.0.2</jakarta.bind-api.version>
+    <jakarta.bind-api.version>4.0.4</jakarta.bind-api.version>
     <jakarta.mail.version>2.1.4</jakarta.mail.version>
     <org.json.version>20250517</org.json.version>
 
