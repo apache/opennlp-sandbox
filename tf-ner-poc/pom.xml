@@ -26,11 +26,11 @@
     <parent>
         <groupId>org.apache.opennlp</groupId>
         <artifactId>opennlp-sandbox</artifactId>
-        <version>2.5.6-SNAPSHOT</version>
+        <version>2.5.7-SNAPSHOT</version>
     </parent>
 
     <artifactId>tf-ner-poc</artifactId>
-    <version>2.5.6-SNAPSHOT</version>
+    <version>2.5.7-SNAPSHOT</version>
     <name>Apache OpenNLP TF NER poc</name>
 
     <properties>
