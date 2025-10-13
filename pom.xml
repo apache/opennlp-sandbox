@@ -149,7 +149,7 @@
         <junit.version>6.0.0</junit.version>
 
         <coveralls.maven.plugin>4.3.0</coveralls.maven.plugin>
-        <jacoco.maven.plugin>0.8.13</jacoco.maven.plugin>
+        <jacoco.maven.plugin>0.8.14</jacoco.maven.plugin>
         <maven.failsafe.plugin>3.5.4</maven.failsafe.plugin>
         <forbiddenapis.plugin>3.10</forbiddenapis.plugin>
         <mockito.version>3.9.0</mockito.version>
