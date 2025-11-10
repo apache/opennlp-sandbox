@@ -142,7 +142,7 @@
         <log4j2.version>2.25.2</log4j2.version>
 
         <uimaj.version>3.6.1</uimaj.version>
-        <jersey-client.version>2.41</jersey-client.version>
+        <jersey-client.version>4.0.0</jersey-client.version>
         <jersey-server.version>2.47</jersey-server.version>
         <jettison.version>1.5.4</jettison.version>
 
