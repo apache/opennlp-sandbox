@@ -26,7 +26,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.commons.collections.ListUtils;
+import org.apache.commons.collections4.ListUtils;
 
 public class ConceptLattice {
 	int objectCount;
@@ -88,7 +88,6 @@ public class ConceptLattice {
 		}				
 	}
 
-	
 	public int GetMaximalConcept(List<Integer> intent, int Generator) {
 		boolean parentIsMaximal = true;
 		while(parentIsMaximal) {
@@ -105,7 +104,7 @@ public class ConceptLattice {
 	}
 	
 	public void AddExtentToAncestors(LinkedHashSet<Integer>extent, int curNode) {
-		if (conceptList.get(curNode).parents.size()>0){
+		if (!conceptList.get(curNode).parents.isEmpty()){
 			for (int parent : conceptList.get(curNode).parents){
 				conceptList.get(parent).addExtents(extent);
 				AddExtentToAncestors(extent, parent);
