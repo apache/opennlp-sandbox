@@ -19,16 +19,16 @@ package opennlp.tools.fca;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
-import org.apache.commons.collections.ListUtils;
+import org.apache.commons.collections4.ListUtils;
 
 public class BasicLevelMetrics {
 	
-	final ConceptLattice cl;
-	ArrayList<ArrayList<Integer>> attributesExtent;
-	ArrayList<ArrayList<Integer>> objectsIntent  = null; 
-	ArrayList<Integer> attributes = null; 
+	private final ConceptLattice cl;
+	private List<ArrayList<Integer>> attributesExtent;
+  private List<Integer> attributes = null;
 	private final double[][] objectsSimilarityJ;
 	private final double [][] objectsSimilaritySMC;
 
@@ -41,7 +41,7 @@ public class BasicLevelMetrics {
 	
 	public void setUp(){
 		attributesExtent = new ArrayList<>();
-		objectsIntent = new ArrayList<>();
+    List<ArrayList<Integer>> objectsIntent = new ArrayList<>();
 		attributes = new ArrayList<>();
 		
 		for (int i=0;i<cl.attributeCount;i++){
@@ -66,15 +66,10 @@ public class BasicLevelMetrics {
 			objectsSimilarityJ[i][i] = 1;
 			objectsSimilaritySMC[i][i] = 1;
 		}
-		
-		//System.out.println("J");
-		//System.out.println(Arrays.deepToString(objectsSimilarityJ));
-		//System.out.println("SMC");
-		//System.out.println(Arrays.deepToString(objectsSimilaritySMC));
 
 	} 
 	 
-	//Utility functions for  Similarity approach (S)
+	// Utility functions for  Similarity approach (S)
 	public double simSMC (ArrayList<Integer> intent1, ArrayList<Integer>intent2){
 		int tp = (ListUtils.intersection(intent1,intent2)).size();
 		ArrayList<Integer> fnlst = new ArrayList<>(this.attributes);

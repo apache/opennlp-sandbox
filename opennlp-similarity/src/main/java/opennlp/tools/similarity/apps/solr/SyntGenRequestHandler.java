@@ -60,7 +60,10 @@ import org.apache.solr.search.SolrIndexSearcher;
 
 public class SyntGenRequestHandler extends SearchHandler {
 
-	private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
+  private static final String SCORE = "score";
+  private static final String RESPONSE = "response";
+  private static final String PREFIX_QUERY = "q=";
+  private final ParseTreeChunkListScorer parseTreeChunkListScorer = new ParseTreeChunkListScorer();
 
 	public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp){
 		try {
@@ -77,7 +80,7 @@ public class SyntGenRequestHandler extends SearchHandler {
 
 		//modify rsp
 		NamedList<Object> values = rsp.getValues();
-		ResultContext c = (ResultContext) values.get("response");
+		ResultContext c = (ResultContext) values.get(RESPONSE);
 		if (c==null)
 			return;
 
@@ -97,13 +100,12 @@ public class SyntGenRequestHandler extends SearchHandler {
 			e.printStackTrace();
 		}
 		// c.docs = dListResult;
-		values.remove("response");
+		values.remove(RESPONSE);
 
 		rsp.setAllValues(values);
 	}
 
-	public DocList filterResultsBySyntMatchReduceDocSet(DocList docList,
-			SolrQueryRequest req,  SolrParams params) {
+	public DocList filterResultsBySyntMatchReduceDocSet(DocList docList, SolrQueryRequest req,  SolrParams params) {
 		//if (!docList.hasScores())
 		//	return docList;
 
@@ -117,7 +119,7 @@ public class SyntGenRequestHandler extends SearchHandler {
 		String requestExpression = req.getParamString();
 		String[] exprParts = requestExpression.split("&");
 		for(String part: exprParts){
-			if (part.startsWith("q="))
+			if (part.startsWith(PREFIX_QUERY))
 				requestExpression = part;
 		}
 		String fieldNameQuery = StringUtils.substringBetween(requestExpression, "=", ":");
@@ -126,7 +128,7 @@ public class SyntGenRequestHandler extends SearchHandler {
 		if  (queryParts.length>=2 && queryParts[1].length()>5)
 			requestExpression = queryParts[1].replace('+', ' ');
 		else if (requestExpression.contains(":")) {// still field-based expression
-			requestExpression = requestExpression.replaceAll(fieldNameQuery+":", "").replace('+',' ').replaceAll("  ", " ").replace("q=", "");
+			requestExpression = requestExpression.replaceAll(fieldNameQuery+":", "").replace('+',' ').replaceAll("  ", " ").replace(PREFIX_QUERY, "");
 		}
 
 		if (fieldNameQuery ==null)
@@ -217,7 +219,7 @@ public class SyntGenRequestHandler extends SearchHandler {
 		int numFound = 0;
 		List<SolrDocument> slice = new ArrayList<>();
 		for (SolrDocument sdoc : results) {
-			Float score = (Float) sdoc.getFieldValue("score");
+			Float score = (Float) sdoc.getFieldValue(SCORE);
 			if (maxScore < score) {
 				maxScore = score;
 			}
@@ -231,13 +233,13 @@ public class SyntGenRequestHandler extends SearchHandler {
 		results.setNumFound(numFound);
 		results.setMaxScore(maxScore);
 		results.setStart(start);
-		rsp.add("response", results);
+		rsp.add(RESPONSE, results);
 
 	}
 
 
 	private Query buildFilter(String[] fqs, SolrQueryRequest req)
-	throws IOException, ParseException {
+          throws IOException, ParseException {
 		if (fqs != null && fqs.length > 0) {
 			BooleanQuery.Builder fquery =  new BooleanQuery.Builder();
 			for (String fq : fqs) {
@@ -254,17 +256,16 @@ public class SyntGenRequestHandler extends SearchHandler {
 		return null;
 	}
 
-	private void doSearch1(SolrDocumentList results,
-			SolrIndexSearcher searcher, String q, Query filter,
-			int ndocs, SolrQueryRequest req,
-			Map<String,SchemaField> fields, Set<Integer> alreadyFound) 
-	throws IOException {
+	private void doSearch1(SolrDocumentList results, SolrIndexSearcher searcher,
+                         String q, Query filter, int ndocs, SolrQueryRequest req,
+                         Map<String,SchemaField> fields, Set<Integer> alreadyFound)
+          throws IOException {
 
 		// build custom query and extra fields
 		Map<String,Object> extraFields = new HashMap<>();
 		extraFields.put("search_type", "search1");
 		boolean includeScore = 
-			req.getParams().get(CommonParams.FL).contains("score");
+			req.getParams().get(CommonParams.FL).contains(SCORE);
 
 		int  maxDocsPerSearcherType = 0;
 		float maprelScoreCutoff = 2.0f;
@@ -296,7 +297,7 @@ public class SyntGenRequestHandler extends SearchHandler {
 				sdoc.addField(extraField, extraFields.get(extraField));
 			}
 			if (includeScore) {
-				sdoc.addField("score", hit.score);
+				sdoc.addField(SCORE, hit.score);
 			}
 			results.add(sdoc);
 			alreadyFound.add(hit.doc);
@@ -315,9 +316,3 @@ public class SyntGenRequestHandler extends SearchHandler {
 	}
 
 }
-
-/*
- * 
- * 
- * http://localhost:8080/solr/syntgen/?q=add-style-to-your-every-day-fresh-design-iphone-cases&t1=Personalized+iPhone+Cases&d1=Add+style+to+your+every+day+with+a+custom+iPhone+case&t2=Personalized+iPhone+Cases&d2=Add+style+to+your+every+day+with+a+custom+iPhone+case&t3=Personalized+iPhone+Cases&d3=Add+style+to+your+every+day+with+a+custom+iPhone+case&t4=Personalized+iPhone+Cases&d4=add+style+to+your+every+day+with+a+custom+iPhone+case
- * */

@@ -31,8 +31,10 @@
     <jakarta.mail.version>2.1.4</jakarta.mail.version>
     <org.json.version>20250517</org.json.version>
 
+    <lucene.version>9.12.3</lucene.version>
+    <solr.version>9.10.0</solr.version>
     <tika.version>3.2.3</tika.version>
-    <solr.version>8.11.4</solr.version>
+    
     <docx4j.version>11.5.7</docx4j.version>
     <dl4j.version>1.0.0-M2.1</dl4j.version>
     <hdf5.version>1.14.3-1.5.10</hdf5.version>
@@ -101,12 +103,12 @@
       <scope>runtime</scope>
     </dependency>
     <!-- End model resources -->
-    
+
     <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <scope>runtime</scope>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-collections4</artifactId>
     </dependency>
+
     <dependency>
       <groupId>jakarta.xml.bind</groupId>
       <artifactId>jakarta.xml.bind-api</artifactId>
@@ -156,6 +158,13 @@
           <artifactId>*</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+
+    <!-- required for solr in the chosen version -->
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-queryparser</artifactId>
+      <version>${lucene.version}</version>
     </dependency>
 
     <dependency>
