@@ -9,10 +9,6 @@ The Apache Software Foundation (http://www.apache.org/).
 List of third-party dependencies grouped by their license type.
 
 
-    3-Clause BSD License
-
-        * Protocol Buffers [Core] (com.google.protobuf:protobuf-java:3.15.0 - https://developers.google.com/protocol-buffers/protobuf-java/)
-
     Apache License
 
         * HttpClient (commons-httpclient:commons-httpclient:3.0.1 - http://jakarta.apache.org/commons/httpclient/)
@@ -21,36 +17,53 @@ List of third-party dependencies grouped by their license type.
     Apache License, Version 2.0
 
         * annotations-api (org.apache.tomcat:annotations-api:6.0.53 - http://tomcat.apache.org/)
-        * Apache Calcite Avatica (org.apache.calcite.avatica:avatica-core:1.23.0 - https://calcite.apache.org/avatica)
-        * Apache Calcite Avatica Metrics (org.apache.calcite.avatica:avatica-metrics:1.23.0 - https://calcite.apache.org/avatica)
         * Apache Commons BeanUtils (commons-beanutils:commons-beanutils:1.11.0 - https://commons.apache.org/proper/commons-beanutils)
         * Apache Commons CLI (commons-cli:commons-cli:1.11.0 - https://commons.apache.org/proper/commons-cli/)
         * Apache Commons Codec (commons-codec:commons-codec:1.20.0 - https://commons.apache.org/proper/commons-codec/)
         * Apache Commons Collections (commons-collections:commons-collections:3.2.2 - http://commons.apache.org/collections/)
         * Apache Commons Collections (org.apache.commons:commons-collections4:4.5.0 - https://commons.apache.org/proper/commons-collections/)
         * Apache Commons Compress (org.apache.commons:commons-compress:1.28.0 - https://commons.apache.org/proper/commons-compress/)
-        * Apache Commons Configuration (org.apache.commons:commons-configuration2:2.8.0 - https://commons.apache.org/proper/commons-configuration/)
-        * Apache Commons Exec (org.apache.commons:commons-exec:1.3 - http://commons.apache.org/proper/commons-exec/)
+        * Apache Commons Exec (org.apache.commons:commons-exec:1.5.0 - https://commons.apache.org/proper/commons-exec/)
         * Apache Commons IO (commons-io:commons-io:2.21.0 - https://commons.apache.org/proper/commons-io/)
         * Apache Commons Lang (org.apache.commons:commons-lang3:3.20.0 - https://commons.apache.org/proper/commons-lang/)
         * Apache Commons Logging (commons-logging:commons-logging:1.3.5 - https://commons.apache.org/proper/commons-logging/)
         * Apache Commons Math (org.apache.commons:commons-math3:3.6.1 - http://commons.apache.org/proper/commons-math/)
-        * Apache Commons Text (org.apache.commons:commons-text:1.10.0 - https://commons.apache.org/proper/commons-text)
         * Apache Derby Database Engine and Embedded JDBC Driver (org.apache.derby:derby:10.17.1.0 - http://db.apache.org/derby/)
         * Apache Derby Shared Code (org.apache.derby:derbyshared:10.17.1.0 - http://db.apache.org/derby/)
         * Apache Derby Tools (org.apache.derby:derbytools:10.17.1.0 - http://db.apache.org/derby/)
         * Apache FontBox (org.apache.pdfbox:fontbox:3.0.6 - http://pdfbox.apache.org/)
         * Apache HttpClient (org.apache.httpcomponents:httpclient:4.5.14 - http://hc.apache.org/httpcomponents-client-ga)
-        * Apache HttpClient (org.apache.httpcomponents.client5:httpclient5:5.1.3 - https://hc.apache.org/httpcomponents-client-5.0.x/5.1.3/httpclient5/)
         * Apache HttpClient Mime (org.apache.httpcomponents:httpmime:4.5.14 - http://hc.apache.org/httpcomponents-client-ga)
-        * Apache HttpComponents Core HTTP/1.1 (org.apache.httpcomponents.core5:httpcore5:5.1.3 - https://hc.apache.org/httpcomponents-core-5.1.x/5.1.3/httpcore5/)
-        * Apache HttpComponents Core HTTP/2 (org.apache.httpcomponents.core5:httpcore5-h2:5.1.3 - https://hc.apache.org/httpcomponents-core-5.1.x/5.1.3/httpcore5-h2/)
         * Apache HttpCore (org.apache.httpcomponents:httpcore:4.4.16 - http://hc.apache.org/httpcomponents-core-ga)
         * Apache Log4j API (org.apache.logging.log4j:log4j-api:2.25.2 - https://logging.apache.org/log4j/2.x/)
         * Apache Log4j Core (org.apache.logging.log4j:log4j-core:2.25.2 - https://logging.apache.org/log4j/2.x/)
+        * Apache Lucene (module: backward-codecs) (org.apache.lucene:lucene-backward-codecs:9.12.3 - https://lucene.apache.org/)
+        * Apache Lucene (module: classification) (org.apache.lucene:lucene-classification:9.12.3 - https://lucene.apache.org/)
+        * Apache Lucene (module: codecs) (org.apache.lucene:lucene-codecs:9.12.3 - https://lucene.apache.org/)
+        * Apache Lucene (module: common) (org.apache.lucene:lucene-analysis-common:9.12.3 - https://lucene.apache.org/)
+        * Apache Lucene (module: core) (org.apache.lucene:lucene-core:9.12.3 - https://lucene.apache.org/)
+        * Apache Lucene (module: expressions) (org.apache.lucene:lucene-expressions:9.12.3 - https://lucene.apache.org/)
+        * Apache Lucene (module: facet) (org.apache.lucene:lucene-facet:9.12.3 - https://lucene.apache.org/)
+        * Apache Lucene (module: grouping) (org.apache.lucene:lucene-grouping:9.12.3 - https://lucene.apache.org/)
+        * Apache Lucene (module: highlighter) (org.apache.lucene:lucene-highlighter:9.12.3 - https://lucene.apache.org/)
+        * Apache Lucene (module: join) (org.apache.lucene:lucene-join:9.12.3 - https://lucene.apache.org/)
+        * Apache Lucene (module: kuromoji) (org.apache.lucene:lucene-analysis-kuromoji:9.12.3 - https://lucene.apache.org/)
+        * Apache Lucene (module: memory) (org.apache.lucene:lucene-memory:9.12.3 - https://lucene.apache.org/)
+        * Apache Lucene (module: misc) (org.apache.lucene:lucene-misc:9.12.3 - https://lucene.apache.org/)
+        * Apache Lucene (module: nori) (org.apache.lucene:lucene-analysis-nori:9.12.3 - https://lucene.apache.org/)
+        * Apache Lucene (module: phonetic) (org.apache.lucene:lucene-analysis-phonetic:9.12.3 - https://lucene.apache.org/)
+        * Apache Lucene (module: queries) (org.apache.lucene:lucene-queries:9.12.3 - https://lucene.apache.org/)
+        * Apache Lucene (module: queryparser) (org.apache.lucene:lucene-queryparser:9.12.3 - https://lucene.apache.org/)
+        * Apache Lucene (module: sandbox) (org.apache.lucene:lucene-sandbox:9.12.3 - https://lucene.apache.org/)
+        * Apache Lucene (module: spatial3d) (org.apache.lucene:lucene-spatial3d:9.12.3 - https://lucene.apache.org/)
+        * Apache Lucene (module: spatial-extras) (org.apache.lucene:lucene-spatial-extras:9.12.3 - https://lucene.apache.org/)
+        * Apache Lucene (module: suggest) (org.apache.lucene:lucene-suggest:9.12.3 - https://lucene.apache.org/)
         * Apache PDFBox io (org.apache.pdfbox:pdfbox-io:3.0.6 - https://www.apache.org/pdfbox-parent/pdfbox-io/)
-        * Apache Solr Core (org.apache.solr:solr-core:8.11.4 - https://lucene.apache.org/solr-parent/solr-core)
-        * Apache Solr Solrj (org.apache.solr:solr-solrj:8.11.4 - https://lucene.apache.org/solr-parent/solr-solrj)
+        * Apache Solr (module: api) (org.apache.solr:solr-api:9.10.0 - https://solr.apache.org/)
+        * Apache Solr (module: core) (org.apache.solr:solr-core:9.10.0 - https://solr.apache.org/)
+        * Apache Solr (module: solrj) (org.apache.solr:solr-solrj:9.10.0 - https://solr.apache.org/)
+        * Apache Solr (module: solrj-streaming) (org.apache.solr:solr-solrj-streaming:9.10.0 - https://solr.apache.org/)
+        * Apache Solr (module: solrj-zookeeper) (org.apache.solr:solr-solrj-zookeeper:9.10.0 - https://solr.apache.org/)
         * Apache Tika core (org.apache.tika:tika-core:3.2.3 - https://tika.apache.org/)
         * Apache Tika html parser module (org.apache.tika:tika-parser-html-module:3.2.3 - https://tika.apache.org/tika-parser-html-module/)
         * Apache UIMA Base: jVinci: Vinci Transport Library (org.apache.uima:jVinci:3.6.1 - https://uima.apache.org)
@@ -60,22 +73,17 @@ List of third-party dependencies grouped by their license type.
         * Apache UIMA Base: uimaj-tools: Tools (org.apache.uima:uimaj-tools:3.6.1 - https://uima.apache.org)
         * Apache UIMA Eclipse: uimaj-ep-cas-editor (org.apache.uima:uimaj-ep-cas-editor:3.6.1 - https://uima.apache.org)
         * Apache XML Graphics Commons (org.apache.xmlgraphics:xmlgraphics-commons:2.11 - http://xmlgraphics.apache.org/commons/)
-        * Apache ZooKeeper - Jute (org.apache.zookeeper:zookeeper-jute:3.6.2 - http://zookeeper.apache.org/zookeeper-jute)
-        * Apache ZooKeeper - Server (org.apache.zookeeper:zookeeper:3.6.2 - http://zookeeper.apache.org/zookeeper)
+        * Apache ZooKeeper - Jute (org.apache.zookeeper:zookeeper-jute:3.9.4 - http://zookeeper.apache.org/zookeeper-jute)
+        * Apache ZooKeeper - Server (org.apache.zookeeper:zookeeper:3.9.4 - http://zookeeper.apache.org/zookeeper)
         * BeanShell (org.apache-extras.beanshell:bsh:2.0b6 - https://github.com/beanshell/beanshell/)
         * Byte Units (com.jakewharton.byteunits:byteunits:0.9.1 - http://nexus.sonatype.org/oss-repository-hosting.html/byteunits)
-        * Caffeine cache (com.github.ben-manes.caffeine:caffeine:2.9.3 - https://github.com/ben-manes/caffeine)
-        * Calcite Core (org.apache.calcite:calcite-core:1.35.0 - https://calcite.apache.org)
-        * Calcite Linq4j (org.apache.calcite:calcite-linq4j:1.35.0 - https://calcite.apache.org)
+        * Caffeine cache (com.github.ben-manes.caffeine:caffeine:3.1.8 - https://github.com/ben-manes/caffeine)
         * Commons BeanUtils Core (commons-beanutils:commons-beanutils-core:1.8.0 - http://commons.apache.org/beanutils/)
         * Commons Configuration (commons-configuration:commons-configuration:1.6 - http://commons.apache.org/${pom.artifactId.substring(8)}/)
         * Commons Lang (commons-lang:commons-lang:2.6 - http://commons.apache.org/lang/)
         * Commons Math (org.apache.commons:commons-math:2.1 - http://commons.apache.org/math/)
         * Commons Net (commons-net:commons-net:3.1 - http://commons.apache.org/net/)
         * ConcurrentLinkedHashMap (com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.3.2 - http://code.google.com/p/concurrentlinkedhashmap)
-        * Curator Client (org.apache.curator:curator-client:2.13.0 - http://curator.apache.org/curator-client)
-        * Curator Framework (org.apache.curator:curator-framework:2.13.0 - http://curator.apache.org/curator-framework)
-        * Curator Recipes (org.apache.curator:curator-recipes:2.13.0 - http://curator.apache.org/curator-recipes)
         * Data Mapper for Jackson (org.codehaus.jackson:jackson-mapper-asl:1.9.12 - http://jackson.codehaus.org)
         * datavec-api (org.datavec:datavec-api:1.0.0-M2.1 - http://deeplearning4j.konduit.ai/datavec-parent/datavec-api/)
         * deeplearning4j-core (org.deeplearning4j:deeplearning4j-core:1.0.0-M2.1 - http://deeplearning4j.konduit.ai/deeplearning4j-parent/deeplearning4j-core/)
@@ -87,12 +95,10 @@ List of third-party dependencies grouped by their license type.
         * deeplearning4j-ui-components (org.deeplearning4j:deeplearning4j-ui-components:1.0.0-M2.1 - http://deeplearning4j.konduit.ai/deeplearning4j-parent/deeplearning4j-ui-parent/deeplearning4j-ui-components/)
         * deeplearning4j-utility-iterators (org.deeplearning4j:deeplearning4j-utility-iterators:1.0.0-M2.1 - http://deeplearning4j.konduit.ai/deeplearning4j-parent/deeplearning4j-data/deeplearning4j-utility-iterators/)
         * Digester (commons-digester:commons-digester:1.8 - http://jakarta.apache.org/commons/digester/)
-        * Disruptor Framework (com.lmax:disruptor:3.4.2 - http://lmax-exchange.github.com/disruptor)
         * docx4j-core (org.docx4j:docx4j-core:11.5.7 - http://www.docx4java.org/docx4j-core/)
         * docx4j-openxml-objects (org.docx4j:docx4j-openxml-objects:11.5.7 - http://www.docx4java.org/docx4j-openxml-objects/)
         * docx4j-openxml-objects-pml (org.docx4j:docx4j-openxml-objects-pml:11.5.7 - http://www.docx4java.org/docx4j-openxml-objects-pml/)
         * docx4j-openxml-objects-sml (org.docx4j:docx4j-openxml-objects-sml:11.5.7 - http://www.docx4java.org/docx4j-openxml-objects-sml/)
-        * eigenbase-properties (net.hydromatic:eigenbase-properties:1.1.5 - http://github.com/julianhyde/eigenbase-properties)
         * EL (commons-el:commons-el:1.0 - http://jakarta.apache.org/commons/el/)
         * error-prone annotations (com.google.errorprone:error_prone_annotations:2.3.3 - http://nexus.sonatype.org/oss-repository-hosting.html/error_prone_parent/error_prone_annotations)
         * error-prone annotations (com.google.errorprone:error_prone_annotations:2.36.0 - https://errorprone.info/error_prone_annotations)
@@ -103,95 +109,68 @@ List of third-party dependencies grouped by their license type.
         * Google Android Annotations Library (com.google.android:annotations:4.1.1.4 - http://source.android.com/)
         * Google Collections Library (com.google.collections:google-collections:0.9 - http://code.google.com/p/google-collections/)
         * Google S2 geometry library (io.sgr:s2-geometry-library-java:1.0.0 - https://github.com/sgr-io/s2-geometry-library-java)
-        * Graphite Integration for Metrics (io.dropwizard.metrics:metrics-graphite:4.1.5 - https://metrics.dropwizard.io/metrics-graphite)
+        * Graphite Integration for Metrics (io.dropwizard.metrics:metrics-graphite:4.2.26 - https://metrics.dropwizard.io/metrics-graphite)
         * Gson (com.google.code.gson:gson:2.11.0 - https://github.com/google/gson)
         * Gson (com.google.code.gson:gson:2.8.0 - https://github.com/google/gson/gson)
-        * Guava: Google Core Libraries for Java (com.google.guava:guava:32.1.3-jre - https://github.com/google/guava)
+        * Guava: Google Core Libraries for Java (com.google.guava:guava:33.1.0-jre - https://github.com/google/guava)
         * Guava: Google Core Libraries for Java (com.google.guava:guava:33.4.8-android - https://github.com/google/guava)
         * Guava: Google Core Libraries for Java (com.google.guava:guava:33.5.0-jre - https://github.com/google/guava)
         * guava (org.nd4j:guava:1.0.0-M2.1 - http://deeplearning4j.konduit.ai/nd4j/nd4j-shade/guava/)
-        * Guava InternalFutureFailureAccess and InternalFutures (com.google.guava:failureaccess:1.0.1 - https://github.com/google/guava/failureaccess)
+        * Guava InternalFutureFailureAccess and InternalFutures (com.google.guava:failureaccess:1.0.2 - https://github.com/google/guava/failureaccess)
         * Guava InternalFutureFailureAccess and InternalFutures (com.google.guava:failureaccess:1.0.3 - https://github.com/google/guava/failureaccess)
         * Guava ListenableFuture only (com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava - https://github.com/google/guava/listenablefuture)
         * hadoop-core (org.apache.hadoop:hadoop-core:1.2.1 - no url defined)
-        * HPPC Collections (com.carrotsearch:hppc:0.8.1 - http://labs.carrotsearch.com/hppc.html/hppc)
-        * htrace-core4 (org.apache.htrace:htrace-core4:4.1.0-incubating - http://incubator.apache.org/projects/htrace.html)
-        * io.grpc:grpc-api (io.grpc:grpc-api:1.76.0 - https://github.com/grpc/grpc-java)
-        * io.grpc:grpc-context (io.grpc:grpc-context:1.76.0 - https://github.com/grpc/grpc-java)
-        * io.grpc:grpc-core (io.grpc:grpc-core:1.76.0 - https://github.com/grpc/grpc-java)
-        * io.grpc:grpc-netty-shaded (io.grpc:grpc-netty-shaded:1.76.0 - https://github.com/grpc/grpc-java)
-        * io.grpc:grpc-protobuf (io.grpc:grpc-protobuf:1.76.0 - https://github.com/grpc/grpc-java)
-        * io.grpc:grpc-protobuf-lite (io.grpc:grpc-protobuf-lite:1.76.0 - https://github.com/grpc/grpc-java)
-        * io.grpc:grpc-services (io.grpc:grpc-services:1.76.0 - https://github.com/grpc/grpc-java)
-        * io.grpc:grpc-stub (io.grpc:grpc-stub:1.76.0 - https://github.com/grpc/grpc-java)
-        * io.grpc:grpc-util (io.grpc:grpc-util:1.76.0 - https://github.com/grpc/grpc-java)
-        * J2ObjC Annotations (com.google.j2objc:j2objc-annotations:1.3 - https://github.com/google/j2objc/)
+        * High Performance Primitive Collections (com.carrotsearch:hppc:0.10.0 - https://github.com/carrotsearch/hppc)
+        * io.grpc:grpc-api (io.grpc:grpc-api:1.77.0 - https://github.com/grpc/grpc-java)
+        * io.grpc:grpc-context (io.grpc:grpc-context:1.77.0 - https://github.com/grpc/grpc-java)
+        * io.grpc:grpc-core (io.grpc:grpc-core:1.77.0 - https://github.com/grpc/grpc-java)
+        * io.grpc:grpc-netty-shaded (io.grpc:grpc-netty-shaded:1.77.0 - https://github.com/grpc/grpc-java)
+        * io.grpc:grpc-protobuf (io.grpc:grpc-protobuf:1.77.0 - https://github.com/grpc/grpc-java)
+        * io.grpc:grpc-protobuf-lite (io.grpc:grpc-protobuf-lite:1.77.0 - https://github.com/grpc/grpc-java)
+        * io.grpc:grpc-services (io.grpc:grpc-services:1.77.0 - https://github.com/grpc/grpc-java)
+        * io.grpc:grpc-stub (io.grpc:grpc-stub:1.77.0 - https://github.com/grpc/grpc-java)
+        * io.grpc:grpc-util (io.grpc:grpc-util:1.77.0 - https://github.com/grpc/grpc-java)
         * J2ObjC Annotations (com.google.j2objc:j2objc-annotations:3.0.0 - https://github.com/google/j2objc/)
         * J2ObjC Annotations (com.google.j2objc:j2objc-annotations:3.1 - https://github.com/google/j2objc/)
         * Jackson (org.codehaus.jackson:jackson-core-asl:1.9.12 - http://jackson.codehaus.org)
         * jackson (org.nd4j:jackson:1.0.0-M2.1 - http://deeplearning4j.konduit.ai/nd4j/nd4j-shade/jackson/)
-        * Jackson-annotations (com.fasterxml.jackson.core:jackson-annotations:2.15.2 - https://github.com/FasterXML/jackson)
         * Jackson-annotations (com.fasterxml.jackson.core:jackson-annotations:2.18.0 - https://github.com/FasterXML/jackson)
         * Jackson-annotations (com.fasterxml.jackson.core:jackson-annotations:2.19.2 - https://github.com/FasterXML/jackson)
-        * Jackson-core (com.fasterxml.jackson.core:jackson-core:2.15.2 - https://github.com/FasterXML/jackson-core)
         * Jackson-core (com.fasterxml.jackson.core:jackson-core:2.18.0 - https://github.com/FasterXML/jackson-core)
         * Jackson-core (com.fasterxml.jackson.core:jackson-core:2.19.2 - https://github.com/FasterXML/jackson-core)
-        * jackson-databind (com.fasterxml.jackson.core:jackson-databind:2.15.2 - https://github.com/FasterXML/jackson)
         * jackson-databind (com.fasterxml.jackson.core:jackson-databind:2.18.0 - https://github.com/FasterXML/jackson)
         * jackson-databind (com.fasterxml.jackson.core:jackson-databind:2.19.2 - https://github.com/FasterXML/jackson)
-        * Jackson dataformat: Smile (com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.15.2 - https://github.com/FasterXML/jackson-dataformats-binary)
+        * Jackson dataformat: CBOR (com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.18.0 - https://github.com/FasterXML/jackson-dataformats-binary)
+        * Jackson dataformat: Smile (com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.18.0 - https://github.com/FasterXML/jackson-dataformats-binary)
+        * Jackson module: Jakarta XML Bind Annotations (jakarta.xml.bind) (com.fasterxml.jackson.module:jackson-module-jakarta-xmlbind-annotations:2.18.0 - https://github.com/FasterXML/jackson-modules-base)
         * Jackson module: Jakarta XML Bind Annotations (jakarta.xml.bind) (com.fasterxml.jackson.module:jackson-module-jakarta-xmlbind-annotations:2.19.1 - https://github.com/FasterXML/jackson-modules-base)
         * Jackson module: Old JAXB Annotations (javax.xml.bind) (com.fasterxml.jackson.module:jackson-module-jaxb-annotations:2.18.0 - https://github.com/FasterXML/jackson-modules-base)
         * Jackson module: Old JAXB Annotations (javax.xml.bind) (com.fasterxml.jackson.module:jackson-module-jaxb-annotations:2.19.2 - https://github.com/FasterXML/jackson-modules-base)
         * Jakarta Bean Validation API (jakarta.validation:jakarta.validation-api:2.0.2 - https://beanvalidation.org)
+        * Jakarta Bean Validation API (jakarta.validation:jakarta.validation-api:3.0.2 - https://beanvalidation.org)
         * Jakarta Commons Net (commons-net:commons-net:1.4.1 - http://jakarta.apache.org/commons/${pom.artifactId.substring(8)}/)
         * Jakarta Dependency Injection (jakarta.inject:jakarta.inject-api:2.0.1 - https://github.com/eclipse-ee4j/injection-api)
         * Jakarta Validation API (jakarta.validation:jakarta.validation-api:3.1.0 - https://beanvalidation.org)
         * jaxb-svg11 (org.plutext:jaxb-svg11:11.4.0 - https://github.com/plutext/JAXB-classes-for-SVG)
-        * JCL 1.2 implemented over SLF4J (org.slf4j:jcl-over-slf4j:1.7.36 - http://www.slf4j.org)
+        * JCL 1.2 implemented over SLF4J (org.slf4j:jcl-over-slf4j:2.0.17 - http://www.slf4j.org)
         * Jettison (org.codehaus.jettison:jettison:1.5.4 - https://github.com/jettison-json/jettison)
         * Joda time (joda-time:joda-time:2.2 - http://joda-time.sourceforge.net)
-        * jose4j (org.bitbucket.b_c:jose4j:0.6.5 - https://bitbucket.org/b_c/jose4j/)
+        * json-path (com.jayway.jsonpath:json-path:2.9.0 - https://github.com/jayway/JsonPath)
         * JSpecify annotations (org.jspecify:jspecify:1.0.0 - http://jspecify.org/)
-        * JVM Integration for Metrics (io.dropwizard.metrics:metrics-jvm:4.1.5 - https://metrics.dropwizard.io/metrics-jvm)
-        * Kerby ASN1 Project (org.apache.kerby:kerby-asn1:1.0.1 - http://directory.apache.org/kerby/kerby-common/kerby-asn1)
-        * Kerby-kerb core (org.apache.kerby:kerb-core:1.0.1 - http://directory.apache.org/kerby/kerby-kerb/kerb-core)
-        * Kerby-kerb Util (org.apache.kerby:kerb-util:1.0.1 - http://directory.apache.org/kerby/kerby-kerb/kerb-util)
-        * Kerby PKIX Project (org.apache.kerby:kerby-pkix:1.0.1 - http://directory.apache.org/kerby/kerby-pkix)
+        * JVM Integration for Metrics (io.dropwizard.metrics:metrics-jvm:4.2.26 - https://metrics.dropwizard.io/metrics-jvm)
         * libtensorflow_jni (org.tensorflow:libtensorflow_jni:1.15.0 - https://www.tensorflow.org/libtensorflow_jni)
         * libtensorflow (org.tensorflow:libtensorflow:1.15.0 - https://www.tensorflow.org/libtensorflow)
         * Log4j Implemented Over SLF4J (org.slf4j:log4j-over-slf4j:2.0.17 - http://www.slf4j.org)
-        * Lucene Classification (org.apache.lucene:lucene-classification:8.11.4 - https://lucene.apache.org/lucene-parent/lucene-classification)
-        * Lucene codecs (org.apache.lucene:lucene-codecs:8.11.4 - https://lucene.apache.org/lucene-parent/lucene-codecs)
         * Lucene Common Analyzers (org.apache.lucene:lucene-analyzers-common:4.6.1 - http://lucene.apache.org/lucene-parent/lucene-analyzers-common)
-        * Lucene Common Analyzers (org.apache.lucene:lucene-analyzers-common:8.11.4 - https://lucene.apache.org/lucene-parent/lucene-analyzers-common)
         * Lucene Core (org.apache.lucene:lucene-core:2.9.3 - http://lucene.apache.org/java/lucene-core)
         * Lucene Core (org.apache.lucene:lucene-core:4.6.1 - http://lucene.apache.org/lucene-parent/lucene-core)
-        * Lucene Core (org.apache.lucene:lucene-core:8.11.4 - https://lucene.apache.org/lucene-parent/lucene-core)
-        * Lucene Expressions (org.apache.lucene:lucene-expressions:8.11.4 - https://lucene.apache.org/lucene-parent/lucene-expressions)
-        * Lucene Grouping (org.apache.lucene:lucene-grouping:8.11.4 - https://lucene.apache.org/lucene-parent/lucene-grouping)
         * Lucene Highlighter (org.apache.lucene:lucene-highlighter:2.9.3 - http://lucene.apache.org/java/lucene-contrib/lucene-highlighter)
-        * Lucene Highlighter (org.apache.lucene:lucene-highlighter:8.11.4 - https://lucene.apache.org/lucene-parent/lucene-highlighter)
-        * Lucene Join (org.apache.lucene:lucene-join:8.11.4 - https://lucene.apache.org/lucene-parent/lucene-join)
-        * Lucene Kuromoji Japanese Morphological Analyzer (org.apache.lucene:lucene-analyzers-kuromoji:8.11.4 - https://lucene.apache.org/lucene-parent/lucene-analyzers-kuromoji)
-        * Lucene Memory (org.apache.lucene:lucene-backward-codecs:8.11.4 - https://lucene.apache.org/lucene-parent/lucene-backward-codecs)
         * Lucene Memory (org.apache.lucene:lucene-memory:2.9.3 - http://lucene.apache.org/java/lucene-contrib/lucene-memory)
-        * Lucene Memory (org.apache.lucene:lucene-memory:8.11.4 - https://lucene.apache.org/lucene-parent/lucene-memory)
-        * Lucene Miscellaneous (org.apache.lucene:lucene-misc:8.11.4 - https://lucene.apache.org/lucene-parent/lucene-misc)
-        * Lucene Nori Korean Morphological Analyzer (org.apache.lucene:lucene-analyzers-nori:8.11.4 - https://lucene.apache.org/lucene-parent/lucene-analyzers-nori)
-        * Lucene Phonetic Filters (org.apache.lucene:lucene-analyzers-phonetic:8.11.4 - https://lucene.apache.org/lucene-parent/lucene-analyzers-phonetic)
-        * Lucene Queries (org.apache.lucene:lucene-queries:8.11.4 - https://lucene.apache.org/lucene-parent/lucene-queries)
-        * Lucene QueryParsers (org.apache.lucene:lucene-queryparser:8.11.4 - https://lucene.apache.org/lucene-parent/lucene-queryparser)
-        * Lucene Sandbox (org.apache.lucene:lucene-sandbox:8.11.4 - https://lucene.apache.org/lucene-parent/lucene-sandbox)
         * Lucene Snowball (org.apache.lucene:lucene-snowball:2.9.3 - http://lucene.apache.org/java/lucene-contrib/lucene-snowball)
-        * Lucene Spatial 3D (org.apache.lucene:lucene-spatial3d:8.11.4 - https://lucene.apache.org/lucene-parent/lucene-spatial3d)
-        * Lucene Spatial Extras (org.apache.lucene:lucene-spatial-extras:8.11.4 - https://lucene.apache.org/lucene-parent/lucene-spatial-extras)
-        * Lucene Suggest (org.apache.lucene:lucene-suggest:8.11.4 - https://lucene.apache.org/lucene-parent/lucene-suggest)
         * Mahout Core (org.apache.mahout:mahout-core:0.9 - http://mahout.apache.org/mahout-core)
         * Mahout Math (org.apache.mahout:mahout-math:0.9 - http://mahout.apache.org/mahout-math)
-        * Metrics Core (io.dropwizard.metrics:metrics-core:4.1.5 - https://metrics.dropwizard.io/metrics-core)
-        * Metrics Integration for Jetty 9.3 and higher (io.dropwizard.metrics:metrics-jetty9:4.1.5 - https://metrics.dropwizard.io/metrics-jetty9)
-        * Metrics Integration with JMX (io.dropwizard.metrics:metrics-jmx:4.1.5 - https://metrics.dropwizard.io/metrics-jmx)
+        * Metrics Core (io.dropwizard.metrics:metrics-core:4.2.26 - https://metrics.dropwizard.io/metrics-core)
+        * Metrics Integration with JMX (io.dropwizard.metrics:metrics-jmx:4.2.26 - https://metrics.dropwizard.io/metrics-jmx)
         * nd4j-api (org.nd4j:nd4j-api:1.0.0-M2.1 - http://deeplearning4j.konduit.ai/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/)
         * nd4j-common (org.nd4j:nd4j-common:1.0.0-M2.1 - http://deeplearning4j.konduit.ai/nd4j/nd4j-common/)
         * nd4j-native (org.nd4j:nd4j-native:1.0.0-M2.1 - http://deeplearning4j.konduit.ai/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/)
@@ -199,78 +178,93 @@ List of third-party dependencies grouped by their license type.
         * nd4j-native-preset (org.nd4j:nd4j-native-preset:1.0.0-M2.1 - http://deeplearning4j.konduit.ai/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-preset/)
         * nd4j-presets-common (org.nd4j:nd4j-presets-common:1.0.0-M2.1 - http://deeplearning4j.konduit.ai/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-presets-common/)
         * neoitertools (net.ericaro:neoitertools:1.0.0 - http://neoitertools.googlecode.com/)
-        * Netty/Buffer (io.netty:netty-buffer:4.1.99.Final - https://netty.io/netty-buffer/)
-        * Netty/Codec (io.netty:netty-codec:4.1.99.Final - https://netty.io/netty-codec/)
-        * Netty/Common (io.netty:netty-common:4.1.99.Final - https://netty.io/netty-common/)
-        * Netty/Handler (io.netty:netty-handler:4.1.99.Final - https://netty.io/netty-handler/)
-        * Netty/Resolver (io.netty:netty-resolver:4.1.99.Final - https://netty.io/netty-resolver/)
-        * Netty/Transport/Classes/Epoll (io.netty:netty-transport-classes-epoll:4.1.99.Final - https://netty.io/netty-transport-classes-epoll/)
-        * Netty/Transport/Native/Epoll (io.netty:netty-transport-native-epoll:4.1.99.Final - https://netty.io/netty-transport-native-epoll/)
-        * Netty/Transport/Native/Unix/Common (io.netty:netty-transport-native-unix-common:4.1.99.Final - https://netty.io/netty-transport-native-unix-common/)
-        * Netty/Transport (io.netty:netty-transport:4.1.99.Final - https://netty.io/netty-transport/)
+        * Netty/Buffer (io.netty:netty-buffer:4.1.119.Final - https://netty.io/netty-buffer/)
+        * Netty/Codec (io.netty:netty-codec:4.1.119.Final - https://netty.io/netty-codec/)
+        * Netty/Common (io.netty:netty-common:4.1.119.Final - https://netty.io/netty-common/)
+        * Netty/Handler (io.netty:netty-handler:4.1.119.Final - https://netty.io/netty-handler/)
+        * Netty/Resolver (io.netty:netty-resolver:4.1.119.Final - https://netty.io/netty-resolver/)
+        * Netty/TomcatNative [BoringSSL - Static] (io.netty:netty-tcnative-boringssl-static:2.0.70.Final - https://github.com/netty/netty-tcnative/netty-tcnative-boringssl-static/)
+        * Netty/TomcatNative [OpenSSL - Classes] (io.netty:netty-tcnative-classes:2.0.70.Final - https://github.com/netty/netty-tcnative/netty-tcnative-classes/)
+        * Netty/Transport/Classes/Epoll (io.netty:netty-transport-classes-epoll:4.1.119.Final - https://netty.io/netty-transport-classes-epoll/)
+        * Netty/Transport/Native/Epoll (io.netty:netty-transport-native-epoll:4.1.119.Final - https://netty.io/netty-transport-native-epoll/)
+        * Netty/Transport/Native/Unix/Common (io.netty:netty-transport-native-unix-common:4.1.119.Final - https://netty.io/netty-transport-native-unix-common/)
+        * Netty/Transport (io.netty:netty-transport:4.1.119.Final - https://netty.io/netty-transport/)
         * opencsv (net.sf.opencsv:opencsv:2.3 - http://opencsv.sf.net)
         * OpenTracing API (io.opentracing:opentracing-api:0.33.0 - https://github.com/opentracing/opentracing-java/opentracing-api)
         * OpenTracing-noop (io.opentracing:opentracing-noop:0.33.0 - https://github.com/opentracing/opentracing-java/opentracing-noop)
         * OpenTracing-util (io.opentracing:opentracing-util:0.33.0 - https://github.com/opentracing/opentracing-java/opentracing-util)
-        * org.apiguardian:apiguardian-api (org.apiguardian:apiguardian-api:1.1.2 - https://github.com/apiguardian-team/apiguardian)
-        * org.immutables.value-annotations (org.immutables:value-annotations:2.9.2 - http://immutables.org/value-annotations)
         * org.osgi.compendium (org.osgi:org.osgi.compendium:4.2.0 - no url defined)
         * org.osgi.core (org.osgi:org.osgi.core:4.2.0 - no url defined)
         * perfmark:perfmark-api (io.perfmark:perfmark-api:0.27.0 - https://github.com/perfmark/perfmark)
-        * Proj4J (org.locationtech.proj4j:proj4j:1.1.5 - https://github.com/locationtech/proj4j)
-        * project ':json-path' (com.jayway.jsonpath:json-path:2.7.0 - https://github.com/jayway/JsonPath)
+        * Prometheus Metrics Exposition Formats (io.prometheus:prometheus-metrics-exposition-formats:1.1.0 - http://github.com/prometheus/client_java/prometheus-metrics-exposition-formats)
+        * Prometheus Metrics Model (io.prometheus:prometheus-metrics-model:1.1.0 - http://github.com/prometheus/client_java/prometheus-metrics-model)
         * protobuf (org.nd4j:protobuf:1.0.0-M2.1 - http://deeplearning4j.konduit.ai/nd4j/nd4j-shade/protobuf/)
         * proto-google-common-protos (com.google.api.grpc:proto-google-common-protos:2.59.2 - https://github.com/googleapis/sdk-platform-java)
         * QDox (com.thoughtworks.qdox:qdox:1.12.1 - http://qdox.codehaus.org)
         * resources (org.deeplearning4j:resources:1.0.0-M2.1 - http://deeplearning4j.konduit.ai/resources/)
-        * RRD4J (org.rrd4j:rrd4j:3.5 - https://github.com/rrd4j/rrd4j/)
         * SLF4J 2 Provider for Log4j API (org.apache.logging.log4j:log4j-slf4j2-impl:2.25.2 - https://logging.apache.org/log4j/2.x/)
-        * snappy-java (org.xerial.snappy:snappy-java:1.1.10.1 - https://github.com/xerial/snappy-java)
+        * snappy-java (org.xerial.snappy:snappy-java:1.1.10.8 - https://github.com/xerial/snappy-java)
         * Solr Specific Commons CSV (org.apache.solr:solr-commons-csv:3.5.0 - http://lucene.apache.org/java/solr-parent/solr-commons-csv)
-        * Spatial4J (org.locationtech.spatial4j:spatial4j:0.7 - https://projects.eclipse.org/projects/locationtech.spatial4j)
+        * Spatial4J (org.locationtech.spatial4j:spatial4j:0.8 - https://projects.eclipse.org/projects/locationtech.spatial4j)
         * stream-lib (com.clearspring.analytics:stream:2.9.8 - https://github.com/addthis/stream-lib)
-        * T-Digest (com.tdunning:t-digest:3.1 - https://github.com/tdunning/t-digest)
+        * swagger-annotations-jakarta (io.swagger.core.v3:swagger-annotations-jakarta:2.2.22 - https://github.com/swagger-api/swagger-core/modules/swagger-annotations-jakarta)
         * T-Digest (com.tdunning:t-digest:3.2 - https://github.com/tdunning/t-digest)
+        * t-digest (com.tdunning:t-digest:3.3 - https://github.com/tdunning/t-digest)
         * tensorflow (org.tensorflow:tensorflow:1.15.0 - https://www.tensorflow.org/tensorflow)
         * UIMA Annotator: Lucas (org.apache.uima:Lucas:2.3.1 - http://uima.apache.org)
         * wmf2svg (net.arnx:wmf2svg:0.9.11 - http://hidekatsu-izuno.github.io/wmf2svg/)
-        * Woodstox (com.fasterxml.woodstox:woodstox-core:6.5.1 - https://github.com/FasterXML/woodstox)
+        * Woodstox (com.fasterxml.woodstox:woodstox-core:7.0.0 - https://github.com/FasterXML/woodstox)
         * xalan-interpretive (org.docx4j.org.apache:xalan-interpretive:11.0.0 - http://xml.apache.org/xalan-j/)
         * xalan-serializer (org.docx4j.org.apache:xalan-serializer:11.0.0 - http://xml.apache.org/xalan-j/)
 
     Apache License, Version 2.0, BSD 2-Clause, Eclipse Distribution License, Version 1.0, Eclipse Public License, Version 2.0, jQuery license, MIT License, Modified BSD, Public Domain, The GNU General Public License (GPL), Version 2, With Classpath Exception, W3C license
 
         * jersey-container-grizzly2-http (org.glassfish.jersey.containers:jersey-container-grizzly2-http:4.0.0 - https://projects.eclipse.org/projects/ee4j.jersey/project/jersey-container-grizzly2-http)
+        * jersey-container-jetty-http (org.glassfish.jersey.containers:jersey-container-jetty-http:2.39.1 - https://projects.eclipse.org/projects/ee4j.jersey/project/jersey-container-jetty-http)
         * jersey-container-servlet (org.glassfish.jersey.containers:jersey-container-servlet:2.47 - https://projects.eclipse.org/projects/ee4j.jersey/project/jersey-container-servlet)
         * jersey-container-servlet-core (org.glassfish.jersey.containers:jersey-container-servlet-core:2.47 - https://projects.eclipse.org/projects/ee4j.jersey/project/jersey-container-servlet-core)
         * jersey-core-client (org.glassfish.jersey.core:jersey-client:2.41 - https://projects.eclipse.org/projects/ee4j.jersey/jersey-client)
+        * jersey-core-client (org.glassfish.jersey.core:jersey-client:3.1.11 - https://projects.eclipse.org/projects/ee4j.jersey/jersey-client)
         * jersey-core-client (org.glassfish.jersey.core:jersey-client:4.0.0 - https://projects.eclipse.org/projects/ee4j.jersey/jersey-client)
         * jersey-ext-entity-filtering (org.glassfish.jersey.ext:jersey-entity-filtering:2.47 - https://projects.eclipse.org/projects/ee4j.jersey/project/jersey-entity-filtering)
+        * jersey-ext-entity-filtering (org.glassfish.jersey.ext:jersey-entity-filtering:3.1.11 - https://projects.eclipse.org/projects/ee4j.jersey/project/jersey-entity-filtering)
         * jersey-ext-entity-filtering (org.glassfish.jersey.ext:jersey-entity-filtering:4.0.0 - https://projects.eclipse.org/projects/ee4j.jersey/project/jersey-entity-filtering)
+        * jersey-inject-hk2 (org.glassfish.jersey.inject:jersey-hk2:3.1.11 - https://projects.eclipse.org/projects/ee4j.jersey/project/jersey-hk2)
         * jersey-media-jaxb (org.glassfish.jersey.media:jersey-media-jaxb:2.47 - https://projects.eclipse.org/projects/ee4j.jersey/project/jersey-media-jaxb)
         * jersey-media-json-jettison (org.glassfish.jersey.media:jersey-media-json-jettison:2.47 - https://projects.eclipse.org/projects/ee4j.jersey/project/jersey-media-json-jettison)
 
     Apache License, Version 2.0, Eclipse Public License, Version 2.0, Modified BSD, The GNU General Public License (GPL), Version 2, With Classpath Exception
 
         * jersey-core-server (org.glassfish.jersey.core:jersey-server:2.47 - https://projects.eclipse.org/projects/ee4j.jersey/jersey-server)
+        * jersey-core-server (org.glassfish.jersey.core:jersey-server:3.1.11 - https://projects.eclipse.org/projects/ee4j.jersey/jersey-server)
         * jersey-core-server (org.glassfish.jersey.core:jersey-server:4.0.0 - https://projects.eclipse.org/projects/ee4j.jersey/jersey-server)
 
     Apache License, Version 2.0, Eclipse Public License, Version 2.0, Public Domain, The GNU General Public License (GPL), Version 2, With Classpath Exception
 
         * jersey-core-common (org.glassfish.jersey.core:jersey-common:2.41 - https://projects.eclipse.org/projects/ee4j.jersey/jersey-common)
         * jersey-core-common (org.glassfish.jersey.core:jersey-common:2.47 - https://projects.eclipse.org/projects/ee4j.jersey/jersey-common)
+        * jersey-core-common (org.glassfish.jersey.core:jersey-common:3.1.11 - https://projects.eclipse.org/projects/ee4j.jersey/jersey-common)
         * jersey-core-common (org.glassfish.jersey.core:jersey-common:4.0.0 - https://projects.eclipse.org/projects/ee4j.jersey/jersey-common)
 
     Apache License, Version 2.0, Eclipse Public License, Version 2.0, The GNU General Public License (GPL), Version 2, With Classpath Exception
 
         * jersey-media-json-jackson (org.glassfish.jersey.media:jersey-media-json-jackson:2.47 - https://projects.eclipse.org/projects/ee4j.jersey/project/jersey-media-json-jackson)
+        * jersey-media-json-jackson (org.glassfish.jersey.media:jersey-media-json-jackson:3.1.11 - https://projects.eclipse.org/projects/ee4j.jersey/project/jersey-media-json-jackson)
         * jersey-media-json-jackson (org.glassfish.jersey.media:jersey-media-json-jackson:4.0.0 - https://projects.eclipse.org/projects/ee4j.jersey/project/jersey-media-json-jackson)
+
+    Apache License, Version 2.0, Eclipse Public License - Version 1.0
+
+        * Jetty :: Servlet API and Schemas for JPMS and OSGi (org.eclipse.jetty.toolchain:jetty-servlet-api:4.0.6 - https://eclipse.org/jetty/jetty-servlet-api)
 
     Apache License, Version 2.0, GNU General Public License (GPL) version 2, or any later version, GPLv2 with Classpath exception
 
         * JavaCPP (org.bytedeco:javacpp:1.5.12 - http://bytedeco.org/javacpp/)
         * JavaCPP Presets for HDF5 (org.bytedeco:hdf5:1.14.3-1.5.10 - http://bytedeco.org/javacpp-presets/hdf5/)
         * JavaCPP Presets for OpenBLAS (org.bytedeco:openblas:0.3.30-1.5.12 - http://bytedeco.org/javacpp-presets/openblas/)
+
+    Apache License, Version 2.0, LGPL 2.1, MPL 1.1
+
+        * Javassist (org.javassist:javassist:3.30.2-GA - https://www.javassist.org/)
 
     Apache License V2.0
 
@@ -283,10 +277,11 @@ List of third-party dependencies grouped by their license type.
 
     BSD 3-Clause License
 
-        * asm (org.ow2.asm:asm:9.3 - http://asm.ow2.io/)
-        * asm-commons (org.ow2.asm:asm-commons:9.3 - http://asm.ow2.io/)
-        * commons-compiler (org.codehaus.janino:commons-compiler:3.1.8 - http://janino-compiler.github.io/commons-compiler/)
-        * janino (org.codehaus.janino:janino:3.1.8 - http://janino-compiler.github.io/janino/)
+        * ANTLR 4 Runtime (org.antlr:antlr4-runtime:4.11.1 - https://www.antlr.org/antlr4-runtime/)
+        * asm (org.ow2.asm:asm:7.2 - http://asm.ow2.io/)
+        * asm-analysis (org.ow2.asm:asm-analysis:7.2 - http://asm.ow2.io/)
+        * asm-commons (org.ow2.asm:asm-commons:7.2 - http://asm.ow2.io/)
+        * asm-tree (org.ow2.asm:asm-tree:7.2 - http://asm.ow2.io/)
         * Java WordNet Library (net.sf.jwordnet:jwnl:1.4_rc3 - http://jwordnet.sf.net)
         * Protocol Buffers [Core] (com.google.protobuf:protobuf-java:3.25.8 - https://developers.google.com/protocol-buffers/protobuf-java/)
         * Protocol Buffers [Util] (com.google.protobuf:protobuf-java-util:3.25.8 - https://developers.google.com/protocol-buffers/protobuf-java-util/)
@@ -296,7 +291,6 @@ List of third-party dependencies grouped by their license type.
     BSD License
 
         * ANTLR 3 Runtime (org.antlr:antlr-runtime:3.5.3 - http://www.antlr.org)
-        * ANTLR 4 Runtime (org.antlr:antlr4-runtime:4.5.1-1 - http://www.antlr.org/antlr4-runtime)
         * AntLR Parser Generator (antlr:antlr:2.7.7 - http://www.antlr.org/)
         * ANTLR StringTemplate (org.antlr:stringtemplate:3.2.1 - http://www.stringtemplate.org)
         * extJWNL (net.sf.extjwnl:extjwnl:2.0.5 - http://extjwnl.sf.net/extjwnl)
@@ -304,7 +298,6 @@ List of third-party dependencies grouped by their license type.
         * Fortran to Java ARPACK (net.sourceforge.f2j:arpack_combined_all:0.1 - http://f2j.sourceforge.net)
         * Java interface for fastText (com.github.vinhkhuc:jfasttext:0.4 - http://maven.apache.org)
         * Netlib for Java (com.googlecode.netlib-java:netlib-java:0.9.3 - http://code.google.com/p/netlib-java/)
-        * Stax2 API (org.codehaus.woodstox:stax2-api:4.2.1 - http://github.com/FasterXML/stax2-api)
 
     BSD-like
 
@@ -313,10 +306,6 @@ List of third-party dependencies grouped by their license type.
     CDDL/GPLv2+CE
 
         * JavaBeans Activation Framework (com.sun.activation:javax.activation:1.2.0 - http://java.net/all/javax.activation/)
-
-    Common Development and Distribution License
-
-        * Java Servlet API (javax.servlet:javax.servlet-api:3.1.0 - http://servlet-spec.java.net)
 
     Common Development and Distribution License (CDDL) v1.1
 
@@ -349,11 +338,6 @@ List of third-party dependencies grouped by their license type.
         * Jakarta XML Binding API (jakarta.xml.bind:jakarta.xml.bind-api:2.3.3 - https://github.com/eclipse-ee4j/jaxb-api/jakarta.xml.bind-api)
         * Jakarta XML Binding API (jakarta.xml.bind:jakarta.xml.bind-api:4.0.2 - https://github.com/jakartaee/jaxb-api/jakarta.xml.bind-api)
         * Jakarta XML Binding API (jakarta.xml.bind:jakarta.xml.bind-api:4.0.4 - https://github.com/jakartaee/jaxb-api/jakarta.xml.bind-api)
-
-    Eclipse Distribution License, Version 1.0, Eclipse Public License, Version 2.0
-
-        * org.locationtech.jts:jts-core (org.locationtech.jts:jts-core:1.19.0 - https://www.locationtech.org/projects/technology.jts/jts-modules/jts-core)
-        * org.locationtech.jts.io:jts-io-common (org.locationtech.jts.io:jts-io-common:1.19.0 - https://www.locationtech.org/projects/technology.jts/jts-modules/jts-io/jts-io-common)
 
     Eclipse Distribution License, Version 1.0, Eclipse Public License, Version 2.0, The GNU General Public License (GPL), Version 2, With Classpath Exception
 
@@ -409,16 +393,22 @@ List of third-party dependencies grouped by their license type.
 
     Eclipse Public License, Version 2.0, GPL-2.0-with-classpath-exception
 
+        * Jakarta RESTful WS API (jakarta.ws.rs:jakarta.ws.rs-api:3.1.0 - https://github.com/eclipse-ee4j/jaxrs-api)
         * Jakarta RESTful WS API (jakarta.ws.rs:jakarta.ws.rs-api:4.0.0 - https://github.com/jakartaee/rest/jakarta.ws.rs-api)
 
     Eclipse Public License, Version 2.0, The GNU General Public License (GPL), Version 2, With Classpath Exception
 
+        * aopalliance version 1.0 repackaged as a module (org.glassfish.hk2.external:aopalliance-repackaged:3.1.1 - https://github.com/eclipse-ee4j/glassfish-hk2/external/aopalliance-repackaged)
+        * HK2 API module (org.glassfish.hk2:hk2-api:3.1.1 - https://github.com/eclipse-ee4j/glassfish-hk2/hk2-api)
+        * HK2 Implementation Utilities (org.glassfish.hk2:hk2-utils:3.1.1 - https://github.com/eclipse-ee4j/glassfish-hk2/hk2-utils)
         * HK2 OSGi resource locator (org.glassfish.hk2:osgi-resource-locator:3.0.0 - https://projects.eclipse.org/projects/ee4j/hk2-extra-parent/osgi-resource-locator)
         * jakarta.ws.rs-api (jakarta.ws.rs:jakarta.ws.rs-api:2.1.6 - https://github.com/eclipse-ee4j/jaxrs-api)
         * Jakarta Annotations API (jakarta.annotation:jakarta.annotation-api:1.3.5 - https://projects.eclipse.org/projects/ee4j.ca)
+        * Jakarta Annotations API (jakarta.annotation:jakarta.annotation-api:2.1.1 - https://projects.eclipse.org/projects/ee4j.ca)
         * Jakarta Annotations API (jakarta.annotation:jakarta.annotation-api:3.0.0 - https://projects.eclipse.org/projects/ee4j.ca)
         * javax.inject:1 as OSGi bundle (org.glassfish.hk2.external:jakarta.inject:2.6.1 - https://github.com/eclipse-ee4j/glassfish-hk2/external/jakarta.inject)
         * OSGi resource locator (org.glassfish.hk2:osgi-resource-locator:1.0.3 - https://projects.eclipse.org/projects/ee4j/osgi-resource-locator)
+        * ServiceLocator Default Implementation (org.glassfish.hk2:hk2-locator:3.0.6 - https://github.com/eclipse-ee4j/glassfish-hk2/hk2-locator)
 
     GNU Lesser General Public License
 
@@ -432,10 +422,6 @@ List of third-party dependencies grouped by their license type.
 
         * JGraphT (jgrapht:jgrapht:0.6.0 - http://jgrapht.sourceforge.net)
 
-    Go License
-
-        * RE2/J (com.google.re2j:re2j:1.2 - http://github.com/google/re2j)
-
     Indiana University Extreme! Lab Software License
 
         * MXParser (io.github.x-stream:mxparser:1.2.2 - http://x-stream.github.io/mxparser)
@@ -448,10 +434,10 @@ List of third-party dependencies grouped by their license type.
 
         * Animal Sniffer Annotations (org.codehaus.mojo:animal-sniffer-annotations:1.24 - https://www.mojohaus.org/animal-sniffer/animal-sniffer-annotations)
         * args4j (args4j:args4j:2.37 - http://args4j.kohsuke.org/args4j/)
-        * Checker Qual (org.checkerframework:checker-qual:3.23.0 - https://checkerframework.org)
-        * Java SemVer (com.github.zafarkhaja:java-semver:0.9.0 - https://github.com/zafarkhaja/jsemver)
+        * Checker Qual (org.checkerframework:checker-qual:3.52.0 - https://checkerframework.org/)
         * jsoup Java HTML Parser (org.jsoup:jsoup:1.21.2 - https://jsoup.org/)
         * mbassador (net.engio:mbassador:1.3.2 - https://github.com/bennidi/mbassador)
+        * semver4j (org.semver4j:semver4j:5.8.0 - https://github.com/semver4j/semver4j)
         * SLF4J API Module (org.slf4j:slf4j-api:2.0.17 - http://www.slf4j.org)
         * SLF4J Simple Provider (org.slf4j:slf4j-simple:2.0.17 - http://www.slf4j.org)
 
@@ -471,3 +457,7 @@ List of third-party dependencies grouped by their license type.
     The Apache Software License, version 2.0
 
         * picocli (info.picocli:picocli:4.7.7 - https://picocli.info)
+
+    The BSD 2-Clause License
+
+        * Stax2 API (org.codehaus.woodstox:stax2-api:4.2.2 - http://github.com/FasterXML/stax2-api)
