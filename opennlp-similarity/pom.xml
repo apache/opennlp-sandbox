@@ -31,7 +31,7 @@
     <jakarta.mail.version>2.1.4</jakarta.mail.version>
     <org.json.version>20250517</org.json.version>
 
-    <lucene.version>9.12.3</lucene.version>
+    <lucene.version>10.3.2</lucene.version>
     <solr.version>9.10.0</solr.version>
     <tika.version>3.2.3</tika.version>
     
