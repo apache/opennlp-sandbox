@@ -53,7 +53,7 @@ jobs:
           cat src/license/NOTICE.template target/DEPENDENCY-LICENSES > NOTICE
 
       - name: Create Pull Request after License Regeneration
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           base: main
           token: ${{ secrets.GITHUB_TOKEN }}
