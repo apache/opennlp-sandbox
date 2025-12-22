@@ -43,7 +43,7 @@ mvn clean install
 Start the server: Use the following command to run the server with default settings:
 
 ```bash
-java -jar target/opennlp-grpc-server-2.5.7-SNAPSHOT.jar
+java -jar target/opennlp-grpc-server-2.5.8-SNAPSHOT.jar
 ```
 
 Configure server options: 
