@@ -35,7 +35,7 @@
     <solr.version>9.10.0</solr.version>
     <tika.version>3.2.3</tika.version>
     
-    <docx4j.version>11.5.8</docx4j.version>
+    <docx4j.version>11.5.9</docx4j.version>
     <dl4j.version>1.0.0-M2.1</dl4j.version>
     <hdf5.version>1.14.3-1.5.10</hdf5.version>
     <javacpp.version>1.5.12</javacpp.version>
