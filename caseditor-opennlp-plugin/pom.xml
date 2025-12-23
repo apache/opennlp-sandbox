@@ -23,11 +23,11 @@
 	<parent>
 		<groupId>org.apache.opennlp</groupId>
 		<artifactId>opennlp-sandbox</artifactId>
-		<version>2.5.7-SNAPSHOT</version>
+		<version>2.5.8-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>caseditor-opennlp-plugin</artifactId>
-	<version>2.5.7-SNAPSHOT</version>
+	<version>2.5.8-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<name>Apache OpenNLP CasEditor Plugin</name>
 
