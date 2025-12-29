@@ -447,7 +447,7 @@ List of third-party dependencies grouped by their license type.
 
     Public Domain
 
-        * JSON in Java (org.json:json:20250517 - https://github.com/douglascrockford/JSON-java)
+        * JSON in Java (org.json:json:20251224 - https://github.com/douglascrockford/JSON-java)
         * XML Pull Parsing API (xmlpull:xmlpull:1.1.3.1 - http://www.xmlpull.org)
 
     Similar to Apache License but with the acknowledgment clause removed
