@@ -29,7 +29,7 @@
   <properties>
     <jakarta.bind-api.version>4.0.4</jakarta.bind-api.version>
     <jakarta.mail.version>2.1.4</jakarta.mail.version>
-    <org.json.version>20250517</org.json.version>
+    <org.json.version>20251224</org.json.version>
 
     <lucene.version>9.12.3</lucene.version>
     <solr.version>9.10.0</solr.version>
