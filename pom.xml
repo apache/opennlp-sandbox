@@ -154,7 +154,7 @@
         <forbiddenapis.plugin>3.10</forbiddenapis.plugin>
         <mockito.version>3.9.0</mockito.version>
 
-        <license-maven-plugin.version>2.7.0</license-maven-plugin.version>
+        <license-maven-plugin.version>2.7.1</license-maven-plugin.version>
     </properties>
 
     <dependencyManagement>
