@@ -100,6 +100,7 @@ List of third-party dependencies grouped by their license type.
         * docx4j-openxml-objects-pml (org.docx4j:docx4j-openxml-objects-pml:11.5.9 - http://www.docx4java.org/docx4j-openxml-objects-pml/)
         * docx4j-openxml-objects-sml (org.docx4j:docx4j-openxml-objects-sml:11.5.9 - http://www.docx4java.org/docx4j-openxml-objects-sml/)
         * EL (commons-el:commons-el:1.0 - http://jakarta.apache.org/commons/el/)
+        * error-prone annotations (com.google.errorprone:error_prone_annotations:2.24.1 - https://errorprone.info/error_prone_annotations)
         * error-prone annotations (com.google.errorprone:error_prone_annotations:2.3.3 - http://nexus.sonatype.org/oss-repository-hosting.html/error_prone_parent/error_prone_annotations)
         * error-prone annotations (com.google.errorprone:error_prone_annotations:2.41.0 - https://errorprone.info/error_prone_annotations)
         * error-prone annotations (com.google.errorprone:error_prone_annotations:2.44.0 - https://errorprone.info/error_prone_annotations)
@@ -121,6 +122,7 @@ List of third-party dependencies grouped by their license type.
         * Guava ListenableFuture only (com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava - https://github.com/google/guava/listenablefuture)
         * hadoop-core (org.apache.hadoop:hadoop-core:1.2.1 - no url defined)
         * High Performance Primitive Collections (com.carrotsearch:hppc:0.10.0 - https://github.com/carrotsearch/hppc)
+        * HPPC Collections (com.carrotsearch:hppc:0.8.1 - http://labs.carrotsearch.com/hppc.html/hppc)
         * io.grpc:grpc-api (io.grpc:grpc-api:1.78.0 - https://github.com/grpc/grpc-java)
         * io.grpc:grpc-context (io.grpc:grpc-context:1.78.0 - https://github.com/grpc/grpc-java)
         * io.grpc:grpc-core (io.grpc:grpc-core:1.78.0 - https://github.com/grpc/grpc-java)
@@ -167,6 +169,7 @@ List of third-party dependencies grouped by their license type.
         * Lucene Highlighter (org.apache.lucene:lucene-highlighter:2.9.3 - http://lucene.apache.org/java/lucene-contrib/lucene-highlighter)
         * Lucene Memory (org.apache.lucene:lucene-memory:2.9.3 - http://lucene.apache.org/java/lucene-contrib/lucene-memory)
         * Lucene Snowball (org.apache.lucene:lucene-snowball:2.9.3 - http://lucene.apache.org/java/lucene-contrib/lucene-snowball)
+        * MAchine Learning for LanguagE Toolkit (MALLET) (cc.mallet:mallet:2.1.0 - http://mallet.cs.umass.edu/)
         * Mahout Core (org.apache.mahout:mahout-core:0.9 - http://mahout.apache.org/mahout-core)
         * Mahout Math (org.apache.mahout:mahout-math:0.9 - http://mahout.apache.org/mahout-math)
         * Metrics Core (io.dropwizard.metrics:metrics-core:4.2.26 - https://metrics.dropwizard.io/metrics-core)
@@ -282,7 +285,6 @@ List of third-party dependencies grouped by their license type.
         * asm-analysis (org.ow2.asm:asm-analysis:7.2 - http://asm.ow2.io/)
         * asm-commons (org.ow2.asm:asm-commons:7.2 - http://asm.ow2.io/)
         * asm-tree (org.ow2.asm:asm-tree:7.2 - http://asm.ow2.io/)
-        * Java WordNet Library (net.sf.jwordnet:jwnl:1.4_rc3 - http://jwordnet.sf.net)
         * Protocol Buffers [Core] (com.google.protobuf:protobuf-java:3.25.8 - https://developers.google.com/protocol-buffers/protobuf-java/)
         * Protocol Buffers [Util] (com.google.protobuf:protobuf-java-util:3.25.8 - https://developers.google.com/protocol-buffers/protobuf-java-util/)
         * ThreeTen backport (org.threeten:threetenbp:1.3.3 - https://www.threeten.org/threetenbp)
@@ -295,9 +297,7 @@ List of third-party dependencies grouped by their license type.
         * ANTLR StringTemplate (org.antlr:stringtemplate:3.2.1 - http://www.stringtemplate.org)
         * extJWNL (net.sf.extjwnl:extjwnl:2.0.5 - http://extjwnl.sf.net/extjwnl)
         * extJWNL WordNet 3.1 Data (net.sf.extjwnl:extjwnl-data-wn31:1.2 - http://extjwnl.sf.net/extjwnl-data-wn31)
-        * Fortran to Java ARPACK (net.sourceforge.f2j:arpack_combined_all:0.1 - http://f2j.sourceforge.net)
         * Java interface for fastText (com.github.vinhkhuc:jfasttext:0.4 - http://maven.apache.org)
-        * Netlib for Java (com.googlecode.netlib-java:netlib-java:0.9.3 - http://code.google.com/p/netlib-java/)
 
     BSD-like
 
@@ -314,10 +314,6 @@ List of third-party dependencies grouped by their license type.
     Common Development and Distribution License (CDDL) v1.1, The GNU General Public License (GPL), Version 2, With Classpath Exception
 
         * Java Architecture for XML Binding (javax.xml.bind:jaxb-api:2.2.12 - http://jaxb.java.net/)
-
-    Common Public License Version 1.0
-
-        * MAchine Learning for LanguagE Toolkit (MALLET) (cc.mallet:mallet:2.0.8 - http://mallet.cs.umass.edu/)
 
     Creative Commons Attribution-NonCommerical Version 3.0 Unported License
 
@@ -409,18 +405,6 @@ List of third-party dependencies grouped by their license type.
         * javax.inject:1 as OSGi bundle (org.glassfish.hk2.external:jakarta.inject:2.6.1 - https://github.com/eclipse-ee4j/glassfish-hk2/external/jakarta.inject)
         * OSGi resource locator (org.glassfish.hk2:osgi-resource-locator:1.0.3 - https://projects.eclipse.org/projects/ee4j/osgi-resource-locator)
         * ServiceLocator Default Implementation (org.glassfish.hk2:hk2-locator:3.0.6 - https://github.com/eclipse-ee4j/glassfish-hk2/hk2-locator)
-
-    GNU Lesser General Public License
-
-        * Matrix Toolkits for Java (com.googlecode.matrix-toolkits-java:mtj:0.9.14 - http://code.google.com/p/matrix-toolkits-java/)
-
-    GNU Lesser General Public License 2.1
-
-        * GNU Trove (net.sf.trove4j:trove4j:2.0.2 - http://trove4j.sf.net)
-
-    GNU Lesser General Public License Version 2.1, February 1999
-
-        * JGraphT (jgrapht:jgrapht:0.6.0 - http://jgrapht.sourceforge.net)
 
     Indiana University Extreme! Lab Software License
 
