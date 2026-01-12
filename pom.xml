@@ -627,7 +627,7 @@
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <configuration>
                     <doclint>none</doclint>
-                    <source>${java.version}</source>
+                    <release>${java.version}</release>
                     <sourcepath>src/main/java</sourcepath>
                 </configuration>
                 <executions>
