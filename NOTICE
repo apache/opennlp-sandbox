@@ -333,7 +333,7 @@ List of third-party dependencies grouped by their license type.
         * Jakarta Activation API jar (jakarta.activation:jakarta.activation-api:1.2.2 - https://github.com/eclipse-ee4j/jaf/jakarta.activation-api)
         * Jakarta XML Binding API (jakarta.xml.bind:jakarta.xml.bind-api:2.3.3 - https://github.com/eclipse-ee4j/jaxb-api/jakarta.xml.bind-api)
         * Jakarta XML Binding API (jakarta.xml.bind:jakarta.xml.bind-api:4.0.2 - https://github.com/jakartaee/jaxb-api/jakarta.xml.bind-api)
-        * Jakarta XML Binding API (jakarta.xml.bind:jakarta.xml.bind-api:4.0.4 - https://github.com/jakartaee/jaxb-api/jakarta.xml.bind-api)
+        * Jakarta XML Binding API (jakarta.xml.bind:jakarta.xml.bind-api:4.0.5 - https://github.com/jakartaee/jaxb-api/jakarta.xml.bind-api)
 
     Eclipse Distribution License, Version 1.0, Eclipse Public License, Version 2.0, The GNU General Public License (GPL), Version 2, With Classpath Exception
 
