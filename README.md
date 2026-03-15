@@ -23,6 +23,8 @@ Welcome to Apache OpenNLP!
 [![GitHub pull requests](https://img.shields.io/github/issues-pr-raw/apache/opennlp-sandbox.svg)](https://github.com/apache/opennlp-sandbox/pulls)
 [![Stack Overflow](https://img.shields.io/badge/stack%20overflow-opennlp-f1eefe.svg)](https://stackoverflow.com/questions/tagged/opennlp)
 
+> **Security Disclaimer:** The code and modules in this sandbox repository are **NOT intended for production use** and are **NOT released as official artifacts of the Apache Software Foundation (ASF)**. They may contain experimental, incomplete, or unstable code. As such, we do **not** accept CVE reports targeting this sandbox repository.
+
 The Apache OpenNLP library is a machine learning based toolkit for the processing of natural language text.
 
 This sandbox of the toolkit is written mostly in Java and provides support for special NLP tasks, such as 
