@@ -98,7 +98,6 @@
         <module>caseditor-corpus-server-plugin</module>
         <module>caseditor-opennlp-plugin</module>
         <module>corpus-server</module>
-        <module>mahout-addon</module>
         <module>mallet-addon</module>
         <module>modelbuilder-addon</module>
         <module>nlp-utils</module>
