@@ -111,7 +111,6 @@
         <module>tf-ner-poc</module>
         <module>summarizer</module>
         <module>tagging-server</module>
-        <module>wikinews-importer</module>
     </modules>
 
     <properties>
