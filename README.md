@@ -67,7 +67,6 @@ Currently, the library has different components:
 * `summarizer`: A set of classes providing text summarization.
 * `tagging-server`: A RESTful webservice to allow for NER, POS tagging, sentence detection and tokenization.
 * `tf-ner-poc`: An adapter component for [Tensorflow](https://www.tensorflow.org), in an early proof-of-concept (poc) stage.
-* `wikinews-importer`: A set of classes to process and annotate text formatted in [MediaWiki markup](https://www.mediawiki.org/wiki/Help:Formatting).
 
 ## Getting Started
 
