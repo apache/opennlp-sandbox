@@ -24,7 +24,7 @@
     <parent>
         <groupId>org.apache.opennlp</groupId>
         <artifactId>opennlp-grpc</artifactId>
-        <version>2.5.8-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>opennlp-grpc-service</artifactId>
@@ -38,13 +38,11 @@
         </dependency>
         <dependency>
             <groupId>org.apache.opennlp</groupId>
-            <artifactId>opennlp-tools</artifactId>
-            <version>${opennlp.tools.version}</version>
+            <artifactId>opennlp-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.opennlp</groupId>
-            <artifactId>opennlp-tools-models</artifactId>
-            <version>${opennlp.tools.version}</version>
+            <artifactId>opennlp-models</artifactId>
         </dependency>
         <dependency>
             <groupId>info.picocli</groupId>

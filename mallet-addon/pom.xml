@@ -24,21 +24,19 @@
 	<parent>
 		<groupId>org.apache.opennlp</groupId>
 		<artifactId>opennlp-sandbox</artifactId>
-		<version>2.5.8-SNAPSHOT</version>
+		<version>3.0.0-SNAPSHOT</version>
 	</parent>
 
 	<groupId>kottmann.opennlp</groupId>
 	<artifactId>mallet-addon</artifactId>
-	<version>2.5.8-SNAPSHOT</version>
-
-	<packaging>jar</packaging>
 	<name>Apache OpenNLP Mallet Addon</name>
+	<packaging>jar</packaging>
 
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.opennlp</groupId>
-			<artifactId>opennlp-tools</artifactId>
-			<version>${opennlp.tools.version}</version>
+			<artifactId>opennlp-runtime</artifactId>
+			<version>${opennlp.version}</version>
 		</dependency>
 		
 		<dependency>

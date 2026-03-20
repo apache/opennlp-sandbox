@@ -23,11 +23,10 @@
   <parent>
     <groupId>org.apache.opennlp</groupId>
     <artifactId>opennlp-sandbox</artifactId>
-    <version>2.5.8-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
   </parent>
   
   <artifactId>nlp-utils</artifactId>
-  <version>2.5.8-SNAPSHOT</version>
   <name>Apache OpenNLP Utils</name>
 
   <dependencies>

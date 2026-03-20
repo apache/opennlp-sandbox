@@ -24,6 +24,7 @@ import java.util.Map;
 
 import opennlp.tools.ml.model.DataIndexer;
 import opennlp.tools.ml.model.MaxentModel;
+import opennlp.tools.util.TrainingParameters;
 
 import org.apache.mahout.classifier.sgd.AdaptiveLogisticRegression;
 import org.apache.mahout.classifier.sgd.L1;
@@ -35,7 +36,7 @@ public class AdaptiveLogisticRegressionTrainer extends AbstractOnlineLearnerTrai
   }
 
   @Override
-  public MaxentModel doTrain(DataIndexer indexer) throws IOException {
+  public MaxentModel doTrain(DataIndexer<TrainingParameters> indexer) throws IOException {
     
     // TODO: Lets use the predMap here as well for encoding
     int numberOfOutcomes = indexer.getOutcomeLabels().length;
@@ -60,10 +61,5 @@ public class AdaptiveLogisticRegressionTrainer extends AbstractOnlineLearnerTrai
     
     return new VectorClassifierModel(pa.getBest().getPayload().getLearner(),
         indexer.getOutcomeLabels(), createPrepMap(indexer));
-  }
-
-  @Override
-  public boolean isSortAndMerge() {
-    return true;
   }
 }

@@ -28,6 +28,8 @@ import opennlp.tools.ml.model.Event;
 import opennlp.tools.ml.model.Sequence;
 import opennlp.tools.ml.model.SequenceClassificationModel;
 import opennlp.tools.ml.model.SequenceStream;
+import opennlp.tools.util.TrainingParameters;
+
 import cc.mallet.fst.CRF;
 import cc.mallet.fst.CRFOptimizableByLabelLikelihood;
 import cc.mallet.fst.CRFTrainerByValueGradients;
@@ -45,7 +47,9 @@ import cc.mallet.types.LabelSequence;
 // Transducer should be abstract, we have two CRF and HMM.
 // For HMM we don't need to generate any features (how to do that nicely?!)
 // Dummy feature generator ?!
-public class CRFTrainer extends AbstractTrainer implements SequenceTrainer {
+public class CRFTrainer
+    extends AbstractTrainer<TrainingParameters>
+    implements SequenceTrainer<TrainingParameters> {
 
   private int[] getOrders() {
     String[] ordersString = "0,1".split(",");

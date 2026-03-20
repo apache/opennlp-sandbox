@@ -26,11 +26,10 @@
     <parent>
         <groupId>org.apache.opennlp</groupId>
         <artifactId>opennlp-sandbox</artifactId>
-        <version>2.5.8-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>tf-ner-poc</artifactId>
-    <version>2.5.8-SNAPSHOT</version>
     <name>Apache OpenNLP TF NER poc</name>
 
     <properties>
@@ -46,7 +45,7 @@
 
         <dependency>
             <groupId>org.apache.opennlp</groupId>
-            <artifactId>opennlp-tools</artifactId>
+            <artifactId>opennlp-runtime</artifactId>
         </dependency>
 
         <dependency>

@@ -26,6 +26,8 @@ import java.util.Collection;
 import opennlp.tools.ml.AbstractEventTrainer;
 import opennlp.tools.ml.model.DataIndexer;
 import opennlp.tools.ml.model.MaxentModel;
+import opennlp.tools.util.TrainingParameters;
+
 import cc.mallet.classify.Classifier;
 import cc.mallet.classify.MaxEntTrainer;
 import cc.mallet.types.Alphabet;
@@ -34,7 +36,7 @@ import cc.mallet.types.Instance;
 import cc.mallet.types.InstanceList;
 import cc.mallet.types.LabelAlphabet;
 
-public class MaxentTrainer extends AbstractEventTrainer {
+public class MaxentTrainer extends AbstractEventTrainer<TrainingParameters> {
 
   @Override
   public boolean isSortAndMerge() {
@@ -42,7 +44,7 @@ public class MaxentTrainer extends AbstractEventTrainer {
   }
 
   @Override
-  public MaxentModel doTrain(DataIndexer indexer) throws IOException {
+  public MaxentModel doTrain(DataIndexer<TrainingParameters> indexer) throws IOException {
 
     int numFeatures = indexer.getPredLabels().length;
 
