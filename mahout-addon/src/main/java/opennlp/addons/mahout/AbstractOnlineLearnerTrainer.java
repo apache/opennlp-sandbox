@@ -29,7 +29,7 @@ import opennlp.tools.ml.AbstractEventTrainer;
 import opennlp.tools.ml.model.DataIndexer;
 import opennlp.tools.util.TrainingParameters;
 
-abstract class AbstractOnlineLearnerTrainer extends AbstractEventTrainer {
+abstract class AbstractOnlineLearnerTrainer extends AbstractEventTrainer<TrainingParameters> {
 
   protected int iterations;
   
@@ -41,7 +41,7 @@ abstract class AbstractOnlineLearnerTrainer extends AbstractEventTrainer {
 	  iterations = trainParams.getIntParameter("Iterations", 20);
   }
   
-  protected void trainOnlineLearner(DataIndexer indexer, org.apache.mahout.classifier.OnlineLearner pa) {
+  protected void trainOnlineLearner(DataIndexer<TrainingParameters> indexer, org.apache.mahout.classifier.OnlineLearner pa) {
     int cardinality = indexer.getPredLabels().length;
     int[] outcomes = indexer.getOutcomeList();
     
@@ -59,7 +59,7 @@ abstract class AbstractOnlineLearnerTrainer extends AbstractEventTrainer {
     }
   }
 
-  protected Map<String, Integer> createPrepMap(DataIndexer indexer) {
+  protected Map<String, Integer> createPrepMap(DataIndexer<TrainingParameters> indexer) {
     Map<String, Integer> predMap = new HashMap<>();
     
     String[] predLabels = indexer.getPredLabels();

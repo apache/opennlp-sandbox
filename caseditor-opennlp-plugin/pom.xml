@@ -23,13 +23,12 @@
 	<parent>
 		<groupId>org.apache.opennlp</groupId>
 		<artifactId>opennlp-sandbox</artifactId>
-		<version>2.5.8-SNAPSHOT</version>
+		<version>3.0.0-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>caseditor-opennlp-plugin</artifactId>
-	<version>2.5.8-SNAPSHOT</version>
-	<packaging>jar</packaging>
 	<name>Apache OpenNLP CasEditor Plugin</name>
+	<packaging>jar</packaging>
 
 	<repositories>
 		<repository>
@@ -52,7 +51,7 @@
 	<dependencies>
 		<dependency>
 		  <groupId>org.apache.opennlp</groupId>
-		  <artifactId>opennlp-tools</artifactId>
+		  <artifactId>opennlp-runtime</artifactId>
 		</dependency>
 
 		<!-- UIMA dependencies -->

@@ -16,7 +16,7 @@
 name: Java CI
 
 on:
-  # Run CI on Pushes to "master"" or on pull requests targeting "master".
+  # Run CI on Pushes to "main or on pull requests targeting "main".
   push:
     branches:
       - main
@@ -28,7 +28,6 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
       matrix:
@@ -36,7 +35,7 @@ jobs:
         java: [ 21, 25 ]
         experimental: [false]
 #         include:
-#           - java: 25-ea
+#           - java: 26-ea
 #             os: ubuntu-latest
 #             experimental: true
 
@@ -54,6 +53,6 @@ jobs:
         distribution: temurin
         java-version: ${{ matrix.java }}
     - name: Build with Maven
-      run: mvn -V clean test install --no-transfer-progress -Pjacoco
+      run: mvn -V clean test verify --no-transfer-progress -Pjacoco
     - name: Jacoco
       run: mvn jacoco:report

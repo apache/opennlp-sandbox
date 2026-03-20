@@ -24,6 +24,7 @@ import java.util.Map;
 
 import opennlp.tools.ml.model.DataIndexer;
 import opennlp.tools.ml.model.MaxentModel;
+import opennlp.tools.util.TrainingParameters;
 
 import org.apache.mahout.classifier.sgd.PassiveAggressive;
 
@@ -34,7 +35,7 @@ public class PassiveAggressiveTrainer extends AbstractOnlineLearnerTrainer {
   }
 
   @Override
-  public MaxentModel doTrain(DataIndexer indexer) throws IOException {
+  public MaxentModel doTrain(DataIndexer<TrainingParameters> indexer) throws IOException {
     
     // TODO: Lets use the predMap here as well for encoding
     int numberOfOutcomes = indexer.getOutcomeLabels().length;
@@ -54,8 +55,4 @@ public class PassiveAggressiveTrainer extends AbstractOnlineLearnerTrainer {
     return new VectorClassifierModel(pa, indexer.getOutcomeLabels(), createPrepMap(indexer));
   }
 
-  @Override
-  public boolean isSortAndMerge() {
-    return true;
-  }
 }
