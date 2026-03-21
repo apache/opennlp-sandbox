@@ -56,7 +56,6 @@ Currently, the library has different components:
 * `caseeditor-corpus-server-plugin`: A set of Java classes for [Apache UIMA](https://uima.apache.org) as Eclipse plugin to integrate corpora.
 * `caseeditor-opennlp-plugin`: An OpenNLP plugin for [Apache UIMA](https://uima.apache.org).
 * `corpus-server`: A multi-module component to create, search, remove, and serve multiple corpora.
-* `mahout-addon`: An addon for [Apache Mahout](https://mahout.apache.org).
 * `mallet-addon`: An addon for [Mallet](https://mimno.github.io/Mallet/topics.html) targeting topic modelling techniques.
 * `modelbuilder-addon`: A set of classes to build models.
 * `nlp-utils`: A set of OpenNLP util classes.
@@ -68,6 +67,7 @@ Currently, the library has different components:
 * `summarizer`: A set of classes providing text summarization.
 * `tagging-server`: A RESTful webservice to allow for NER, POS tagging, sentence detection and tokenization.
 * `wikinews-importer`: A set of classes to process and annotate text formatted in [MediaWiki markup](https://www.mediawiki.org/wiki/Help:Formatting).
+* `tf-ner-poc`: An adapter component for [Tensorflow](https://www.tensorflow.org), in an early proof-of-concept (poc) stage.
 
 ## Getting Started
 
