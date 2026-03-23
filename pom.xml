@@ -141,7 +141,7 @@
         <uimaj.version>3.6.1</uimaj.version>
         <jersey-client.version>2.41</jersey-client.version>
         <jersey-server.version>2.47</jersey-server.version>
-        <jettison.version>1.5.4</jettison.version>
+        <jettison.version>1.5.5</jettison.version>
 
         <junit.version>6.0.3</junit.version>
 
