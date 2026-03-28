@@ -1,0 +1,40 @@
+
+*****************************************************
+Summary
+-------
+Generated at: 2026-03-05T07:50:37+05:30
+
+Notes: 0
+Binaries: 0
+Archives: 0
+Standards: 14
+
+Apache Licensed: 14
+Generated Documents: 0
+
+JavaDocs are generated, thus a license header is optional.
+Generated files do not require license headers.
+
+0 Unknown Licenses
+
+*****************************************************
+  Files with Apache License headers will be marked AL
+  Binary files (which do not require any license headers) will be marked B
+  Compressed archives will be marked A
+  Notices, licenses etc. will be marked N
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-dl/pom.xml
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-dl/src/main/java/opennlp/tools/dl/UnclosableInputStream.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-dl/src/main/java/opennlp/tools/dl/NameFinderDL.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-dl/src/main/java/opennlp/tools/dl/GlobalVectors.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-dl/src/main/java/opennlp/tools/dl/DataReader.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-dl/src/main/java/opennlp/tools/dl/NeuralDocCat.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-dl/src/main/java/opennlp/tools/dl/RNN.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-dl/src/main/java/opennlp/tools/dl/NameSampleDataSetIterator.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-dl/src/main/java/opennlp/tools/dl/NeuralDocCatTrainer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-dl/src/main/java/opennlp/tools/dl/StackedRNN.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-dl/src/main/java/opennlp/tools/dl/NeuralDocCatModel.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-dl/src/test/java/opennlp/tools/dl/StackedRNNTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-dl/src/test/java/opennlp/tools/dl/RNNTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-dl/src/test/java/opennlp/tools/dl/NeuralDocCatTest.java
+ 
+*****************************************************

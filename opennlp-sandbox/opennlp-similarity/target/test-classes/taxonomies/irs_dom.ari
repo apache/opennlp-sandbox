@@ -1,0 +1,1537 @@
+:- visible findall/3.
+:- visible(all).
+:- visible(arity_builtins).
+:- visible( var/1 ).
+:- extrn iassert/1.
+
+:-extrn member/2.
+:-extrn writeln/1.
+:-extrn	quicksort/2.
+:-extrn last/2.
+:-extrn args/1.
+:-extrn var_const/2.
+:-extrn intersection/3.
+:-extrn var_var/2.
+:-extrn change_char/4.
+:-extrn pattern/1.
+:-extrn list_insert/4.
+:-extrn string_change_char/4.
+:-extrn clause_list/2.
+
+:- extrn xyear/1.
+:- extrn xarbitrary/1.
+:- extrn interpreter/0.
+
+:-public who_is/2.
+:-extrn do1/1.
+:-extrn do5/1.
+:-extrn do8/1.
+:-extrn do83/1.
+
+%*09100 how can i protect money against creditor
+%*09100 why should i maximize 401k deduction
+f401k_deduction(maximize,_):-do(09100).
+money(protect,_):-do(09100).
+bankruptcy(file(_,_), _):-do(09100).
+bankruptcy(safe, _):-do(09100).
+money(safe, _):-do(09100).
+invest(safe, _):-do(09100).
+money(creditor,_):-do(09100).
+
+%09101* how to convert nondeductible interests to deductible
+convert(non_deductible,_):-do(09101).
+convert(deductible,_):-do(09101).
+loan(fee(_,_),_):-do(09101).
+
+%10100* who can contribute to ira (==  % how can i contribute to ira)
+%da
+what_is(ira(_,_), _):-do(10100).
+%da
+ira(contribute,_):-do(10100).
+ira(much,_):-do(10100).
+
+%10101* what happens with my learning credit if my child does not % want to go to college
+ira(college,_):- do(10101).
+ira(child(_,_),_):- do(10101).
+ira(penalize,_):-do(10101).
+credit(learning,_):-do(10101).
+
+%10102* how long can i wait before take distribution from my Roth IRA
+ira(distribution,_):-do(10102).
+
+%11100* how can i avoid tax from charitable action if i hold stock
+stock(donate,_):-do(11100).
+stock(charity,_):-do(11100).
+taks(avoid,_):-do(11100).
+
+%09102* can i deduct loan interest on my camper
+deduct(loan(interest(_,_),_),_,09102):-do(09102).
+  loan(interest(_,_),_):-do(09102).
+deduct(mortgage_interest,_,09102):-do(09102).
+deduct(mortgage(residence,_),_,09102):-do(09102).
+  mortgage(residence,_):-do(09102).
+loan(rv,_):-do(09102).
+loan(camper,_):-do(09102).
+loan(boat,_):-do(09102).
+
+%03100* what is residence
+what_is(residence, _):-do(03100).
+
+%62100* do i need pay marriage penalty in the year of divorce
+taks(divorce(_,_),_):-do(62100).
+earn(spouse, _):-do(62100).
+earn(more,_):-do(62100).
+penalty(marriage,_):-do(62100).
+
+%71100* name tax benefits on cafeteria company
+taks(benefit(_,_), company(cafeteria,_)):-do(71100).
+company(cafeteria,_):-do(71100).
+company(care,_):-do(71100).
+advantage(benefit(_,_),_):-do(71100).
+taks_bracket(28,_):-do(71100).
+taks_bracket(31,_):-do(71100).
+income_taks(decrease,company(cafeteria,_)):-do(71100).
+income_taks(state,company(cafeteria,_)):-do(71100).
+credit(dependent_care,_):-do(71100).
+
+%64100* when should i visit a doctor
+schedule(a,w2):-do(64100).
+expense(medical,_):-do(64100).
+doctor(visit,_):-do(64100).
+company(cafeteria,_):-do(64100).
+
+%09103* what should i do with capital gain to decrease taxes
+%09103* what is tax rate on capital gain
+stock(growth,_):- do(09103).
+capital_gain(long_term,_):-do(09103).
+taks(capital_gain(decrease,_),_):-do(09103).
+invest(cash,_):-do(09103).
+loan(home_equity,_):-do(09103).
+account(margin,_):-do(09103).
+sell(stock(X,_),09103):-var(X), do(09103).
+taks(decrease,_):-do(09103).
+taks_rate(capital_gain(_,_),_):-do(09103).
+
+%07100* what information should i give to auditor
+%07100 what information request to auditor
+information(volunteer,_):-do(07100).
+information(give,_):-do(07100).
+information(auditor(_,_),_):-do(07100).
+request(information(auditor(_,_),_),_):-do(07100).
+auditor(request(_,_),_):-do(07100).
+
+%03101* how to choose a business
+business(start,_):-do(03101).
+business(choose,_):-do(03101).
+taks(partnership,_):-do(03101).
+deduct(money(_,_),_,03101):-do(03101).
+deduct(business(_,_),_,03101):-do(03101).
+
+%Solving Tax Problems
+
+%How to respond to IRS notices
+%How to cancel IRS penalties
+%How to cancel interest
+%What is the statute of limitations on collections
+%How to eliminate liens
+%Spousal tax relief
+%How to stop a wage or bank levy
+%How and when to use the Problems Resolution Office
+%How to be forgiven of tax debt you cannot pay
+%=============================================================
+
+%06100* How to respond to IRS notices
+%06100* when are irs notices wrong
+%06100* how to prevent from paying you do not owe
+notice(respond, _):-do(06100).
+notice(incorrect, _):-do(06100).
+notice(penalty(_,_),_):-do(06100).
+prevent(pay(_,_,_),_):-do(06100).
+proof(notice(incorrect,_),_):-do(06100).
+
+%06101* How to cancel IRS penalties
+penalty(cancel,_):-do(06101).
+notice(penalty(_,_),_):-do(06101).
+
+%06102* How to cancel interest
+interest(cancel,_):-do(06102).
+
+%21101* What is the statute of limitations on collections
+limitations(taks(collection,_),_):-do(21101).
+taks(collection,_):-do(21101).
+collect(long,_):-do(21101).
+extension(file(_,_),_):-do(21101).
+extension(automatic,_):-do(21101).
+
+%05101* How to eliminate liens
+lien(eliminate,_):-do(05101).
+cannot(pay(debt(_,_),_,_),_):-do(05101).
+what_is(lien,_):-do(05101).
+
+%62101* what is about spouse tax relief
+ta(find,_):-do(62101).
+ta(contact,_):-do(62101).
+relief(spouse,_):-do(62101).
+divorce(_,_):-do(62101).
+file(return(X,_),_):- nonvar(X), X=joint, do(62101).
+ return(joint,_):- do(62101).
+
+%05102* How to stop a wage or bank levy
+form(911,X,_):-var(X), do(05102).
+levy(wage(_,_),_):- do(05102).
+levy(bank,_):- do(05102).
+lien(immediately,_):-do(05102).
+debt(forgive,_):-do(05102).
+
+%40100* How and when to use the Taxpayers Advocates Office
+ta(use,_):-do(40100).
+form(911,X,_):-var(X), do(40100).
+dispute(involve,_):-do(40100).
+
+  % forgive tax debt
+%05103 05104* How to be forgiven of tax debt you cannot pay
+%05103 05104* can my tax debt be forgiven
+debt(forgive,_):-do(05103), do(05104).
+cannot(pay(debt(_,_),_,_),_):-do(05103), do(05104).
+cannot(pay(_,_,_),_):-do(05103), do(05104).
+agreement(installment,_):-do(05103), do(05104).
+form(433,X,_):-var(X), do(05103).
+bankruptcy(discharge,_):-do(05103), do(05104).
+offer_in_compromise(_,_):-do(05103), do(05104).
+
+bankruptcy(filing,_):-do(05104).
+
+%06103* how can i be forced to pay taxes i do not owe
+audit(recieve,_):-do(06103).
+audit(notice(_,_),_):-do(06103).
+audit(record(_,_),_):-do(06103).
+right(audit(record(_,_),_),_):-do(06103).
+audit(date,_):-do(06103).
+right(audit(date,_),_):-do(06103).
+force(pay(taks(_,_),_,_),_):-do(06103).
+ pay(taks(owe(_,_),_),_,_):-do(06103).
+taks(owe(_,_),_):-do(06103).
+
+%05105* How to call IRS bluffs
+bluff(_,_):-do(05105).
+deduction(claim,P):-var(P), do(05105).
+deduction(receipt(_,_),_):-do(05105).
+deduction(cancelled_check,_):-do(05105).
+challenge(auditor,_):-do(05105).
+disclose(facts,_):-do(05105).
+
+%07101* how to prove deductions without a receipt
+deduction(receipt(without,_),_):-do(07101).
+receipt(without,_):-do(07101).
+receipt(lost,_):-do(07101).
+record(lost,_):-do(07101).
+contribution(cash,_):-do(07101).
+
+%07102* what IRS forms should you never sign
+form(sign,_,_):-do(07102).
+
+%05106* How to spy on the IRS
+spy(_,_):-do(05106).
+
+%07103* could i conduct audit by mail
+audit(mail,_):-do(07103).
+
+%07104* How to appeal an audit decision
+appeal(audit(decision,_),_):-do(07104).
+ audit(decision,_):-do(07104).
+audit(abusive,_):-do(07104).
+auditor(challenge(_,_),_):-do(07104).
+owe(more,_):-do(07104).
+
+%07105* How to recover the cost of an abusive audit
+audit(abusive,_):-do(07105).
+cost(recover,_):-do(07105).
+
+%30100* When and how to use Tax Court
+court(taks(_,_),_):-do(30100).
+
+%09104* how to double my refund
+%09104 tax over-withhold
+refund(double, _):-do(09104).
+taks(over_withhold,_):-do(09104).
+ira(invest(_,_),_):-do(09104).
+
+%09105* How to use affidavits to pay less tax
+%09105* How to use explanation letter
+pay(taks(less,_),_,_):-do(09105).
+taks(less, _):-do(09105).
+taks(lesser,_):-do(09105).
+taks(decrease,_):-do(09105).
+affidavit(_,_):-do(09105).
+letter(explanation,_):-do(09105).
+
+%09106* how can i double property tax deduction
+deduction(property_taks(double,_),_):-do(09106).
+deduction(double,_):-do(09106).
+
+%09107* what deduction can i use if i pay estimated income tax
+deduction(income_taks(estimate,_),_):-do(09107).
+ income_taks(estimate,_):-do(09107).
+%%taks(increase, state, income):- do(09107). %%%%%%???? Inna-3 args
+
+%72100* is there a limit on deduction of non cash charitable contribution
+limit(deduction(charity_contribution(non_cash,_),_),_):-do(72100).
+deduction(charity_contribution(non_cash,_),_):-do(72100).
+deduction(charity,_):-do(72100).
+charuty_contribution(non_cash,_):-do(72100).
+
+%07106* how to defend your business against an audit
+business(defend, _):-do(07106).
+business(protect,_):-do(07106).
+business(penalize,_):-do(07106).
+business(contractor(_,_),_):-do(07106).
+business(subcontractor,_):-do(07106).
+audit(against,_):-do(07106).
+
+%03102* When to use independent contractors
+contractor(use,_):-do(03102).
+contractor(tools,_):-do(03102).
+contractor(independent,_):-do(03102).
+requirement(time,_):-do(03102).
+requirement(place,_):-do(03102).
+work(exclusively,_):-do(03102).
+work(part_time,_):-do(03102).
+
+%09108* how to turn your hobby into a business
+business(hobby(_,_),_):-do(09108).
+hobby(recategorize,_):-do(09108).
+business(categorize,_):-do(09108).
+business(profit,_):-do(09108).
+business(plan,_):-do(09108).
+hobby(profit,_):-do(09108).
+
+%07107* How to audit-proof a tax return
+return(audit_proof,_):-do(07107).
+information(relevant,_):-do(07107).
+charity_contribution(_,_):-do(07107).
+business(milage,_):-do(07107).
+cost(entertainment,_):-do(07107).
+expense(medical,_):-do(07107).
+form(8275,X,_):-var(X), do(07107).
+file(disclosure,_):-do(07107).
+
+%21100* How to get an extension of time to pay taxes
+form(2688,X,_):-var(X), do(21100).
+form(4868,X,_):-var(X), do(21100).
+form(1127,X,_):-var(X), do(21100).
+extension(return(_,_),_):-do(21100).
+return(on_time,_):-do(21100).
+pay(later,_,_):-do(21100).
+extension(automatic,_):-do(21100).
+extension(pay(taks(_,_),_,_),_):-do(21100).
+ pay(taks(_,_),_,_).
+need(time,_,21100):-do(21100).
+hardship(undue,_):-do(21100).
+
+%02100 I just completed my return and find that I owe the IRS money. What should I do?
+%02100* what should i do if i owe money to irs
+owe(money(_,_),_):-do(02100).
+complete(just,_):-do(02100).
+file(april15,_):-do(02100).
+interest(decrease,_):-do(02100).
+
+%12100* Can I ask to make installment payments on the amount I owe?
+pay(monthly,_,_):-do(12100).
+pay(owe(installment,_),_,_):-do(12100).
+ owe(installment,_):-do(12100).
+agreement(installment,_):-do(12100).
+cost(alternative,_):-do(12100).
+
+%12101 What kind of penalties and interest will I be
+%     charged for paying and filing my taxes late?
+%12101* what kind of penalties will i be charged for paying my taxes late
+interest(charge,_):-do(12101).
+penalty(charge,_):-do(12101).
+pay(on_time,_,_):-do(12101).
+pay(delay,_,_):-do(12101).
+return(delay,_):-do(12101).
+file(on_time,_):-do(12101).
+taks(owe(_,_),_):-do(12101).
+
+%12102* Can my refund be used to pay other debts?
+refund(use,_):-do(12102).
+pay(debt(other,_),_,_):-do(12102).
+debt(other,_):-do(12102).
+debt(past_due,_):-do(12102).
+owe(child_support,_):-do(12102).
+
+%12103* I am unable to pay my delinquent taxes. Will the IRS accept an Offer in Compromise?
+offer_in_compromise(pay(taks(delinquent,_),_,_),_):-do(12103).
+pay(unable,_,_):-do(12103).
+pay(taks(delinquent,_),_,_):-do(12103).
+offer_in_compromise(accept,_):-do(12103).
+
+%04100* how to use computer tax return
+form(1040,X,_):-var(X), do(04100).
+return(paper,_):-do(04100).
+return(electronic,_):-do(04100).
+file(return(X,_),_):-nonvar(X), X=electronic, do(04100).
+file(electronic,_):-do(04100).
+irs(approve,_):-do(04100).
+
+%04101* why to file a return electronically
+file(safe,_):-do(04101).
+file(fast,_):-do(04101).
+file(return(X,_),_):-nonvar(X), X=electronic, do(04101).
+file(electronic,_):-do(04101).
+
+%04102* what forms can i file on computer
+form(download,_,_):-do(04102).
+form(electronic,_,_):-do(04102).
+
+%40101* How to Choose a Tax Preparer.
+irs(recommend,_):-do(40101).
+preparer(recommend,_):-do(40101).
+preparer(select,_):-do(40101).
+preparer(choose,_):-do(40101).
+
+%04103* when can i use telefile
+telefile(_,_):-do(04103).
+file(return(X,_),_):-nonvar(X), X=tele, do(04103).
+return(tele,_):-do(04103).
+file(tele,_):-do(04103).
+
+%61100* What are capital gains and capital losses
+%61100 how about my taxes if i own my property more than...
+what_is(capital_gain(long_term,_),_):-do(61100).
+what_is(capital_gain(_,_),_):-do(61100).
+what_is(capital_loss(long_term,_),_):-do(61100).
+what_is(capital_loss(_,_),_):-do(61100).
+%% short_term
+trade(long_term,_):-do(61100).
+trade(short_term,_):-do(61100).
+capital_loss(determine,_):-do(61100).
+capital_gain(determine,_):-do(61100).
+capital_gain(decrease,_):-do(61100).
+property(more,_):-do(61100).
+property(less,_):-do(61100).
+sell(property(_,_),_):-do(61100).
+property(base,_):-do(61100).
+property(estimate,_):-do(61100).
+
+%30101* How to request an appeal of a specific collection action
+what_is(request(appeal(_,_),_),_):-do(30101).
+request(appeal(collection,_),_):-do(30101).
+appeal(collection,_):-do(30101).
+form(9423,X,_):-var(X), do(30101).
+publication(1660,_):-do(30101).
+right(appeal(_,_),_):-do(30101).
+
+%73100* How to claim dependents on your tax return
+deduction(dependent(_,_),_):-do(73100).
+dependent(claim,_):-do(73100).
+dependent(test(_,_,_),_):-do(73100).
+deduction(allow, _):-do(73100).
+test(citizenship, _,73100):-do(73100).
+test(relationship, _,73100):-do(73100).
+return(joint,_):-do(73100).
+test(gross_income(_,_), _,73100):-do(73100).
+test(support, _,73100):-do(73100).
+
+%50100* What is Earned Income Credit
+%50100 What is the Earned Income Tax Credit (EITC)?
+what_is(taks_credit(_,_),_):-do(50100).
+earned_income(tax_credit(_,_,_,_),_):-do(50100).
+taks(owe(_,_),_):-do(50100).
+taks(decrease,_):-do(50100).
+money(back,_):-do(50100).
+tax_credit(rule,_,_,50100):-do(50100).
+
+%50101* Who can claim the tax credit?
+right(tax_credit(_,_,_,_),_):-do(50101).
+tax_credit(claim,_,_,50101):-do(50101).
+%61106* what is SSN
+%61107* what is ITIN
+what_is(ssn,_):-do(61106).
+what_is(itin,_):-do(61107).
+
+%61101* Who is a qualifying child?
+child(qualifying,_):- do(61101).
+what_is(child(qualifying,_),_):- do(61101).
+
+%61102* What is Earned Income?
+what_is(earned_income(X,_),_):- var(X), do(61102), !.
+
+%61103* What is taxable Earned Income?
+%taxable_earned_income(_,_):-var(X), do(61103).
+what_is(taxable_earned_income(_,_),_):-do(61103), !.
+
+%61104* What is nontaxable Earned Income?
+what_is(earned_income(nontaxable,_),_):-do(61104), !.
+ earned_income(nontaxable,_):-do(61104).
+
+%61105* What is Modified AGI?
+agi(modified,_):- do(61105).
+what_is(agi(modified,_),_):- do(61105), !.
+
+%50102* How do I figure my tax credit?
+tax_credit(calculate,_,how(calculate,_),50102):-do(50102).
+
+%51100* What is the Advance Earned Income Tax Credit (Advance EITC)?
+what_is(advance_tax_credit(_,_),_):-do(51100), !.
+
+%51101* Why should I be interested in the Advance EITC?
+advance_tax_credit(recieve,_):-do(51101).
+advance_tax_credit(_,_):-do(51101).
+right(advance_tax_credit(_,_),_):-do(51101).
+
+%51102* How do I get Advance EITC payments?
+pay(advance_tax_credit(X,_),_,_):-var(X), do(51102).
+
+%51103* Could my Advance EITC payments change? %%%%-----
+pay(advance_tax_credit(change,_),_,_):- do(51103).
+ advance_tax_credit(change,_):- do(51103).
+refund(advance_tax_credit(_,_),_):- do(51103).
+form(w5,X,_):- var(X), do(51103).
+
+%51104* If I get Advance EITC do I have to file a tax return?
+need(return(advance_tax_credit(_,_),_),_,51104):-do(51104).
+need(file(return(P,_),_),_,51104):-
+  P=..[X|_], X=advance_tax_credit, do(51104).
+return(advance_tax_credit(_,_),_):-do(51104).
+file(return(P,_),_):- nonvar(P),  P=..[X|_], X=advance_tax_credit, do(51104).
+file(return(advance_tax_credit(_,_),_),_):-do(51104).
+
+%Employee Compensation
+
+compensation(_,employee(_,_)):-
+  do(60100),do(60101),do(74100),do(74101),do(77102),do(74103),do(75100),
+  do(63100),do(80119),do(77100),do(77101),do(77102),do(77103),do(77104),
+  do(77105),do(77106),do(77107),do(77108).
+
+%60100* what should i do if i receive advance commissions
+commission(advance,employee(_,_)):-do(60100).
+
+%60101...* How can employee deduct income ==
+%74102... how can i deduct income if i am employee
+taxable_income(commission(_,_),employee(_,_)):- do(60100), do(60101).
+taxable_earned_income(commission(_,_),employee(_,_)):-var(X),do(60100), do(60101).
+refund(advance_tax_credit(_,_),employee(_,_)):- do(60101).
+refund(commission(unearned,_),employee(_,_)):- do(60101).
+deduct(income,employee(_,_),60101):-do(60101).
+form(1040,X,_):-var(X), do(60101).
+
+%74100 74101* are awards for employee taxable
+gross_income(award,employee(_,_)):-do(74100).
+taxable_income(award,employee(_,_)):- do(74100), do(74101).
+form(w2,X,employee(_,_)):- var(X), do(74100), do(74101).
+
+%74102* are awards included into taxable income for employee
+deduct(income,employee(_,_),74102):-do(74102).
+taxable_income(award,employee(_,_)):- do(74102).
+taxable_income(exclude,employee(_,_)):- do(74102).
+
+%74103* are gifts included into taxable income for employee
+deduct(income,employee(_,_),74103):-do(74103).
+taxable_income(gift,employee(_,_)):- do(74103).
+
+%75100* should i include meals provided by my employer in taxable income
+deduct(income,employee(_,_),75100):-do(75100).
+taxable_income(meal,employee(_,_)):- do(75100).
+taxable_income(lodging,employee(_,_)):- do(75100).
+
+%63100* are expenses for interview included into taxable income
+deduct(income,employee(_,_),63100):-do(63100).
+taxable_income(expense(interview,_),employee(_,_)):- do(63100).
+form(1040,X,employee(_,_)):-var(X), do(63100).
+
+%80119* If i receive property for my services, should i include its value in gross income
+taxable_income(property(_,_),employee(_,_)):- do(80119).
+gross_income(property(_,_),employee(_,_)):- do(80119).
+
+%77100* Are severance payments taxable
+taxable_income(severance_pay,employee(_,_)):- do(77100).
+taxable_income(lump_sum(cancel,_),employee(_,_)):- do(77100).
+lump_sum(cancel,_):- do(77100).
+
+%77101* i receive lump sum payment for accrued annual leave. should this
+%      amount be included in taxable income
+deduct(income,employee(_,_),77101):-do(77101).
+taxable_income(lump_sum(leave,_),employee(_,_)):- do(77101).
+lump_sum(leave,_):- do(77101).
+form(w2,X,employee(_,_)):- var(X), do(77101).
+
+%77102 sick benefits under the Railroad Unemployment Insurance Act
+deduct(income,employee(_,_),77102):-do(77102).
+taxable_income(benefit(sick,_),employee(railroad,_)):- do(77102).
+benefit(sick,_):- do(77102).
+taxable_income(pay(sick,_,_),employee(railroad,_)):- do(77102).
+ pay(sick,_,_):- do(77102).
+employee(railroad,_):- do(77102).
+
+%77103* Are sick benefits taxable
+deduct(income,employee(_,_),77103):-do(77103).
+taxable_income(benefit(sick,_),employee(_,_)):- do(77103).
+benefit(sick,_):- do(77103).
+taxable_income(pay(sick,_,_),employee(_,_)):- do(77103).
+ pay(sick,_,_):- do(77103).
+
+%77104* Are unemployment benefits taxable
+deduct(income,employee(_,_),77104):-do(77104).
+taxable_income(benefit(unemployment,_),employee(_,_)):- do(77104).
+benefit(unemployment,_):- do(77104).
+publication(525,_):-do(77104).
+
+%77105* Are medicare tax included in taxable income
+taxable_income(taks(social_security,_),_):- do(77105).
+ taks(social_security,_):- do(77105).
+taxable_income(taks(medicare,_),_):- do(77105).
+ taks(medicare,_):- do(77105).
+
+%77106* Are amounts withheld from my wage taxable
+taxable_income(wage(withheld,_),employee(_,_)):- do(77106).
+wage(withheld,_):- do(77106).
+form(w2,X,employee(_,_)):-var(X), do(77106).
+
+%77107* Are union benefits taxable
+deduct(income,employee(_,_),77107):-do(77107).
+taxable_income(benefit(union,_),employee(_,_)):- do(77107).
+benefit(union,_):- do(77107).
+form(1040,X,employee(_,_)):-var(X), do(77107).
+
+%77108* Should i include payments for child care in taxable income
+taxable_income(pay(child_care,_,_),_):- do(77108).
+ pay(child_care,_,_):- do(77108).
+form(w2,X,employee(_,_)):-var(X), do(77108).
+form(1040,X,_):-var(X), do(77108).
+
+%02101 03103 61108 02102 02103* when i have to file a tax return
+need(file(return(_,_),_),_,02101):- do(02101), do(03103), do(61108).
+ file(return(X,_),_):- var(X), do(02101), do(03103), do(61108).
+requirement(file(return(_,_),_),_):-do(02101), do(03103), do(61108).
+
+%03103* what is filing status
+what_is(filing_status(_,_),_):-do(03103), !.
+filing_status(test(_,_,_),_):-do(02101), do(03103).
+filing_status(more,_):-do(03103).
+test(single,_,03103):-do(03103).
+test(head_of_household,_,03103):-do(03103).
+test(marriage,_,03103):-do(03103).
+test(widow,_,03103):-do(03103).
+
+%61108* what is gross income
+what_is(gross_income(_,_),_):-do(61108), !.
+gross_income(less,_):-do(61108).
+limit(gross_income(_,_),_):-do(61108).
+limit(require,_):-do(61108).
+
+%02102* should i file tax return If i am not Resident Alien,
+need(return(nonresident,_),_,02102):-do(02102).
+need(file(return(nonresident,_),_),_,02102):-do(02102).
+file(return(nonresident,_),_):- do(02102).
+return(nonresident,_):-do(02102).
+publication(519,_):-do(02102).
+
+%02103* when should i file tax return
+need(return(P,_),_,02103):-var(P), do(02103).
+need(file(return(P,_),_),_,02103):-var(P), do(02103).
+file(return(P,_),_):-  var(P), do(02103).
+
+%30102* in what cases do i have right to appeal
+challenge(audit(_,_),_):-do(30102).
+challenge(collect(_,_),_):-do(30102).
+challenge(collection,_):-do(30102).
+right(appeal(_,_),_):-do(30102).
+
+%30103* how can i appeal in connection with a bankruptcy case?
+%30103* what should i do if i have a dispute with the IRS in connection
+%        with a bankruptcy case?
+challenge(bankruptcy(_,_),_):-do(30103).
+dispute(bankruptcy(_,_),_):-do(30103).
+appeal(bankruptcy(_,_),_):-do(30103).
+
+%30104* what should i do if i disagree with the findings of an irs agent in
+%       examination report
+challenge(examination(_,_),_):-do(30104).
+appeal(examination(_,_),_):-do(30104).
+publication(5,_):-do(30104).
+
+%30105* can i appeal irs actions to collect tax
+appeal(collection,_):-do(30105).
+appeal(collect(_,_),_):-do(30105).
+
+%06104* how irs resolve dispute questions
+dispute(resolve,_):-do(06104).
+audit(before,_):-do(06104).
+examination(before,_):-do(06104).
+revenue_procedure(9615,_):-do(06104).
+revenue_procedure(969,_):-do(06104).
+what_is(statement_of_value,_):-do(06104).
+examination(form(1040,_,_),_):-do(06104).
+
+%77109* Are child support payments taxable
+taxable_income(pay(child_support,_,_),_):- do(77109).
+pay(child_support,_,_):- do(77109).
+
+%77100* Are grants to help victims of natural disasters taxable
+taxable_income(pay(disaster(X,_),_,_),_):- var(X), do(77110).
+pay(disaster(X,_),_,_):- var(X), do(77110).
+disaster(act,_):-do(77110).
+
+%77111* are disaster unemployment assistence payments taxable
+taxable_income(pay(disaster(X,_),_,_),_):- nonvar(X), X=unemployment, do(77111).
+pay(disaster(unemployment,_),_,_):-do(77111).
+  disaster(unemployment,_).
+
+%77112* must i include gambling winnings as taxable income
+taxable_income(winning(_,_),_):- do(77112).
+winning(gamble,_):- do(77112).
+deduct(gambling_loss,_,77112):-do(77112).
+form(1040,a,_):-do(77112).
+taxable_income(lottery,_):- do(77112).
+winning(cash,_):- do(77112).
+winning(noncash,_):- do(77112).
+form(w2,g,_):-do(77112).
+
+%61109* What is fair market value
+what_is(fair_market_value,_):-do(61109).
+
+%77113* Is income from hobby taxable
+taxable_income(hobby(_,_),_):- do(77113).
+hobby(income,_):-do(77113).
+form(1040,a,_):-do(77113).
+deduct(expense(hobby,_),_,77113):-do(77113).
+deduction(expense(hobby,_),_):-do(77113).
+expense(hobby(_,_),_):-do(77113).
+
+%77114 if i sell stamps from my collection do i need to include the gain
+%   to taxable income ---!!!!! is the gain on sale stamps from collection taxable
+%77114* what should i do if i sell stamps from my collection
+sell_hobby(hobby(_,_)).
+sell_hobby(stamp).
+sell_hobby(coin).
+sell_hobby(collection).
+taxable_income(hobby(_,_),_):- do(77114).
+taxable_income(sell(P,_),_):- sell_hobby(P), do(77114).
+gain(sell(P,_),_,77114):- sell_hobby(P),do(77114).
+loss(sell(P,_),_,77114):- sell_hobby(P),do(77114).
+capital_gain(hobby(_,_),_):-do(77114).
+capital_gain(sell(P,_),_):-sell_hobby(P),do(77114).
+sell(hobby(_,_),_):- do(77114).
+sell(stamp,_):- do(77114).
+sell(coin,_):- do(77114).
+sell(collection,_):- do(77114).
+cannot(deduct(loss(net,_,_),_,_),_):-do(77114).
+deduct(loss(net,_,_),_,77114):-do(77114).
+ loss(net,_,_).
+
+%77115* does taxable income include illegal income
+gross_income(illegal_income,_):-do(77115).
+taxable_income(illegal_income,_):-do(77115).
+
+%73101* 73102 how can i reduce my taxable income
+%73101* how many exemption could i have if i am married
+taxable_income(decrease,_):-do(73101), do(73102).
+deduct(personal,_,73101):-do(73101), do(73102).
+deduction(personal,P):-var(P), do(73101).
+deduction(spouse,_):-do(73101).
+deduction(marriage,_):-do(73101).
+
+%73102* in what cases can my personal exemption be reduced (+73101)
+%73102* could i have personal exemption if my agi is greater than 100000 dollars
+deduction(claim,P):-var(P), do(73102).
+deduction(personal,P):-var(P), do(73102).
+deduction(decrease,_):-do(73102).
+deduction(amount,_):-do(73102).
+agi(more,_):-do(73102).
+form(1040,X,_):-var(X), do(73102).
+form(1040,a,_):-do(73102).
+
+%73103* could i take exemption for myself if i am claimed as a dependent
+%73103* when i can not claim personal exemption
+deduction(claim,dependent(_,_)):-do(73103).
+deduction(personal,dependent(_,_)):-do(73103).
+ dependent(claim,_):-do(73103).
+cannot(deduction(claim,_),_):-do(73103).
+cannot(deduction(personal,_),_):-do(73103).
+
+%73104* could i claim spouse exemption if we were divorced at the end of 1999
+deduction(personal,divorce(_,_)):-do(73104).
+deduction(claim,divorce(_,_)):-do(73104).
+cannot(deduction(claim,_),_):-do(73104).
+cannot(deduction(personal,_),_):-do(73104).
+deduction(personal,spouse):-do(73104).
+deduction(claim,spouse):-do(73104).
+deduction(personal,marriage):-do(73104).
+deduction(claim,marriage):-do(73104).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%80100 80102* what should i do if i bought home
+%80100* what is basis of home
+what_is(basis(home(_,_,_),_,80100),_):-do(80100).
+basis(home(X,_,_),define,80100):-var(X), do(80100).
+buy(home(_,_,_),80100):-do(80100).
+publication(523,_):-member(N,[80100,80101,80102,80103,80104,80105,80106,
+      80107,80108,80109,80110,80111,80112,80113,80114,80115,80116,
+      80117,80118]), do(N).
+
+%80101* what is adjusted basis of home
+what_is(adjusted_basis(home(_,_,_),_,80101),_):-do(80101).
+adjusted_basis(home(_,_,_),define,80101):-do(80101).
+
+%80101...* how to figure gain on sale of my home
+gain(sell(home(X,_,_),_),how(calculate,_),80101):-var(X), do(80101).
+loss(sell(home(X,_,_),_),how(calculate,_),80101):-var(X), do(80101).
+
+%80102* what is cost of property
+%80102...* how to figure home basis  ( big answer )
+%80102...* how to figure basis when i buy home
+%80102...* when can i reduce home basis
+cost(property(_,_),_):-do(80102).
+cost(home(_,_,_),_):-do(80102).
+basis(home(X,_,_),how(calculate,_),80102):-var(X), do(80102).
+buy(home(_,_,_),80102):-do(80102).
+pay(points,homeseller,80102):-do(80102).
+basis(home(X,_,_),decrease,80102):-var(X), do(80102).
+worksheet(1,_):-do(80102).
+
+%80103* Are settlement fees included in home basis
+%80103* how to figure home basis if i pay settlement fees
+basis(home(X,_,_),how(calculate,_),80103):-var(X), do(80103).
+pay(settlement,80103):-do(80103).
+fee(settlement,80103):-do(80103).
+buy(home(_,_,_),80103):-do(80103).
+cost(closing,80103):-do(80103).
+
+%80104* May Real Estate Taxes affect home basis
+basis(home(X,_,_),how(calculate,_),80104):-var(X), do(80104).
+property_taks(home(_,_,_),80104):-do(80104).
+
+%80105* how to figure basis when i build house on my own land
+basis(home(build,_,_),how(calculate,_),80105):-do(80105), do(80106).
+home(build,_,80105):-do(80105).
+
+%80106* should i reduce basis when builder gave me temporary house for period
+%      of construction a new home
+basis(home(temporary,_,_),how(calculate,_),80106):-do(80106).
+basis(home(temporary,_,_),decrease,80106):-do(80106).
+ home(temporary,_,80106):-do(80106).
+
+%80107* how to figure basis in the case of cooperative home
+basis(home(cooperative,_,_),how(calculate,_),80107):-do(80107).
+
+%80108* how to figure home basis in the case of condominium
+basis(home(condominium,_,_),how(calculate,_),80108):-do(80108).
+ home(condominium,_,80108):-do(80108).
+
+%80109* how to figure basis if i receive home as gift
+basis(home(gift,_,_),how(calculate,_),80109):-do(80109).
+ home(gift,_,80109):-do(80109).
+
+%80110* how to figure basis when i received home from spouse
+basis(home(spouse,_,_),how(calculate,_),80110):-do(80110).
+basis(home(divorce(_,_),_,_),how(calculate,_),80110):-do(80110).
+  home(divorce(_,_),_,80110):-do(80110).
+publication(504,_):-do(80110).
+
+%80111* how to figure basis when i received home as inheritance
+basis(home(inheritance,_,_),how(calculate,_),80111):-do(80111).
+ home(inheritance,_,80111):-do(80111).
+basis(home(death,_,_),how(calculate,_),80111):-do(80111).
+ home(death,_,80111):-do(80111).
+property(community,80111):-do(80111).
+publication(555,_):-do(80111).
+
+%80112- how to figure basis when i received home in trade (eliminate trade(_,_))
+basis(home(X,_,_),how(calculate,_),80112):-var(X), do(80112).
+trade(home(_,_,_),80112):-do(80112).
+
+%80113* how to get information on basis
+basis(_,information(_,_),80113):-do(80113).
+publication(551):-do(80113).
+
+%80114* what increases to basis
+basis(home(X,_,_),increase,80114):-var(X), do(80114).
+
+%80115* what decreases to basis
+basis(home(X,_,_),decrease,80115):-var(X), do(80115).
+
+%80116* how do home improvements affect on basis
+basis(home(X,_,_),increase,80116):-var(X), do(80116).
+basis(home(X,_,_),decrease,80116):-var(X), do(80116).
+basis(home(improvement,_,_),how(calculate,_),80116):- do(80116).
+home(improvement,_,80116):-do(80116).
+
+%80117* how does home repair affect on basis
+basis(home(repair,_,_),how(calculate,_),80117):-do(80117).
+home(repair,_,80117):-do(80117).
+
+%80118* what records prove my homes adjusted bases
+%80118* how many years must i keep records on home adjusted bases
+%80118* what records must i keep
+proof(adjusted_basis(home(_,_,_),_,_),_):-do(80118).
+record(adjusted_basis(home(_,_,_),_,_),_):-do(80118).
+keep(record(adjusted_basis(_,_,_),_),what):-do(80118).
+keep(record(adjusted_basis(_,_,_),_),how_long):-do(80118).
+need(record(adjusted_basis(_,_,_),_),_,80118):-do(80118).
+need(keep(record(P,_),what),_,80118):-P=..[X|_], X=adjusted_basis, do(80118).
+need(keep(record(P,_),how_long),_,80118):-P=..[X|_], X=adjusted_basis,do(80118).
+
+%82100* what should i do when i sold home
+sell(home(X,_,_),82100):-var(X), do(82100).
+publication(523,_):-do(82100).
+
+%82101* can i exclude from income gain from the sale of my house
+%82101* how much gain on the sale of my house can i exclude from income
+%82101- can i exclude from taxable income gain from the sale of my house
+%82101...* when can i use reduced exclusion
+gross_income(sell(home(_,_,_),_),homeseller):-do(82101), do(82102).
+taxable_income(sell(home(_,_,_),_),homeseller):-do(82101), do(82102).
+taxable_income(decrease,X):-nonvar(X), X=homeseller, do(82101).
+gross_income(decrease,homeseller):-do(82101).
+deduct(income,homeseller,82101):-do(82101).
+deduct(gain(sell(P,_),_,_),homeseller,82101):-P=..[X|_], X=home, do(82101).
+limit(exclusion(amount,homeseller,_),_):-do(82101).
+limit(deduct(gain(_,_,_),homeseller,_),_):-do(82101).
+exclusion(amount,homeseller,82101):-do(82101).
+exclusion(decrease,homeseller,82101):-do(82101).
+worksheet(3,_):-do(82101).
+publication(523,_):-do(82101).
+
+%82102* can i deduct loss on the sale of my home
+deduct(loss(sell(P,_),_,_),homeseller,82102):-
+   nonvar(P), P=..[X|_], X=home, do(82102).
+form(1040,X,homeseller):-var(X), do(82102), do(82104).
+form(w2,X,homeseller):-var(X), do(82102), do(82104).
+publication(523,_):-do(82102).
+
+%82103* how to figure gain (loss) on sale of my home
+gain(sell(home(X,_,_),_),how(calculate,_),82103):-var(X), do(82103).
+loss(sell(home(X,_,_),_),how(calculate,_),82103):-var(X), do(82103).
+publication(523,_):-do(82103).
+how(calculate,_).
+
+%82104* what is selling price of home
+%82104* what is personal property
+what_is(home(selling_price,_,_),_):-do(82104).
+what_is(home(price,_,_),_):-do(82104).
+what_is(selling_price,_):-do(82104).
+home(selling_price,_,82104):-do(82104).
+home(price,_,82104):-do(82104).
+%what_is(property(personal,_),_):-do(82104).
+property(personal,_):-do(82104).
+form(1099,s,_):-do(82104).
+publication(523,_):-do(82104).
+
+%82105* what is amount realized
+%82105- what is amount realized on sale of home
+%82105* what are selling expenses
+what_is(amount_realized(home(_,_,_),_),_):-do(82105), !.
+amount_realized(home(_,_,_),_):-do(82105).
+what_is(expense(sell(_,_),_),_):-do(82105), !.
+expense(sell(_,_),_):-do(82105).
+publication(523,_):-do(82105).
+
+%82106* how to figure gain (loss) when i trade home
+trade(home(_,_,_),82106):-do(82106).
+gain(trade(home(_,_,_),_),how(calculate,_),82106):-do(82106).
+loss(trade(home(_,_,_),_),how(calculate,_),82106):-do(82106).
+publication(523,_):-do(82106).
+
+%82107* how to figure gain in the case of home foreclosure (repossession)
+%82107* how to figure gain from sale if i abandon my home
+gain(sell(home(X,_,_),_),how(calculate,_),82107):-
+  (X=foreclosure; X=repossession; X=abandonment),
+  do(82107).
+loss(sell(home(X,_,_),_),how(calculate,_),82107):-
+  (X=foreclosure; X=repossession; X=abandonment),
+  do(82107).
+gain(home(X,_,_),_,82107):-
+  nonvar(X),
+  (X=foreclosure; X=repossession; X=abandonment),
+  do(82107).
+loss(home(X,_,_),_,82107):-
+  nonvar(X),
+  (X=foreclosure; X=repossession; X=abandonment),
+  do(82107).
+ home(foreclosure,_,82107):-do(82107).
+ home(repossession,_,82107):-do(82107).
+ home(abandonment,_,82107):-do(82107).
+form(1040,d,_):- do(82107).
+schedule(d,1040):-do(82107).
+bankruptcy(home(_,_,_),_):-do(82107).
+home(debt(cancel,_),_,82107):-do(82107).
+gross_income(debt(cancel,_),_):-do(82107).
+debt(cancel,_):-do(82107).
+publication(908,_):-do(82107).
+form(1099,X,_):-var(X), do(82107).
+publication(544,_):-do(82107).
+publication(523,_):-do(82107).
+
+%82108* how to figure gain(loss) when i transfer home to spouse
+gain(home(transfer,_,_),_,82108):-do(82108).
+ home(transfer,_,82108):-do(82108).
+loss(home(transfer,_,_),_,82108):-do(82108).
+gain(home(spouse,_),_,82108):-do(82108).
+ home(spouse,_,82108):-do(82108).
+loss(home(spouse,_,_),_,82108):-do(82108).
+publication(504,_):-do(82108).
+publication(523,_):-do(82108).
+
+%%% 13.01.00
+%82109* when can i claim exclusion of gain from income
+%82109* are there limits on exclusion of gain for homesellers
+%82109* what are tests on exclusion of gain for homesellers
+%82109...* how can i exclude gain from selling of my house
+exclusion(claim,homeseller,82109):-do(82109).
+limit(exclusion(_,homeseller,_),_):-do(82109).
+limit(deduct(gain(_,_,_),homeseller,_),_):-do(82109).
+exclusion(sell(home(_,_,_),_),homeseller,82109):- do(82109).
+deduct(gain(sell(P,_),_,_),homeseller,82109):-P=..[X|_], X=home, do(82109).
+exclusion(test(_,_,_),homeseller,82109):- do(82109).
+deduct(gain(test(_,_,_),_,_),homeseller,82109):- do(82109).
+ gain(test(_,_,_),_,82109).
+own(home(_,_,_),homeseller):-do(82109).
+test(ownership,homeseller,82109):-do(82109).
+test(use,homeseller,82109):-do(82109).
+home(less,homeseller,82109):-do(82109).
+home(more,homeseller,82109):-do(82109).
+exclusion(decrease,homeseller,82109):-do(82109).
+publication(523,_):-do(82109).
+
+%82110...* how to figure period in ownership (use) test
+%82110* does period in ownership (use) test have to be continuous
+test(ownership,homeseller,82110):-var(X), do(82110).
+test(use,homeseller,82110):-var(X), do(82110).
+period(continuous,82110):-do(82110).
+period(how(calculate,_),82110):-do(82110).
+exclusion(decrease,homeseller,82110):-do(82110).
+publication(523,_):-do(82110).
+
+%82111* how about ownership (use) test when i sold stock in a cooperative housing corporation
+test(ownership,homeseller,82111):-do(82111).
+test(use,homeseller,82111):-do(82111).
+sell(stock(home(cooperative,_,_),_),82111):-do(82111).
+home(cooperative,homeseller,82111):-do(82111).
+publication(523,_):-do(82111).
+
+%82112* how about ownership (use) test for individuals with a disability
+test(ownership,disability,82112):-do(82112).
+test(use,disability,82112):-do(82112).
+publication(523,_):-do(82112).
+
+%82113* how to affect on ownership (use) test the sale of my previous house
+test(ownership,homeseller,82113):-do(82113).
+test(use,homeseller,82113):-do(82113).
+home(previous,homeseller,82113):-do(82113).
+ period(how(calculate,_),82113).
+sell(home(X,_,_),82113):-nonvar(X), X=previous, do(82113).
+gain(sell(home(X,_,_),_),_,82113):-nonvar(X), X=previous, do(82113).
+publication(523,_):-do(82113).
+
+%82114* how about ownership (use) test if my previous home destroyed (condemned)
+test(ownership,homeseller,82114):-do(82114).
+test(use,homeseller,82114):-do(82114).
+destroy(home(previous,homeseller,_),82114):-do(82114).
+condemn(home(previous,homeseller,_),82114):-do(82114).
+ period(how(calculate,_),82114).
+publication(523,_):-do(82114).
+
+%82115* can divorce affect on ownership (use) test
+%82115- can marriage affect on ownership (use) test ( test(marriage,..) )
+%82115* can death of one spouse affect on ownership (use) test
+%exclusion(sell(home(_,_,_),_),homeseller,82115):- do(82115).
+%deduct(gain(sell(P,_),_,_),homeseller,82115):-P=..[X|_], X=home, do(82115).
+test(ownership,marriage,82115):-do(82115).
+test(ownership,spouse,82115):-do(82115).
+test(ownership,death,82115):-do(82115).
+test(ownership,divorce(_,_),82115):-do(82115).
+test(use,marriage,82115):-do(82115).
+test(use,divorce(_,_),82115):-do(82115).
+test(use,spouse,82115):-do(82115).
+test(use,death,82115):-do(82115).
+ period(how(calculate,_),82115).
+publication(523,_):-do(82115).
+
+%82116 82117 82118* can i exclude gain from sale of my house
+%                     if i have used it for business
+exclusion(sell(home(_,_,_),_),homeseller,82116):- do(82116), do(82117), do(82118).
+exclusion(business(home(_,_,_),_),homeseller,82116):- do(82116), do(82117), do(82118).
+deduct(gain(sell(P,_),_,_),homeseller,82116):-P=..[X|_], X=home, do(82116), do(82117), do(82118).
+deduct(business(home(_,_,_),_),homeseller,82116):-do(82116), do(82117), do(82118).
+gain(sell(home(_,_,_),_),_,82116). %:- do(82116), do(82117), do(82118).
+sell(home(X,_,_),82116):- var(X), do(82116), do(82117), do(82118).
+test(ownership,homeseller,82116):-do(82116), do(82117), do(82118).
+test(use,homeseller,82116):-do(82116), do(82117), do(82118).
+business(home(_,homeseller,_),82116):-do(82116), do(82117), do(82118).
+home(rent,homeseller,82116):-do(82116), do(82117), do(82118).
+publication(523,_):-do(82116).
+
+form(4797,X,homeseller):- var(X), do(82117).
+publication(523,_):-do(82117), do(82118).
+
+business(home(depreciation,homeseller,_),82128):- do(82118).
+home(depreciation,homeseller,82128):- do(82118).
+
+%82119* how to deduct real estate tax when selling home
+deduct(property_taks(sell(P,_),_),_,82119):-P=..[X|_], X=home, do(82119).
+property_taks(sell(home(_,_,_),_),82119):-do(82119).
+form(1099,s,homeseller):- do(82119).
+form(1099,s,homebuyer):- do(82119).
+publication(530,_):-do(82119).
+publication(523,_):-do(82119).
+
+%82120* Can i deduct transfer (stamp) taxes on the sale of my home
+deduct(transfer_taks(sell(P,_),_),_,82120):-P=..[X|_], X=home, do(82120).
+ transfer_taks(sell(home(_,_,_),_),_):-do(82120).
+deduct(stamp_taks(sell(P,_),_),_,82120):-P=..[X|_], X=home,do(82120).
+ stamp_taks(sell(home(_,_,_),_),82120):-do(82120).
+ deduct(transfer_taks(_,_),_,82120).
+ deduct(stamp_taks(_,_),_,82120).
+amount_realized(home(_,_,_),82120):-do(82120).
+basis(home(X,homebuyer,_),how(calculate,_),82120):-var(X), do(82120).
+ home(_,homebuyer,82120).
+buy(home(_,_,_),82120). %:-do(82120).
+publication(523,_):-do(82120).
+
+%82121* do i need report gain if i sold my house (on my tax return)
+gain(report,when,82121):-do(82121).
+need(return(_,_),when,82121):- do(82121).
+sell(home(_,_,_),82121).
+need(report,when,82121). %:-do(82121).
+gain(sell(home(_,_,_),_),when,82121):- do(82121).
+publication(523,_):-do(82121).
+
+%%%%%%%%%%%%% continue
+%82122...* how do i report gain on sale of my house
+%82122...- how do i need report gain on sale of my house
+gain(report,how(report,_),82122):-do(82122), do(82125).
+gain(sell(home(_,_,_),_),how(report,_),82122):- do(82122), do(82125).
+%need(return(_,_),how(report,_),82122):- do(82122).
+form(1040,d,homeseller):- do(82122), do(82125).
+schedule(d,1040):- do(82122).
+worksheet(2,_):-do(82122), do(82125).
+worksheet(4,_):-do(82122), do(82125).
+keep(record(X,homeseller),what):-var(X), do(82122), do(82125).
+taks_rate(capital_gain(_,_),_):-do(82122).
+publication(523,_):-do(82122).
+
+%82123 What is installment sale
+what_is(installment_sale,_):-do(82123).
+gain(installment_sale,_,82123):-do(82123).
+publication(523,_):-do(82123).
+
+%82124 How to fill in tax return when i had installment sale of home
+gain(report,how(report,_),82124):-do(82124).
+return(installment_sale,homeseller):- do(82124).
+%return(gain(installment_sale,_,_),homeseller):- do(82124).
+gain(installment_sale,how(report,_),82124):- do(82124).
+gain(sell(home(_,_,_),_),how(report,_),82124):- do(82124).
+form(1040,b,homeseller):- do(82124).
+schedule(b,1040):- do(82124).
+schedule(1,1040):- do(82124).
+form(1040,a,_):-do(82124).
+need(ssn,_,82124):-do(82124).
+need(itin,_,82124):-do(82124).
+form(w7,X,itin):- var(X), do(82124).
+publication(537,_):-do(82124).
+publication(523,_):-do(82124).
+how(report,_).
+
+%82125 what is an example of reporting gain on selling a home
+gain(report,example,82125):-do(82125).
+
+%82126 can i exclude gain from selling my home if am not us citizen
+exclusion(sell(home(_,_,_),_),X,82126):-nonvar(X), X=nonresident, do(82126).
+deduct(gain(sell(_,_),_,_),X,82126):-nonvar(X), X=nonresident,do(82126).
+publication(523,_):-do(82126).
+
+%82127 how to exclude gain from home selling when my home was destroyed (condemned)
+exclusion(sell(home(_,_,_),_),homeseller,82127):-do(82127).
+destroy(home(X,homeseller,_),82127):-var(X), do(82127).
+condemn(home(X,homeseller,_),82127):-var(X), do(82127).
+deduct(gain(sell(P,_),_,_),homeseller,82127):-P=..[X|_], X=home, do(82127).
+publication(544,_):-do(82127).
+publication(523,_):-do(82127).
+
+%82128 how to exclude gain from the sale of a remainder interest in my home
+exclusion(sell(home(remainder_interest,_,_),_),homeseller,82128):-do(82128).
+ sell(home(X,_,_),_):-nonvar(X), X=remainder_interest, do(82128).
+ home(remainder_interest,_,82128):-do(82128).
+deduct(gain(sell(remainder_interest,_),_,_),homeseller,82128):-do(82128).
+ gain(sell(remainder_interest,_),_,82128):-do(82128).
+ sell(remainder_interest,_):-do(82128).
+publication(523,_):-do(82128).
+
+/* %%%% 14.01
+%83100 what is publication 530 about
+what_is(publication(530,_),_):-do(83100), !.
+publication(530,_):-do(83100).
+
+%83101* can i have tax credit when i buy home
+basis(home(columbia,homebuyer,_),decrease,83101):-do(83101).
+buy(home(X,_,_),83101):-nonvar(X), X=columbia, do(83101).
+tax_credit(claim,homebuyer,_,83101):-do(83101).
+tax_credit(home(buy,_,_),homebuyer,_,83101):-do(83101).
+tax_credit(home(columbia,_,_),homebuyer,_,83101):-do(83101).
+ home(columbia,homebuyer,83101):-do(83101).
+form(8859,X,homebuyer):-var(X), do(83101).
+publication(530,_):-do(83101).
+
+%13100 what records must i keep (== why must i keep record )
+%13100* how to keep records
+keep(record(X,_),what):- var(X), do(13100).
+keep(record(_,_),how):- do(13100).
+need(keep(record(X,_),what),_,13100):-var(X), do(13100).
+need(keep(record(_,_),how),_,13100):- do(13100).
+%publication(530,_):-do(13100).
+
+%13101* how long to keep records
+keep(record(X,_),how_long):- var(X), do(13101).
+need(keep(record(X,_),how_long),_,13101):-var(X), do(13101).
+limitations(period(_,_),_):-do(13101).
+
+%83102 who can receive mortgage interest credit
+mortgage_credit(X,_,83102):-var(X), do(83102).
+tax_credit(mortgage_credit(_,_,_),homebuyer,_,83102):-do(83102).
+publication(530,_):-do(83102).
+
+%83103 what is mortgage credit certificate (mcc)
+%83103 how can i get mcc (who can get mcc)
+mortgage_credit(X,_,83103):-var(X), do(83103).
+what_is(mcc(_,_),_):-do(83103).
+mcc(_,_):-do(83103).
+publication(530,_):-do(83103).
+
+%83104 how to claim mortgage credit
+mortgage_credit(claim,_,83104):- do(83104).
+deduct(mortgage_credit(_,_,_),_,83104):- do(83104).
+form(8396,X,_):- var(X), do(83104).
+form(1040,X,_):- var(X), do(83104).
+publication(530,_):-do(83104).
+
+%83105 in what cases should i repay mortgage interest credit
+%83105 what should i do if i sell home which buy using mcc
+mcc(_,_):-do(83105).
+sell(home(P,_,_),_):-nonvar(P), P=..[X|_], X=mcc, do(83105).
+ home(mcc(_,_),_,83105):-do(83105).
+refund(mortgage_credit(_,_,_),_):-do(83105).
+publication(523,_):-do(83105).
+publication(530,_):-do(83105).
+
+%83106 how to calculate mortgage interest credit
+mortgage_credit(report,how(calculate,_),83106):- do(83106).
+form(8396,X,_):- var(X), do(83106).
+publication(530,_):-do(83106).
+
+%83107 what limits may apply to my mortgage credit
+limit(mortgage_credit(_,_,_),_):- do(83107).
+form(1040,_,_):- do(83107).
+publication(530,_):-do(83107).
+
+%83108 in what cases mortgage credit must be divided
+%         with more than one person
+mortgage_credit(more,how(calculate,_),83108):- do(83108).
+mortgage_credit(divide,how(calculate,_),83108):- do(83108).
+publication(530,_):-do(83108).
+
+%83109 can i carry forward unused portion of my mortgage credit
+mortgage_credit(forward,how(calculate,_),83109):- do(83109).
+mortgage_credit(unused,how(calculate,_),83109):- do(83109).
+publication(530,_):-do(83109).
+
+%83110 what should i do when i refinance mortgage loan on which i get MCC
+mortgage_credit(refinance,how(calculate,_),83110):- do(83110).
+mortgage(refinance,_):- do(83110).
+form(8396,X,_):- var(X), do(83110).
+keep(record(mcc(_,_),_),what):-do(83110).
+ record(mcc(_,_),_):-do(83110).
+mcc(_,_):-do(83110).
+publication(530,_):-do(83110).
+
+%83111 How to deduct expenses of owning a home
+deduct(expense(home(_,_,_),_),homeowner(X,_),83111):-var(X), do(83111).
+deduction(expense(home(_,_,_),_),homeowner(_,_)):- do(83111).
+deduction(itemize,homeowner(_,_)):-do(83111).
+form(1040,a,homeowner(_,_)):-do(83111).
+publication(530,_):-do(83111).
+
+%83112 can i deduct my house monthly payments
+deduct(home(pay(monthly,_,_),_,_),homeowner(_,_),83112):-do(83112).
+home(pay(monthly,_,_),homeowner(_,_),83112):-do(83112).
+deduct(property_taks(home(_,_,_),_),homeowner(X,_),83112):-var(X), do(83112).
+  property_taks(home(_,_,_),83112):-do(83112).
+deduct(mortgage_interest,homeowner(X,_),83112):-var(X), do(83112).
+publication(530,_):-do(83112).
+
+deduction(property_taks(home(X,Y,S),Z),W):-  deduct(property_taks(home(X,Y,S),Z),W,_).
+deduction(mortgage_interest,W):- deduct(mortgage_interest,W,_).
+
+%83113 what can deduct minister(military) as homeowner
+deduct(property_taks(home(_,_,_),_),homeowner(military,_),83113):-do(83113).
+deduct(property_taks(home(_,_,_),_),homeowner(minister,_),83113):-do(83113).
+ homeowner(military,_):-do(83113).
+ homeowner(minister,_):-do(83113).
+deduct(mortgage_interest,homeowner(military,_),83113):-do(83113).
+deduct(mortgage_interest,homeowner(minister,_),83113):-do(83113).
+publication(530,_):-do(83113).
+
+%83114 what items can not i deduct in house payments
+cannot(deduct(home(_,_,_),homeowner(_,_),_),_):-do(83114).
+home(pay(monthly,_,_),homeowner(_,_),83114):-do(83114).
+home(pay(non_deductible,_,_),homeowner(_,_),83114):-do(83114).
+publication(530,_):-do(83114).
+
+%83115 83116 where to deduct real estate taxes
+deduct(property_taks(_,_),homeowner(_,_),83115):-do(83115), do(83116).
+form(1040,a,_):-do(83115).
+property_taks(_,83115):-do(83115), do(83116).
+publication(530,_):-do(83115).
+
+%83117 can i deduct delinquent tax of previous homeowner
+cannot(deduct(taks(delinquent,_),homeowner(_,_),_),_):-do(83117).
+deduct(taks(delinquent,_),homeowner(_,_),83117):-do(83117).
+ taks(delinquent,_):-do(83117).
+publication(530,_):-do(83117).
+
+%83118  cannot deduct the total you pay into the escrow account
+cannot(deduct(home(pay(_,_,_),_,_),homeowner(_,_),_),_):-do(83118).
+deduct(home(pay(_,_,_),_,_),homeowner(_,_),83118):-do(83118).
+publication(530,_):-do(83118).
+
+%83119 how to deduct real estate tax if i receive a refund of real estate taxes
+deduct(refund(property_taks(_,_),_),homeowner(_,_),83119):-do(83119).
+deduction(refund(property_taks(_,_),_),homeowner(_,_)):-do(83119).
+deduct(property_taks(decrease,_),homeowner(_,_),83119):-do(83119).
+publication(525,_):-do(83119).
+publication(530,_):-do(83119).
+
+%83120 how to deduct Real Estate Items taxes
+cannot(deduct(property_taks(_,_),homeowner(_,_),_),_):-do(83120).
+deduct(property_taks(non_deductible,_),homeowner(_,_),83120):-do(83120).
+property_taks(non_deductible,83120):-do(83120).
+publication(530,_):-do(83120).
+
+%83121 can i deduct amount paied for local benefits
+cannot(deduct(benefit(local,_),homeowner(_,_),_),_):-do(83121).
+deduct(benefit(local,_),homeowner(_,_),83121):-do(83121).
+deduction(benefit(local,_),homeowner(_,_)):-do(83121).
+  benefit(local,_):-do(83121).
+publication(530,_):-do(83121).
+
+%83122 can i deduct homeowners association assessments
+cannot(deduct(association,homeowner(_,_),_),_):-do(83122).
+deduct(association,homeowner(_,_),83122):-do(83122).
+deduction(association,homeowner(_,_)):-do(83122).
+publication(530,_):-do(83122).
+
+%83123 how can i deduct property tax in the case of cooperative apartment
+deduct(property_taks(home(cooperative,_,_),_),homeowner(_,_),83123):-do(83123).
+home(cooperative,homeowner(_,_),83123):-do(83123).
+deduct(property_taks(home(_,_,_),_),tenant,83123):-do(83123).
+deduct(property_taks(home(_,_,_),_),stockholder,83123):- do(83123).
+deduct(refund(property_taks(_,_),_),homeowner(corporation,_),83123):-do(83123).
+deduction(refund(property_taks(_,_),_),homeowner(corporation,_)):-do(83123).
+homeowner(corporation,_):-do(83123).
+publication(530,_):-do(83123).
+
+%83124 can i deduct mortgage credit interest
+deduct(mortgage_interest,homeowner(X,_),83124):-var(X), do(83124).
+deduction(mortgage_interest,homeowner(X,_)):-var(X), do(83124).
+form(1040,a,homeowner(X,_)):-var(X), do(83124).
+mortgage(refinance,_):- do(83124).
+limit(deduct(mortgage_interest,homeowner(_,_),_),_):- do(83124).
+limit(deduction(mortgage_interest,homeowner(_,_)),_):- do(83124).
+publication(936,_):-do(83124).
+publication(530,_):-do(83124).
+
+%83125 what should i do if i receive a refund of home mortgage interest
+deduct(refund(mortgage_interest,_),homeowner(_,_),83125):-do(83125).
+deduction(refund(mortgage_interest,_),homeowner(_,_)):-do(83125).
+refund(mortgage_interest,_):-do(83125).
+record(mortgage_interest,_):-do(83125).
+publication(525,_):-do(83125).
+publication(530,_):-do(83125).
+
+%%%% 17.01
+%83126 what can i deduct as home mortgage interest
+deduct(mortgage_interest,homeowner(_,_),83126):-do(83126).
+deduction(mortgage_interest,homeowner(_,_)):-do(83126).
+loan(home(_,_,_),_):-do(83126).
+loan(home_equity,_):-do(83126).
+loan(mortgage(_,_),_):-do(83126).
+pay(interest(advance,_),_,_):-do(83126).
+ interest(advance,_):-do(83126).
+deduct(penalty(mortgage_interest,_),homeowner(_,_),83126):-do(83126).
+ penalty(mortgage_interest,_):-do(83126).
+deduction(penalty(mortgage_interest,_),homeowner(_,_)):-do(83126).
+publication(530,_):-do(83126).
+
+%83127 what is ground rent
+%83127 can i deduct ground rent as mortgage interest
+deduct(mortgage_interest,homeowner(_,_),83127):-do(83127).
+deduction(mortgage_interest,homeowner(_,_)):-do(83127).
+ground_rent(_,_):-do(83127).
+deduct(ground_rent(_,_),homeowner(_,_),83127):-do(83127).
+publication(530,_):-do(83127).
+
+%83128 how can i deduct home mortgage interest in the case of cooperative apartment
+deduct(mortgage_interest,homeowner(_,_),83128):-do(83128).
+deduction(mortgage_interest,homeowner(_,_)):-do(83128).
+home(cooperative,homeowner(_,_),83128):-do(83128).
+deduct(refund(mortgage_interest,_),homeowner(_,_),83128):-do(83128).
+deduction(refund(mortgage_interest,_),homeowner(_,_)):-do(83128).
+form(1098,_,homeowner(_,_)):-do(83128).
+publication(936,_):-do(83128).
+publication(530,_):-do(83128).
+
+%83129 can i deduct Mortgage Interest Paid at Settlement
+deduct(mortgage_interest,homeowner(_,_),83129):-do(83129).
+deduction(mortgage_interest,homeowner(_,_)):-do(83129).
+pay(settlement,_,_):-do(83129).
+form(1040,a,homeowner(_,_)):-do(83129).
+publication(530,_):-do(83129).
+
+%83130 what are points
+%83130, 83131 how to deduct points
+%83130 how to use test for points deduction
+deduct(mortgage_interest,homeowner(_,_),83130):-do(83130).
+deduction(mortgage_interest,homeowner(_,_)):-do(83130).
+deduct(points,homeowner(_,_),83130):-do(83130).
+deduction(points,homeowner(_,_)):-do(83130).
+what_is(points,_):-do(83130), !.
+loan(home(_,_,_),_):-do(83130).
+loan(mortgage(_,_),_):-do(83130).
+test(points,_,83130):-do(83130).
+publication(535,_):-do(83130).
+publication(530,_):-do(83130).
+
+deduct(mortgage_interest,homeowner(_,_),83131):-do(83131).
+deduction(mortgage_interest,homeowner(_,_)):-do(83131).
+deduct(points,homeowner(_,_),83131):-do(83131).
+deduction(points,homeowner(_,_)):-do(83131).
+publication(530,_):-do(83131).
+
+%83132 can i deduct points paid by me as homeseller
+deduct(mortgage_interest,homeowner(_,_),83132):-do(83132).
+deduction(mortgage_interest,homeowner(_,_)):-do(83132).
+deduct(points,homeseller,83132):-do(83132).
+deduction(points,homeseller):-do(83132).
+cannot(deduct(points,homeseller),_):-do(83132).
+amount_realized(home(_,homeseller,_),_):-do(83132).
+pay(points,homeseller,_):-do(83132).
+publication(530,_):-do(83132).
+
+%83133 deduct points when funds provided are less than points
+deduct(mortgage_interest,homeowner(_,_),83133):-do(83133).
+deduction(mortgage_interest,homeowner(_,_)):-do(83133).
+deduct(points,homeowner(_,_),83133):-do(83133).
+deduction(points,homeowner(_,_)):-do(83133).
+test(points,_,83133):-do(83133).
+publication(530,_):-do(83133).
+
+%83134 /Excess/ points
+deduct(mortgage_interest,homeowner(_,_),83134):-do(83134).
+deduction(mortgage_interest,homeowner(_,_)):-do(83134).
+deduct(points,homeowner(_,_),83134):-do(83134).
+deduction(points,homeowner(_,_)):-do(83134).
+test(points,_,83134):-do(83134).
+form(1098,_,homeowner(_,_)):-do(83134).
+publication(530,_):-do(83134).
+
+%83135 how to deduct points when mortgage ending early
+%83135 what should i do with points when mortgage ending early
+deduct(mortgage_interest,homeowner(_,_),83135):-do(83135).
+deduction(mortgage_interest,homeowner(_,_)):-do(83135).
+deduct(points,homeowner(_,_),83135):-do(83135).
+deduction(points,homeowner(_,_)):-do(83135).
+deduct(mortgage(full,_),homeowner(_,_),83135):- do(83135).
+deduct(mortgage(early,_),homeowner(_,_),83135):-do(83135).
+mortgage(full,_):- do(83135).
+mortgage(early,_):-do(83135).
+publication(530,_):-do(83135).
+
+%83136 where to deduct home mortgage interest %%% ????
+deduct(mortgage_interest,homeowner(_,_),83136):-do(83136).
+deduction(mortgage_interest,homeowner(_,_)):-do(83136).
+form(1040,a,homeowner(_,_)):-do(83136).
+form(1098,_,homeowner(_,_)):-do(83136).
+publication(530,_):-do(83136).
+
+%83137 who receive mortgage interest statement
+%83137 should i send mortgage interest statement to irs
+record(mortgage_interest,_):-do(83137).
+form(1098,_,homeowner(_,_)):-do(83137).
+pay(settlement,_,_):-do(83137).
+form(1040,a,homeowner(_,_)):-do(83137).
+refund(mortgage_interest,_):-do(83137).
+publication(530,_):-do(83137).
+
+%10103 10106 can i deduct ira contribution from taxable income
+%10103 10106 what are ira benefits
+benefit(ira(roth,_),_):-do(10103), do(10106).
+ira(roth,_):-do(10103).
+cannot(deduct(contribution(P,_),_,_),_):-P=..[X|_], X=ira, do(10103), do(10106).
+deduct(contribution(ira(_,_),_),_,10103):-do(10103), do(10106).
+ira(withdrawal,_):-do(10103), do(10106).
+income_taks(ira(withdrawal,_),_):-do(10103), do(10106).
+
+%10104 can i convert money to a roth ira from traditional ira
+ira(roth,_):-do(10104), do(10106).
+ira(traditional,_):-do(10104), do(10106).
+convert(ira(_,_),_):-do(10104), do(10106).
+taxable_income(ira(traditional,_),_):-do(10104), do(10106).
+deduct(contribution(ira(_,_),_),_,10104):-do(10104), do(10106).
+ira(age,_):-do(10104), do(10106).
+ira(agi(modified,_),_):-do(10104), do(10106).
+contribution(ira(_,_),_):-do(10104), do(10106).
+ira(distribution,_):-do(10104), do(10106).
+
+%10105 can i withdraw funds from IRA for educational expenses
+ira(new,_):-do(10105), do(10106).
+ira(withdraw,_):-do(10105), do(10106).
+taxable_income(ira(withdraw,_),_):-do(10105), do(10106).
+ira(buy(home(first,_,_),_),_):-do(10105), do(10106).
+ buy(home(first,_,_),_):-do(10105).
+ home(first,_,_).
+ira(expense(education,_),_):-do(10105), do(10106).
+ expense(education,_):-do(10105).
+
+publication(17,_):-do(10106).
+publication(590,_):-do(10106).
+
+%52100 what are tax benefits for parents with 1 child
+%52100 what is child tax credit
+tax_credit(child(_,_),parent,_,52100):-do(52100).
+taks(benefit(child(_,_),_),parent):-do(52100).
+benefit(child(_,_),parent):-do(52100).
+
+%52101 what tax credit can i receive if i have more than 3 children
+%52101 are there income (agi) restrictions on child tax credit
+%52101 how do you claim child tax credit
+tax_credit(child(_,_),parent,_,52101):-do(52101).
+agi(modified,parent):-do(52101).
+form(1040,_,parent):-do(52101).
+form(8812,_,parent):-do(52101).
+publication(17,_):-do(52101).
+
+%tax_credit(higher_education,_,_,52100):-do(52100). */
+
+
+%%%%%%%%%%%%%%%%%%%%  COMMON  PREDICATES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+what_is(P,_):- P, !.
+
+who_is(_,_):-fail.
+
+taxable_income(X,Y):- taxable_earned_income(X,Y).
+earned_income(X,Y):- taxable_earned_income(X,Y).
+
+adjusted_basis(X,_,Z):-basis(X,increase,Z).
+adjusted_basis(X,_,Z):-basis(X,decrease,Z).
+adjusted_basis(X,_,Z):-basis(X,adjustment,Z).
+
+do(N):-do1(N), !.
+do(N):-do5(N), !.
+do(N):-do8(N), !.
+do(N):-do83(N), !.
+do(N):- interpreter, int_text(N,Str), iassert(Str), !.
+do(N):- int_text(N,Nstr),
+        concat([" Information on number ",Nstr," is absent."],Str),
+        iassert(Str), !.
+

@@ -1,0 +1,41 @@
+// ------------------------------------------------------------------
+// Transitive dependencies of this project determined from the
+// maven pom organized by organization.
+// ------------------------------------------------------------------
+
+Apache OpenNLP CasEditor Plugin
+
+
+From: 'QOS.ch' (http://www.qos.ch)
+
+  - SLF4J API Module (http://www.slf4j.org) org.slf4j:slf4j-api:jar:2.0.17
+    License: MIT  (https://opensource.org/license/mit)
+
+
+From: 'The Apache Software Foundation' (https://www.apache.org/)
+
+  - Apache OpenNLP Tools (https://www.apache.org/opennlp/opennlp-tools/) org.apache.opennlp:opennlp-tools:jar:2.5.7
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - Apache UIMA Base: jVinci: Vinci Transport Library (https://uima.apache.org) org.apache.uima:jVinci:bundle:3.6.1
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - Apache UIMA Base: uimaj-adapter-vinci: Vinci Adapter (https://uima.apache.org) org.apache.uima:uimaj-adapter-vinci:bundle:3.6.1
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - Apache UIMA Base: uimaj-core (https://uima.apache.org) org.apache.uima:uimaj-core:bundle:3.6.1
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - Apache UIMA Base: uimaj-cpe: Collection Processing Engine (https://uima.apache.org) org.apache.uima:uimaj-cpe:bundle:3.6.1
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - Apache UIMA Eclipse: uimaj-ep-cas-editor (https://uima.apache.org) org.apache.uima:uimaj-ep-cas-editor:jar:3.6.1
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - Apache UIMA Base: uimaj-tools: Tools (https://uima.apache.org) org.apache.uima:uimaj-tools:bundle:3.6.1
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+
+
+
+
+

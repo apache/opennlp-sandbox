@@ -1,0 +1,57 @@
+
+*****************************************************
+Summary
+-------
+Generated at: 2026-03-05T07:50:43+05:30
+
+Notes: 0
+Binaries: 0
+Archives: 3
+Standards: 20
+
+Apache Licensed: 20
+Generated Documents: 0
+
+JavaDocs are generated, thus a license header is optional.
+Generated files do not require license headers.
+
+0 Unknown Licenses
+
+Archives:
+
+ + /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/test/resources/words.txt.gz
+ 
+ + /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/test/resources/chars.txt.gz
+ 
+ + /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/test/resources/tags.txt.gz
+ 
+*****************************************************
+  Files with Apache License headers will be marked AL
+  Binary files (which do not require any license headers) will be marked B
+  Compressed archives will be marked A
+  Notices, licenses etc. will be marked N
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/pom.xml
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/main/java/org/apache/opennlp/normalizer/Normalizer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/main/java/org/apache/opennlp/namecat/NameCategorizer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/main/java/org/apache/opennlp/ModelUtil.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/main/java/org/apache/opennlp/namefinder/SequenceTagging.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/main/java/org/apache/opennlp/namefinder/PredictionConfiguration.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/main/java/org/apache/opennlp/namefinder/Viterbi.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/main/java/org/apache/opennlp/namefinder/TokenIds.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/main/java/org/apache/opennlp/namefinder/WordIndexer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/main/java/org/apache/opennlp/namefinder/IndexTagger.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/main/java/org/apache/opennlp/namefinder/FeedDictionary.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/main/python/normalizer/normalizer.py
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/main/python/normalizer/date_generator.py
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/main/python/doccat/doccat.py
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/main/python/namecat/namecat.py
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/main/python/namefinder/split.py
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/main/python/namefinder/namefinder.py
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/test/java/org/apache/opennlp/namefinder/FeedDictionaryTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/test/java/org/apache/opennlp/namefinder/PredictTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/test/java/org/apache/opennlp/namefinder/WordIndexerTest.java
+  A     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/test/resources/words.txt.gz
+  A     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/test/resources/chars.txt.gz
+  A     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tf-ner-poc/src/test/resources/tags.txt.gz
+ 
+*****************************************************

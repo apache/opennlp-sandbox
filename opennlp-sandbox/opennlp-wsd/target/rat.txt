@@ -1,0 +1,99 @@
+
+*****************************************************
+Summary
+-------
+Generated at: 2026-03-05T07:50:41+05:30
+
+Notes: 1
+Binaries: 0
+Archives: 2
+Standards: 64
+
+Apache Licensed: 64
+Generated Documents: 0
+
+JavaDocs are generated, thus a license header is optional.
+Generated files do not require license headers.
+
+0 Unknown Licenses
+
+Archives:
+
+ + /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/resources/senseval3/EnglishLS.train.gz
+ 
+ + /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/resources/senseval3/EnglishLS.train.key.gz
+ 
+*****************************************************
+  Files with Apache License headers will be marked AL
+  Binary files (which do not require any license headers) will be marked B
+  Compressed archives will be marked A
+  Notices, licenses etc. will be marked N
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/pom.xml
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/WSDEvaluationMonitor.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/SynNode.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/IMSWSDSequenceValidator.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/WSDSample.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/WSDHelper.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/WordPOS.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/datareader/Sentence.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/datareader/Paragraph.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/datareader/SensevalReader.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/datareader/Word.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/datareader/SemcorReaderExtended.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/WSDEvaluator.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/MFS.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/FeaturesExtractor.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/Lesk.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/WSDParameters.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/Disambiguator.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/WSDisambiguatorME.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/WSDDefaultParameters.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/WSDModel.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/WTDIMS.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/WSDisambiguatorFactory.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/AbstractWSDisambiguator.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/IMSWSDContextGenerator.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/LeskParameters.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/WSDSampleStream.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/WSDContextGenerator.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/disambiguator/WordSense.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/cmdline/disambiguator/DisambiguatorTool.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/cmdline/disambiguator/DisambiguatorEvaluatorParams.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/cmdline/disambiguator/DisambiguatorToolParams.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/cmdline/disambiguator/DisambiguatorEvaluatorTool.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/main/java/opennlp/tools/cmdline/wsd/WSDModelLoader.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/WSDisambiguatorFactoryTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/WSDisambiguatorMETest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/IMSWSDSequenceValidatorTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/WSDSampleTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/MFSTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/IMSWSDContextGeneratorTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/datareader/WordTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/datareader/SensevalReaderTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/datareader/SemcorReaderExtendedTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/datareader/SentenceTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/datareader/ParagraphTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/LeskEvaluatorIT.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/WSDDefaultParametersTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/SynNodeTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/AbstractEvaluatorTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/WordSenseTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/MFSEvaluatorIT.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/WSDSampleStreamTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/LeskParametersTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/WTDIMSTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/AbstractDisambiguatorTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/WordPOSTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/WSDEvaluatorIT.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/FeaturesExtractorTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/LeskTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/disambiguator/WSDModelTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/cmdline/disambiguator/DisambiguatorEvaluatorToolTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/cmdline/disambiguator/DisambiguatorToolTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/cmdline/wsd/WSDModelLoaderTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/java/opennlp/tools/AbstractTest.java
+  A     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/resources/senseval3/EnglishLS.train.gz
+  A     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/resources/senseval3/EnglishLS.train.key.gz
+  N     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-wsd/src/test/resources/semcor3.0/LICENSE
+ 
+*****************************************************

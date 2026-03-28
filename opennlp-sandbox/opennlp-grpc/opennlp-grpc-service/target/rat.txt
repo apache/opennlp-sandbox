@@ -1,0 +1,53 @@
+
+*****************************************************
+Summary
+-------
+Generated at: 2026-03-05T07:50:38+05:30
+
+Notes: 0
+Binaries: 0
+Archives: 2
+Standards: 19
+
+Apache Licensed: 19
+Generated Documents: 0
+
+JavaDocs are generated, thus a license header is optional.
+Generated files do not require license headers.
+
+0 Unknown Licenses
+
+Archives:
+
+ + /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/test/resources/models/opennlp-models-pos-test.jar
+ 
+ + /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/test/resources/models/recursive/opennlp-pos-rec-test.jar
+ 
+*****************************************************
+  Files with Apache License headers will be marked AL
+  Binary files (which do not require any license headers) will be marked B
+  Compressed archives will be marked A
+  Notices, licenses etc. will be marked N
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/pom.xml
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java/opennlp/service/SentenceDetectorService.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java/opennlp/service/PosTaggerService.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java/opennlp/service/exception/ServiceException.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java/opennlp/service/ModelFinderUtil.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java/opennlp/service/classpath/DirectoryModelFinder.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java/opennlp/service/ExceptionAware.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java/opennlp/service/CacheAware.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java/opennlp/service/TokenizerService.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java/opennlp/service/ModelAware.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java/opennlp/OpenNLPServer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/resources/log4j2.xml
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/test/java/opennlp/service/TokenizerServiceTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/test/java/opennlp/service/AbstractServiceTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/test/java/opennlp/service/PosTaggerServiceTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/test/java/opennlp/service/SentenceDetectorServiceTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/test/java/opennlp/service/stubs/TestStreamObserver.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/test/java/opennlp/OpenNLPServerIT.java
+  A     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/test/resources/models/opennlp-models-pos-test.jar
+  A     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/test/resources/models/recursive/opennlp-pos-rec-test.jar
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/test/resources/config-test.ini
+ 
+*****************************************************

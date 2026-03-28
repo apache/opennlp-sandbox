@@ -1,0 +1,37 @@
+
+*****************************************************
+Summary
+-------
+Generated at: 2026-03-05T07:50:33+05:30
+
+Notes: 0
+Binaries: 0
+Archives: 0
+Standards: 11
+
+Apache Licensed: 11
+Generated Documents: 0
+
+JavaDocs are generated, thus a license header is optional.
+Generated files do not require license headers.
+
+0 Unknown Licenses
+
+*****************************************************
+  Files with Apache License headers will be marked AL
+  Binary files (which do not require any license headers) will be marked B
+  Compressed archives will be marked A
+  Notices, licenses etc. will be marked N
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-tools/pom.xml
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-tools/src/main/java/org/apache/opennlp/corpus_server/tools/ReplaceTypeSystem.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-tools/src/main/java/org/apache/opennlp/corpus_server/tools/SearchCorpus.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-tools/src/main/java/org/apache/opennlp/corpus_server/tools/CorpusBackup.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-tools/src/main/java/org/apache/opennlp/corpus_server/tools/CreateTaskQueue.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-tools/src/main/java/org/apache/opennlp/corpus_server/tools/DropCorpus.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-tools/src/main/java/org/apache/opennlp/corpus_server/tools/CASImporter.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-tools/src/main/java/org/apache/opennlp/corpus_server/tools/RemoveCAS.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-tools/src/main/java/org/apache/opennlp/corpus_server/tools/FileUtil.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-tools/src/main/java/org/apache/opennlp/corpus_server/tools/CreateCorpus.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-tools/bin/cs-tools
+ 
+*****************************************************

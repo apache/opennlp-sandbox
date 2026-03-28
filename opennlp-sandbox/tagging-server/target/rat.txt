@@ -1,0 +1,45 @@
+
+*****************************************************
+Summary
+-------
+Generated at: 2026-03-05T07:50:42+05:30
+
+Notes: 0
+Binaries: 0
+Archives: 0
+Standards: 19
+
+Apache Licensed: 19
+Generated Documents: 0
+
+JavaDocs are generated, thus a license header is optional.
+Generated files do not require license headers.
+
+0 Unknown Licenses
+
+*****************************************************
+  Files with Apache License headers will be marked AL
+  Binary files (which do not require any license headers) will be marked B
+  Compressed archives will be marked A
+  Notices, licenses etc. will be marked N
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tagging-server/feature.xml
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tagging-server/pom.xml
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tagging-server/src/main/java/org/apache/opennlp/tagging_server/namefind/DefaultRawTextNameFinderFactory.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tagging-server/src/main/java/org/apache/opennlp/tagging_server/namefind/NameFinderResource.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tagging-server/src/main/java/org/apache/opennlp/tagging_server/namefind/BratNameFinderResource.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tagging-server/src/main/java/org/apache/opennlp/tagging_server/namefind/RawTextNameFinderFactory.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tagging-server/src/main/java/org/apache/opennlp/tagging_server/POSTaggerResource.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tagging-server/src/main/java/org/apache/opennlp/tagging_server/TaggingServerApplication.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tagging-server/src/main/java/org/apache/opennlp/tagging_server/ModelUtil.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tagging-server/src/main/java/org/apache/opennlp/tagging_server/tokenize/TokenizerResource.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tagging-server/src/main/java/org/apache/opennlp/tagging_server/TaggingServerBundle.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tagging-server/src/main/java/org/apache/opennlp/tagging_server/sentdetect/SentenceDetectorResource.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tagging-server/src/main/java/org/apache/opennlp/tagging_server/ModelServiceKeys.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tagging-server/src/main/java/org/apache/opennlp/tagging_server/postag/POSTaggerResource.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tagging-server/src/main/java/org/apache/opennlp/tagging_server/ServiceUtil.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tagging-server/src/main/resources/htmls/annotation-editor.js
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tagging-server/src/main/resources/htmls/index.html
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tagging-server/src/main/resources/htmls/opennlp-demo.js
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/tagging-server/model-bundle.xml
+ 
+*****************************************************

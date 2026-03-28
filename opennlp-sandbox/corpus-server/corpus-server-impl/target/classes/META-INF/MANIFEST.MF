@@ -1,0 +1,52 @@
+Manifest-Version: 1.0
+Build-Jdk-Spec: 21
+Bundle-Activator: org.apache.opennlp.corpus_server.impl.Activator
+Bundle-ClassPath: .,uimaj-core-3.6.1.jar,slf4j-api-2.0.17.jar,Lucas-2.3.
+ 1.jar,lucene-core-2.9.3.jar,lucene-snowball-2.9.3.jar,lucene-memory-2.9
+ .3.jar,lucene-highlighter-2.9.3.jar,google-collections-0.9.jar
+Bundle-Description: The Apache Software Foundation provides support for 
+ the Apache community of open-source software projects.    The Apache pr
+ ojects are characterized by a collaborative, consensus based developmen
+ t process, an open and    pragmatic software license, and a desire to c
+ reate high quality software that leads the way in its field.    We cons
+ ider ourselves not simply a group of projects sharing a server, but rat
+ her a community of developers    and users.
+Bundle-DocURL: https://www.apache.org/
+Bundle-License: https://www.apache.org/licenses/LICENSE-2.0.txt
+Bundle-ManifestVersion: 2
+Bundle-Name: Apache OpenNLP Corpus Server Implementation
+Bundle-SymbolicName: corpus-server-impl
+Bundle-Vendor: The Apache Software Foundation
+Bundle-Version: 2.5.8.SNAPSHOT
+Created-By: Apache Maven Bundle Plugin 6.0.2
+Embed-Dependency: *;scope=compile;inline=false
+Embed-Transitive: true
+Embedded-Artifacts: uimaj-core-3.6.1.jar;g="org.apache.uima";a="uimaj-co
+ re";v="3.6.1",slf4j-api-2.0.17.jar;g="org.slf4j";a="slf4j-api";v="2.0.1
+ 7",Lucas-2.3.1.jar;g="org.apache.uima";a="Lucas";v="2.3.1",lucene-core-
+ 2.9.3.jar;g="org.apache.lucene";a="lucene-core";v="2.9.3",lucene-snowba
+ ll-2.9.3.jar;g="org.apache.lucene";a="lucene-snowball";v="2.9.3",lucene
+ -memory-2.9.3.jar;g="org.apache.lucene";a="lucene-memory";v="2.9.3",luc
+ ene-highlighter-2.9.3.jar;g="org.apache.lucene";a="lucene-highlighter";
+ v="2.9.3",google-collections-0.9.jar;g="com.google.collections";a="goog
+ le-collections";v="0.9"
+Export-Package: org.apache.opennlp.corpus_server.impl;uses:="org.apache.
+ opennlp.corpus_server,org.apache.opennlp.corpus_server.search,org.apach
+ e.opennlp.corpus_server.store,org.apache.opennlp.corpus_server.taskqueu
+ e,org.osgi.framework";version="2.5.8"
+Import-Package: com.apple.eio,javax.management,javax.sql,javax.swing,jav
+ ax.swing.filechooser,javax.xml.parsers,javax.xml.transform,javax.xml.tr
+ ansform.dom,javax.xml.transform.sax,javax.xml.transform.stream,org.apac
+ he.derby.jdbc,org.apache.log4j,org.apache.logging.log4j;resolution:=opt
+ ional,org.apache.logging.log4j.core;resolution:=optional,org.apache.log
+ ging.log4j.core.config;resolution:=optional,org.apache.logging.log4j.co
+ re.filter;resolution:=optional,org.apache.logging.log4j.message;resolut
+ ion:=optional,org.apache.logging.log4j.spi;resolution:=optional,org.apa
+ che.logging.slf4j;resolution:=optional,org.apache.opennlp.corpus_server
+ ,org.apache.opennlp.corpus_server.search,org.apache.opennlp.corpus_serv
+ er.store,org.apache.opennlp.corpus_server.taskqueue,org.osgi.framework;
+ version="[1.5,2)",org.slf4j.impl;resolution:=optional,org.w3c.dom,org.x
+ ml.sax,org.xml.sax.ext,org.xml.sax.helpers,org.apache.opennlp.corpus_se
+ rver,org.apache.derby.jdbc
+Require-Capability: osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=17))"
+Tool: Bnd-7.0.0.202310060912

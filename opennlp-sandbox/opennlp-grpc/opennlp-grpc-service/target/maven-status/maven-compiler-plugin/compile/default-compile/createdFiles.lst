@@ -1,0 +1,10 @@
+opennlp/service/ExceptionAware.class
+opennlp/service/SentenceDetectorService.class
+opennlp/service/ModelFinderUtil.class
+opennlp/service/TokenizerService.class
+opennlp/service/classpath/DirectoryModelFinder.class
+opennlp/service/CacheAware.class
+opennlp/OpenNLPServer.class
+opennlp/service/ModelAware.class
+opennlp/service/PosTaggerService.class
+opennlp/service/exception/ServiceException.class

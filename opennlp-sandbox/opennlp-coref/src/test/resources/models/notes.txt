@@ -1,0 +1,7 @@
+NOTES:
+
+(A) All files in: 'models/coref/en' are original versions available via Sourceforge repo (model version 1.4).
+Those are used as reference to check Coref model loading and processing (linking) with it.
+
+(B) The resources in: 'models/training/' - that is all *.events.gz files - are compressed copies of the events files found here:
+https://github.com/dpdearing/nlp/tree/master/lib/opennlp-1.5-en/coref

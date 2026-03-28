@@ -1,0 +1,198 @@
+
+*****************************************************
+Summary
+-------
+Generated at: 2026-03-05T07:50:40+05:30
+
+Notes: 6
+Binaries: 3
+Archives: 1
+Standards: 158
+
+Apache Licensed: 158
+Generated Documents: 0
+
+JavaDocs are generated, thus a license header is optional.
+Generated files do not require license headers.
+
+0 Unknown Licenses
+
+Archives:
+
+ + /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/test/resources/new_vn.zip
+ 
+*****************************************************
+  Files with Apache License headers will be marked AL
+  Binary files (which do not require any license headers) will be marked B
+  Compressed archives will be marked A
+  Notices, licenses etc. will be marked N
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/RELEASE_NOTES.html
+  N     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/NOTICE
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/pom.xml
+  N     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/README.txt
+  N     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/LICENSE
+  N     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/readme/NOTICE
+  N     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/readme/LICENSE
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/assembly/assembly.xml
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/POSManager.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/ParseTreeChunk.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/TextSimilarityBagOfWords.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/ParseTreeMatcher.java
+  N     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/readme.txt
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/LemmaFormManager.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/TextProcessor.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/ParseTreeChunkListScorer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/ParseTreeChunkComparable.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/SentencePairMatchResult.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/ParseTreeMatcherDeterministic.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/GeneralizationListReducer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/LemmaPair.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/TokenObject.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/chunker2matcher/PhraseNode.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/chunker2matcher/WordNode.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/chunker2matcher/ParserChunker2MatcherProcessor.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/chunker2matcher/SyntacticTreeNode.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/chunker2matcher/ParserCacheSerializer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/chunker2matcher/SentenceNode.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/chunker2matcher/ParserConstants.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/chunker2matcher/ParserPure2MatcherProcessor.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/textsimilarity/EpistemicStatesTrainingSet.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/word2vec/W2VDistanceMeasurer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/enron_email_recognizer/EmailNormalizer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/enron_email_recognizer/EmailTrainingSetFormer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/nl2code/ObjectPhrase.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/nl2code/NL2Obj.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/nl2code/ObjectControlOp.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/nl2code/ObjectPhraseListForSentence.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/nl2code/NL2ObjCreateAssign.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/pattern_structure/PatternStructureWriter.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/pattern_structure/PhraseConcept.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/pattern_structure/LinguisticPatternStructure.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/pattern_structure/PhrasePatternStructure.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/matching/GeneralizationResult.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/matching/LemmaFormManager.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/matching/PhraseGroupGeneralizer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/matching/PhraseGeneralizer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/matching/ParseTreeNodeGeneralizer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/matching/NERPhraseGeneralizer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/matching/PartOfSpeechGeneralizer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/matching/LemmaGeneralizer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/VerbNetProcessor.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/ParseTreeNode.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/WordWordInterSentenceRelationArc.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/Triple.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/IGeneralizer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/ArcType.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/Pair.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/apps/SnippetToParagraph.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/apps/WebPageContentSentenceExtractor.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/apps/WebPageExtractor.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/apps/MultiSentenceSearchResultsProcessor.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/apps/MostFrequentWordsFromPageGetter.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/communicative_actions/CommunicativeActionsAttribute.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/parse_thicket/communicative_actions/CommunicativeActionsArcBuilder.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/utils/LevensteinDistanceFinder.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/utils/ValueSortMap.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/utils/StringDistanceMeasurer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/utils/Utils.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/utils/StringCleaner.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/utils/CountItemsList.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/utils/Pair.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/utils/PageFetcher.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/RelatedSentenceFinder.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/ContentGenerator.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/GeneratedSentenceProcessor.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/SpeechRecognitionResultsProcessor.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/HitBaseComparable.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/GoogleAutoCompleteQueryRunner.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/taxo_builder/DomainTaxonomyExtender.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/taxo_builder/CsvAdapter.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/taxo_builder/TaxonomySerializer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/taxo_builder/AriAdapter.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/taxo_builder/TaxoQuerySnapshotMatcher.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/WebSearchEngineResultsScraper.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/BingResponse.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/StoryDiscourseNavigator.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/HitBase.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/solr/SearchResultsReRankerRequestHandler.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/solr/cgRequestForm.html
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/solr/SyntGenRequestHandler.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/solr/WordDocBuilderSingleImageSearchCall.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/solr/NLProgram2CodeRequestHandler.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/solr/WordDocBuilderEndNotes.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/solr/ContentGeneratorRequestHandler.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/solr/WordDocBuilder.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/solr/IterativeSearchRequestHandler.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/solr/IterativeQueryComponent.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/solr/solrconfig.xml
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/solr/CommentsRel.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/solr/Comment.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/solr/QueryExpansionRequestHandler.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/Fragment.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/SearchResultsProcessor.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/SentenceTranslate.java.txt
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/RelatedSentenceFinderML.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/similarity/apps/ContentGeneratorSupport.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/fca/FcaWriter.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/fca/FormalConcept.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/fca/ConceptLattice.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/fca/BasicLevelMetrics.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/fca/RandomNoiseGenerator.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/fca/Measures.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/fca/FcaReader.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/fca/FcaConverter.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/jsmlearning/JSMLearnerOnLatticeBase.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/jsmlearning/JSMLearnerOnLatticeWithAbduction.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/jsmlearning/TreeKernelRunner.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/jsmlearning/FeatureSpaceCoverageProcessor.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/jsmlearning/JSMLearnerOnLatticeWithDeduction.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/jsmlearning/JSMDecision.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/jsmlearning/IntersectionSetBuilder.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/ProfileReaderWriter.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/doc_classifier/ClassifierTrainingSetIndexer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/doc_classifier/DocClassifier.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/doc_classifier/DocClassifierTrainingSetMultilingualExtender.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/doc_classifier/DocClassifierTrainingSetVerifier.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/utils/email/SMTPAuthenticator.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/utils/email/EmailSender.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/review_builder/ReviewObj.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/review_builder/MachineTranslationWrapper.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/review_builder/WebPageReviewExtractor.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/review_builder/ParserConstants.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/review_builder/MinedSentenceProcessor.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/review_builder/SentenceOriginalizer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/review_builder/ReviewBuilderRunner.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/review_builder/SentenceBeingOriginalized.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/relevanceVocabs/SynonymListFilter.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/relevanceVocabs/TopJWNLDictionary.java.txt
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/relevanceVocabs/PhraseProcessor.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/relevanceVocabs/WordDictionary.java.txt
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/relevanceVocabs/SynonymMap.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/relevanceVocabs/SentimentVocab.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/relevanceVocabs/POStags.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/contentgen/multithreaded/cgRequestForm.html
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/contentgen/multithreaded/nlProg2codeRequestForm.html
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/contentgen/multithreaded/Fragment.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/contentgen/multithreaded/MyEventListener.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/main/java/opennlp/tools/apps/contentgen/multithreaded/MyEvent.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/test/java/opennlp/tools/textsimilarity/GeneralizationListReducerTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/test/java/opennlp/tools/textsimilarity/ParseTreeChunkListScorerTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/test/java/opennlp/tools/textsimilarity/SyntMatcherTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/test/java/opennlp/tools/textsimilarity/ParseTreeChunkTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/test/java/opennlp/tools/textsimilarity/chunker2matcher/ParserChunker2MatcherProcessorTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/test/java/opennlp/tools/textsimilarity/chunker2matcher/PhraseNodeTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/test/java/opennlp/tools/textsimilarity/LemmaFormManagerTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/test/java/opennlp/tools/parse_thicket/pattern_structure/JSMLearnerOnLatticeTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/test/java/opennlp/tools/parse_thicket/apps/RelatedSentenceFinderTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/test/java/opennlp/tools/similarity/apps/utils/ValueSortMapTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/test/java/opennlp/tools/similarity/apps/taxo_builder/AriAdapterTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/test/java/opennlp/tools/similarity/apps/taxo_builder/TaxoQuerySnapshotMatcherTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/test/java/opennlp/tools/similarity/apps/taxo_builder/DomainTaxonomyExtenderTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/test/java/opennlp/tools/similarity/apps/SearchResultsProcessorTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/test/java/opennlp/tools/similarity/apps/SpeechRecognitionResultsProcessorTest.java
+  B     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/test/resources/sentence_parseObject.dat
+  A     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/test/resources/new_vn.zip
+  B     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/test/resources/taxonomies/irs_domTaxo.dat
+  B     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-similarity/src/test/resources/OpenNLP_Similarity_component.doc
+ 
+*****************************************************

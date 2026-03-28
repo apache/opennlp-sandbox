@@ -1,0 +1,732 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+   Licensed to the Apache Software Foundation (ASF) under one
+   or more contributor license agreements.  See the NOTICE file
+   distributed with this work for additional information
+   regarding copyright ownership.  The ASF licenses this file
+   to you under the Apache License, Version 2.0 (the
+   "License"); you may not use this file except in compliance
+   with the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing,
+   software distributed under the License is distributed on an
+   "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+   KIND, either express or implied.  See the License for the
+   specific language governing permissions and limitations
+   under the License.
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.apache</groupId>
+        <artifactId>apache</artifactId>
+        <version>37</version>
+        <relativePath />
+    </parent>
+
+    <groupId>org.apache.opennlp</groupId>
+    <artifactId>opennlp-sandbox</artifactId>
+    <version>2.5.8-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>Apache OpenNLP Sandbox</name>
+
+    <scm>
+        <connection>scm:git:https://github.com/apache/opennlp-sandbox.git</connection>
+        <developerConnection>scm:git:git@github.com:apache/opennlp-sandbox.git</developerConnection>
+        <url>https://github.com/apache/opennlp-sandbox.git</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <repositories>
+        <repository>
+            <id>apache.snapshots</id>
+            <name>Apache Snapshot Repository</name>
+            <url>https://repository.apache.org/snapshots</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </repository>
+    </repositories>
+
+    <mailingLists>
+        <mailingList>
+            <name>Apache OpenNLP Users</name>
+            <subscribe>users-subscribe@opennlp.apache.org</subscribe>
+            <unsubscribe>users-unsubscribe@opennlp.apache.org</unsubscribe>
+            <post>users@opennlp.apache.org</post>
+            <archive>https://mail-archives.apache.org/mod_mbox/opennlp-users/</archive>
+        </mailingList>
+
+        <mailingList>
+            <name>Apache OpenNLP Developers</name>
+            <subscribe>dev-subscribe@opennlp.apache.org</subscribe>
+            <unsubscribe>dev-unsubscribe@opennlp.apache.org</unsubscribe>
+            <post>dev@opennlp.apache.org</post>
+            <archive>https://mail-archives.apache.org/mod_mbox/opennlp-dev/</archive>
+        </mailingList>
+
+        <mailingList>
+            <name>Apache OpenNLP Commits</name>
+            <subscribe>commits-subscribe@opennlp.apache.org</subscribe>
+            <unsubscribe>commits-unsubscribe@opennlp.apache.org</unsubscribe>
+            <archive>https://mail-archives.apache.org/mod_mbox/opennlp-commits/</archive>
+        </mailingList>
+
+        <mailingList>
+            <name>Apache OpenNLP Issues</name>
+            <subscribe>issues-subscribe@opennlp.apache.org</subscribe>
+            <unsubscribe>issues-unsubscribe@opennlp.apache.org</unsubscribe>
+            <archive>https://mail-archives.apache.org/mod_mbox/opennlp-issues/</archive>
+        </mailingList>
+    </mailingLists>
+
+    <issueManagement>
+        <system>jira</system>
+        <url>https://issues.apache.org/jira/browse/OPENNLP</url>
+    </issueManagement>
+
+    <modules>
+        <module>caseditor-corpus-server-plugin</module>
+        <module>caseditor-opennlp-plugin</module>
+        <module>corpus-server</module>
+        <module>mahout-addon</module>
+        <module>mallet-addon</module>
+        <module>modelbuilder-addon</module>
+        <module>nlp-utils</module>
+        <module>opennlp-brat-annotator</module>
+        <module>opennlp-coref</module>
+        <module>opennlp-dl</module>
+        <module>opennlp-grpc</module>
+        <module>opennlp-similarity</module>
+        <module>opennlp-wsd</module>
+        <module>tf-ner-poc</module>
+        <module>summarizer</module>
+        <module>tagging-server</module>
+        <module>wikinews-importer</module>
+    </modules>
+
+    <properties>
+        <!-- Build Properties -->
+        <java.version>17</java.version>
+        <maven.version>3.3.9</maven.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <opennlp.tools.version>2.5.7</opennlp.tools.version>
+        <opennlp.models.version>1.3.0</opennlp.models.version>
+        <opennlp.forkCount>1.0C</opennlp.forkCount>
+
+        <commons-beanutils.version>1.11.0</commons-beanutils.version>
+        <commons-cli.version>1.11.0</commons-cli.version>
+        <commons-codec.version>1.21.0</commons-codec.version>
+        <commons-collections.version>3.2.2</commons-collections.version>
+        <commons-collections4.version>4.5.0</commons-collections4.version>
+        <commons-compress.version>1.28.0</commons-compress.version>
+        <commons-io.version>2.21.0</commons-io.version>
+        <commons-lang.version>2.6</commons-lang.version>
+        <commons-lang3.version>3.20.0</commons-lang3.version>
+        <commons-logging.version>1.3.5</commons-logging.version>
+        <commons-math3.version>3.6.1</commons-math3.version>
+
+        <slf4j.version>2.0.17</slf4j.version>
+        <log4j2.version>2.25.3</log4j2.version>
+
+        <uimaj.version>3.6.1</uimaj.version>
+        <jersey-client.version>2.41</jersey-client.version>
+        <jersey-server.version>2.47</jersey-server.version>
+        <jettison.version>1.5.4</jettison.version>
+
+        <junit.version>6.0.3</junit.version>
+
+        <coveralls.maven.plugin>4.3.0</coveralls.maven.plugin>
+        <jacoco.maven.plugin>0.8.14</jacoco.maven.plugin>
+        <maven.failsafe.plugin>3.5.5</maven.failsafe.plugin>
+        <forbiddenapis.plugin>3.10</forbiddenapis.plugin>
+        <mockito.version>3.9.0</mockito.version>
+
+        <license-maven-plugin.version>2.7.1</license-maven-plugin.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <artifactId>opennlp-tools</artifactId>
+                <groupId>${project.groupId}</groupId>
+                <version>${opennlp.tools.version}</version>
+            </dependency>
+            <dependency>
+                <artifactId>opennlp-tools-models</artifactId>
+                <groupId>${project.groupId}</groupId>
+                <version>${opennlp.tools.version}</version>
+            </dependency>
+
+            <dependency>
+                <artifactId>opennlp-tools</artifactId>
+                <groupId>${project.groupId}</groupId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+            </dependency>
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>log4j-over-slf4j</artifactId>
+                <version>${slf4j.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>commons-cli</groupId>
+                <artifactId>commons-cli</artifactId>
+                <version>${commons-cli.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>${commons-lang.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons-lang3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-codec</groupId>
+                <artifactId>commons-codec</artifactId>
+                <version>${commons-codec.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-compress</artifactId>
+                <version>${commons-compress.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-logging</groupId>
+                <artifactId>commons-logging</artifactId>
+                <version>${commons-logging.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-collections</groupId>
+                <artifactId>commons-collections</artifactId>
+                <version>${commons-collections.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-collections4</artifactId>
+                <version>${commons-collections4.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-math3</artifactId>
+                <version>${commons-math3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-beanutils</groupId>
+                <artifactId>commons-beanutils</artifactId>
+                <version>${commons-beanutils.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-api</artifactId>
+                <version>${log4j2.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-core</artifactId>
+                <version>${log4j2.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-slf4j2-impl</artifactId>
+                <version>${log4j2.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-params</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <configuration>
+                        <useReleaseProfile>false</useReleaseProfile>
+                        <goals>deploy</goals>
+                        <arguments>-Papache-release</arguments>
+                        <mavenExecutorId>forked-path</mavenExecutorId>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>3.8.0</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.felix</groupId>
+                    <artifactId>maven-bundle-plugin</artifactId>
+                    <version>6.0.2</version>
+                </plugin>
+                <!--
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-checkstyle-plugin</artifactId>
+                    <version>${checkstyle.plugin.version}</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>com.puppycrawl.tools</groupId>
+                            <artifactId>checkstyle</artifactId>
+                            <version>10.6.0</version>
+                        </dependency>
+                    </dependencies>
+                    <executions>
+                        <execution>
+                            <id>validate</id>
+                            <phase>validate</phase>
+                            <configuration>
+                                <configLocation>checkstyle.xml</configLocation>
+                                <consoleOutput>true</consoleOutput>
+                                <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                                <testSourceDirectories>${project.basedir}/src/test/java</testSourceDirectories>
+                                <violationSeverity>error</violationSeverity>
+                                <failOnViolation>true</failOnViolation>
+                            </configuration>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                -->
+                
+                <!-- Coverage analysis for tests -->
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${jacoco.maven.plugin}</version>
+                    <configuration>
+                        <excludes>
+                            <exclude>**/stemmer/*</exclude>
+                            <exclude>**/stemmer/snowball/*</exclude>
+                        </excludes>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>jacoco-prepare-agent</id>
+                            <goals>
+                                <goal>prepare-agent</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>jacoco-prepare-agent-integration</id>
+                            <goals>
+                                <goal>prepare-agent-integration</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>jacoco-report</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>report</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <!-- Report jacoco coverage to coveralls.io -->
+                <plugin>
+                    <groupId>org.eluder.coveralls</groupId>
+                    <artifactId>coveralls-maven-plugin</artifactId>
+                    <version>${coveralls.maven.plugin}</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <argLine>-Xmx2048m -Dfile.encoding=UTF-8</argLine>
+                        <forkCount>1</forkCount>
+                        <reuseForks>true</reuseForks>
+                        <failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
+                        <excludes>
+                            <exclude>**/*IT.java</exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${maven.failsafe.plugin}</version>
+                    <executions>
+                        <execution>
+                            <id>integration-test</id>
+                            <goals>
+                                <goal>integration-test</goal>
+                                <goal>verify</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <argLine>-Xmx2048m -Dfile.encoding=UTF-8</argLine>
+                        <forkCount>1</forkCount>
+                        <reuseForks>true</reuseForks>
+                        <excludes>
+                            <exclude>**/*Test.java</exclude>
+                        </excludes>
+                        <includes>
+                            <include>**/*IT.java</include>
+                        </includes>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>de.thetaphi</groupId>
+                    <artifactId>forbiddenapis</artifactId>
+                    <version>${forbiddenapis.plugin}</version>
+                    <configuration>
+                        <failOnUnsupportedJava>false</failOnUnsupportedJava>
+                        <bundledSignatures>
+                            <bundledSignature>jdk-deprecated</bundledSignature>
+                            <bundledSignature>jdk-non-portable</bundledSignature>
+                            <bundledSignature>jdk-internal</bundledSignature>
+                            <!-- don't allow unsafe reflective access: -->
+                            <bundledSignature>jdk-reflection</bundledSignature>
+                        </bundledSignatures>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <phase>validate</phase>
+                            <goals>
+                                <goal>check</goal>
+                                <goal>testCheck</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>license-maven-plugin</artifactId>
+                    <version>${license-maven-plugin.version}</version>
+                    <configuration>
+                        <useMissingFile>true</useMissingFile>
+                        <failOnMissing>true</failOnMissing>
+                        <includeTransitiveDependencies>true</includeTransitiveDependencies>
+                        <fileTemplate>/org/codehaus/mojo/license/third-party-file-groupByMultiLicense.ftl
+                        </fileTemplate>
+                        <excludedScopes>system,test</excludedScopes>
+                        <excludedGroups>${project.groupId}</excludedGroups>
+                        <licenseMerges>
+                            <licenseMerge>
+                                Apache License, Version 2.0 |
+                                Apache License, version 2.0 |
+                                Apache License Version 2 |
+                                Apache License Version 2.0 |
+                                Apache License version 2.0 |
+                                Apache 2 |
+                                Apache 2.0 |
+                                Apache-2.0 |
+                                Apache 2.0 License |
+                                Apache License, 2.0 |
+                                Apache License 2 |
+                                Apache License 2.0 |
+                                Apache Public License 2.0 |
+                                Apache Software License - Version 2.0 |
+                                Apache v2 |
+                                ASL, version 2 |
+                                The Apache License, Version 2.0 |
+                                The Apache Software License, Version 2.0
+                            </licenseMerge>
+                            <licenseMerge>
+                                Apache License |
+                                Apache Software Licenses
+                            </licenseMerge>
+                            <licenseMerge>
+                                BSD License |
+                                BSD license |
+                                BSD licence |
+                                BSD |
+                                The BSD License
+                            </licenseMerge>
+                            <licenseMerge>
+                                BSD 2-Clause License |
+                                BSD 2-Clause license |
+                            </licenseMerge>
+                            <licenseMerge>
+                                BSD 3-Clause License |
+                                BSD 3-Clause |
+                                BSD 3-clause |
+                                BSD-3-Clause |
+                                The BSD 3-Clause License |
+                                New BSD License |
+                                New BSD license
+                            </licenseMerge>
+                            <licenseMerge>
+                                Common Development and Distribution License (CDDL) v1.0 |
+                                COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0 |
+                                CDDL 1.0
+                            </licenseMerge>
+                            <licenseMerge>
+                                Common Development and Distribution License (CDDL) v1.1 |
+                                COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1 |
+                                CDDL 1.1 |
+                                Common Development and Distribution License (CDDL), Version 1.1
+                            </licenseMerge>
+                            <licenseMerge>
+                                Common Development and Distribution License |
+                                <!-- Multilicense, choosing CDDL -->
+                                CDDL+GPL |
+                                CDDL+GPL License |
+                                CDDL + GPLv2 with classpath exception
+                            </licenseMerge>
+                            <licenseMerge>
+                                Eclipse Public License, Version 1.0 |
+                                Eclipse Public License 1.0 |
+                                Eclipse Public License - v 1.0
+                            </licenseMerge>
+                            <licenseMerge>
+                                Eclipse Public License, Version 2.0 |
+                                EPL-2.0 |
+                                EPL 2.0
+                            </licenseMerge>
+                            <licenseMerge>
+                                Eclipse Distribution License, Version 1.0 |
+                                Eclipse Distribution License - v 1.0 |
+                                EDL 1.0
+                            </licenseMerge>
+                            <licenseMerge>
+                                MIT License |
+                                The MIT License |
+                                MIT license |
+                                MIT X11 License |
+                                MIT
+                            </licenseMerge>
+                            <licenseMerge>
+                                The GNU General Public License (GPL), Version 2, With Classpath Exception |
+                                GPL2 w/ CPE
+                            </licenseMerge>
+                            <licenseMerge>
+                                GNU Lesser General Public License (LGPL), Version 2.1 |
+                                LGPL, version 2.1 |
+                                GNU Lesser General Public License Version 2.1 |
+                                GNU Lesser General Public License, version 2.1
+                            </licenseMerge>
+                            <licenseMerge>
+                                Common Public License Version 1.0 |
+                                Common Public License - v 1.0
+                            </licenseMerge>
+                        </licenseMerges>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <release>${java.version}</release>
+                    <compilerArgument>-Xlint</compilerArgument>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.rat</groupId>
+                <artifactId>apache-rat-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-cli</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <phase>verify</phase>
+                        <configuration>
+                            <excludes>
+                                <exclude>release.properties</exclude>
+                                <exclude>.gitattributes</exclude>
+                                <exclude>.github/*</exclude>
+                                <exclude>**/*.md</exclude>
+                                <exclude>**/src/license/**</exclude>
+                                <!-- We do not ship files from test/resources, so ok to exclude -->
+                                <exclude>**/src/test/resources/**/*.txt</exclude>
+                                <exclude>**/src/test/resources/**/*.ari</exclude>
+                                <exclude>**/src/test/resources/**/*.csv</exclude>
+                                <exclude>**/src/test/resources/**/*.cxt</exclude>
+                                <exclude>**/src/test/resources/**/*.xml</exclude>
+                                <exclude>**/src/test/resources/**/*.sensemap</exclude>
+                                <exclude>**/src/test/resources/**/*.story</exclude>
+                                <exclude>**/src/test/resources/**/*.bin</exclude>
+                                <exclude>**/src/test/resources/**/tagfiles/*</exclude>
+                                <!-- These files do not allow a license header -->
+                                <exclude>**/src/main/resources/opennlp/cfg/an/*.txt</exclude>
+                                <exclude>**/src/main/resources/opennlp/cfg/wn/*.txt</exclude>
+                                <exclude>**/src/main/java/opennlp/tools/similarity/apps/taxo_builder/taxonomy.txt</exclude>
+                                <exclude>**/src/main/java/opennlp/tools/similarity/apps/gen.txt</exclude>
+                                <!-- These files are required for testing the coref component -->
+                                <exclude>**/src/test/resources/models/coref/en/acronyms</exclude>
+                                <exclude>**/src/test/resources/models/training/acronyms</exclude>
+                                <exclude>**/src/test/resources/models/coref/en/gen.fem</exclude>
+                                <exclude>**/src/test/resources/models/coref/en/gen.mas</exclude>
+                                <!-- These files are samples in wikinews-importer -->
+                                <exclude>**/samples/*.xmi</exclude>
+                                <!-- This is a log file of DerbyDB being created during test runs -->
+                                <exclude>**/derby.log</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <doclint>none</doclint>
+                    <release>${java.version}</release>
+                    <sourcepath>src/main/java</sourcepath>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>create-javadoc-jar</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <show>public</show>
+                            <quiet>false</quiet>
+                            <use>false</use> <!-- Speeds up the build of the javadocs -->
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>create-source-jar</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <phase>package</phase>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-eclipse-plugin</artifactId>
+                <version>2.10</version>
+                <configuration>
+                    <workspace>../</workspace>
+                    <workspaceCodeStylesURL>https://opennlp.apache.org/code-formatter/OpenNLP-Eclipse-Formatter.xml</workspaceCodeStylesURL>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce-java</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireJavaVersion>
+                                    <message>Java 17 or higher is required to compile this module</message>
+                                    <version>[${java.version},)</version>
+                                </requireJavaVersion>
+                                <requireMavenVersion>
+                                    <message>Maven 3.3.9 or higher is required to compile this module</message>
+                                    <version>[${maven.version},)</version>
+                                </requireMavenVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>de.thetaphi</groupId>
+                <artifactId>forbiddenapis</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>jacoco</id>
+            <properties>
+                <opennlp.forkCount>1</opennlp.forkCount>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+    </profiles>
+
+</project>

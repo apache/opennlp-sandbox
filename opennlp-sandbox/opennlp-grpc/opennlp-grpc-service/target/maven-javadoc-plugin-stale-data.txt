@@ -1,0 +1,82 @@
+-J-Duser.language=
+-J-Duser.country=
+@options
+@argfile
+-classpath
+'/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-api/target/opennlp-grpc-api-2.5.8-SNAPSHOT.jar:/home/joy/.m2/repository/io/grpc/grpc-netty-shaded/1.79.0/grpc-netty-shaded-1.79.0.jar:/home/joy/.m2/repository/io/grpc/grpc-core/1.79.0/grpc-core-1.79.0.jar:/home/joy/.m2/repository/com/google/guava/guava/33.5.0-android/guava-33.5.0-android.jar:/home/joy/.m2/repository/com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar:/home/joy/.m2/repository/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar:/home/joy/.m2/repository/com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar:/home/joy/.m2/repository/com/google/errorprone/error_prone_annotations/2.45.0/error_prone_annotations-2.45.0.jar:/home/joy/.m2/repository/io/grpc/grpc-api/1.79.0/grpc-api-1.79.0.jar:/home/joy/.m2/repository/org/codehaus/mojo/animal-sniffer-annotations/1.26/animal-sniffer-annotations-1.26.jar:/home/joy/.m2/repository/io/grpc/grpc-protobuf/1.79.0/grpc-protobuf-1.79.0.jar:/home/joy/.m2/repository/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar:/home/joy/.m2/repository/com/google/protobuf/protobuf-java/3.25.8/protobuf-java-3.25.8.jar:/home/joy/.m2/repository/com/google/api/grpc/proto-google-common-protos/2.63.2/proto-google-common-protos-2.63.2.jar:/home/joy/.m2/repository/io/grpc/grpc-stub/1.79.0/grpc-stub-1.79.0.jar:/home/joy/.m2/repository/io/grpc/grpc-services/1.79.0/grpc-services-1.79.0.jar:/home/joy/.m2/repository/org/apache/opennlp/opennlp-tools/2.5.7/opennlp-tools-2.5.7.jar:/home/joy/.m2/repository/org/apache/opennlp/opennlp-tools-models/2.5.7/opennlp-tools-models-2.5.7.jar:/home/joy/.m2/repository/info/picocli/picocli/4.7.7/picocli-4.7.7.jar:/home/joy/.m2/repository/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar:/home/joy/.m2/repository/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar'
+-encoding
+'UTF-8'
+-public
+--release
+17
+-sourcepath
+'/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java'
+-author
+-bottom
+'Copyright &#169; 2026 <a href="https://www.apache.org/">The Apache Software Foundation</a>. All rights reserved.'
+-charset
+'UTF-8'
+-d
+'/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs'
+-docencoding
+'UTF-8'
+-Xdoclint:none
+-doctitle
+'Apache OpenNLP gRPC Server 2.5.8-SNAPSHOT API'
+-notimestamp
+-version
+-windowtitle
+'Apache OpenNLP gRPC Server 2.5.8-SNAPSHOT API'
+'/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java/opennlp/service/SentenceDetectorService.java'
+'/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java/opennlp/service/PosTaggerService.java'
+'/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java/opennlp/service/exception/ServiceException.java'
+'/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java/opennlp/service/ModelFinderUtil.java'
+'/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java/opennlp/service/classpath/DirectoryModelFinder.java'
+'/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java/opennlp/service/ExceptionAware.java'
+'/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java/opennlp/service/CacheAware.java'
+'/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java/opennlp/service/TokenizerService.java'
+'/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java/opennlp/service/ModelAware.java'
+'/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java/opennlp/OpenNLPServer.java'
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-api/target/opennlp-grpc-api-2.5.8-SNAPSHOT.jar = 1772629151519
+/home/joy/.m2/repository/io/grpc/grpc-netty-shaded/1.79.0/grpc-netty-shaded-1.79.0.jar = 1772627470332
+/home/joy/.m2/repository/io/grpc/grpc-core/1.79.0/grpc-core-1.79.0.jar = 1772627467125
+/home/joy/.m2/repository/com/google/guava/guava/33.5.0-android/guava-33.5.0-android.jar = 1772627464171
+/home/joy/.m2/repository/com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar = 1772627463741
+/home/joy/.m2/repository/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar = 1772627463840
+/home/joy/.m2/repository/com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar = 1772627463911
+/home/joy/.m2/repository/com/google/errorprone/error_prone_annotations/2.45.0/error_prone_annotations-2.45.0.jar = 1772627463987
+/home/joy/.m2/repository/io/grpc/grpc-api/1.79.0/grpc-api-1.79.0.jar = 1772627464348
+/home/joy/.m2/repository/org/codehaus/mojo/animal-sniffer-annotations/1.26/animal-sniffer-annotations-1.26.jar = 1772627464223
+/home/joy/.m2/repository/io/grpc/grpc-protobuf/1.79.0/grpc-protobuf-1.79.0.jar = 1772627464371
+/home/joy/.m2/repository/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar = 1772627464416
+/home/joy/.m2/repository/com/google/protobuf/protobuf-java/3.25.8/protobuf-java-3.25.8.jar = 1772627464775
+/home/joy/.m2/repository/com/google/api/grpc/proto-google-common-protos/2.63.2/proto-google-common-protos-2.63.2.jar = 1772627465667
+/home/joy/.m2/repository/io/grpc/grpc-stub/1.79.0/grpc-stub-1.79.0.jar = 1772627464915
+/home/joy/.m2/repository/io/grpc/grpc-services/1.79.0/grpc-services-1.79.0.jar = 1772627464949
+/home/joy/.m2/repository/org/apache/opennlp/opennlp-tools/2.5.7/opennlp-tools-2.5.7.jar = 1772611253060
+/home/joy/.m2/repository/org/apache/opennlp/opennlp-tools-models/2.5.7/opennlp-tools-models-2.5.7.jar = 1772611253678
+/home/joy/.m2/repository/info/picocli/picocli/4.7.7/picocli-4.7.7.jar = 1772611253289
+/home/joy/.m2/repository/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar = 1772611253472
+/home/joy/.m2/repository/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar = 1772611253811
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/src/main/java = 1772611009105
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs/search-page.js = 1772629170992
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs/tag-search-index.js = 1772629170969
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs/module-search-index.js = 1772629170967
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs/serialized-form.html = 1772629170940
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs/type-search-index.js = 1772629170968
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs/overview-summary.html = 1772629170984
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs/link.svg = 1772629170991
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs/stylesheet.css = 1772629170989
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs/copy.svg = 1772629170990
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs/overview-tree.html = 1772629170946
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs/search.html = 1772629170983
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs/index.html = 1772629170949
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs/script.js = 1772629170989
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs/allclasses-index.html = 1772629170964
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs/allpackages-index.html = 1772629170966
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs/member-search-index.js = 1772629170968
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs/search.js = 1772629170991
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs/package-search-index.js = 1772629170968
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs/help-doc.html = 1772629170987
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs/index-all.html = 1772629170981
+/home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/.tmp-opennlp-sandbox/opennlp-sandbox/opennlp-grpc/opennlp-grpc-service/target/reports/apidocs/element-list = 1772629170860

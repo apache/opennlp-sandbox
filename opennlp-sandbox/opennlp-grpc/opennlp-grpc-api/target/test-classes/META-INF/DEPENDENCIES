@@ -1,0 +1,92 @@
+// ------------------------------------------------------------------
+// Transitive dependencies of this project determined from the
+// maven pom organized by organization.
+// ------------------------------------------------------------------
+
+Apache OpenNLP gRPC API
+
+
+From: 'an unknown organization'
+
+  - Google Android Annotations Library (http://source.android.com/) com.google.android:annotations:jar:4.1.1.4
+    License: Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
+
+  - FindBugs-jsr305 (http://findbugs.sourceforge.net/) com.google.code.findbugs:jsr305:jar:3.0.2
+    License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - Gson (https://github.com/google/gson) com.google.code.gson:gson:jar:2.12.1
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - Guava InternalFutureFailureAccess and InternalFutures (https://github.com/google/guava/failureaccess) com.google.guava:failureaccess:jar:1.0.3
+    License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - Guava: Google Core Libraries for Java (https://github.com/google/guava) com.google.guava:guava:bundle:33.5.0-android
+    License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - Guava ListenableFuture only (https://github.com/google/guava/listenablefuture) com.google.guava:listenablefuture:jar:9999.0-empty-to-avoid-conflict-with-guava
+    License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - J2ObjC Annotations (https://github.com/google/j2objc/) com.google.j2objc:j2objc-annotations:jar:3.1
+    License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - Protocol Buffers [Core] (https://developers.google.com/protocol-buffers/protobuf-java/) com.google.protobuf:protobuf-java:jar:3.25.8
+    License: BSD-3-Clause  (https://opensource.org/licenses/BSD-3-Clause)
+
+  - Protocol Buffers [Util] (https://developers.google.com/protocol-buffers/protobuf-java-util/) com.google.protobuf:protobuf-java-util:jar:3.25.8
+    License: BSD-3-Clause  (https://opensource.org/licenses/BSD-3-Clause)
+
+  - io.grpc:grpc-api (https://github.com/grpc/grpc-java) io.grpc:grpc-api:jar:1.79.0
+    License: Apache 2.0  (https://opensource.org/licenses/Apache-2.0)
+
+  - io.grpc:grpc-context (https://github.com/grpc/grpc-java) io.grpc:grpc-context:jar:1.79.0
+    License: Apache 2.0  (https://opensource.org/licenses/Apache-2.0)
+
+  - io.grpc:grpc-core (https://github.com/grpc/grpc-java) io.grpc:grpc-core:jar:1.79.0
+    License: Apache 2.0  (https://opensource.org/licenses/Apache-2.0)
+
+  - io.grpc:grpc-netty-shaded (https://github.com/grpc/grpc-java) io.grpc:grpc-netty-shaded:jar:1.79.0
+    License: Apache 2.0  (https://opensource.org/licenses/Apache-2.0)
+
+  - io.grpc:grpc-protobuf (https://github.com/grpc/grpc-java) io.grpc:grpc-protobuf:jar:1.79.0
+    License: Apache 2.0  (https://opensource.org/licenses/Apache-2.0)
+
+  - io.grpc:grpc-protobuf-lite (https://github.com/grpc/grpc-java) io.grpc:grpc-protobuf-lite:jar:1.79.0
+    License: Apache 2.0  (https://opensource.org/licenses/Apache-2.0)
+
+  - io.grpc:grpc-services (https://github.com/grpc/grpc-java) io.grpc:grpc-services:jar:1.79.0
+    License: Apache 2.0  (https://opensource.org/licenses/Apache-2.0)
+
+  - io.grpc:grpc-stub (https://github.com/grpc/grpc-java) io.grpc:grpc-stub:jar:1.79.0
+    License: Apache 2.0  (https://opensource.org/licenses/Apache-2.0)
+
+  - io.grpc:grpc-util (https://github.com/grpc/grpc-java) io.grpc:grpc-util:jar:1.79.0
+    License: Apache 2.0  (https://opensource.org/licenses/Apache-2.0)
+
+  - perfmark:perfmark-api (https://github.com/perfmark/perfmark) io.perfmark:perfmark-api:jar:0.27.0
+    License: Apache 2.0  (https://opensource.org/licenses/Apache-2.0)
+
+  - JSpecify annotations (http://jspecify.org/) org.jspecify:jspecify:jar:1.0.0
+    License: The Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+
+
+From: 'Google LLC' (https://www.google.com)
+
+  - error-prone annotations (https://errorprone.info/error_prone_annotations) com.google.errorprone:error_prone_annotations:jar:2.45.0
+    License: Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+
+
+From: 'Google LLC'
+
+  - proto-google-common-protos (https://github.com/googleapis/sdk-platform-java) com.google.api.grpc:proto-google-common-protos:jar:2.63.2
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+
+
+From: 'MojoHaus' (https://www.mojohaus.org)
+
+  - Animal Sniffer Annotations (https://www.mojohaus.org/animal-sniffer/animal-sniffer-annotations) org.codehaus.mojo:animal-sniffer-annotations:jar:1.26
+    License: MIT license  (https://spdx.org/licenses/MIT.txt)
+
+
+
+
+

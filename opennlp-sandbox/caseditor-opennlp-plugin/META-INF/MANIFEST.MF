@@ -1,0 +1,61 @@
+Manifest-Version: 1.0
+Build-Jdk-Spec: 21
+Bundle-ActivationPolicy: lazy
+Bundle-Activator: org.apache.opennlp.caseditor.OpenNLPPlugin
+Bundle-Description: The Apache Software Foundation provides support for 
+ the Apache community of open-source software projects.    The Apache pr
+ ojects are characterized by a collaborative, consensus based developmen
+ t process, an open and    pragmatic software license, and a desire to c
+ reate high quality software that leads the way in its field.    We cons
+ ider ourselves not simply a group of projects sharing a server, but rat
+ her a community of developers    and users.
+Bundle-DocURL: https://www.apache.org/
+Bundle-License: https://www.apache.org/licenses/LICENSE-2.0.txt
+Bundle-ManifestVersion: 2
+Bundle-Name: Apache OpenNLP CasEditor Plugin
+Bundle-RequiredExecutionEnvironment: J2SE-1.5
+Bundle-SymbolicName: org.apache.opennlp.caseditor;singleton:=true
+Bundle-Vendor: The Apache Software Foundation
+Bundle-Version: 2.5.8.SNAPSHOT
+Created-By: Apache Maven Bundle Plugin 6.0.2
+Export-Package: org.apache.opennlp.caseditor;uses:="org.apache.uima.cas,
+ org.apache.uima.caseditor.editor,org.eclipse.core.runtime.preferences,o
+ rg.eclipse.jface.action,org.eclipse.jface.dialogs,org.eclipse.jface.pre
+ ference,org.eclipse.jface.viewers,org.eclipse.swt.widgets,org.osgi.fram
+ ework";version="2.5.8",org.apache.opennlp.caseditor.namefinder;uses:="o
+ pennlp.tools.namefind,opennlp.tools.util,org.apache.opennlp.caseditor,o
+ rg.apache.uima.cas,org.apache.uima.caseditor.editor,org.eclipse.core.ru
+ ntime.jobs,org.eclipse.jface.dialogs,org.eclipse.jface.preference,org.e
+ clipse.jface.viewers,org.eclipse.swt.graphics,org.eclipse.swt.widgets";
+ version="2.5.8",org.apache.opennlp.caseditor.sentdetect;uses:="opennlp.
+ tools.util,org.apache.uima.cas,org.apache.uima.caseditor.editor,org.ecl
+ ipse.core.runtime.jobs,org.eclipse.jface.preference,org.eclipse.jface.v
+ iewers,org.eclipse.swt.graphics,org.eclipse.swt.widgets";version="2.5.8
+ ",org.apache.opennlp.caseditor.tokenize;uses:="org.apache.uima.casedito
+ r.editor,org.eclipse.core.runtime.jobs,org.eclipse.jface.preference,org
+ .eclipse.swt.widgets";version="2.5.8",org.apache.opennlp.caseditor.util
+ ;uses:="org.apache.uima.cas,org.apache.uima.cas.text";version="2.5.8"
+Implementation-Title: Apache OpenNLP CasEditor Plugin
+Implementation-Vendor: The Apache Software Foundation
+Implementation-Version: 2.5.8-SNAPSHOT
+Import-Package: opennlp.tools.namefind,opennlp.tools.sentdetect,opennlp.
+ tools.tokenize,opennlp.tools.util,opennlp.tools.util.featuregen,org.apa
+ che.opennlp.caseditor,org.apache.opennlp.caseditor.namefinder,org.apach
+ e.opennlp.caseditor.sentdetect,org.apache.opennlp.caseditor.tokenize,or
+ g.apache.opennlp.caseditor.util,org.apache.uima.cas;version="[3.6,4)",o
+ rg.apache.uima.cas.text;version="[3.6,4)",org.apache.uima.caseditor;ver
+ sion="[3.6,4)",org.apache.uima.caseditor.editor;version="[3.6,4)",org.a
+ pache.uima.caseditor.editor.util;version="[3.6,4)",org.eclipse.core.run
+ time.jobs,org.eclipse.core.runtime.preferences;version="[3.3,4)",org.ec
+ lipse.jface.action,org.eclipse.jface.dialogs,org.eclipse.jface.layout,o
+ rg.eclipse.jface.preference,org.eclipse.jface.resource,org.eclipse.jfac
+ e.util,org.eclipse.jface.viewers,org.eclipse.swt.graphics,org.eclipse.s
+ wt.layout,org.eclipse.swt.widgets,org.osgi.framework;version="[1.8,2)"
+Require-Bundle: org.eclipse.jface.text,org.eclipse.text,org.eclipse.ui.e
+ ditors,org.eclipse.ui.workbench.texteditor,org.eclipse.ui,org.eclipse.u
+ i.workbench,org.eclipse.core.runtime,org.eclipse.core.resources,
+Require-Capability: osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=17))"
+Specification-Title: Apache OpenNLP CasEditor Plugin
+Specification-Vendor: The Apache Software Foundation
+Specification-Version: 2.5
+Tool: Bnd-7.0.0.202310060912

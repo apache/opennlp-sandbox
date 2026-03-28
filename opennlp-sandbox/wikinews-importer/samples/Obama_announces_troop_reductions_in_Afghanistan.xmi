@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmlns:cas="http:///uima/cas.ecore" xmlns:annotations="http:///org/apache/opennlp/annotations.ecore" xmlns:xmi="http://www.omg.org/XMI" xmlns:tcas="http:///uima/tcas.ecore" xmi:version="2.0">
+    <cas:NULL xmi:id="0"/>
+    <cas:Sofa xmi:id="1" sofaNum="1" sofaID="_InitialView" mimeType="text" sofaString="Obama announces troop reductions in Afghanistan&#10;&#10;A third of U.S. forces in Afghanistan are to be withdrawn&#10;from the country by the end of next year, president Barack Obama&#10;has announced. In a televised statement on Wednesday evening,&#10;Obama announced 33,000 soldiers would be withdrawn from the country&#10;by the summer of next year, and declared the U.S. had beaten&#10;al-Qaeda and the Taliban.&#10;&#10;During the speech he announced the U.S. was &quot;meeting our goals&quot;&#10;to reverse the momentum of the Taliban and train the Afghan National Army,&#10;and said al-Qaeda was &quot;on a path to defeat&quot; after the death of&#10;Osama bin Laden earlier this year. Obama said that it was &quot;time&#10;to focus on nation-building here at home,&quot; and that the reduction&#10;in troops marked &quot;the beginning—but not the end—of our effort to&#10;wind down this war.&quot;&#10;&#10;U.S. civilian leaders from both the Democratic and Republican&#10;parties have voiced support for a rapid drawdown of troops—27 senators&#10;from both parties sent a letter to the president last week advocating&#10;&quot;a sizable and sustained reduction in forces.&quot; However, politicians&#10;are also angry at the huge cost of the war—currently over $2bn&#10;every week—and the U.S. public is tired of the war which has gone&#10;on ten years, leaving thousands of Americans dead.&#10;&#10;However, NATO officials are worried the president is making a&#10;big gamble with such a large scale withdrawal, and have warned&#10;the U.S. could take substantial losses in the country as &quot;fighting season&quot;&#10;begins into the summer.&#10;&#10;David Petraeus, the general who commands all U.S. forces in Afghanistan,&#10;urged a smaller withdrawal. He has reportedly refused to endorse&#10;the decision by Obama.&#10;&#10;Analysts say any setbacks in the country this year will leave&#10;Obama exposed to allegations he was too quick in his decision&#10;and was too politically motivated.&#10;"/>
+    <tcas:DocumentAnnotation xmi:id="8" sofa="1" begin="0" end="1807" language="x-unspecified"/>
+    <annotations:Headline xmi:id="13" sofa="1" begin="0" end="47"/>
+    <annotations:Paragraph xmi:id="17" sofa="1" begin="49" end="388"/>
+    <annotations:Paragraph xmi:id="21" sofa="1" begin="390" end="807"/>
+    <annotations:Paragraph xmi:id="25" sofa="1" begin="809" end="1259"/>
+    <annotations:Paragraph xmi:id="29" sofa="1" begin="1261" end="1484"/>
+    <annotations:Paragraph xmi:id="33" sofa="1" begin="1486" end="1646"/>
+    <annotations:Paragraph xmi:id="37" sofa="1" begin="1648" end="1806"/>
+    <annotations:Sentence xmi:id="41" sofa="1" begin="49" end="186"/>
+    <annotations:Sentence xmi:id="45" sofa="1" begin="187" end="388"/>
+    <annotations:Sentence xmi:id="49" sofa="1" begin="390" end="626"/>
+    <annotations:Sentence xmi:id="53" sofa="1" begin="627" end="807"/>
+    <annotations:Sentence xmi:id="57" sofa="1" begin="809" end="1058"/>
+    <annotations:Sentence xmi:id="61" sofa="1" begin="1059" end="1259"/>
+    <annotations:Sentence xmi:id="65" sofa="1" begin="1261" end="1484"/>
+    <annotations:Sentence xmi:id="69" sofa="1" begin="1587" end="1646"/>
+    <annotations:Sentence xmi:id="73" sofa="1" begin="1486" end="1586"/>
+    <annotations:Sentence xmi:id="77" sofa="1" begin="1648" end="1806"/>
+    <cas:View sofa="1" members="8 13 17 21 25 29 33 37 41 45 49 53 57 61 65 69 73 77"/>
+</xmi:XMI>

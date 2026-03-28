@@ -1,0 +1,59 @@
+
+*****************************************************
+Summary
+-------
+Generated at: 2026-03-05T07:50:42+05:30
+
+Notes: 0
+Binaries: 0
+Archives: 0
+Standards: 33
+
+Apache Licensed: 33
+Generated Documents: 0
+
+JavaDocs are generated, thus a license header is optional.
+Generated files do not require license headers.
+
+0 Unknown Licenses
+
+*****************************************************
+  Files with Apache License headers will be marked AL
+  Binary files (which do not require any license headers) will be marked B
+  Compressed archives will be marked A
+  Notices, licenses etc. will be marked N
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/pom.xml
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/main/java/opennlp/summarization/textrank/TextRankSummarizer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/main/java/opennlp/summarization/textrank/TextRank.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/main/java/opennlp/summarization/preprocess/IDFWordWeight.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/main/java/opennlp/summarization/preprocess/DefaultDocProcessor.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/main/java/opennlp/summarization/preprocess/StopWords.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/main/java/opennlp/summarization/preprocess/WordWeight.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/main/java/opennlp/summarization/Sentence.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/main/java/opennlp/summarization/DocProcessor.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/main/java/opennlp/summarization/lexicalchaining/LexicalChainingKeywordExtractor.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/main/java/opennlp/summarization/lexicalchaining/NounPOSTagger.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/main/java/opennlp/summarization/lexicalchaining/LexicalChainingSummarizer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/main/java/opennlp/summarization/lexicalchaining/LexicalChain.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/main/java/opennlp/summarization/lexicalchaining/WordRelationshipDetermination.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/main/java/opennlp/summarization/lexicalchaining/WordRelation.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/main/java/opennlp/summarization/lexicalchaining/POSTagger.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/main/java/opennlp/summarization/lexicalchaining/WordnetWord.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/main/java/opennlp/summarization/lexicalchaining/Word.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/main/java/opennlp/summarization/Summarizer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/main/java/opennlp/summarization/meta/MetaSummarizer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/main/java/opennlp/summarization/Score.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/test/java/opennlp/summarization/AbstractSummarizerTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/test/java/opennlp/summarization/textrank/TextRankSummarizerNewsTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/test/java/opennlp/summarization/preprocess/DefaultDocProcessorTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/test/java/opennlp/summarization/SentenceTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/test/java/opennlp/summarization/lexicalchaining/AbstractLexicalChainTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/test/java/opennlp/summarization/lexicalchaining/WordRelationshipDeterminationTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/test/java/opennlp/summarization/lexicalchaining/WordnetWordTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/test/java/opennlp/summarization/lexicalchaining/LexicalChainingSummarizerTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/test/java/opennlp/summarization/lexicalchaining/LexChainingKeywordExtractorTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/test/java/opennlp/summarization/lexicalchaining/LexicalChainingSummarizerNewsTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/test/java/opennlp/summarization/lexicalchaining/NounPOSTaggerTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/summarizer/src/test/java/opennlp/summarization/meta/MetaSummarizerNewsTest.java
+ 
+*****************************************************

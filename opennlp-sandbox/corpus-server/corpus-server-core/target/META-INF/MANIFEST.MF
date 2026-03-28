@@ -1,0 +1,44 @@
+Manifest-Version: 1.0
+Build-Jdk-Spec: 21
+Bundle-Activator: org.apache.opennlp.corpus_server.CorpusServerBundle
+Bundle-Description: The Apache Software Foundation provides support for 
+ the Apache community of open-source software projects.    The Apache pr
+ ojects are characterized by a collaborative, consensus based developmen
+ t process, an open and    pragmatic software license, and a desire to c
+ reate high quality software that leads the way in its field.    We cons
+ ider ourselves not simply a group of projects sharing a server, but rat
+ her a community of developers    and users.
+Bundle-DocURL: https://www.apache.org/
+Bundle-License: https://www.apache.org/licenses/LICENSE-2.0.txt
+Bundle-ManifestVersion: 2
+Bundle-Name: Apache OpenNLP Corpus Server Core
+Bundle-SymbolicName: corpus-server-core
+Bundle-Vendor: The Apache Software Foundation
+Bundle-Version: 2.5.8.SNAPSHOT
+Created-By: Apache Maven Bundle Plugin 6.0.2
+Export-Package: org.apache.opennlp.corpus_server;uses:="javax.ws.rs,java
+ x.ws.rs.core,org.apache.opennlp.corpus_server.search,org.apache.opennlp
+ .corpus_server.store,org.apache.opennlp.corpus_server.taskqueue,org.osg
+ i.framework";version="2.5.8",org.apache.opennlp.corpus_server.search;us
+ es:="org.apache.opennlp.corpus_server.store";version="2.5.8",org.apache
+ .opennlp.corpus_server.store;version="2.5.8",org.apache.opennlp.corpus_
+ server.taskqueue;version="2.5.8",org.apache.opennlp.corpus_server.searc
+ h;version="2.5.8"
+Implementation-Title: Apache OpenNLP Corpus Server Core
+Implementation-Vendor: The Apache Software Foundation
+Implementation-Version: 2.5.8-SNAPSHOT
+Import-Package: javax.servlet,javax.ws.rs;version="[2.1,3)",javax.ws.rs.
+ core;version="[2.1,3)",org.apache.opennlp.corpus_server,org.apache.open
+ nlp.corpus_server.search,org.apache.opennlp.corpus_server.store,org.apa
+ che.opennlp.corpus_server.taskqueue,org.glassfish.jersey.servlet;versio
+ n="[2.47,3)",org.osgi.framework;version="[1.5,2)",org.osgi.service.http
+ ;version="[1.2,2)",org.osgi.util.tracker;version="[1.4,2)",org.codehaus
+ .jackson.xc,org.apache.opennlp.corpus_server,com.sun.jersey.api.core,co
+ m.sun.jersey.spi.container.servlet
+Require-Capability: osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=17))"
+Specification-Title: Apache OpenNLP Corpus Server Core
+Specification-Vendor: The Apache Software Foundation
+Specification-Version: 2.5
+Tool: Bnd-7.0.0.202310060912
+Web-ContextPath: rest
+Webapp-Context: rest

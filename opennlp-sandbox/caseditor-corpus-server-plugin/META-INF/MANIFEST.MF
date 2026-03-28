@@ -1,0 +1,50 @@
+Manifest-Version: 1.0
+Build-Jdk-Spec: 21
+Bundle-ActivationPolicy: lazy
+Bundle-Activator: org.apache.opennlp.corpus_server.caseditor.CorpusServe
+ rPlugin
+Bundle-Description: The Apache Software Foundation provides support for 
+ the Apache community of open-source software projects.    The Apache pr
+ ojects are characterized by a collaborative, consensus based developmen
+ t process, an open and    pragmatic software license, and a desire to c
+ reate high quality software that leads the way in its field.    We cons
+ ider ourselves not simply a group of projects sharing a server, but rat
+ her a community of developers    and users.
+Bundle-DocURL: https://www.apache.org/
+Bundle-License: https://www.apache.org/licenses/LICENSE-2.0.txt
+Bundle-ManifestVersion: 2
+Bundle-Name: Apache OpenNLP CasEditor Corpus Server Plugin
+Bundle-RequiredExecutionEnvironment: J2SE-1.5
+Bundle-SymbolicName: org.apache.opennlp.corpus_server.caseditor.CorpusSe
+ rverPlugin;singleton:=true
+Bundle-Vendor: The Apache Software Foundation
+Bundle-Version: 2.5.8.SNAPSHOT
+Created-By: Apache Maven Bundle Plugin 6.0.2
+Export-Package: org.apache.opennlp.corpus_server.caseditor;uses:="org.ap
+ ache.uima.caseditor.editor,org.eclipse.core.runtime.jobs,org.eclipse.jf
+ ace.preference,org.eclipse.jface.resource,org.eclipse.swt.widgets,org.o
+ sgi.framework";version="2.5.8"
+Implementation-Title: Apache OpenNLP CasEditor Corpus Server Plugin
+Implementation-Vendor: The Apache Software Foundation
+Implementation-Version: 2.5.8-SNAPSHOT
+Import-Package: javax.ws.rs;version="[2.1,3)",javax.ws.rs.client;version
+ ="[2.1,3)",javax.ws.rs.core;version="[2.1,3)",org.apache.uima;version="
+ [3.6,4)",org.apache.uima.cas;version="[3.6,4)",org.apache.uima.casedito
+ r.editor;version="[3.6,4)",org.apache.uima.resource;version="[3.6,4)",o
+ rg.apache.uima.resource.metadata;version="[3.6,4)",org.apache.uima.reso
+ urce.metadata.impl;version="[3.6,4)",org.apache.uima.util;version="[3.6
+ ,4)",org.codehaus.jettison.json;version="[1.5,2)",org.eclipse.core.runt
+ ime.jobs,org.eclipse.jface.layout,org.eclipse.jface.preference,org.ecli
+ pse.jface.resource,org.eclipse.jface.viewers,org.eclipse.swt.events,org
+ .eclipse.swt.graphics,org.eclipse.swt.layout,org.eclipse.swt.widgets,or
+ g.glassfish.jersey.client;version="[2.41,3)",org.osgi.framework;version
+ ="[1.8,2)",org.codehaus.jettison;version="[1.5,2)",org.glassfish.jersey
+ .client.config
+Require-Bundle: org.eclipse.jface.text,org.eclipse.text,org.eclipse.ui.e
+ ditors,org.eclipse.ui.workbench.texteditor,org.eclipse.ui,org.eclipse.u
+ i.workbench,org.eclipse.core.runtime,org.eclipse.core.resources
+Require-Capability: osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=17))"
+Specification-Title: Apache OpenNLP CasEditor Corpus Server Plugin
+Specification-Vendor: The Apache Software Foundation
+Specification-Version: 2.5
+Tool: Bnd-7.0.0.202310060912

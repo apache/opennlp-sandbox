@@ -1,0 +1,39 @@
+Manifest-Version: 1.0
+Build-Jdk-Spec: 21
+Bundle-Activator: org.apache.opennlp.tagging_server.TaggingServerBundle
+Bundle-Description: The Apache Software Foundation provides support for 
+ the Apache community of open-source software projects.    The Apache pr
+ ojects are characterized by a collaborative, consensus based developmen
+ t process, an open and    pragmatic software license, and a desire to c
+ reate high quality software that leads the way in its field.    We cons
+ ider ourselves not simply a group of projects sharing a server, but rat
+ her a community of developers    and users.
+Bundle-DocURL: https://www.apache.org/
+Bundle-License: https://www.apache.org/licenses/LICENSE-2.0.txt
+Bundle-ManifestVersion: 2
+Bundle-Name: Apache OpenNLP Tagging Server
+Bundle-SymbolicName: tagging-server
+Bundle-Vendor: The Apache Software Foundation
+Bundle-Version: 2.5.8.SNAPSHOT
+Created-By: Apache Maven Bundle Plugin 6.0.2
+Export-Package: org.apache.opennlp.tagging_server;uses:="javax.ws.rs,jav
+ ax.ws.rs.core,org.osgi.framework";version="2.5.8",org.apache.opennlp.ta
+ gging_server.namefind;uses:="javax.ws.rs,opennlp.tools.namefind,opennlp
+ .tools.sentdetect,opennlp.tools.tokenize,opennlp.tools.util";version="2
+ .5.8",org.apache.opennlp.tagging_server.postag;uses:="javax.ws.rs";vers
+ ion="2.5.8",org.apache.opennlp.tagging_server.sentdetect;uses:="javax.w
+ s.rs,opennlp.tools.util";version="2.5.8",org.apache.opennlp.tagging_ser
+ ver.tokenize;uses:="javax.ws.rs,opennlp.tools.util";version="2.5.8"
+Import-Package: javax.servlet,javax.ws.rs;version="[2.1,3)",javax.ws.rs.
+ core;version="[2.1,3)",opennlp.tools.namefind,opennlp.tools.postag,open
+ nlp.tools.sentdetect,opennlp.tools.tokenize,opennlp.tools.util,org.apac
+ he.opennlp.tagging_server,org.apache.opennlp.tagging_server.namefind,or
+ g.apache.opennlp.tagging_server.postag,org.glassfish.jersey.servlet;ver
+ sion="[2.47,3)",org.osgi.framework;version="[1.5,2)",org.osgi.service.h
+ ttp;version="[1.2,2)",org.osgi.util.tracker;version="[1.4,2)",org.codeh
+ aus.jackson.xc,org.glassfish.jersey.spi;version="[2.47,3)",org.glassfis
+ h.jersey.server.spiorg.glassfish.jersey.servlet.spi
+Require-Capability: osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=17))"
+Tool: Bnd-7.0.0.202310060912
+Web-ContextPath: rest
+Webapp-Context: rest

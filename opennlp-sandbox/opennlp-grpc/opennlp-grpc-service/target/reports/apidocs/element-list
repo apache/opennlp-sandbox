@@ -1,0 +1,4 @@
+opennlp
+opennlp.service
+opennlp.service.classpath
+opennlp.service.exception

@@ -1,0 +1,154 @@
+
+*****************************************************
+Summary
+-------
+Generated at: 2026-03-05T07:50:36+05:30
+
+Notes: 0
+Binaries: 0
+Archives: 9
+Standards: 99
+
+Apache Licensed: 99
+Generated Documents: 0
+
+JavaDocs are generated, thus a license header is optional.
+Generated files do not require license headers.
+
+0 Unknown Licenses
+
+Archives:
+
+ + /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/resources/models/training/defmodel.events.gz
+ 
+ + /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/resources/models/training/pmodel.events.gz
+ 
+ + /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/resources/models/training/pnmodel.events.gz
+ 
+ + /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/resources/models/training/plmodel.events.gz
+ 
+ + /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/resources/models/training/cmodel.events.gz
+ 
+ + /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/resources/models/training/fmodel.events.gz
+ 
+ + /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/resources/models/training/gen.events.gz
+ 
+ + /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/resources/models/training/tmodel.events.gz
+ 
+ + /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/resources/models/training/imodel.events.gz
+ 
+*****************************************************
+  Files with Apache License headers will be marked AL
+  Binary files (which do not require any license headers) will be marked B
+  Compressed archives will be marked A
+  Notices, licenses etc. will be marked N
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/pom.xml
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/cmdline/coref/CoreferencerTool.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/cmdline/coref/CoreferenceConverterTool.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/cmdline/coref/CoreferencerTrainerTool.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/cmdline/coref/TrainingParams.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/CorefSample.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/linker/DefaultLinker.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/linker/AbstractLinker.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/linker/Linker.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/linker/LinkerMode.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/linker/TreebankLinker.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/DiscourseEntity.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/package-info.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/AbstractParse.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/sim/NumberModel.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/sim/package-info.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/sim/Gender.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/sim/TrainModel.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/sim/Number.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/sim/SimilarityModel.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/sim/GenderModel.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/sim/NumberEnum.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/sim/TestGenderModel.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/sim/MaxentCompatibilityModel.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/sim/GenderEnum.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/sim/TestSimilarityModel.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/sim/TestNumberModel.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/sim/Context.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/DefaultParse.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/resolver/NonReferentialResolver.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/resolver/SingularPronounResolver.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/resolver/FixedNonReferentialResolver.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/resolver/package-info.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/resolver/ProperNounResolver.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/resolver/ResolverUtils.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/resolver/PluralNounResolver.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/resolver/IsAResolver.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/resolver/PerfectResolver.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/resolver/DefaultNonReferentialResolver.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/resolver/MaxentResolver.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/resolver/SpeechPronounResolver.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/resolver/ResolverMode.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/resolver/DefiniteNounResolver.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/resolver/CommonNounResolver.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/resolver/AbstractResolver.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/resolver/Resolver.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/resolver/PluralPronounResolver.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/mention/PTBMentionFinder.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/mention/AbstractMentionFinder.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/mention/package-info.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/mention/PTBHeadFinder.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/mention/HeadFinder.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/mention/MentionContext.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/mention/Mention.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/mention/Parse.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/mention/ShallowParseMentionFinder.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/mention/MentionFinder.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/CorefTrainer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/DiscourseModel.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/CorefModel.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/dictionary/package-info.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/dictionary/Dictionary.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/dictionary/JWNLDictionary.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/dictionary/DictionaryFactory.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/DiscourseElement.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/CorefParse.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/CorefSampleDataStream.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/coref/CorefSampleStreamFactory.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/lang/english/TreebankNameFinder.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/formats/muc/MucCorefContentHandler.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/formats/muc/ShallowParseCorefEnhancerStream.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/formats/muc/Muc6FullParseCorefSampleStreamFactory.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/formats/muc/MucCorefSampleStream.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/formats/muc/FullParseCorefEnhancerStream.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/formats/muc/NameFinderCorefEnhancerStream.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/formats/muc/MucMentionInserterStream.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/main/java/opennlp/tools/formats/muc/RawCorefSample.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/java/opennlp/tools/cmdline/coref/CoreferencerToolTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/java/opennlp/tools/cmdline/coref/CoreferencerTrainerToolTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/java/opennlp/tools/cmdline/coref/CoreferenceConverterToolTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/java/opennlp/tools/coref/CorefSampleTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/java/opennlp/tools/coref/linker/TreebankLinkerTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/java/opennlp/tools/coref/linker/DefaultLinkerModelTrainingTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/java/opennlp/tools/coref/linker/AbstractLinkerTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/java/opennlp/tools/coref/linker/DefaultLinkerTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/java/opennlp/tools/coref/CorefParseTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/java/opennlp/tools/coref/DefaultParseTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/java/opennlp/tools/coref/CorefModelTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/java/opennlp/tools/coref/mention/MentionTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/java/opennlp/tools/coref/mention/DummyHeadFinder.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/java/opennlp/tools/coref/mention/ShallowParseMentionFinderTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/java/opennlp/tools/coref/mention/MentionContextTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/java/opennlp/tools/coref/mention/PTBMentionFinderTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/java/opennlp/tools/coref/CorefSampleStreamFactoryTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/java/opennlp/tools/coref/AbstractCorefTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/java/opennlp/tools/coref/CorefSampleDataStreamTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/java/opennlp/tools/coref/CorefTrainerTest.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/java/opennlp/tools/formats/muc/Muc6FullParseCorefSampleStreamFactoryTest.java
+  A     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/resources/models/training/defmodel.events.gz
+  A     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/resources/models/training/pmodel.events.gz
+  A     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/resources/models/training/pnmodel.events.gz
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/resources/models/training/coref/muc/LDC2003T13.sgml
+  A     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/resources/models/training/plmodel.events.gz
+  A     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/resources/models/training/cmodel.events.gz
+  A     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/resources/models/training/fmodel.events.gz
+  A     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/resources/models/training/gen.events.gz
+  A     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/resources/models/training/tmodel.events.gz
+  A     /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/opennlp-coref/src/test/resources/models/training/imodel.events.gz
+ 
+*****************************************************

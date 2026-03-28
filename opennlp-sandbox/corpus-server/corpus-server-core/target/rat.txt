@@ -1,0 +1,51 @@
+
+*****************************************************
+Summary
+-------
+Generated at: 2026-03-05T07:50:31+05:30
+
+Notes: 0
+Binaries: 0
+Archives: 0
+Standards: 25
+
+Apache Licensed: 25
+Generated Documents: 0
+
+JavaDocs are generated, thus a license header is optional.
+Generated files do not require license headers.
+
+0 Unknown Licenses
+
+*****************************************************
+  Files with Apache License headers will be marked AL
+  Binary files (which do not require any license headers) will be marked B
+  Compressed archives will be marked A
+  Notices, licenses etc. will be marked N
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/feature.xml
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/pom.xml
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/webapp/WEB-INF/web.xml
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/java/org/apache/opennlp/corpus_server/store/CorpusStore.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/java/org/apache/opennlp/corpus_server/store/MemoryCorpusStore.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/java/org/apache/opennlp/corpus_server/store/CorporaChangeListener.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/java/org/apache/opennlp/corpus_server/store/AbstractCorporaStore.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/java/org/apache/opennlp/corpus_server/store/MemoryCorporaStore.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/java/org/apache/opennlp/corpus_server/store/CorporaStore.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/java/org/apache/opennlp/corpus_server/CorpusServerBundle.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/java/org/apache/opennlp/corpus_server/CorporaResource.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/java/org/apache/opennlp/corpus_server/taskqueue/TaskQueueService.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/java/org/apache/opennlp/corpus_server/taskqueue/MemoryTaskQueueService.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/java/org/apache/opennlp/corpus_server/taskqueue/TaskQueue.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/java/org/apache/opennlp/corpus_server/taskqueue/MemoryTaskQueue.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/java/org/apache/opennlp/corpus_server/CorpusServerApplication.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/java/org/apache/opennlp/corpus_server/CorpusServer.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/java/org/apache/opennlp/corpus_server/CorpusResource.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/java/org/apache/opennlp/corpus_server/search/SearchService.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/java/org/apache/opennlp/corpus_server/TaskQueueResource.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/java/org/apache/opennlp/corpus_server/TaskQueuesResource.java
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/resources/org/apache/opennlp/corpus_server/search/IndexWriter.properties
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/resources/org/apache/opennlp/corpus_server/search/LuceneIndexer.xml
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/main/resources/org/apache/opennlp/corpus_server/search/TypeSystem.xml
+  AL    /home/joy/Desktop/opennlp-sandbox-experiments/opennlp-sandbox-experiments/tmp-opennlp-sandbox/opennlp-sandbox/corpus-server/corpus-server-core/src/test/java/org/apache/opennlp/corpus_server/util/TestCorpusServer.java
+ 
+*****************************************************

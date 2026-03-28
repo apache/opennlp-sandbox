@@ -1,0 +1,117 @@
+// ------------------------------------------------------------------
+// Transitive dependencies of this project determined from the
+// maven pom organized by organization.
+// ------------------------------------------------------------------
+
+Apache OpenNLP CasEditor Corpus Server Plugin
+
+
+From: 'an unknown organization'
+
+  - Jettison (https://github.com/jettison-json/jettison) org.codehaus.jettison:jettison:bundle:1.5.4
+    License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
+
+
+From: 'Eclipse Foundation' (https://www.eclipse.org)
+
+  - Jakarta Activation API jar (https://github.com/eclipse-ee4j/jaf/jakarta.activation-api) jakarta.activation:jakarta.activation-api:jar:1.2.2
+    License: EDL 1.0  (http://www.eclipse.org/org/documents/edl-v10.php)
+
+  - Jakarta Annotations API (https://projects.eclipse.org/projects/ee4j.ca) jakarta.annotation:jakarta.annotation-api:jar:1.3.5
+    License: EPL 2.0  (http://www.eclipse.org/legal/epl-2.0)
+    License: GPL2 w/ CPE  (https://www.gnu.org/software/classpath/license.html)
+
+  - Jakarta XML Binding API (https://github.com/eclipse-ee4j/jaxb-api/jakarta.xml.bind-api) jakarta.xml.bind:jakarta.xml.bind-api:jar:2.3.3
+    License: Eclipse Distribution License - v 1.0  (http://www.eclipse.org/org/documents/edl-v10.php)
+
+  - OSGi resource locator (https://projects.eclipse.org/projects/ee4j/osgi-resource-locator) org.glassfish.hk2:osgi-resource-locator:jar:1.0.3
+    License: EPL 2.0  (http://www.eclipse.org/legal/epl-2.0)
+    License: GPL2 w/ CPE  (https://www.gnu.org/software/classpath/license.html)
+
+
+From: 'Eclipse Foundation' (https://www.eclipse.org/org/foundation/)
+
+  - jakarta.ws.rs-api (https://github.com/eclipse-ee4j/jaxrs-api) jakarta.ws.rs:jakarta.ws.rs-api:bundle:2.1.6
+    License: EPL 2.0  (http://www.eclipse.org/legal/epl-2.0)
+    License: GPL2 w/ CPE  (https://www.gnu.org/software/classpath/license.html)
+
+  - jersey-core-client (https://projects.eclipse.org/projects/ee4j.jersey/jersey-client) org.glassfish.jersey.core:jersey-client:jar:2.41
+    License: EPL 2.0  (http://www.eclipse.org/legal/epl-2.0)
+    License: GPL2 w/ CPE  (https://www.gnu.org/software/classpath/license.html)
+    License: EDL 1.0  (http://www.eclipse.org/org/documents/edl-v10.php)
+    License: BSD 2-Clause  (https://opensource.org/licenses/BSD-2-Clause)
+    License: Apache License, 2.0  (http://www.apache.org/licenses/LICENSE-2.0.html)
+    License: Public Domain  (https://creativecommons.org/publicdomain/zero/1.0/)
+    License: Modified BSD  (https://asm.ow2.io/license.html)
+    License: jQuery license  (jquery.org/license)
+    License: MIT license  (http://www.opensource.org/licenses/mit-license.php)
+    License: W3C license  (https://www.w3.org/Consortium/Legal/copyright-documents-19990405)
+
+  - jersey-core-common (https://projects.eclipse.org/projects/ee4j.jersey/jersey-common) org.glassfish.jersey.core:jersey-common:jar:2.41
+    License: EPL 2.0  (http://www.eclipse.org/legal/epl-2.0)
+    License: The GNU General Public License (GPL), Version 2, With Classpath Exception  (https://www.gnu.org/software/classpath/license.html)
+    License: Apache License, 2.0  (http://www.apache.org/licenses/LICENSE-2.0.html)
+    License: Public Domain  (https://creativecommons.org/publicdomain/zero/1.0/)
+
+  - jersey-media-jaxb (https://projects.eclipse.org/projects/ee4j.jersey/project/jersey-media-jaxb) org.glassfish.jersey.media:jersey-media-jaxb:jar:2.47
+    License: EPL 2.0  (http://www.eclipse.org/legal/epl-2.0)
+    License: GPL2 w/ CPE  (https://www.gnu.org/software/classpath/license.html)
+    License: EDL 1.0  (http://www.eclipse.org/org/documents/edl-v10.php)
+    License: BSD 2-Clause  (https://opensource.org/licenses/BSD-2-Clause)
+    License: Apache License, 2.0  (http://www.apache.org/licenses/LICENSE-2.0.html)
+    License: Public Domain  (https://creativecommons.org/publicdomain/zero/1.0/)
+    License: Modified BSD  (https://asm.ow2.io/license.html)
+    License: jQuery license  (jquery.org/license)
+    License: MIT license  (http://www.opensource.org/licenses/mit-license.php)
+    License: W3C license  (https://www.w3.org/Consortium/Legal/copyright-documents-19990405)
+
+  - jersey-media-json-jettison (https://projects.eclipse.org/projects/ee4j.jersey/project/jersey-media-json-jettison) org.glassfish.jersey.media:jersey-media-json-jettison:jar:2.47
+    License: EPL 2.0  (http://www.eclipse.org/legal/epl-2.0)
+    License: GPL2 w/ CPE  (https://www.gnu.org/software/classpath/license.html)
+    License: EDL 1.0  (http://www.eclipse.org/org/documents/edl-v10.php)
+    License: BSD 2-Clause  (https://opensource.org/licenses/BSD-2-Clause)
+    License: Apache License, 2.0  (http://www.apache.org/licenses/LICENSE-2.0.html)
+    License: Public Domain  (https://creativecommons.org/publicdomain/zero/1.0/)
+    License: Modified BSD  (https://asm.ow2.io/license.html)
+    License: jQuery license  (jquery.org/license)
+    License: MIT license  (http://www.opensource.org/licenses/mit-license.php)
+    License: W3C license  (https://www.w3.org/Consortium/Legal/copyright-documents-19990405)
+
+
+From: 'Oracle Corporation' (http://www.oracle.com)
+
+  - javax.inject:1 as OSGi bundle (https://github.com/eclipse-ee4j/glassfish-hk2/external/jakarta.inject) org.glassfish.hk2.external:jakarta.inject:jar:2.6.1
+    License: EPL 2.0  (http://www.eclipse.org/legal/epl-2.0)
+    License: GPL2 w/ CPE  (https://www.gnu.org/software/classpath/license.html)
+
+
+From: 'QOS.ch' (http://www.qos.ch)
+
+  - SLF4J API Module (http://www.slf4j.org) org.slf4j:slf4j-api:jar:2.0.17
+    License: MIT  (https://opensource.org/license/mit)
+
+
+From: 'The Apache Software Foundation' (https://www.apache.org/)
+
+  - Apache UIMA Base: jVinci: Vinci Transport Library (https://uima.apache.org) org.apache.uima:jVinci:bundle:3.6.1
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - Apache UIMA Base: uimaj-adapter-vinci: Vinci Adapter (https://uima.apache.org) org.apache.uima:uimaj-adapter-vinci:bundle:3.6.1
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - Apache UIMA Base: uimaj-core (https://uima.apache.org) org.apache.uima:uimaj-core:bundle:3.6.1
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - Apache UIMA Base: uimaj-cpe: Collection Processing Engine (https://uima.apache.org) org.apache.uima:uimaj-cpe:bundle:3.6.1
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - Apache UIMA Eclipse: uimaj-ep-cas-editor (https://uima.apache.org) org.apache.uima:uimaj-ep-cas-editor:jar:3.6.1
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - Apache UIMA Base: uimaj-tools: Tools (https://uima.apache.org) org.apache.uima:uimaj-tools:bundle:3.6.1
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+
+
+
+
+
