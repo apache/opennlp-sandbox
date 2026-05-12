@@ -28,7 +28,7 @@ import opennlp.tools.similarity.apps.utils.StringDistanceMeasurer;
 import opennlp.tools.similarity.apps.utils.Utils;
 import opennlp.tools.textsimilarity.TextProcessor;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

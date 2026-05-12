@@ -17,7 +17,7 @@
 
 package opennlp.tools.apps.review_builder;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import opennlp.tools.similarity.apps.utils.Utils;
 

@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import opennlp.tools.similarity.apps.ContentGeneratorSupport;
 import opennlp.tools.similarity.apps.Fragment;
