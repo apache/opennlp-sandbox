@@ -23,7 +23,7 @@ import opennlp.tools.nl2code.NL2ObjCreateAssign;
 import opennlp.tools.nl2code.ObjectPhraseListForSentence;
 import opennlp.tools.textsimilarity.ParseTreeChunkListScorer;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;

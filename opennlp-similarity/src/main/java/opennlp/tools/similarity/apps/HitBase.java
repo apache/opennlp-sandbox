@@ -23,7 +23,7 @@ import java.util.logging.Logger;
 
 import opennlp.tools.similarity.apps.utils.StringDistanceMeasurer;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public class HitBase {
 	private static final Logger LOG = Logger

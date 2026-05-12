@@ -23,7 +23,7 @@ import java.util.List;
 import opennlp.tools.similarity.apps.GeneratedSentenceProcessor;
 import opennlp.tools.similarity.apps.HitBase;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public class WebPageContentSentenceExtractor extends WebPageExtractor {
 

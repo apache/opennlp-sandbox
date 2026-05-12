@@ -20,7 +20,7 @@ package opennlp.tools.apps.relevanceVocabs;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import opennlp.tools.parser.Parse;
 import opennlp.tools.textsimilarity.ParseTreeChunk;

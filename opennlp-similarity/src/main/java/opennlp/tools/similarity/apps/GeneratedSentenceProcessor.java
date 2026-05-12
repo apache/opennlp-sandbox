@@ -21,7 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import opennlp.tools.similarity.apps.utils.Utils;
 import org.slf4j.Logger;
