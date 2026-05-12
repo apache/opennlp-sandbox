@@ -119,7 +119,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <opennlp.version>3.0.0-M1</opennlp.version>
+        <opennlp.version>3.0.0-M3</opennlp.version>
         <opennlp.models.version>1.3.0</opennlp.models.version>
         <opennlp.forkCount>1.0C</opennlp.forkCount>
 
@@ -157,6 +157,11 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <artifactId>opennlp-api</artifactId>
+                <groupId>${project.groupId}</groupId>
+                <version>${opennlp.version}</version>
+            </dependency>
+            <dependency>
                 <artifactId>opennlp-runtime</artifactId>
                 <groupId>${project.groupId}</groupId>
                 <version>${opennlp.version}</version>
@@ -167,7 +172,7 @@
                 <version>${opennlp.version}</version>
             </dependency>
             <dependency>
-                <artifactId>opennlp-models</artifactId>
+                <artifactId>opennlp-model-resolver</artifactId>
                 <groupId>${project.groupId}</groupId>
                 <version>${opennlp.version}</version>
             </dependency>

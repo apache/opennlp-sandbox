@@ -40,7 +40,11 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.opennlp</groupId>
-			<artifactId>opennlp-tools</artifactId>
+			<artifactId>opennlp-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.opennlp</groupId>
+			<artifactId>opennlp-cli</artifactId>
 		</dependency>
 
 		<dependency>
