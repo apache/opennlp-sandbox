@@ -60,6 +60,7 @@ import opennlp.tools.models.ClassPathModelFinder;
  * @see AbstractClassPathModelFinder
  * @see ClassPathModelFinder
  */
+// TODO Remove this class, once OPENNLP-1829 is closed and latest 3.0.0 milestone is out
 public class DirectoryModelFinder extends AbstractClassPathModelFinder implements ClassPathModelFinder {
 
   private static final org.slf4j.Logger logger = LoggerFactory.getLogger(DirectoryModelFinder.class);
