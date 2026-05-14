@@ -21,19 +21,27 @@ import opennlp_pb2_grpc
 
 def run():
     # Create gRPC channel
-    channel = grpc.insecure_channel("localhost:7071")
-    stub = opennlp_pb2_grpc.SentenceDetectorServiceStub(channel)
+    with grpc.insecure_channel("localhost:7071") as channel:
+        stub = opennlp_pb2_grpc.SentenceDetectorServiceStub(channel)
+        
+        print("Connecting to OpenNLP gRPC server...")
 
-    print("Connecting to OpenNLP gRPC server...")
-
-    # Discover available models
-    response = stub.GetAvailableModels(opennlp_pb2.Empty())
-    models = list(response.models)
+        # Discover available models
+        try:
+            response = stub.GetAvailableModels(
+                opennlp_pb2.Empty(),
+                timeout=5
+            )
+            models = list(response.models)
+        except grpc.RpcError as e:
+            print(f"Server error: {e.code()} - {e.details()}")
+            return
 
     if not models:
         print("No models available on server.")
         return
 
+    # Pick first registered sentence detector model
     model = models[0]
     print(f"Using model: {model.name} ({model.hash})")
 
@@ -47,7 +55,11 @@ def run():
     )
 
     # Call service
-    result = stub.sentDetect(request)
+    try:
+       result = stub.sentDetect(request, timeout=5)
+    except grpc.RpcError as e:
+        print(f"Sentence detection failed: {e.code()} - {e.details()}")
+    return
 
     print("\nSentence Detection Result:")
     for i, sentence in enumerate(result.values, 1):
