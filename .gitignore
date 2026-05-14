@@ -12,5 +12,7 @@ nb-configuration.xml
 vocab.txt
 extlib
 *.jar
+__pycache__/
+*.pyc
 
 .python-version
