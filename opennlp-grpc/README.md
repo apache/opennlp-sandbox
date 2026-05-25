@@ -14,6 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
+
 # OpenNLP gRPC - Proof of Concept
 
 This project demonstrates a proof of concept for creating a backend powered by Apache OpenNLP using gRPC. It comprises of three main modules : 

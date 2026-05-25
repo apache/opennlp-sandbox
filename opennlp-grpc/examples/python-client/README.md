@@ -50,9 +50,5 @@ uv run python sentdetect_example.py
 ## Regenerating gRPC stubs
 
 ```bash
-uv run python -m grpc_tools.protoc \
-    -I../../opennlp-grpc-api \
-    --python_out=. \
-    --grpc_python_out=. \
-    ../../opennlp-grpc-api/opennlp.proto
+uv run python -m grpc_tools.protoc -I../../opennlp-grpc-api --python_out=. --grpc_python_out=. ../../opennlp-grpc-api/opennlp.proto
 ```
