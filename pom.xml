@@ -143,7 +143,7 @@
         <jersey-server.version>2.47</jersey-server.version>
         <jettison.version>1.5.5</jettison.version>
 
-        <junit.version>6.0.3</junit.version>
+        <junit.version>6.1.0</junit.version>
 
         <coveralls.maven.plugin>4.3.0</coveralls.maven.plugin>
         <jacoco.maven.plugin>0.8.14</jacoco.maven.plugin>
