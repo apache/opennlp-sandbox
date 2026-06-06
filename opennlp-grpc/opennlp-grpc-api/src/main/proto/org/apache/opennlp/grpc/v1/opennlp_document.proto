@@ -1,0 +1,165 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+syntax = "proto3";
+
+package org.apache.opennlp.grpc.v1;
+
+option java_package = "org.apache.opennlp.grpc.v1";
+option java_multiple_files = true;
+
+// Canonical 1:1 NLP document: text in, annotations out.
+// The sentences list provides the shared base linguistic analysis
+// (computed once even when multiple chunk+embed groups are requested).
+message OpenNlpDocument {
+  string doc_id = 1;
+  string raw_text = 2;
+  optional string detected_language = 3;
+  optional float language_confidence = 4;
+  repeated AnnotatedSentence sentences = 5;
+  optional DocumentAnalytics analytics = 6;
+  map<string, string> metadata = 7;
+  repeated EmbeddingResult embeddings = 8;  // denormalized convenience "all vectors + spans"
+  optional DocumentClassification classification = 9;
+
+  // Primary way to carry multiple independent chunk+embedding result groups
+  // from one analysis. Each group corresponds to one chunking strategy with
+  // its explicitly requested embedding models attached inside the chunks.
+  repeated ChunkEmbeddingGroup chunk_embedding_groups = 10;
+}
+
+message AnnotatedSentence {
+  CharSpan sentence_span = 1;
+  repeated Token tokens = 2;
+  repeated NamedEntity entities = 3;
+  // Classic syntactic chunks (from ChunkerME or similar), per sentence.
+  optional ChunkResult syntactic_chunks = 4;
+  optional ParseTree parse_tree = 5;
+  optional string sentiment_label = 6;
+  optional float sentiment_confidence = 7;
+}
+
+message Token {
+  string text = 1;
+  CharSpan char_span = 2;
+  optional string pos_tag = 3;
+  optional string lemma = 4;
+  optional float pos_probability = 5;
+}
+
+message NamedEntity {
+  CharSpan char_span = 1;
+  string entity_type = 2;
+  optional double probability = 3;
+}
+
+message CharSpan {
+  int32 start = 1;
+  int32 end = 2;
+  CoordinateSpace space = 3;
+  optional string type = 4;
+  optional double probability = 5;
+}
+
+enum CoordinateSpace {
+  COORDINATE_SPACE_UNSPECIFIED = 0;
+  CHAR_DOCUMENT = 1;
+  TOKEN_SENTENCE = 2;
+}
+
+message DocumentAnalytics {
+  int32 total_tokens = 1;
+  int32 total_sentences = 2;
+  float noun_density = 3;
+  float verb_density = 4;
+  float adjective_density = 5;
+  float adverb_density = 6;
+  float content_word_ratio = 7;
+  int32 unique_lemma_count = 8;
+  float lexical_density = 9;
+}
+
+// Lightweight result for classic syntactic chunking (ChunkerME style)
+// attached to sentences. Distinct from the strategy-driven chunks below.
+message ChunkResult {
+  repeated ChunkSpan chunks = 1;
+}
+
+message ChunkSpan {
+  CharSpan char_span = 1;
+  string chunk_tag = 2;
+}
+
+// A chunk produced by a chunking strategy. The strategy and the list of
+// embedding models are declared on the containing ChunkEmbeddingGroup.
+// Embeddings for the requested models are carried inside this chunk.
+message Chunk {
+  CharSpan char_span = 1;
+  optional string chunk_tag = 2;
+  // The text of the chunk (for client convenience; authoritative bounds
+  // are given by char_span over the document raw_text).
+  optional string text_content = 3;
+  // Multiple embedding models per chunk, as requested for the group/strategy.
+  repeated EmbeddingResult embeddings = 4;
+  // Optional navigation aid: indices into the document's sentences list.
+  repeated int32 contained_sentence_indices = 5;
+}
+
+// One chunking strategy's output: the chunks (with their embeddings inside)
+// plus traceability for the strategy and the exact embedding models that
+// were asked for this strategy in the request.
+message ChunkEmbeddingGroup {
+  string group_id = 1;
+  optional string chunk_config_id = 2;
+  repeated string embedding_model_ids = 3;  // exactly as named for this strategy
+  optional string result_set_name = 4;
+  repeated Chunk chunks = 5;
+  map<string, string> metadata = 6;
+  optional EmbeddingGranularity granularity = 7;
+}
+
+message ParseTree {
+  ParseNode root = 1;
+}
+
+message ParseNode {
+  string label = 1;
+  CharSpan span = 2;
+  repeated ParseNode children = 3;
+  optional double probability = 4;
+}
+
+message EmbeddingResult {
+  string model_id = 1;
+  repeated float vector = 2;
+  CharSpan source_span = 3;
+  EmbeddingGranularity granularity = 4;
+}
+
+enum EmbeddingGranularity {
+  EMBEDDING_GRANULARITY_UNSPECIFIED = 0;
+  DOCUMENT = 1;
+  SENTENCE = 2;
+  CHUNK = 3;  // embeddings attached to chunks of a strategy/group
+  reserved 4 to 10;
+}
+
+message DocumentClassification {
+  string best_category = 1;
+  map<string, double> category_scores = 2;
+}
