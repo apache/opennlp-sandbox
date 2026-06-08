@@ -15,101 +15,49 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# OpenNLP gRPC - Proof of Concept
+# OpenNLP gRPC (sandbox)
 
-This project demonstrates a proof of concept for creating a backend powered by Apache OpenNLP using gRPC. It comprises of three main modules : 
+Document-centric gRPC API for Apache OpenNLP inference. Design RFC: [docs/rfc/opennlp-grpc-design.md](docs/rfc/opennlp-grpc-design.md).
 
-- **opennlp-grpc-api**
-- **opennlp-grpc-service**
-- **examples**
+## Modules
 
-## Modules Overview
+- **opennlp-grpc-api** - v1 protos (`org.apache.opennlp.grpc.v1`) and generated stubs
+- **opennlp-grpc-service** - `OpenNlpGrpcServer` and `OpenNlpAnalysisService` implementation
+- **examples** - client samples (v1 Python client TBD)
 
-1. **opennlp-grpc-api**:
-    - Contains the gRPC schema for OpenNLP services.
-    - Includes generated Java stubs.
-    - Provides a README with instructions on generating code stubs for various languages and auto-generated documentation.
- 
+## Build
 
-2. **opennlp-grpc-service**:
-    - Features a server implementation.
-    - Offers an initial service implementation for POS tagging.
-
-3. **examples**:
-    - Provides a sample implementation for interacting with the OpenNLP server backend via gRPC in Python.
-
-## Getting Started
-
-Follow these steps to set up and run the OpenNLP gRPC proof of concept project:
-
-### Prerequisites
-Before you begin, ensure you have the following installed on your system:
-
-- Java Development Kit (JDK) 17 or later
-- Apache Maven (for building Java components)
-- Docker for running the gRPC tools if modifications to the .proto files are needed
-
-You can build the project by running
-
-```
+```bash
 mvn clean install
 ```
 
-### Running the gRPC Backend
+Requires JDK 21+.
 
-Start the server: Use the following command to run the server with default settings:
+## Run the server
 
 ```bash
-java -jar target/opennlp-grpc-server-3.0.0-SNAPSHOT.jar
+java -jar opennlp-grpc-service/target/opennlp-grpc-server-3.0.0-SNAPSHOT.jar
 ```
 
-Configure server options: 
+Options:
 
-The server supports several command-line options for customization:
+- `-p, --port` - listen port (default `7071`)
+- `-c, --config` - key=value config file
 
-```bash
--p or --port: Port on which the server will listen on (default: 7071).
--c or --config: Path to a configuration file.
-```
+Example config:
 
-Example with custom options:
-
-```bash
-java -jar target/opennlp-grpc-server-1.0-SNAPSHOT.jar -p 8080 -h 127.0.0.1 -c ./server-config.ini
-```
-
-Sample configuration file: 
-
-If using a configuration file, it should be in the format:
-
-```bash
-# Set to true to enable gRPC server reflection, see https://grpc.io/docs/guides/reflection/
+```ini
 server.enable_reflection = false
-
-# Folder used to scan for models
-model.location=extlib
-# Set to true to recursively scan for models inside the model.location folder.
-model.recursive=true
-# A wildcard to search for models in the model.location folder.
-model.pos.wildcard.pattern=opennlp-models-pos-*.jar
-model.tokenizer.wildcard.pattern=opennlp-models-tokenizer-*.jar
-model.sentdetect.wildcard.pattern=opennlp-models-sentdetect-*.jar
+model.location = extlib
+model.recursive = true
+model.sentdetect.wildcard.pattern = opennlp-models-sentdetect-*.jar
+model.tokenizer.wildcard.pattern = opennlp-models-tokenizer-*.jar
 ```
 
-#### Models
+Place model JARs in `extlib` (or `model.location`).
 
-To ensure the server automatically loads models, these must be placed in the `extlib` (or in the location configured via `model.location`) directory. 
+## v1 API
 
-## Building a Custom Client in another Programming Language
+Primary RPC: `org.apache.opennlp.grpc.v1.OpenNlpAnalysisService/AnalyzeDocument`
 
-Details can be found in the README of the [opennlp-grpc-api module](opennlp-grpc-api/README.md).
-
-## Supported Features
-
-Currently, the server supports the following features:
-
-- POS Tagging (using the Universal Dependencies tag format)
-- Tokenization
-- Sentence Detection
-
-
+Send `raw_text`, receive an enriched `OpenNlpDocument` (sentences, tokens, diagnostics; chunk/embed groups as implemented).

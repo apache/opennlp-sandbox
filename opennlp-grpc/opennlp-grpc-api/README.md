@@ -1,50 +1,55 @@
 # Apache OpenNLP gRPC API
 
-This module contains the [gRPC](https://grpc.io) schema used in Apache OpenNLP to provide a service side gRPC backend.
+v1 protobuf definitions and generated Java stubs for the document-centric OpenNLP gRPC API.
 
-An automatically generated overview of the endpoints and messages can be found [here](opennlp)
+**Package:** `org.apache.opennlp.grpc.v1`
 
-# Main concepts
+**Protos:** `src/main/proto/org/apache/opennlp/grpc/v1/`
 
-The endpoints and messages described by the API are meant to be a minimum.
-It does not support every feature of Apache OpenNLP at the moment, but is open for enhancement or further improvements.
+- `opennlp_document_v1.proto` - `OpenNlpDocument`, spans, tokens, chunks, embeddings
+- `opennlp_pipeline_v1.proto` - profiles, pipeline steps, model bundles, inference backends
+- `opennlp_service_v1.proto` - `OpenNlpAnalysisService` RPCs
 
-# Maven dependencies
+## Maven dependency
 
-The Java code generated from the schema is available as a Maven dependency.
-
-```
-		<dependency>
-			<groupId>org.apache.opennlp</groupId>
-			<artifactId>opennlp-grpc-api</artifactId>
-			<version>VERSION</version>
-		</dependency>
-```
-
-# Code generation
-
-The Java code can be (re)generated as follows; [docker-protoc](https://github.com/namely/docker-protoc) is used to generate the code for Java : 
-
-```powershell
-docker run -v ${PWD}:/defs namely/protoc-all -f opennlp.proto -l java -o src/main/java
+```xml
+<dependency>
+  <groupId>org.apache.opennlp</groupId>
+  <artifactId>opennlp-grpc-api</artifactId>
+  <version>VERSION</version>
+</dependency>
 ```
 
-Since the Java code is provided here and the corresponding JARs will be available from Maven, regenerating from the schema is not necessary.
+## Code generation
 
-For other languages, you need to generate the code stubs yourself, as shown here for Python
+Java stubs are generated at build time via `protobuf-maven-plugin`:
 
-```
-python3 -m venv grpc
-python3 -m pip install grpcio-tools
-mkdir python
-python3 -m grpc_tools.protoc -I. --python_out=python --grpc_python_out=python opennlp.proto
+```bash
+mvn -pl opennlp-grpc-api compile
 ```
 
-# Documentation generation
+Generated sources: `target/generated-sources/protobuf/java/org/apache/opennlp/grpc/v1/`
 
-```powershell
-docker run --rm -v ${PWD}:/out -v ${PWD}:/protos pseudomuto/protoc-gen-doc --doc_opt=markdown,opennlp.md 
+## Lint
+
+```bash
+buf lint
 ```
 
-The current version of the documentation can be found [here](opennlp)
+Runs Buf STANDARD rules using `buf.yaml` in this module.
 
+## Other languages
+
+Generate client stubs from the v1 protos under `src/main/proto`. Example for Python:
+
+```bash
+python -m grpc_tools.protoc \
+  -I src/main/proto \
+  --python_out=python \
+  --grpc_python_out=python \
+  src/main/proto/org/apache/opennlp/grpc/v1/opennlp_document_v1.proto \
+  src/main/proto/org/apache/opennlp/grpc/v1/opennlp_pipeline_v1.proto \
+  src/main/proto/org/apache/opennlp/grpc/v1/opennlp_service_v1.proto
+```
+
+See `docs/rfc/opennlp-grpc-design.md` for the full API contract.

@@ -38,7 +38,7 @@ Phase 1 is agreement on this contract-the protos and the design captured here. I
 | Field                | Value                                            |
 | -------------------- | ------------------------------------------------ |
 | **Status**           | Draft RFC                                        |
-| **Version**          | 0.5                                              |
+| **Version**          | 0.7                                              |
 | **API version**      | `v1`                                             |
 | **OpenNLP baseline** | 3.0.0-SNAPSHOT (JDK 21+)                         |
 | **Companion**        | [JIRA proposal](./opennlp-grpc-jira-proposal.md) |
@@ -57,10 +57,9 @@ This RFC evolves the sandbox gRPC POC into a **document-centric, language-neutra
 
 | Artifact                                                                                | Status                          |
 | --------------------------------------------------------------------------------------- | ------------------------------- |
-| Legacy POC (`opennlp.proto`, 3 granular services, `OpenNLPServer`)                      | Committed, unchanged            |
-| v1 protos (`opennlp_document.proto`, `opennlp_pipeline.proto`, `opennlp_service.proto`) | Written, not yet wired to build |
+| v1 protos (`opennlp_document_v1.proto`, `opennlp_pipeline_v1.proto`, `opennlp_service_v1.proto`) | Stable; Maven + Buf lint        |
 | This RFC + JIRA companion                                                               | Written                         |
-| v1 Java processor / server / codegen                                                    | Not started                     |
+| v1 Java processor / server / codegen                                                    | In progress (sandbox)           |
 | Core `opennlp-api` `Document` interface                                                 | Proposed for later              |
 
 
@@ -110,7 +109,7 @@ flowchart TB
 | ------------------------ | -------------------------------------------------------------------------------------- |
 | **Primary RPC**          | `OpenNlpAnalysisService.AnalyzeDocument`                                               |
 | **Package**              | `org.apache.opennlp.grpc.v1`                                                           |
-| **Legacy services**      | Retain under `org.apache.opennlp.grpc.legacy.v1` during transition                     |
+| **Legacy POC**             | Removed; single v1 server surface only                                                 |
 | **Core library**         | Stays gRPC-free; wire API in optional Maven modules                                    |
 | **Build**                | Maven + `protobuf-maven-plugin` only                                                   |
 | **CHUNK + EMBED**        | First-class v1 steps (`ChunkerME`, `SentenceVectorsDL`, segmentation chunking)         |
@@ -169,16 +168,11 @@ Location: [https://github.com/apache/opennlp-sandbox/tree/main/opennlp-grpc](htt
 
 Modules:
 
-- `opennlp-grpc-api` - `opennlp.proto`, generated stubs
-- `opennlp-grpc-service` - server, per-tool services, directory/JAR model scanning
-- `examples` - Python client
+- `opennlp-grpc-api` - v1 protos under `org.apache.opennlp.grpc.v1`, Maven-generated stubs
+- `opennlp-grpc-service` - `OpenNlpGrpcServer`, document processor, directory/JAR model scanning
+- `examples` - client samples (v1 Python TBD)
 
-Limitations motivating this redesign:
-
-- Per-tool services and string payloads
-- No document-level result aggregation
-- No pipeline profile or step diagnostics
-- `package opennlp` / `java_outer_classname` bundling (discouraged for multi-file generation)
+The original per-tool POC (`package opennlp`, three granular services) has been removed from the sandbox branch in favor of the v1 document-centric API only.
 
 ### 3.3 UIMA reference pipeline
 
@@ -190,7 +184,7 @@ The gRPC server orchestrator should mirror this **order** when steps are enabled
 
 - `opennlp-dl`: ONNX Runtime support including `SentenceVectorsDL` for embeddings, plus `NameFinderDL` and `DocumentCategorizerDL`. These are the foundation for the v1 `EMBED` step (and future DL-backed NER/categorization).
 - `opennlp-dl-gpu`: swaps the CPU onnxruntime for `onnxruntime_gpu` (CUDA on NVIDIA). This is one of the concrete provider implementations behind the hot-swap story.
-- A narrow provider SPI / middle interface (behind `InferenceBackend` and per-component selection in profiles/options) allows the pure-Java processor (and thus the gRPC server) to dispatch `EMBED` (and later other steps) to different backends. Concrete providers for CUDA, a future OpenVINO backend (Intel GPU/accelerators), DJL, or even remote endpoints (KServe v2 or another OpenNLP gRPC instance) can live in separate optional modules with their own build artifacts and dependencies. The base `opennlp-grpc-server` (and any pure-Java processor usage) does not force heavy native dependencies.
+- A narrow provider SPI / middle interface (behind `InferenceBackend` and per-component selection in profiles/options) allows the pure-Java processor (and thus the gRPC server) to dispatch `EMBED` (and later other steps) to different backends. Wire selectors include `INFERENCE_BACKEND_CUDA` (NVIDIA, via `opennlp-dl-gpu`) and `INFERENCE_BACKEND_OPENVINO` (Intel; spelled as one token to match the product name and Buf enum-prefix rules, not `OPEN_VINO`). `INFERENCE_BACKEND_ONNX_RUNTIME_GPU` remains for backward compatibility and maps to the same CUDA provider. DJL and remote endpoints (KServe v2, etc.) can live in separate optional modules with their own build artifacts and dependencies. The base `opennlp-grpc-server` (and any pure-Java processor usage) does not force heavy native dependencies.
 - CHUNK and EMBED (with basic ONNX) are in-scope for the initial v1 contract and sandbox implementation. Advanced acceleration and additional providers are implementation work that does not require wire changes.
 
 The initiating email for OPENNLP-1833 emphasizes GPU embeddings (CUDA for NVIDIA, OpenVINO for Intel) with a hot-swappable middle interface whose implementations are their own builds. This design makes that explicit via the provider mechanism while keeping the `OpenNlpDocument` / `AnalyzeDocument` contract stable.
@@ -239,9 +233,9 @@ flowchart TB
 
 | Layer | File (proposed)          | Responsibility                                           |
 | ----- | ------------------------ | -------------------------------------------------------- |
-| 1     | `opennlp_document.proto` | Document, spans, tokens, entities, analytics, embeddings |
-| 2     | `opennlp_pipeline.proto` | Profiles, steps, model refs, options, backends           |
-| 3     | `opennlp_service.proto`  | gRPC services and request/response envelopes             |
+| 1     | `opennlp_document_v1.proto` | Document, spans, tokens, entities, analytics, embeddings |
+| 2     | `opennlp_pipeline_v1.proto` | Profiles, steps, model refs, options, backends           |
+| 3     | `opennlp_service_v1.proto`  | gRPC services and request/response envelopes             |
 
 
 All files share `package org.apache.opennlp.grpc.v1`.
@@ -272,7 +266,7 @@ sequenceDiagram
       S->>N: ChunkerME
     end
   end
-  S->>S: CharSpanMapper to OpenNlpDocument
+  S->>S: AnnotationSpanMapper to OpenNlpDocument
   S-->>C: AnalyzeDocumentResponse
 ```
 
@@ -295,7 +289,7 @@ OpenNLP Java APIs mix coordinate systems:
 
 **Wire contract (mandatory for v1):**
 
-- Every `CharSpan` in `OpenNlpDocument` and in RPC responses MUST use `CoordinateSpace.CHAR_DOCUMENT` unless explicitly documented otherwise.
+- Every `AnnotationSpan` in `OpenNlpDocument` and in RPC responses MUST use `CoordinateSpace.COORDINATE_SPACE_CHAR_DOCUMENT` unless explicitly documented otherwise.
 - Offsets are **half-open** `[start, end)` into `raw_text`, matching `opennlp.tools.util.Span`.
 - The server is solely responsible for converting token-index spans from `NameFinderME` to character spans before returning.
 
@@ -338,7 +332,7 @@ Server config (or a model resolver) maps `bundle_id` → concrete artifacts/path
 
 Implementations should populate these fields so that a client can list bundles, filter by language or capability (e.g. "has an embed component"), and then pick a `bundle_id` or `profile_id`. The exact richness of the descriptors can grow over time without breaking v1 clients (additive fields only).
 
-In the sandbox implementation we will start with what the existing `ModelFinderUtil` + directory scanning can provide and extend it for ONNX embedding artifacts (model + vocab pairs) as first-class bundle components.
+In the sandbox implementation we will start with `ConfiguredModelLoader` + `DirectoryModelFinder` under `org.apache.opennlp.grpc.model` (drop the sandbox copy once OPENNLP-1829 ships in the dependency) and extend it for ONNX embedding artifacts (model + vocab pairs) as first-class bundle components.
 
 ### 6.3 Profiles
 
@@ -414,7 +408,8 @@ This policy is intentionally documented early so that Python/Go/Rust/etc. client
 - Package path includes `v1`; breaking changes require `v2` package.
 - Use `reserved` for removed fields; never reuse field numbers.
 - `GetServiceInfoResponse.api_version` reports proto/API version string (e.g. `"1.0.0"`).
-- Sandbox `opennlp` package services: **not** wire-compatible; migration guide in Phase 2.
+- The removed sandbox `opennlp` package POC is **not** wire-compatible with v1.
+- v1 protos are linted with [Buf](https://buf.build) STANDARD rules (`opennlp-grpc-api/buf.yaml`). Run: `cd opennlp-grpc-api && buf lint`. Enum values use type prefixes (e.g. `PIPELINE_STEP_SENTENCE_DETECT`) to satisfy `ENUM_VALUE_PREFIX` and avoid cross-enum name collisions in protobuf.
 
 ---
 
@@ -435,7 +430,7 @@ Out of scope for proto, noted for implementers:
 | Phase | Deliverable                                                                                                                                                                                                                              |
 | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2a    | `opennlp-grpc-api` module, codegen, proto tests (including CHUNK/EMBED shapes)                                                                                                                                                           |
-| 2b    | Pure-Java processor/orchestrator + `CharSpanMapper` + basic CHUNK (sentence+overlap segmentation) + EMBED via `SentenceVectorsDL`; unit tests                                                                                            |
+| 2b    | Pure-Java processor/orchestrator + `AnnotationSpanMapper` + basic CHUNK (sentence+overlap segmentation) + EMBED via `SentenceVectorsDL`; unit tests                                                                                            |
 | 2c    | gRPC server host (delegating to processor), config for bundles/profiles, model discovery for both classic + ONNX embedding artifacts, integration tests, sandbox port + updated Python example                                           |
 | 2d    | Graduate modules to `apache/opennlp` (after community review); optional core `Document` interface alignment if not already landed in 3.0.0-M4                                                                                            |
 | 3     | Provider SPI hardening; first CUDA (`opennlp-dl-gpu`) and OpenVINO provider modules as separate optional builds; hot-swap / priority selection examples                                                                                  |
@@ -451,7 +446,7 @@ Out of scope for proto, noted for implementers:
 live under `opennlp-grpc-api/src/main/proto/org/apache/opennlp/grpc/v1/`. The blocks below
 are the canonical text form for the RFC and are kept in sync with those files.
 
-### 11.1 `opennlp_document.proto`
+### 11.1 `opennlp_document_v1.proto`
 
 ```protobuf
 // Licensed to the Apache Software Foundation (ASF) under one or more
@@ -533,13 +528,13 @@ message ChunkEmbeddingGroup {
 // A chunk (segmentation or otherwise) with its embeddings attached inside.
 // This is the "chunk owns its embedding models" shape (chunking first).
 message Chunk {
-  CharSpan char_span = 1;
+  AnnotationSpan annotation_span = 1;
   optional string chunk_tag = 2;
 
   // The text content of the chunk (substring of the document's raw_text).
   // Repeated for convenience so clients (especially non-Java) do not have to
   // slice the original document text. The authoritative location is still
-  // given by char_span over the top-level raw_text.
+  // given by annotation_span over the top-level raw_text.
   optional string text_content = 3;
 
   // The embeddings for this chunk from the models named for the containing group.
@@ -554,7 +549,7 @@ message Chunk {
 }
 
 message AnnotatedSentence {
-  CharSpan sentence_span = 1;
+  AnnotationSpan sentence_span = 1;
   repeated Token tokens = 2;
   repeated NamedEntity entities = 3;
   optional ChunkResult syntactic_chunks = 4;
@@ -565,19 +560,19 @@ message AnnotatedSentence {
 
 message Token {
   string text = 1;
-  CharSpan char_span = 2;
+  AnnotationSpan annotation_span = 2;
   optional string pos_tag = 3;
   optional string lemma = 4;
   optional float pos_probability = 5;
 }
 
 message NamedEntity {
-  CharSpan char_span = 1;
+  AnnotationSpan annotation_span = 1;
   string entity_type = 2;
   optional double probability = 3;
 }
 
-message CharSpan {
+message AnnotationSpan {
   int32 start = 1;
   int32 end = 2;
   CoordinateSpace space = 3;
@@ -587,8 +582,8 @@ message CharSpan {
 
 enum CoordinateSpace {
   COORDINATE_SPACE_UNSPECIFIED = 0;
-  CHAR_DOCUMENT = 1;
-  TOKEN_SENTENCE = 2;
+  COORDINATE_SPACE_CHAR_DOCUMENT = 1;
+  COORDINATE_SPACE_TOKEN_SENTENCE = 2;
 }
 
 message DocumentAnalytics {
@@ -610,7 +605,7 @@ message ChunkResult {
 }
 
 message ChunkSpan {
-  CharSpan char_span = 1;
+  AnnotationSpan annotation_span = 1;
   string chunk_tag = 2;
 }
 
@@ -620,7 +615,7 @@ message ParseTree {
 
 message ParseNode {
   string label = 1;
-  CharSpan span = 2;
+  AnnotationSpan span = 2;
   repeated ParseNode children = 3;
   optional double probability = 4;
 }
@@ -628,19 +623,19 @@ message ParseNode {
 message EmbeddingResult {
   string model_id = 1;
   repeated float vector = 2;
-  CharSpan source_span = 3;
+  AnnotationSpan source_span = 3;
   EmbeddingGranularity granularity = 4;
 }
 
 enum EmbeddingGranularity {
   EMBEDDING_GRANULARITY_UNSPECIFIED = 0;
-  DOCUMENT = 1;
-  SENTENCE = 2;
+  EMBEDDING_GRANULARITY_DOCUMENT = 1;
+  EMBEDDING_GRANULARITY_SENTENCE = 2;
   // Embeddings attached to (segmentation or syntactic) chunks produced by a CHUNK step
   // or by a ChunkEmbeddingGroup. This enables the "one chunk, multiple embedding aspects"
   // and multi-group use case (different chunker configs or embed models can each
   // produce their own group with CHUNK-granularity vectors).
-  CHUNK = 3;
+  EMBEDDING_GRANULARITY_CHUNK_LEVEL = 3;
   // Future: paragraph, section, or custom spans. Consumers should match on this
   // enum (plus group metadata) rather than string parsing of config ids.
   reserved 4 to 10;
@@ -652,7 +647,7 @@ message DocumentClassification {
 }
 ```
 
-### 11.2 `opennlp_pipeline.proto`
+### 11.2 `opennlp_pipeline_v1.proto`
 
 ```protobuf
 syntax = "proto3";
@@ -662,37 +657,63 @@ package org.apache.opennlp.grpc.v1;
 option java_package = "org.apache.opennlp.grpc.v1";
 option java_multiple_files = true;
 
-import "opennlp_document.proto";
+import "org/apache/opennlp/grpc/v1/opennlp_document_v1.proto";
 
 enum PipelineStep {
   PIPELINE_STEP_UNSPECIFIED = 0;
-  LANGUAGE_DETECT = 1;
-  SENTENCE_DETECT = 2;
-  TOKENIZE = 3;
-  POS_TAG = 4;
-  NER = 5;
-  CHUNK = 6;
-  PARSE = 7;
-  LEMMATIZE = 8;
-  DOC_CATEGORIZE = 9;
-  SENTIMENT = 10;
-  EMBED = 11;
+  PIPELINE_STEP_LANGUAGE_DETECT = 1;
+  PIPELINE_STEP_SENTENCE_DETECT = 2;
+  PIPELINE_STEP_TOKENIZE = 3;
+  PIPELINE_STEP_POS_TAG = 4;
+  PIPELINE_STEP_NER = 5;
+  PIPELINE_STEP_CHUNK = 6;
+  PIPELINE_STEP_PARSE = 7;
+  PIPELINE_STEP_LEMMATIZE = 8;
+  PIPELINE_STEP_DOC_CATEGORIZE = 9;
+  PIPELINE_STEP_SENTIMENT = 10;
+  PIPELINE_STEP_EMBED = 11;
+}
+
+// Configuration for a chunking strategy (used when the caller does not
+// supply a full AnalysisProfile for the entry).
+message ChunkingSpec {
+  // Algorithm: token, sentence, character, semantic (future), etc.
+  string algorithm = 1;           // e.g. "token", "sentence"
+  int32 chunk_size = 2;
+  int32 chunk_overlap = 3;
+  bool clean_text = 4;
+  bool preserve_urls = 5;
+  // For semantic chunking (topic boundaries via embeddings).
+  optional SemanticChunkingConfig semantic_config = 6;
+}
+
+message SemanticChunkingConfig {
+  float similarity_threshold = 1;
+  int32 percentile_threshold = 2;
+  int32 min_chunk_sentences = 3;
+  int32 max_chunk_sentences = 4;
+  // Embedding model used to detect semantic boundaries. When unset, the server
+  // uses the sole entry in ChunkEmbedConfigEntry.embedding_model_ids when exactly
+  // one id is present; otherwise semantic chunking is rejected with INVALID_ARGUMENT.
+  optional string semantic_embedding_model_id = 5;
 }
 
 enum POSTagFormat {
   POS_TAG_FORMAT_UNSPECIFIED = 0;
-  UD = 1;
-  PENN = 2;
-  CUSTOM = 3;
+  POS_TAG_FORMAT_UD = 1;
+  POS_TAG_FORMAT_PENN = 2;
+  POS_TAG_FORMAT_CUSTOM = 3;
 }
 
 enum InferenceBackend {
   INFERENCE_BACKEND_UNSPECIFIED = 0;
-  OPENNLP_ME = 1;
-  ONNX_RUNTIME = 2;
-  ONNX_RUNTIME_GPU = 3;
-  reserved 4 to 9;
-  reserved "OPENVINO", "DJL";
+  INFERENCE_BACKEND_OPENNLP_ME = 1;
+  INFERENCE_BACKEND_ONNX_RUNTIME = 2;
+  INFERENCE_BACKEND_ONNX_RUNTIME_GPU = 3;  // legacy selector; maps to CUDA provider
+  INFERENCE_BACKEND_CUDA = 4;                // NVIDIA CUDA (opennlp-dl-gpu)
+  INFERENCE_BACKEND_OPENVINO = 5;            // Intel OpenVINO (optional module)
+  reserved 6 to 9;
+  reserved "INFERENCE_BACKEND_DJL";
 }
 
 message AnalysisProfile {
@@ -710,7 +731,7 @@ message ModelBundleRef {
 
 message AnalysisOptions {
   bool include_probabilities = 1;
-  bool clear_adaptive_data = 2;
+  optional bool clear_adaptive_data = 2;
   InferenceBackend inference_backend = 3;
   optional int32 max_text_length = 4;
   optional string onnx_embedding_model_id = 5;
@@ -736,7 +757,7 @@ message ModelBundleInfo {
 }
 ```
 
-### 11.3 `opennlp_service.proto`
+### 11.3 `opennlp_service_v1.proto`
 
 ```protobuf
 syntax = "proto3";
@@ -746,8 +767,8 @@ package org.apache.opennlp.grpc.v1;
 option java_package = "org.apache.opennlp.grpc.v1";
 option java_multiple_files = true;
 
-import "opennlp_document.proto";
-import "opennlp_pipeline.proto";
+import "org/apache/opennlp/grpc/v1/opennlp_document_v1.proto";
+import "org/apache/opennlp/grpc/v1/opennlp_pipeline_v1.proto";
 
 service OpenNlpAnalysisService {
   rpc AnalyzeDocument(AnalyzeDocumentRequest) returns (AnalyzeDocumentResponse);
@@ -814,9 +835,9 @@ message ProcessingDiagnostic {
 
 enum DiagnosticSeverity {
   DIAGNOSTIC_SEVERITY_UNSPECIFIED = 0;
-  INFO = 1;
-  WARNING = 2;
-  ERROR = 3;
+  DIAGNOSTIC_SEVERITY_INFO = 1;
+  DIAGNOSTIC_SEVERITY_WARNING = 2;
+  DIAGNOSTIC_SEVERITY_ERROR = 3;
 }
 
 message GetServiceInfoRequest {}
@@ -834,12 +855,6 @@ message ListModelBundlesResponse {
   repeated ModelBundleInfo bundles = 1;
 }
 ```
-
-### 11.4 Reserved legacy package (optional, Phase 2 discussion)
-
-If PMC requires sandbox compatibility, move existing services to:
-
-`package org.apache.opennlp.grpc.legacy.v1;` - **unchanged wire format** from sandbox for one release, deprecated in favor of `OpenNlpAnalysisService`.
 
 ---
 
@@ -876,12 +891,12 @@ Two chunking strategies, each with explicitly named embedding models (not an aut
   "chunk_embed_configs": [
     {
       "config_id": "sentence-chunks",
-      "chunking": { "strategy": "SENTENCE" },
+      "chunking": { "algorithm": "sentence" },
       "embedding_model_ids": ["minilm-l6-v2"]
     },
     {
       "config_id": "fixed-window",
-      "chunking": { "strategy": "FIXED_CHAR", "max_chars": 128, "overlap_chars": 16 },
+      "chunking": { "algorithm": "token", "chunk_size": 128, "chunk_overlap": 16 },
       "embedding_model_ids": ["minilm-l6-v2", "e5-small"]
     }
   ]
@@ -898,12 +913,12 @@ Two chunking strategies, each with explicitly named embedding models (not an aut
     "detected_language": "eng",
     "sentences": [
       {
-        "sentence_span": { "start": 0, "end": 38, "space": "CHAR_DOCUMENT" },
+        "sentence_span": { "start": 0, "end": 38, "space": "COORDINATE_SPACE_CHAR_DOCUMENT" },
         "tokens": [
-          { "text": "John", "char_span": { "start": 0, "end": 4, "space": "CHAR_DOCUMENT" }, "pos_tag": "PROPN" }
+          { "text": "John", "annotation_span": { "start": 0, "end": 4, "space": "COORDINATE_SPACE_CHAR_DOCUMENT" }, "pos_tag": "PROPN" }
         ],
         "entities": [
-          { "char_span": { "start": 0, "end": 4, "space": "CHAR_DOCUMENT" }, "entity_type": "person" }
+          { "annotation_span": { "start": 0, "end": 4, "space": "COORDINATE_SPACE_CHAR_DOCUMENT" }, "entity_type": "person" }
         ]
       }
     ],
@@ -914,14 +929,14 @@ Two chunking strategies, each with explicitly named embedding models (not an aut
         "embedding_model_ids": ["minilm-l6-v2"],
         "chunks": [
           {
-            "char_span": { "start": 0, "end": 38, "space": "CHAR_DOCUMENT" },
+            "annotation_span": { "start": 0, "end": 38, "space": "COORDINATE_SPACE_CHAR_DOCUMENT" },
             "text_content": "John works at OpenNLP in New York.",
             "embeddings": [
               {
                 "model_id": "minilm-l6-v2",
                 "vector": [0.12, -0.04, 0.33],
-                "source_span": { "start": 0, "end": 38, "space": "CHAR_DOCUMENT" },
-                "granularity": "CHUNK"
+                "source_span": { "start": 0, "end": 38, "space": "COORDINATE_SPACE_CHAR_DOCUMENT" },
+                "granularity": "EMBEDDING_GRANULARITY_CHUNK_LEVEL"
               }
             ]
           }
@@ -933,11 +948,11 @@ Two chunking strategies, each with explicitly named embedding models (not an aut
         "embedding_model_ids": ["minilm-l6-v2", "e5-small"],
         "chunks": [
           {
-            "char_span": { "start": 0, "end": 64, "space": "CHAR_DOCUMENT" },
+            "annotation_span": { "start": 0, "end": 64, "space": "COORDINATE_SPACE_CHAR_DOCUMENT" },
             "text_content": "John works at OpenNLP in New York. The team builds NLP tools.",
             "embeddings": [
-              { "model_id": "minilm-l6-v2", "vector": [0.11, -0.03, 0.31], "granularity": "CHUNK" },
-              { "model_id": "e5-small", "vector": [0.09, 0.02, 0.28], "granularity": "CHUNK" }
+              { "model_id": "minilm-l6-v2", "vector": [0.11, -0.03, 0.31], "granularity": "EMBEDDING_GRANULARITY_CHUNK_LEVEL" },
+              { "model_id": "e5-small", "vector": [0.09, 0.02, 0.28], "granularity": "EMBEDDING_GRANULARITY_CHUNK_LEVEL" }
             ]
           }
         ]
@@ -984,6 +999,8 @@ Two chunking strategies, each with explicitly named embedding models (not an aut
 
 | Version | Date       | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.7     | 2026-06-08 | Reconcile §11/§12 with the on-disk `*_v1.proto` sources: `CharSpan`→`AnnotationSpan` (canonical; the coordinate space, not the name, distinguishes char vs. token offsets), `ChunkingSpec` field names (`algorithm`/`chunk_size`/`chunk_overlap`) + document `SemanticChunkingConfig`, `optional clear_adaptive_data`, full-path proto imports and `*_v1.proto` filenames. |
+| 0.6     | 2026-06-07 | Add `buf.yaml`; fix Buf STANDARD lint (enum value prefixes, remove unused import). |
 | 0.5     | 2026-06-06 | Expand conversational Summary: motivation, what the document-centric gRPC API unlocks (polyglot integration, streaming, shared infrastructure, search/RAG). |
 | 0.4     | 2026-06-06 | Restructure into Part I (overview + target architecture diagram) and Part II (specs). Remove external platform references. Clarify chunk-first / embeddings-inside-chunk model. Fix duplicate proto appendix messages. Add multi-group §12 examples.                                                                                                                                                                                                          |
 | 0.3     | 2026-06-06 | Canonical sandbox doc; multi-group chunk+embed (`ChunkEmbeddingGroup`, `ChunkEmbedConfigEntry`, `EmbeddingGranularity.CHUNK`).                                                                                                                                                                                                                                                                                                                                |

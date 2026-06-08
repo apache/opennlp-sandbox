@@ -1,0 +1,121 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+syntax = "proto3";
+
+package org.apache.opennlp.grpc.v1;
+
+option java_package = "org.apache.opennlp.grpc.v1";
+option java_multiple_files = true;
+
+// Pipeline steps supported by AnalyzeDocument (and future streaming variants).
+enum PipelineStep {
+  PIPELINE_STEP_UNSPECIFIED = 0;
+  PIPELINE_STEP_LANGUAGE_DETECT = 1;
+  PIPELINE_STEP_SENTENCE_DETECT = 2;
+  PIPELINE_STEP_TOKENIZE = 3;
+  PIPELINE_STEP_POS_TAG = 4;
+  PIPELINE_STEP_NER = 5;
+  PIPELINE_STEP_CHUNK = 6;     // segmentation-style or classic syntactic chunking
+  PIPELINE_STEP_PARSE = 7;
+  PIPELINE_STEP_LEMMATIZE = 8;
+  PIPELINE_STEP_DOC_CATEGORIZE = 9;
+  PIPELINE_STEP_SENTIMENT = 10;
+  PIPELINE_STEP_EMBED = 11;
+}
+
+// Configuration for a chunking strategy (used when the caller does not
+// supply a full AnalysisProfile for the entry).
+message ChunkingSpec {
+  // Algorithm: token, sentence, character, semantic (future), etc.
+  string algorithm = 1;           // e.g. "token", "sentence"
+  int32 chunk_size = 2;
+  int32 chunk_overlap = 3;
+  bool clean_text = 4;
+  bool preserve_urls = 5;
+  // For semantic chunking (topic boundaries via embeddings).
+  optional SemanticChunkingConfig semantic_config = 6;
+}
+
+message SemanticChunkingConfig {
+  float similarity_threshold = 1;
+  int32 percentile_threshold = 2;
+  int32 min_chunk_sentences = 3;
+  int32 max_chunk_sentences = 4;
+  // Embedding model used to detect semantic boundaries. When unset, the server
+  // uses the sole entry in ChunkEmbedConfigEntry.embedding_model_ids when exactly
+  // one id is present; otherwise semantic chunking is rejected with INVALID_ARGUMENT.
+  optional string semantic_embedding_model_id = 5;
+}
+
+enum POSTagFormat {
+  POS_TAG_FORMAT_UNSPECIFIED = 0;
+  POS_TAG_FORMAT_UD = 1;
+  POS_TAG_FORMAT_PENN = 2;
+  POS_TAG_FORMAT_CUSTOM = 3;
+}
+
+enum InferenceBackend {
+  INFERENCE_BACKEND_UNSPECIFIED = 0;
+  INFERENCE_BACKEND_OPENNLP_ME = 1;          // classic *ME
+  INFERENCE_BACKEND_ONNX_RUNTIME = 2;        // CPU ONNX Runtime (opennlp-dl)
+  INFERENCE_BACKEND_ONNX_RUNTIME_GPU = 3;    // CUDA via onnxruntime-gpu (opennlp-dl-gpu); prefer CUDA below
+  INFERENCE_BACKEND_CUDA = 4;                // NVIDIA CUDA provider (opennlp-dl-gpu / onnxruntime-gpu)
+  INFERENCE_BACKEND_OPENVINO = 5;            // Intel OpenVINO provider (optional module, future)
+  // DJL and other providers remain reserved for separate optional modules.
+  reserved 6 to 9;
+  reserved "INFERENCE_BACKEND_DJL";
+}
+
+message AnalysisProfile {
+  string profile_id = 1;
+  repeated PipelineStep steps = 2;
+  ModelBundleRef model_bundle = 3;
+  POSTagFormat pos_tag_format = 4;
+  repeated string ner_entity_types = 5;
+}
+
+message ModelBundleRef {
+  string bundle_id = 1;
+  map<string, string> component_keys = 2;
+}
+
+message AnalysisOptions {
+  bool include_probabilities = 1;
+  // When omitted, the server defaults to true (clear adaptive data after each request).
+  optional bool clear_adaptive_data = 2;
+  InferenceBackend inference_backend = 3;
+  optional int32 max_text_length = 4;
+  optional string onnx_embedding_model_id = 5;
+}
+
+message ModelDescriptor {
+  string hash = 1;
+  string name = 2;
+  string locale = 3;
+  string component_type = 4;
+  repeated string languages = 5;
+  repeated PipelineStep supported_steps = 6;
+  map<string, string> attributes = 7;
+}
+
+message ModelBundleInfo {
+  string bundle_id = 1;
+  repeated ModelDescriptor models = 2;
+  repeated string supported_languages = 3;
+  repeated PipelineStep supported_steps = 4;
+}
