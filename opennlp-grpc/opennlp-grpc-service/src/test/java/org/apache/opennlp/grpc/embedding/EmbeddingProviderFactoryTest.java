@@ -49,10 +49,30 @@ class EmbeddingProviderFactoryTest {
   }
 
   @Test
-  void rejectsUnknownBackend() {
+  void rejectsUnknownBackendAndListsRegisteredBackends() {
     final AnalysisException e = assertThrows(AnalysisException.class,
         () -> EmbeddingProviderFactory.create(Map.of("model.embedder.backend", "openvino")));
     assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, e.getFailureType());
+    assertTrue(e.getMessage().contains("registered backends:"),
+        "error should list the discovered backends: " + e.getMessage());
+    assertTrue(e.getMessage().contains("onnx"), e.getMessage());
+    assertTrue(e.getMessage().contains("cuda"), e.getMessage());
+  }
+
+  @Test
+  void discoversExternalBackendThroughServiceLoader() {
+    final EmbeddingProvider provider =
+        EmbeddingProviderFactory.create(Map.of("model.embedder.backend", "stub"));
+    assertInstanceOf(StubEmbeddingProvider.class, provider);
+    assertTrue(provider.supportsModel("stub-model"));
+    assertEquals(3, provider.embeddingDimension("stub-model"));
+  }
+
+  @Test
+  void backendSelectionIsCaseInsensitive() {
+    final EmbeddingProvider provider =
+        EmbeddingProviderFactory.create(Map.of("model.embedder.backend", " ONNX "));
+    assertInstanceOf(OnnxRuntimeEmbeddingProvider.class, provider);
   }
 
   @Test

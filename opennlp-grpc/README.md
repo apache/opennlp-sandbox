@@ -101,10 +101,19 @@ model.embedder.sentence-transformers.vocab.path=/path/to/vocab.txt
 ```
 
 `model.embedder.backend` accepts `onnx` (default, CPU) or `cuda`; any other value
-is rejected at startup. `model.embedder.gpu_device_id` is only valid with the
-`cuda` backend. Clients should set `inference_backend` to `INFERENCE_BACKEND_CUDA`
-(or legacy `INFERENCE_BACKEND_ONNX_RUNTIME_GPU`) when requesting embeddings or
-chunk embeddings. Requires an NVIDIA CUDA runtime on the host.
+is rejected at startup with the list of registered backends. `model.embedder.gpu_device_id`
+is only valid with the `cuda` backend. Clients should set `inference_backend` to
+`INFERENCE_BACKEND_CUDA` (or legacy `INFERENCE_BACKEND_ONNX_RUNTIME_GPU`) when requesting
+embeddings or chunk embeddings. Requires an NVIDIA CUDA runtime on the host.
+
+#### Custom embedding backends (SPI)
+
+Embedding backends are discovered through `java.util.ServiceLoader`. To add a backend
+(for example OpenVINO or a remote inference endpoint), ship a jar that implements
+`org.apache.opennlp.grpc.embedding.EmbeddingBackendFactory`, registers it in
+`META-INF/services/org.apache.opennlp.grpc.embedding.EmbeddingBackendFactory`, and put
+that jar on the server classpath. The backend then becomes selectable via
+`model.embedder.backend=<your-backend-id>` without any change to the server.
 
 ### Chunk + embed configs
 

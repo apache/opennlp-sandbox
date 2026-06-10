@@ -19,22 +19,31 @@ package org.apache.opennlp.grpc.embedding;
 
 import java.util.Locale;
 import java.util.Map;
+import java.util.ServiceLoader;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Creates the configured {@link EmbeddingProvider} for the gRPC server.
  *
- * <p>The backend is selected with the {@code model.embedder.backend} configuration key.
- * Supported values are {@value #BACKEND_ONNX} (the default, ONNX Runtime on CPU) and
- * {@value #BACKEND_CUDA} (ONNX Runtime with the CUDA execution provider; requires a
- * server built with the {@code gpu} Maven profile). Any other value is rejected.</p>
+ * <p>Backends are discovered through the {@link EmbeddingBackendFactory} service provider
+ * interface via {@link ServiceLoader} and selected with the {@code model.embedder.backend}
+ * configuration key. The server ships {@code onnx} (the default, ONNX Runtime on CPU) and
+ * {@code cuda} (ONNX Runtime with the CUDA execution provider; requires a server built
+ * with the {@code gpu} Maven flavor). Additional backends become available by placing a
+ * jar with an {@link EmbeddingBackendFactory} registration on the classpath. Unknown
+ * backend values are rejected with the list of discovered backends.</p>
  */
 public final class EmbeddingProviderFactory {
 
+  private static final Logger logger = LoggerFactory.getLogger(EmbeddingProviderFactory.class);
+
   static final String KEY_BACKEND = "model.embedder.backend";
-  static final String BACKEND_ONNX = "onnx";
-  static final String BACKEND_CUDA = "cuda";
+  static final String DEFAULT_BACKEND = OnnxEmbeddingBackendFactory.BACKEND_ID;
 
   private EmbeddingProviderFactory() {
   }
@@ -46,18 +55,47 @@ public final class EmbeddingProviderFactory {
    *
    * @return The configured provider. Never {@code null}.
    *
-   * @throws AnalysisException If the configured backend is unknown or the provider's
-   *                           model configuration is invalid.
+   * @throws AnalysisException If the configured backend is not registered, two factories
+   *                           declare the same backend id, or the provider's model
+   *                           configuration is invalid.
    */
   public static EmbeddingProvider create(Map<String, String> configuration) {
     final String backend =
-        configuration.getOrDefault(KEY_BACKEND, BACKEND_ONNX).trim().toLowerCase(Locale.ROOT);
-    return switch (backend) {
-      case BACKEND_ONNX -> new OnnxRuntimeEmbeddingProvider(configuration);
-      case BACKEND_CUDA -> new CudaEmbeddingProvider(configuration);
-      default -> throw AnalysisException.invalidArgument(
-          KEY_BACKEND + " '" + backend + "' is not supported; expected one of: "
-              + BACKEND_ONNX + ", " + BACKEND_CUDA);
-    };
+        configuration.getOrDefault(KEY_BACKEND, DEFAULT_BACKEND).trim().toLowerCase(Locale.ROOT);
+    final SortedMap<String, EmbeddingBackendFactory> factories = discoverFactories();
+
+    final EmbeddingBackendFactory factory = factories.get(backend);
+    if (factory == null) {
+      throw AnalysisException.invalidArgument(
+          KEY_BACKEND + " '" + backend + "' is not supported; registered backends: "
+              + String.join(", ", factories.keySet()));
+    }
+    logger.info("Selected embedding backend '{}' ({})", backend, factory.getClass().getName());
+    return factory.create(configuration);
+  }
+
+  /**
+   * Discovers all registered backend factories, keyed by backend id.
+   *
+   * @throws AnalysisException If a factory declares an invalid id or two factories declare
+   *                           the same id.
+   */
+  private static SortedMap<String, EmbeddingBackendFactory> discoverFactories() {
+    final SortedMap<String, EmbeddingBackendFactory> factories = new TreeMap<>();
+    for (EmbeddingBackendFactory factory : ServiceLoader.load(EmbeddingBackendFactory.class)) {
+      final String id = factory.backendId();
+      if (id == null || id.isBlank() || !id.equals(id.toLowerCase(Locale.ROOT))) {
+        throw AnalysisException.invalidArgument(
+            factory.getClass().getName() + " declares an invalid backend id '" + id
+                + "'; backend ids must be non-blank and lower-case");
+      }
+      final EmbeddingBackendFactory duplicate = factories.putIfAbsent(id, factory);
+      if (duplicate != null) {
+        throw AnalysisException.invalidArgument(
+            "Embedding backend id '" + id + "' is declared by both "
+                + duplicate.getClass().getName() + " and " + factory.getClass().getName());
+      }
+    }
+    return factories;
   }
 }
