@@ -18,12 +18,13 @@
 package org.apache.opennlp.grpc.server;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.stream.Stream;
 
 import io.grpc.ManagedChannel;
@@ -82,15 +83,19 @@ class OpenNlpGrpcServerIT {
     final Path sentenceModel = requireModelFile(modelsDir, SENTENCE_MODEL_PREFIX);
     final Path tokenizerModel = requireModelFile(modelsDir, TOKENIZER_MODEL_PREFIX);
 
+    final Properties properties = new Properties();
+    properties.setProperty("server.enable_reflection", "false");
+    properties.setProperty("server.max_inbound_message_size", "10485760");
+    properties.setProperty("model.sentence_detector.path", sentenceModel.toAbsolutePath().toString());
+    properties.setProperty("model.tokenizer.path", tokenizerModel.toAbsolutePath().toString());
+
     final Path config = Files.createTempFile("opennlp-grpc-it-", ".ini");
     config.toFile().deleteOnExit();
-    Files.writeString(config, """
-        server.enable_reflection=false
-        server.max_inbound_message_size=10485760
-        model.sentence_detector.path=%s
-        model.tokenizer.path=%s
-        """.formatted(sentenceModel.toAbsolutePath(), tokenizerModel.toAbsolutePath()),
-        StandardCharsets.UTF_8);
+    // The server parses the config with Properties.load, so the file must be written with
+    // Properties.store: it escapes backslashes, which would otherwise corrupt Windows paths.
+    try (OutputStream out = Files.newOutputStream(config)) {
+      properties.store(out, null);
+    }
     return config;
   }
 
