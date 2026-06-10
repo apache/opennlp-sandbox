@@ -21,6 +21,10 @@ package org.apache.opennlp.grpc.v1;
 
 option java_package = "org.apache.opennlp.grpc.v1";
 option java_multiple_files = true;
+// Explicit outer classname: without it, protoc derives "OpennlpDocument" from
+// the filename, which collides with the OpenNlpDocument message on
+// case-insensitive filesystems (macOS, Windows).
+option java_outer_classname = "OpenNlpDocumentProto";
 
 import "google/protobuf/struct.proto";
 
