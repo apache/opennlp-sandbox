@@ -44,17 +44,26 @@ Options:
 - `-p, --port` - listen port (default `7071`)
 - `-c, --config` - key=value config file
 
-Example config:
+Example config (`key=value`, `#` comments):
 
 ```ini
-server.enable_reflection = false
-model.location = extlib
-model.recursive = true
-model.sentdetect.wildcard.pattern = opennlp-models-sentdetect-*.jar
-model.tokenizer.wildcard.pattern = opennlp-models-tokenizer-*.jar
+server.enable_reflection=false
+server.max_inbound_message_size=10485760
+
+# Optional explicit model overrides. When omitted, the en sentence-detector and
+# tokenizer load from the classpath via the opennlp-models-* runtime deps.
+# model.sentence_detector.path=/path/to/en-sent.bin
+# model.tokenizer.path=/path/to/en-token.bin
 ```
 
-Place model JARs in `extlib` (or `model.location`).
+By default no configuration is required: the server loads the bundled English
+sentence-detector and tokenizer from the classpath.
+
+> v1 note: this minimal slice implements sentence detection, tokenization,
+> probability reporting, `max_text_length`, offset encoding selection, and the
+> default `en-basic` model bundle. Unsupported backends, ONNX embedding model
+> selection, non-default bundles, and chunk/embed configs are rejected explicitly
+> instead of being silently ignored.
 
 ## v1 API
 

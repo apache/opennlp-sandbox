@@ -29,14 +29,13 @@ import java.util.Objects;
 import opennlp.tools.models.ClassPathModelProvider;
 import opennlp.tools.models.DefaultClassPathModelProvider;
 import opennlp.tools.models.ModelType;
-import opennlp.tools.sentdetect.SentenceDetector;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
-import opennlp.tools.tokenize.Tokenizer;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.tokenize.TokenizerModel;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.v1.ComponentType;
 import org.apache.opennlp.grpc.v1.ModelBundleInfo;
 import org.apache.opennlp.grpc.v1.ModelDescriptor;
 import org.apache.opennlp.grpc.v1.PipelineStep;
@@ -55,8 +54,8 @@ public final class ModelBundleCache {
 
   private final ClassPathModelProvider modelProvider;
   private final Map<String, ModelBundleInfo> bundles;
-  private final SentenceDetector sentenceDetector;
-  private final Tokenizer tokenizer;
+  private final SentenceDetectorME sentenceDetector;
+  private final TokenizerME tokenizer;
 
   public ModelBundleCache(Map<String, String> configuration) {
     Objects.requireNonNull(configuration, "configuration");
@@ -66,11 +65,11 @@ public final class ModelBundleCache {
     this.bundles = buildBundleCatalog();
   }
 
-  public SentenceDetector getSentenceDetector() {
+  public SentenceDetectorME getSentenceDetector() {
     return sentenceDetector;
   }
 
-  public Tokenizer getTokenizer() {
+  public TokenizerME getTokenizer() {
     return tokenizer;
   }
 
@@ -78,7 +77,7 @@ public final class ModelBundleCache {
     return new ArrayList<>(bundles.values());
   }
 
-  private SentenceDetector loadSentenceDetector(Map<String, String> configuration) {
+  private SentenceDetectorME loadSentenceDetector(Map<String, String> configuration) {
     try {
       final String configuredPath = configuration.get(KEY_SENTDETECT_PATH);
       final SentenceModel model;
@@ -99,7 +98,7 @@ public final class ModelBundleCache {
     }
   }
 
-  private Tokenizer loadTokenizer(Map<String, String> configuration) {
+  private TokenizerME loadTokenizer(Map<String, String> configuration) {
     try {
       final String configuredPath = configuration.get(KEY_TOKENIZER_PATH);
       final TokenizerModel model;
@@ -130,13 +129,13 @@ public final class ModelBundleCache {
         .addModels(ModelDescriptor.newBuilder()
             .setName("opennlp-models-sentdetect-" + DEFAULT_LANGUAGE)
             .setLocale(DEFAULT_LANGUAGE)
-            .setComponentType("sentdetect")
+            .setComponentType(ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR)
             .addLanguages(DEFAULT_LANGUAGE)
             .build())
         .addModels(ModelDescriptor.newBuilder()
             .setName("opennlp-models-tokenizer-" + DEFAULT_LANGUAGE)
             .setLocale(DEFAULT_LANGUAGE)
-            .setComponentType("tokenizer")
+            .setComponentType(ComponentType.COMPONENT_TYPE_TOKENIZER)
             .addLanguages(DEFAULT_LANGUAGE)
             .build())
         .build());

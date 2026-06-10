@@ -20,6 +20,7 @@ package org.apache.opennlp.grpc.profile;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
+import org.apache.opennlp.grpc.v1.ModelBundleRef;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.junit.jupiter.api.Test;
@@ -66,6 +67,24 @@ class ProfileResolverTest {
     assertEquals("inline", profile.getProfileId());
     assertEquals(1, profile.getStepsCount());
     assertEquals(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT, profile.getSteps(0));
+  }
+
+  @Test
+  void inlineProfileMergesNonStepOverridesWhenProfileIdIsSet() {
+    final AnalysisProfile profile = resolver.resolve(AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setRawText("Hello.").build())
+        .setProfileId("en-basic")
+        .setProfile(AnalysisProfile.newBuilder()
+            .setProfileId("custom-bundle")
+            .setModelBundle(ModelBundleRef.newBuilder().setBundleId("custom").build())
+            .build())
+        .build());
+
+    assertEquals("custom-bundle", profile.getProfileId());
+    assertEquals("custom", profile.getModelBundle().getBundleId());
+    assertEquals(2, profile.getStepsCount());
+    assertEquals(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT, profile.getSteps(0));
+    assertEquals(PipelineStep.PIPELINE_STEP_TOKENIZE, profile.getSteps(1));
   }
 
   @Test

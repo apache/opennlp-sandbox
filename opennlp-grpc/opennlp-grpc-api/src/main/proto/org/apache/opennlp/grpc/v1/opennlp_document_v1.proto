@@ -22,6 +22,8 @@ package org.apache.opennlp.grpc.v1;
 option java_package = "org.apache.opennlp.grpc.v1";
 option java_multiple_files = true;
 
+import "google/protobuf/struct.proto";
+
 // Canonical 1:1 NLP document: text in, annotations out.
 // The sentences list provides the shared base linguistic analysis
 // (computed once even when multiple chunk+embed groups are requested).
@@ -32,7 +34,9 @@ message OpenNlpDocument {
   optional float language_confidence = 4;
   repeated AnnotatedSentence sentences = 5;
   optional DocumentAnalytics analytics = 6;
-  map<string, string> metadata = 7;
+  // Opaque client-supplied metadata, echoed back verbatim. The server never
+  // writes first-class results here; it is a passthrough lane only.
+  google.protobuf.Struct metadata = 7;
   repeated EmbeddingResult embeddings = 8;  // denormalized convenience "all vectors + spans"
   optional DocumentClassification classification = 9;
 
@@ -40,6 +44,10 @@ message OpenNlpDocument {
   // from one analysis. Each group corresponds to one chunking strategy with
   // its explicitly requested embedding models attached inside the chunks.
   repeated ChunkEmbeddingGroup chunk_embedding_groups = 10;
+
+  // Unit of every AnnotationSpan start/end offset in this document (uniform).
+  // Echoes the requested AnalysisOptions.offset_encoding; defaults to UTF-8 bytes.
+  OffsetEncoding offset_encoding = 11;
 }
 
 message AnnotatedSentence {
@@ -82,6 +90,17 @@ enum CoordinateSpace {
   COORDINATE_SPACE_UNSPECIFIED = 0;
   COORDINATE_SPACE_CHAR_DOCUMENT = 1;
   COORDINATE_SPACE_TOKEN_SENTENCE = 2;
+}
+
+// Unit that AnnotationSpan.start/end are measured in. Orthogonal to
+// CoordinateSpace (which says what the offset is relative to). The wire
+// default is UTF-8 bytes, aligning with the protobuf encoding of raw_text so
+// non-JVM clients slice correctly without conversion.
+enum OffsetEncoding {
+  OFFSET_ENCODING_UNSPECIFIED = 0;
+  OFFSET_ENCODING_UTF8_BYTE = 1;           // default; matches the raw_text wire bytes
+  OFFSET_ENCODING_UTF16_CODE_UNIT = 2;     // Java/OpenNLP native
+  OFFSET_ENCODING_UNICODE_CODE_POINT = 3;  // language-neutral codepoints
 }
 
 message DocumentAnalytics {
@@ -131,8 +150,15 @@ message ChunkEmbeddingGroup {
   repeated string embedding_model_ids = 3;  // exactly as named for this strategy
   optional string result_set_name = 4;
   repeated Chunk chunks = 5;
-  map<string, string> metadata = 6;
+  optional ChunkGroupStats stats = 6;
   optional EmbeddingGranularity granularity = 7;
+}
+
+// Typed per-group statistics/provenance (replaces an untyped metadata map).
+message ChunkGroupStats {
+  int32 chunk_count = 1;
+  int32 total_tokens = 2;
+  int64 processing_time_ms = 3;
 }
 
 message ParseTree {

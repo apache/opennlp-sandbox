@@ -23,6 +23,8 @@ package org.apache.opennlp.grpc.processor;
  */
 public final class AnalysisException extends RuntimeException {
 
+  private static final long serialVersionUID = 1L;
+
   public enum FailureType {
     /** Client supplied an invalid request. */
     INVALID_ARGUMENT,

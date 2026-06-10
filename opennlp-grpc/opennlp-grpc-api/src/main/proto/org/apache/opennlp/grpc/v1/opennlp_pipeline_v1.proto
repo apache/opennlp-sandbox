@@ -22,6 +22,8 @@ package org.apache.opennlp.grpc.v1;
 option java_package = "org.apache.opennlp.grpc.v1";
 option java_multiple_files = true;
 
+import "org/apache/opennlp/grpc/v1/opennlp_document_v1.proto";
+
 // Pipeline steps supported by AnalyzeDocument (and future streaming variants).
 enum PipelineStep {
   PIPELINE_STEP_UNSPECIFIED = 0;
@@ -91,7 +93,28 @@ message AnalysisProfile {
 
 message ModelBundleRef {
   string bundle_id = 1;
-  map<string, string> component_keys = 2;
+  repeated ComponentModelRef component_models = 2;
+}
+
+// Binds a pipeline component to a specific model artifact (by SHA-256 hash).
+message ComponentModelRef {
+  ComponentType component_type = 1;
+  string model_hash = 2;
+}
+
+enum ComponentType {
+  COMPONENT_TYPE_UNSPECIFIED = 0;
+  COMPONENT_TYPE_LANGUAGE_DETECTOR = 1;
+  COMPONENT_TYPE_SENTENCE_DETECTOR = 2;
+  COMPONENT_TYPE_TOKENIZER = 3;
+  COMPONENT_TYPE_POS_TAGGER = 4;
+  COMPONENT_TYPE_NAME_FINDER = 5;
+  COMPONENT_TYPE_CHUNKER = 6;
+  COMPONENT_TYPE_PARSER = 7;
+  COMPONENT_TYPE_LEMMATIZER = 8;
+  COMPONENT_TYPE_DOC_CATEGORIZER = 9;
+  COMPONENT_TYPE_SENTIMENT = 10;
+  COMPONENT_TYPE_EMBEDDER = 11;
 }
 
 message AnalysisOptions {
@@ -101,16 +124,18 @@ message AnalysisOptions {
   InferenceBackend inference_backend = 3;
   optional int32 max_text_length = 4;
   optional string onnx_embedding_model_id = 5;
+  // Unit for response AnnotationSpan offsets. Unset => UTF-8 bytes (the default).
+  OffsetEncoding offset_encoding = 6;
 }
 
 message ModelDescriptor {
   string hash = 1;
   string name = 2;
   string locale = 3;
-  string component_type = 4;
+  ComponentType component_type = 4;
   repeated string languages = 5;
   repeated PipelineStep supported_steps = 6;
-  map<string, string> attributes = 7;
+  int32 embedding_dimension = 7;  // 0 unless this is an embedding model
 }
 
 message ModelBundleInfo {

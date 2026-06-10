@@ -38,7 +38,7 @@ Phase 1 is agreement on this contract-the protos and the design captured here. I
 | Field                | Value                                            |
 | -------------------- | ------------------------------------------------ |
 | **Status**           | Draft RFC                                        |
-| **Version**          | 0.7                                              |
+| **Version**          | 0.8                                              |
 | **API version**      | `v1`                                             |
 | **OpenNLP baseline** | 3.0.0-SNAPSHOT (JDK 21+)                         |
 | **Companion**        | [JIRA proposal](./opennlp-grpc-jira-proposal.md) |
@@ -291,7 +291,8 @@ OpenNLP Java APIs mix coordinate systems:
 
 - Every `AnnotationSpan` in `OpenNlpDocument` and in RPC responses MUST use `CoordinateSpace.COORDINATE_SPACE_CHAR_DOCUMENT` unless explicitly documented otherwise.
 - Offsets are **half-open** `[start, end)` into `raw_text`, matching `opennlp.tools.util.Span`.
-- The server is solely responsible for converting token-index spans from `NameFinderME` to character spans before returning.
+- Offset units are explicit: `OpenNlpDocument.offset_encoding` records whether all spans are UTF-8 byte offsets, Java/OpenNLP UTF-16 code-unit offsets, or Unicode code-point offsets. `AnalysisOptions.offset_encoding` selects the response encoding; unset means UTF-8 bytes.
+- The server is solely responsible for converting Java/OpenNLP offsets and token-index spans into the requested wire offset encoding before returning.
 
 ---
 
@@ -301,7 +302,7 @@ OpenNLP Java APIs mix coordinate systems:
 
 - Classic models: Java-serialized `.bin` in ZIP/JAR (unchanged).
 - Models are **never** sent inline in `AnalyzeDocumentRequest`.
-- Server loads from configurable directory/classpath (port sandbox `model.location`, wildcards).
+- Server loads the default `en-basic` bundle from the classpath via `DefaultClassPathModelProvider` (the `opennlp-models-*` runtime deps); optional `model.sentence_detector.path` / `model.tokenizer.path` config keys override with explicit `.bin` files.
 
 ### 6.2 ModelBundleRef and discovery
 
@@ -310,11 +311,16 @@ OpenNLP Java APIs mix coordinate systems:
 ```protobuf
 message ModelBundleRef {
   string bundle_id = 1;
-  map<string, string> component_keys = 2;
+  repeated ComponentModelRef component_models = 2;
+}
+
+message ComponentModelRef {
+  ComponentType component_type = 1;
+  string model_hash = 2;
 }
 ```
 
-Example `component_keys`: `tokenizer`, `sentence_detector`, `pos`, `ner_person`, `ner_org`, `embed_minilm`, `langdetect`.
+Example `ComponentType` values: `COMPONENT_TYPE_TOKENIZER`, `COMPONENT_TYPE_SENTENCE_DETECTOR`, `COMPONENT_TYPE_POS_TAGGER`, `COMPONENT_TYPE_NAME_FINDER`, `COMPONENT_TYPE_EMBEDDER`, `COMPONENT_TYPE_LANGUAGE_DETECTOR`.
 
 Server config (or a model resolver) maps `bundle_id` → concrete artifacts/paths. Clients can send only `bundle_id` when using server-defined profiles.
 
@@ -326,13 +332,13 @@ Server config (or a model resolver) maps `bundle_id` → concrete artifacts/path
 `ModelBundleInfo` / `ModelDescriptor` (see full proto in 11.2–11.3) are intended to carry enough metadata for real client discovery:
 
 - `locale` / language.
-- Component types present (e.g. "sentence_detector", "embed").
+- Component types present (for example `COMPONENT_TYPE_SENTENCE_DETECTOR`, `COMPONENT_TYPE_TOKENIZER`, `COMPONENT_TYPE_EMBEDDER`).
 - Supported or typical `PipelineStep` values this bundle is intended to serve.
 - Optional free-form capabilities or tags.
 
 Implementations should populate these fields so that a client can list bundles, filter by language or capability (e.g. "has an embed component"), and then pick a `bundle_id` or `profile_id`. The exact richness of the descriptors can grow over time without breaking v1 clients (additive fields only).
 
-In the sandbox implementation we will start with `ConfiguredModelLoader` + `DirectoryModelFinder` under `org.apache.opennlp.grpc.model` (drop the sandbox copy once OPENNLP-1829 ships in the dependency) and extend it for ONNX embedding artifacts (model + vocab pairs) as first-class bundle components.
+The current sandbox slice resolves a single shared `en-basic` bundle through `DefaultClassPathModelProvider` (`opennlp-grpc.model.ModelBundleCache`). Multi-bundle resolution by `bundle_id` / `component_models`, directory/JAR discovery (e.g. via OPENNLP-1829's `DirectoryModelFinder` once it ships in the dependency), and ONNX embedding artifacts (model + vocab pairs) as first-class bundle components are deferred to later phases.
 
 ### 6.3 Profiles
 
@@ -476,7 +482,7 @@ message OpenNlpDocument {
   optional float language_confidence = 4;
   repeated AnnotatedSentence sentences = 5;
   optional DocumentAnalytics analytics = 6;
-  map<string, string> metadata = 7;
+  google.protobuf.Struct metadata = 7;
   repeated EmbeddingResult embeddings = 8;  // denormalized "all embeddings with spans" view (optional convenience)
   optional DocumentClassification classification = 9;
 
@@ -485,6 +491,9 @@ message OpenNlpDocument {
   // Shared linguistic backbone (sentences above) is computed once; each group
   // applies its chunking strategy and named embedding models independently.
   repeated ChunkEmbeddingGroup chunk_embedding_groups = 10;
+
+  // Unit of every AnnotationSpan start/end offset in this document.
+  OffsetEncoding offset_encoding = 11;
 }
 
 // A named, traceable group of chunks produced by one chunking strategy,
@@ -517,12 +526,18 @@ message ChunkEmbeddingGroup {
   // and the multiple embedding models attached directly to it.
   repeated Chunk chunks = 5;
 
-  // Optional per-group metadata (timing, counts, provenance, etc.).
-  map<string, string> metadata = 6;
+  // Optional typed per-group statistics/provenance.
+  optional ChunkGroupStats stats = 6;
 
   // Primary granularity for the chunks/vectors in this group (CHUNK for
   // segmentation-style groups, SENTENCE, etc.).
   optional EmbeddingGranularity granularity = 7;
+}
+
+message ChunkGroupStats {
+  int32 chunk_count = 1;
+  int32 total_tokens = 2;
+  int64 processing_time_ms = 3;
 }
 
 // A chunk (segmentation or otherwise) with its embeddings attached inside.
@@ -637,7 +652,7 @@ enum EmbeddingGranularity {
   // produce their own group with CHUNK-granularity vectors).
   EMBEDDING_GRANULARITY_CHUNK_LEVEL = 3;
   // Future: paragraph, section, or custom spans. Consumers should match on this
-  // enum (plus group metadata) rather than string parsing of config ids.
+  // enum (plus the group id/config fields) rather than string parsing config ids.
   reserved 4 to 10;
 }
 
@@ -726,7 +741,27 @@ message AnalysisProfile {
 
 message ModelBundleRef {
   string bundle_id = 1;
-  map<string, string> component_keys = 2;
+  repeated ComponentModelRef component_models = 2;
+}
+
+message ComponentModelRef {
+  ComponentType component_type = 1;
+  string model_hash = 2;
+}
+
+enum ComponentType {
+  COMPONENT_TYPE_UNSPECIFIED = 0;
+  COMPONENT_TYPE_LANGUAGE_DETECTOR = 1;
+  COMPONENT_TYPE_SENTENCE_DETECTOR = 2;
+  COMPONENT_TYPE_TOKENIZER = 3;
+  COMPONENT_TYPE_POS_TAGGER = 4;
+  COMPONENT_TYPE_NAME_FINDER = 5;
+  COMPONENT_TYPE_CHUNKER = 6;
+  COMPONENT_TYPE_PARSER = 7;
+  COMPONENT_TYPE_LEMMATIZER = 8;
+  COMPONENT_TYPE_DOC_CATEGORIZER = 9;
+  COMPONENT_TYPE_SENTIMENT = 10;
+  COMPONENT_TYPE_EMBEDDER = 11;
 }
 
 message AnalysisOptions {
@@ -735,17 +770,18 @@ message AnalysisOptions {
   InferenceBackend inference_backend = 3;
   optional int32 max_text_length = 4;
   optional string onnx_embedding_model_id = 5;
+  OffsetEncoding offset_encoding = 6;
 }
 
 message ModelDescriptor {
   string hash = 1;
   string name = 2;
   string locale = 3;
-  string component_type = 4;
+  ComponentType component_type = 4;
   // Discovery aids (additive; populated by server for ListModelBundles)
   repeated string languages = 5;           // e.g. ["en", "eng"]
   repeated PipelineStep supported_steps = 6;
-  map<string, string> attributes = 7;      // free-form (e.g. "dim":"384", "task":"embed")
+  int32 embedding_dimension = 7;           // 0 unless this is an embedding model
 }
 
 message ModelBundleInfo {
@@ -999,6 +1035,7 @@ Two chunking strategies, each with explicitly named embedding models (not an aut
 
 | Version | Date       | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.8     | 2026-06-08 | §6: replace the removed `ConfiguredModelLoader`/`DirectoryModelFinder` + `model.location` scanning design with the current `DefaultClassPathModelProvider` single-`en-basic` bundle; note multi-bundle/discovery/ONNX as deferred. |
 | 0.7     | 2026-06-08 | Reconcile §11/§12 with the on-disk `*_v1.proto` sources: `CharSpan`→`AnnotationSpan` (canonical; the coordinate space, not the name, distinguishes char vs. token offsets), `ChunkingSpec` field names (`algorithm`/`chunk_size`/`chunk_overlap`) + document `SemanticChunkingConfig`, `optional clear_adaptive_data`, full-path proto imports and `*_v1.proto` filenames. |
 | 0.6     | 2026-06-07 | Add `buf.yaml`; fix Buf STANDARD lint (enum value prefixes, remove unused import). |
 | 0.5     | 2026-06-06 | Expand conversational Summary: motivation, what the document-centric gRPC API unlocks (polyglot integration, streaming, shared infrastructure, search/RAG). |

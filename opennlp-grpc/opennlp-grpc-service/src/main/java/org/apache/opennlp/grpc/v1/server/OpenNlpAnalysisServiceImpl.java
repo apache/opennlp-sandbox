@@ -33,7 +33,6 @@ import org.apache.opennlp.grpc.v1.GetServiceInfoResponse;
 import org.apache.opennlp.grpc.v1.ListModelBundlesRequest;
 import org.apache.opennlp.grpc.v1.ListModelBundlesResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpAnalysisServiceGrpc;
-import org.apache.opennlp.grpc.v1.PipelineStep;
 
 /**
  * gRPC adapter for the v1 document-centric API.

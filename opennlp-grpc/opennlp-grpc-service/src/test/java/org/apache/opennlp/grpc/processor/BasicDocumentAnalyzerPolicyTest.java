@@ -19,11 +19,14 @@ package org.apache.opennlp.grpc.processor;
 
 import java.util.Map;
 
+import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkingSpec;
 import org.apache.opennlp.grpc.v1.DiagnosticSeverity;
+import org.apache.opennlp.grpc.v1.InferenceBackend;
+import org.apache.opennlp.grpc.v1.ModelBundleRef;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.apache.opennlp.grpc.v1.SemanticChunkingConfig;
@@ -109,5 +112,63 @@ class BasicDocumentAnalyzerPolicyTest {
         .anyMatch(d -> d.getStep() == PipelineStep.PIPELINE_STEP_TOKENIZE
             && d.getSeverity() == DiagnosticSeverity.DIAGNOSTIC_SEVERITY_INFO
             && d.getMessage().contains("skipped")));
+  }
+
+  @Test
+  void rejectsTextExceedingMaxTextLength() {
+    final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(Map.of());
+
+    final AnalysisException error = assertThrows(AnalysisException.class, () -> analyzer.analyze(
+        AnalyzeDocumentRequest.newBuilder()
+            .setDocument(OpenNlpDocument.newBuilder().setRawText("This is too long.").build())
+            .setOptions(AnalysisOptions.newBuilder().setMaxTextLength(4).build())
+            .build()));
+
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+  }
+
+  @Test
+  void rejectsUnsupportedInferenceBackend() {
+    final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(Map.of());
+
+    final AnalysisException error = assertThrows(AnalysisException.class, () -> analyzer.analyze(
+        AnalyzeDocumentRequest.newBuilder()
+            .setDocument(OpenNlpDocument.newBuilder().setRawText("Hello world.").build())
+            .setOptions(AnalysisOptions.newBuilder()
+                .setInferenceBackend(InferenceBackend.INFERENCE_BACKEND_ONNX_RUNTIME)
+                .build())
+            .build()));
+
+    assertEquals(AnalysisException.FailureType.UNIMPLEMENTED, error.getFailureType());
+  }
+
+  @Test
+  void rejectsOnnxEmbeddingModelId() {
+    final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(Map.of());
+
+    final AnalysisException error = assertThrows(AnalysisException.class, () -> analyzer.analyze(
+        AnalyzeDocumentRequest.newBuilder()
+            .setDocument(OpenNlpDocument.newBuilder().setRawText("Hello world.").build())
+            .setOptions(AnalysisOptions.newBuilder().setOnnxEmbeddingModelId("minilm").build())
+            .build()));
+
+    assertEquals(AnalysisException.FailureType.UNIMPLEMENTED, error.getFailureType());
+  }
+
+  @Test
+  void rejectsUnknownModelBundle() {
+    final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(Map.of());
+
+    final AnalysisException error = assertThrows(AnalysisException.class, () -> analyzer.analyze(
+        AnalyzeDocumentRequest.newBuilder()
+            .setDocument(OpenNlpDocument.newBuilder().setRawText("Hello world.").build())
+            .setProfile(AnalysisProfile.newBuilder()
+                .setProfileId("custom")
+                .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+                .setModelBundle(ModelBundleRef.newBuilder().setBundleId("de-custom").build())
+                .build())
+            .build()));
+
+    assertEquals(AnalysisException.FailureType.NOT_FOUND, error.getFailureType());
   }
 }

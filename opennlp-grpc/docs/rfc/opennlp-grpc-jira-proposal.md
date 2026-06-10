@@ -67,7 +67,7 @@ Evolve the sandbox POC into ASF-native modules (target: main repo after consensu
 ### Design highlights
 
 1. **Three proto layers (NLP-only):** domain types (`OpenNlpDocument`), pipeline config (`AnalysisProfile`), service (`OpenNlpAnalysisService`)
-2. **Offset contract:** All exported spans use **character offsets in the original `raw_text`** (`CHAR_DOCUMENT`), half-open `[start, end)` matching `opennlp.tools.util.Span`
+2. **Offset contract:** All exported spans are half-open `[start, end)` ranges in the original `raw_text`; `CoordinateSpace` says what the range is relative to, and `OffsetEncoding` says whether the units are UTF-8 bytes, UTF-16 code units, or Unicode code points
 3. **Model bundles:** Replace per-RPC `model_hash` with `ModelBundleRef` + server-defined profiles (reuse sandbox model discovery patterns)
 4. **Thread safety:** Leverage OpenNLP 3.0 thread-safe `*ME` instances cached per model bundle
 
@@ -85,6 +85,8 @@ package org.apache.opennlp.grpc.v1;
 option java_package = "org.apache.opennlp.grpc.v1";
 option java_multiple_files = true;
 
+import "google/protobuf/struct.proto";
+
 // --- Layer 1: Document ---
 
 message OpenNlpDocument {
@@ -93,38 +95,48 @@ message OpenNlpDocument {
   optional string detected_language = 3;
   optional float language_confidence = 4;
   repeated AnnotatedSentence sentences = 5;
-  map<string, string> metadata = 6;
+  optional DocumentAnalytics analytics = 6;
+  google.protobuf.Struct metadata = 7;
+  OffsetEncoding offset_encoding = 11;
 }
 
 message AnnotatedSentence {
-  CharSpan sentence_span = 1;
+  AnnotationSpan sentence_span = 1;
   repeated Token tokens = 2;
   repeated NamedEntity entities = 3;
 }
 
 message Token {
   string text = 1;
-  CharSpan char_span = 2;
+  AnnotationSpan annotation_span = 2;
   optional string pos_tag = 3;
 }
 
 message NamedEntity {
-  CharSpan char_span = 1;
+  AnnotationSpan annotation_span = 1;
   string entity_type = 2;
-  optional double prob = 3;
+  optional double probability = 3;
 }
 
-message CharSpan {
+message AnnotationSpan {
   int32 start = 1;
   int32 end = 2;
   CoordinateSpace space = 3;
   optional string type = 4;
-  optional double prob = 5;
+  optional double probability = 5;
 }
 
 enum CoordinateSpace {
   COORDINATE_SPACE_UNSPECIFIED = 0;
-  CHAR_DOCUMENT = 1;
+  COORDINATE_SPACE_CHAR_DOCUMENT = 1;
+  COORDINATE_SPACE_TOKEN_SENTENCE = 2;
+}
+
+enum OffsetEncoding {
+  OFFSET_ENCODING_UNSPECIFIED = 0;
+  OFFSET_ENCODING_UTF8_BYTE = 1;
+  OFFSET_ENCODING_UTF16_CODE_UNIT = 2;
+  OFFSET_ENCODING_UNICODE_CODE_POINT = 3;
 }
 
 // --- Layer 2: Pipeline ---

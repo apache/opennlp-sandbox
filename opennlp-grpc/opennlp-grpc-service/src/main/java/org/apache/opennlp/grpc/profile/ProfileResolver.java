@@ -48,9 +48,7 @@ public final class ProfileResolver {
     final boolean hasProfileId = request.hasProfileId() && !request.getProfileId().isBlank();
     final boolean hasInlineProfile = request.hasProfile();
     final AnalysisProfile inline = hasInlineProfile ? request.getProfile() : null;
-    final boolean inlineHasSteps = inline != null && inline.getStepsCount() > 0;
-
-    if (hasProfileId && hasInlineProfile && inlineHasSteps) {
+    if (hasProfileId && hasInlineProfile) {
       final AnalysisProfile serverProfile = registry.find(request.getProfileId())
           .orElseThrow(() -> AnalysisException.notFound("Unknown profile_id: " + request.getProfileId()));
       return merge(serverProfile, inline);
@@ -61,7 +59,7 @@ public final class ProfileResolver {
           .orElseThrow(() -> AnalysisException.notFound("Unknown profile_id: " + request.getProfileId()));
     }
 
-    if (hasInlineProfile && inlineHasSteps) {
+    if (hasInlineProfile && inline.getStepsCount() > 0) {
       return inline;
     }
 
