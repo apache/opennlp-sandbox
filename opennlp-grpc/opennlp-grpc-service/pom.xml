@@ -213,6 +213,40 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.11.0</version>
+                <executions>
+                    <execution>
+                        <id>unpack-integration-test-models</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.apache.opennlp</groupId>
+                                    <artifactId>opennlp-models-sentdetect-en</artifactId>
+                                    <version>${opennlp.models.version}</version>
+                                    <type>jar</type>
+                                    <includes>*.bin</includes>
+                                    <outputDirectory>${project.build.testOutputDirectory}/models</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.apache.opennlp</groupId>
+                                    <artifactId>opennlp-models-tokenizer-en</artifactId>
+                                    <version>${opennlp.models.version}</version>
+                                    <type>jar</type>
+                                    <includes>*.bin</includes>
+                                    <outputDirectory>${project.build.testOutputDirectory}/models</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <executions>
                     <execution>

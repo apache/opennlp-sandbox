@@ -17,10 +17,14 @@
  */
 package org.apache.opennlp.grpc.server;
 
+import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -39,6 +43,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OpenNlpGrpcServerIT {
 
+  private static final String SENTENCE_MODEL_PREFIX = "opennlp-en-ud-ewt-sentence-";
+  private static final String TOKENIZER_MODEL_PREFIX = "opennlp-en-ud-ewt-tokens-";
+
   private static OpenNlpGrpcServer server;
   private static ManagedChannel channel;
 
@@ -46,7 +53,7 @@ class OpenNlpGrpcServerIT {
   static void init() throws Exception {
     server = new OpenNlpGrpcServer();
     server.port = 0;
-    server.config = getConfig().toString();
+    server.config = writeIntegrationConfig().toString();
     server.start();
 
     channel = ManagedChannelBuilder.forAddress("localhost", server.getPort())
@@ -64,12 +71,37 @@ class OpenNlpGrpcServerIT {
     }
   }
 
-  private static Path getConfig() throws URISyntaxException {
-    return Paths.get(
-        Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("config-test.ini"))
-            .toURI()
-    ).toAbsolutePath();
+  /**
+   * Writes a server config with explicit model paths. Integration tests must not rely on
+   * {@code DefaultClassPathModelProvider} classpath scanning, which is environment-dependent
+   * across operating systems and Maven classloader layouts.
+   */
+  private static Path writeIntegrationConfig() throws IOException, URISyntaxException {
+    final Path modelsDir = Paths.get(
+        Objects.requireNonNull(OpenNlpGrpcServerIT.class.getResource("/models/")).toURI());
+    final Path sentenceModel = requireModelFile(modelsDir, SENTENCE_MODEL_PREFIX);
+    final Path tokenizerModel = requireModelFile(modelsDir, TOKENIZER_MODEL_PREFIX);
+
+    final Path config = Files.createTempFile("opennlp-grpc-it-", ".ini");
+    config.toFile().deleteOnExit();
+    Files.writeString(config, """
+        server.enable_reflection=false
+        server.max_inbound_message_size=10485760
+        model.sentence_detector.path=%s
+        model.tokenizer.path=%s
+        """.formatted(sentenceModel.toAbsolutePath(), tokenizerModel.toAbsolutePath()),
+        StandardCharsets.UTF_8);
+    return config;
+  }
+
+  private static Path requireModelFile(Path modelsDir, String prefix) throws IOException {
+    try (Stream<Path> files = Files.list(modelsDir)) {
+      return files.filter(Files::isRegularFile)
+          .filter(path -> path.getFileName().toString().startsWith(prefix))
+          .findFirst()
+          .orElseThrow(() -> new IllegalStateException(
+              "Expected a model file with prefix '" + prefix + "' under " + modelsDir));
+    }
   }
 
   @Test
