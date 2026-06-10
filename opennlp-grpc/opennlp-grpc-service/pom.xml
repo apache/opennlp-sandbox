@@ -30,6 +30,11 @@
     <artifactId>opennlp-grpc-service</artifactId>
     <name>Apache OpenNLP gRPC Server</name>
 
+    <properties>
+        <!-- Must match the onnxruntime version managed by opennlp-dl ${opennlp.version}. -->
+        <onnxruntime.version>1.25.0</onnxruntime.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.opennlp</groupId>
@@ -54,6 +59,23 @@
         <dependency>
             <groupId>org.apache.opennlp</groupId>
             <artifactId>opennlp-model-resolver</artifactId>
+        </dependency>
+        <!--
+          ONNX embeddings support (Maven Central artifact, not the sandbox DL4J module).
+          The onnxruntime jar is excluded here and supplied by exactly one of the
+          cpu/gpu profiles below, so the CPU and CUDA runtimes (which ship the same
+          ai.onnxruntime classes) can never coexist on the classpath.
+        -->
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-dl</artifactId>
+            <version>${opennlp.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.microsoft.onnxruntime</groupId>
+                    <artifactId>onnxruntime</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -130,6 +152,44 @@
         </dependency>
 
     </dependencies>
+
+    <!--
+      Exactly one ONNX Runtime flavor is active at a time. The default cpu profile
+      is replaced by the gpu profile when building with -Dgpu (mirrors the
+      opennlp-dl / opennlp-dl-gpu split in the main OpenNLP repository).
+    -->
+    <profiles>
+        <profile>
+            <id>cpu</id>
+            <activation>
+                <property>
+                    <name>!gpu</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.microsoft.onnxruntime</groupId>
+                    <artifactId>onnxruntime</artifactId>
+                    <version>${onnxruntime.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>gpu</id>
+            <activation>
+                <property>
+                    <name>gpu</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.microsoft.onnxruntime</groupId>
+                    <artifactId>onnxruntime_gpu</artifactId>
+                    <version>${onnxruntime.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 
     <build>
         <plugins>

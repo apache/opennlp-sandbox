@@ -114,7 +114,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     this.server.start();
     logger.info("Started OpenNlpGrpcServer on port {}", server.getPort());
 
-    registerShutdownHook();
+    registerShutdownHook(modelBundleCache);
   }
 
   public void awaitTermination() throws InterruptedException {
@@ -149,13 +149,14 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     return configuration;
   }
 
-  private void registerShutdownHook() {
+  private void registerShutdownHook(ModelBundleCache modelBundleCache) {
     Runtime.getRuntime()
         .addShutdownHook(
             new Thread(
                 () -> {
                   try {
                     stop();
+                    modelBundleCache.close();
                   } catch (Exception e) {
                     logger.error(
                         "Error when trying to shutdown a lifecycle component: {}",

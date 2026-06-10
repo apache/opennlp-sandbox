@@ -80,18 +80,26 @@ class BasicDocumentAnalyzerPolicyTest {
   }
 
   @Test
-  void rejectsChunkEmbedConfigs() {
+  void rejectsSemanticChunkEmbedConfigsWithoutEmbeddingModel() {
     final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(Map.of());
 
     final AnalysisException error = assertThrows(AnalysisException.class, () -> analyzer.analyze(
         AnalyzeDocumentRequest.newBuilder()
             .setDocument(OpenNlpDocument.newBuilder().setRawText("Hello world.").build())
             .addChunkEmbedConfigs(ChunkEmbedConfigEntry.newBuilder()
-                .setConfigId("token-chunks")
+                .setConfigId("semantic")
+                .setChunking(ChunkingSpec.newBuilder()
+                    .setAlgorithm("semantic")
+                    .setSemanticConfig(SemanticChunkingConfig.newBuilder()
+                        .setSimilarityThreshold(0.5f)
+                        .build())
+                    .build())
+                .addEmbeddingModelIds("minilm")
+                .addEmbeddingModelIds("e5")
                 .build())
             .build()));
 
-    assertEquals(AnalysisException.FailureType.UNIMPLEMENTED, error.getFailureType());
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
   }
 
   @Test
@@ -143,7 +151,7 @@ class BasicDocumentAnalyzerPolicyTest {
   }
 
   @Test
-  void rejectsOnnxEmbeddingModelId() {
+  void rejectsOnnxEmbeddingModelIdWithoutEmbedStep() {
     final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(Map.of());
 
     final AnalysisException error = assertThrows(AnalysisException.class, () -> analyzer.analyze(
@@ -152,7 +160,25 @@ class BasicDocumentAnalyzerPolicyTest {
             .setOptions(AnalysisOptions.newBuilder().setOnnxEmbeddingModelId("minilm").build())
             .build()));
 
-    assertEquals(AnalysisException.FailureType.UNIMPLEMENTED, error.getFailureType());
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+  }
+
+  @Test
+  void rejectsEmbedStepWhenNoModelsConfigured() {
+    final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(Map.of());
+
+    final AnalysisException error = assertThrows(AnalysisException.class, () -> analyzer.analyze(
+        AnalyzeDocumentRequest.newBuilder()
+            .setDocument(OpenNlpDocument.newBuilder().setRawText("Hello world.").build())
+            .setProfile(AnalysisProfile.newBuilder()
+                .setProfileId("with-embed")
+                .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+                .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+                .addSteps(PipelineStep.PIPELINE_STEP_EMBED)
+                .build())
+            .build()));
+
+    assertEquals(AnalysisException.FailureType.NOT_FOUND, error.getFailureType());
   }
 
   @Test

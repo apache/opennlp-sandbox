@@ -18,13 +18,17 @@
 package org.apache.opennlp.grpc.processor;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.util.Span;
+import org.apache.opennlp.grpc.chunk.ChunkEmbedProcessor;
+import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.profile.ProfileResolver;
@@ -34,16 +38,19 @@ import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
+import org.apache.opennlp.grpc.v1.Chunk;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
+import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
 import org.apache.opennlp.grpc.v1.DiagnosticSeverity;
+import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
+import org.apache.opennlp.grpc.v1.EmbeddingResult;
 import org.apache.opennlp.grpc.v1.InferenceBackend;
 import org.apache.opennlp.grpc.v1.ModelBundleRef;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.apache.opennlp.grpc.v1.ProcessingDiagnostic;
-import org.apache.opennlp.grpc.v1.SemanticChunkingConfig;
 import org.apache.opennlp.grpc.v1.Token;
 
 /**
@@ -56,16 +63,26 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
 
   private final ProfileResolver profileResolver;
   private final ModelBundleCache modelBundleCache;
+  private final EmbeddingProvider embeddingProvider;
 
   public BasicDocumentAnalyzer(Map<String, String> configuration) {
     this(ProfileRegistry.createDefault(), new ModelBundleCache(configuration));
   }
 
   public BasicDocumentAnalyzer(ProfileRegistry profileRegistry, ModelBundleCache modelBundleCache) {
+    this(profileRegistry, modelBundleCache, modelBundleCache.getEmbeddingProvider());
+  }
+
+  public BasicDocumentAnalyzer(
+      ProfileRegistry profileRegistry,
+      ModelBundleCache modelBundleCache,
+      EmbeddingProvider embeddingProvider) {
     Objects.requireNonNull(profileRegistry, "profileRegistry");
     Objects.requireNonNull(modelBundleCache, "modelBundleCache");
+    Objects.requireNonNull(embeddingProvider, "embeddingProvider");
     this.profileResolver = new ProfileResolver(profileRegistry);
     this.modelBundleCache = modelBundleCache;
+    this.embeddingProvider = embeddingProvider;
   }
 
   @Override
@@ -95,7 +112,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       document.setMetadata(input.getMetadata());
     }
 
-    if (PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)) {
+    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)) {
       runStep(
           PipelineStep.PIPELINE_STEP_SENTENCE_DETECT,
           diagnostics,
@@ -104,7 +121,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       addSkippedDiagnostic(diagnostics, PipelineStep.PIPELINE_STEP_SENTENCE_DETECT);
     }
 
-    if (PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
+    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
       if (document.getSentencesCount() == 0) {
         throw AnalysisException.failedPrecondition(
             PipelineStep.PIPELINE_STEP_TOKENIZE.name()
@@ -119,6 +136,36 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       addSkippedDiagnostic(diagnostics, PipelineStep.PIPELINE_STEP_TOKENIZE);
     }
 
+    final String embeddingModelId = resolveEmbeddingModelId(request, profile);
+    if (PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_EMBED)) {
+      if (document.getSentencesCount() == 0) {
+        throw AnalysisException.failedPrecondition(
+            PipelineStep.PIPELINE_STEP_EMBED.name()
+                + " requires "
+                + PipelineStep.PIPELINE_STEP_SENTENCE_DETECT.name());
+      }
+      runStep(
+          PipelineStep.PIPELINE_STEP_EMBED,
+          diagnostics,
+          () -> runEmbedding(rawText, document, embeddingModelId, diagnostics));
+    } else {
+      addSkippedDiagnostic(diagnostics, PipelineStep.PIPELINE_STEP_EMBED);
+    }
+
+    if (request.getChunkEmbedConfigsCount() > 0) {
+      runStep(
+          PipelineStep.PIPELINE_STEP_CHUNK,
+          diagnostics,
+          () -> runChunkEmbedConfigs(rawText, document, request, diagnostics));
+    } else if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_CHUNK)) {
+      runStep(
+          PipelineStep.PIPELINE_STEP_CHUNK,
+          diagnostics,
+          () -> runProfileChunking(rawText, document, diagnostics));
+    } else {
+      addSkippedDiagnostic(diagnostics, PipelineStep.PIPELINE_STEP_CHUNK);
+    }
+
     final OffsetEncoding requestedEncoding = request.hasOptions()
         ? request.getOptions().getOffsetEncoding()
         : OffsetEncoding.OFFSET_ENCODING_UNSPECIFIED;
@@ -130,7 +177,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
         .build();
   }
 
-  private static void validateSupportedRequest(
+  private void validateSupportedRequest(
       AnalyzeDocumentRequest request, AnalysisProfile profile, String rawText) {
     for (PipelineStep step : profile.getStepsList()) {
       if (step == PipelineStep.PIPELINE_STEP_UNSPECIFIED) {
@@ -141,38 +188,152 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       }
     }
 
-    validateOptions(request, rawText);
+    validateOptions(request, profile, rawText);
     validateModelBundle(profile);
+    validateEmbeddingRequest(request, profile);
+    validateChunkEmbedConfigs(request);
+  }
 
+  private void validateChunkEmbedConfigs(AnalyzeDocumentRequest request) {
     if (request.getChunkEmbedConfigsCount() == 0) {
       return;
     }
     for (ChunkEmbedConfigEntry entry : request.getChunkEmbedConfigsList()) {
-      validateSemanticChunking(entry);
+      ChunkEmbedProcessor.validateEntry(entry, embeddingProvider);
     }
-    throw AnalysisException.unimplemented("chunk_embed_configs are not implemented on this server");
   }
 
-  private static void validateOptions(AnalyzeDocumentRequest request, String rawText) {
+  private Set<PipelineStep> resolveEffectiveSteps(
+      AnalyzeDocumentRequest request, AnalysisProfile profile) {
+    final LinkedHashSet<PipelineStep> steps = new LinkedHashSet<>(profile.getStepsList());
+    if (PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_EMBED)) {
+      steps.add(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT);
+    }
+    if (request.getChunkEmbedConfigsCount() > 0) {
+      steps.add(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT);
+      for (ChunkEmbedConfigEntry entry : request.getChunkEmbedConfigsList()) {
+        if (entry.hasChunking() && "token".equals(entry.getChunking().getAlgorithm())) {
+          steps.add(PipelineStep.PIPELINE_STEP_TOKENIZE);
+        }
+      }
+    }
+    if (PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_CHUNK)
+        && request.getChunkEmbedConfigsCount() == 0) {
+      steps.add(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT);
+    }
+    return steps;
+  }
+
+  private boolean shouldRunStep(
+      AnalyzeDocumentRequest request, AnalysisProfile profile, PipelineStep step) {
+    return resolveEffectiveSteps(request, profile).contains(step);
+  }
+
+  private void validateOptions(
+      AnalyzeDocumentRequest request, AnalysisProfile profile, String rawText) {
     if (!request.hasOptions()) {
       return;
     }
     final AnalysisOptions options = request.getOptions();
     final InferenceBackend backend = options.getInferenceBackend();
+    final boolean embedRequested =
+        PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_EMBED);
+    final boolean chunkEmbedsRequested = request.getChunkEmbedConfigsList().stream()
+        .anyMatch(entry -> entry.getEmbeddingModelIdsCount() > 0);
+    final boolean dlRequested = embedRequested || chunkEmbedsRequested;
     if (backend != InferenceBackend.INFERENCE_BACKEND_UNSPECIFIED
-        && backend != InferenceBackend.INFERENCE_BACKEND_OPENNLP_ME) {
+        && backend != InferenceBackend.INFERENCE_BACKEND_OPENNLP_ME
+        && !(dlRequested && embeddingProvider.supportsInferenceBackend(backend))) {
       throw AnalysisException.unimplemented(
-          "inference_backend " + backend.name() + " is not implemented; only OPENNLP_ME is supported");
+          "inference_backend " + backend.name()
+              + " is not implemented for the configured embedding provider");
     }
     if (options.hasOnnxEmbeddingModelId() && !options.getOnnxEmbeddingModelId().isBlank()) {
-      throw AnalysisException.unimplemented(
-          "onnx_embedding_model_id is not implemented (no EMBED step on this server)");
+      if (!embedRequested) {
+        throw AnalysisException.invalidArgument(
+            "onnx_embedding_model_id requires PIPELINE_STEP_EMBED in the analysis profile");
+      }
     }
     if (options.hasMaxTextLength()
         && options.getMaxTextLength() > 0
         && rawText.length() > options.getMaxTextLength()) {
       throw AnalysisException.invalidArgument(
           "document.raw_text exceeds max_text_length (" + options.getMaxTextLength() + ")");
+    }
+  }
+
+  private void validateEmbeddingRequest(AnalyzeDocumentRequest request, AnalysisProfile profile) {
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_EMBED)) {
+      return;
+    }
+    if (!embeddingProvider.isAvailable()) {
+      throw AnalysisException.notFound(
+          "PIPELINE_STEP_EMBED requested but no embedding models are configured on this server");
+    }
+    final String modelId = resolveEmbeddingModelId(request, profile);
+    if (modelId == null || modelId.isBlank()) {
+      throw AnalysisException.invalidArgument(
+          "onnx_embedding_model_id is required when multiple embedding models are configured");
+    }
+    if (!embeddingProvider.supportsModel(modelId)) {
+      throw AnalysisException.notFound("Unknown embedding model '" + modelId + "'");
+    }
+  }
+
+  private String resolveEmbeddingModelId(AnalyzeDocumentRequest request, AnalysisProfile profile) {
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_EMBED)) {
+      return null;
+    }
+    String requested = null;
+    if (request.hasOptions() && request.getOptions().hasOnnxEmbeddingModelId()) {
+      requested = request.getOptions().getOnnxEmbeddingModelId();
+    }
+    return embeddingProvider.resolveModelId(requested);
+  }
+
+  private void runChunkEmbedConfigs(
+      String rawText,
+      OpenNlpDocument.Builder document,
+      AnalyzeDocumentRequest request,
+      List<ProcessingDiagnostic> diagnostics) {
+    if (document.getSentencesCount() == 0) {
+      throw AnalysisException.failedPrecondition(
+          "chunk_embed_configs requires sentence detection backbone");
+    }
+    for (ChunkEmbedConfigEntry entry : request.getChunkEmbedConfigsList()) {
+      if ("token".equals(entry.getChunking().getAlgorithm())) {
+        ensureTokenized(document);
+      }
+      final ChunkEmbeddingGroup group =
+          ChunkEmbedProcessor.buildGroup(rawText, document.build(), entry, embeddingProvider);
+      document.addChunkEmbeddingGroups(group);
+      diagnostics.add(ChunkEmbedProcessor.successDiagnostic(
+          entry.getConfigId(), group.getChunksCount()));
+    }
+  }
+
+  private void runProfileChunking(
+      String rawText,
+      OpenNlpDocument.Builder document,
+      List<ProcessingDiagnostic> diagnostics) {
+    if (document.getSentencesCount() == 0) {
+      throw AnalysisException.failedPrecondition(
+          PipelineStep.PIPELINE_STEP_CHUNK.name()
+              + " requires "
+              + PipelineStep.PIPELINE_STEP_SENTENCE_DETECT.name());
+    }
+    final ChunkEmbeddingGroup group =
+        ChunkEmbedProcessor.buildSentenceGroup(rawText, document.build(), "profile-chunk");
+    document.addChunkEmbeddingGroups(group);
+    diagnostics.add(ChunkEmbedProcessor.successDiagnostic("profile-chunk", group.getChunksCount()));
+  }
+
+  private static void ensureTokenized(OpenNlpDocument.Builder document) {
+    for (AnnotatedSentence sentence : document.getSentencesList()) {
+      if (sentence.getTokensCount() == 0) {
+        throw AnalysisException.failedPrecondition(
+            "token chunking requires " + PipelineStep.PIPELINE_STEP_TOKENIZE.name());
+      }
     }
   }
 
@@ -191,21 +352,6 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       throw AnalysisException.unimplemented(
           "per-component model selection (component_models) is not implemented");
     }
-  }
-
-  private static void validateSemanticChunking(ChunkEmbedConfigEntry entry) {
-    if (!entry.hasChunking() || !entry.getChunking().hasSemanticConfig()) {
-      return;
-    }
-    final SemanticChunkingConfig semantic = entry.getChunking().getSemanticConfig();
-    if (semantic.hasSemanticEmbeddingModelId() && !semantic.getSemanticEmbeddingModelId().isBlank()) {
-      return;
-    }
-    if (entry.getEmbeddingModelIdsCount() == 1) {
-      return;
-    }
-    throw AnalysisException.invalidArgument(
-        "semantic chunking requires semantic_embedding_model_id or exactly one embedding_model_id");
   }
 
   private void runStep(
@@ -281,6 +427,40 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
         .build());
   }
 
+  private void runEmbedding(
+      String rawText,
+      OpenNlpDocument.Builder document,
+      String modelId,
+      List<ProcessingDiagnostic> diagnostics) {
+    int embeddingCount = 0;
+    for (AnnotatedSentence sentence : document.getSentencesList()) {
+      final AnnotationSpan sentenceSpan = sentence.getSentenceSpan();
+      final String sentenceText = rawText.substring(sentenceSpan.getStart(), sentenceSpan.getEnd());
+      final float[] vector = embeddingProvider.embed(modelId, sentenceText);
+      document.addEmbeddings(EmbeddingResult.newBuilder()
+          .setModelId(modelId)
+          .addAllVector(toFloatList(vector))
+          .setSourceSpan(sentenceSpan)
+          .setGranularity(EmbeddingGranularity.EMBEDDING_GRANULARITY_SENTENCE)
+          .build());
+      embeddingCount++;
+    }
+    diagnostics.add(ProcessingDiagnostic.newBuilder()
+        .setStep(PipelineStep.PIPELINE_STEP_EMBED)
+        .setSeverity(DiagnosticSeverity.DIAGNOSTIC_SEVERITY_INFO)
+        .setMessage("Generated " + embeddingCount + " sentence embedding(s) with model '"
+            + modelId + "'")
+        .build());
+  }
+
+  private static List<Float> toFloatList(float[] vector) {
+    final List<Float> values = new ArrayList<>(vector.length);
+    for (float value : vector) {
+      values.add(value);
+    }
+    return values;
+  }
+
   /**
    * Converts every span in the document from Java UTF-16 indices to the requested
    * {@link OffsetEncoding} and records the chosen encoding on the document.
@@ -297,6 +477,27 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
         sentence.setTokens(t, token.build());
       }
       document.setSentences(i, sentence.build());
+    }
+    for (int e = 0; e < document.getEmbeddingsCount(); e++) {
+      final EmbeddingResult embedding = document.getEmbeddings(e);
+      document.setEmbeddings(e, embedding.toBuilder()
+          .setSourceSpan(remap(embedding.getSourceSpan(), mapper))
+          .build());
+    }
+    for (int g = 0; g < document.getChunkEmbeddingGroupsCount(); g++) {
+      final ChunkEmbeddingGroup.Builder group = document.getChunkEmbeddingGroups(g).toBuilder();
+      for (int c = 0; c < group.getChunksCount(); c++) {
+        final Chunk.Builder chunk = group.getChunks(c).toBuilder();
+        chunk.setAnnotationSpan(remap(chunk.getAnnotationSpan(), mapper));
+        for (int e = 0; e < chunk.getEmbeddingsCount(); e++) {
+          final EmbeddingResult embedding = chunk.getEmbeddings(e);
+          chunk.setEmbeddings(e, embedding.toBuilder()
+              .setSourceSpan(remap(embedding.getSourceSpan(), mapper))
+              .build());
+        }
+        group.setChunks(c, chunk.build());
+      }
+      document.setChunkEmbeddingGroups(g, group.build());
     }
     document.setOffsetEncoding(mapper.encoding());
   }

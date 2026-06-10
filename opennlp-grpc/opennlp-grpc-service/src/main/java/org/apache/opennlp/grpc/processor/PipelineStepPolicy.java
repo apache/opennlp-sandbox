@@ -31,7 +31,9 @@ public final class PipelineStepPolicy {
   /** Steps implemented by the current processor, in execution order. */
   private static final List<PipelineStep> IMPLEMENTED_STEPS = List.of(
       PipelineStep.PIPELINE_STEP_SENTENCE_DETECT,
-      PipelineStep.PIPELINE_STEP_TOKENIZE);
+      PipelineStep.PIPELINE_STEP_TOKENIZE,
+      PipelineStep.PIPELINE_STEP_CHUNK,
+      PipelineStep.PIPELINE_STEP_EMBED);
 
   private static final Set<PipelineStep> IMPLEMENTED_STEP_SET = Set.copyOf(IMPLEMENTED_STEPS);
 
