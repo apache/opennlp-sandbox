@@ -22,7 +22,7 @@ package org.apache.opennlp.grpc.v1;
 option java_package = "org.apache.opennlp.grpc.v1";
 option java_multiple_files = true;
 
-import "org/apache/opennlp/grpc/v1/opennlp_document_v1.proto";
+import "org/apache/opennlp/grpc/v1/opennlp_document.proto";
 
 // Pipeline steps supported by AnalyzeDocument (and future streaming variants).
 enum PipelineStep {

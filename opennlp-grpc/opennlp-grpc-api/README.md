@@ -6,9 +6,9 @@ v1 protobuf definitions and generated Java stubs for the document-centric OpenNL
 
 **Protos:** `src/main/proto/org/apache/opennlp/grpc/v1/`
 
-- `opennlp_document_v1.proto` - `OpenNlpDocument`, spans, tokens, chunks, embeddings
-- `opennlp_pipeline_v1.proto` - profiles, pipeline steps, model bundles, inference backends
-- `opennlp_service_v1.proto` - `OpenNlpAnalysisService` RPCs
+- `opennlp_document.proto` - `OpenNlpDocument`, spans, tokens, chunks, embeddings
+- `opennlp_pipeline.proto` - profiles, pipeline steps, model bundles, inference backends
+- `opennlp_service.proto` - `OpenNlpAnalysisService` RPCs
 
 ## Maven dependency
 
@@ -47,9 +47,9 @@ python -m grpc_tools.protoc \
   -I src/main/proto \
   --python_out=python \
   --grpc_python_out=python \
-  src/main/proto/org/apache/opennlp/grpc/v1/opennlp_document_v1.proto \
-  src/main/proto/org/apache/opennlp/grpc/v1/opennlp_pipeline_v1.proto \
-  src/main/proto/org/apache/opennlp/grpc/v1/opennlp_service_v1.proto
+  src/main/proto/org/apache/opennlp/grpc/v1/opennlp_document.proto \
+  src/main/proto/org/apache/opennlp/grpc/v1/opennlp_pipeline.proto \
+  src/main/proto/org/apache/opennlp/grpc/v1/opennlp_service.proto
 ```
 
 See `docs/rfc/opennlp-grpc-design.md` for the full API contract.

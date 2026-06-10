@@ -57,7 +57,7 @@ This RFC evolves the sandbox gRPC POC into a **document-centric, language-neutra
 
 | Artifact                                                                                | Status                          |
 | --------------------------------------------------------------------------------------- | ------------------------------- |
-| v1 protos (`opennlp_document_v1.proto`, `opennlp_pipeline_v1.proto`, `opennlp_service_v1.proto`) | Stable; Maven + Buf lint        |
+| v1 protos (`opennlp_document.proto`, `opennlp_pipeline.proto`, `opennlp_service.proto`) | Stable; Maven + Buf lint        |
 | This RFC + JIRA companion                                                               | Written                         |
 | v1 Java processor / server / codegen                                                    | In progress (sandbox)           |
 | Core `opennlp-api` `Document` interface                                                 | Proposed for later              |
@@ -233,9 +233,9 @@ flowchart TB
 
 | Layer | File (proposed)          | Responsibility                                           |
 | ----- | ------------------------ | -------------------------------------------------------- |
-| 1     | `opennlp_document_v1.proto` | Document, spans, tokens, entities, analytics, embeddings |
-| 2     | `opennlp_pipeline_v1.proto` | Profiles, steps, model refs, options, backends           |
-| 3     | `opennlp_service_v1.proto`  | gRPC services and request/response envelopes             |
+| 1     | `opennlp_document.proto` | Document, spans, tokens, entities, analytics, embeddings |
+| 2     | `opennlp_pipeline.proto` | Profiles, steps, model refs, options, backends           |
+| 3     | `opennlp_service.proto`  | gRPC services and request/response envelopes             |
 
 
 All files share `package org.apache.opennlp.grpc.v1`.
@@ -452,7 +452,7 @@ Out of scope for proto, noted for implementers:
 live under `opennlp-grpc-api/src/main/proto/org/apache/opennlp/grpc/v1/`. The blocks below
 are the canonical text form for the RFC and are kept in sync with those files.
 
-### 11.1 `opennlp_document_v1.proto`
+### 11.1 `opennlp_document.proto`
 
 ```protobuf
 // Licensed to the Apache Software Foundation (ASF) under one or more
@@ -662,7 +662,7 @@ message DocumentClassification {
 }
 ```
 
-### 11.2 `opennlp_pipeline_v1.proto`
+### 11.2 `opennlp_pipeline.proto`
 
 ```protobuf
 syntax = "proto3";
@@ -672,7 +672,7 @@ package org.apache.opennlp.grpc.v1;
 option java_package = "org.apache.opennlp.grpc.v1";
 option java_multiple_files = true;
 
-import "org/apache/opennlp/grpc/v1/opennlp_document_v1.proto";
+import "org/apache/opennlp/grpc/v1/opennlp_document.proto";
 
 enum PipelineStep {
   PIPELINE_STEP_UNSPECIFIED = 0;
@@ -793,7 +793,7 @@ message ModelBundleInfo {
 }
 ```
 
-### 11.3 `opennlp_service_v1.proto`
+### 11.3 `opennlp_service.proto`
 
 ```protobuf
 syntax = "proto3";
@@ -803,8 +803,8 @@ package org.apache.opennlp.grpc.v1;
 option java_package = "org.apache.opennlp.grpc.v1";
 option java_multiple_files = true;
 
-import "org/apache/opennlp/grpc/v1/opennlp_document_v1.proto";
-import "org/apache/opennlp/grpc/v1/opennlp_pipeline_v1.proto";
+import "org/apache/opennlp/grpc/v1/opennlp_document.proto";
+import "org/apache/opennlp/grpc/v1/opennlp_pipeline.proto";
 
 service OpenNlpAnalysisService {
   rpc AnalyzeDocument(AnalyzeDocumentRequest) returns (AnalyzeDocumentResponse);
