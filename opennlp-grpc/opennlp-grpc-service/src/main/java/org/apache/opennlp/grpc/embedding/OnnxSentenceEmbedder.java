@@ -38,17 +38,23 @@ import opennlp.tools.tokenize.WordpieceTokenizer;
  * Computes sentence embeddings with a BERT-style ONNX model and a wordpiece vocabulary.
  *
  * <p>This embedder is the inference core behind {@link AbstractOnnxEmbeddingProvider}. It
- * reuses the vocabulary loading and wordpiece tokenizer selection of {@link AbstractDL}
- * (BERT or RoBERTa special tokens, chosen from the vocabulary contents) and adds the
- * pieces {@code opennlp-dl}'s {@code SentenceVectorsDL} does not offer: an optional CUDA
- * execution provider, session-metadata based dimension discovery and deterministic native
- * resource management.</p>
+ * reuses the vocabulary loading of {@link AbstractDL} (BERT or RoBERTa special tokens,
+ * chosen from the vocabulary contents) and adds the pieces {@code opennlp-dl}'s
+ * {@code SentenceVectorsDL} does not offer: full BERT text normalization through
+ * {@link BertTokenizer}, configurable pooling, an optional CUDA execution provider,
+ * session-metadata based dimension discovery and deterministic native resource
+ * management.</p>
  *
  * <p>Model input conventions follow the standard single-segment BERT encoding:
  * {@code attention_mask} is {@code 1} for every real token and {@code token_type_ids}
  * is {@code 0} throughout. Inputs the model does not declare (many sentence-transformers
- * exports omit {@code token_type_ids}) are not sent. The embedding is the hidden state of
- * the leading classification token ({@code [CLS]} / {@code <s>}).</p>
+ * exports omit {@code token_type_ids}) are not sent.</p>
+ *
+ * <p>Two pooling strategies are supported. {@link Pooling#MEAN} averages the hidden
+ * states of all tokens and L2-normalizes the result; this is the sentence-transformers
+ * convention and the correct choice for models from that family. {@link Pooling#CLS}
+ * returns the raw hidden state of the leading classification token, for models trained
+ * with a CLS sentence objective.</p>
  *
  * <p>Token sequences are truncated to {@link #MAX_SEQUENCE_TOKENS} wordpieces (the
  * trailing separator token is preserved) so that inputs never exceed the positional range
@@ -56,9 +62,19 @@ import opennlp.tools.tokenize.WordpieceTokenizer;
  */
 final class OnnxSentenceEmbedder extends AbstractDL {
 
+  /** How the per-token hidden states are reduced to one sentence vector. */
+  enum Pooling {
+    /** Masked mean of all token hidden states, L2-normalized (sentence-transformers). */
+    MEAN,
+    /** The raw hidden state of the leading classification token. */
+    CLS
+  }
+
   /** Maximum wordpiece sequence length accepted by BERT-style encoders. */
   static final int MAX_SEQUENCE_TOKENS = 512;
 
+  private final BertTokenizer bertTokenizer;
+  private final Pooling pooling;
   private final Set<String> declaredInputs;
   private final long unknownTokenId;
   private final int embeddingDimension;
@@ -70,14 +86,17 @@ final class OnnxSentenceEmbedder extends AbstractDL {
    * @param vocabulary  The wordpiece vocabulary file matching the model. Must exist.
    * @param useCuda     Whether to register the CUDA execution provider.
    * @param gpuDeviceId The CUDA device ordinal; ignored when {@code useCuda} is {@code false}.
+   * @param lowerCase   Whether to lower case and accent strip the input text. Must be
+   *                    {@code true} for uncased models and {@code false} for cased models.
+   * @param pooling     The pooling strategy. Must not be {@code null}.
    *
    * @throws OrtException If the ONNX session cannot be created or the model does not
    *                      declare a static embedding dimension.
    * @throws IOException  If the vocabulary cannot be read or lacks the special tokens
    *                      required by the wordpiece tokenizer.
    */
-  OnnxSentenceEmbedder(File model, File vocabulary, boolean useCuda, int gpuDeviceId)
-      throws OrtException, IOException {
+  OnnxSentenceEmbedder(File model, File vocabulary, boolean useCuda, int gpuDeviceId,
+      boolean lowerCase, Pooling pooling) throws OrtException, IOException {
     env = OrtEnvironment.getEnvironment();
     try (OrtSession.SessionOptions sessionOptions = new OrtSession.SessionOptions()) {
       if (useCuda) {
@@ -86,9 +105,18 @@ final class OnnxSentenceEmbedder extends AbstractDL {
       session = env.createSession(model.getPath(), sessionOptions);
     }
     try {
+      this.pooling = pooling;
       vocab = loadVocab(vocabulary);
-      tokenizer = createTokenizer(vocab);
-      unknownTokenId = requireSpecialTokens(vocab);
+      final boolean roberta = vocab.containsKey(WordpieceTokenizer.ROBERTA_CLS_TOKEN);
+      final String cls = roberta
+          ? WordpieceTokenizer.ROBERTA_CLS_TOKEN : WordpieceTokenizer.BERT_CLS_TOKEN;
+      final String sep = roberta
+          ? WordpieceTokenizer.ROBERTA_SEP_TOKEN : WordpieceTokenizer.BERT_SEP_TOKEN;
+      final String unk = roberta
+          ? WordpieceTokenizer.ROBERTA_UNK_TOKEN : WordpieceTokenizer.BERT_UNK_TOKEN;
+      requireSpecialTokens(vocab, cls, sep, unk);
+      bertTokenizer = new BertTokenizer(vocab.keySet(), lowerCase, cls, sep, unk);
+      unknownTokenId = vocab.get(unk);
       declaredInputs = Set.copyOf(session.getInputNames());
       embeddingDimension = readEmbeddingDimension(session, model);
     } catch (OrtException | IOException | RuntimeException e) {
@@ -136,7 +164,7 @@ final class OnnxSentenceEmbedder extends AbstractDL {
       try (OrtSession.Result result = session.run(inputs)) {
         // getValue() copies the tensor into Java arrays, so the result can be closed safely.
         final float[][][] hiddenStates = (float[][][]) result.get(0).getValue();
-        return hiddenStates[0][0];
+        return pool(hiddenStates[0]);
       }
     } finally {
       inputs.values().forEach(OnnxTensor::close);
@@ -152,8 +180,39 @@ final class OnnxSentenceEmbedder extends AbstractDL {
     session.close();
   }
 
+  /**
+   * Reduces the per-token hidden states to a single sentence vector according
+   * to the configured {@link Pooling} strategy.
+   */
+  private float[] pool(float[][] hiddenStates) {
+    if (pooling == Pooling.CLS) {
+      return hiddenStates[0];
+    }
+    // Mean pooling: average all token positions (the sequence is never padded, so
+    // every position is a real token), then L2-normalize as sentence-transformers does.
+    final int dimension = hiddenStates[0].length;
+    final float[] mean = new float[dimension];
+    for (float[] hiddenState : hiddenStates) {
+      for (int i = 0; i < dimension; i++) {
+        mean[i] += hiddenState[i];
+      }
+    }
+    double sumOfSquares = 0;
+    for (int i = 0; i < dimension; i++) {
+      mean[i] /= hiddenStates.length;
+      sumOfSquares += (double) mean[i] * mean[i];
+    }
+    final float norm = (float) Math.sqrt(sumOfSquares);
+    if (norm > 0) {
+      for (int i = 0; i < dimension; i++) {
+        mean[i] /= norm;
+      }
+    }
+    return mean;
+  }
+
   private long[] tokenIds(String text) {
-    String[] tokens = tokenizer.tokenize(text);
+    String[] tokens = bertTokenizer.tokenize(text);
     if (tokens.length > MAX_SEQUENCE_TOKENS) {
       final String separator = tokens[tokens.length - 1];
       tokens = Arrays.copyOf(tokens, MAX_SEQUENCE_TOKENS);
@@ -168,26 +227,17 @@ final class OnnxSentenceEmbedder extends AbstractDL {
   }
 
   /**
-   * Verifies that the special tokens selected by {@link AbstractDL#createTokenizer(Map)}
-   * are present in the vocabulary, so that every tokenizer output can be mapped to an id.
-   *
-   * @return The id of the unknown token.
+   * Verifies that the special tokens chosen from the vocabulary contents are present,
+   * so that every tokenizer output can be mapped to an id.
    */
-  private static long requireSpecialTokens(Map<String, Integer> vocab) throws IOException {
-    final boolean roberta = vocab.containsKey(WordpieceTokenizer.ROBERTA_CLS_TOKEN);
-    final String cls = roberta
-        ? WordpieceTokenizer.ROBERTA_CLS_TOKEN : WordpieceTokenizer.BERT_CLS_TOKEN;
-    final String sep = roberta
-        ? WordpieceTokenizer.ROBERTA_SEP_TOKEN : WordpieceTokenizer.BERT_SEP_TOKEN;
-    final String unk = roberta
-        ? WordpieceTokenizer.ROBERTA_UNK_TOKEN : WordpieceTokenizer.BERT_UNK_TOKEN;
+  private static void requireSpecialTokens(Map<String, Integer> vocab,
+      String cls, String sep, String unk) throws IOException {
     for (String token : new String[] {cls, sep, unk}) {
       if (!vocab.containsKey(token)) {
         throw new IOException("Embedding vocabulary does not define the special token '"
             + token + "'; the vocabulary file does not match the model");
       }
     }
-    return vocab.get(unk);
   }
 
   /**

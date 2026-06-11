@@ -76,11 +76,25 @@ Register ONNX sentence-transformer models in the server config:
 model.embedder.default_id=sentence-transformers
 model.embedder.sentence-transformers.onnx.path=/path/to/model.onnx
 model.embedder.sentence-transformers.vocab.path=/path/to/vocab.txt
+# Optional, with these defaults:
+model.embedder.sentence-transformers.lowercase=true
+model.embedder.sentence-transformers.pooling=mean
 ```
 
 Request embeddings by adding `PIPELINE_STEP_EMBED` to the analysis profile and
 setting `options.onnx_embedding_model_id` (or rely on `default_id` when only
 one model is registered). Uses ONNX Runtime via `opennlp-dl` on CPU by default.
+
+The input text is normalized with the full BERT basic tokenization (control
+character cleanup, CJK isolation, punctuation splitting and - for uncased
+models - lower casing with accent stripping) before wordpiece encoding.
+`lowercase` is a property of the model: uncased models such as the
+`sentence-transformers` family require `true`, cased models require `false`.
+`pooling` selects how token states become one sentence vector: `mean`
+(masked mean + L2 normalization, the sentence-transformers convention) or
+`cls` (raw classification-token state). With the defaults, embeddings are
+numerically equivalent to the Python `sentence-transformers` output for the
+same model.
 
 #### GPU embeddings (optional)
 

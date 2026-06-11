@@ -20,6 +20,7 @@ package org.apache.opennlp.grpc.embedding;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -39,9 +40,18 @@ import org.slf4j.LoggerFactory;
  * <pre>
  * model.embedder.&lt;model-id&gt;.onnx.path=/models/minilm.onnx
  * model.embedder.&lt;model-id&gt;.vocab.path=/models/minilm-vocab.txt
+ * model.embedder.&lt;model-id&gt;.lowercase=true|false   (optional, default true)
+ * model.embedder.&lt;model-id&gt;.pooling=mean|cls       (optional, default mean)
  * model.embedder.default_id=&lt;model-id&gt;          (optional, required with multiple models)
  * model.embedder.gpu_device_id=&lt;ordinal&gt;        (CUDA backends only)
  * </pre>
+ *
+ * <p>{@code lowercase} selects the text normalization variant and is a property of the
+ * model: uncased models (such as the {@code sentence-transformers} family) require
+ * {@code true}, cased models require {@code false}. {@code pooling} selects how token
+ * hidden states are reduced to one sentence vector: {@code mean} (masked mean with L2
+ * normalization, the sentence-transformers convention) or {@code cls} (the raw hidden
+ * state of the classification token).</p>
  *
  * <p>All configured models are loaded eagerly so that misconfiguration fails at server
  * startup rather than on the first request. Subclasses only declare which
@@ -54,6 +64,8 @@ abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider, AutoC
   private static final String KEY_PREFIX = "model.embedder.";
   private static final String KEY_ONNX_SUFFIX = ".onnx.path";
   private static final String KEY_VOCAB_SUFFIX = ".vocab.path";
+  private static final String KEY_LOWERCASE_SUFFIX = ".lowercase";
+  private static final String KEY_POOLING_SUFFIX = ".pooling";
   private static final String KEY_DEFAULT_ID = "model.embedder.default_id";
   private static final String KEY_GPU_DEVICE = "model.embedder.gpu_device_id";
 
@@ -178,6 +190,8 @@ abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider, AutoC
       Map<String, String> configuration, boolean useCuda, int gpuDeviceId) {
     final Map<String, String> onnxPaths = new HashMap<>();
     final Map<String, String> vocabPaths = new HashMap<>();
+    final Map<String, Boolean> lowerCase = new HashMap<>();
+    final Map<String, OnnxSentenceEmbedder.Pooling> pooling = new HashMap<>();
 
     for (Map.Entry<String, String> entry : configuration.entrySet()) {
       final String key = entry.getKey();
@@ -189,18 +203,24 @@ abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider, AutoC
         suffix = KEY_ONNX_SUFFIX;
       } else if (key.endsWith(KEY_VOCAB_SUFFIX)) {
         suffix = KEY_VOCAB_SUFFIX;
+      } else if (key.endsWith(KEY_LOWERCASE_SUFFIX)) {
+        suffix = KEY_LOWERCASE_SUFFIX;
+      } else if (key.endsWith(KEY_POOLING_SUFFIX)) {
+        suffix = KEY_POOLING_SUFFIX;
       } else {
         continue;
       }
       final String modelId = key.substring(KEY_PREFIX.length(), key.length() - suffix.length());
-      final String path = entry.getValue();
-      if (modelId.isBlank() || path == null || path.isBlank()) {
+      final String value = entry.getValue();
+      if (modelId.isBlank() || value == null || value.isBlank()) {
         continue;
       }
-      if (suffix.equals(KEY_ONNX_SUFFIX)) {
-        onnxPaths.put(modelId, path);
-      } else {
-        vocabPaths.put(modelId, path);
+      switch (suffix) {
+        case KEY_ONNX_SUFFIX -> onnxPaths.put(modelId, value);
+        case KEY_VOCAB_SUFFIX -> vocabPaths.put(modelId, value);
+        case KEY_LOWERCASE_SUFFIX -> lowerCase.put(modelId, parseLowercase(modelId, value));
+        case KEY_POOLING_SUFFIX -> pooling.put(modelId, parsePooling(modelId, value));
+        default -> throw new IllegalStateException("Unhandled suffix: " + suffix);
       }
     }
 
@@ -214,7 +234,9 @@ abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider, AutoC
               KEY_PREFIX + modelId + KEY_VOCAB_SUFFIX
                   + " is required when an ONNX path is configured");
         }
-        loaded.put(modelId, loadModel(modelId, entry.getValue(), vocabPath, useCuda, gpuDeviceId));
+        loaded.put(modelId, loadModel(modelId, entry.getValue(), vocabPath, useCuda, gpuDeviceId,
+            lowerCase.getOrDefault(modelId, Boolean.TRUE),
+            pooling.getOrDefault(modelId, OnnxSentenceEmbedder.Pooling.MEAN)));
       }
     } catch (RuntimeException e) {
       for (OnnxSentenceEmbedder embedder : loaded.values()) {
@@ -229,8 +251,27 @@ abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider, AutoC
     return Map.copyOf(loaded);
   }
 
+  private static boolean parseLowercase(String modelId, String value) {
+    final String normalized = value.trim().toLowerCase(Locale.ROOT);
+    if (normalized.equals("true") || normalized.equals("false")) {
+      return Boolean.parseBoolean(normalized);
+    }
+    throw AnalysisException.invalidArgument(
+        KEY_PREFIX + modelId + KEY_LOWERCASE_SUFFIX + " must be 'true' or 'false': " + value);
+  }
+
+  private static OnnxSentenceEmbedder.Pooling parsePooling(String modelId, String value) {
+    return switch (value.trim().toLowerCase(Locale.ROOT)) {
+      case "mean" -> OnnxSentenceEmbedder.Pooling.MEAN;
+      case "cls" -> OnnxSentenceEmbedder.Pooling.CLS;
+      default -> throw AnalysisException.invalidArgument(
+          KEY_PREFIX + modelId + KEY_POOLING_SUFFIX + " must be 'mean' or 'cls': " + value);
+    };
+  }
+
   private static OnnxSentenceEmbedder loadModel(
-      String modelId, String onnxPath, String vocabPath, boolean useCuda, int gpuDeviceId) {
+      String modelId, String onnxPath, String vocabPath, boolean useCuda, int gpuDeviceId,
+      boolean lowerCase, OnnxSentenceEmbedder.Pooling pooling) {
     final File onnxFile = new File(onnxPath);
     final File vocabFile = new File(vocabPath);
     if (!onnxFile.isFile()) {
@@ -243,9 +284,10 @@ abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider, AutoC
     }
     try {
       final OnnxSentenceEmbedder embedder =
-          new OnnxSentenceEmbedder(onnxFile, vocabFile, useCuda, gpuDeviceId);
-      logger.info("Loaded embedding model '{}' (dimension={}, backend={})",
-          modelId, embedder.embeddingDimension(), useCuda ? "CUDA" : "ONNX Runtime CPU");
+          new OnnxSentenceEmbedder(onnxFile, vocabFile, useCuda, gpuDeviceId, lowerCase, pooling);
+      logger.info("Loaded embedding model '{}' (dimension={}, backend={}, lowercase={}, pooling={})",
+          modelId, embedder.embeddingDimension(), useCuda ? "CUDA" : "ONNX Runtime CPU",
+          lowerCase, pooling);
       return embedder;
     } catch (OrtException | IOException e) {
       final String backend = useCuda ? "CUDA" : "ONNX Runtime CPU";
