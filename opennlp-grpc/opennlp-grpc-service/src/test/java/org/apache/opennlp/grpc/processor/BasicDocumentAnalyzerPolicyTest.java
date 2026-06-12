@@ -151,13 +151,13 @@ class BasicDocumentAnalyzerPolicyTest {
   }
 
   @Test
-  void rejectsOnnxEmbeddingModelIdWithoutEmbedStep() {
+  void rejectsEmbeddingModelIdWithoutEmbedStep() {
     final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(Map.of());
 
     final AnalysisException error = assertThrows(AnalysisException.class, () -> analyzer.analyze(
         AnalyzeDocumentRequest.newBuilder()
             .setDocument(OpenNlpDocument.newBuilder().setRawText("Hello world.").build())
-            .setOptions(AnalysisOptions.newBuilder().setOnnxEmbeddingModelId("minilm").build())
+            .setOptions(AnalysisOptions.newBuilder().setEmbeddingModelId("minilm").build())
             .build()));
 
     assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());

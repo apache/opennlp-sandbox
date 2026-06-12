@@ -56,7 +56,7 @@ class BasicDocumentAnalyzerEmbeddingTest {
             .addSteps(PipelineStep.PIPELINE_STEP_EMBED)
             .build())
         .setOptions(AnalysisOptions.newBuilder()
-            .setOnnxEmbeddingModelId("minilm")
+            .setEmbeddingModelId("minilm")
             .setInferenceBackend(InferenceBackend.INFERENCE_BACKEND_ONNX_RUNTIME)
             .build())
         .build());
@@ -83,7 +83,7 @@ class BasicDocumentAnalyzerEmbeddingTest {
                 .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
                 .addSteps(PipelineStep.PIPELINE_STEP_EMBED)
                 .build())
-            .setOptions(AnalysisOptions.newBuilder().setOnnxEmbeddingModelId("missing").build())
+            .setOptions(AnalysisOptions.newBuilder().setEmbeddingModelId("missing").build())
             .build()));
 
     assertEquals(AnalysisException.FailureType.NOT_FOUND, error.getFailureType());

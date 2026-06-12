@@ -124,7 +124,9 @@ message AnalysisOptions {
   optional bool clear_adaptive_data = 2;
   InferenceBackend inference_backend = 3;
   optional int32 max_text_length = 4;
-  optional string onnx_embedding_model_id = 5;
+  // The registered embedding model to use for PIPELINE_STEP_EMBED. The id is
+  // backend-agnostic; the server resolves it against the configured provider.
+  optional string embedding_model_id = 5;
   // Unit for response AnnotationSpan offsets. Unset => UTF-8 bytes (the default).
   OffsetEncoding offset_encoding = 6;
 }

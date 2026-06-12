@@ -248,10 +248,10 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
           "inference_backend " + backend.name()
               + " is not implemented for the configured embedding provider");
     }
-    if (options.hasOnnxEmbeddingModelId() && !options.getOnnxEmbeddingModelId().isBlank()) {
+    if (options.hasEmbeddingModelId() && !options.getEmbeddingModelId().isBlank()) {
       if (!embedRequested) {
         throw AnalysisException.invalidArgument(
-            "onnx_embedding_model_id requires PIPELINE_STEP_EMBED in the analysis profile");
+            "embedding_model_id requires PIPELINE_STEP_EMBED in the analysis profile");
       }
     }
     if (options.hasMaxTextLength()
@@ -273,7 +273,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     final String modelId = resolveEmbeddingModelId(request, profile);
     if (modelId == null || modelId.isBlank()) {
       throw AnalysisException.invalidArgument(
-          "onnx_embedding_model_id is required when multiple embedding models are configured");
+          "embedding_model_id is required when multiple embedding models are configured");
     }
     if (!embeddingProvider.supportsModel(modelId)) {
       throw AnalysisException.notFound("Unknown embedding model '" + modelId + "'");
@@ -285,8 +285,8 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       return null;
     }
     String requested = null;
-    if (request.hasOptions() && request.getOptions().hasOnnxEmbeddingModelId()) {
-      requested = request.getOptions().getOnnxEmbeddingModelId();
+    if (request.hasOptions() && request.getOptions().hasEmbeddingModelId()) {
+      requested = request.getOptions().getEmbeddingModelId();
     }
     return embeddingProvider.resolveModelId(requested);
   }

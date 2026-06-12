@@ -82,7 +82,7 @@ model.embedder.sentence-transformers.pooling=mean
 ```
 
 Request embeddings by adding `PIPELINE_STEP_EMBED` to the analysis profile and
-setting `options.onnx_embedding_model_id` (or rely on `default_id` when only
+setting `options.embedding_model_id` (or rely on `default_id` when only
 one model is registered). Uses ONNX Runtime via `opennlp-dl` on CPU by default.
 
 The input text is normalized with the full BERT basic tokenization (control

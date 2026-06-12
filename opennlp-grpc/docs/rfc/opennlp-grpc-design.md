@@ -769,7 +769,7 @@ message AnalysisOptions {
   optional bool clear_adaptive_data = 2;
   InferenceBackend inference_backend = 3;
   optional int32 max_text_length = 4;
-  optional string onnx_embedding_model_id = 5;
+  optional string embedding_model_id = 5;
   OffsetEncoding offset_encoding = 6;
 }
 
