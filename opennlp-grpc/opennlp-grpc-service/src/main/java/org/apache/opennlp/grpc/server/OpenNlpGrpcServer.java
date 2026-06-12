@@ -30,7 +30,7 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.protobuf.services.ProtoReflectionServiceV1;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
-import org.apache.opennlp.grpc.processor.BasicDocumentAnalyzer;
+import org.apache.opennlp.grpc.processor.basic.BasicDocumentAnalyzer;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.v1.server.OpenNlpAnalysisServiceImpl;
 import org.slf4j.LoggerFactory;

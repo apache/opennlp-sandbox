@@ -30,8 +30,11 @@ public final class PipelineStepPolicy {
 
   /** Steps implemented by the current processor, in execution order. */
   private static final List<PipelineStep> IMPLEMENTED_STEPS = List.of(
+      PipelineStep.PIPELINE_STEP_LANGUAGE_DETECT,
       PipelineStep.PIPELINE_STEP_SENTENCE_DETECT,
       PipelineStep.PIPELINE_STEP_TOKENIZE,
+      PipelineStep.PIPELINE_STEP_POS_TAG,
+      PipelineStep.PIPELINE_STEP_LEMMATIZE,
       PipelineStep.PIPELINE_STEP_CHUNK,
       PipelineStep.PIPELINE_STEP_EMBED);
 

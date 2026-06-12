@@ -15,18 +15,21 @@
  * KIND, either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-package org.apache.opennlp.grpc.embedding;
+package org.apache.opennlp.grpc.embedding.cuda;
 
 import java.util.Map;
 
+import org.apache.opennlp.grpc.embedding.EmbeddingBackendFactory;
+import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
+
 /**
- * {@link EmbeddingBackendFactory} for the default {@code onnx} backend
- * (ONNX Runtime on the CPU execution provider).
+ * {@link EmbeddingBackendFactory} for the {@code cuda} backend (ONNX Runtime with the
+ * CUDA execution provider; requires a server built with the {@code gpu} Maven flavor).
  */
-public final class OnnxEmbeddingBackendFactory implements EmbeddingBackendFactory {
+public final class CudaEmbeddingBackendFactory implements EmbeddingBackendFactory {
 
   /** The backend id: {@value}. */
-  public static final String BACKEND_ID = "onnx";
+  public static final String BACKEND_ID = "cuda";
 
   @Override
   public String backendId() {
@@ -35,6 +38,6 @@ public final class OnnxEmbeddingBackendFactory implements EmbeddingBackendFactor
 
   @Override
   public EmbeddingProvider create(Map<String, String> configuration) {
-    return new OnnxRuntimeEmbeddingProvider(configuration);
+    return new CudaEmbeddingProvider(configuration);
   }
 }

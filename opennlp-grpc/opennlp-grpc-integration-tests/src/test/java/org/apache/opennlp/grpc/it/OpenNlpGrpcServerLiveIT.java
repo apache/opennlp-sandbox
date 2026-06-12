@@ -110,8 +110,11 @@ class OpenNlpGrpcServerLiveIT {
   void serviceInfoReportsEmbeddingSupport() {
     final var info = client.getServiceInfo(GetServiceInfoRequest.getDefaultInstance());
     assertEquals("v1", info.getApiVersion());
+    assertTrue(info.getSupportedStepsList().contains(PipelineStep.PIPELINE_STEP_LANGUAGE_DETECT));
     assertTrue(info.getSupportedStepsList().contains(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT));
     assertTrue(info.getSupportedStepsList().contains(PipelineStep.PIPELINE_STEP_TOKENIZE));
+    assertTrue(info.getSupportedStepsList().contains(PipelineStep.PIPELINE_STEP_POS_TAG));
+    assertTrue(info.getSupportedStepsList().contains(PipelineStep.PIPELINE_STEP_LEMMATIZE));
     assertTrue(info.getSupportedStepsList().contains(PipelineStep.PIPELINE_STEP_EMBED));
   }
 
@@ -129,11 +132,17 @@ class OpenNlpGrpcServerLiveIT {
     assertEquals("tei", embedder.getBackendId());
     assertEquals(EMBEDDING_DIMENSION, embedder.getEmbeddingDimension());
 
-    final ModelDescriptor sentDetect = models.stream()
-        .filter(m -> m.getComponentType() == ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR)
-        .findFirst()
-        .orElseThrow(() -> new AssertionError("no sentence detector in catalog: " + models));
-    assertEquals("opennlp-me", sentDetect.getBackendId());
+    for (ComponentType classicType : List.of(
+        ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR,
+        ComponentType.COMPONENT_TYPE_TOKENIZER,
+        ComponentType.COMPONENT_TYPE_POS_TAGGER,
+        ComponentType.COMPONENT_TYPE_LEMMATIZER)) {
+      final ModelDescriptor descriptor = models.stream()
+          .filter(m -> m.getComponentType() == classicType)
+          .findFirst()
+          .orElseThrow(() -> new AssertionError("no " + classicType + " in catalog: " + models));
+      assertEquals("opennlp-me", descriptor.getBackendId());
+    }
   }
 
   @Test
@@ -145,6 +154,63 @@ class OpenNlpGrpcServerLiveIT {
     assertEquals("live-1", response.getDocument().getDocId());
     assertEquals(2, response.getDocument().getSentencesCount());
     assertTrue(response.getDocument().getSentences(0).getTokensCount() > 0);
+  }
+
+  /**
+   * Language detection runs from the model bundled inside the shaded server jar,
+   * exercised across the process boundary.
+   */
+  @Test
+  void detectsLanguageWithBundledModel() {
+    final var response = client.analyzeDocument(AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setDocId("live-lang").setRawText(TEXT).build())
+        .setProfile(AnalysisProfile.newBuilder()
+            .setProfileId("lang")
+            .addSteps(PipelineStep.PIPELINE_STEP_LANGUAGE_DETECT)
+            .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+            .build())
+        .build());
+
+    assertEquals("eng", response.getDocument().getDetectedLanguage());
+    assertTrue(response.getDocument().getLanguageConfidence() > 0.0f);
+  }
+
+  /**
+   * POS tagging and lemmatization run from models bundled inside the shaded server jar,
+   * exercised across the process boundary.
+   */
+  @Test
+  void posTagsAndLemmatizesWithBundledModels() {
+    final var response = client.analyzeDocument(AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setDocId("live-pos").setRawText(TEXT).build())
+        .setProfile(AnalysisProfile.newBuilder()
+            .setProfileId("pos-lemma")
+            .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+            .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+            .addSteps(PipelineStep.PIPELINE_STEP_POS_TAG)
+            .addSteps(PipelineStep.PIPELINE_STEP_LEMMATIZE)
+            .build())
+        .build());
+
+    assertEquals(2, response.getDocument().getSentencesCount());
+    for (var sentence : response.getDocument().getSentencesList()) {
+      assertTrue(sentence.getTokensCount() > 0);
+      for (var token : sentence.getTokensList()) {
+        assertTrue(token.hasPosTag(), "token '" + token.getText() + "' has no POS tag");
+        assertTrue(token.hasLemma(), "token '" + token.getText() + "' has no lemma");
+      }
+    }
+    // "got" lemmatizes to "get" with the bundled English UD lemmatizer.
+    final var firstSentence = response.getDocument().getSentences(0);
+    boolean sawGot = false;
+    for (var token : firstSentence.getTokensList()) {
+      if ("got".equals(token.getText())) {
+        sawGot = true;
+        assertEquals("VERB", token.getPosTag());
+        assertEquals("get", token.getLemma());
+      }
+    }
+    assertTrue(sawGot, "expected token 'got' in: " + firstSentence);
   }
 
   @Test

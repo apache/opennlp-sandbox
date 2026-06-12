@@ -15,7 +15,7 @@
  * KIND, either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-package org.apache.opennlp.grpc.embedding;
+package org.apache.opennlp.grpc.embedding.onnx;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import ai.onnxruntime.OrtException;
+import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +57,7 @@ import org.slf4j.LoggerFactory;
  * startup rather than on the first request. Subclasses only declare their
  * {@link #backendId() backend id} and execution provider.</p>
  */
-abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider, AutoCloseable {
+public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider, AutoCloseable {
 
   private static final Logger logger = LoggerFactory.getLogger(AbstractOnnxEmbeddingProvider.class);
 
@@ -80,7 +81,7 @@ abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider, AutoC
    * @throws AnalysisException If the configuration is inconsistent, a referenced file is
    *                           missing, or a model fails to load.
    */
-  AbstractOnnxEmbeddingProvider(Map<String, String> configuration, boolean useCuda) {
+  protected AbstractOnnxEmbeddingProvider(Map<String, String> configuration, boolean useCuda) {
     Objects.requireNonNull(configuration, "configuration must not be null");
     final int gpuDeviceId = gpuDeviceId(configuration, useCuda);
     this.models = loadModels(configuration, useCuda, gpuDeviceId);

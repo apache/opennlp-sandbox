@@ -15,31 +15,29 @@
  * KIND, either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-package org.apache.opennlp.grpc.embedding;
+package org.apache.opennlp.grpc.embedding.onnx;
 
 import java.util.Map;
 
-/**
- * ONNX Runtime embedding provider running on the CUDA execution provider.
- *
- * <p>Requires a server built with the {@code gpu} Maven profile, which replaces
- * the {@code onnxruntime} jar with {@code onnxruntime_gpu}, and a CUDA capable device at
- * runtime. The device is selected with {@code model.embedder.gpu_device_id}. See
- * {@link AbstractOnnxEmbeddingProvider} for the model configuration keys.</p>
- */
-public final class CudaEmbeddingProvider extends AbstractOnnxEmbeddingProvider {
+import org.apache.opennlp.grpc.embedding.EmbeddingBackendFactory;
+import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 
-  /**
-   * Loads all configured embedding models on the CUDA device.
-   *
-   * @param configuration The server configuration. Must not be {@code null}.
-   */
-  public CudaEmbeddingProvider(Map<String, String> configuration) {
-    super(configuration, true);
-  }
+/**
+ * {@link EmbeddingBackendFactory} for the default {@code onnx} backend
+ * (ONNX Runtime on the CPU execution provider).
+ */
+public final class OnnxEmbeddingBackendFactory implements EmbeddingBackendFactory {
+
+  /** The backend id: {@value}. */
+  public static final String BACKEND_ID = "onnx";
 
   @Override
   public String backendId() {
-    return CudaEmbeddingBackendFactory.BACKEND_ID;
+    return BACKEND_ID;
+  }
+
+  @Override
+  public EmbeddingProvider create(Map<String, String> configuration) {
+    return new OnnxRuntimeEmbeddingProvider(configuration);
   }
 }

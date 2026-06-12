@@ -23,6 +23,7 @@ import java.util.ServiceLoader;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.apache.opennlp.grpc.embedding.onnx.OnnxEmbeddingBackendFactory;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

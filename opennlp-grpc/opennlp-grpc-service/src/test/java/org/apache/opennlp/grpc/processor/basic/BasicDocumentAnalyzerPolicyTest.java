@@ -15,10 +15,11 @@
  * KIND, either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-package org.apache.opennlp.grpc.processor;
+package org.apache.opennlp.grpc.processor.basic;
 
 import java.util.Map;
 
+import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;

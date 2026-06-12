@@ -22,6 +22,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.CodeSource;
@@ -31,16 +32,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import opennlp.tools.langdetect.LanguageDetectorME;
+import opennlp.tools.langdetect.LanguageDetectorModel;
+import opennlp.tools.lemmatizer.LemmatizerME;
+import opennlp.tools.lemmatizer.LemmatizerModel;
 import opennlp.tools.models.ClassPathModelProvider;
 import opennlp.tools.models.DefaultClassPathModelProvider;
 import opennlp.tools.models.ModelType;
+import opennlp.tools.postag.POSModel;
+import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.tokenize.TokenizerModel;
+import opennlp.tools.util.model.BaseModel;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.embedding.EmbeddingProviderFactory;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
@@ -71,6 +80,9 @@ public final class ModelBundleCache {
   private static final String DEFAULT_LANGUAGE = "en";
   private static final String KEY_SENTDETECT_PATH = "model.sentence_detector.path";
   private static final String KEY_TOKENIZER_PATH = "model.tokenizer.path";
+  private static final String KEY_POS_TAGGER_PATH = "model.pos_tagger.path";
+  private static final String KEY_LEMMATIZER_PATH = "model.lemmatizer.path";
+  private static final String KEY_LANGDETECT_PATH = "model.language_detector.path";
 
   /** Backend id reported for models served by the classic OpenNLP maxent runtime. */
   private static final String OPENNLP_ME_BACKEND_ID = "opennlp-me";
@@ -78,19 +90,37 @@ public final class ModelBundleCache {
   /** Name fragments identifying the bundled UD model binaries at the jar root. */
   private static final String BUNDLED_SENTENCE_MODEL_FRAGMENT = "-sentence-";
   private static final String BUNDLED_TOKENIZER_MODEL_FRAGMENT = "-tokens-";
+  private static final String BUNDLED_POS_MODEL_FRAGMENT = "-pos-";
+  private static final String BUNDLED_LEMMATIZER_MODEL_FRAGMENT = "-lemmas-";
+  private static final String BUNDLED_LANGDETECT_MODEL_FRAGMENT = "langdetect";
+  private static final String MODEL_DESCRIPTOR_RESOURCE = "model.properties";
   private static final String MODEL_FILE_SUFFIX = ".bin";
 
   private final ClassPathModelProvider modelProvider;
   private final Map<String, ModelBundleInfo> bundles;
   private final SentenceDetectorME sentenceDetector;
   private final TokenizerME tokenizer;
+  private final POSTaggerME posTagger;
+  private final LemmatizerME lemmatizer;
+  private final LanguageDetectorME languageDetector;
   private final EmbeddingProvider embeddingProvider;
 
   public ModelBundleCache(Map<String, String> configuration) {
     Objects.requireNonNull(configuration, "configuration");
     this.modelProvider = new DefaultClassPathModelProvider();
-    this.sentenceDetector = loadSentenceDetector(configuration);
-    this.tokenizer = loadTokenizer(configuration);
+    this.sentenceDetector = new SentenceDetectorME(loadModel(configuration,
+        KEY_SENTDETECT_PATH, ModelType.SENTENCE_DETECTOR, SentenceModel.class,
+        BUNDLED_SENTENCE_MODEL_FRAGMENT, "sentence detector", SentenceModel::new));
+    this.tokenizer = new TokenizerME(loadModel(configuration,
+        KEY_TOKENIZER_PATH, ModelType.TOKENIZER, TokenizerModel.class,
+        BUNDLED_TOKENIZER_MODEL_FRAGMENT, "tokenizer", TokenizerModel::new));
+    this.posTagger = new POSTaggerME(loadModel(configuration,
+        KEY_POS_TAGGER_PATH, ModelType.POS_GENERIC, POSModel.class,
+        BUNDLED_POS_MODEL_FRAGMENT, "POS tagger", POSModel::new));
+    this.lemmatizer = new LemmatizerME(loadModel(configuration,
+        KEY_LEMMATIZER_PATH, ModelType.LEMMATIZER, LemmatizerModel.class,
+        BUNDLED_LEMMATIZER_MODEL_FRAGMENT, "lemmatizer", LemmatizerModel::new));
+    this.languageDetector = new LanguageDetectorME(loadLanguageDetectorModel(configuration));
     this.embeddingProvider = EmbeddingProviderFactory.create(configuration);
     this.bundles = buildBundleCatalog();
   }
@@ -101,6 +131,18 @@ public final class ModelBundleCache {
 
   public TokenizerME getTokenizer() {
     return tokenizer;
+  }
+
+  public POSTaggerME getPosTagger() {
+    return posTagger;
+  }
+
+  public LemmatizerME getLemmatizer() {
+    return lemmatizer;
+  }
+
+  public LanguageDetectorME getLanguageDetector() {
+    return languageDetector;
   }
 
   public List<ModelBundleInfo> listBundles() {
@@ -125,68 +167,116 @@ public final class ModelBundleCache {
     }
   }
 
-  private SentenceDetectorME loadSentenceDetector(Map<String, String> configuration) {
+  /**
+   * Loads one component model following the three-step resolution order: an explicitly
+   * configured file path, classpath discovery via the model provider, and finally the
+   * model binary bundled inside the shaded server jar.
+   *
+   * @param configuration The server configuration. Must not be {@code null}.
+   * @param pathKey The configuration key for an explicit model file path.
+   * @param type The {@link ModelType} used for classpath discovery.
+   * @param modelClass The model class used for classpath discovery.
+   * @param bundledFragment The name fragment identifying the bundled binary.
+   * @param description Human-readable component name for log and error messages.
+   * @param reader Deserializes the model from a stream, e.g. {@code SentenceModel::new}.
+   *
+   * @return The loaded model, never {@code null}.
+   * @throws AnalysisException If no model can be resolved or loading fails.
+   */
+  private <M extends BaseModel> M loadModel(
+      Map<String, String> configuration, String pathKey, ModelType type, Class<M> modelClass,
+      String bundledFragment, String description, ModelReader<M> reader) {
     try {
-      final String configuredPath = configuration.get(KEY_SENTDETECT_PATH);
-      final SentenceModel model;
+      final String configuredPath = configuration.get(pathKey);
       if (configuredPath != null && !configuredPath.isBlank()) {
         try (InputStream input = new FileInputStream(configuredPath)) {
-          model = new SentenceModel(input);
+          return reader.read(input);
         }
-      } else {
-        SentenceModel resolved =
-            modelProvider.load(DEFAULT_LANGUAGE, ModelType.SENTENCE_DETECTOR, SentenceModel.class);
-        if (resolved == null) {
-          final InputStream bundled = openBundledModel(BUNDLED_SENTENCE_MODEL_FRAGMENT);
-          if (bundled == null) {
-            throw AnalysisException.notFound(
-                "No sentence detector model available for language '" + DEFAULT_LANGUAGE
-                    + "'. Configure '" + KEY_SENTDETECT_PATH + "' or add an opennlp-models-sentdetect"
-                    + " jar to the classpath.");
-          }
-          logger.info("Loaded sentence detector model bundled in the server jar");
-          try (InputStream input = bundled) {
-            resolved = new SentenceModel(input);
-          }
-        }
-        model = resolved;
       }
-      return new SentenceDetectorME(model);
+      M resolved = modelProvider.load(DEFAULT_LANGUAGE, type, modelClass);
+      if (resolved == null) {
+        final InputStream bundled = openBundledModel(bundledFragment);
+        if (bundled == null) {
+          throw AnalysisException.notFound(
+              "No " + description + " model available for language '" + DEFAULT_LANGUAGE
+                  + "'. Configure '" + pathKey + "' or add the corresponding opennlp-models"
+                  + " jar to the classpath.");
+        }
+        logger.info("Loaded {} model bundled in the server jar", description);
+        try (InputStream input = bundled) {
+          resolved = reader.read(input);
+        }
+      }
+      return resolved;
     } catch (IOException e) {
-      throw AnalysisException.internal("Failed to load sentence detector model", e);
+      throw AnalysisException.internal("Failed to load " + description + " model", e);
     }
   }
 
-  private TokenizerME loadTokenizer(Map<String, String> configuration) {
+  /** Deserializes a model from a stream; all OpenNLP model constructors fit this shape. */
+  @FunctionalInterface
+  private interface ModelReader<M extends BaseModel> {
+    M read(InputStream input) throws IOException;
+  }
+
+  /**
+   * Loads the language detector model. It needs custom resolution because the generic
+   * classpath provider is keyed by language, while this model is language-independent
+   * ({@code model.language=root} in its descriptor): explicit path first, then the
+   * {@code model.properties} descriptors of the model jars on the classpath, then the
+   * binary bundled inside the shaded server jar.
+   */
+  private LanguageDetectorModel loadLanguageDetectorModel(Map<String, String> configuration) {
     try {
-      final String configuredPath = configuration.get(KEY_TOKENIZER_PATH);
-      final TokenizerModel model;
+      final String configuredPath = configuration.get(KEY_LANGDETECT_PATH);
       if (configuredPath != null && !configuredPath.isBlank()) {
         try (InputStream input = new FileInputStream(configuredPath)) {
-          model = new TokenizerModel(input);
+          return new LanguageDetectorModel(input);
         }
-      } else {
-        TokenizerModel resolved =
-            modelProvider.load(DEFAULT_LANGUAGE, ModelType.TOKENIZER, TokenizerModel.class);
-        if (resolved == null) {
-          final InputStream bundled = openBundledModel(BUNDLED_TOKENIZER_MODEL_FRAGMENT);
-          if (bundled == null) {
-            throw AnalysisException.notFound(
-                "No tokenizer model available for language '" + DEFAULT_LANGUAGE
-                    + "'. Configure '" + KEY_TOKENIZER_PATH + "' or add an opennlp-models-tokenizer"
-                    + " jar to the classpath.");
-          }
-          logger.info("Loaded tokenizer model bundled in the server jar");
-          try (InputStream input = bundled) {
-            resolved = new TokenizerModel(input);
-          }
-        }
-        model = resolved;
       }
-      return new TokenizerME(model);
+      InputStream resolved = findClassPathLanguageDetectorModel();
+      if (resolved == null) {
+        resolved = openBundledModel(BUNDLED_LANGDETECT_MODEL_FRAGMENT);
+      }
+      if (resolved == null) {
+        throw AnalysisException.notFound(
+            "No language detector model available. Configure '" + KEY_LANGDETECT_PATH
+                + "' or add the opennlp-models-langdetect jar to the classpath.");
+      }
+      try (InputStream input = resolved) {
+        return new LanguageDetectorModel(input);
+      }
     } catch (IOException e) {
-      throw AnalysisException.internal("Failed to load tokenizer model", e);
+      throw AnalysisException.internal("Failed to load language detector model", e);
     }
+  }
+
+  /**
+   * Locates the language detector binary through the {@code model.properties}
+   * descriptors of the model jars on the classpath. The binary sits at the jar root, so
+   * once the descriptor names it, the model loads as a plain classpath resource.
+   *
+   * @return An input stream of the model bytes, or {@code null} if no descriptor on the
+   *     classpath names a language detector binary.
+   */
+  private static InputStream findClassPathLanguageDetectorModel() throws IOException {
+    final ClassLoader classLoader = ModelBundleCache.class.getClassLoader();
+    final Enumeration<URL> descriptors = classLoader.getResources(MODEL_DESCRIPTOR_RESOURCE);
+    while (descriptors.hasMoreElements()) {
+      final Properties properties = new Properties();
+      try (InputStream input = descriptors.nextElement().openStream()) {
+        properties.load(input);
+      }
+      final String modelName = properties.getProperty("model.name", "");
+      if (modelName.contains(BUNDLED_LANGDETECT_MODEL_FRAGMENT)
+          && modelName.endsWith(MODEL_FILE_SUFFIX)) {
+        final InputStream model = classLoader.getResourceAsStream(modelName);
+        if (model != null) {
+          return model;
+        }
+      }
+    }
+    return null;
   }
 
   /**
@@ -260,22 +350,31 @@ public final class ModelBundleCache {
     final ModelBundleInfo.Builder bundle = ModelBundleInfo.newBuilder()
         .setBundleId(ProfileRegistry.DEFAULT_BUNDLE_ID)
         .addSupportedLanguages(DEFAULT_LANGUAGE)
+        .addSupportedSteps(PipelineStep.PIPELINE_STEP_LANGUAGE_DETECT)
         .addSupportedSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
         .addSupportedSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+        .addSupportedSteps(PipelineStep.PIPELINE_STEP_POS_TAG)
+        .addSupportedSteps(PipelineStep.PIPELINE_STEP_LEMMATIZE)
         .addModels(ModelDescriptor.newBuilder()
-            .setName("opennlp-models-sentdetect-" + DEFAULT_LANGUAGE)
-            .setLocale(DEFAULT_LANGUAGE)
-            .setComponentType(ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR)
-            .addLanguages(DEFAULT_LANGUAGE)
+            .setName("opennlp-models-langdetect")
+            // The language detector is language-independent; its descriptor declares
+            // locale "root" and it predicts ISO 639-3 codes for 103 languages.
+            .setLocale("root")
+            .setComponentType(ComponentType.COMPONENT_TYPE_LANGUAGE_DETECTOR)
             .setBackendId(OPENNLP_ME_BACKEND_ID)
             .build())
-        .addModels(ModelDescriptor.newBuilder()
-            .setName("opennlp-models-tokenizer-" + DEFAULT_LANGUAGE)
-            .setLocale(DEFAULT_LANGUAGE)
-            .setComponentType(ComponentType.COMPONENT_TYPE_TOKENIZER)
-            .addLanguages(DEFAULT_LANGUAGE)
-            .setBackendId(OPENNLP_ME_BACKEND_ID)
-            .build());
+        .addModels(classicModelDescriptor(
+            "opennlp-models-sentdetect-" + DEFAULT_LANGUAGE,
+            ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR))
+        .addModels(classicModelDescriptor(
+            "opennlp-models-tokenizer-" + DEFAULT_LANGUAGE,
+            ComponentType.COMPONENT_TYPE_TOKENIZER))
+        .addModels(classicModelDescriptor(
+            "opennlp-models-pos-" + DEFAULT_LANGUAGE,
+            ComponentType.COMPONENT_TYPE_POS_TAGGER))
+        .addModels(classicModelDescriptor(
+            "opennlp-models-lemmatizer-" + DEFAULT_LANGUAGE,
+            ComponentType.COMPONENT_TYPE_LEMMATIZER));
     if (embeddingProvider.isAvailable()) {
       bundle.addSupportedSteps(PipelineStep.PIPELINE_STEP_EMBED);
       for (String modelId : embeddingProvider.registeredModelIds()) {
@@ -292,5 +391,16 @@ public final class ModelBundleCache {
     final Map<String, ModelBundleInfo> catalog = new HashMap<>();
     catalog.put(ProfileRegistry.DEFAULT_BUNDLE_ID, bundle.build());
     return catalog;
+  }
+
+  /** Descriptor for a model served by the classic OpenNLP maxent runtime. */
+  private static ModelDescriptor classicModelDescriptor(String name, ComponentType type) {
+    return ModelDescriptor.newBuilder()
+        .setName(name)
+        .setLocale(DEFAULT_LANGUAGE)
+        .setComponentType(type)
+        .addLanguages(DEFAULT_LANGUAGE)
+        .setBackendId(OPENNLP_ME_BACKEND_ID)
+        .build();
   }
 }

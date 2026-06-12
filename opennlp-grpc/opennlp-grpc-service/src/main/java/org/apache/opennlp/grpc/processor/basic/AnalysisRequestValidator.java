@@ -1,0 +1,149 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+package org.apache.opennlp.grpc.processor.basic;
+
+import java.util.Objects;
+
+import org.apache.opennlp.grpc.chunk.ChunkEmbedProcessor;
+import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.processor.PipelineStepPolicy;
+import org.apache.opennlp.grpc.profile.ProfileRegistry;
+import org.apache.opennlp.grpc.v1.AnalysisOptions;
+import org.apache.opennlp.grpc.v1.AnalysisProfile;
+import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
+import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
+import org.apache.opennlp.grpc.v1.ModelBundleRef;
+import org.apache.opennlp.grpc.v1.PipelineStep;
+
+/**
+ * Validates an {@code AnalyzeDocument} request against the capabilities of this server
+ * before any pipeline step runs, so invalid requests fail fast with a precise status
+ * instead of failing halfway through processing.
+ */
+final class AnalysisRequestValidator {
+
+  private final EmbeddingProvider embeddingProvider;
+
+  AnalysisRequestValidator(EmbeddingProvider embeddingProvider) {
+    this.embeddingProvider = Objects.requireNonNull(embeddingProvider, "embeddingProvider");
+  }
+
+  /**
+   * Runs all request-level checks: every requested step is implemented, options are
+   * consistent, the model bundle exists, the embedding configuration is satisfiable,
+   * and all chunk+embed config entries are well-formed.
+   *
+   * @throws AnalysisException If any check fails.
+   */
+  void validate(AnalyzeDocumentRequest request, AnalysisProfile profile, String rawText) {
+    for (PipelineStep step : profile.getStepsList()) {
+      if (step == PipelineStep.PIPELINE_STEP_UNSPECIFIED) {
+        continue;
+      }
+      if (!PipelineStepPolicy.isImplemented(step)) {
+        throw AnalysisException.unimplemented(step.name() + " is not implemented on this server");
+      }
+    }
+    validateOptions(request, profile, rawText);
+    validateModelBundle(profile);
+    validateEmbeddingRequest(request, profile);
+    validateChunkEmbedConfigs(request);
+  }
+
+  /**
+   * Resolves the embedding model id for this request: the explicitly requested id, or
+   * the provider default. Returns {@code null} when the profile does not embed.
+   */
+  String resolveEmbeddingModelId(AnalyzeDocumentRequest request, AnalysisProfile profile) {
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_EMBED)) {
+      return null;
+    }
+    String requested = null;
+    if (request.hasOptions() && request.getOptions().hasEmbeddingModelId()) {
+      requested = request.getOptions().getEmbeddingModelId();
+    }
+    return embeddingProvider.resolveModelId(requested);
+  }
+
+  private void validateOptions(
+      AnalyzeDocumentRequest request, AnalysisProfile profile, String rawText) {
+    if (!request.hasOptions()) {
+      return;
+    }
+    final AnalysisOptions options = request.getOptions();
+    final boolean embedRequested =
+        PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_EMBED);
+    if (options.hasEmbeddingModelId() && !options.getEmbeddingModelId().isBlank()) {
+      if (!embedRequested) {
+        throw AnalysisException.invalidArgument(
+            "embedding_model_id requires PIPELINE_STEP_EMBED in the analysis profile");
+      }
+    }
+    if (options.hasMaxTextLength()
+        && options.getMaxTextLength() > 0
+        && rawText.length() > options.getMaxTextLength()) {
+      throw AnalysisException.invalidArgument(
+          "document.raw_text exceeds max_text_length (" + options.getMaxTextLength() + ")");
+    }
+  }
+
+  private void validateEmbeddingRequest(AnalyzeDocumentRequest request, AnalysisProfile profile) {
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_EMBED)) {
+      return;
+    }
+    if (!embeddingProvider.isAvailable()) {
+      throw AnalysisException.notFound(
+          "PIPELINE_STEP_EMBED requested but no embedding models are configured on this server");
+    }
+    final String modelId = resolveEmbeddingModelId(request, profile);
+    if (modelId == null || modelId.isBlank()) {
+      throw AnalysisException.invalidArgument(
+          "embedding_model_id is required when multiple embedding models are configured");
+    }
+    if (!embeddingProvider.supportsModel(modelId)) {
+      throw AnalysisException.notFound("Unknown embedding model '" + modelId + "'");
+    }
+  }
+
+  private void validateChunkEmbedConfigs(AnalyzeDocumentRequest request) {
+    if (request.getChunkEmbedConfigsCount() == 0) {
+      return;
+    }
+    for (ChunkEmbedConfigEntry entry : request.getChunkEmbedConfigsList()) {
+      ChunkEmbedProcessor.validateEntry(entry, embeddingProvider);
+    }
+  }
+
+  private static void validateModelBundle(AnalysisProfile profile) {
+    if (!profile.hasModelBundle()) {
+      return;
+    }
+    final ModelBundleRef bundle = profile.getModelBundle();
+    final String bundleId = bundle.getBundleId();
+    if (!bundleId.isBlank() && !bundleId.equals(ProfileRegistry.DEFAULT_BUNDLE_ID)) {
+      throw AnalysisException.notFound(
+          "Unknown model bundle '" + bundleId + "'; only '"
+              + ProfileRegistry.DEFAULT_BUNDLE_ID + "' is available");
+    }
+    if (bundle.getComponentModelsCount() > 0) {
+      throw AnalysisException.unimplemented(
+          "per-component model selection (component_models) is not implemented");
+    }
+  }
+}

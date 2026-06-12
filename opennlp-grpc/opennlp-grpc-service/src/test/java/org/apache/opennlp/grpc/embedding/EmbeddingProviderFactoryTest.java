@@ -19,6 +19,10 @@ package org.apache.opennlp.grpc.embedding;
 
 import java.util.Map;
 
+import org.apache.opennlp.grpc.embedding.cuda.CudaEmbeddingBackendFactory;
+import org.apache.opennlp.grpc.embedding.cuda.CudaEmbeddingProvider;
+import org.apache.opennlp.grpc.embedding.onnx.OnnxEmbeddingBackendFactory;
+import org.apache.opennlp.grpc.embedding.onnx.OnnxRuntimeEmbeddingProvider;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.junit.jupiter.api.Test;
 

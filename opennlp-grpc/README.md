@@ -57,26 +57,35 @@ Example config (`key=value`, `#` comments):
 server.enable_reflection=false
 server.max_inbound_message_size=10485760
 
-# Optional explicit model overrides. When omitted, the en sentence-detector and
-# tokenizer load from the classpath via the opennlp-models-* runtime deps.
+# Optional explicit model overrides. When omitted, the language detector and the
+# en sentence-detector, tokenizer, POS tagger and lemmatizer load from the
+# classpath via the opennlp-models-* runtime deps.
+# model.language_detector.path=/path/to/langdetect.bin
 # model.sentence_detector.path=/path/to/en-sent.bin
 # model.tokenizer.path=/path/to/en-token.bin
+# model.pos_tagger.path=/path/to/en-pos.bin
+# model.lemmatizer.path=/path/to/en-lemmas.bin
 ```
 
-By default no configuration is required: the server loads the bundled English
-sentence-detector and tokenizer models. When running from the executable jar,
-the models merged into the jar by the build are used directly; when running
-from a regular classpath (e.g. via Maven), they are discovered from the
+By default no configuration is required: the server loads the bundled language
+detector (103 languages) and the English sentence-detector, tokenizer, POS tagger
+and lemmatizer models (Apache-distributed UD models). When running from the
+executable jar, the models merged into the jar by the build are used directly; when
+running from a regular classpath (e.g. via Maven), they are discovered from the
 `opennlp-models-*` runtime dependencies.
 
-> v1 note: this minimal slice implements sentence detection, tokenization,
-> sentence-level embeddings (when ONNX models are configured), segmentation chunking
-> (`sentence` and `token` algorithms via `chunk_embed_configs` or `PIPELINE_STEP_CHUNK`),
-> probability reporting, `max_text_length`, offset encoding selection, and the default
-> `en-basic` model bundle. Semantic chunking (`algorithm: semantic`), CPU/GPU ONNX
-> embeddings, and segmentation chunking are supported when models are configured.
-> OpenVINO, classic syntactic `ChunkerME`, non-default bundles, and per-entry chunk
-> profiles are rejected explicitly instead of being silently ignored.
+> v1 note: this slice implements language detection (`PIPELINE_STEP_LANGUAGE_DETECT`,
+> filling `detected_language` with an ISO 639-3 code plus `language_confidence`),
+> sentence detection, tokenization, POS tagging (`PIPELINE_STEP_POS_TAG`, filling
+> `Token.pos_tag` with UD tags), lemmatization (`PIPELINE_STEP_LEMMATIZE`, filling
+> `Token.lemma`; requires the POS step), sentence-level embeddings, segmentation
+> chunking (`sentence` and `token` algorithms via `chunk_embed_configs` or
+> `PIPELINE_STEP_CHUNK`), probability reporting, `max_text_length`, offset encoding
+> selection, and the default `en-basic` model bundle. Semantic chunking
+> (`algorithm: semantic`) and CPU/GPU embeddings are supported when embedding models
+> are configured. Classic syntactic `ChunkerME`, NER, parsing, non-default bundles,
+> and per-entry chunk profiles are rejected explicitly instead of being silently
+> ignored.
 
 ### Embedding models (optional)
 

@@ -14,5 +14,5 @@
 # KIND, either express or implied.  See the License for the specific
 # language governing permissions and limitations under the License.
 
-org.apache.opennlp.grpc.embedding.OnnxEmbeddingBackendFactory
-org.apache.opennlp.grpc.embedding.CudaEmbeddingBackendFactory
+org.apache.opennlp.grpc.embedding.onnx.OnnxEmbeddingBackendFactory
+org.apache.opennlp.grpc.embedding.cuda.CudaEmbeddingBackendFactory
