@@ -38,8 +38,7 @@ class ChunkEmbedProcessorSemanticTest {
 
   private final StubEmbeddingProvider provider = new StubEmbeddingProvider(
       Map.of("minilm", 3),
-      (modelId, text) -> text.startsWith("A") ? TOPIC_A : TOPIC_B,
-      java.util.Set.of());
+      (modelId, text) -> text.startsWith("A") ? TOPIC_A : TOPIC_B);
 
   @Test
   void buildsSemanticGroupWithEmbeddings() {

@@ -75,7 +75,7 @@ Evolve the sandbox POC into ASF-native modules (target: main repo after consensu
 
 The following is a **short sketch** for discussion; field numbers and optional messages may change during RFC.
 
-**Important (per community feedback on OPENNLP-1833):** Chunking and embeddings are **in scope for v1**, not deferred. The full protobuf definitions (including `PipelineStep.CHUNK` and `EMBED`, `ChunkResult`/`ChunkSpan`, `EmbeddingResult`, `InferenceBackend`, richer `ModelBundleInfo` for discovery, etc.) live in the companion design document `docs/rfc/opennlp-grpc-design.md`. The short sketch below is intentionally minimal. GPU hot-swap (CUDA, OpenVINO) is achieved via a provider SPI behind `InferenceBackend`; those provider implementations are separate optional modules.
+**Important (per community feedback on OPENNLP-1833):** Chunking and embeddings are **in scope for v1**, not deferred. The full protobuf definitions (including `PipelineStep.CHUNK` and `EMBED`, `ChunkResult`/`ChunkSpan`, `EmbeddingResult`, richer `ModelBundleInfo` for discovery, etc.) live in the companion design document `docs/rfc/opennlp-grpc-design.md`. The short sketch below is intentionally minimal. GPU hot-swap (CUDA, OpenVINO) is achieved via a server-side provider SPI selected by configuration (`model.embedder.backend`), with the serving backend reported per model via `ModelDescriptor.backend_id`; provider implementations are separate optional modules.
 
 ```protobuf
 syntax = "proto3";

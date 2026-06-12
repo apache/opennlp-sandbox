@@ -17,14 +17,22 @@
  */
 package org.apache.opennlp.grpc.model;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.CodeSource;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 import opennlp.tools.models.ClassPathModelProvider;
 import opennlp.tools.models.DefaultClassPathModelProvider;
@@ -47,8 +55,14 @@ import org.slf4j.LoggerFactory;
 /**
  * Loads shared thread-safe {@code *ME} singletons once at startup.
  *
- * <p>Models resolve from optional explicit paths in configuration, otherwise from the
- * classpath via {@link DefaultClassPathModelProvider} and {@code opennlp-models-*} runtime deps.
+ * <p>Models resolve in three steps: optional explicit paths in configuration, then the
+ * classpath via {@link DefaultClassPathModelProvider} and {@code opennlp-models-*} runtime
+ * deps, and finally the model binaries bundled inside the shaded server jar itself.
+ *
+ * <p>The bundled fallback exists because classpath discovery matches model <em>jar file
+ * names</em> ({@code opennlp-models-*.jar}) and therefore cannot see models that have been
+ * merged into a single executable jar, which is how the server is distributed and run
+ * ({@code java -jar opennlp-grpc-server-*.jar}).
  */
 public final class ModelBundleCache {
 
@@ -57,6 +71,14 @@ public final class ModelBundleCache {
   private static final String DEFAULT_LANGUAGE = "en";
   private static final String KEY_SENTDETECT_PATH = "model.sentence_detector.path";
   private static final String KEY_TOKENIZER_PATH = "model.tokenizer.path";
+
+  /** Backend id reported for models served by the classic OpenNLP maxent runtime. */
+  private static final String OPENNLP_ME_BACKEND_ID = "opennlp-me";
+
+  /** Name fragments identifying the bundled UD model binaries at the jar root. */
+  private static final String BUNDLED_SENTENCE_MODEL_FRAGMENT = "-sentence-";
+  private static final String BUNDLED_TOKENIZER_MODEL_FRAGMENT = "-tokens-";
+  private static final String MODEL_FILE_SUFFIX = ".bin";
 
   private final ClassPathModelProvider modelProvider;
   private final Map<String, ModelBundleInfo> bundles;
@@ -112,11 +134,22 @@ public final class ModelBundleCache {
           model = new SentenceModel(input);
         }
       } else {
-        model = modelProvider.load(DEFAULT_LANGUAGE, ModelType.SENTENCE_DETECTOR, SentenceModel.class);
-        if (model == null) {
-          throw AnalysisException.notFound(
-              "No sentence detector model available for language '" + DEFAULT_LANGUAGE + "'");
+        SentenceModel resolved =
+            modelProvider.load(DEFAULT_LANGUAGE, ModelType.SENTENCE_DETECTOR, SentenceModel.class);
+        if (resolved == null) {
+          final InputStream bundled = openBundledModel(BUNDLED_SENTENCE_MODEL_FRAGMENT);
+          if (bundled == null) {
+            throw AnalysisException.notFound(
+                "No sentence detector model available for language '" + DEFAULT_LANGUAGE
+                    + "'. Configure '" + KEY_SENTDETECT_PATH + "' or add an opennlp-models-sentdetect"
+                    + " jar to the classpath.");
+          }
+          logger.info("Loaded sentence detector model bundled in the server jar");
+          try (InputStream input = bundled) {
+            resolved = new SentenceModel(input);
+          }
         }
+        model = resolved;
       }
       return new SentenceDetectorME(model);
     } catch (IOException e) {
@@ -133,15 +166,93 @@ public final class ModelBundleCache {
           model = new TokenizerModel(input);
         }
       } else {
-        model = modelProvider.load(DEFAULT_LANGUAGE, ModelType.TOKENIZER, TokenizerModel.class);
-        if (model == null) {
-          throw AnalysisException.notFound(
-              "No tokenizer model available for language '" + DEFAULT_LANGUAGE + "'");
+        TokenizerModel resolved =
+            modelProvider.load(DEFAULT_LANGUAGE, ModelType.TOKENIZER, TokenizerModel.class);
+        if (resolved == null) {
+          final InputStream bundled = openBundledModel(BUNDLED_TOKENIZER_MODEL_FRAGMENT);
+          if (bundled == null) {
+            throw AnalysisException.notFound(
+                "No tokenizer model available for language '" + DEFAULT_LANGUAGE
+                    + "'. Configure '" + KEY_TOKENIZER_PATH + "' or add an opennlp-models-tokenizer"
+                    + " jar to the classpath.");
+          }
+          logger.info("Loaded tokenizer model bundled in the server jar");
+          try (InputStream input = bundled) {
+            resolved = new TokenizerModel(input);
+          }
         }
+        model = resolved;
       }
       return new TokenizerME(model);
     } catch (IOException e) {
       throw AnalysisException.internal("Failed to load tokenizer model", e);
+    }
+  }
+
+  /**
+   * Opens a model binary bundled in the jar this class was loaded from, e.g. the shaded
+   * server jar which merges the {@code opennlp-models-*} artifacts. Returns {@code null}
+   * when not running from a jar (tests, exploded classpath) or when no matching entry
+   * exists; classpath discovery is expected to handle those cases.
+   *
+   * @param nameFragment The fragment identifying the model binary, e.g. {@code "-sentence-"}.
+   * @return An input stream of the model bytes, or {@code null} if not found.
+   * @throws IOException Thrown if the jar exists but cannot be read.
+   */
+  private static InputStream openBundledModel(String nameFragment) throws IOException {
+    final Path jarPath = codeSourceJar();
+    if (jarPath == null) {
+      return null;
+    }
+    return findBundledModel(jarPath, nameFragment);
+  }
+
+  /**
+   * Scans the root entries of {@code jarFile} for a model binary whose name contains
+   * {@code nameFragment} and ends with {@code .bin}.
+   *
+   * @param jarFile The jar file to scan. Must not be {@code null}.
+   * @param nameFragment The fragment identifying the model binary. Must not be {@code null}.
+   * @return An input stream of the model bytes, or {@code null} if no entry matches.
+   * @throws IOException Thrown if the jar cannot be read.
+   */
+  static InputStream findBundledModel(Path jarFile, String nameFragment) throws IOException {
+    try (JarFile jar = new JarFile(jarFile.toFile())) {
+      final Enumeration<JarEntry> entries = jar.entries();
+      while (entries.hasMoreElements()) {
+        final JarEntry entry = entries.nextElement();
+        final String name = entry.getName();
+        // Model artifacts place their binaries at the jar root; nested entries belong
+        // to other dependencies and are not considered.
+        if (!entry.isDirectory() && !name.contains("/")
+            && name.endsWith(MODEL_FILE_SUFFIX) && name.contains(nameFragment)) {
+          try (InputStream input = jar.getInputStream(entry)) {
+            return new ByteArrayInputStream(input.readAllBytes());
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * @return The jar file this class was loaded from, or {@code null} when running from
+   *     an exploded classpath (e.g. during tests or {@code mvn exec}).
+   */
+  private static Path codeSourceJar() {
+    final CodeSource codeSource = ModelBundleCache.class.getProtectionDomain().getCodeSource();
+    if (codeSource == null || codeSource.getLocation() == null) {
+      return null;
+    }
+    try {
+      final Path path = Path.of(codeSource.getLocation().toURI());
+      if (Files.isRegularFile(path) && path.getFileName().toString().endsWith(".jar")) {
+        return path;
+      }
+      return null;
+    } catch (URISyntaxException e) {
+      logger.warn("Could not resolve code source location: {}", codeSource.getLocation(), e);
+      return null;
     }
   }
 
@@ -156,12 +267,14 @@ public final class ModelBundleCache {
             .setLocale(DEFAULT_LANGUAGE)
             .setComponentType(ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR)
             .addLanguages(DEFAULT_LANGUAGE)
+            .setBackendId(OPENNLP_ME_BACKEND_ID)
             .build())
         .addModels(ModelDescriptor.newBuilder()
             .setName("opennlp-models-tokenizer-" + DEFAULT_LANGUAGE)
             .setLocale(DEFAULT_LANGUAGE)
             .setComponentType(ComponentType.COMPONENT_TYPE_TOKENIZER)
             .addLanguages(DEFAULT_LANGUAGE)
+            .setBackendId(OPENNLP_ME_BACKEND_ID)
             .build());
     if (embeddingProvider.isAvailable()) {
       bundle.addSupportedSteps(PipelineStep.PIPELINE_STEP_EMBED);
@@ -172,6 +285,7 @@ public final class ModelBundleCache {
             .setComponentType(ComponentType.COMPONENT_TYPE_EMBEDDER)
             .addLanguages(DEFAULT_LANGUAGE)
             .setEmbeddingDimension(embeddingProvider.embeddingDimension(modelId))
+            .setBackendId(embeddingProvider.backendId())
             .build());
       }
     }

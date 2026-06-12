@@ -45,7 +45,6 @@ import org.apache.opennlp.grpc.v1.CoordinateSpace;
 import org.apache.opennlp.grpc.v1.DiagnosticSeverity;
 import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
 import org.apache.opennlp.grpc.v1.EmbeddingResult;
-import org.apache.opennlp.grpc.v1.InferenceBackend;
 import org.apache.opennlp.grpc.v1.ModelBundleRef;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
@@ -235,19 +234,8 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       return;
     }
     final AnalysisOptions options = request.getOptions();
-    final InferenceBackend backend = options.getInferenceBackend();
     final boolean embedRequested =
         PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_EMBED);
-    final boolean chunkEmbedsRequested = request.getChunkEmbedConfigsList().stream()
-        .anyMatch(entry -> entry.getEmbeddingModelIdsCount() > 0);
-    final boolean dlRequested = embedRequested || chunkEmbedsRequested;
-    if (backend != InferenceBackend.INFERENCE_BACKEND_UNSPECIFIED
-        && backend != InferenceBackend.INFERENCE_BACKEND_OPENNLP_ME
-        && !(dlRequested && embeddingProvider.supportsInferenceBackend(backend))) {
-      throw AnalysisException.unimplemented(
-          "inference_backend " + backend.name()
-              + " is not implemented for the configured embedding provider");
-    }
     if (options.hasEmbeddingModelId() && !options.getEmbeddingModelId().isBlank()) {
       if (!embedRequested) {
         throw AnalysisException.invalidArgument(
@@ -432,23 +420,26 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       OpenNlpDocument.Builder document,
       String modelId,
       List<ProcessingDiagnostic> diagnostics) {
-    int embeddingCount = 0;
+    final List<AnnotationSpan> sentenceSpans = new ArrayList<>(document.getSentencesCount());
+    final List<String> sentenceTexts = new ArrayList<>(document.getSentencesCount());
     for (AnnotatedSentence sentence : document.getSentencesList()) {
       final AnnotationSpan sentenceSpan = sentence.getSentenceSpan();
-      final String sentenceText = rawText.substring(sentenceSpan.getStart(), sentenceSpan.getEnd());
-      final float[] vector = embeddingProvider.embed(modelId, sentenceText);
+      sentenceSpans.add(sentenceSpan);
+      sentenceTexts.add(rawText.substring(sentenceSpan.getStart(), sentenceSpan.getEnd()));
+    }
+    final List<float[]> vectors = embeddingProvider.embedBatch(modelId, sentenceTexts);
+    for (int i = 0; i < vectors.size(); i++) {
       document.addEmbeddings(EmbeddingResult.newBuilder()
           .setModelId(modelId)
-          .addAllVector(toFloatList(vector))
-          .setSourceSpan(sentenceSpan)
+          .addAllVector(toFloatList(vectors.get(i)))
+          .setSourceSpan(sentenceSpans.get(i))
           .setGranularity(EmbeddingGranularity.EMBEDDING_GRANULARITY_SENTENCE)
           .build());
-      embeddingCount++;
     }
     diagnostics.add(ProcessingDiagnostic.newBuilder()
         .setStep(PipelineStep.PIPELINE_STEP_EMBED)
         .setSeverity(DiagnosticSeverity.DIAGNOSTIC_SEVERITY_INFO)
-        .setMessage("Generated " + embeddingCount + " sentence embedding(s) with model '"
+        .setMessage("Generated " + vectors.size() + " sentence embedding(s) with model '"
             + modelId + "'")
         .build());
   }

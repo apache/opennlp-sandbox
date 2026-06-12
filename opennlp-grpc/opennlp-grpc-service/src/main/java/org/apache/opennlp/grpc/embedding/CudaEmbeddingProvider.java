@@ -18,15 +18,11 @@
 package org.apache.opennlp.grpc.embedding;
 
 import java.util.Map;
-import java.util.Set;
-
-import org.apache.opennlp.grpc.v1.InferenceBackend;
 
 /**
  * ONNX Runtime embedding provider running on the CUDA execution provider.
  *
- * <p>Serves {@code INFERENCE_BACKEND_CUDA} and {@code INFERENCE_BACKEND_ONNX_RUNTIME_GPU}
- * requests. Requires a server built with the {@code gpu} Maven profile, which replaces
+ * <p>Requires a server built with the {@code gpu} Maven profile, which replaces
  * the {@code onnxruntime} jar with {@code onnxruntime_gpu}, and a CUDA capable device at
  * runtime. The device is selected with {@code model.embedder.gpu_device_id}. See
  * {@link AbstractOnnxEmbeddingProvider} for the model configuration keys.</p>
@@ -43,9 +39,7 @@ public final class CudaEmbeddingProvider extends AbstractOnnxEmbeddingProvider {
   }
 
   @Override
-  Set<InferenceBackend> supportedBackends() {
-    return Set.of(
-        InferenceBackend.INFERENCE_BACKEND_CUDA,
-        InferenceBackend.INFERENCE_BACKEND_ONNX_RUNTIME_GPU);
+  public String backendId() {
+    return CudaEmbeddingBackendFactory.BACKEND_ID;
   }
 }

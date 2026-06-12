@@ -27,9 +27,15 @@ import java.util.Map;
  * {@code META-INF/services/org.apache.opennlp.grpc.embedding.EmbeddingBackendFactory}
  * and is then selectable through the {@code model.embedder.backend} server configuration
  * key without any change to the gRPC server. This is the extension point for additional
- * inference runtimes (for example OpenVINO or remote endpoints) shipped as separate jars.</p>
+ * inference runtimes shipped as separate jars: in-process engines (OpenVINO, DJL, ...)
+ * as well as remote backends whose provider is a client to an external inference
+ * service. A remote provider implements the same surface ({@code embed},
+ * {@code embedBatch}, model registry) over a connection it owns, which keeps the
+ * actual inference free to live in another process or language entirely.</p>
  *
- * <p>Implementations must be stateless and provide a public no-argument constructor.</p>
+ * <p>Implementations must be stateless and provide a public no-argument constructor.
+ * Providers that hold connections or native resources should implement
+ * {@link AutoCloseable}; the server closes them on shutdown.</p>
  */
 public interface EmbeddingBackendFactory {
 

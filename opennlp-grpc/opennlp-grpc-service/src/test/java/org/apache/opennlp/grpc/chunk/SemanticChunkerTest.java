@@ -19,8 +19,6 @@ package org.apache.opennlp.grpc.chunk;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
 import org.apache.opennlp.grpc.embedding.StubEmbeddingProvider;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
@@ -39,8 +37,7 @@ class SemanticChunkerTest {
 
   private final StubEmbeddingProvider provider = new StubEmbeddingProvider(
       Map.of("minilm", 3),
-      (modelId, text) -> text.startsWith("A") ? TOPIC_A : TOPIC_B,
-      Set.of());
+      (modelId, text) -> text.startsWith("A") ? TOPIC_A : TOPIC_B);
 
   @Test
   void splitsWhenAdjacentSentenceSimilarityIsLow() {

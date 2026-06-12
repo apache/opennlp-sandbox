@@ -27,7 +27,6 @@ import java.util.Set;
 
 import ai.onnxruntime.OrtException;
 import org.apache.opennlp.grpc.processor.AnalysisException;
-import org.apache.opennlp.grpc.v1.InferenceBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,8 +53,8 @@ import org.slf4j.LoggerFactory;
  * state of the classification token).</p>
  *
  * <p>All configured models are loaded eagerly so that misconfiguration fails at server
- * startup rather than on the first request. Subclasses only declare which
- * {@link InferenceBackend} values they serve.</p>
+ * startup rather than on the first request. Subclasses only declare their
+ * {@link #backendId() backend id} and execution provider.</p>
  */
 abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider, AutoCloseable {
 
@@ -87,12 +86,6 @@ abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider, AutoC
     this.models = loadModels(configuration, useCuda, gpuDeviceId);
     this.defaultModelId = resolveDefaultModelId(configuration, models);
   }
-
-  /**
-   * @return The {@link InferenceBackend} values this provider serves, in addition to
-   *         {@code UNSPECIFIED} and {@code OPENNLP_ME} which every provider accepts.
-   */
-  abstract Set<InferenceBackend> supportedBackends();
 
   @Override
   public boolean isAvailable() {
@@ -134,13 +127,6 @@ abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider, AutoC
       return defaultModelId;
     }
     return models.size() == 1 ? models.keySet().iterator().next() : null;
-  }
-
-  @Override
-  public boolean supportsInferenceBackend(InferenceBackend backend) {
-    return backend == InferenceBackend.INFERENCE_BACKEND_UNSPECIFIED
-        || backend == InferenceBackend.INFERENCE_BACKEND_OPENNLP_ME
-        || supportedBackends().contains(backend);
   }
 
   /**

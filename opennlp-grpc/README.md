@@ -23,6 +23,13 @@ Document-centric gRPC API for Apache OpenNLP inference. Design RFC: [docs/rfc/op
 
 - **opennlp-grpc-api** - v1 protos (`org.apache.opennlp.grpc.v1`) and generated stubs
 - **opennlp-grpc-service** - `OpenNlpGrpcServer` and `OpenNlpAnalysisService` implementation
+- **opennlp-grpc-backend-tei** - optional remote embedding backend for HuggingFace Text
+  Embeddings Inference (TEI) gRPC endpoints
+- **opennlp-grpc-backend-openvino** - optional remote embedding backend for OpenVINO
+  Model Server and other KServe v2 compatible inference servers
+- **opennlp-grpc-integration-tests** - black-box integration tests that launch the
+  shaded server jar as a separate process and exercise it over the network, including
+  a remote TEI embedding backend
 - **examples** - client samples (v1 Python client TBD)
 
 ## Build
@@ -57,7 +64,10 @@ server.max_inbound_message_size=10485760
 ```
 
 By default no configuration is required: the server loads the bundled English
-sentence-detector and tokenizer from the classpath.
+sentence-detector and tokenizer models. When running from the executable jar,
+the models merged into the jar by the build are used directly; when running
+from a regular classpath (e.g. via Maven), they are discovered from the
+`opennlp-models-*` runtime dependencies.
 
 > v1 note: this minimal slice implements sentence detection, tokenization,
 > sentence-level embeddings (when ONNX models are configured), segmentation chunking
@@ -116,14 +126,74 @@ model.embedder.sentence-transformers.vocab.path=/path/to/vocab.txt
 
 `model.embedder.backend` accepts `onnx` (default, CPU) or `cuda`; any other value
 is rejected at startup with the list of registered backends. `model.embedder.gpu_device_id`
-is only valid with the `cuda` backend. Clients should set `inference_backend` to
-`INFERENCE_BACKEND_CUDA` (or legacy `INFERENCE_BACKEND_ONNX_RUNTIME_GPU`) when requesting
-embeddings or chunk embeddings. Requires an NVIDIA CUDA runtime on the host.
+is only valid with the `cuda` backend. Requires an NVIDIA CUDA runtime on the host.
+
+Backend selection is purely a server deployment concern: clients request embeddings by
+model id and never indicate a backend. The backend serving each model is reported to
+clients through `ModelDescriptor.backend_id` in `GetAvailableModels`.
+
+#### Remote backends: HuggingFace TEI (optional)
+
+The `opennlp-grpc-backend-tei` module delegates embedding inference to
+[HuggingFace Text Embeddings Inference](https://github.com/huggingface/text-embeddings-inference)
+instances over their native gRPC API (`-grpc` flavored TEI Docker images). Tokenization,
+truncation, pooling and normalization run inside TEI; the OpenNLP server keeps
+orchestrating the document pipeline. One TEI instance serves one model, so each model id
+maps to one endpoint. Put the module jar on the server classpath and configure:
+
+```ini
+model.embedder.backend=tei
+model.embedder.minilm.tei.target=localhost:8080
+model.embedder.minilm.tei.use_tls=false      # optional, default false
+model.embedder.minilm.tei.truncate=true      # optional, default true
+model.embedder.minilm.tei.normalize=true     # optional, default true
+model.embedder.tei.deadline_ms=30000         # optional
+```
+
+Endpoints are validated at startup (TEI `Info` RPC plus one probe embedding that also
+determines the vector dimension). Batches are fanned out as concurrent calls on the
+multiplexed HTTP/2 connection; TEI applies its own server-side batching.
+
+See [opennlp-grpc-backend-tei/README.md](opennlp-grpc-backend-tei/README.md) for the
+full deployment guide: the TEI Docker image matrix (CPU and per-CUDA-architecture GPU
+images), multi-model configuration, and the model/device combinations verified by the
+live integration tests.
+
+#### Remote backends: OpenVINO Model Server / KServe v2 (optional)
+
+The `opennlp-grpc-backend-openvino` module delegates embedding inference to an
+[OpenVINO Model Server](https://docs.openvino.ai/2026/model-server/ovms_what_is_openvino_model_server.html)
+— or any KServe v2 compatible inference server (Triton, KServe, ...) — over the KServe
+open inference protocol gRPC API. The served model or OVMS MediaPipe graph must accept a
+`BYTES` string tensor and return `FP32` embeddings, i.e. tokenization runs server-side
+(for OpenVINO, models converted with `openvino_tokenizers`):
+
+```ini
+model.embedder.backend=openvino
+model.embedder.minilm.openvino.target=localhost:9000
+model.embedder.minilm.openvino.model_name=all-MiniLM-L6-v2
+model.embedder.minilm.openvino.model_version=1       # optional
+model.embedder.minilm.openvino.input_name=texts      # optional with one input
+model.embedder.minilm.openvino.output_name=embeddings # optional with one output
+model.embedder.openvino.deadline_ms=30000            # optional
+```
+
+Model readiness and tensor metadata are validated at startup, and one probe inference
+determines the embedding dimension. Batches are sent as a single `ModelInfer` call with
+a leading batch dimension.
+
+See [opennlp-grpc-backend-openvino/README.md](opennlp-grpc-backend-openvino/README.md)
+for the full deployment guide, including the scripted model export that fuses the
+HuggingFace tokenizer, transformer, mean pooling and L2 normalization into a single
+string-input OpenVINO model, and the configuration verified by the live integration
+tests.
 
 #### Custom embedding backends (SPI)
 
-Embedding backends are discovered through `java.util.ServiceLoader`. To add a backend
-(for example OpenVINO or a remote inference endpoint), ship a jar that implements
+Embedding backends are discovered through `java.util.ServiceLoader` — the TEI and
+OpenVINO modules above are regular consumers of this SPI. To add another backend
+(DJL, a custom native runtime, or any other remote inference service in any language),
+ship a jar that implements
 `org.apache.opennlp.grpc.embedding.EmbeddingBackendFactory`, registers it in
 `META-INF/services/org.apache.opennlp.grpc.embedding.EmbeddingBackendFactory`, and put
 that jar on the server classpath. The backend then becomes selectable via

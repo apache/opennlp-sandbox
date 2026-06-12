@@ -17,19 +17,33 @@
  */
 package org.apache.opennlp.grpc.embedding;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
-import org.apache.opennlp.grpc.v1.InferenceBackend;
-
 /**
- * Local embedding backend for the {@code PIPELINE_STEP_EMBED} pipeline step.
+ * Embedding backend for the {@code PIPELINE_STEP_EMBED} pipeline step.
  *
  * <p>Implementations own their model lifecycle: models are registered at construction
  * time and identified by a stable model id. Implementations that hold native resources
- * should also implement {@link AutoCloseable}; the server closes such providers on
- * shutdown.</p>
+ * or remote connections should also implement {@link AutoCloseable}; the server closes
+ * such providers on shutdown.</p>
+ *
+ * <p>Inference may run in-process (ONNX Runtime, CUDA, DJL, OpenVINO, ...) or be
+ * delegated to a remote service; the server is agnostic. Batch-capable backends should
+ * override {@link #embedBatch(String, List)}, which the server prefers whenever it has
+ * more than one text to embed.</p>
  */
 public interface EmbeddingProvider {
+
+  /**
+   * @return The open identifier of the backend serving this provider's models,
+   *         e.g. {@code "onnx"} or {@code "cuda"}. Matches the id of the
+   *         {@link EmbeddingBackendFactory} that created the provider and is reported
+   *         to clients in {@code ModelDescriptor.backend_id}. Never {@code null}.
+   */
+  String backendId();
 
   /**
    * @return {@code true} when at least one embedding model is registered.
@@ -66,6 +80,26 @@ public interface EmbeddingProvider {
   float[] embed(String modelId, String text);
 
   /**
+   * Embeds the given texts in one call. The default implementation embeds each text
+   * individually; backends with native batch support (GPU inference, remote services)
+   * should override this to avoid per-text dispatch overhead.
+   *
+   * @param modelId The id of a registered embedding model.
+   * @param texts   The texts to embed. Must not be {@code null} and must not contain
+   *                {@code null} elements.
+   *
+   * @return One embedding vector per input text, in input order.
+   */
+  default List<float[]> embedBatch(String modelId, List<String> texts) {
+    Objects.requireNonNull(texts, "texts must not be null");
+    final List<float[]> vectors = new ArrayList<>(texts.size());
+    for (String text : texts) {
+      vectors.add(embed(modelId, text));
+    }
+    return vectors;
+  }
+
+  /**
    * Resolves the effective model id from an optional client override.
    *
    * @param requestedModelId The model id requested by the client. May be {@code null}
@@ -81,18 +115,5 @@ public interface EmbeddingProvider {
       return registeredModelIds().iterator().next();
     }
     return null;
-  }
-
-  /**
-   * @param backend The inference backend requested by the client.
-   *
-   * @return {@code true} when the provider can serve the requested inference backend.
-   *         {@code UNSPECIFIED} and {@code OPENNLP_ME} are always accepted because they
-   *         do not constrain the embedding backend.
-   */
-  default boolean supportsInferenceBackend(InferenceBackend backend) {
-    return backend == InferenceBackend.INFERENCE_BACKEND_UNSPECIFIED
-        || backend == InferenceBackend.INFERENCE_BACKEND_OPENNLP_ME
-        || backend == InferenceBackend.INFERENCE_BACKEND_ONNX_RUNTIME;
   }
 }

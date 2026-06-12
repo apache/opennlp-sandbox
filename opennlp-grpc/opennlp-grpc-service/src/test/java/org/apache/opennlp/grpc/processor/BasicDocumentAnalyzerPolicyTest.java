@@ -25,7 +25,6 @@ import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkingSpec;
 import org.apache.opennlp.grpc.v1.DiagnosticSeverity;
-import org.apache.opennlp.grpc.v1.InferenceBackend;
 import org.apache.opennlp.grpc.v1.ModelBundleRef;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
@@ -133,21 +132,6 @@ class BasicDocumentAnalyzerPolicyTest {
             .build()));
 
     assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
-  }
-
-  @Test
-  void rejectsUnsupportedInferenceBackend() {
-    final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(Map.of());
-
-    final AnalysisException error = assertThrows(AnalysisException.class, () -> analyzer.analyze(
-        AnalyzeDocumentRequest.newBuilder()
-            .setDocument(OpenNlpDocument.newBuilder().setRawText("Hello world.").build())
-            .setOptions(AnalysisOptions.newBuilder()
-                .setInferenceBackend(InferenceBackend.INFERENCE_BACKEND_ONNX_RUNTIME)
-                .build())
-            .build()));
-
-    assertEquals(AnalysisException.FailureType.UNIMPLEMENTED, error.getFailureType());
   }
 
   @Test

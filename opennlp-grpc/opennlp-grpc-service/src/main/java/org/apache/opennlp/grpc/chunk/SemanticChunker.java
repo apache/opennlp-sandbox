@@ -77,12 +77,13 @@ public final class SemanticChunker {
     }
 
     final int sentenceCount = document.getSentencesCount();
-    final float[][] embeddings = new float[sentenceCount][];
+    final List<String> sentenceTexts = new ArrayList<>(sentenceCount);
     for (int i = 0; i < sentenceCount; i++) {
       final AnnotationSpan span = document.getSentences(i).getSentenceSpan();
-      final String sentenceText = rawText.substring(span.getStart(), span.getEnd());
-      embeddings[i] = embeddingProvider.embed(modelId, sentenceText);
+      sentenceTexts.add(rawText.substring(span.getStart(), span.getEnd()));
     }
+    final float[][] embeddings =
+        embeddingProvider.embedBatch(modelId, sentenceTexts).toArray(new float[0][]);
 
     final float[] similarities = new float[sentenceCount - 1];
     for (int i = 0; i < similarities.length; i++) {

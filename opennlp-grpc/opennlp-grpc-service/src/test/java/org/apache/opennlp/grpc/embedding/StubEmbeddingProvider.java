@@ -21,28 +21,30 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 
-import org.apache.opennlp.grpc.v1.InferenceBackend;
-
 /**
  * Test double returning deterministic or caller-supplied vectors.
  */
 public final class StubEmbeddingProvider implements EmbeddingProvider {
 
+  public static final String BACKEND_ID = "stub";
+
   private final Map<String, Integer> dimensions;
   private final BiFunction<String, String, float[]> embedFn;
-  private final Set<InferenceBackend> backends;
 
   public StubEmbeddingProvider(Map<String, Integer> dimensions) {
-    this(dimensions, null, Set.of(InferenceBackend.INFERENCE_BACKEND_ONNX_RUNTIME));
+    this(dimensions, null);
   }
 
   public StubEmbeddingProvider(
       Map<String, Integer> dimensions,
-      BiFunction<String, String, float[]> embedFn,
-      Set<InferenceBackend> backends) {
+      BiFunction<String, String, float[]> embedFn) {
     this.dimensions = Map.copyOf(dimensions);
     this.embedFn = embedFn;
-    this.backends = Set.copyOf(backends);
+  }
+
+  @Override
+  public String backendId() {
+    return BACKEND_ID;
   }
 
   @Override
@@ -77,13 +79,5 @@ public final class StubEmbeddingProvider implements EmbeddingProvider {
       vector[i] = (seed + i) * 0.001f;
     }
     return vector;
-  }
-
-  @Override
-  public boolean supportsInferenceBackend(InferenceBackend backend) {
-    return backend == InferenceBackend.INFERENCE_BACKEND_UNSPECIFIED
-        || backend == InferenceBackend.INFERENCE_BACKEND_OPENNLP_ME
-        || backend == InferenceBackend.INFERENCE_BACKEND_ONNX_RUNTIME
-        || backends.contains(backend);
   }
 }

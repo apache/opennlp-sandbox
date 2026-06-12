@@ -35,6 +35,9 @@
     <modules>
         <module>opennlp-grpc-api</module>
         <module>opennlp-grpc-service</module>
+        <module>opennlp-grpc-backend-tei</module>
+        <module>opennlp-grpc-backend-openvino</module>
+        <module>opennlp-grpc-integration-tests</module>
     </modules>
 
     <properties>

@@ -18,7 +18,9 @@
 package org.apache.opennlp.grpc.chunk;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
@@ -118,19 +120,31 @@ public final class ChunkEmbedProcessor {
       group.setResultSetName(entry.getResultSetName());
     }
 
-    int totalTokens = 0;
+    final List<String> chunkTexts = new ArrayList<>(segments.size());
     for (SegmentationChunker.ChunkSegment segment : segments) {
-      final String chunkText = rawText.substring(segment.start(), segment.end());
+      chunkTexts.add(rawText.substring(segment.start(), segment.end()));
+    }
+
+    // One batched inference per model across all chunks of this group.
+    final Map<String, List<float[]>> vectorsByModel = new LinkedHashMap<>();
+    if (!segments.isEmpty()) {
+      for (String modelId : entry.getEmbeddingModelIdsList()) {
+        vectorsByModel.put(modelId, embeddingProvider.embedBatch(modelId, chunkTexts));
+      }
+    }
+
+    int totalTokens = 0;
+    for (int i = 0; i < segments.size(); i++) {
+      final SegmentationChunker.ChunkSegment segment = segments.get(i);
       final Chunk.Builder chunk = Chunk.newBuilder()
           .setAnnotationSpan(toSpan(segment.start(), segment.end()))
-          .setTextContent(chunkText)
+          .setTextContent(chunkTexts.get(i))
           .addAllContainedSentenceIndices(segment.sentenceIndices());
       totalTokens += countTokens(document, segment);
       for (String modelId : entry.getEmbeddingModelIdsList()) {
-        final float[] vector = embeddingProvider.embed(modelId, chunkText);
         chunk.addEmbeddings(EmbeddingResult.newBuilder()
             .setModelId(modelId)
-            .addAllVector(toFloatList(vector))
+            .addAllVector(toFloatList(vectorsByModel.get(modelId).get(i)))
             .setSourceSpan(toSpan(segment.start(), segment.end()))
             .setGranularity(EmbeddingGranularity.EMBEDDING_GRANULARITY_CHUNK_LEVEL)
             .build());
@@ -228,6 +242,11 @@ public final class ChunkEmbedProcessor {
 
   /** Embedding provider that rejects embed calls; used for chunk-only groups. */
   private static final class NoOpEmbeddingProvider implements EmbeddingProvider {
+    @Override
+    public String backendId() {
+      return "none";
+    }
+
     @Override
     public boolean isAvailable() {
       return false;

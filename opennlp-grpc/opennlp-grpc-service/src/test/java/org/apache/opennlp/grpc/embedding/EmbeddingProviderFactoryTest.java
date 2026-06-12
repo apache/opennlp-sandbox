@@ -20,11 +20,9 @@ package org.apache.opennlp.grpc.embedding;
 import java.util.Map;
 
 import org.apache.opennlp.grpc.processor.AnalysisException;
-import org.apache.opennlp.grpc.v1.InferenceBackend;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -35,8 +33,7 @@ class EmbeddingProviderFactoryTest {
   void defaultsToCpuProvider() {
     final EmbeddingProvider provider = EmbeddingProviderFactory.create(Map.of());
     assertInstanceOf(OnnxRuntimeEmbeddingProvider.class, provider);
-    assertTrue(provider.supportsInferenceBackend(InferenceBackend.INFERENCE_BACKEND_ONNX_RUNTIME));
-    assertFalse(provider.supportsInferenceBackend(InferenceBackend.INFERENCE_BACKEND_CUDA));
+    assertEquals(OnnxEmbeddingBackendFactory.BACKEND_ID, provider.backendId());
   }
 
   @Test
@@ -44,8 +41,7 @@ class EmbeddingProviderFactoryTest {
     final EmbeddingProvider provider =
         EmbeddingProviderFactory.create(Map.of("model.embedder.backend", "cuda"));
     assertInstanceOf(CudaEmbeddingProvider.class, provider);
-    assertTrue(provider.supportsInferenceBackend(InferenceBackend.INFERENCE_BACKEND_CUDA));
-    assertTrue(provider.supportsInferenceBackend(InferenceBackend.INFERENCE_BACKEND_ONNX_RUNTIME_GPU));
+    assertEquals(CudaEmbeddingBackendFactory.BACKEND_ID, provider.backendId());
   }
 
   @Test
@@ -64,6 +60,7 @@ class EmbeddingProviderFactoryTest {
     final EmbeddingProvider provider =
         EmbeddingProviderFactory.create(Map.of("model.embedder.backend", "stub"));
     assertInstanceOf(StubEmbeddingProvider.class, provider);
+    assertEquals(StubEmbeddingProvider.BACKEND_ID, provider.backendId());
     assertTrue(provider.supportsModel("stub-model"));
     assertEquals(3, provider.embeddingDimension("stub-model"));
   }

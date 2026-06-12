@@ -19,8 +19,6 @@ package org.apache.opennlp.grpc.processor;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
 import org.apache.opennlp.grpc.embedding.StubEmbeddingProvider;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
@@ -43,8 +41,7 @@ class BasicDocumentAnalyzerSemanticChunkTest {
   private final StubEmbeddingProvider embeddingProvider = new StubEmbeddingProvider(
       Map.of("minilm", 3),
       (modelId, text) -> text.contains("rain")
-          ? new float[] {0f, 1f, 0f} : new float[] {1f, 0f, 0f},
-      Set.of());
+          ? new float[] {0f, 1f, 0f} : new float[] {1f, 0f, 0f});
 
   private final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(
       ProfileRegistry.createDefault(),

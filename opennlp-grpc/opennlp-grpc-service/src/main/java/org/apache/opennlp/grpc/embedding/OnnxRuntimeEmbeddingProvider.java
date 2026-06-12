@@ -18,15 +18,11 @@
 package org.apache.opennlp.grpc.embedding;
 
 import java.util.Map;
-import java.util.Set;
-
-import org.apache.opennlp.grpc.v1.InferenceBackend;
 
 /**
  * ONNX Runtime embedding provider running on the CPU execution provider.
  *
- * <p>Serves {@code INFERENCE_BACKEND_ONNX_RUNTIME} requests. See
- * {@link AbstractOnnxEmbeddingProvider} for the model configuration keys.</p>
+ * <p>See {@link AbstractOnnxEmbeddingProvider} for the model configuration keys.</p>
  */
 public final class OnnxRuntimeEmbeddingProvider extends AbstractOnnxEmbeddingProvider {
 
@@ -40,7 +36,7 @@ public final class OnnxRuntimeEmbeddingProvider extends AbstractOnnxEmbeddingPro
   }
 
   @Override
-  Set<InferenceBackend> supportedBackends() {
-    return Set.of(InferenceBackend.INFERENCE_BACKEND_ONNX_RUNTIME);
+  public String backendId() {
+    return OnnxEmbeddingBackendFactory.BACKEND_ID;
   }
 }

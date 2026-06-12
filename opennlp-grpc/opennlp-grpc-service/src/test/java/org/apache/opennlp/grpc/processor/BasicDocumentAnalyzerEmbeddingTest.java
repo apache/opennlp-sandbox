@@ -26,7 +26,6 @@ import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
-import org.apache.opennlp.grpc.v1.InferenceBackend;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.junit.jupiter.api.Test;
@@ -57,7 +56,6 @@ class BasicDocumentAnalyzerEmbeddingTest {
             .build())
         .setOptions(AnalysisOptions.newBuilder()
             .setEmbeddingModelId("minilm")
-            .setInferenceBackend(InferenceBackend.INFERENCE_BACKEND_ONNX_RUNTIME)
             .build())
         .build());
 
