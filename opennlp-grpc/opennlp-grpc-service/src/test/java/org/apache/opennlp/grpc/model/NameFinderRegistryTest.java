@@ -80,7 +80,10 @@ class NameFinderRegistryTest {
     assertTrue(registry.supportsEntityType("PERSON"));
     assertTrue(registry.supportsEntityType(" Person "));
     assertEquals(List.of("person"), registry.resolveEntityTypes(List.of("PERSON")));
-    assertEquals(registry.get("person"), registry.get("PERSON"));
+    // The same underlying model is selected regardless of the requested type's case.
+    assertEquals(registry.modelsForTypes(List.of("person")),
+        registry.modelsForTypes(List.of("PERSON")));
+    assertEquals(1, registry.modelsForTypes(List.of("PERSON")).size());
   }
 
   @Test

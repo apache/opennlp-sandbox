@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -68,10 +69,17 @@ public final class NameFinderRegistry {
   /** Suffix completing a per-type path key: {@code model.name_finder.<type>.path}. */
   public static final String KEY_SUFFIX = ".path";
 
-  private final Map<String, NameFinderME> finders;
+  /** All recognizers keyed by model id (for classic models, the entity type). */
+  private final Map<String, NerModel> modelsById;
+  /** Index from normalized entity type to the models that can emit it. */
+  private final Map<String, List<NerModel>> byEntityType;
 
-  private NameFinderRegistry(Map<String, NameFinderME> finders) {
-    this.finders = Map.copyOf(finders);
+  private NameFinderRegistry(Map<String, NerModel> modelsById,
+      Map<String, List<NerModel>> byEntityType) {
+    this.modelsById = Map.copyOf(modelsById);
+    final Map<String, List<NerModel>> index = new LinkedHashMap<>();
+    byEntityType.forEach((type, models) -> index.put(type, List.copyOf(models)));
+    this.byEntityType = Map.copyOf(index);
   }
 
   /**
@@ -99,36 +107,55 @@ public final class NameFinderRegistry {
     Objects.requireNonNull(configuration, "configuration");
     final Map<String, String> paths = parseConfiguredPaths(configuration);
     if (paths.isEmpty()) {
-      return new NameFinderRegistry(Map.of());
+      return new NameFinderRegistry(Map.of(), Map.of());
     }
-    final Map<String, NameFinderME> loaded = new LinkedHashMap<>();
+    final Map<String, NerModel> modelsById = new LinkedHashMap<>();
+    final Map<String, List<NerModel>> byEntityType = new LinkedHashMap<>();
     for (Map.Entry<String, String> entry : paths.entrySet()) {
-      loaded.put(entry.getKey(), loadNameFinder(entry.getKey(), entry.getValue()));
+      final String entityType = entry.getKey();
+      final NerModel model =
+          new ClassicNerModel(entityType, loadNameFinder(entityType, entry.getValue()));
+      modelsById.put(model.id(), model);
+      for (String type : model.entityTypes()) {
+        byEntityType.computeIfAbsent(type, key -> new ArrayList<>()).add(model);
+      }
     }
-    return new NameFinderRegistry(loaded);
+    return new NameFinderRegistry(modelsById, byEntityType);
   }
 
   public boolean isAvailable() {
-    return !finders.isEmpty();
+    return !modelsById.isEmpty();
   }
 
   /**
    * @return Configured entity types in stable registration order.
    */
   public List<String> entityTypes() {
-    return List.copyOf(finders.keySet());
+    return List.copyOf(byEntityType.keySet());
   }
 
   public boolean supportsEntityType(String entityType) {
-    return entityType != null && finders.containsKey(normalize(entityType));
+    return entityType != null && byEntityType.containsKey(normalize(entityType));
   }
 
-  public NameFinderME get(String entityType) {
-    final NameFinderME finder = finders.get(normalize(entityType));
-    if (finder == null) {
-      throw new IllegalArgumentException("No name finder configured for entity type '" + entityType + "'");
+  /**
+   * Resolves the distinct {@link NerModel}s that must run for the requested entity types:
+   * every model that can emit at least one of them, each listed once. An empty or
+   * {@code null} request selects all configured models. Running a model once and filtering
+   * its output avoids invoking a multi-type model repeatedly.
+   */
+  public List<NerModel> modelsForTypes(List<String> requestedTypes) {
+    if (requestedTypes == null || requestedTypes.isEmpty()) {
+      return List.copyOf(modelsById.values());
     }
-    return finder;
+    final LinkedHashSet<NerModel> selected = new LinkedHashSet<>();
+    for (String requestedType : requestedTypes) {
+      final List<NerModel> models = byEntityType.get(normalize(requestedType));
+      if (models != null) {
+        selected.addAll(models);
+      }
+    }
+    return List.copyOf(selected);
   }
 
   /**
@@ -152,8 +179,10 @@ public final class NameFinderRegistry {
    * OpenNLP Name Finder API after each document when stateless RPC semantics are desired.
    */
   public void clearAdaptiveData() {
-    for (NameFinderME finder : finders.values()) {
-      finder.clearAdaptiveData();
+    for (NerModel model : modelsById.values()) {
+      if (model.isStateful()) {
+        model.clearAdaptiveData();
+      }
     }
   }
 
