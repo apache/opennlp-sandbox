@@ -91,6 +91,14 @@ class NameFinderRegistryTest {
   }
 
   @Test
+  void rejectsMissingModelFileWithNotFound() {
+    final AnalysisException error = assertThrows(AnalysisException.class, () ->
+        NameFinderRegistry.create(Map.of(personKey(), "/no/such/path/en-ner-person.bin")));
+    assertEquals(AnalysisException.FailureType.NOT_FOUND, error.getFailureType());
+    assertTrue(error.getMessage().contains("/no/such/path/en-ner-person.bin"));
+  }
+
+  @Test
   void rejectsDuplicateEntityType() {
     final AnalysisException error = assertThrows(AnalysisException.class, () ->
         NameFinderRegistry.create(Map.of(

@@ -19,6 +19,7 @@ package org.apache.opennlp.grpc.model;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
@@ -214,6 +215,10 @@ public final class ModelBundleCache {
         }
       }
       return resolved;
+    } catch (FileNotFoundException e) {
+      // A configured path that does not exist is an operator error, not an internal fault.
+      throw AnalysisException.notFound(
+          "Configured " + description + " model file not found: " + configuration.get(pathKey));
     } catch (IOException e) {
       throw AnalysisException.internal("Failed to load " + description + " model", e);
     }
@@ -252,6 +257,11 @@ public final class ModelBundleCache {
       try (InputStream input = resolved) {
         return new LanguageDetectorModel(input);
       }
+    } catch (FileNotFoundException e) {
+      // A configured path that does not exist is an operator error, not an internal fault.
+      throw AnalysisException.notFound(
+          "Configured language detector model file not found: "
+              + configuration.get(KEY_LANGDETECT_PATH));
     } catch (IOException e) {
       throw AnalysisException.internal("Failed to load language detector model", e);
     }

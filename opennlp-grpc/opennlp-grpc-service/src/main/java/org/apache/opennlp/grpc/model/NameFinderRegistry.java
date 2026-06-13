@@ -18,6 +18,7 @@
 package org.apache.opennlp.grpc.model;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -49,6 +50,13 @@ import org.slf4j.LoggerFactory;
  * <p>Each entry points at one Java-serialized {@link TokenNameFinderModel} ({@code .bin}).
  * ONNX-backed NER ({@code NameFinderDL}) is not handled here; it would use a separate
  * backend key in a follow-on change.</p>
+ *
+ * <p><b>Concurrency:</b> one {@link NameFinderME} instance per entity type is loaded once
+ * and shared across all requests. This is safe because OpenNLP 3.0's {@code NameFinderME}
+ * is {@code @ThreadSafe} (per-thread adaptive state). {@link #clearAdaptiveData()} is still
+ * invoked after each document by the analyzer to enforce stateless RPC semantics: it resets
+ * only the calling thread's adaptive state, so repeated requests never influence one
+ * another. A non-thread-safe name finder implementation would invalidate this sharing.</p>
  */
 public final class NameFinderRegistry {
 
@@ -180,6 +188,10 @@ public final class NameFinderRegistry {
       final TokenNameFinderModel model = new TokenNameFinderModel(input);
       logger.info("Loaded name finder for entity type '{}' from {}", entityType, path);
       return new NameFinderME(model);
+    } catch (FileNotFoundException e) {
+      // A missing configured path is an operator error, not an internal server fault.
+      throw AnalysisException.notFound(
+          "Name finder model file for entity type '" + entityType + "' not found: " + path);
     } catch (IOException e) {
       throw AnalysisException.internal(
           "Failed to load name finder model for entity type '" + entityType + "' from " + path, e);
