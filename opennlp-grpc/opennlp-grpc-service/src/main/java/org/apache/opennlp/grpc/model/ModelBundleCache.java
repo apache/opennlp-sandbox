@@ -104,6 +104,7 @@ public final class ModelBundleCache {
   private final LemmatizerME lemmatizer;
   private final LanguageDetectorME languageDetector;
   private final EmbeddingProvider embeddingProvider;
+  private final NameFinderRegistry nameFinderRegistry;
 
   public ModelBundleCache(Map<String, String> configuration) {
     Objects.requireNonNull(configuration, "configuration");
@@ -122,6 +123,7 @@ public final class ModelBundleCache {
         BUNDLED_LEMMATIZER_MODEL_FRAGMENT, "lemmatizer", LemmatizerModel::new));
     this.languageDetector = new LanguageDetectorME(loadLanguageDetectorModel(configuration));
     this.embeddingProvider = EmbeddingProviderFactory.create(configuration);
+    this.nameFinderRegistry = NameFinderRegistry.create(configuration);
     this.bundles = buildBundleCatalog();
   }
 
@@ -151,6 +153,10 @@ public final class ModelBundleCache {
 
   public EmbeddingProvider getEmbeddingProvider() {
     return embeddingProvider;
+  }
+
+  public NameFinderRegistry getNameFinderRegistry() {
+    return nameFinderRegistry;
   }
 
   /**
@@ -390,7 +396,37 @@ public final class ModelBundleCache {
     }
     final Map<String, ModelBundleInfo> catalog = new HashMap<>();
     catalog.put(ProfileRegistry.DEFAULT_BUNDLE_ID, bundle.build());
+    if (nameFinderRegistry.isAvailable()) {
+      catalog.put(ProfileRegistry.NER_BUNDLE_ID, buildNerBundleCatalog());
+    }
     return catalog;
+  }
+
+  private ModelBundleInfo buildNerBundleCatalog() {
+    // The sentence-detector and tokenizer backbone is English, so the bundle constrains
+    // input to English; the name finder models themselves are operator-supplied and their
+    // language is unknown to the server, so their descriptors claim no locale/language.
+    final ModelBundleInfo.Builder bundle = ModelBundleInfo.newBuilder()
+        .setBundleId(ProfileRegistry.NER_BUNDLE_ID)
+        .addSupportedLanguages(DEFAULT_LANGUAGE)
+        .addSupportedSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+        .addSupportedSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+        .addSupportedSteps(PipelineStep.PIPELINE_STEP_NER)
+        .addModels(classicModelDescriptor(
+            "opennlp-models-sentdetect-" + DEFAULT_LANGUAGE,
+            ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR))
+        .addModels(classicModelDescriptor(
+            "opennlp-models-tokenizer-" + DEFAULT_LANGUAGE,
+            ComponentType.COMPONENT_TYPE_TOKENIZER));
+    for (String entityType : nameFinderRegistry.entityTypes()) {
+      bundle.addModels(ModelDescriptor.newBuilder()
+          .setName(entityType)
+          .setComponentType(ComponentType.COMPONENT_TYPE_NAME_FINDER)
+          .addSupportedSteps(PipelineStep.PIPELINE_STEP_NER)
+          .setBackendId(OPENNLP_ME_BACKEND_ID)
+          .build());
+    }
+    return bundle.build();
   }
 
   /** Descriptor for a model served by the classic OpenNLP maxent runtime. */

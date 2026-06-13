@@ -17,10 +17,12 @@
  */
 package org.apache.opennlp.grpc.processor.basic;
 
+import java.util.List;
 import java.util.Objects;
 
 import org.apache.opennlp.grpc.chunk.ChunkEmbedProcessor;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.model.NameFinderRegistry;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.processor.PipelineStepPolicy;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
@@ -39,9 +41,13 @@ import org.apache.opennlp.grpc.v1.PipelineStep;
 final class AnalysisRequestValidator {
 
   private final EmbeddingProvider embeddingProvider;
+  private final NameFinderRegistry nameFinderRegistry;
 
-  AnalysisRequestValidator(EmbeddingProvider embeddingProvider) {
+  AnalysisRequestValidator(
+      EmbeddingProvider embeddingProvider,
+      NameFinderRegistry nameFinderRegistry) {
     this.embeddingProvider = Objects.requireNonNull(embeddingProvider, "embeddingProvider");
+    this.nameFinderRegistry = Objects.requireNonNull(nameFinderRegistry, "nameFinderRegistry");
   }
 
   /**
@@ -62,8 +68,20 @@ final class AnalysisRequestValidator {
     }
     validateOptions(request, profile, rawText);
     validateModelBundle(profile);
+    validateNerRequest(profile);
     validateEmbeddingRequest(request, profile);
     validateChunkEmbedConfigs(request);
+  }
+
+  /**
+   * Resolves the entity types to run for NER: an explicit profile filter, or all
+   * configured types when {@code ner_entity_types} is empty.
+   */
+  List<String> resolveNerEntityTypes(AnalysisProfile profile) {
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_NER)) {
+      return List.of();
+    }
+    return nameFinderRegistry.resolveEntityTypes(profile.getNerEntityTypesList());
   }
 
   /**
@@ -130,16 +148,45 @@ final class AnalysisRequestValidator {
     }
   }
 
-  private static void validateModelBundle(AnalysisProfile profile) {
+  private void validateNerRequest(AnalysisProfile profile) {
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_NER)) {
+      return;
+    }
+    if (!nameFinderRegistry.isAvailable()) {
+      throw AnalysisException.notFound(
+          "PIPELINE_STEP_NER requested but no name finder models are configured on this server; "
+              + "set model.name_finder.<entity_type>.path entries");
+    }
+    for (String entityType : profile.getNerEntityTypesList()) {
+      if (entityType == null || entityType.isBlank()) {
+        throw AnalysisException.invalidArgument("ner_entity_types must not contain blank values");
+      }
+      if (!nameFinderRegistry.supportsEntityType(entityType)) {
+        throw AnalysisException.notFound(
+            "Unknown ner_entity_type '" + entityType + "'; configured types: "
+                + nameFinderRegistry.entityTypes());
+      }
+    }
+  }
+
+  private void validateModelBundle(AnalysisProfile profile) {
     if (!profile.hasModelBundle()) {
       return;
     }
     final ModelBundleRef bundle = profile.getModelBundle();
     final String bundleId = bundle.getBundleId();
-    if (!bundleId.isBlank() && !bundleId.equals(ProfileRegistry.DEFAULT_BUNDLE_ID)) {
+    if (!bundleId.isBlank()
+        && !bundleId.equals(ProfileRegistry.DEFAULT_BUNDLE_ID)
+        && !bundleId.equals(ProfileRegistry.NER_BUNDLE_ID)) {
       throw AnalysisException.notFound(
-          "Unknown model bundle '" + bundleId + "'; only '"
-              + ProfileRegistry.DEFAULT_BUNDLE_ID + "' is available");
+          "Unknown model bundle '" + bundleId + "'; available bundles: "
+              + ProfileRegistry.DEFAULT_BUNDLE_ID
+              + (nameFinderRegistry.isAvailable() ? ", " + ProfileRegistry.NER_BUNDLE_ID : ""));
+    }
+    if (bundleId.equals(ProfileRegistry.NER_BUNDLE_ID) && !nameFinderRegistry.isAvailable()) {
+      throw AnalysisException.notFound(
+          "Model bundle '" + ProfileRegistry.NER_BUNDLE_ID
+              + "' requires name finder models; configure model.name_finder.<entity_type>.path");
     }
     if (bundle.getComponentModelsCount() > 0) {
       throw AnalysisException.unimplemented(

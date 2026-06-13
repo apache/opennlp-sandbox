@@ -76,16 +76,61 @@ running from a regular classpath (e.g. via Maven), they are discovered from the
 
 > v1 note: this slice implements language detection (`PIPELINE_STEP_LANGUAGE_DETECT`,
 > filling `detected_language` with an ISO 639-3 code plus `language_confidence`),
-> sentence detection, tokenization, POS tagging (`PIPELINE_STEP_POS_TAG`, filling
+> sentence detection, tokenization, named entity recognition (`PIPELINE_STEP_NER`,
+> filling `AnnotatedSentence.entities` when name finder models are configured),
+> POS tagging (`PIPELINE_STEP_POS_TAG`, filling
 > `Token.pos_tag` with UD tags), lemmatization (`PIPELINE_STEP_LEMMATIZE`, filling
 > `Token.lemma`; requires the POS step), sentence-level embeddings, segmentation
 > chunking (`sentence` and `token` algorithms via `chunk_embed_configs` or
 > `PIPELINE_STEP_CHUNK`), probability reporting, `max_text_length`, offset encoding
 > selection, and the default `en-basic` model bundle. Semantic chunking
 > (`algorithm: semantic`) and CPU/GPU embeddings are supported when embedding models
-> are configured. Classic syntactic `ChunkerME`, NER, parsing, non-default bundles,
-> and per-entry chunk profiles are rejected explicitly instead of being silently
-> ignored.
+> are configured. Classic syntactic `ChunkerME`, parsing, non-default bundles beyond
+> `en-ner` when NER models are configured, and per-entry chunk profiles are rejected
+> explicitly instead of being silently ignored.
+
+### Name finder models (optional)
+
+Name finder models are operator-supplied: unlike the sentence detector, tokenizer,
+POS tagger, lemmatizer and language detector, Apache does not distribute NER models as
+`opennlp-models-*` artifacts, so there is no default and NER is only available once you
+configure model paths. Register classic OpenNLP `.bin` name finder models — one file per
+entity type — in the server config. The middle segment of each key becomes the logical
+entity type exposed to clients via `AnalysisProfile.ner_entity_types` and
+`NamedEntity.entity_type`. Entity types are case-insensitive: keys are normalized to
+lower case, and `ner_entity_types` filters are matched the same way (so `PERSON` and
+`person` are equivalent):
+
+```ini
+# Classic maxent models from https://opennlp.apache.org/models.html
+model.name_finder.person.path=/path/to/en-ner-person.bin
+model.name_finder.organization.path=/path/to/en-ner-organization.bin
+model.name_finder.location.path=/path/to/en-ner-location.bin
+```
+
+Request NER by adding `PIPELINE_STEP_NER` to the analysis profile (or use the
+built-in `en-ner` profile / `en-ner` bundle when models are configured). Optionally
+restrict which configured types run:
+
+```protobuf
+AnalysisProfile {
+  profile_id: "en-ner"
+  steps: [PIPELINE_STEP_SENTENCE_DETECT, PIPELINE_STEP_TOKENIZE, PIPELINE_STEP_NER]
+  model_bundle { bundle_id: "en-ner" }
+  ner_entity_types: ["person", "organization"]
+}
+```
+
+`AnalysisOptions.clear_adaptive_data` (default `true`) controls whether the server
+calls `NameFinderME.clearAdaptiveData()` after each request, matching the OpenNLP
+manual's per-document reset semantics.
+
+> Pair each name finder with a tokenizer trained for the same tokenization scheme.
+> The bundled UD English tokenizer works with `opennlp-models` artifacts; legacy
+> 1.5 news-domain NER models (`en-ner-person.bin`, etc.) were trained with Penn-style
+> tokenization and may perform best with a matching tokenizer override.
+
+ONNX-backed NER (`NameFinderDL`) is not configured through these keys yet.
 
 ### Embedding models (optional)
 

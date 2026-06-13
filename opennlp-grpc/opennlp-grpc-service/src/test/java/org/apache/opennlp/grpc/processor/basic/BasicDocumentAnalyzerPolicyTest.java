@@ -20,6 +20,7 @@ package org.apache.opennlp.grpc.processor.basic;
 import java.util.Map;
 
 import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
@@ -69,6 +70,24 @@ class BasicDocumentAnalyzerPolicyTest {
         AnalyzeDocumentRequest.newBuilder()
             .setDocument(OpenNlpDocument.newBuilder().setRawText("John works at OpenNLP.").build())
             .setProfile(AnalysisProfile.newBuilder()
+                .setProfileId("parse-profile")
+                .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+                .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+                .addSteps(PipelineStep.PIPELINE_STEP_PARSE)
+                .build())
+            .build()));
+
+    assertEquals(AnalysisException.FailureType.UNIMPLEMENTED, error.getFailureType());
+  }
+
+  @Test
+  void rejectsNerStepWhenNoModelsConfigured() {
+    final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(Map.of());
+
+    final AnalysisException error = assertThrows(AnalysisException.class, () -> analyzer.analyze(
+        AnalyzeDocumentRequest.newBuilder()
+            .setDocument(OpenNlpDocument.newBuilder().setRawText("John works at OpenNLP.").build())
+            .setProfile(AnalysisProfile.newBuilder()
                 .setProfileId("ner-profile")
                 .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
                 .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
@@ -76,7 +95,8 @@ class BasicDocumentAnalyzerPolicyTest {
                 .build())
             .build()));
 
-    assertEquals(AnalysisException.FailureType.UNIMPLEMENTED, error.getFailureType());
+    assertEquals(AnalysisException.FailureType.NOT_FOUND, error.getFailureType());
+    assertTrue(error.getMessage().contains("model.name_finder"));
   }
 
   @Test
@@ -181,5 +201,30 @@ class BasicDocumentAnalyzerPolicyTest {
             .build()));
 
     assertEquals(AnalysisException.FailureType.NOT_FOUND, error.getFailureType());
+    assertTrue(error.getMessage().contains("de-custom"));
+  }
+
+  @Test
+  void rejectsEnNerBundleWhenNoNameFindersConfigured() {
+    final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(Map.of());
+
+    // The en-ner profile is not advertised without models, so request NER inline against
+    // the en-ner bundle: it must still be rejected because no name finder models exist.
+    final AnalysisException error = assertThrows(AnalysisException.class, () -> analyzer.analyze(
+        AnalyzeDocumentRequest.newBuilder()
+            .setDocument(OpenNlpDocument.newBuilder().setRawText("John works at OpenNLP.").build())
+            .setProfile(AnalysisProfile.newBuilder()
+                .setProfileId("ner-attempt")
+                .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+                .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+                .addSteps(PipelineStep.PIPELINE_STEP_NER)
+                .setModelBundle(ModelBundleRef.newBuilder()
+                    .setBundleId(ProfileRegistry.NER_BUNDLE_ID)
+                    .build())
+                .build())
+            .build()));
+
+    assertEquals(AnalysisException.FailureType.NOT_FOUND, error.getFailureType());
+    assertTrue(error.getMessage().contains("name finder"));
   }
 }

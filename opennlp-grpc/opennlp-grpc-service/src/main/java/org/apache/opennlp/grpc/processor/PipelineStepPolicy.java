@@ -33,6 +33,7 @@ public final class PipelineStepPolicy {
       PipelineStep.PIPELINE_STEP_LANGUAGE_DETECT,
       PipelineStep.PIPELINE_STEP_SENTENCE_DETECT,
       PipelineStep.PIPELINE_STEP_TOKENIZE,
+      PipelineStep.PIPELINE_STEP_NER,
       PipelineStep.PIPELINE_STEP_POS_TAG,
       PipelineStep.PIPELINE_STEP_LEMMATIZE,
       PipelineStep.PIPELINE_STEP_CHUNK,

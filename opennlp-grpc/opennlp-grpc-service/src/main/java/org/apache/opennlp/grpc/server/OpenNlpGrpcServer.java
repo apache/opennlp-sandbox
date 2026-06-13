@@ -93,8 +93,9 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
         Integer.parseInt(
             configuration.getOrDefault("server.max_inbound_message_size", "10485760"));
 
-    final ProfileRegistry profileRegistry = ProfileRegistry.createDefault();
     final ModelBundleCache modelBundleCache = new ModelBundleCache(configuration);
+    final ProfileRegistry profileRegistry = ProfileRegistry.createDefault(
+        modelBundleCache.getNameFinderRegistry().isAvailable());
     final BasicDocumentAnalyzer documentAnalyzer =
         new BasicDocumentAnalyzer(profileRegistry, modelBundleCache);
 

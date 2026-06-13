@@ -23,14 +23,17 @@ import java.util.Objects;
 import opennlp.tools.langdetect.Language;
 import opennlp.tools.langdetect.LanguageDetectorME;
 import opennlp.tools.lemmatizer.LemmatizerME;
+import opennlp.tools.namefind.NameFinderME;
 import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.util.Span;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
+import org.apache.opennlp.grpc.model.NameFinderRegistry;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
+import org.apache.opennlp.grpc.v1.NamedEntity;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.apache.opennlp.grpc.v1.ProcessingDiagnostic;
@@ -38,8 +41,9 @@ import org.apache.opennlp.grpc.v1.Token;
 
 /**
  * Executes the classic OpenNLP annotation steps (language detection, sentence
- * detection, tokenization, POS tagging, lemmatization) against the shared models in
- * the {@link ModelBundleCache}, writing results into the document builder.
+ * detection, tokenization, named entity recognition, POS tagging, lemmatization)
+ * against the shared models in the {@link ModelBundleCache}, writing results into
+ * the document builder.
  *
  * <p>All spans are produced in Java UTF-16 indices; the final offset-encoding pass
  * converts them to the client-requested encoding.</p>
@@ -127,6 +131,50 @@ final class ClassicStepRunner {
   }
 
   /**
+   * Runs one {@link NameFinderME} per configured entity type against every sentence,
+   * mapping token-index spans to document character offsets and attaching them as
+   * {@link NamedEntity} records on the sentence.
+   */
+  void findNamedEntities(
+      OpenNlpDocument.Builder document,
+      List<String> entityTypes,
+      boolean includeProbabilities,
+      List<ProcessingDiagnostic> diagnostics) {
+    final NameFinderRegistry registry = modelBundleCache.getNameFinderRegistry();
+    int entityCount = 0;
+    for (int i = 0; i < document.getSentencesCount(); i++) {
+      final AnnotatedSentence sentence = document.getSentences(i);
+      if (sentence.getTokensCount() == 0) {
+        continue;
+      }
+      final String[] tokens = tokenTexts(sentence);
+      final AnnotatedSentence.Builder sentenceBuilder = sentence.toBuilder();
+      for (String entityType : entityTypes) {
+        final NameFinderME nameFinder = registry.get(entityType);
+        final Span[] spans = nameFinder.find(tokens);
+        final double[] probabilities = includeProbabilities ? nameFinder.probs(spans) : null;
+        for (int e = 0; e < spans.length; e++) {
+          final Span span = spans[e];
+          final AnnotationSpan annotationSpan = tokenSpanToDocumentSpan(sentence, span);
+          final NamedEntity.Builder entity = NamedEntity.newBuilder()
+              .setAnnotationSpan(annotationSpan)
+              .setEntityType(resolveEntityType(entityType, span));
+          if (probabilities != null && e < probabilities.length) {
+            entity.setProbability(probabilities[e]);
+          }
+          sentenceBuilder.addEntities(entity.build());
+          entityCount++;
+        }
+      }
+      document.setSentences(i, sentenceBuilder.build());
+    }
+    diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_NER,
+        "Detected " + entityCount + " entit"
+            + (entityCount == 1 ? "y" : "ies")
+            + " across " + entityTypes.size() + " configured type(s)"));
+  }
+
+  /**
    * Tags every token of every sentence with its part of speech. Sentences are tagged
    * as a whole so the tagger sees full sentential context.
    */
@@ -195,5 +243,34 @@ final class ClassicStepRunner {
       tokens[t] = sentence.getTokens(t).getText();
     }
     return tokens;
+  }
+
+  private static AnnotationSpan tokenSpanToDocumentSpan(AnnotatedSentence sentence, Span tokenSpan) {
+    final int startToken = tokenSpan.getStart();
+    final int endToken = tokenSpan.getEnd();
+    if (startToken < 0 || endToken <= startToken || endToken > sentence.getTokensCount()) {
+      throw new IllegalStateException("Name finder span is out of token bounds: " + tokenSpan);
+    }
+    final Token first = sentence.getTokens(startToken);
+    final Token last = sentence.getTokens(endToken - 1);
+    return AnnotationSpan.newBuilder()
+        .setStart(first.getAnnotationSpan().getStart())
+        .setEnd(last.getAnnotationSpan().getEnd())
+        .setSpace(CoordinateSpace.COORDINATE_SPACE_CHAR_DOCUMENT)
+        .build();
+  }
+
+  /**
+   * The authoritative entity type is the one the model emits on the span (set by
+   * multi-class models). Single-type models leave it unset, so we fall back to the
+   * configured type the finder was registered under — this is the intended label for
+   * such models, not a guess.
+   */
+  private static String resolveEntityType(String configuredType, Span span) {
+    final String spanType = span.getType();
+    if (spanType != null && !spanType.isBlank()) {
+      return spanType;
+    }
+    return configuredType;
   }
 }

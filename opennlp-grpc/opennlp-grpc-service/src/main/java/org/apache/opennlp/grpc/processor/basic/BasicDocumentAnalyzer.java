@@ -26,6 +26,7 @@ import java.util.Set;
 
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
+import org.apache.opennlp.grpc.model.NameFinderRegistry;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.processor.DocumentAnalyzer;
 import org.apache.opennlp.grpc.processor.PipelineStepPolicy;
@@ -59,9 +60,15 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
   private final AnalysisRequestValidator validator;
   private final ClassicStepRunner classicSteps;
   private final EmbedChunkStepRunner embedChunkSteps;
+  private final NameFinderRegistry nameFinderRegistry;
 
   public BasicDocumentAnalyzer(Map<String, String> configuration) {
-    this(ProfileRegistry.createDefault(), new ModelBundleCache(configuration));
+    this(new ModelBundleCache(configuration));
+  }
+
+  private BasicDocumentAnalyzer(ModelBundleCache modelBundleCache) {
+    this(ProfileRegistry.createDefault(modelBundleCache.getNameFinderRegistry().isAvailable()),
+        modelBundleCache);
   }
 
   public BasicDocumentAnalyzer(ProfileRegistry profileRegistry, ModelBundleCache modelBundleCache) {
@@ -76,7 +83,8 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     Objects.requireNonNull(modelBundleCache, "modelBundleCache");
     Objects.requireNonNull(embeddingProvider, "embeddingProvider");
     this.profileResolver = new ProfileResolver(profileRegistry);
-    this.validator = new AnalysisRequestValidator(embeddingProvider);
+    this.nameFinderRegistry = modelBundleCache.getNameFinderRegistry();
+    this.validator = new AnalysisRequestValidator(embeddingProvider, nameFinderRegistry);
     this.classicSteps = new ClassicStepRunner(modelBundleCache);
     this.embedChunkSteps = new EmbedChunkStepRunner(embeddingProvider);
   }
@@ -131,6 +139,20 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
           () -> classicSteps.tokenize(rawText, document, includeProbabilities, diagnostics));
     } else {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_TOKENIZE));
+    }
+
+    final List<String> nerEntityTypes = validator.resolveNerEntityTypes(profile);
+    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_NER)) {
+      requireTokens(document, PipelineStep.PIPELINE_STEP_NER);
+      runStep(
+          PipelineStep.PIPELINE_STEP_NER,
+          () -> classicSteps.findNamedEntities(
+              document, nerEntityTypes, includeProbabilities, diagnostics));
+      if (shouldClearAdaptiveData(request)) {
+        nameFinderRegistry.clearAdaptiveData();
+      }
+    } else {
+      diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_NER));
     }
 
     if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_POS_TAG)) {
@@ -218,6 +240,16 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
   private boolean shouldRunStep(
       AnalyzeDocumentRequest request, AnalysisProfile profile, PipelineStep step) {
     return resolveEffectiveSteps(request, profile).contains(step);
+  }
+
+  /**
+   * Defaults to {@code true} per the v1 contract when {@code clear_adaptive_data} is unset.
+   */
+  private static boolean shouldClearAdaptiveData(AnalyzeDocumentRequest request) {
+    if (!request.hasOptions() || !request.getOptions().hasClearAdaptiveData()) {
+      return true;
+    }
+    return request.getOptions().getClearAdaptiveData();
   }
 
   /** Wraps unexpected step failures in an INTERNAL status carrying the step name. */

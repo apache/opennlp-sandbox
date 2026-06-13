@@ -33,14 +33,35 @@ public final class ProfileRegistry {
   public static final String DEFAULT_PROFILE_ID = "en-basic";
   public static final String DEFAULT_BUNDLE_ID = "en-basic";
 
+  public static final String NER_PROFILE_ID = "en-ner";
+  public static final String NER_BUNDLE_ID = "en-ner";
+
   private final Map<String, AnalysisProfile> profiles = new LinkedHashMap<>();
 
   public ProfileRegistry() {
+    this(false);
+  }
+
+  /**
+   * @param nerAvailable Whether name finder models are configured. The {@code en-ner}
+   *     profile is registered only when {@code true}, so the advertised profile catalog
+   *     matches the model catalog, which likewise hides the {@code en-ner} bundle when no
+   *     name finder models are loaded. A request for {@code en-ner} without models would
+   *     fail anyway; this keeps the two catalogs honest and consistent.
+   */
+  public ProfileRegistry(boolean nerAvailable) {
     register(defaultProfile());
+    if (nerAvailable) {
+      register(nerProfile());
+    }
   }
 
   public static ProfileRegistry createDefault() {
     return new ProfileRegistry();
+  }
+
+  public static ProfileRegistry createDefault(boolean nerAvailable) {
+    return new ProfileRegistry(nerAvailable);
   }
 
   public void register(AnalysisProfile profile) {
@@ -71,6 +92,16 @@ public final class ProfileRegistry {
         .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
         .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
         .setModelBundle(ModelBundleRef.newBuilder().setBundleId(DEFAULT_BUNDLE_ID).build())
+        .build();
+  }
+
+  private static AnalysisProfile nerProfile() {
+    return AnalysisProfile.newBuilder()
+        .setProfileId(NER_PROFILE_ID)
+        .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+        .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+        .addSteps(PipelineStep.PIPELINE_STEP_NER)
+        .setModelBundle(ModelBundleRef.newBuilder().setBundleId(NER_BUNDLE_ID).build())
         .build();
   }
 }
