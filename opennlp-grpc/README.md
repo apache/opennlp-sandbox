@@ -130,7 +130,30 @@ manual's per-document reset semantics.
 > 1.5 news-domain NER models (`en-ner-person.bin`, etc.) were trained with Penn-style
 > tokenization and may perform best with a matching tokenizer override.
 
-ONNX-backed NER (`NameFinderDL`) is not configured through these keys yet.
+#### ONNX name finder models (optional)
+
+Transformer NER models exported to ONNX are registered under a separate namespace.
+Each model needs the ONNX file, its wordpiece vocabulary, and a labels file (one BIO
+label per line, line number = output index):
+
+```ini
+model.name_finder_dl.person.path=/path/to/ner.onnx
+model.name_finder_dl.person.vocab=/path/to/vocab.txt
+model.name_finder_dl.person.labels=/path/to/labels.txt
+# Optional:
+model.name_finder_dl.person.entity_type=person   # defaults to the <id> segment
+model.name_finder_dl.person.backend=onnx          # onnx (default, CPU) | cuda
+model.name_finder_dl.person.gpu_device_id=0       # only with backend=cuda
+```
+
+These models are served by `opennlp-dl`'s `NameFinderDL` and reported in the catalog with
+`backend_id` `onnx` or `cuda`. They participate in NER exactly like classic models — a
+client requests `PIPELINE_STEP_NER` and filters by `ner_entity_types`; the server runs each
+configured model once and merges the results.
+
+> The current `opennlp-dl` `NameFinderDL` recognizes a single entity type (person), so each
+> ONNX entry emits one `entity_type`. Requires `opennlp-dl` with the thread-safe
+> `NameFinderDL` (OpenNLP 3.0.0). CUDA requires an NVIDIA runtime and the GPU build flavor.
 
 ### Embedding models (optional)
 

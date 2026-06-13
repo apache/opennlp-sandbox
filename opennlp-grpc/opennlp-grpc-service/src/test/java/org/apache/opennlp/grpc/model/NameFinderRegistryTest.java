@@ -111,6 +111,38 @@ class NameFinderRegistryTest {
   }
 
   @Test
+  void rejectsDlConfigMissingRequiredAttribute() {
+    // path present but vocab/labels missing.
+    final AnalysisException error = assertThrows(AnalysisException.class, () ->
+        NameFinderRegistry.create(Map.of(
+            NameFinderRegistry.KEY_DL_PREFIX + "person.path", "/tmp/model.onnx")));
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+  }
+
+  @Test
+  void rejectsDlConfigUnsupportedBackend() {
+    final AnalysisException error = assertThrows(AnalysisException.class, () ->
+        NameFinderRegistry.create(Map.of(
+            NameFinderRegistry.KEY_DL_PREFIX + "person.path", "/tmp/model.onnx",
+            NameFinderRegistry.KEY_DL_PREFIX + "person.vocab", "/tmp/vocab.txt",
+            NameFinderRegistry.KEY_DL_PREFIX + "person.labels", "/tmp/labels.txt",
+            NameFinderRegistry.KEY_DL_PREFIX + "person.backend", "tpu")));
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+  }
+
+  @Test
+  void rejectsDlConfigWithoutSentenceDetector() {
+    // A complete ONNX config still needs a sentence detector; create(config) supplies none.
+    final AnalysisException error = assertThrows(AnalysisException.class, () ->
+        NameFinderRegistry.create(Map.of(
+            NameFinderRegistry.KEY_DL_PREFIX + "person.path", "/tmp/model.onnx",
+            NameFinderRegistry.KEY_DL_PREFIX + "person.vocab", "/tmp/vocab.txt",
+            NameFinderRegistry.KEY_DL_PREFIX + "person.labels", "/tmp/labels.txt")));
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+    assertTrue(error.getMessage().contains("sentence detector"));
+  }
+
+  @Test
   void resolveEntityTypesReturnsAllConfiguredWhenFilterUnset() {
     final NameFinderRegistry registry =
         NameFinderRegistry.create(Map.of(personKey(), personModelPath.toString()));

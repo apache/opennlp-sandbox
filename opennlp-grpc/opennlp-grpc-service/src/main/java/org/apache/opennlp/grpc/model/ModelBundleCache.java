@@ -124,7 +124,7 @@ public final class ModelBundleCache {
         BUNDLED_LEMMATIZER_MODEL_FRAGMENT, "lemmatizer", LemmatizerModel::new));
     this.languageDetector = new LanguageDetectorME(loadLanguageDetectorModel(configuration));
     this.embeddingProvider = EmbeddingProviderFactory.create(configuration);
-    this.nameFinderRegistry = NameFinderRegistry.create(configuration);
+    this.nameFinderRegistry = NameFinderRegistry.create(configuration, sentenceDetector);
     this.bundles = buildBundleCatalog();
   }
 
@@ -428,13 +428,15 @@ public final class ModelBundleCache {
         .addModels(classicModelDescriptor(
             "opennlp-models-tokenizer-" + DEFAULT_LANGUAGE,
             ComponentType.COMPONENT_TYPE_TOKENIZER));
-    for (String entityType : nameFinderRegistry.entityTypes()) {
-      bundle.addModels(ModelDescriptor.newBuilder()
-          .setName(entityType)
-          .setComponentType(ComponentType.COMPONENT_TYPE_NAME_FINDER)
-          .addSupportedSteps(PipelineStep.PIPELINE_STEP_NER)
-          .setBackendId(OPENNLP_ME_BACKEND_ID)
-          .build());
+    for (NerModel model : nameFinderRegistry.allModels()) {
+      for (String entityType : model.entityTypes()) {
+        bundle.addModels(ModelDescriptor.newBuilder()
+            .setName(entityType)
+            .setComponentType(ComponentType.COMPONENT_TYPE_NAME_FINDER)
+            .addSupportedSteps(PipelineStep.PIPELINE_STEP_NER)
+            .setBackendId(model.backendId())
+            .build());
+      }
     }
     return bundle.build();
   }
