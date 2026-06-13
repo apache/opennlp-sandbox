@@ -155,6 +155,17 @@ configured model once and merges the results.
 > ONNX entry emits one `entity_type`. Requires `opennlp-dl` with the thread-safe
 > `NameFinderDL` (OpenNLP 3.0.0). CUDA requires an NVIDIA runtime and the GPU build flavor.
 
+An opt-in end-to-end test exercises this backend against a real model. The `dl-ner` build
+profile downloads the ONNX export of `dslim/bert-base-NER` (MIT) from HuggingFace into
+`target/` at build time and runs `BasicDocumentAnalyzerDlNerTest`:
+
+```bash
+mvn -pl opennlp-grpc/opennlp-grpc-service -Pdl-ner test -Dtest=BasicDocumentAnalyzerDlNerTest
+```
+
+The model is fetched at build time only — it is never bundled into a built artifact and is
+not redistributed. Without the profile the test skips (no model present).
+
 ### Embedding models (optional)
 
 Register ONNX sentence-transformer models in the server config:

@@ -207,6 +207,59 @@
                 </dependency>
             </dependencies>
         </profile>
+        <!--
+          Opt-in (-Pdl-ner) end-to-end test of the ONNX name finder backend. Downloads the
+          ONNX export of dslim/bert-base-NER (MIT) from HuggingFace into target/ at build
+          time only; the model is never bundled into any artifact and is not redistributed.
+          Without this profile BasicDocumentAnalyzerDlNerTest skips (no model present).
+        -->
+        <profile>
+            <id>dl-ner</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.googlecode.maven-download-plugin</groupId>
+                        <artifactId>download-maven-plugin</artifactId>
+                        <version>1.13.0</version>
+                        <executions>
+                            <execution>
+                                <id>download-dl-ner-model</id>
+                                <phase>generate-test-resources</phase>
+                                <goals>
+                                    <goal>wget</goal>
+                                </goals>
+                                <configuration>
+                                    <url>https://huggingface.co/Xenova/bert-base-NER/resolve/main/onnx/model_quantized.onnx</url>
+                                    <outputDirectory>${project.build.directory}/dl-ner-model</outputDirectory>
+                                    <outputFileName>model.onnx</outputFileName>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>download-dl-ner-vocab</id>
+                                <phase>generate-test-resources</phase>
+                                <goals>
+                                    <goal>wget</goal>
+                                </goals>
+                                <configuration>
+                                    <url>https://huggingface.co/Xenova/bert-base-NER/resolve/main/vocab.txt</url>
+                                    <outputDirectory>${project.build.directory}/dl-ner-model</outputDirectory>
+                                    <outputFileName>vocab.txt</outputFileName>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <dl.ner.model.dir>${project.build.directory}/dl-ner-model</dl.ner.model.dir>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
     <build>
