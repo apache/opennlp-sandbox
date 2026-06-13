@@ -58,4 +58,46 @@ class OffsetMapperTest {
     assertEquals(4, mapper.toTarget(5));   // + emoji = 4 code points
     assertEquals(5, mapper.toTarget(6));   // + '.' = 5 code points
   }
+
+  // "Café!" : C,a,f,e are 1 byte each; U+0301 (combining acute accent) is its own
+  // Java char / code point but 2 UTF-8 bytes; '!' is 1 byte. Java length = 6.
+  private static final String COMBINING = "Cafe\u0301!";
+
+  @Test
+  void combiningMarkUtf8Offsets() {
+    final OffsetMapper mapper = OffsetMapper.forText(COMBINING, OffsetEncoding.OFFSET_ENCODING_UTF8_BYTE);
+    assertEquals(4, mapper.toTarget(4));   // "Cafe" = 4 bytes (before the combining mark)
+    assertEquals(6, mapper.toTarget(5));   // + combining mark (2 bytes) = 6
+    assertEquals(7, mapper.toTarget(6));   // + '!' = 7 total bytes
+  }
+
+  @Test
+  void combiningMarkCodePointOffsets() {
+    final OffsetMapper mapper =
+        OffsetMapper.forText(COMBINING, OffsetEncoding.OFFSET_ENCODING_UNICODE_CODE_POINT);
+    // No surrogates: every Java char is one code point, so offsets are the identity.
+    assertEquals(4, mapper.toTarget(4));
+    assertEquals(5, mapper.toTarget(5));
+    assertEquals(6, mapper.toTarget(6));
+  }
+
+  @Test
+  void threeByteCjkUtf8Offsets() {
+    // "A你B": '你' (U+4F60) is one Java char / code point but 3 UTF-8 bytes.
+    final OffsetMapper mapper =
+        OffsetMapper.forText("A你B", OffsetEncoding.OFFSET_ENCODING_UTF8_BYTE);
+    assertEquals(1, mapper.toTarget(1));   // "A" = 1 byte
+    assertEquals(4, mapper.toTarget(2));   // + 3-byte CJK = 4
+    assertEquals(5, mapper.toTarget(3));   // + "B" = 5 total bytes
+  }
+
+  @Test
+  void multipleSurrogatePairsUtf8Offsets() {
+    // Two emoji back to back: each is a surrogate pair (2 Java chars, 4 UTF-8 bytes).
+    final OffsetMapper mapper =
+        OffsetMapper.forText("😀😀", OffsetEncoding.OFFSET_ENCODING_UTF8_BYTE);
+    assertEquals(0, mapper.toTarget(0));
+    assertEquals(4, mapper.toTarget(2));   // after first emoji = 4 bytes
+    assertEquals(8, mapper.toTarget(4));   // after second emoji = 8 bytes
+  }
 }
