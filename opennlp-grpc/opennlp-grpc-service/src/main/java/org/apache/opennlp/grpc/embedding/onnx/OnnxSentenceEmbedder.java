@@ -27,7 +27,6 @@ import java.util.Set;
 
 import ai.onnxruntime.NodeInfo;
 import ai.onnxruntime.OnnxTensor;
-import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
 import ai.onnxruntime.TensorInfo;
@@ -97,16 +96,11 @@ final class OnnxSentenceEmbedder extends AbstractDL {
    */
   OnnxSentenceEmbedder(File model, File vocabulary, boolean useCuda, int gpuDeviceId,
       boolean lowerCase, Pooling pooling) throws OrtException, IOException {
-    env = OrtEnvironment.getEnvironment();
-    try (OrtSession.SessionOptions sessionOptions = new OrtSession.SessionOptions()) {
-      if (useCuda) {
-        sessionOptions.addCUDA(gpuDeviceId);
-      }
-      session = env.createSession(model.getPath(), sessionOptions);
-    }
+    // AbstractDL loads the vocabulary and creates the (shared, immutable) ONNX session;
+    // it closes the session itself if vocabulary loading fails.
+    super(model, vocabulary, sessionOptions(useCuda, gpuDeviceId), lowerCase);
     try {
       this.pooling = pooling;
-      vocab = loadVocab(vocabulary);
       final boolean roberta = vocab.containsKey(WordpieceTokenizer.ROBERTA_CLS_TOKEN);
       final String cls = roberta
           ? WordpieceTokenizer.ROBERTA_CLS_TOKEN : WordpieceTokenizer.BERT_CLS_TOKEN;
@@ -127,6 +121,16 @@ final class OnnxSentenceEmbedder extends AbstractDL {
       }
       throw e;
     }
+  }
+
+  /** Builds session options, registering the CUDA provider when GPU inference is requested. */
+  private static OrtSession.SessionOptions sessionOptions(boolean useCuda, int gpuDeviceId)
+      throws OrtException {
+    final OrtSession.SessionOptions sessionOptions = new OrtSession.SessionOptions();
+    if (useCuda) {
+      sessionOptions.addCUDA(gpuDeviceId);
+    }
+    return sessionOptions;
   }
 
   /**
