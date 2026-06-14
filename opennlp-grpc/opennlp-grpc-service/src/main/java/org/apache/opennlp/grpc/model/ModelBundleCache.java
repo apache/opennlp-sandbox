@@ -37,8 +37,6 @@ import java.util.Properties;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import opennlp.tools.chunker.ChunkerME;
-import opennlp.tools.chunker.ChunkerModel;
 import opennlp.tools.langdetect.LanguageDetectorME;
 import opennlp.tools.langdetect.LanguageDetectorModel;
 import opennlp.tools.lemmatizer.LemmatizerME;
@@ -90,7 +88,6 @@ public final class ModelBundleCache {
   private static final String KEY_LEMMATIZER_PATH = "model.lemmatizer.path";
   private static final String KEY_LANGDETECT_PATH = "model.language_detector.path";
   private static final String KEY_PARSER_PATH = "model.parser.path";
-  private static final String KEY_CHUNKER_PATH = "model.chunker.path";
 
   /** Backend id reported for models served by the classic OpenNLP maxent runtime. */
   private static final String OPENNLP_ME_BACKEND_ID = "opennlp-me";
@@ -121,10 +118,10 @@ public final class ModelBundleCache {
   // immutable ParserModel. {@code parser} is null when no parser model is configured.
   private final boolean parserAvailable;
   private final ThreadLocal<Parser> parser;
-  // Optional shallow-chunking model (operator-supplied via model.chunker.path, not bundled).
-  // ChunkerME is @ThreadSafe (per-thread state), so a single instance is shared. Null when
-  // no chunker model is configured.
-  private final ChunkerME chunker;
+  // Optional shallow-chunking registry (operator-supplied via model.chunker.<id>.path, not bundled).
+  // Groups chunkers by id into a RankedBackends so a chunker can be served by several engines;
+  // empty when no chunker model is configured.
+  private final ChunkerRegistry chunkerRegistry;
 
   /**
    * Eagerly loads every model and registry described by the given configuration. The classic
@@ -161,25 +158,28 @@ public final class ModelBundleCache {
     NameFinderRegistry nameFinderRegistry = null;
     DocCategorizerRegistry docCategorizerRegistry = null;
     SentimentRegistry sentimentRegistry = null;
+    ChunkerRegistry chunkerRegistry = null;
     boolean constructed = false;
     try {
       embeddingProvider = EmbeddingProviderFactory.create(configuration);
       nameFinderRegistry = NameFinderRegistry.create(configuration, sentenceDetector);
       docCategorizerRegistry = DocCategorizerRegistry.create(configuration);
       sentimentRegistry = SentimentRegistry.create(configuration);
+      chunkerRegistry = ChunkerRegistry.create(configuration);
       final ParserModel parserModel = loadParserModel(configuration);
       this.embeddingProvider = embeddingProvider;
       this.nameFinderRegistry = nameFinderRegistry;
       this.docCategorizerRegistry = docCategorizerRegistry;
       this.sentimentRegistry = sentimentRegistry;
+      this.chunkerRegistry = chunkerRegistry;
       this.parserAvailable = parserModel != null;
       this.parser = parserModel == null ? null
           : ThreadLocal.withInitial(() -> ParserFactory.create(parserModel));
-      this.chunker = loadChunker(configuration);
       this.bundles = buildBundleCatalog();
       constructed = true;
     } finally {
       if (!constructed) {
+        closeQuietly(chunkerRegistry);
         closeQuietly(sentimentRegistry);
         closeQuietly(docCategorizerRegistry);
         closeQuietly(nameFinderRegistry);
@@ -301,22 +301,21 @@ public final class ModelBundleCache {
   }
 
   /**
-   * Reports whether a shallow-chunking (ChunkerME) model is configured on this server.
+   * Reports whether any shallow-chunking model is configured on this server.
    *
-   * @return Whether a chunker model is configured.
+   * @return Whether a chunker is configured.
    */
   public boolean isChunkerAvailable() {
-    return chunker != null;
+    return chunkerRegistry.isAvailable();
   }
 
   /**
-   * Returns the shared shallow chunker. {@code ChunkerME} is thread-safe, so the one instance is
-   * shared across requests.
+   * Returns the chunker registry (chunkers grouped by id, with their engines).
    *
-   * @return The chunker, or {@code null} when none is configured.
+   * @return The chunker registry. Never {@code null}; may be empty.
    */
-  public ChunkerME getChunker() {
-    return chunker;
+  public ChunkerRegistry getChunkerRegistry() {
+    return chunkerRegistry;
   }
 
   /**
@@ -336,6 +335,7 @@ public final class ModelBundleCache {
     nameFinderRegistry.close();
     docCategorizerRegistry.close();
     sentimentRegistry.close();
+    chunkerRegistry.close();
   }
 
   /** Closes a resource if it is {@link AutoCloseable}, logging rather than propagating failures. */
@@ -468,29 +468,6 @@ public final class ModelBundleCache {
     }
   }
 
-  /**
-   * Loads the optional shallow chunker. Like the parser, the chunker model is operator-supplied
-   * (not bundled), so it is loaded only when {@code model.chunker.path} is configured; otherwise
-   * the server does not offer {@code PIPELINE_STEP_SYNTACTIC_CHUNK}.
-   *
-   * @return A shared thread-safe chunker, or {@code null} when none is configured.
-   */
-  private ChunkerME loadChunker(Map<String, String> configuration) {
-    final String configuredPath = configuration.get(KEY_CHUNKER_PATH);
-    if (configuredPath == null || configuredPath.isBlank()) {
-      return null;
-    }
-    try (InputStream input = new FileInputStream(configuredPath)) {
-      final ChunkerME loaded = new ChunkerME(new ChunkerModel(input));
-      logger.info("Loaded chunker model from {}", configuredPath);
-      return loaded;
-    } catch (FileNotFoundException e) {
-      // A configured path that does not exist is an operator error, not an internal fault.
-      throw AnalysisException.notFound("Configured chunker model file not found: " + configuredPath);
-    } catch (IOException e) {
-      throw AnalysisException.internal("Failed to load chunker model from " + configuredPath, e);
-    }
-  }
 
   /**
    * Locates the language detector binary through the {@code model.properties}
@@ -644,7 +621,7 @@ public final class ModelBundleCache {
     if (parserAvailable) {
       catalog.put(ProfileRegistry.PARSE_BUNDLE_ID, buildParseBundleCatalog());
     }
-    if (chunker != null) {
+    if (chunkerRegistry.isAvailable()) {
       catalog.put(ProfileRegistry.CHUNK_BUNDLE_ID, buildChunkBundleCatalog());
     }
     return catalog;

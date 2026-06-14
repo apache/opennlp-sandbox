@@ -120,7 +120,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     this.nameFinderRegistry = modelBundleCache.getNameFinderRegistry();
     this.validator = new AnalysisRequestValidator(embeddingProvider, nameFinderRegistry,
         modelBundleCache.getDocCategorizerRegistry(), modelBundleCache.getSentimentRegistry(),
-        modelBundleCache.isParserAvailable(), modelBundleCache.isChunkerAvailable());
+        modelBundleCache.isParserAvailable(), modelBundleCache.getChunkerRegistry());
     this.classicSteps = new ClassicStepRunner(modelBundleCache);
     this.embedChunkSteps = new EmbedChunkStepRunner(embeddingProvider);
   }
@@ -263,7 +263,8 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       requireTokens(document, PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK);
       runStep(
           PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK,
-          () -> classicSteps.chunkSyntactic(document, diagnostics));
+          () -> classicSteps.chunkSyntactic(
+              document, profile.getChunkEnginePolicy(), diagnostics));
     } else {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK));
     }

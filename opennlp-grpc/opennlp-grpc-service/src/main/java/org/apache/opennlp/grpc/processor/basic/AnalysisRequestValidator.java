@@ -24,6 +24,7 @@ import java.util.Set;
 
 import org.apache.opennlp.grpc.chunk.ChunkEmbedProcessor;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.model.ChunkerRegistry;
 import org.apache.opennlp.grpc.model.DocCategorizerModel;
 import org.apache.opennlp.grpc.model.DocCategorizerRegistry;
 import org.apache.opennlp.grpc.model.NameFinderRegistry;
@@ -52,7 +53,7 @@ final class AnalysisRequestValidator {
   private final DocCategorizerRegistry docCategorizerRegistry;
   private final SentimentRegistry sentimentRegistry;
   private final boolean parserAvailable;
-  private final boolean chunkerAvailable;
+  private final ChunkerRegistry chunkerRegistry;
 
   AnalysisRequestValidator(
       EmbeddingProvider embeddingProvider,
@@ -60,14 +61,14 @@ final class AnalysisRequestValidator {
       DocCategorizerRegistry docCategorizerRegistry,
       SentimentRegistry sentimentRegistry,
       boolean parserAvailable,
-      boolean chunkerAvailable) {
+      ChunkerRegistry chunkerRegistry) {
     this.embeddingProvider = Objects.requireNonNull(embeddingProvider, "embeddingProvider");
     this.nameFinderRegistry = Objects.requireNonNull(nameFinderRegistry, "nameFinderRegistry");
     this.docCategorizerRegistry =
         Objects.requireNonNull(docCategorizerRegistry, "docCategorizerRegistry");
     this.sentimentRegistry = Objects.requireNonNull(sentimentRegistry, "sentimentRegistry");
     this.parserAvailable = parserAvailable;
-    this.chunkerAvailable = chunkerAvailable;
+    this.chunkerRegistry = Objects.requireNonNull(chunkerRegistry, "chunkerRegistry");
   }
 
   /**
@@ -229,16 +230,26 @@ final class AnalysisRequestValidator {
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK)) {
       return;
     }
-    if (!chunkerAvailable) {
+    if (!chunkerRegistry.isAvailable()) {
       throw AnalysisException.notFound(
           "PIPELINE_STEP_SYNTACTIC_CHUNK requested but no chunker model is configured on this "
-              + "server; set model.chunker.path");
+              + "server; set model.chunker.<id>.path");
     }
     // The chunker classifies the token+POS-tag sequence, so POS tagging must also run.
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_POS_TAG)) {
       throw AnalysisException.failedPrecondition(
           PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK.name() + " requires "
               + PipelineStep.PIPELINE_STEP_POS_TAG.name());
+    }
+    for (String engine : profile.getChunkEnginePolicy().getEnginesList()) {
+      if (engine == null || engine.isBlank()) {
+        throw AnalysisException.invalidArgument(
+            "chunk_engine_policy.engines must not contain blank values");
+      }
+      if (!chunkerRegistry.knowsEngine(engine)) {
+        throw AnalysisException.notFound(
+            "Unknown chunker engine '" + engine + "' in chunk_engine_policy");
+      }
     }
   }
 
@@ -369,7 +380,7 @@ final class AnalysisRequestValidator {
               + (sentimentRegistry.isAvailable()
                   ? ", " + ProfileRegistry.SENTIMENT_BUNDLE_ID : "")
               + (parserAvailable ? ", " + ProfileRegistry.PARSE_BUNDLE_ID : "")
-              + (chunkerAvailable ? ", " + ProfileRegistry.CHUNK_BUNDLE_ID : ""));
+              + (chunkerRegistry.isAvailable() ? ", " + ProfileRegistry.CHUNK_BUNDLE_ID : ""));
     }
     if (bundleId.equals(ProfileRegistry.NER_BUNDLE_ID) && !nameFinderRegistry.isAvailable()) {
       throw AnalysisException.notFound(
@@ -393,10 +404,10 @@ final class AnalysisRequestValidator {
           "Model bundle '" + ProfileRegistry.PARSE_BUNDLE_ID
               + "' requires a parser model; configure model.parser.path");
     }
-    if (bundleId.equals(ProfileRegistry.CHUNK_BUNDLE_ID) && !chunkerAvailable) {
+    if (bundleId.equals(ProfileRegistry.CHUNK_BUNDLE_ID) && !chunkerRegistry.isAvailable()) {
       throw AnalysisException.notFound(
           "Model bundle '" + ProfileRegistry.CHUNK_BUNDLE_ID
-              + "' requires a chunker model; configure model.chunker.path");
+              + "' requires a chunker model; configure model.chunker.<id>.path");
     }
     if (bundle.getComponentModelsCount() > 0) {
       throw AnalysisException.unimplemented(

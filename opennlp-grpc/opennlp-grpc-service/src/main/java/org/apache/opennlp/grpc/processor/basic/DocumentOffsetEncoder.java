@@ -22,6 +22,7 @@ import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.Chunk;
 import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
 import org.apache.opennlp.grpc.v1.ChunkResult;
+import org.apache.opennlp.grpc.v1.ChunkSpan;
 import org.apache.opennlp.grpc.v1.EmbeddingResult;
 import org.apache.opennlp.grpc.v1.NamedEntity;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
@@ -75,9 +76,17 @@ final class DocumentOffsetEncoder {
       if (sentence.hasSyntacticChunks()) {
         final ChunkResult.Builder chunks = sentence.getSyntacticChunks().toBuilder();
         for (int c = 0; c < chunks.getChunksCount(); c++) {
-          chunks.setChunks(c, chunks.getChunks(c).toBuilder()
-              .setAnnotationSpan(remap(chunks.getChunks(c).getAnnotationSpan(), mapper))
-              .build());
+          final ChunkSpan.Builder chunk = chunks.getChunks(c).toBuilder()
+              .setAnnotationSpan(remap(chunks.getChunks(c).getAnnotationSpan(), mapper));
+          // Per-source spans (a provider's own offsets, set only when they diverge) remap too.
+          for (int s = 0; s < chunk.getSourcesCount(); s++) {
+            if (chunk.getSources(s).hasAnnotationSpan()) {
+              chunk.setSources(s, chunk.getSources(s).toBuilder()
+                  .setAnnotationSpan(remap(chunk.getSources(s).getAnnotationSpan(), mapper))
+                  .build());
+            }
+          }
+          chunks.setChunks(c, chunk.build());
         }
         sentence.setSyntacticChunks(chunks.build());
       }

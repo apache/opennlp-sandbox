@@ -21,19 +21,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-import opennlp.tools.util.Span;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
-import org.apache.opennlp.grpc.v1.AnnotationSpan;
-import org.apache.opennlp.grpc.v1.ChunkResult;
-import org.apache.opennlp.grpc.v1.CoordinateSpace;
+import org.apache.opennlp.grpc.v1.ChunkSpan;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
-import org.apache.opennlp.grpc.v1.Token;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,51 +38,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * Tests shallow (syntactic) chunking. The token-index-to-document-span conversion is unit-tested
- * hermetically from hand-built chunker spans; the availability/error path is hermetic; the actual
- * end-to-end chunking is opt-in (a ChunkerME model cannot be trained in-memory). Point
- * {@code -Dchunker.model.path=/path/to/en-chunker.bin} at a real model to run it.
+ * Tests shallow (syntactic) chunking end-to-end through the analyzer. The token-index-to-document
+ * span conversion is unit-tested hermetically in {@code ClassicChunkerModelTest}; the
+ * availability/error path is hermetic here; the actual end-to-end chunking is opt-in (a ChunkerME
+ * model cannot be trained in-memory). Point {@code -Dchunker.model.path=/path/to/en-chunker.bin} at
+ * a real model to run it.
  */
 class BasicDocumentAnalyzerSyntacticChunkTest {
-
-  private static AnnotationSpan span(int start, int end) {
-    return AnnotationSpan.newBuilder().setStart(start).setEnd(end)
-        .setSpace(CoordinateSpace.COORDINATE_SPACE_CHAR_DOCUMENT).build();
-  }
-
-  // "The dog barked" tokenized.
-  private static AnnotatedSentence theDogBarked() {
-    return AnnotatedSentence.newBuilder()
-        .addTokens(Token.newBuilder().setText("The").setAnnotationSpan(span(0, 3)).build())
-        .addTokens(Token.newBuilder().setText("dog").setAnnotationSpan(span(4, 7)).build())
-        .addTokens(Token.newBuilder().setText("barked").setAnnotationSpan(span(8, 14)).build())
-        .build();
-  }
-
-  @Test
-  void mapsTokenIndexChunkSpansToDocumentSpans() {
-    // NP covers tokens [0,2) = "The dog"; VP covers token [2,3) = "barked".
-    final Span[] chunks = {new Span(0, 2, "NP"), new Span(2, 3, "VP")};
-
-    final ChunkResult result = ClassicStepRunner.toChunkResult(chunks, theDogBarked());
-
-    assertEquals(2, result.getChunksCount());
-    assertEquals("NP", result.getChunks(0).getChunkTag());
-    assertEquals(0, result.getChunks(0).getAnnotationSpan().getStart());
-    assertEquals(7, result.getChunks(0).getAnnotationSpan().getEnd());
-    assertEquals("VP", result.getChunks(1).getChunkTag());
-    assertEquals(8, result.getChunks(1).getAnnotationSpan().getStart());
-    assertEquals(14, result.getChunks(1).getAnnotationSpan().getEnd());
-  }
-
-  @Test
-  void singleTokenChunkSpansOneToken() {
-    final ChunkResult result =
-        ClassicStepRunner.toChunkResult(new Span[] {new Span(1, 2, "NP")}, theDogBarked());
-    assertEquals(1, result.getChunksCount());
-    assertEquals(4, result.getChunks(0).getAnnotationSpan().getStart());
-    assertEquals(7, result.getChunks(0).getAnnotationSpan().getEnd());
-  }
 
   @Test
   void rejectsSyntacticChunkWhenNoModelConfigured() {
@@ -114,7 +72,7 @@ class BasicDocumentAnalyzerSyntacticChunkTest {
 
     final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(
         ProfileRegistry.createDefault(false, false, false, false, true),
-        new ModelBundleCache(Map.of("model.chunker.path", modelPath)));
+        new ModelBundleCache(Map.of("model.chunker.default.path", modelPath)));
 
     final AnnotatedSentence sentence = analyzer.analyze(AnalyzeDocumentRequest.newBuilder()
         .setDocument(OpenNlpDocument.newBuilder()
@@ -130,7 +88,13 @@ class BasicDocumentAnalyzerSyntacticChunkTest {
 
     assertTrue(sentence.hasSyntacticChunks());
     assertTrue(sentence.getSyntacticChunks().getChunksCount() > 0);
+    final ChunkSpan first = sentence.getSyntacticChunks().getChunks(0);
     // English shallow parses begin with a noun phrase.
-    assertEquals("NP", sentence.getSyntacticChunks().getChunks(0).getChunkTag());
+    assertEquals("NP", first.getChunkTag());
+    // The chunk carries its surface text and single-provider provenance.
+    assertEquals("The quick brown fox", first.getText());
+    assertEquals(1, first.getSourcesCount());
+    assertEquals("default", first.getSources(0).getChunkerId());
+    assertEquals("opennlp-me", first.getSources(0).getEngine());
   }
 }

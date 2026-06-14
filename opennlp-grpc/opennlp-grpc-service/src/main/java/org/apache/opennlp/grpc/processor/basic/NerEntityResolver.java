@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * entity, and reconciles overlapping hits per the {@link MergeStrategy}.
  *
  * <p>The number of {@code engines} requested drives the behavior (matching
- * {@code NerEnginePolicy}):</p>
+ * {@code EnginePolicy}):</p>
  * <ul>
  *   <li><b>none</b> — each recognizer runs its highest-priority engine, falling back to the next on
  *       failure;</li>

@@ -160,35 +160,45 @@ message AnalysisProfile {
   // NOT_FOUND.
   repeated string ner_entity_types = 5;
   // How NER picks among engines when a recognizer is served by more than one. Unset
-  // selects each recognizer's highest-priority engine (with fallback). See the message.
-  NerEnginePolicy ner_engine_policy = 6;
+  // selects each recognizer's highest-priority engine (with fallback). See EnginePolicy.
+  EnginePolicy ner_engine_policy = 6;
+  // How syntactic chunking picks among engines when a chunker id is served by more than
+  // one. Unset selects the highest-priority engine (with fallback). See EnginePolicy.
+  EnginePolicy chunk_engine_policy = 7;
+  // How constituency parsing picks among engines when a parser id is served by more than
+  // one. Unlike span producers, a union returns one parse tree per engine rather than a
+  // merged tree (see AnnotatedSentence.parse_trees); MergeStrategy is ignored. See EnginePolicy.
+  EnginePolicy parse_engine_policy = 8;
 }
 
-// Selects which engine(s) run for NER when a recognizer is served by more than one
-// provider, and how their outputs are combined. The number of `engines` listed drives
-// the behavior, so the common cases need no mode flag:
-//   - empty  => run each recognizer's highest-priority engine, falling back to the next
-//               on failure (the resilient default);
-//   - one    => pin that engine (no fallback); recognizers it does not serve are skipped;
-//   - two or more => run all of the listed engines and UNION their entities, each tagged
-//               with its producer (see NamedEntity.sources).
-// An engine id that is not registered for any recognizer => NOT_FOUND.
-message NerEnginePolicy {
+// Selects which engine(s) run for a span-producing capability (NER, chunking) when a
+// logical component is served by more than one provider, and how their outputs are
+// combined. The number of `engines` listed drives the behavior, so the common cases need
+// no mode flag:
+//   - empty  => run each component's highest-priority engine, falling back to the next on
+//               failure (the resilient default);
+//   - one    => pin that engine (no fallback); components it does not serve are skipped;
+//   - two or more => run all of the listed engines and UNION their output, each item tagged
+//               with its producer (see NamedEntity.sources / ChunkSpan.sources).
+// An engine id that is not registered for any component => NOT_FOUND. For parsing, which
+// produces trees rather than spans, `merge` is ignored and a union yields one tree per engine.
+message EnginePolicy {
   // Engine/backend ids to run (e.g. "onnx", "opennlp-me"). See the message comment for
   // how the count is interpreted.
   repeated string engines = 1;
-  // How overlapping entities from different providers are reconciled in the response.
+  // How overlapping items from different providers are reconciled in the response.
   MergeStrategy merge = 2;
 }
 
-// How a multi-engine NER union reconciles entities that more than one provider reports.
+// How a multi-engine union reconciles span items (entities, chunks) that more than one
+// provider reports. Ignored for parsing.
 enum MergeStrategy {
-  // Default: collapse entities of the same type whose spans overlap into one entity,
-  // whose `sources` lists every provider that found it and whose canonical span comes
-  // from the highest-priority provider. Cross-provider agreement is visible at a glance.
+  // Default: collapse items of the same type/tag whose spans overlap into one item, whose
+  // `sources` lists every provider that found it and whose canonical span comes from the
+  // highest-priority provider. Cross-provider agreement is visible at a glance.
   MERGE_STRATEGY_UNSPECIFIED = 0;
-  // Keep every provider's hit as its own entity with a single source; perform no
-  // cross-provider merging. Maximum detail, including disagreements.
+  // Keep every provider's item as its own with a single source; perform no cross-provider
+  // merging. Maximum detail, including disagreements.
   MERGE_STRATEGY_RAW = 1;
   // Same collapsing as the default; named explicitly for requests that want to be precise.
   MERGE_STRATEGY_CONSENSUS = 2;

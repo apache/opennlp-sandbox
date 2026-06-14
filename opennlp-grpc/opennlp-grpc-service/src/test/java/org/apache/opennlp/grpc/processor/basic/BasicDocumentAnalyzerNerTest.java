@@ -31,9 +31,9 @@ import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
+import org.apache.opennlp.grpc.v1.EnginePolicy;
 import org.apache.opennlp.grpc.v1.ModelBundleRef;
 import org.apache.opennlp.grpc.v1.NamedEntity;
-import org.apache.opennlp.grpc.v1.NerEnginePolicy;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
@@ -191,7 +191,7 @@ class BasicDocumentAnalyzerNerTest {
                 .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
                 .addSteps(PipelineStep.PIPELINE_STEP_NER)
                 .addNerEntityTypes("person")
-                .setNerEnginePolicy(NerEnginePolicy.newBuilder().addEngines("tpu").build())
+                .setNerEnginePolicy(EnginePolicy.newBuilder().addEngines("tpu").build())
                 .build())
             .build()));
 
@@ -210,7 +210,7 @@ class BasicDocumentAnalyzerNerTest {
                 .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
                 .addSteps(PipelineStep.PIPELINE_STEP_NER)
                 .addNerEntityTypes("person")
-                .setNerEnginePolicy(NerEnginePolicy.newBuilder().addEngines("opennlp-me").build())
+                .setNerEnginePolicy(EnginePolicy.newBuilder().addEngines("opennlp-me").build())
                 .build())
             .build());
 

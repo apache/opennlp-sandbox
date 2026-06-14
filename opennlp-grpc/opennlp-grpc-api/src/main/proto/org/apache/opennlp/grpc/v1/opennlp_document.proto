@@ -245,6 +245,26 @@ message ChunkSpan {
   AnnotationSpan annotation_span = 1;
   // Chunk/phrase tag, e.g. "NP", "VP" (the chunker model's tagset).
   string chunk_tag = 2;
+  // The exact document text covered by `annotation_span`. Always populated, so a response is
+  // readable without re-resolving offsets — which matters when several providers chunked at
+  // slightly different offsets (see `sources`).
+  string text = 3;
+  // Which chunker(s)/engine(s) produced this chunk. With one provider this holds a single
+  // source; under a multi-engine union (see AnalysisProfile.chunk_engine_policy) it lists every
+  // provider that produced this chunk. Empty only on responses from servers predating this field.
+  repeated ChunkSource sources = 4;
+}
+
+// Provenance for a ChunkSpan: one chunker/engine that produced it. Under a multi-engine union
+// the same chunk can be reported by several providers, each with possibly its own offsets.
+message ChunkSource {
+  // The logical chunker id that produced the chunk (e.g. "default"), as configured.
+  string chunker_id = 1;
+  // The engine/backend that served this chunker (e.g. "opennlp-me").
+  string engine = 2;
+  // This provider's own span for the chunk, when it differs from the enclosing ChunkSpan's
+  // canonical span (providers may tokenize differently). Unset when it matches.
+  optional AnnotationSpan annotation_span = 3;
 }
 
 // A chunk produced by a chunking strategy. The strategy and the list of

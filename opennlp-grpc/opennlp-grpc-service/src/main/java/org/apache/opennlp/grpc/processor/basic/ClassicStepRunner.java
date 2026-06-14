@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import opennlp.tools.chunker.ChunkerME;
 import opennlp.tools.langdetect.Language;
 import opennlp.tools.langdetect.LanguageDetectorME;
 import opennlp.tools.lemmatizer.LemmatizerME;
@@ -33,6 +32,7 @@ import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.util.Span;
+import org.apache.opennlp.grpc.model.ChunkerRegistry;
 import org.apache.opennlp.grpc.model.DocCategorizerModel;
 import org.apache.opennlp.grpc.model.DocCategorizerRegistry;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
@@ -42,11 +42,10 @@ import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.ChunkResult;
-import org.apache.opennlp.grpc.v1.ChunkSpan;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
 import org.apache.opennlp.grpc.v1.DocumentClassification;
+import org.apache.opennlp.grpc.v1.EnginePolicy;
 import org.apache.opennlp.grpc.v1.NamedEntity;
-import org.apache.opennlp.grpc.v1.NerEnginePolicy;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.ParseFormat;
 import org.apache.opennlp.grpc.v1.ParseTree;
@@ -154,7 +153,7 @@ final class ClassicStepRunner {
   void findNamedEntities(
       OpenNlpDocument.Builder document,
       List<String> entityTypes,
-      NerEnginePolicy enginePolicy,
+      EnginePolicy enginePolicy,
       boolean includeProbabilities,
       List<ProcessingDiagnostic> diagnostics) {
     final NameFinderRegistry registry = modelBundleCache.getNameFinderRegistry();
@@ -357,60 +356,35 @@ final class ClassicStepRunner {
   }
 
   /**
-   * Groups each sentence's tokens into base phrases (NP, VP, ...) with the shared {@link ChunkerME}
-   * and stores them in {@link AnnotatedSentence#getSyntacticChunks()}. The chunker classifies the
-   * token+POS-tag sequence, so this runs after {@link PipelineStep#PIPELINE_STEP_POS_TAG}; each
-   * chunk's token-index span is mapped to a document span via the sentence's tokens.
+   * Groups each sentence's tokens into base phrases (NP, VP, ...) per the request's engine policy
+   * and stores them in {@link AnnotatedSentence#getSyntacticChunks()}, attaching each chunk's
+   * provenance and matched text. A chunker served by several engines is resolved by priority (with
+   * fallback), pinned, or unioned depending on how many engines the policy lists; see
+   * {@link ChunkResolver}. Runs after {@link PipelineStep#PIPELINE_STEP_POS_TAG}.
    */
-  void chunkSyntactic(OpenNlpDocument.Builder document, List<ProcessingDiagnostic> diagnostics) {
-    final ChunkerME chunker = modelBundleCache.getChunker();
-    if (chunker == null) {
-      // The validator checks chunker availability up front, so a null here is a server-side bug.
-      throw AnalysisException.internal("Chunker is not configured", null);
+  void chunkSyntactic(OpenNlpDocument.Builder document, EnginePolicy enginePolicy,
+      List<ProcessingDiagnostic> diagnostics) {
+    final ChunkerRegistry registry = modelBundleCache.getChunkerRegistry();
+    final List<String> chunkerIds = registry.chunkerIds();
+    final List<String> engines = new ArrayList<>(enginePolicy.getEnginesCount());
+    for (String engine : enginePolicy.getEnginesList()) {
+      engines.add(ChunkerRegistry.normalize(engine));
     }
+    final ChunkResolver resolver = new ChunkResolver(
+        registry.chunkers(), chunkerIds, engines, enginePolicy.getMerge(), document.getRawText());
+
     int chunkCount = 0;
     for (int i = 0; i < document.getSentencesCount(); i++) {
       final AnnotatedSentence sentence = document.getSentences(i);
       if (sentence.getTokensCount() == 0) {
         continue;
       }
-      final Span[] chunks = chunker.chunkAsSpans(tokenTexts(sentence), posTags(sentence));
-      final ChunkResult result = toChunkResult(chunks, sentence);
+      final ChunkResult result = resolver.resolve(sentence);
       chunkCount += result.getChunksCount();
       document.setSentences(i, sentence.toBuilder().setSyntacticChunks(result).build());
     }
     diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK,
-        "Found " + chunkCount + " syntactic chunk(s)"));
-  }
-
-  /**
-   * Maps the chunker's token-index spans to a {@link ChunkResult} of document-span chunks: each
-   * chunk covers tokens {@code [span.getStart(), span.getEnd())}, so its document span runs from
-   * the first token's start to the last token's end, with the chunk tag as {@code chunk_tag}.
-   */
-  static ChunkResult toChunkResult(Span[] chunks, AnnotatedSentence sentence) {
-    final ChunkResult.Builder result = ChunkResult.newBuilder();
-    for (Span chunk : chunks) {
-      final AnnotationSpan first = sentence.getTokens(chunk.getStart()).getAnnotationSpan();
-      final AnnotationSpan last = sentence.getTokens(chunk.getEnd() - 1).getAnnotationSpan();
-      result.addChunks(ChunkSpan.newBuilder()
-          .setChunkTag(chunk.getType())
-          .setAnnotationSpan(AnnotationSpan.newBuilder()
-              .setStart(first.getStart())
-              .setEnd(last.getEnd())
-              .setSpace(CoordinateSpace.COORDINATE_SPACE_CHAR_DOCUMENT)
-              .build())
-          .build());
-    }
-    return result.build();
-  }
-
-  private static String[] posTags(AnnotatedSentence sentence) {
-    final String[] tags = new String[sentence.getTokensCount()];
-    for (int t = 0; t < tags.length; t++) {
-      tags[t] = sentence.getTokens(t).getPosTag();
-    }
-    return tags;
+        "Found " + chunkCount + " syntactic chunk(s) across " + chunkerIds.size() + " chunker(s)"));
   }
 
   private static String[] tokenTexts(AnnotatedSentence sentence) {
