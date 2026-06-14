@@ -42,10 +42,12 @@ final class ClassicNerModel implements NerModel {
 
   private final String entityType;
   private final NameFinderME nameFinder;
+  private final int priority;
 
-  ClassicNerModel(String entityType, NameFinderME nameFinder) {
+  ClassicNerModel(String entityType, NameFinderME nameFinder, int priority) {
     this.entityType = Objects.requireNonNull(entityType, "entityType");
     this.nameFinder = Objects.requireNonNull(nameFinder, "nameFinder");
+    this.priority = priority;
   }
 
   @Override
@@ -56,6 +58,11 @@ final class ClassicNerModel implements NerModel {
   @Override
   public String backendId() {
     return BACKEND_ID;
+  }
+
+  @Override
+  public int priority() {
+    return priority;
   }
 
   @Override

@@ -183,7 +183,8 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       runStep(
           PipelineStep.PIPELINE_STEP_NER,
           () -> classicSteps.findNamedEntities(
-              document, nerEntityTypes, includeProbabilities, diagnostics));
+              document, nerEntityTypes, profile.getNerEnginePolicy(), includeProbabilities,
+              diagnostics));
       if (shouldClearAdaptiveData(request)) {
         nameFinderRegistry.clearAdaptiveData();
       }

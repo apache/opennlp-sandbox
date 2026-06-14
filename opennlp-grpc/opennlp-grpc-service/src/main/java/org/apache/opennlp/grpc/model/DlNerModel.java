@@ -49,12 +49,15 @@ final class DlNerModel implements NerModel, AutoCloseable {
   private final String id;
   private final Set<String> entityTypes;
   private final String backendId;
+  private final int priority;
   private final NameFinderDL nameFinderDL;
 
-  DlNerModel(String id, Set<String> entityTypes, String backendId, NameFinderDL nameFinderDL) {
+  DlNerModel(String id, Set<String> entityTypes, String backendId, int priority,
+      NameFinderDL nameFinderDL) {
     this.id = Objects.requireNonNull(id, "id");
     this.entityTypes = Set.copyOf(Objects.requireNonNull(entityTypes, "entityTypes"));
     this.backendId = Objects.requireNonNull(backendId, "backendId");
+    this.priority = priority;
     this.nameFinderDL = Objects.requireNonNull(nameFinderDL, "nameFinderDL");
   }
 
@@ -72,6 +75,11 @@ final class DlNerModel implements NerModel, AutoCloseable {
   @Override
   public String backendId() {
     return backendId;
+  }
+
+  @Override
+  public int priority() {
+    return priority;
   }
 
   @Override

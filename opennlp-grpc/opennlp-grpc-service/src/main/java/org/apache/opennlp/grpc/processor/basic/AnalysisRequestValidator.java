@@ -335,6 +335,16 @@ final class AnalysisRequestValidator {
                 + nameFinderRegistry.entityTypes());
       }
     }
+    for (String engine : profile.getNerEnginePolicy().getEnginesList()) {
+      if (engine == null || engine.isBlank()) {
+        throw AnalysisException.invalidArgument(
+            "ner_engine_policy.engines must not contain blank values");
+      }
+      if (!nameFinderRegistry.knowsEngine(engine)) {
+        throw AnalysisException.notFound(
+            "Unknown NER engine '" + engine + "' in ner_engine_policy");
+      }
+    }
   }
 
   private void validateModelBundle(AnalysisProfile profile) {

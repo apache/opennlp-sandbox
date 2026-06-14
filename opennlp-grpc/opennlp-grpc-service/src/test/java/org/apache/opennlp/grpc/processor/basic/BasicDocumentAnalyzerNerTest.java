@@ -33,6 +33,7 @@ import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.ModelBundleRef;
 import org.apache.opennlp.grpc.v1.NamedEntity;
+import org.apache.opennlp.grpc.v1.NerEnginePolicy;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
@@ -108,8 +109,15 @@ class BasicDocumentAnalyzerNerTest {
         final String matched = TEXT.substring(
             entity.getAnnotationSpan().getStart(), entity.getAnnotationSpan().getEnd());
         assertTrue(matched.contains("Vinken"), "unexpected entity text: '" + matched + "'");
+        // The response carries the surface text directly, matching the span.
+        assertEquals(matched, entity.getText());
+        // Provenance: a single classic recognizer produced it.
+        assertEquals(1, entity.getSourcesCount());
+        assertEquals("person", entity.getSources(0).getRecognizerId());
+        assertEquals("opennlp-me", entity.getSources(0).getEngine());
         if (entity.hasProbability()) {
           assertTrue(entity.getProbability() > 0.0d);
+          assertEquals(entity.getProbability(), entity.getSources(0).getProbability(), 1e-9);
         }
         entityCount++;
       }
@@ -168,5 +176,48 @@ class BasicDocumentAnalyzerNerTest {
 
     assertEquals(AnalysisException.FailureType.NOT_FOUND, error.getFailureType());
     assertTrue(error.getMessage().contains("location"));
+  }
+
+  @Test
+  void rejectsUnknownNerEngineInPolicy() {
+    final BasicDocumentAnalyzer analyzer = analyzerWithPersonModel();
+
+    final AnalysisException error = assertThrows(
+        AnalysisException.class,
+        () -> analyzer.analyze(AnalyzeDocumentRequest.newBuilder()
+            .setDocument(OpenNlpDocument.newBuilder().setRawText(TEXT).build())
+            .setProfile(AnalysisProfile.newBuilder()
+                .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+                .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+                .addSteps(PipelineStep.PIPELINE_STEP_NER)
+                .addNerEntityTypes("person")
+                .setNerEnginePolicy(NerEnginePolicy.newBuilder().addEngines("tpu").build())
+                .build())
+            .build()));
+
+    assertEquals(AnalysisException.FailureType.NOT_FOUND, error.getFailureType());
+    assertTrue(error.getMessage().contains("tpu"));
+  }
+
+  @Test
+  void pinningTheConfiguredEngineStillDetectsEntities() {
+    // Pin the only engine the classic person model is served by; behavior is unchanged.
+    final AnalyzeDocumentResponse response = analyzerWithPersonModel().analyze(
+        AnalyzeDocumentRequest.newBuilder()
+            .setDocument(OpenNlpDocument.newBuilder().setRawText(TEXT).build())
+            .setProfile(AnalysisProfile.newBuilder()
+                .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+                .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+                .addSteps(PipelineStep.PIPELINE_STEP_NER)
+                .addNerEntityTypes("person")
+                .setNerEnginePolicy(NerEnginePolicy.newBuilder().addEngines("opennlp-me").build())
+                .build())
+            .build());
+
+    int entityCount = 0;
+    for (AnnotatedSentence sentence : response.getDocument().getSentencesList()) {
+      entityCount += sentence.getEntitiesCount();
+    }
+    assertTrue(entityCount > 0, "pinning the configured engine found no entities");
   }
 }

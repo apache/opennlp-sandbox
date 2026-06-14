@@ -55,10 +55,17 @@ final class DocumentOffsetEncoder {
         sentence.setTokens(t, token.build());
       }
       for (int en = 0; en < sentence.getEntitiesCount(); en++) {
-        final NamedEntity entity = sentence.getEntities(en);
-        sentence.setEntities(en, entity.toBuilder()
-            .setAnnotationSpan(remap(entity.getAnnotationSpan(), mapper))
-            .build());
+        final NamedEntity.Builder entity = sentence.getEntities(en).toBuilder()
+            .setAnnotationSpan(remap(sentence.getEntities(en).getAnnotationSpan(), mapper));
+        // Per-source spans (a provider's own offsets, set only when they diverge) remap too.
+        for (int s = 0; s < entity.getSourcesCount(); s++) {
+          if (entity.getSources(s).hasAnnotationSpan()) {
+            entity.setSources(s, entity.getSources(s).toBuilder()
+                .setAnnotationSpan(remap(entity.getSources(s).getAnnotationSpan(), mapper))
+                .build());
+          }
+        }
+        sentence.setEntities(en, entity.build());
       }
       if (sentence.hasParseTree() && sentence.getParseTree().hasRoot()) {
         final ParseTree.Builder tree = sentence.getParseTree().toBuilder();

@@ -80,7 +80,7 @@ public final class OnnxNerBackendFactory implements NerBackendFactory {
 
   /** Resolved configuration for one ONNX name finder. */
   private record DlConfig(String id, String modelPath, String vocabPath, String labelsPath,
-      String backend, int gpuDeviceId) {
+      String backend, int gpuDeviceId, int priority) {
   }
 
   private static Map<String, DlConfig> parseDlConfigs(Map<String, String> configuration) {
@@ -126,7 +126,9 @@ public final class OnnxNerBackendFactory implements NerBackendFactory {
             "ONNX name finder '" + id + "' has a non-numeric gpu_device_id: " + gpu);
       }
     }
-    return new DlConfig(id, modelPath, vocabPath, labelsPath, backend, gpuDeviceId);
+    final int priority = NameFinderRegistry.parsePriority(
+        KEY_DL_PREFIX + id + ".priority", attrs.get("priority"));
+    return new DlConfig(id, modelPath, vocabPath, labelsPath, backend, gpuDeviceId, priority);
   }
 
   private static String requiredAttr(String id, Map<String, String> attrs, String attr) {
@@ -158,7 +160,8 @@ public final class OnnxNerBackendFactory implements NerBackendFactory {
           new NameFinderDL(model, vocab, ids2Labels, inferenceOptions, sentenceDetector);
       logger.info("Loaded ONNX name finder '{}' (entity types {}, backend '{}') from {}",
           config.id(), entityTypes, config.backend(), config.modelPath());
-      return new DlNerModel(config.id(), entityTypes, config.backend(), nameFinderDL);
+      return new DlNerModel(config.id(), entityTypes, config.backend(), config.priority(),
+          nameFinderDL);
     } catch (IOException e) {
       throw AnalysisException.internal(
           "Failed to load ONNX name finder '" + config.id() + "'", e);

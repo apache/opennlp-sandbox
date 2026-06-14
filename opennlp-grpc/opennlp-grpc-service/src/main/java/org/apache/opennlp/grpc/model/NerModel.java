@@ -52,6 +52,17 @@ public interface NerModel {
   String backendId();
 
   /**
+   * Returns this model's selection priority among engines serving the same logical
+   * {@link #id() recognizer id}. Higher wins when a request resolves a recognizer to a single
+   * engine; ties keep configuration order.
+   *
+   * @return The priority; {@code 0} by default.
+   */
+  default int priority() {
+    return 0;
+  }
+
+  /**
    * Returns the entity types this model can emit, in normalized (lower-case) form.
    *
    * @return The emitted entity types. Never {@code null}.

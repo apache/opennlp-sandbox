@@ -58,18 +58,27 @@ public final class ClassicNerBackendFactory implements NerBackendFactory {
     return FACTORY_ID;
   }
 
+  /** Suffix completing a per-type priority key: {@code model.name_finder.<type>.priority}. */
+  public static final String KEY_PRIORITY_SUFFIX = ".priority";
+
   @Override
   public List<NerModel> create(Map<String, String> configuration, NerBackendContext context) {
-    final Map<String, String> paths = parseConfiguredPaths(configuration);
-    final List<NerModel> models = new ArrayList<>(paths.size());
-    for (Map.Entry<String, String> entry : paths.entrySet()) {
-      models.add(new ClassicNerModel(entry.getKey(), loadNameFinder(entry.getKey(), entry.getValue())));
+    final Map<String, ClassicEntry> entries = parseConfiguredPaths(configuration);
+    final List<NerModel> models = new ArrayList<>(entries.size());
+    for (Map.Entry<String, ClassicEntry> entry : entries.entrySet()) {
+      models.add(new ClassicNerModel(entry.getKey(),
+          loadNameFinder(entry.getKey(), entry.getValue().path()),
+          entry.getValue().priority()));
     }
     return models;
   }
 
-  private static Map<String, String> parseConfiguredPaths(Map<String, String> configuration) {
-    final Map<String, String> paths = new LinkedHashMap<>();
+  /** One classic recognizer's loaded configuration. */
+  private record ClassicEntry(String path, int priority) {
+  }
+
+  private static Map<String, ClassicEntry> parseConfiguredPaths(Map<String, String> configuration) {
+    final Map<String, ClassicEntry> entries = new LinkedHashMap<>();
     for (Map.Entry<String, String> entry : configuration.entrySet()) {
       final String key = entry.getKey();
       // The ONNX namespace is handled by its own backend; never read it here.
@@ -79,8 +88,8 @@ public final class ClassicNerBackendFactory implements NerBackendFactory {
       if (!key.startsWith(KEY_PREFIX) || !key.endsWith(KEY_SUFFIX)) {
         continue;
       }
-      final String entityType = NameFinderRegistry.normalize(
-          key.substring(KEY_PREFIX.length(), key.length() - KEY_SUFFIX.length()));
+      final String base = key.substring(0, key.length() - KEY_SUFFIX.length());
+      final String entityType = NameFinderRegistry.normalize(base.substring(KEY_PREFIX.length()));
       if (entityType.isEmpty()) {
         throw AnalysisException.invalidArgument(
             "Invalid name finder configuration key '" + key + "'; entity type must not be blank");
@@ -90,12 +99,14 @@ public final class ClassicNerBackendFactory implements NerBackendFactory {
         throw AnalysisException.invalidArgument(
             "Name finder path for entity type '" + entityType + "' must not be blank");
       }
-      if (paths.putIfAbsent(entityType, path.trim()) != null) {
+      final int priority = NameFinderRegistry.parsePriority(
+          base + KEY_PRIORITY_SUFFIX, configuration.get(base + KEY_PRIORITY_SUFFIX));
+      if (entries.putIfAbsent(entityType, new ClassicEntry(path.trim(), priority)) != null) {
         throw AnalysisException.invalidArgument(
             "Duplicate name finder configuration for entity type '" + entityType + "'");
       }
     }
-    return paths;
+    return entries;
   }
 
   private static NameFinderME loadNameFinder(String entityType, String path) {

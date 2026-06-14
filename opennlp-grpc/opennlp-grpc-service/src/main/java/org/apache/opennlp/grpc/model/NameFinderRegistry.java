@@ -28,18 +28,24 @@ import java.util.ServiceLoader;
 import java.util.Set;
 
 import opennlp.tools.sentdetect.SentenceDetector;
+import org.apache.opennlp.grpc.backend.RankedBackends;
+import org.apache.opennlp.grpc.backend.RankedBackends.Registration;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Catalog of {@link NerModel} recognizers, keyed by model id with an index from entity type
- * to the models that emit it.
+ * Catalog of {@link NerModel} recognizers. A recognizer is identified by a logical
+ * <em>recognizer id</em>; the same id may be served by several engines at once (e.g. a classic
+ * maxent model and an ONNX model both registered as {@code person}), so the catalog groups
+ * recognizers into a {@link RankedBackends} keyed by id with each engine's priority. A separate
+ * index maps each entity type to the recognizer ids that can emit it.
  *
  * <p>Models are produced by {@link NerBackendFactory} backends discovered via
- * {@link ServiceLoader}: the built-in classic ({@code model.name_finder.<type>.path}) and
- * ONNX ({@code model.name_finder_dl.<id>.*}) backends, plus any third-party backend whose jar
- * registers a {@code NerBackendFactory}. Several backends may contribute models at once.</p>
+ * {@link ServiceLoader}: the built-in classic ({@code model.name_finder.<id>.path}) and ONNX
+ * ({@code model.name_finder_dl.<id>.*}) backends, plus any third-party backend whose jar registers
+ * a {@code NerBackendFactory}. Registering the same id under two backends is how a recognizer
+ * becomes multi-engine; registering it twice under the <em>same</em> backend is an error.</p>
  *
  * <p><b>Concurrency:</b> each recognizer is loaded once and shared across requests. Classic
  * {@code NameFinderME} models are {@code @ThreadSafe} (per-thread adaptive state) and
@@ -50,30 +56,54 @@ public final class NameFinderRegistry implements AutoCloseable {
 
   private static final Logger logger = LoggerFactory.getLogger(NameFinderRegistry.class);
 
-  /** All recognizers keyed by model id (for classic models, the entity type). */
-  private final Map<String, NerModel> modelsById;
-  /** Index from normalized entity type to the models that can emit it. */
-  private final Map<String, List<NerModel>> byEntityType;
+  /** Recognizers grouped by logical id, each id's engines priority-sorted. */
+  private final RankedBackends<NerModel> recognizers;
+  /** Index from normalized entity type to the recognizer ids that can emit it, in order. */
+  private final Map<String, List<String>> recognizerIdsByType;
+  /** Every backend/engine id present, for validating an engine pin. */
+  private final Set<String> knownEngines;
 
-  private NameFinderRegistry(Map<String, NerModel> modelsById,
-      Map<String, List<NerModel>> byEntityType) {
-    this.modelsById = Map.copyOf(modelsById);
-    final Map<String, List<NerModel>> index = new LinkedHashMap<>();
-    byEntityType.forEach((type, models) -> index.put(type, List.copyOf(models)));
-    this.byEntityType = Map.copyOf(index);
+  private NameFinderRegistry(RankedBackends<NerModel> recognizers,
+      Map<String, List<String>> recognizerIdsByType, Set<String> knownEngines) {
+    this.recognizers = recognizers;
+    final Map<String, List<String>> index = new LinkedHashMap<>();
+    recognizerIdsByType.forEach((type, ids) -> index.put(type, List.copyOf(ids)));
+    this.recognizerIdsByType = Map.copyOf(index);
+    this.knownEngines = Set.copyOf(knownEngines);
   }
 
   /**
-   * Canonical form of an entity type: trimmed and lower-cased. Configuration keys and
-   * client-supplied {@code ner_entity_types} are normalized identically so entity types
-   * are matched case-insensitively on both sides.
+   * Canonical form of an entity type or engine id: trimmed and lower-cased. Configuration keys
+   * and client-supplied values are normalized identically so they are matched case-insensitively
+   * on both sides.
    *
-   * @param entityType The raw entity type to normalize. May be {@code null}.
+   * @param value The raw value to normalize. May be {@code null}.
    *
-   * @return The normalized type, or {@code null} if {@code entityType} is {@code null}.
+   * @return The normalized value, or {@code null} if {@code value} is {@code null}.
    */
-  public static String normalize(String entityType) {
-    return entityType == null ? null : entityType.trim().toLowerCase(Locale.ROOT);
+  public static String normalize(String value) {
+    return value == null ? null : value.trim().toLowerCase(Locale.ROOT);
+  }
+
+  /**
+   * Parses an optional integer priority from configuration.
+   *
+   * @param key The configuration key, for error messages.
+   * @param rawValue The configured value; {@code null} or blank yields {@code 0}.
+   *
+   * @return The parsed priority, or {@code 0} when unset.
+   * @throws AnalysisException {@code INVALID_ARGUMENT} if {@code rawValue} is not an integer.
+   */
+  public static int parsePriority(String key, String rawValue) {
+    if (rawValue == null || rawValue.isBlank()) {
+      return 0;
+    }
+    try {
+      return Integer.parseInt(rawValue.trim());
+    } catch (NumberFormatException e) {
+      throw AnalysisException.invalidArgument(
+          key + " must be an integer, was '" + rawValue + "'");
+    }
   }
 
   /**
@@ -84,8 +114,7 @@ public final class NameFinderRegistry implements AutoCloseable {
    *
    * @return A registry, possibly empty when no name finder is configured.
    *
-   * @throws AnalysisException If a backend's configuration is invalid or a model fails to
-   *     load.
+   * @throws AnalysisException If a backend's configuration is invalid or a model fails to load.
    */
   public static NameFinderRegistry create(Map<String, String> configuration) {
     return create(configuration, null);
@@ -93,7 +122,7 @@ public final class NameFinderRegistry implements AutoCloseable {
 
   /**
    * Loads all name finder models by discovering {@link NerBackendFactory} backends via
-   * {@link ServiceLoader} and aggregating the models each contributes.
+   * {@link ServiceLoader} and grouping the models each contributes by recognizer id.
    *
    * @param configuration The server configuration. Must not be {@code null}.
    * @param sentenceDetector The sentence detector ONNX name finders need internally; may be
@@ -101,8 +130,8 @@ public final class NameFinderRegistry implements AutoCloseable {
    *
    * @return A registry, possibly empty when no name finder is configured.
    *
-   * @throws AnalysisException If a backend's configuration is invalid or a model fails to
-   *     load.
+   * @throws AnalysisException If a backend's configuration is invalid, a model fails to load, or
+   *     the same recognizer id is registered twice by the same engine.
    */
   public static NameFinderRegistry create(
       Map<String, String> configuration, SentenceDetector sentenceDetector) {
@@ -110,8 +139,9 @@ public final class NameFinderRegistry implements AutoCloseable {
       throw new NullPointerException("configuration");
     }
     final NerBackendContext context = new NerBackendContext(sentenceDetector);
-    final Map<String, NerModel> modelsById = new LinkedHashMap<>();
-    final Map<String, List<NerModel>> byEntityType = new LinkedHashMap<>();
+    final RankedBackends.Builder<NerModel> builder = RankedBackends.builder();
+    final Map<String, List<String>> recognizerIdsByType = new LinkedHashMap<>();
+    final Set<String> knownEngines = new LinkedHashSet<>();
     final Set<String> seenFactories = new HashSet<>();
     for (NerBackendFactory factory : ServiceLoader.load(
         NerBackendFactory.class, NameFinderRegistry.class.getClassLoader())) {
@@ -121,38 +151,52 @@ public final class NameFinderRegistry implements AutoCloseable {
         continue;
       }
       for (NerModel model : factory.create(configuration, context)) {
-        register(modelsById, byEntityType, model);
+        // RankedBackends rejects a duplicate (id, engine); distinct engines for one id are the
+        // multi-engine case and are kept, priority-sorted.
+        builder.add(model.id(), model.backendId(), model.priority(), model);
+        knownEngines.add(model.backendId());
+        for (String type : model.entityTypes()) {
+          final List<String> ids = recognizerIdsByType.computeIfAbsent(type, k -> new ArrayList<>());
+          if (!ids.contains(model.id())) {
+            ids.add(model.id());
+          }
+        }
       }
     }
-    return new NameFinderRegistry(modelsById, byEntityType);
-  }
-
-  private static void register(Map<String, NerModel> modelsById,
-      Map<String, List<NerModel>> byEntityType, NerModel model) {
-    if (modelsById.putIfAbsent(model.id(), model) != null) {
-      throw AnalysisException.invalidArgument("Duplicate name finder model id: " + model.id());
-    }
-    for (String type : model.entityTypes()) {
-      byEntityType.computeIfAbsent(type, key -> new ArrayList<>()).add(model);
-    }
+    return new NameFinderRegistry(builder.build(), recognizerIdsByType, knownEngines);
   }
 
   /**
    * Reports whether any name finder is configured.
    *
-   * @return {@code true} when at least one model is registered.
+   * @return {@code true} when at least one recognizer is registered.
    */
   public boolean isAvailable() {
-    return !modelsById.isEmpty();
+    return !recognizers.isEmpty();
   }
 
   /**
-   * Returns all configured recognizers, in registration order, for catalog reporting.
+   * Returns the recognizers grouped by id, for the orchestrator to apply an engine policy.
    *
-   * @return An immutable copy of the registered models.
+   * @return The ranked recognizer registry.
+   */
+  public RankedBackends<NerModel> recognizers() {
+    return recognizers;
+  }
+
+  /**
+   * Returns all configured recognizers across every engine, for catalog reporting.
+   *
+   * @return An immutable list of the registered models.
    */
   public List<NerModel> allModels() {
-    return List.copyOf(modelsById.values());
+    final List<NerModel> models = new ArrayList<>();
+    for (String id : recognizers.ids()) {
+      for (Registration<NerModel> registration : recognizers.resolve(id)) {
+        models.add(registration.value());
+      }
+    }
+    return List.copyOf(models);
   }
 
   /**
@@ -161,41 +205,50 @@ public final class NameFinderRegistry implements AutoCloseable {
    * @return An immutable copy of the registered, normalized entity types.
    */
   public List<String> entityTypes() {
-    return List.copyOf(byEntityType.keySet());
+    return List.copyOf(recognizerIdsByType.keySet());
   }
 
   /**
-   * Reports whether any model emits the given entity type.
+   * Reports whether any recognizer emits the given entity type.
    *
-   * @param entityType The entity type to check. May be {@code null}; matched after
-   *     normalization.
+   * @param entityType The entity type to check. May be {@code null}; matched after normalization.
    *
-   * @return {@code true} when a model is registered for the normalized type.
+   * @return {@code true} when a recognizer is registered for the normalized type.
    */
   public boolean supportsEntityType(String entityType) {
-    return entityType != null && byEntityType.containsKey(normalize(entityType));
+    return entityType != null && recognizerIdsByType.containsKey(normalize(entityType));
   }
 
   /**
-   * Resolves the distinct {@link NerModel}s that must run for the requested entity types:
-   * every model that can emit at least one of them, each listed once. An empty or
-   * {@code null} request selects all configured models. Running a model once and filtering
-   * its output avoids invoking a multi-type model repeatedly.
+   * Reports whether the named engine serves any recognizer.
+   *
+   * @param engine The engine/backend id; matched after normalization. May be {@code null}.
+   *
+   * @return {@code true} when the engine is registered.
+   */
+  public boolean knowsEngine(String engine) {
+    return engine != null && knownEngines.contains(normalize(engine));
+  }
+
+  /**
+   * Resolves the distinct recognizer ids that must run for the requested entity types: every
+   * recognizer that can emit at least one of them, each listed once in registration order. An
+   * empty or {@code null} request selects all configured recognizers.
    *
    * @param requestedTypes The requested entity types; {@code null} or empty selects all
-   *     models. Each type is matched after normalization.
+   *     recognizers. Each type is matched after normalization.
    *
-   * @return An immutable list of the distinct models to run, in registration order.
+   * @return An immutable list of the distinct recognizer ids to run.
    */
-  public List<NerModel> modelsForTypes(List<String> requestedTypes) {
+  public List<String> recognizerIdsForTypes(List<String> requestedTypes) {
     if (requestedTypes == null || requestedTypes.isEmpty()) {
-      return List.copyOf(modelsById.values());
+      return List.copyOf(recognizers.ids());
     }
-    final LinkedHashSet<NerModel> selected = new LinkedHashSet<>();
+    final LinkedHashSet<String> selected = new LinkedHashSet<>();
     for (String requestedType : requestedTypes) {
-      final List<NerModel> models = byEntityType.get(normalize(requestedType));
-      if (models != null) {
-        selected.addAll(models);
+      final List<String> ids = recognizerIdsByType.get(normalize(requestedType));
+      if (ids != null) {
+        selected.addAll(ids);
       }
     }
     return List.copyOf(selected);
@@ -203,8 +256,8 @@ public final class NameFinderRegistry implements AutoCloseable {
 
   /**
    * Resolves which entity types to run for this request: an explicit
-   * {@code AnalysisProfile.ner_entity_types} filter (normalized to the canonical form),
-   * or all configured types when unset.
+   * {@code AnalysisProfile.ner_entity_types} filter (normalized to the canonical form), or all
+   * configured types when unset.
    *
    * @param requestedTypes The requested entity types; {@code null} or empty resolves to all
    *     configured types. Otherwise each requested type is normalized.
@@ -223,11 +276,11 @@ public final class NameFinderRegistry implements AutoCloseable {
   }
 
   /**
-   * Clears adaptive feature-generator state on every loaded finder, as required by the
-   * OpenNLP Name Finder API after each document when stateless RPC semantics are desired.
+   * Clears adaptive feature-generator state on every loaded finder, as required by the OpenNLP
+   * Name Finder API after each document when stateless RPC semantics are desired.
    */
   public void clearAdaptiveData() {
-    for (NerModel model : modelsById.values()) {
+    for (NerModel model : allModels()) {
       if (model.isStateful()) {
         model.clearAdaptiveData();
       }
@@ -235,13 +288,13 @@ public final class NameFinderRegistry implements AutoCloseable {
   }
 
   /**
-   * Closes any recognizer that holds native resources (e.g. an ONNX session in a DL name
-   * finder). Classic {@code NameFinderME} models hold none. A failure closing one model is
-   * logged and does not stop the others from being released.
+   * Closes any recognizer that holds native resources (e.g. an ONNX session in a DL name finder).
+   * Classic {@code NameFinderME} models hold none. A failure closing one model is logged and does
+   * not stop the others from being released.
    */
   @Override
   public void close() {
-    for (NerModel model : modelsById.values()) {
+    for (NerModel model : allModels()) {
       if (model instanceof AutoCloseable closeable) {
         try {
           closeable.close();

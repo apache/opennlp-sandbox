@@ -126,8 +126,36 @@ message NamedEntity {
   // name finder is configured for (see AnalysisProfile.ner_entity_types).
   string entity_type = 2;
   // Model confidence in this entity, in [0,1]. Populated only when the request set
-  // AnalysisOptions.include_probabilities = true.
+  // AnalysisOptions.include_probabilities = true. When several providers contributed
+  // (see `sources`), this is the highest of their probabilities.
   optional double probability = 3;
+  // The exact document text covered by `annotation_span`. Always populated, so a
+  // response is readable without re-resolving offsets — which matters when several
+  // providers recognized this entity at slightly different offsets (see `sources`).
+  string text = 4;
+  // Which recognizer(s)/engine(s) produced this entity. With one provider this holds
+  // a single source; under a multi-engine union (see AnalysisProfile.ner_engine_policy)
+  // it lists every provider that found this entity, so provenance and cross-provider
+  // agreement are explicit. Empty only on responses from servers that predate this field.
+  repeated EntitySource sources = 5;
+}
+
+// Provenance for a NamedEntity: one recognizer/engine that produced it. Under a
+// multi-engine NER union the same entity can be reported by several providers, each
+// with its own probability and (because providers tokenize differently) possibly its
+// own offsets; this records each contribution so the union stays understandable.
+message EntitySource {
+  // The logical recognizer id that emitted the entity (e.g. "person"), as configured.
+  string recognizer_id = 1;
+  // The engine/backend that served this recognizer (e.g. "opennlp-me", "onnx").
+  string engine = 2;
+  // This provider's confidence in the entity, in [0,1]. Populated only when the
+  // request set AnalysisOptions.include_probabilities = true.
+  optional double probability = 3;
+  // This provider's own span for the entity, when it differs from the enclosing
+  // NamedEntity's canonical span (providers may tokenize differently). Unset when it
+  // matches the canonical span.
+  optional AnnotationSpan annotation_span = 4;
 }
 
 // Offset range for an annotation. The coordinate space is explicit so future

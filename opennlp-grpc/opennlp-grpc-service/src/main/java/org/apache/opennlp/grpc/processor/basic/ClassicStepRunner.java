@@ -37,7 +37,6 @@ import org.apache.opennlp.grpc.model.DocCategorizerModel;
 import org.apache.opennlp.grpc.model.DocCategorizerRegistry;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.model.NameFinderRegistry;
-import org.apache.opennlp.grpc.model.NerModel;
 import org.apache.opennlp.grpc.model.SentimentRegistry;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
@@ -47,6 +46,7 @@ import org.apache.opennlp.grpc.v1.ChunkSpan;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
 import org.apache.opennlp.grpc.v1.DocumentClassification;
 import org.apache.opennlp.grpc.v1.NamedEntity;
+import org.apache.opennlp.grpc.v1.NerEnginePolicy;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.ParseFormat;
 import org.apache.opennlp.grpc.v1.ParseTree;
@@ -146,14 +146,15 @@ final class ClassicStepRunner {
   }
 
   /**
-   * Runs every {@link NerModel} that can emit one of the requested entity types once per
-   * sentence, keeps the entities whose type was requested, deduplicates identical spans,
-   * and attaches them to the sentence. Running each model once (rather than once per type)
-   * is what lets a single multi-type model serve several entity types.
+   * Recognizes named entities per the request's engine policy, attaches each entity's provenance
+   * ({@code sources}) and matched text, and writes them onto their sentences. A recognizer served
+   * by several engines is resolved by priority (with fallback), pinned to one engine, or unioned
+   * across engines depending on how many engines the policy lists; see {@link NerEntityResolver}.
    */
   void findNamedEntities(
       OpenNlpDocument.Builder document,
       List<String> entityTypes,
+      NerEnginePolicy enginePolicy,
       boolean includeProbabilities,
       List<ProcessingDiagnostic> diagnostics) {
     final NameFinderRegistry registry = modelBundleCache.getNameFinderRegistry();
@@ -161,7 +162,14 @@ final class ClassicStepRunner {
     for (String entityType : entityTypes) {
       requested.add(NameFinderRegistry.normalize(entityType));
     }
-    final List<NerModel> models = registry.modelsForTypes(entityTypes);
+    final List<String> recognizerIds = registry.recognizerIdsForTypes(entityTypes);
+    final List<String> engines = new ArrayList<>(enginePolicy.getEnginesCount());
+    for (String engine : enginePolicy.getEnginesList()) {
+      engines.add(NameFinderRegistry.normalize(engine));
+    }
+    final NerEntityResolver resolver = new NerEntityResolver(
+        registry.recognizers(), recognizerIds, engines, enginePolicy.getMerge(),
+        requested, document.getRawText(), includeProbabilities);
 
     int entityCount = 0;
     for (int i = 0; i < document.getSentencesCount(); i++) {
@@ -169,28 +177,21 @@ final class ClassicStepRunner {
       if (sentence.getTokensCount() == 0) {
         continue;
       }
+      final List<NamedEntity> entities = resolver.resolve(sentence);
+      if (entities.isEmpty()) {
+        continue;
+      }
       final AnnotatedSentence.Builder sentenceBuilder = sentence.toBuilder();
-      final Set<String> seen = new HashSet<>();
-      for (NerModel model : models) {
-        for (NamedEntity entity : model.recognize(sentence, includeProbabilities)) {
-          final String type = NameFinderRegistry.normalize(entity.getEntityType());
-          if (!requested.contains(type)) {
-            continue;
-          }
-          final AnnotationSpan span = entity.getAnnotationSpan();
-          if (!seen.add(span.getStart() + ":" + span.getEnd() + ":" + type)) {
-            continue;
-          }
-          sentenceBuilder.addEntities(entity);
-          entityCount++;
-        }
+      for (NamedEntity entity : entities) {
+        sentenceBuilder.addEntities(entity);
       }
       document.setSentences(i, sentenceBuilder.build());
+      entityCount += entities.size();
     }
     diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_NER,
         "Detected " + entityCount + " entit"
             + (entityCount == 1 ? "y" : "ies")
-            + " across " + models.size() + " model(s)"));
+            + " across " + recognizerIds.size() + " recognizer(s)"));
   }
 
   /**

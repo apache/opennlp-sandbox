@@ -131,10 +131,10 @@ class NameFinderRegistryTest {
     assertTrue(registry.supportsEntityType("PERSON"));
     assertTrue(registry.supportsEntityType(" Person "));
     assertEquals(List.of("person"), registry.resolveEntityTypes(List.of("PERSON")));
-    // The same underlying model is selected regardless of the requested type's case.
-    assertEquals(registry.modelsForTypes(List.of("person")),
-        registry.modelsForTypes(List.of("PERSON")));
-    assertEquals(1, registry.modelsForTypes(List.of("PERSON")).size());
+    // The same recognizer is selected regardless of the requested type's case.
+    assertEquals(registry.recognizerIdsForTypes(List.of("person")),
+        registry.recognizerIdsForTypes(List.of("PERSON")));
+    assertEquals(List.of("person"), registry.recognizerIdsForTypes(List.of("PERSON")));
   }
 
   @Test
@@ -210,9 +210,11 @@ class NameFinderRegistryTest {
 
     assertTrue(registry.supportsEntityType("gadget"));
     assertTrue(registry.supportsEntityType("person"));
-    assertEquals(1, registry.modelsForTypes(List.of("gadget")).size());
+    // The stub recognizer's id is "stub:gadget" (its own naming); it emits the "gadget" type.
+    final List<String> gadgetIds = registry.recognizerIdsForTypes(List.of("gadget"));
+    assertEquals(List.of(StubNerBackendFactory.FACTORY_ID + ":gadget"), gadgetIds);
     assertEquals(StubNerBackendFactory.FACTORY_ID,
-        registry.modelsForTypes(List.of("gadget")).get(0).backendId());
+        registry.recognizers().primary(gadgetIds.get(0)).value().backendId());
   }
 
   @Test

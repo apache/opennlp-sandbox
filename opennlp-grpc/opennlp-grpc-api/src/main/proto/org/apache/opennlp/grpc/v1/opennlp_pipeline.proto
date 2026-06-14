@@ -159,6 +159,39 @@ message AnalysisProfile {
   // name finder(s) support". Blank values => INVALID_ARGUMENT; an unknown type =>
   // NOT_FOUND.
   repeated string ner_entity_types = 5;
+  // How NER picks among engines when a recognizer is served by more than one. Unset
+  // selects each recognizer's highest-priority engine (with fallback). See the message.
+  NerEnginePolicy ner_engine_policy = 6;
+}
+
+// Selects which engine(s) run for NER when a recognizer is served by more than one
+// provider, and how their outputs are combined. The number of `engines` listed drives
+// the behavior, so the common cases need no mode flag:
+//   - empty  => run each recognizer's highest-priority engine, falling back to the next
+//               on failure (the resilient default);
+//   - one    => pin that engine (no fallback); recognizers it does not serve are skipped;
+//   - two or more => run all of the listed engines and UNION their entities, each tagged
+//               with its producer (see NamedEntity.sources).
+// An engine id that is not registered for any recognizer => NOT_FOUND.
+message NerEnginePolicy {
+  // Engine/backend ids to run (e.g. "onnx", "opennlp-me"). See the message comment for
+  // how the count is interpreted.
+  repeated string engines = 1;
+  // How overlapping entities from different providers are reconciled in the response.
+  MergeStrategy merge = 2;
+}
+
+// How a multi-engine NER union reconciles entities that more than one provider reports.
+enum MergeStrategy {
+  // Default: collapse entities of the same type whose spans overlap into one entity,
+  // whose `sources` lists every provider that found it and whose canonical span comes
+  // from the highest-priority provider. Cross-provider agreement is visible at a glance.
+  MERGE_STRATEGY_UNSPECIFIED = 0;
+  // Keep every provider's hit as its own entity with a single source; perform no
+  // cross-provider merging. Maximum detail, including disagreements.
+  MERGE_STRATEGY_RAW = 1;
+  // Same collapsing as the default; named explicitly for requests that want to be precise.
+  MERGE_STRATEGY_CONSENSUS = 2;
 }
 
 // References a server-side model bundle by id. Available bundle ids include
