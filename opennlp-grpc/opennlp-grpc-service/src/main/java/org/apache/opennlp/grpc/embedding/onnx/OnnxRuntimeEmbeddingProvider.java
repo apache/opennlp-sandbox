@@ -32,7 +32,7 @@ public final class OnnxRuntimeEmbeddingProvider extends AbstractOnnxEmbeddingPro
    * @param configuration The server configuration. Must not be {@code null}.
    */
   public OnnxRuntimeEmbeddingProvider(Map<String, String> configuration) {
-    super(configuration, false);
+    super(configuration, false, "." + OnnxEmbeddingBackendFactory.BACKEND_ID + ".path");
   }
 
   @Override

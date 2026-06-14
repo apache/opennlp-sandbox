@@ -48,7 +48,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -149,15 +148,19 @@ class OpenVinoEmbeddingProviderTest {
   }
 
   @Test
-  void factoryIsDiscoveredThroughServiceLoader() {
-    final Map<String, String> configuration = config(typedServer, "minilm");
-    configuration.put("model.embedder.backend", "openvino");
-    final EmbeddingProvider provider = EmbeddingProviderFactory.create(configuration);
+  void factoryAggregatesOpenVinoThroughServiceLoader() throws Exception {
+    // The factory discovers the OpenVINO backend via ServiceLoader and aggregates it into the
+    // composite provider; the OpenVINO-configured model resolves to the OpenVINO engine.
+    final EmbeddingProvider provider =
+        EmbeddingProviderFactory.create(config(typedServer, "minilm"));
     try {
-      assertInstanceOf(OpenVinoEmbeddingProvider.class, provider);
-      assertEquals(OpenVinoEmbeddingBackendFactory.BACKEND_ID, provider.backendId());
+      assertTrue(provider.isAvailable());
+      assertTrue(provider.supportsModel("minilm"));
+      assertEquals(OpenVinoEmbeddingBackendFactory.BACKEND_ID, provider.backendId("minilm"));
     } finally {
-      ((OpenVinoEmbeddingProvider) provider).close();
+      if (provider instanceof AutoCloseable closeable) {
+        closeable.close();
+      }
     }
   }
 

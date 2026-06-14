@@ -619,13 +619,14 @@ public final class ModelBundleCache {
     if (embeddingProvider.isAvailable()) {
       bundle.addSupportedSteps(PipelineStep.PIPELINE_STEP_EMBED);
       for (String modelId : embeddingProvider.registeredModelIds()) {
+        // Each logical model is tagged with the engine it resolves to by default (highest priority).
         bundle.addModels(ModelDescriptor.newBuilder()
             .setName(modelId)
             .setLocale(DEFAULT_LANGUAGE)
             .setComponentType(ComponentType.COMPONENT_TYPE_EMBEDDER)
             .addLanguages(DEFAULT_LANGUAGE)
             .setEmbeddingDimension(embeddingProvider.embeddingDimension(modelId))
-            .setBackendId(embeddingProvider.backendId())
+            .setBackendId(embeddingProvider.backendId(modelId))
             .build());
       }
     }

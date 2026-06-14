@@ -42,7 +42,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -120,15 +119,18 @@ class TeiEmbeddingProviderTest {
   }
 
   @Test
-  void factoryIsDiscoveredThroughServiceLoader() {
-    final Map<String, String> configuration = config("minilm");
-    configuration.put("model.embedder.backend", "tei");
-    final EmbeddingProvider provider = EmbeddingProviderFactory.create(configuration);
+  void factoryAggregatesTeiThroughServiceLoader() throws Exception {
+    // The factory discovers the TEI backend via ServiceLoader and aggregates it into the composite
+    // provider; the TEI-configured model resolves to the TEI engine.
+    final EmbeddingProvider provider = EmbeddingProviderFactory.create(config("minilm"));
     try {
-      assertInstanceOf(TeiEmbeddingProvider.class, provider);
-      assertEquals(TeiEmbeddingBackendFactory.BACKEND_ID, provider.backendId());
+      assertTrue(provider.isAvailable());
+      assertTrue(provider.supportsModel("minilm"));
+      assertEquals(TeiEmbeddingBackendFactory.BACKEND_ID, provider.backendId("minilm"));
     } finally {
-      ((TeiEmbeddingProvider) provider).close();
+      if (provider instanceof AutoCloseable closeable) {
+        closeable.close();
+      }
     }
   }
 

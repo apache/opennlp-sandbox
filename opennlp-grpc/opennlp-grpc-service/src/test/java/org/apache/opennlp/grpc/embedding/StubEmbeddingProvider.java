@@ -28,23 +28,33 @@ public final class StubEmbeddingProvider implements EmbeddingProvider {
 
   public static final String BACKEND_ID = "stub";
 
+  private final String backendId;
   private final Map<String, Integer> dimensions;
   private final BiFunction<String, String, float[]> embedFn;
 
   public StubEmbeddingProvider(Map<String, Integer> dimensions) {
-    this(dimensions, null);
+    this(BACKEND_ID, dimensions, null);
   }
 
   public StubEmbeddingProvider(
       Map<String, Integer> dimensions,
       BiFunction<String, String, float[]> embedFn) {
+    this(BACKEND_ID, dimensions, embedFn);
+  }
+
+  /** Stub with an explicit backend id, so composite tests can model several distinct engines. */
+  public StubEmbeddingProvider(
+      String backendId,
+      Map<String, Integer> dimensions,
+      BiFunction<String, String, float[]> embedFn) {
+    this.backendId = backendId;
     this.dimensions = Map.copyOf(dimensions);
     this.embedFn = embedFn;
   }
 
   @Override
   public String backendId() {
-    return BACKEND_ID;
+    return backendId;
   }
 
   @Override

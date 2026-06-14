@@ -37,7 +37,7 @@ public final class CudaEmbeddingProvider extends AbstractOnnxEmbeddingProvider {
    * @param configuration The server configuration. Must not be {@code null}.
    */
   public CudaEmbeddingProvider(Map<String, String> configuration) {
-    super(configuration, true);
+    super(configuration, true, "." + CudaEmbeddingBackendFactory.BACKEND_ID + ".path");
   }
 
   @Override

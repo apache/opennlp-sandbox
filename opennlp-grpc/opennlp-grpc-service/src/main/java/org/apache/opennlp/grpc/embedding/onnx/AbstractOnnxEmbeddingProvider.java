@@ -62,7 +62,6 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
   private static final Logger logger = LoggerFactory.getLogger(AbstractOnnxEmbeddingProvider.class);
 
   private static final String KEY_PREFIX = "model.embedder.";
-  private static final String KEY_ONNX_SUFFIX = ".onnx.path";
   private static final String KEY_VOCAB_SUFFIX = ".vocab.path";
   private static final String KEY_LOWERCASE_SUFFIX = ".lowercase";
   private static final String KEY_POOLING_SUFFIX = ".pooling";
@@ -73,18 +72,23 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
   private final String defaultModelId;
 
   /**
-   * Loads all configured embedding models.
+   * Loads all configured embedding models for this engine.
    *
    * @param configuration The server configuration. Must not be {@code null}.
    * @param useCuda       Whether models run on the CUDA execution provider.
+   * @param pathSuffix    The engine's model-path key suffix that selects which models belong to
+   *                      this engine, e.g. {@code .onnx.path} (CPU) or {@code .cuda.path} (GPU),
+   *                      so several engines can coexist under {@code model.embedder.*}.
    *
    * @throws AnalysisException If the configuration is inconsistent, a referenced file is
    *                           missing, or a model fails to load.
    */
-  protected AbstractOnnxEmbeddingProvider(Map<String, String> configuration, boolean useCuda) {
+  protected AbstractOnnxEmbeddingProvider(
+      Map<String, String> configuration, boolean useCuda, String pathSuffix) {
     Objects.requireNonNull(configuration, "configuration must not be null");
+    Objects.requireNonNull(pathSuffix, "pathSuffix must not be null");
     final int gpuDeviceId = gpuDeviceId(configuration, useCuda);
-    this.models = loadModels(configuration, useCuda, gpuDeviceId);
+    this.models = loadModels(configuration, useCuda, gpuDeviceId, pathSuffix);
     this.defaultModelId = resolveDefaultModelId(configuration, models);
   }
 
@@ -157,13 +161,13 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
   }
 
   private static int gpuDeviceId(Map<String, String> configuration, boolean useCuda) {
+    // gpu_device_id only applies to the CUDA engine; the CPU engine ignores it.
+    if (!useCuda) {
+      return 0;
+    }
     final String configured = configuration.get(KEY_GPU_DEVICE);
     if (configured == null || configured.isBlank()) {
       return 0;
-    }
-    if (!useCuda) {
-      throw AnalysisException.invalidArgument(
-          KEY_GPU_DEVICE + " requires model.embedder.backend=cuda");
     }
     try {
       return Integer.parseInt(configured.trim());
@@ -174,7 +178,7 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
   }
 
   private static Map<String, OnnxSentenceEmbedder> loadModels(
-      Map<String, String> configuration, boolean useCuda, int gpuDeviceId) {
+      Map<String, String> configuration, boolean useCuda, int gpuDeviceId, String pathSuffix) {
     final Map<String, String> onnxPaths = new HashMap<>();
     final Map<String, String> vocabPaths = new HashMap<>();
     final Map<String, Boolean> lowerCase = new HashMap<>();
@@ -186,8 +190,8 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
         continue;
       }
       final String suffix;
-      if (key.endsWith(KEY_ONNX_SUFFIX)) {
-        suffix = KEY_ONNX_SUFFIX;
+      if (key.endsWith(pathSuffix)) {
+        suffix = pathSuffix;
       } else if (key.endsWith(KEY_VOCAB_SUFFIX)) {
         suffix = KEY_VOCAB_SUFFIX;
       } else if (key.endsWith(KEY_LOWERCASE_SUFFIX)) {
@@ -202,12 +206,15 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
       if (modelId.isBlank() || value == null || value.isBlank()) {
         continue;
       }
-      switch (suffix) {
-        case KEY_ONNX_SUFFIX -> onnxPaths.put(modelId, value);
-        case KEY_VOCAB_SUFFIX -> vocabPaths.put(modelId, value);
-        case KEY_LOWERCASE_SUFFIX -> lowerCase.put(modelId, parseLowercase(modelId, value));
-        case KEY_POOLING_SUFFIX -> pooling.put(modelId, parsePooling(modelId, value));
-        default -> throw new IllegalStateException("Unhandled suffix: " + suffix);
+      // pathSuffix is engine-specific (a runtime value), so it cannot be a switch case label.
+      if (suffix.equals(pathSuffix)) {
+        onnxPaths.put(modelId, value);
+      } else if (suffix.equals(KEY_VOCAB_SUFFIX)) {
+        vocabPaths.put(modelId, value);
+      } else if (suffix.equals(KEY_LOWERCASE_SUFFIX)) {
+        lowerCase.put(modelId, parseLowercase(modelId, value));
+      } else {
+        pooling.put(modelId, parsePooling(modelId, value));
       }
     }
 

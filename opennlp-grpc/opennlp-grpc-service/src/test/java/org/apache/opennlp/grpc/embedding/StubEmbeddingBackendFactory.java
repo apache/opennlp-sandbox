@@ -27,6 +27,8 @@ import java.util.Map;
 public final class StubEmbeddingBackendFactory implements EmbeddingBackendFactory {
 
   public static final String BACKEND_ID = "stub";
+  /** When set, the stub contributes one model with this id; otherwise it stays inert. */
+  public static final String KEY_MODEL_ID = "model.embedder.stub.model_id";
 
   @Override
   public String backendId() {
@@ -35,6 +37,11 @@ public final class StubEmbeddingBackendFactory implements EmbeddingBackendFactor
 
   @Override
   public EmbeddingProvider create(Map<String, String> configuration) {
-    return new StubEmbeddingProvider(Map.of("stub-model", 3));
+    final String modelId = configuration.get(KEY_MODEL_ID);
+    if (modelId == null || modelId.isBlank()) {
+      // Inert unless explicitly activated, so the composite stays empty in unrelated tests.
+      return new StubEmbeddingProvider(Map.of());
+    }
+    return new StubEmbeddingProvider(Map.of(modelId, 3));
   }
 }

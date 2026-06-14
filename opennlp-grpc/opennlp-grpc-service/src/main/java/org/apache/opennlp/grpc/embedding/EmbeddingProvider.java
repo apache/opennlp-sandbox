@@ -48,6 +48,20 @@ public interface EmbeddingProvider {
   String backendId();
 
   /**
+   * Returns the backend id of the engine that actually serves the given model. For a
+   * single-engine provider this is just {@link #backendId()}; an aggregating provider that routes
+   * a model id across several engines overrides this to report the engine a specific model resolves
+   * to.
+   *
+   * @param modelId The id of a registered embedding model.
+   *
+   * @return The backend id serving {@code modelId}.
+   */
+  default String backendId(String modelId) {
+    return backendId();
+  }
+
+  /**
    * Reports whether this provider can serve any embedding requests.
    *
    * @return {@code true} when at least one embedding model is registered.

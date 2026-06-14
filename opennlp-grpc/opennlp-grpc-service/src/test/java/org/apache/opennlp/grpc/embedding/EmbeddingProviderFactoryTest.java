@@ -19,67 +19,44 @@ package org.apache.opennlp.grpc.embedding;
 
 import java.util.Map;
 
-import org.apache.opennlp.grpc.embedding.cuda.CudaEmbeddingBackendFactory;
-import org.apache.opennlp.grpc.embedding.cuda.CudaEmbeddingProvider;
-import org.apache.opennlp.grpc.embedding.onnx.OnnxEmbeddingBackendFactory;
-import org.apache.opennlp.grpc.embedding.onnx.OnnxRuntimeEmbeddingProvider;
-import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * Tests {@link EmbeddingProviderFactory}: it discovers every embedding backend via
+ * {@link java.util.ServiceLoader} and aggregates the ones with configured models into a
+ * {@link CompositeEmbeddingProvider}. (Multi-engine routing/fallback is covered by
+ * {@link CompositeEmbeddingProviderTest}; this verifies discovery + aggregation.) The
+ * ServiceLoader-registered {@link StubEmbeddingBackendFactory} stands in for a third-party engine.
+ */
 class EmbeddingProviderFactoryTest {
 
   @Test
-  void defaultsToCpuProvider() {
+  void aggregatesBackendsIntoComposite() {
     final EmbeddingProvider provider = EmbeddingProviderFactory.create(Map.of());
-    assertInstanceOf(OnnxRuntimeEmbeddingProvider.class, provider);
-    assertEquals(OnnxEmbeddingBackendFactory.BACKEND_ID, provider.backendId());
+    assertInstanceOf(CompositeEmbeddingProvider.class, provider);
   }
 
   @Test
-  void selectsCudaProviderFromConfig() {
-    final EmbeddingProvider provider =
-        EmbeddingProviderFactory.create(Map.of("model.embedder.backend", "cuda"));
-    assertInstanceOf(CudaEmbeddingProvider.class, provider);
-    assertEquals(CudaEmbeddingBackendFactory.BACKEND_ID, provider.backendId());
-  }
-
-  @Test
-  void rejectsUnknownBackendAndListsRegisteredBackends() {
-    final AnalysisException e = assertThrows(AnalysisException.class,
-        () -> EmbeddingProviderFactory.create(Map.of("model.embedder.backend", "openvino")));
-    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, e.getFailureType());
-    assertTrue(e.getMessage().contains("registered backends:"),
-        "error should list the discovered backends: " + e.getMessage());
-    assertTrue(e.getMessage().contains("onnx"), e.getMessage());
-    assertTrue(e.getMessage().contains("cuda"), e.getMessage());
+  void emptyWhenNoEmbeddingModelsConfigured() {
+    // No backend has models configured, so the aggregate serves nothing (rather than failing).
+    final EmbeddingProvider provider = EmbeddingProviderFactory.create(Map.of());
+    assertFalse(provider.isAvailable());
   }
 
   @Test
   void discoversExternalBackendThroughServiceLoader() {
-    final EmbeddingProvider provider =
-        EmbeddingProviderFactory.create(Map.of("model.embedder.backend", "stub"));
-    assertInstanceOf(StubEmbeddingProvider.class, provider);
-    assertEquals(StubEmbeddingProvider.BACKEND_ID, provider.backendId());
-    assertTrue(provider.supportsModel("stub-model"));
-    assertEquals(3, provider.embeddingDimension("stub-model"));
-  }
-
-  @Test
-  void backendSelectionIsCaseInsensitive() {
-    final EmbeddingProvider provider =
-        EmbeddingProviderFactory.create(Map.of("model.embedder.backend", " ONNX "));
-    assertInstanceOf(OnnxRuntimeEmbeddingProvider.class, provider);
-  }
-
-  @Test
-  void rejectsGpuDeviceIdWithoutCudaBackend() {
-    final AnalysisException e = assertThrows(AnalysisException.class,
-        () -> EmbeddingProviderFactory.create(Map.of("model.embedder.gpu_device_id", "1")));
-    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, e.getFailureType());
+    // The stub engine, registered only via test META-INF/services, contributes a model and is
+    // aggregated like any built-in backend; its model resolves to the stub engine.
+    final EmbeddingProvider provider = EmbeddingProviderFactory.create(
+        Map.of(StubEmbeddingBackendFactory.KEY_MODEL_ID, "demo"));
+    assertTrue(provider.isAvailable());
+    assertTrue(provider.supportsModel("demo"));
+    assertEquals(StubEmbeddingProvider.BACKEND_ID, provider.backendId("demo"));
+    assertEquals(3, provider.embeddingDimension("demo"));
   }
 }
