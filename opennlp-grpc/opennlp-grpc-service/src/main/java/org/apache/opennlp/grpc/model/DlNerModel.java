@@ -40,19 +40,20 @@ import org.apache.opennlp.grpc.v1.NamedEntity;
  * tokens' document character offsets, which the offset-encoding pass then converts to the
  * client encoding.</p>
  *
- * <p>The current upstream {@code NameFinderDL} recognizes a single entity type, so each
- * instance emits one configured {@link #entityTypes() entity type}.</p>
+ * <p>The model emits whatever entity types its label set defines (PER, ORG, LOC, ...);
+ * {@link #recognize} reports each entity under the model's own label and the registry
+ * indexes the model under all {@link #entityTypes() types} it can produce.</p>
  */
 final class DlNerModel implements NerModel {
 
   private final String id;
-  private final String entityType;
+  private final Set<String> entityTypes;
   private final String backendId;
   private final NameFinderDL nameFinderDL;
 
-  DlNerModel(String id, String entityType, String backendId, NameFinderDL nameFinderDL) {
+  DlNerModel(String id, Set<String> entityTypes, String backendId, NameFinderDL nameFinderDL) {
     this.id = Objects.requireNonNull(id, "id");
-    this.entityType = Objects.requireNonNull(entityType, "entityType");
+    this.entityTypes = Set.copyOf(Objects.requireNonNull(entityTypes, "entityTypes"));
     this.backendId = Objects.requireNonNull(backendId, "backendId");
     this.nameFinderDL = Objects.requireNonNull(nameFinderDL, "nameFinderDL");
   }
@@ -69,7 +70,7 @@ final class DlNerModel implements NerModel {
 
   @Override
   public Set<String> entityTypes() {
-    return Set.of(entityType);
+    return entityTypes;
   }
 
   @Override
@@ -91,6 +92,12 @@ final class DlNerModel implements NerModel {
     final Span[] spans = nameFinderDL.find(tokens);
     final List<NamedEntity> entities = new ArrayList<>(spans.length);
     for (Span span : spans) {
+      // The entity type is the model's own label (PER, ORG, LOC, ...), normalized; the
+      // orchestrator filters these against the requested ner_entity_types.
+      final String entityType = NameFinderRegistry.normalize(span.getType());
+      if (entityType == null || entityType.isEmpty()) {
+        continue;
+      }
       final NamedEntity.Builder entity = NamedEntity.newBuilder()
           .setAnnotationSpan(documentSpan(sentence, tokens, span.getStart(), span.getEnd()))
           .setEntityType(entityType);

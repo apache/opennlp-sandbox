@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import ai.onnxruntime.OrtException;
 import opennlp.dl.InferenceOptions;
@@ -286,7 +287,7 @@ public final class NameFinderRegistry {
 
   /** Resolved configuration for one ONNX name finder. */
   private record DlConfig(String id, String modelPath, String vocabPath, String labelsPath,
-      String entityType, String backend, int gpuDeviceId) {
+      String backend, int gpuDeviceId) {
   }
 
   /**
@@ -322,11 +323,6 @@ public final class NameFinderRegistry {
     final String modelPath = requiredAttr(id, attrs, "path");
     final String vocabPath = requiredAttr(id, attrs, "vocab");
     final String labelsPath = requiredAttr(id, attrs, "labels");
-    final String entityType = normalize(attrs.getOrDefault("entity_type", id));
-    if (entityType.isEmpty()) {
-      throw AnalysisException.invalidArgument(
-          "ONNX name finder '" + id + "' has a blank entity_type");
-    }
     final String backend = attrs.getOrDefault("backend", BACKEND_ONNX).trim().toLowerCase(Locale.ROOT);
     if (!BACKEND_ONNX.equals(backend) && !BACKEND_CUDA.equals(backend)) {
       throw AnalysisException.invalidArgument(
@@ -343,7 +339,7 @@ public final class NameFinderRegistry {
             "ONNX name finder '" + id + "' has a non-numeric gpu_device_id: " + gpu);
       }
     }
-    return new DlConfig(id, modelPath, vocabPath, labelsPath, entityType, backend, gpuDeviceId);
+    return new DlConfig(id, modelPath, vocabPath, labelsPath, backend, gpuDeviceId);
   }
 
   private static String requiredAttr(String id, Map<String, String> attrs, String attr) {
@@ -361,6 +357,11 @@ public final class NameFinderRegistry {
     final File labels = requireReadable(config.id(), "labels", config.labelsPath());
     try {
       final Map<Integer, String> ids2Labels = loadLabels(labels);
+      final Set<String> entityTypes = entityTypesFromLabels(ids2Labels);
+      if (entityTypes.isEmpty()) {
+        throw AnalysisException.invalidArgument(
+            "ONNX name finder '" + config.id() + "' labels define no entity types (only 'O'?)");
+      }
       final InferenceOptions inferenceOptions = new InferenceOptions();
       if (BACKEND_CUDA.equals(config.backend())) {
         inferenceOptions.setGpu(true);
@@ -368,9 +369,9 @@ public final class NameFinderRegistry {
       }
       final NameFinderDL nameFinderDL =
           new NameFinderDL(model, vocab, ids2Labels, inferenceOptions, sentenceDetector);
-      logger.info("Loaded ONNX name finder '{}' (entity type '{}', backend '{}') from {}",
-          config.id(), config.entityType(), config.backend(), config.modelPath());
-      return new DlNerModel(config.id(), config.entityType(), config.backend(), nameFinderDL);
+      logger.info("Loaded ONNX name finder '{}' (entity types {}, backend '{}') from {}",
+          config.id(), entityTypes, config.backend(), config.modelPath());
+      return new DlNerModel(config.id(), entityTypes, config.backend(), nameFinderDL);
     } catch (IOException e) {
       throw AnalysisException.internal(
           "Failed to load ONNX name finder '" + config.id() + "'", e);
@@ -378,6 +379,22 @@ public final class NameFinderRegistry {
       throw AnalysisException.internal(
           "Failed to create ONNX session for name finder '" + config.id() + "'", e);
     }
+  }
+
+  /**
+   * Derives the distinct entity types a BIO label set defines, with the {@code B-}/{@code I-}
+   * prefixes stripped and normalized (e.g. {@code B-PER}/{@code I-LOC} -> {@code per},
+   * {@code loc}); the outside label {@code O} contributes nothing.
+   */
+  private static Set<String> entityTypesFromLabels(Map<Integer, String> ids2Labels) {
+    final Set<String> types = new LinkedHashSet<>();
+    for (String label : ids2Labels.values()) {
+      final String normalized = normalize(label);
+      if (normalized.startsWith("b-") || normalized.startsWith("i-")) {
+        types.add(normalized.substring(2));
+      }
+    }
+    return types;
   }
 
   /** Reads a label-per-line file, mapping each line number (0-based) to its label. */

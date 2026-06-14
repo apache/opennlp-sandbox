@@ -62,7 +62,7 @@ class BasicDocumentAnalyzerDlNerTest {
   Path tempDir;
 
   @Test
-  void detectsPersonEntitiesWithOnnxModel() throws IOException {
+  void detectsMultipleEntityTypesWithOnnxModel() throws IOException {
     final String dir = System.getProperty("dl.ner.model.dir");
     assumeTrue(dir != null && !dir.isBlank(), "set -Ddl.ner.model.dir to run the ONNX NER test");
     final File model = new File(dir, "model.onnx");
@@ -73,11 +73,11 @@ class BasicDocumentAnalyzerDlNerTest {
     final Path labels = Files.writeString(tempDir.resolve("labels.txt"), LABELS,
         StandardCharsets.UTF_8);
 
+    // The model id is arbitrary; the entity types come from the model's BIO labels.
     final Map<String, String> configuration = Map.of(
-        "model.name_finder_dl.person.path", model.getPath(),
-        "model.name_finder_dl.person.vocab", vocab.getPath(),
-        "model.name_finder_dl.person.labels", labels.toString(),
-        "model.name_finder_dl.person.entity_type", "person");
+        "model.name_finder_dl.bert_ner.path", model.getPath(),
+        "model.name_finder_dl.bert_ner.vocab", vocab.getPath(),
+        "model.name_finder_dl.bert_ner.labels", labels.toString());
 
     final ModelBundleCache modelBundleCache = new ModelBundleCache(configuration);
     final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(
@@ -86,11 +86,11 @@ class BasicDocumentAnalyzerDlNerTest {
     final AnalyzeDocumentResponse response = analyzer.analyze(
         AnalyzeDocumentRequest.newBuilder()
             .setDocument(OpenNlpDocument.newBuilder().setRawText(TEXT).build())
+            // No ner_entity_types filter -> return every type the model emits.
             .setProfile(AnalysisProfile.newBuilder()
                 .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
                 .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
                 .addSteps(PipelineStep.PIPELINE_STEP_NER)
-                .addNerEntityTypes("person")
                 .build())
             // UTF-16 offsets so spans index directly into the Java string below.
             .setOptions(AnalysisOptions.newBuilder()
@@ -98,20 +98,22 @@ class BasicDocumentAnalyzerDlNerTest {
                 .build())
             .build());
 
-    boolean sawWashington = false;
-    int personCount = 0;
+    String personText = null;
+    String locationText = null;
     for (AnnotatedSentence sentence : response.getDocument().getSentencesList()) {
       for (NamedEntity entity : sentence.getEntitiesList()) {
-        assertEquals("person", entity.getEntityType());
         final String covered = TEXT.substring(
             entity.getAnnotationSpan().getStart(), entity.getAnnotationSpan().getEnd());
-        if (covered.contains("Washington")) {
-          sawWashington = true;
+        // Entity types are the model's own labels, normalized (PER -> "per", LOC -> "loc").
+        if ("per".equals(entity.getEntityType())) {
+          personText = covered;
+        } else if ("loc".equals(entity.getEntityType())) {
+          locationText = covered;
         }
-        personCount++;
       }
     }
-    assertTrue(personCount > 0, "expected at least one person entity");
-    assertTrue(sawWashington, "expected a person entity covering 'Washington'");
+    // The multi-type decoder finds both the person and the location.
+    assertEquals("George Washington", personText);
+    assertEquals("United States", locationText);
   }
 }

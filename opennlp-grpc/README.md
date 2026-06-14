@@ -137,23 +137,24 @@ Each model needs the ONNX file, its wordpiece vocabulary, and a labels file (one
 label per line, line number = output index):
 
 ```ini
-model.name_finder_dl.person.path=/path/to/ner.onnx
-model.name_finder_dl.person.vocab=/path/to/vocab.txt
-model.name_finder_dl.person.labels=/path/to/labels.txt
+model.name_finder_dl.bert_ner.path=/path/to/ner.onnx
+model.name_finder_dl.bert_ner.vocab=/path/to/vocab.txt
+model.name_finder_dl.bert_ner.labels=/path/to/labels.txt
 # Optional:
-model.name_finder_dl.person.entity_type=person   # defaults to the <id> segment
-model.name_finder_dl.person.backend=onnx          # onnx (default, CPU) | cuda
-model.name_finder_dl.person.gpu_device_id=0       # only with backend=cuda
+model.name_finder_dl.bert_ner.backend=onnx          # onnx (default, CPU) | cuda
+model.name_finder_dl.bert_ner.gpu_device_id=0       # only with backend=cuda
 ```
 
-These models are served by `opennlp-dl`'s `NameFinderDL` and reported in the catalog with
-`backend_id` `onnx` or `cuda`. They participate in NER exactly like classic models — a
-client requests `PIPELINE_STEP_NER` and filters by `ner_entity_types`; the server runs each
-configured model once and merges the results.
+The `<id>` segment (`bert_ner` above) is an arbitrary model name. The entity types it
+produces are derived from the BIO labels file (`B-PER`/`I-PER` → `per`, `B-LOC` → `loc`,
+etc.), so one ONNX model serves every type it was trained for. These models are served by
+`opennlp-dl`'s `NameFinderDL` and reported in the catalog with `backend_id` `onnx` or `cuda`.
+They participate in NER exactly like classic models — a client requests `PIPELINE_STEP_NER`
+and filters by `ner_entity_types`; the server runs each configured model once, attaches each
+entity under the model's own label, and merges the results.
 
-> The current `opennlp-dl` `NameFinderDL` recognizes a single entity type (person), so each
-> ONNX entry emits one `entity_type`. Requires `opennlp-dl` with the thread-safe
-> `NameFinderDL` (OpenNLP 3.0.0). CUDA requires an NVIDIA runtime and the GPU build flavor.
+> Requires `opennlp-dl` (OpenNLP 3.0.0) with the thread-safe, multi-type `NameFinderDL`.
+> CUDA requires an NVIDIA runtime and the GPU build flavor.
 
 An opt-in end-to-end test exercises this backend against a real model. The `dl-ner` build
 profile downloads the ONNX export of `dslim/bert-base-NER` (MIT) from HuggingFace into
