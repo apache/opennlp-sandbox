@@ -102,6 +102,11 @@ final class DocumentOffsetEncoder {
           .setSourceSpan(remap(embedding.getSourceSpan(), mapper))
           .build());
     }
+    for (int e = 0; e < document.getDocumentCentroidsCount(); e++) {
+      document.setDocumentCentroids(e, document.getDocumentCentroids(e).toBuilder()
+          .setSourceSpan(remap(document.getDocumentCentroids(e).getSourceSpan(), mapper))
+          .build());
+    }
     for (int g = 0; g < document.getChunkEmbeddingGroupsCount(); g++) {
       final ChunkEmbeddingGroup.Builder group = document.getChunkEmbeddingGroups(g).toBuilder();
       for (int c = 0; c < group.getChunksCount(); c++) {
@@ -114,6 +119,11 @@ final class DocumentOffsetEncoder {
               .build());
         }
         group.setChunks(c, chunk.build());
+      }
+      for (int e = 0; e < group.getCentroidsCount(); e++) {
+        group.setCentroids(e, group.getCentroids(e).toBuilder()
+            .setSourceSpan(remap(group.getCentroids(e).getSourceSpan(), mapper))
+            .build());
       }
       document.setChunkEmbeddingGroups(g, group.build());
     }

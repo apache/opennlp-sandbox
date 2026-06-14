@@ -67,6 +67,30 @@ class BasicDocumentAnalyzerChunkEmbedTest {
         EmbeddingGranularity.EMBEDDING_GRANULARITY_CHUNK_LEVEL,
         group.getChunks(0).getEmbeddings(0).getGranularity());
     assertTrue(group.getStats().getChunkCount() > 0);
+
+    // One centroid per model, each the element-wise mean of that model's chunk vectors.
+    assertEquals(2, group.getCentroidsCount());
+    for (final org.apache.opennlp.grpc.v1.EmbeddingResult centroid : group.getCentroidsList()) {
+      assertEquals(EmbeddingGranularity.EMBEDDING_GRANULARITY_GROUP_CENTROID,
+          centroid.getGranularity());
+      final int dimension = centroid.getVectorCount();
+      for (int d = 0; d < dimension; d++) {
+        double sum = 0;
+        for (final var chunk : group.getChunksList()) {
+          sum += chunkVector(chunk, centroid.getModelId()).getVector(d);
+        }
+        assertEquals((float) (sum / group.getChunksCount()), centroid.getVector(d), 1e-5f,
+            "centroid component " + d + " for model " + centroid.getModelId());
+      }
+    }
+  }
+
+  private static org.apache.opennlp.grpc.v1.EmbeddingResult chunkVector(
+      org.apache.opennlp.grpc.v1.Chunk chunk, String modelId) {
+    return chunk.getEmbeddingsList().stream()
+        .filter(e -> e.getModelId().equals(modelId))
+        .findFirst()
+        .orElseThrow();
   }
 
   @Test

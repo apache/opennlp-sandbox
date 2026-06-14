@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.opennlp.grpc.chunk.Centroids;
 import org.apache.opennlp.grpc.chunk.ChunkEmbedProcessor;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.processor.AnalysisException;
@@ -29,6 +30,7 @@ import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
+import org.apache.opennlp.grpc.v1.CoordinateSpace;
 import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
 import org.apache.opennlp.grpc.v1.EmbeddingResult;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
@@ -69,6 +71,17 @@ final class EmbedChunkStepRunner {
           .setSourceSpan(sentenceSpans.get(i))
           .setGranularity(EmbeddingGranularity.EMBEDDING_GRANULARITY_SENTENCE)
           .build());
+    }
+    // One document centroid per model: the mean of its sentence vectors over the whole text.
+    final EmbeddingResult documentCentroid = Centroids.centroid(modelId, vectors,
+        AnnotationSpan.newBuilder()
+            .setStart(0)
+            .setEnd(rawText.length())
+            .setSpace(CoordinateSpace.COORDINATE_SPACE_CHAR_DOCUMENT)
+            .build(),
+        EmbeddingGranularity.EMBEDDING_GRANULARITY_DOCUMENT);
+    if (documentCentroid != null) {
+      document.addDocumentCentroids(documentCentroid);
     }
     diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_EMBED,
         "Generated " + vectors.size() + " sentence embedding(s) with model '" + modelId + "'"));

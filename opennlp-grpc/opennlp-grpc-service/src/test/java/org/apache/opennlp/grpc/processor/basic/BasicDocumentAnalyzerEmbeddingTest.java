@@ -69,6 +69,18 @@ class BasicDocumentAnalyzerEmbeddingTest {
         response.getDocument().getEmbeddings(0).getGranularity());
     assertTrue(response.getDiagnosticsList().stream()
         .anyMatch(d -> d.getStep() == PipelineStep.PIPELINE_STEP_EMBED));
+
+    // A document centroid: the element-wise mean of the sentence vectors, granularity DOCUMENT.
+    assertEquals(1, response.getDocument().getDocumentCentroidsCount());
+    final var centroid = response.getDocument().getDocumentCentroids(0);
+    assertEquals("minilm", centroid.getModelId());
+    assertEquals(EmbeddingGranularity.EMBEDDING_GRANULARITY_DOCUMENT, centroid.getGranularity());
+    assertEquals(4, centroid.getVectorCount());
+    for (int d = 0; d < centroid.getVectorCount(); d++) {
+      final float expected = (response.getDocument().getEmbeddings(0).getVector(d)
+          + response.getDocument().getEmbeddings(1).getVector(d)) / 2f;
+      assertEquals(expected, centroid.getVector(d), 1e-5f);
+    }
   }
 
   @Test

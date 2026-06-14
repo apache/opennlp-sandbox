@@ -155,12 +155,35 @@ public final class ChunkEmbedProcessor {
       group.addChunks(chunk.build());
     }
 
+    // One centroid per model: the mean of this group's chunk vectors, spanning all its chunks.
+    if (!segments.isEmpty()) {
+      final AnnotationSpan groupSpan = groupSpan(segments);
+      for (String modelId : entry.getEmbeddingModelIdsList()) {
+        final EmbeddingResult centroid = Centroids.centroid(modelId, vectorsByModel.get(modelId),
+            groupSpan, EmbeddingGranularity.EMBEDDING_GRANULARITY_GROUP_CENTROID);
+        if (centroid != null) {
+          group.addCentroids(centroid);
+        }
+      }
+    }
+
     group.setStats(ChunkGroupStats.newBuilder()
         .setChunkCount(segments.size())
         .setTotalTokens(distinctTokenStarts.size())
         .setProcessingTimeMs(System.currentTimeMillis() - started)
         .build());
     return group.build();
+  }
+
+  /** The span covering every chunk in a group (from the earliest start to the latest end). */
+  private static AnnotationSpan groupSpan(List<SegmentationChunker.ChunkSegment> segments) {
+    int start = Integer.MAX_VALUE;
+    int end = Integer.MIN_VALUE;
+    for (SegmentationChunker.ChunkSegment segment : segments) {
+      start = Math.min(start, segment.start());
+      end = Math.max(end, segment.end());
+    }
+    return toSpan(start, end);
   }
 
   /**

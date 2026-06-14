@@ -74,6 +74,11 @@ message OpenNlpDocument {
   // Unit of every AnnotationSpan start/end offset in this document (uniform).
   // Echoes the requested AnalysisOptions.offset_encoding; defaults to UTF-8 bytes.
   OffsetEncoding offset_encoding = 11;
+  // One document centroid per embedding model: the mean of the document's sentence-level
+  // embeddings for that model (granularity EMBEDDING_GRANULARITY_DOCUMENT), a single
+  // representative vector for the whole document. Set only when PIPELINE_STEP_EMBED produced
+  // sentence embeddings.
+  repeated EmbeddingResult document_centroids = 12;
 }
 
 // One detected sentence and every annotation attached to it. Populated
@@ -313,6 +318,10 @@ message ChunkEmbeddingGroup {
   optional ChunkGroupStats stats = 6;
   // Granularity of the embeddings in this group; always CHUNK_LEVEL.
   optional EmbeddingGranularity granularity = 7;
+  // One centroid per embedding model in embedding_model_ids: the mean of this group's chunk
+  // vectors for that model (granularity EMBEDDING_GRANULARITY_GROUP_CENTROID), a single
+  // representative vector for the group. Empty when the group has no embedded chunks.
+  repeated EmbeddingResult centroids = 8;
 }
 
 // Typed per-group statistics/provenance (replaces an untyped metadata map).
@@ -398,6 +407,9 @@ enum EmbeddingGranularity {
   // ChunkEmbeddingGroup's chunks).
   EMBEDDING_GRANULARITY_CHUNK_LEVEL = 3;
   reserved 4 to 10;
+  // The mean (centroid) of a ChunkEmbeddingGroup's chunk vectors for one model — a single
+  // representative vector for the group, computed on CPU from the existing chunk vectors.
+  EMBEDDING_GRANULARITY_GROUP_CENTROID = 11;
 }
 
 // Whole-document categorization result from PIPELINE_STEP_DOC_CATEGORIZE.
