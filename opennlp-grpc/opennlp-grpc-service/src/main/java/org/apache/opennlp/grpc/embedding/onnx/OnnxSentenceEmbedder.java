@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.nio.LongBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import ai.onnxruntime.NodeInfo;
@@ -169,6 +171,72 @@ final class OnnxSentenceEmbedder extends AbstractDL {
         // getValue() copies the tensor into Java arrays, so the result can be closed safely.
         final float[][][] hiddenStates = (float[][][]) result.get(0).getValue();
         return pool(hiddenStates[0]);
+      }
+    } finally {
+      inputs.values().forEach(OnnxTensor::close);
+    }
+  }
+
+  /**
+   * Embeds several texts in a single batched inference call.
+   *
+   * <p>Each text is tokenized independently, then all sequences are right-padded to the longest
+   * one and stacked into {@code [batch, maxLength]} tensors for one {@code session.run}. The
+   * {@code attention_mask} is {@code 0} at padded positions, so a correct encoder masks them out
+   * of self-attention and the real-token hidden states are identical to the unbatched path;
+   * pooling then reads only each row's real tokens, so every vector equals what
+   * {@link #embed(String)} would have returned for that text.</p>
+   *
+   * @param texts The texts to embed. Must not be {@code null} and must not contain {@code null}
+   *              elements.
+   *
+   * @return One embedding vector per input text, in input order; an empty list for empty input.
+   *
+   * @throws OrtException If inference fails.
+   */
+  float[][] embedBatch(List<String> texts) throws OrtException {
+    Objects.requireNonNull(texts, "texts must not be null");
+    final int batch = texts.size();
+    if (batch == 0) {
+      return new float[0][];
+    }
+    final long[][] ids = new long[batch][];
+    int maxLength = 0;
+    for (int i = 0; i < batch; i++) {
+      ids[i] = tokenIds(Objects.requireNonNull(texts.get(i), "texts must not contain null elements"));
+      maxLength = Math.max(maxLength, ids[i].length);
+    }
+
+    final long[] flatIds = new long[batch * maxLength];
+    final long[] flatMask = new long[batch * maxLength];
+    final long[] flatTypes = new long[batch * maxLength];
+    for (int i = 0; i < batch; i++) {
+      final int offset = i * maxLength;
+      System.arraycopy(ids[i], 0, flatIds, offset, ids[i].length);
+      // Real tokens occupy the leading positions; pad ids stay 0 and are masked out by mask=0.
+      Arrays.fill(flatMask, offset, offset + ids[i].length, 1L);
+    }
+    final long[] shape = {batch, maxLength};
+
+    final Map<String, OnnxTensor> inputs = new HashMap<>();
+    try {
+      inputs.put(INPUT_IDS, OnnxTensor.createTensor(env, LongBuffer.wrap(flatIds), shape));
+      if (declaredInputs.contains(ATTENTION_MASK)) {
+        inputs.put(ATTENTION_MASK, OnnxTensor.createTensor(env, LongBuffer.wrap(flatMask), shape));
+      }
+      if (declaredInputs.contains(TOKEN_TYPE_IDS)) {
+        inputs.put(TOKEN_TYPE_IDS, OnnxTensor.createTensor(env, LongBuffer.wrap(flatTypes), shape));
+      }
+      try (OrtSession.Result result = session.run(inputs)) {
+        final float[][][] hiddenStates = (float[][][]) result.get(0).getValue();
+        final float[][] vectors = new float[batch][];
+        for (int i = 0; i < batch; i++) {
+          // Pool over this row's real tokens only, excluding the right-side padding.
+          final float[][] realTokens = ids[i].length == maxLength
+              ? hiddenStates[i] : Arrays.copyOf(hiddenStates[i], ids[i].length);
+          vectors[i] = pool(realTokens);
+        }
+        return vectors;
       }
     } finally {
       inputs.values().forEach(OnnxTensor::close);

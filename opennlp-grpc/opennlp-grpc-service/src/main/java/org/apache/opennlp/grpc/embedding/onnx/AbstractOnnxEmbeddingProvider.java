@@ -19,7 +19,9 @@ package org.apache.opennlp.grpc.embedding.onnx;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -118,6 +120,18 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
     final OnnxSentenceEmbedder embedder = requireModel(modelId);
     try {
       return embedder.embed(text);
+    } catch (OrtException e) {
+      throw AnalysisException.internal("Embedding inference failed for model '" + modelId + "'", e);
+    }
+  }
+
+  @Override
+  public List<float[]> embedBatch(String modelId, List<String> texts) {
+    Objects.requireNonNull(texts, "texts must not be null");
+    final OnnxSentenceEmbedder embedder = requireModel(modelId);
+    try {
+      // One padded [batch, maxLength] inference call instead of per-text dispatch.
+      return Arrays.asList(embedder.embedBatch(texts));
     } catch (OrtException e) {
       throw AnalysisException.internal("Embedding inference failed for model '" + modelId + "'", e);
     }

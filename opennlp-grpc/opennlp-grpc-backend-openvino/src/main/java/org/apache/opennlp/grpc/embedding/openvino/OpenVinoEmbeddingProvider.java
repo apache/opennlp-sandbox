@@ -108,20 +108,16 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
    *
    * @param configuration The server configuration. Must not be {@code null}.
    *
-   * @throws AnalysisException If no endpoint is configured, an endpoint is unreachable,
-   *                           a model is not ready, or the served model does not have a
-   *                           string-in / float-out signature.
+   * @throws AnalysisException If a configured endpoint is unreachable, names no served model, is
+   *                           not ready, or does not have a string-in / float-out signature. When
+   *                           no {@code .openvino.target} is configured at all the provider is inert
+   *                           ({@link #isAvailable()} is {@code false}) rather than failing, so it
+   *                           can coexist with other engines in the composite.
    */
   public OpenVinoEmbeddingProvider(Map<String, String> configuration) {
     Objects.requireNonNull(configuration, "configuration must not be null");
     this.deadlineMs = parseDeadline(configuration);
     this.models = connectAll(configuration, deadlineMs);
-    if (models.isEmpty()) {
-      throw AnalysisException.invalidArgument(
-          "The 'openvino' embedding backend requires at least one model: configure "
-              + KEY_PREFIX + "<model-id>" + KEY_TARGET_SUFFIX + " and "
-              + KEY_PREFIX + "<model-id>" + KEY_MODEL_NAME_SUFFIX);
-    }
     this.defaultModelId = resolveDefaultModelId(configuration, models);
   }
 

@@ -42,6 +42,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -135,10 +136,16 @@ class TeiEmbeddingProviderTest {
   }
 
   @Test
-  void rejectsMissingTargetConfiguration() {
-    final AnalysisException e = assertThrows(AnalysisException.class,
-        () -> new TeiEmbeddingProvider(Map.of()));
-    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, e.getFailureType());
+  void isInertWhenNoTargetConfigured() {
+    // No .tei.target keys: the provider must construct cleanly and report itself unavailable so
+    // the composite can aggregate it alongside other engines in a deploy that does not use TEI.
+    final TeiEmbeddingProvider provider = new TeiEmbeddingProvider(Map.of());
+    try {
+      assertFalse(provider.isAvailable());
+      assertTrue(provider.registeredModelIds().isEmpty());
+    } finally {
+      provider.close();
+    }
   }
 
   @Test

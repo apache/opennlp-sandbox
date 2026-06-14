@@ -97,18 +97,15 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
    *
    * @param configuration The server configuration. Must not be {@code null}.
    *
-   * @throws AnalysisException If no endpoint is configured, an endpoint is unreachable,
-   *                           or a served model is not an embedding model.
+   * @throws AnalysisException If a configured endpoint is unreachable or a served model is not an
+   *                           embedding model. When no {@code .tei.target} is configured at all the
+   *                           provider is inert ({@link #isAvailable()} is {@code false}) rather
+   *                           than failing, so it can coexist with other engines in the composite.
    */
   public TeiEmbeddingProvider(Map<String, String> configuration) {
     Objects.requireNonNull(configuration, "configuration must not be null");
     this.deadlineMs = parseDeadline(configuration);
     this.models = connectAll(configuration, deadlineMs);
-    if (models.isEmpty()) {
-      throw AnalysisException.invalidArgument(
-          "The 'tei' embedding backend requires at least one model: configure "
-              + KEY_PREFIX + "<model-id>" + KEY_TARGET_SUFFIX);
-    }
     this.defaultModelId = resolveDefaultModelId(configuration, models);
   }
 

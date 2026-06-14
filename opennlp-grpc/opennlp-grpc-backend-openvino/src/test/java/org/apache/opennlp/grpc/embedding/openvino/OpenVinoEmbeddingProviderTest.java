@@ -48,6 +48,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -165,10 +166,16 @@ class OpenVinoEmbeddingProviderTest {
   }
 
   @Test
-  void rejectsMissingConfiguration() {
-    final AnalysisException e = assertThrows(AnalysisException.class,
-        () -> new OpenVinoEmbeddingProvider(Map.of()));
-    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, e.getFailureType());
+  void isInertWhenNoTargetConfigured() {
+    // No .openvino.target keys: the provider must construct cleanly and report itself unavailable
+    // so the composite can aggregate it alongside other engines in a deploy that does not use it.
+    final OpenVinoEmbeddingProvider provider = new OpenVinoEmbeddingProvider(Map.of());
+    try {
+      assertFalse(provider.isAvailable());
+      assertTrue(provider.registeredModelIds().isEmpty());
+    } finally {
+      provider.close();
+    }
   }
 
   @Test
