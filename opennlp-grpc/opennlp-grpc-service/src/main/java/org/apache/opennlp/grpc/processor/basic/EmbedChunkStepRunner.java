@@ -28,6 +28,7 @@ import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
+import org.apache.opennlp.grpc.v1.CategoryChunkConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
@@ -103,6 +104,26 @@ final class EmbedChunkStepRunner {
       }
       final ChunkEmbeddingGroup group =
           ChunkEmbedProcessor.buildGroup(rawText, document.build(), entry, embeddingProvider);
+      document.addChunkEmbeddingGroups(group);
+      diagnostics.add(ChunkEmbedProcessor.successDiagnostic(
+          entry.getConfigId(), group.getChunksCount()));
+    }
+  }
+
+  /** Builds one category-grouped chunk+embedding group per requested category config entry. */
+  void runCategoryChunkConfigs(
+      String rawText,
+      OpenNlpDocument.Builder document,
+      AnalyzeDocumentRequest request,
+      List<ProcessingDiagnostic> diagnostics) {
+    if (document.getSentencesCount() == 0) {
+      throw AnalysisException.failedPrecondition(
+          "category_chunk_configs requires sentence detection backbone");
+    }
+    for (CategoryChunkConfigEntry entry : request.getCategoryChunkConfigsList()) {
+      final ChunkEmbeddingGroup group =
+          ChunkEmbedProcessor.buildCategoryGroup(rawText, document.build(), entry,
+              embeddingProvider);
       document.addChunkEmbeddingGroups(group);
       diagnostics.add(ChunkEmbedProcessor.successDiagnostic(
           entry.getConfigId(), group.getChunksCount()));

@@ -36,6 +36,7 @@ import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
+import org.apache.opennlp.grpc.v1.CategoryChunkConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
 import org.apache.opennlp.grpc.v1.ModelBundleRef;
 import org.apache.opennlp.grpc.v1.POSTagFormat;
@@ -98,6 +99,7 @@ final class AnalysisRequestValidator {
     validatePosTagFormat(profile);
     validateEmbeddingRequest(request, profile);
     validateChunkEmbedConfigs(request);
+    validateCategoryChunkConfigs(request, profile);
   }
 
   /**
@@ -335,6 +337,22 @@ final class AnalysisRequestValidator {
     }
     for (ChunkEmbedConfigEntry entry : request.getChunkEmbedConfigsList()) {
       ChunkEmbedProcessor.validateEntry(entry, embeddingProvider);
+    }
+  }
+
+  private void validateCategoryChunkConfigs(
+      AnalyzeDocumentRequest request, AnalysisProfile profile) {
+    if (request.getCategoryChunkConfigsCount() == 0) {
+      return;
+    }
+    // Category grouping keys on the per-sentence sentiment label, so SENTIMENT must run.
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_SENTIMENT)) {
+      throw AnalysisException.failedPrecondition(
+          "category_chunk_configs requires " + PipelineStep.PIPELINE_STEP_SENTIMENT.name()
+              + " in the profile so sentences carry category labels");
+    }
+    for (CategoryChunkConfigEntry entry : request.getCategoryChunkConfigsList()) {
+      ChunkEmbedProcessor.validateCategoryEntry(entry, embeddingProvider);
     }
   }
 

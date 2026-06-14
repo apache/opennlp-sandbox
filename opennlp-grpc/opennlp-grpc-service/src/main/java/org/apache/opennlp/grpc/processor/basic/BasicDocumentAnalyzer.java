@@ -292,6 +292,14 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_CHUNK));
     }
 
+    // Category-driven chunking is an independent request-side output (it groups by the sentiment
+    // labels the SENTIMENT step already attached), so it runs after the strategy chunking above.
+    if (request.getCategoryChunkConfigsCount() > 0) {
+      runStep(
+          PipelineStep.PIPELINE_STEP_CHUNK,
+          () -> embedChunkSteps.runCategoryChunkConfigs(rawText, document, request, diagnostics));
+    }
+
     final OffsetEncoding requestedEncoding = request.hasOptions()
         ? request.getOptions().getOffsetEncoding()
         : OffsetEncoding.OFFSET_ENCODING_UNSPECIFIED;
@@ -323,6 +331,10 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     }
     if (PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_CHUNK)
         && request.getChunkEmbedConfigsCount() == 0) {
+      steps.add(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT);
+    }
+    if (request.getCategoryChunkConfigsCount() > 0) {
+      // Category grouping needs sentences and their sentiment labels (validated to be in profile).
       steps.add(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT);
     }
     return steps;

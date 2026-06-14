@@ -71,6 +71,28 @@ message AnalyzeDocumentRequest {
   // the caller names exactly which embedding_model_ids to attach to its chunks.
   // The server shares the base NLP analysis (sentences etc.) across all entries.
   repeated ChunkEmbedConfigEntry chunk_embed_configs = 5;
+
+  // Category-driven chunking: group sentences by their per-sentence category (today the
+  // PIPELINE_STEP_SENTIMENT label), concatenate each category's sentences into one chunk, and
+  // embed it. Requires SENTIMENT in the profile so sentences carry labels. Each entry yields one
+  // ChunkEmbeddingGroup whose chunks are the category groups (chunk_tag = the category label),
+  // with a per-model centroid. Empty when not requested.
+  repeated CategoryChunkConfigEntry category_chunk_configs = 6;
+}
+
+// One category-chunking request: groups the document's sentences by category and embeds each
+// group's concatenated text. The output is a normal ChunkEmbeddingGroup (one chunk per category).
+message CategoryChunkConfigEntry {
+  // Caller-chosen id for this config entry; becomes the resulting group's group_id.
+  string config_id = 1;
+  // Optional allowlist of category labels to emit, in this order. Empty selects every distinct
+  // category the sentences carry, in first-appearance order. Matched case-insensitively; a listed
+  // category that no sentence carries is simply absent from the output.
+  repeated string categories = 2;
+  // The embedding models to attach to each category group's concatenated text.
+  repeated string embedding_model_ids = 3;
+  // Optional friendly label, echoed onto the resulting group's result_set_name.
+  optional string result_set_name = 4;
 }
 
 // One chunking strategy + the concrete embedding models to use for the chunks

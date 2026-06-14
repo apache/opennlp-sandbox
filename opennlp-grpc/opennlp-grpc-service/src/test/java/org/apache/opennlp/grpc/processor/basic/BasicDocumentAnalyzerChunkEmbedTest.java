@@ -21,9 +21,11 @@ import java.util.Map;
 
 import org.apache.opennlp.grpc.embedding.StubEmbeddingProvider;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
+import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
+import org.apache.opennlp.grpc.v1.CategoryChunkConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkingSpec;
 import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
@@ -32,6 +34,7 @@ import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BasicDocumentAnalyzerChunkEmbedTest {
@@ -91,6 +94,25 @@ class BasicDocumentAnalyzerChunkEmbedTest {
         .filter(e -> e.getModelId().equals(modelId))
         .findFirst()
         .orElseThrow();
+  }
+
+  @Test
+  void categoryChunkConfigsRequireSentimentInProfile() {
+    // Category grouping keys on the per-sentence sentiment label, so without SENTIMENT in the
+    // profile the request is rejected up front rather than producing empty groups.
+    final AnalysisException error = assertThrows(AnalysisException.class, () -> analyzer.analyze(
+        AnalyzeDocumentRequest.newBuilder()
+            .setDocument(OpenNlpDocument.newBuilder().setRawText(TEXT).build())
+            .setProfile(AnalysisProfile.newBuilder()
+                .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+                .build())
+            .addCategoryChunkConfigs(CategoryChunkConfigEntry.newBuilder()
+                .setConfigId("by-sentiment")
+                .addEmbeddingModelIds("minilm")
+                .build())
+            .build()));
+
+    assertEquals(AnalysisException.FailureType.FAILED_PRECONDITION, error.getFailureType());
   }
 
   @Test

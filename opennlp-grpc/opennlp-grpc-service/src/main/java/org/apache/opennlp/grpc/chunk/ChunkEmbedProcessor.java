@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -28,6 +29,7 @@ import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
+import org.apache.opennlp.grpc.v1.CategoryChunkConfigEntry;
 import org.apache.opennlp.grpc.v1.Chunk;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
@@ -173,6 +175,177 @@ public final class ChunkEmbedProcessor {
         .setProcessingTimeMs(System.currentTimeMillis() - started)
         .build());
     return group.build();
+  }
+
+  /**
+   * Validates a category-chunk config entry: a non-blank id, at least one supported embedding
+   * model, and no blank category labels.
+   *
+   * @param entry The entry to validate.
+   * @param embeddingProvider The provider, checked for the requested models.
+   *
+   * @throws AnalysisException If the entry is malformed or names an unavailable model.
+   */
+  public static void validateCategoryEntry(
+      CategoryChunkConfigEntry entry, EmbeddingProvider embeddingProvider) {
+    if (entry.getConfigId().isBlank()) {
+      throw AnalysisException.invalidArgument("category_chunk_configs.config_id is required");
+    }
+    if (entry.getEmbeddingModelIdsCount() == 0) {
+      throw AnalysisException.invalidArgument("category_chunk_configs entry '" + entry.getConfigId()
+          + "' requires at least one embedding_model_id");
+    }
+    if (!embeddingProvider.isAvailable()) {
+      throw AnalysisException.notFound("embedding models requested for category config '"
+          + entry.getConfigId() + "' but no embedding models are configured on this server");
+    }
+    for (String modelId : entry.getEmbeddingModelIdsList()) {
+      if (!embeddingProvider.supportsModel(modelId)) {
+        throw AnalysisException.notFound("Unknown embedding model '" + modelId + "'");
+      }
+    }
+    for (String category : entry.getCategoriesList()) {
+      if (category == null || category.isBlank()) {
+        throw AnalysisException.invalidArgument(
+            "category_chunk_configs.categories must not contain blank values");
+      }
+    }
+  }
+
+  /**
+   * Groups the document's sentences by their per-sentence category (the sentiment label),
+   * concatenates each category's sentences into one chunk, embeds it with each requested model, and
+   * returns a {@link ChunkEmbeddingGroup} with one chunk per category plus a per-model centroid.
+   * Sentences without a category label are ignored.
+   *
+   * @param rawText The document text the offsets refer to.
+   * @param document The analyzed document, whose sentences carry sentiment labels.
+   * @param entry A previously validated category-chunk config entry.
+   * @param embeddingProvider The provider used to embed the category texts.
+   *
+   * @return The resulting group; its chunks are the category groups, {@code chunk_tag} the label.
+   */
+  public static ChunkEmbeddingGroup buildCategoryGroup(
+      String rawText, OpenNlpDocument document, CategoryChunkConfigEntry entry,
+      EmbeddingProvider embeddingProvider) {
+    final long started = System.currentTimeMillis();
+
+    // Bucket sentence text by normalized category label, preserving first-appearance order.
+    final Map<String, CategoryBucket> buckets = new LinkedHashMap<>();
+    for (int i = 0; i < document.getSentencesCount(); i++) {
+      final AnnotatedSentence sentence = document.getSentences(i);
+      final String label = sentence.getSentimentLabel();
+      if (label == null || label.isBlank()) {
+        continue;
+      }
+      buckets.computeIfAbsent(normalizeCategory(label), k -> new CategoryBucket(label))
+          .add(i, sentence, rawText);
+    }
+
+    // Ordered categories: the allowlist (normalized, deduplicated) if given, else first-appearance.
+    final List<String> order = new ArrayList<>();
+    if (entry.getCategoriesCount() > 0) {
+      for (String category : entry.getCategoriesList()) {
+        final String key = normalizeCategory(category);
+        if (buckets.containsKey(key) && !order.contains(key)) {
+          order.add(key);
+        }
+      }
+    } else {
+      order.addAll(buckets.keySet());
+    }
+
+    final List<String> categoryTexts = new ArrayList<>(order.size());
+    for (String key : order) {
+      categoryTexts.add(buckets.get(key).text());
+    }
+
+    final Map<String, List<float[]>> vectorsByModel = new LinkedHashMap<>();
+    if (!order.isEmpty()) {
+      for (String modelId : entry.getEmbeddingModelIdsList()) {
+        vectorsByModel.put(modelId, embeddingProvider.embedBatch(modelId, categoryTexts));
+      }
+    }
+
+    final ChunkEmbeddingGroup.Builder group = ChunkEmbeddingGroup.newBuilder()
+        .setGroupId(entry.getConfigId())
+        .setChunkConfigId(entry.getConfigId())
+        .addAllEmbeddingModelIds(entry.getEmbeddingModelIdsList())
+        .setGranularity(EmbeddingGranularity.EMBEDDING_GRANULARITY_CHUNK_LEVEL);
+    if (entry.hasResultSetName()) {
+      group.setResultSetName(entry.getResultSetName());
+    }
+
+    int groupedSentences = 0;
+    int spanStart = Integer.MAX_VALUE;
+    int spanEnd = Integer.MIN_VALUE;
+    for (int g = 0; g < order.size(); g++) {
+      final CategoryBucket bucket = buckets.get(order.get(g));
+      groupedSentences += bucket.indices.size();
+      spanStart = Math.min(spanStart, bucket.start);
+      spanEnd = Math.max(spanEnd, bucket.end);
+      final Chunk.Builder chunk = Chunk.newBuilder()
+          .setAnnotationSpan(toSpan(bucket.start, bucket.end))
+          .setChunkTag(bucket.label)
+          .setTextContent(categoryTexts.get(g))
+          .addAllContainedSentenceIndices(bucket.indices);
+      for (String modelId : entry.getEmbeddingModelIdsList()) {
+        chunk.addEmbeddings(EmbeddingResult.newBuilder()
+            .setModelId(modelId)
+            .addAllVector(toFloatList(vectorsByModel.get(modelId).get(g)))
+            .setSourceSpan(toSpan(bucket.start, bucket.end))
+            .setGranularity(EmbeddingGranularity.EMBEDDING_GRANULARITY_CHUNK_LEVEL)
+            .build());
+      }
+      group.addChunks(chunk.build());
+    }
+
+    if (!order.isEmpty()) {
+      final AnnotationSpan groupSpan = toSpan(spanStart, spanEnd);
+      for (String modelId : entry.getEmbeddingModelIdsList()) {
+        final EmbeddingResult centroid = Centroids.centroid(modelId, vectorsByModel.get(modelId),
+            groupSpan, EmbeddingGranularity.EMBEDDING_GRANULARITY_GROUP_CENTROID);
+        if (centroid != null) {
+          group.addCentroids(centroid);
+        }
+      }
+    }
+
+    group.setStats(ChunkGroupStats.newBuilder()
+        .setChunkCount(order.size())
+        .setTotalTokens(groupedSentences)
+        .setProcessingTimeMs(System.currentTimeMillis() - started)
+        .build());
+    return group.build();
+  }
+
+  private static String normalizeCategory(String value) {
+    return value.trim().toLowerCase(Locale.ROOT);
+  }
+
+  /** Accumulates one category's sentences: their texts (for concat) and their bounding span. */
+  private static final class CategoryBucket {
+    private final String label;
+    private final List<Integer> indices = new ArrayList<>();
+    private final List<String> texts = new ArrayList<>();
+    private int start = Integer.MAX_VALUE;
+    private int end = Integer.MIN_VALUE;
+
+    CategoryBucket(String label) {
+      this.label = label;
+    }
+
+    void add(int sentenceIndex, AnnotatedSentence sentence, String rawText) {
+      final AnnotationSpan span = sentence.getSentenceSpan();
+      indices.add(sentenceIndex);
+      texts.add(rawText.substring(span.getStart(), span.getEnd()));
+      start = Math.min(start, span.getStart());
+      end = Math.max(end, span.getEnd());
+    }
+
+    String text() {
+      return String.join(" ", texts);
+    }
   }
 
   /** The span covering every chunk in a group (from the earliest start to the latest end). */
