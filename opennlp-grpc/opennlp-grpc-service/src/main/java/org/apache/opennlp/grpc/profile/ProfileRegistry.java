@@ -36,10 +36,17 @@ public final class ProfileRegistry {
   public static final String NER_PROFILE_ID = "en-ner";
   public static final String NER_BUNDLE_ID = "en-ner";
 
+  public static final String DOCCAT_PROFILE_ID = "en-doccat";
+  public static final String DOCCAT_BUNDLE_ID = "en-doccat";
+
   private final Map<String, AnalysisProfile> profiles = new LinkedHashMap<>();
 
   public ProfileRegistry() {
     this(false);
+  }
+
+  public ProfileRegistry(boolean nerAvailable) {
+    this(nerAvailable, false);
   }
 
   /**
@@ -48,11 +55,17 @@ public final class ProfileRegistry {
    *     matches the model catalog, which likewise hides the {@code en-ner} bundle when no
    *     name finder models are loaded. A request for {@code en-ner} without models would
    *     fail anyway; this keeps the two catalogs honest and consistent.
+   * @param doccatAvailable Whether document categorizer models are configured. The
+   *     {@code en-doccat} profile is registered only when {@code true}, for the same
+   *     catalog-consistency reason as {@code nerAvailable}.
    */
-  public ProfileRegistry(boolean nerAvailable) {
+  public ProfileRegistry(boolean nerAvailable, boolean doccatAvailable) {
     register(defaultProfile());
     if (nerAvailable) {
       register(nerProfile());
+    }
+    if (doccatAvailable) {
+      register(doccatProfile());
     }
   }
 
@@ -62,6 +75,10 @@ public final class ProfileRegistry {
 
   public static ProfileRegistry createDefault(boolean nerAvailable) {
     return new ProfileRegistry(nerAvailable);
+  }
+
+  public static ProfileRegistry createDefault(boolean nerAvailable, boolean doccatAvailable) {
+    return new ProfileRegistry(nerAvailable, doccatAvailable);
   }
 
   public void register(AnalysisProfile profile) {
@@ -102,6 +119,16 @@ public final class ProfileRegistry {
         .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
         .addSteps(PipelineStep.PIPELINE_STEP_NER)
         .setModelBundle(ModelBundleRef.newBuilder().setBundleId(NER_BUNDLE_ID).build())
+        .build();
+  }
+
+  private static AnalysisProfile doccatProfile() {
+    return AnalysisProfile.newBuilder()
+        .setProfileId(DOCCAT_PROFILE_ID)
+        .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+        .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+        .addSteps(PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE)
+        .setModelBundle(ModelBundleRef.newBuilder().setBundleId(DOCCAT_BUNDLE_ID).build())
         .build();
   }
 }

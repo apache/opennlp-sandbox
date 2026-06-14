@@ -106,6 +106,7 @@ public final class ModelBundleCache {
   private final LanguageDetectorME languageDetector;
   private final EmbeddingProvider embeddingProvider;
   private final NameFinderRegistry nameFinderRegistry;
+  private final DocCategorizerRegistry docCategorizerRegistry;
 
   public ModelBundleCache(Map<String, String> configuration) {
     Objects.requireNonNull(configuration, "configuration");
@@ -125,6 +126,7 @@ public final class ModelBundleCache {
     this.languageDetector = new LanguageDetectorME(loadLanguageDetectorModel(configuration));
     this.embeddingProvider = EmbeddingProviderFactory.create(configuration);
     this.nameFinderRegistry = NameFinderRegistry.create(configuration, sentenceDetector);
+    this.docCategorizerRegistry = DocCategorizerRegistry.create(configuration);
     this.bundles = buildBundleCatalog();
   }
 
@@ -160,6 +162,10 @@ public final class ModelBundleCache {
     return nameFinderRegistry;
   }
 
+  public DocCategorizerRegistry getDocCategorizerRegistry() {
+    return docCategorizerRegistry;
+  }
+
   /**
    * Releases resources held by the embedding provider. Failures are logged so that the
    * remaining server shutdown is not interrupted.
@@ -172,6 +178,7 @@ public final class ModelBundleCache {
         logger.warn("Failed to close embedding provider", e);
       }
     }
+    docCategorizerRegistry.close();
   }
 
   /**
@@ -409,6 +416,9 @@ public final class ModelBundleCache {
     if (nameFinderRegistry.isAvailable()) {
       catalog.put(ProfileRegistry.NER_BUNDLE_ID, buildNerBundleCatalog());
     }
+    if (docCategorizerRegistry.isAvailable()) {
+      catalog.put(ProfileRegistry.DOCCAT_BUNDLE_ID, buildDoccatBundleCatalog());
+    }
     return catalog;
   }
 
@@ -437,6 +447,33 @@ public final class ModelBundleCache {
             .setBackendId(model.backendId())
             .build());
       }
+    }
+    return bundle.build();
+  }
+
+  private ModelBundleInfo buildDoccatBundleCatalog() {
+    // The classic categorizer consumes the English tokenizer's output, so the bundle constrains
+    // input to English; the categorizer models themselves are operator-supplied and their
+    // language is unknown to the server, so their descriptors claim no locale/language.
+    final ModelBundleInfo.Builder bundle = ModelBundleInfo.newBuilder()
+        .setBundleId(ProfileRegistry.DOCCAT_BUNDLE_ID)
+        .addSupportedLanguages(DEFAULT_LANGUAGE)
+        .addSupportedSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+        .addSupportedSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+        .addSupportedSteps(PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE)
+        .addModels(classicModelDescriptor(
+            "opennlp-models-sentdetect-" + DEFAULT_LANGUAGE,
+            ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR))
+        .addModels(classicModelDescriptor(
+            "opennlp-models-tokenizer-" + DEFAULT_LANGUAGE,
+            ComponentType.COMPONENT_TYPE_TOKENIZER));
+    for (DocCategorizerModel model : docCategorizerRegistry.allModels()) {
+      bundle.addModels(ModelDescriptor.newBuilder()
+          .setName(model.id())
+          .setComponentType(ComponentType.COMPONENT_TYPE_DOC_CATEGORIZER)
+          .addSupportedSteps(PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE)
+          .setBackendId(model.backendId())
+          .build());
     }
     return bundle.build();
   }

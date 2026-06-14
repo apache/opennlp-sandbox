@@ -1,0 +1,5 @@
+# Built-in document categorization backends, discovered by DocCategorizerRegistry via
+# ServiceLoader. Third-party backends add their own factory by shipping a jar with this same
+# service file (merged on the classpath) naming their DocCategorizerBackendFactory.
+org.apache.opennlp.grpc.model.ClassicDocCategorizerBackendFactory
+org.apache.opennlp.grpc.model.OnnxDocCategorizerBackendFactory

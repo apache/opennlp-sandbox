@@ -17,6 +17,7 @@
  */
 package org.apache.opennlp.grpc.processor.basic;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -29,12 +30,16 @@ import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.util.Span;
+import org.apache.opennlp.grpc.model.DocCategorizerModel;
+import org.apache.opennlp.grpc.model.DocCategorizerRegistry;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.model.NameFinderRegistry;
 import org.apache.opennlp.grpc.model.NerModel;
+import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
+import org.apache.opennlp.grpc.v1.DocumentClassification;
 import org.apache.opennlp.grpc.v1.NamedEntity;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
@@ -243,11 +248,49 @@ final class ClassicStepRunner {
         "Lemmatized " + lemmatizedTokens + " token(s)"));
   }
 
+  /**
+   * Classifies the whole document with the selected {@link DocCategorizerModel} and records the
+   * result as {@link OpenNlpDocument#getClassification()}. The model receives both the raw text
+   * and the document's tokens so classic (token-based) and transformer (text-based) categorizers
+   * are both served from the one call.
+   */
+  void categorizeDocument(
+      String rawText,
+      OpenNlpDocument.Builder document,
+      String modelId,
+      List<ProcessingDiagnostic> diagnostics) {
+    final DocCategorizerRegistry registry = modelBundleCache.getDocCategorizerRegistry();
+    final DocCategorizerModel model = registry.get(modelId);
+    if (model == null) {
+      // The validator resolves and checks the id up front, so a null here is a server-side bug.
+      throw AnalysisException.internal(
+          "Document categorizer '" + modelId + "' is not registered", null);
+    }
+    final String[] tokens = documentTokens(document);
+    final DocumentClassification classification = model.classify(rawText, tokens);
+    document.setClassification(classification);
+    diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE,
+        "Classified document as '" + classification.getBestCategory() + "' using model '"
+            + modelId + "' (" + classification.getCategoryScoresCount() + " categor"
+            + (classification.getCategoryScoresCount() == 1 ? "y" : "ies") + ")"));
+  }
+
   private static String[] tokenTexts(AnnotatedSentence sentence) {
     final String[] tokens = new String[sentence.getTokensCount()];
     for (int t = 0; t < tokens.length; t++) {
       tokens[t] = sentence.getTokens(t).getText();
     }
     return tokens;
+  }
+
+  /** Flattens every sentence's tokens into one document-order array for whole-document tasks. */
+  private static String[] documentTokens(OpenNlpDocument.Builder document) {
+    final List<String> tokens = new ArrayList<>();
+    for (AnnotatedSentence sentence : document.getSentencesList()) {
+      for (Token token : sentence.getTokensList()) {
+        tokens.add(token.getText());
+      }
+    }
+    return tokens.toArray(new String[0]);
   }
 }

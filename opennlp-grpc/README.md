@@ -181,6 +181,58 @@ several backends are active at once. A backend that needs the server's sentence 
 obtains it from the supplied `NerBackendContext`. The new backend's entity types then
 participate in NER exactly like the built-ins — no change to the server.
 
+### Document categorization models (optional)
+
+Whole-document classifiers (topic, language register, intent, …) populate the document-level
+`classification` field (`best_category` plus a `category_scores` map) when a request runs
+`PIPELINE_STEP_DOC_CATEGORIZE`. Register classic OpenNLP maxent categorizers per model id:
+
+```ini
+model.doccat.topic.path=/path/to/en-doccat-topic.bin
+# When several categorizers are configured, pick the one DOC_CATEGORIZE runs:
+model.doccat.default_id=topic
+```
+
+Each `<id>` is an arbitrary model name; the categories come from the model itself. A single
+configured model is used automatically — `default_id` is only required to disambiguate when
+more than one is registered. Categorization is document-level, so it runs the selected model
+once over the document's tokens and stores one `DocumentClassification`.
+
+#### ONNX document categorizer models (optional)
+
+Transformer classifiers exported to ONNX are registered under a separate namespace. Each model
+needs the ONNX file, its wordpiece vocabulary, and a categories file (one category per line,
+line number = output index):
+
+```ini
+model.doccat_dl.sentiment.path=/path/to/doccat.onnx
+model.doccat_dl.sentiment.vocab=/path/to/vocab.txt
+model.doccat_dl.sentiment.categories=/path/to/categories.txt
+# Optional:
+model.doccat_dl.sentiment.backend=onnx          # onnx (default, CPU) | cuda
+model.doccat_dl.sentiment.gpu_device_id=0       # only with backend=cuda
+```
+
+These are served by `opennlp-dl`'s `DocumentCategorizerDL`, which splits and re-tokenizes the
+raw document text internally, and are reported in the catalog with `backend_id` `onnx` or
+`cuda`. They participate in `DOC_CATEGORIZE` exactly like classic models.
+
+> Requires `opennlp-dl` (OpenNLP 3.0.0). CUDA requires an NVIDIA runtime and the GPU build
+> flavor.
+
+#### Custom doc categorizer backends (SPI)
+
+Document categorization backends are discovered through `java.util.ServiceLoader`, mirroring
+the NER and embedding SPIs — the built-in classic (`opennlp-me`) and ONNX (`onnx`/`cuda`)
+backends are themselves regular consumers of it. To add another backend (a remote classifier,
+a custom model format, any runtime in any language), ship a jar that implements
+`org.apache.opennlp.grpc.model.DocCategorizerBackendFactory`, registers it in
+`META-INF/services/org.apache.opennlp.grpc.model.DocCategorizerBackendFactory`, and put that
+jar on the server classpath. Each factory parses its own configuration namespace and returns
+`DocCategorizerModel`s; the `DocCategorizerRegistry` aggregates the models from every backend.
+The new backend's models then participate in `DOC_CATEGORIZE` exactly like the built-ins — no
+change to the server.
+
 ### Embedding models (optional)
 
 Register ONNX sentence-transformer models in the server config:

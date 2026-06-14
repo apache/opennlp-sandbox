@@ -22,6 +22,7 @@ import java.util.Objects;
 
 import org.apache.opennlp.grpc.chunk.ChunkEmbedProcessor;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.model.DocCategorizerRegistry;
 import org.apache.opennlp.grpc.model.NameFinderRegistry;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.processor.PipelineStepPolicy;
@@ -42,12 +43,16 @@ final class AnalysisRequestValidator {
 
   private final EmbeddingProvider embeddingProvider;
   private final NameFinderRegistry nameFinderRegistry;
+  private final DocCategorizerRegistry docCategorizerRegistry;
 
   AnalysisRequestValidator(
       EmbeddingProvider embeddingProvider,
-      NameFinderRegistry nameFinderRegistry) {
+      NameFinderRegistry nameFinderRegistry,
+      DocCategorizerRegistry docCategorizerRegistry) {
     this.embeddingProvider = Objects.requireNonNull(embeddingProvider, "embeddingProvider");
     this.nameFinderRegistry = Objects.requireNonNull(nameFinderRegistry, "nameFinderRegistry");
+    this.docCategorizerRegistry =
+        Objects.requireNonNull(docCategorizerRegistry, "docCategorizerRegistry");
   }
 
   /**
@@ -69,6 +74,7 @@ final class AnalysisRequestValidator {
     validateOptions(request, profile, rawText);
     validateModelBundle(profile);
     validateNerRequest(profile);
+    validateDocCategorizeRequest(profile);
     validateEmbeddingRequest(request, profile);
     validateChunkEmbedConfigs(request);
   }
@@ -97,6 +103,34 @@ final class AnalysisRequestValidator {
       requested = request.getOptions().getEmbeddingModelId();
     }
     return embeddingProvider.resolveModelId(requested);
+  }
+
+  /**
+   * Resolves the document categorizer to run for this request: the configured default (or the
+   * sole configured model). Returns {@code null} when the profile does not categorize.
+   */
+  String resolveDocCategorizerModelId(AnalysisProfile profile) {
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE)) {
+      return null;
+    }
+    return docCategorizerRegistry.resolveDefaultModelId();
+  }
+
+  private void validateDocCategorizeRequest(AnalysisProfile profile) {
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE)) {
+      return;
+    }
+    if (!docCategorizerRegistry.isAvailable()) {
+      throw AnalysisException.notFound(
+          "PIPELINE_STEP_DOC_CATEGORIZE requested but no document categorizer models are "
+              + "configured on this server; set model.doccat.<id>.path entries");
+    }
+    if (docCategorizerRegistry.resolveDefaultModelId() == null) {
+      throw AnalysisException.invalidArgument(
+          "Multiple document categorizer models are configured; set " + DocCategorizerRegistry
+              .KEY_DEFAULT_ID + " to select one. Configured ids: "
+              + docCategorizerRegistry.modelIds());
+    }
   }
 
   private void validateOptions(
@@ -177,16 +211,25 @@ final class AnalysisRequestValidator {
     final String bundleId = bundle.getBundleId();
     if (!bundleId.isBlank()
         && !bundleId.equals(ProfileRegistry.DEFAULT_BUNDLE_ID)
-        && !bundleId.equals(ProfileRegistry.NER_BUNDLE_ID)) {
+        && !bundleId.equals(ProfileRegistry.NER_BUNDLE_ID)
+        && !bundleId.equals(ProfileRegistry.DOCCAT_BUNDLE_ID)) {
       throw AnalysisException.notFound(
           "Unknown model bundle '" + bundleId + "'; available bundles: "
               + ProfileRegistry.DEFAULT_BUNDLE_ID
-              + (nameFinderRegistry.isAvailable() ? ", " + ProfileRegistry.NER_BUNDLE_ID : ""));
+              + (nameFinderRegistry.isAvailable() ? ", " + ProfileRegistry.NER_BUNDLE_ID : "")
+              + (docCategorizerRegistry.isAvailable()
+                  ? ", " + ProfileRegistry.DOCCAT_BUNDLE_ID : ""));
     }
     if (bundleId.equals(ProfileRegistry.NER_BUNDLE_ID) && !nameFinderRegistry.isAvailable()) {
       throw AnalysisException.notFound(
           "Model bundle '" + ProfileRegistry.NER_BUNDLE_ID
               + "' requires name finder models; configure model.name_finder.<entity_type>.path");
+    }
+    if (bundleId.equals(ProfileRegistry.DOCCAT_BUNDLE_ID)
+        && !docCategorizerRegistry.isAvailable()) {
+      throw AnalysisException.notFound(
+          "Model bundle '" + ProfileRegistry.DOCCAT_BUNDLE_ID
+              + "' requires document categorizer models; configure model.doccat.<id>.path");
     }
     if (bundle.getComponentModelsCount() > 0) {
       throw AnalysisException.unimplemented(

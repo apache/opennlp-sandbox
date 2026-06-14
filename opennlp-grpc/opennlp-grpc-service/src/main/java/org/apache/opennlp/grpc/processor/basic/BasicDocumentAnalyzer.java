@@ -67,7 +67,9 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
   }
 
   private BasicDocumentAnalyzer(ModelBundleCache modelBundleCache) {
-    this(ProfileRegistry.createDefault(modelBundleCache.getNameFinderRegistry().isAvailable()),
+    this(ProfileRegistry.createDefault(
+            modelBundleCache.getNameFinderRegistry().isAvailable(),
+            modelBundleCache.getDocCategorizerRegistry().isAvailable()),
         modelBundleCache);
   }
 
@@ -84,7 +86,8 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     Objects.requireNonNull(embeddingProvider, "embeddingProvider");
     this.profileResolver = new ProfileResolver(profileRegistry);
     this.nameFinderRegistry = modelBundleCache.getNameFinderRegistry();
-    this.validator = new AnalysisRequestValidator(embeddingProvider, nameFinderRegistry);
+    this.validator = new AnalysisRequestValidator(embeddingProvider, nameFinderRegistry,
+        modelBundleCache.getDocCategorizerRegistry());
     this.classicSteps = new ClassicStepRunner(modelBundleCache);
     this.embedChunkSteps = new EmbedChunkStepRunner(embeddingProvider);
   }
@@ -177,6 +180,17 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
           () -> classicSteps.lemmatize(document, diagnostics));
     } else {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_LEMMATIZE));
+    }
+
+    final String docCategorizerModelId = validator.resolveDocCategorizerModelId(profile);
+    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE)) {
+      requireTokens(document, PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE);
+      runStep(
+          PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE,
+          () -> classicSteps.categorizeDocument(
+              rawText, document, docCategorizerModelId, diagnostics));
+    } else {
+      diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE));
     }
 
     final String embeddingModelId = validator.resolveEmbeddingModelId(request, profile);
