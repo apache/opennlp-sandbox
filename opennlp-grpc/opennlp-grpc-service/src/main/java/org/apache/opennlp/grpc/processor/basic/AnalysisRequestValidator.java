@@ -22,8 +22,10 @@ import java.util.Objects;
 
 import org.apache.opennlp.grpc.chunk.ChunkEmbedProcessor;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.model.DocCategorizerModel;
 import org.apache.opennlp.grpc.model.DocCategorizerRegistry;
 import org.apache.opennlp.grpc.model.NameFinderRegistry;
+import org.apache.opennlp.grpc.model.SentimentRegistry;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.processor.PipelineStepPolicy;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
@@ -44,15 +46,18 @@ final class AnalysisRequestValidator {
   private final EmbeddingProvider embeddingProvider;
   private final NameFinderRegistry nameFinderRegistry;
   private final DocCategorizerRegistry docCategorizerRegistry;
+  private final SentimentRegistry sentimentRegistry;
 
   AnalysisRequestValidator(
       EmbeddingProvider embeddingProvider,
       NameFinderRegistry nameFinderRegistry,
-      DocCategorizerRegistry docCategorizerRegistry) {
+      DocCategorizerRegistry docCategorizerRegistry,
+      SentimentRegistry sentimentRegistry) {
     this.embeddingProvider = Objects.requireNonNull(embeddingProvider, "embeddingProvider");
     this.nameFinderRegistry = Objects.requireNonNull(nameFinderRegistry, "nameFinderRegistry");
     this.docCategorizerRegistry =
         Objects.requireNonNull(docCategorizerRegistry, "docCategorizerRegistry");
+    this.sentimentRegistry = Objects.requireNonNull(sentimentRegistry, "sentimentRegistry");
   }
 
   /**
@@ -75,6 +80,7 @@ final class AnalysisRequestValidator {
     validateModelBundle(profile);
     validateNerRequest(profile);
     validateDocCategorizeRequest(profile);
+    validateSentimentRequest(profile);
     validateEmbeddingRequest(request, profile);
     validateChunkEmbedConfigs(request);
   }
@@ -116,6 +122,16 @@ final class AnalysisRequestValidator {
     return docCategorizerRegistry.resolveDefaultModelId();
   }
 
+  /**
+   * Whether the selected document categorizer needs tokens (classic maxent) rather than only the
+   * raw text (transformer). A raw-text model can run without {@code TOKENIZE}. Defaults to
+   * {@code true} for an unknown id so the conservative token prerequisite still applies.
+   */
+  boolean docCategorizerRequiresTokens(String modelId) {
+    final DocCategorizerModel model = docCategorizerRegistry.get(modelId);
+    return model == null || model.requiresTokens();
+  }
+
   private void validateDocCategorizeRequest(AnalysisProfile profile) {
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE)) {
       return;
@@ -130,6 +146,43 @@ final class AnalysisRequestValidator {
           "Multiple document categorizer models are configured; set " + DocCategorizerRegistry
               .KEY_DEFAULT_ID + " to select one. Configured ids: "
               + docCategorizerRegistry.modelIds());
+    }
+  }
+
+  /**
+   * Resolves the sentiment model to run for this request: the configured default (or the sole
+   * configured model). Returns {@code null} when the profile does not score sentiment.
+   */
+  String resolveSentimentModelId(AnalysisProfile profile) {
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_SENTIMENT)) {
+      return null;
+    }
+    return sentimentRegistry.resolveDefaultModelId();
+  }
+
+  /**
+   * Whether the selected sentiment model needs each sentence's tokens (classic maxent) rather
+   * than only the sentence text (transformer). A raw-text model still needs sentences, but no
+   * {@code TOKENIZE}. Defaults to {@code true} for an unknown id.
+   */
+  boolean sentimentRequiresTokens(String modelId) {
+    final DocCategorizerModel model = sentimentRegistry.get(modelId);
+    return model == null || model.requiresTokens();
+  }
+
+  private void validateSentimentRequest(AnalysisProfile profile) {
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_SENTIMENT)) {
+      return;
+    }
+    if (!sentimentRegistry.isAvailable()) {
+      throw AnalysisException.notFound(
+          "PIPELINE_STEP_SENTIMENT requested but no sentiment models are configured on this "
+              + "server; set model.sentiment.<id>.path entries");
+    }
+    if (sentimentRegistry.resolveDefaultModelId() == null) {
+      throw AnalysisException.invalidArgument(
+          "Multiple sentiment models are configured; set " + SentimentRegistry.KEY_DEFAULT_ID
+              + " to select one. Configured ids: " + sentimentRegistry.modelIds());
     }
   }
 
@@ -212,13 +265,16 @@ final class AnalysisRequestValidator {
     if (!bundleId.isBlank()
         && !bundleId.equals(ProfileRegistry.DEFAULT_BUNDLE_ID)
         && !bundleId.equals(ProfileRegistry.NER_BUNDLE_ID)
-        && !bundleId.equals(ProfileRegistry.DOCCAT_BUNDLE_ID)) {
+        && !bundleId.equals(ProfileRegistry.DOCCAT_BUNDLE_ID)
+        && !bundleId.equals(ProfileRegistry.SENTIMENT_BUNDLE_ID)) {
       throw AnalysisException.notFound(
           "Unknown model bundle '" + bundleId + "'; available bundles: "
               + ProfileRegistry.DEFAULT_BUNDLE_ID
               + (nameFinderRegistry.isAvailable() ? ", " + ProfileRegistry.NER_BUNDLE_ID : "")
               + (docCategorizerRegistry.isAvailable()
-                  ? ", " + ProfileRegistry.DOCCAT_BUNDLE_ID : ""));
+                  ? ", " + ProfileRegistry.DOCCAT_BUNDLE_ID : "")
+              + (sentimentRegistry.isAvailable()
+                  ? ", " + ProfileRegistry.SENTIMENT_BUNDLE_ID : ""));
     }
     if (bundleId.equals(ProfileRegistry.NER_BUNDLE_ID) && !nameFinderRegistry.isAvailable()) {
       throw AnalysisException.notFound(
@@ -230,6 +286,12 @@ final class AnalysisRequestValidator {
       throw AnalysisException.notFound(
           "Model bundle '" + ProfileRegistry.DOCCAT_BUNDLE_ID
               + "' requires document categorizer models; configure model.doccat.<id>.path");
+    }
+    if (bundleId.equals(ProfileRegistry.SENTIMENT_BUNDLE_ID)
+        && !sentimentRegistry.isAvailable()) {
+      throw AnalysisException.notFound(
+          "Model bundle '" + ProfileRegistry.SENTIMENT_BUNDLE_ID
+              + "' requires sentiment models; configure model.sentiment.<id>.path");
     }
     if (bundle.getComponentModelsCount() > 0) {
       throw AnalysisException.unimplemented(

@@ -83,6 +83,13 @@ final class OpenNlpDocCategorizerModel implements DocCategorizerModel, AutoClose
   }
 
   @Override
+  public boolean requiresTokens() {
+    // Classic maxent categorizers classify the token bag; transformer models re-tokenize the
+    // raw text internally and need no upstream tokenization.
+    return inputMode == InputMode.TOKENS;
+  }
+
+  @Override
   public DocumentClassification classify(String documentText, String[] documentTokens) {
     final String[] input = inputMode == InputMode.RAW_TEXT
         ? new String[] {documentText == null ? "" : documentText}

@@ -45,6 +45,20 @@ public interface DocCategorizerModel {
   List<String> categories();
 
   /**
+   * Whether this model needs tokens (classic maxent, which classifies a bag of tokens) rather
+   * than only the raw text (transformer models that re-tokenize the text internally). The
+   * orchestrator uses this to decide whether tokenization must run before the model: a
+   * raw-text model can therefore classify under a {@code DOC_CATEGORIZE}-only profile without
+   * {@code TOKENIZE}.
+   *
+   * <p>Defaults to {@code true} so existing backends keep their conservative tokenized behavior
+   * unless they explicitly opt into raw-text classification.</p>
+   */
+  default boolean requiresTokens() {
+    return true;
+  }
+
+  /**
    * Classifies one document into the model's categories.
    *
    * @param documentText The whole document text.

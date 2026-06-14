@@ -215,7 +215,9 @@ model.doccat_dl.sentiment.gpu_device_id=0       # only with backend=cuda
 
 These are served by `opennlp-dl`'s `DocumentCategorizerDL`, which splits and re-tokenizes the
 raw document text internally, and are reported in the catalog with `backend_id` `onnx` or
-`cuda`. They participate in `DOC_CATEGORIZE` exactly like classic models.
+`cuda`. They participate in `DOC_CATEGORIZE` exactly like classic models — except that, because
+they consume the raw text, they need no upstream `TOKENIZE` and run under a `DOC_CATEGORIZE`-only
+profile (classic maxent categorizers still require `TOKENIZE`).
 
 > Requires `opennlp-dl` (OpenNLP 3.0.0). CUDA requires an NVIDIA runtime and the GPU build
 > flavor.
@@ -232,6 +234,42 @@ jar on the server classpath. Each factory parses its own configuration namespace
 `DocCategorizerModel`s; the `DocCategorizerRegistry` aggregates the models from every backend.
 The new backend's models then participate in `DOC_CATEGORIZE` exactly like the built-ins — no
 change to the server.
+
+### Sentiment models (optional)
+
+Sentiment is document categorization applied **per sentence**: when a request runs
+`PIPELINE_STEP_SENTIMENT`, the selected model classifies each sentence and the winning label and
+its score populate that sentence's `sentiment_label` and `sentiment_confidence`. Because it is
+doccat under the hood, it reuses the same backends, just under a dedicated `model.sentiment.*`
+namespace so its models stay separate from the document-level categorizers:
+
+```ini
+model.sentiment.polarity.path=/path/to/en-sentiment-polarity.bin
+# When several sentiment models are configured, pick the one SENTIMENT runs:
+model.sentiment.default_id=polarity
+```
+
+The model's categories are its sentiment classes (e.g. `positive`/`negative`, or a finer scale);
+the labels come from the model itself. A single configured model is used automatically —
+`default_id` only disambiguates when more than one is registered.
+
+ONNX transformer sentiment models register under `model.sentiment_dl.*`, with the same keys as
+the ONNX doc categorizer (`path`, `vocab`, `categories`, optional `backend`/`gpu_device_id`):
+
+```ini
+model.sentiment_dl.bert_sst.path=/path/to/sentiment.onnx
+model.sentiment_dl.bert_sst.vocab=/path/to/vocab.txt
+model.sentiment_dl.bert_sst.categories=/path/to/categories.txt
+# Optional:
+model.sentiment_dl.bert_sst.backend=onnx          # onnx (default, CPU) | cuda
+model.sentiment_dl.bert_sst.gpu_device_id=0       # only with backend=cuda
+```
+
+The `en-sentiment` profile/bundle (sentence detect + tokenize + sentiment) is advertised only
+when at least one sentiment model is configured. Custom backends need nothing new: the same
+`DocCategorizerBackendFactory` SPI serves both capabilities, so a backend written for doc
+categorization is automatically available for sentiment — configure its models under the
+`model.sentiment.*` namespace instead of `model.doccat.*`.
 
 ### Embedding models (optional)
 

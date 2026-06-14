@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.opennlp.grpc.model.ClassicDocCategorizerBackendFactory;
 import org.apache.opennlp.grpc.model.DocCategorizerRegistry;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
+import org.apache.opennlp.grpc.model.StubDocCategorizerBackendFactory;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.testing.TinyDoccatModel;
@@ -138,6 +139,27 @@ class BasicDocumentAnalyzerDocCategorizeTest {
                 .build())
             .build()));
     assertEquals(AnalysisException.FailureType.NOT_FOUND, error.getFailureType());
+  }
+
+  @Test
+  void classifiesRawTextModelWithoutTokenizationStep() {
+    // A raw-text backend (the stub stands in for an ONNX DocumentCategorizerDL) reports
+    // requiresTokens()==false, so a DOC_CATEGORIZE-only profile with no SENTENCE_DETECT/TOKENIZE
+    // is valid and must classify the document text directly.
+    final ModelBundleCache modelBundleCache =
+        new ModelBundleCache(Map.of(StubDocCategorizerBackendFactory.KEY_CATEGORY, "spam"));
+    final BasicDocumentAnalyzer analyzer =
+        new BasicDocumentAnalyzer(ProfileRegistry.createDefault(false, true), modelBundleCache);
+
+    final AnalyzeDocumentResponse response = analyzer.analyze(AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setRawText(WEATHER_TEXT).build())
+        .setProfile(AnalysisProfile.newBuilder()
+            .addSteps(PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE)
+            .build())
+        .build());
+
+    assertEquals("spam", response.getDocument().getClassification().getBestCategory());
+    assertEquals(0, response.getDocument().getSentencesCount());
   }
 
   @Test

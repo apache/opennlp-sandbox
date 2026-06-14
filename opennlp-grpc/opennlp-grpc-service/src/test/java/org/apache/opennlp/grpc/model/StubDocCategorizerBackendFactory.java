@@ -66,6 +66,13 @@ public final class StubDocCategorizerBackendFactory implements DocCategorizerBac
     }
 
     @Override
+    public boolean requiresTokens() {
+      // This stub ignores its input, so it stands in for a raw-text backend that needs no
+      // upstream tokenization.
+      return false;
+    }
+
+    @Override
     public DocumentClassification classify(String documentText, String[] documentTokens) {
       return DocumentClassification.newBuilder()
           .setBestCategory(category)

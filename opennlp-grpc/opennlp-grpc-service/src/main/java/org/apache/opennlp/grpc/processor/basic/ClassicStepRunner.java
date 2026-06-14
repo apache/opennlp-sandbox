@@ -35,6 +35,7 @@ import org.apache.opennlp.grpc.model.DocCategorizerRegistry;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.model.NameFinderRegistry;
 import org.apache.opennlp.grpc.model.NerModel;
+import org.apache.opennlp.grpc.model.SentimentRegistry;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
@@ -273,6 +274,44 @@ final class ClassicStepRunner {
         "Classified document as '" + classification.getBestCategory() + "' using model '"
             + modelId + "' (" + classification.getCategoryScoresCount() + " categor"
             + (classification.getCategoryScoresCount() == 1 ? "y" : "ies") + ")"));
+  }
+
+  /**
+   * Classifies every sentence with the selected sentiment model and records the winning label and
+   * its score as {@link AnnotatedSentence#getSentimentLabel()} /
+   * {@link AnnotatedSentence#getSentimentConfidence()}. Sentiment is document categorization
+   * applied per sentence, so each sentence is handed both its own text and its tokens, letting
+   * classic (token-based) and transformer (text-based) models be served from the one call.
+   */
+  void analyzeSentiment(
+      String rawText,
+      OpenNlpDocument.Builder document,
+      String modelId,
+      List<ProcessingDiagnostic> diagnostics) {
+    final SentimentRegistry registry = modelBundleCache.getSentimentRegistry();
+    final DocCategorizerModel model = registry.get(modelId);
+    if (model == null) {
+      // The validator resolves and checks the id up front, so a null here is a server-side bug.
+      throw AnalysisException.internal("Sentiment model '" + modelId + "' is not registered", null);
+    }
+    int classifiedSentences = 0;
+    for (int i = 0; i < document.getSentencesCount(); i++) {
+      final AnnotatedSentence sentence = document.getSentences(i);
+      final AnnotationSpan span = sentence.getSentenceSpan();
+      final String sentenceText = rawText.substring(span.getStart(), span.getEnd());
+      final DocumentClassification classification =
+          model.classify(sentenceText, tokenTexts(sentence));
+      final String label = classification.getBestCategory();
+      document.setSentences(i, sentence.toBuilder()
+          .setSentimentLabel(label)
+          .setSentimentConfidence(
+              (float) classification.getCategoryScoresOrDefault(label, 0.0d))
+          .build());
+      classifiedSentences++;
+    }
+    diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_SENTIMENT,
+        "Scored sentiment for " + classifiedSentences + " sentence(s) using model '"
+            + modelId + "'"));
   }
 
   private static String[] tokenTexts(AnnotatedSentence sentence) {

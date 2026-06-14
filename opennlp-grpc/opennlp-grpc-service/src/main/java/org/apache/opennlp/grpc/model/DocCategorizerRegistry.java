@@ -43,16 +43,25 @@ import org.slf4j.LoggerFactory;
  */
 public final class DocCategorizerRegistry implements AutoCloseable {
 
+  /**
+   * Canonical configuration namespace. Built-in backends read {@code model.doccat.*} /
+   * {@code model.doccat_dl.*} keys; other namespaces (e.g. {@code sentiment}) are canonicalized
+   * onto this one before reaching the factories, so one backend serves every namespace.
+   */
+  static final String DEFAULT_NAMESPACE = "doccat";
+
   /** Configuration key selecting the default document categorizer when several are configured. */
-  public static final String KEY_DEFAULT_ID = "model.doccat.default_id";
+  public static final String KEY_DEFAULT_ID = "model." + DEFAULT_NAMESPACE + ".default_id";
 
   private static final Logger logger = LoggerFactory.getLogger(DocCategorizerRegistry.class);
 
+  private final String namespace;
   private final Map<String, DocCategorizerModel> modelsById;
   private final String configuredDefaultId;
 
   private DocCategorizerRegistry(
-      Map<String, DocCategorizerModel> modelsById, String configuredDefaultId) {
+      String namespace, Map<String, DocCategorizerModel> modelsById, String configuredDefaultId) {
+    this.namespace = namespace;
     this.modelsById = Map.copyOf(modelsById);
     this.configuredDefaultId = configuredDefaultId;
   }
@@ -79,9 +88,30 @@ public final class DocCategorizerRegistry implements AutoCloseable {
    *     {@code model.doccat.default_id} names an unknown model.
    */
   public static DocCategorizerRegistry create(Map<String, String> configuration) {
+    return createForNamespace(DEFAULT_NAMESPACE, configuration);
+  }
+
+  /**
+   * Loads classifiers configured under {@code model.<namespace>.*} / {@code model.<namespace>_dl.*}.
+   * Those keys are canonicalized onto the built-in {@code model.doccat*} namespace before the
+   * {@link DocCategorizerBackendFactory} backends run, so the same backends (built-in and
+   * third-party) serve every namespace without modification. Keys belonging to a different
+   * namespace are ignored, keeping the namespaces' catalogs isolated.
+   *
+   * @param namespace The configuration namespace token, e.g. {@code "doccat"} or {@code "sentiment"}.
+   * @param configuration The server configuration. Must not be {@code null}.
+   *
+   * @return A registry, possibly empty when no model is configured under the namespace.
+   *
+   * @throws AnalysisException If a backend's configuration is invalid, a model fails to load, or
+   *     {@code model.<namespace>.default_id} names an unknown model.
+   */
+  static DocCategorizerRegistry createForNamespace(
+      String namespace, Map<String, String> configuration) {
     if (configuration == null) {
       throw new NullPointerException("configuration");
     }
+    final Map<String, String> canonical = canonicalize(namespace, configuration);
     final Map<String, DocCategorizerModel> modelsById = new LinkedHashMap<>();
     final Set<String> seenFactories = new HashSet<>();
     for (DocCategorizerBackendFactory factory : ServiceLoader.load(
@@ -91,21 +121,44 @@ public final class DocCategorizerRegistry implements AutoCloseable {
             factory.factoryId(), factory.getClass().getName());
         continue;
       }
-      for (DocCategorizerModel model : factory.create(configuration)) {
+      for (DocCategorizerModel model : factory.create(canonical)) {
         if (modelsById.putIfAbsent(model.id(), model) != null) {
           throw AnalysisException.invalidArgument(
-              "Duplicate document categorizer model id: " + model.id());
+              "Duplicate " + namespace + " model id: " + model.id());
         }
       }
     }
 
-    final String defaultId = normalize(configuration.get(KEY_DEFAULT_ID));
+    final String defaultIdKey = "model." + namespace + ".default_id";
+    final String defaultId = normalize(configuration.get(defaultIdKey));
     if (defaultId != null && !defaultId.isEmpty() && !modelsById.containsKey(defaultId)) {
-      throw AnalysisException.invalidArgument(KEY_DEFAULT_ID + " names unknown document "
-          + "categorizer '" + defaultId + "'; configured ids: " + modelsById.keySet());
+      throw AnalysisException.invalidArgument(defaultIdKey + " names unknown " + namespace
+          + " model '" + defaultId + "'; configured ids: " + modelsById.keySet());
     }
     return new DocCategorizerRegistry(
-        modelsById, defaultId == null || defaultId.isEmpty() ? null : defaultId);
+        namespace, modelsById, defaultId == null || defaultId.isEmpty() ? null : defaultId);
+  }
+
+  /**
+   * Rewrites {@code model.<namespace>*} configuration keys onto the canonical {@code model.doccat*}
+   * namespace the built-in backends read, dropping every key that belongs to another namespace.
+   * For the canonical namespace this keeps only its own keys; for an aliased namespace (e.g.
+   * {@code sentiment}) it both renames the keys and isolates them from the canonical models.
+   */
+  private static Map<String, String> canonicalize(
+      String namespace, Map<String, String> configuration) {
+    final String token = "model." + namespace;
+    final String canonicalPrefix = "model." + DEFAULT_NAMESPACE;
+    final Map<String, String> canonical = new LinkedHashMap<>();
+    for (Map.Entry<String, String> entry : configuration.entrySet()) {
+      final String key = entry.getKey();
+      // A '.' suffix scopes the classic/default keys; a '_' suffix scopes a backend sub-namespace
+      // (e.g. model.<ns>_dl.* or a third-party model.<ns>_remote.*). Both are canonicalized.
+      if (key.startsWith(token + ".") || key.startsWith(token + "_")) {
+        canonical.put(canonicalPrefix + key.substring(token.length()), entry.getValue());
+      }
+    }
+    return canonical;
   }
 
   public boolean isAvailable() {

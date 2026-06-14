@@ -37,6 +37,7 @@ public final class PipelineStepPolicy {
       PipelineStep.PIPELINE_STEP_POS_TAG,
       PipelineStep.PIPELINE_STEP_LEMMATIZE,
       PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE,
+      PipelineStep.PIPELINE_STEP_SENTIMENT,
       PipelineStep.PIPELINE_STEP_CHUNK,
       PipelineStep.PIPELINE_STEP_EMBED);
 

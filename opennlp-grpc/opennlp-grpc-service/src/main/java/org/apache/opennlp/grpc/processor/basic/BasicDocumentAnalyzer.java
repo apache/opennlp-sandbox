@@ -69,7 +69,8 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
   private BasicDocumentAnalyzer(ModelBundleCache modelBundleCache) {
     this(ProfileRegistry.createDefault(
             modelBundleCache.getNameFinderRegistry().isAvailable(),
-            modelBundleCache.getDocCategorizerRegistry().isAvailable()),
+            modelBundleCache.getDocCategorizerRegistry().isAvailable(),
+            modelBundleCache.getSentimentRegistry().isAvailable()),
         modelBundleCache);
   }
 
@@ -87,7 +88,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     this.profileResolver = new ProfileResolver(profileRegistry);
     this.nameFinderRegistry = modelBundleCache.getNameFinderRegistry();
     this.validator = new AnalysisRequestValidator(embeddingProvider, nameFinderRegistry,
-        modelBundleCache.getDocCategorizerRegistry());
+        modelBundleCache.getDocCategorizerRegistry(), modelBundleCache.getSentimentRegistry());
     this.classicSteps = new ClassicStepRunner(modelBundleCache);
     this.embedChunkSteps = new EmbedChunkStepRunner(embeddingProvider);
   }
@@ -184,13 +185,33 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
 
     final String docCategorizerModelId = validator.resolveDocCategorizerModelId(profile);
     if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE)) {
-      requireTokens(document, PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE);
+      // Only classic (token-based) categorizers need tokenization; raw-text models (ONNX) can
+      // classify the document text directly, so a DOC_CATEGORIZE-only profile is valid for them.
+      if (validator.docCategorizerRequiresTokens(docCategorizerModelId)) {
+        requireTokens(document, PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE);
+      }
       runStep(
           PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE,
           () -> classicSteps.categorizeDocument(
               rawText, document, docCategorizerModelId, diagnostics));
     } else {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE));
+    }
+
+    final String sentimentModelId = validator.resolveSentimentModelId(profile);
+    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_SENTIMENT)) {
+      // Sentiment is per sentence, so it always needs sentences; only classic (token-based)
+      // models additionally need tokenization, while raw-text models score the sentence text.
+      requireSentences(document, PipelineStep.PIPELINE_STEP_SENTIMENT);
+      if (validator.sentimentRequiresTokens(sentimentModelId)) {
+        requireTokens(document, PipelineStep.PIPELINE_STEP_SENTIMENT);
+      }
+      runStep(
+          PipelineStep.PIPELINE_STEP_SENTIMENT,
+          () -> classicSteps.analyzeSentiment(
+              rawText, document, sentimentModelId, diagnostics));
+    } else {
+      diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_SENTIMENT));
     }
 
     final String embeddingModelId = validator.resolveEmbeddingModelId(request, profile);

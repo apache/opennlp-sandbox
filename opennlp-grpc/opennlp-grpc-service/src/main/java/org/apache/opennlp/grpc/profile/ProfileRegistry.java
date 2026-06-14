@@ -39,6 +39,9 @@ public final class ProfileRegistry {
   public static final String DOCCAT_PROFILE_ID = "en-doccat";
   public static final String DOCCAT_BUNDLE_ID = "en-doccat";
 
+  public static final String SENTIMENT_PROFILE_ID = "en-sentiment";
+  public static final String SENTIMENT_BUNDLE_ID = "en-sentiment";
+
   private final Map<String, AnalysisProfile> profiles = new LinkedHashMap<>();
 
   public ProfileRegistry() {
@@ -47,6 +50,10 @@ public final class ProfileRegistry {
 
   public ProfileRegistry(boolean nerAvailable) {
     this(nerAvailable, false);
+  }
+
+  public ProfileRegistry(boolean nerAvailable, boolean doccatAvailable) {
+    this(nerAvailable, doccatAvailable, false);
   }
 
   /**
@@ -58,14 +65,20 @@ public final class ProfileRegistry {
    * @param doccatAvailable Whether document categorizer models are configured. The
    *     {@code en-doccat} profile is registered only when {@code true}, for the same
    *     catalog-consistency reason as {@code nerAvailable}.
+   * @param sentimentAvailable Whether sentiment models are configured. The {@code en-sentiment}
+   *     profile is registered only when {@code true}, for the same catalog-consistency reason.
    */
-  public ProfileRegistry(boolean nerAvailable, boolean doccatAvailable) {
+  public ProfileRegistry(
+      boolean nerAvailable, boolean doccatAvailable, boolean sentimentAvailable) {
     register(defaultProfile());
     if (nerAvailable) {
       register(nerProfile());
     }
     if (doccatAvailable) {
       register(doccatProfile());
+    }
+    if (sentimentAvailable) {
+      register(sentimentProfile());
     }
   }
 
@@ -79,6 +92,11 @@ public final class ProfileRegistry {
 
   public static ProfileRegistry createDefault(boolean nerAvailable, boolean doccatAvailable) {
     return new ProfileRegistry(nerAvailable, doccatAvailable);
+  }
+
+  public static ProfileRegistry createDefault(
+      boolean nerAvailable, boolean doccatAvailable, boolean sentimentAvailable) {
+    return new ProfileRegistry(nerAvailable, doccatAvailable, sentimentAvailable);
   }
 
   public void register(AnalysisProfile profile) {
@@ -129,6 +147,16 @@ public final class ProfileRegistry {
         .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
         .addSteps(PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE)
         .setModelBundle(ModelBundleRef.newBuilder().setBundleId(DOCCAT_BUNDLE_ID).build())
+        .build();
+  }
+
+  private static AnalysisProfile sentimentProfile() {
+    return AnalysisProfile.newBuilder()
+        .setProfileId(SENTIMENT_PROFILE_ID)
+        .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+        .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+        .addSteps(PipelineStep.PIPELINE_STEP_SENTIMENT)
+        .setModelBundle(ModelBundleRef.newBuilder().setBundleId(SENTIMENT_BUNDLE_ID).build())
         .build();
   }
 }
