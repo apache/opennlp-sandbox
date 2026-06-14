@@ -20,6 +20,7 @@ package org.apache.opennlp.grpc.processor.basic;
 import java.util.Map;
 
 import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.processor.PipelineStepPolicy;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
@@ -34,6 +35,7 @@ import org.apache.opennlp.grpc.v1.SemanticChunkingConfig;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -63,21 +65,18 @@ class BasicDocumentAnalyzerPolicyTest {
   }
 
   @Test
-  void rejectsUnimplementedProfileSteps() {
-    final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(Map.of());
-
-    final AnalysisException error = assertThrows(AnalysisException.class, () -> analyzer.analyze(
-        AnalyzeDocumentRequest.newBuilder()
-            .setDocument(OpenNlpDocument.newBuilder().setRawText("John works at OpenNLP.").build())
-            .setProfile(AnalysisProfile.newBuilder()
-                .setProfileId("parse-profile")
-                .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
-                .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
-                .addSteps(PipelineStep.PIPELINE_STEP_PARSE)
-                .build())
-            .build()));
-
-    assertEquals(AnalysisException.FailureType.UNIMPLEMENTED, error.getFailureType());
+  void implementsEveryDefinedPipelineStep() {
+    // PARSE was the last unimplemented step; the server now implements the whole PipelineStep
+    // surface. Only the UNSPECIFIED sentinel is not implemented (and the validator skips it), so
+    // the UNIMPLEMENTED guard is now a forward-compatibility net for future enum additions. This
+    // also fails fast if a step is ever dropped from PipelineStepPolicy's implemented set.
+    for (PipelineStep step : PipelineStep.values()) {
+      if (step == PipelineStep.PIPELINE_STEP_UNSPECIFIED || step == PipelineStep.UNRECOGNIZED) {
+        continue;
+      }
+      assertTrue(PipelineStepPolicy.isImplemented(step), step + " should be implemented");
+    }
+    assertFalse(PipelineStepPolicy.isImplemented(PipelineStep.PIPELINE_STEP_UNSPECIFIED));
   }
 
   @Test

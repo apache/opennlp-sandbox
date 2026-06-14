@@ -24,6 +24,8 @@ import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
 import org.apache.opennlp.grpc.v1.EmbeddingResult;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.ParseNode;
+import org.apache.opennlp.grpc.v1.ParseTree;
 import org.apache.opennlp.grpc.v1.Token;
 
 /**
@@ -50,6 +52,11 @@ final class DocumentOffsetEncoder {
         token.setAnnotationSpan(remap(token.getAnnotationSpan(), mapper));
         sentence.setTokens(t, token.build());
       }
+      if (sentence.hasParseTree() && sentence.getParseTree().hasRoot()) {
+        final ParseTree.Builder tree = sentence.getParseTree().toBuilder();
+        tree.setRoot(remapParseNode(tree.getRoot(), mapper));
+        sentence.setParseTree(tree.build());
+      }
       document.setSentences(i, sentence.build());
     }
     for (int e = 0; e < document.getEmbeddingsCount(); e++) {
@@ -74,6 +81,15 @@ final class DocumentOffsetEncoder {
       document.setChunkEmbeddingGroups(g, group.build());
     }
     document.setOffsetEncoding(mapper.encoding());
+  }
+
+  /** Remaps a parse node's span and all its descendants' spans, depth-first. */
+  private static ParseNode remapParseNode(ParseNode node, OffsetMapper mapper) {
+    final ParseNode.Builder builder = node.toBuilder().setSpan(remap(node.getSpan(), mapper));
+    for (int i = 0; i < builder.getChildrenCount(); i++) {
+      builder.setChildren(i, remapParseNode(builder.getChildren(i), mapper));
+    }
+    return builder.build();
   }
 
   private static AnnotationSpan remap(AnnotationSpan span, OffsetMapper mapper) {

@@ -165,15 +165,39 @@ message ChunkGroupStats {
   int64 processing_time_ms = 3;
 }
 
+// A constituency (phrase-structure) parse of one sentence. The server populates the
+// representations the request selects via AnalysisOptions.parse_formats; an unselected
+// representation is left empty. The structured tree and the bracketed string are independent
+// views of the same parse, so a client takes whichever fits its language and use.
 message ParseTree {
+  // Structured, navigable tree (PARSE_FORMAT_STRUCTURED). Empty when not requested.
   ParseNode root = 1;
+  // Standard bracketed (Penn-Treebank-style) form (PARSE_FORMAT_BRACKETED), as emitted by
+  // OpenNLP's Parse.show(), e.g. "(TOP (S (NP (DT The)(NN dog))(VP (VBD barked))))". The
+  // universal interchange/debug representation; every NLP toolkit can read it.
+  optional string penn_treebank = 2;
 }
 
+// One node of a constituency parse. A nonterminal is a phrase (its label is a phrase tag such
+// as S/NP/VP and it has children); a terminal is a single token (its label is the POS tag, it
+// has no children, and token_index links it to the sentence's token list rather than repeating
+// the token text).
 message ParseNode {
-  string label = 1;
-  AnnotationSpan span = 2;
-  repeated ParseNode children = 3;
-  optional double probability = 4;
+  string label = 1;                  // phrase tag (nonterminal) or POS tag (terminal)
+  AnnotationSpan span = 2;           // document span this node covers
+  repeated ParseNode children = 3;   // empty for terminals
+  optional double probability = 4;   // model confidence for this node
+  // Whether this node is a phrase or a single token. Explicit so clients switch on the kind
+  // instead of inferring "leaf == no children".
+  ParseNodeKind kind = 5;
+  // Terminals only: index into the enclosing AnnotatedSentence.tokens. Unset on nonterminals.
+  optional int32 token_index = 6;
+}
+
+enum ParseNodeKind {
+  PARSE_NODE_KIND_UNSPECIFIED = 0;
+  PARSE_NODE_KIND_NONTERMINAL = 1;   // a phrase / constituent
+  PARSE_NODE_KIND_TERMINAL = 2;      // a single token (preterminal carrying the POS tag)
 }
 
 message EmbeddingResult {

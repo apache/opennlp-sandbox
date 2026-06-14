@@ -39,6 +39,7 @@ import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.ParseFormat;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.apache.opennlp.grpc.v1.ProcessingDiagnostic;
 
@@ -70,7 +71,8 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     this(ProfileRegistry.createDefault(
             modelBundleCache.getNameFinderRegistry().isAvailable(),
             modelBundleCache.getDocCategorizerRegistry().isAvailable(),
-            modelBundleCache.getSentimentRegistry().isAvailable()),
+            modelBundleCache.getSentimentRegistry().isAvailable(),
+            modelBundleCache.isParserAvailable()),
         modelBundleCache);
   }
 
@@ -88,7 +90,8 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     this.profileResolver = new ProfileResolver(profileRegistry);
     this.nameFinderRegistry = modelBundleCache.getNameFinderRegistry();
     this.validator = new AnalysisRequestValidator(embeddingProvider, nameFinderRegistry,
-        modelBundleCache.getDocCategorizerRegistry(), modelBundleCache.getSentimentRegistry());
+        modelBundleCache.getDocCategorizerRegistry(), modelBundleCache.getSentimentRegistry(),
+        modelBundleCache.isParserAvailable());
     this.classicSteps = new ClassicStepRunner(modelBundleCache);
     this.embedChunkSteps = new EmbedChunkStepRunner(embeddingProvider);
   }
@@ -212,6 +215,16 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
               rawText, document, sentimentModelId, diagnostics));
     } else {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_SENTIMENT));
+    }
+
+    final Set<ParseFormat> parseFormats = validator.resolveParseFormats(request, profile);
+    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_PARSE)) {
+      requireTokens(document, PipelineStep.PIPELINE_STEP_PARSE);
+      runStep(
+          PipelineStep.PIPELINE_STEP_PARSE,
+          () -> classicSteps.parse(document, parseFormats, diagnostics));
+    } else {
+      diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_PARSE));
     }
 
     final String embeddingModelId = validator.resolveEmbeddingModelId(request, profile);

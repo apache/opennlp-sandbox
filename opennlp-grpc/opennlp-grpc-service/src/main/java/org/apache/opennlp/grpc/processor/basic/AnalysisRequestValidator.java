@@ -17,8 +17,10 @@
  */
 package org.apache.opennlp.grpc.processor.basic;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import org.apache.opennlp.grpc.chunk.ChunkEmbedProcessor;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
@@ -34,6 +36,7 @@ import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
 import org.apache.opennlp.grpc.v1.ModelBundleRef;
+import org.apache.opennlp.grpc.v1.ParseFormat;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 
 /**
@@ -47,17 +50,20 @@ final class AnalysisRequestValidator {
   private final NameFinderRegistry nameFinderRegistry;
   private final DocCategorizerRegistry docCategorizerRegistry;
   private final SentimentRegistry sentimentRegistry;
+  private final boolean parserAvailable;
 
   AnalysisRequestValidator(
       EmbeddingProvider embeddingProvider,
       NameFinderRegistry nameFinderRegistry,
       DocCategorizerRegistry docCategorizerRegistry,
-      SentimentRegistry sentimentRegistry) {
+      SentimentRegistry sentimentRegistry,
+      boolean parserAvailable) {
     this.embeddingProvider = Objects.requireNonNull(embeddingProvider, "embeddingProvider");
     this.nameFinderRegistry = Objects.requireNonNull(nameFinderRegistry, "nameFinderRegistry");
     this.docCategorizerRegistry =
         Objects.requireNonNull(docCategorizerRegistry, "docCategorizerRegistry");
     this.sentimentRegistry = Objects.requireNonNull(sentimentRegistry, "sentimentRegistry");
+    this.parserAvailable = parserAvailable;
   }
 
   /**
@@ -81,6 +87,7 @@ final class AnalysisRequestValidator {
     validateNerRequest(profile);
     validateDocCategorizeRequest(profile);
     validateSentimentRequest(profile);
+    validateParseRequest(profile);
     validateEmbeddingRequest(request, profile);
     validateChunkEmbedConfigs(request);
   }
@@ -186,6 +193,42 @@ final class AnalysisRequestValidator {
     }
   }
 
+  private void validateParseRequest(AnalysisProfile profile) {
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_PARSE)) {
+      return;
+    }
+    if (!parserAvailable) {
+      throw AnalysisException.notFound(
+          "PIPELINE_STEP_PARSE requested but no parser model is configured on this server; "
+              + "set model.parser.path");
+    }
+  }
+
+  /**
+   * Resolves which parse representations to populate for this request: the formats listed in
+   * options, or the default {@code STRUCTURED + BRACKETED} set when none (or only UNSPECIFIED)
+   * is given. Returns an empty set when the profile does not parse.
+   */
+  Set<ParseFormat> resolveParseFormats(AnalyzeDocumentRequest request, AnalysisProfile profile) {
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_PARSE)) {
+      return EnumSet.noneOf(ParseFormat.class);
+    }
+    final Set<ParseFormat> formats = EnumSet.noneOf(ParseFormat.class);
+    if (request.hasOptions()) {
+      for (ParseFormat format : request.getOptions().getParseFormatsList()) {
+        if (format != ParseFormat.PARSE_FORMAT_UNSPECIFIED
+            && format != ParseFormat.UNRECOGNIZED) {
+          formats.add(format);
+        }
+      }
+    }
+    if (formats.isEmpty()) {
+      formats.add(ParseFormat.PARSE_FORMAT_STRUCTURED);
+      formats.add(ParseFormat.PARSE_FORMAT_BRACKETED);
+    }
+    return formats;
+  }
+
   private void validateOptions(
       AnalyzeDocumentRequest request, AnalysisProfile profile, String rawText) {
     if (!request.hasOptions()) {
@@ -266,7 +309,8 @@ final class AnalysisRequestValidator {
         && !bundleId.equals(ProfileRegistry.DEFAULT_BUNDLE_ID)
         && !bundleId.equals(ProfileRegistry.NER_BUNDLE_ID)
         && !bundleId.equals(ProfileRegistry.DOCCAT_BUNDLE_ID)
-        && !bundleId.equals(ProfileRegistry.SENTIMENT_BUNDLE_ID)) {
+        && !bundleId.equals(ProfileRegistry.SENTIMENT_BUNDLE_ID)
+        && !bundleId.equals(ProfileRegistry.PARSE_BUNDLE_ID)) {
       throw AnalysisException.notFound(
           "Unknown model bundle '" + bundleId + "'; available bundles: "
               + ProfileRegistry.DEFAULT_BUNDLE_ID
@@ -274,7 +318,8 @@ final class AnalysisRequestValidator {
               + (docCategorizerRegistry.isAvailable()
                   ? ", " + ProfileRegistry.DOCCAT_BUNDLE_ID : "")
               + (sentimentRegistry.isAvailable()
-                  ? ", " + ProfileRegistry.SENTIMENT_BUNDLE_ID : ""));
+                  ? ", " + ProfileRegistry.SENTIMENT_BUNDLE_ID : "")
+              + (parserAvailable ? ", " + ProfileRegistry.PARSE_BUNDLE_ID : ""));
     }
     if (bundleId.equals(ProfileRegistry.NER_BUNDLE_ID) && !nameFinderRegistry.isAvailable()) {
       throw AnalysisException.notFound(
@@ -292,6 +337,11 @@ final class AnalysisRequestValidator {
       throw AnalysisException.notFound(
           "Model bundle '" + ProfileRegistry.SENTIMENT_BUNDLE_ID
               + "' requires sentiment models; configure model.sentiment.<id>.path");
+    }
+    if (bundleId.equals(ProfileRegistry.PARSE_BUNDLE_ID) && !parserAvailable) {
+      throw AnalysisException.notFound(
+          "Model bundle '" + ProfileRegistry.PARSE_BUNDLE_ID
+              + "' requires a parser model; configure model.parser.path");
     }
     if (bundle.getComponentModelsCount() > 0) {
       throw AnalysisException.unimplemented(

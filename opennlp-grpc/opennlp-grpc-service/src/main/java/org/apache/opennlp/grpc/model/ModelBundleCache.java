@@ -41,6 +41,9 @@ import opennlp.tools.langdetect.LanguageDetectorME;
 import opennlp.tools.langdetect.LanguageDetectorModel;
 import opennlp.tools.lemmatizer.LemmatizerME;
 import opennlp.tools.lemmatizer.LemmatizerModel;
+import opennlp.tools.parser.Parser;
+import opennlp.tools.parser.ParserFactory;
+import opennlp.tools.parser.ParserModel;
 import opennlp.tools.models.ClassPathModelProvider;
 import opennlp.tools.models.DefaultClassPathModelProvider;
 import opennlp.tools.models.ModelType;
@@ -84,6 +87,7 @@ public final class ModelBundleCache {
   private static final String KEY_POS_TAGGER_PATH = "model.pos_tagger.path";
   private static final String KEY_LEMMATIZER_PATH = "model.lemmatizer.path";
   private static final String KEY_LANGDETECT_PATH = "model.language_detector.path";
+  private static final String KEY_PARSER_PATH = "model.parser.path";
 
   /** Backend id reported for models served by the classic OpenNLP maxent runtime. */
   private static final String OPENNLP_ME_BACKEND_ID = "opennlp-me";
@@ -108,6 +112,9 @@ public final class ModelBundleCache {
   private final NameFinderRegistry nameFinderRegistry;
   private final DocCategorizerRegistry docCategorizerRegistry;
   private final SentimentRegistry sentimentRegistry;
+  // Optional; null when no parser model is configured (the model is large and operator-supplied,
+  // not bundled). The classic ME parser is read-only at inference, so a single instance is shared.
+  private final Parser parser;
 
   public ModelBundleCache(Map<String, String> configuration) {
     Objects.requireNonNull(configuration, "configuration");
@@ -129,6 +136,7 @@ public final class ModelBundleCache {
     this.nameFinderRegistry = NameFinderRegistry.create(configuration, sentenceDetector);
     this.docCategorizerRegistry = DocCategorizerRegistry.create(configuration);
     this.sentimentRegistry = SentimentRegistry.create(configuration);
+    this.parser = loadParser(configuration);
     this.bundles = buildBundleCatalog();
   }
 
@@ -170,6 +178,16 @@ public final class ModelBundleCache {
 
   public SentimentRegistry getSentimentRegistry() {
     return sentimentRegistry;
+  }
+
+  /** @return Whether a constituency parser model is configured on this server. */
+  public boolean isParserAvailable() {
+    return parser != null;
+  }
+
+  /** @return The shared parser, or {@code null} when none is configured. */
+  public Parser getParser() {
+    return parser;
   }
 
   /**
@@ -278,6 +296,31 @@ public final class ModelBundleCache {
               + configuration.get(KEY_LANGDETECT_PATH));
     } catch (IOException e) {
       throw AnalysisException.internal("Failed to load language detector model", e);
+    }
+  }
+
+  /**
+   * Loads the optional constituency parser. Unlike the always-present backbone components, the
+   * parser model is large and not bundled, so it is loaded only when an explicit
+   * {@code model.parser.path} is configured; otherwise the server simply does not offer
+   * {@code PIPELINE_STEP_PARSE}.
+   *
+   * @return The parser, or {@code null} when none is configured.
+   */
+  private Parser loadParser(Map<String, String> configuration) {
+    final String configuredPath = configuration.get(KEY_PARSER_PATH);
+    if (configuredPath == null || configuredPath.isBlank()) {
+      return null;
+    }
+    try (InputStream input = new FileInputStream(configuredPath)) {
+      final Parser loaded = ParserFactory.create(new ParserModel(input));
+      logger.info("Loaded parser model from {}", configuredPath);
+      return loaded;
+    } catch (FileNotFoundException e) {
+      // A configured path that does not exist is an operator error, not an internal fault.
+      throw AnalysisException.notFound("Configured parser model file not found: " + configuredPath);
+    } catch (IOException e) {
+      throw AnalysisException.internal("Failed to load parser model from " + configuredPath, e);
     }
   }
 
@@ -429,7 +472,34 @@ public final class ModelBundleCache {
     if (sentimentRegistry.isAvailable()) {
       catalog.put(ProfileRegistry.SENTIMENT_BUNDLE_ID, buildSentimentBundleCatalog());
     }
+    if (parser != null) {
+      catalog.put(ProfileRegistry.PARSE_BUNDLE_ID, buildParseBundleCatalog());
+    }
     return catalog;
+  }
+
+  private ModelBundleInfo buildParseBundleCatalog() {
+    // Parsing consumes the English tokenizer's output, so the bundle constrains input to English;
+    // the parser model is operator-supplied and its language is unknown to the server.
+    return ModelBundleInfo.newBuilder()
+        .setBundleId(ProfileRegistry.PARSE_BUNDLE_ID)
+        .addSupportedLanguages(DEFAULT_LANGUAGE)
+        .addSupportedSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+        .addSupportedSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+        .addSupportedSteps(PipelineStep.PIPELINE_STEP_PARSE)
+        .addModels(classicModelDescriptor(
+            "opennlp-models-sentdetect-" + DEFAULT_LANGUAGE,
+            ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR))
+        .addModels(classicModelDescriptor(
+            "opennlp-models-tokenizer-" + DEFAULT_LANGUAGE,
+            ComponentType.COMPONENT_TYPE_TOKENIZER))
+        .addModels(ModelDescriptor.newBuilder()
+            .setName("parser")
+            .setComponentType(ComponentType.COMPONENT_TYPE_PARSER)
+            .addSupportedSteps(PipelineStep.PIPELINE_STEP_PARSE)
+            .setBackendId(OPENNLP_ME_BACKEND_ID)
+            .build())
+        .build();
   }
 
   private ModelBundleInfo buildNerBundleCatalog() {

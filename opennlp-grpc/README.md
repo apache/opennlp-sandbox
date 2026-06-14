@@ -271,6 +271,34 @@ when at least one sentiment model is configured. Custom backends need nothing ne
 categorization is automatically available for sentiment — configure its models under the
 `model.sentiment.*` namespace instead of `model.doccat.*`.
 
+### Constituency parsing (optional)
+
+A constituency (phrase-structure) parser builds a full parse tree per sentence when a request
+runs `PIPELINE_STEP_PARSE`. The parser model is large and operator-supplied (not bundled), so it
+is loaded only when configured:
+
+```ini
+model.parser.path=/path/to/en-parser-chunking.bin
+```
+
+When configured, the server advertises the `en-parse` profile/bundle (sentence detect + tokenize
++ parse). The result is written to `AnnotatedSentence.parse_tree`, which carries two independent
+views of the same parse so each client takes whichever fits its language and use:
+
+- **Structured** (`ParseTree.root`): a nested `ParseNode` tree. Each node has a `kind`
+  (`NONTERMINAL` phrase or `TERMINAL` token), a `label` (phrase tag like `S`/`NP`/`VP`, or a POS
+  tag at terminals), a document `span`, and a `probability`. Terminals also carry `token_index`,
+  linking back to the sentence's token list instead of repeating token text.
+- **Bracketed** (`ParseTree.penn_treebank`): the standard Penn-Treebank-style string, e.g.
+  `(TOP (S (NP (DT The)(NN dog))(VP (VBD barked))))` — the universal interchange/debug form.
+
+Choose the representation(s) per request with `AnalysisOptions.parse_formats`
+(`PARSE_FORMAT_STRUCTURED`, `PARSE_FORMAT_BRACKETED`); an empty list defaults to both, and
+listing fewer trims the response. Parsing consumes tokens, so a parse profile runs sentence
+detection and tokenization first.
+
+> The classic ME parser is read-only at inference, so one instance is shared across requests.
+
 ### Embedding models (optional)
 
 Register ONNX sentence-transformer models in the server config:

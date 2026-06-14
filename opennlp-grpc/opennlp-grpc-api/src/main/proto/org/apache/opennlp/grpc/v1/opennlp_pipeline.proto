@@ -126,6 +126,17 @@ message AnalysisOptions {
   optional string embedding_model_id = 5;
   // Unit for response AnnotationSpan offsets. Unset => UTF-8 bytes (the default).
   OffsetEncoding offset_encoding = 6;
+  // Parse representations to populate for PIPELINE_STEP_PARSE. Empty selects the default set
+  // (STRUCTURED + BRACKETED); listing fewer trims the response to just those views.
+  repeated ParseFormat parse_formats = 7;
+}
+
+// Selects which view(s) of a constituency parse the server fills in ParseTree. Independent
+// representations of the same parse, so a client requests only what its language/use needs.
+enum ParseFormat {
+  PARSE_FORMAT_UNSPECIFIED = 0;
+  PARSE_FORMAT_STRUCTURED = 1;   // ParseTree.root (nested ParseNode tree)
+  PARSE_FORMAT_BRACKETED = 2;    // ParseTree.penn_treebank (standard bracketed string)
 }
 
 message ModelDescriptor {

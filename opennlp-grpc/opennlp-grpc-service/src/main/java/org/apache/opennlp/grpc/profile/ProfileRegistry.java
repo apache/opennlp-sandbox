@@ -42,6 +42,9 @@ public final class ProfileRegistry {
   public static final String SENTIMENT_PROFILE_ID = "en-sentiment";
   public static final String SENTIMENT_BUNDLE_ID = "en-sentiment";
 
+  public static final String PARSE_PROFILE_ID = "en-parse";
+  public static final String PARSE_BUNDLE_ID = "en-parse";
+
   private final Map<String, AnalysisProfile> profiles = new LinkedHashMap<>();
 
   public ProfileRegistry() {
@@ -56,6 +59,11 @@ public final class ProfileRegistry {
     this(nerAvailable, doccatAvailable, false);
   }
 
+  public ProfileRegistry(
+      boolean nerAvailable, boolean doccatAvailable, boolean sentimentAvailable) {
+    this(nerAvailable, doccatAvailable, sentimentAvailable, false);
+  }
+
   /**
    * @param nerAvailable Whether name finder models are configured. The {@code en-ner}
    *     profile is registered only when {@code true}, so the advertised profile catalog
@@ -67,9 +75,11 @@ public final class ProfileRegistry {
    *     catalog-consistency reason as {@code nerAvailable}.
    * @param sentimentAvailable Whether sentiment models are configured. The {@code en-sentiment}
    *     profile is registered only when {@code true}, for the same catalog-consistency reason.
+   * @param parserAvailable Whether a parser model is configured. The {@code en-parse} profile is
+   *     registered only when {@code true}, for the same catalog-consistency reason.
    */
-  public ProfileRegistry(
-      boolean nerAvailable, boolean doccatAvailable, boolean sentimentAvailable) {
+  public ProfileRegistry(boolean nerAvailable, boolean doccatAvailable,
+      boolean sentimentAvailable, boolean parserAvailable) {
     register(defaultProfile());
     if (nerAvailable) {
       register(nerProfile());
@@ -79,6 +89,9 @@ public final class ProfileRegistry {
     }
     if (sentimentAvailable) {
       register(sentimentProfile());
+    }
+    if (parserAvailable) {
+      register(parseProfile());
     }
   }
 
@@ -97,6 +110,11 @@ public final class ProfileRegistry {
   public static ProfileRegistry createDefault(
       boolean nerAvailable, boolean doccatAvailable, boolean sentimentAvailable) {
     return new ProfileRegistry(nerAvailable, doccatAvailable, sentimentAvailable);
+  }
+
+  public static ProfileRegistry createDefault(boolean nerAvailable, boolean doccatAvailable,
+      boolean sentimentAvailable, boolean parserAvailable) {
+    return new ProfileRegistry(nerAvailable, doccatAvailable, sentimentAvailable, parserAvailable);
   }
 
   public void register(AnalysisProfile profile) {
@@ -157,6 +175,16 @@ public final class ProfileRegistry {
         .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
         .addSteps(PipelineStep.PIPELINE_STEP_SENTIMENT)
         .setModelBundle(ModelBundleRef.newBuilder().setBundleId(SENTIMENT_BUNDLE_ID).build())
+        .build();
+  }
+
+  private static AnalysisProfile parseProfile() {
+    return AnalysisProfile.newBuilder()
+        .setProfileId(PARSE_PROFILE_ID)
+        .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+        .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+        .addSteps(PipelineStep.PIPELINE_STEP_PARSE)
+        .setModelBundle(ModelBundleRef.newBuilder().setBundleId(PARSE_BUNDLE_ID).build())
         .build();
   }
 }

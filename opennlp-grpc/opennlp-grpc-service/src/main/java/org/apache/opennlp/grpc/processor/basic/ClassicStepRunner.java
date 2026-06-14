@@ -26,6 +26,8 @@ import java.util.Set;
 import opennlp.tools.langdetect.Language;
 import opennlp.tools.langdetect.LanguageDetectorME;
 import opennlp.tools.lemmatizer.LemmatizerME;
+import opennlp.tools.parser.Parse;
+import opennlp.tools.parser.Parser;
 import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.tokenize.TokenizerME;
@@ -43,6 +45,8 @@ import org.apache.opennlp.grpc.v1.CoordinateSpace;
 import org.apache.opennlp.grpc.v1.DocumentClassification;
 import org.apache.opennlp.grpc.v1.NamedEntity;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.ParseFormat;
+import org.apache.opennlp.grpc.v1.ParseTree;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.apache.opennlp.grpc.v1.ProcessingDiagnostic;
 import org.apache.opennlp.grpc.v1.Token;
@@ -312,6 +316,39 @@ final class ClassicStepRunner {
     diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_SENTIMENT,
         "Scored sentiment for " + classifiedSentences + " sentence(s) using model '"
             + modelId + "'"));
+  }
+
+  /**
+   * Builds a constituency parse for every tokenized sentence and stores the requested
+   * representations in {@link AnnotatedSentence#getParseTree()}: the structured {@link ParseNode}
+   * tree and/or the standard bracketed string. The parser is fed the sentence's tokens (via
+   * {@link Parse#createFromTokens}), so terminals line up with the sentence's token list.
+   */
+  void parse(
+      OpenNlpDocument.Builder document,
+      Set<ParseFormat> formats,
+      List<ProcessingDiagnostic> diagnostics) {
+    final Parser parser = modelBundleCache.getParser();
+    if (parser == null) {
+      // The validator checks parser availability up front, so a null here is a server-side bug.
+      throw AnalysisException.internal("Parser is not configured", null);
+    }
+    final boolean wantStructured = formats.contains(ParseFormat.PARSE_FORMAT_STRUCTURED);
+    final boolean wantBracketed = formats.contains(ParseFormat.PARSE_FORMAT_BRACKETED);
+    int parsedSentences = 0;
+    for (int i = 0; i < document.getSentencesCount(); i++) {
+      final AnnotatedSentence sentence = document.getSentences(i);
+      if (sentence.getTokensCount() == 0) {
+        continue;
+      }
+      final Parse parse = parser.parse(Parse.createFromTokens(tokenTexts(sentence)));
+      final ParseTree tree =
+          ParseTreeConverter.toParseTree(parse, sentence, wantStructured, wantBracketed);
+      document.setSentences(i, sentence.toBuilder().setParseTree(tree).build());
+      parsedSentences++;
+    }
+    diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_PARSE,
+        "Parsed " + parsedSentences + " sentence(s)"));
   }
 
   private static String[] tokenTexts(AnnotatedSentence sentence) {
