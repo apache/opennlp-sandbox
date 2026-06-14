@@ -222,7 +222,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       requireTokens(document, PipelineStep.PIPELINE_STEP_PARSE);
       runStep(
           PipelineStep.PIPELINE_STEP_PARSE,
-          () -> classicSteps.parse(document, parseFormats, diagnostics));
+          () -> classicSteps.parse(document, parseFormats, includeProbabilities, diagnostics));
     } else {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_PARSE));
     }

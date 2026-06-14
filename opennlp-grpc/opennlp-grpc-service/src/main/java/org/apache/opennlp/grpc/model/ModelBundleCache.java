@@ -112,9 +112,12 @@ public final class ModelBundleCache {
   private final NameFinderRegistry nameFinderRegistry;
   private final DocCategorizerRegistry docCategorizerRegistry;
   private final SentimentRegistry sentimentRegistry;
-  // Optional; null when no parser model is configured (the model is large and operator-supplied,
-  // not bundled). The classic ME parser is read-only at inference, so a single instance is shared.
-  private final Parser parser;
+  // The parser is optional (the model is large and operator-supplied, not bundled). Unlike the
+  // other classic *ME components, OpenNLP's parser is NOT thread-safe — its beam search mutates
+  // per-instance state — so each request thread gets its own Parser built from the shared,
+  // immutable ParserModel. {@code parser} is null when no parser model is configured.
+  private final boolean parserAvailable;
+  private final ThreadLocal<Parser> parser;
 
   public ModelBundleCache(Map<String, String> configuration) {
     Objects.requireNonNull(configuration, "configuration");
@@ -132,12 +135,37 @@ public final class ModelBundleCache {
         KEY_LEMMATIZER_PATH, ModelType.LEMMATIZER, LemmatizerModel.class,
         BUNDLED_LEMMATIZER_MODEL_FRAGMENT, "lemmatizer", LemmatizerModel::new));
     this.languageDetector = new LanguageDetectorME(loadLanguageDetectorModel(configuration));
-    this.embeddingProvider = EmbeddingProviderFactory.create(configuration);
-    this.nameFinderRegistry = NameFinderRegistry.create(configuration, sentenceDetector);
-    this.docCategorizerRegistry = DocCategorizerRegistry.create(configuration);
-    this.sentimentRegistry = SentimentRegistry.create(configuration);
-    this.parser = loadParser(configuration);
-    this.bundles = buildBundleCatalog();
+    // The embedding provider and the three registries may hold native resources (ONNX sessions,
+    // remote connections). If a later load fails, release the ones already created so a failed
+    // startup does not leak native sessions.
+    EmbeddingProvider embeddingProvider = null;
+    NameFinderRegistry nameFinderRegistry = null;
+    DocCategorizerRegistry docCategorizerRegistry = null;
+    SentimentRegistry sentimentRegistry = null;
+    boolean constructed = false;
+    try {
+      embeddingProvider = EmbeddingProviderFactory.create(configuration);
+      nameFinderRegistry = NameFinderRegistry.create(configuration, sentenceDetector);
+      docCategorizerRegistry = DocCategorizerRegistry.create(configuration);
+      sentimentRegistry = SentimentRegistry.create(configuration);
+      final ParserModel parserModel = loadParserModel(configuration);
+      this.embeddingProvider = embeddingProvider;
+      this.nameFinderRegistry = nameFinderRegistry;
+      this.docCategorizerRegistry = docCategorizerRegistry;
+      this.sentimentRegistry = sentimentRegistry;
+      this.parserAvailable = parserModel != null;
+      this.parser = parserModel == null ? null
+          : ThreadLocal.withInitial(() -> ParserFactory.create(parserModel));
+      this.bundles = buildBundleCatalog();
+      constructed = true;
+    } finally {
+      if (!constructed) {
+        closeQuietly(sentimentRegistry);
+        closeQuietly(docCategorizerRegistry);
+        closeQuietly(nameFinderRegistry);
+        closeQuietly(embeddingProvider);
+      }
+    }
   }
 
   public SentenceDetectorME getSentenceDetector() {
@@ -182,17 +210,24 @@ public final class ModelBundleCache {
 
   /** @return Whether a constituency parser model is configured on this server. */
   public boolean isParserAvailable() {
-    return parser != null;
-  }
-
-  /** @return The shared parser, or {@code null} when none is configured. */
-  public Parser getParser() {
-    return parser;
+    return parserAvailable;
   }
 
   /**
-   * Releases resources held by the embedding provider. Failures are logged so that the
-   * remaining server shutdown is not interrupted.
+   * @return A parser for the calling thread (lazily built from the shared immutable model), or
+   *     {@code null} when no parser is configured. The instance must not be shared across threads
+   *     — OpenNLP's parser is not thread-safe — so callers use the returned parser only on the
+   *     thread that requested it.
+   */
+  public Parser getParser() {
+    return parser == null ? null : parser.get();
+  }
+
+  /**
+   * Releases native resources held by the embedding provider and the name-finder, document
+   * categorizer and sentiment registries (e.g. ONNX sessions in DL models). Each failure is
+   * logged so the remaining shutdown is not interrupted. The classic {@code *ME} backbone models
+   * and the parser hold no native resources and need no release.
    */
   public void close() {
     if (embeddingProvider instanceof AutoCloseable closeable) {
@@ -202,8 +237,20 @@ public final class ModelBundleCache {
         logger.warn("Failed to close embedding provider", e);
       }
     }
+    nameFinderRegistry.close();
     docCategorizerRegistry.close();
     sentimentRegistry.close();
+  }
+
+  /** Closes a resource if it is {@link AutoCloseable}, logging rather than propagating failures. */
+  private static void closeQuietly(Object resource) {
+    if (resource instanceof AutoCloseable closeable) {
+      try {
+        closeable.close();
+      } catch (Exception e) {
+        logger.warn("Failed to release a model resource during failed startup", e);
+      }
+    }
   }
 
   /**
@@ -305,17 +352,18 @@ public final class ModelBundleCache {
    * {@code model.parser.path} is configured; otherwise the server simply does not offer
    * {@code PIPELINE_STEP_PARSE}.
    *
-   * @return The parser, or {@code null} when none is configured.
+   * @return The parser model, or {@code null} when none is configured. The model is immutable and
+   *     shared; per-thread {@code Parser} instances are created from it on demand.
    */
-  private Parser loadParser(Map<String, String> configuration) {
+  private ParserModel loadParserModel(Map<String, String> configuration) {
     final String configuredPath = configuration.get(KEY_PARSER_PATH);
     if (configuredPath == null || configuredPath.isBlank()) {
       return null;
     }
     try (InputStream input = new FileInputStream(configuredPath)) {
-      final Parser loaded = ParserFactory.create(new ParserModel(input));
+      final ParserModel model = new ParserModel(input);
       logger.info("Loaded parser model from {}", configuredPath);
-      return loaded;
+      return model;
     } catch (FileNotFoundException e) {
       // A configured path that does not exist is an operator error, not an internal fault.
       throw AnalysisException.notFound("Configured parser model file not found: " + configuredPath);
@@ -472,7 +520,7 @@ public final class ModelBundleCache {
     if (sentimentRegistry.isAvailable()) {
       catalog.put(ProfileRegistry.SENTIMENT_BUNDLE_ID, buildSentimentBundleCatalog());
     }
-    if (parser != null) {
+    if (parserAvailable) {
       catalog.put(ProfileRegistry.PARSE_BUNDLE_ID, buildParseBundleCatalog());
     }
     return catalog;

@@ -17,9 +17,11 @@
  */
 package org.apache.opennlp.grpc.model;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.NamedEntity;
@@ -29,11 +31,30 @@ import org.apache.opennlp.grpc.v1.NamedEntity;
  * external jar can contribute a name finder backend without changes to the server. It is
  * activated by a {@code model.name_finder_stub.type=<entity-type>} configuration entry and
  * otherwise contributes nothing, so it stays inert for every other test.
+ *
+ * <p>A second key, {@code model.name_finder_stub.closeable_type=<entity-type>}, contributes an
+ * {@link AutoCloseable} recognizer that records how many times it was closed (via
+ * {@link #closeCount()}). It stands in for a DL name finder that holds a native session, so tests
+ * can assert the registry releases such models on {@code close()} without loading an ONNX
+ * model.</p>
  */
 public final class StubNerBackendFactory implements NerBackendFactory {
 
   public static final String FACTORY_ID = "stub";
   public static final String KEY_TYPE = "model.name_finder_stub.type";
+  public static final String KEY_CLOSEABLE_TYPE = "model.name_finder_stub.closeable_type";
+
+  private static final AtomicInteger CLOSE_COUNT = new AtomicInteger();
+
+  /** @return How many times a closeable stub recognizer has been closed since the last reset. */
+  public static int closeCount() {
+    return CLOSE_COUNT.get();
+  }
+
+  /** Resets the close counter so a test starts from a known state. */
+  public static void resetCloseCount() {
+    CLOSE_COUNT.set(0);
+  }
 
   @Override
   public String factoryId() {
@@ -42,11 +63,16 @@ public final class StubNerBackendFactory implements NerBackendFactory {
 
   @Override
   public List<NerModel> create(Map<String, String> configuration, NerBackendContext context) {
+    final List<NerModel> models = new ArrayList<>();
     final String type = configuration.get(KEY_TYPE);
-    if (type == null || type.isBlank()) {
-      return List.of();
+    if (type != null && !type.isBlank()) {
+      models.add(new StubNerModel(NameFinderRegistry.normalize(type)));
     }
-    return List.of(new StubNerModel(NameFinderRegistry.normalize(type)));
+    final String closeableType = configuration.get(KEY_CLOSEABLE_TYPE);
+    if (closeableType != null && !closeableType.isBlank()) {
+      models.add(new CloseableStubNerModel(NameFinderRegistry.normalize(closeableType)));
+    }
+    return models;
   }
 
   /** A recognizer that reports an entity type but finds nothing; enough to prove discovery. */
@@ -80,6 +106,51 @@ public final class StubNerBackendFactory implements NerBackendFactory {
     @Override
     public List<NamedEntity> recognize(AnnotatedSentence sentence, boolean includeProbabilities) {
       return List.of();
+    }
+  }
+
+  /** A recognizer that holds a (pretend) native resource and records its release on close. */
+  private static final class CloseableStubNerModel implements NerModel, AutoCloseable {
+
+    private final String type;
+
+    CloseableStubNerModel(String type) {
+      this.type = type;
+    }
+
+    @Override
+    public String id() {
+      return FACTORY_ID + ":closeable:" + type;
+    }
+
+    @Override
+    public String backendId() {
+      return FACTORY_ID;
+    }
+
+    @Override
+    public Set<String> entityTypes() {
+      return Set.of(type);
+    }
+
+    @Override
+    public boolean isStateful() {
+      return false;
+    }
+
+    @Override
+    public void clearAdaptiveData() {
+      // Stateless.
+    }
+
+    @Override
+    public List<NamedEntity> recognize(AnnotatedSentence sentence, boolean includeProbabilities) {
+      return List.of();
+    }
+
+    @Override
+    public void close() {
+      CLOSE_COUNT.incrementAndGet();
     }
   }
 }

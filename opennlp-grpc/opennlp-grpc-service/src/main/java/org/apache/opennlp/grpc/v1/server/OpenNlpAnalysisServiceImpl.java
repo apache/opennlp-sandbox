@@ -33,11 +33,15 @@ import org.apache.opennlp.grpc.v1.GetServiceInfoResponse;
 import org.apache.opennlp.grpc.v1.ListModelBundlesRequest;
 import org.apache.opennlp.grpc.v1.ListModelBundlesResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpAnalysisServiceGrpc;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * gRPC adapter for the v1 document-centric API.
  */
 public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenNlpAnalysisServiceImplBase {
+
+  private static final Logger logger = LoggerFactory.getLogger(OpenNlpAnalysisServiceImpl.class);
 
   private static final String API_VERSION = "v1";
 
@@ -68,6 +72,13 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
       final Status status = GrpcStatusMapper.toStatus(e);
       responseObserver.onError(
           status.withDescription(e.getMessage()).withCause(e.getCause()).asRuntimeException());
+    } catch (RuntimeException e) {
+      // Any non-AnalysisException is an unexpected server fault. Without this it would escape the
+      // handler and gRPC would close the call with an opaque UNKNOWN (and risk leaking the raw
+      // exception); map it to a clean INTERNAL, logging the detail server-side only.
+      logger.error("Unexpected error handling AnalyzeDocument", e);
+      responseObserver.onError(Status.INTERNAL
+          .withDescription("Internal server error").withCause(e).asRuntimeException());
     }
   }
 

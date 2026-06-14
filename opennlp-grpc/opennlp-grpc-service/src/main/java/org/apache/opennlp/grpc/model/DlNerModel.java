@@ -44,7 +44,7 @@ import org.apache.opennlp.grpc.v1.NamedEntity;
  * {@link #recognize} reports each entity under the model's own label and the registry
  * indexes the model under all {@link #entityTypes() types} it can produce.</p>
  */
-final class DlNerModel implements NerModel {
+final class DlNerModel implements NerModel, AutoCloseable {
 
   private final String id;
   private final Set<String> entityTypes;
@@ -56,6 +56,12 @@ final class DlNerModel implements NerModel {
     this.entityTypes = Set.copyOf(Objects.requireNonNull(entityTypes, "entityTypes"));
     this.backendId = Objects.requireNonNull(backendId, "backendId");
     this.nameFinderDL = Objects.requireNonNull(nameFinderDL, "nameFinderDL");
+  }
+
+  /** Releases the underlying ONNX session held by the {@link NameFinderDL}. */
+  @Override
+  public void close() throws Exception {
+    nameFinderDL.close();
   }
 
   @Override

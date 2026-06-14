@@ -36,6 +36,7 @@ import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
 import org.apache.opennlp.grpc.v1.ModelBundleRef;
+import org.apache.opennlp.grpc.v1.POSTagFormat;
 import org.apache.opennlp.grpc.v1.ParseFormat;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 
@@ -88,6 +89,7 @@ final class AnalysisRequestValidator {
     validateDocCategorizeRequest(profile);
     validateSentimentRequest(profile);
     validateParseRequest(profile);
+    validatePosTagFormat(profile);
     validateEmbeddingRequest(request, profile);
     validateChunkEmbedConfigs(request);
   }
@@ -190,6 +192,21 @@ final class AnalysisRequestValidator {
       throw AnalysisException.invalidArgument(
           "Multiple sentiment models are configured; set " + SentimentRegistry.KEY_DEFAULT_ID
               + " to select one. Configured ids: " + sentimentRegistry.modelIds());
+    }
+  }
+
+  private void validatePosTagFormat(AnalysisProfile profile) {
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_POS_TAG)) {
+      return;
+    }
+    final POSTagFormat format = profile.getPosTagFormat();
+    if (format != POSTagFormat.POS_TAG_FORMAT_UNSPECIFIED
+        && format != POSTagFormat.UNRECOGNIZED) {
+      // The tagger emits its model's native tagset; we do not convert/select tagsets, so reject
+      // rather than silently returning a different tagset than the client asked for.
+      throw AnalysisException.unimplemented(
+          "pos_tag_format selection is not implemented; the POS tagger emits its model's native "
+              + "tagset (requested " + format + ")");
     }
   }
 

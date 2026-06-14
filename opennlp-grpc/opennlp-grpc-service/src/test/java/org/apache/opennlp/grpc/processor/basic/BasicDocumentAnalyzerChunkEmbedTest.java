@@ -103,4 +103,27 @@ class BasicDocumentAnalyzerChunkEmbedTest {
     assertTrue(response.getDocument().getSentences(0).getTokensCount() > 0);
     assertEquals(3, response.getDocument().getChunkEmbeddingGroups(0).getChunksCount());
   }
+
+  @Test
+  void overlappingTokenChunksCountEachTokenOnceInGroupTotal() {
+    // "one two three four five" = 5 tokens; size 2, overlap 1 (step 1) yields overlapping
+    // chunks [0,1],[1,2],[2,3],[3,4] (the chunker stops once a window reaches the last token).
+    // total_tokens must be the 5 distinct tokens, not the inflated per-chunk sum (8).
+    final var response = analyzer.analyze(AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setRawText("one two three four five").build())
+        .addChunkEmbedConfigs(ChunkEmbedConfigEntry.newBuilder()
+            .setConfigId("overlap-chunks")
+            .setChunking(ChunkingSpec.newBuilder()
+                .setAlgorithm("token")
+                .setChunkSize(2)
+                .setChunkOverlap(1)
+                .build())
+            .addEmbeddingModelIds("minilm")
+            .build())
+        .build());
+
+    final var group = response.getDocument().getChunkEmbeddingGroups(0);
+    assertEquals(4, group.getChunksCount());
+    assertEquals(5, group.getStats().getTotalTokens());
+  }
 }

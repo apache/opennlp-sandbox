@@ -17,11 +17,16 @@
  */
 package org.apache.opennlp.grpc.v1.server;
 
+import java.util.EnumMap;
+
 import io.grpc.Status;
 import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.processor.AnalysisException.FailureType;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class GrpcStatusMapperTest {
 
@@ -35,8 +40,35 @@ class GrpcStatusMapperTest {
         GrpcStatusMapper.toStatus(AnalysisException.failedPrecondition("state")).getCode());
     assertEquals(Status.Code.UNIMPLEMENTED,
         GrpcStatusMapper.toStatus(AnalysisException.unimplemented("later")).getCode());
+    assertEquals(Status.Code.UNAVAILABLE,
+        GrpcStatusMapper.toStatus(AnalysisException.unavailable("remote down", null)).getCode());
     assertEquals(Status.Code.INTERNAL,
         GrpcStatusMapper.toStatus(AnalysisException.internal("boom", new IllegalStateException()))
             .getCode());
+  }
+
+  @Test
+  void everyFailureTypeMapsToADistinctNonOkStatus() {
+    // Driven by FailureType.values() so a newly added failure type without an asserted, distinct,
+    // non-OK mapping fails here (and the exhaustive switch below fails to compile).
+    final EnumMap<FailureType, Status.Code> seen = new EnumMap<>(FailureType.class);
+    for (FailureType type : FailureType.values()) {
+      final Status.Code code = GrpcStatusMapper.toStatus(exceptionFor(type)).getCode();
+      assertNotEquals(Status.Code.OK, code, type + " maps to OK");
+      assertFalse(seen.containsValue(code), "duplicate gRPC status for " + type);
+      seen.put(type, code);
+    }
+    assertEquals(FailureType.values().length, seen.size());
+  }
+
+  private static AnalysisException exceptionFor(FailureType type) {
+    return switch (type) {
+      case INVALID_ARGUMENT -> AnalysisException.invalidArgument("x");
+      case NOT_FOUND -> AnalysisException.notFound("x");
+      case FAILED_PRECONDITION -> AnalysisException.failedPrecondition("x");
+      case UNIMPLEMENTED -> AnalysisException.unimplemented("x");
+      case UNAVAILABLE -> AnalysisException.unavailable("x", null);
+      case INTERNAL -> AnalysisException.internal("x", null);
+    };
   }
 }

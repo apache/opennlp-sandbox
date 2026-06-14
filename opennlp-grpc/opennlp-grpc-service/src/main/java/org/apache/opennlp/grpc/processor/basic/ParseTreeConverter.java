@@ -48,14 +48,16 @@ final class ParseTreeConverter {
    * @param sentence The sentence whose tokens terminals are linked to (by left-to-right order).
    * @param structured Whether to populate the nested {@link ParseNode} tree.
    * @param bracketed Whether to populate the Penn-Treebank string.
+   * @param includeProbabilities Whether to set each node's probability (gated like every other
+   *     step's probabilities).
    *
    * @return A {@link ParseTree} carrying exactly the requested views.
    */
-  static ParseTree toParseTree(
-      Parse parse, AnnotatedSentence sentence, boolean structured, boolean bracketed) {
+  static ParseTree toParseTree(Parse parse, AnnotatedSentence sentence,
+      boolean structured, boolean bracketed, boolean includeProbabilities) {
     final ParseTree.Builder tree = ParseTree.newBuilder();
     if (structured) {
-      tree.setRoot(toParseNode(parse, sentence, new int[] {0}));
+      tree.setRoot(toParseNode(parse, sentence, new int[] {0}, includeProbabilities));
     }
     if (bracketed) {
       final StringBuffer sb = new StringBuffer();
@@ -71,7 +73,8 @@ final class ParseTreeConverter {
    * into the sentence; every other node becomes a NONTERMINAL whose span covers its children. The
    * token cursor advances left-to-right, matching the order tokens were parsed.
    */
-  static ParseNode toParseNode(Parse parse, AnnotatedSentence sentence, int[] tokenCursor) {
+  static ParseNode toParseNode(Parse parse, AnnotatedSentence sentence,
+      int[] tokenCursor, boolean includeProbabilities) {
     final Parse[] children = parse.getChildren();
     if (children.length == 1 && Parser.TOK_NODE.equals(children[0].getType())) {
       final int index = tokenCursor[0]++;
@@ -79,18 +82,22 @@ final class ParseTreeConverter {
           ? sentence.getTokens(index).getAnnotationSpan()
           : AnnotationSpan.newBuilder()
               .setSpace(CoordinateSpace.COORDINATE_SPACE_CHAR_DOCUMENT).build();
-      return ParseNode.newBuilder()
+      final ParseNode.Builder terminal = ParseNode.newBuilder()
           .setKind(ParseNodeKind.PARSE_NODE_KIND_TERMINAL)
           .setLabel(parse.getType())
           .setSpan(span)
-          .setTokenIndex(index)
-          .setProbability(parse.getProb())
-          .build();
+          .setTokenIndex(index);
+      if (includeProbabilities) {
+        terminal.setProbability(probability(parse));
+      }
+      return terminal.build();
     }
     final ParseNode.Builder node = ParseNode.newBuilder()
         .setKind(ParseNodeKind.PARSE_NODE_KIND_NONTERMINAL)
-        .setLabel(parse.getType())
-        .setProbability(parse.getProb());
+        .setLabel(parse.getType());
+    if (includeProbabilities) {
+      node.setProbability(probability(parse));
+    }
     int start = Integer.MAX_VALUE;
     int end = Integer.MIN_VALUE;
     for (Parse child : children) {
@@ -100,7 +107,7 @@ final class ParseTreeConverter {
         tokenCursor[0]++;
         continue;
       }
-      final ParseNode childNode = toParseNode(child, sentence, tokenCursor);
+      final ParseNode childNode = toParseNode(child, sentence, tokenCursor, includeProbabilities);
       node.addChildren(childNode);
       start = Math.min(start, childNode.getSpan().getStart());
       end = Math.max(end, childNode.getSpan().getEnd());
@@ -114,5 +121,15 @@ final class ParseTreeConverter {
         .setEnd(end)
         .setSpace(CoordinateSpace.COORDINATE_SPACE_CHAR_DOCUMENT)
         .build()).build();
+  }
+
+  /**
+   * OpenNLP's {@link Parse#getProb()} returns the natural log of the product of the decision
+   * probabilities for the constituent (a non-positive value), so exponentiate it back into the
+   * [0,1] confidence the API uses everywhere else. The synthetic root is assigned a sentinel
+   * prob of 1.0 (not a log value) whose exponential would exceed 1, so clamp to [0,1].
+   */
+  private static double probability(Parse parse) {
+    return Math.min(1.0, Math.exp(parse.getProb()));
   }
 }

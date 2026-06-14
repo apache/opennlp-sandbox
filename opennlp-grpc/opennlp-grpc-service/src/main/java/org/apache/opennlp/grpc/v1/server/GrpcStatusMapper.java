@@ -36,6 +36,7 @@ public final class GrpcStatusMapper {
       case NOT_FOUND -> Status.NOT_FOUND;
       case FAILED_PRECONDITION -> Status.FAILED_PRECONDITION;
       case UNIMPLEMENTED -> Status.UNIMPLEMENTED;
+      case UNAVAILABLE -> Status.UNAVAILABLE;
       case INTERNAL -> Status.INTERNAL;
     };
   }

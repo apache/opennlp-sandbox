@@ -18,6 +18,7 @@
 package org.apache.opennlp.grpc.chunk;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -133,14 +134,16 @@ public final class ChunkEmbedProcessor {
       }
     }
 
-    int totalTokens = 0;
+    // Token-window chunks overlap, so a token can appear in several chunks; count each token
+    // once for the group total by deduplicating on its (unique) character start offset.
+    final Set<Integer> distinctTokenStarts = new HashSet<>();
     for (int i = 0; i < segments.size(); i++) {
       final SegmentationChunker.ChunkSegment segment = segments.get(i);
       final Chunk.Builder chunk = Chunk.newBuilder()
           .setAnnotationSpan(toSpan(segment.start(), segment.end()))
           .setTextContent(chunkTexts.get(i))
           .addAllContainedSentenceIndices(segment.sentenceIndices());
-      totalTokens += countTokens(document, segment);
+      collectTokenStarts(document, segment, distinctTokenStarts);
       for (String modelId : entry.getEmbeddingModelIdsList()) {
         chunk.addEmbeddings(EmbeddingResult.newBuilder()
             .setModelId(modelId)
@@ -154,7 +157,7 @@ public final class ChunkEmbedProcessor {
 
     group.setStats(ChunkGroupStats.newBuilder()
         .setChunkCount(segments.size())
-        .setTotalTokens(totalTokens)
+        .setTotalTokens(distinctTokenStarts.size())
         .setProcessingTimeMs(System.currentTimeMillis() - started)
         .build());
     return group.build();
@@ -210,18 +213,17 @@ public final class ChunkEmbedProcessor {
     return "semantic".equals(chunking.getAlgorithm()) || chunking.hasSemanticConfig();
   }
 
-  private static int countTokens(OpenNlpDocument document, SegmentationChunker.ChunkSegment segment) {
-    int count = 0;
+  private static void collectTokenStarts(OpenNlpDocument document,
+      SegmentationChunker.ChunkSegment segment, Set<Integer> tokenStarts) {
     for (int sentenceIndex : segment.sentenceIndices()) {
       final AnnotatedSentence sentence = document.getSentences(sentenceIndex);
       for (var token : sentence.getTokensList()) {
         final AnnotationSpan span = token.getAnnotationSpan();
         if (span.getStart() < segment.end() && span.getEnd() > segment.start()) {
-          count++;
+          tokenStarts.add(span.getStart());
         }
       }
     }
-    return count;
   }
 
   private static AnnotationSpan toSpan(int start, int end) {

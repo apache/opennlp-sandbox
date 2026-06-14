@@ -327,6 +327,7 @@ final class ClassicStepRunner {
   void parse(
       OpenNlpDocument.Builder document,
       Set<ParseFormat> formats,
+      boolean includeProbabilities,
       List<ProcessingDiagnostic> diagnostics) {
     final Parser parser = modelBundleCache.getParser();
     if (parser == null) {
@@ -342,8 +343,8 @@ final class ClassicStepRunner {
         continue;
       }
       final Parse parse = parser.parse(Parse.createFromTokens(tokenTexts(sentence)));
-      final ParseTree tree =
-          ParseTreeConverter.toParseTree(parse, sentence, wantStructured, wantBracketed);
+      final ParseTree tree = ParseTreeConverter.toParseTree(
+          parse, sentence, wantStructured, wantBracketed, includeProbabilities);
       document.setSentences(i, sentence.toBuilder().setParseTree(tree).build());
       parsedSentences++;
     }

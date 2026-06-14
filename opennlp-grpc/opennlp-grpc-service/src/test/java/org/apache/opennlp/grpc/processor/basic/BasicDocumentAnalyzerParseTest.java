@@ -20,6 +20,13 @@ package org.apache.opennlp.grpc.processor.basic;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.processor.AnalysisException;
@@ -31,6 +38,7 @@ import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.ParseFormat;
+import org.apache.opennlp.grpc.v1.ParseNode;
 import org.apache.opennlp.grpc.v1.ParseNodeKind;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.junit.jupiter.api.Test;
@@ -109,5 +117,81 @@ class BasicDocumentAnalyzerParseTest {
         .getDocument().getSentences(0);
     assertFalse(bracketedOnly.getParseTree().hasRoot());
     assertFalse(bracketedOnly.getParseTree().getPennTreebank().isBlank());
+  }
+
+  @Test
+  void emitsBoundedProbabilitiesWhenRequested() {
+    final String modelPath = System.getProperty("parser.model.path");
+    assumeTrue(modelPath != null && Files.isRegularFile(Path.of(modelPath)),
+        "set -Dparser.model.path to a real OpenNLP parser model to run this test");
+
+    final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(
+        ProfileRegistry.createDefault(false, false, false, true),
+        new ModelBundleCache(Map.of("model.parser.path", modelPath)));
+    final AnalyzeDocumentResponse response = analyzer.analyze(AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setRawText(TEXT).build())
+        .setOptions(org.apache.opennlp.grpc.v1.AnalysisOptions.newBuilder()
+            .setIncludeProbabilities(true).build())
+        .setProfile(AnalysisProfile.newBuilder()
+            .setProfileId(ProfileRegistry.PARSE_PROFILE_ID)
+            .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+            .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+            .addSteps(PipelineStep.PIPELINE_STEP_PARSE)
+            .build())
+        .build());
+
+    // OpenNLP's Parse.getProb() is a log-probability; exponentiating it must land every node in
+    // [0,1] rather than emitting the raw non-positive log value.
+    assertProbabilitiesBounded(response.getDocument().getSentences(0).getParseTree().getRoot());
+  }
+
+  private static void assertProbabilitiesBounded(ParseNode node) {
+    assertTrue(node.hasProbability(), "probability expected when include_probabilities is set");
+    final double p = node.getProbability();
+    assertTrue(p >= 0.0 && p <= 1.0, "probability out of [0,1]: " + p);
+    for (ParseNode child : node.getChildrenList()) {
+      assertProbabilitiesBounded(child);
+    }
+  }
+
+  @Test
+  void parsesConcurrentlyWithoutCorruption() throws Exception {
+    final String modelPath = System.getProperty("parser.model.path");
+    assumeTrue(modelPath != null && Files.isRegularFile(Path.of(modelPath)),
+        "set -Dparser.model.path to a real OpenNLP parser model to run this test");
+
+    // One analyzer (one shared ModelBundleCache) hit from many threads at once. OpenNLP's parser
+    // is not thread-safe; before the per-thread Parser fix this raced and produced corrupt trees
+    // or exceptions. The bracketed strings of all results must be identical and well-formed.
+    final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(
+        ProfileRegistry.createDefault(false, false, false, true),
+        new ModelBundleCache(Map.of("model.parser.path", modelPath)));
+    final String expected = analyzer.analyze(parseRequest())
+        .getDocument().getSentences(0).getParseTree().getPennTreebank();
+
+    final int threads = 8;
+    final int perThread = 25;
+    final ExecutorService pool = Executors.newFixedThreadPool(threads);
+    try {
+      final List<Callable<Boolean>> tasks = new ArrayList<>();
+      for (int t = 0; t < threads; t++) {
+        tasks.add(() -> {
+          for (int i = 0; i < perThread; i++) {
+            final String ptb = analyzer.analyze(parseRequest())
+                .getDocument().getSentences(0).getParseTree().getPennTreebank();
+            if (!expected.equals(ptb) || !ptb.startsWith("(TOP")) {
+              return false;
+            }
+          }
+          return true;
+        });
+      }
+      for (Future<Boolean> result : pool.invokeAll(tasks)) {
+        assertTrue(result.get(), "concurrent parse produced a corrupt or differing tree");
+      }
+    } finally {
+      pool.shutdownNow();
+      assertTrue(pool.awaitTermination(30, TimeUnit.SECONDS));
+    }
   }
 }

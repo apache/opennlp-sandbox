@@ -122,7 +122,9 @@ public final class DocCategorizerRegistry implements AutoCloseable {
         continue;
       }
       for (DocCategorizerModel model : factory.create(canonical)) {
-        if (modelsById.putIfAbsent(model.id(), model) != null) {
+        // Register under the normalized id so a backend that returns a mixed-case id is still
+        // found by get()/supportsModel(), which look up by the normalized form.
+        if (modelsById.putIfAbsent(normalize(model.id()), model) != null) {
           throw AnalysisException.invalidArgument(
               "Duplicate " + namespace + " model id: " + model.id());
         }

@@ -30,6 +30,7 @@ import org.apache.opennlp.grpc.v1.ChunkingSpec;
 import org.apache.opennlp.grpc.v1.DiagnosticSeverity;
 import org.apache.opennlp.grpc.v1.ModelBundleRef;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.POSTagFormat;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.apache.opennlp.grpc.v1.SemanticChunkingConfig;
 import org.junit.jupiter.api.Test;
@@ -62,6 +63,25 @@ class BasicDocumentAnalyzerPolicyTest {
             .build()));
 
     assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+  }
+
+  @Test
+  void rejectsUnsupportedPosTagFormatInsteadOfReturningWrongTagset() {
+    final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(Map.of());
+
+    final AnalysisException error = assertThrows(AnalysisException.class, () -> analyzer.analyze(
+        AnalyzeDocumentRequest.newBuilder()
+            .setDocument(OpenNlpDocument.newBuilder().setRawText("The dog barked.").build())
+            .setProfile(AnalysisProfile.newBuilder()
+                .setProfileId("pos-ud")
+                .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+                .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+                .addSteps(PipelineStep.PIPELINE_STEP_POS_TAG)
+                .setPosTagFormat(POSTagFormat.POS_TAG_FORMAT_UD)
+                .build())
+            .build()));
+
+    assertEquals(AnalysisException.FailureType.UNIMPLEMENTED, error.getFailureType());
   }
 
   @Test

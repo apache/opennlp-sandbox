@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -68,6 +69,56 @@ class NameFinderRegistryTest {
     assertTrue(registry.isAvailable());
     assertEquals(List.of("person"), registry.entityTypes());
     assertTrue(registry.supportsEntityType("person"));
+  }
+
+  @Test
+  void closeReleasesCloseableModels() {
+    // A DL name finder holds a native ONNX session and must be released on shutdown. The closeable
+    // stub stands in for one (no ONNX model needed) and records its release.
+    StubNerBackendFactory.resetCloseCount();
+    final NameFinderRegistry registry = NameFinderRegistry.create(
+        Map.of(StubNerBackendFactory.KEY_CLOSEABLE_TYPE, "person"));
+    assertTrue(registry.supportsEntityType("person"));
+    assertEquals(0, StubNerBackendFactory.closeCount());
+
+    registry.close();
+    assertEquals(1, StubNerBackendFactory.closeCount());
+  }
+
+  @Test
+  void closeIsHarmlessWhenNoModelHoldsResources() {
+    // Classic NameFinderME models hold no native resources; closing must not throw.
+    StubNerBackendFactory.resetCloseCount();
+    final NameFinderRegistry registry =
+        NameFinderRegistry.create(Map.of(personKey(), personModelPath.toString()));
+    assertDoesNotThrow(registry::close);
+    assertEquals(0, StubNerBackendFactory.closeCount());
+  }
+
+  @Test
+  void modelBundleCacheCloseReleasesNerModels() {
+    // Regression guard: ModelBundleCache.close() must release the name-finder registry, not only
+    // the embedding/doccat/sentiment registries, or DL NER sessions leak at server shutdown.
+    StubNerBackendFactory.resetCloseCount();
+    final ModelBundleCache cache =
+        new ModelBundleCache(Map.of(StubNerBackendFactory.KEY_CLOSEABLE_TYPE, "person"));
+    assertTrue(cache.getNameFinderRegistry().supportsEntityType("person"));
+    assertEquals(0, StubNerBackendFactory.closeCount());
+
+    cache.close();
+    assertEquals(1, StubNerBackendFactory.closeCount());
+  }
+
+  @Test
+  void modelBundleCacheReleasesModelsWhenConstructionFails() {
+    // A closeable NER model is created, then the parser load fails (bad path). The half-built
+    // cache can never be close()d by the caller, so construction itself must release what it
+    // already created rather than leaking the native session.
+    StubNerBackendFactory.resetCloseCount();
+    assertThrows(AnalysisException.class, () -> new ModelBundleCache(Map.of(
+        StubNerBackendFactory.KEY_CLOSEABLE_TYPE, "person",
+        "model.parser.path", "/no/such/parser-model.bin")));
+    assertEquals(1, StubNerBackendFactory.closeCount());
   }
 
   @Test

@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  * {@link #clearAdaptiveData()} resets only the calling thread's state after each document;
  * ONNX models are stateless.</p>
  */
-public final class NameFinderRegistry {
+public final class NameFinderRegistry implements AutoCloseable {
 
   private static final Logger logger = LoggerFactory.getLogger(NameFinderRegistry.class);
 
@@ -188,6 +188,24 @@ public final class NameFinderRegistry {
     for (NerModel model : modelsById.values()) {
       if (model.isStateful()) {
         model.clearAdaptiveData();
+      }
+    }
+  }
+
+  /**
+   * Closes any recognizer that holds native resources (e.g. an ONNX session in a DL name
+   * finder). Classic {@code NameFinderME} models hold none. A failure closing one model is
+   * logged and does not stop the others from being released.
+   */
+  @Override
+  public void close() {
+    for (NerModel model : modelsById.values()) {
+      if (model instanceof AutoCloseable closeable) {
+        try {
+          closeable.close();
+        } catch (Exception e) {
+          logger.warn("Failed to close name finder '{}'", model.id(), e);
+        }
       }
     }
   }

@@ -18,6 +18,7 @@
 package org.apache.opennlp.grpc.model;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -153,6 +154,32 @@ class DocCategorizerRegistryTest {
   }
 
   @Test
+  void rejectsDlConfigWithBlankId() {
+    final AnalysisException error = assertThrows(AnalysisException.class, () ->
+        DocCategorizerRegistry.create(Map.of(
+            OnnxDocCategorizerBackendFactory.KEY_DL_PREFIX + " .path", "/tmp/model.onnx")));
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+  }
+
+  @Test
+  void rejectsDlCategoriesFileWithBlankLine() throws IOException {
+    // A blank line would leave a gap in the line-number->category index map (and an NPE at load);
+    // it must be rejected with a clear config error before any ONNX session is created.
+    final Path model = Files.writeString(modelDir.resolve("m.onnx"), "stub");
+    final Path vocab = Files.writeString(modelDir.resolve("v.txt"), "[CLS]\n[SEP]\n");
+    final Path categories = Files.writeString(modelDir.resolve("cats.txt"), "weather\n\nfinance\n");
+    final String prefix = OnnxDocCategorizerBackendFactory.KEY_DL_PREFIX + "topic.";
+
+    final AnalysisException error = assertThrows(AnalysisException.class, () ->
+        DocCategorizerRegistry.create(Map.of(
+            prefix + "path", model.toString(),
+            prefix + "vocab", vocab.toString(),
+            prefix + "categories", categories.toString())));
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+    assertTrue(error.getMessage().contains("blank line"));
+  }
+
+  @Test
   void rejectsDlConfigMissingRequiredAttribute() {
     // path present but vocab/categories missing.
     final AnalysisException error = assertThrows(AnalysisException.class, () ->
@@ -173,6 +200,18 @@ class DocCategorizerRegistryTest {
     assertTrue(registry.supportsModel("stub:spam"));
     assertEquals(StubDocCategorizerBackendFactory.FACTORY_ID,
         registry.get("stub:spam").backendId());
+  }
+
+  @Test
+  void findsModelWhoseBackendReturnsAMixedCaseId() {
+    // A third-party backend may return an id with uppercase letters; the registry normalizes ids
+    // at registration so get()/supportsModel() (which normalize the lookup) still find it.
+    final DocCategorizerRegistry registry = DocCategorizerRegistry.create(
+        Map.of(StubDocCategorizerBackendFactory.KEY_RAW_ID, "MixedCase"));
+    assertTrue(registry.supportsModel("MixedCase"));
+    assertTrue(registry.supportsModel("mixedcase"));
+    assertEquals(List.of("mixedcase"), registry.modelIds());
+    assertEquals("stub", registry.get("MIXEDCASE").backendId());
   }
 
   @Test

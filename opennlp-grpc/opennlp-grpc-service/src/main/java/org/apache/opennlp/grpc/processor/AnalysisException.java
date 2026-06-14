@@ -34,6 +34,9 @@ public final class AnalysisException extends RuntimeException {
     FAILED_PRECONDITION,
     /** Requested capability is not implemented on this server. */
     UNIMPLEMENTED,
+    /** A required upstream/remote dependency (e.g. a remote embedding backend) is unreachable
+     * or timed out; the request may succeed on retry. */
+    UNAVAILABLE,
     /** Unexpected server-side failure while executing a required step. */
     INTERNAL
   }
@@ -68,6 +71,10 @@ public final class AnalysisException extends RuntimeException {
 
   public static AnalysisException unimplemented(String message) {
     return new AnalysisException(FailureType.UNIMPLEMENTED, message);
+  }
+
+  public static AnalysisException unavailable(String message, Throwable cause) {
+    return new AnalysisException(FailureType.UNAVAILABLE, message, cause);
   }
 
   public static AnalysisException internal(String message, Throwable cause) {

@@ -22,6 +22,7 @@ import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.Chunk;
 import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
 import org.apache.opennlp.grpc.v1.EmbeddingResult;
+import org.apache.opennlp.grpc.v1.NamedEntity;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.ParseNode;
@@ -51,6 +52,12 @@ final class DocumentOffsetEncoder {
         final Token.Builder token = sentence.getTokens(t).toBuilder();
         token.setAnnotationSpan(remap(token.getAnnotationSpan(), mapper));
         sentence.setTokens(t, token.build());
+      }
+      for (int en = 0; en < sentence.getEntitiesCount(); en++) {
+        final NamedEntity entity = sentence.getEntities(en);
+        sentence.setEntities(en, entity.toBuilder()
+            .setAnnotationSpan(remap(entity.getAnnotationSpan(), mapper))
+            .build());
       }
       if (sentence.hasParseTree() && sentence.getParseTree().hasRoot()) {
         final ParseTree.Builder tree = sentence.getParseTree().toBuilder();

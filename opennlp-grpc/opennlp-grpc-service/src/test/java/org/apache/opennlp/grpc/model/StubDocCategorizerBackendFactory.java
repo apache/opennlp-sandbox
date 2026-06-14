@@ -17,6 +17,7 @@
  */
 package org.apache.opennlp.grpc.model;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -32,6 +33,9 @@ public final class StubDocCategorizerBackendFactory implements DocCategorizerBac
 
   public static final String FACTORY_ID = "stub";
   public static final String KEY_CATEGORY = "model.doccat_stub.category";
+  /** Contributes a model whose {@code id()} is the raw (un-normalized) value, to exercise that the
+   * registry normalizes ids at registration so a mixed-case id is still found. */
+  public static final String KEY_RAW_ID = "model.doccat_stub.raw_id";
 
   @Override
   public String factoryId() {
@@ -40,11 +44,16 @@ public final class StubDocCategorizerBackendFactory implements DocCategorizerBac
 
   @Override
   public List<DocCategorizerModel> create(Map<String, String> configuration) {
+    final List<DocCategorizerModel> models = new ArrayList<>();
     final String category = configuration.get(KEY_CATEGORY);
-    if (category == null || category.isBlank()) {
-      return List.of();
+    if (category != null && !category.isBlank()) {
+      models.add(new StubDocCategorizerModel(DocCategorizerRegistry.normalize(category)));
     }
-    return List.of(new StubDocCategorizerModel(DocCategorizerRegistry.normalize(category)));
+    final String rawId = configuration.get(KEY_RAW_ID);
+    if (rawId != null && !rawId.isBlank()) {
+      models.add(new RawIdStubModel(rawId));
+    }
+    return models;
   }
 
   /** A categorizer that always returns its single fixed category with score 1.0. */
@@ -77,6 +86,31 @@ public final class StubDocCategorizerBackendFactory implements DocCategorizerBac
       return DocumentClassification.newBuilder()
           .setBestCategory(category)
           .putCategoryScores(category, 1.0d)
+          .build();
+    }
+  }
+
+  /** A model that returns its id verbatim (no normalization), to test registry id normalization. */
+  private record RawIdStubModel(String rawId) implements DocCategorizerModel {
+
+    @Override
+    public String id() {
+      return rawId;
+    }
+
+    @Override
+    public String backendId() {
+      return FACTORY_ID;
+    }
+
+    @Override
+    public List<String> categories() {
+      return List.of("x");
+    }
+
+    @Override
+    public DocumentClassification classify(String documentText, String[] documentTokens) {
+      return DocumentClassification.newBuilder().setBestCategory("x").putCategoryScores("x", 1.0d)
           .build();
     }
   }

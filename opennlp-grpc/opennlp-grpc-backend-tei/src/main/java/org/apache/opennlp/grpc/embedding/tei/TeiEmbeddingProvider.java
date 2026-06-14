@@ -228,7 +228,10 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
 
   private static AnalysisException remoteFailure(
       String operation, String modelId, String target, Throwable cause) {
-    return AnalysisException.internal(
+    // A remote backend that is unreachable, times out, or returns a transport error is an
+    // upstream availability problem (retryable), not an internal server bug, so surface it as
+    // UNAVAILABLE rather than collapsing every remote fault to INTERNAL.
+    return AnalysisException.unavailable(
         operation + " to TEI backend '" + target + "' failed for model '" + modelId + "'",
         cause);
   }

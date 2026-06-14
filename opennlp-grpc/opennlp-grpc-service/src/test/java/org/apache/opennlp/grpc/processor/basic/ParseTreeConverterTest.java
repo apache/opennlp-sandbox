@@ -64,7 +64,7 @@ class ParseTreeConverterTest {
   @Test
   void buildsTypedStructuredTreeLinkedToTokens() {
     final ParseTree tree =
-        ParseTreeConverter.toParseTree(Parse.parseParse(TREEBANK), sentence(), true, false);
+        ParseTreeConverter.toParseTree(Parse.parseParse(TREEBANK), sentence(), true, false, false);
 
     final ParseNode root = tree.getRoot();
     assertEquals("TOP", root.getLabel());
@@ -97,7 +97,7 @@ class ParseTreeConverterTest {
   @Test
   void nonterminalSpansCoverTheirDescendants() {
     final ParseNode root =
-        ParseTreeConverter.toParseTree(Parse.parseParse(TREEBANK), sentence(), true, false)
+        ParseTreeConverter.toParseTree(Parse.parseParse(TREEBANK), sentence(), true, false, false)
             .getRoot();
     final ParseNode s = root.getChildren(0);
     final ParseNode np = s.getChildren(0);
@@ -116,7 +116,7 @@ class ParseTreeConverterTest {
   @Test
   void bracketedViewIsStandardTreebankString() {
     final ParseTree tree =
-        ParseTreeConverter.toParseTree(Parse.parseParse(TREEBANK), sentence(), false, true);
+        ParseTreeConverter.toParseTree(Parse.parseParse(TREEBANK), sentence(), false, true, false);
 
     assertFalse(tree.hasRoot());
     final String ptb = tree.getPennTreebank();
@@ -130,8 +130,26 @@ class ParseTreeConverterTest {
   @Test
   void populatesBothViewsWhenRequested() {
     final ParseTree tree =
-        ParseTreeConverter.toParseTree(Parse.parseParse(TREEBANK), sentence(), true, true);
+        ParseTreeConverter.toParseTree(Parse.parseParse(TREEBANK), sentence(), true, true, false);
     assertTrue(tree.hasRoot());
     assertTrue(tree.hasPennTreebank());
+  }
+
+  @Test
+  void nodeProbabilityIsGatedByTheFlag() {
+    // Without the flag no probability is emitted; with it, every node carries one. (The [0,1]
+    // bound from exponentiating OpenNLP's log-prob is asserted in the real-model parse test;
+    // parseParse here uses synthetic placeholder probabilities.)
+    final ParseNode noProb =
+        ParseTreeConverter.toParseTree(Parse.parseParse(TREEBANK), sentence(), true, false, false)
+            .getRoot();
+    assertFalse(noProb.hasProbability());
+    assertFalse(noProb.getChildren(0).getChildren(0).hasProbability());
+
+    final ParseNode withProb =
+        ParseTreeConverter.toParseTree(Parse.parseParse(TREEBANK), sentence(), true, false, true)
+            .getRoot();
+    assertTrue(withProb.hasProbability());
+    assertTrue(withProb.getChildren(0).getChildren(0).hasProbability());
   }
 }

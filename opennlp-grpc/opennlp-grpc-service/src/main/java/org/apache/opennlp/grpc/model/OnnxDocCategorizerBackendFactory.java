@@ -88,6 +88,10 @@ public final class OnnxDocCategorizerBackendFactory implements DocCategorizerBac
         throw AnalysisException.invalidArgument("Invalid ONNX document categorizer key: " + key);
       }
       final String id = DocCategorizerRegistry.normalize(remainder.substring(0, lastDot));
+      if (id.isEmpty()) {
+        throw AnalysisException.invalidArgument(
+            "Invalid ONNX document categorizer key: " + key + "; id must not be blank");
+      }
       final String attr = remainder.substring(lastDot + 1).trim().toLowerCase(Locale.ROOT);
       byId.computeIfAbsent(id, k -> new LinkedHashMap<>()).put(attr, entry.getValue());
     }
@@ -157,15 +161,23 @@ public final class OnnxDocCategorizerBackendFactory implements DocCategorizerBac
     }
   }
 
-  /** Reads a category-per-line file, mapping each line number (0-based) to its category. */
+  /**
+   * Reads a category-per-line file, mapping each line number (0-based) to its category. A blank
+   * line is rejected rather than skipped: skipping would leave a gap in the index map, and since
+   * the line number is the model's output index, a gap silently misaligns scores to categories
+   * (and yields a null category / NPE at model load).
+   */
   private static Map<Integer, String> loadCategories(File categoriesFile) throws IOException {
     final List<String> lines = Files.readAllLines(categoriesFile.toPath(), StandardCharsets.UTF_8);
     final Map<Integer, String> categories = new HashMap<>();
     for (int i = 0; i < lines.size(); i++) {
       final String category = lines.get(i).trim();
-      if (!category.isEmpty()) {
-        categories.put(i, category);
+      if (category.isEmpty()) {
+        throw AnalysisException.invalidArgument("Categories file " + categoriesFile
+            + " has a blank line at line " + (i + 1) + "; every line must name exactly one "
+            + "category (line number = output index)");
       }
+      categories.put(i, category);
     }
     if (categories.isEmpty()) {
       throw new IOException("Categories file is empty: " + categoriesFile);
