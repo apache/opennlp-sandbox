@@ -292,14 +292,39 @@ class OpenNlpGrpcServerLiveIT {
 
   /** TEI Embed stub returning {@code [length(inputs), 1, 1]} for every request. */
   private static final class StubTeiEmbedService extends EmbedGrpc.EmbedImplBase {
-    @Override
-    public void embed(EmbedRequest request, StreamObserver<EmbedResponse> observer) {
-      observer.onNext(EmbedResponse.newBuilder()
+    private static EmbedResponse embedding(EmbedRequest request) {
+      return EmbedResponse.newBuilder()
           .addEmbeddings(request.getInputs().length())
           .addEmbeddings(1f)
           .addEmbeddings(1f)
-          .build());
+          .build();
+    }
+
+    @Override
+    public void embed(EmbedRequest request, StreamObserver<EmbedResponse> observer) {
+      observer.onNext(embedding(request));
       observer.onCompleted();
+    }
+
+    @Override
+    public StreamObserver<EmbedRequest> embedStream(StreamObserver<EmbedResponse> observer) {
+      // The provider now batches via the bidi EmbedStream RPC; echo one response per request.
+      return new StreamObserver<>() {
+        @Override
+        public void onNext(EmbedRequest request) {
+          observer.onNext(embedding(request));
+        }
+
+        @Override
+        public void onError(Throwable t) {
+          observer.onError(t);
+        }
+
+        @Override
+        public void onCompleted() {
+          observer.onCompleted();
+        }
+      };
     }
   }
 }

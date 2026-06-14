@@ -24,13 +24,18 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.StreamObserver;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.tei.v1.EmbedGrpc;
@@ -67,10 +72,11 @@ import org.slf4j.LoggerFactory;
  * unreachable endpoints therefore fail at server startup rather than on the first
  * request.</p>
  *
- * <p>{@link #embedBatch(String, List)} fans the batch out as concurrent unary calls on
- * the multiplexed HTTP/2 connection and preserves input order; TEI performs its own
- * server-side request batching. Tokenization, truncation, pooling and normalization all
- * happen inside TEI.</p>
+ * <p>{@link #embedBatch(String, List)} streams the whole batch over TEI's bidirectional
+ * {@code EmbedStream} RPC: every text is sent on one streaming call and TEI returns the
+ * embeddings in request order while batching them server-side. This is one call instead of
+ * a fan-out of unary requests, and the same streaming path a fully streaming v2 will build
+ * on. Tokenization, truncation, pooling and normalization all happen inside TEI.</p>
  */
 public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoCloseable {
 
@@ -91,6 +97,8 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
   private final Map<String, TeiEndpoint> models;
   private final String defaultModelId;
   private final long deadlineMs;
+  /** Virtual-thread executor for channel callbacks (e.g. EmbedStream responses); null when inert. */
+  private final ExecutorService channelExecutor;
 
   /**
    * Connects to all configured TEI endpoints and validates them.
@@ -105,7 +113,18 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
   public TeiEmbeddingProvider(Map<String, String> configuration) {
     Objects.requireNonNull(configuration, "configuration must not be null");
     this.deadlineMs = parseDeadline(configuration);
-    this.models = connectAll(configuration, deadlineMs);
+    final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+    try {
+      this.models = connectAll(configuration, deadlineMs, executor);
+    } catch (RuntimeException e) {
+      executor.shutdown();
+      throw e;
+    }
+    // Keep the executor only if it actually serves channels; an inert provider holds nothing.
+    this.channelExecutor = models.isEmpty() ? null : executor;
+    if (channelExecutor == null) {
+      executor.shutdown();
+    }
     this.defaultModelId = resolveDefaultModelId(configuration, models);
   }
 
@@ -152,24 +171,64 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
   public List<float[]> embedBatch(String modelId, List<String> texts) {
     Objects.requireNonNull(texts, "texts must not be null");
     final TeiEndpoint endpoint = requireModel(modelId);
-    final List<Future<EmbedResponse>> pending = new ArrayList<>(texts.size());
-    final EmbedGrpc.EmbedFutureStub stub =
-        endpoint.futureStub.withDeadlineAfter(deadlineMs, TimeUnit.MILLISECONDS);
-    for (String text : texts) {
-      Objects.requireNonNull(text, "texts must not contain null elements");
-      pending.add(stub.embed(embedRequest(endpoint, text)));
+    if (texts.isEmpty()) {
+      return List.of();
     }
+    // One bidirectional EmbedStream call: send every text and collect the responses, which
+    // TEI returns in request order while batching them server-side. The response observer is
+    // invoked on a gRPC thread; the latch publishes its writes to this thread before we read.
     final List<float[]> vectors = new ArrayList<>(texts.size());
-    for (Future<EmbedResponse> future : pending) {
-      try {
-        vectors.add(toVector(future.get()));
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw AnalysisException.internal(
-            "Interrupted while waiting for TEI batch embeddings from '" + endpoint.target + "'", e);
-      } catch (ExecutionException e) {
-        throw remoteFailure("Batch embedding call", modelId, endpoint.target, e.getCause());
+    final CountDownLatch completed = new CountDownLatch(1);
+    final AtomicReference<Throwable> failure = new AtomicReference<>();
+    final StreamObserver<EmbedRequest> requests = EmbedGrpc.newStub(endpoint.channel)
+        .withDeadlineAfter(deadlineMs, TimeUnit.MILLISECONDS)
+        .embedStream(new StreamObserver<>() {
+          @Override
+          public void onNext(EmbedResponse response) {
+            vectors.add(toVector(response));
+          }
+
+          @Override
+          public void onError(Throwable t) {
+            failure.set(t);
+            completed.countDown();
+          }
+
+          @Override
+          public void onCompleted() {
+            completed.countDown();
+          }
+        });
+    try {
+      for (String text : texts) {
+        Objects.requireNonNull(text, "texts must not contain null elements");
+        requests.onNext(embedRequest(endpoint, text));
       }
+      requests.onCompleted();
+      if (!completed.await(deadlineMs, TimeUnit.MILLISECONDS)) {
+        requests.onError(Status.DEADLINE_EXCEEDED.asRuntimeException());
+        throw remoteFailure("Batch embedding stream", modelId, endpoint.target,
+            new TimeoutException(
+                "TEI EmbedStream did not complete within " + deadlineMs + " ms"));
+      }
+    } catch (InterruptedException e) {
+      requests.onError(e);
+      Thread.currentThread().interrupt();
+      throw AnalysisException.internal(
+          "Interrupted while streaming TEI batch embeddings from '" + endpoint.target + "'", e);
+    } catch (RuntimeException e) {
+      // A request-side failure (e.g. a null element) must abort the stream before propagating.
+      requests.onError(e);
+      throw e;
+    }
+    final Throwable error = failure.get();
+    if (error != null) {
+      throw remoteFailure("Batch embedding stream", modelId, endpoint.target, error);
+    }
+    if (vectors.size() != texts.size()) {
+      throw AnalysisException.unavailable(
+          "TEI backend '" + endpoint.target + "' returned " + vectors.size()
+              + " embeddings for " + texts.size() + " inputs (model '" + modelId + "')", null);
     }
     return vectors;
   }
@@ -193,6 +252,9 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
   public void close() {
     for (Map.Entry<String, TeiEndpoint> entry : models.entrySet()) {
       shutdownChannel(entry.getKey(), entry.getValue().channel);
+    }
+    if (channelExecutor != null) {
+      channelExecutor.shutdown();
     }
   }
 
@@ -234,7 +296,7 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
   }
 
   private static Map<String, TeiEndpoint> connectAll(
-      Map<String, String> configuration, long deadlineMs) {
+      Map<String, String> configuration, long deadlineMs, ExecutorService channelExecutor) {
     final Map<String, String> targets = new HashMap<>();
     final Map<String, Boolean> useTls = new HashMap<>();
     final Map<String, Boolean> truncate = new HashMap<>();
@@ -279,7 +341,7 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
             useTls.getOrDefault(modelId, Boolean.FALSE),
             truncate.getOrDefault(modelId, Boolean.TRUE),
             normalize.getOrDefault(modelId, Boolean.TRUE),
-            deadlineMs));
+            deadlineMs, channelExecutor));
       }
     } catch (RuntimeException e) {
       for (Map.Entry<String, TeiEndpoint> entry : connected.entrySet()) {
@@ -292,8 +354,9 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
 
   private static TeiEndpoint connect(
       String modelId, String target, boolean useTls, boolean truncate, boolean normalize,
-      long deadlineMs) {
-    final ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forTarget(target);
+      long deadlineMs, ExecutorService channelExecutor) {
+    final ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forTarget(target)
+        .executor(channelExecutor);
     if (useTls) {
       builder.useTransportSecurity();
     } else {
@@ -340,7 +403,7 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
       logger.info("Connected embedding model '{}' to TEI backend '{}' (served model='{}',"
               + " dimension={}, truncate={}, normalize={})",
           modelId, target, info.getModelId(), probe.getEmbeddingsCount(), truncate, normalize);
-      return new TeiEndpoint(channel, blockingStub, EmbedGrpc.newFutureStub(channel),
+      return new TeiEndpoint(channel, blockingStub,
           target, truncate, normalize, probe.getEmbeddingsCount());
     } catch (RuntimeException e) {
       shutdownChannel(modelId, channel);
@@ -401,7 +464,6 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
   private record TeiEndpoint(
       ManagedChannel channel,
       EmbedGrpc.EmbedBlockingStub blockingStub,
-      EmbedGrpc.EmbedFutureStub futureStub,
       String target,
       boolean truncate,
       boolean normalize,

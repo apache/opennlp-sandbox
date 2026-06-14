@@ -220,17 +220,42 @@ class TeiEmbeddingProviderTest {
     }
   }
 
-  /** Embed stub returning {@code [length(inputs), 1, 1]} for every request. */
+  /** Embed stub returning {@code [length(inputs), 1, 1]} for every request, unary and streamed. */
   private static final class StubEmbedService extends EmbedGrpc.EmbedImplBase {
 
-    @Override
-    public void embed(EmbedRequest request, StreamObserver<EmbedResponse> observer) {
-      observer.onNext(EmbedResponse.newBuilder()
+    private static EmbedResponse embedding(EmbedRequest request) {
+      return EmbedResponse.newBuilder()
           .addEmbeddings(request.getInputs().length())
           .addEmbeddings(1f)
           .addEmbeddings(1f)
-          .build());
+          .build();
+    }
+
+    @Override
+    public void embed(EmbedRequest request, StreamObserver<EmbedResponse> observer) {
+      observer.onNext(embedding(request));
       observer.onCompleted();
+    }
+
+    @Override
+    public StreamObserver<EmbedRequest> embedStream(StreamObserver<EmbedResponse> observer) {
+      // Echo one response per request, in order, mirroring TEI's request-ordered EmbedStream.
+      return new StreamObserver<>() {
+        @Override
+        public void onNext(EmbedRequest request) {
+          observer.onNext(embedding(request));
+        }
+
+        @Override
+        public void onError(Throwable t) {
+          observer.onError(t);
+        }
+
+        @Override
+        public void onCompleted() {
+          observer.onCompleted();
+        }
+      };
     }
   }
 }

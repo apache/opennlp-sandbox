@@ -28,6 +28,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import com.google.protobuf.ByteString;
@@ -102,6 +104,8 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
   private final Map<String, OvmsEndpoint> models;
   private final String defaultModelId;
   private final long deadlineMs;
+  /** Virtual-thread executor for channel callbacks; null when the provider is inert. */
+  private final ExecutorService channelExecutor;
 
   /**
    * Connects to all configured KServe endpoints and validates them.
@@ -117,7 +121,18 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
   public OpenVinoEmbeddingProvider(Map<String, String> configuration) {
     Objects.requireNonNull(configuration, "configuration must not be null");
     this.deadlineMs = parseDeadline(configuration);
-    this.models = connectAll(configuration, deadlineMs);
+    final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+    try {
+      this.models = connectAll(configuration, deadlineMs, executor);
+    } catch (RuntimeException e) {
+      executor.shutdown();
+      throw e;
+    }
+    // Keep the executor only if it actually serves channels; an inert provider holds nothing.
+    this.channelExecutor = models.isEmpty() ? null : executor;
+    if (channelExecutor == null) {
+      executor.shutdown();
+    }
     this.defaultModelId = resolveDefaultModelId(configuration, models);
   }
 
@@ -200,6 +215,9 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
     for (Map.Entry<String, OvmsEndpoint> entry : models.entrySet()) {
       shutdownChannel(entry.getKey(), entry.getValue().channel);
     }
+    if (channelExecutor != null) {
+      channelExecutor.shutdown();
+    }
   }
 
   private OvmsEndpoint requireModel(String modelId) {
@@ -280,7 +298,7 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
   }
 
   private static Map<String, OvmsEndpoint> connectAll(
-      Map<String, String> configuration, long deadlineMs) {
+      Map<String, String> configuration, long deadlineMs, ExecutorService channelExecutor) {
     final Map<String, Map<String, String>> settings = new HashMap<>();
 
     for (Map.Entry<String, String> entry : configuration.entrySet()) {
@@ -303,7 +321,8 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
     final Map<String, OvmsEndpoint> connected = new HashMap<>();
     try {
       for (Map.Entry<String, Map<String, String>> entry : settings.entrySet()) {
-        connected.put(entry.getKey(), connect(entry.getKey(), entry.getValue(), deadlineMs));
+        connected.put(entry.getKey(),
+            connect(entry.getKey(), entry.getValue(), deadlineMs, channelExecutor));
       }
     } catch (RuntimeException e) {
       for (Map.Entry<String, OvmsEndpoint> entry : connected.entrySet()) {
@@ -337,7 +356,8 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
   }
 
   private static OvmsEndpoint connect(
-      String modelId, Map<String, String> settings, long deadlineMs) {
+      String modelId, Map<String, String> settings, long deadlineMs,
+      ExecutorService channelExecutor) {
     final String target = settings.get(KEY_TARGET_SUFFIX);
     final String modelName = settings.get(KEY_MODEL_NAME_SUFFIX);
     if (target == null) {
@@ -352,7 +372,8 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
     final boolean useTls = settings.containsKey(KEY_USE_TLS_SUFFIX)
         && parseBoolean(KEY_PREFIX + modelId + KEY_USE_TLS_SUFFIX, settings.get(KEY_USE_TLS_SUFFIX));
 
-    final ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forTarget(target);
+    final ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forTarget(target)
+        .executor(channelExecutor);
     if (useTls) {
       builder.useTransportSecurity();
     } else {

@@ -25,6 +25,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -63,6 +65,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
   String config;
 
   private Server server;
+  private ExecutorService handlerExecutor;
 
   /** Creates an unstarted server; picocli populates the options before {@link #call()} runs. */
   public OpenNlpGrpcServer() {
@@ -117,7 +120,14 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     final BasicDocumentAnalyzer documentAnalyzer =
         new BasicDocumentAnalyzer(profileRegistry, modelBundleCache);
 
+    // Run each RPC handler on a virtual thread, so a request that blocks on a remote backend
+    // (TEI/OpenVINO), a streaming batch's latch, or native inference unmounts its carrier
+    // instead of pinning a platform thread. The Netty event-loop threads stay platform threads;
+    // only the application-callback executor is virtual.
+    this.handlerExecutor = Executors.newVirtualThreadPerTaskExecutor();
+
     final ServerBuilder<?> builder = ServerBuilder.forPort(port)
+        .executor(handlerExecutor)
         .addService(new OpenNlpAnalysisServiceImpl(
             documentAnalyzer,
             profileRegistry,
@@ -202,6 +212,9 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     if (server != null) {
       logger.info("Shutting down OpenNlpGrpcServer on port {}", server.getPort());
       server.shutdown();
+    }
+    if (handlerExecutor != null) {
+      handlerExecutor.shutdown();
     }
   }
 }
