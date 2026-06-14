@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 
+import org.apache.opennlp.grpc.model.ClassicNerBackendFactory;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
-import org.apache.opennlp.grpc.model.NameFinderRegistry;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.testing.TinyNerModel;
@@ -66,7 +66,7 @@ class BasicDocumentAnalyzerNerTest {
   }
 
   private static String personKey() {
-    return NameFinderRegistry.KEY_PREFIX + "person" + NameFinderRegistry.KEY_SUFFIX;
+    return ClassicNerBackendFactory.KEY_PREFIX + "person" + ClassicNerBackendFactory.KEY_SUFFIX;
   }
 
   private static BasicDocumentAnalyzer analyzerWithPersonModel() {

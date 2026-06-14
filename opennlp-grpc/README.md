@@ -167,6 +167,20 @@ mvn -pl opennlp-grpc/opennlp-grpc-service -Pdl-ner test -Dtest=BasicDocumentAnal
 The model is fetched at build time only — it is never bundled into a built artifact and is
 not redistributed. Without the profile the test skips (no model present).
 
+#### Custom NER backends (SPI)
+
+Name finder backends are discovered through `java.util.ServiceLoader`, mirroring the
+embedding SPI — the built-in classic (`opennlp-me`) and ONNX (`onnx`/`cuda`) backends are
+themselves regular consumers of it. To add another backend (a remote NER service, a custom
+model format, any inference runtime in any language), ship a jar that implements
+`org.apache.opennlp.grpc.model.NerBackendFactory`, registers it in
+`META-INF/services/org.apache.opennlp.grpc.model.NerBackendFactory`, and put that jar on the
+server classpath. Each factory parses its own configuration namespace and returns
+`NerModel` recognizers; the `NameFinderRegistry` aggregates the models from every backend, so
+several backends are active at once. A backend that needs the server's sentence detector
+obtains it from the supplied `NerBackendContext`. The new backend's entity types then
+participate in NER exactly like the built-ins — no change to the server.
+
 ### Embedding models (optional)
 
 Register ONNX sentence-transformer models in the server config:

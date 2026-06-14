@@ -50,7 +50,7 @@ class NameFinderRegistryTest {
   }
 
   private static String personKey() {
-    return NameFinderRegistry.KEY_PREFIX + "person" + NameFinderRegistry.KEY_SUFFIX;
+    return ClassicNerBackendFactory.KEY_PREFIX + "person" + ClassicNerBackendFactory.KEY_SUFFIX;
   }
 
   @Test
@@ -115,7 +115,7 @@ class NameFinderRegistryTest {
     // path present but vocab/labels missing.
     final AnalysisException error = assertThrows(AnalysisException.class, () ->
         NameFinderRegistry.create(Map.of(
-            NameFinderRegistry.KEY_DL_PREFIX + "person.path", "/tmp/model.onnx")));
+            OnnxNerBackendFactory.KEY_DL_PREFIX + "person.path", "/tmp/model.onnx")));
     assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
   }
 
@@ -123,10 +123,10 @@ class NameFinderRegistryTest {
   void rejectsDlConfigUnsupportedBackend() {
     final AnalysisException error = assertThrows(AnalysisException.class, () ->
         NameFinderRegistry.create(Map.of(
-            NameFinderRegistry.KEY_DL_PREFIX + "person.path", "/tmp/model.onnx",
-            NameFinderRegistry.KEY_DL_PREFIX + "person.vocab", "/tmp/vocab.txt",
-            NameFinderRegistry.KEY_DL_PREFIX + "person.labels", "/tmp/labels.txt",
-            NameFinderRegistry.KEY_DL_PREFIX + "person.backend", "tpu")));
+            OnnxNerBackendFactory.KEY_DL_PREFIX + "person.path", "/tmp/model.onnx",
+            OnnxNerBackendFactory.KEY_DL_PREFIX + "person.vocab", "/tmp/vocab.txt",
+            OnnxNerBackendFactory.KEY_DL_PREFIX + "person.labels", "/tmp/labels.txt",
+            OnnxNerBackendFactory.KEY_DL_PREFIX + "person.backend", "tpu")));
     assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
   }
 
@@ -135,9 +135,9 @@ class NameFinderRegistryTest {
     // A complete ONNX config still needs a sentence detector; create(config) supplies none.
     final AnalysisException error = assertThrows(AnalysisException.class, () ->
         NameFinderRegistry.create(Map.of(
-            NameFinderRegistry.KEY_DL_PREFIX + "person.path", "/tmp/model.onnx",
-            NameFinderRegistry.KEY_DL_PREFIX + "person.vocab", "/tmp/vocab.txt",
-            NameFinderRegistry.KEY_DL_PREFIX + "person.labels", "/tmp/labels.txt")));
+            OnnxNerBackendFactory.KEY_DL_PREFIX + "person.path", "/tmp/model.onnx",
+            OnnxNerBackendFactory.KEY_DL_PREFIX + "person.vocab", "/tmp/vocab.txt",
+            OnnxNerBackendFactory.KEY_DL_PREFIX + "person.labels", "/tmp/labels.txt")));
     assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
     assertTrue(error.getMessage().contains("sentence detector"));
   }
@@ -147,5 +147,28 @@ class NameFinderRegistryTest {
     final NameFinderRegistry registry =
         NameFinderRegistry.create(Map.of(personKey(), personModelPath.toString()));
     assertEquals(registry.entityTypes(), registry.resolveEntityTypes(List.of()));
+  }
+
+  @Test
+  void discoversExternalBackendThroughServiceLoader() {
+    // StubNerBackendFactory is registered only via test META-INF/services, like a third-party
+    // jar. Its model joins the built-in backends' models in the same registry.
+    final NameFinderRegistry registry = NameFinderRegistry.create(Map.of(
+        personKey(), personModelPath.toString(),
+        StubNerBackendFactory.KEY_TYPE, "gadget"));
+
+    assertTrue(registry.supportsEntityType("gadget"));
+    assertTrue(registry.supportsEntityType("person"));
+    assertEquals(1, registry.modelsForTypes(List.of("gadget")).size());
+    assertEquals(StubNerBackendFactory.FACTORY_ID,
+        registry.modelsForTypes(List.of("gadget")).get(0).backendId());
+  }
+
+  @Test
+  void externalBackendStaysInertWithoutItsConfiguration() {
+    // Without the stub's activation key, only the built-in classic model is present.
+    final NameFinderRegistry registry =
+        NameFinderRegistry.create(Map.of(personKey(), personModelPath.toString()));
+    assertEquals(List.of("person"), registry.entityTypes());
   }
 }

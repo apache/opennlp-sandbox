@@ -1,0 +1,5 @@
+# Built-in NER backends, discovered by NameFinderRegistry via ServiceLoader.
+# Third-party backends add their own factory by shipping a jar with this same
+# service file (merged on the classpath) naming their NerBackendFactory.
+org.apache.opennlp.grpc.model.ClassicNerBackendFactory
+org.apache.opennlp.grpc.model.OnnxNerBackendFactory
