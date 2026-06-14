@@ -37,6 +37,8 @@ import java.util.Properties;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import opennlp.tools.chunker.ChunkerME;
+import opennlp.tools.chunker.ChunkerModel;
 import opennlp.tools.langdetect.LanguageDetectorME;
 import opennlp.tools.langdetect.LanguageDetectorModel;
 import opennlp.tools.lemmatizer.LemmatizerME;
@@ -88,6 +90,7 @@ public final class ModelBundleCache {
   private static final String KEY_LEMMATIZER_PATH = "model.lemmatizer.path";
   private static final String KEY_LANGDETECT_PATH = "model.language_detector.path";
   private static final String KEY_PARSER_PATH = "model.parser.path";
+  private static final String KEY_CHUNKER_PATH = "model.chunker.path";
 
   /** Backend id reported for models served by the classic OpenNLP maxent runtime. */
   private static final String OPENNLP_ME_BACKEND_ID = "opennlp-me";
@@ -118,6 +121,10 @@ public final class ModelBundleCache {
   // immutable ParserModel. {@code parser} is null when no parser model is configured.
   private final boolean parserAvailable;
   private final ThreadLocal<Parser> parser;
+  // Optional shallow-chunking model (operator-supplied via model.chunker.path, not bundled).
+  // ChunkerME is @ThreadSafe (per-thread state), so a single instance is shared. Null when
+  // no chunker model is configured.
+  private final ChunkerME chunker;
 
   /**
    * Eagerly loads every model and registry described by the given configuration. The classic
@@ -168,6 +175,7 @@ public final class ModelBundleCache {
       this.parserAvailable = parserModel != null;
       this.parser = parserModel == null ? null
           : ThreadLocal.withInitial(() -> ParserFactory.create(parserModel));
+      this.chunker = loadChunker(configuration);
       this.bundles = buildBundleCatalog();
       constructed = true;
     } finally {
@@ -290,6 +298,25 @@ public final class ModelBundleCache {
    */
   public Parser getParser() {
     return parser == null ? null : parser.get();
+  }
+
+  /**
+   * Reports whether a shallow-chunking (ChunkerME) model is configured on this server.
+   *
+   * @return Whether a chunker model is configured.
+   */
+  public boolean isChunkerAvailable() {
+    return chunker != null;
+  }
+
+  /**
+   * Returns the shared shallow chunker. {@code ChunkerME} is thread-safe, so the one instance is
+   * shared across requests.
+   *
+   * @return The chunker, or {@code null} when none is configured.
+   */
+  public ChunkerME getChunker() {
+    return chunker;
   }
 
   /**
@@ -438,6 +465,30 @@ public final class ModelBundleCache {
       throw AnalysisException.notFound("Configured parser model file not found: " + configuredPath);
     } catch (IOException e) {
       throw AnalysisException.internal("Failed to load parser model from " + configuredPath, e);
+    }
+  }
+
+  /**
+   * Loads the optional shallow chunker. Like the parser, the chunker model is operator-supplied
+   * (not bundled), so it is loaded only when {@code model.chunker.path} is configured; otherwise
+   * the server does not offer {@code PIPELINE_STEP_SYNTACTIC_CHUNK}.
+   *
+   * @return A shared thread-safe chunker, or {@code null} when none is configured.
+   */
+  private ChunkerME loadChunker(Map<String, String> configuration) {
+    final String configuredPath = configuration.get(KEY_CHUNKER_PATH);
+    if (configuredPath == null || configuredPath.isBlank()) {
+      return null;
+    }
+    try (InputStream input = new FileInputStream(configuredPath)) {
+      final ChunkerME loaded = new ChunkerME(new ChunkerModel(input));
+      logger.info("Loaded chunker model from {}", configuredPath);
+      return loaded;
+    } catch (FileNotFoundException e) {
+      // A configured path that does not exist is an operator error, not an internal fault.
+      throw AnalysisException.notFound("Configured chunker model file not found: " + configuredPath);
+    } catch (IOException e) {
+      throw AnalysisException.internal("Failed to load chunker model from " + configuredPath, e);
     }
   }
 
@@ -592,7 +643,38 @@ public final class ModelBundleCache {
     if (parserAvailable) {
       catalog.put(ProfileRegistry.PARSE_BUNDLE_ID, buildParseBundleCatalog());
     }
+    if (chunker != null) {
+      catalog.put(ProfileRegistry.CHUNK_BUNDLE_ID, buildChunkBundleCatalog());
+    }
     return catalog;
+  }
+
+  private ModelBundleInfo buildChunkBundleCatalog() {
+    // Shallow chunking consumes POS-tagged English tokens, so the bundle constrains input to
+    // English; the chunker model is operator-supplied and its language is unknown to the server.
+    return ModelBundleInfo.newBuilder()
+        .setBundleId(ProfileRegistry.CHUNK_BUNDLE_ID)
+        .addSupportedLanguages(DEFAULT_LANGUAGE)
+        .addSupportedSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+        .addSupportedSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+        .addSupportedSteps(PipelineStep.PIPELINE_STEP_POS_TAG)
+        .addSupportedSteps(PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK)
+        .addModels(classicModelDescriptor(
+            "opennlp-models-sentdetect-" + DEFAULT_LANGUAGE,
+            ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR))
+        .addModels(classicModelDescriptor(
+            "opennlp-models-tokenizer-" + DEFAULT_LANGUAGE,
+            ComponentType.COMPONENT_TYPE_TOKENIZER))
+        .addModels(classicModelDescriptor(
+            "opennlp-models-pos-" + DEFAULT_LANGUAGE,
+            ComponentType.COMPONENT_TYPE_POS_TAGGER))
+        .addModels(ModelDescriptor.newBuilder()
+            .setName("chunker")
+            .setComponentType(ComponentType.COMPONENT_TYPE_CHUNKER)
+            .addSupportedSteps(PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK)
+            .setBackendId(OPENNLP_ME_BACKEND_ID)
+            .build())
+        .build();
   }
 
   private ModelBundleInfo buildParseBundleCatalog() {

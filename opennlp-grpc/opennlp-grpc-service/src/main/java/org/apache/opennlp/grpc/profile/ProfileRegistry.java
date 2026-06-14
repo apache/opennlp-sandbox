@@ -55,6 +55,11 @@ public final class ProfileRegistry {
   /** Bundle id referenced by the parse profile. */
   public static final String PARSE_BUNDLE_ID = "en-parse";
 
+  /** Id of the shallow-chunk profile, registered only when a chunker model is available. */
+  public static final String CHUNK_PROFILE_ID = "en-chunk";
+  /** Bundle id referenced by the shallow-chunk profile. */
+  public static final String CHUNK_BUNDLE_ID = "en-chunk";
+
   private final Map<String, AnalysisProfile> profiles = new LinkedHashMap<>();
 
   /** Creates a registry holding only the default profile. */
@@ -95,6 +100,20 @@ public final class ProfileRegistry {
   }
 
   /**
+   * Creates a registry with the default profile plus the NER, doccat, sentiment, and parse
+   * profiles when requested (no chunker profile).
+   *
+   * @param nerAvailable       Whether to register the {@code en-ner} profile.
+   * @param doccatAvailable    Whether to register the {@code en-doccat} profile.
+   * @param sentimentAvailable Whether to register the {@code en-sentiment} profile.
+   * @param parserAvailable    Whether to register the {@code en-parse} profile.
+   */
+  public ProfileRegistry(boolean nerAvailable, boolean doccatAvailable,
+      boolean sentimentAvailable, boolean parserAvailable) {
+    this(nerAvailable, doccatAvailable, sentimentAvailable, parserAvailable, false);
+  }
+
+  /**
    * Creates a registry with the default profile plus each optional profile whose models are
    * available, so the advertised profile catalog stays consistent with the model catalog.
    *
@@ -110,9 +129,11 @@ public final class ProfileRegistry {
    *     profile is registered only when {@code true}, for the same catalog-consistency reason.
    * @param parserAvailable Whether a parser model is configured. The {@code en-parse} profile is
    *     registered only when {@code true}, for the same catalog-consistency reason.
+   * @param chunkerAvailable Whether a chunker model is configured. The {@code en-chunk} profile is
+   *     registered only when {@code true}, for the same catalog-consistency reason.
    */
   public ProfileRegistry(boolean nerAvailable, boolean doccatAvailable,
-      boolean sentimentAvailable, boolean parserAvailable) {
+      boolean sentimentAvailable, boolean parserAvailable, boolean chunkerAvailable) {
     register(defaultProfile());
     if (nerAvailable) {
       register(nerProfile());
@@ -125,6 +146,9 @@ public final class ProfileRegistry {
     }
     if (parserAvailable) {
       register(parseProfile());
+    }
+    if (chunkerAvailable) {
+      register(chunkProfile());
     }
   }
 
@@ -190,6 +214,24 @@ public final class ProfileRegistry {
   public static ProfileRegistry createDefault(boolean nerAvailable, boolean doccatAvailable,
       boolean sentimentAvailable, boolean parserAvailable) {
     return new ProfileRegistry(nerAvailable, doccatAvailable, sentimentAvailable, parserAvailable);
+  }
+
+  /**
+   * Creates a default registry, additionally registering each optional profile whose models
+   * are available.
+   *
+   * @param nerAvailable       Whether to register the {@code en-ner} profile.
+   * @param doccatAvailable    Whether to register the {@code en-doccat} profile.
+   * @param sentimentAvailable Whether to register the {@code en-sentiment} profile.
+   * @param parserAvailable    Whether to register the {@code en-parse} profile.
+   * @param chunkerAvailable   Whether to register the {@code en-chunk} profile.
+   *
+   * @return A new registry.
+   */
+  public static ProfileRegistry createDefault(boolean nerAvailable, boolean doccatAvailable,
+      boolean sentimentAvailable, boolean parserAvailable, boolean chunkerAvailable) {
+    return new ProfileRegistry(
+        nerAvailable, doccatAvailable, sentimentAvailable, parserAvailable, chunkerAvailable);
   }
 
   /**
@@ -285,6 +327,17 @@ public final class ProfileRegistry {
         .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
         .addSteps(PipelineStep.PIPELINE_STEP_PARSE)
         .setModelBundle(ModelBundleRef.newBuilder().setBundleId(PARSE_BUNDLE_ID).build())
+        .build();
+  }
+
+  private static AnalysisProfile chunkProfile() {
+    return AnalysisProfile.newBuilder()
+        .setProfileId(CHUNK_PROFILE_ID)
+        .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+        .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+        .addSteps(PipelineStep.PIPELINE_STEP_POS_TAG)
+        .addSteps(PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK)
+        .setModelBundle(ModelBundleRef.newBuilder().setBundleId(CHUNK_BUNDLE_ID).build())
         .build();
   }
 }

@@ -21,6 +21,7 @@ import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.Chunk;
 import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
+import org.apache.opennlp.grpc.v1.ChunkResult;
 import org.apache.opennlp.grpc.v1.EmbeddingResult;
 import org.apache.opennlp.grpc.v1.NamedEntity;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
@@ -63,6 +64,15 @@ final class DocumentOffsetEncoder {
         final ParseTree.Builder tree = sentence.getParseTree().toBuilder();
         tree.setRoot(remapParseNode(tree.getRoot(), mapper));
         sentence.setParseTree(tree.build());
+      }
+      if (sentence.hasSyntacticChunks()) {
+        final ChunkResult.Builder chunks = sentence.getSyntacticChunks().toBuilder();
+        for (int c = 0; c < chunks.getChunksCount(); c++) {
+          chunks.setChunks(c, chunks.getChunks(c).toBuilder()
+              .setAnnotationSpan(remap(chunks.getChunks(c).getAnnotationSpan(), mapper))
+              .build());
+        }
+        sentence.setSyntacticChunks(chunks.build());
       }
       document.setSentences(i, sentence.build());
     }

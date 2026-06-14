@@ -63,6 +63,10 @@ enum PipelineStep {
   // Embed sentences/document with AnalysisOptions.embedding_model_id. Requires (and
   // auto-adds) SENTENCE_DETECT.
   PIPELINE_STEP_EMBED = 11;
+  // Classic shallow (syntactic) chunking with a ChunkerME model: groups each sentence's
+  // tokens into base phrases (NP, VP, ...) in AnnotatedSentence.syntactic_chunks. Distinct
+  // from CHUNK (which is segmentation for embedding). Requires POS_TAG (and thus TOKENIZE).
+  PIPELINE_STEP_SYNTACTIC_CHUNK = 12;
 }
 
 // Configuration for a chunking strategy (used when the caller does not

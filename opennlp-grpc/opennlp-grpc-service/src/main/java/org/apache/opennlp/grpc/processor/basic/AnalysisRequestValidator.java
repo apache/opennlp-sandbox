@@ -52,19 +52,22 @@ final class AnalysisRequestValidator {
   private final DocCategorizerRegistry docCategorizerRegistry;
   private final SentimentRegistry sentimentRegistry;
   private final boolean parserAvailable;
+  private final boolean chunkerAvailable;
 
   AnalysisRequestValidator(
       EmbeddingProvider embeddingProvider,
       NameFinderRegistry nameFinderRegistry,
       DocCategorizerRegistry docCategorizerRegistry,
       SentimentRegistry sentimentRegistry,
-      boolean parserAvailable) {
+      boolean parserAvailable,
+      boolean chunkerAvailable) {
     this.embeddingProvider = Objects.requireNonNull(embeddingProvider, "embeddingProvider");
     this.nameFinderRegistry = Objects.requireNonNull(nameFinderRegistry, "nameFinderRegistry");
     this.docCategorizerRegistry =
         Objects.requireNonNull(docCategorizerRegistry, "docCategorizerRegistry");
     this.sentimentRegistry = Objects.requireNonNull(sentimentRegistry, "sentimentRegistry");
     this.parserAvailable = parserAvailable;
+    this.chunkerAvailable = chunkerAvailable;
   }
 
   /**
@@ -89,6 +92,7 @@ final class AnalysisRequestValidator {
     validateDocCategorizeRequest(profile);
     validateSentimentRequest(profile);
     validateParseRequest(profile);
+    validateSyntacticChunkRequest(profile);
     validatePosTagFormat(profile);
     validateEmbeddingRequest(request, profile);
     validateChunkEmbedConfigs(request);
@@ -221,6 +225,23 @@ final class AnalysisRequestValidator {
     }
   }
 
+  private void validateSyntacticChunkRequest(AnalysisProfile profile) {
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK)) {
+      return;
+    }
+    if (!chunkerAvailable) {
+      throw AnalysisException.notFound(
+          "PIPELINE_STEP_SYNTACTIC_CHUNK requested but no chunker model is configured on this "
+              + "server; set model.chunker.path");
+    }
+    // The chunker classifies the token+POS-tag sequence, so POS tagging must also run.
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_POS_TAG)) {
+      throw AnalysisException.failedPrecondition(
+          PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK.name() + " requires "
+              + PipelineStep.PIPELINE_STEP_POS_TAG.name());
+    }
+  }
+
   /**
    * Resolves which parse representations to populate for this request: the formats listed in
    * options, or the default {@code STRUCTURED + BRACKETED} set when none (or only UNSPECIFIED)
@@ -327,7 +348,8 @@ final class AnalysisRequestValidator {
         && !bundleId.equals(ProfileRegistry.NER_BUNDLE_ID)
         && !bundleId.equals(ProfileRegistry.DOCCAT_BUNDLE_ID)
         && !bundleId.equals(ProfileRegistry.SENTIMENT_BUNDLE_ID)
-        && !bundleId.equals(ProfileRegistry.PARSE_BUNDLE_ID)) {
+        && !bundleId.equals(ProfileRegistry.PARSE_BUNDLE_ID)
+        && !bundleId.equals(ProfileRegistry.CHUNK_BUNDLE_ID)) {
       throw AnalysisException.notFound(
           "Unknown model bundle '" + bundleId + "'; available bundles: "
               + ProfileRegistry.DEFAULT_BUNDLE_ID
@@ -336,7 +358,8 @@ final class AnalysisRequestValidator {
                   ? ", " + ProfileRegistry.DOCCAT_BUNDLE_ID : "")
               + (sentimentRegistry.isAvailable()
                   ? ", " + ProfileRegistry.SENTIMENT_BUNDLE_ID : "")
-              + (parserAvailable ? ", " + ProfileRegistry.PARSE_BUNDLE_ID : ""));
+              + (parserAvailable ? ", " + ProfileRegistry.PARSE_BUNDLE_ID : "")
+              + (chunkerAvailable ? ", " + ProfileRegistry.CHUNK_BUNDLE_ID : ""));
     }
     if (bundleId.equals(ProfileRegistry.NER_BUNDLE_ID) && !nameFinderRegistry.isAvailable()) {
       throw AnalysisException.notFound(
@@ -359,6 +382,11 @@ final class AnalysisRequestValidator {
       throw AnalysisException.notFound(
           "Model bundle '" + ProfileRegistry.PARSE_BUNDLE_ID
               + "' requires a parser model; configure model.parser.path");
+    }
+    if (bundleId.equals(ProfileRegistry.CHUNK_BUNDLE_ID) && !chunkerAvailable) {
+      throw AnalysisException.notFound(
+          "Model bundle '" + ProfileRegistry.CHUNK_BUNDLE_ID
+              + "' requires a chunker model; configure model.chunker.path");
     }
     if (bundle.getComponentModelsCount() > 0) {
       throw AnalysisException.unimplemented(

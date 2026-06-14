@@ -299,6 +299,25 @@ detection and tokenization first.
 
 > The classic ME parser is read-only at inference, so one instance is shared across requests.
 
+### Shallow (syntactic) chunking (optional)
+
+A `ChunkerME` model groups each sentence's tokens into base phrases (`NP`, `VP`, `PP`, …) when a
+request runs `PIPELINE_STEP_SYNTACTIC_CHUNK`, filling `AnnotatedSentence.syntactic_chunks`. This
+is shallow parsing — distinct from `PIPELINE_STEP_CHUNK`, which is segmentation chunking for
+embedding. The model is operator-supplied (not bundled):
+
+```ini
+model.chunker.path=/path/to/en-chunker.bin
+```
+
+When configured, the server advertises the `en-chunk` profile/bundle (sentence detect + tokenize
++ POS tag + syntactic chunk). The chunker classifies the token **and POS-tag** sequence, so
+`SYNTACTIC_CHUNK` requires `POS_TAG` (and thus `TOKENIZE`); requesting it without `POS_TAG` fails
+with `FAILED_PRECONDITION`, and requesting it with no chunker configured fails with `NOT_FOUND`.
+Each chunk carries its document span and the chunker's phrase tag (`chunk_tag`).
+
+> `ChunkerME` is thread-safe (per-thread state), so one instance is shared across requests.
+
 ### Embedding models (optional)
 
 Register ONNX sentence-transformer models in the server config:

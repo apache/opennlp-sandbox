@@ -19,6 +19,8 @@ package org.apache.opennlp.grpc.processor.basic;
 
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
+import org.apache.opennlp.grpc.v1.ChunkResult;
+import org.apache.opennlp.grpc.v1.ChunkSpan;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
 import org.apache.opennlp.grpc.v1.NamedEntity;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
@@ -66,6 +68,9 @@ class DocumentOffsetEncoderTest {
         .addEntities(NamedEntity.newBuilder()
             .setEntityType("person").setAnnotationSpan(span(5, 9)).build())
         .setParseTree(ParseTree.newBuilder().setRoot(root).build())
+        .setSyntacticChunks(ChunkResult.newBuilder()
+            .addChunks(ChunkSpan.newBuilder().setChunkTag("NP").setAnnotationSpan(span(5, 9)))
+            .build())
         .build();
     return OpenNlpDocument.newBuilder().setRawText(TEXT).addSentences(sentence);
   }
@@ -100,6 +105,9 @@ class DocumentOffsetEncoderTest {
     assertEquals(10, root.getSpan().getEnd());
     assertEquals(6, root.getChildren(0).getSpan().getStart());
     assertEquals(10, root.getChildren(0).getSpan().getEnd());
+    final AnnotationSpan chunkSpan = sentence.getSyntacticChunks().getChunks(0).getAnnotationSpan();
+    assertEquals(6, chunkSpan.getStart());
+    assertEquals(10, chunkSpan.getEnd());
     assertEquals(OffsetEncoding.OFFSET_ENCODING_UTF8_BYTE, document.getOffsetEncoding());
   }
 

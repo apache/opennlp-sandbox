@@ -80,7 +80,8 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
             modelBundleCache.getNameFinderRegistry().isAvailable(),
             modelBundleCache.getDocCategorizerRegistry().isAvailable(),
             modelBundleCache.getSentimentRegistry().isAvailable(),
-            modelBundleCache.isParserAvailable()),
+            modelBundleCache.isParserAvailable(),
+            modelBundleCache.isChunkerAvailable()),
         modelBundleCache);
   }
 
@@ -119,7 +120,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     this.nameFinderRegistry = modelBundleCache.getNameFinderRegistry();
     this.validator = new AnalysisRequestValidator(embeddingProvider, nameFinderRegistry,
         modelBundleCache.getDocCategorizerRegistry(), modelBundleCache.getSentimentRegistry(),
-        modelBundleCache.isParserAvailable());
+        modelBundleCache.isParserAvailable(), modelBundleCache.isChunkerAvailable());
     this.classicSteps = new ClassicStepRunner(modelBundleCache);
     this.embedChunkSteps = new EmbedChunkStepRunner(embeddingProvider);
   }
@@ -253,6 +254,17 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
           () -> classicSteps.parse(document, parseFormats, includeProbabilities, diagnostics));
     } else {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_PARSE));
+    }
+
+    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK)) {
+      // The validator already requires POS_TAG in the profile; tokens (and thus POS tags) are
+      // present by the time this runs.
+      requireTokens(document, PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK);
+      runStep(
+          PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK,
+          () -> classicSteps.chunkSyntactic(document, diagnostics));
+    } else {
+      diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK));
     }
 
     final String embeddingModelId = validator.resolveEmbeddingModelId(request, profile);
