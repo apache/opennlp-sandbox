@@ -37,19 +37,34 @@ import org.apache.opennlp.grpc.v1.NamedEntity;
  */
 public interface NerModel {
 
-  /** Stable identifier for this model (for classic per-type models, the entity type). */
+  /**
+   * Returns the stable identifier for this model.
+   *
+   * @return The model id; for classic per-type models, the entity type. Never {@code null}.
+   */
   String id();
 
-  /** Open identifier of the backend serving this model, e.g. {@code "opennlp-me"}. */
+  /**
+   * Returns the open identifier of the backend serving this model.
+   *
+   * @return The backend id, e.g. {@code "opennlp-me"}. Never {@code null}.
+   */
   String backendId();
 
-  /** The entity types this model can emit, in normalized (lower-case) form. */
+  /**
+   * Returns the entity types this model can emit, in normalized (lower-case) form.
+   *
+   * @return The emitted entity types. Never {@code null}.
+   */
   Set<String> entityTypes();
 
   /**
    * Whether this model carries document-level adaptive state that must be reset between
    * documents for stateless RPC semantics. Stateless models (e.g. transformer NER) return
    * {@code false}.
+   *
+   * @return {@code true} if the model keeps per-document adaptive state, {@code false}
+   *     otherwise.
    */
   boolean isStateful();
 

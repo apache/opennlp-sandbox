@@ -121,11 +121,20 @@
                 </executions>
             </plugin>
             <plugin>
-                <!-- The parent restricts the javadoc sourcepath to src/main/java; this
-                     module also compiles generated KServe client stubs. -->
+                <!--
+                  The parent restricts the javadoc sourcepath to src/main/java; this module also
+                  compiles generated KServe protobuf/gRPC client stubs, which must stay on the
+                  sourcepath so javadoc can resolve the kserve.v2 types referenced by the
+                  hand-written sources. That generated code is produced by protoc, cannot be
+                  hand-edited, and is not subject to Apache-grade Javadoc enforcement, so its
+                  packages are excluded from doclint via excludePackageNames (mirroring the parent
+                  rationale for opennlp-grpc-api). Only the hand-written
+                  org.apache.opennlp.grpc.embedding.openvino package is scanned for warnings.
+                -->
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <configuration>
                     <sourcepath>${basedir}/src/main/java${path.separator}${project.build.directory}/generated-sources/protobuf/java${path.separator}${project.build.directory}/generated-sources/protobuf/grpc-java</sourcepath>
+                    <excludePackageNames>org.apache.opennlp.grpc.kserve.v2</excludePackageNames>
                 </configuration>
             </plugin>
         </plugins>

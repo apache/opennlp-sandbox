@@ -39,6 +39,10 @@ import org.slf4j.LoggerFactory;
  */
 public final class ClassicNerBackendFactory implements NerBackendFactory {
 
+  /** Public no-arg constructor required by {@link java.util.ServiceLoader}. */
+  public ClassicNerBackendFactory() {
+  }
+
   /** Prefix for per-type classic name finder path entries. */
   public static final String KEY_PREFIX = "model.name_finder.";
 

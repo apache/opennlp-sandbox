@@ -27,5 +27,17 @@ import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
  */
 public interface DocumentAnalyzer {
 
+  /**
+   * Runs the configured analysis pipeline over the given request and returns the
+   * annotated document together with any processing diagnostics.
+   *
+   * @param request The analysis request, carrying the document text, requested profile,
+   *               and pipeline steps. Must not be {@code null}.
+   *
+   * @return The analysis response with the annotated document. Never {@code null}.
+   *
+   * @throws org.apache.opennlp.grpc.processor.AnalysisException If the request is invalid
+   *         or a required step fails.
+   */
   AnalyzeDocumentResponse analyze(AnalyzeDocumentRequest request);
 }

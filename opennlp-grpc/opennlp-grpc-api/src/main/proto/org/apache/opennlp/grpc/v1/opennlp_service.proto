@@ -26,17 +26,45 @@ option java_outer_classname = "OpenNlpServiceProto";
 import "org/apache/opennlp/grpc/v1/opennlp_document.proto";
 import "org/apache/opennlp/grpc/v1/opennlp_pipeline.proto";
 
+// The v1 document-centric OpenNLP analysis API: one unary RPC to analyze a
+// document, plus two capability-discovery RPCs.
+//
+// Error model: failures are reported as gRPC status codes. AnalyzeDocument maps
+// validation/processing errors to INVALID_ARGUMENT (malformed/invalid request),
+// NOT_FOUND (unknown profile, bundle, model, or entity type), FAILED_PRECONDITION
+// (a requested step's dependency was not run), UNIMPLEMENTED (a requested step,
+// format, or feature this server does not implement), UNAVAILABLE (an upstream
+// dependency such as a remote embedding backend is unreachable; retryable), and
+// INTERNAL (unexpected server fault). GetServiceInfo and ListModelBundles do not
+// validate input and complete with OK.
 service OpenNlpAnalysisService {
+  // Analyzes one document according to a profile (the steps to run) and options
+  // (how to render results), returning the annotated document plus per-step
+  // diagnostics. See AnalyzeDocumentRequest / AnalyzeDocumentResponse and the
+  // service-level error model above.
   rpc AnalyzeDocument(AnalyzeDocumentRequest) returns (AnalyzeDocumentResponse);
+  // Reports server identity and capabilities: OpenNLP/API versions, the ids of the
+  // profiles registered on the server, and the pipeline steps this server implements.
   rpc GetServiceInfo(GetServiceInfoRequest) returns (GetServiceInfoResponse);
+  // Lists the model bundles loaded on the server and their aggregate capabilities.
   rpc ListModelBundles(ListModelBundlesRequest) returns (ListModelBundlesResponse);
 }
 
+// Input to AnalyzeDocument. Supplies the document, selects which analysis to run
+// (via an inline profile and/or a named profile_id), tunes output via options, and
+// optionally requests one or more chunk+embedding groups.
 message AnalyzeDocumentRequest {
+  // The document to analyze. Required; document.raw_text must be non-blank
+  // (else INVALID_ARGUMENT).
   OpenNlpDocument document = 1;
   // Classic single-profile usage.
   AnalysisProfile profile = 2;
+  // Output/execution options (probabilities, offset encoding, parse formats, etc.).
   AnalysisOptions options = 3;
+  // Names a server-side profile to use. Resolved against the server's profile
+  // registry; an unknown id => NOT_FOUND. When `profile` is also set, the inline
+  // profile is merged field-by-field over the named one. When neither is set, the
+  // server's default profile ("en-basic") is used.
   optional string profile_id = 4;
 
   // Per-chunking-strategy multi-config. Chunking first; for each strategy
@@ -48,45 +76,77 @@ message AnalyzeDocumentRequest {
 // One chunking strategy + the concrete embedding models to use for the chunks
 // it produces. Corresponds 1:1 to one ChunkEmbeddingGroup in the reply.
 message ChunkEmbedConfigEntry {
-  string config_id = 1;                 // becomes the group's group_id
+  // Caller-chosen id for this config entry; becomes the resulting group's group_id.
+  string config_id = 1;
+  // Optional friendly label, echoed onto the resulting group's result_set_name.
   optional string result_set_name = 2;
+  // Optional profile for chunking this entry. (Note: the v1 server drives profile
+  // resolution from the top-level request.profile / request.profile_id, not from
+  // per-entry profiles.)
   optional AnalysisProfile profile = 3;
+  // The chunking strategy for this entry. When omitted, the server applies a
+  // sentence-based default for the entry.
   optional ChunkingSpec chunking = 4;
   // The embeddings wanted for *this* chunking strategy's chunks.
   // Not a blind NxM; explicit per-strategy list.
   repeated string embedding_model_ids = 5;
 }
 
+// Output of AnalyzeDocument: the annotated document plus diagnostics describing
+// what each step did or why it was skipped.
 message AnalyzeDocumentResponse {
+  // The analyzed document with all requested annotations and chunk/embedding groups.
   OpenNlpDocument document = 1;
+  // Per-step informational notes, warnings, or non-fatal errors. Fatal failures
+  // are returned as a gRPC error status instead (see the service error model).
   repeated ProcessingDiagnostic diagnostics = 2;
 }
 
+// A non-fatal note about a pipeline step's execution (ran, skipped, or had a
+// recoverable issue). Fatal failures abort the RPC with an error status instead.
 message ProcessingDiagnostic {
+  // The pipeline step this diagnostic concerns.
   PipelineStep step = 1;
+  // Human-readable detail.
   string message = 2;
+  // Severity of the note.
   DiagnosticSeverity severity = 3;
+  // Optional key of the model/component the diagnostic relates to.
   optional string component_key = 4;
 }
 
+// Severity of a ProcessingDiagnostic.
 enum DiagnosticSeverity {
+  // Unset/unknown severity.
   DIAGNOSTIC_SEVERITY_UNSPECIFIED = 0;
+  // Informational (e.g. a step ran, or was skipped as not requested).
   DIAGNOSTIC_SEVERITY_INFO = 1;
+  // A recoverable concern that did not stop processing.
   DIAGNOSTIC_SEVERITY_WARNING = 2;
+  // A non-fatal error within a step; analysis still produced a response.
   DIAGNOSTIC_SEVERITY_ERROR = 3;
 }
 
+// Input to GetServiceInfo. Empty; no parameters.
 message GetServiceInfoRequest {}
 
+// Server identity and capabilities returned by GetServiceInfo.
 message GetServiceInfoResponse {
+  // The underlying OpenNLP library version, or "unknown" if undetermined.
   string opennlp_version = 1;
+  // The API version served (currently "v1").
   string api_version = 2;
+  // Ids of the analysis profiles registered on the server (usable as profile_id).
   repeated string available_profile_ids = 3;
+  // The pipeline steps this server actually implements, in execution order.
   repeated PipelineStep supported_steps = 4;
 }
 
+// Input to ListModelBundles. Empty; no parameters.
 message ListModelBundlesRequest {}
 
+// The loaded model bundles returned by ListModelBundles.
 message ListModelBundlesResponse {
+  // One entry per model bundle loaded on the server.
   repeated ModelBundleInfo bundles = 1;
 }

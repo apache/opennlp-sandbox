@@ -35,13 +35,25 @@ import org.apache.opennlp.grpc.v1.DocumentClassification;
  */
 public interface DocCategorizerModel {
 
-  /** Stable identifier this model is registered and selected under. */
+  /**
+   * Returns the stable identifier this model is registered and selected under.
+   *
+   * @return The model id. Never {@code null}.
+   */
   String id();
 
-  /** Open identifier of the backend serving this model, e.g. {@code "opennlp-me"}. */
+  /**
+   * Returns the open identifier of the backend serving this model.
+   *
+   * @return The backend id, e.g. {@code "opennlp-me"}. Never {@code null}.
+   */
   String backendId();
 
-  /** The categories this model can emit, in the model's own index order. */
+  /**
+   * Returns the categories this model can emit, in the model's own index order.
+   *
+   * @return The category labels in index order. Never {@code null}.
+   */
   List<String> categories();
 
   /**
@@ -53,6 +65,9 @@ public interface DocCategorizerModel {
    *
    * <p>Defaults to {@code true} so existing backends keep their conservative tokenized behavior
    * unless they explicitly opt into raw-text classification.</p>
+   *
+   * @return {@code true} if the model must be given tokens; {@code false} if the raw text
+   *     suffices.
    */
   default boolean requiresTokens() {
     return true;

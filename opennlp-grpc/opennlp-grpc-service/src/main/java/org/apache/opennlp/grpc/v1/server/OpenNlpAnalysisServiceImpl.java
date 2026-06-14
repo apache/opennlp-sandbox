@@ -50,6 +50,19 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
   private final ModelBundleCache modelBundleCache;
   private final String opennlpVersion;
 
+  /**
+   * Creates the gRPC service adapter delegating analysis to the given orchestrator and
+   * answering capability queries from the profile registry and model cache.
+   *
+   * @param documentAnalyzer The orchestrator handling {@code analyzeDocument}. Must not be
+   *     {@code null}.
+   * @param profileRegistry  The registry exposing the available analysis profiles. Must not
+   *     be {@code null}.
+   * @param modelBundleCache The cache exposing loaded models for capability reporting. Must
+   *     not be {@code null}.
+   * @param opennlpVersion   The OpenNLP version string reported to clients; {@code "unknown"}
+   *     is substituted when {@code null}.
+   */
   public OpenNlpAnalysisServiceImpl(
       DocumentAnalyzer documentAnalyzer,
       ProfileRegistry profileRegistry,

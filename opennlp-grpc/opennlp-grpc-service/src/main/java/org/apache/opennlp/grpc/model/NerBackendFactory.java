@@ -36,6 +36,8 @@ import java.util.Map;
 public interface NerBackendFactory {
 
   /**
+   * Returns the stable identifier of this factory.
+   *
    * @return A stable, lower-case identifier for this factory, used in logging and to reject
    *     duplicate factories on the classpath. Distinct from the {@link NerModel#backendId()}
    *     reported per model.

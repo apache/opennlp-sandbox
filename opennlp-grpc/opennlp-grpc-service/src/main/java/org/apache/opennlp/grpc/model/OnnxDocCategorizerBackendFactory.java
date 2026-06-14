@@ -44,6 +44,10 @@ import org.slf4j.LoggerFactory;
  */
 public final class OnnxDocCategorizerBackendFactory implements DocCategorizerBackendFactory {
 
+  /** Public no-arg constructor required by {@link java.util.ServiceLoader}. */
+  public OnnxDocCategorizerBackendFactory() {
+  }
+
   /** Prefix for ONNX document categorizer entries: {@code model.doccat_dl.<id>.<attr>}. */
   public static final String KEY_DL_PREFIX = "model.doccat_dl.";
 

@@ -45,6 +45,10 @@ import org.slf4j.LoggerFactory;
  */
 public final class OnnxNerBackendFactory implements NerBackendFactory {
 
+  /** Public no-arg constructor required by {@link java.util.ServiceLoader}. */
+  public OnnxNerBackendFactory() {
+  }
+
   /** Prefix for ONNX name finder entries: {@code model.name_finder_dl.<id>.<attr>}. */
   public static final String KEY_DL_PREFIX = "model.name_finder_dl.";
 

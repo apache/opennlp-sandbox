@@ -70,6 +70,8 @@ public final class DocCategorizerRegistry implements AutoCloseable {
    * Canonical form of a model id: trimmed and lower-cased, so configuration keys and the
    * {@code default_id} selector match case-insensitively.
    *
+   * @param id The raw model id to normalize. May be {@code null}.
+   *
    * @return The normalized id, or {@code null} if {@code id} is {@code null}.
    */
   public static String normalize(String id) {
@@ -163,24 +165,52 @@ public final class DocCategorizerRegistry implements AutoCloseable {
     return canonical;
   }
 
+  /**
+   * Reports whether any categorizer is configured.
+   *
+   * @return {@code true} when at least one model is registered.
+   */
   public boolean isAvailable() {
     return !modelsById.isEmpty();
   }
 
-  /** @return All configured categorizer ids, in registration order. */
+  /**
+   * Returns all configured categorizer ids, in registration order.
+   *
+   * @return An immutable copy of the registered, normalized model ids.
+   */
   public List<String> modelIds() {
     return List.copyOf(modelsById.keySet());
   }
 
+  /**
+   * Reports whether a categorizer is registered under the given id.
+   *
+   * @param modelId The model id to check. May be {@code null}; matched after normalization.
+   *
+   * @return {@code true} when a model is registered under the normalized id.
+   */
   public boolean supportsModel(String modelId) {
     return modelId != null && modelsById.containsKey(normalize(modelId));
   }
 
-  /** @return All configured categorizers, in registration order, for catalog reporting. */
+  /**
+   * Returns all configured categorizers, in registration order, for catalog reporting.
+   *
+   * @return An immutable copy of the registered models.
+   */
   public List<DocCategorizerModel> allModels() {
     return List.copyOf(modelsById.values());
   }
 
+  /**
+   * Looks up the categorizer registered under the given id.
+   *
+   * @param modelId The model id to look up. May be {@code null}; matched after normalization.
+   *
+   * @return The matching model, or {@code null} when {@code modelId} is {@code null} or no
+   *     model is registered under the normalized id.
+   */
   public DocCategorizerModel get(String modelId) {
     return modelId == null ? null : modelsById.get(normalize(modelId));
   }

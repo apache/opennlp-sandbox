@@ -30,41 +30,74 @@ import org.apache.opennlp.grpc.v1.PipelineStep;
  */
 public final class ProfileRegistry {
 
+  /** Id of the always-present default profile (sentence detect + tokenize). */
   public static final String DEFAULT_PROFILE_ID = "en-basic";
+  /** Bundle id referenced by the default profile. */
   public static final String DEFAULT_BUNDLE_ID = "en-basic";
 
+  /** Id of the NER profile, registered only when name finder models are available. */
   public static final String NER_PROFILE_ID = "en-ner";
+  /** Bundle id referenced by the NER profile. */
   public static final String NER_BUNDLE_ID = "en-ner";
 
+  /** Id of the document categorization profile, registered only when doccat models exist. */
   public static final String DOCCAT_PROFILE_ID = "en-doccat";
+  /** Bundle id referenced by the document categorization profile. */
   public static final String DOCCAT_BUNDLE_ID = "en-doccat";
 
+  /** Id of the sentiment profile, registered only when sentiment models are available. */
   public static final String SENTIMENT_PROFILE_ID = "en-sentiment";
+  /** Bundle id referenced by the sentiment profile. */
   public static final String SENTIMENT_BUNDLE_ID = "en-sentiment";
 
+  /** Id of the parse profile, registered only when a parser model is available. */
   public static final String PARSE_PROFILE_ID = "en-parse";
+  /** Bundle id referenced by the parse profile. */
   public static final String PARSE_BUNDLE_ID = "en-parse";
 
   private final Map<String, AnalysisProfile> profiles = new LinkedHashMap<>();
 
+  /** Creates a registry holding only the default profile. */
   public ProfileRegistry() {
     this(false);
   }
 
+  /**
+   * Creates a registry with the default profile plus the NER profile when requested.
+   *
+   * @param nerAvailable Whether to register the {@code en-ner} profile.
+   */
   public ProfileRegistry(boolean nerAvailable) {
     this(nerAvailable, false);
   }
 
+  /**
+   * Creates a registry with the default profile plus the NER and doccat profiles when requested.
+   *
+   * @param nerAvailable    Whether to register the {@code en-ner} profile.
+   * @param doccatAvailable Whether to register the {@code en-doccat} profile.
+   */
   public ProfileRegistry(boolean nerAvailable, boolean doccatAvailable) {
     this(nerAvailable, doccatAvailable, false);
   }
 
+  /**
+   * Creates a registry with the default profile plus the NER, doccat, and sentiment profiles
+   * when requested.
+   *
+   * @param nerAvailable       Whether to register the {@code en-ner} profile.
+   * @param doccatAvailable    Whether to register the {@code en-doccat} profile.
+   * @param sentimentAvailable Whether to register the {@code en-sentiment} profile.
+   */
   public ProfileRegistry(
       boolean nerAvailable, boolean doccatAvailable, boolean sentimentAvailable) {
     this(nerAvailable, doccatAvailable, sentimentAvailable, false);
   }
 
   /**
+   * Creates a registry with the default profile plus each optional profile whose models are
+   * available, so the advertised profile catalog stays consistent with the model catalog.
+   *
    * @param nerAvailable Whether name finder models are configured. The {@code en-ner}
    *     profile is registered only when {@code true}, so the advertised profile catalog
    *     matches the model catalog, which likewise hides the {@code en-ner} bundle when no
@@ -95,28 +128,77 @@ public final class ProfileRegistry {
     }
   }
 
+  /**
+   * Creates a registry holding only the default profile.
+   *
+   * @return A new registry with the default profile registered.
+   */
   public static ProfileRegistry createDefault() {
     return new ProfileRegistry();
   }
 
+  /**
+   * Creates a default registry, additionally registering the NER profile when requested.
+   *
+   * @param nerAvailable Whether to register the {@code en-ner} profile.
+   *
+   * @return A new registry.
+   */
   public static ProfileRegistry createDefault(boolean nerAvailable) {
     return new ProfileRegistry(nerAvailable);
   }
 
+  /**
+   * Creates a default registry, additionally registering the NER and doccat profiles when
+   * requested.
+   *
+   * @param nerAvailable    Whether to register the {@code en-ner} profile.
+   * @param doccatAvailable Whether to register the {@code en-doccat} profile.
+   *
+   * @return A new registry.
+   */
   public static ProfileRegistry createDefault(boolean nerAvailable, boolean doccatAvailable) {
     return new ProfileRegistry(nerAvailable, doccatAvailable);
   }
 
+  /**
+   * Creates a default registry, additionally registering the NER, doccat, and sentiment
+   * profiles when requested.
+   *
+   * @param nerAvailable       Whether to register the {@code en-ner} profile.
+   * @param doccatAvailable    Whether to register the {@code en-doccat} profile.
+   * @param sentimentAvailable Whether to register the {@code en-sentiment} profile.
+   *
+   * @return A new registry.
+   */
   public static ProfileRegistry createDefault(
       boolean nerAvailable, boolean doccatAvailable, boolean sentimentAvailable) {
     return new ProfileRegistry(nerAvailable, doccatAvailable, sentimentAvailable);
   }
 
+  /**
+   * Creates a default registry, additionally registering each optional profile whose models
+   * are available.
+   *
+   * @param nerAvailable       Whether to register the {@code en-ner} profile.
+   * @param doccatAvailable    Whether to register the {@code en-doccat} profile.
+   * @param sentimentAvailable Whether to register the {@code en-sentiment} profile.
+   * @param parserAvailable    Whether to register the {@code en-parse} profile.
+   *
+   * @return A new registry.
+   */
   public static ProfileRegistry createDefault(boolean nerAvailable, boolean doccatAvailable,
       boolean sentimentAvailable, boolean parserAvailable) {
     return new ProfileRegistry(nerAvailable, doccatAvailable, sentimentAvailable, parserAvailable);
   }
 
+  /**
+   * Registers (or replaces) a profile, keyed by its {@code profile_id}.
+   *
+   * @param profile The profile to register. Its {@code profile_id} must not be blank.
+   *
+   * @throws IllegalArgumentException If the profile's {@code profile_id} is blank.
+   */
   public void register(AnalysisProfile profile) {
     if (profile.getProfileId().isBlank()) {
       throw new IllegalArgumentException("profile_id is required");
@@ -124,6 +206,14 @@ public final class ProfileRegistry {
     profiles.put(profile.getProfileId(), profile);
   }
 
+  /**
+   * Looks up a profile by id.
+   *
+   * @param profileId The profile id to look up. May be {@code null} or blank.
+   *
+   * @return The matching profile, or an empty {@link Optional} when {@code profileId} is
+   *     {@code null}, blank, or unknown.
+   */
   public Optional<AnalysisProfile> find(String profileId) {
     if (profileId == null || profileId.isBlank()) {
       return Optional.empty();
@@ -131,10 +221,20 @@ public final class ProfileRegistry {
     return Optional.ofNullable(profiles.get(profileId));
   }
 
+  /**
+   * Returns the default profile.
+   *
+   * @return The {@code en-basic} profile, or {@code null} if it was removed.
+   */
   public AnalysisProfile getDefaultProfile() {
     return profiles.get(DEFAULT_PROFILE_ID);
   }
 
+  /**
+   * Returns all registered profiles for catalog reporting.
+   *
+   * @return An immutable copy of the profiles keyed by {@code profile_id}.
+   */
   public Map<String, AnalysisProfile> getProfiles() {
     return Map.copyOf(profiles);
   }

@@ -40,6 +40,8 @@ import java.util.Map;
 public interface EmbeddingBackendFactory {
 
   /**
+   * Returns the backend id this factory serves.
+   *
    * @return The unique backend id this factory serves, matched case-insensitively against
    *         the {@code model.embedder.backend} configuration value. Must be lower-case,
    *         non-blank, and stable across releases (it is part of the configuration contract).

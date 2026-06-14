@@ -38,6 +38,8 @@ import java.util.Set;
 public interface EmbeddingProvider {
 
   /**
+   * Returns the open identifier of the backend serving this provider's models.
+   *
    * @return The open identifier of the backend serving this provider's models,
    *         e.g. {@code "onnx"} or {@code "cuda"}. Matches the id of the
    *         {@link EmbeddingBackendFactory} that created the provider and is reported
@@ -46,16 +48,22 @@ public interface EmbeddingProvider {
   String backendId();
 
   /**
+   * Reports whether this provider can serve any embedding requests.
+   *
    * @return {@code true} when at least one embedding model is registered.
    */
   boolean isAvailable();
 
   /**
+   * Returns the ids of every embedding model this provider can serve.
+   *
    * @return The ids of all registered embedding models. Never {@code null}.
    */
   Set<String> registeredModelIds();
 
   /**
+   * Reports whether the given model id refers to a model this provider serves.
+   *
    * @param modelId The model id to check. May be {@code null} or blank.
    *
    * @return {@code true} when the given id refers to a registered embedding model.
@@ -63,6 +71,8 @@ public interface EmbeddingProvider {
   boolean supportsModel(String modelId);
 
   /**
+   * Returns the dimension of the vectors produced by the given model.
+   *
    * @param modelId The id of a registered embedding model.
    *
    * @return The dimension of the vectors produced by the model.

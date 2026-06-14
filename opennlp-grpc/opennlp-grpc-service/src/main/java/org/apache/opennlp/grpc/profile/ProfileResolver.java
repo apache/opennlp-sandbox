@@ -38,10 +38,28 @@ public final class ProfileResolver {
 
   private final ProfileRegistry registry;
 
+  /**
+   * Creates a resolver backed by the given profile catalog.
+   *
+   * @param registry The profile registry consulted for {@code profile_id} lookups and the
+   *     default profile. Must not be {@code null}.
+   */
   public ProfileResolver(ProfileRegistry registry) {
     this.registry = Objects.requireNonNull(registry, "registry");
   }
 
+  /**
+   * Resolves the effective analysis profile for the request, applying the precedence rules
+   * documented on this class and merging an inline profile over the catalog entry when both
+   * are present.
+   *
+   * @param request The analyze request carrying an optional {@code profile_id} and/or inline
+   *     {@code profile}. Must not be {@code null}.
+   *
+   * @return The effective profile to run. Never {@code null}.
+   *
+   * @throws AnalysisException If a referenced {@code profile_id} is not in the catalog.
+   */
   public AnalysisProfile resolve(AnalyzeDocumentRequest request) {
     Objects.requireNonNull(request, "request");
 

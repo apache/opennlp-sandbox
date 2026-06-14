@@ -25,6 +25,10 @@ public final class AnalysisException extends RuntimeException {
 
   private static final long serialVersionUID = 1L;
 
+  /**
+   * The category of failure, used by {@link org.apache.opennlp.grpc.v1.server.GrpcStatusMapper}
+   * to select the gRPC status code reported to the client.
+   */
   public enum FailureType {
     /** Client supplied an invalid request. */
     INVALID_ARGUMENT,
@@ -41,6 +45,7 @@ public final class AnalysisException extends RuntimeException {
     INTERNAL
   }
 
+  /** The failure category this exception carries. */
   private final FailureType failureType;
 
   private AnalysisException(FailureType failureType, String message) {
@@ -53,30 +58,80 @@ public final class AnalysisException extends RuntimeException {
     this.failureType = failureType;
   }
 
+  /**
+   * Returns the failure category this exception carries.
+   *
+   * @return The failure type, never {@code null}.
+   */
   public FailureType getFailureType() {
     return failureType;
   }
 
+  /**
+   * Creates an exception for a client request that is malformed or semantically invalid.
+   *
+   * @param message The human-readable failure detail.
+   *
+   * @return A new exception with failure type {@link FailureType#INVALID_ARGUMENT}.
+   */
   public static AnalysisException invalidArgument(String message) {
     return new AnalysisException(FailureType.INVALID_ARGUMENT, message);
   }
 
+  /**
+   * Creates an exception for a referenced profile, bundle, or model handle that does not exist.
+   *
+   * @param message The human-readable failure detail.
+   *
+   * @return A new exception with failure type {@link FailureType#NOT_FOUND}.
+   */
   public static AnalysisException notFound(String message) {
     return new AnalysisException(FailureType.NOT_FOUND, message);
   }
 
+  /**
+   * Creates an exception for a request that cannot run in the current document or profile state.
+   *
+   * @param message The human-readable failure detail.
+   *
+   * @return A new exception with failure type {@link FailureType#FAILED_PRECONDITION}.
+   */
   public static AnalysisException failedPrecondition(String message) {
     return new AnalysisException(FailureType.FAILED_PRECONDITION, message);
   }
 
+  /**
+   * Creates an exception for a capability that is not implemented on this server.
+   *
+   * @param message The human-readable failure detail.
+   *
+   * @return A new exception with failure type {@link FailureType#UNIMPLEMENTED}.
+   */
   public static AnalysisException unimplemented(String message) {
     return new AnalysisException(FailureType.UNIMPLEMENTED, message);
   }
 
+  /**
+   * Creates an exception for an unreachable or timed-out upstream dependency. The request
+   * may succeed on retry.
+   *
+   * @param message The human-readable failure detail.
+   * @param cause   The underlying connectivity or timeout failure.
+   *
+   * @return A new exception with failure type {@link FailureType#UNAVAILABLE}.
+   */
   public static AnalysisException unavailable(String message, Throwable cause) {
     return new AnalysisException(FailureType.UNAVAILABLE, message, cause);
   }
 
+  /**
+   * Creates an exception for an unexpected server-side failure while executing a step.
+   *
+   * @param message The human-readable failure detail.
+   * @param cause   The underlying failure.
+   *
+   * @return A new exception with failure type {@link FailureType#INTERNAL}.
+   */
   public static AnalysisException internal(String message, Throwable cause) {
     return new AnalysisException(FailureType.INTERNAL, message, cause);
   }

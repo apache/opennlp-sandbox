@@ -28,6 +28,10 @@ import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
  */
 public final class CudaEmbeddingBackendFactory implements EmbeddingBackendFactory {
 
+  /** Public no-arg constructor required by {@link java.util.ServiceLoader}. */
+  public CudaEmbeddingBackendFactory() {
+  }
+
   /** The backend id: {@value}. */
   public static final String BACKEND_ID = "cuda";
 

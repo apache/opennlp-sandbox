@@ -29,11 +29,19 @@ public final class NerBackendContext {
 
   private final SentenceDetector sentenceDetector;
 
+  /**
+   * Creates a context carrying the shared resources available to NER backends.
+   *
+   * @param sentenceDetector The server's sentence detector, or {@code null} when none is
+   *     configured. Backends that need one obtain it via {@link #requireSentenceDetector()}.
+   */
   public NerBackendContext(SentenceDetector sentenceDetector) {
     this.sentenceDetector = sentenceDetector;
   }
 
   /**
+   * Returns the shared sentence detector, failing if none was provided.
+   *
    * @return The shared sentence detector.
    *
    * @throws AnalysisException If no sentence detector is available, which a backend that

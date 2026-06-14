@@ -56,4 +56,25 @@
         <awaitility.version>4.3.0</awaitility.version>
     </properties>
 
+    <build>
+        <plugins>
+            <!--
+              Apache-grade Javadoc enforcement for the gRPC modules: override the sandbox parent's
+              doclint=none so missing/malformed Javadoc fails the build. The sourcepath restriction
+              keeps the check on hand-written sources; the generated protobuf module
+              (opennlp-grpc-api) has no src/main/java and is therefore not scanned here — its API
+              is documented through the protoc-gen-doc output instead.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <doclint>all</doclint>
+                    <failOnWarnings>true</failOnWarnings>
+                    <sourcepath>src/main/java</sourcepath>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>

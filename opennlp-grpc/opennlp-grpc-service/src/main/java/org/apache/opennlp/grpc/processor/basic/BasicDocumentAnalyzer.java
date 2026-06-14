@@ -63,6 +63,14 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
   private final EmbedChunkStepRunner embedChunkSteps;
   private final NameFinderRegistry nameFinderRegistry;
 
+  /**
+   * Creates an analyzer backed by a fresh {@link ModelBundleCache} built from the given
+   * configuration. The default profile registry is derived from the model capabilities
+   * the cache discovers.
+   *
+   * @param configuration The model-loading configuration passed through to
+   *                      {@link ModelBundleCache}. Must not be {@code null}.
+   */
   public BasicDocumentAnalyzer(Map<String, String> configuration) {
     this(new ModelBundleCache(configuration));
   }
@@ -76,10 +84,30 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
         modelBundleCache);
   }
 
+  /**
+   * Creates an analyzer with an explicit profile registry and model cache, using the
+   * embedding provider exposed by the cache.
+   *
+   * @param profileRegistry  The profile registry resolving requested profiles. Must not
+   *                        be {@code null}.
+   * @param modelBundleCache The cache supplying loaded models and registries. Must not be
+   *                        {@code null}.
+   */
   public BasicDocumentAnalyzer(ProfileRegistry profileRegistry, ModelBundleCache modelBundleCache) {
     this(profileRegistry, modelBundleCache, modelBundleCache.getEmbeddingProvider());
   }
 
+  /**
+   * Creates an analyzer with an explicit profile registry, model cache, and embedding
+   * provider. This is the canonical constructor the other constructors delegate to.
+   *
+   * @param profileRegistry   The profile registry resolving requested profiles. Must not
+   *                         be {@code null}.
+   * @param modelBundleCache  The cache supplying loaded models and registries. Must not be
+   *                         {@code null}.
+   * @param embeddingProvider The provider used for embedding and semantic-chunk steps.
+   *                         Must not be {@code null}.
+   */
   public BasicDocumentAnalyzer(
       ProfileRegistry profileRegistry,
       ModelBundleCache modelBundleCache,

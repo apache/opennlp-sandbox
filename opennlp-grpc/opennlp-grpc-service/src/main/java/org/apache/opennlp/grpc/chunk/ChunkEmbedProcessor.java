@@ -184,6 +184,8 @@ public final class ChunkEmbedProcessor {
   }
 
   /**
+   * Builds an INFO diagnostic recording the chunk count for a successfully processed config.
+   *
    * @param configId   The config id the diagnostic refers to.
    * @param chunkCount The number of chunks produced for the config.
    *

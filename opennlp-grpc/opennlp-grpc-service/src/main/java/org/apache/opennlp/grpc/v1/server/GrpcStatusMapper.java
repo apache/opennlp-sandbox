@@ -30,6 +30,14 @@ public final class GrpcStatusMapper {
   private GrpcStatusMapper() {
   }
 
+  /**
+   * Maps an {@link AnalysisException} to the gRPC {@link Status} its failure type denotes.
+   *
+   * @param exception The analysis failure to map. Must not be {@code null}.
+   *
+   * @return The gRPC status corresponding to the exception's
+   *     {@link AnalysisException.FailureType}.
+   */
   public static Status toStatus(AnalysisException exception) {
     return switch (exception.getFailureType()) {
       case INVALID_ARGUMENT -> Status.INVALID_ARGUMENT;

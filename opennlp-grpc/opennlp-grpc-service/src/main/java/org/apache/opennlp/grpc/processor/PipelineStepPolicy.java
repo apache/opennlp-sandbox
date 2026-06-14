@@ -47,14 +47,34 @@ public final class PipelineStepPolicy {
   private PipelineStepPolicy() {
   }
 
+  /**
+   * Returns the steps this server implements, in execution order.
+   *
+   * @return An immutable list of the implemented pipeline steps.
+   */
   public static List<PipelineStep> implementedSteps() {
     return IMPLEMENTED_STEPS;
   }
 
+  /**
+   * Reports whether the given step is implemented by this server.
+   *
+   * @param step The pipeline step to check.
+   *
+   * @return {@code true} when the step is implemented.
+   */
   public static boolean isImplemented(PipelineStep step) {
     return IMPLEMENTED_STEP_SET.contains(step);
   }
 
+  /**
+   * Reports whether the given step should run for the given profile, i.e. the profile lists it.
+   *
+   * @param profile The resolved analysis profile.
+   * @param step    The pipeline step to check.
+   *
+   * @return {@code true} when the profile selects the step.
+   */
   public static boolean shouldRun(AnalysisProfile profile, PipelineStep step) {
     return profile.getStepsList().contains(step);
   }

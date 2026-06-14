@@ -64,6 +64,16 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
 
   private Server server;
 
+  /** Creates an unstarted server; picocli populates the options before {@link #call()} runs. */
+  public OpenNlpGrpcServer() {
+  }
+
+  /**
+   * Command-line entry point. Parses the arguments with picocli, runs the server, and exits
+   * the JVM with the resulting status code.
+   *
+   * @param args The command-line arguments (port and config file options).
+   */
   public static void main(String... args) {
     final CommandLine cli = new CommandLine(new OpenNlpGrpcServer());
     final int exitCode = cli.execute(args);
@@ -82,6 +92,14 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     return 0;
   }
 
+  /**
+   * Loads the configuration, builds the model cache, profiles, and analyzer, then starts the
+   * gRPC server on the configured port and registers a shutdown hook that closes the models.
+   * Optionally enables server reflection per the {@code server.enable_reflection} setting.
+   *
+   * @throws Exception If the configuration cannot be read, a model fails to load, or the
+   *     server fails to bind or start.
+   */
   public void start() throws Exception {
     final Map<String, String> configuration = loadConfiguration();
 
@@ -118,12 +136,24 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     registerShutdownHook(modelBundleCache);
   }
 
+  /**
+   * Blocks the calling thread until the server terminates. Returns immediately if the server
+   * has not been started.
+   *
+   * @throws InterruptedException If the calling thread is interrupted while waiting.
+   */
   public void awaitTermination() throws InterruptedException {
     if (server != null) {
       server.awaitTermination();
     }
   }
 
+  /**
+   * Returns the port the server is listening on.
+   *
+   * @return The bound port once started, otherwise the configured port (which may be {@code 0}
+   *     to request an ephemeral port).
+   */
   public int getPort() {
     return server != null ? server.getPort() : port;
   }
@@ -167,6 +197,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
                 }));
   }
 
+  /** Initiates a graceful shutdown of the server; a no-op if it was never started. */
   public void stop() {
     if (server != null) {
       logger.info("Shutting down OpenNlpGrpcServer on port {}", server.getPort());

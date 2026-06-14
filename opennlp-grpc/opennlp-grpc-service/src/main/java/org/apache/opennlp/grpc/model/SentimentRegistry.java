@@ -72,24 +72,52 @@ public final class SentimentRegistry implements AutoCloseable {
         DocCategorizerRegistry.createForNamespace(NAMESPACE, configuration));
   }
 
+  /**
+   * Reports whether any sentiment model is configured.
+   *
+   * @return {@code true} when at least one model is registered.
+   */
   public boolean isAvailable() {
     return delegate.isAvailable();
   }
 
-  /** @return All configured sentiment model ids, in registration order. */
+  /**
+   * Returns all configured sentiment model ids, in registration order.
+   *
+   * @return An immutable copy of the registered, normalized model ids.
+   */
   public List<String> modelIds() {
     return delegate.modelIds();
   }
 
+  /**
+   * Reports whether a sentiment model is registered under the given id.
+   *
+   * @param modelId The model id to check. May be {@code null}; matched after normalization.
+   *
+   * @return {@code true} when a model is registered under the normalized id.
+   */
   public boolean supportsModel(String modelId) {
     return delegate.supportsModel(modelId);
   }
 
-  /** @return All configured sentiment models, in registration order, for catalog reporting. */
+  /**
+   * Returns all configured sentiment models, in registration order, for catalog reporting.
+   *
+   * @return An immutable copy of the registered models.
+   */
   public List<DocCategorizerModel> allModels() {
     return delegate.allModels();
   }
 
+  /**
+   * Looks up the sentiment model registered under the given id.
+   *
+   * @param modelId The model id to look up. May be {@code null}; matched after normalization.
+   *
+   * @return The matching model, or {@code null} when {@code modelId} is {@code null} or no
+   *     model is registered under the normalized id.
+   */
   public DocCategorizerModel get(String modelId) {
     return delegate.get(modelId);
   }

@@ -38,7 +38,16 @@ import org.apache.opennlp.grpc.v1.Token;
  */
 public final class SegmentationChunker {
 
-  /** Exclusive-end document character offsets plus the sentences touched by the chunk. */
+  /**
+   * Exclusive-end document character offsets plus the sentences touched by the chunk.
+   *
+   * @param start           The inclusive start character offset of the chunk in the
+   *                        document text.
+   * @param end             The exclusive end character offset of the chunk in the
+   *                        document text.
+   * @param sentenceIndices The indices of the sentences covered by the chunk, in
+   *                        document order.
+   */
   public record ChunkSegment(int start, int end, List<Integer> sentenceIndices) {
   }
 

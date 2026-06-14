@@ -119,6 +119,18 @@ public final class ModelBundleCache {
   private final boolean parserAvailable;
   private final ThreadLocal<Parser> parser;
 
+  /**
+   * Eagerly loads every model and registry described by the given configuration. The classic
+   * {@code *ME} components fall back to bundled defaults when no path is configured; the
+   * embedding provider, name finder, document categorizer, and sentiment registries are built
+   * from their configured backends and the optional parser model is loaded last. If any load
+   * after the classic components fails, the resources already created are released so a failed
+   * startup does not leak native sessions.
+   *
+   * @param configuration The server configuration. Must not be {@code null}.
+   *
+   * @throws AnalysisException If a configured model path is invalid or a model fails to load.
+   */
   public ModelBundleCache(Map<String, String> configuration) {
     Objects.requireNonNull(configuration, "configuration");
     this.modelProvider = new DefaultClassPathModelProvider();
@@ -168,52 +180,109 @@ public final class ModelBundleCache {
     }
   }
 
+  /**
+   * Returns the shared sentence detector. Always available (bundled default when unconfigured).
+   *
+   * @return The shared sentence detector. Never {@code null}.
+   */
   public SentenceDetectorME getSentenceDetector() {
     return sentenceDetector;
   }
 
+  /**
+   * Returns the shared tokenizer. Always available (bundled default when unconfigured).
+   *
+   * @return The shared tokenizer. Never {@code null}.
+   */
   public TokenizerME getTokenizer() {
     return tokenizer;
   }
 
+  /**
+   * Returns the shared POS tagger. Always available (bundled default when unconfigured).
+   *
+   * @return The shared POS tagger. Never {@code null}.
+   */
   public POSTaggerME getPosTagger() {
     return posTagger;
   }
 
+  /**
+   * Returns the shared lemmatizer. Always available (bundled default when unconfigured).
+   *
+   * @return The shared lemmatizer. Never {@code null}.
+   */
   public LemmatizerME getLemmatizer() {
     return lemmatizer;
   }
 
+  /**
+   * Returns the shared language detector. Always available (bundled default when unconfigured).
+   *
+   * @return The shared language detector. Never {@code null}.
+   */
   public LanguageDetectorME getLanguageDetector() {
     return languageDetector;
   }
 
+  /**
+   * Returns the catalog of loaded model bundles for capability reporting.
+   *
+   * @return A new list of the loaded bundle descriptors. Never {@code null}.
+   */
   public List<ModelBundleInfo> listBundles() {
     return new ArrayList<>(bundles.values());
   }
 
+  /**
+   * Returns the configured embedding provider.
+   *
+   * @return The embedding provider; never {@code null}, though it may report no registered
+   *     models when none is configured.
+   */
   public EmbeddingProvider getEmbeddingProvider() {
     return embeddingProvider;
   }
 
+  /**
+   * Returns the registry of loaded name finders.
+   *
+   * @return The name finder registry; never {@code null}, possibly empty.
+   */
   public NameFinderRegistry getNameFinderRegistry() {
     return nameFinderRegistry;
   }
 
+  /**
+   * Returns the registry of loaded document categorizers.
+   *
+   * @return The document categorizer registry; never {@code null}, possibly empty.
+   */
   public DocCategorizerRegistry getDocCategorizerRegistry() {
     return docCategorizerRegistry;
   }
 
+  /**
+   * Returns the registry of loaded sentiment models.
+   *
+   * @return The sentiment registry; never {@code null}, possibly empty.
+   */
   public SentimentRegistry getSentimentRegistry() {
     return sentimentRegistry;
   }
 
-  /** @return Whether a constituency parser model is configured on this server. */
+  /**
+   * Reports whether a constituency parser model is configured on this server.
+   *
+   * @return Whether a constituency parser model is configured on this server.
+   */
   public boolean isParserAvailable() {
     return parserAvailable;
   }
 
   /**
+   * Returns the calling thread's parser instance, building it lazily from the shared model.
+   *
    * @return A parser for the calling thread (lazily built from the shared immutable model), or
    *     {@code null} when no parser is configured. The instance must not be shared across threads
    *     — OpenNLP's parser is not thread-safe — so callers use the returned parser only on the

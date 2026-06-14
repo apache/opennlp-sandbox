@@ -35,6 +35,14 @@ public final class OpenVinoEmbeddingBackendFactory implements EmbeddingBackendFa
   /** The backend id: {@value}. */
   public static final String BACKEND_ID = "openvino";
 
+  /**
+   * Creates the factory. Public and no-arg because this class is discovered and
+   * instantiated reflectively by the {@link java.util.ServiceLoader} that registers
+   * {@link EmbeddingBackendFactory} implementations.
+   */
+  public OpenVinoEmbeddingBackendFactory() {
+  }
+
   @Override
   public String backendId() {
     return BACKEND_ID;

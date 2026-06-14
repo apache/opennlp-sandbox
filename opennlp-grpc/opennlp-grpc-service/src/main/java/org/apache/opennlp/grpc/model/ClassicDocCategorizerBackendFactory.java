@@ -38,6 +38,10 @@ import org.slf4j.LoggerFactory;
  */
 public final class ClassicDocCategorizerBackendFactory implements DocCategorizerBackendFactory {
 
+  /** Public no-arg constructor required by {@link java.util.ServiceLoader}. */
+  public ClassicDocCategorizerBackendFactory() {
+  }
+
   /** Prefix for classic document categorizer path entries. */
   public static final String KEY_PREFIX = "model.doccat.";
 

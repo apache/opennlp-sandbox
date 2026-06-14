@@ -68,12 +68,25 @@ public final class NameFinderRegistry implements AutoCloseable {
    * client-supplied {@code ner_entity_types} are normalized identically so entity types
    * are matched case-insensitively on both sides.
    *
+   * @param entityType The raw entity type to normalize. May be {@code null}.
+   *
    * @return The normalized type, or {@code null} if {@code entityType} is {@code null}.
    */
   public static String normalize(String entityType) {
     return entityType == null ? null : entityType.trim().toLowerCase(Locale.ROOT);
   }
 
+  /**
+   * Loads all name finder models with no sentence detector available, equivalent to
+   * {@link #create(Map, SentenceDetector)} with a {@code null} detector.
+   *
+   * @param configuration The server configuration. Must not be {@code null}.
+   *
+   * @return A registry, possibly empty when no name finder is configured.
+   *
+   * @throws AnalysisException If a backend's configuration is invalid or a model fails to
+   *     load.
+   */
   public static NameFinderRegistry create(Map<String, String> configuration) {
     return create(configuration, null);
   }
@@ -124,22 +137,41 @@ public final class NameFinderRegistry implements AutoCloseable {
     }
   }
 
+  /**
+   * Reports whether any name finder is configured.
+   *
+   * @return {@code true} when at least one model is registered.
+   */
   public boolean isAvailable() {
     return !modelsById.isEmpty();
   }
 
-  /** @return All configured recognizers, in registration order, for catalog reporting. */
+  /**
+   * Returns all configured recognizers, in registration order, for catalog reporting.
+   *
+   * @return An immutable copy of the registered models.
+   */
   public List<NerModel> allModels() {
     return List.copyOf(modelsById.values());
   }
 
   /**
-   * @return Configured entity types in stable registration order.
+   * Returns the configured entity types in stable registration order.
+   *
+   * @return An immutable copy of the registered, normalized entity types.
    */
   public List<String> entityTypes() {
     return List.copyOf(byEntityType.keySet());
   }
 
+  /**
+   * Reports whether any model emits the given entity type.
+   *
+   * @param entityType The entity type to check. May be {@code null}; matched after
+   *     normalization.
+   *
+   * @return {@code true} when a model is registered for the normalized type.
+   */
   public boolean supportsEntityType(String entityType) {
     return entityType != null && byEntityType.containsKey(normalize(entityType));
   }
@@ -149,6 +181,11 @@ public final class NameFinderRegistry implements AutoCloseable {
    * every model that can emit at least one of them, each listed once. An empty or
    * {@code null} request selects all configured models. Running a model once and filtering
    * its output avoids invoking a multi-type model repeatedly.
+   *
+   * @param requestedTypes The requested entity types; {@code null} or empty selects all
+   *     models. Each type is matched after normalization.
+   *
+   * @return An immutable list of the distinct models to run, in registration order.
    */
   public List<NerModel> modelsForTypes(List<String> requestedTypes) {
     if (requestedTypes == null || requestedTypes.isEmpty()) {
@@ -168,6 +205,11 @@ public final class NameFinderRegistry implements AutoCloseable {
    * Resolves which entity types to run for this request: an explicit
    * {@code AnalysisProfile.ner_entity_types} filter (normalized to the canonical form),
    * or all configured types when unset.
+   *
+   * @param requestedTypes The requested entity types; {@code null} or empty resolves to all
+   *     configured types. Otherwise each requested type is normalized.
+   *
+   * @return An immutable list of the entity types to run, in request or registration order.
    */
   public List<String> resolveEntityTypes(List<String> requestedTypes) {
     if (requestedTypes == null || requestedTypes.isEmpty()) {

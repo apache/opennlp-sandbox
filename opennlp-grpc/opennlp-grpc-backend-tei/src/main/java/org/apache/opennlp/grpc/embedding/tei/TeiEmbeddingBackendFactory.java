@@ -36,6 +36,14 @@ public final class TeiEmbeddingBackendFactory implements EmbeddingBackendFactory
   /** The backend id: {@value}. */
   public static final String BACKEND_ID = "tei";
 
+  /**
+   * Creates the factory. Public and no-arg because this class is discovered and
+   * instantiated reflectively by the {@link java.util.ServiceLoader} that registers
+   * {@link EmbeddingBackendFactory} implementations.
+   */
+  public TeiEmbeddingBackendFactory() {
+  }
+
   @Override
   public String backendId() {
     return BACKEND_ID;
