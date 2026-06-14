@@ -90,7 +90,8 @@ message AnnotatedSentence {
   // Classic syntactic (shallow) chunks (from ChunkerME or similar), per sentence.
   // Distinct from the strategy-driven Chunk in chunk_embedding_groups.
   optional ChunkResult syntactic_chunks = 4;
-  // Constituency parse of this sentence (from PIPELINE_STEP_PARSE).
+  // Constituency parse of this sentence (from PIPELINE_STEP_PARSE). The primary parse: the
+  // chosen engine's tree (default/pinned), or the highest-priority engine's tree under a union.
   optional ParseTree parse_tree = 5;
   // Winning sentiment category for this sentence (from PIPELINE_STEP_SENTIMENT,
   // which is per-sentence document categorization): the argmax label of the
@@ -99,6 +100,11 @@ message AnnotatedSentence {
   // Score of the winning sentiment_label from the categorizer's score distribution,
   // in [0,1]. Set only when SENTIMENT ran.
   optional float sentiment_confidence = 7;
+  // All constituency parses when more than one engine ran (a union, see
+  // AnalysisProfile.parse_engine_policy with two or more engines), each tagged with its
+  // producer. Empty for the single-engine default/pin case, where `parse_tree` is the only
+  // parse; when populated, `parse_tree` repeats its primary (highest-priority) element.
+  repeated ParseTree parse_trees = 8;
 }
 
 // A single token, with the optional per-token annotations from POS tagging and
@@ -331,6 +337,10 @@ message ParseTree {
   // OpenNLP's Parse.show(), e.g. "(TOP (S (NP (DT The)(NN dog))(VP (VBD barked))))". The
   // universal interchange/debug representation; every NLP toolkit can read it.
   optional string penn_treebank = 2;
+  // The logical parser id that produced this tree (e.g. "default"), as configured.
+  string parser_id = 3;
+  // The engine/backend that served this parser (e.g. "opennlp-me").
+  string engine = 4;
 }
 
 // One node of a constituency parse. A nonterminal is a phrase (its label is a phrase tag such

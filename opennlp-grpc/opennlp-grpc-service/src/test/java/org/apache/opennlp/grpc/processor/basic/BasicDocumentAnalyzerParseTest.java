@@ -96,7 +96,7 @@ class BasicDocumentAnalyzerParseTest {
         "set -Dparser.model.path to a real OpenNLP parser model to run this test");
 
     final ModelBundleCache modelBundleCache =
-        new ModelBundleCache(Map.of("model.parser.path", modelPath));
+        new ModelBundleCache(Map.of("model.parser.default.path", modelPath));
     final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(
         ProfileRegistry.createDefault(false, false, false, true), modelBundleCache);
 
@@ -108,6 +108,10 @@ class BasicDocumentAnalyzerParseTest {
     assertEquals(ParseNodeKind.PARSE_NODE_KIND_NONTERMINAL,
         sentence.getParseTree().getRoot().getKind());
     assertFalse(sentence.getParseTree().getPennTreebank().isBlank());
+    // The tree carries its provenance; the single-engine case leaves parse_trees empty.
+    assertEquals("default", sentence.getParseTree().getParserId());
+    assertEquals("opennlp-me", sentence.getParseTree().getEngine());
+    assertEquals(0, sentence.getParseTreesCount());
     assertTrue(response.getDiagnosticsList().stream()
         .anyMatch(d -> d.getStep() == PipelineStep.PIPELINE_STEP_PARSE));
 
@@ -127,7 +131,7 @@ class BasicDocumentAnalyzerParseTest {
 
     final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(
         ProfileRegistry.createDefault(false, false, false, true),
-        new ModelBundleCache(Map.of("model.parser.path", modelPath)));
+        new ModelBundleCache(Map.of("model.parser.default.path", modelPath)));
     final AnalyzeDocumentResponse response = analyzer.analyze(AnalyzeDocumentRequest.newBuilder()
         .setDocument(OpenNlpDocument.newBuilder().setRawText(TEXT).build())
         .setOptions(org.apache.opennlp.grpc.v1.AnalysisOptions.newBuilder()
@@ -165,7 +169,7 @@ class BasicDocumentAnalyzerParseTest {
     // or exceptions. The bracketed strings of all results must be identical and well-formed.
     final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(
         ProfileRegistry.createDefault(false, false, false, true),
-        new ModelBundleCache(Map.of("model.parser.path", modelPath)));
+        new ModelBundleCache(Map.of("model.parser.default.path", modelPath)));
     final String expected = analyzer.analyze(parseRequest())
         .getDocument().getSentences(0).getParseTree().getPennTreebank();
 

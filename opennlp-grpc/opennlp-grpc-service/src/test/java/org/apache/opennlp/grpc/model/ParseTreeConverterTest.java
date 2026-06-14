@@ -15,7 +15,7 @@
  * KIND, either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-package org.apache.opennlp.grpc.processor.basic;
+package org.apache.opennlp.grpc.model;
 
 import opennlp.tools.parser.Parse;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;

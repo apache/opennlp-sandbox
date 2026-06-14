@@ -117,7 +117,7 @@ class NameFinderRegistryTest {
     StubNerBackendFactory.resetCloseCount();
     assertThrows(AnalysisException.class, () -> new ModelBundleCache(Map.of(
         StubNerBackendFactory.KEY_CLOSEABLE_TYPE, "person",
-        "model.parser.path", "/no/such/parser-model.bin")));
+        "model.parser.default.path", "/no/such/parser-model.bin")));
     assertEquals(1, StubNerBackendFactory.closeCount());
   }
 

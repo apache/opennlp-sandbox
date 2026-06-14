@@ -26,8 +26,6 @@ import java.util.Set;
 import opennlp.tools.langdetect.Language;
 import opennlp.tools.langdetect.LanguageDetectorME;
 import opennlp.tools.lemmatizer.LemmatizerME;
-import opennlp.tools.parser.Parse;
-import opennlp.tools.parser.Parser;
 import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.tokenize.TokenizerME;
@@ -37,6 +35,7 @@ import org.apache.opennlp.grpc.model.DocCategorizerModel;
 import org.apache.opennlp.grpc.model.DocCategorizerRegistry;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.model.NameFinderRegistry;
+import org.apache.opennlp.grpc.model.ParserRegistry;
 import org.apache.opennlp.grpc.model.SentimentRegistry;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
@@ -322,37 +321,48 @@ final class ClassicStepRunner {
   }
 
   /**
-   * Builds a constituency parse for every tokenized sentence and stores the requested
-   * representations in {@link AnnotatedSentence#getParseTree()}: the structured {@link ParseNode}
-   * tree and/or the standard bracketed string. The parser is fed the sentence's tokens (via
-   * {@link Parse#createFromTokens}), so terminals line up with the sentence's token list.
+   * Builds constituency parses per the request's engine policy and stores them on each sentence:
+   * the primary parse on the sentence's {@code parse_tree}, and — when a union across engines
+   * produced more than one — the full list on {@code parse_trees}, each tagged with its producer. A
+   * parser served by several engines is resolved by priority (with fallback), pinned, or unioned
+   * depending on how many engines the policy lists; see {@link ParseResolver}.
    */
   void parse(
       OpenNlpDocument.Builder document,
       Set<ParseFormat> formats,
+      EnginePolicy enginePolicy,
       boolean includeProbabilities,
       List<ProcessingDiagnostic> diagnostics) {
-    final Parser parser = modelBundleCache.getParser();
-    if (parser == null) {
-      // The validator checks parser availability up front, so a null here is a server-side bug.
-      throw AnalysisException.internal("Parser is not configured", null);
+    final ParserRegistry registry = modelBundleCache.getParserRegistry();
+    final List<String> parserIds = registry.parserIds();
+    final List<String> engines = new ArrayList<>(enginePolicy.getEnginesCount());
+    for (String engine : enginePolicy.getEnginesList()) {
+      engines.add(ParserRegistry.normalize(engine));
     }
-    final boolean wantStructured = formats.contains(ParseFormat.PARSE_FORMAT_STRUCTURED);
-    final boolean wantBracketed = formats.contains(ParseFormat.PARSE_FORMAT_BRACKETED);
+    final ParseResolver resolver = new ParseResolver(registry.parsers(), parserIds, engines,
+        formats.contains(ParseFormat.PARSE_FORMAT_STRUCTURED),
+        formats.contains(ParseFormat.PARSE_FORMAT_BRACKETED), includeProbabilities);
+
     int parsedSentences = 0;
     for (int i = 0; i < document.getSentencesCount(); i++) {
       final AnnotatedSentence sentence = document.getSentences(i);
       if (sentence.getTokensCount() == 0) {
         continue;
       }
-      final Parse parse = parser.parse(Parse.createFromTokens(tokenTexts(sentence)));
-      final ParseTree tree = ParseTreeConverter.toParseTree(
-          parse, sentence, wantStructured, wantBracketed, includeProbabilities);
-      document.setSentences(i, sentence.toBuilder().setParseTree(tree).build());
+      final List<ParseTree> trees = resolver.resolve(sentence);
+      if (trees.isEmpty()) {
+        continue;
+      }
+      // The first tree is the primary; expose the full list only when a union produced several.
+      final AnnotatedSentence.Builder sentenceBuilder = sentence.toBuilder().setParseTree(trees.get(0));
+      if (trees.size() > 1) {
+        sentenceBuilder.addAllParseTrees(trees);
+      }
+      document.setSentences(i, sentenceBuilder.build());
       parsedSentences++;
     }
     diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_PARSE,
-        "Parsed " + parsedSentences + " sentence(s)"));
+        "Parsed " + parsedSentences + " sentence(s) across " + parserIds.size() + " parser(s)"));
   }
 
   /**

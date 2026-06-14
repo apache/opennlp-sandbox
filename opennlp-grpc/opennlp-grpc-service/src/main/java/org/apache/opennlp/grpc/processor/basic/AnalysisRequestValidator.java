@@ -28,6 +28,7 @@ import org.apache.opennlp.grpc.model.ChunkerRegistry;
 import org.apache.opennlp.grpc.model.DocCategorizerModel;
 import org.apache.opennlp.grpc.model.DocCategorizerRegistry;
 import org.apache.opennlp.grpc.model.NameFinderRegistry;
+import org.apache.opennlp.grpc.model.ParserRegistry;
 import org.apache.opennlp.grpc.model.SentimentRegistry;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.processor.PipelineStepPolicy;
@@ -52,7 +53,7 @@ final class AnalysisRequestValidator {
   private final NameFinderRegistry nameFinderRegistry;
   private final DocCategorizerRegistry docCategorizerRegistry;
   private final SentimentRegistry sentimentRegistry;
-  private final boolean parserAvailable;
+  private final ParserRegistry parserRegistry;
   private final ChunkerRegistry chunkerRegistry;
 
   AnalysisRequestValidator(
@@ -60,14 +61,14 @@ final class AnalysisRequestValidator {
       NameFinderRegistry nameFinderRegistry,
       DocCategorizerRegistry docCategorizerRegistry,
       SentimentRegistry sentimentRegistry,
-      boolean parserAvailable,
+      ParserRegistry parserRegistry,
       ChunkerRegistry chunkerRegistry) {
     this.embeddingProvider = Objects.requireNonNull(embeddingProvider, "embeddingProvider");
     this.nameFinderRegistry = Objects.requireNonNull(nameFinderRegistry, "nameFinderRegistry");
     this.docCategorizerRegistry =
         Objects.requireNonNull(docCategorizerRegistry, "docCategorizerRegistry");
     this.sentimentRegistry = Objects.requireNonNull(sentimentRegistry, "sentimentRegistry");
-    this.parserAvailable = parserAvailable;
+    this.parserRegistry = Objects.requireNonNull(parserRegistry, "parserRegistry");
     this.chunkerRegistry = Objects.requireNonNull(chunkerRegistry, "chunkerRegistry");
   }
 
@@ -219,10 +220,20 @@ final class AnalysisRequestValidator {
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_PARSE)) {
       return;
     }
-    if (!parserAvailable) {
+    if (!parserRegistry.isAvailable()) {
       throw AnalysisException.notFound(
           "PIPELINE_STEP_PARSE requested but no parser model is configured on this server; "
-              + "set model.parser.path");
+              + "set model.parser.<id>.path");
+    }
+    for (String engine : profile.getParseEnginePolicy().getEnginesList()) {
+      if (engine == null || engine.isBlank()) {
+        throw AnalysisException.invalidArgument(
+            "parse_engine_policy.engines must not contain blank values");
+      }
+      if (!parserRegistry.knowsEngine(engine)) {
+        throw AnalysisException.notFound(
+            "Unknown parser engine '" + engine + "' in parse_engine_policy");
+      }
     }
   }
 
@@ -379,7 +390,7 @@ final class AnalysisRequestValidator {
                   ? ", " + ProfileRegistry.DOCCAT_BUNDLE_ID : "")
               + (sentimentRegistry.isAvailable()
                   ? ", " + ProfileRegistry.SENTIMENT_BUNDLE_ID : "")
-              + (parserAvailable ? ", " + ProfileRegistry.PARSE_BUNDLE_ID : "")
+              + (parserRegistry.isAvailable() ? ", " + ProfileRegistry.PARSE_BUNDLE_ID : "")
               + (chunkerRegistry.isAvailable() ? ", " + ProfileRegistry.CHUNK_BUNDLE_ID : ""));
     }
     if (bundleId.equals(ProfileRegistry.NER_BUNDLE_ID) && !nameFinderRegistry.isAvailable()) {
@@ -399,10 +410,10 @@ final class AnalysisRequestValidator {
           "Model bundle '" + ProfileRegistry.SENTIMENT_BUNDLE_ID
               + "' requires sentiment models; configure model.sentiment.<id>.path");
     }
-    if (bundleId.equals(ProfileRegistry.PARSE_BUNDLE_ID) && !parserAvailable) {
+    if (bundleId.equals(ProfileRegistry.PARSE_BUNDLE_ID) && !parserRegistry.isAvailable()) {
       throw AnalysisException.notFound(
           "Model bundle '" + ProfileRegistry.PARSE_BUNDLE_ID
-              + "' requires a parser model; configure model.parser.path");
+              + "' requires a parser model; configure model.parser.<id>.path");
     }
     if (bundleId.equals(ProfileRegistry.CHUNK_BUNDLE_ID) && !chunkerRegistry.isAvailable()) {
       throw AnalysisException.notFound(

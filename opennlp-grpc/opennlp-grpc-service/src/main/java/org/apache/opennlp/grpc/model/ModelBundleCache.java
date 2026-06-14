@@ -41,9 +41,6 @@ import opennlp.tools.langdetect.LanguageDetectorME;
 import opennlp.tools.langdetect.LanguageDetectorModel;
 import opennlp.tools.lemmatizer.LemmatizerME;
 import opennlp.tools.lemmatizer.LemmatizerModel;
-import opennlp.tools.parser.Parser;
-import opennlp.tools.parser.ParserFactory;
-import opennlp.tools.parser.ParserModel;
 import opennlp.tools.models.ClassPathModelProvider;
 import opennlp.tools.models.DefaultClassPathModelProvider;
 import opennlp.tools.models.ModelType;
@@ -87,7 +84,6 @@ public final class ModelBundleCache {
   private static final String KEY_POS_TAGGER_PATH = "model.pos_tagger.path";
   private static final String KEY_LEMMATIZER_PATH = "model.lemmatizer.path";
   private static final String KEY_LANGDETECT_PATH = "model.language_detector.path";
-  private static final String KEY_PARSER_PATH = "model.parser.path";
 
   /** Backend id reported for models served by the classic OpenNLP maxent runtime. */
   private static final String OPENNLP_ME_BACKEND_ID = "opennlp-me";
@@ -112,12 +108,11 @@ public final class ModelBundleCache {
   private final NameFinderRegistry nameFinderRegistry;
   private final DocCategorizerRegistry docCategorizerRegistry;
   private final SentimentRegistry sentimentRegistry;
-  // The parser is optional (the model is large and operator-supplied, not bundled). Unlike the
-  // other classic *ME components, OpenNLP's parser is NOT thread-safe — its beam search mutates
-  // per-instance state — so each request thread gets its own Parser built from the shared,
-  // immutable ParserModel. {@code parser} is null when no parser model is configured.
-  private final boolean parserAvailable;
-  private final ThreadLocal<Parser> parser;
+  // Optional constituency-parsing registry (operator-supplied via model.parser.<id>.path, not
+  // bundled). Groups parsers by id into a RankedBackends so a parser can be served by several
+  // engines; each classic parser holds its own per-thread Parser (OpenNLP's parser is not
+  // thread-safe). Empty when no parser model is configured.
+  private final ParserRegistry parserRegistry;
   // Optional shallow-chunking registry (operator-supplied via model.chunker.<id>.path, not bundled).
   // Groups chunkers by id into a RankedBackends so a chunker can be served by several engines;
   // empty when no chunker model is configured.
@@ -166,15 +161,12 @@ public final class ModelBundleCache {
       docCategorizerRegistry = DocCategorizerRegistry.create(configuration);
       sentimentRegistry = SentimentRegistry.create(configuration);
       chunkerRegistry = ChunkerRegistry.create(configuration);
-      final ParserModel parserModel = loadParserModel(configuration);
       this.embeddingProvider = embeddingProvider;
       this.nameFinderRegistry = nameFinderRegistry;
       this.docCategorizerRegistry = docCategorizerRegistry;
       this.sentimentRegistry = sentimentRegistry;
       this.chunkerRegistry = chunkerRegistry;
-      this.parserAvailable = parserModel != null;
-      this.parser = parserModel == null ? null
-          : ThreadLocal.withInitial(() -> ParserFactory.create(parserModel));
+      this.parserRegistry = ParserRegistry.create(configuration);
       this.bundles = buildBundleCatalog();
       constructed = true;
     } finally {
@@ -285,19 +277,16 @@ public final class ModelBundleCache {
    * @return Whether a constituency parser model is configured on this server.
    */
   public boolean isParserAvailable() {
-    return parserAvailable;
+    return parserRegistry.isAvailable();
   }
 
   /**
-   * Returns the calling thread's parser instance, building it lazily from the shared model.
+   * Returns the parser registry (parsers grouped by id, with their engines).
    *
-   * @return A parser for the calling thread (lazily built from the shared immutable model), or
-   *     {@code null} when no parser is configured. The instance must not be shared across threads
-   *     — OpenNLP's parser is not thread-safe — so callers use the returned parser only on the
-   *     thread that requested it.
+   * @return The parser registry. Never {@code null}; may be empty.
    */
-  public Parser getParser() {
-    return parser == null ? null : parser.get();
+  public ParserRegistry getParserRegistry() {
+    return parserRegistry;
   }
 
   /**
@@ -442,31 +431,6 @@ public final class ModelBundleCache {
     }
   }
 
-  /**
-   * Loads the optional constituency parser. Unlike the always-present backbone components, the
-   * parser model is large and not bundled, so it is loaded only when an explicit
-   * {@code model.parser.path} is configured; otherwise the server simply does not offer
-   * {@code PIPELINE_STEP_PARSE}.
-   *
-   * @return The parser model, or {@code null} when none is configured. The model is immutable and
-   *     shared; per-thread {@code Parser} instances are created from it on demand.
-   */
-  private ParserModel loadParserModel(Map<String, String> configuration) {
-    final String configuredPath = configuration.get(KEY_PARSER_PATH);
-    if (configuredPath == null || configuredPath.isBlank()) {
-      return null;
-    }
-    try (InputStream input = new FileInputStream(configuredPath)) {
-      final ParserModel model = new ParserModel(input);
-      logger.info("Loaded parser model from {}", configuredPath);
-      return model;
-    } catch (FileNotFoundException e) {
-      // A configured path that does not exist is an operator error, not an internal fault.
-      throw AnalysisException.notFound("Configured parser model file not found: " + configuredPath);
-    } catch (IOException e) {
-      throw AnalysisException.internal("Failed to load parser model from " + configuredPath, e);
-    }
-  }
 
 
   /**
@@ -618,7 +582,7 @@ public final class ModelBundleCache {
     if (sentimentRegistry.isAvailable()) {
       catalog.put(ProfileRegistry.SENTIMENT_BUNDLE_ID, buildSentimentBundleCatalog());
     }
-    if (parserAvailable) {
+    if (parserRegistry.isAvailable()) {
       catalog.put(ProfileRegistry.PARSE_BUNDLE_ID, buildParseBundleCatalog());
     }
     if (chunkerRegistry.isAvailable()) {

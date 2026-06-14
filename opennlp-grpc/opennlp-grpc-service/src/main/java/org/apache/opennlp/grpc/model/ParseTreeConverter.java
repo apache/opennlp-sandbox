@@ -15,7 +15,7 @@
  * KIND, either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-package org.apache.opennlp.grpc.processor.basic;
+package org.apache.opennlp.grpc.model;
 
 import opennlp.tools.parser.Parse;
 import opennlp.tools.parser.Parser;
@@ -28,7 +28,7 @@ import org.apache.opennlp.grpc.v1.ParseTree;
 
 /**
  * Converts an OpenNLP {@link Parse} into the gRPC {@link ParseTree} views. Kept separate from
- * {@link ClassicStepRunner} so the conversion is unit-testable from a hand-built parse, with no
+ * the step runner so the conversion is unit-testable from a hand-built parse, with no
  * parser model required.
  *
  * <p>The structured tree links terminals back to the sentence's tokens by index (rather than

@@ -69,9 +69,13 @@ final class DocumentOffsetEncoder {
         sentence.setEntities(en, entity.build());
       }
       if (sentence.hasParseTree() && sentence.getParseTree().hasRoot()) {
-        final ParseTree.Builder tree = sentence.getParseTree().toBuilder();
-        tree.setRoot(remapParseNode(tree.getRoot(), mapper));
-        sentence.setParseTree(tree.build());
+        sentence.setParseTree(remapParseTree(sentence.getParseTree(), mapper));
+      }
+      // Union parses (one tree per engine) carry their own structured roots; remap each.
+      for (int p = 0; p < sentence.getParseTreesCount(); p++) {
+        if (sentence.getParseTrees(p).hasRoot()) {
+          sentence.setParseTrees(p, remapParseTree(sentence.getParseTrees(p), mapper));
+        }
       }
       if (sentence.hasSyntacticChunks()) {
         final ChunkResult.Builder chunks = sentence.getSyntacticChunks().toBuilder();
@@ -114,6 +118,11 @@ final class DocumentOffsetEncoder {
       document.setChunkEmbeddingGroups(g, group.build());
     }
     document.setOffsetEncoding(mapper.encoding());
+  }
+
+  /** Remaps a parse tree's structured root (and all descendants) into the target encoding. */
+  private static ParseTree remapParseTree(ParseTree tree, OffsetMapper mapper) {
+    return tree.toBuilder().setRoot(remapParseNode(tree.getRoot(), mapper)).build();
   }
 
   /** Remaps a parse node's span and all its descendants' spans, depth-first. */
