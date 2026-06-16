@@ -119,7 +119,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <opennlp.version>3.0.0-M3</opennlp.version>
+        <opennlp.version>3.0.0-SNAPSHOT</opennlp.version>
         <opennlp.models.version>1.3.0</opennlp.models.version>
         <opennlp.forkCount>1.0C</opennlp.forkCount>
 

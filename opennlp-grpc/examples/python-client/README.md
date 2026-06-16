@@ -1,54 +1,16 @@
-<!--
-Licensed to the Apache Software Foundation (ASF) under one or more
-contributor license agreements. See the NOTICE file distributed with
-this work for additional information regarding copyright ownership.
-The ASF licenses this file to You under the Apache License, Version 2.0
-(the "License"); you may not use this file except in compliance with
-the License. You may obtain a copy of the License at
+# OpenNLP gRPC Python client (v1)
 
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
--->
-# Apache OpenNLP gRPC - Python Client
-
-This client was generated using the gRPC tools and the schema provided in
-the `opennlp-grpc-api` module.
-
-## Setup
-
-Install dependencies:
+Generate stubs from the v1 protos:
 
 ```bash
-uv sync
+cd ../../opennlp-grpc-api
+python -m grpc_tools.protoc \
+  -I src/main/proto \
+  --python_out=../examples/python-client \
+  --grpc_python_out=../examples/python-client \
+  src/main/proto/org/apache/opennlp/grpc/v1/opennlp_document.proto \
+  src/main/proto/org/apache/opennlp/grpc/v1/opennlp_pipeline.proto \
+  src/main/proto/org/apache/opennlp/grpc/v1/opennlp_service.proto
 ```
 
-Fallback without `uv`:
-
-```bash
-python3 -m pip install grpcio grpcio-tools
-```
-
-## Run examples
-
-Run POS tagging:
-
-```bash
-uv run python main.py
-```
-
-Run sentence detection:
-
-```bash
-uv run python sentdetect_example.py
-```
-
-## Regenerating gRPC stubs
-
-```bash
-uv run python -m grpc_tools.protoc -I../../opennlp-grpc-api --python_out=. --grpc_python_out=. ../../opennlp-grpc-api/opennlp.proto
-```
+A sample `AnalyzeDocument` client will be added here once the v1 Python workflow is finalized.

@@ -35,13 +35,46 @@
     <modules>
         <module>opennlp-grpc-api</module>
         <module>opennlp-grpc-service</module>
+        <module>opennlp-grpc-backend-tei</module>
+        <module>opennlp-grpc-backend-openvino</module>
+        <module>opennlp-grpc-integration-tests</module>
     </modules>
 
     <properties>
+        <!--
+          TEMPORARY: pin to a locally-built, distinctly-versioned OpenNLP that carries the
+          opennlp-dl bug-fix patches (OPENNLP-1844 thread-safety, OPENNLP-1845 doccat softmax,
+          OPENNLP-1846 multi-type NER) the gRPC DL backends depend on. The distinct version keeps
+          a plain 3.0.0-SNAPSHOT refresh from clobbering it. Revert to ${opennlp.version} inherited
+          from the parent (3.0.0-SNAPSHOT) once those three PRs are merged to apache/opennlp main.
+        -->
+        <opennlp.version>3.0.0-kristian-SNAPSHOT</opennlp.version>
         <grpc.version>1.81.0</grpc.version>
+        <protobuf.version>3.25.8</protobuf.version>
         <picocli.version>4.7.7</picocli.version>
         <junit5-system-exit.version>2.0.3</junit5-system-exit.version>
         <awaitility.version>4.3.0</awaitility.version>
     </properties>
+
+    <build>
+        <plugins>
+            <!--
+              Apache-grade Javadoc enforcement for the gRPC modules: override the sandbox parent's
+              doclint=none so missing/malformed Javadoc fails the build. The sourcepath restriction
+              keeps the check on hand-written sources; the generated protobuf module
+              (opennlp-grpc-api) has no src/main/java and is therefore not scanned here — its API
+              is documented through the protoc-gen-doc output instead.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <doclint>all</doclint>
+                    <failOnWarnings>true</failOnWarnings>
+                    <sourcepath>src/main/java</sourcepath>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

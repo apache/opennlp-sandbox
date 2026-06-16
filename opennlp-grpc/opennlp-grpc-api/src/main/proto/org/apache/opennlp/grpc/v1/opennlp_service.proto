@@ -1,0 +1,173 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+syntax = "proto3";
+
+package org.apache.opennlp.grpc.v1;
+
+option java_package = "org.apache.opennlp.grpc.v1";
+option java_multiple_files = true;
+option java_outer_classname = "OpenNlpServiceProto";
+
+import "org/apache/opennlp/grpc/v1/opennlp_document.proto";
+import "org/apache/opennlp/grpc/v1/opennlp_pipeline.proto";
+
+// The v1 document-centric OpenNLP analysis API: one unary RPC to analyze a
+// document, plus two capability-discovery RPCs.
+//
+// Error model: failures are reported as gRPC status codes. AnalyzeDocument maps
+// validation/processing errors to INVALID_ARGUMENT (malformed/invalid request),
+// NOT_FOUND (unknown profile, bundle, model, or entity type), FAILED_PRECONDITION
+// (a requested step's dependency was not run), UNIMPLEMENTED (a requested step,
+// format, or feature this server does not implement), UNAVAILABLE (an upstream
+// dependency such as a remote embedding backend is unreachable; retryable), and
+// INTERNAL (unexpected server fault). GetServiceInfo and ListModelBundles do not
+// validate input and complete with OK.
+service OpenNlpAnalysisService {
+  // Analyzes one document according to a profile (the steps to run) and options
+  // (how to render results), returning the annotated document plus per-step
+  // diagnostics. See AnalyzeDocumentRequest / AnalyzeDocumentResponse and the
+  // service-level error model above.
+  rpc AnalyzeDocument(AnalyzeDocumentRequest) returns (AnalyzeDocumentResponse);
+  // Reports server identity and capabilities: OpenNLP/API versions, the ids of the
+  // profiles registered on the server, and the pipeline steps this server implements.
+  rpc GetServiceInfo(GetServiceInfoRequest) returns (GetServiceInfoResponse);
+  // Lists the model bundles loaded on the server and their aggregate capabilities.
+  rpc ListModelBundles(ListModelBundlesRequest) returns (ListModelBundlesResponse);
+}
+
+// Input to AnalyzeDocument. Supplies the document, selects which analysis to run
+// (via an inline profile and/or a named profile_id), tunes output via options, and
+// optionally requests one or more chunk+embedding groups.
+message AnalyzeDocumentRequest {
+  // The document to analyze. Required; document.raw_text must be non-blank
+  // (else INVALID_ARGUMENT).
+  OpenNlpDocument document = 1;
+  // Classic single-profile usage.
+  AnalysisProfile profile = 2;
+  // Output/execution options (probabilities, offset encoding, parse formats, etc.).
+  AnalysisOptions options = 3;
+  // Names a server-side profile to use. Resolved against the server's profile
+  // registry; an unknown id => NOT_FOUND. When `profile` is also set, the inline
+  // profile is merged field-by-field over the named one. When neither is set, the
+  // server's default profile ("en-basic") is used.
+  optional string profile_id = 4;
+
+  // Per-chunking-strategy multi-config. Chunking first; for each strategy
+  // the caller names exactly which embedding_model_ids to attach to its chunks.
+  // The server shares the base NLP analysis (sentences etc.) across all entries.
+  repeated ChunkEmbedConfigEntry chunk_embed_configs = 5;
+
+  // Category-driven chunking: group sentences by their per-sentence category (today the
+  // PIPELINE_STEP_SENTIMENT label), concatenate each category's sentences into one chunk, and
+  // embed it. Requires SENTIMENT in the profile so sentences carry labels. Each entry yields one
+  // ChunkEmbeddingGroup whose chunks are the category groups (chunk_tag = the category label),
+  // with a per-model centroid. Empty when not requested.
+  repeated CategoryChunkConfigEntry category_chunk_configs = 6;
+}
+
+// One category-chunking request: groups the document's sentences by category and embeds each
+// group's concatenated text. The output is a normal ChunkEmbeddingGroup (one chunk per category).
+message CategoryChunkConfigEntry {
+  // Caller-chosen id for this config entry; becomes the resulting group's group_id.
+  string config_id = 1;
+  // Optional allowlist of category labels to emit, in this order. Empty selects every distinct
+  // category the sentences carry, in first-appearance order. Matched case-insensitively; a listed
+  // category that no sentence carries is simply absent from the output.
+  repeated string categories = 2;
+  // The embedding models to attach to each category group's concatenated text.
+  repeated string embedding_model_ids = 3;
+  // Optional friendly label, echoed onto the resulting group's result_set_name.
+  optional string result_set_name = 4;
+}
+
+// One chunking strategy + the concrete embedding models to use for the chunks
+// it produces. Corresponds 1:1 to one ChunkEmbeddingGroup in the reply.
+message ChunkEmbedConfigEntry {
+  // Caller-chosen id for this config entry; becomes the resulting group's group_id.
+  string config_id = 1;
+  // Optional friendly label, echoed onto the resulting group's result_set_name.
+  optional string result_set_name = 2;
+  // Optional profile merged over the top-level request profile to supply backbone
+  // steps (sentence detection, tokenization, ...) needed for this entry's chunking.
+  optional AnalysisProfile profile = 3;
+  // The chunking strategy for this entry. When omitted, the server applies a
+  // sentence-based default for the entry.
+  optional ChunkingSpec chunking = 4;
+  // The embeddings wanted for *this* chunking strategy's chunks.
+  // Not a blind NxM; explicit per-strategy list.
+  repeated string embedding_model_ids = 5;
+}
+
+// Output of AnalyzeDocument: the annotated document plus diagnostics describing
+// what each step did or why it was skipped.
+message AnalyzeDocumentResponse {
+  // The analyzed document with all requested annotations and chunk/embedding groups.
+  OpenNlpDocument document = 1;
+  // Per-step informational notes, warnings, or non-fatal errors. Fatal failures
+  // are returned as a gRPC error status instead (see the service error model).
+  repeated ProcessingDiagnostic diagnostics = 2;
+}
+
+// A non-fatal note about a pipeline step's execution (ran, skipped, or had a
+// recoverable issue). Fatal failures abort the RPC with an error status instead.
+message ProcessingDiagnostic {
+  // The pipeline step this diagnostic concerns.
+  PipelineStep step = 1;
+  // Human-readable detail.
+  string message = 2;
+  // Severity of the note.
+  DiagnosticSeverity severity = 3;
+  // Optional key of the model/component the diagnostic relates to.
+  optional string component_key = 4;
+}
+
+// Severity of a ProcessingDiagnostic.
+enum DiagnosticSeverity {
+  // Unset/unknown severity.
+  DIAGNOSTIC_SEVERITY_UNSPECIFIED = 0;
+  // Informational (e.g. a step ran, or was skipped as not requested).
+  DIAGNOSTIC_SEVERITY_INFO = 1;
+  // A recoverable concern that did not stop processing.
+  DIAGNOSTIC_SEVERITY_WARNING = 2;
+  // A non-fatal error within a step; analysis still produced a response.
+  DIAGNOSTIC_SEVERITY_ERROR = 3;
+}
+
+// Input to GetServiceInfo. Empty; no parameters.
+message GetServiceInfoRequest {}
+
+// Server identity and capabilities returned by GetServiceInfo.
+message GetServiceInfoResponse {
+  // The underlying OpenNLP library version, or "unknown" if undetermined.
+  string opennlp_version = 1;
+  // The API version served (currently "v1").
+  string api_version = 2;
+  // Ids of the analysis profiles registered on the server (usable as profile_id).
+  repeated string available_profile_ids = 3;
+  // The pipeline steps this server actually implements, in execution order.
+  repeated PipelineStep supported_steps = 4;
+}
+
+// Input to ListModelBundles. Empty; no parameters.
+message ListModelBundlesRequest {}
+
+// The loaded model bundles returned by ListModelBundles.
+message ListModelBundlesResponse {
+  // One entry per model bundle loaded on the server.
+  repeated ModelBundleInfo bundles = 1;
+}

@@ -1,0 +1,499 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+package org.apache.opennlp.grpc.chunk;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.processor.PipelineStepPolicy;
+import org.apache.opennlp.grpc.v1.AnalysisProfile;
+import org.apache.opennlp.grpc.v1.AnnotatedSentence;
+import org.apache.opennlp.grpc.v1.AnnotationSpan;
+import org.apache.opennlp.grpc.v1.CategoryChunkConfigEntry;
+import org.apache.opennlp.grpc.v1.Chunk;
+import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
+import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
+import org.apache.opennlp.grpc.v1.ChunkGroupStats;
+import org.apache.opennlp.grpc.v1.ChunkingSpec;
+import org.apache.opennlp.grpc.v1.CoordinateSpace;
+import org.apache.opennlp.grpc.v1.DiagnosticSeverity;
+import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
+import org.apache.opennlp.grpc.v1.EmbeddingResult;
+import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.PipelineStep;
+import org.apache.opennlp.grpc.v1.ProcessingDiagnostic;
+
+/**
+ * Builds {@link ChunkEmbeddingGroup} results from {@link ChunkEmbedConfigEntry} requests.
+ */
+public final class ChunkEmbedProcessor {
+
+  private ChunkEmbedProcessor() {
+  }
+
+  /**
+   * Validates a chunk+embed config entry against the server's capabilities before any
+   * processing starts, so invalid requests fail without partial results.
+   *
+   * @param entry             The config entry to validate.
+   * @param embeddingProvider The provider whose registered models are checked.
+   *
+   * @throws AnalysisException If the entry is incomplete, references unknown embedding
+   *                           models, or requires features this server does not provide.
+   */
+  public static void validateEntry(ChunkEmbedConfigEntry entry, EmbeddingProvider embeddingProvider) {
+    if (entry.getConfigId().isBlank()) {
+      throw AnalysisException.invalidArgument("chunk_embed_configs.config_id is required");
+    }
+    if (entry.hasProfile()) {
+      validateEntryProfile(entry.getProfile(), entry.getConfigId());
+    }
+    if (!entry.hasChunking()) {
+      throw AnalysisException.invalidArgument(
+          "chunk_embed_configs.chunking is required for config '" + entry.getConfigId() + "'");
+    }
+    final ChunkingSpec chunking = entry.getChunking();
+    if (isSemantic(chunking)) {
+      validateSemanticChunking(entry);
+      if (!embeddingProvider.isAvailable()) {
+        throw AnalysisException.notFound(
+            "semantic chunking for config '" + entry.getConfigId()
+                + "' requires configured embedding models on this server");
+      }
+    }
+    if (entry.getEmbeddingModelIdsCount() > 0 && !embeddingProvider.isAvailable()) {
+      throw AnalysisException.notFound(
+          "embedding models requested for config '" + entry.getConfigId()
+              + "' but no embedding models are configured on this server");
+    }
+    for (String modelId : entry.getEmbeddingModelIdsList()) {
+      if (!embeddingProvider.supportsModel(modelId)) {
+        throw AnalysisException.notFound("Unknown embedding model '" + modelId + "'");
+      }
+    }
+  }
+
+  /**
+   * Chunks the document according to the entry's chunking spec and embeds every chunk
+   * with each requested embedding model.
+   *
+   * @param rawText           The document text the annotation offsets refer to.
+   * @param document          The analyzed document backbone.
+   * @param entry             A previously validated config entry.
+   * @param embeddingProvider The provider used for chunk embeddings and semantic chunking.
+   *
+   * @return The resulting chunk group including per-group statistics.
+   */
+  public static ChunkEmbeddingGroup buildGroup(
+      String rawText,
+      OpenNlpDocument document,
+      ChunkEmbedConfigEntry entry,
+      EmbeddingProvider embeddingProvider) {
+    final long started = System.currentTimeMillis();
+    final List<SegmentationChunker.ChunkSegment> segments =
+        SegmentationChunker.segment(rawText, document, entry.getChunking(), embeddingProvider);
+
+    final ChunkEmbeddingGroup.Builder group = ChunkEmbeddingGroup.newBuilder()
+        .setGroupId(entry.getConfigId())
+        .setChunkConfigId(entry.getConfigId())
+        .addAllEmbeddingModelIds(entry.getEmbeddingModelIdsList())
+        .setGranularity(EmbeddingGranularity.EMBEDDING_GRANULARITY_CHUNK_LEVEL);
+    if (entry.hasResultSetName()) {
+      group.setResultSetName(entry.getResultSetName());
+    }
+
+    final List<String> chunkTexts = new ArrayList<>(segments.size());
+    final ChunkingSpec chunkingSpec = entry.getChunking();
+    for (SegmentationChunker.ChunkSegment segment : segments) {
+      chunkTexts.add(ChunkTextPreprocessor.chunkText(
+          rawText, segment.start(), segment.end(), chunkingSpec));
+    }
+
+    // One batched inference per model across all chunks of this group.
+    final Map<String, List<float[]>> vectorsByModel = new LinkedHashMap<>();
+    if (!segments.isEmpty()) {
+      for (String modelId : entry.getEmbeddingModelIdsList()) {
+        vectorsByModel.put(modelId, embeddingProvider.embedBatch(modelId, chunkTexts));
+      }
+    }
+
+    // Token-window chunks overlap, so a token can appear in several chunks; count each token
+    // once for the group total by deduplicating on its (unique) character start offset.
+    final Set<Integer> distinctTokenStarts = new HashSet<>();
+    for (int i = 0; i < segments.size(); i++) {
+      final SegmentationChunker.ChunkSegment segment = segments.get(i);
+      final Chunk.Builder chunk = Chunk.newBuilder()
+          .setAnnotationSpan(toSpan(segment.start(), segment.end()))
+          .setTextContent(chunkTexts.get(i))
+          .addAllContainedSentenceIndices(segment.sentenceIndices());
+      collectTokenStarts(document, segment, distinctTokenStarts);
+      for (String modelId : entry.getEmbeddingModelIdsList()) {
+        chunk.addEmbeddings(EmbeddingResult.newBuilder()
+            .setModelId(modelId)
+            .addAllVector(toFloatList(vectorsByModel.get(modelId).get(i)))
+            .setSourceSpan(toSpan(segment.start(), segment.end()))
+            .setGranularity(EmbeddingGranularity.EMBEDDING_GRANULARITY_CHUNK_LEVEL)
+            .build());
+      }
+      group.addChunks(chunk.build());
+    }
+
+    // One centroid per model: the mean of this group's chunk vectors, spanning all its chunks.
+    if (!segments.isEmpty()) {
+      final AnnotationSpan groupSpan = groupSpan(segments);
+      for (String modelId : entry.getEmbeddingModelIdsList()) {
+        final EmbeddingResult centroid = Centroids.centroid(modelId, vectorsByModel.get(modelId),
+            groupSpan, EmbeddingGranularity.EMBEDDING_GRANULARITY_GROUP_CENTROID);
+        if (centroid != null) {
+          group.addCentroids(centroid);
+        }
+      }
+    }
+
+    group.setStats(ChunkGroupStats.newBuilder()
+        .setChunkCount(segments.size())
+        .setTotalTokens(distinctTokenStarts.size())
+        .setProcessingTimeMs(System.currentTimeMillis() - started)
+        .build());
+    return group.build();
+  }
+
+  /**
+   * Validates a category-chunk config entry: a non-blank id, at least one supported embedding
+   * model, and no blank category labels.
+   *
+   * @param entry The entry to validate.
+   * @param embeddingProvider The provider, checked for the requested models.
+   *
+   * @throws AnalysisException If the entry is malformed or names an unavailable model.
+   */
+  public static void validateCategoryEntry(
+      CategoryChunkConfigEntry entry, EmbeddingProvider embeddingProvider) {
+    if (entry.getConfigId().isBlank()) {
+      throw AnalysisException.invalidArgument("category_chunk_configs.config_id is required");
+    }
+    if (entry.getEmbeddingModelIdsCount() == 0) {
+      throw AnalysisException.invalidArgument("category_chunk_configs entry '" + entry.getConfigId()
+          + "' requires at least one embedding_model_id");
+    }
+    if (!embeddingProvider.isAvailable()) {
+      throw AnalysisException.notFound("embedding models requested for category config '"
+          + entry.getConfigId() + "' but no embedding models are configured on this server");
+    }
+    for (String modelId : entry.getEmbeddingModelIdsList()) {
+      if (!embeddingProvider.supportsModel(modelId)) {
+        throw AnalysisException.notFound("Unknown embedding model '" + modelId + "'");
+      }
+    }
+    for (String category : entry.getCategoriesList()) {
+      if (category == null || category.isBlank()) {
+        throw AnalysisException.invalidArgument(
+            "category_chunk_configs.categories must not contain blank values");
+      }
+    }
+  }
+
+  /**
+   * Groups the document's sentences by their per-sentence category (the sentiment label),
+   * concatenates each category's sentences into one chunk, embeds it with each requested model, and
+   * returns a {@link ChunkEmbeddingGroup} with one chunk per category plus a per-model centroid.
+   * Sentences without a category label are ignored.
+   *
+   * @param rawText The document text the offsets refer to.
+   * @param document The analyzed document, whose sentences carry sentiment labels.
+   * @param entry A previously validated category-chunk config entry.
+   * @param embeddingProvider The provider used to embed the category texts.
+   *
+   * @return The resulting group; its chunks are the category groups, {@code chunk_tag} the label.
+   */
+  public static ChunkEmbeddingGroup buildCategoryGroup(
+      String rawText, OpenNlpDocument document, CategoryChunkConfigEntry entry,
+      EmbeddingProvider embeddingProvider) {
+    final long started = System.currentTimeMillis();
+
+    // Bucket sentence text by normalized category label, preserving first-appearance order.
+    final Map<String, CategoryBucket> buckets = new LinkedHashMap<>();
+    for (int i = 0; i < document.getSentencesCount(); i++) {
+      final AnnotatedSentence sentence = document.getSentences(i);
+      final String label = sentence.getSentimentLabel();
+      if (label == null || label.isBlank()) {
+        continue;
+      }
+      buckets.computeIfAbsent(normalizeCategory(label), k -> new CategoryBucket(label))
+          .add(i, sentence, rawText);
+    }
+
+    // Ordered categories: the allowlist (normalized, deduplicated) if given, else first-appearance.
+    final List<String> order = new ArrayList<>();
+    if (entry.getCategoriesCount() > 0) {
+      for (String category : entry.getCategoriesList()) {
+        final String key = normalizeCategory(category);
+        if (buckets.containsKey(key) && !order.contains(key)) {
+          order.add(key);
+        }
+      }
+    } else {
+      order.addAll(buckets.keySet());
+    }
+
+    final List<String> categoryTexts = new ArrayList<>(order.size());
+    for (String key : order) {
+      categoryTexts.add(buckets.get(key).text());
+    }
+
+    final Map<String, List<float[]>> vectorsByModel = new LinkedHashMap<>();
+    if (!order.isEmpty()) {
+      for (String modelId : entry.getEmbeddingModelIdsList()) {
+        vectorsByModel.put(modelId, embeddingProvider.embedBatch(modelId, categoryTexts));
+      }
+    }
+
+    final ChunkEmbeddingGroup.Builder group = ChunkEmbeddingGroup.newBuilder()
+        .setGroupId(entry.getConfigId())
+        .setChunkConfigId(entry.getConfigId())
+        .addAllEmbeddingModelIds(entry.getEmbeddingModelIdsList())
+        .setGranularity(EmbeddingGranularity.EMBEDDING_GRANULARITY_CHUNK_LEVEL);
+    if (entry.hasResultSetName()) {
+      group.setResultSetName(entry.getResultSetName());
+    }
+
+    int groupedSentences = 0;
+    int spanStart = Integer.MAX_VALUE;
+    int spanEnd = Integer.MIN_VALUE;
+    for (int g = 0; g < order.size(); g++) {
+      final CategoryBucket bucket = buckets.get(order.get(g));
+      groupedSentences += bucket.indices.size();
+      spanStart = Math.min(spanStart, bucket.start);
+      spanEnd = Math.max(spanEnd, bucket.end);
+      final Chunk.Builder chunk = Chunk.newBuilder()
+          .setAnnotationSpan(toSpan(bucket.start, bucket.end))
+          .setChunkTag(bucket.label)
+          .setTextContent(categoryTexts.get(g))
+          .addAllContainedSentenceIndices(bucket.indices);
+      for (String modelId : entry.getEmbeddingModelIdsList()) {
+        chunk.addEmbeddings(EmbeddingResult.newBuilder()
+            .setModelId(modelId)
+            .addAllVector(toFloatList(vectorsByModel.get(modelId).get(g)))
+            .setSourceSpan(toSpan(bucket.start, bucket.end))
+            .setGranularity(EmbeddingGranularity.EMBEDDING_GRANULARITY_CHUNK_LEVEL)
+            .build());
+      }
+      group.addChunks(chunk.build());
+    }
+
+    if (!order.isEmpty()) {
+      final AnnotationSpan groupSpan = toSpan(spanStart, spanEnd);
+      for (String modelId : entry.getEmbeddingModelIdsList()) {
+        final EmbeddingResult centroid = Centroids.centroid(modelId, vectorsByModel.get(modelId),
+            groupSpan, EmbeddingGranularity.EMBEDDING_GRANULARITY_GROUP_CENTROID);
+        if (centroid != null) {
+          group.addCentroids(centroid);
+        }
+      }
+    }
+
+    group.setStats(ChunkGroupStats.newBuilder()
+        .setChunkCount(order.size())
+        .setTotalTokens(groupedSentences)
+        .setProcessingTimeMs(System.currentTimeMillis() - started)
+        .build());
+    return group.build();
+  }
+
+  private static String normalizeCategory(String value) {
+    return value.trim().toLowerCase(Locale.ROOT);
+  }
+
+  /** Accumulates one category's sentences: their texts (for concat) and their bounding span. */
+  private static final class CategoryBucket {
+    private final String label;
+    private final List<Integer> indices = new ArrayList<>();
+    private final List<String> texts = new ArrayList<>();
+    private int start = Integer.MAX_VALUE;
+    private int end = Integer.MIN_VALUE;
+
+    CategoryBucket(String label) {
+      this.label = label;
+    }
+
+    void add(int sentenceIndex, AnnotatedSentence sentence, String rawText) {
+      final AnnotationSpan span = sentence.getSentenceSpan();
+      indices.add(sentenceIndex);
+      texts.add(rawText.substring(span.getStart(), span.getEnd()));
+      start = Math.min(start, span.getStart());
+      end = Math.max(end, span.getEnd());
+    }
+
+    String text() {
+      return String.join(" ", texts);
+    }
+  }
+
+  /** The span covering every chunk in a group (from the earliest start to the latest end). */
+  private static AnnotationSpan groupSpan(List<SegmentationChunker.ChunkSegment> segments) {
+    int start = Integer.MAX_VALUE;
+    int end = Integer.MIN_VALUE;
+    for (SegmentationChunker.ChunkSegment segment : segments) {
+      start = Math.min(start, segment.start());
+      end = Math.max(end, segment.end());
+    }
+    return toSpan(start, end);
+  }
+
+  /**
+   * Builds a sentence-per-chunk group without embeddings, used when the {@code CHUNK}
+   * pipeline step runs without chunk+embed configs.
+   *
+   * @param rawText  The document text the annotation offsets refer to.
+   * @param document The analyzed document backbone.
+   * @param groupId  The id assigned to the resulting group.
+   *
+   * @return The resulting chunk group.
+   */
+  public static ChunkEmbeddingGroup buildSentenceGroup(
+      String rawText, OpenNlpDocument document, String groupId) {
+    final ChunkingSpec spec = ChunkingSpec.newBuilder().setAlgorithm("sentence").build();
+    final ChunkEmbedConfigEntry entry = ChunkEmbedConfigEntry.newBuilder()
+        .setConfigId(groupId)
+        .setChunking(spec)
+        .build();
+    return buildGroup(rawText, document, entry, new NoOpEmbeddingProvider());
+  }
+
+  /**
+   * Builds an INFO diagnostic recording the chunk count for a successfully processed config.
+   *
+   * @param configId   The config id the diagnostic refers to.
+   * @param chunkCount The number of chunks produced for the config.
+   *
+   * @return An INFO diagnostic for a successfully processed chunk config.
+   */
+  public static ProcessingDiagnostic successDiagnostic(String configId, int chunkCount) {
+    return ProcessingDiagnostic.newBuilder()
+        .setStep(PipelineStep.PIPELINE_STEP_CHUNK)
+        .setSeverity(DiagnosticSeverity.DIAGNOSTIC_SEVERITY_INFO)
+        .setMessage("Produced " + chunkCount + " chunk(s) for config '" + configId + "'")
+        .build();
+  }
+
+  /**
+   * Validates that every step listed on a chunk config entry profile is implemented.
+   *
+   * @param profile  The per-entry profile to validate. Must not be {@code null}.
+   * @param configId The parent config entry id, used in error messages.
+   *
+   * @throws AnalysisException If the profile requests an unimplemented step.
+   */
+  private static void validateEntryProfile(AnalysisProfile profile, String configId) {
+    for (PipelineStep step : profile.getStepsList()) {
+      if (step == PipelineStep.PIPELINE_STEP_UNSPECIFIED || step == PipelineStep.UNRECOGNIZED) {
+        continue;
+      }
+      if (!PipelineStepPolicy.isImplemented(step)) {
+        throw AnalysisException.unimplemented(
+            "chunk_embed_configs profile for config '" + configId + "' requests unimplemented step "
+                + step);
+      }
+    }
+  }
+
+  private static void validateSemanticChunking(ChunkEmbedConfigEntry entry) {
+    final var semantic = entry.getChunking().getSemanticConfig();
+    if (semantic.hasSemanticEmbeddingModelId() && !semantic.getSemanticEmbeddingModelId().isBlank()) {
+      return;
+    }
+    if (entry.getEmbeddingModelIdsCount() == 1) {
+      return;
+    }
+    throw AnalysisException.invalidArgument(
+        "semantic chunking requires semantic_embedding_model_id or exactly one embedding_model_id");
+  }
+
+  private static boolean isSemantic(ChunkingSpec chunking) {
+    return "semantic".equals(chunking.getAlgorithm()) || chunking.hasSemanticConfig();
+  }
+
+  private static void collectTokenStarts(OpenNlpDocument document,
+      SegmentationChunker.ChunkSegment segment, Set<Integer> tokenStarts) {
+    for (int sentenceIndex : segment.sentenceIndices()) {
+      final AnnotatedSentence sentence = document.getSentences(sentenceIndex);
+      for (var token : sentence.getTokensList()) {
+        final AnnotationSpan span = token.getAnnotationSpan();
+        if (span.getStart() < segment.end() && span.getEnd() > segment.start()) {
+          tokenStarts.add(span.getStart());
+        }
+      }
+    }
+  }
+
+  private static AnnotationSpan toSpan(int start, int end) {
+    return AnnotationSpan.newBuilder()
+        .setStart(start)
+        .setEnd(end)
+        .setSpace(CoordinateSpace.COORDINATE_SPACE_CHAR_DOCUMENT)
+        .build();
+  }
+
+  private static List<Float> toFloatList(float[] vector) {
+    final List<Float> values = new ArrayList<>(vector.length);
+    for (float value : vector) {
+      values.add(value);
+    }
+    return values;
+  }
+
+  /** Embedding provider that rejects embed calls; used for chunk-only groups. */
+  private static final class NoOpEmbeddingProvider implements EmbeddingProvider {
+    @Override
+    public String backendId() {
+      return "none";
+    }
+
+    @Override
+    public boolean isAvailable() {
+      return false;
+    }
+
+    @Override
+    public Set<String> registeredModelIds() {
+      return Set.of();
+    }
+
+    @Override
+    public boolean supportsModel(String modelId) {
+      return false;
+    }
+
+    @Override
+    public int embeddingDimension(String modelId) {
+      return 0;
+    }
+
+    @Override
+    public float[] embed(String modelId, String text) {
+      throw AnalysisException.failedPrecondition("embeddings were not requested for this group");
+    }
+  }
+}

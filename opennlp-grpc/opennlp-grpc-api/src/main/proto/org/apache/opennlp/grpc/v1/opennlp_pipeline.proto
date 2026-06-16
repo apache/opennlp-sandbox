@@ -1,0 +1,329 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+syntax = "proto3";
+
+package org.apache.opennlp.grpc.v1;
+
+option java_package = "org.apache.opennlp.grpc.v1";
+option java_multiple_files = true;
+option java_outer_classname = "OpenNlpPipelineProto";
+
+import "org/apache/opennlp/grpc/v1/opennlp_document.proto";
+
+// Pipeline steps supported by AnalyzeDocument (and future streaming variants). A
+// profile lists the steps to run; the server runs them in a fixed execution order
+// regardless of list order. Steps have preconditions on earlier steps: an unmet
+// precondition fails the request with FAILED_PRECONDITION, and requesting a step
+// this server does not implement fails with UNIMPLEMENTED (see GetServiceInfo's
+// supported_steps for the implemented set).
+enum PipelineStep {
+  // Unset; ignored if it appears in a profile's step list.
+  PIPELINE_STEP_UNSPECIFIED = 0;
+  // Detect the document language. No preconditions; runs on raw text. Populates
+  // OpenNlpDocument.detected_language / language_confidence.
+  PIPELINE_STEP_LANGUAGE_DETECT = 1;
+  // Split the text into sentences. No preconditions. Backbone for EMBED, CHUNK,
+  // PARSE, and SENTIMENT (auto-added when those run).
+  PIPELINE_STEP_SENTENCE_DETECT = 2;
+  // Tokenize each sentence. Requires SENTENCE_DETECT.
+  PIPELINE_STEP_TOKENIZE = 3;
+  // Part-of-speech tag the tokens. Requires TOKENIZE. Emits the tagger's native
+  // tagset (see POSTagFormat).
+  PIPELINE_STEP_POS_TAG = 4;
+  // Named-entity recognition. Requires TOKENIZE.
+  PIPELINE_STEP_NER = 5;
+  // Segmentation-style chunking for embedding (token/sentence/semantic strategies).
+  // Auto-adds SENTENCE_DETECT, and TOKENIZE for the "token" algorithm.
+  PIPELINE_STEP_CHUNK = 6;
+  // Constituency parse each sentence. Requires TOKENIZE (and thus SENTENCE_DETECT).
+  PIPELINE_STEP_PARSE = 7;
+  // Lemmatize the tokens. Requires TOKENIZE and POS_TAG.
+  PIPELINE_STEP_LEMMATIZE = 8;
+  // Categorize the whole document. Requires TOKENIZE for classic (token-based)
+  // categorizers; raw-text (e.g. ONNX) categorizers need no tokens.
+  PIPELINE_STEP_DOC_CATEGORIZE = 9;
+  // Per-sentence sentiment as document categorization. Requires SENTENCE_DETECT,
+  // and TOKENIZE for token-based sentiment models.
+  PIPELINE_STEP_SENTIMENT = 10;
+  // Embed sentences/document with AnalysisOptions.embedding_model_id. Requires (and
+  // auto-adds) SENTENCE_DETECT.
+  PIPELINE_STEP_EMBED = 11;
+  // Classic shallow (syntactic) chunking with a ChunkerME model: groups each sentence's
+  // tokens into base phrases (NP, VP, ...) in AnnotatedSentence.syntactic_chunks. Distinct
+  // from CHUNK (which is segmentation for embedding). Requires POS_TAG (and thus TOKENIZE).
+  PIPELINE_STEP_SYNTACTIC_CHUNK = 12;
+}
+
+// Configuration for a chunking strategy (used when the caller does not
+// supply a full AnalysisProfile for the entry).
+message ChunkingSpec {
+  // Chunking strategy. Required (blank => INVALID_ARGUMENT). Implemented values:
+  // "sentence" (one chunk per N sentences), "token" (sliding token windows), and
+  // "semantic" (topic boundaries via embeddings; also implied when semantic_config
+  // is set). Any other non-blank value => UNIMPLEMENTED.
+  string algorithm = 1;           // e.g. "token", "sentence"
+  // For "token" chunking only: window size in TOKENS. Must be > 0 (else
+  // INVALID_ARGUMENT). Ignored by other algorithms.
+  int32 chunk_size = 2;
+  // For "token" chunking only: overlap between consecutive windows in TOKENS.
+  // Must satisfy 0 <= chunk_overlap < chunk_size (else INVALID_ARGUMENT). Defaults
+  // to 0 (no overlap).
+  int32 chunk_overlap = 3;
+  bool clean_text = 4;
+  // When clean_text is true, URL substrings are preserved verbatim while surrounding
+  // whitespace is normalized.
+  bool preserve_urls = 5;
+  // For semantic chunking (topic boundaries via embeddings). Its presence also
+  // selects the "semantic" algorithm.
+  optional SemanticChunkingConfig semantic_config = 6;
+}
+
+// Tuning for "semantic" chunking, which places a chunk boundary between two
+// adjacent sentences when their embedding cosine similarity drops below a
+// threshold, then enforces min/max chunk sizes (merge small, then split large).
+message SemanticChunkingConfig {
+  // Absolute cosine-similarity boundary threshold. Used only when
+  // percentile_threshold is not set (<= 0). When it too is unset (<= 0), the
+  // server defaults to 0.5. A boundary is placed where similarity < threshold.
+  float similarity_threshold = 1;
+  // Percentile (1..99) of observed adjacent-sentence similarities to use as the
+  // boundary threshold. Takes PRECEDENCE over similarity_threshold when > 0. Must
+  // be < 100 (else INVALID_ARGUMENT).
+  int32 percentile_threshold = 2;
+  // Minimum sentences per chunk; chunks below this are merged into a neighbour.
+  // Defaults to 1 (no minimum) when unset/<= 0. May be violated by a split remainder.
+  int32 min_chunk_sentences = 3;
+  // Maximum sentences per chunk; larger chunks are split into windows of this size.
+  // Defaults to unbounded when unset/<= 0.
+  int32 max_chunk_sentences = 4;
+  // Embedding model used to detect semantic boundaries. When unset, the server
+  // uses the sole entry in ChunkEmbedConfigEntry.embedding_model_ids when exactly
+  // one id is present; otherwise semantic chunking is rejected with INVALID_ARGUMENT.
+  optional string semantic_embedding_model_id = 5;
+}
+
+// Desired part-of-speech tagset for the response. When the requested format differs
+// from the tagger model's native tagset, the server converts tags using OpenNLP's
+// Penn/UD mapping tables. POS_TAG_FORMAT_CUSTOM is not supported.
+enum POSTagFormat {
+  // Unset; the tagger emits its model's native tagset.
+  POS_TAG_FORMAT_UNSPECIFIED = 0;
+  // Universal Dependencies tagset.
+  POS_TAG_FORMAT_UD = 1;
+  // Penn Treebank tagset.
+  POS_TAG_FORMAT_PENN = 2;
+  // A custom tagset. Not supported => UNIMPLEMENTED.
+  POS_TAG_FORMAT_CUSTOM = 3;
+}
+
+// Inference backends are deliberately not part of the request contract. Backend
+// selection (ONNX Runtime, CUDA, OpenVINO, DJL, a remote inference service, ...)
+// is a server deployment concern, configured via `model.embedder.backend` and
+// extensible through the server's backend SPI. Clients request *models* by id;
+// which backend serves a model is reported in ModelDescriptor.backend_id.
+
+// A named, reusable analysis configuration: which steps to run and which models
+// back them. A request may name a server-side profile by id (see
+// AnalyzeDocumentRequest.profile_id), inline a profile, or both (an inline profile
+// is merged field-by-field over the named one). When neither is given, the server
+// applies its default profile ("en-basic": SENTENCE_DETECT + TOKENIZE).
+message AnalysisProfile {
+  // Identifier of this profile (e.g. "en-basic"). Optional on an inline profile.
+  string profile_id = 1;
+  // The pipeline steps to run. Order here is advisory; the server runs implemented
+  // steps in its own fixed order and auto-adds backbone steps as needed.
+  repeated PipelineStep steps = 2;
+  // Selects a server-side model bundle to back the steps.
+  ModelBundleRef model_bundle = 3;
+  // Requested POS tagset. UNSPECIFIED selects the model's native tagset; UD and PENN
+  // convert when needed. CUSTOM => UNIMPLEMENTED.
+  POSTagFormat pos_tag_format = 4;
+  // Entity types to keep from NER. Empty means "all entity types the configured
+  // name finder(s) support". Blank values => INVALID_ARGUMENT; an unknown type =>
+  // NOT_FOUND.
+  repeated string ner_entity_types = 5;
+  // How NER picks among engines when a recognizer is served by more than one. Unset
+  // selects each recognizer's highest-priority engine (with fallback). See EnginePolicy.
+  EnginePolicy ner_engine_policy = 6;
+  // How syntactic chunking picks among engines when a chunker id is served by more than
+  // one. Unset selects the highest-priority engine (with fallback). See EnginePolicy.
+  EnginePolicy chunk_engine_policy = 7;
+  // How constituency parsing picks among engines when a parser id is served by more than
+  // one. Unlike span producers, a union returns one parse tree per engine rather than a
+  // merged tree (see AnnotatedSentence.parse_trees); MergeStrategy is ignored. See EnginePolicy.
+  EnginePolicy parse_engine_policy = 8;
+}
+
+// Selects which engine(s) run for a span-producing capability (NER, chunking) when a
+// logical component is served by more than one provider, and how their outputs are
+// combined. The number of `engines` listed drives the behavior, so the common cases need
+// no mode flag:
+//   - empty  => run each component's highest-priority engine, falling back to the next on
+//               failure (the resilient default);
+//   - one    => pin that engine (no fallback); components it does not serve are skipped;
+//   - two or more => run all of the listed engines and UNION their output, each item tagged
+//               with its producer (see NamedEntity.sources / ChunkSpan.sources).
+// An engine id that is not registered for any component => NOT_FOUND. For parsing, which
+// produces trees rather than spans, `merge` is ignored and a union yields one tree per engine.
+message EnginePolicy {
+  // Engine/backend ids to run (e.g. "onnx", "opennlp-me"). See the message comment for
+  // how the count is interpreted.
+  repeated string engines = 1;
+  // How overlapping items from different providers are reconciled in the response.
+  MergeStrategy merge = 2;
+}
+
+// How a multi-engine union reconciles span items (entities, chunks) that more than one
+// provider reports. Ignored for parsing.
+enum MergeStrategy {
+  // Default: collapse items of the same type/tag whose spans overlap into one item, whose
+  // `sources` lists every provider that found it and whose canonical span comes from the
+  // highest-priority provider. Cross-provider agreement is visible at a glance.
+  MERGE_STRATEGY_UNSPECIFIED = 0;
+  // Keep every provider's item as its own with a single source; perform no cross-provider
+  // merging. Maximum detail, including disagreements.
+  MERGE_STRATEGY_RAW = 1;
+  // Same collapsing as the default; named explicitly for requests that want to be precise.
+  MERGE_STRATEGY_CONSENSUS = 2;
+}
+
+// References a server-side model bundle by id. Available bundle ids include
+// "en-basic" plus, when their models are configured, "en-ner", "en-doccat",
+// "en-sentiment", "en-parse". An unknown id => NOT_FOUND.
+message ModelBundleRef {
+  // The bundle id to use; blank selects the default bundle.
+  string bundle_id = 1;
+  // Per-component model pins by SHA-256 hash. Each entry must match a loaded artifact
+  // for the given component_type or the request fails with NOT_FOUND.
+  repeated ComponentModelRef component_models = 2;
+}
+
+// Binds a pipeline component to a specific model artifact (by SHA-256 hash).
+message ComponentModelRef {
+  // Which pipeline component this override targets.
+  ComponentType component_type = 1;
+  // SHA-256 hash identifying the model artifact to bind.
+  string model_hash = 2;
+}
+
+// The pipeline component an artifact provides. Parallels PipelineStep but names
+// the model role rather than the processing step.
+enum ComponentType {
+  // Unset/unknown component type.
+  COMPONENT_TYPE_UNSPECIFIED = 0;
+  // Language detector model.
+  COMPONENT_TYPE_LANGUAGE_DETECTOR = 1;
+  // Sentence detector model.
+  COMPONENT_TYPE_SENTENCE_DETECTOR = 2;
+  // Tokenizer model.
+  COMPONENT_TYPE_TOKENIZER = 3;
+  // Part-of-speech tagger model.
+  COMPONENT_TYPE_POS_TAGGER = 4;
+  // Named-entity (name finder) model.
+  COMPONENT_TYPE_NAME_FINDER = 5;
+  // Syntactic chunker model.
+  COMPONENT_TYPE_CHUNKER = 6;
+  // Constituency parser model.
+  COMPONENT_TYPE_PARSER = 7;
+  // Lemmatizer model.
+  COMPONENT_TYPE_LEMMATIZER = 8;
+  // Document categorizer model.
+  COMPONENT_TYPE_DOC_CATEGORIZER = 9;
+  // Sentiment (per-sentence categorizer) model.
+  COMPONENT_TYPE_SENTIMENT = 10;
+  // Embedding model.
+  COMPONENT_TYPE_EMBEDDER = 11;
+}
+
+// Per-request output and execution options, orthogonal to the profile (which says
+// what to run; these say how to render/bound it).
+message AnalysisOptions {
+  // When true, the server attaches model confidence scores where available (token
+  // pos_probability, entity/span/parse probabilities). When false they are omitted.
+  bool include_probabilities = 1;
+  // When omitted, the server defaults to true (clear adaptive data after each request).
+  optional bool clear_adaptive_data = 2;
+  // Field 3 carried an InferenceBackend enum in pre-release drafts. Backend
+  // selection is server configuration; see the comment above AnalysisProfile.
+  reserved 3;
+  reserved "inference_backend";
+  // Maximum allowed length of document.raw_text. When set and > 0, a longer text
+  // is rejected with INVALID_ARGUMENT. Length is measured in Java UTF-16 code units.
+  optional int32 max_text_length = 4;
+  // The registered embedding model to use for PIPELINE_STEP_EMBED. The id is
+  // backend-agnostic; the server resolves it against the configured provider.
+  // Requires EMBED in the profile (else INVALID_ARGUMENT); an unknown id =>
+  // NOT_FOUND. Optional when exactly one embedding model is configured.
+  optional string embedding_model_id = 5;
+  // Unit for response AnnotationSpan offsets. Unset => UTF-8 bytes (the default).
+  OffsetEncoding offset_encoding = 6;
+  // Parse representations to populate for PIPELINE_STEP_PARSE. Empty selects the default set
+  // (STRUCTURED + BRACKETED); listing fewer trims the response to just those views.
+  repeated ParseFormat parse_formats = 7;
+}
+
+// Selects which view(s) of a constituency parse the server fills in ParseTree. Independent
+// representations of the same parse, so a client requests only what its language/use needs.
+enum ParseFormat {
+  // Unset; ignored. If the format list ends up empty, the server fills the default
+  // set (STRUCTURED + BRACKETED).
+  PARSE_FORMAT_UNSPECIFIED = 0;
+  // Populate ParseTree.root (the nested, navigable ParseNode tree).
+  PARSE_FORMAT_STRUCTURED = 1;
+  // Populate ParseTree.penn_treebank (the standard bracketed string).
+  PARSE_FORMAT_BRACKETED = 2;
+}
+
+// Describes one loaded model artifact within a bundle (see ListModelBundles).
+message ModelDescriptor {
+  // SHA-256 hash identifying the model artifact. Populated in ListModelBundles for
+  // artifacts whose hash is known at load time.
+  string hash = 1;
+  // Human-readable model name.
+  string name = 2;
+  // Single locale tag for the model, or "root" for a language-independent model
+  // (e.g. the language detector). Empty when the model's language is unknown to the
+  // server (operator-supplied NER/doccat/sentiment/parser models).
+  string locale = 3;
+  // The pipeline component this model provides.
+  ComponentType component_type = 4;
+  // Languages the model handles. Empty for language-independent models and for
+  // operator-supplied models whose language is unknown to the server.
+  repeated string languages = 5;
+  // The pipeline steps this model can serve.
+  repeated PipelineStep supported_steps = 6;
+  // Dimensionality of the vectors this model emits; 0 unless this is an embedding model.
+  int32 embedding_dimension = 7;
+  // Open identifier of the backend serving this model, e.g. "opennlp-me" for
+  // classic maxent models or "onnx"/"cuda" for the built-in ONNX backends.
+  // Third-party backends registered through the server SPI report their own ids.
+  string backend_id = 8;
+}
+
+// A loaded model bundle and its aggregate capabilities, as returned by
+// ListModelBundles. A bundle groups the models that back a set of pipeline steps.
+message ModelBundleInfo {
+  // The bundle's id (e.g. "en-basic", "en-ner"), usable in ModelBundleRef.bundle_id.
+  string bundle_id = 1;
+  // The model artifacts in this bundle.
+  repeated ModelDescriptor models = 2;
+  // Languages the bundle supports overall (driven by its backbone models).
+  repeated string supported_languages = 3;
+  // The pipeline steps this bundle can serve.
+  repeated PipelineStep supported_steps = 4;
+}

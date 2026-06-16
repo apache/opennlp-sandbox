@@ -14,5 +14,7 @@ extlib
 *.jar
 __pycache__/
 *.pyc
+derby.log
+META-INF/MANIFEST.MF
 
 .python-version
