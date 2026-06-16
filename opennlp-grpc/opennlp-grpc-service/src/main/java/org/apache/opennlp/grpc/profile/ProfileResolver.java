@@ -89,22 +89,6 @@ public final class ProfileResolver {
   }
 
   private static AnalysisProfile merge(AnalysisProfile base, AnalysisProfile override) {
-    final AnalysisProfile.Builder builder = base.toBuilder();
-    if (override.getStepsCount() > 0) {
-      builder.clearSteps().addAllSteps(override.getStepsList());
-    }
-    if (override.hasModelBundle()) {
-      builder.setModelBundle(override.getModelBundle());
-    }
-    if (!override.getProfileId().isBlank()) {
-      builder.setProfileId(override.getProfileId());
-    }
-    if (override.getPosTagFormat() != org.apache.opennlp.grpc.v1.POSTagFormat.POS_TAG_FORMAT_UNSPECIFIED) {
-      builder.setPosTagFormat(override.getPosTagFormat());
-    }
-    if (override.getNerEntityTypesCount() > 0) {
-      builder.clearNerEntityTypes().addAllNerEntityTypes(override.getNerEntityTypesList());
-    }
-    return builder.build();
+    return ProfileMerger.merge(base, override);
   }
 }

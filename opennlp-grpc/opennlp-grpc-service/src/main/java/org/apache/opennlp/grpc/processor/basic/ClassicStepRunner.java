@@ -46,6 +46,7 @@ import org.apache.opennlp.grpc.v1.DocumentClassification;
 import org.apache.opennlp.grpc.v1.EnginePolicy;
 import org.apache.opennlp.grpc.v1.NamedEntity;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.POSTagFormat;
 import org.apache.opennlp.grpc.v1.ParseFormat;
 import org.apache.opennlp.grpc.v1.ParseTree;
 import org.apache.opennlp.grpc.v1.PipelineStep;
@@ -198,9 +199,10 @@ final class ClassicStepRunner {
    */
   void tagPartsOfSpeech(
       OpenNlpDocument.Builder document,
+      POSTagFormat posTagFormat,
       boolean includeProbabilities,
       List<ProcessingDiagnostic> diagnostics) {
-    final POSTaggerME posTagger = modelBundleCache.getPosTagger();
+    final POSTaggerME posTagger = modelBundleCache.createPosTagger(posTagFormat);
     int taggedTokens = 0;
     for (int i = 0; i < document.getSentencesCount(); i++) {
       final AnnotatedSentence sentence = document.getSentences(i);

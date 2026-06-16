@@ -19,6 +19,7 @@ package org.apache.opennlp.grpc.embedding.onnx;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +30,7 @@ import java.util.Set;
 
 import ai.onnxruntime.OrtException;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.model.ModelArtifactHasher;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +73,7 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
   private static final String KEY_GPU_DEVICE = "model.embedder.gpu_device_id";
 
   private final Map<String, OnnxSentenceEmbedder> models;
+  private final Map<String, String> modelArtifactHashes;
   private final String defaultModelId;
 
   /**
@@ -90,8 +93,20 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
     Objects.requireNonNull(configuration, "configuration must not be null");
     Objects.requireNonNull(pathSuffix, "pathSuffix must not be null");
     final int gpuDeviceId = gpuDeviceId(configuration, useCuda);
-    this.models = loadModels(configuration, useCuda, gpuDeviceId, pathSuffix);
+    final LoadedOnnxModels loaded = loadModels(configuration, useCuda, gpuDeviceId, pathSuffix);
+    this.models = loaded.embedders();
+    this.modelArtifactHashes = loaded.hashes();
     this.defaultModelId = resolveDefaultModelId(configuration, models);
+  }
+
+  /**
+   * Loaded ONNX embedding models and their artifact hashes.
+   *
+   * @param embedders The per-model sentence embedders keyed by model id.
+   * @param hashes    The SHA-256 digest of each model's ONNX artifact keyed by model id.
+   */
+  private record LoadedOnnxModels(
+      Map<String, OnnxSentenceEmbedder> embedders, Map<String, String> hashes) {
   }
 
   @Override
@@ -149,6 +164,17 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
   }
 
   /**
+   * {@inheritDoc}
+   */
+  @Override
+  public String modelArtifactHash(String modelId) {
+    if (modelId == null || modelId.isBlank()) {
+      return "";
+    }
+    return modelArtifactHashes.getOrDefault(modelId, "");
+  }
+
+  /**
    * Closes all loaded ONNX sessions. Failures are logged and do not abort the shutdown
    * of the remaining models.
    */
@@ -191,7 +217,7 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
     }
   }
 
-  private static Map<String, OnnxSentenceEmbedder> loadModels(
+  private static LoadedOnnxModels loadModels(
       Map<String, String> configuration, boolean useCuda, int gpuDeviceId, String pathSuffix) {
     final Map<String, String> onnxPaths = new HashMap<>();
     final Map<String, String> vocabPaths = new HashMap<>();
@@ -233,6 +259,7 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
     }
 
     final Map<String, OnnxSentenceEmbedder> loaded = new HashMap<>();
+    final Map<String, String> hashes = new HashMap<>();
     try {
       for (Map.Entry<String, String> entry : onnxPaths.entrySet()) {
         final String modelId = entry.getKey();
@@ -245,6 +272,12 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
         loaded.put(modelId, loadModel(modelId, entry.getValue(), vocabPath, useCuda, gpuDeviceId,
             lowerCase.getOrDefault(modelId, Boolean.TRUE),
             pooling.getOrDefault(modelId, OnnxSentenceEmbedder.Pooling.MEAN)));
+        try {
+          hashes.put(modelId, ModelArtifactHasher.sha256Hex(Path.of(entry.getValue())));
+        } catch (IOException e) {
+          throw AnalysisException.internal(
+              "Failed to hash embedding model artifact for '" + modelId + "'", e);
+        }
       }
     } catch (RuntimeException e) {
       for (OnnxSentenceEmbedder embedder : loaded.values()) {
@@ -256,7 +289,7 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
       }
       throw e;
     }
-    return Map.copyOf(loaded);
+    return new LoadedOnnxModels(Map.copyOf(loaded), Map.copyOf(hashes));
   }
 
   private static boolean parseLowercase(String modelId, String value) {

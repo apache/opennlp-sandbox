@@ -18,7 +18,6 @@
 package org.apache.opennlp.grpc.model;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,10 +40,9 @@ import opennlp.tools.langdetect.LanguageDetectorME;
 import opennlp.tools.langdetect.LanguageDetectorModel;
 import opennlp.tools.lemmatizer.LemmatizerME;
 import opennlp.tools.lemmatizer.LemmatizerModel;
-import opennlp.tools.models.ClassPathModelProvider;
-import opennlp.tools.models.DefaultClassPathModelProvider;
-import opennlp.tools.models.ModelType;
 import opennlp.tools.postag.POSModel;
+import opennlp.tools.postag.POSTagFormat;
+import opennlp.tools.postag.POSTagFormatMapper;
 import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
@@ -65,9 +63,9 @@ import org.slf4j.LoggerFactory;
 /**
  * Loads shared thread-safe {@code *ME} singletons once at startup.
  *
- * <p>Models resolve in three steps: optional explicit paths in configuration, then the
- * classpath via {@link DefaultClassPathModelProvider} and {@code opennlp-models-*} runtime
- * deps, and finally the model binaries bundled inside the shaded server jar itself.
+ * <p>Models resolve in three steps: optional explicit paths in configuration, then
+ * {@code model.properties} descriptors on the classpath from {@code opennlp-models-*}
+ * runtime deps, and finally the model binaries bundled inside the shaded server jar itself.
  *
  * <p>The bundled fallback exists because classpath discovery matches model <em>jar file
  * names</em> ({@code opennlp-models-*.jar}) and therefore cannot see models that have been
@@ -97,10 +95,11 @@ public final class ModelBundleCache {
   private static final String MODEL_DESCRIPTOR_RESOURCE = "model.properties";
   private static final String MODEL_FILE_SUFFIX = ".bin";
 
-  private final ClassPathModelProvider modelProvider;
   private final Map<String, ModelBundleInfo> bundles;
+  private final ModelArtifactRegistry artifactRegistry;
   private final SentenceDetectorME sentenceDetector;
   private final TokenizerME tokenizer;
+  private final POSModel posModel;
   private final POSTaggerME posTagger;
   private final LemmatizerME lemmatizer;
   private final LanguageDetectorME languageDetector;
@@ -132,20 +131,23 @@ public final class ModelBundleCache {
    */
   public ModelBundleCache(Map<String, String> configuration) {
     Objects.requireNonNull(configuration, "configuration");
-    this.modelProvider = new DefaultClassPathModelProvider();
-    this.sentenceDetector = new SentenceDetectorME(loadModel(configuration,
-        KEY_SENTDETECT_PATH, ModelType.SENTENCE_DETECTOR, SentenceModel.class,
-        BUNDLED_SENTENCE_MODEL_FRAGMENT, "sentence detector", SentenceModel::new));
-    this.tokenizer = new TokenizerME(loadModel(configuration,
-        KEY_TOKENIZER_PATH, ModelType.TOKENIZER, TokenizerModel.class,
-        BUNDLED_TOKENIZER_MODEL_FRAGMENT, "tokenizer", TokenizerModel::new));
-    this.posTagger = new POSTaggerME(loadModel(configuration,
-        KEY_POS_TAGGER_PATH, ModelType.POS_GENERIC, POSModel.class,
-        BUNDLED_POS_MODEL_FRAGMENT, "POS tagger", POSModel::new));
-    this.lemmatizer = new LemmatizerME(loadModel(configuration,
-        KEY_LEMMATIZER_PATH, ModelType.LEMMATIZER, LemmatizerModel.class,
-        BUNDLED_LEMMATIZER_MODEL_FRAGMENT, "lemmatizer", LemmatizerModel::new));
-    this.languageDetector = new LanguageDetectorME(loadLanguageDetectorModel(configuration));
+    final LoadedArtifact<SentenceModel> loadedSentence = loadModel(configuration,
+        KEY_SENTDETECT_PATH, BUNDLED_SENTENCE_MODEL_FRAGMENT, "sentence detector",
+        SentenceModel::new);
+    final LoadedArtifact<TokenizerModel> loadedTokenizer = loadModel(configuration,
+        KEY_TOKENIZER_PATH, BUNDLED_TOKENIZER_MODEL_FRAGMENT, "tokenizer", TokenizerModel::new);
+    final LoadedArtifact<POSModel> loadedPos = loadModel(configuration,
+        KEY_POS_TAGGER_PATH, BUNDLED_POS_MODEL_FRAGMENT, "POS tagger", POSModel::new);
+    final LoadedArtifact<LemmatizerModel> loadedLemma = loadModel(configuration,
+        KEY_LEMMATIZER_PATH, BUNDLED_LEMMATIZER_MODEL_FRAGMENT, "lemmatizer", LemmatizerModel::new);
+    final LoadedArtifact<LanguageDetectorModel> loadedLangDetect =
+        loadLanguageDetectorModel(configuration);
+    this.sentenceDetector = new SentenceDetectorME(loadedSentence.model());
+    this.tokenizer = new TokenizerME(loadedTokenizer.model());
+    this.posModel = loadedPos.model();
+    this.posTagger = new POSTaggerME(posModel);
+    this.lemmatizer = new LemmatizerME(loadedLemma.model());
+    this.languageDetector = new LanguageDetectorME(loadedLangDetect.model());
     // The embedding provider and the three registries may hold native resources (ONNX sessions,
     // remote connections). If a later load fails, release the ones already created so a failed
     // startup does not leak native sessions.
@@ -167,7 +169,12 @@ public final class ModelBundleCache {
       this.sentimentRegistry = sentimentRegistry;
       this.chunkerRegistry = chunkerRegistry;
       this.parserRegistry = ParserRegistry.create(configuration);
-      this.bundles = buildBundleCatalog();
+      this.bundles = buildBundleCatalog(
+          loadedLangDetect.hash(), loadedSentence.hash(), loadedTokenizer.hash(),
+          loadedPos.hash(), loadedLemma.hash());
+      this.artifactRegistry = buildArtifactRegistry(
+          loadedLangDetect.hash(), loadedSentence.hash(), loadedTokenizer.hash(),
+          loadedPos.hash(), loadedLemma.hash());
       constructed = true;
     } finally {
       if (!constructed) {
@@ -208,6 +215,30 @@ public final class ModelBundleCache {
   }
 
   /**
+   * Returns a POS tagger emitting tags in the requested output format.
+   *
+   * @param requestedFormat The client-requested tagset.
+   *
+   * @return A tagger configured for {@code requestedFormat}. Never {@code null}.
+   *
+   * @throws AnalysisException If {@code requestedFormat} is {@code CUSTOM}.
+   */
+  public POSTaggerME createPosTagger(org.apache.opennlp.grpc.v1.POSTagFormat requestedFormat) {
+    if (requestedFormat == org.apache.opennlp.grpc.v1.POSTagFormat.POS_TAG_FORMAT_CUSTOM) {
+      throw AnalysisException.unimplemented(
+          "pos_tag_format CUSTOM requires a client-supplied tag mapping; not supported");
+    }
+    final POSTagFormat outputFormat = switch (requestedFormat) {
+      case POS_TAG_FORMAT_UD -> POSTagFormat.UD;
+      case POS_TAG_FORMAT_PENN -> POSTagFormat.PENN;
+      case POS_TAG_FORMAT_UNSPECIFIED, UNRECOGNIZED ->
+          POSTagFormatMapper.guessFormat(posModel);
+      default -> POSTagFormatMapper.guessFormat(posModel);
+    };
+    return new POSTaggerME(posModel, outputFormat);
+  }
+
+  /**
    * Returns the shared lemmatizer. Always available (bundled default when unconfigured).
    *
    * @return The shared lemmatizer. Never {@code null}.
@@ -232,6 +263,15 @@ public final class ModelBundleCache {
    */
   public List<ModelBundleInfo> listBundles() {
     return new ArrayList<>(bundles.values());
+  }
+
+  /**
+   * Returns the registry of SHA-256 hashes for loaded model artifacts.
+   *
+   * @return The artifact registry. Never {@code null}.
+   */
+  public ModelArtifactRegistry getArtifactRegistry() {
+    return artifactRegistry;
   }
 
   /**
@@ -351,34 +391,38 @@ public final class ModelBundleCache {
    * @param description Human-readable component name for log and error messages.
    * @param reader Deserializes the model from a stream, e.g. {@code SentenceModel::new}.
    *
-   * @return The loaded model, never {@code null}.
+   * @return The loaded model and its artifact hash, never {@code null}.
    * @throws AnalysisException If no model can be resolved or loading fails.
    */
-  private <M extends BaseModel> M loadModel(
-      Map<String, String> configuration, String pathKey, ModelType type, Class<M> modelClass,
-      String bundledFragment, String description, ModelReader<M> reader) {
+  private <M extends BaseModel> LoadedArtifact<M> loadModel(
+      Map<String, String> configuration, String pathKey, String bundledFragment,
+      String description, ModelReader<M> reader) {
     try {
       final String configuredPath = configuration.get(pathKey);
       if (configuredPath != null && !configuredPath.isBlank()) {
-        try (InputStream input = new FileInputStream(configuredPath)) {
-          return reader.read(input);
-        }
+        final byte[] bytes = Files.readAllBytes(Path.of(configuredPath));
+        return new LoadedArtifact<>(reader.read(new ByteArrayInputStream(bytes)),
+            ModelArtifactHasher.sha256Hex(bytes));
       }
-      M resolved = modelProvider.load(DEFAULT_LANGUAGE, type, modelClass);
-      if (resolved == null) {
-        final InputStream bundled = openBundledModel(bundledFragment);
-        if (bundled == null) {
-          throw AnalysisException.notFound(
-              "No " + description + " model available for language '" + DEFAULT_LANGUAGE
-                  + "'. Configure '" + pathKey + "' or add the corresponding opennlp-models"
-                  + " jar to the classpath.");
-        }
-        logger.info("Loaded {} model bundled in the server jar", description);
-        try (InputStream input = bundled) {
-          resolved = reader.read(input);
-        }
+      final ClasspathArtifact classpathArtifact =
+          findClasspathArtifact(DEFAULT_LANGUAGE, bundledFragment);
+      if (classpathArtifact != null) {
+        return new LoadedArtifact<>(reader.read(new ByteArrayInputStream(classpathArtifact.bytes())),
+            classpathArtifact.hash());
       }
-      return resolved;
+      final InputStream bundled = openBundledModel(bundledFragment);
+      if (bundled == null) {
+        throw AnalysisException.notFound(
+            "No " + description + " model available for language '" + DEFAULT_LANGUAGE
+                + "'. Configure '" + pathKey + "' or add the corresponding opennlp-models"
+                + " jar to the classpath.");
+      }
+      logger.info("Loaded {} model bundled in the server jar", description);
+      try (InputStream input = bundled) {
+        final byte[] bytes = input.readAllBytes();
+        return new LoadedArtifact<>(reader.read(new ByteArrayInputStream(bytes)),
+            ModelArtifactHasher.sha256Hex(bytes));
+      }
     } catch (FileNotFoundException e) {
       // A configured path that does not exist is an operator error, not an internal fault.
       throw AnalysisException.notFound(
@@ -386,6 +430,24 @@ public final class ModelBundleCache {
     } catch (IOException e) {
       throw AnalysisException.internal("Failed to load " + description + " model", e);
     }
+  }
+
+  /**
+   * One loaded classic model and the SHA-256 hash of its artifact bytes.
+   *
+   * @param model The deserialized OpenNLP model. Never {@code null}.
+   * @param hash  The lowercase hex SHA-256 digest of the artifact bytes. Never {@code null}.
+   */
+  private record LoadedArtifact<M extends BaseModel>(M model, String hash) {
+  }
+
+  /**
+   * Classpath-resolved artifact bytes and hash.
+   *
+   * @param bytes The model artifact bytes. Never {@code null}.
+   * @param hash  The lowercase hex SHA-256 digest. Never {@code null}.
+   */
+  private record ClasspathArtifact(byte[] bytes, String hash) {
   }
 
   /** Deserializes a model from a stream; all OpenNLP model constructors fit this shape. */
@@ -401,26 +463,38 @@ public final class ModelBundleCache {
    * {@code model.properties} descriptors of the model jars on the classpath, then the
    * binary bundled inside the shaded server jar.
    */
-  private LanguageDetectorModel loadLanguageDetectorModel(Map<String, String> configuration) {
+  private LoadedArtifact<LanguageDetectorModel> loadLanguageDetectorModel(
+      Map<String, String> configuration) {
     try {
       final String configuredPath = configuration.get(KEY_LANGDETECT_PATH);
       if (configuredPath != null && !configuredPath.isBlank()) {
-        try (InputStream input = new FileInputStream(configuredPath)) {
-          return new LanguageDetectorModel(input);
+        final byte[] bytes = Files.readAllBytes(Path.of(configuredPath));
+        return new LoadedArtifact<>(new LanguageDetectorModel(new ByteArrayInputStream(bytes)),
+            ModelArtifactHasher.sha256Hex(bytes));
+      }
+      byte[] classpathBytes = findClasspathLanguageDetectorBytes();
+      String classpathHash = null;
+      if (classpathBytes == null) {
+        final InputStream bundled = openBundledModel(BUNDLED_LANGDETECT_MODEL_FRAGMENT);
+        if (bundled != null) {
+          try (InputStream input = bundled) {
+            classpathBytes = input.readAllBytes();
+          }
         }
+      } else {
+        classpathHash = findClasspathLanguageDetectorHash();
       }
-      InputStream resolved = findClassPathLanguageDetectorModel();
-      if (resolved == null) {
-        resolved = openBundledModel(BUNDLED_LANGDETECT_MODEL_FRAGMENT);
-      }
-      if (resolved == null) {
+      if (classpathBytes == null) {
         throw AnalysisException.notFound(
             "No language detector model available. Configure '" + KEY_LANGDETECT_PATH
                 + "' or add the opennlp-models-langdetect jar to the classpath.");
       }
-      try (InputStream input = resolved) {
-        return new LanguageDetectorModel(input);
-      }
+      final String hash = classpathHash != null
+          ? classpathHash
+          : ModelArtifactHasher.sha256Hex(classpathBytes);
+      return new LoadedArtifact<>(
+          new LanguageDetectorModel(new ByteArrayInputStream(classpathBytes)),
+          hash);
     } catch (FileNotFoundException e) {
       // A configured path that does not exist is an operator error, not an internal fault.
       throw AnalysisException.notFound(
@@ -432,6 +506,145 @@ public final class ModelBundleCache {
   }
 
 
+
+  /**
+   * Locates a classic model binary through {@code model.properties} descriptors on the classpath.
+   *
+   * @param language     The model language tag to match, e.g. {@code "en"}.
+   * @param nameFragment A substring that must appear in the {@code model.name} entry.
+   *
+   * @return The artifact bytes and hash, or {@code null} when no matching descriptor is found.
+   *
+   * @throws IOException If a descriptor or model stream cannot be read.
+   */
+  private static ClasspathArtifact findClasspathArtifact(String language, String nameFragment)
+      throws IOException {
+    final ClassLoader classLoader = ModelBundleCache.class.getClassLoader();
+    final Enumeration<URL> descriptors = classLoader.getResources(MODEL_DESCRIPTOR_RESOURCE);
+    while (descriptors.hasMoreElements()) {
+      final Properties properties = new Properties();
+      try (InputStream input = descriptors.nextElement().openStream()) {
+        properties.load(input);
+      }
+      if (!language.equals(properties.getProperty("model.language"))) {
+        continue;
+      }
+      final String modelName = properties.getProperty("model.name", "");
+      if (!modelName.endsWith(MODEL_FILE_SUFFIX) || !modelName.contains(nameFragment)) {
+        continue;
+      }
+      try (InputStream model = classLoader.getResourceAsStream(modelName)) {
+        if (model == null) {
+          continue;
+        }
+        final byte[] bytes = model.readAllBytes();
+        final String declaredHash = properties.getProperty("model.sha256", "").trim().toLowerCase();
+        final String hash = declaredHash.isBlank()
+            ? ModelArtifactHasher.sha256Hex(bytes)
+            : declaredHash;
+        return new ClasspathArtifact(bytes, hash);
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Locates the language-detector binary bytes on the classpath.
+   *
+   * @return The model bytes, or {@code null} when no matching descriptor is found.
+   *
+   * @throws IOException If a descriptor or model stream cannot be read.
+   */
+  private static byte[] findClasspathLanguageDetectorBytes() throws IOException {
+    final ClassLoader classLoader = ModelBundleCache.class.getClassLoader();
+    final Enumeration<URL> descriptors = classLoader.getResources(MODEL_DESCRIPTOR_RESOURCE);
+    while (descriptors.hasMoreElements()) {
+      final Properties properties = new Properties();
+      try (InputStream input = descriptors.nextElement().openStream()) {
+        properties.load(input);
+      }
+      final String modelName = properties.getProperty("model.name", "");
+      if (modelName.contains(BUNDLED_LANGDETECT_MODEL_FRAGMENT)
+          && modelName.endsWith(MODEL_FILE_SUFFIX)) {
+        try (InputStream model = classLoader.getResourceAsStream(modelName)) {
+          if (model != null) {
+            return model.readAllBytes();
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Reads the declared {@code model.sha256} for the classpath language-detector artifact.
+   *
+   * @return The lowercase hex digest, or {@code null} when no descriptor declares one.
+   *
+   * @throws IOException If a descriptor stream cannot be read.
+   */
+  private static String findClasspathLanguageDetectorHash() throws IOException {
+    final ClassLoader classLoader = ModelBundleCache.class.getClassLoader();
+    final Enumeration<URL> descriptors = classLoader.getResources(MODEL_DESCRIPTOR_RESOURCE);
+    while (descriptors.hasMoreElements()) {
+      final Properties properties = new Properties();
+      try (InputStream input = descriptors.nextElement().openStream()) {
+        properties.load(input);
+      }
+      final String modelName = properties.getProperty("model.name", "");
+      if (modelName.contains(BUNDLED_LANGDETECT_MODEL_FRAGMENT)
+          && modelName.endsWith(MODEL_FILE_SUFFIX)) {
+        final String declaredHash = properties.getProperty("model.sha256", "").trim().toLowerCase();
+        if (!declaredHash.isBlank()) {
+          return declaredHash;
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Builds the artifact registry used for {@code component_models} validation and catalog hashes.
+   *
+   * @param langDetectHash SHA-256 digest of the language detector artifact.
+   * @param sentenceHash   SHA-256 digest of the sentence detector artifact.
+   * @param tokenizerHash  SHA-256 digest of the tokenizer artifact.
+   * @param posHash        SHA-256 digest of the POS tagger artifact.
+   * @param lemmaHash      SHA-256 digest of the lemmatizer artifact.
+   *
+   * @return The completed registry. Never {@code null}.
+   */
+  private ModelArtifactRegistry buildArtifactRegistry(
+      String langDetectHash,
+      String sentenceHash,
+      String tokenizerHash,
+      String posHash,
+      String lemmaHash) {
+    final ModelArtifactRegistry.Builder builder = ModelArtifactRegistry.builder()
+        .register(ComponentType.COMPONENT_TYPE_LANGUAGE_DETECTOR, langDetectHash,
+            "opennlp-models-langdetect")
+        .register(ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR, sentenceHash,
+            "opennlp-models-sentdetect-" + DEFAULT_LANGUAGE)
+        .register(ComponentType.COMPONENT_TYPE_TOKENIZER, tokenizerHash,
+            "opennlp-models-tokenizer-" + DEFAULT_LANGUAGE)
+        .register(ComponentType.COMPONENT_TYPE_POS_TAGGER, posHash,
+            "opennlp-models-pos-" + DEFAULT_LANGUAGE)
+        .register(ComponentType.COMPONENT_TYPE_LEMMATIZER, lemmaHash,
+            "opennlp-models-lemmatizer-" + DEFAULT_LANGUAGE);
+    for (String modelId : embeddingProvider.registeredModelIds()) {
+      final String hash = embeddingProvider.modelArtifactHash(modelId);
+      if (hash != null && !hash.isBlank()) {
+        builder.register(ComponentType.COMPONENT_TYPE_EMBEDDER, hash, modelId);
+      }
+    }
+    for (NerModel model : nameFinderRegistry.allModels()) {
+      if (!model.artifactHash().isBlank()) {
+        builder.register(ComponentType.COMPONENT_TYPE_NAME_FINDER, model.artifactHash(),
+            model.id());
+      }
+    }
+    return builder.build();
+  }
 
   /**
    * Locates the language detector binary through the {@code model.properties}
@@ -528,7 +741,12 @@ public final class ModelBundleCache {
     }
   }
 
-  private Map<String, ModelBundleInfo> buildBundleCatalog() {
+  private Map<String, ModelBundleInfo> buildBundleCatalog(
+      String langDetectHash,
+      String sentenceHash,
+      String tokenizerHash,
+      String posHash,
+      String lemmaHash) {
     final ModelBundleInfo.Builder bundle = ModelBundleInfo.newBuilder()
         .setBundleId(ProfileRegistry.DEFAULT_BUNDLE_ID)
         .addSupportedLanguages(DEFAULT_LANGUAGE)
@@ -537,61 +755,76 @@ public final class ModelBundleCache {
         .addSupportedSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
         .addSupportedSteps(PipelineStep.PIPELINE_STEP_POS_TAG)
         .addSupportedSteps(PipelineStep.PIPELINE_STEP_LEMMATIZE)
-        .addModels(ModelDescriptor.newBuilder()
-            .setName("opennlp-models-langdetect")
-            // The language detector is language-independent; its descriptor declares
-            // locale "root" and it predicts ISO 639-3 codes for 103 languages.
-            .setLocale("root")
-            .setComponentType(ComponentType.COMPONENT_TYPE_LANGUAGE_DETECTOR)
-            .setBackendId(OPENNLP_ME_BACKEND_ID)
-            .build())
+        .addModels(classicModelDescriptor(
+            "opennlp-models-langdetect",
+            ComponentType.COMPONENT_TYPE_LANGUAGE_DETECTOR,
+            "root",
+            langDetectHash))
         .addModels(classicModelDescriptor(
             "opennlp-models-sentdetect-" + DEFAULT_LANGUAGE,
-            ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR))
+            ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR,
+            DEFAULT_LANGUAGE,
+            sentenceHash))
         .addModels(classicModelDescriptor(
             "opennlp-models-tokenizer-" + DEFAULT_LANGUAGE,
-            ComponentType.COMPONENT_TYPE_TOKENIZER))
+            ComponentType.COMPONENT_TYPE_TOKENIZER,
+            DEFAULT_LANGUAGE,
+            tokenizerHash))
         .addModels(classicModelDescriptor(
             "opennlp-models-pos-" + DEFAULT_LANGUAGE,
-            ComponentType.COMPONENT_TYPE_POS_TAGGER))
+            ComponentType.COMPONENT_TYPE_POS_TAGGER,
+            DEFAULT_LANGUAGE,
+            posHash))
         .addModels(classicModelDescriptor(
             "opennlp-models-lemmatizer-" + DEFAULT_LANGUAGE,
-            ComponentType.COMPONENT_TYPE_LEMMATIZER));
+            ComponentType.COMPONENT_TYPE_LEMMATIZER,
+            DEFAULT_LANGUAGE,
+            lemmaHash));
     if (embeddingProvider.isAvailable()) {
       bundle.addSupportedSteps(PipelineStep.PIPELINE_STEP_EMBED);
       for (String modelId : embeddingProvider.registeredModelIds()) {
         // Each logical model is tagged with the engine it resolves to by default (highest priority).
-        bundle.addModels(ModelDescriptor.newBuilder()
+        final ModelDescriptor.Builder descriptor = ModelDescriptor.newBuilder()
             .setName(modelId)
             .setLocale(DEFAULT_LANGUAGE)
             .setComponentType(ComponentType.COMPONENT_TYPE_EMBEDDER)
             .addLanguages(DEFAULT_LANGUAGE)
             .setEmbeddingDimension(embeddingProvider.embeddingDimension(modelId))
-            .setBackendId(embeddingProvider.backendId(modelId))
-            .build());
+            .setBackendId(embeddingProvider.backendId(modelId));
+        final String hash = embeddingProvider.modelArtifactHash(modelId);
+        if (hash != null && !hash.isBlank()) {
+          descriptor.setHash(hash);
+        }
+        bundle.addModels(descriptor.build());
       }
     }
     final Map<String, ModelBundleInfo> catalog = new HashMap<>();
     catalog.put(ProfileRegistry.DEFAULT_BUNDLE_ID, bundle.build());
     if (nameFinderRegistry.isAvailable()) {
-      catalog.put(ProfileRegistry.NER_BUNDLE_ID, buildNerBundleCatalog());
+      catalog.put(ProfileRegistry.NER_BUNDLE_ID,
+          buildNerBundleCatalog(sentenceHash, tokenizerHash));
     }
     if (docCategorizerRegistry.isAvailable()) {
-      catalog.put(ProfileRegistry.DOCCAT_BUNDLE_ID, buildDoccatBundleCatalog());
+      catalog.put(ProfileRegistry.DOCCAT_BUNDLE_ID,
+          buildDoccatBundleCatalog(sentenceHash, tokenizerHash));
     }
     if (sentimentRegistry.isAvailable()) {
-      catalog.put(ProfileRegistry.SENTIMENT_BUNDLE_ID, buildSentimentBundleCatalog());
+      catalog.put(ProfileRegistry.SENTIMENT_BUNDLE_ID,
+          buildSentimentBundleCatalog(sentenceHash, tokenizerHash));
     }
     if (parserRegistry.isAvailable()) {
-      catalog.put(ProfileRegistry.PARSE_BUNDLE_ID, buildParseBundleCatalog());
+      catalog.put(ProfileRegistry.PARSE_BUNDLE_ID,
+          buildParseBundleCatalog(sentenceHash, tokenizerHash));
     }
     if (chunkerRegistry.isAvailable()) {
-      catalog.put(ProfileRegistry.CHUNK_BUNDLE_ID, buildChunkBundleCatalog());
+      catalog.put(ProfileRegistry.CHUNK_BUNDLE_ID,
+          buildChunkBundleCatalog(sentenceHash, tokenizerHash, posHash));
     }
     return catalog;
   }
 
-  private ModelBundleInfo buildChunkBundleCatalog() {
+  private ModelBundleInfo buildChunkBundleCatalog(
+      String sentenceHash, String tokenizerHash, String posHash) {
     // Shallow chunking consumes POS-tagged English tokens, so the bundle constrains input to
     // English; the chunker model is operator-supplied and its language is unknown to the server.
     return ModelBundleInfo.newBuilder()
@@ -603,13 +836,19 @@ public final class ModelBundleCache {
         .addSupportedSteps(PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK)
         .addModels(classicModelDescriptor(
             "opennlp-models-sentdetect-" + DEFAULT_LANGUAGE,
-            ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR))
+            ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR,
+            DEFAULT_LANGUAGE,
+            sentenceHash))
         .addModels(classicModelDescriptor(
             "opennlp-models-tokenizer-" + DEFAULT_LANGUAGE,
-            ComponentType.COMPONENT_TYPE_TOKENIZER))
+            ComponentType.COMPONENT_TYPE_TOKENIZER,
+            DEFAULT_LANGUAGE,
+            tokenizerHash))
         .addModels(classicModelDescriptor(
             "opennlp-models-pos-" + DEFAULT_LANGUAGE,
-            ComponentType.COMPONENT_TYPE_POS_TAGGER))
+            ComponentType.COMPONENT_TYPE_POS_TAGGER,
+            DEFAULT_LANGUAGE,
+            posHash))
         .addModels(ModelDescriptor.newBuilder()
             .setName("chunker")
             .setComponentType(ComponentType.COMPONENT_TYPE_CHUNKER)
@@ -619,7 +858,7 @@ public final class ModelBundleCache {
         .build();
   }
 
-  private ModelBundleInfo buildParseBundleCatalog() {
+  private ModelBundleInfo buildParseBundleCatalog(String sentenceHash, String tokenizerHash) {
     // Parsing consumes the English tokenizer's output, so the bundle constrains input to English;
     // the parser model is operator-supplied and its language is unknown to the server.
     return ModelBundleInfo.newBuilder()
@@ -630,10 +869,14 @@ public final class ModelBundleCache {
         .addSupportedSteps(PipelineStep.PIPELINE_STEP_PARSE)
         .addModels(classicModelDescriptor(
             "opennlp-models-sentdetect-" + DEFAULT_LANGUAGE,
-            ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR))
+            ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR,
+            DEFAULT_LANGUAGE,
+            sentenceHash))
         .addModels(classicModelDescriptor(
             "opennlp-models-tokenizer-" + DEFAULT_LANGUAGE,
-            ComponentType.COMPONENT_TYPE_TOKENIZER))
+            ComponentType.COMPONENT_TYPE_TOKENIZER,
+            DEFAULT_LANGUAGE,
+            tokenizerHash))
         .addModels(ModelDescriptor.newBuilder()
             .setName("parser")
             .setComponentType(ComponentType.COMPONENT_TYPE_PARSER)
@@ -643,7 +886,7 @@ public final class ModelBundleCache {
         .build();
   }
 
-  private ModelBundleInfo buildNerBundleCatalog() {
+  private ModelBundleInfo buildNerBundleCatalog(String sentenceHash, String tokenizerHash) {
     // The sentence-detector and tokenizer backbone is English, so the bundle constrains
     // input to English; the name finder models themselves are operator-supplied and their
     // language is unknown to the server, so their descriptors claim no locale/language.
@@ -655,24 +898,31 @@ public final class ModelBundleCache {
         .addSupportedSteps(PipelineStep.PIPELINE_STEP_NER)
         .addModels(classicModelDescriptor(
             "opennlp-models-sentdetect-" + DEFAULT_LANGUAGE,
-            ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR))
+            ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR,
+            DEFAULT_LANGUAGE,
+            sentenceHash))
         .addModels(classicModelDescriptor(
             "opennlp-models-tokenizer-" + DEFAULT_LANGUAGE,
-            ComponentType.COMPONENT_TYPE_TOKENIZER));
+            ComponentType.COMPONENT_TYPE_TOKENIZER,
+            DEFAULT_LANGUAGE,
+            tokenizerHash));
     for (NerModel model : nameFinderRegistry.allModels()) {
       for (String entityType : model.entityTypes()) {
-        bundle.addModels(ModelDescriptor.newBuilder()
+        final ModelDescriptor.Builder descriptor = ModelDescriptor.newBuilder()
             .setName(entityType)
             .setComponentType(ComponentType.COMPONENT_TYPE_NAME_FINDER)
             .addSupportedSteps(PipelineStep.PIPELINE_STEP_NER)
-            .setBackendId(model.backendId())
-            .build());
+            .setBackendId(model.backendId());
+        if (!model.artifactHash().isBlank()) {
+          descriptor.setHash(model.artifactHash());
+        }
+        bundle.addModels(descriptor.build());
       }
     }
     return bundle.build();
   }
 
-  private ModelBundleInfo buildDoccatBundleCatalog() {
+  private ModelBundleInfo buildDoccatBundleCatalog(String sentenceHash, String tokenizerHash) {
     // The classic categorizer consumes the English tokenizer's output, so the bundle constrains
     // input to English; the categorizer models themselves are operator-supplied and their
     // language is unknown to the server, so their descriptors claim no locale/language.
@@ -684,10 +934,14 @@ public final class ModelBundleCache {
         .addSupportedSteps(PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE)
         .addModels(classicModelDescriptor(
             "opennlp-models-sentdetect-" + DEFAULT_LANGUAGE,
-            ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR))
+            ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR,
+            DEFAULT_LANGUAGE,
+            sentenceHash))
         .addModels(classicModelDescriptor(
             "opennlp-models-tokenizer-" + DEFAULT_LANGUAGE,
-            ComponentType.COMPONENT_TYPE_TOKENIZER));
+            ComponentType.COMPONENT_TYPE_TOKENIZER,
+            DEFAULT_LANGUAGE,
+            tokenizerHash));
     for (DocCategorizerModel model : docCategorizerRegistry.allModels()) {
       bundle.addModels(ModelDescriptor.newBuilder()
           .setName(model.id())
@@ -699,7 +953,7 @@ public final class ModelBundleCache {
     return bundle.build();
   }
 
-  private ModelBundleInfo buildSentimentBundleCatalog() {
+  private ModelBundleInfo buildSentimentBundleCatalog(String sentenceHash, String tokenizerHash) {
     // Sentiment runs per sentence, so it needs the English sentence-detector and tokenizer
     // backbone; the sentiment models themselves are operator-supplied and their language is
     // unknown to the server, so their descriptors claim no locale/language.
@@ -711,10 +965,14 @@ public final class ModelBundleCache {
         .addSupportedSteps(PipelineStep.PIPELINE_STEP_SENTIMENT)
         .addModels(classicModelDescriptor(
             "opennlp-models-sentdetect-" + DEFAULT_LANGUAGE,
-            ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR))
+            ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR,
+            DEFAULT_LANGUAGE,
+            sentenceHash))
         .addModels(classicModelDescriptor(
             "opennlp-models-tokenizer-" + DEFAULT_LANGUAGE,
-            ComponentType.COMPONENT_TYPE_TOKENIZER));
+            ComponentType.COMPONENT_TYPE_TOKENIZER,
+            DEFAULT_LANGUAGE,
+            tokenizerHash));
     for (DocCategorizerModel model : sentimentRegistry.allModels()) {
       bundle.addModels(ModelDescriptor.newBuilder()
           .setName(model.id())
@@ -727,12 +985,14 @@ public final class ModelBundleCache {
   }
 
   /** Descriptor for a model served by the classic OpenNLP maxent runtime. */
-  private static ModelDescriptor classicModelDescriptor(String name, ComponentType type) {
+  private static ModelDescriptor classicModelDescriptor(
+      String name, ComponentType type, String locale, String hash) {
     return ModelDescriptor.newBuilder()
+        .setHash(hash)
         .setName(name)
-        .setLocale(DEFAULT_LANGUAGE)
+        .setLocale(locale)
         .setComponentType(type)
-        .addLanguages(DEFAULT_LANGUAGE)
+        .addLanguages(locale)
         .setBackendId(OPENNLP_ME_BACKEND_ID)
         .build();
   }

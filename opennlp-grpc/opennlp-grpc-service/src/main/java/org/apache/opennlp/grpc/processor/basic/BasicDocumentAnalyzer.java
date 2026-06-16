@@ -37,6 +37,7 @@ import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
+import org.apache.opennlp.grpc.v1.DocumentAnalytics;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.ParseFormat;
@@ -120,9 +121,10 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     this.nameFinderRegistry = modelBundleCache.getNameFinderRegistry();
     this.validator = new AnalysisRequestValidator(embeddingProvider, nameFinderRegistry,
         modelBundleCache.getDocCategorizerRegistry(), modelBundleCache.getSentimentRegistry(),
-        modelBundleCache.getParserRegistry(), modelBundleCache.getChunkerRegistry());
+        modelBundleCache.getParserRegistry(), modelBundleCache.getChunkerRegistry(),
+        modelBundleCache.getArtifactRegistry());
     this.classicSteps = new ClassicStepRunner(modelBundleCache);
-    this.embedChunkSteps = new EmbedChunkStepRunner(embeddingProvider);
+    this.embedChunkSteps = new EmbedChunkStepRunner(embeddingProvider, classicSteps);
   }
 
   @Override
@@ -196,7 +198,8 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       requireTokens(document, PipelineStep.PIPELINE_STEP_POS_TAG);
       runStep(
           PipelineStep.PIPELINE_STEP_POS_TAG,
-          () -> classicSteps.tagPartsOfSpeech(document, includeProbabilities, diagnostics));
+          () -> classicSteps.tagPartsOfSpeech(
+              document, profile.getPosTagFormat(), includeProbabilities, diagnostics));
     } else {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_POS_TAG));
     }
@@ -283,7 +286,8 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     if (request.getChunkEmbedConfigsCount() > 0) {
       runStep(
           PipelineStep.PIPELINE_STEP_CHUNK,
-          () -> embedChunkSteps.runChunkEmbedConfigs(rawText, document, request, diagnostics));
+          () -> embedChunkSteps.runChunkEmbedConfigs(
+              rawText, document, request, profile, includeProbabilities, diagnostics));
     } else if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_CHUNK)) {
       runStep(
           PipelineStep.PIPELINE_STEP_CHUNK,
@@ -303,6 +307,12 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     final OffsetEncoding requestedEncoding = request.hasOptions()
         ? request.getOptions().getOffsetEncoding()
         : OffsetEncoding.OFFSET_ENCODING_UNSPECIFIED;
+
+    final DocumentAnalytics analytics = DocumentAnalyticsComputer.compute(document.build());
+    if (analytics != null) {
+      document.setAnalytics(analytics);
+    }
+
     DocumentOffsetEncoder.apply(document, rawText, requestedEncoding);
 
     return AnalyzeDocumentResponse.newBuilder()

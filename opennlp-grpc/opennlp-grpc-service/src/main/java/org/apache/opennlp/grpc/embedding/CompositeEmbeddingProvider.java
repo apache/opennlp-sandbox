@@ -158,6 +158,25 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
   }
 
   /**
+   * {@inheritDoc}
+   *
+   * <p>Delegates to the provider that serves {@code modelId}.</p>
+   */
+  @Override
+  public String modelArtifactHash(String modelId) {
+    if (modelId == null || modelId.isBlank()) {
+      return "";
+    }
+    for (EmbeddingProvider provider : providers) {
+      final String hash = provider.modelArtifactHash(modelId);
+      if (hash != null && !hash.isBlank()) {
+        return hash;
+      }
+    }
+    return "";
+  }
+
+  /**
    * Embeds on a specific engine (no fallback) — the strongly-typed engine pin: the model id and
    * engine are separate arguments, never a parsed composite string.
    *

@@ -17,10 +17,12 @@
  */
 package org.apache.opennlp.grpc.model;
 
-import java.io.FileInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -66,15 +68,24 @@ public final class ClassicNerBackendFactory implements NerBackendFactory {
     final Map<String, ClassicEntry> entries = parseConfiguredPaths(configuration);
     final List<NerModel> models = new ArrayList<>(entries.size());
     for (Map.Entry<String, ClassicEntry> entry : entries.entrySet()) {
-      models.add(new ClassicNerModel(entry.getKey(),
-          loadNameFinder(entry.getKey(), entry.getValue().path()),
-          entry.getValue().priority()));
+      final LoadedClassicNer loaded = loadNameFinder(entry.getKey(), entry.getValue().path());
+      models.add(new ClassicNerModel(entry.getKey(), loaded.nameFinder(),
+          entry.getValue().priority(), loaded.artifactHash()));
     }
     return models;
   }
 
   /** One classic recognizer's loaded configuration. */
   private record ClassicEntry(String path, int priority) {
+  }
+
+  /**
+   * A classic name finder loaded from disk together with its artifact hash.
+   *
+   * @param nameFinder   The loaded recognizer. Never {@code null}.
+   * @param artifactHash The lowercase hex SHA-256 digest of the model file.
+   */
+  private record LoadedClassicNer(NameFinderME nameFinder, String artifactHash) {
   }
 
   private static Map<String, ClassicEntry> parseConfiguredPaths(Map<String, String> configuration) {
@@ -109,11 +120,15 @@ public final class ClassicNerBackendFactory implements NerBackendFactory {
     return entries;
   }
 
-  private static NameFinderME loadNameFinder(String entityType, String path) {
-    try (InputStream input = new FileInputStream(path)) {
-      final TokenNameFinderModel model = new TokenNameFinderModel(input);
+  private static LoadedClassicNer loadNameFinder(String entityType, String path) {
+    try {
+      final byte[] bytes = Files.readAllBytes(Path.of(path));
+      final TokenNameFinderModel model = new TokenNameFinderModel(new ByteArrayInputStream(bytes));
       logger.info("Loaded name finder for entity type '{}' from {}", entityType, path);
-      return new NameFinderME(model);
+      return new LoadedClassicNer(new NameFinderME(model), ModelArtifactHasher.sha256Hex(bytes));
+    } catch (NoSuchFileException e) {
+      throw AnalysisException.notFound(
+          "Name finder model file for entity type '" + entityType + "' not found: " + path);
     } catch (FileNotFoundException e) {
       // A missing configured path is an operator error, not an internal server fault.
       throw AnalysisException.notFound(

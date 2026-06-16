@@ -110,6 +110,23 @@ class BasicDocumentAnalyzerPosLemmaTest {
   }
 
   @Test
+  void analyticsPopulatedAfterPosAndLemma() {
+    final AnalyzeDocumentResponse response = analyzer.analyze(request(
+        profile(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT,
+            PipelineStep.PIPELINE_STEP_TOKENIZE,
+            PipelineStep.PIPELINE_STEP_POS_TAG,
+            PipelineStep.PIPELINE_STEP_LEMMATIZE),
+        false));
+
+    assertTrue(response.getDocument().hasAnalytics());
+    assertTrue(response.getDocument().getAnalytics().getTotalTokens() > 0);
+    assertEquals(response.getDocument().getSentencesCount(),
+        response.getDocument().getAnalytics().getTotalSentences());
+    assertTrue(response.getDocument().getAnalytics().getUniqueLemmaCount() > 0);
+    assertTrue(response.getDocument().getAnalytics().getNounDensity() > 0.0f);
+  }
+
+  @Test
   void posTaggingWithoutTokenizationIsRejected() {
     final AnalysisException e = assertThrows(AnalysisException.class,
         () -> analyzer.analyze(request(

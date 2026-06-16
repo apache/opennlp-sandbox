@@ -140,4 +140,14 @@ public interface EmbeddingProvider {
     }
     return null;
   }
+
+  /**
+   * Returns the SHA-256 hash of the primary artifact backing {@code modelId}, when known.
+   *
+   * @param modelId The id of a registered embedding model.
+   * @return The lowercase hex digest, or an empty string when unavailable.
+   */
+  default String modelArtifactHash(String modelId) {
+    return "";
+  }
 }

@@ -27,6 +27,7 @@ import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.model.ChunkerRegistry;
 import org.apache.opennlp.grpc.model.DocCategorizerModel;
 import org.apache.opennlp.grpc.model.DocCategorizerRegistry;
+import org.apache.opennlp.grpc.model.ModelArtifactRegistry;
 import org.apache.opennlp.grpc.model.NameFinderRegistry;
 import org.apache.opennlp.grpc.model.ParserRegistry;
 import org.apache.opennlp.grpc.model.SentimentRegistry;
@@ -38,6 +39,8 @@ import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.CategoryChunkConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
+import org.apache.opennlp.grpc.v1.ComponentModelRef;
+import org.apache.opennlp.grpc.v1.ComponentType;
 import org.apache.opennlp.grpc.v1.ModelBundleRef;
 import org.apache.opennlp.grpc.v1.POSTagFormat;
 import org.apache.opennlp.grpc.v1.ParseFormat;
@@ -56,6 +59,7 @@ final class AnalysisRequestValidator {
   private final SentimentRegistry sentimentRegistry;
   private final ParserRegistry parserRegistry;
   private final ChunkerRegistry chunkerRegistry;
+  private final ModelArtifactRegistry artifactRegistry;
 
   AnalysisRequestValidator(
       EmbeddingProvider embeddingProvider,
@@ -63,7 +67,8 @@ final class AnalysisRequestValidator {
       DocCategorizerRegistry docCategorizerRegistry,
       SentimentRegistry sentimentRegistry,
       ParserRegistry parserRegistry,
-      ChunkerRegistry chunkerRegistry) {
+      ChunkerRegistry chunkerRegistry,
+      ModelArtifactRegistry artifactRegistry) {
     this.embeddingProvider = Objects.requireNonNull(embeddingProvider, "embeddingProvider");
     this.nameFinderRegistry = Objects.requireNonNull(nameFinderRegistry, "nameFinderRegistry");
     this.docCategorizerRegistry =
@@ -71,6 +76,7 @@ final class AnalysisRequestValidator {
     this.sentimentRegistry = Objects.requireNonNull(sentimentRegistry, "sentimentRegistry");
     this.parserRegistry = Objects.requireNonNull(parserRegistry, "parserRegistry");
     this.chunkerRegistry = Objects.requireNonNull(chunkerRegistry, "chunkerRegistry");
+    this.artifactRegistry = Objects.requireNonNull(artifactRegistry, "artifactRegistry");
   }
 
   /**
@@ -120,6 +126,10 @@ final class AnalysisRequestValidator {
   String resolveEmbeddingModelId(AnalyzeDocumentRequest request, AnalysisProfile profile) {
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_EMBED)) {
       return null;
+    }
+    final String pinnedEmbedder = pinnedEmbedderModelId(profile);
+    if (pinnedEmbedder != null) {
+      return pinnedEmbedder;
     }
     String requested = null;
     if (request.hasOptions() && request.getOptions().hasEmbeddingModelId()) {
@@ -207,14 +217,9 @@ final class AnalysisRequestValidator {
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_POS_TAG)) {
       return;
     }
-    final POSTagFormat format = profile.getPosTagFormat();
-    if (format != POSTagFormat.POS_TAG_FORMAT_UNSPECIFIED
-        && format != POSTagFormat.UNRECOGNIZED) {
-      // The tagger emits its model's native tagset; we do not convert/select tagsets, so reject
-      // rather than silently returning a different tagset than the client asked for.
+    if (profile.getPosTagFormat() == POSTagFormat.POS_TAG_FORMAT_CUSTOM) {
       throw AnalysisException.unimplemented(
-          "pos_tag_format selection is not implemented; the POS tagger emits its model's native "
-              + "tagset (requested " + format + ")");
+          "pos_tag_format CUSTOM requires a client-supplied tag mapping; not supported");
     }
   }
 
@@ -439,8 +444,28 @@ final class AnalysisRequestValidator {
               + "' requires a chunker model; configure model.chunker.<id>.path");
     }
     if (bundle.getComponentModelsCount() > 0) {
-      throw AnalysisException.unimplemented(
-          "per-component model selection (component_models) is not implemented");
+      artifactRegistry.validateComponentModels(bundle.getComponentModelsList());
     }
+  }
+
+  /**
+   * Returns the embedding model id pinned by {@code component_models}, when present.
+   *
+   * @param profile The effective analysis profile.
+   *
+   * @return The pinned model id, or {@code null} when no embedder pin is set.
+   */
+  private String pinnedEmbedderModelId(AnalysisProfile profile) {
+    if (!profile.hasModelBundle()) {
+      return null;
+    }
+    for (ComponentModelRef ref : profile.getModelBundle().getComponentModelsList()) {
+      if (ref.getComponentType() == ComponentType.COMPONENT_TYPE_EMBEDDER) {
+        return artifactRegistry.embedderModelIdForHash(ref.getModelHash())
+            .orElseThrow(() -> AnalysisException.notFound(
+                "component_models embedder hash '" + ref.getModelHash() + "' is not loaded"));
+      }
+    }
+    return null;
   }
 }

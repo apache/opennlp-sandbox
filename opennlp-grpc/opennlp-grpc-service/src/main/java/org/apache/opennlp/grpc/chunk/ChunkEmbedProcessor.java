@@ -27,6 +27,8 @@ import java.util.Set;
 
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.processor.PipelineStepPolicy;
+import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.CategoryChunkConfigEntry;
@@ -66,8 +68,7 @@ public final class ChunkEmbedProcessor {
       throw AnalysisException.invalidArgument("chunk_embed_configs.config_id is required");
     }
     if (entry.hasProfile()) {
-      throw AnalysisException.unimplemented(
-          "per-entry analysis profiles in chunk_embed_configs are not implemented");
+      validateEntryProfile(entry.getProfile(), entry.getConfigId());
     }
     if (!entry.hasChunking()) {
       throw AnalysisException.invalidArgument(
@@ -124,8 +125,10 @@ public final class ChunkEmbedProcessor {
     }
 
     final List<String> chunkTexts = new ArrayList<>(segments.size());
+    final ChunkingSpec chunkingSpec = entry.getChunking();
     for (SegmentationChunker.ChunkSegment segment : segments) {
-      chunkTexts.add(rawText.substring(segment.start(), segment.end()));
+      chunkTexts.add(ChunkTextPreprocessor.chunkText(
+          rawText, segment.start(), segment.end(), chunkingSpec));
     }
 
     // One batched inference per model across all chunks of this group.
@@ -393,6 +396,27 @@ public final class ChunkEmbedProcessor {
         .setSeverity(DiagnosticSeverity.DIAGNOSTIC_SEVERITY_INFO)
         .setMessage("Produced " + chunkCount + " chunk(s) for config '" + configId + "'")
         .build();
+  }
+
+  /**
+   * Validates that every step listed on a chunk config entry profile is implemented.
+   *
+   * @param profile  The per-entry profile to validate. Must not be {@code null}.
+   * @param configId The parent config entry id, used in error messages.
+   *
+   * @throws AnalysisException If the profile requests an unimplemented step.
+   */
+  private static void validateEntryProfile(AnalysisProfile profile, String configId) {
+    for (PipelineStep step : profile.getStepsList()) {
+      if (step == PipelineStep.PIPELINE_STEP_UNSPECIFIED || step == PipelineStep.UNRECOGNIZED) {
+        continue;
+      }
+      if (!PipelineStepPolicy.isImplemented(step)) {
+        throw AnalysisException.unimplemented(
+            "chunk_embed_configs profile for config '" + configId + "' requests unimplemented step "
+                + step);
+      }
+    }
   }
 
   private static void validateSemanticChunking(ChunkEmbedConfigEntry entry) {

@@ -43,11 +43,13 @@ final class ClassicNerModel implements NerModel {
   private final String entityType;
   private final NameFinderME nameFinder;
   private final int priority;
+  private final String artifactHash;
 
-  ClassicNerModel(String entityType, NameFinderME nameFinder, int priority) {
+  ClassicNerModel(String entityType, NameFinderME nameFinder, int priority, String artifactHash) {
     this.entityType = Objects.requireNonNull(entityType, "entityType");
     this.nameFinder = Objects.requireNonNull(nameFinder, "nameFinder");
     this.priority = priority;
+    this.artifactHash = artifactHash == null ? "" : artifactHash;
   }
 
   @Override
@@ -58,6 +60,12 @@ final class ClassicNerModel implements NerModel {
   @Override
   public String backendId() {
     return BACKEND_ID;
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public String artifactHash() {
+    return artifactHash;
   }
 
   @Override

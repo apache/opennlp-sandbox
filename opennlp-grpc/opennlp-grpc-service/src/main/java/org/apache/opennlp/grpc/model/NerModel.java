@@ -45,6 +45,15 @@ public interface NerModel {
   String id();
 
   /**
+   * Returns the SHA-256 hash of this model's primary artifact, when known.
+   *
+   * @return The lowercase hex digest, or an empty string when unavailable.
+   */
+  default String artifactHash() {
+    return "";
+  }
+
+  /**
    * Returns the open identifier of the backend serving this model.
    *
    * @return The backend id, e.g. {@code "opennlp-me"}. Never {@code null}.

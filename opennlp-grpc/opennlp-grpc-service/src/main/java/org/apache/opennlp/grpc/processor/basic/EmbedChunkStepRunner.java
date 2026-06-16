@@ -25,6 +25,8 @@ import org.apache.opennlp.grpc.chunk.Centroids;
 import org.apache.opennlp.grpc.chunk.ChunkEmbedProcessor;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.profile.ProfileMerger;
+import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
@@ -46,9 +48,18 @@ import org.apache.opennlp.grpc.v1.ProcessingDiagnostic;
 final class EmbedChunkStepRunner {
 
   private final EmbeddingProvider embeddingProvider;
+  private final ClassicStepRunner classicSteps;
 
-  EmbedChunkStepRunner(EmbeddingProvider embeddingProvider) {
+  /**
+   * Creates a runner backed by the given embedding provider and classic step delegate.
+   *
+   * @param embeddingProvider The embedding provider. Must not be {@code null}.
+   * @param classicSteps      The classic step runner used for per-entry backbones. Must not be
+   *                          {@code null}.
+   */
+  EmbedChunkStepRunner(EmbeddingProvider embeddingProvider, ClassicStepRunner classicSteps) {
     this.embeddingProvider = Objects.requireNonNull(embeddingProvider, "embeddingProvider");
+    this.classicSteps = Objects.requireNonNull(classicSteps, "classicSteps");
   }
 
   /** Embeds every sentence in one batch and attaches the vectors to the document. */
@@ -88,25 +99,68 @@ final class EmbedChunkStepRunner {
         "Generated " + vectors.size() + " sentence embedding(s) with model '" + modelId + "'"));
   }
 
-  /** Builds one chunk+embedding group per requested config entry. */
+  /**
+   * Builds one chunk+embedding group per requested config entry, running any per-entry backbone
+   * steps first.
+   *
+   * @param rawText              The document text.
+   * @param document             The mutable document builder.
+   * @param request              The analyze request carrying chunk configs.
+   * @param requestProfile       The effective top-level analysis profile.
+   * @param includeProbabilities Whether to attach model probabilities to backbone steps.
+   * @param diagnostics          The diagnostic list to append to.
+   */
   void runChunkEmbedConfigs(
       String rawText,
       OpenNlpDocument.Builder document,
       AnalyzeDocumentRequest request,
+      AnalysisProfile requestProfile,
+      boolean includeProbabilities,
       List<ProcessingDiagnostic> diagnostics) {
-    if (document.getSentencesCount() == 0) {
+    if (document.getSentencesCount() == 0 && request.getChunkEmbedConfigsList().stream()
+        .noneMatch(entry -> entry.hasProfile())) {
       throw AnalysisException.failedPrecondition(
           "chunk_embed_configs requires sentence detection backbone");
     }
     for (ChunkEmbedConfigEntry entry : request.getChunkEmbedConfigsList()) {
-      if ("token".equals(entry.getChunking().getAlgorithm())) {
-        ensureTokenized(document);
-      }
+      ensureEntryBackbone(rawText, document, requestProfile, entry, includeProbabilities,
+          diagnostics);
       final ChunkEmbeddingGroup group =
           ChunkEmbedProcessor.buildGroup(rawText, document.build(), entry, embeddingProvider);
       document.addChunkEmbeddingGroups(group);
       diagnostics.add(ChunkEmbedProcessor.successDiagnostic(
           entry.getConfigId(), group.getChunksCount()));
+    }
+  }
+
+  /**
+   * Ensures the document backbone required by one chunk config entry is present, running classic
+   * steps on demand when the entry supplies its own profile.
+   */
+  private void ensureEntryBackbone(
+      String rawText,
+      OpenNlpDocument.Builder document,
+      AnalysisProfile requestProfile,
+      ChunkEmbedConfigEntry entry,
+      boolean includeProbabilities,
+      List<ProcessingDiagnostic> diagnostics) {
+    final AnalysisProfile effectiveProfile = entry.hasProfile()
+        ? ProfileMerger.merge(requestProfile, entry.getProfile())
+        : requestProfile;
+    final String algorithm = entry.hasChunking()
+        ? entry.getChunking().getAlgorithm()
+        : "sentence";
+
+    if (document.getSentencesCount() == 0) {
+      classicSteps.detectSentences(rawText, document, includeProbabilities, diagnostics);
+    }
+    if ("token".equals(algorithm) && !isTokenized(document)) {
+      classicSteps.tokenize(rawText, document, includeProbabilities, diagnostics);
+    }
+    if (entry.hasProfile()
+        && effectiveProfile.getStepsList().contains(PipelineStep.PIPELINE_STEP_TOKENIZE)
+        && !isTokenized(document)) {
+      classicSteps.tokenize(rawText, document, includeProbabilities, diagnostics);
     }
   }
 
@@ -147,15 +201,20 @@ final class EmbedChunkStepRunner {
     diagnostics.add(ChunkEmbedProcessor.successDiagnostic("profile-chunk", group.getChunksCount()));
   }
 
-  private static void ensureTokenized(OpenNlpDocument.Builder document) {
+  /** Reports whether every sentence in {@code document} already carries tokens. */
+  private static boolean isTokenized(OpenNlpDocument.Builder document) {
+    if (document.getSentencesCount() == 0) {
+      return false;
+    }
     for (AnnotatedSentence sentence : document.getSentencesList()) {
       if (sentence.getTokensCount() == 0) {
-        throw AnalysisException.failedPrecondition(
-            "token chunking requires " + PipelineStep.PIPELINE_STEP_TOKENIZE.name());
+        return false;
       }
     }
+    return true;
   }
 
+  /** Converts a primitive embedding vector to the boxed list used in protobuf builders. */
   private static List<Float> toFloatList(float[] vector) {
     final List<Float> values = new ArrayList<>(vector.length);
     for (float value : vector) {

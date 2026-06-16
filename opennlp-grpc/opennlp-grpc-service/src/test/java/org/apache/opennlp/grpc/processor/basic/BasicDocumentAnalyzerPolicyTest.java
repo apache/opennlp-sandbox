@@ -66,18 +66,36 @@ class BasicDocumentAnalyzerPolicyTest {
   }
 
   @Test
-  void rejectsUnsupportedPosTagFormatInsteadOfReturningWrongTagset() {
+  void acceptsNativePosTagFormatWithoutConversion() {
+    final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(Map.of());
+
+    final var response = analyzer.analyze(AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setRawText("The dog barked.").build())
+        .setProfile(AnalysisProfile.newBuilder()
+            .setProfileId("pos-ud")
+            .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+            .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+            .addSteps(PipelineStep.PIPELINE_STEP_POS_TAG)
+            .setPosTagFormat(POSTagFormat.POS_TAG_FORMAT_UD)
+            .build())
+        .build());
+
+    assertEquals("DET", response.getDocument().getSentences(0).getTokens(0).getPosTag());
+  }
+
+  @Test
+  void rejectsCustomPosTagFormat() {
     final BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(Map.of());
 
     final AnalysisException error = assertThrows(AnalysisException.class, () -> analyzer.analyze(
         AnalyzeDocumentRequest.newBuilder()
             .setDocument(OpenNlpDocument.newBuilder().setRawText("The dog barked.").build())
             .setProfile(AnalysisProfile.newBuilder()
-                .setProfileId("pos-ud")
+                .setProfileId("pos-custom")
                 .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
                 .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
                 .addSteps(PipelineStep.PIPELINE_STEP_POS_TAG)
-                .setPosTagFormat(POSTagFormat.POS_TAG_FORMAT_UD)
+                .setPosTagFormat(POSTagFormat.POS_TAG_FORMAT_CUSTOM)
                 .build())
             .build()));
 
