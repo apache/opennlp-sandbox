@@ -50,9 +50,9 @@ message OpenNlpDocument {
   // This is the shared base analysis, computed once and reused across every
   // requested chunk+embedding group.
   repeated AnnotatedSentence sentences = 5;
-  // Document-level aggregate statistics. NOTE: not populated by the v1 server; the
-  // message is reserved in the contract but no field is currently computed, so this
-  // is left unset.
+  // Document-level aggregate statistics over the analyzed text. Populated when tokenization
+  // has run; POS-based densities require PIPELINE_STEP_POS_TAG and unique_lemma_count requires
+  // PIPELINE_STEP_LEMMATIZE.
   optional DocumentAnalytics analytics = 6;
   // Opaque client-supplied metadata, echoed back verbatim. The server never
   // writes first-class results here; it is a passthrough lane only.
@@ -222,24 +222,23 @@ enum OffsetEncoding {
 // semantics are documented per field for forward compatibility; clients must not
 // rely on these being present in v1.
 message DocumentAnalytics {
-  // Intended: total token count across all sentences (raw count). Not populated.
+  // Total token count across all sentences.
   int32 total_tokens = 1;
-  // Intended: total number of detected sentences (raw count). Not populated.
+  // Total number of detected sentences.
   int32 total_sentences = 2;
-  // Intended: fraction of tokens that are nouns, in [0,1]. Not populated.
+  // Fraction of POS-tagged tokens that are nouns, in [0,1].
   float noun_density = 3;
-  // Intended: fraction of tokens that are verbs, in [0,1]. Not populated.
+  // Fraction of POS-tagged tokens that are verbs, in [0,1].
   float verb_density = 4;
-  // Intended: fraction of tokens that are adjectives, in [0,1]. Not populated.
+  // Fraction of POS-tagged tokens that are adjectives, in [0,1].
   float adjective_density = 5;
-  // Intended: fraction of tokens that are adverbs, in [0,1]. Not populated.
+  // Fraction of POS-tagged tokens that are adverbs, in [0,1].
   float adverb_density = 6;
-  // Intended: fraction of tokens that are content (vs. function) words, in [0,1].
-  // Not populated.
+  // Fraction of POS-tagged tokens that are content (vs. function) words, in [0,1].
   float content_word_ratio = 7;
-  // Intended: number of distinct lemmas (raw count). Not populated.
+  // Number of distinct lemmas when lemmatization ran.
   int32 unique_lemma_count = 8;
-  // Intended: lexical density (content words / total words), in [0,1]. Not populated.
+  // Lexical density (content words / POS-tagged tokens), in [0,1].
   float lexical_density = 9;
 }
 

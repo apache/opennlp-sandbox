@@ -30,7 +30,7 @@ Document-centric gRPC API for Apache OpenNLP inference. Design RFC: [docs/rfc/op
 - **opennlp-grpc-integration-tests** - black-box integration tests that launch the
   shaded server jar as a separate process and exercise it over the network, including
   a remote TEI embedding backend
-- **examples** - client samples (v1 Python client TBD)
+- **examples** - v1 client stub-generation scaffolding (Python sample TBD)
 
 ## Build
 
@@ -77,17 +77,29 @@ running from a regular classpath (e.g. via Maven), they are discovered from the
 > v1 note: this slice implements language detection (`PIPELINE_STEP_LANGUAGE_DETECT`,
 > filling `detected_language` with an ISO 639-3 code plus `language_confidence`),
 > sentence detection, tokenization, named entity recognition (`PIPELINE_STEP_NER`,
-> filling `AnnotatedSentence.entities` when name finder models are configured),
-> POS tagging (`PIPELINE_STEP_POS_TAG`, filling
-> `Token.pos_tag` with UD tags), lemmatization (`PIPELINE_STEP_LEMMATIZE`, filling
-> `Token.lemma`; requires the POS step), sentence-level embeddings, segmentation
-> chunking (`sentence` and `token` algorithms via `chunk_embed_configs` or
-> `PIPELINE_STEP_CHUNK`), probability reporting, `max_text_length`, offset encoding
-> selection, and the default `en-basic` model bundle. Semantic chunking
-> (`algorithm: semantic`) and CPU/GPU embeddings are supported when embedding models
-> are configured. Classic syntactic `ChunkerME`, parsing, non-default bundles beyond
-> `en-ner` when NER models are configured, and per-entry chunk profiles are rejected
-> explicitly instead of being silently ignored.
+> filling `AnnotatedSentence.entities`), POS tagging (`PIPELINE_STEP_POS_TAG`,
+> filling `Token.pos_tag` with the model's native tagset), lemmatization
+> (`PIPELINE_STEP_LEMMATIZE`, filling `Token.lemma`; requires POS), document
+> categorization (`PIPELINE_STEP_DOC_CATEGORIZE`, filling
+> `OpenNlpDocument.classification`), per-sentence sentiment
+> (`PIPELINE_STEP_SENTIMENT`, filling `AnnotatedSentence.sentiment_label` /
+> `sentiment_confidence`), constituency parsing (`PIPELINE_STEP_PARSE`, filling
+> structured and/or bracketed parse views), classic shallow chunking
+> (`PIPELINE_STEP_SYNTACTIC_CHUNK`, filling `AnnotatedSentence.syntactic_chunks`),
+> sentence and document embeddings (`PIPELINE_STEP_EMBED`), segmentation chunking
+> (`sentence`, `token`, and `semantic` algorithms via `chunk_embed_configs` or
+> `PIPELINE_STEP_CHUNK`), category-driven chunking via `category_chunk_configs`,
+> probability reporting, `max_text_length`, offset encoding selection, parse format
+> selection, and capability discovery through `GetServiceInfo` / `ListModelBundles`.
+> The default `en-basic` profile/bundle is always present; optional `en-ner`,
+> `en-doccat`, `en-sentiment`, `en-parse`, and `en-chunk` profiles/bundles are
+> advertised only when their operator-supplied models are configured. NER, syntactic
+> chunking, and parsing support multi-provider engine policy; embeddings support
+> ONNX CPU/CUDA plus optional TEI and OpenVINO/KServe backends through SPI modules.
+> `DocumentAnalytics`, `ModelDescriptor.hash`, `ModelBundleRef.component_models`,
+> `AnalysisProfile.pos_tag_format` (UD/Penn conversion), per-entry chunk profiles,
+> and `ChunkingSpec.clean_text` / `preserve_urls` are implemented on the v1 contract.
+> `POS_TAG_FORMAT_CUSTOM` remains unsupported.
 
 ### Name finder models (optional)
 
@@ -490,4 +502,9 @@ or below the configured `percentile_threshold`. Example:
 
 Primary RPC: `org.apache.opennlp.grpc.v1.OpenNlpAnalysisService/AnalyzeDocument`
 
-Send `raw_text`, receive an enriched `OpenNlpDocument` (sentences, tokens, diagnostics; chunk/embed groups as implemented).
+Send `raw_text` plus a named or inline `AnalysisProfile`, receive an enriched
+`OpenNlpDocument` with the annotations selected by the profile: sentences, tokens,
+entities, POS tags, lemmas, document classification, per-sentence sentiment, parse trees,
+syntactic chunks, embeddings, and chunk/embedding groups. `AnalyzeDocumentResponse`
+also includes per-step diagnostics; invalid requests fail with precise gRPC status codes
+instead of returning partial results.

@@ -102,9 +102,8 @@ message ChunkEmbedConfigEntry {
   string config_id = 1;
   // Optional friendly label, echoed onto the resulting group's result_set_name.
   optional string result_set_name = 2;
-  // Optional profile for chunking this entry. (Note: the v1 server drives profile
-  // resolution from the top-level request.profile / request.profile_id, not from
-  // per-entry profiles.)
+  // Optional profile merged over the top-level request profile to supply backbone
+  // steps (sentence detection, tokenization, ...) needed for this entry's chunking.
   optional AnalysisProfile profile = 3;
   // The chunking strategy for this entry. When omitted, the server applies a
   // sentence-based default for the entry.

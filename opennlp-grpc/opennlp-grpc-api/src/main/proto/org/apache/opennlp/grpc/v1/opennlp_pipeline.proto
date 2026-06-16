@@ -84,11 +84,9 @@ message ChunkingSpec {
   // Must satisfy 0 <= chunk_overlap < chunk_size (else INVALID_ARGUMENT). Defaults
   // to 0 (no overlap).
   int32 chunk_overlap = 3;
-  // Reserved-but-unimplemented: the v1 server does not clean text; this field is
-  // currently ignored.
   bool clean_text = 4;
-  // Reserved-but-unimplemented: the v1 server does not special-case URLs; this
-  // field is currently ignored.
+  // When clean_text is true, URL substrings are preserved verbatim while surrounding
+  // whitespace is normalized.
   bool preserve_urls = 5;
   // For semantic chunking (topic boundaries via embeddings). Its presence also
   // selects the "semantic" algorithm.
@@ -119,17 +117,17 @@ message SemanticChunkingConfig {
   optional string semantic_embedding_model_id = 5;
 }
 
-// Desired part-of-speech tagset for the response. NOTE: the v1 server does not
-// translate tagsets; POS_TAG always emits the tagger model's native tagset. Any
-// value other than UNSPECIFIED is rejected with UNIMPLEMENTED.
+// Desired part-of-speech tagset for the response. When the requested format differs
+// from the tagger model's native tagset, the server converts tags using OpenNLP's
+// Penn/UD mapping tables. POS_TAG_FORMAT_CUSTOM is not supported.
 enum POSTagFormat {
-  // Unset; the tagger emits its model's native tagset (the only supported behavior).
+  // Unset; the tagger emits its model's native tagset.
   POS_TAG_FORMAT_UNSPECIFIED = 0;
-  // Universal Dependencies tagset. Not implemented => UNIMPLEMENTED.
+  // Universal Dependencies tagset.
   POS_TAG_FORMAT_UD = 1;
-  // Penn Treebank tagset. Not implemented => UNIMPLEMENTED.
+  // Penn Treebank tagset.
   POS_TAG_FORMAT_PENN = 2;
-  // A custom tagset. Not implemented => UNIMPLEMENTED.
+  // A custom tagset. Not supported => UNIMPLEMENTED.
   POS_TAG_FORMAT_CUSTOM = 3;
 }
 
@@ -152,8 +150,8 @@ message AnalysisProfile {
   repeated PipelineStep steps = 2;
   // Selects a server-side model bundle to back the steps.
   ModelBundleRef model_bundle = 3;
-  // Requested POS tagset. Must be UNSPECIFIED (the v1 server only emits the model's
-  // native tagset); any other value => UNIMPLEMENTED.
+  // Requested POS tagset. UNSPECIFIED selects the model's native tagset; UD and PENN
+  // convert when needed. CUSTOM => UNIMPLEMENTED.
   POSTagFormat pos_tag_format = 4;
   // Entity types to keep from NER. Empty means "all entity types the configured
   // name finder(s) support". Blank values => INVALID_ARGUMENT; an unknown type =>
@@ -210,13 +208,12 @@ enum MergeStrategy {
 message ModelBundleRef {
   // The bundle id to use; blank selects the default bundle.
   string bundle_id = 1;
-  // Per-component model overrides. NOT IMPLEMENTED in v1: a non-empty list =>
-  // UNIMPLEMENTED.
+  // Per-component model pins by SHA-256 hash. Each entry must match a loaded artifact
+  // for the given component_type or the request fails with NOT_FOUND.
   repeated ComponentModelRef component_models = 2;
 }
 
 // Binds a pipeline component to a specific model artifact (by SHA-256 hash).
-// Reserved for per-component model selection, which is not implemented in v1.
 message ComponentModelRef {
   // Which pipeline component this override targets.
   ComponentType component_type = 1;
@@ -294,8 +291,8 @@ enum ParseFormat {
 
 // Describes one loaded model artifact within a bundle (see ListModelBundles).
 message ModelDescriptor {
-  // SHA-256 hash identifying the model artifact. (Not populated by the v1 server's
-  // bundle catalog; reserved for artifact-pinned selection.)
+  // SHA-256 hash identifying the model artifact. Populated in ListModelBundles for
+  // artifacts whose hash is known at load time.
   string hash = 1;
   // Human-readable model name.
   string name = 2;
