@@ -137,7 +137,7 @@ List of third-party dependencies grouped by their license type.
         * Jakarta Validation API (jakarta.validation:jakarta.validation-api:3.1.0 - https://beanvalidation.org)
         * jaxb-svg11 (org.plutext:jaxb-svg11:11.4.0 - https://github.com/plutext/JAXB-classes-for-SVG)
         * JCL 1.2 implemented over SLF4J (org.slf4j:jcl-over-slf4j:2.0.18 - http://www.slf4j.org)
-        * Jettison (org.codehaus.jettison:jettison:1.5.5 - https://github.com/jettison-json/jettison)
+        * Jettison (org.codehaus.jettison:jettison:1.5.6 - https://github.com/jettison-json/jettison)
         * Joda time (joda-time:joda-time:2.2 - http://joda-time.sourceforge.net)
         * json-path (com.jayway.jsonpath:json-path:2.9.0 - https://github.com/jayway/JsonPath)
         * JSpecify annotations (org.jspecify:jspecify:1.0.0 - http://jspecify.org/)
