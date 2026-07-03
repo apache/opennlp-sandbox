@@ -40,6 +40,7 @@ public final class PipelineStepPolicy {
       PipelineStep.PIPELINE_STEP_SENTIMENT,
       PipelineStep.PIPELINE_STEP_PARSE,
       PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK,
+      PipelineStep.PIPELINE_STEP_NORMALIZE,
       PipelineStep.PIPELINE_STEP_CHUNK,
       PipelineStep.PIPELINE_STEP_EMBED);
 

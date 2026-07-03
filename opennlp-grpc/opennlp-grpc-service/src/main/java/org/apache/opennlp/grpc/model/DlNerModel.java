@@ -103,7 +103,12 @@ final class DlNerModel implements NerModel, AutoCloseable {
       return List.of();
     }
     final String[] tokens = tokenTexts(sentence);
-    final Span[] spans = nameFinderDL.find(tokens);
+    // findInOriginal (OffsetMappingNameFinder) reports spans in the coordinates of the ORIGINAL
+    // joined input even when the finder normalizes internally (whitespace/dash folding shrinking
+    // a supplementary-plane dash, for example). find() reports normalized coordinates in that
+    // case, which would skew the token walk in documentSpan below. With normalization disabled
+    // the two are identical, so this is strictly safer.
+    final Span[] spans = nameFinderDL.findInOriginal(tokens);
     final List<NamedEntity> entities = new ArrayList<>(spans.length);
     for (Span span : spans) {
       // The entity type is the model's own label (PER, ORG, LOC, ...), normalized; the

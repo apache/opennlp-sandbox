@@ -29,7 +29,15 @@ import opennlp.tools.lemmatizer.LemmatizerME;
 import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.tokenize.TokenizerME;
+import opennlp.tools.tokenize.uax29.WordToken;
+import opennlp.tools.tokenize.uax29.WordTokenizer;
 import opennlp.tools.util.Span;
+import opennlp.tools.util.normalizer.AlignedText;
+import opennlp.tools.util.normalizer.Dimension;
+import opennlp.tools.util.normalizer.OffsetAwareNormalizer;
+import opennlp.tools.util.normalizer.Term;
+import opennlp.tools.util.normalizer.TermAnalyzer;
+import opennlp.tools.util.normalizer.TextNormalizer;
 import org.apache.opennlp.grpc.model.ChunkerRegistry;
 import org.apache.opennlp.grpc.model.DocCategorizerModel;
 import org.apache.opennlp.grpc.model.DocCategorizerRegistry;
@@ -45,6 +53,9 @@ import org.apache.opennlp.grpc.v1.CoordinateSpace;
 import org.apache.opennlp.grpc.v1.DocumentClassification;
 import org.apache.opennlp.grpc.v1.EnginePolicy;
 import org.apache.opennlp.grpc.v1.NamedEntity;
+import org.apache.opennlp.grpc.v1.NormalizationResult;
+import org.apache.opennlp.grpc.v1.NormalizationRung;
+import org.apache.opennlp.grpc.v1.NormalizationSpec;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.POSTagFormat;
 import org.apache.opennlp.grpc.v1.ParseFormat;
@@ -142,6 +153,125 @@ final class ClassicStepRunner {
     }
     diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_TOKENIZE,
         "Tokenized " + tokenCount + " token(s)"));
+  }
+
+  // The UAX #29 word tokenizer is stateless and thread-safe; one shared instance.
+  private static final WordTokenizer UAX29_TOKENIZER = new WordTokenizer();
+
+  /**
+   * Tokenizes each sentence with the rule-based Unicode UAX&#160;#29 word tokenizer
+   * (AnalysisProfile.tokenizer_engine = "uax29"). Needs no model, and additionally
+   * classifies each token ({@code Token.word_type}). No probabilities: the
+   * segmentation is deterministic, not statistical.
+   */
+  static void tokenizeUax29(
+      String rawText,
+      OpenNlpDocument.Builder document,
+      List<ProcessingDiagnostic> diagnostics) {
+    int tokenCount = 0;
+    for (int i = 0; i < document.getSentencesCount(); i++) {
+      final AnnotatedSentence sentence = document.getSentences(i);
+      final AnnotationSpan sentenceSpan = sentence.getSentenceSpan();
+      final String sentenceText = rawText.substring(sentenceSpan.getStart(), sentenceSpan.getEnd());
+      final AnnotatedSentence.Builder sentenceBuilder = sentence.toBuilder();
+      for (final WordToken word : UAX29_TOKENIZER.tokenizeTyped(sentenceText)) {
+        final AnnotationSpan.Builder span = AnnotationSpan.newBuilder()
+            .setStart(sentenceSpan.getStart() + word.span().getStart())
+            .setEnd(sentenceSpan.getStart() + word.span().getEnd())
+            .setSpace(CoordinateSpace.COORDINATE_SPACE_CHAR_DOCUMENT);
+        sentenceBuilder.addTokens(Token.newBuilder()
+            .setText(sentenceText.substring(word.span().getStart(), word.span().getEnd()))
+            .setAnnotationSpan(span)
+            .setWordType(word.type().name())
+            .build());
+        tokenCount++;
+      }
+      document.setSentences(i, sentenceBuilder.build());
+    }
+    diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_TOKENIZE,
+        "Tokenized " + tokenCount + " token(s) (uax29)"));
+  }
+
+  /**
+   * Runs PIPELINE_STEP_NORMALIZE: applies the requested rungs in the library's canonical
+   * order and records the normalized text in {@code OpenNlpDocument.normalization}. When
+   * every rung is offset-aware the result carries the full alignment (in UTF-16 units at
+   * this stage; the offset-encoding pass rescales); otherwise, which the validator only
+   * permits with {@code require_alignment = false}, the alignment is omitted and a
+   * diagnostic says so.
+   */
+  static void normalize(
+      String rawText,
+      NormalizationSpec spec,
+      OpenNlpDocument.Builder document,
+      List<ProcessingDiagnostic> diagnostics) {
+    final List<NormalizationRung> ordered = NormalizationRungs.canonicalOrder(spec.getRungsList());
+    final TextNormalizer.Builder builder = TextNormalizer.builder();
+    for (final NormalizationRung rung : ordered) {
+      NormalizationRungs.apply(builder, rung);
+    }
+    final NormalizationResult.Builder result = NormalizationResult.newBuilder();
+    for (final NormalizationRung rung : ordered) {
+      result.addAppliedRungs(rung.name());
+    }
+    if (NormalizationRungs.allOffsetAware(ordered)) {
+      final OffsetAwareNormalizer aligned = builder.buildAligned();
+      final AlignedText alignedText = aligned.normalizeAligned(rawText);
+      result.setNormalizedText(alignedText.normalizedString());
+      result.addAllAlignment(AlignmentRuns.from(alignedText.alignment()));
+    } else {
+      result.setNormalizedText(builder.build().normalize(rawText).toString());
+      diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_NORMALIZE,
+          "Offset-opaque rung(s) requested; normalized_text carries no alignment"));
+    }
+    document.setNormalization(result.build());
+    diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_NORMALIZE,
+        "Applied " + ordered.size() + " normalization rung(s)"));
+  }
+
+  /**
+   * Computes per-token normalization layers ({@code Token.term_layers}) for the
+   * character-level {@link Dimension}s named in AnalysisProfile.term_dimensions,
+   * using the library's cumulative Term ladder semantics. The validator has already
+   * checked the names.
+   */
+  static void computeTermLayers(
+      OpenNlpDocument.Builder document,
+      List<String> dimensionNames,
+      List<ProcessingDiagnostic> diagnostics) {
+    final List<Dimension> dimensions = new ArrayList<>(dimensionNames.size());
+    for (final String name : dimensionNames) {
+      dimensions.add(Dimension.valueOf(name));
+    }
+    final TermAnalyzer.Builder builder = TermAnalyzer.builder();
+    for (final Dimension dimension : dimensions) {
+      builder.transform(dimension, dimension.defaultNormalizer());
+    }
+    final TermAnalyzer analyzer = builder.build();
+    int tokenCount = 0;
+    for (int i = 0; i < document.getSentencesCount(); i++) {
+      final AnnotatedSentence sentence = document.getSentences(i);
+      if (sentence.getTokensCount() == 0) {
+        continue;
+      }
+      final String[] tokens = new String[sentence.getTokensCount()];
+      for (int t = 0; t < tokens.length; t++) {
+        tokens[t] = sentence.getTokens(t).getText();
+      }
+      final List<Term> terms = analyzer.analyze(tokens, new String[tokens.length]);
+      final AnnotatedSentence.Builder sentenceBuilder = sentence.toBuilder();
+      for (int t = 0; t < tokens.length; t++) {
+        final Token.Builder token = sentenceBuilder.getTokens(t).toBuilder();
+        for (final Dimension dimension : dimensions) {
+          token.putTermLayers(dimension.name(), terms.get(t).at(dimension));
+        }
+        sentenceBuilder.setTokens(t, token.build());
+        tokenCount++;
+      }
+      document.setSentences(i, sentenceBuilder.build());
+    }
+    diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_TOKENIZE,
+        "Computed " + dimensionNames.size() + " term layer(s) for " + tokenCount + " token(s)"));
   }
 
   /**

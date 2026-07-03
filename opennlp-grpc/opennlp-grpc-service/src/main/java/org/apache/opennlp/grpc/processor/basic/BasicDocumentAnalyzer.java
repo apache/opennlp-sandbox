@@ -162,6 +162,15 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_LANGUAGE_DETECT));
     }
 
+    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_NORMALIZE)) {
+      runStep(
+          PipelineStep.PIPELINE_STEP_NORMALIZE,
+          () -> ClassicStepRunner.normalize(
+              rawText, profile.getNormalization(), document, diagnostics));
+    } else {
+      diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_NORMALIZE));
+    }
+
     if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)) {
       runStep(
           PipelineStep.PIPELINE_STEP_SENTENCE_DETECT,
@@ -172,9 +181,21 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
 
     if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
       requireSentences(document, PipelineStep.PIPELINE_STEP_TOKENIZE);
+      final boolean uax29 = AnalysisRequestValidator.UAX29_TOKENIZER_ENGINE
+          .equals(profile.getTokenizerEngine());
       runStep(
           PipelineStep.PIPELINE_STEP_TOKENIZE,
-          () -> classicSteps.tokenize(rawText, document, includeProbabilities, diagnostics));
+          () -> {
+            if (uax29) {
+              ClassicStepRunner.tokenizeUax29(rawText, document, diagnostics);
+            } else {
+              classicSteps.tokenize(rawText, document, includeProbabilities, diagnostics);
+            }
+            if (!profile.getTermDimensionsList().isEmpty()) {
+              ClassicStepRunner.computeTermLayers(
+                  document, profile.getTermDimensionsList(), diagnostics);
+            }
+          });
     } else {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_TOKENIZE));
     }

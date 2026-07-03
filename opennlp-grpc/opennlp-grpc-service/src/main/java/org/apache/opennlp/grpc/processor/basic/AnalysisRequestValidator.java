@@ -42,6 +42,8 @@ import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
 import org.apache.opennlp.grpc.v1.ComponentModelRef;
 import org.apache.opennlp.grpc.v1.ComponentType;
 import org.apache.opennlp.grpc.v1.ModelBundleRef;
+import opennlp.tools.util.normalizer.Dimension;
+import org.apache.opennlp.grpc.v1.NormalizationRung;
 import org.apache.opennlp.grpc.v1.POSTagFormat;
 import org.apache.opennlp.grpc.v1.ParseFormat;
 import org.apache.opennlp.grpc.v1.PipelineStep;
@@ -103,6 +105,9 @@ final class AnalysisRequestValidator {
     validateParseRequest(profile);
     validateSyntacticChunkRequest(profile);
     validatePosTagFormat(profile);
+    validateNormalizeRequest(profile);
+    validateTokenizerEngine(profile);
+    validateTermDimensions(profile);
     validateEmbeddingRequest(request, profile);
     validateChunkEmbedConfigs(request);
     validateCategoryChunkConfigs(request, profile);
@@ -210,6 +215,80 @@ final class AnalysisRequestValidator {
       throw AnalysisException.invalidArgument(
           "Multiple sentiment models are configured; set " + SentimentRegistry.KEY_DEFAULT_ID
               + " to select one. Configured ids: " + sentimentRegistry.modelIds());
+    }
+  }
+
+  /** The rule-based UAX #29 engine id for AnalysisProfile.tokenizer_engine. */
+  static final String UAX29_TOKENIZER_ENGINE = "uax29";
+  private static final String MODEL_TOKENIZER_ENGINE = "model";
+
+  private void validateNormalizeRequest(AnalysisProfile profile) {
+    final boolean requested =
+        PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_NORMALIZE);
+    if (!requested) {
+      if (profile.hasNormalization()) {
+        throw AnalysisException.invalidArgument(
+            "AnalysisProfile.normalization requires PIPELINE_STEP_NORMALIZE in the profile steps");
+      }
+      return;
+    }
+    if (!profile.hasNormalization() || profile.getNormalization().getRungsCount() == 0) {
+      throw AnalysisException.invalidArgument(
+          "PIPELINE_STEP_NORMALIZE requires AnalysisProfile.normalization with at least one rung");
+    }
+    final var spec = profile.getNormalization();
+    final var rungs = NormalizationRungs.canonicalOrder(spec.getRungsList());
+    if (rungs.isEmpty()) {
+      throw AnalysisException.invalidArgument(
+          "AnalysisProfile.normalization.rungs contains no recognized rung");
+    }
+    if (rungs.contains(NormalizationRung.NORMALIZATION_RUNG_WHITESPACE)
+        && rungs.contains(NormalizationRung.NORMALIZATION_RUNG_WHITESPACE_PRESERVE_LINE_BREAKS)) {
+      throw AnalysisException.invalidArgument(
+          "WHITESPACE and WHITESPACE_PRESERVE_LINE_BREAKS are mutually exclusive rungs");
+    }
+    final boolean requireAlignment = !spec.hasRequireAlignment() || spec.getRequireAlignment();
+    if (requireAlignment && !NormalizationRungs.allOffsetAware(rungs)) {
+      throw AnalysisException.invalidArgument(
+          "The requested rungs include offset-opaque one(s) (NFC, NFKC, CASE_FOLD, ACCENT_FOLD, "
+              + "CONFUSABLE_FOLD), which cannot report an alignment; drop them or set "
+              + "normalization.require_alignment = false to accept normalized text without one");
+    }
+  }
+
+  private void validateTokenizerEngine(AnalysisProfile profile) {
+    final String engine = profile.getTokenizerEngine();
+    if (!engine.isEmpty()
+        && !MODEL_TOKENIZER_ENGINE.equals(engine)
+        && !UAX29_TOKENIZER_ENGINE.equals(engine)) {
+      throw AnalysisException.invalidArgument(
+          "Unknown tokenizer_engine '" + engine + "'; supported: \"model\", \"uax29\"");
+    }
+  }
+
+  private void validateTermDimensions(AnalysisProfile profile) {
+    if (profile.getTermDimensionsCount() == 0) {
+      return;
+    }
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
+      throw AnalysisException.invalidArgument(
+          "AnalysisProfile.term_dimensions requires PIPELINE_STEP_TOKENIZE in the profile steps");
+    }
+    for (final String name : profile.getTermDimensionsList()) {
+      final Dimension dimension;
+      try {
+        dimension = Dimension.valueOf(name);
+      } catch (IllegalArgumentException e) {
+        throw AnalysisException.invalidArgument(
+            "Unknown term dimension '" + name + "'; use the library's character-level "
+                + "Dimension names (e.g. NFC, CASE_FOLD, FULL_CASE_FOLD, EMOJI_FOLD)");
+      }
+      if (dimension == Dimension.ORIGINAL || dimension == Dimension.STEM
+          || dimension == Dimension.LEMMA) {
+        throw AnalysisException.invalidArgument(
+            "Term dimension '" + name + "' is not a character-level dimension; "
+                + "PIPELINE_STEP_LEMMATIZE owns lemmas");
+      }
     }
   }
 

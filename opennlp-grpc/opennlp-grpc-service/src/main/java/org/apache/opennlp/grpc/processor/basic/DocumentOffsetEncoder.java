@@ -47,6 +47,9 @@ final class DocumentOffsetEncoder {
    */
   static void apply(OpenNlpDocument.Builder document, String rawText, OffsetEncoding requested) {
     final OffsetMapper mapper = OffsetMapper.forText(rawText, requested);
+    if (document.hasNormalization() && document.getNormalization().getAlignmentCount() > 0) {
+      document.setNormalization(rescaleAlignment(document.getNormalization(), mapper, requested));
+    }
     for (int i = 0; i < document.getSentencesCount(); i++) {
       final AnnotatedSentence.Builder sentence = document.getSentences(i).toBuilder();
       sentence.setSentenceSpan(remap(sentence.getSentenceSpan(), mapper));
@@ -149,5 +152,33 @@ final class DocumentOffsetEncoder {
         .setStart(mapper.toTarget(span.getStart()))
         .setEnd(mapper.toTarget(span.getEnd()))
         .build();
+  }
+
+  // Rescales NormalizationResult alignment runs from Java UTF-16 units to the requested
+  // encoding. Run boundaries are exact span boundaries on both texts, so each side converts
+  // through its own OffsetMapper by differencing cumulative positions.
+  private static org.apache.opennlp.grpc.v1.NormalizationResult rescaleAlignment(
+      org.apache.opennlp.grpc.v1.NormalizationResult normalization,
+      OffsetMapper originalMapper,
+      OffsetEncoding requested) {
+    final OffsetMapper normalizedMapper =
+        OffsetMapper.forText(normalization.getNormalizedText(), requested);
+    final org.apache.opennlp.grpc.v1.NormalizationResult.Builder rescaled =
+        normalization.toBuilder().clearAlignment();
+    int originalPos = 0;
+    int normalizedPos = 0;
+    for (final org.apache.opennlp.grpc.v1.AlignmentRun run : normalization.getAlignmentList()) {
+      final int originalEnd = originalPos + run.getOriginalUnits();
+      final int normalizedEnd = normalizedPos + run.getNormalizedUnits();
+      rescaled.addAlignment(run.toBuilder()
+          .setOriginalUnits(
+              originalMapper.toTarget(originalEnd) - originalMapper.toTarget(originalPos))
+          .setNormalizedUnits(
+              normalizedMapper.toTarget(normalizedEnd) - normalizedMapper.toTarget(normalizedPos))
+          .build());
+      originalPos = originalEnd;
+      normalizedPos = normalizedEnd;
+    }
+    return rescaled.build();
   }
 }

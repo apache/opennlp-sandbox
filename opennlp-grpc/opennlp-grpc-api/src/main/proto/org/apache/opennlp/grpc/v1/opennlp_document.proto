@@ -79,6 +79,10 @@ message OpenNlpDocument {
   // representative vector for the whole document. Set only when PIPELINE_STEP_EMBED produced
   // sentence embeddings.
   repeated EmbeddingResult document_centroids = 12;
+  // Result of PIPELINE_STEP_NORMALIZE: the normalized text together with the
+  // alignment that maps spans between it and raw_text. Unset when the step did
+  // not run.
+  optional NormalizationResult normalization = 13;
 }
 
 // One detected sentence and every annotation attached to it. Populated
@@ -127,6 +131,15 @@ message Token {
   // Model confidence in pos_tag, in [0,1]. Populated only when the request set
   // AnalysisOptions.include_probabilities = true.
   optional float pos_probability = 5;
+  // UAX #29 word-token class (e.g. "ALPHANUMERIC", "NUMERIC", "IDEOGRAPHIC",
+  // "EMOJI"), populated only when the rule-based uax29 tokenizer engine ran
+  // (AnalysisProfile.tokenizer_engine = "uax29").
+  optional string word_type = 6;
+  // Per-token normalization layers, keyed by the library's character-level
+  // Dimension name (e.g. "FULL_CASE_FOLD" -> the fully case-folded form).
+  // Populated only for the dimensions the request listed in
+  // AnalysisProfile.term_dimensions; empty otherwise.
+  map<string, string> term_layers = 7;
 }
 
 // A named entity recognized by PIPELINE_STEP_NER.
@@ -149,6 +162,9 @@ message NamedEntity {
   // it lists every provider that found this entity, so provenance and cross-provider
   // agreement are explicit. Empty only on responses from servers that predate this field.
   repeated EntitySource sources = 5;
+  // Reserved for entity resolution payloads (geocoding: coordinates, gazetteer
+  // id, containment hierarchy; and other per-entity enrichment).
+  reserved 10 to 19;
 }
 
 // Provenance for a NamedEntity: one recognizer/engine that produced it. Under a
@@ -412,6 +428,31 @@ enum EmbeddingGranularity {
 }
 
 // Whole-document categorization result from PIPELINE_STEP_DOC_CATEGORIZE.
+// Result of PIPELINE_STEP_NORMALIZE. The alignment lets a client map any span
+// between raw_text and normalized_text without re-implementing the fold logic:
+// runs are contiguous and ordered, covering both texts exactly.
+message NormalizationResult {
+  // The normalized text produced by the requested rungs, applied in order.
+  string normalized_text = 1;
+  // Ordered edit runs from raw_text to normalized_text. The units of both sides
+  // are the response's OffsetEncoding (UTF-8 bytes by default), converted by the
+  // server, so clients consume them in the same unit as every AnnotationSpan.
+  repeated AlignmentRun alignment = 2;
+  // The rungs that were applied, in application order, using
+  // NormalizationRung enum value names.
+  repeated string applied_rungs = 3;
+}
+
+// One run of a text alignment: `original_units` units of raw_text correspond to
+// `normalized_units` units of normalized_text. `equal` runs are copied through
+// unchanged; replace runs map as one block (a position inside one maps to the
+// whole block, matching the library's Alignment semantics).
+message AlignmentRun {
+  int32 original_units = 1;
+  int32 normalized_units = 2;
+  bool equal = 3;
+}
+
 message DocumentClassification {
   // The winning category: argmax over category_scores, as decided by the categorizer model.
   string best_category = 1;

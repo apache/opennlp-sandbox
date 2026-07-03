@@ -67,6 +67,11 @@ enum PipelineStep {
   // tokens into base phrases (NP, VP, ...) in AnnotatedSentence.syntactic_chunks. Distinct
   // from CHUNK (which is segmentation for embedding). Requires POS_TAG (and thus TOKENIZE).
   PIPELINE_STEP_SYNTACTIC_CHUNK = 12;
+  // Offset-aware text normalization. No preconditions; runs on raw text and
+  // populates OpenNlpDocument.normalization. Configure the rungs with
+  // AnalysisProfile.normalization; requesting the step without a spec =>
+  // INVALID_ARGUMENT.
+  PIPELINE_STEP_NORMALIZE = 13;
 }
 
 // Configuration for a chunking strategy (used when the caller does not
@@ -167,6 +172,56 @@ message AnalysisProfile {
   // one. Unlike span producers, a union returns one parse tree per engine rather than a
   // merged tree (see AnnotatedSentence.parse_trees); MergeStrategy is ignored. See EnginePolicy.
   EnginePolicy parse_engine_policy = 8;
+  // Rungs for PIPELINE_STEP_NORMALIZE. Required when that step is requested.
+  NormalizationSpec normalization = 9;
+  // Tokenizer engine for PIPELINE_STEP_TOKENIZE. Unset or "model" selects the
+  // bundle's TokenizerME (the previous behavior). "uax29" selects the rule-based
+  // Unicode UAX #29 word tokenizer, which needs no model and additionally
+  // populates Token.word_type. Any other value => INVALID_ARGUMENT.
+  optional string tokenizer_engine = 10;
+  // Character-level normalization layers to compute per token into
+  // Token.term_layers, named by the library's Dimension enum (e.g. "NFC",
+  // "CASE_FOLD", "FULL_CASE_FOLD", "ACCENT_FOLD", "EMOJI_FOLD",
+  // "CONFUSABLE_FOLD"). Token-level dimensions ("STEM", "LEMMA") =>
+  // INVALID_ARGUMENT (PIPELINE_STEP_LEMMATIZE owns lemmas); an unknown name =>
+  // INVALID_ARGUMENT. Requires TOKENIZE.
+  repeated string term_dimensions = 11;
+}
+
+// Configuration for PIPELINE_STEP_NORMALIZE: which rungs run, in the order the
+// server applies them (the library's canonical builder order, not list order).
+message NormalizationSpec {
+  // The rungs to apply. Empty while the step is requested => INVALID_ARGUMENT.
+  repeated NormalizationRung rungs = 1;
+  // When true (the default), every requested rung must be offset-aware so the
+  // response carries a complete alignment; requesting an offset-opaque rung
+  // (NFC, NFKC, CASE_FOLD, ACCENT_FOLD, CONFUSABLE_FOLD) => INVALID_ARGUMENT.
+  // When false, opaque rungs are permitted: the response carries
+  // normalized_text without alignment runs, plus a diagnostic.
+  optional bool require_alignment = 2;
+}
+
+// A normalization rung of the library's TextNormalizer builder. The offset-aware
+// subset (everything except NFC, NFKC, CASE_FOLD, ACCENT_FOLD, CONFUSABLE_FOLD)
+// composes into an aligned pipeline that reports exact span mappings.
+enum NormalizationRung {
+  NORMALIZATION_RUNG_UNSPECIFIED = 0;
+  NORMALIZATION_RUNG_STRIP_INVISIBLE = 1;
+  NORMALIZATION_RUNG_NFC = 2;
+  NORMALIZATION_RUNG_NFKC = 3;
+  NORMALIZATION_RUNG_WHITESPACE = 4;
+  NORMALIZATION_RUNG_WHITESPACE_PRESERVE_LINE_BREAKS = 5;
+  NORMALIZATION_RUNG_QUOTES = 6;
+  NORMALIZATION_RUNG_DASHES = 7;
+  NORMALIZATION_RUNG_DIGITS = 8;
+  NORMALIZATION_RUNG_ELLIPSIS = 9;
+  NORMALIZATION_RUNG_BULLETS = 10;
+  NORMALIZATION_RUNG_CASE_FOLD = 11;
+  NORMALIZATION_RUNG_FULL_CASE_FOLD = 12;
+  NORMALIZATION_RUNG_ACCENT_FOLD = 13;
+  NORMALIZATION_RUNG_EMOJI_TO_EMOTICON = 14;
+  NORMALIZATION_RUNG_EMOTICON_TO_EMOJI = 15;
+  NORMALIZATION_RUNG_CONFUSABLE_FOLD = 16;
 }
 
 // Selects which engine(s) run for a span-producing capability (NER, chunking) when a
