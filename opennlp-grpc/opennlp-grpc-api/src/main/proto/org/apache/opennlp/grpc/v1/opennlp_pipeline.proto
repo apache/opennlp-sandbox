@@ -186,6 +186,13 @@ message AnalysisProfile {
   // INVALID_ARGUMENT (PIPELINE_STEP_LEMMATIZE owns lemmas); an unknown name =>
   // INVALID_ARGUMENT. Requires TOKENIZE.
   repeated string term_dimensions = 11;
+  // A per-language normalization profile (the library's NormalizationProfiles
+  // registry, e.g. "en", "de"): computes Token.term_layers with the profile's
+  // matching analyzer, including its language-appropriate stemmer layer. Requires
+  // TOKENIZE. Mutually exclusive with term_dimensions => INVALID_ARGUMENT; a
+  // language with no registered profile => NOT_FOUND. The analyzer is built per
+  // request, so stateful stemmers are never shared across threads.
+  optional string term_profile = 12;
 }
 
 // Configuration for PIPELINE_STEP_NORMALIZE: which rungs run, in the order the

@@ -34,6 +34,8 @@ import opennlp.tools.tokenize.uax29.WordTokenizer;
 import opennlp.tools.util.Span;
 import opennlp.tools.util.normalizer.AlignedText;
 import opennlp.tools.util.normalizer.Dimension;
+import opennlp.tools.util.normalizer.NormalizationProfile;
+import opennlp.tools.util.normalizer.NormalizationProfiles;
 import opennlp.tools.util.normalizer.OffsetAwareNormalizer;
 import opennlp.tools.util.normalizer.Term;
 import opennlp.tools.util.normalizer.TermAnalyzer;
@@ -272,6 +274,48 @@ final class ClassicStepRunner {
     }
     diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_TOKENIZE,
         "Computed " + dimensionNames.size() + " term layer(s) for " + tokenCount + " token(s)"));
+  }
+
+  /**
+   * Computes Token.term_layers with a per-language {@link NormalizationProfile} matching
+   * analyzer (AnalysisProfile.term_profile). The analyzer is built per request: the
+   * profile's stemmer layer is stateful (Snowball), so instances must not be shared
+   * across threads. The validator has already confirmed the profile exists.
+   */
+  static void computeProfileTermLayers(
+      OpenNlpDocument.Builder document,
+      String language,
+      List<ProcessingDiagnostic> diagnostics) {
+    final NormalizationProfile profile = NormalizationProfiles.forLanguage(language)
+        .orElseThrow(() -> AnalysisException.notFound(
+            "No normalization profile registered for language '" + language + "'"));
+    final TermAnalyzer analyzer = profile.matchingAnalyzer();
+    final List<Dimension> dimensions = analyzer.dimensions();
+    int tokenCount = 0;
+    for (int i = 0; i < document.getSentencesCount(); i++) {
+      final AnnotatedSentence sentence = document.getSentences(i);
+      if (sentence.getTokensCount() == 0) {
+        continue;
+      }
+      final String[] tokens = new String[sentence.getTokensCount()];
+      for (int t = 0; t < tokens.length; t++) {
+        tokens[t] = sentence.getTokens(t).getText();
+      }
+      final List<Term> terms = analyzer.analyze(tokens, new String[tokens.length]);
+      final AnnotatedSentence.Builder sentenceBuilder = sentence.toBuilder();
+      for (int t = 0; t < tokens.length; t++) {
+        final Token.Builder token = sentenceBuilder.getTokens(t).toBuilder();
+        for (final Dimension dimension : dimensions) {
+          token.putTermLayers(dimension.name(), terms.get(t).at(dimension));
+        }
+        sentenceBuilder.setTokens(t, token.build());
+        tokenCount++;
+      }
+      document.setSentences(i, sentenceBuilder.build());
+    }
+    diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_TOKENIZE,
+        "Computed profile '" + language + "' term layers (" + dimensions.size()
+            + " dimension(s)) for " + tokenCount + " token(s)"));
   }
 
   /**

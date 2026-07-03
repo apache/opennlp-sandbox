@@ -108,6 +108,7 @@ final class AnalysisRequestValidator {
     validateNormalizeRequest(profile);
     validateTokenizerEngine(profile);
     validateTermDimensions(profile);
+    validateTermProfile(profile);
     validateEmbeddingRequest(request, profile);
     validateChunkEmbedConfigs(request);
     validateCategoryChunkConfigs(request, profile);
@@ -289,6 +290,26 @@ final class AnalysisRequestValidator {
             "Term dimension '" + name + "' is not a character-level dimension; "
                 + "PIPELINE_STEP_LEMMATIZE owns lemmas");
       }
+    }
+  }
+
+  private void validateTermProfile(AnalysisProfile profile) {
+    if (!profile.hasTermProfile()) {
+      return;
+    }
+    if (profile.getTermDimensionsCount() > 0) {
+      throw AnalysisException.invalidArgument(
+          "term_profile and term_dimensions are mutually exclusive; the profile already "
+              + "defines its dimension ladder");
+    }
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
+      throw AnalysisException.invalidArgument(
+          "AnalysisProfile.term_profile requires PIPELINE_STEP_TOKENIZE in the profile steps");
+    }
+    if (opennlp.tools.util.normalizer.NormalizationProfiles
+        .forLanguage(profile.getTermProfile()).isEmpty()) {
+      throw AnalysisException.notFound(
+          "No normalization profile registered for language '" + profile.getTermProfile() + "'");
     }
   }
 

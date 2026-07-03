@@ -183,4 +183,49 @@ class ParityStepsTest {
     assertEquals(document.getNormalization().getNormalizedText()
         .getBytes(java.nio.charset.StandardCharsets.UTF_8).length, normalized);
   }
+
+  // ---------- Per-language profile term layers ----------
+
+  @Test
+  void termProfileComputesTheLanguageLadderPerToken() {
+    final String rawText = "Running quickly";
+    final OpenNlpDocument.Builder document = documentWithSentence(rawText);
+    ClassicStepRunner.tokenizeUax29(rawText, document, new ArrayList<>());
+    ClassicStepRunner.computeProfileTermLayers(document, "en", new ArrayList<>());
+    final Token token = document.getSentences(0).getTokens(0);
+    // The English profile's ladder includes a stem layer; its value for "Running" is the
+    // Snowball stem of the case-folded form.
+    assertTrue(token.containsTermLayers("STEM"), "profile ladder should include STEM");
+    assertEquals("run", token.getTermLayersOrThrow("STEM"));
+  }
+
+  @Test
+  void termProfileForUnknownLanguageFailsLoud() {
+    final OpenNlpDocument.Builder document = documentWithSentence("text");
+    ClassicStepRunner.tokenizeUax29("text", document, new ArrayList<>());
+    final org.apache.opennlp.grpc.processor.AnalysisException e =
+        org.junit.jupiter.api.Assertions.assertThrows(
+            org.apache.opennlp.grpc.processor.AnalysisException.class,
+            () -> ClassicStepRunner.computeProfileTermLayers(document, "zz", new ArrayList<>()));
+    assertTrue(e.getMessage().contains("zz"));
+  }
+
+  // ---------- Rung mapping invariants ----------
+
+  @Test
+  void everyDeclaredRungMapsIntoTheBuilder() {
+    // Mirrors the pipeline-step policy test: a rung added to the proto without a builder
+    // mapping must fail here, not at request time.
+    for (final NormalizationRung rung : NormalizationRung.values()) {
+      if (rung == NormalizationRung.NORMALIZATION_RUNG_UNSPECIFIED
+          || rung == NormalizationRung.UNRECOGNIZED) {
+        continue;
+      }
+      final TextNormalizer.Builder builder = TextNormalizer.builder();
+      NormalizationRungs.apply(builder, rung); // must not throw
+      if (!NormalizationRungs.OFFSET_OPAQUE.contains(rung)) {
+        builder.buildAligned(); // offset-aware claims must hold against the library
+      }
+    }
+  }
 }

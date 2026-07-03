@@ -195,6 +195,10 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
               ClassicStepRunner.computeTermLayers(
                   document, profile.getTermDimensionsList(), diagnostics);
             }
+            if (profile.hasTermProfile()) {
+              ClassicStepRunner.computeProfileTermLayers(
+                  document, profile.getTermProfile(), diagnostics);
+            }
           });
     } else {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_TOKENIZE));
