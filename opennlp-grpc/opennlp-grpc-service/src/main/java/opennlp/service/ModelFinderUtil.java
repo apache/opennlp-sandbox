@@ -25,10 +25,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import opennlp.service.classpath.DirectoryModelFinder;
 import opennlp.tools.models.ClassPathModel;
 import opennlp.tools.models.ClassPathModelEntry;
 import opennlp.tools.models.ClassPathModelLoader;
+import opennlp.tools.models.dir.DirectoryModelFinder;
 
 /**
  * Utility class for scanning and loading models.
