@@ -27,6 +27,8 @@ Document-centric gRPC API for Apache OpenNLP inference. Design RFC: [docs/rfc/op
   Embeddings Inference (TEI) gRPC endpoints
 - **opennlp-grpc-backend-openvino** - optional remote embedding backend for OpenVINO
   Model Server and other KServe v2 compatible inference servers
+- **opennlp-grpc-backend-static** - optional in-process embedding backend serving static
+  (non-contextual) embedding tables through the `opennlp-embeddings` extension module
 - **opennlp-grpc-integration-tests** - black-box integration tests that launch the
   shaded server jar as a separate process and exercise it over the network, including
   a remote TEI embedding backend
@@ -100,6 +102,20 @@ running from a regular classpath (e.g. via Maven), they are discovered from the
 > `AnalysisProfile.pos_tag_format` (UD/Penn conversion), per-entry chunk profiles,
 > and `ChunkingSpec.clean_text` / `preserve_urls` are implemented on the v1 contract.
 > `POS_TAG_FORMAT_CUSTOM` remains unsupported.
+
+### Unicode text analysis (model-free parity surfaces)
+
+These request surfaces expose the `opennlp-tools` Unicode stack (offset-aware
+normalization, UAX #29 word segmentation, per-token normalization ladders) on the
+wire. They run entirely rule-based and need no operator-supplied models.
+
+| Feature | Request surface | Response surface | Notes |
+| ------- | --------------- | ---------------- | ----- |
+| Offset-aware normalization | `PIPELINE_STEP_NORMALIZE` + `AnalysisProfile.normalization` (`NormalizationSpec.rungs`, `require_alignment`) | `OpenNlpDocument.normalization`: `normalized_text`, `applied_rungs`, `alignment` runs | Rungs apply in the library's canonical order. Offset-opaque rungs (NFC, NFKC, CASE_FOLD, ACCENT_FOLD, CONFUSABLE_FOLD) are rejected unless `require_alignment = false`, which returns `normalized_text` without runs plus a diagnostic. `WHITESPACE` and `WHITESPACE_PRESERVE_LINE_BREAKS` are mutually exclusive. |
+| Alignment run rescale | `AnalysisOptions.offset_encoding` | `AlignmentRun.original_units` / `normalized_units` | Alignment runs are emitted in the response's `OffsetEncoding`: UTF-8 bytes by default, UTF-16 code units on request, matching every other span in the response. |
+| UAX #29 word tokenizer | `AnalysisProfile.tokenizer_engine = "uax29"` (`"model"` selects the default statistical tokenizer) | `Token.word_type` (`ALPHANUMERIC`, `NUMERIC`, `EMOJI`, ...) | Deterministic Unicode segmentation with token classification; no model and no probabilities. Any other engine value fails with `INVALID_ARGUMENT`. |
+| Per-token term layers | `AnalysisProfile.term_dimensions` (library `Dimension` names, e.g. `NFC`, `CASE_FOLD`, `FULL_CASE_FOLD`, `EMOJI_FOLD`) | `Token.term_layers` map | Requires `PIPELINE_STEP_TOKENIZE`. Character-level dimensions only: `ORIGINAL`, `STEM` and `LEMMA` are rejected (`PIPELINE_STEP_LEMMATIZE` owns lemmas). |
+| Per-language term profile | `AnalysisProfile.term_profile` (registry language, e.g. `"en"`, `"de"`) | `Token.term_layers` map carrying the profile's full ladder (including its `STEM` layer) | Requires `PIPELINE_STEP_TOKENIZE`. Mutually exclusive with `term_dimensions`; an unregistered language fails with `NOT_FOUND`. |
 
 ### Name finder models (optional)
 
@@ -347,6 +363,16 @@ Request embeddings by adding `PIPELINE_STEP_EMBED` to the analysis profile and
 setting `options.embedding_model_id` (or rely on `default_id` when only
 one model is registered). Uses ONNX Runtime via `opennlp-dl` on CPU by default.
 
+For high-throughput embedding of pre-segmented texts (RAG chunk pipelines and the
+like) the `EmbedText` bidi streaming RPC bypasses the document pipeline entirely:
+the client streams texts, the server streams one vector per text back in request
+order, one embedding model per stream (fixed by the first message). No sentence
+detection, no diagnostics; each message's text embeds as one unit. Response writes
+are gated on transport readiness with a bounded elastic window, so a client that
+stops reading gets its stream closed with RESOURCE_EXHAUSTED instead of growing the
+server heap. Throughput against the unary path is measured in
+[benchmarks/embedding-throughput](benchmarks/embedding-throughput/README.md).
+
 The input text is normalized with the full BERT basic tokenization (control
 character cleanup, CJK isolation, punctuation splitting and - for uncased
 models - lower casing with accent stripping) before wordpiece encoding.
@@ -383,6 +409,40 @@ is only valid with the `cuda` backend. Requires an NVIDIA CUDA runtime on the ho
 Backend selection is purely a server deployment concern: clients request embeddings by
 model id and never indicate a backend. The backend serving each model is reported to
 clients through `ModelDescriptor.backend_id` in `GetAvailableModels`.
+
+#### In-process backend: static embedding tables (optional)
+
+The `opennlp-grpc-backend-static` module serves static (non-contextual) embedding
+tables through the `opennlp-embeddings` extension module: a per-token vector table
+plus WordPiece tokenization, distilled from a sentence-transformer. Embedding is
+tokenize, gather, mean-pool, and normalize; there is no model forward pass and no
+native runtime, so the backend runs anywhere the server's JVM runs and one immutable,
+thread-safe model instance serves every request thread. Put the module jar (and
+`opennlp-embeddings`) on the server classpath and configure one of two forms.
+
+The directory form points at a published model directory and reads the tokenizer and
+pooling switches from the model's own `config.json` and `tokenizer_config.json`:
+
+```ini
+model.embedder.potion.static.dir=/models/my-static-model
+```
+
+The explicit form names the files and switches directly, for models laid out
+differently:
+
+```ini
+model.embedder.potion.static.safetensors.path=/models/table.safetensors
+model.embedder.potion.static.vocab.path=/models/vocab.txt
+# Optional, with these defaults:
+model.embedder.potion.static.lowercase=true
+model.embedder.potion.static.normalize=true
+```
+
+Mixing the two forms for one model id fails at startup, as does a `lowercase` or
+`normalize` key next to the directory form (the directory's own configuration governs
+there). Models are reported with `backend_id` `static`. Throughput and the trade-off
+against remote transformer backends are measured in
+[benchmarks/embedding-throughput](benchmarks/embedding-throughput/README.md).
 
 #### Remote backends: HuggingFace TEI (optional)
 

@@ -43,6 +43,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -143,6 +144,21 @@ class TeiEmbeddingProviderTest {
     try {
       assertFalse(provider.isAvailable());
       assertTrue(provider.registeredModelIds().isEmpty());
+    } finally {
+      provider.close();
+    }
+  }
+
+  @Test
+  void foreignDefaultIdIsIgnoredNotRejected() {
+    // model.embedder.default_id is shared across engines; an id served by another engine
+    // must not fail this engine's startup. The composite validates the id against the
+    // union of engines, so a typo still fails loud there.
+    final TeiEmbeddingProvider provider = new TeiEmbeddingProvider(
+        Map.of("model.embedder.default_id", "served-by-another-engine"));
+    try {
+      assertFalse(provider.isAvailable());
+      assertNull(provider.resolveModelId(null));
     } finally {
       provider.close();
     }

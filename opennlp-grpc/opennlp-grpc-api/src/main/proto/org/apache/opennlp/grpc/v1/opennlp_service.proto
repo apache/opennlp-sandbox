@@ -48,6 +48,14 @@ service OpenNlpAnalysisService {
   rpc GetServiceInfo(GetServiceInfoRequest) returns (GetServiceInfoResponse);
   // Lists the model bundles loaded on the server and their aggregate capabilities.
   rpc ListModelBundles(ListModelBundlesRequest) returns (ListModelBundlesResponse);
+  // High-throughput embedding: the client streams texts, the server streams one vector
+  // per text back, in request order. Bypasses the document pipeline entirely: no sentence
+  // detection, no chunking, no diagnostics; each message's text embeds as one unit (the
+  // caller decides segmentation). One stream uses one embedding model, fixed by the first
+  // message. Errors (unknown or mid-stream-switched model id, blank text) terminate the
+  // stream with a status: INVALID_ARGUMENT (blank text, model switch), NOT_FOUND (unknown
+  // model id, or no model id when several models are configured and none is the default).
+  rpc EmbedText(stream EmbedTextRequest) returns (stream EmbedTextResponse);
 }
 
 // Input to AnalyzeDocument. Supplies the document, selects which analysis to run
@@ -170,4 +178,26 @@ message ListModelBundlesRequest {}
 message ListModelBundlesResponse {
   // One entry per model bundle loaded on the server.
   repeated ModelBundleInfo bundles = 1;
+}
+
+// One text to embed on an EmbedText stream.
+message EmbedTextRequest {
+  // Caller-chosen correlation number, echoed back verbatim on the matching response.
+  // Responses arrive in request order regardless; this exists so pipelined callers can
+  // match responses without counting.
+  uint64 sequence = 1;
+  // The text to embed as one unit. Must not be blank (else INVALID_ARGUMENT).
+  string text = 2;
+  // The registered embedding model for this stream. Resolved on the first message
+  // (optional there when exactly one model is configured or a default_id is set); later
+  // messages may repeat it but must not name a different model (else INVALID_ARGUMENT).
+  optional string model_id = 3;
+}
+
+// One embedding vector on an EmbedText stream, in request order.
+message EmbedTextResponse {
+  // The sequence number of the request this vector answers.
+  uint64 sequence = 1;
+  // The dense embedding vector; length matches the model's embedding dimension.
+  repeated float vector = 2;
 }

@@ -44,10 +44,12 @@ import opennlp.tools.postag.POSModel;
 import opennlp.tools.postag.POSTagFormat;
 import opennlp.tools.postag.POSTagFormatMapper;
 import opennlp.tools.postag.POSTaggerME;
+import opennlp.tools.sentdetect.SentenceDetector;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.tokenize.TokenizerModel;
+import opennlp.tools.util.Span;
 import opennlp.tools.util.model.BaseModel;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.embedding.EmbeddingProviderFactory;
@@ -97,12 +99,15 @@ public final class ModelBundleCache {
 
   private final Map<String, ModelBundleInfo> bundles;
   private final ModelArtifactRegistry artifactRegistry;
-  private final SentenceDetectorME sentenceDetector;
-  private final TokenizerME tokenizer;
+  // The *Model artifacts are immutable and shared; the *ME decoders keep per-call state
+  // (probabilities of the last run, beam search buffers) and are NOT safe for concurrent
+  // use, so every server thread decodes with its own instance over the shared model.
   private final POSModel posModel;
-  private final POSTaggerME posTagger;
-  private final LemmatizerME lemmatizer;
-  private final LanguageDetectorME languageDetector;
+  private final ThreadLocal<SentenceDetectorME> sentenceDetector;
+  private final ThreadLocal<TokenizerME> tokenizer;
+  private final ThreadLocal<POSTaggerME> posTagger;
+  private final ThreadLocal<LemmatizerME> lemmatizer;
+  private final ThreadLocal<LanguageDetectorME> languageDetector;
   private final EmbeddingProvider embeddingProvider;
   private final NameFinderRegistry nameFinderRegistry;
   private final DocCategorizerRegistry docCategorizerRegistry;
@@ -142,12 +147,17 @@ public final class ModelBundleCache {
         KEY_LEMMATIZER_PATH, BUNDLED_LEMMATIZER_MODEL_FRAGMENT, "lemmatizer", LemmatizerModel::new);
     final LoadedArtifact<LanguageDetectorModel> loadedLangDetect =
         loadLanguageDetectorModel(configuration);
-    this.sentenceDetector = new SentenceDetectorME(loadedSentence.model());
-    this.tokenizer = new TokenizerME(loadedTokenizer.model());
+    final SentenceModel sentenceModel = loadedSentence.model();
+    this.sentenceDetector = ThreadLocal.withInitial(() -> new SentenceDetectorME(sentenceModel));
+    final TokenizerModel tokenizerModel = loadedTokenizer.model();
+    this.tokenizer = ThreadLocal.withInitial(() -> new TokenizerME(tokenizerModel));
     this.posModel = loadedPos.model();
-    this.posTagger = new POSTaggerME(posModel);
-    this.lemmatizer = new LemmatizerME(loadedLemma.model());
-    this.languageDetector = new LanguageDetectorME(loadedLangDetect.model());
+    this.posTagger = ThreadLocal.withInitial(() -> new POSTaggerME(posModel));
+    final LemmatizerModel lemmatizerModel = loadedLemma.model();
+    this.lemmatizer = ThreadLocal.withInitial(() -> new LemmatizerME(lemmatizerModel));
+    final LanguageDetectorModel languageDetectorModel = loadedLangDetect.model();
+    this.languageDetector =
+        ThreadLocal.withInitial(() -> new LanguageDetectorME(languageDetectorModel));
     // The embedding provider and the three registries may hold native resources (ONNX sessions,
     // remote connections). If a later load fails, release the ones already created so a failed
     // startup does not leak native sessions.
@@ -159,7 +169,19 @@ public final class ModelBundleCache {
     boolean constructed = false;
     try {
       embeddingProvider = EmbeddingProviderFactory.create(configuration);
-      nameFinderRegistry = NameFinderRegistry.create(configuration, sentenceDetector);
+      // The registry may call the detector from any of its threads; hand it a view that
+      // resolves to the calling thread's own instance rather than one shared decoder.
+      nameFinderRegistry = NameFinderRegistry.create(configuration, new SentenceDetector() {
+        @Override
+        public String[] sentDetect(CharSequence text) {
+          return sentenceDetector.get().sentDetect(text);
+        }
+
+        @Override
+        public Span[] sentPosDetect(CharSequence text) {
+          return sentenceDetector.get().sentPosDetect(text);
+        }
+      });
       docCategorizerRegistry = DocCategorizerRegistry.create(configuration);
       sentimentRegistry = SentimentRegistry.create(configuration);
       chunkerRegistry = ChunkerRegistry.create(configuration);
@@ -188,30 +210,36 @@ public final class ModelBundleCache {
   }
 
   /**
-   * Returns the shared sentence detector. Always available (bundled default when unconfigured).
+   * Returns the calling thread's sentence detector over the shared model. Always available
+   * (bundled default when unconfigured). Per-thread because {@link SentenceDetectorME} keeps
+   * per-call state (e.g. the probabilities of the last run) and is not safe for concurrent use.
    *
-   * @return The shared sentence detector. Never {@code null}.
+   * @return The calling thread's sentence detector. Never {@code null}.
    */
   public SentenceDetectorME getSentenceDetector() {
-    return sentenceDetector;
+    return sentenceDetector.get();
   }
 
   /**
-   * Returns the shared tokenizer. Always available (bundled default when unconfigured).
+   * Returns the calling thread's tokenizer over the shared model. Always available (bundled
+   * default when unconfigured). Per-thread because {@link TokenizerME} keeps per-call state
+   * and is not safe for concurrent use.
    *
-   * @return The shared tokenizer. Never {@code null}.
+   * @return The calling thread's tokenizer. Never {@code null}.
    */
   public TokenizerME getTokenizer() {
-    return tokenizer;
+    return tokenizer.get();
   }
 
   /**
-   * Returns the shared POS tagger. Always available (bundled default when unconfigured).
+   * Returns the calling thread's POS tagger over the shared model. Always available (bundled
+   * default when unconfigured). Per-thread because {@link POSTaggerME} keeps per-call state
+   * and is not safe for concurrent use.
    *
-   * @return The shared POS tagger. Never {@code null}.
+   * @return The calling thread's POS tagger. Never {@code null}.
    */
   public POSTaggerME getPosTagger() {
-    return posTagger;
+    return posTagger.get();
   }
 
   /**
@@ -239,21 +267,25 @@ public final class ModelBundleCache {
   }
 
   /**
-   * Returns the shared lemmatizer. Always available (bundled default when unconfigured).
+   * Returns the calling thread's lemmatizer over the shared model. Always available (bundled
+   * default when unconfigured). Per-thread because {@link LemmatizerME} keeps per-call state
+   * and is not safe for concurrent use.
    *
-   * @return The shared lemmatizer. Never {@code null}.
+   * @return The calling thread's lemmatizer. Never {@code null}.
    */
   public LemmatizerME getLemmatizer() {
-    return lemmatizer;
+    return lemmatizer.get();
   }
 
   /**
-   * Returns the shared language detector. Always available (bundled default when unconfigured).
+   * Returns the calling thread's language detector over the shared model. Always available
+   * (bundled default when unconfigured). Per-thread because {@link LanguageDetectorME} keeps
+   * per-call state and is not safe for concurrent use.
    *
-   * @return The shared language detector. Never {@code null}.
+   * @return The calling thread's language detector. Never {@code null}.
    */
   public LanguageDetectorME getLanguageDetector() {
-    return languageDetector;
+    return languageDetector.get();
   }
 
   /**

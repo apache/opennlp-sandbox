@@ -337,15 +337,15 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
     }
   }
 
+  // KEY_DEFAULT_ID is shared across engines: a default naming a model served by another
+  // engine is not an error here, it just means this engine has no default of its own.
+  // CompositeEmbeddingProvider validates the id against the union of all engines, so a
+  // typo still fails loud at startup.
   private static String resolveDefaultModelId(
       Map<String, String> configuration, Map<String, OnnxSentenceEmbedder> models) {
     final String configured = configuration.get(KEY_DEFAULT_ID);
-    if (configured != null && !configured.isBlank()) {
-      if (!models.containsKey(configured)) {
-        throw AnalysisException.notFound(
-            KEY_DEFAULT_ID + " '" + configured + "' is not registered");
-      }
-      return configured;
+    if (configured != null && !configured.isBlank() && models.containsKey(configured.trim())) {
+      return configured.trim();
     }
     return models.size() == 1 ? models.keySet().iterator().next() : null;
   }

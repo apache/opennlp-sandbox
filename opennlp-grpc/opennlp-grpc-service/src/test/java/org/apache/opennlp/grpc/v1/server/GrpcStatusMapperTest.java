@@ -68,6 +68,7 @@ class GrpcStatusMapperTest {
       case FAILED_PRECONDITION -> AnalysisException.failedPrecondition("x");
       case UNIMPLEMENTED -> AnalysisException.unimplemented("x");
       case UNAVAILABLE -> AnalysisException.unavailable("x", null);
+      case RESOURCE_EXHAUSTED -> AnalysisException.resourceExhausted("x");
       case INTERNAL -> AnalysisException.internal("x", null);
     };
   }

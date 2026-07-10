@@ -37,6 +37,7 @@
         <module>opennlp-grpc-service</module>
         <module>opennlp-grpc-backend-tei</module>
         <module>opennlp-grpc-backend-openvino</module>
+        <module>opennlp-grpc-backend-static</module>
         <module>opennlp-grpc-integration-tests</module>
     </modules>
 

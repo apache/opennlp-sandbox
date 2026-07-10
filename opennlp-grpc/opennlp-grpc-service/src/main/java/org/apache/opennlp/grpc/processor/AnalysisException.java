@@ -41,6 +41,9 @@ public final class AnalysisException extends RuntimeException {
     /** A required upstream/remote dependency (e.g. a remote embedding backend) is unreachable
      * or timed out; the request may succeed on retry. */
     UNAVAILABLE,
+    /** The caller exhausted a server-side limit (e.g. a streaming client that stops reading
+     * responses, forcing the server to either buffer without bound or close the call). */
+    RESOURCE_EXHAUSTED,
     /** Unexpected server-side failure while executing a required step. */
     INTERNAL
   }
@@ -122,6 +125,18 @@ public final class AnalysisException extends RuntimeException {
    */
   public static AnalysisException unavailable(String message, Throwable cause) {
     return new AnalysisException(FailureType.UNAVAILABLE, message, cause);
+  }
+
+  /**
+   * Creates an exception for a caller that exhausted a server-side limit, such as a streaming
+   * client that stops draining responses.
+   *
+   * @param message The human-readable failure detail.
+   *
+   * @return A new exception with failure type {@link FailureType#RESOURCE_EXHAUSTED}.
+   */
+  public static AnalysisException resourceExhausted(String message) {
+    return new AnalysisException(FailureType.RESOURCE_EXHAUSTED, message);
   }
 
   /**
