@@ -195,6 +195,10 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
               ClassicStepRunner.computeTermLayers(
                   document, profile.getTermDimensionsList(), diagnostics);
             }
+            if (profile.hasStopwordLanguage()) {
+              ClassicStepRunner.markStopwords(
+                  document, profile.getStopwordLanguage(), diagnostics);
+            }
             if (profile.hasTermProfile()) {
               ClassicStepRunner.computeProfileTermLayers(
                   document, profile.getTermProfile(), diagnostics);

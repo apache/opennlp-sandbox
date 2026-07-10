@@ -277,6 +277,33 @@ final class ClassicStepRunner {
   }
 
   /**
+   * Marks Token.is_stopword against the bundled stopword list for the requested
+   * language (AnalysisProfile.stopword_language). Annotation only: no token is
+   * removed. The validator has already confirmed the language has a bundled list.
+   */
+  static void markStopwords(
+      OpenNlpDocument.Builder document,
+      String language,
+      List<ProcessingDiagnostic> diagnostics) {
+    final opennlp.tools.stopword.StopwordFilter filter =
+        opennlp.tools.stopword.StopwordLists.forLanguage(language);
+    int marked = 0;
+    for (int i = 0; i < document.getSentencesCount(); i++) {
+      final AnnotatedSentence.Builder sentenceBuilder = document.getSentences(i).toBuilder();
+      for (int t = 0; t < sentenceBuilder.getTokensCount(); t++) {
+        if (filter.isStopword(sentenceBuilder.getTokens(t).getText())) {
+          sentenceBuilder.setTokens(t, sentenceBuilder.getTokens(t).toBuilder()
+              .setIsStopword(true).build());
+          marked++;
+        }
+      }
+      document.setSentences(i, sentenceBuilder.build());
+    }
+    diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_TOKENIZE,
+        "Marked " + marked + " stopword token(s) for language '" + language + "'"));
+  }
+
+  /**
    * Computes Token.term_layers with a per-language {@link NormalizationProfile} matching
    * analyzer (AnalysisProfile.term_profile). The analyzer is built per request: the
    * profile's stemmer layer is stateful (Snowball), so instances must not be shared

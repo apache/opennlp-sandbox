@@ -140,6 +140,9 @@ message Token {
   // Populated only for the dimensions the request listed in
   // AnalysisProfile.term_dimensions; empty otherwise.
   map<string, string> term_layers = 7;
+  // True when AnalysisProfile.stopword_language was set and the bundled list for that
+  // language contains this token. Absent/false otherwise.
+  bool is_stopword = 8;
 }
 
 // A named entity recognized by PIPELINE_STEP_NER.

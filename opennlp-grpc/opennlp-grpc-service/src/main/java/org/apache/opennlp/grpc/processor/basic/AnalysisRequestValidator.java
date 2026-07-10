@@ -109,6 +109,7 @@ final class AnalysisRequestValidator {
     validateTokenizerEngine(profile);
     validateTermDimensions(profile);
     validateTermProfile(profile);
+    validateStopwordLanguage(profile);
     validateEmbeddingRequest(request, profile);
     validateChunkEmbedConfigs(request);
     validateCategoryChunkConfigs(request, profile);
@@ -290,6 +291,21 @@ final class AnalysisRequestValidator {
             "Term dimension '" + name + "' is not a character-level dimension; "
                 + "PIPELINE_STEP_LEMMATIZE owns lemmas");
       }
+    }
+  }
+
+  private void validateStopwordLanguage(AnalysisProfile profile) {
+    if (!profile.hasStopwordLanguage()) {
+      return;
+    }
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
+      throw AnalysisException.invalidArgument(
+          "AnalysisProfile.stopword_language requires PIPELINE_STEP_TOKENIZE in the profile steps");
+    }
+    if (!opennlp.tools.stopword.StopwordLists.supportedLanguages()
+        .contains(profile.getStopwordLanguage())) {
+      throw AnalysisException.notFound(
+          "No bundled stopword list for language '" + profile.getStopwordLanguage() + "'");
     }
   }
 

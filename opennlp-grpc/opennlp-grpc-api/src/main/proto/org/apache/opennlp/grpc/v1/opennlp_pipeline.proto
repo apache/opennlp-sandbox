@@ -193,6 +193,11 @@ message AnalysisProfile {
   // language with no registered profile => NOT_FOUND. The analyzer is built per
   // request, so stateful stemmers are never shared across threads.
   optional string term_profile = 12;
+  // Marks each token's Token.is_stopword against the library's bundled stopword list
+  // for this ISO 639 language code. Annotation, not removal: the server never drops
+  // tokens; consumers filter. Requires TOKENIZE; a language with no bundled list =>
+  // NOT_FOUND.
+  optional string stopword_language = 13;
 }
 
 // Configuration for PIPELINE_STEP_NORMALIZE: which rungs run, in the order the
