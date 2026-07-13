@@ -140,7 +140,7 @@
 
         <uimaj.version>3.6.1</uimaj.version>
 
-        <jackson.version>2.21.5</jackson.version>
+        <jackson.version>2.22.1</jackson.version>
         <jackson.annotations.version>2.21</jackson.annotations.version>
         <jersey-client.version>2.41</jersey-client.version>
         <jersey-server.version>2.47</jersey-server.version>
