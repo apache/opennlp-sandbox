@@ -38,7 +38,7 @@
     </modules>
 
     <properties>
-        <grpc.version>1.82.1</grpc.version>
+        <grpc.version>1.82.2</grpc.version>
         <picocli.version>4.7.7</picocli.version>
         <junit5-system-exit.version>2.0.3</junit5-system-exit.version>
         <awaitility.version>4.3.0</awaitility.version>
