@@ -43,11 +43,19 @@ public class DisambiguatorEvaluatorToolTest {
             tool.getShortDescription());
   }
 
+  /*
+   * Note: The order in which the parameters appear in the usage string is derived from
+   * Class#getMethods(), which is not specified and differs between JVM implementations.
+   * Therefore, only the presence of each parameter is checked here, not their order.
+   */
   @Test
   void testGetHelp() {
-    assertTrue(tool.getHelp().startsWith(
-      "Usage: opennlp DisambiguatorEvaluator -data testData [-model model] " +
-              "[-encoding charsetName] [-type mfs|lesk|ims] -lang language"));
+    final String help = tool.getHelp();
+    assertTrue(help.startsWith("Usage: opennlp DisambiguatorEvaluator "));
+    for (String param : new String[] {"-data testData", "[-model model]",
+        "[-encoding charsetName]", "[-type mfs|lesk|ims]", "-lang language"}) {
+      assertTrue(help.contains(param), "Expected usage to contain '" + param + "' but was: " + help);
+    }
   }
   
 }

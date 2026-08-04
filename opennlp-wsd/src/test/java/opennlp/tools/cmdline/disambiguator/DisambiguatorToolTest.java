@@ -49,11 +49,19 @@ public class DisambiguatorToolTest {
     assertEquals("Word Sense Disambiguator", tool.getShortDescription());
   }
 
+  /*
+   * Note: The order in which the parameters appear in the usage string is derived from
+   * Class#getMethods(), which is not specified and differs between JVM implementations.
+   * Therefore, only the presence of each parameter is checked here, not their order.
+   */
   @Test
   void testGetHelp() {
-    assertTrue(tool.getHelp().startsWith(
-      "Usage: opennlp Disambiguator [-type mfs|lesk|ims] [-data testData] " +
-              "-lang language [-encoding charsetName]"));
+    final String help = tool.getHelp();
+    assertTrue(help.startsWith("Usage: opennlp Disambiguator "));
+    for (String param : new String[] {"[-type mfs|lesk|ims]", "[-data testData]",
+        "-lang language", "[-encoding charsetName]"}) {
+      assertTrue(help.contains(param), "Expected usage to contain '" + param + "' but was: " + help);
+    }
   }
 
   @Test
