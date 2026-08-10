@@ -142,7 +142,7 @@ List of third-party dependencies grouped by their license type.
         * Lucene Highlighter (org.apache.lucene:lucene-highlighter:2.9.3 - http://lucene.apache.org/java/lucene-contrib/lucene-highlighter)
         * Lucene Memory (org.apache.lucene:lucene-memory:2.9.3 - http://lucene.apache.org/java/lucene-contrib/lucene-memory)
         * Lucene Snowball (org.apache.lucene:lucene-snowball:2.9.3 - http://lucene.apache.org/java/lucene-contrib/lucene-snowball)
-        * MAchine Learning for LanguagE Toolkit (MALLET) (cc.mallet:mallet:2.1.0 - http://mallet.cs.umass.edu/)
+        * MAchine Learning for LanguagE Toolkit (MALLET) (cc.mallet:mallet:2.1.1 - http://mallet.cs.umass.edu/)
         * Metrics Core (io.dropwizard.metrics:metrics-core:4.2.26 - https://metrics.dropwizard.io/metrics-core)
         * Metrics Integration with JMX (io.dropwizard.metrics:metrics-jmx:4.2.26 - https://metrics.dropwizard.io/metrics-jmx)
         * nd4j-api (org.nd4j:nd4j-api:1.0.0-M2.1 - http://deeplearning4j.konduit.ai/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/)
@@ -233,7 +233,7 @@ List of third-party dependencies grouped by their license type.
 
     Apache License, Version 2.0, GNU General Public License (GPL) version 2, or any later version, GPLv2 with Classpath exception
 
-        * JavaCPP (org.bytedeco:javacpp:1.5.13 - http://bytedeco.org/javacpp/)
+        * JavaCPP (org.bytedeco:javacpp:1.5.14 - http://bytedeco.org/javacpp/)
         * JavaCPP Presets for HDF5 (org.bytedeco:hdf5:1.14.3-1.5.10 - http://bytedeco.org/javacpp-presets/hdf5/)
         * JavaCPP Presets for OpenBLAS (org.bytedeco:openblas:0.3.31-1.5.13 - http://bytedeco.org/javacpp-presets/openblas/)
 
