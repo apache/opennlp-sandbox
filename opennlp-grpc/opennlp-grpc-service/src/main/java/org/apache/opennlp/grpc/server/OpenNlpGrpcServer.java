@@ -30,10 +30,13 @@ import java.util.concurrent.Executors;
 
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.health.v1.HealthCheckResponse;
+import io.grpc.protobuf.services.HealthStatusManager;
 import io.grpc.protobuf.services.ProtoReflectionServiceV1;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.processor.basic.BasicDocumentAnalyzer;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
+import org.apache.opennlp.grpc.v1.OpenNlpAnalysisServiceGrpc;
 import org.apache.opennlp.grpc.v1.server.OpenNlpAnalysisServiceImpl;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -66,6 +69,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
 
   private Server server;
   private ExecutorService handlerExecutor;
+  private HealthStatusManager healthStatusManager;
 
   /** Creates an unstarted server; picocli populates the options before {@link #call()} runs. */
   public OpenNlpGrpcServer() {
@@ -125,6 +129,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     // instead of pinning a platform thread. The Netty event-loop threads stay platform threads;
     // only the application-callback executor is virtual.
     this.handlerExecutor = Executors.newVirtualThreadPerTaskExecutor();
+    this.healthStatusManager = new HealthStatusManager();
 
     final ServerBuilder<?> builder = ServerBuilder.forPort(port)
         .executor(handlerExecutor)
@@ -133,6 +138,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
             profileRegistry,
             modelBundleCache,
             SERVER_VERSION))
+        .addService(healthStatusManager.getHealthService())
         .maxInboundMessageSize(maxInboundMessageSize);
 
     if (enableReflection) {
@@ -141,6 +147,12 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
 
     this.server = builder.build();
     this.server.start();
+    healthStatusManager.setStatus(
+        HealthStatusManager.SERVICE_NAME_ALL_SERVICES,
+        HealthCheckResponse.ServingStatus.SERVING);
+    healthStatusManager.setStatus(
+        OpenNlpAnalysisServiceGrpc.SERVICE_NAME,
+        HealthCheckResponse.ServingStatus.SERVING);
     logger.info("Started OpenNlpGrpcServer on port {}", server.getPort());
 
     registerShutdownHook(modelBundleCache);
@@ -209,6 +221,9 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
 
   /** Initiates a graceful shutdown of the server; a no-op if it was never started. */
   public void stop() {
+    if (healthStatusManager != null) {
+      healthStatusManager.enterTerminalState();
+    }
     if (server != null) {
       logger.info("Shutting down OpenNlpGrpcServer on port {}", server.getPort());
       server.shutdown();
