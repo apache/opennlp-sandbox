@@ -12,9 +12,9 @@ OpenNLP gRPC client --> opennlp-grpc-server --> TEI (Docker, CPU or CUDA)
 ```
 
 The backend is discovered via `ServiceLoader`: drop this module's jar on the server
-classpath and select it with `model.embedder.backend=tei`. No code changes are needed
-to switch models or move between CPU and GPU — that is decided entirely by which TEI
-container you run.
+classpath and configure a `.tei.target`. Its models automatically join the aggregate
+provider. No code changes are needed to switch models or move between CPU and GPU;
+that is decided entirely by which TEI container you run.
 
 ## 1. Start a TEI server
 
@@ -59,8 +59,6 @@ One TEI instance serves exactly one model, so each registered model id maps to o
 endpoint:
 
 ```properties
-model.embedder.backend=tei
-
 # Register model id "minilm" against a TEI endpoint (required)
 model.embedder.minilm.tei.target=localhost:18080
 
@@ -73,7 +71,9 @@ model.embedder.default_id=minilm             # required when multiple models are
 ```
 
 Multiple models are simply multiple `model.embedder.<id>.tei.target` entries pointing
-at different TEI containers; clients select one via `AnalysisOptions.embedding_model_id`.
+at different TEI containers. Clients select a logical model with
+`AnalysisOptions.embedding_selector.model_id` and may pin the `tei` route with its
+`backend_id`.
 
 Run the server with this backend on the classpath:
 

@@ -24,7 +24,7 @@ import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 
 /**
  * {@link EmbeddingBackendFactory} for HuggingFace Text Embeddings Inference (TEI)
- * endpoints, selected with {@code model.embedder.backend=tei}.
+ * endpoints. Configured TEI models join the aggregate embedding provider automatically.
  *
  * <p>This backend is a gRPC <em>client</em>: inference runs in external TEI instances
  * (typically the {@code -grpc} flavored TEI Docker images) while the OpenNLP gRPC

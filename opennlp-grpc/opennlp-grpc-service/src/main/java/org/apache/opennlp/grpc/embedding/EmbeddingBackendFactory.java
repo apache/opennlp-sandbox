@@ -25,8 +25,9 @@ import java.util.Map;
  *
  * <p>A backend module registers its implementation in
  * {@code META-INF/services/org.apache.opennlp.grpc.embedding.EmbeddingBackendFactory}
- * and is then selectable through the {@code model.embedder.backend} server configuration
- * key without any change to the gRPC server. This is the extension point for additional
+ * and its configured models join the aggregate provider without any change to the gRPC
+ * server. Clients may let routing priority choose it or pin its open backend id through
+ * {@code EmbeddingSelector.backend_id}. This is the extension point for additional
  * inference runtimes shipped as separate jars: in-process engines (OpenVINO, DJL, ...)
  * as well as remote backends whose provider is a client to an external inference
  * service. A remote provider implements the same surface ({@code embed},
@@ -42,9 +43,8 @@ public interface EmbeddingBackendFactory {
   /**
    * Returns the backend id this factory serves.
    *
-   * @return The unique backend id this factory serves, matched case-insensitively against
-   *         the {@code model.embedder.backend} configuration value. Must be lower-case,
-   *         non-blank, and stable across releases (it is part of the configuration contract).
+   * @return The unique backend id this factory serves. Must be lower-case, non-blank, and
+   *         stable across releases because it is part of the discovery and selector contract.
    */
   String backendId();
 

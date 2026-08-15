@@ -89,7 +89,6 @@ class OpenNlpGrpcServerLiveIT {
         .start();
 
     final Properties config = new Properties();
-    config.setProperty("model.embedder.backend", "tei");
     config.setProperty("model.embedder.minilm.tei.target", "localhost:" + teiServer.getPort());
     config.setProperty("model.embedder.tei.deadline_ms", "10000");
     harness = LiveServerHarness.start(config);

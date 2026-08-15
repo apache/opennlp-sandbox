@@ -57,7 +57,6 @@ import org.slf4j.LoggerFactory;
  * TEI endpoint:</p>
  *
  * <pre>
- * model.embedder.backend=tei
  * model.embedder.&lt;model-id&gt;.tei.target=host:port          (required)
  * model.embedder.&lt;model-id&gt;.tei.use_tls=true|false        (optional, default false)
  * model.embedder.&lt;model-id&gt;.tei.truncate=true|false       (optional, default true)

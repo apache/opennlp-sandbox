@@ -24,7 +24,7 @@ import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 
 /**
  * {@link EmbeddingBackendFactory} for OpenVINO Model Server (and other KServe v2
- * compatible inference servers), selected with {@code model.embedder.backend=openvino}.
+ * compatible inference servers). Configured routes join the aggregate provider automatically.
  *
  * <p>This backend is a gRPC <em>client</em>: inference runs in an external model server
  * while the OpenNLP gRPC server keeps orchestrating the document pipeline. See

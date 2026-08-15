@@ -186,11 +186,11 @@ enum POSTagFormat {
   POS_TAG_FORMAT_CUSTOM = 3;
 }
 
-// Inference backends are deliberately not part of the request contract. Backend
-// selection (ONNX Runtime, CUDA, OpenVINO, DJL, a remote inference service, ...)
-// is a server deployment concern, configured via `model.embedder.backend` and
-// extensible through the server's backend SPI. Clients request *models* by id;
-// which backend serves a model is reported in ModelDescriptor.backend_id.
+// Backend discovery and configuration are server deployment concerns, extensible
+// through the ServiceLoader SPI. Clients request logical models by open string id
+// and may optionally pin one advertised route with EmbeddingSelector.backend_id.
+// An unpinned selector uses priority and safe fallback. ModelDescriptor reports
+// every available route and every result reports the route that produced it.
 
 // A named, reusable analysis configuration: which steps to run and which models
 // back them. A request may name a server-side profile by id (see

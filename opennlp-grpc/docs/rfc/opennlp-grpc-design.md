@@ -113,7 +113,7 @@ flowchart TB
 | **Core library**         | Stays gRPC-free; wire API in optional Maven modules                                    |
 | **Build**                | Maven + `protobuf-maven-plugin` only                                                   |
 | **CHUNK + EMBED**        | First-class v1 steps (`ChunkerME`, `SentenceVectorsDL`, segmentation chunking)         |
-| **GPU / providers**      | Server-side backend SPI (`model.embedder.backend`); CUDA/OpenVINO as optional modules |
+| **GPU / providers**      | ServiceLoader SPI with concurrent routes; CUDA/OpenVINO as optional modules          |
 | **Multi-group**          | `repeated ChunkEmbedConfigEntry` in request → `repeated ChunkEmbeddingGroup` in reply  |
 | **Embeddings placement** | Inside `Chunk`, not a separate flat list per model                                     |
 | **Partial failures**     | Required steps fail the RPC; optional steps return best-effort + diagnostics           |
@@ -184,7 +184,7 @@ The gRPC server orchestrator should mirror this **order** when steps are enabled
 
 - `opennlp-dl`: ONNX Runtime support including `SentenceVectorsDL` for embeddings, plus `NameFinderDL` and `DocumentCategorizerDL`. These are the foundation for the v1 `EMBED` step (and future DL-backed NER/categorization).
 - `opennlp-dl-gpu`: swaps the CPU onnxruntime for `onnxruntime_gpu` (CUDA on NVIDIA). This is one of the concrete provider implementations behind the hot-swap story.
-- A narrow provider SPI (a `ServiceLoader`-discovered `EmbeddingBackendFactory` keyed by an open backend id string) allows the pure-Java processor (and thus the gRPC server) to dispatch `EMBED` (and later other steps) to different backends. Backend selection is a server deployment concern (`model.embedder.backend=onnx|cuda|<spi-id>`), not part of the wire contract: clients request models by id, and the backend serving each model is reported in `ModelDescriptor.backend_id`. Built-in ids are `onnx` (ONNX Runtime CPU) and `cuda` (NVIDIA, via `onnxruntime_gpu`). Two optional remote backend modules ship alongside the server and prove the SPI's cross-process/cross-language reach: `opennlp-grpc-backend-tei` (id `tei`, a gRPC client for HuggingFace Text Embeddings Inference) and `opennlp-grpc-backend-openvino` (id `openvino`, a KServe v2 open-inference-protocol client for OpenVINO Model Server, Triton, etc.). DJL or further runtimes can register their own ids from separate optional modules with their own build artifacts and dependencies. The base `opennlp-grpc-server` (and any pure-Java processor usage) does not force heavy native dependencies.
+- A narrow provider SPI (a `ServiceLoader`-discovered `EmbeddingBackendFactory` keyed by an open backend id string) allows the pure-Java processor, and thus the gRPC server, to dispatch `EMBED` to different backends. Every configured backend joins one aggregate provider. Clients select a logical model by open string id and may optionally pin one advertised route with `EmbeddingSelector.backend_id`; otherwise priority and safe fallback choose the route. `ModelDescriptor.embedding_routes` and each result report the concrete route. Built-in ids are `onnx` (ONNX Runtime CPU) and `cuda` (NVIDIA, via `onnxruntime_gpu`). Two optional remote backend modules ship alongside the server and prove the SPI's cross-process and cross-language reach: `opennlp-grpc-backend-tei` (id `tei`, a gRPC client for HuggingFace Text Embeddings Inference) and `opennlp-grpc-backend-openvino` (id `openvino`, a KServe v2 open-inference-protocol client for OpenVINO Model Server, Triton, etc.). DJL or further runtimes can register their own ids from separate optional modules with their own build artifacts and dependencies. The base `opennlp-grpc-server`, and any pure-Java processor usage, does not force heavy native dependencies.
 - CHUNK and EMBED (with basic ONNX) are in-scope for the initial v1 contract and sandbox implementation. Advanced acceleration and additional providers are implementation work that does not require wire changes.
 
 The initiating email for OPENNLP-1833 emphasizes GPU embeddings (CUDA for NVIDIA, OpenVINO for Intel) with a hot-swappable middle interface whose implementations are their own builds. This design makes that explicit via the provider mechanism while keeping the `OpenNlpDocument` / `AnalyzeDocument` contract stable.
@@ -720,10 +720,9 @@ enum POSTagFormat {
   POS_TAG_FORMAT_CUSTOM = 3;
 }
 
-// Inference backends are not part of the wire contract. Backend selection is
-// server configuration (model.embedder.backend) behind an open SPI; clients
-// request models by id and discover the serving backend via
-// ModelDescriptor.backend_id.
+// Backends are discovered and configured behind an open ServiceLoader SPI.
+// Clients request logical models by id and may optionally pin one advertised
+// route. ModelDescriptor and embedding results report the concrete route.
 
 message AnalysisProfile {
   string profile_id = 1;
@@ -1039,5 +1038,4 @@ Two chunking strategies, each with explicitly named embedding models (not an aut
 | 0.3     | 2026-06-06 | Canonical sandbox doc; multi-group chunk+embed (`ChunkEmbeddingGroup`, `ChunkEmbedConfigEntry`, `EmbeddingGranularity.CHUNK`).                                                                                                                                                                                                                                                                                                                                |
 | 0.2     | 2026-06-06 | Incorporate initial dev@ feedback (Martin Wiesner, Richard Zowalla): neutral core `Document` interface proposal; sandbox-first + Maven only; retain legacy granular services; target 3.1.x more likely; make CHUNK + EMBED explicit v1 with GPU hot-swap provider story; expand ModelBundle discovery; define partial-results policy; clarify stateless contract vs. adaptive data; update goals, background, phases, and add Community RFC feedback section. |
 | 0.1     | 2026-05-21 | Initial Phase 1 design + full protos                                                                                                                                                                                                                                                                                                                                                                                                                          |
-
 

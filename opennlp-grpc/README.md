@@ -29,12 +29,17 @@ ids are namespaced exactly as in the Java container (`opennlp:sentences`,
 `opennlp:chunks`, `opennlp:parses`, `opennlp:sentiment`, `opennlp:language`,
 `opennlp:categories`, `opennlp:embeddings`, `opennlp:word-types`,
 `opennlp:stopwords`, `opennlp:terms:<DIMENSION>`, `opennlp:subwords`,
-`opennlp:stems`, `opennlp:expansions`, `opennlp:geo`), and every annotation value is
-strongly typed through the layer's value list (string, scored category,
-embedding vector, or parse tree). Layer spans use the response's offset
-encoding like every other span. Server-side, the string layers are built through
-`opennlp.tools.document.Document` itself, so the container's invariants validate
-what goes on the wire; the full inventory is documented in
+`opennlp:stems`, `opennlp:expansions`, `opennlp:geo`, `opennlp:normalization`,
+`opennlp:analytics`, `opennlp:chunk-groups`), and every annotation value is strongly
+typed through the layer's `oneof` value list. First-class payloads retain their complete
+types and provenance: entities are `NamedEntity`, syntactic chunks are `ChunkSpan`, UAX
+29 classes use `DocumentWordType`, stems carry `StemmerAlgorithm`, lexical expansions
+carry `LexicalExpansionKind`, and strategy chunks retain their embeddings and centroids.
+Layer ids remain open namespaced strings so extensions do not require protocol changes.
+Layer spans use the response's offset encoding like every other span. Server-side, layers
+are built through `opennlp.tools.document.Document` itself and the completed shape is
+validated before serialization, so container, scope, span, probability, and vector
+invariants apply to what goes on the wire. The full inventory is documented in
 `opennlp_document.proto`.
 
 Beyond the classic pipeline, the service serves the OpenNLP 3.0 feature branches:
@@ -389,8 +394,28 @@ model.embedder.sentence-transformers.pooling=mean
 ```
 
 Request embeddings by adding `PIPELINE_STEP_EMBED` to the analysis profile and
-setting `options.embedding_model_id` (or rely on `default_id` when only
-one model is registered). Uses ONNX Runtime via `opennlp-dl` on CPU by default.
+setting `options.embedding_selector.model_id` (or rely on `default_id` when only
+one model is registered). Set `embedding_selector.backend_id` to pin one concrete
+route with no fallback, or omit it to use the highest-priority compatible route.
+The older `embedding_model_id` field remains as an additive compatibility field.
+The same selector shape is used by streaming, chunk, category-chunk, and semantic
+chunk requests.
+
+Every configured ServiceLoader backend is active at the same time. When several
+backends serve one logical model, configure their priorities and a shared vector-space
+identity. Dimensions and vector-space ids must agree, and automatic fallback occurs only
+for `UNAVAILABLE` or `RESOURCE_EXHAUSTED` failures:
+
+```ini
+model.embedder.sentence-transformers.onnx.priority=10
+model.embedder.sentence-transformers.cuda.priority=20
+model.embedder.sentence-transformers.onnx.vector_space_id=minilm-v1
+model.embedder.sentence-transformers.cuda.vector_space_id=minilm-v1
+```
+
+`ListModelBundles` reports every `EmbeddingRoute`, including its backend id, priority,
+vector-space id, primary status, and artifact hash when known. Each embedding response
+also reports the route that actually produced the vector, including after fallback.
 
 For high-throughput embedding of pre-segmented texts (RAG chunk pipelines and the
 like) the `EmbedText` bidi streaming RPC bypasses the document pipeline entirely:
@@ -424,20 +449,15 @@ mvn -pl opennlp-grpc/opennlp-grpc-service -Dgpu package
 ```
 
 ```ini
-model.embedder.backend=cuda
 model.embedder.gpu_device_id=0
 model.embedder.default_id=sentence-transformers
-model.embedder.sentence-transformers.onnx.path=/path/to/model.onnx
+model.embedder.sentence-transformers.cuda.path=/path/to/model.onnx
 model.embedder.sentence-transformers.vocab.path=/path/to/vocab.txt
 ```
 
-`model.embedder.backend` accepts `onnx` (default, CPU) or `cuda`; any other value
-is rejected at startup with the list of registered backends. `model.embedder.gpu_device_id`
-is only valid with the `cuda` backend. Requires an NVIDIA CUDA runtime on the host.
-
-Backend selection is purely a server deployment concern: clients request embeddings by
-model id and never indicate a backend. The backend serving each model is reported to
-clients through `ModelDescriptor.backend_id` in `GetAvailableModels`.
+`model.embedder.gpu_device_id` applies to CUDA model paths. Requires an NVIDIA CUDA
+runtime on the host. CPU and CUDA routes may coexist by configuring both `.onnx.path`
+and `.cuda.path` for the same logical model and declaring the shared vector space above.
 
 #### In-process backend: static embedding tables (optional)
 
@@ -483,7 +503,6 @@ orchestrating the document pipeline. One TEI instance serves one model, so each 
 maps to one endpoint. Put the module jar on the server classpath and configure:
 
 ```ini
-model.embedder.backend=tei
 model.embedder.minilm.tei.target=localhost:8080
 model.embedder.minilm.tei.use_tls=false      # optional, default false
 model.embedder.minilm.tei.truncate=true      # optional, default true
@@ -510,7 +529,6 @@ open inference protocol gRPC API. The served model or OVMS MediaPipe graph must 
 (for OpenVINO, models converted with `openvino_tokenizers`):
 
 ```ini
-model.embedder.backend=openvino
 model.embedder.minilm.openvino.target=localhost:9000
 model.embedder.minilm.openvino.model_name=all-MiniLM-L6-v2
 model.embedder.minilm.openvino.model_version=1       # optional
@@ -537,8 +555,11 @@ OpenVINO modules above are regular consumers of this SPI. To add another backend
 ship a jar that implements
 `org.apache.opennlp.grpc.embedding.EmbeddingBackendFactory`, registers it in
 `META-INF/services/org.apache.opennlp.grpc.embedding.EmbeddingBackendFactory`, and put
-that jar on the server classpath. The backend then becomes selectable via
-`model.embedder.backend=<your-backend-id>` without any change to the server.
+that jar on the server classpath. Its configured models join the aggregate provider
+without any server change. Clients can leave route choice to priority/fallback or pin
+the backend's open id through `EmbeddingSelector.backend_id`. The shaded server merges
+service descriptors, and the integration suite verifies loading and invoking a provider
+compiled and packaged outside this reactor.
 
 ### Chunk + embed configs
 

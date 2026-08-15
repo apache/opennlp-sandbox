@@ -61,7 +61,6 @@ import org.slf4j.LoggerFactory;
  * model:</p>
  *
  * <pre>
- * model.embedder.backend=openvino
  * model.embedder.&lt;model-id&gt;.openvino.target=host:port        (required)
  * model.embedder.&lt;model-id&gt;.openvino.model_name=&lt;name&gt;      (required, served name)
  * model.embedder.&lt;model-id&gt;.openvino.model_version=&lt;v&gt;      (optional)

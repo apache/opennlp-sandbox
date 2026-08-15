@@ -552,12 +552,12 @@ message DocumentClassification {
 //                       per token, span-aligned with opennlp:tokens.
 //   opennlp:lemmas      positional, string values: the lemma, span-aligned with
 //                       opennlp:tokens.
-//   opennlp:entities    positional, string values: the entity type; the span
-//                       covers the mention.
-//   opennlp:chunks      positional, string values: the phrase tag of each
-//                       syntactic chunk (from PIPELINE_STEP_SYNTACTIC_CHUNK).
-//   opennlp:parses      positional, tree values: the primary constituency parse
-//                       of each parsed sentence.
+//   opennlp:entities    positional, entity values: the complete NamedEntity,
+//                       including provider and geocoding provenance.
+//   opennlp:chunks      positional, syntactic-chunk values: each complete
+//                       ChunkSpan and its provider provenance.
+//   opennlp:parses      positional, tree values: every constituency parse of
+//                       each parsed sentence, with the primary first.
 //   opennlp:sentiment   positional, category values: per-sentence label and
 //                       score, the span covering the sentence.
 //   opennlp:language    document-scoped, category values: one annotation, the
@@ -566,8 +566,8 @@ message DocumentClassification {
 //                       classification distribution, best category first.
 //   opennlp:embeddings  positional, embedding values: sentence vectors and the
 //                       document centroid, told apart by granularity.
-//   opennlp:word-types  positional, string values: the UAX #29 word class per
-//                       token, present only when the uax29 tokenizer engine ran.
+//   opennlp:word-types  positional, word-type values: the closed UAX #29
+//                       DocumentWordType per token, present only for uax29.
 //   opennlp:stopwords   positional, string values: the covered text of each
 //                       token the stopword list matched.
 //   opennlp:terms:<DIMENSION>  positional, string values: the per-token
@@ -576,16 +576,17 @@ message DocumentClassification {
 //   opennlp:subwords    positional, subword values: the SentencePiece encoding
 //                       of the whole document text, each piece with its
 //                       vocabulary id (from PIPELINE_STEP_SUBWORD_TOKENIZE).
-//   opennlp:stems       positional, string values: the stem of each token under
-//                       the requested stemmer, span-aligned with opennlp:tokens
-//                       (from PIPELINE_STEP_STEM).
-//   opennlp:expansions  positional, category values: lexical expansions (synonyms,
-//                       hypernyms) of each token from the configured knowledge
-//                       base, each a scored label anchored on the expanded token's
-//                       span (from PIPELINE_STEP_EXPAND).
+//   opennlp:stems       positional, stem values: the stem and its complete
+//                       StemmerSpec provenance, span-aligned with tokens.
+//   opennlp:expansions  positional, lexical-expansion values: relation, depth,
+//                       sense rank, weight, and lexicon provenance per term.
 //   opennlp:geo         positional, geo values: the geocoded resolution of each
 //                       resolvable location entity, anchored on the mention's span
 //                       (from PIPELINE_STEP_GEOCODE).
+//   opennlp:normalization  document-scoped normalization values with alignment.
+//   opennlp:analytics   document-scoped typed DocumentAnalytics values.
+//   opennlp:chunk-groups  document-scoped strategy chunks, vectors, centroids,
+//                       routes, and statistics.
 
 // The typed annotation layers of one analyzed document.
 message DocumentLayers {

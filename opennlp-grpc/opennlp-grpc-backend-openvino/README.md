@@ -10,7 +10,8 @@ OpenNLP gRPC client --> opennlp-grpc-server --> OVMS (Docker, CPU or Intel GPU)
 ```
 
 The backend is discovered via `ServiceLoader`: drop this module's jar on the server
-classpath and select it with `model.embedder.backend=openvino`.
+classpath and configure an `.openvino.target`. Its routes automatically join the
+aggregate embedding provider.
 
 ## 1. The served model must map text to vectors
 
@@ -44,8 +45,6 @@ through `/dev/dri` passthrough — there is no CUDA variant of OVMS.
 Each registered model id maps to one served model:
 
 ```properties
-model.embedder.backend=openvino
-
 # Register model id "minilm" against a served model (both required)
 model.embedder.minilm.openvino.target=localhost:19000
 model.embedder.minilm.openvino.model_name=embedder

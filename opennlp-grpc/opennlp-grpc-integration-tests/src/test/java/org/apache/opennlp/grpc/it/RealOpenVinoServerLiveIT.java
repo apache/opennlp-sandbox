@@ -74,7 +74,6 @@ class RealOpenVinoServerLiveIT {
   static void startServerAgainstRealOvms() throws Exception {
     final String modelName = System.getenv().getOrDefault("OPENNLP_OVMS_MODEL_NAME", "embedder");
     final Properties config = new Properties();
-    config.setProperty("model.embedder.backend", "openvino");
     config.setProperty("model.embedder.real.openvino.target",
         System.getenv("OPENNLP_OVMS_TARGET"));
     config.setProperty("model.embedder.real.openvino.model_name", modelName);

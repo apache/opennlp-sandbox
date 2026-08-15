@@ -22,7 +22,7 @@ import java.util.Map;
 /**
  * Test-only {@link EmbeddingBackendFactory} registered via {@code META-INF/services},
  * proving that external jars can contribute embedding backends without changes to the
- * server. Selected with {@code model.embedder.backend=stub}.
+ * server. Its configured model joins the aggregate provider automatically.
  */
 public final class StubEmbeddingBackendFactory implements EmbeddingBackendFactory {
 

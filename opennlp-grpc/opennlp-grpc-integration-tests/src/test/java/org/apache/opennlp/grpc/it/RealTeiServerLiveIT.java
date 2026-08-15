@@ -69,7 +69,6 @@ class RealTeiServerLiveIT {
   @BeforeAll
   static void startServerAgainstRealTei() throws Exception {
     final Properties config = new Properties();
-    config.setProperty("model.embedder.backend", "tei");
     config.setProperty("model.embedder.real.tei.target", System.getenv("OPENNLP_TEI_TARGET"));
     config.setProperty("model.embedder.tei.deadline_ms", "60000");
     harness = LiveServerHarness.start(config);
