@@ -27,10 +27,13 @@ import org.apache.opennlp.grpc.v1.ChunkResult;
 import org.apache.opennlp.grpc.v1.ChunkSpan;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
 import org.apache.opennlp.grpc.v1.DocumentClassification;
+import org.apache.opennlp.grpc.v1.DocumentAnalytics;
 import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
 import org.apache.opennlp.grpc.v1.EmbeddingResult;
 import org.apache.opennlp.grpc.v1.LayerScope;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.NormalizationResult;
+import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
 import org.apache.opennlp.grpc.v1.ParseNode;
 import org.apache.opennlp.grpc.v1.ParseNodeKind;
 import org.apache.opennlp.grpc.v1.ParseTree;
@@ -154,9 +157,33 @@ class DocumentShapeAssemblerTest {
 
     final AnnotationLayer chunks =
         layer(document, DocumentShapeAssembler.CHUNKS.id()).orElseThrow();
-    assertEquals(1, chunks.getStringValues().getAnnotationsCount());
-    assertEquals("NP", chunks.getStringValues().getAnnotations(0).getValue());
-    assertEquals(10, chunks.getStringValues().getAnnotations(0).getSpan().getEnd());
+    assertEquals(1, chunks.getSyntacticChunkValues().getAnnotationsCount());
+    assertEquals("NP", chunks.getSyntacticChunkValues().getAnnotations(0).getChunkTag());
+    assertEquals(10, chunks.getSyntacticChunkValues().getAnnotations(0)
+        .getAnnotationSpan().getEnd());
+  }
+
+  @Test
+  void documentLevelFirstClassResultsEachHaveATypedLayer() {
+    final OpenNlpDocument.Builder document = twoSentences()
+        .setAnalytics(DocumentAnalytics.newBuilder()
+            .setTotalSentences(2).setTotalTokens(4).build())
+        .setNormalization(NormalizationResult.newBuilder()
+            .setNormalizedText(TEXT.toLowerCase(java.util.Locale.ROOT)).build())
+        .addChunkEmbeddingGroups(ChunkEmbeddingGroup.newBuilder()
+            .setGroupId("sentences").build());
+
+    DocumentShapeAssembler.apply(document, TEXT);
+
+    final AnnotationLayer analytics = layer(document, "opennlp:analytics").orElseThrow();
+    assertEquals(LayerScope.LAYER_SCOPE_DOCUMENT, analytics.getScope());
+    assertEquals(4, analytics.getAnalyticsValues().getAnnotations(0).getTotalTokens());
+    final AnnotationLayer normalization =
+        layer(document, "opennlp:normalization").orElseThrow();
+    assertEquals(TEXT.toLowerCase(java.util.Locale.ROOT),
+        normalization.getNormalizationValues().getAnnotations(0).getNormalizedText());
+    final AnnotationLayer groups = layer(document, "opennlp:chunk-groups").orElseThrow();
+    assertEquals("sentences", groups.getChunkGroupValues().getAnnotations(0).getGroupId());
   }
 
   @Test

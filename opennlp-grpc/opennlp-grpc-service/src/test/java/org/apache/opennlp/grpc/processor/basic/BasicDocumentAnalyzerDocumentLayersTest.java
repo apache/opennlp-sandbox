@@ -37,6 +37,7 @@ import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationLayer;
 import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
+import org.apache.opennlp.grpc.v1.DocumentWordType;
 import org.apache.opennlp.grpc.v1.LayerScope;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
@@ -195,10 +196,12 @@ class BasicDocumentAnalyzerDocumentLayersTest {
     assertTrue(entityCount > 0, "fixture produced no entities");
 
     final AnnotationLayer entities = requireLayer(response, "opennlp:entities");
-    assertEquals(entityCount, entities.getStringValues().getAnnotationsCount());
-    for (StringAnnotation annotation : entities.getStringValues().getAnnotationsList()) {
-      assertEquals("person", annotation.getValue());
-      assertTrue(annotation.getSpan().getEnd() > annotation.getSpan().getStart());
+    assertEquals(entityCount, entities.getEntityValues().getAnnotationsCount());
+    for (var annotation : entities.getEntityValues().getAnnotationsList()) {
+      assertEquals("person", annotation.getEntityType());
+      assertTrue(annotation.getAnnotationSpan().getEnd()
+          > annotation.getAnnotationSpan().getStart());
+      assertTrue(annotation.getSourcesCount() > 0);
     }
   }
 
@@ -274,8 +277,9 @@ class BasicDocumentAnalyzerDocumentLayersTest {
     assertTrue(tokenCount > 0);
 
     final AnnotationLayer wordTypes = requireLayer(response, "opennlp:word-types");
-    assertEquals(tokenCount, wordTypes.getStringValues().getAnnotationsCount());
-    assertEquals("ALPHANUMERIC", wordTypes.getStringValues().getAnnotations(0).getValue());
+    assertEquals(tokenCount, wordTypes.getWordTypeValues().getAnnotationsCount());
+    assertEquals(DocumentWordType.DOCUMENT_WORD_TYPE_ALPHANUMERIC,
+        wordTypes.getWordTypeValues().getAnnotations(0).getType());
 
     final AnnotationLayer stopwords = requireLayer(response, "opennlp:stopwords");
     assertTrue(stopwords.getStringValues().getAnnotationsCount() > 0);

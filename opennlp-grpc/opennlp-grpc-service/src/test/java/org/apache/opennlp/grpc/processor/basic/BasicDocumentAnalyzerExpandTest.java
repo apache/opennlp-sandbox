@@ -32,8 +32,9 @@ import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationLayer;
-import org.apache.opennlp.grpc.v1.CategoryAnnotation;
 import org.apache.opennlp.grpc.v1.LayerScope;
+import org.apache.opennlp.grpc.v1.LexicalExpansionAnnotation;
+import org.apache.opennlp.grpc.v1.LexicalExpansionKind;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.apache.opennlp.grpc.v1.Token;
@@ -95,7 +96,7 @@ class BasicDocumentAnalyzerExpandTest {
     assertTrue(found.isPresent(), "opennlp:expansions layer is missing");
     final AnnotationLayer expansions = found.get();
     assertEquals(LayerScope.LAYER_SCOPE_POSITIONAL, expansions.getScope());
-    assertTrue(expansions.getCategoryValues().getAnnotationsCount() > 0);
+    assertTrue(expansions.getLexicalExpansionValues().getAnnotationsCount() > 0);
 
     final List<Token> tokens = new ArrayList<>();
     for (AnnotatedSentence sentence : response.getDocument().getSentencesList()) {
@@ -106,11 +107,18 @@ class BasicDocumentAnalyzerExpandTest {
         .findFirst().orElseThrow();
 
     final List<String> dogExpansions = new ArrayList<>();
-    for (CategoryAnnotation annotation : expansions.getCategoryValues().getAnnotationsList()) {
-      assertFalse(annotation.getLabel().isBlank());
-      assertTrue(annotation.getScore() > 0.0d, "expansion carries no weight");
+    for (LexicalExpansionAnnotation annotation
+        : expansions.getLexicalExpansionValues().getAnnotationsList()) {
+      assertFalse(annotation.getTerm().isBlank());
+      assertTrue(annotation.getWeight() > 0.0d, "expansion carries no weight");
+      assertEquals("mini", annotation.getLexiconId());
       if (annotation.getSpan().getStart() == dog.getAnnotationSpan().getStart()) {
-        dogExpansions.add(annotation.getLabel());
+        dogExpansions.add(annotation.getTerm());
+        if ("domestic dog".equals(annotation.getTerm())) {
+          assertEquals(LexicalExpansionKind.LEXICAL_EXPANSION_KIND_SYNONYM,
+              annotation.getKind());
+          assertEquals(0, annotation.getDepth());
+        }
       }
     }
     assertTrue(dogExpansions.contains("domestic dog"),

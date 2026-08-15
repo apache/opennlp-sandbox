@@ -38,7 +38,7 @@ import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.apache.opennlp.grpc.v1.StemmerAlgorithm;
 import org.apache.opennlp.grpc.v1.StemmerSpec;
-import org.apache.opennlp.grpc.v1.StringAnnotation;
+import org.apache.opennlp.grpc.v1.StemAnnotation;
 import org.apache.opennlp.grpc.v1.Token;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -133,15 +133,17 @@ class BasicDocumentAnalyzerStemTest {
     assertEquals(LayerScope.LAYER_SCOPE_POSITIONAL, stems.getScope());
 
     final List<Token> tokens = allTokens(response);
-    assertEquals(tokens.size(), stems.getStringValues().getAnnotationsCount());
+    assertEquals(tokens.size(), stems.getStemValues().getAnnotationsCount());
     for (int t = 0; t < tokens.size(); t++) {
-      final StringAnnotation annotation = stems.getStringValues().getAnnotations(t);
+      final StemAnnotation annotation = stems.getStemValues().getAnnotations(t);
       assertEquals(tokens.get(t).getAnnotationSpan().getStart(),
           annotation.getSpan().getStart(), "stem layer is not token-aligned");
+      assertEquals(StemmerAlgorithm.STEMMER_ALGORITHM_SNOWBALL, annotation.getAlgorithm());
+      assertEquals("en", annotation.getLanguage());
     }
     // "cats" is the second token; snowball English reduces it to "cat".
     assertEquals("cats", tokens.get(1).getText());
-    assertEquals("cat", stems.getStringValues().getAnnotations(1).getValue());
+    assertEquals("cat", stems.getStemValues().getAnnotations(1).getStem());
   }
 
   @Test
@@ -153,7 +155,9 @@ class BasicDocumentAnalyzerStemTest {
             .build()));
 
     final AnnotationLayer stems = stemsLayer(response).orElseThrow();
-    assertEquals("cat", stems.getStringValues().getAnnotations(1).getValue());
+    assertEquals("cat", stems.getStemValues().getAnnotations(1).getStem());
+    assertEquals(StemmerAlgorithm.STEMMER_ALGORITHM_MINIMAL,
+        stems.getStemValues().getAnnotations(1).getAlgorithm());
   }
 
   @Test
@@ -165,9 +169,11 @@ class BasicDocumentAnalyzerStemTest {
 
     final AnnotationLayer stems = stemsLayer(response).orElseThrow();
     final List<Token> tokens = allTokens(response);
-    assertEquals(tokens.size(), stems.getStringValues().getAnnotationsCount());
+    assertEquals(tokens.size(), stems.getStemValues().getAnnotationsCount());
     assertEquals("cats", tokens.get(1).getText());
-    assertEquals("cat", stems.getStringValues().getAnnotations(1).getValue());
+    assertEquals("cat", stems.getStemValues().getAnnotations(1).getStem());
+    assertEquals(StemmerAlgorithm.STEMMER_ALGORITHM_HUNSPELL,
+        stems.getStemValues().getAnnotations(1).getAlgorithm());
   }
 
   @Test
