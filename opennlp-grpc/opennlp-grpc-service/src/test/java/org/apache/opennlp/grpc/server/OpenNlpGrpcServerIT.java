@@ -29,6 +29,9 @@ import java.util.stream.Stream;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.health.v1.HealthCheckRequest;
+import io.grpc.health.v1.HealthCheckResponse;
+import io.grpc.health.v1.HealthGrpc;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.GetServiceInfoRequest;
 import org.apache.opennlp.grpc.v1.OpenNlpAnalysisServiceGrpc;
@@ -136,5 +139,15 @@ class OpenNlpGrpcServerIT {
     assertFalse(response.getDocument().getSentences(0).getTokensList().isEmpty());
     assertTrue(response.getDiagnosticsList().stream()
         .anyMatch(d -> d.getStep() == PipelineStep.PIPELINE_STEP_SENTENCE_DETECT));
+  }
+
+  @Test
+  void reportsTheAnalysisServiceAsServingThroughStandardGrpcHealth() {
+    final HealthCheckResponse response = HealthGrpc.newBlockingStub(channel)
+        .check(HealthCheckRequest.newBuilder()
+            .setService("org.apache.opennlp.grpc.v1.OpenNlpAnalysisService")
+            .build());
+
+    assertEquals(HealthCheckResponse.ServingStatus.SERVING, response.getStatus());
   }
 }
