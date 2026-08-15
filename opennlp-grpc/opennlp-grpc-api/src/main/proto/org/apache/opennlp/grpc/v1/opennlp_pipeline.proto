@@ -233,7 +233,10 @@ message AnalysisProfile {
   // Tokenizer engine for PIPELINE_STEP_TOKENIZE. Unset or "model" selects the
   // bundle's TokenizerME (the previous behavior). "uax29" selects the rule-based
   // Unicode UAX #29 word tokenizer, which needs no model and additionally
-  // populates Token.word_type. Any other value => INVALID_ARGUMENT.
+  // populates Token.word_type. "lattice" selects Viterbi lattice segmentation over
+  // an operator-configured MeCab-format dictionary (select it with
+  // lattice_dictionary_id; none configured => NOT_FOUND). Any other value =>
+  // INVALID_ARGUMENT.
   optional string tokenizer_engine = 10;
   // Character-level normalization layers to compute per token into
   // Token.term_layers, named by the library's Dimension enum (e.g. "NFC",
@@ -270,6 +273,12 @@ message AnalysisProfile {
   // configured default (model.wordnet.default_id) or the sole configured lexicon; an
   // unknown id, or no selectable lexicon, => NOT_FOUND.
   optional string wordnet_lexicon_id = 16;
+
+  // For tokenizer_engine "lattice": the MeCab-format dictionary to segment with, one
+  // of the ids configured under model.lattice.<id>.dir on the server. Unset selects
+  // the configured default (model.lattice.default_id) or the sole configured
+  // dictionary; an unknown id, or no selectable dictionary, => NOT_FOUND.
+  optional string lattice_dictionary_id = 17;
 }
 
 // Configuration for PIPELINE_STEP_NORMALIZE: which rungs run, in the order the
