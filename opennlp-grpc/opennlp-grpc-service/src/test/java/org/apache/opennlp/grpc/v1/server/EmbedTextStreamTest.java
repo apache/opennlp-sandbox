@@ -23,8 +23,11 @@ import java.util.Map;
 
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
+import org.apache.opennlp.grpc.embedding.StubEmbeddingBackendFactory;
+import org.apache.opennlp.grpc.embedding.TrackingEmbeddingBackendFactory;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
+import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.EmbedTextRequest;
 import org.apache.opennlp.grpc.v1.EmbedTextResponse;
 import org.junit.jupiter.api.Test;
@@ -62,6 +65,22 @@ class EmbedTextStreamTest {
         },
         ProfileRegistry.createDefault(),
         new ModelBundleCache(Map.of()),
+        "test");
+  }
+
+  private static OpenNlpAnalysisServiceImpl serviceWithTwoRoutes() {
+    return new OpenNlpAnalysisServiceImpl(
+        req -> {
+          throw new UnsupportedOperationException("not under test");
+        },
+        ProfileRegistry.createDefault(),
+        new ModelBundleCache(Map.of(
+            StubEmbeddingBackendFactory.KEY_MODEL_ID, "mini",
+            TrackingEmbeddingBackendFactory.KEY_MODEL_ID, "mini",
+            "model.embedder.mini.stub.priority", "100",
+            "model.embedder.mini.tracking.priority", "50",
+            "model.embedder.mini.stub.vector_space_id", "mini-v1",
+            "model.embedder.mini.tracking.vector_space_id", "mini-v1")),
         "test");
   }
 
@@ -107,6 +126,69 @@ class EmbedTextStreamTest {
     assertNull(responses.error);
     assertTrue(responses.completed);
     assertEquals(2, responses.values.size());
+  }
+
+  @Test
+  void pinsAStreamToOneBackendAndReportsTheActualRoute() {
+    final CapturingObserver responses = new CapturingObserver();
+    final StreamObserver<EmbedTextRequest> requests =
+        serviceWithTwoRoutes().embedText(responses);
+    final EmbeddingSelector selector = EmbeddingSelector.newBuilder()
+        .setModelId("mini")
+        .setBackendId("tracking")
+        .build();
+
+    requests.onNext(EmbedTextRequest.newBuilder()
+        .setSequence(1).setText("first").setEmbeddingSelector(selector).build());
+    requests.onNext(EmbedTextRequest.newBuilder()
+        .setSequence(2).setText("second").setEmbeddingSelector(selector).build());
+    requests.onCompleted();
+
+    assertNull(responses.error);
+    assertTrue(responses.completed);
+    assertEquals(2, responses.values.size());
+    assertEquals(9.0f, responses.values.get(0).getVector(0));
+    assertEquals("mini", responses.values.get(0).getRoute().getModelId());
+    assertEquals("tracking", responses.values.get(0).getRoute().getBackendId());
+    assertEquals("mini-v1", responses.values.get(0).getRoute().getVectorSpaceId());
+  }
+
+  @Test
+  void rejectsABackendSwitchMidStream() {
+    final CapturingObserver responses = new CapturingObserver();
+    final StreamObserver<EmbedTextRequest> requests =
+        serviceWithTwoRoutes().embedText(responses);
+
+    requests.onNext(EmbedTextRequest.newBuilder().setSequence(1).setText("first")
+        .setEmbeddingSelector(EmbeddingSelector.newBuilder()
+            .setModelId("mini").setBackendId("tracking"))
+        .build());
+    requests.onNext(EmbedTextRequest.newBuilder().setSequence(2).setText("second")
+        .setEmbeddingSelector(EmbeddingSelector.newBuilder()
+            .setModelId("mini").setBackendId("stub"))
+        .build());
+
+    assertNotNull(responses.error);
+    assertEquals(Status.Code.INVALID_ARGUMENT, Status.fromThrowable(responses.error).getCode());
+    assertEquals(1, responses.values.size());
+    assertFalse(responses.completed);
+  }
+
+  @Test
+  void rejectsLegacyModelIdTogetherWithASelector() {
+    final CapturingObserver responses = new CapturingObserver();
+    final StreamObserver<EmbedTextRequest> requests =
+        serviceWithTwoRoutes().embedText(responses);
+
+    requests.onNext(EmbedTextRequest.newBuilder().setSequence(1).setText("first")
+        .setModelId("mini")
+        .setEmbeddingSelector(EmbeddingSelector.newBuilder()
+            .setModelId("mini").setBackendId("tracking"))
+        .build());
+
+    assertNotNull(responses.error);
+    assertEquals(Status.Code.INVALID_ARGUMENT, Status.fromThrowable(responses.error).getCode());
+    assertTrue(responses.values.isEmpty());
   }
 
   @Test

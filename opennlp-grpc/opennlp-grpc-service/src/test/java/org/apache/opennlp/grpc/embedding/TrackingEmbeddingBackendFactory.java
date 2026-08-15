@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /** ServiceLoader test backend that records whether its provider was closed. */
 public final class TrackingEmbeddingBackendFactory implements EmbeddingBackendFactory {
 
-  static final String KEY_ENABLED = "test.embedder.tracking.enabled";
+  public static final String KEY_MODEL_ID = "test.embedder.tracking.model_id";
 
   private static final AtomicBoolean CLOSED = new AtomicBoolean();
 
@@ -43,16 +43,16 @@ public final class TrackingEmbeddingBackendFactory implements EmbeddingBackendFa
 
   @Override
   public EmbeddingProvider create(Map<String, String> configuration) {
-    final boolean enabled = Boolean.parseBoolean(configuration.get(KEY_ENABLED));
-    return new TrackingProvider(enabled);
+    final String modelId = configuration.get(KEY_MODEL_ID);
+    return new TrackingProvider(modelId == null || modelId.isBlank() ? null : modelId);
   }
 
   private static final class TrackingProvider implements EmbeddingProvider, AutoCloseable {
 
-    private final boolean enabled;
+    private final String modelId;
 
-    private TrackingProvider(boolean enabled) {
-      this.enabled = enabled;
+    private TrackingProvider(String modelId) {
+      this.modelId = modelId;
     }
 
     @Override
@@ -62,27 +62,27 @@ public final class TrackingEmbeddingBackendFactory implements EmbeddingBackendFa
 
     @Override
     public boolean isAvailable() {
-      return enabled;
+      return modelId != null;
     }
 
     @Override
     public Set<String> registeredModelIds() {
-      return enabled ? Set.of("tracking-model") : Set.of();
+      return modelId == null ? Set.of() : Set.of(modelId);
     }
 
     @Override
     public boolean supportsModel(String modelId) {
-      return enabled && "tracking-model".equals(modelId);
+      return this.modelId != null && this.modelId.equals(modelId);
     }
 
     @Override
     public int embeddingDimension(String modelId) {
-      return supportsModel(modelId) ? 1 : 0;
+      return supportsModel(modelId) ? 3 : 0;
     }
 
     @Override
     public float[] embed(String modelId, String text) {
-      return new float[] {1.0f};
+      return new float[] {9.0f, 9.0f, 9.0f};
     }
 
     @Override

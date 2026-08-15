@@ -66,7 +66,7 @@ class EmbeddingProviderFactoryTest {
     TrackingEmbeddingBackendFactory.reset();
 
     assertThrows(RuntimeException.class, () -> EmbeddingProviderFactory.create(Map.of(
-        TrackingEmbeddingBackendFactory.KEY_ENABLED, "true",
+        TrackingEmbeddingBackendFactory.KEY_MODEL_ID, "tracking-model",
         FailingEmbeddingBackendFactory.KEY_FAIL, "true")));
 
     assertTrue(TrackingEmbeddingBackendFactory.wasClosed(),
