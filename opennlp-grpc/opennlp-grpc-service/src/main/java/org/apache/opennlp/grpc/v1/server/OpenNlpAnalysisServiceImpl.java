@@ -19,6 +19,7 @@ package org.apache.opennlp.grpc.v1.server;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 
 import io.grpc.Status;
@@ -59,6 +60,8 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
   private final ProfileRegistry profileRegistry;
   private final ModelBundleCache modelBundleCache;
   private final String opennlpVersion;
+  private final Executor analysisExecutor;
+  private final int analysisStreamWindow;
 
   /**
    * Creates the gRPC service adapter delegating analysis to the given orchestrator and
@@ -78,10 +81,37 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
       ProfileRegistry profileRegistry,
       ModelBundleCache modelBundleCache,
       String opennlpVersion) {
+    this(documentAnalyzer, profileRegistry, modelBundleCache, opennlpVersion,
+        ForkJoinPool.commonPool(), DEFAULT_ANALYSIS_STREAM_WINDOW);
+  }
+
+  /**
+   * Creates the service with an explicit shared executor and per-stream admission
+   * window for full document analysis.
+   *
+   * @param documentAnalyzer Analyzer handling unary and streaming documents.
+   * @param profileRegistry Registry exposing available profiles.
+   * @param modelBundleCache Cache exposing models and embedding providers.
+   * @param opennlpVersion OpenNLP version reported to clients.
+   * @param analysisExecutor Shared executor for streamed document work.
+   * @param analysisStreamWindow Maximum documents admitted concurrently per stream.
+   */
+  public OpenNlpAnalysisServiceImpl(
+      DocumentAnalyzer documentAnalyzer,
+      ProfileRegistry profileRegistry,
+      ModelBundleCache modelBundleCache,
+      String opennlpVersion,
+      Executor analysisExecutor,
+      int analysisStreamWindow) {
     this.documentAnalyzer = Objects.requireNonNull(documentAnalyzer, "documentAnalyzer");
     this.profileRegistry = Objects.requireNonNull(profileRegistry, "profileRegistry");
     this.modelBundleCache = Objects.requireNonNull(modelBundleCache, "modelBundleCache");
     this.opennlpVersion = opennlpVersion == null ? "unknown" : opennlpVersion;
+    this.analysisExecutor = Objects.requireNonNull(analysisExecutor, "analysisExecutor");
+    if (analysisStreamWindow < 1) {
+      throw new IllegalArgumentException("analysisStreamWindow must be positive");
+    }
+    this.analysisStreamWindow = analysisStreamWindow;
   }
 
   @Override
@@ -89,8 +119,8 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
       StreamObserver<AnalyzeStreamResponse> responseObserver) {
     return new AnalyzeDocumentStream(
         documentAnalyzer,
-        ForkJoinPool.commonPool(),
-        DEFAULT_ANALYSIS_STREAM_WINDOW,
+        analysisExecutor,
+        analysisStreamWindow,
         responseObserver);
   }
 

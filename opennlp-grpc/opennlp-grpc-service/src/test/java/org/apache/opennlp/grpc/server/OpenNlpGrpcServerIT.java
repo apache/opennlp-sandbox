@@ -89,6 +89,7 @@ class OpenNlpGrpcServerIT {
     final Properties properties = new Properties();
     properties.setProperty("server.enable_reflection", "false");
     properties.setProperty("server.max_inbound_message_size", "10485760");
+    properties.setProperty("server.analysis_stream_workers", "2");
     properties.setProperty("model.sentence_detector.path", sentenceModel.toAbsolutePath().toString());
     properties.setProperty("model.tokenizer.path", tokenizerModel.toAbsolutePath().toString());
 

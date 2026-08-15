@@ -70,6 +70,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
 
   private Server server;
   private ExecutorService handlerExecutor;
+  private ExecutorService analysisExecutor;
   private HealthStatusManager healthStatusManager;
 
   /** Creates an unstarted server; picocli populates the options before {@link #call()} runs. */
@@ -119,6 +120,13 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
         Integer.parseInt(
             configuration.getOrDefault("server.max_inbound_message_size", "10485760"));
 
+    final int analysisStreamWorkers = Integer.parseInt(configuration.getOrDefault(
+        "server.analysis_stream_workers",
+        Integer.toString(Math.max(2, Runtime.getRuntime().availableProcessors()))));
+    if (analysisStreamWorkers < 1) {
+      throw new IllegalArgumentException("server.analysis_stream_workers must be positive");
+    }
+
     final ModelBundleCache modelBundleCache = new ModelBundleCache(configuration);
     final ProfileRegistry profileRegistry = ProfileRegistry.createDefault(
         modelBundleCache.getNameFinderRegistry().isAvailable());
@@ -130,6 +138,9 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     // instead of pinning a platform thread. The Netty event-loop threads stay platform threads;
     // only the application-callback executor is virtual.
     this.handlerExecutor = Executors.newVirtualThreadPerTaskExecutor();
+    this.analysisExecutor = Executors.newFixedThreadPool(
+        analysisStreamWorkers,
+        Thread.ofVirtual().name("opennlp-analysis-stream-", 0).factory());
     this.healthStatusManager = new HealthStatusManager();
 
     final ServerBuilder<?> builder = ServerBuilder.forPort(port)
@@ -139,7 +150,9 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
                 documentAnalyzer,
                 profileRegistry,
                 modelBundleCache,
-                SERVER_VERSION),
+                SERVER_VERSION,
+                analysisExecutor,
+                analysisStreamWorkers),
             new EagerHeadersInterceptor()))
         .addService(healthStatusManager.getHealthService())
         .maxInboundMessageSize(maxInboundMessageSize);
@@ -233,6 +246,9 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     }
     if (handlerExecutor != null) {
       handlerExecutor.shutdown();
+    }
+    if (analysisExecutor != null) {
+      analysisExecutor.shutdown();
     }
   }
 }
