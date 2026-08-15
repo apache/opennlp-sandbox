@@ -95,6 +95,13 @@ enum PipelineStep {
   // Select the knowledge base with AnalysisProfile.wordnet_lexicon_id; no configured
   // lexicon => NOT_FOUND.
   PIPELINE_STEP_EXPAND = 16;
+
+  // Geocodes the location-typed entities NER produced: resolves each mention against
+  // the library's bundled Natural Earth gazetteer, sets NamedEntity.geo on resolved
+  // entities, and emits the document-shape layer "opennlp:geo". An unresolvable
+  // mention is left without a resolution, never fabricated. Requires NER; requesting
+  // it without => FAILED_PRECONDITION.
+  PIPELINE_STEP_GEOCODE = 17;
 }
 
 // The stemmer families the STEM step can run. All but HUNSPELL are bundled

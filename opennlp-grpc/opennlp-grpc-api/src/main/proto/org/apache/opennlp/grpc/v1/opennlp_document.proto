@@ -171,9 +171,37 @@ message NamedEntity {
   // it lists every provider that found this entity, so provenance and cross-provider
   // agreement are explicit. Empty only on responses from servers that predate this field.
   repeated EntitySource sources = 5;
-  // Reserved for entity resolution payloads (geocoding: coordinates, gazetteer
-  // id, containment hierarchy; and other per-entity enrichment).
-  reserved 10 to 19;
+  // Geocoding of a location-typed entity (from PIPELINE_STEP_GEOCODE): the resolved
+  // gazetteer entry and the resolution confidence. Unset when the step did not run,
+  // the entity is not location-typed, or the mention did not resolve.
+  optional GeoResolutionResult geo = 10;
+  // Reserved for further per-entity enrichment.
+  reserved 11 to 19;
+}
+
+// One geocoded place: the gazetteer entry a location mention resolved to, with the
+// resolution confidence. Field semantics mirror the library's GazetteerEntry.
+message GeoResolutionResult {
+  // The gazetteer that supplied the entry, e.g. "naturalearth".
+  string source = 1;
+  // The entry's stable id within its source.
+  string record_id = 2;
+  // The canonical place name of the entry.
+  string name = 3;
+  // Latitude of the representative point, in degrees.
+  double latitude = 4;
+  // Longitude of the representative point, in degrees.
+  double longitude = 5;
+  // ISO country code of the entry, when the source carries one.
+  optional string country_code = 6;
+  // Enclosing regions of the place, in the source's containment order.
+  repeated string containment = 7;
+  // Population of the place, when the source carries one; 0 otherwise.
+  int64 population = 8;
+  // The source's feature classification of the place, e.g. a city or a country.
+  optional string feature_class = 9;
+  // The geocoder's confidence in this resolution, in [0,1].
+  double confidence = 10;
 }
 
 // Provenance for a NamedEntity: one recognizer/engine that produced it. Under a
@@ -518,6 +546,9 @@ message DocumentClassification {
 //                       hypernyms) of each token from the configured knowledge
 //                       base, each a scored label anchored on the expanded token's
 //                       span (from PIPELINE_STEP_EXPAND).
+//   opennlp:geo         positional, geo values: the geocoded resolution of each
+//                       resolvable location entity, anchored on the mention's span
+//                       (from PIPELINE_STEP_GEOCODE).
 
 // The typed annotation layers of one analyzed document.
 message DocumentLayers {
@@ -546,6 +577,8 @@ message AnnotationLayer {
     TreeAnnotationList tree_values = 6;
     // Annotations whose value is a subword piece with its vocabulary id.
     SubwordAnnotationList subword_values = 7;
+    // Annotations whose value is a geocoded place.
+    GeoAnnotationList geo_values = 8;
   }
 }
 
@@ -626,6 +659,19 @@ message SubwordAnnotation {
   string piece = 2;
   // The piece's id in the model's vocabulary.
   int32 vocabulary_id = 3;
+}
+
+// The annotations of a geocoding layer.
+message GeoAnnotationList {
+  repeated GeoAnnotation annotations = 1;
+}
+
+// One geocoded location mention: the resolved place anchored on the mention's span.
+message GeoAnnotation {
+  // The span of the location mention within the document text.
+  AnnotationSpan span = 1;
+  // The place the mention resolved to.
+  GeoResolutionResult resolution = 2;
 }
 
 // The annotations of a parse-tree layer.

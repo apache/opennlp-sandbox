@@ -71,10 +71,38 @@ public final class TinyNerModel {
    * @throws IOException If training or serialization fails.
    */
   public static Path trainPersonModel(Path target) throws IOException {
+    return train(target, TRAINING_SENTENCES);
+  }
+
+  /** Annotated location sentences; the mention contexts recur in the geocode tests. */
+  private static final String[] LOCATION_SENTENCES = {
+      "The mayor visited <START:location> Paris <END> last spring .",
+      "The delegation traveled to <START:location> Tokyo <END> in May .",
+      "<START:location> Paris <END> hosted the summit this year .",
+      "<START:location> Tokyo <END> was the next stop on the tour .",
+      "She moved from <START:location> Paris <END> to <START:location> Tokyo <END> .",
+      "The mayor visited <START:location> Tokyo <END> last spring .",
+  };
+
+  /**
+   * Trains a location model over the fixture sentences and serializes it to
+   * {@code target}.
+   *
+   * @param target Destination {@code .bin} path. Must not be {@code null}.
+   *
+   * @return {@code target}, for call-site convenience.
+   *
+   * @throws IOException If training or serialization fails.
+   */
+  public static Path trainLocationModel(Path target) throws IOException {
+    return train(target, LOCATION_SENTENCES);
+  }
+
+  private static Path train(Path target, String[] sentences) throws IOException {
     final List<String> lines = new ArrayList<>();
-    // Repeat the small corpus so the perceptron trainer converges on the fixture names.
+    // Repeat the small corpus so the trainer converges on the fixture names.
     for (int i = 0; i < 80; i++) {
-      Collections.addAll(lines, TRAINING_SENTENCES);
+      Collections.addAll(lines, sentences);
     }
 
     final TrainingParameters params = new TrainingParameters();
