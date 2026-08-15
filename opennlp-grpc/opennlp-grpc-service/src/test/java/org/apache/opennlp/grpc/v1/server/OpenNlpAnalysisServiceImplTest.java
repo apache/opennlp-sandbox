@@ -18,6 +18,7 @@
 package org.apache.opennlp.grpc.v1.server;
 
 import java.util.Map;
+import java.util.Set;
 
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -27,7 +28,10 @@ import org.apache.opennlp.grpc.processor.DocumentAnalyzer;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
+import org.apache.opennlp.grpc.v1.GetServiceInfoRequest;
+import org.apache.opennlp.grpc.v1.GetServiceInfoResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.StandardLayer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -58,7 +62,7 @@ class OpenNlpAnalysisServiceImplTest {
   @Test
   void deliversResponseOnSuccess() {
     final AnalyzeDocumentResponse response = AnalyzeDocumentResponse.newBuilder().build();
-    final CapturingObserver observer = new CapturingObserver();
+    final CapturingObserver<AnalyzeDocumentResponse> observer = new CapturingObserver<>();
 
     serviceWith(req -> response).analyzeDocument(request(), observer);
 
@@ -69,7 +73,7 @@ class OpenNlpAnalysisServiceImplTest {
 
   @Test
   void mapsAnalysisExceptionToItsStatusWithMessage() {
-    final CapturingObserver observer = new CapturingObserver();
+    final CapturingObserver<AnalyzeDocumentResponse> observer = new CapturingObserver<>();
 
     serviceWith(req -> {
       throw AnalysisException.invalidArgument("ner_entity_types must not contain blank values");
@@ -84,7 +88,7 @@ class OpenNlpAnalysisServiceImplTest {
 
   @Test
   void mapsUnexpectedExceptionToInternalWithoutLeakingDetail() {
-    final CapturingObserver observer = new CapturingObserver();
+    final CapturingObserver<AnalyzeDocumentResponse> observer = new CapturingObserver<>();
 
     serviceWith(req -> {
       throw new IllegalStateException("secret internal stack detail");
@@ -98,14 +102,31 @@ class OpenNlpAnalysisServiceImplTest {
     assertFalse(observer.completed);
   }
 
+  @Test
+  void serviceInfoAdvertisesEveryStandardDocumentLayer() {
+    final CapturingObserver<GetServiceInfoResponse> observer = new CapturingObserver<>();
+
+    serviceWith(request -> AnalyzeDocumentResponse.getDefaultInstance())
+        .getServiceInfo(GetServiceInfoRequest.getDefaultInstance(), observer);
+
+    assertNotNull(observer.value);
+    assertEquals(Set.of(StandardLayer.values()).stream()
+            .filter(layer -> layer != StandardLayer.STANDARD_LAYER_UNSPECIFIED
+                && layer != StandardLayer.UNRECOGNIZED)
+            .collect(java.util.stream.Collectors.toSet()),
+        Set.copyOf(observer.value.getSupportedLayersList()));
+    assertTrue(observer.completed);
+    assertNull(observer.error);
+  }
+
   /** Captures the terminal callback the service makes on the response stream. */
-  private static final class CapturingObserver implements StreamObserver<AnalyzeDocumentResponse> {
-    private AnalyzeDocumentResponse value;
+  private static final class CapturingObserver<T> implements StreamObserver<T> {
+    private T value;
     private Throwable error;
     private boolean completed;
 
     @Override
-    public void onNext(AnalyzeDocumentResponse value) {
+    public void onNext(T value) {
       this.value = value;
     }
 
