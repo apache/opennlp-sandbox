@@ -72,6 +72,14 @@ enum PipelineStep {
   // AnalysisProfile.normalization; requesting the step without a spec =>
   // INVALID_ARGUMENT.
   PIPELINE_STEP_NORMALIZE = 13;
+
+  // Encodes the whole document text into subword pieces (SentencePiece) against a
+  // configured subword model, reporting every piece with its vocabulary id and the
+  // exact span of original text it covers. Emitted only as the document-shape layer
+  // "opennlp:subwords"; independent of SENTENCE_DETECT and TOKENIZE, and does not
+  // change the word-token results. Select the model with
+  // AnalysisProfile.subword_model_id; no configured model => NOT_FOUND.
+  PIPELINE_STEP_SUBWORD_TOKENIZE = 14;
 }
 
 // Configuration for a chunking strategy (used when the caller does not
@@ -198,6 +206,12 @@ message AnalysisProfile {
   // tokens; consumers filter. Requires TOKENIZE; a language with no bundled list =>
   // NOT_FOUND.
   optional string stopword_language = 13;
+
+  // The subword model for PIPELINE_STEP_SUBWORD_TOKENIZE, one of the ids configured
+  // under model.subword.<id>.path on the server. Unset selects the configured
+  // default (model.subword.default_id) or the sole configured model; an unknown id,
+  // or no selectable model, => NOT_FOUND.
+  optional string subword_model_id = 14;
 }
 
 // Configuration for PIPELINE_STEP_NORMALIZE: which rungs run, in the order the

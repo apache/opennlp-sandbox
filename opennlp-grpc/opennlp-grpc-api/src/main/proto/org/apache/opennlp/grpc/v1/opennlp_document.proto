@@ -508,6 +508,9 @@ message DocumentClassification {
 //   opennlp:terms:<DIMENSION>  positional, string values: the per-token
 //                       normalized form of one requested term dimension,
 //                       span-aligned with opennlp:tokens.
+//   opennlp:subwords    positional, subword values: the SentencePiece encoding
+//                       of the whole document text, each piece with its
+//                       vocabulary id (from PIPELINE_STEP_SUBWORD_TOKENIZE).
 
 // The typed annotation layers of one analyzed document.
 message DocumentLayers {
@@ -534,6 +537,8 @@ message AnnotationLayer {
     EmbeddingAnnotationList embedding_values = 5;
     // Annotations whose value is a constituency parse tree.
     TreeAnnotationList tree_values = 6;
+    // Annotations whose value is a subword piece with its vocabulary id.
+    SubwordAnnotationList subword_values = 7;
   }
 }
 
@@ -597,6 +602,23 @@ message EmbeddingAnnotation {
   repeated float vector = 3;
   // The textual unit the vector was computed over.
   EmbeddingGranularity granularity = 4;
+}
+
+// The annotations of a subword layer.
+message SubwordAnnotationList {
+  repeated SubwordAnnotation annotations = 1;
+}
+
+// One subword piece: the model's normalized piece text, its vocabulary id, and the
+// exact span of original text it covers. The piece is generally not a substring of
+// the input, because the model normalizes; the span always is the source location.
+message SubwordAnnotation {
+  // The span of original text the piece covers.
+  AnnotationSpan span = 1;
+  // The piece in the model's normalized form, e.g. "▁open".
+  string piece = 2;
+  // The piece's id in the model's vocabulary.
+  int32 vocabulary_id = 3;
 }
 
 // The annotations of a parse-tree layer.
