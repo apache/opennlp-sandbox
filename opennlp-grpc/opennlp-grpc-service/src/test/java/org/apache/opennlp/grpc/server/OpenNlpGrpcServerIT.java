@@ -25,6 +25,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import io.grpc.ManagedChannel;
@@ -32,7 +36,12 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.health.v1.HealthCheckRequest;
 import io.grpc.health.v1.HealthCheckResponse;
 import io.grpc.health.v1.HealthGrpc;
+import io.grpc.stub.StreamObserver;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
+import org.apache.opennlp.grpc.v1.AnalyzeStreamConfiguration;
+import org.apache.opennlp.grpc.v1.AnalyzeStreamDocument;
+import org.apache.opennlp.grpc.v1.AnalyzeStreamRequest;
+import org.apache.opennlp.grpc.v1.AnalyzeStreamResponse;
 import org.apache.opennlp.grpc.v1.GetServiceInfoRequest;
 import org.apache.opennlp.grpc.v1.OpenNlpAnalysisServiceGrpc;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
@@ -43,6 +52,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OpenNlpGrpcServerIT {
@@ -150,5 +160,56 @@ class OpenNlpGrpcServerIT {
             .build());
 
     assertEquals(HealthCheckResponse.ServingStatus.SERVING, response.getStatus());
+  }
+
+  @Test
+  void analyzesMultipleDocumentsOverOneGrpcStream() throws Exception {
+    final var responses = new CopyOnWriteArrayList<AnalyzeStreamResponse>();
+    final AtomicReference<Throwable> error = new AtomicReference<>();
+    final CountDownLatch done = new CountDownLatch(1);
+    final StreamObserver<AnalyzeStreamRequest> requests =
+        OpenNlpAnalysisServiceGrpc.newStub(channel).analyzeStream(new StreamObserver<>() {
+          @Override
+          public void onNext(AnalyzeStreamResponse response) {
+            responses.add(response);
+          }
+
+          @Override
+          public void onError(Throwable failure) {
+            error.set(failure);
+            done.countDown();
+          }
+
+          @Override
+          public void onCompleted() {
+            done.countDown();
+          }
+        });
+
+    requests.onNext(AnalyzeStreamRequest.newBuilder()
+        .setConfiguration(AnalyzeStreamConfiguration.getDefaultInstance())
+        .build());
+    requests.onNext(streamDocument(11, "A first sentence."));
+    requests.onNext(streamDocument(12, "Another sentence follows."));
+    requests.onCompleted();
+
+    assertTrue(done.await(10, TimeUnit.SECONDS));
+    assertNull(error.get());
+    assertEquals(2, responses.size());
+    assertTrue(responses.stream().allMatch(AnalyzeStreamResponse::hasOk));
+    assertTrue(responses.stream().anyMatch(response -> response.getSequence() == 11));
+    assertTrue(responses.stream().anyMatch(response -> response.getSequence() == 12));
+    assertTrue(responses.stream().allMatch(
+        response -> response.getOk().getDocument().getSentencesCount() == 1));
+  }
+
+  private static AnalyzeStreamRequest streamDocument(long sequence, String text) {
+    return AnalyzeStreamRequest.newBuilder()
+        .setDocument(AnalyzeStreamDocument.newBuilder()
+            .setSequence(sequence)
+            .setDocument(OpenNlpDocument.newBuilder()
+                .setDocId("stream-" + sequence)
+                .setRawText(text)))
+        .build();
   }
 }
