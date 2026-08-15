@@ -118,7 +118,7 @@ class DocumentShapeAssemblerTest {
   }
 
   @Test
-  void parsesRenderThePrimaryTreePerParsedSentence() {
+  void parsesRetainPrimaryAndAllEngineAlternatives() {
     final ParseTree tree = ParseTree.newBuilder()
         .setParserId("default")
         .setEngine("opennlp-me")
@@ -129,7 +129,15 @@ class DocumentShapeAssemblerTest {
             .build())
         .build();
     final OpenNlpDocument.Builder document = twoSentences();
-    document.setSentences(0, document.getSentences(0).toBuilder().setParseTree(tree).build());
+    final ParseTree alternative = tree.toBuilder()
+        .setParserId("alternate")
+        .setEngine("onnx")
+        .build();
+    document.setSentences(0, document.getSentences(0).toBuilder()
+        .setParseTree(tree)
+        .addParseTrees(tree)
+        .addParseTrees(alternative)
+        .build());
 
     DocumentShapeAssembler.apply(document, TEXT);
 
@@ -138,6 +146,9 @@ class DocumentShapeAssemblerTest {
     assertEquals(1, parses.getTreeValues().getAnnotationsCount());
     assertEquals(0, parses.getTreeValues().getAnnotations(0).getSpan().getStart());
     assertEquals("TOP", parses.getTreeValues().getAnnotations(0).getTree().getRoot().getLabel());
+    assertEquals(2, parses.getTreeValues().getAnnotations(0).getAlternativesCount());
+    assertEquals("alternate",
+        parses.getTreeValues().getAnnotations(0).getAlternatives(1).getParserId());
   }
 
   @Test
