@@ -30,8 +30,8 @@ public final class ProfileMerger {
   }
 
   /**
-   * Returns {@code override} merged on top of {@code base}: non-empty override fields replace
-   * the corresponding base fields.
+   * Returns {@code override} merged on top of {@code base}. Present scalar and message fields,
+   * and non-empty repeated fields, replace the corresponding base fields.
    *
    * @param base     The base profile. Must not be {@code null}.
    * @param override The overriding profile. Must not be {@code null}.
@@ -63,6 +63,33 @@ public final class ProfileMerger {
     }
     if (override.hasParseEnginePolicy()) {
       builder.setParseEnginePolicy(override.getParseEnginePolicy());
+    }
+    if (override.hasNormalization()) {
+      builder.setNormalization(override.getNormalization());
+    }
+    if (override.hasTokenizerEngine()) {
+      builder.setTokenizerEngine(override.getTokenizerEngine());
+    }
+    if (override.getTermDimensionsCount() > 0) {
+      builder.clearTermDimensions().addAllTermDimensions(override.getTermDimensionsList());
+    }
+    if (override.hasTermProfile()) {
+      builder.setTermProfile(override.getTermProfile());
+    }
+    if (override.hasStopwordLanguage()) {
+      builder.setStopwordLanguage(override.getStopwordLanguage());
+    }
+    if (override.hasSubwordModelId()) {
+      builder.setSubwordModelId(override.getSubwordModelId());
+    }
+    if (override.hasStemmer()) {
+      builder.setStemmer(override.getStemmer());
+    }
+    if (override.hasWordnetLexiconId()) {
+      builder.setWordnetLexiconId(override.getWordnetLexiconId());
+    }
+    if (override.hasLatticeDictionaryId()) {
+      builder.setLatticeDictionaryId(override.getLatticeDictionaryId());
     }
     return builder.build();
   }
