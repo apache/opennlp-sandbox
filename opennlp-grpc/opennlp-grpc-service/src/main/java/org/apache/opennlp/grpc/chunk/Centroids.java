@@ -49,7 +49,16 @@ public final class Centroids {
     return centroid(modelId, vectors, span, granularity, null);
   }
 
-  /** Builds a centroid and retains the concrete route that produced its member vectors. */
+  /**
+   * Builds a centroid and retains the concrete route that produced its member vectors.
+   *
+   * @param modelId The embedding model the vectors came from.
+   * @param vectors The member vectors to average; must be non-empty and of equal length.
+   * @param span The span the centroid represents.
+   * @param granularity The granularity to stamp on the centroid.
+   * @param route The concrete route that produced the member vectors, or {@code null}.
+   * @return The centroid result, or {@code null} when {@code vectors} is empty.
+   */
   public static EmbeddingResult centroid(String modelId, List<float[]> vectors, AnnotationSpan span,
       EmbeddingGranularity granularity, EmbeddingRoute route) {
     if (vectors.isEmpty()) {

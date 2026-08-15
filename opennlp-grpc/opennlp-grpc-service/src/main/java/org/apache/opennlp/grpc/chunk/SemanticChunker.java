@@ -71,7 +71,18 @@ public final class SemanticChunker {
     return chunk(rawText, document, config, embeddingProvider, modelId, null);
   }
 
-  /** Chunks using an optional concrete embedding backend route. */
+  /**
+   * Chunks using an optional concrete embedding backend route.
+   *
+   * @param rawText The document text the sentence spans refer to.
+   * @param document The analyzed document. Sentence spans are required.
+   * @param config The semantic chunking configuration.
+   * @param embeddingProvider The provider used to embed each sentence.
+   * @param modelId The id of a registered embedding model.
+   * @param backendId The concrete backend id, or {@code null} to use the default route.
+   * @return The chunk segments in document order.
+   * @throws AnalysisException If the configuration is invalid or embedding fails.
+   */
   public static List<SegmentationChunker.ChunkSegment> chunk(
       String rawText,
       OpenNlpDocument document,

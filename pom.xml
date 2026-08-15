@@ -624,6 +624,8 @@
                                 <exclude>**/src/test/resources/models/coref/en/gen.mas</exclude>
                                 <!-- These files are samples in wikinews-importer -->
                                 <exclude>**/samples/*.xmi</exclude>
+                                <!-- This file is line-oriented benchmark input, so a header changes the data -->
+                                <exclude>**/benchmarks/embedding-throughput/sentences.txt</exclude>
                                 <!-- This is a log file of DerbyDB being created during test runs -->
                                 <exclude>**/derby.log</exclude>
                             </excludes>

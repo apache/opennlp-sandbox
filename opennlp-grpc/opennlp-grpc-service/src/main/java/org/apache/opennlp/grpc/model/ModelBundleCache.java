@@ -364,6 +364,8 @@ public final class ModelBundleCache {
   }
 
   /**
+   * Returns the registry of configured subword tokenizers.
+   *
    * @return The registry of configured subword tokenizers, possibly empty. Never
    *         {@code null}.
    */
@@ -372,6 +374,8 @@ public final class ModelBundleCache {
   }
 
   /**
+   * Returns the registry of configured hunspell dictionaries.
+   *
    * @return The registry of configured hunspell dictionaries, possibly empty. Never
    *         {@code null}.
    */
@@ -380,6 +384,8 @@ public final class ModelBundleCache {
   }
 
   /**
+   * Returns the registry of configured WordNet lexicons.
+   *
    * @return The registry of configured WordNet lexicons, possibly empty. Never
    *         {@code null}.
    */
@@ -388,6 +394,8 @@ public final class ModelBundleCache {
   }
 
   /**
+   * Returns the registry of configured lattice dictionaries.
+   *
    * @return The registry of configured lattice dictionaries, possibly empty. Never
    *         {@code null}.
    */

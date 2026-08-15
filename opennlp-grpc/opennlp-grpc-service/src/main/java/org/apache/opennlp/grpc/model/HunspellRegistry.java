@@ -117,6 +117,8 @@ public final class HunspellRegistry {
   }
 
   /**
+   * Reports whether any hunspell dictionary is configured.
+   *
    * @return {@code true} when at least one hunspell dictionary is configured.
    */
   public boolean isAvailable() {

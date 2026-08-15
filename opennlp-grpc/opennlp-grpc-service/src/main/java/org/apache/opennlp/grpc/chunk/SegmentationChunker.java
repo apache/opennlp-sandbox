@@ -77,7 +77,17 @@ public final class SegmentationChunker {
     return segment(rawText, document, spec, embeddingProvider, null);
   }
 
-  /** Segments with an optional entry-level embedding selector for semantic fallback. */
+  /**
+   * Segments with an optional entry-level embedding selector for semantic fallback.
+   *
+   * @param rawText The document text the annotation offsets refer to.
+   * @param document The analyzed document.
+   * @param spec The chunking specification.
+   * @param embeddingProvider The provider used for semantic chunking.
+   * @param fallbackSelector The entry-level selector to use when semantic configuration omits one.
+   * @return The chunk segments in document order.
+   * @throws AnalysisException If the specification or selector is invalid.
+   */
   public static List<ChunkSegment> segment(
       String rawText,
       OpenNlpDocument document,

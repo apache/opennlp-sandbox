@@ -103,6 +103,8 @@ public final class WordNetRegistry {
   }
 
   /**
+   * Reports whether any WordNet lexicon is configured.
+   *
    * @return {@code true} when at least one lexicon is configured.
    */
   public boolean isAvailable() {

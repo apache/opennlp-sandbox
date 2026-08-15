@@ -104,6 +104,8 @@ public final class LatticeRegistry {
   }
 
   /**
+   * Reports whether any lattice dictionary is configured.
+   *
    * @return {@code true} when at least one dictionary is configured.
    */
   public boolean isAvailable() {

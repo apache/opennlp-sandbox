@@ -101,6 +101,8 @@ public final class SubwordRegistry {
   }
 
   /**
+   * Reports whether any subword tokenizer is configured.
+   *
    * @return {@code true} when at least one subword model is configured.
    */
   public boolean isAvailable() {

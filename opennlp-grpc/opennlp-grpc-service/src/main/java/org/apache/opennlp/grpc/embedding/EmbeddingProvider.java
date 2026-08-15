@@ -87,7 +87,13 @@ public interface EmbeddingProvider {
    */
   boolean supportsModel(String modelId);
 
-  /** Reports whether one concrete backend route serves the logical model. */
+  /**
+   * Reports whether one concrete backend route serves the logical model.
+   *
+   * @param modelId The logical model id.
+   * @param backendId The concrete backend id.
+   * @return {@code true} when the backend serves the model.
+   */
   default boolean supportsModel(String modelId, String backendId) {
     return supportsModel(modelId) && backendId != null && backendId.equals(backendId(modelId));
   }
@@ -134,6 +140,11 @@ public interface EmbeddingProvider {
   /**
    * Embeds a batch on the selected route and reports the route that actually produced it.
    * A blank backend selects this provider's default route.
+   *
+   * @param modelId The logical model id.
+   * @param backendId The concrete backend id, or blank to use the default route.
+   * @param texts The texts to embed.
+   * @return The vectors and the concrete route that produced them.
    */
   default EmbeddingBatchResult embedBatchResolved(
       String modelId, String backendId, List<String> texts) {

@@ -66,7 +66,14 @@ public final class RankedBackends<T> {
   public record Registration<T>(String logicalId, String engineId, int priority, T value) {
   }
 
-  /** One successful invocation together with the registration that handled it. */
+  /**
+   * One successful invocation together with the registration that handled it.
+   *
+   * @param <T> The per-engine handler type.
+   * @param <R> The invocation result type.
+   * @param registration The registration that handled the invocation.
+   * @param result The successful invocation result.
+   */
   public record Invocation<T, R>(Registration<T> registration, R result) {
   }
 
@@ -208,7 +215,16 @@ public final class RankedBackends<T> {
     return invokeResolved(id, op).result();
   }
 
-  /** Runs with safe fallback and retains the registration that succeeded. */
+  /**
+   * Runs with safe fallback and retains the registration that succeeded.
+   *
+   * @param <R> The operation's result type.
+   * @param id The logical id.
+   * @param op The operation to run against an engine's registration.
+   * @return The successful result and the registration that produced it.
+   * @throws AnalysisException {@code NOT_FOUND} if no engine serves {@code id}, or when every
+   *                           eligible engine fails.
+   */
   public <R> Invocation<T, R> invokeResolved(
       String id, Function<Registration<T>, R> op) {
     final List<Registration<T>> registrations = resolve(id);

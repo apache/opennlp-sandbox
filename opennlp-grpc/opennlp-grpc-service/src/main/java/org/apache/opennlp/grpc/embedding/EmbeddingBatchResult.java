@@ -22,9 +22,15 @@ import java.util.Objects;
 
 import org.apache.opennlp.grpc.v1.EmbeddingRoute;
 
-/** One batch of vectors together with the concrete route that produced them. */
+/**
+ * One batch of vectors together with the concrete route that produced them.
+ *
+ * @param vectors One vector per input text, in input order.
+ * @param route The concrete embedding route that produced the vectors.
+ */
 public record EmbeddingBatchResult(List<float[]> vectors, EmbeddingRoute route) {
 
+  /** Validates and defensively copies the batch result. */
   public EmbeddingBatchResult {
     vectors = List.copyOf(Objects.requireNonNull(vectors, "vectors"));
     Objects.requireNonNull(route, "route");
