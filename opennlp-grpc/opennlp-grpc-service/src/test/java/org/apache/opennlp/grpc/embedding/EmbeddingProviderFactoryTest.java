@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -58,5 +59,17 @@ class EmbeddingProviderFactoryTest {
     assertTrue(provider.supportsModel("demo"));
     assertEquals(StubEmbeddingProvider.BACKEND_ID, provider.backendId("demo"));
     assertEquals(3, provider.embeddingDimension("demo"));
+  }
+
+  @Test
+  void closesEarlierProvidersWhenALaterFactoryFails() {
+    TrackingEmbeddingBackendFactory.reset();
+
+    assertThrows(RuntimeException.class, () -> EmbeddingProviderFactory.create(Map.of(
+        TrackingEmbeddingBackendFactory.KEY_ENABLED, "true",
+        FailingEmbeddingBackendFactory.KEY_FAIL, "true")));
+
+    assertTrue(TrackingEmbeddingBackendFactory.wasClosed(),
+        "a provider created before a later factory failed was leaked");
   }
 }
