@@ -24,6 +24,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import opennlp.tools.sentdetect.NewlineSentenceDetector;
+import opennlp.tools.tokenize.SimpleTokenizer;
+import opennlp.tools.tokenize.WhitespaceTokenizer;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.model.NameFinderRegistry;
@@ -46,11 +49,13 @@ import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.ParseFormat;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.apache.opennlp.grpc.v1.ProcessingDiagnostic;
+import org.apache.opennlp.grpc.v1.StandardSentenceDetectorEngine;
+import org.apache.opennlp.grpc.v1.StandardTokenizerEngine;
 
 /**
  * v1 pipeline orchestrator: resolves the analysis profile, validates the request, and
  * executes the requested steps in order, delegating the actual work to focused
- * helpers — {@link AnalysisRequestValidator} for request checks,
+ * helpers: {@link AnalysisRequestValidator} for request checks,
  * {@link ClassicStepRunner} for the classic annotation steps,
  * {@link EmbedChunkStepRunner} for embeddings and chunk groups, and
  * {@link DocumentOffsetEncoder} for the final span conversion.
@@ -60,6 +65,9 @@ import org.apache.opennlp.grpc.v1.ProcessingDiagnostic;
  * bytes).
  */
 public class BasicDocumentAnalyzer implements DocumentAnalyzer {
+
+  private static final NewlineSentenceDetector NEWLINE_SENTENCE_DETECTOR =
+      new NewlineSentenceDetector();
 
   private final ProfileResolver profileResolver;
   private final AnalysisRequestValidator validator;
@@ -123,7 +131,8 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
         modelBundleCache.getParserRegistry(), modelBundleCache.getChunkerRegistry(),
         modelBundleCache.getArtifactRegistry(), modelBundleCache.getSubwordRegistry(),
         modelBundleCache.getHunspellRegistry(), modelBundleCache.getWordNetRegistry(),
-        modelBundleCache.getLatticeRegistry());
+        modelBundleCache.getLatticeRegistry(), modelBundleCache.getTokenizerRegistry(),
+        modelBundleCache.getSentenceDetectorRegistry());
     this.classicSteps = new ClassicStepRunner(modelBundleCache);
     this.embedChunkSteps = new EmbedChunkStepRunner(embeddingProvider, classicSteps);
   }
@@ -209,24 +218,49 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     }
 
     if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)) {
+      final var sentenceDetector = validator.resolveSentenceDetector(profile);
       runStep(
           PipelineStep.PIPELINE_STEP_SENTENCE_DETECT,
-          () -> classicSteps.detectSentences(rawText, document, includeProbabilities, diagnostics));
+          () -> {
+            if (sentenceDetector.custom() != null) {
+              ClassicStepRunner.detectSentences(rawText, document, sentenceDetector.custom(),
+                  "custom:" + sentenceDetector.customId(), diagnostics);
+            } else if (sentenceDetector.standard()
+                == StandardSentenceDetectorEngine.STANDARD_SENTENCE_DETECTOR_ENGINE_NEWLINE) {
+              ClassicStepRunner.detectSentences(rawText, document, NEWLINE_SENTENCE_DETECTOR,
+                  "newline", diagnostics);
+            } else {
+              classicSteps.detectSentences(
+                  rawText, document, includeProbabilities, diagnostics);
+            }
+          });
     } else {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT));
     }
 
     if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
       requireSentences(document, PipelineStep.PIPELINE_STEP_TOKENIZE);
-      final boolean uax29 = AnalysisRequestValidator.UAX29_TOKENIZER_ENGINE
-          .equals(profile.getTokenizerEngine());
+      final var tokenizer = validator.resolveTokenizer(profile);
       final String latticeDictionaryId = validator.resolveLatticeDictionaryId(profile);
       runStep(
           PipelineStep.PIPELINE_STEP_TOKENIZE,
           () -> {
-            if (uax29) {
+            if (tokenizer.custom() != null) {
+              ClassicStepRunner.tokenize(rawText, document, tokenizer.custom(),
+                  "custom:" + tokenizer.customId(), diagnostics);
+            } else if (tokenizer.standard()
+                == StandardTokenizerEngine.STANDARD_TOKENIZER_ENGINE_UAX29) {
               ClassicStepRunner.tokenizeUax29(rawText, document, diagnostics);
-            } else if (latticeDictionaryId != null) {
+            } else if (tokenizer.standard()
+                == StandardTokenizerEngine.STANDARD_TOKENIZER_ENGINE_WHITESPACE) {
+              ClassicStepRunner.tokenize(rawText, document, WhitespaceTokenizer.INSTANCE,
+                  "whitespace", diagnostics);
+            } else if (tokenizer.standard()
+                == StandardTokenizerEngine.STANDARD_TOKENIZER_ENGINE_SIMPLE) {
+              ClassicStepRunner.tokenize(rawText, document, SimpleTokenizer.INSTANCE,
+                  "simple", diagnostics);
+            } else if (tokenizer.standard()
+                == StandardTokenizerEngine.STANDARD_TOKENIZER_ENGINE_LATTICE) {
               classicSteps.tokenizeLattice(rawText, document, latticeDictionaryId, diagnostics);
             } else {
               classicSteps.tokenize(rawText, document, includeProbabilities, diagnostics);

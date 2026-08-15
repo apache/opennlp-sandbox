@@ -273,14 +273,15 @@ message AnalysisProfile {
   EnginePolicy parse_engine_policy = 8;
   // Rungs for PIPELINE_STEP_NORMALIZE. Required when that step is requested.
   NormalizationSpec normalization = 9;
-  // Tokenizer engine for PIPELINE_STEP_TOKENIZE. Unset or "model" selects the
+  // Compatibility tokenizer selector retained for existing v1 clients; new clients
+  // should use tokenizer. Unset or "model" selects the
   // bundle's TokenizerME (the previous behavior). "uax29" selects the rule-based
   // Unicode UAX #29 word tokenizer, which needs no model and additionally
   // populates Token.word_type. "lattice" selects Viterbi lattice segmentation over
   // an operator-configured MeCab-format dictionary (select it with
   // lattice_dictionary_id; none configured => NOT_FOUND). Any other value =>
   // INVALID_ARGUMENT.
-  optional string tokenizer_engine = 10 [deprecated = true];
+  optional string tokenizer_engine = 10;
   // Character-level normalization layers to compute per token into
   // Token.term_layers, named by the library's Dimension enum (e.g. "NFC",
   // "CASE_FOLD", "FULL_CASE_FOLD", "ACCENT_FOLD", "EMOJI_FOLD",

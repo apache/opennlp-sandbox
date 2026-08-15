@@ -136,6 +136,9 @@ public final class ModelBundleCache {
   // via model.lattice.<id>.dir, not bundled). The built tokenizers read only immutable
   // dictionary state and are shared; empty when none is configured.
   private final LatticeRegistry latticeRegistry;
+  // Custom tokenizer and sentence-detector engines contributed by ServiceLoader modules.
+  private final TokenizerRegistry tokenizerRegistry;
+  private final SentenceDetectorRegistry sentenceDetectorRegistry;
 
   /**
    * Eagerly loads every model and registry described by the given configuration. The classic
@@ -186,8 +189,12 @@ public final class ModelBundleCache {
     DocCategorizerRegistry docCategorizerRegistry = null;
     SentimentRegistry sentimentRegistry = null;
     ChunkerRegistry chunkerRegistry = null;
+    TokenizerRegistry tokenizerRegistry = null;
+    SentenceDetectorRegistry sentenceDetectorRegistry = null;
     boolean constructed = false;
     try {
+      tokenizerRegistry = TokenizerRegistry.create(configuration);
+      sentenceDetectorRegistry = SentenceDetectorRegistry.create(configuration);
       embeddingProvider = EmbeddingProviderFactory.create(configuration);
       // The registry may call the detector from any of its threads; hand it a view that
       // resolves to the calling thread's own instance rather than one shared decoder.
@@ -210,6 +217,8 @@ public final class ModelBundleCache {
       this.docCategorizerRegistry = docCategorizerRegistry;
       this.sentimentRegistry = sentimentRegistry;
       this.chunkerRegistry = chunkerRegistry;
+      this.tokenizerRegistry = tokenizerRegistry;
+      this.sentenceDetectorRegistry = sentenceDetectorRegistry;
       this.parserRegistry = ParserRegistry.create(configuration);
       this.bundles = buildBundleCatalog(
           loadedLangDetect.hash(), loadedSentence.hash(), loadedTokenizer.hash(),
@@ -220,6 +229,8 @@ public final class ModelBundleCache {
       constructed = true;
     } finally {
       if (!constructed) {
+        closeQuietly(sentenceDetectorRegistry);
+        closeQuietly(tokenizerRegistry);
         closeQuietly(chunkerRegistry);
         closeQuietly(sentimentRegistry);
         closeQuietly(docCategorizerRegistry);
@@ -420,6 +431,24 @@ public final class ModelBundleCache {
   }
 
   /**
+   * Returns the custom tokenizer registry.
+   *
+   * @return The configured custom tokenizer registry, possibly empty. Never {@code null}.
+   */
+  public TokenizerRegistry getTokenizerRegistry() {
+    return tokenizerRegistry;
+  }
+
+  /**
+   * Returns the custom sentence-detector registry.
+   *
+   * @return The configured custom detector registry, possibly empty. Never {@code null}.
+   */
+  public SentenceDetectorRegistry getSentenceDetectorRegistry() {
+    return sentenceDetectorRegistry;
+  }
+
+  /**
    * Reports whether a constituency parser model is configured on this server.
    *
    * @return Whether a constituency parser model is configured on this server.
@@ -473,6 +502,8 @@ public final class ModelBundleCache {
     docCategorizerRegistry.close();
     sentimentRegistry.close();
     chunkerRegistry.close();
+    closeQuietly(sentenceDetectorRegistry);
+    closeQuietly(tokenizerRegistry);
   }
 
   /** Closes a resource if it is {@link AutoCloseable}, logging rather than propagating failures. */

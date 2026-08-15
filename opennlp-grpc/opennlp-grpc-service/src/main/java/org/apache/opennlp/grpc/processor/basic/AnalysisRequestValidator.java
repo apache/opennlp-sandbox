@@ -32,8 +32,10 @@ import org.apache.opennlp.grpc.model.DocCategorizerRegistry;
 import org.apache.opennlp.grpc.model.ModelArtifactRegistry;
 import org.apache.opennlp.grpc.model.NameFinderRegistry;
 import org.apache.opennlp.grpc.model.ParserRegistry;
+import org.apache.opennlp.grpc.model.SentenceDetectorRegistry;
 import org.apache.opennlp.grpc.model.SentimentRegistry;
 import org.apache.opennlp.grpc.model.SubwordRegistry;
+import org.apache.opennlp.grpc.model.TokenizerRegistry;
 import org.apache.opennlp.grpc.model.WordNetRegistry;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.processor.PipelineStepPolicy;
@@ -51,6 +53,12 @@ import org.apache.opennlp.grpc.v1.NormalizationRung;
 import org.apache.opennlp.grpc.v1.POSTagFormat;
 import org.apache.opennlp.grpc.v1.ParseFormat;
 import org.apache.opennlp.grpc.v1.PipelineStep;
+import org.apache.opennlp.grpc.v1.SentenceDetectorSelector;
+import org.apache.opennlp.grpc.v1.StandardSentenceDetectorEngine;
+import org.apache.opennlp.grpc.v1.StandardTokenizerEngine;
+import org.apache.opennlp.grpc.v1.TokenizerSelector;
+import opennlp.tools.sentdetect.SentenceDetector;
+import opennlp.tools.tokenize.Tokenizer;
 
 /**
  * Validates an {@code AnalyzeDocument} request against the capabilities of this server
@@ -70,6 +78,8 @@ final class AnalysisRequestValidator {
   private final HunspellRegistry hunspellRegistry;
   private final WordNetRegistry wordNetRegistry;
   private final LatticeRegistry latticeRegistry;
+  private final TokenizerRegistry tokenizerRegistry;
+  private final SentenceDetectorRegistry sentenceDetectorRegistry;
 
   AnalysisRequestValidator(
       EmbeddingProvider embeddingProvider,
@@ -82,7 +92,9 @@ final class AnalysisRequestValidator {
       SubwordRegistry subwordRegistry,
       HunspellRegistry hunspellRegistry,
       WordNetRegistry wordNetRegistry,
-      LatticeRegistry latticeRegistry) {
+      LatticeRegistry latticeRegistry,
+      TokenizerRegistry tokenizerRegistry,
+      SentenceDetectorRegistry sentenceDetectorRegistry) {
     this.embeddingProvider = Objects.requireNonNull(embeddingProvider, "embeddingProvider");
     this.nameFinderRegistry = Objects.requireNonNull(nameFinderRegistry, "nameFinderRegistry");
     this.docCategorizerRegistry =
@@ -95,6 +107,9 @@ final class AnalysisRequestValidator {
     this.hunspellRegistry = Objects.requireNonNull(hunspellRegistry, "hunspellRegistry");
     this.wordNetRegistry = Objects.requireNonNull(wordNetRegistry, "wordNetRegistry");
     this.latticeRegistry = Objects.requireNonNull(latticeRegistry, "latticeRegistry");
+    this.tokenizerRegistry = Objects.requireNonNull(tokenizerRegistry, "tokenizerRegistry");
+    this.sentenceDetectorRegistry =
+        Objects.requireNonNull(sentenceDetectorRegistry, "sentenceDetectorRegistry");
   }
 
   /**
@@ -123,6 +138,7 @@ final class AnalysisRequestValidator {
     validatePosTagFormat(profile);
     validateNormalizeRequest(profile);
     validateTokenizerEngine(profile);
+    resolveSentenceDetector(profile);
     validateTermDimensions(profile);
     validateTermProfile(profile);
     validateStopwordLanguage(profile);
@@ -157,10 +173,6 @@ final class AnalysisRequestValidator {
     return nameFinderRegistry.resolveEntityTypes(profile.getNerEntityTypesList());
   }
 
-  /**
-   * Resolves the embedding model id for this request: the explicitly requested id, or
-   * the provider default. Returns {@code null} when the profile does not embed.
-   */
   /**
    * Resolves the subword model to run for this request: the profile's explicit id, or
    * the configured default (or sole configured model). Returns {@code null} when the
@@ -348,16 +360,83 @@ final class AnalysisRequestValidator {
   }
 
   private void validateTokenizerEngine(AnalysisProfile profile) {
-    final String engine = profile.getTokenizerEngine();
-    if (!engine.isEmpty()
-        && !MODEL_TOKENIZER_ENGINE.equals(engine)
-        && !UAX29_TOKENIZER_ENGINE.equals(engine)
-        && !LATTICE_TOKENIZER_ENGINE.equals(engine)) {
-      throw AnalysisException.invalidArgument(
-          "Unknown tokenizer_engine '" + engine
-              + "'; supported: \"model\", \"uax29\", \"lattice\"");
-    }
+    resolveTokenizer(profile);
     resolveLatticeDictionaryId(profile);
+  }
+
+  /** Resolves the typed or compatibility tokenizer choice for one profile. */
+  TokenizerSelection resolveTokenizer(AnalysisProfile profile) {
+    if (profile.hasTokenizerEngine() && profile.hasTokenizer()) {
+      throw AnalysisException.invalidArgument(
+          "AnalysisProfile.tokenizer_engine and tokenizer are mutually exclusive");
+    }
+    if (!profile.hasTokenizer()) {
+      final String engine = profile.getTokenizerEngine();
+      return switch (engine) {
+        case "", MODEL_TOKENIZER_ENGINE -> TokenizerSelection.standard(
+            StandardTokenizerEngine.STANDARD_TOKENIZER_ENGINE_MODEL);
+        case UAX29_TOKENIZER_ENGINE -> TokenizerSelection.standard(
+            StandardTokenizerEngine.STANDARD_TOKENIZER_ENGINE_UAX29);
+        case LATTICE_TOKENIZER_ENGINE -> TokenizerSelection.standard(
+            StandardTokenizerEngine.STANDARD_TOKENIZER_ENGINE_LATTICE);
+        default -> throw AnalysisException.invalidArgument(
+            "Unknown tokenizer_engine '" + engine
+                + "'; supported: \"model\", \"uax29\", \"lattice\"");
+      };
+    }
+
+    final TokenizerSelector selector = profile.getTokenizer();
+    return switch (selector.getKindCase()) {
+      case STANDARD -> switch (selector.getStandard()) {
+        case STANDARD_TOKENIZER_ENGINE_UNSPECIFIED, STANDARD_TOKENIZER_ENGINE_MODEL ->
+            TokenizerSelection.standard(StandardTokenizerEngine.STANDARD_TOKENIZER_ENGINE_MODEL);
+        case STANDARD_TOKENIZER_ENGINE_UAX29, STANDARD_TOKENIZER_ENGINE_WHITESPACE,
+            STANDARD_TOKENIZER_ENGINE_SIMPLE, STANDARD_TOKENIZER_ENGINE_LATTICE ->
+            TokenizerSelection.standard(selector.getStandard());
+        case UNRECOGNIZED -> throw AnalysisException.invalidArgument(
+            "AnalysisProfile.tokenizer.standard is not recognized by this server");
+      };
+      case CUSTOM -> {
+        final String id = selector.getCustom();
+        if (id.isBlank()) {
+          throw AnalysisException.invalidArgument(
+              "AnalysisProfile.tokenizer.custom must not be blank");
+        }
+        yield TokenizerSelection.custom(id, tokenizerRegistry.get(id));
+      }
+      case KIND_NOT_SET -> TokenizerSelection.standard(
+          StandardTokenizerEngine.STANDARD_TOKENIZER_ENGINE_MODEL);
+    };
+  }
+
+  /** Resolves the typed sentence-detector choice for one profile. */
+  SentenceDetectorSelection resolveSentenceDetector(AnalysisProfile profile) {
+    if (!profile.hasSentenceDetector()) {
+      return SentenceDetectorSelection.standard(
+          StandardSentenceDetectorEngine.STANDARD_SENTENCE_DETECTOR_ENGINE_MODEL);
+    }
+    final SentenceDetectorSelector selector = profile.getSentenceDetector();
+    return switch (selector.getKindCase()) {
+      case STANDARD -> switch (selector.getStandard()) {
+        case STANDARD_SENTENCE_DETECTOR_ENGINE_UNSPECIFIED,
+            STANDARD_SENTENCE_DETECTOR_ENGINE_MODEL -> SentenceDetectorSelection.standard(
+                StandardSentenceDetectorEngine.STANDARD_SENTENCE_DETECTOR_ENGINE_MODEL);
+        case STANDARD_SENTENCE_DETECTOR_ENGINE_NEWLINE ->
+            SentenceDetectorSelection.standard(selector.getStandard());
+        case UNRECOGNIZED -> throw AnalysisException.invalidArgument(
+            "AnalysisProfile.sentence_detector.standard is not recognized by this server");
+      };
+      case CUSTOM -> {
+        final String id = selector.getCustom();
+        if (id.isBlank()) {
+          throw AnalysisException.invalidArgument(
+              "AnalysisProfile.sentence_detector.custom must not be blank");
+        }
+        yield SentenceDetectorSelection.custom(id, sentenceDetectorRegistry.get(id));
+      }
+      case KIND_NOT_SET -> SentenceDetectorSelection.standard(
+          StandardSentenceDetectorEngine.STANDARD_SENTENCE_DETECTOR_ENGINE_MODEL);
+    };
   }
 
   /**
@@ -366,11 +445,38 @@ final class AnalysisRequestValidator {
    * profile does not use the lattice tokenizer engine.
    */
   String resolveLatticeDictionaryId(AnalysisProfile profile) {
-    if (!LATTICE_TOKENIZER_ENGINE.equals(profile.getTokenizerEngine())) {
+    if (resolveTokenizer(profile).standard()
+        != StandardTokenizerEngine.STANDARD_TOKENIZER_ENGINE_LATTICE) {
       return null;
     }
     return latticeRegistry.resolveDictionaryId(
         profile.hasLatticeDictionaryId() ? profile.getLatticeDictionaryId() : null);
+  }
+
+  /** One resolved word-tokenizer route. Exactly one of standard and custom is set. */
+  record TokenizerSelection(
+      StandardTokenizerEngine standard, String customId, Tokenizer custom) {
+
+    private static TokenizerSelection standard(StandardTokenizerEngine engine) {
+      return new TokenizerSelection(engine, null, null);
+    }
+
+    private static TokenizerSelection custom(String id, Tokenizer tokenizer) {
+      return new TokenizerSelection(null, id, tokenizer);
+    }
+  }
+
+  /** One resolved sentence-detector route. Exactly one of standard and custom is set. */
+  record SentenceDetectorSelection(
+      StandardSentenceDetectorEngine standard, String customId, SentenceDetector custom) {
+
+    private static SentenceDetectorSelection standard(StandardSentenceDetectorEngine engine) {
+      return new SentenceDetectorSelection(engine, null, null);
+    }
+
+    private static SentenceDetectorSelection custom(String id, SentenceDetector detector) {
+      return new SentenceDetectorSelection(null, id, detector);
+    }
   }
 
   private void validateTermDimensions(AnalysisProfile profile) {

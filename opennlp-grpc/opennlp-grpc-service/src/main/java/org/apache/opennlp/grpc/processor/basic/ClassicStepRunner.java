@@ -35,8 +35,10 @@ import opennlp.wordnet.LexicalExpander;
 import opennlp.tools.langdetect.LanguageDetectorME;
 import opennlp.tools.lemmatizer.LemmatizerME;
 import opennlp.tools.postag.POSTaggerME;
+import opennlp.tools.sentdetect.SentenceDetector;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.tokenize.SubwordPiece;
+import opennlp.tools.tokenize.Tokenizer;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.tokenize.lattice.LatticeTokenizer;
 import opennlp.tools.tokenize.uax29.WordToken;
@@ -146,6 +148,26 @@ final class ClassicStepRunner {
         "Detected " + spans.length + " sentence(s)"));
   }
 
+  /** Detects sentence spans with a deterministic standard or custom engine. */
+  static void detectSentences(
+      String rawText,
+      OpenNlpDocument.Builder document,
+      SentenceDetector detector,
+      String engineId,
+      List<ProcessingDiagnostic> diagnostics) {
+    final Span[] spans = detector.sentPosDetect(rawText);
+    for (Span span : spans) {
+      document.addSentences(AnnotatedSentence.newBuilder()
+          .setSentenceSpan(AnnotationSpan.newBuilder()
+              .setStart(span.getStart())
+              .setEnd(span.getEnd())
+              .setSpace(CoordinateSpace.COORDINATE_SPACE_CHAR_DOCUMENT))
+          .build());
+    }
+    diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT,
+        "Detected " + spans.length + " sentence(s) (" + engineId + ")"));
+  }
+
   void tokenize(
       String rawText,
       OpenNlpDocument.Builder document,
@@ -179,6 +201,35 @@ final class ClassicStepRunner {
     }
     diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_TOKENIZE,
         "Tokenized " + tokenCount + " token(s)"));
+  }
+
+  /** Tokenizes each detected sentence with a deterministic standard or custom engine. */
+  static void tokenize(
+      String rawText,
+      OpenNlpDocument.Builder document,
+      Tokenizer tokenizer,
+      String engineId,
+      List<ProcessingDiagnostic> diagnostics) {
+    int tokenCount = 0;
+    for (int i = 0; i < document.getSentencesCount(); i++) {
+      final AnnotatedSentence sentence = document.getSentences(i);
+      final AnnotationSpan sentenceSpan = sentence.getSentenceSpan();
+      final String sentenceText = rawText.substring(sentenceSpan.getStart(), sentenceSpan.getEnd());
+      final AnnotatedSentence.Builder sentenceBuilder = sentence.toBuilder();
+      for (Span tokenSpan : tokenizer.tokenizePos(sentenceText)) {
+        sentenceBuilder.addTokens(Token.newBuilder()
+            .setText(sentenceText.substring(tokenSpan.getStart(), tokenSpan.getEnd()))
+            .setAnnotationSpan(AnnotationSpan.newBuilder()
+                .setStart(sentenceSpan.getStart() + tokenSpan.getStart())
+                .setEnd(sentenceSpan.getStart() + tokenSpan.getEnd())
+                .setSpace(CoordinateSpace.COORDINATE_SPACE_CHAR_DOCUMENT))
+            .build());
+        tokenCount++;
+      }
+      document.setSentences(i, sentenceBuilder.build());
+    }
+    diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_TOKENIZE,
+        "Tokenized " + tokenCount + " token(s) (" + engineId + ")"));
   }
 
   // The UAX #29 word tokenizer is stateless and thread-safe; one shared instance.
@@ -811,8 +862,8 @@ final class ClassicStepRunner {
 
   /**
    * Builds constituency parses per the request's engine policy and stores them on each sentence:
-   * the primary parse on the sentence's {@code parse_tree}, and — when a union across engines
-   * produced more than one — the full list on {@code parse_trees}, each tagged with its producer. A
+   * the primary parse on the sentence's {@code parse_tree}, and, when a union across engines
+   * produced more than one, the full list on {@code parse_trees}, each tagged with its producer. A
    * parser served by several engines is resolved by priority (with fallback), pinned, or unioned
    * depending on how many engines the policy lists; see {@link ParseResolver}.
    */

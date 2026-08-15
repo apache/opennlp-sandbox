@@ -91,6 +91,12 @@ public final class ProfileMerger {
     if (override.hasLatticeDictionaryId()) {
       builder.setLatticeDictionaryId(override.getLatticeDictionaryId());
     }
+    if (override.hasTokenizer()) {
+      builder.setTokenizer(override.getTokenizer());
+    }
+    if (override.hasSentenceDetector()) {
+      builder.setSentenceDetector(override.getSentenceDetector());
+    }
     return builder.build();
   }
 }
