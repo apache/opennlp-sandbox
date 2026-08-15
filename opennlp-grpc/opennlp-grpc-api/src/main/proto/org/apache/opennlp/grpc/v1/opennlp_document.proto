@@ -68,11 +68,10 @@ message OpenNlpDocument {
   // Opaque client-supplied metadata, echoed back verbatim. The server never
   // writes first-class results here; it is a passthrough lane only.
   google.protobuf.Struct metadata = 7;
-  // Document-level (and sentence-level) embeddings produced by PIPELINE_STEP_EMBED
-  // via AnalysisOptions.embedding_model_id. A denormalized convenience list of "all
-  // vectors + their source spans". Chunk-attached embeddings live inside the chunks
-  // of chunk_embedding_groups instead, not here.
-  repeated EmbeddingResult embeddings = 8;  // denormalized convenience "all vectors + spans"
+  // Sentence-level embeddings produced by PIPELINE_STEP_EMBED through the selected
+  // embedding model. Document centroids live in document_centroids; chunk-attached
+  // embeddings live inside chunk_embedding_groups.
+  repeated EmbeddingResult embeddings = 8;
   // Whole-document classification from PIPELINE_STEP_DOC_CATEGORIZE. Set only when
   // that step ran.
   optional DocumentClassification classification = 9;
@@ -279,12 +278,10 @@ enum OffsetEncoding {
   OFFSET_ENCODING_UNICODE_CODE_POINT = 3;
 }
 
-// Document-level aggregate statistics over the analyzed text.
-//
-// RESERVED IN THE CONTRACT BUT NOT POPULATED BY THE v1 SERVER: no field below is
-// currently computed, and OpenNlpDocument.analytics is left unset. The intended
-// semantics are documented per field for forward compatibility; clients must not
-// rely on these being present in v1.
+// Document-level aggregate statistics over the analyzed text. The server populates
+// this message when tokenization produced at least one token. Sentence and token
+// counts are always available then. POS densities require PIPELINE_STEP_POS_TAG,
+// and unique_lemma_count requires PIPELINE_STEP_LEMMATIZE.
 message DocumentAnalytics {
   // Total token count across all sentences.
   int32 total_tokens = 1;
