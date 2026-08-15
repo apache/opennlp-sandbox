@@ -80,6 +80,45 @@ enum PipelineStep {
   // change the word-token results. Select the model with
   // AnalysisProfile.subword_model_id; no configured model => NOT_FOUND.
   PIPELINE_STEP_SUBWORD_TOKENIZE = 14;
+
+  // Stems every word token with the stemmer selected by AnalysisProfile.stemmer,
+  // emitted only as the document-shape layer "opennlp:stems", span-aligned with the
+  // token layer. Annotation only: tokens and lemmas are untouched. Requires
+  // TOKENIZE; requesting it without => FAILED_PRECONDITION.
+  PIPELINE_STEP_STEM = 15;
+}
+
+// The stemmer families the STEM step can run. All but HUNSPELL are bundled
+// algorithms; HUNSPELL stems against an operator-supplied affix dictionary.
+enum StemmerAlgorithm {
+  // Unset; treated as STEMMER_ALGORITHM_SNOWBALL.
+  STEMMER_ALGORITHM_UNSPECIFIED = 0;
+  // The Snowball stemmer for the language in StemmerSpec.language.
+  STEMMER_ALGORITHM_SNOWBALL = 1;
+  // The classic Porter stemmer (English only; StemmerSpec.language is ignored).
+  STEMMER_ALGORITHM_PORTER = 2;
+  // The UniNE light stemmer tier for StemmerSpec.language.
+  STEMMER_ALGORITHM_LIGHT = 3;
+  // The UniNE minimal stemmer tier for StemmerSpec.language.
+  STEMMER_ALGORITHM_MINIMAL = 4;
+  // Hunspell affix-dictionary stemming; select the dictionary with
+  // StemmerSpec.hunspell_dictionary_id.
+  STEMMER_ALGORITHM_HUNSPELL = 5;
+}
+
+// Configuration for PIPELINE_STEP_STEM.
+message StemmerSpec {
+  // The stemmer family to run. Unset selects SNOWBALL.
+  StemmerAlgorithm algorithm = 1;
+  // ISO 639-1 language code for SNOWBALL, LIGHT, and MINIMAL (e.g. "en", "de").
+  // Required for those algorithms (blank => INVALID_ARGUMENT); a language the
+  // selected family does not cover => NOT_FOUND. Ignored for PORTER and HUNSPELL.
+  optional string language = 2;
+  // For HUNSPELL: one of the dictionary ids configured on the server as
+  // model.hunspell.<id>.affix_path / model.hunspell.<id>.dictionary_path. Unset
+  // selects the sole configured dictionary; an unknown id, or no configured
+  // dictionary, => NOT_FOUND.
+  optional string hunspell_dictionary_id = 3;
 }
 
 // Configuration for a chunking strategy (used when the caller does not
@@ -212,6 +251,10 @@ message AnalysisProfile {
   // default (model.subword.default_id) or the sole configured model; an unknown id,
   // or no selectable model, => NOT_FOUND.
   optional string subword_model_id = 14;
+
+  // Configuration for PIPELINE_STEP_STEM. Requesting the step with no spec runs
+  // the default (SNOWBALL), which then requires `language`.
+  StemmerSpec stemmer = 15;
 }
 
 // Configuration for PIPELINE_STEP_NORMALIZE: which rungs run, in the order the

@@ -511,6 +511,9 @@ message DocumentClassification {
 //   opennlp:subwords    positional, subword values: the SentencePiece encoding
 //                       of the whole document text, each piece with its
 //                       vocabulary id (from PIPELINE_STEP_SUBWORD_TOKENIZE).
+//   opennlp:stems       positional, string values: the stem of each token under
+//                       the requested stemmer, span-aligned with opennlp:tokens
+//                       (from PIPELINE_STEP_STEM).
 
 // The typed annotation layers of one analyzed document.
 message DocumentLayers {
