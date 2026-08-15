@@ -75,7 +75,7 @@ class RankedBackendsTest {
     assertEquals("A-on-e2", ranked.invoke("a", Registration::value));
     final String result = ranked.invoke("a", reg -> {
       if (reg.engineId().equals("e2")) {
-        throw new IllegalStateException("e2 down");
+        throw AnalysisException.unavailable("e2 down", null);
       }
       return reg.value();
     });
