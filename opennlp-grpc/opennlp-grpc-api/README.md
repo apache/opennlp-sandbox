@@ -8,7 +8,12 @@ v1 protobuf definitions and generated Java stubs for the document-centric OpenNL
 
 - `opennlp_document.proto` - `OpenNlpDocument`, spans, tokens, chunks, embeddings
 - `opennlp_pipeline.proto` - profiles, pipeline steps, model bundles, inference backends
-- `opennlp_service.proto` - `OpenNlpAnalysisService` RPCs
+- `opennlp_service.proto` - unary and streaming `OpenNlpAnalysisService` RPCs
+
+`AnalyzeStream` is the bulk document-analysis RPC. Send exactly one
+`AnalyzeStreamConfiguration` first, then any number of sequenced
+`AnalyzeStreamDocument` messages. Responses arrive in completion order and carry either
+the same `AnalyzeDocumentResponse` used by unary analysis or a per-document error.
 
 ## Maven dependency
 

@@ -92,6 +92,9 @@ Example config (`key=value`, `#` comments):
 ```ini
 server.enable_reflection=false
 server.max_inbound_message_size=10485760
+# Full-analysis documents admitted concurrently per stream. The default is the
+# larger of 2 or the available processor count.
+server.analysis_stream_workers=8
 
 # Optional explicit model overrides. When omitted, the language detector and the
 # en sentence-detector, tokenizer, POS tagger and lemmatizer load from the
@@ -610,7 +613,7 @@ or below the configured `percentile_threshold`. Example:
 
 ## v1 API
 
-Primary RPC: `org.apache.opennlp.grpc.v1.OpenNlpAnalysisService/AnalyzeDocument`
+Unary RPC: `org.apache.opennlp.grpc.v1.OpenNlpAnalysisService/AnalyzeDocument`
 
 Send `raw_text` plus a named or inline `AnalysisProfile`, receive an enriched
 `OpenNlpDocument` with the annotations selected by the profile: sentences, tokens,
@@ -618,3 +621,24 @@ entities, POS tags, lemmas, document classification, per-sentence sentiment, par
 syntactic chunks, embeddings, and chunk/embedding groups. `AnalyzeDocumentResponse`
 also includes per-step diagnostics; invalid requests fail with precise gRPC status codes
 instead of returning partial results.
+
+For bulk analysis, `AnalyzeStream` runs the same `DocumentAnalyzer` and returns the
+same `AnalyzeDocumentResponse` shape. The first request frame carries one
+`AnalyzeStreamConfiguration`, which fixes the profile, options, offset encoding, and
+chunk configurations for the stream. Later frames carry a caller sequence plus one
+`OpenNlpDocument`. Documents run concurrently and responses arrive in completion order,
+so clients correlate them by sequence rather than arrival position.
+
+A document-local validation or processing failure returns an `AnalyzeStreamError` for
+that sequence and the stream continues. Missing, late, or repeated configuration is a
+protocol failure and closes the stream with `INVALID_ARGUMENT`. Inbound demand tracks
+the configured worker count, outbound writes wait for transport readiness, and a client
+that stops draining responses is closed with `RESOURCE_EXHAUSTED`. The server sends
+response headers as soon as the call is accepted, which lets clients open the stream
+before submitting its configuration. Unary and streaming calls share the generic
+`DocumentAnalyzer` interface; a provider may override `openSession` to validate or
+compile the fixed plan once.
+
+The server also registers the standard `grpc.health.v1.Health` service. Check
+`org.apache.opennlp.grpc.v1.OpenNlpAnalysisService` or the empty service name for
+whole-server readiness.
