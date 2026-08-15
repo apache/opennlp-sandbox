@@ -95,7 +95,11 @@ public final class TokenizerRegistry implements AutoCloseable {
     return tokenizer;
   }
 
-  /** @return Configured custom tokenizer ids in stable order. */
+  /**
+   * Lists the configured custom tokenizer ids.
+   *
+   * @return The ids in stable order.
+   */
   public List<String> ids() {
     return List.copyOf(tokenizers.keySet());
   }

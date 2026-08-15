@@ -96,7 +96,11 @@ public final class SentenceDetectorRegistry implements AutoCloseable {
     return detector;
   }
 
-  /** @return Configured custom sentence-detector ids in stable order. */
+  /**
+   * Lists the configured custom sentence-detector ids.
+   *
+   * @return The ids in stable order.
+   */
   public List<String> ids() {
     return List.copyOf(detectors.keySet());
   }
