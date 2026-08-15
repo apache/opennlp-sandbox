@@ -29,8 +29,42 @@ import org.apache.opennlp.grpc.v1.TokenizerSelector;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class ProfileMergerTest {
+
+  @Test
+  void typedTokenizerOverrideReplacesLegacyBaseSelector() {
+    final AnalysisProfile base = AnalysisProfile.newBuilder()
+        .setTokenizerEngine("model")
+        .build();
+    final AnalysisProfile override = AnalysisProfile.newBuilder()
+        .setTokenizer(TokenizerSelector.newBuilder()
+            .setStandard(StandardTokenizerEngine.STANDARD_TOKENIZER_ENGINE_WHITESPACE))
+        .build();
+
+    final AnalysisProfile merged = ProfileMerger.merge(base, override);
+
+    assertFalse(merged.hasTokenizerEngine());
+    assertEquals(StandardTokenizerEngine.STANDARD_TOKENIZER_ENGINE_WHITESPACE,
+        merged.getTokenizer().getStandard());
+  }
+
+  @Test
+  void legacyTokenizerOverrideReplacesTypedBaseSelector() {
+    final AnalysisProfile base = AnalysisProfile.newBuilder()
+        .setTokenizer(TokenizerSelector.newBuilder()
+            .setStandard(StandardTokenizerEngine.STANDARD_TOKENIZER_ENGINE_MODEL))
+        .build();
+    final AnalysisProfile override = AnalysisProfile.newBuilder()
+        .setTokenizerEngine("simple")
+        .build();
+
+    final AnalysisProfile merged = ProfileMerger.merge(base, override);
+
+    assertEquals("simple", merged.getTokenizerEngine());
+    assertFalse(merged.hasTokenizer());
+  }
 
   @Test
   void extendedFieldsOverrideNamedProfileValues() {
