@@ -29,8 +29,8 @@ import io.grpc.Status;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.processor.DocumentAnalysisSession;
 import org.apache.opennlp.grpc.processor.DocumentAnalyzer;
-import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeStreamConfiguration;
 import org.apache.opennlp.grpc.v1.AnalyzeStreamDocument;
 import org.apache.opennlp.grpc.v1.AnalyzeStreamError;
@@ -61,6 +61,7 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
   private final AtomicBoolean terminated = new AtomicBoolean();
 
   private volatile AnalyzeStreamConfiguration configuration;
+  private volatile DocumentAnalysisSession analysisSession;
   private volatile boolean clientCompleted;
 
   /**
@@ -128,6 +129,18 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
       return;
     }
     configuration = requestedConfiguration;
+    try {
+      analysisSession = Objects.requireNonNull(
+          documentAnalyzer.openSession(requestedConfiguration),
+          "DocumentAnalyzer.openSession returned null");
+    } catch (AnalysisException e) {
+      failStream(GrpcStatusMapper.toStatus(e).withDescription(e.getMessage()));
+      return;
+    } catch (RuntimeException e) {
+      logger.error("Unexpected error preparing AnalyzeStream configuration", e);
+      failStream(Status.INTERNAL.withDescription("Internal server error"));
+      return;
+    }
     request(streamWindow);
   }
 
@@ -150,10 +163,9 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
 
   private void analyze(AnalyzeStreamDocument document) {
     try {
-      final AnalyzeDocumentRequest request = requestFor(document);
       send(AnalyzeStreamResponse.newBuilder()
           .setSequence(document.getSequence())
-          .setOk(documentAnalyzer.analyze(request))
+          .setOk(analysisSession.analyze(document.getDocument()))
           .build());
     } catch (AnalysisException e) {
       sendFailure(document.getSequence(), GrpcStatusMapper.toStatus(e)
@@ -167,24 +179,6 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
       request(1);
       maybeComplete();
     }
-  }
-
-  private AnalyzeDocumentRequest requestFor(AnalyzeStreamDocument document) {
-    final AnalyzeStreamConfiguration fixed = configuration;
-    final AnalyzeDocumentRequest.Builder request = AnalyzeDocumentRequest.newBuilder()
-        .setDocument(document.getDocument());
-    if (fixed.hasProfile()) {
-      request.setProfile(fixed.getProfile());
-    }
-    if (fixed.hasOptions()) {
-      request.setOptions(fixed.getOptions());
-    }
-    if (fixed.hasProfileId()) {
-      request.setProfileId(fixed.getProfileId());
-    }
-    request.addAllChunkEmbedConfigs(fixed.getChunkEmbedConfigsList());
-    request.addAllCategoryChunkConfigs(fixed.getCategoryChunkConfigsList());
-    return request.build();
   }
 
   private void sendFailure(long sequence, Status status) {
@@ -241,11 +235,14 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
   }
 
   private void failProtocol(String description) {
+    failStream(Status.INVALID_ARGUMENT.withDescription(description));
+  }
+
+  private void failStream(Status status) {
     if (terminated.compareAndSet(false, true)) {
       signalReady();
       synchronized (outputLock) {
-        responseObserver.onError(Status.INVALID_ARGUMENT
-            .withDescription(description).asRuntimeException());
+        responseObserver.onError(status.asRuntimeException());
       }
     }
   }
