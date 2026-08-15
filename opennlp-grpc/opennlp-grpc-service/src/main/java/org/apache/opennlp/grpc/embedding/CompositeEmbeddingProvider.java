@@ -69,20 +69,26 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
     Objects.requireNonNull(providers, "providers");
     Objects.requireNonNull(configuration, "configuration");
     this.providers = List.copyOf(providers);
-    final RankedBackends.Builder<EmbeddingProvider> builder = RankedBackends.builder();
-    for (EmbeddingProvider provider : this.providers) {
-      final String engine = provider.backendId();
-      for (String modelId : provider.registeredModelIds()) {
-        builder.add(modelId, engine, priority(configuration, modelId, engine), provider);
+    try {
+      final RankedBackends.Builder<EmbeddingProvider> builder = RankedBackends.builder();
+      for (EmbeddingProvider provider : this.providers) {
+        final String engine = provider.backendId();
+        for (String modelId : provider.registeredModelIds()) {
+          builder.add(modelId, engine, priority(configuration, modelId, engine), provider);
+        }
       }
-    }
-    this.backends = builder.build();
-    verifyDimensionAgreement();
-    final String defaultId = configuration.get(KEY_DEFAULT_ID);
-    this.configuredDefaultId = defaultId == null || defaultId.isBlank() ? null : defaultId.trim();
-    if (configuredDefaultId != null && !supportsModel(configuredDefaultId)) {
-      throw AnalysisException.invalidArgument(KEY_DEFAULT_ID + " names unknown embedding model '"
-          + configuredDefaultId + "'; configured: " + backends.ids());
+      this.backends = builder.build();
+      verifyDimensionAgreement();
+      verifyVectorSpaceAgreement(configuration);
+      final String defaultId = configuration.get(KEY_DEFAULT_ID);
+      this.configuredDefaultId = defaultId == null || defaultId.isBlank() ? null : defaultId.trim();
+      if (configuredDefaultId != null && !supportsModel(configuredDefaultId)) {
+        throw AnalysisException.invalidArgument(KEY_DEFAULT_ID + " names unknown embedding model '"
+            + configuredDefaultId + "'; configured: " + backends.ids());
+      }
+    } catch (RuntimeException e) {
+      closeProviders(this.providers);
+      throw e;
     }
   }
 
@@ -111,6 +117,34 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
           throw AnalysisException.invalidArgument("Embedding model '" + logicalId + "' is served by "
               + "engines with differing dimensions (" + expected + " vs " + dimension
               + "); engines serving one logical id must agree so fallback is safe");
+        }
+      }
+    }
+  }
+
+  /** Engines used as fallbacks must explicitly declare the same vector-space identity. */
+  private void verifyVectorSpaceAgreement(Map<String, String> configuration) {
+    for (String logicalId : backends.ids()) {
+      final List<Registration<EmbeddingProvider>> registrations = backends.resolve(logicalId);
+      if (registrations.size() < 2) {
+        continue;
+      }
+      String expected = null;
+      for (Registration<EmbeddingProvider> registration : registrations) {
+        final String key = "model.embedder." + logicalId + "." + registration.engineId()
+            + ".vector_space_id";
+        final String configured = configuration.get(key);
+        if (configured == null || configured.isBlank()) {
+          throw AnalysisException.invalidArgument(key + " is required when embedding model '"
+              + logicalId + "' is served by more than one engine");
+        }
+        final String vectorSpaceId = configured.trim();
+        if (expected == null) {
+          expected = vectorSpaceId;
+        } else if (!expected.equals(vectorSpaceId)) {
+          throw AnalysisException.invalidArgument("Embedding model '" + logicalId
+              + "' is served by engines in different vector spaces ('" + expected + "' vs '"
+              + vectorSpaceId + "'); fallback requires one shared vector space");
         }
       }
     }
@@ -167,13 +201,8 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
     if (modelId == null || modelId.isBlank()) {
       return "";
     }
-    for (EmbeddingProvider provider : providers) {
-      final String hash = provider.modelArtifactHash(modelId);
-      if (hash != null && !hash.isBlank()) {
-        return hash;
-      }
-    }
-    return "";
+    final String hash = backends.primary(modelId).value().modelArtifactHash(modelId);
+    return hash == null ? "" : hash;
   }
 
   /**
@@ -208,6 +237,10 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
   /** Closes every aggregated provider that holds resources, continuing past individual failures. */
   @Override
   public void close() {
+    closeProviders(providers);
+  }
+
+  private static void closeProviders(List<EmbeddingProvider> providers) {
     for (EmbeddingProvider provider : providers) {
       if (provider instanceof AutoCloseable closeable) {
         try {

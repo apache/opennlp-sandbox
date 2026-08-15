@@ -189,8 +189,9 @@ public final class RankedBackends<T> {
 
   /**
    * Runs {@code op} against each engine for {@code id} in priority order, returning the first
-   * success and falling back to the next engine on a {@link RuntimeException}. Re-throws the last
-   * failure when every engine fails.
+   * success and falling back to the next engine on an explicitly retryable
+   * {@link AnalysisException}. Re-throws the last failure when every engine fails. Client errors,
+   * failed preconditions, internal failures, and unexpected runtime exceptions are not retried.
    *
    * @param <R> The operation's result type.
    * @param id The logical id.
@@ -201,11 +202,14 @@ public final class RankedBackends<T> {
    */
   public <R> R invoke(String id, Function<Registration<T>, R> op) {
     final List<Registration<T>> registrations = resolve(id);
-    RuntimeException last = null;
+    AnalysisException last = null;
     for (Registration<T> registration : registrations) {
       try {
         return op.apply(registration);
-      } catch (RuntimeException e) {
+      } catch (AnalysisException e) {
+        if (!isRetryable(e)) {
+          throw e;
+        }
         last = e;
         if (registrations.size() > 1) {
           logger.warn("'{}' failed on engine '{}'; falling back to the next engine",
@@ -214,6 +218,11 @@ public final class RankedBackends<T> {
       }
     }
     throw last;
+  }
+
+  private static boolean isRetryable(AnalysisException failure) {
+    return failure.getFailureType() == AnalysisException.FailureType.UNAVAILABLE
+        || failure.getFailureType() == AnalysisException.FailureType.RESOURCE_EXHAUSTED;
   }
 
   /**
