@@ -37,6 +37,8 @@ import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
 import org.apache.opennlp.grpc.v1.ParseNode;
 import org.apache.opennlp.grpc.v1.ParseNodeKind;
 import org.apache.opennlp.grpc.v1.ParseTree;
+import org.apache.opennlp.grpc.v1.StandardLayer;
+import org.apache.opennlp.grpc.v1.Token;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -247,5 +249,29 @@ class DocumentShapeAssemblerTest {
     assertEquals("opennlp:sentences", document.getLayers().getLayers(0).getId());
     assertEquals("opennlp:language", document.getLayers().getLayers(1).getId());
     assertTrue(document.getLayers().getLayers(1).getCategoryValues().getAnnotationsCount() > 0);
+  }
+
+  @Test
+  void builtInLayersCarryTypedIdentityAndTermDimensionsUseAQualifier() {
+    final OpenNlpDocument.Builder document = OpenNlpDocument.newBuilder()
+        .setRawText("Alpha")
+        .addSentences(AnnotatedSentence.newBuilder()
+            .setSentenceSpan(span(0, 5))
+            .addTokens(Token.newBuilder()
+                .setText("Alpha")
+                .setAnnotationSpan(span(0, 5))
+                .putTermLayers("FULL_CASE_FOLD", "alpha")));
+
+    DocumentShapeAssembler.apply(document, "Alpha");
+
+    final AnnotationLayer sentences = layer(document, "opennlp:sentences").orElseThrow();
+    assertEquals(StandardLayer.STANDARD_LAYER_SENTENCES,
+        sentences.getIdentity().getStandard());
+    assertFalse(sentences.getIdentity().hasQualifier());
+
+    final AnnotationLayer terms =
+        layer(document, "opennlp:terms:FULL_CASE_FOLD").orElseThrow();
+    assertEquals(StandardLayer.STANDARD_LAYER_TERMS, terms.getIdentity().getStandard());
+    assertEquals("FULL_CASE_FOLD", terms.getIdentity().getQualifier());
   }
 }

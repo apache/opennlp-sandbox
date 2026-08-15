@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import org.apache.opennlp.grpc.v1.AnnotationLayer;
+import org.apache.opennlp.grpc.v1.LayerIdentity;
 import org.apache.opennlp.grpc.v1.OpenNlpDocumentProto;
 import org.junit.jupiter.api.Test;
 
@@ -65,6 +66,35 @@ class DocumentShapeWireContractTest {
         "LEXICAL_EXPANSION_KIND_UNSPECIFIED", "LEXICAL_EXPANSION_KIND_SYNONYM",
         "LEXICAL_EXPANSION_KIND_HYPERNYM", "LEXICAL_EXPANSION_KIND_HYPONYM"),
         expansionKind.getValues().stream()
+            .map(value -> value.getName()).collect(Collectors.toSet()));
+  }
+
+  @Test
+  void layerIdentityUsesAClosedStandardEnumOrAnOpenCustomId() {
+    final Descriptor layer = AnnotationLayer.getDescriptor();
+    assertEquals("org.apache.opennlp.grpc.v1.LayerIdentity",
+        layer.findFieldByName("identity").getMessageType().getFullName());
+
+    final Descriptor identity = LayerIdentity.getDescriptor();
+    assertEquals(Set.of("standard", "custom"), identity.getOneofs().stream()
+        .filter(oneof -> "kind".equals(oneof.getName()))
+        .flatMap(oneof -> oneof.getFields().stream())
+        .map(field -> field.getName())
+        .collect(Collectors.toSet()));
+    assertEquals("string", identity.findFieldByName("qualifier").getType().name().toLowerCase());
+
+    final EnumDescriptor standardLayer = OpenNlpDocumentProto.getDescriptor()
+        .findEnumTypeByName("StandardLayer");
+    assertEquals(Set.of(
+        "STANDARD_LAYER_UNSPECIFIED", "STANDARD_LAYER_SENTENCES", "STANDARD_LAYER_TOKENS",
+        "STANDARD_LAYER_POS_TAGS", "STANDARD_LAYER_LEMMAS", "STANDARD_LAYER_ENTITIES",
+        "STANDARD_LAYER_SYNTACTIC_CHUNKS", "STANDARD_LAYER_PARSES",
+        "STANDARD_LAYER_SENTIMENT", "STANDARD_LAYER_LANGUAGE", "STANDARD_LAYER_CATEGORIES",
+        "STANDARD_LAYER_EMBEDDINGS", "STANDARD_LAYER_WORD_TYPES", "STANDARD_LAYER_STOPWORDS",
+        "STANDARD_LAYER_TERMS", "STANDARD_LAYER_SUBWORDS", "STANDARD_LAYER_STEMS",
+        "STANDARD_LAYER_EXPANSIONS", "STANDARD_LAYER_GEO", "STANDARD_LAYER_NORMALIZATION",
+        "STANDARD_LAYER_ANALYTICS", "STANDARD_LAYER_CHUNK_GROUPS"),
+        standardLayer.getValues().stream()
             .map(value -> value.getName()).collect(Collectors.toSet()));
   }
 }
