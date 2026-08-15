@@ -64,6 +64,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
   private final ClassicStepRunner classicSteps;
   private final EmbedChunkStepRunner embedChunkSteps;
   private final NameFinderRegistry nameFinderRegistry;
+  private final EmbeddingProvider embeddingProvider;
 
   /**
    * Creates an analyzer backed by a fresh {@link ModelBundleCache} built from the given
@@ -120,6 +121,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     Objects.requireNonNull(embeddingProvider, "embeddingProvider");
     this.profileResolver = new ProfileResolver(profileRegistry);
     this.nameFinderRegistry = modelBundleCache.getNameFinderRegistry();
+    this.embeddingProvider = embeddingProvider;
     this.validator = new AnalysisRequestValidator(embeddingProvider, nameFinderRegistry,
         modelBundleCache.getDocCategorizerRegistry(), modelBundleCache.getSentimentRegistry(),
         modelBundleCache.getParserRegistry(), modelBundleCache.getChunkerRegistry(),
@@ -410,6 +412,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     // The document-shape rendering runs over UTF-16 spans; the offset encoder below
     // remaps layer spans together with every other span.
     DocumentShapeAssembler.apply(document, rawText, extraLayers);
+    DocumentLayersValidator.validate(document.build(), embeddingProvider);
 
     DocumentOffsetEncoder.apply(document, rawText, requestedEncoding);
 
