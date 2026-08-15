@@ -24,7 +24,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 
+import opennlp.geo.BundledGazetteer;
+import opennlp.geo.SpatialCoherenceGeocoder;
 import opennlp.subword.sentencepiece.SentencePieceTokenizer;
+import opennlp.tools.geo.GazetteerEntry;
+import opennlp.tools.geo.GeoResolution;
+import opennlp.tools.geo.Geocoder;
 import opennlp.tools.langdetect.Language;
 import opennlp.wordnet.LexicalExpander;
 import opennlp.tools.langdetect.LanguageDetectorME;
@@ -62,6 +67,9 @@ import org.apache.opennlp.grpc.v1.ChunkResult;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
 import org.apache.opennlp.grpc.v1.DocumentClassification;
 import org.apache.opennlp.grpc.v1.EnginePolicy;
+import org.apache.opennlp.grpc.v1.GeoAnnotation;
+import org.apache.opennlp.grpc.v1.GeoAnnotationList;
+import org.apache.opennlp.grpc.v1.GeoResolutionResult;
 import org.apache.opennlp.grpc.v1.LayerScope;
 import org.apache.opennlp.grpc.v1.NamedEntity;
 import org.apache.opennlp.grpc.v1.NormalizationResult;
@@ -239,6 +247,108 @@ final class ClassicStepRunner {
     }
     diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_STEM,
         "Stemmed " + list.getAnnotationsCount() + " token(s)"));
+  }
+
+  // The bundled Natural Earth gazetteer and the coherence geocoder over it are immutable
+  // and thread-safe; one shared instance serves every request.
+  private static final Geocoder GEOCODER =
+      new SpatialCoherenceGeocoder(BundledGazetteer.getInstance());
+
+  // Entity types the geocode step resolves; everything else (persons, organizations)
+  // is left untouched.
+  private static final Set<String> GEOCODABLE_ENTITY_TYPES =
+      Set.of("location", "gpe", "place", "city", "country");
+
+  /**
+   * Runs PIPELINE_STEP_GEOCODE: resolves the location-typed entity mentions against
+   * the bundled Natural Earth gazetteer, sets {@code NamedEntity.geo} on every
+   * resolved entity, and emits the resolutions as the {@code opennlp:geo}
+   * document-shape layer. An unresolvable mention stays unenriched. Runs after NER.
+   */
+  void geocode(
+      OpenNlpDocument.Builder document,
+      List<AnnotationLayer> extraLayers,
+      List<ProcessingDiagnostic> diagnostics) {
+    final List<Span> mentions = new ArrayList<>();
+    final List<int[]> entityRefs = new ArrayList<>();
+    for (int s = 0; s < document.getSentencesCount(); s++) {
+      final AnnotatedSentence sentence = document.getSentences(s);
+      for (int e = 0; e < sentence.getEntitiesCount(); e++) {
+        final NamedEntity entity = sentence.getEntities(e);
+        if (GEOCODABLE_ENTITY_TYPES.contains(
+            entity.getEntityType().toLowerCase(java.util.Locale.ROOT))) {
+          mentions.add(new Span(entity.getAnnotationSpan().getStart(),
+              entity.getAnnotationSpan().getEnd()));
+          entityRefs.add(new int[] {s, e});
+        }
+      }
+    }
+    int resolved = 0;
+    if (!mentions.isEmpty()) {
+      final List<GeoResolution> resolutions;
+      try {
+        resolutions = GEOCODER.resolve(document.getRawText(), mentions);
+      } catch (java.io.IOException e) {
+        // The bundled in-memory gazetteer never throws; reaching this is a server bug.
+        throw AnalysisException.internal("Geocoding failed", e);
+      }
+      final GeoAnnotationList.Builder layer = GeoAnnotationList.newBuilder();
+      int m = 0;
+      for (GeoResolution resolution : resolutions) {
+        while (m < mentions.size()
+            && (mentions.get(m).getStart() != resolution.mention().getStart()
+                || mentions.get(m).getEnd() != resolution.mention().getEnd())) {
+          m++;
+        }
+        if (m >= mentions.size()) {
+          break;
+        }
+        final int[] ref = entityRefs.get(m);
+        final AnnotatedSentence.Builder sentence = document.getSentences(ref[0]).toBuilder();
+        final NamedEntity entity = sentence.getEntities(ref[1]);
+        final GeoResolutionResult result = toResult(resolution);
+        sentence.setEntities(ref[1], entity.toBuilder().setGeo(result).build());
+        document.setSentences(ref[0], sentence.build());
+        layer.addAnnotations(GeoAnnotation.newBuilder()
+            .setSpan(entity.getAnnotationSpan())
+            .setResolution(result)
+            .build());
+        resolved++;
+        m++;
+      }
+      if (layer.getAnnotationsCount() > 0) {
+        extraLayers.add(AnnotationLayer.newBuilder()
+            .setId(DocumentShapeAssembler.GEO_ID)
+            .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
+            .setGeoValues(layer.build())
+            .build());
+      }
+    }
+    diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_GEOCODE,
+        "Geocoded " + resolved + " of " + mentions.size() + " location mention(s)"));
+  }
+
+  /** Renders one library resolution as the typed wire result. */
+  private static GeoResolutionResult toResult(GeoResolution resolution) {
+    final GazetteerEntry entry = resolution.entry();
+    final GeoResolutionResult.Builder result = GeoResolutionResult.newBuilder()
+        .setSource(entry.source())
+        .setRecordId(entry.recordId())
+        .setName(entry.name())
+        .setLatitude(entry.location().latitude())
+        .setLongitude(entry.location().longitude())
+        .setPopulation(entry.population())
+        .setConfidence(resolution.confidence());
+    if (entry.countryCode() != null) {
+      result.setCountryCode(entry.countryCode());
+    }
+    if (entry.containment() != null) {
+      result.addAllContainment(entry.containment());
+    }
+    if (entry.featureClass() != null) {
+      result.setFeatureClass(entry.featureClass());
+    }
+    return result.build();
   }
 
   /**

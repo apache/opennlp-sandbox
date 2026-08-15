@@ -103,6 +103,9 @@ final class DocumentShapeAssembler {
   /** The id of the lexical-expansion layer. */
   static final String EXPANSIONS_ID = "opennlp:expansions";
 
+  /** The id of the geocoding layer. */
+  static final String GEO_ID = "opennlp:geo";
+
   private DocumentShapeAssembler() {
     // This class is a stateless rendering pass and is never instantiated.
   }

@@ -72,6 +72,12 @@
             <artifactId>opennlp-wordnet</artifactId>
             <version>${opennlp.version}</version>
         </dependency>
+        <!-- Bundled Natural Earth gazetteer and geocoders for PIPELINE_STEP_GEOCODE. -->
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-geo</artifactId>
+            <version>${opennlp.version}</version>
+        </dependency>
         <!--
           ONNX embeddings support (Maven Central artifact, not the sandbox DL4J module).
           The onnxruntime jar is excluded here and supplied by exactly one of the

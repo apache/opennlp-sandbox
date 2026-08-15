@@ -35,6 +35,7 @@ public final class PipelineStepPolicy {
       PipelineStep.PIPELINE_STEP_TOKENIZE,
       PipelineStep.PIPELINE_STEP_SUBWORD_TOKENIZE,
       PipelineStep.PIPELINE_STEP_NER,
+      PipelineStep.PIPELINE_STEP_GEOCODE,
       PipelineStep.PIPELINE_STEP_POS_TAG,
       PipelineStep.PIPELINE_STEP_LEMMATIZE,
       PipelineStep.PIPELINE_STEP_STEM,

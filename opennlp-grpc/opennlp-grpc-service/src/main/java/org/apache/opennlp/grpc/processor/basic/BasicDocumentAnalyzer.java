@@ -241,6 +241,20 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_NER));
     }
 
+    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_GEOCODE)) {
+      if (!shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_NER)) {
+        throw AnalysisException.failedPrecondition(
+            PipelineStep.PIPELINE_STEP_GEOCODE.name()
+                + " requires "
+                + PipelineStep.PIPELINE_STEP_NER.name());
+      }
+      runStep(
+          PipelineStep.PIPELINE_STEP_GEOCODE,
+          () -> classicSteps.geocode(document, extraLayers, diagnostics));
+    } else {
+      diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_GEOCODE));
+    }
+
     if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_POS_TAG)) {
       requireTokens(document, PipelineStep.PIPELINE_STEP_POS_TAG);
       runStep(

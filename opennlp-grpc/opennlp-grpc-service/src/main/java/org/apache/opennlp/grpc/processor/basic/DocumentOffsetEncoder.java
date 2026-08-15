@@ -28,6 +28,7 @@ import org.apache.opennlp.grpc.v1.ChunkSpan;
 import org.apache.opennlp.grpc.v1.DocumentLayers;
 import org.apache.opennlp.grpc.v1.EmbeddingAnnotationList;
 import org.apache.opennlp.grpc.v1.EmbeddingResult;
+import org.apache.opennlp.grpc.v1.GeoAnnotationList;
 import org.apache.opennlp.grpc.v1.NamedEntity;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
@@ -179,6 +180,14 @@ final class DocumentOffsetEncoder {
             }
           }
           layer.setEmbeddingValues(list.build());
+        }
+        case GEO_VALUES -> {
+          final GeoAnnotationList.Builder list = layer.getGeoValues().toBuilder();
+          for (int a = 0; a < list.getAnnotationsCount(); a++) {
+            list.setAnnotations(a, list.getAnnotations(a).toBuilder()
+                .setSpan(remap(list.getAnnotations(a).getSpan(), mapper)).build());
+          }
+          layer.setGeoValues(list.build());
         }
         case SUBWORD_VALUES -> {
           final SubwordAnnotationList.Builder list = layer.getSubwordValues().toBuilder();
