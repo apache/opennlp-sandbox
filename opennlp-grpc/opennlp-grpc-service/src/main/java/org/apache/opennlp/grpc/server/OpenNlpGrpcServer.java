@@ -128,8 +128,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     }
 
     final ModelBundleCache modelBundleCache = new ModelBundleCache(configuration);
-    final ProfileRegistry profileRegistry = ProfileRegistry.createDefault(
-        modelBundleCache.getNameFinderRegistry().isAvailable());
+    final ProfileRegistry profileRegistry = modelBundleCache.createProfileRegistry();
     final BasicDocumentAnalyzer documentAnalyzer =
         new BasicDocumentAnalyzer(profileRegistry, modelBundleCache);
 

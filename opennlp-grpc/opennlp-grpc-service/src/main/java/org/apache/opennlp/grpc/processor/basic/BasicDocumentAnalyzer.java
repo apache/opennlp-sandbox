@@ -81,13 +81,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
   }
 
   private BasicDocumentAnalyzer(ModelBundleCache modelBundleCache) {
-    this(ProfileRegistry.createDefault(
-            modelBundleCache.getNameFinderRegistry().isAvailable(),
-            modelBundleCache.getDocCategorizerRegistry().isAvailable(),
-            modelBundleCache.getSentimentRegistry().isAvailable(),
-            modelBundleCache.isParserAvailable(),
-            modelBundleCache.isChunkerAvailable()),
-        modelBundleCache);
+    this(modelBundleCache.createProfileRegistry(), modelBundleCache);
   }
 
   /**

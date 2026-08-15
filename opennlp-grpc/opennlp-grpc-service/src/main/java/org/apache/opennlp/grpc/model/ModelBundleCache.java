@@ -337,6 +337,22 @@ public final class ModelBundleCache {
   }
 
   /**
+   * Creates the default analysis profile registry from the capabilities loaded in this cache.
+   * Keeping this derivation beside the registries prevents embedded and executable-server
+   * construction paths from advertising different profile catalogs for the same models.
+   *
+   * @return A new profile registry matching every loaded optional model family.
+   */
+  public ProfileRegistry createProfileRegistry() {
+    return ProfileRegistry.createDefault(
+        nameFinderRegistry.isAvailable(),
+        docCategorizerRegistry.isAvailable(),
+        sentimentRegistry.isAvailable(),
+        isParserAvailable(),
+        isChunkerAvailable());
+  }
+
+  /**
    * Returns the registry of loaded name finders.
    *
    * @return The name finder registry; never {@code null}, possibly empty.
