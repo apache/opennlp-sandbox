@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import opennlp.wordnet.LexicalExpander;
@@ -109,6 +110,20 @@ public final class WordNetRegistry {
    */
   public boolean isAvailable() {
     return !expanders.isEmpty();
+  }
+
+  /**
+   * Returns the configured lexicon ids in stable lexical order.
+   *
+   * @return An immutable list, possibly empty.
+   */
+  public List<String> ids() {
+    return expanders.keySet().stream().sorted().toList();
+  }
+
+  /** Reports whether an unqualified request resolves to the given lexicon id. */
+  public boolean isDefault(String lexiconId) {
+    return lexiconId != null && lexiconId.equals(defaultId);
   }
 
   /**

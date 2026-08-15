@@ -376,6 +376,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
         .addAllCustomTokenizerIds(modelBundleCache.getTokenizerRegistry().ids())
         .addAllCustomSentenceDetectorIds(
             modelBundleCache.getSentenceDetectorRegistry().ids())
+        .addAllConfiguredResources(modelBundleCache.listConfiguredResources())
         .build());
     responseObserver.onCompleted();
   }

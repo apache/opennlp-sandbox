@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import opennlp.subword.sentencepiece.SentencePieceTokenizer;
@@ -107,6 +108,20 @@ public final class SubwordRegistry {
    */
   public boolean isAvailable() {
     return !tokenizers.isEmpty();
+  }
+
+  /**
+   * Returns the configured model ids in stable lexical order.
+   *
+   * @return An immutable list, possibly empty.
+   */
+  public List<String> ids() {
+    return tokenizers.keySet().stream().sorted().toList();
+  }
+
+  /** Reports whether an unqualified request resolves to the given model id. */
+  public boolean isDefault(String modelId) {
+    return modelId != null && modelId.equals(defaultId);
   }
 
   /**

@@ -56,9 +56,12 @@ import org.apache.opennlp.grpc.embedding.EmbeddingProviderFactory;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.ComponentType;
+import org.apache.opennlp.grpc.v1.ConfiguredResource;
 import org.apache.opennlp.grpc.v1.ModelBundleInfo;
 import org.apache.opennlp.grpc.v1.ModelDescriptor;
 import org.apache.opennlp.grpc.v1.PipelineStep;
+import org.apache.opennlp.grpc.v1.ResourceIdentity;
+import org.apache.opennlp.grpc.v1.StandardResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -326,6 +329,41 @@ public final class ModelBundleCache {
    */
   public List<ModelBundleInfo> listBundles() {
     return new ArrayList<>(bundles.values());
+  }
+
+  /**
+   * Returns the loaded non-model resources that profiles can select by id.
+   *
+   * <p>Model artifacts and embedding routes remain in {@link #listBundles()}; this
+   * catalog covers resource families whose runtime objects are not OpenNLP models.</p>
+   *
+   * @return A stable immutable list, grouped by standard resource type and then id.
+   */
+  public List<ConfiguredResource> listConfiguredResources() {
+    final List<ConfiguredResource> resources = new ArrayList<>();
+    addResources(resources, StandardResource.STANDARD_RESOURCE_SUBWORD_MODEL,
+        subwordRegistry.ids(), subwordRegistry::isDefault);
+    addResources(resources, StandardResource.STANDARD_RESOURCE_HUNSPELL_DICTIONARY,
+        hunspellRegistry.ids(), hunspellRegistry::isDefault);
+    addResources(resources, StandardResource.STANDARD_RESOURCE_WORDNET_LEXICON,
+        wordNetRegistry.ids(), wordNetRegistry::isDefault);
+    addResources(resources, StandardResource.STANDARD_RESOURCE_LATTICE_DICTIONARY,
+        latticeRegistry.ids(), latticeRegistry::isDefault);
+    return List.copyOf(resources);
+  }
+
+  private static void addResources(
+      List<ConfiguredResource> resources,
+      StandardResource type,
+      List<String> ids,
+      java.util.function.Predicate<String> isDefault) {
+    for (String id : ids) {
+      resources.add(ConfiguredResource.newBuilder()
+          .setIdentity(ResourceIdentity.newBuilder().setStandard(type))
+          .setResourceId(id)
+          .setIsDefault(isDefault.test(id))
+          .build());
+    }
   }
 
   /**

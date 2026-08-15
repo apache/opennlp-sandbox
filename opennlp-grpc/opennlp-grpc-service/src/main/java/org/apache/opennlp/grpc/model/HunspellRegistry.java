@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import opennlp.tools.stemmer.hunspell.HunspellDictionary;
@@ -123,6 +124,20 @@ public final class HunspellRegistry {
    */
   public boolean isAvailable() {
     return !stemmers.isEmpty();
+  }
+
+  /**
+   * Returns the configured dictionary ids in stable lexical order.
+   *
+   * @return An immutable list, possibly empty.
+   */
+  public List<String> ids() {
+    return stemmers.keySet().stream().sorted().toList();
+  }
+
+  /** Reports whether an unqualified request resolves to the given dictionary id. */
+  public boolean isDefault(String dictionaryId) {
+    return dictionaryId != null && dictionaryId.equals(defaultId);
   }
 
   /**
