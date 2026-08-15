@@ -209,4 +209,6 @@ message EmbedTextResponse {
   uint64 sequence = 1;
   // The dense embedding vector; length matches the model's embedding dimension.
   repeated float vector = 2;
+  // The actual backend route that produced this vector, including after fallback.
+  EmbeddingRoute route = 3;
 }
