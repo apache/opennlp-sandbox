@@ -28,6 +28,17 @@ option java_outer_classname = "OpenNlpDocumentProto";
 
 import "google/protobuf/struct.proto";
 
+// The closed stemmer families supported by the service. Defined in the document
+// contract so typed stem annotations can retain their producer configuration.
+enum StemmerAlgorithm {
+  STEMMER_ALGORITHM_UNSPECIFIED = 0;
+  STEMMER_ALGORITHM_SNOWBALL = 1;
+  STEMMER_ALGORITHM_PORTER = 2;
+  STEMMER_ALGORITHM_LIGHT = 3;
+  STEMMER_ALGORITHM_MINIMAL = 4;
+  STEMMER_ALGORITHM_HUNSPELL = 5;
+}
+
 // Canonical 1:1 NLP document: text in, annotations out.
 // The sentences list provides the shared base linguistic analysis
 // (computed once even when multiple chunk+embed groups are requested).
@@ -605,6 +616,22 @@ message AnnotationLayer {
     SubwordAnnotationList subword_values = 7;
     // Annotations whose value is a geocoded place.
     GeoAnnotationList geo_values = 8;
+    // UAX 29 token classes, represented by a closed enum.
+    WordTypeAnnotationList word_type_values = 9;
+    // Named entities with complete source and geocoding provenance.
+    EntityAnnotationList entity_values = 10;
+    // Shallow chunks with their complete provider provenance.
+    SyntacticChunkAnnotationList syntactic_chunk_values = 11;
+    // Token stems together with their producing stemmer configuration.
+    StemAnnotationList stem_values = 12;
+    // Lexical expansions with relation, depth, sense, weight, and lexicon provenance.
+    LexicalExpansionAnnotationList lexical_expansion_values = 13;
+    // The document normalization and its offset alignment.
+    NormalizationAnnotationList normalization_values = 14;
+    // Typed document analytics.
+    AnalyticsAnnotationList analytics_values = 15;
+    // Strategy-driven chunks, embeddings, centroids, and statistics.
+    ChunkGroupAnnotationList chunk_group_values = 16;
   }
 }
 
@@ -713,4 +740,81 @@ message TreeAnnotation {
   AnnotationSpan span = 1;
   // The parse, in the representations the request selected via parse_formats.
   ParseTree tree = 2;
+  // Every additional parse when a multi-engine union ran. The primary remains in tree.
+  repeated ParseTree alternatives = 3;
+}
+
+// Closed UAX 29 word token classes from OpenNLP's tokenizer.
+enum DocumentWordType {
+  DOCUMENT_WORD_TYPE_UNSPECIFIED = 0;
+  DOCUMENT_WORD_TYPE_ALPHANUMERIC = 1;
+  DOCUMENT_WORD_TYPE_NUMERIC = 2;
+  DOCUMENT_WORD_TYPE_IDEOGRAPHIC = 3;
+  DOCUMENT_WORD_TYPE_HIRAGANA = 4;
+  DOCUMENT_WORD_TYPE_KATAKANA = 5;
+  DOCUMENT_WORD_TYPE_HANGUL = 6;
+  DOCUMENT_WORD_TYPE_SOUTHEAST_ASIAN = 7;
+  DOCUMENT_WORD_TYPE_EMOJI = 8;
+}
+
+message WordTypeAnnotationList {
+  repeated WordTypeAnnotation annotations = 1;
+}
+
+message WordTypeAnnotation {
+  AnnotationSpan span = 1;
+  DocumentWordType type = 2;
+}
+
+message EntityAnnotationList {
+  repeated NamedEntity annotations = 1;
+}
+
+message SyntacticChunkAnnotationList {
+  repeated ChunkSpan annotations = 1;
+}
+
+message StemAnnotationList {
+  repeated StemAnnotation annotations = 1;
+}
+
+message StemAnnotation {
+  AnnotationSpan span = 1;
+  string stem = 2;
+  StemmerAlgorithm algorithm = 3;
+  optional string language = 4;
+  optional string hunspell_dictionary_id = 5;
+}
+
+enum LexicalExpansionKind {
+  LEXICAL_EXPANSION_KIND_UNSPECIFIED = 0;
+  LEXICAL_EXPANSION_KIND_SYNONYM = 1;
+  LEXICAL_EXPANSION_KIND_HYPERNYM = 2;
+  LEXICAL_EXPANSION_KIND_HYPONYM = 3;
+}
+
+message LexicalExpansionAnnotationList {
+  repeated LexicalExpansionAnnotation annotations = 1;
+}
+
+message LexicalExpansionAnnotation {
+  AnnotationSpan span = 1;
+  string term = 2;
+  LexicalExpansionKind kind = 3;
+  int32 depth = 4;
+  int32 sense_rank = 5;
+  double weight = 6;
+  string lexicon_id = 7;
+}
+
+message NormalizationAnnotationList {
+  repeated NormalizationResult annotations = 1;
+}
+
+message AnalyticsAnnotationList {
+  repeated DocumentAnalytics annotations = 1;
+}
+
+message ChunkGroupAnnotationList {
+  repeated ChunkEmbeddingGroup annotations = 1;
 }

@@ -106,22 +106,6 @@ enum PipelineStep {
 
 // The stemmer families the STEM step can run. All but HUNSPELL are bundled
 // algorithms; HUNSPELL stems against an operator-supplied affix dictionary.
-enum StemmerAlgorithm {
-  // Unset; treated as STEMMER_ALGORITHM_SNOWBALL.
-  STEMMER_ALGORITHM_UNSPECIFIED = 0;
-  // The Snowball stemmer for the language in StemmerSpec.language.
-  STEMMER_ALGORITHM_SNOWBALL = 1;
-  // The classic Porter stemmer (English only; StemmerSpec.language is ignored).
-  STEMMER_ALGORITHM_PORTER = 2;
-  // The UniNE light stemmer tier for StemmerSpec.language.
-  STEMMER_ALGORITHM_LIGHT = 3;
-  // The UniNE minimal stemmer tier for StemmerSpec.language.
-  STEMMER_ALGORITHM_MINIMAL = 4;
-  // Hunspell affix-dictionary stemming; select the dictionary with
-  // StemmerSpec.hunspell_dictionary_id.
-  STEMMER_ALGORITHM_HUNSPELL = 5;
-}
-
 // Configuration for PIPELINE_STEP_STEM.
 message StemmerSpec {
   // The stemmer family to run. Unset selects SNOWBALL.
