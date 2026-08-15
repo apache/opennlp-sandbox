@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
 import org.apache.opennlp.grpc.v1.EmbeddingResult;
+import org.apache.opennlp.grpc.v1.EmbeddingRoute;
 
 /**
  * Computes centroid (mean) embedding vectors from a set of member vectors — a single representative
@@ -45,6 +46,12 @@ public final class Centroids {
    */
   public static EmbeddingResult centroid(String modelId, List<float[]> vectors, AnnotationSpan span,
       EmbeddingGranularity granularity) {
+    return centroid(modelId, vectors, span, granularity, null);
+  }
+
+  /** Builds a centroid and retains the concrete route that produced its member vectors. */
+  public static EmbeddingResult centroid(String modelId, List<float[]> vectors, AnnotationSpan span,
+      EmbeddingGranularity granularity, EmbeddingRoute route) {
     if (vectors.isEmpty()) {
       return null;
     }
@@ -60,11 +67,14 @@ public final class Centroids {
     for (int i = 0; i < dimension; i++) {
       mean.add((float) (sums[i] / vectors.size()));
     }
-    return EmbeddingResult.newBuilder()
+    final EmbeddingResult.Builder result = EmbeddingResult.newBuilder()
         .setModelId(modelId)
         .addAllVector(mean)
         .setSourceSpan(span)
-        .setGranularity(granularity)
-        .build();
+        .setGranularity(granularity);
+    if (route != null) {
+      result.setRoute(route);
+    }
+    return result.build();
   }
 }

@@ -26,6 +26,7 @@ import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.ChunkingSpec;
+import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.Token;
 
@@ -73,13 +74,25 @@ public final class SegmentationChunker {
       OpenNlpDocument document,
       ChunkingSpec spec,
       EmbeddingProvider embeddingProvider) {
+    return segment(rawText, document, spec, embeddingProvider, null);
+  }
+
+  /** Segments with an optional entry-level embedding selector for semantic fallback. */
+  public static List<ChunkSegment> segment(
+      String rawText,
+      OpenNlpDocument document,
+      ChunkingSpec spec,
+      EmbeddingProvider embeddingProvider,
+      EmbeddingSelector fallbackSelector) {
     if (spec.getAlgorithm().isBlank()) {
       throw AnalysisException.invalidArgument("chunking.algorithm is required");
     }
     if (isSemantic(spec)) {
-      final String modelId = requireSemanticModelId(spec, embeddingProvider);
+      final SemanticSelection selection =
+          requireSemanticSelection(spec, embeddingProvider, fallbackSelector);
       return SemanticChunker.chunk(
-          rawText, document, spec.getSemanticConfig(), embeddingProvider, modelId);
+          rawText, document, spec.getSemanticConfig(), embeddingProvider,
+          selection.modelId(), selection.backendId());
     }
     return switch (spec.getAlgorithm()) {
       case "sentence" -> sentenceChunks(document);
@@ -93,22 +106,40 @@ public final class SegmentationChunker {
     return "semantic".equals(spec.getAlgorithm()) || spec.hasSemanticConfig();
   }
 
-  private static String requireSemanticModelId(ChunkingSpec spec, EmbeddingProvider provider) {
+  private static SemanticSelection requireSemanticSelection(
+      ChunkingSpec spec, EmbeddingProvider provider, EmbeddingSelector fallbackSelector) {
     if (!spec.hasSemanticConfig()) {
       throw AnalysisException.invalidArgument("chunking.semantic_config is required for semantic chunking");
     }
     final var semantic = spec.getSemanticConfig();
-    final String requested = semantic.hasSemanticEmbeddingModelId()
-        ? semantic.getSemanticEmbeddingModelId() : null;
+    if (semantic.hasSemanticEmbeddingModelId() && semantic.hasSemanticEmbeddingSelector()) {
+      throw AnalysisException.invalidArgument("semantic_embedding_model_id and "
+          + "semantic_embedding_selector are mutually exclusive");
+    }
+    final EmbeddingSelector selector = semantic.hasSemanticEmbeddingSelector()
+        ? semantic.getSemanticEmbeddingSelector() : fallbackSelector;
+    final String requested = selector != null
+        ? selector.getModelId()
+        : semantic.hasSemanticEmbeddingModelId() ? semantic.getSemanticEmbeddingModelId() : null;
+    final String backendId = selector != null && selector.hasBackendId()
+        && !selector.getBackendId().isBlank() ? selector.getBackendId().trim() : null;
     final String modelId = provider.resolveModelId(requested);
     if (modelId == null || modelId.isBlank()) {
       throw AnalysisException.invalidArgument(
           "semantic chunking requires semantic_embedding_model_id or exactly one registered embedding model");
     }
-    if (!provider.supportsModel(modelId)) {
+    if (backendId == null && !provider.supportsModel(modelId)) {
       throw AnalysisException.notFound("Unknown semantic embedding model '" + modelId + "'");
     }
-    return modelId;
+    if (backendId != null && !provider.supportsModel(modelId, backendId)) {
+      throw AnalysisException.notFound(
+          "Engine '" + backendId + "' does not serve semantic embedding model '"
+              + modelId + "'");
+    }
+    return new SemanticSelection(modelId, backendId);
+  }
+
+  private record SemanticSelection(String modelId, String backendId) {
   }
 
   private static List<ChunkSegment> sentenceChunks(OpenNlpDocument document) {

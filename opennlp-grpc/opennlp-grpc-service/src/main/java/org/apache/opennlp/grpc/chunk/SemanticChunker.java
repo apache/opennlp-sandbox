@@ -68,6 +68,17 @@ public final class SemanticChunker {
       SemanticChunkingConfig config,
       EmbeddingProvider embeddingProvider,
       String modelId) {
+    return chunk(rawText, document, config, embeddingProvider, modelId, null);
+  }
+
+  /** Chunks using an optional concrete embedding backend route. */
+  public static List<SegmentationChunker.ChunkSegment> chunk(
+      String rawText,
+      OpenNlpDocument document,
+      SemanticChunkingConfig config,
+      EmbeddingProvider embeddingProvider,
+      String modelId,
+      String backendId) {
     if (document.getSentencesCount() == 0) {
       return List.of();
     }
@@ -82,8 +93,9 @@ public final class SemanticChunker {
       final AnnotationSpan span = document.getSentences(i).getSentenceSpan();
       sentenceTexts.add(rawText.substring(span.getStart(), span.getEnd()));
     }
-    final float[][] embeddings =
-        embeddingProvider.embedBatch(modelId, sentenceTexts).toArray(new float[0][]);
+    final float[][] embeddings = embeddingProvider
+        .embedBatchResolved(modelId, backendId, sentenceTexts)
+        .vectors().toArray(new float[0][]);
 
     final float[] similarities = new float[sentenceCount - 1];
     for (int i = 0; i < similarities.length; i++) {

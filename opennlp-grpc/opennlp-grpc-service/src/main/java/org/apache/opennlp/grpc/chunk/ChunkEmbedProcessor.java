@@ -25,6 +25,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.opennlp.grpc.embedding.EmbeddingBatchResult;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.processor.PipelineStepPolicy;
@@ -41,6 +42,7 @@ import org.apache.opennlp.grpc.v1.CoordinateSpace;
 import org.apache.opennlp.grpc.v1.DiagnosticSeverity;
 import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
 import org.apache.opennlp.grpc.v1.EmbeddingResult;
+import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.apache.opennlp.grpc.v1.ProcessingDiagnostic;
@@ -83,15 +85,14 @@ public final class ChunkEmbedProcessor {
                 + "' requires configured embedding models on this server");
       }
     }
-    if (entry.getEmbeddingModelIdsCount() > 0 && !embeddingProvider.isAvailable()) {
+    final List<EmbeddingSelector> selectors = embeddingSelectors(entry);
+    if (!selectors.isEmpty() && !embeddingProvider.isAvailable()) {
       throw AnalysisException.notFound(
           "embedding models requested for config '" + entry.getConfigId()
               + "' but no embedding models are configured on this server");
     }
-    for (String modelId : entry.getEmbeddingModelIdsList()) {
-      if (!embeddingProvider.supportsModel(modelId)) {
-        throw AnalysisException.notFound("Unknown embedding model '" + modelId + "'");
-      }
+    for (EmbeddingSelector selector : selectors) {
+      validateSelector(selector, embeddingProvider);
     }
   }
 
@@ -112,13 +113,15 @@ public final class ChunkEmbedProcessor {
       ChunkEmbedConfigEntry entry,
       EmbeddingProvider embeddingProvider) {
     final long started = System.currentTimeMillis();
-    final List<SegmentationChunker.ChunkSegment> segments =
-        SegmentationChunker.segment(rawText, document, entry.getChunking(), embeddingProvider);
+    final List<EmbeddingSelector> selectors = embeddingSelectors(entry);
+    final EmbeddingSelector semanticFallback = selectors.size() == 1 ? selectors.getFirst() : null;
+    final List<SegmentationChunker.ChunkSegment> segments = SegmentationChunker.segment(
+        rawText, document, entry.getChunking(), embeddingProvider, semanticFallback);
 
     final ChunkEmbeddingGroup.Builder group = ChunkEmbeddingGroup.newBuilder()
         .setGroupId(entry.getConfigId())
         .setChunkConfigId(entry.getConfigId())
-        .addAllEmbeddingModelIds(entry.getEmbeddingModelIdsList())
+        .addAllEmbeddingModelIds(selectors.stream().map(EmbeddingSelector::getModelId).toList())
         .setGranularity(EmbeddingGranularity.EMBEDDING_GRANULARITY_CHUNK_LEVEL);
     if (entry.hasResultSetName()) {
       group.setResultSetName(entry.getResultSetName());
@@ -132,10 +135,11 @@ public final class ChunkEmbedProcessor {
     }
 
     // One batched inference per model across all chunks of this group.
-    final Map<String, List<float[]>> vectorsByModel = new LinkedHashMap<>();
+    final List<EmbeddingBatchResult> batches = new ArrayList<>(selectors.size());
     if (!segments.isEmpty()) {
-      for (String modelId : entry.getEmbeddingModelIdsList()) {
-        vectorsByModel.put(modelId, embeddingProvider.embedBatch(modelId, chunkTexts));
+      for (EmbeddingSelector selector : selectors) {
+        batches.add(embeddingProvider.embedBatchResolved(selector.getModelId(),
+            selectedBackend(selector), chunkTexts));
       }
     }
 
@@ -149,12 +153,15 @@ public final class ChunkEmbedProcessor {
           .setTextContent(chunkTexts.get(i))
           .addAllContainedSentenceIndices(segment.sentenceIndices());
       collectTokenStarts(document, segment, distinctTokenStarts);
-      for (String modelId : entry.getEmbeddingModelIdsList()) {
+      for (int selected = 0; selected < selectors.size(); selected++) {
+        final EmbeddingSelector selector = selectors.get(selected);
+        final EmbeddingBatchResult batch = batches.get(selected);
         chunk.addEmbeddings(EmbeddingResult.newBuilder()
-            .setModelId(modelId)
-            .addAllVector(toFloatList(vectorsByModel.get(modelId).get(i)))
+            .setModelId(selector.getModelId())
+            .addAllVector(toFloatList(batch.vectors().get(i)))
             .setSourceSpan(toSpan(segment.start(), segment.end()))
             .setGranularity(EmbeddingGranularity.EMBEDDING_GRANULARITY_CHUNK_LEVEL)
+            .setRoute(batch.route())
             .build());
       }
       group.addChunks(chunk.build());
@@ -163,9 +170,12 @@ public final class ChunkEmbedProcessor {
     // One centroid per model: the mean of this group's chunk vectors, spanning all its chunks.
     if (!segments.isEmpty()) {
       final AnnotationSpan groupSpan = groupSpan(segments);
-      for (String modelId : entry.getEmbeddingModelIdsList()) {
-        final EmbeddingResult centroid = Centroids.centroid(modelId, vectorsByModel.get(modelId),
-            groupSpan, EmbeddingGranularity.EMBEDDING_GRANULARITY_GROUP_CENTROID);
+      for (int selected = 0; selected < selectors.size(); selected++) {
+        final EmbeddingSelector selector = selectors.get(selected);
+        final EmbeddingBatchResult batch = batches.get(selected);
+        final EmbeddingResult centroid = Centroids.centroid(
+            selector.getModelId(), batch.vectors(), groupSpan,
+            EmbeddingGranularity.EMBEDDING_GRANULARITY_GROUP_CENTROID, batch.route());
         if (centroid != null) {
           group.addCentroids(centroid);
         }
@@ -194,18 +204,17 @@ public final class ChunkEmbedProcessor {
     if (entry.getConfigId().isBlank()) {
       throw AnalysisException.invalidArgument("category_chunk_configs.config_id is required");
     }
-    if (entry.getEmbeddingModelIdsCount() == 0) {
+    final List<EmbeddingSelector> selectors = embeddingSelectors(entry);
+    if (selectors.isEmpty()) {
       throw AnalysisException.invalidArgument("category_chunk_configs entry '" + entry.getConfigId()
-          + "' requires at least one embedding_model_id");
+          + "' requires at least one embedding selector");
     }
     if (!embeddingProvider.isAvailable()) {
       throw AnalysisException.notFound("embedding models requested for category config '"
           + entry.getConfigId() + "' but no embedding models are configured on this server");
     }
-    for (String modelId : entry.getEmbeddingModelIdsList()) {
-      if (!embeddingProvider.supportsModel(modelId)) {
-        throw AnalysisException.notFound("Unknown embedding model '" + modelId + "'");
-      }
+    for (EmbeddingSelector selector : selectors) {
+      validateSelector(selector, embeddingProvider);
     }
     for (String category : entry.getCategoriesList()) {
       if (category == null || category.isBlank()) {
@@ -232,6 +241,7 @@ public final class ChunkEmbedProcessor {
       String rawText, OpenNlpDocument document, CategoryChunkConfigEntry entry,
       EmbeddingProvider embeddingProvider) {
     final long started = System.currentTimeMillis();
+    final List<EmbeddingSelector> selectors = embeddingSelectors(entry);
 
     // Bucket sentence text by normalized category label, preserving first-appearance order.
     final Map<String, CategoryBucket> buckets = new LinkedHashMap<>();
@@ -263,17 +273,18 @@ public final class ChunkEmbedProcessor {
       categoryTexts.add(buckets.get(key).text());
     }
 
-    final Map<String, List<float[]>> vectorsByModel = new LinkedHashMap<>();
+    final List<EmbeddingBatchResult> batches = new ArrayList<>(selectors.size());
     if (!order.isEmpty()) {
-      for (String modelId : entry.getEmbeddingModelIdsList()) {
-        vectorsByModel.put(modelId, embeddingProvider.embedBatch(modelId, categoryTexts));
+      for (EmbeddingSelector selector : selectors) {
+        batches.add(embeddingProvider.embedBatchResolved(selector.getModelId(),
+            selectedBackend(selector), categoryTexts));
       }
     }
 
     final ChunkEmbeddingGroup.Builder group = ChunkEmbeddingGroup.newBuilder()
         .setGroupId(entry.getConfigId())
         .setChunkConfigId(entry.getConfigId())
-        .addAllEmbeddingModelIds(entry.getEmbeddingModelIdsList())
+        .addAllEmbeddingModelIds(selectors.stream().map(EmbeddingSelector::getModelId).toList())
         .setGranularity(EmbeddingGranularity.EMBEDDING_GRANULARITY_CHUNK_LEVEL);
     if (entry.hasResultSetName()) {
       group.setResultSetName(entry.getResultSetName());
@@ -292,12 +303,15 @@ public final class ChunkEmbedProcessor {
           .setChunkTag(bucket.label)
           .setTextContent(categoryTexts.get(g))
           .addAllContainedSentenceIndices(bucket.indices);
-      for (String modelId : entry.getEmbeddingModelIdsList()) {
+      for (int selected = 0; selected < selectors.size(); selected++) {
+        final EmbeddingSelector selector = selectors.get(selected);
+        final EmbeddingBatchResult batch = batches.get(selected);
         chunk.addEmbeddings(EmbeddingResult.newBuilder()
-            .setModelId(modelId)
-            .addAllVector(toFloatList(vectorsByModel.get(modelId).get(g)))
+            .setModelId(selector.getModelId())
+            .addAllVector(toFloatList(batch.vectors().get(g)))
             .setSourceSpan(toSpan(bucket.start, bucket.end))
             .setGranularity(EmbeddingGranularity.EMBEDDING_GRANULARITY_CHUNK_LEVEL)
+            .setRoute(batch.route())
             .build());
       }
       group.addChunks(chunk.build());
@@ -305,9 +319,12 @@ public final class ChunkEmbedProcessor {
 
     if (!order.isEmpty()) {
       final AnnotationSpan groupSpan = toSpan(spanStart, spanEnd);
-      for (String modelId : entry.getEmbeddingModelIdsList()) {
-        final EmbeddingResult centroid = Centroids.centroid(modelId, vectorsByModel.get(modelId),
-            groupSpan, EmbeddingGranularity.EMBEDDING_GRANULARITY_GROUP_CENTROID);
+      for (int selected = 0; selected < selectors.size(); selected++) {
+        final EmbeddingSelector selector = selectors.get(selected);
+        final EmbeddingBatchResult batch = batches.get(selected);
+        final EmbeddingResult centroid = Centroids.centroid(
+            selector.getModelId(), batch.vectors(), groupSpan,
+            EmbeddingGranularity.EMBEDDING_GRANULARITY_GROUP_CENTROID, batch.route());
         if (centroid != null) {
           group.addCentroids(centroid);
         }
@@ -421,14 +438,75 @@ public final class ChunkEmbedProcessor {
 
   private static void validateSemanticChunking(ChunkEmbedConfigEntry entry) {
     final var semantic = entry.getChunking().getSemanticConfig();
+    if (semantic.hasSemanticEmbeddingModelId() && semantic.hasSemanticEmbeddingSelector()) {
+      throw AnalysisException.invalidArgument("semantic_embedding_model_id and "
+          + "semantic_embedding_selector are mutually exclusive");
+    }
+    if (semantic.hasSemanticEmbeddingSelector()) {
+      if (semantic.getSemanticEmbeddingSelector().getModelId().isBlank()) {
+        throw AnalysisException.invalidArgument(
+            "semantic_embedding_selector.model_id must not be blank");
+      }
+      return;
+    }
     if (semantic.hasSemanticEmbeddingModelId() && !semantic.getSemanticEmbeddingModelId().isBlank()) {
       return;
     }
-    if (entry.getEmbeddingModelIdsCount() == 1) {
+    if (embeddingSelectors(entry).size() == 1) {
       return;
     }
     throw AnalysisException.invalidArgument(
-        "semantic chunking requires semantic_embedding_model_id or exactly one embedding_model_id");
+        "semantic chunking requires a semantic embedding selector or exactly one chunk embedding selector");
+  }
+
+  private static List<EmbeddingSelector> embeddingSelectors(ChunkEmbedConfigEntry entry) {
+    if (entry.getEmbeddingModelIdsCount() > 0 && entry.getEmbeddingSelectorsCount() > 0) {
+      throw AnalysisException.invalidArgument(
+          "embedding_model_ids and embedding_selectors are mutually exclusive");
+    }
+    if (entry.getEmbeddingSelectorsCount() > 0) {
+      return entry.getEmbeddingSelectorsList();
+    }
+    return entry.getEmbeddingModelIdsList().stream()
+        .map(modelId -> EmbeddingSelector.newBuilder().setModelId(modelId).build())
+        .toList();
+  }
+
+  private static List<EmbeddingSelector> embeddingSelectors(CategoryChunkConfigEntry entry) {
+    if (entry.getEmbeddingModelIdsCount() > 0 && entry.getEmbeddingSelectorsCount() > 0) {
+      throw AnalysisException.invalidArgument(
+          "embedding_model_ids and embedding_selectors are mutually exclusive");
+    }
+    if (entry.getEmbeddingSelectorsCount() > 0) {
+      return entry.getEmbeddingSelectorsList();
+    }
+    return entry.getEmbeddingModelIdsList().stream()
+        .map(modelId -> EmbeddingSelector.newBuilder().setModelId(modelId).build())
+        .toList();
+  }
+
+  private static void validateSelector(
+      EmbeddingSelector selector, EmbeddingProvider embeddingProvider) {
+    final String modelId = selector.getModelId().trim();
+    if (modelId.isEmpty()) {
+      throw AnalysisException.invalidArgument("embedding selector model_id must not be blank");
+    }
+    final String backendId = selectedBackend(selector);
+    if (backendId == null) {
+      if (!embeddingProvider.supportsModel(modelId)) {
+        throw AnalysisException.notFound("Unknown embedding model '" + modelId + "'");
+      }
+    } else if (!embeddingProvider.supportsModel(modelId, backendId)) {
+      throw AnalysisException.notFound(
+          "Engine '" + backendId + "' does not serve embedding model '" + modelId + "'");
+    }
+  }
+
+  private static String selectedBackend(EmbeddingSelector selector) {
+    if (!selector.hasBackendId() || selector.getBackendId().isBlank()) {
+      return null;
+    }
+    return selector.getBackendId().trim();
   }
 
   private static boolean isSemantic(ChunkingSpec chunking) {
