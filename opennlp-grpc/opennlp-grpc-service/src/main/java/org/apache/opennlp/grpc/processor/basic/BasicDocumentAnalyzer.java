@@ -366,11 +366,13 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     }
 
     final String embeddingModelId = validator.resolveEmbeddingModelId(request, profile);
+    final String embeddingBackendId = validator.resolveEmbeddingBackendId(request);
     if (PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_EMBED)) {
       requireSentences(document, PipelineStep.PIPELINE_STEP_EMBED);
       runStep(
           PipelineStep.PIPELINE_STEP_EMBED,
-          () -> embedChunkSteps.embedSentences(rawText, document, embeddingModelId, diagnostics));
+          () -> embedChunkSteps.embedSentences(
+              rawText, document, embeddingModelId, embeddingBackendId, diagnostics));
     } else {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_EMBED));
     }

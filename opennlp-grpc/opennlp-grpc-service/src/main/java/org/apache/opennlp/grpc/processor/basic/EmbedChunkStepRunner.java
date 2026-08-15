@@ -24,6 +24,7 @@ import java.util.Objects;
 import org.apache.opennlp.grpc.chunk.Centroids;
 import org.apache.opennlp.grpc.chunk.ChunkEmbedProcessor;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.embedding.EmbeddingBatchResult;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.profile.ProfileMerger;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
@@ -67,6 +68,7 @@ final class EmbedChunkStepRunner {
       String rawText,
       OpenNlpDocument.Builder document,
       String modelId,
+      String backendId,
       List<ProcessingDiagnostic> diagnostics) {
     final List<AnnotationSpan> sentenceSpans = new ArrayList<>(document.getSentencesCount());
     final List<String> sentenceTexts = new ArrayList<>(document.getSentencesCount());
@@ -75,13 +77,16 @@ final class EmbedChunkStepRunner {
       sentenceSpans.add(sentenceSpan);
       sentenceTexts.add(rawText.substring(sentenceSpan.getStart(), sentenceSpan.getEnd()));
     }
-    final List<float[]> vectors = embeddingProvider.embedBatch(modelId, sentenceTexts);
+    final EmbeddingBatchResult embedded =
+        embeddingProvider.embedBatchResolved(modelId, backendId, sentenceTexts);
+    final List<float[]> vectors = embedded.vectors();
     for (int i = 0; i < vectors.size(); i++) {
       document.addEmbeddings(EmbeddingResult.newBuilder()
           .setModelId(modelId)
           .addAllVector(toFloatList(vectors.get(i)))
           .setSourceSpan(sentenceSpans.get(i))
           .setGranularity(EmbeddingGranularity.EMBEDDING_GRANULARITY_SENTENCE)
+          .setRoute(embedded.route())
           .build());
     }
     // One document centroid per model: the mean of its sentence vectors over the whole text.
@@ -93,7 +98,7 @@ final class EmbedChunkStepRunner {
             .build(),
         EmbeddingGranularity.EMBEDDING_GRANULARITY_DOCUMENT);
     if (documentCentroid != null) {
-      document.addDocumentCentroids(documentCentroid);
+      document.addDocumentCentroids(documentCentroid.toBuilder().setRoute(embedded.route()).build());
     }
     diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_EMBED,
         "Generated " + vectors.size() + " sentence embedding(s) with model '" + modelId + "'"));

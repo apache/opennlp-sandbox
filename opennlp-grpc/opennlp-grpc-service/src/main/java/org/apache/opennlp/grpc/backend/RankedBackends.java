@@ -66,6 +66,10 @@ public final class RankedBackends<T> {
   public record Registration<T>(String logicalId, String engineId, int priority, T value) {
   }
 
+  /** One successful invocation together with the registration that handled it. */
+  public record Invocation<T, R>(Registration<T> registration, R result) {
+  }
+
   /** Logical id -> registrations, highest priority first. */
   private final Map<String, List<Registration<T>>> byLogicalId;
 
@@ -201,11 +205,17 @@ public final class RankedBackends<T> {
    * @throws AnalysisException {@code NOT_FOUND} if no engine serves {@code id}.
    */
   public <R> R invoke(String id, Function<Registration<T>, R> op) {
+    return invokeResolved(id, op).result();
+  }
+
+  /** Runs with safe fallback and retains the registration that succeeded. */
+  public <R> Invocation<T, R> invokeResolved(
+      String id, Function<Registration<T>, R> op) {
     final List<Registration<T>> registrations = resolve(id);
     AnalysisException last = null;
     for (Registration<T> registration : registrations) {
       try {
-        return op.apply(registration);
+        return new Invocation<>(registration, op.apply(registration));
       } catch (AnalysisException e) {
         if (!isRetryable(e)) {
           throw e;

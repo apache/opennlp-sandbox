@@ -23,8 +23,10 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.apache.opennlp.grpc.backend.RankedBackends;
+import org.apache.opennlp.grpc.backend.RankedBackends.Invocation;
 import org.apache.opennlp.grpc.backend.RankedBackends.Registration;
 import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.v1.EmbeddingRoute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +54,7 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
   private final List<EmbeddingProvider> providers;
   private final RankedBackends<EmbeddingProvider> backends;
   private final String configuredDefaultId;
+  private final Map<String, String> configuration;
 
   /**
    * Aggregates the given per-engine providers, indexing each engine's models by logical id with
@@ -69,6 +72,7 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
     Objects.requireNonNull(providers, "providers");
     Objects.requireNonNull(configuration, "configuration");
     this.providers = List.copyOf(providers);
+    this.configuration = Map.copyOf(configuration);
     try {
       final RankedBackends.Builder<EmbeddingProvider> builder = RankedBackends.builder();
       for (EmbeddingProvider provider : this.providers) {
@@ -176,6 +180,11 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
   }
 
   @Override
+  public boolean supportsModel(String modelId, String backendId) {
+    return backends.supports(modelId, backendId);
+  }
+
+  @Override
   public int embeddingDimension(String modelId) {
     return backends.primary(modelId).value().embeddingDimension(modelId);
   }
@@ -188,7 +197,23 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
   @Override
   public List<float[]> embedBatch(String modelId, List<String> texts) {
     Objects.requireNonNull(texts, "texts must not be null");
-    return backends.invoke(modelId, registration -> registration.value().embedBatch(modelId, texts));
+    return embedBatchResolved(modelId, null, texts).vectors();
+  }
+
+  @Override
+  public EmbeddingBatchResult embedBatchResolved(
+      String modelId, String backendId, List<String> texts) {
+    Objects.requireNonNull(texts, "texts must not be null");
+    final Invocation<EmbeddingProvider, List<float[]>> invocation;
+    if (backendId == null || backendId.isBlank()) {
+      invocation = backends.invokeResolved(modelId,
+          registration -> registration.value().embedBatch(modelId, texts));
+    } else {
+      final Registration<EmbeddingProvider> registration = backends.resolve(modelId, backendId);
+      invocation = new Invocation<>(registration,
+          registration.value().embedBatch(modelId, texts));
+    }
+    return new EmbeddingBatchResult(invocation.result(), route(invocation.registration()));
   }
 
   /**
@@ -217,9 +242,27 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
    * @throws AnalysisException {@code NOT_FOUND} if {@code engine} does not serve {@code modelId}.
    */
   public List<float[]> embedBatchOnEngine(String modelId, String engine, List<String> texts) {
-    Objects.requireNonNull(texts, "texts must not be null");
-    return backends.invoke(modelId, engine,
-        registration -> registration.value().embedBatch(modelId, texts));
+    return embedBatchResolved(modelId, engine, texts).vectors();
+  }
+
+  private EmbeddingRoute route(Registration<EmbeddingProvider> registration) {
+    final String modelId = registration.logicalId();
+    final String engineId = registration.engineId();
+    final EmbeddingRoute.Builder route = EmbeddingRoute.newBuilder()
+        .setModelId(modelId)
+        .setBackendId(engineId)
+        .setPriority(registration.priority())
+        .setPrimary(backends.primary(modelId).engineId().equals(engineId));
+    final String vectorSpaceId = configuration.get(
+        "model.embedder." + modelId + "." + engineId + ".vector_space_id");
+    if (vectorSpaceId != null && !vectorSpaceId.isBlank()) {
+      route.setVectorSpaceId(vectorSpaceId.trim());
+    }
+    final String hash = registration.value().modelArtifactHash(modelId);
+    if (hash != null && !hash.isBlank()) {
+      route.setArtifactHash(hash);
+    }
+    return route.build();
   }
 
   @Override

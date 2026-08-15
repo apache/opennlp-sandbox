@@ -397,6 +397,9 @@ final class DocumentShapeAssembler {
     if (embedding.hasSourceSpan()) {
       annotation.setSpan(embedding.getSourceSpan());
     }
+    if (embedding.hasRoute()) {
+      annotation.setRoute(embedding.getRoute());
+    }
     return annotation.build();
   }
 

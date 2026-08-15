@@ -22,6 +22,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.v1.EmbeddingRoute;
+
 /**
  * Embedding backend for the {@code PIPELINE_STEP_EMBED} pipeline step.
  *
@@ -84,6 +87,11 @@ public interface EmbeddingProvider {
    */
   boolean supportsModel(String modelId);
 
+  /** Reports whether one concrete backend route serves the logical model. */
+  default boolean supportsModel(String modelId, String backendId) {
+    return supportsModel(modelId) && backendId != null && backendId.equals(backendId(modelId));
+  }
+
   /**
    * Returns the dimension of the vectors produced by the given model.
    *
@@ -121,6 +129,28 @@ public interface EmbeddingProvider {
       vectors.add(embed(modelId, text));
     }
     return vectors;
+  }
+
+  /**
+   * Embeds a batch on the selected route and reports the route that actually produced it.
+   * A blank backend selects this provider's default route.
+   */
+  default EmbeddingBatchResult embedBatchResolved(
+      String modelId, String backendId, List<String> texts) {
+    final String actualBackend = backendId(modelId);
+    if (backendId != null && !backendId.isBlank() && !supportsModel(modelId, backendId)) {
+      throw AnalysisException.notFound(
+          "Engine '" + backendId + "' does not serve embedding model '" + modelId + "'");
+    }
+    final EmbeddingRoute.Builder route = EmbeddingRoute.newBuilder()
+        .setModelId(modelId)
+        .setBackendId(actualBackend)
+        .setPrimary(true);
+    final String hash = modelArtifactHash(modelId);
+    if (hash != null && !hash.isBlank()) {
+      route.setArtifactHash(hash);
+    }
+    return new EmbeddingBatchResult(embedBatch(modelId, texts), route.build());
   }
 
   /**

@@ -202,10 +202,23 @@ final class AnalysisRequestValidator {
       return pinnedEmbedder;
     }
     String requested = null;
-    if (request.hasOptions() && request.getOptions().hasEmbeddingModelId()) {
-      requested = request.getOptions().getEmbeddingModelId();
+    if (request.hasOptions()) {
+      if (request.getOptions().hasEmbeddingSelector()) {
+        requested = request.getOptions().getEmbeddingSelector().getModelId();
+      } else if (request.getOptions().hasEmbeddingModelId()) {
+        requested = request.getOptions().getEmbeddingModelId();
+      }
     }
     return embeddingProvider.resolveModelId(requested);
+  }
+
+  String resolveEmbeddingBackendId(AnalyzeDocumentRequest request) {
+    if (!request.hasOptions() || !request.getOptions().hasEmbeddingSelector()
+        || !request.getOptions().getEmbeddingSelector().hasBackendId()) {
+      return null;
+    }
+    final String backendId = request.getOptions().getEmbeddingSelector().getBackendId().trim();
+    return backendId.isEmpty() ? null : backendId;
   }
 
   /**
@@ -500,6 +513,10 @@ final class AnalysisRequestValidator {
     final AnalysisOptions options = request.getOptions();
     final boolean embedRequested =
         PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_EMBED);
+    if (options.hasEmbeddingModelId() && options.hasEmbeddingSelector()) {
+      throw AnalysisException.invalidArgument(
+          "embedding_model_id and embedding_selector are mutually exclusive");
+    }
     if (options.hasEmbeddingModelId() && !options.getEmbeddingModelId().isBlank()) {
       if (!embedRequested) {
         throw AnalysisException.invalidArgument(
@@ -529,6 +546,11 @@ final class AnalysisRequestValidator {
     }
     if (!embeddingProvider.supportsModel(modelId)) {
       throw AnalysisException.notFound("Unknown embedding model '" + modelId + "'");
+    }
+    final String backendId = resolveEmbeddingBackendId(request);
+    if (backendId != null && !embeddingProvider.supportsModel(modelId, backendId)) {
+      throw AnalysisException.notFound(
+          "Engine '" + backendId + "' does not serve embedding model '" + modelId + "'");
     }
   }
 
