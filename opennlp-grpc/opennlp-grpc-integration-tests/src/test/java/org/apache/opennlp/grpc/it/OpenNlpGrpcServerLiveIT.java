@@ -59,9 +59,13 @@ import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpAnalysisServiceGrpc;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
+import org.apache.opennlp.grpc.v1.SentenceDetectorSelector;
 import org.apache.opennlp.grpc.v1.StandardLayer;
+import org.apache.opennlp.grpc.v1.StandardSentenceDetectorEngine;
+import org.apache.opennlp.grpc.v1.StandardTokenizerEngine;
 import org.apache.opennlp.grpc.v1.StemmerAlgorithm;
 import org.apache.opennlp.grpc.v1.StemmerSpec;
+import org.apache.opennlp.grpc.v1.TokenizerSelector;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -164,6 +168,46 @@ class OpenNlpGrpcServerLiveIT {
     assertTrue(stems.getStemValues().getAnnotationsList().stream()
         .anyMatch(stem -> "cats".equals(slice(document.getRawText(), stem.getSpan()))
             && "cat".equals(stem.getStem())));
+  }
+
+  @Test
+  void typedModelFreeSegmentationProducesExactDocumentLayers() {
+    final String text = "First line, here\n\nSecond 123!";
+    final var response = client.analyzeDocument(AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder()
+            .setDocId("typed-segmentation")
+            .setRawText(text)
+            .build())
+        .setProfile(AnalysisProfile.newBuilder()
+            .setProfileId("typed-segmentation")
+            .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+            .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+            .setSentenceDetector(SentenceDetectorSelector.newBuilder()
+                .setStandard(StandardSentenceDetectorEngine
+                    .STANDARD_SENTENCE_DETECTOR_ENGINE_NEWLINE))
+            .setTokenizer(TokenizerSelector.newBuilder()
+                .setStandard(StandardTokenizerEngine
+                    .STANDARD_TOKENIZER_ENGINE_WHITESPACE))
+            .build())
+        .setOptions(AnalysisOptions.newBuilder()
+            .setOffsetEncoding(OffsetEncoding.OFFSET_ENCODING_UTF16_CODE_UNIT)
+            .build())
+        .build());
+    final OpenNlpDocument document = response.getDocument();
+
+    assertEquals(2, document.getSentencesCount());
+    assertEquals("First line, here",
+        slice(text, document.getSentences(0).getSentenceSpan()));
+    assertEquals("Second 123!",
+        slice(text, document.getSentences(1).getSentenceSpan()));
+    assertEquals(List.of("First", "line,", "here"), document.getSentences(0)
+        .getTokensList().stream().map(token -> token.getText()).toList());
+    assertEquals(List.of("Second", "123!"), document.getSentences(1)
+        .getTokensList().stream().map(token -> token.getText()).toList());
+    assertStandardLayer(document, StandardLayer.STANDARD_LAYER_SENTENCES,
+        "opennlp:sentences");
+    assertStandardLayer(document, StandardLayer.STANDARD_LAYER_TOKENS,
+        "opennlp:tokens");
   }
 
   @Test
@@ -393,7 +437,8 @@ class OpenNlpGrpcServerLiveIT {
             .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
             .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
             .addSteps(PipelineStep.PIPELINE_STEP_STEM)
-            .setTokenizerEngine("uax29")
+            .setTokenizer(TokenizerSelector.newBuilder()
+                .setStandard(StandardTokenizerEngine.STANDARD_TOKENIZER_ENGINE_UAX29))
             .setStemmer(StemmerSpec.newBuilder()
                 .setAlgorithm(StemmerAlgorithm.STEMMER_ALGORITHM_SNOWBALL)
                 .setLanguage("en")
