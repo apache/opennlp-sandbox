@@ -342,6 +342,10 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       document.setAnalytics(analytics);
     }
 
+    // The document-shape rendering runs over UTF-16 spans; the offset encoder below
+    // remaps layer spans together with every other span.
+    DocumentShapeAssembler.apply(document, rawText);
+
     DocumentOffsetEncoder.apply(document, rawText, requestedEncoding);
 
     return AnalyzeDocumentResponse.newBuilder()

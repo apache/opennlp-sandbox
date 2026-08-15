@@ -255,6 +255,40 @@ class BasicDocumentAnalyzerDocumentLayersTest {
   }
 
   @Test
+  void tokenSideLayersRenderWordTypesStopwordsAndTermDimensions() {
+    final AnalyzeDocumentResponse response = analyzer.analyze(
+        AnalyzeDocumentRequest.newBuilder()
+            .setDocument(OpenNlpDocument.newBuilder().setRawText(TEXT).build())
+            .setProfile(AnalysisProfile.newBuilder()
+                .setProfileId("layers")
+                .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+                .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+                .setTokenizerEngine("uax29")
+                .setStopwordLanguage("en")
+                .addTermDimensions("NFC")
+                .build())
+            .build());
+
+    final int tokenCount = requireLayer(response, "opennlp:tokens")
+        .getStringValues().getAnnotationsCount();
+    assertTrue(tokenCount > 0);
+
+    final AnnotationLayer wordTypes = requireLayer(response, "opennlp:word-types");
+    assertEquals(tokenCount, wordTypes.getStringValues().getAnnotationsCount());
+    assertEquals("ALPHANUMERIC", wordTypes.getStringValues().getAnnotations(0).getValue());
+
+    final AnnotationLayer stopwords = requireLayer(response, "opennlp:stopwords");
+    assertTrue(stopwords.getStringValues().getAnnotationsCount() > 0);
+    assertEquals("The", stopwords.getStringValues().getAnnotations(0).getValue());
+
+    final AnnotationLayer terms = requireLayer(response, "opennlp:terms:NFC");
+    assertEquals(tokenCount, terms.getStringValues().getAnnotationsCount());
+    for (StringAnnotation annotation : terms.getStringValues().getAnnotationsList()) {
+      assertFalse(annotation.getValue().isBlank());
+    }
+  }
+
+  @Test
   void layerSpansFollowTheRequestedOffsetEncoding() {
     final String text = "The café was open. It closed.";
     final AnalyzeDocumentResponse response = analyzer.analyze(

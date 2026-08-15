@@ -19,6 +19,23 @@ limitations under the License.
 
 Document-centric gRPC API for Apache OpenNLP inference. Design RFC: [docs/rfc/opennlp-grpc-design.md](docs/rfc/opennlp-grpc-design.md).
 
+## The document shape
+
+Every `AnalyzeDocument` response also renders its results as the OpenNLP 3.0
+document shape (OPENNLP-1888): `OpenNlpDocument.layers` carries named, typed
+annotation layers over `raw_text`, one layer per pipeline step that ran. Layer
+ids are namespaced exactly as in the Java container (`opennlp:sentences`,
+`opennlp:tokens`, `opennlp:pos`, `opennlp:lemmas`, `opennlp:entities`,
+`opennlp:chunks`, `opennlp:parses`, `opennlp:sentiment`, `opennlp:language`,
+`opennlp:categories`, `opennlp:embeddings`, `opennlp:word-types`,
+`opennlp:stopwords`, `opennlp:terms:<DIMENSION>`), and every annotation value is
+strongly typed through the layer's value list (string, scored category,
+embedding vector, or parse tree). Layer spans use the response's offset
+encoding like every other span. Server-side, the string layers are built through
+`opennlp.tools.document.Document` itself, so the container's invariants validate
+what goes on the wire; the full inventory is documented in
+`opennlp_document.proto`.
+
 ## Modules
 
 - **opennlp-grpc-api** - v1 protos (`org.apache.opennlp.grpc.v1`) and generated stubs

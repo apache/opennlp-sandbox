@@ -18,18 +18,25 @@
 package org.apache.opennlp.grpc.processor.basic;
 
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
+import org.apache.opennlp.grpc.v1.AnnotationLayer;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
+import org.apache.opennlp.grpc.v1.CategoryAnnotationList;
 import org.apache.opennlp.grpc.v1.Chunk;
 import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
 import org.apache.opennlp.grpc.v1.ChunkResult;
 import org.apache.opennlp.grpc.v1.ChunkSpan;
+import org.apache.opennlp.grpc.v1.DocumentLayers;
+import org.apache.opennlp.grpc.v1.EmbeddingAnnotationList;
 import org.apache.opennlp.grpc.v1.EmbeddingResult;
 import org.apache.opennlp.grpc.v1.NamedEntity;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.ParseNode;
 import org.apache.opennlp.grpc.v1.ParseTree;
+import org.apache.opennlp.grpc.v1.StringAnnotationList;
 import org.apache.opennlp.grpc.v1.Token;
+import org.apache.opennlp.grpc.v1.TreeAnnotation;
+import org.apache.opennlp.grpc.v1.TreeAnnotationList;
 
 /**
  * Converts every span of a fully assembled document from Java UTF-16 indices to the
@@ -130,7 +137,67 @@ final class DocumentOffsetEncoder {
       }
       document.setChunkEmbeddingGroups(g, group.build());
     }
+    if (document.hasLayers()) {
+      document.setLayers(remapLayers(document.getLayers(), mapper));
+    }
     document.setOffsetEncoding(mapper.encoding());
+  }
+
+  /** Remaps every span in the document-shape layers into the target encoding. */
+  private static DocumentLayers remapLayers(DocumentLayers layers, OffsetMapper mapper) {
+    final DocumentLayers.Builder remapped = layers.toBuilder();
+    for (int i = 0; i < remapped.getLayersCount(); i++) {
+      final AnnotationLayer.Builder layer = remapped.getLayers(i).toBuilder();
+      switch (layer.getValuesCase()) {
+        case STRING_VALUES -> {
+          final StringAnnotationList.Builder list = layer.getStringValues().toBuilder();
+          for (int a = 0; a < list.getAnnotationsCount(); a++) {
+            if (list.getAnnotations(a).hasSpan()) {
+              list.setAnnotations(a, list.getAnnotations(a).toBuilder()
+                  .setSpan(remap(list.getAnnotations(a).getSpan(), mapper)).build());
+            }
+          }
+          layer.setStringValues(list.build());
+        }
+        case CATEGORY_VALUES -> {
+          final CategoryAnnotationList.Builder list = layer.getCategoryValues().toBuilder();
+          for (int a = 0; a < list.getAnnotationsCount(); a++) {
+            if (list.getAnnotations(a).hasSpan()) {
+              list.setAnnotations(a, list.getAnnotations(a).toBuilder()
+                  .setSpan(remap(list.getAnnotations(a).getSpan(), mapper)).build());
+            }
+          }
+          layer.setCategoryValues(list.build());
+        }
+        case EMBEDDING_VALUES -> {
+          final EmbeddingAnnotationList.Builder list = layer.getEmbeddingValues().toBuilder();
+          for (int a = 0; a < list.getAnnotationsCount(); a++) {
+            if (list.getAnnotations(a).hasSpan()) {
+              list.setAnnotations(a, list.getAnnotations(a).toBuilder()
+                  .setSpan(remap(list.getAnnotations(a).getSpan(), mapper)).build());
+            }
+          }
+          layer.setEmbeddingValues(list.build());
+        }
+        case TREE_VALUES -> {
+          final TreeAnnotationList.Builder list = layer.getTreeValues().toBuilder();
+          for (int a = 0; a < list.getAnnotationsCount(); a++) {
+            final TreeAnnotation.Builder tree = list.getAnnotations(a).toBuilder()
+                .setSpan(remap(list.getAnnotations(a).getSpan(), mapper));
+            if (tree.getTree().hasRoot()) {
+              tree.setTree(remapParseTree(tree.getTree(), mapper));
+            }
+            list.setAnnotations(a, tree.build());
+          }
+          layer.setTreeValues(list.build());
+        }
+        default -> {
+          // A layer without annotations carries no spans to remap.
+        }
+      }
+      remapped.setLayers(i, layer.build());
+    }
+    return remapped.build();
   }
 
   /** Remaps a parse tree's structured root (and all descendants) into the target encoding. */
