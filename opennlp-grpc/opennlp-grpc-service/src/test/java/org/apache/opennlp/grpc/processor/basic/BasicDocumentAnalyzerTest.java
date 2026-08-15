@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
+import org.apache.opennlp.grpc.v1.AnalyzeStreamConfiguration;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BasicDocumentAnalyzerTest {
@@ -47,6 +49,28 @@ class BasicDocumentAnalyzerTest {
       request.setOptions(options);
     }
     return analyzer.analyze(request.build());
+  }
+
+  @Test
+  void rejectsNullRequestAtPublicBoundary() {
+    final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+        () -> analyzer.analyze(null));
+    assertEquals("request must not be null", error.getMessage());
+  }
+
+  @Test
+  void rejectsNullStreamConfigurationAtPublicBoundary() {
+    final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+        () -> analyzer.openSession(null));
+    assertEquals("configuration must not be null", error.getMessage());
+  }
+
+  @Test
+  void preparedSessionRejectsNullDocumentAtPublicBoundary() {
+    final var session = analyzer.openSession(AnalyzeStreamConfiguration.getDefaultInstance());
+    final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+        () -> session.analyze(null));
+    assertEquals("document must not be null", error.getMessage());
   }
 
   @Test

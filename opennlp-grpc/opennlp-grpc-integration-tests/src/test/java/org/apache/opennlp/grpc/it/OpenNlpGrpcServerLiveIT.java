@@ -138,8 +138,8 @@ class OpenNlpGrpcServerLiveIT {
   }
 
   @Test
-  void preservesDocumentShapeAndUtf16SpansForMigrationClients() {
-    final AnalyzeDocumentRequest request = migrationRequest("migration-unary", migrationText());
+  void preservesDocumentShapeAndUtf16Spans() {
+    final AnalyzeDocumentRequest request = documentRequest("contract-unary", unicodeText());
     final AnalyzeDocumentResponse response = client.analyzeDocument(request);
     final OpenNlpDocument document = response.getDocument();
 
@@ -168,9 +168,9 @@ class OpenNlpGrpcServerLiveIT {
 
   @Test
   void analysisStreamMatchesUnaryAndContinuesAfterADocumentError() throws Exception {
-    final AnalyzeDocumentRequest firstRequest = migrationRequest("migration-stream-1",
-        migrationText());
-    final AnalyzeDocumentRequest secondRequest = migrationRequest("migration-stream-2",
+    final AnalyzeDocumentRequest firstRequest = documentRequest("contract-stream-1",
+        unicodeText());
+    final AnalyzeDocumentRequest secondRequest = documentRequest("contract-stream-2",
         "Dogs bark.");
     final AnalyzeDocumentResponse firstUnary = client.analyzeDocument(firstRequest);
     final AnalyzeDocumentResponse secondUnary = client.analyzeDocument(secondRequest);
@@ -202,7 +202,7 @@ class OpenNlpGrpcServerLiveIT {
         .build());
     requests.onNext(streamDocument(41, firstRequest.getDocument()));
     requests.onNext(streamDocument(42, OpenNlpDocument.newBuilder()
-        .setDocId("migration-too-long")
+        .setDocId("too-long")
         .setRawText("x".repeat(80))
         .build()));
     requests.onNext(streamDocument(43, secondRequest.getDocument()));
@@ -375,21 +375,21 @@ class OpenNlpGrpcServerLiveIT {
         .build();
   }
 
-  private static String migrationText() {
+  private String unicodeText() {
     return "Running cats \ud83d\ude00 jump. Dogs bark.";
   }
 
-  private static AnalyzeDocumentRequest migrationRequest(String docId, String text) {
+  private AnalyzeDocumentRequest documentRequest(String docId, String text) {
     return AnalyzeDocumentRequest.newBuilder()
         .setDocument(OpenNlpDocument.newBuilder()
             .setDocId(docId)
             .setRawText(text)
             .setMetadata(Struct.newBuilder()
-                .putFields("source", Value.newBuilder().setStringValue("migration-it").build())
+                .putFields("source", Value.newBuilder().setStringValue("live-it").build())
                 .build())
             .build())
         .setProfile(AnalysisProfile.newBuilder()
-            .setProfileId("migration-contract")
+            .setProfileId("document-contract")
             .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
             .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
             .addSteps(PipelineStep.PIPELINE_STEP_STEM)
@@ -406,14 +406,14 @@ class OpenNlpGrpcServerLiveIT {
         .build();
   }
 
-  private static AnalyzeStreamConfiguration streamConfiguration(AnalyzeDocumentRequest request) {
+  private AnalyzeStreamConfiguration streamConfiguration(AnalyzeDocumentRequest request) {
     return AnalyzeStreamConfiguration.newBuilder()
         .setProfile(request.getProfile())
         .setOptions(request.getOptions())
         .build();
   }
 
-  private static AnalyzeStreamRequest streamDocument(long sequence, OpenNlpDocument document) {
+  private AnalyzeStreamRequest streamDocument(long sequence, OpenNlpDocument document) {
     return AnalyzeStreamRequest.newBuilder()
         .setDocument(AnalyzeStreamDocument.newBuilder()
             .setSequence(sequence)
@@ -422,7 +422,7 @@ class OpenNlpGrpcServerLiveIT {
         .build();
   }
 
-  private static AnalyzeStreamResponse responseFor(List<AnalyzeStreamResponse> responses,
+  private AnalyzeStreamResponse responseFor(List<AnalyzeStreamResponse> responses,
       long sequence) {
     return responses.stream()
         .filter(response -> response.getSequence() == sequence)
@@ -430,7 +430,7 @@ class OpenNlpGrpcServerLiveIT {
         .orElseThrow(() -> new AssertionError("No response for sequence " + sequence));
   }
 
-  private static AnnotationLayer assertStandardLayer(OpenNlpDocument document,
+  private AnnotationLayer assertStandardLayer(OpenNlpDocument document,
       StandardLayer standard, String id) {
     final AnnotationLayer layer = document.getLayers().getLayersList().stream()
         .filter(candidate -> candidate.getIdentity().getStandard() == standard)
@@ -440,14 +440,14 @@ class OpenNlpGrpcServerLiveIT {
     return layer;
   }
 
-  private static void assertSpanSlicesText(String text, AnnotationSpan span) {
+  private void assertSpanSlicesText(String text, AnnotationSpan span) {
     assertTrue(span.getStart() >= 0);
     assertTrue(span.getEnd() <= text.length());
     assertTrue(span.getStart() < span.getEnd());
     assertFalse(slice(text, span).isBlank());
   }
 
-  private static String slice(String text, AnnotationSpan span) {
+  private String slice(String text, AnnotationSpan span) {
     return text.substring(span.getStart(), span.getEnd());
   }
 

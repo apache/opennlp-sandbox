@@ -120,6 +120,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
     this.analysisStreamWindow = analysisStreamWindow;
   }
 
+  /** {@inheritDoc} */
   @Override
   public StreamObserver<AnalyzeStreamRequest> analyzeStream(
       StreamObserver<AnalyzeStreamResponse> responseObserver) {

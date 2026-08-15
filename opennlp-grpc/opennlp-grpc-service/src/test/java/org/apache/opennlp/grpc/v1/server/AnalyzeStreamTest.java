@@ -53,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Tests the concurrent, options-first full document analysis stream. */
@@ -81,6 +82,20 @@ class AnalyzeStreamTest {
 
   private static AnalyzeDocumentResponse echo(org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest r) {
     return AnalyzeDocumentResponse.newBuilder().setDocument(r.getDocument()).build();
+  }
+
+  @Test
+  void defaultAnalyzerSessionValidatesItsPublicArguments() {
+    final DocumentAnalyzer analyzer = AnalyzeStreamTest::echo;
+    final IllegalArgumentException configurationError = assertThrows(
+        IllegalArgumentException.class, () -> analyzer.openSession(null));
+    assertEquals("configuration must not be null", configurationError.getMessage());
+
+    final DocumentAnalysisSession session = analyzer.openSession(
+        AnalyzeStreamConfiguration.getDefaultInstance());
+    final IllegalArgumentException documentError = assertThrows(
+        IllegalArgumentException.class, () -> session.analyze(null));
+    assertEquals("document must not be null", documentError.getMessage());
   }
 
   @Test

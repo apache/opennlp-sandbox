@@ -37,6 +37,7 @@ public interface DocumentAnalysisSession {
    * @return Analysis response. Never {@code null}.
    *
    * @throws AnalysisException If the document is invalid or analysis fails.
+   * @throws IllegalArgumentException If {@code document} is {@code null}.
    */
   AnalyzeDocumentResponse analyze(OpenNlpDocument document);
 }

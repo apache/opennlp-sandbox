@@ -31,6 +31,7 @@ import io.grpc.ServerInterceptor;
  */
 final class EagerHeadersInterceptor implements ServerInterceptor {
 
+  /** {@inheritDoc} */
   @Override
   public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(
       ServerCall<ReqT, RespT> call,
@@ -40,6 +41,7 @@ final class EagerHeadersInterceptor implements ServerInterceptor {
         new ForwardingServerCall.SimpleForwardingServerCall<>(call) {
           private boolean sent;
 
+          /** {@inheritDoc} */
           @Override
           public void sendHeaders(Metadata responseHeaders) {
             if (!sent) {

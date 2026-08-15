@@ -96,6 +96,7 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
     }
   }
 
+  /** {@inheritDoc} */
   @Override
   public void onNext(AnalyzeStreamRequest request) {
     if (terminated.get()) {
@@ -108,6 +109,7 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
     }
   }
 
+  /** {@inheritDoc} */
   @Override
   public void onError(Throwable error) {
     // The caller or transport has already ended the call, so workers only need
@@ -117,6 +119,7 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
     logger.debug("AnalyzeStream closed by client or transport", error);
   }
 
+  /** {@inheritDoc} */
   @Override
   public void onCompleted() {
     clientCompleted = true;

@@ -121,6 +121,7 @@ final class LiveServerHarness implements AutoCloseable {
     return client;
   }
 
+  /** Returns an asynchronous client for streaming RPCs. */
   OpenNlpAnalysisServiceGrpc.OpenNlpAnalysisServiceStub asyncClient() {
     return OpenNlpAnalysisServiceGrpc.newStub(channel);
   }

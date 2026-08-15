@@ -134,18 +134,24 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     this.embedChunkSteps = new EmbedChunkStepRunner(embeddingProvider, classicSteps);
   }
 
+  /** {@inheritDoc} */
   @Override
   public AnalyzeDocumentResponse analyze(AnalyzeDocumentRequest request) {
-    Objects.requireNonNull(request, "request");
+    if (request == null) {
+      throw new IllegalArgumentException("request must not be null");
+    }
     final String rawText = requiredRawText(request);
     final PreparedAnalysis prepared = prepare(request);
     validator.validateDocument(request, rawText);
     return analyzePrepared(request, prepared, rawText);
   }
 
+  /** {@inheritDoc} */
   @Override
   public DocumentAnalysisSession openSession(AnalyzeStreamConfiguration configuration) {
-    Objects.requireNonNull(configuration, "configuration");
+    if (configuration == null) {
+      throw new IllegalArgumentException("configuration must not be null");
+    }
     final AnalyzeDocumentRequest.Builder fixed = AnalyzeDocumentRequest.newBuilder();
     if (configuration.hasProfile()) {
       fixed.setProfile(configuration.getProfile());
@@ -161,7 +167,9 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     final AnalyzeDocumentRequest template = fixed.build();
     final PreparedAnalysis prepared = prepare(template);
     return document -> {
-      Objects.requireNonNull(document, "document");
+      if (document == null) {
+        throw new IllegalArgumentException("document must not be null");
+      }
       final AnalyzeDocumentRequest request = template.toBuilder().setDocument(document).build();
       final String rawText = requiredRawText(request);
       validator.validateDocument(request, rawText);

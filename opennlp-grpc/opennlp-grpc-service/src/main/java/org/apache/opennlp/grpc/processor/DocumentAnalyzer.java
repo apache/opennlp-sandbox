@@ -18,15 +18,12 @@
  */
 package org.apache.opennlp.grpc.processor;
 
-import java.util.Objects;
-
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.AnalyzeStreamConfiguration;
 
 /**
- * Pure-Java document analysis orchestrator. Implementations are gRPC-free and may be
- * used in-process or behind the v1 {@code OpenNlpAnalysisService} gRPC adapter.
+ * Analyzes OpenNLP documents from typed pipeline requests.
  */
 public interface DocumentAnalyzer {
 
@@ -41,23 +38,24 @@ public interface DocumentAnalyzer {
    *
    * @throws org.apache.opennlp.grpc.processor.AnalysisException If the request is invalid
    *         or a required step fails.
+   * @throws IllegalArgumentException If {@code request} is {@code null}.
    */
   AnalyzeDocumentResponse analyze(AnalyzeDocumentRequest request);
 
   /**
-   * Opens an analysis session for a streaming call's fixed configuration.
-   * Implementations that can compile or validate a plan once may override this
-   * method. The default implementation preserves exact unary behavior by building
-   * an {@link AnalyzeDocumentRequest} for each submitted document.
+   * Opens an analysis session for a fixed stream configuration.
    *
    * @param configuration Fixed stream configuration. Must not be {@code null}.
    *
    * @return A thread-safe session for analyzing documents concurrently.
    *
    * @throws AnalysisException If the configuration cannot be prepared.
+   * @throws IllegalArgumentException If {@code configuration} is {@code null}.
    */
   default DocumentAnalysisSession openSession(AnalyzeStreamConfiguration configuration) {
-    Objects.requireNonNull(configuration, "configuration");
+    if (configuration == null) {
+      throw new IllegalArgumentException("configuration must not be null");
+    }
     final AnalyzeDocumentRequest.Builder fixed = AnalyzeDocumentRequest.newBuilder();
     if (configuration.hasProfile()) {
       fixed.setProfile(configuration.getProfile());
@@ -71,6 +69,11 @@ public interface DocumentAnalyzer {
     fixed.addAllChunkEmbedConfigs(configuration.getChunkEmbedConfigsList());
     fixed.addAllCategoryChunkConfigs(configuration.getCategoryChunkConfigsList());
     final AnalyzeDocumentRequest template = fixed.build();
-    return document -> analyze(template.toBuilder().setDocument(document).build());
+    return document -> {
+      if (document == null) {
+        throw new IllegalArgumentException("document must not be null");
+      }
+      return analyze(template.toBuilder().setDocument(document).build());
+    };
   }
 }
