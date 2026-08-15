@@ -441,10 +441,13 @@ final class DocumentShapeAssembler {
     final TreeAnnotationList.Builder list = TreeAnnotationList.newBuilder();
     for (AnnotatedSentence sentence : document.getSentencesList()) {
       if (sentence.hasParseTree()) {
-        list.addAnnotations(TreeAnnotation.newBuilder()
+        final TreeAnnotation.Builder annotation = TreeAnnotation.newBuilder()
             .setSpan(sentence.getSentenceSpan())
-            .setTree(sentence.getParseTree())
-            .build());
+            .setTree(sentence.getParseTree());
+        if (sentence.getParseTreesCount() > 0) {
+          annotation.addAllAlternatives(sentence.getParseTreesList());
+        }
+        list.addAnnotations(annotation);
       }
     }
     if (list.getAnnotationsCount() > 0) {
