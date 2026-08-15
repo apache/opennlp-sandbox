@@ -68,6 +68,12 @@ final class LiveServerHarness implements AutoCloseable {
    * @return The running harness. Callers own it and must {@link #close()} it.
    */
   static LiveServerHarness start(Properties serverConfig) throws IOException, InterruptedException {
+    return start(serverConfig, new Path[0]);
+  }
+
+  /** Starts the server with additional extension jars appended to its classpath. */
+  static LiveServerHarness start(Properties serverConfig, Path... extensionJars)
+      throws IOException, InterruptedException {
     final int serverPort = freePort();
     final Properties properties = new Properties();
     properties.putAll(serverConfig);
@@ -82,11 +88,17 @@ final class LiveServerHarness implements AutoCloseable {
 
     final Path log = Files.createTempFile("opennlp-grpc-live-it-", ".log");
     final String javaBin = Path.of(System.getProperty("java.home"), "bin", "java").toString();
-    final String classpath = requiredJar("opennlp.grpc.server.jar")
-        + File.pathSeparator + requiredJar("opennlp.grpc.tei.backend.jar")
-        + File.pathSeparator + requiredJar("opennlp.grpc.openvino.backend.jar");
+    final StringBuilder classpath = new StringBuilder(requiredJar("opennlp.grpc.server.jar"))
+        .append(File.pathSeparator).append(requiredJar("opennlp.grpc.tei.backend.jar"))
+        .append(File.pathSeparator).append(requiredJar("opennlp.grpc.openvino.backend.jar"));
+    for (Path extensionJar : extensionJars) {
+      if (!Files.isRegularFile(extensionJar)) {
+        throw new IllegalArgumentException("Extension jar does not exist: " + extensionJar);
+      }
+      classpath.append(File.pathSeparator).append(extensionJar);
+    }
     final Process process = new ProcessBuilder(
-        javaBin, "-cp", classpath, "org.apache.opennlp.grpc.server.OpenNlpGrpcServer",
+        javaBin, "-cp", classpath.toString(), "org.apache.opennlp.grpc.server.OpenNlpGrpcServer",
         "-p", Integer.toString(serverPort), "-c", config.toString())
         .redirectErrorStream(true)
         .redirectOutput(log.toFile())
