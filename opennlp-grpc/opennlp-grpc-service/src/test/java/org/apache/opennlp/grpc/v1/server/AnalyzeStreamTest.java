@@ -35,6 +35,7 @@ import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.processor.DocumentAnalysisSession;
 import org.apache.opennlp.grpc.processor.DocumentAnalyzer;
+import org.apache.opennlp.grpc.processor.basic.BasicDocumentAnalyzer;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
@@ -298,6 +299,28 @@ class AnalyzeStreamTest {
     assertEquals(configuration, prepared.get());
     assertTrue(responses.bySequence(1).hasOk());
     assertTrue(responses.bySequence(2).hasOk());
+  }
+
+  @Test
+  void productionAnalyzerRejectsInvalidFixedConfigurationBeforeAnyDocument() throws Exception {
+    final CapturingObserver responses = new CapturingObserver();
+    final StreamObserver<AnalyzeStreamRequest> requests = serviceWith(
+        new BasicDocumentAnalyzer(Map.of())).analyzeStream(responses);
+    final AnalysisProfile invalid = AnalysisProfile.newBuilder()
+        .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+        .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+        .setTokenizerEngine("not-an-engine")
+        .build();
+
+    requests.onNext(AnalyzeStreamRequest.newBuilder()
+        .setConfiguration(AnalyzeStreamConfiguration.newBuilder().setProfile(invalid))
+        .build());
+
+    assertTrue(responses.awaitTerminal(), "invalid configuration did not terminate the stream");
+    assertEquals(Status.Code.INVALID_ARGUMENT, Status.fromThrowable(responses.error).getCode());
+    assertTrue(Status.fromThrowable(responses.error).getDescription().contains("tokenizer_engine"));
+    assertFalse(responses.completed);
+    assertTrue(responses.values.isEmpty());
   }
 
   private static void await(CountDownLatch latch) {
