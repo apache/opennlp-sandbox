@@ -874,7 +874,8 @@ public final class ModelBundleCache {
             .setComponentType(ComponentType.COMPONENT_TYPE_EMBEDDER)
             .addLanguages(DEFAULT_LANGUAGE)
             .setEmbeddingDimension(embeddingProvider.embeddingDimension(modelId))
-            .setBackendId(embeddingProvider.backendId(modelId));
+            .setBackendId(embeddingProvider.backendId(modelId))
+            .addAllEmbeddingRoutes(embeddingProvider.routesForModel(modelId));
         final String hash = embeddingProvider.modelArtifactHash(modelId);
         if (hash != null && !hash.isBlank()) {
           descriptor.setHash(hash);

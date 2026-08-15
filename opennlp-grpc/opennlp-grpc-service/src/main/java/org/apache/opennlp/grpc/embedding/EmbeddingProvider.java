@@ -154,6 +154,27 @@ public interface EmbeddingProvider {
   }
 
   /**
+   * Lists the concrete backend routes available for one logical model.
+   *
+   * @param modelId The logical model id.
+   * @return Routes in selection order, with the default route first.
+   */
+  default List<EmbeddingRoute> routesForModel(String modelId) {
+    if (!supportsModel(modelId)) {
+      return List.of();
+    }
+    final EmbeddingRoute.Builder route = EmbeddingRoute.newBuilder()
+        .setModelId(modelId)
+        .setBackendId(backendId(modelId))
+        .setPrimary(true);
+    final String hash = modelArtifactHash(modelId);
+    if (hash != null && !hash.isBlank()) {
+      route.setArtifactHash(hash);
+    }
+    return List.of(route.build());
+  }
+
+  /**
    * Resolves the effective model id from an optional client override.
    *
    * @param requestedModelId The model id requested by the client. May be {@code null}

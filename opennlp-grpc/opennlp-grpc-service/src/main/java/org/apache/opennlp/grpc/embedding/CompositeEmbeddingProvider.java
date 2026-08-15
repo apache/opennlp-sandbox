@@ -216,6 +216,14 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
     return new EmbeddingBatchResult(invocation.result(), route(invocation.registration()));
   }
 
+  @Override
+  public List<EmbeddingRoute> routesForModel(String modelId) {
+    if (!supportsModel(modelId)) {
+      return List.of();
+    }
+    return backends.resolve(modelId).stream().map(this::route).toList();
+  }
+
   /**
    * {@inheritDoc}
    *
