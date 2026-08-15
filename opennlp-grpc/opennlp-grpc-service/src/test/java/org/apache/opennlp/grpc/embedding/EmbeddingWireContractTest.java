@@ -23,6 +23,7 @@ import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.CategoryChunkConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
 import org.apache.opennlp.grpc.v1.EmbedTextRequest;
+import org.apache.opennlp.grpc.v1.EmbedTextResponse;
 import org.apache.opennlp.grpc.v1.EmbeddingAnnotation;
 import org.apache.opennlp.grpc.v1.EmbeddingResult;
 import org.apache.opennlp.grpc.v1.ModelDescriptor;
@@ -74,6 +75,8 @@ class EmbeddingWireContractTest {
         "route", "EmbeddingRoute", false);
     requiredMessageField(ModelDescriptor.getDescriptor(),
         "embedding_routes", "EmbeddingRoute", true);
+    requiredMessageField(EmbedTextResponse.getDescriptor(),
+        "route", "EmbeddingRoute", false);
 
     final Descriptor route = resultRoute.getMessageType();
     assertStringField(route, "model_id");
