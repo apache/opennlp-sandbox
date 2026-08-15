@@ -25,12 +25,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.grpc.Status;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.processor.DocumentAnalysisSession;
 import org.apache.opennlp.grpc.processor.DocumentAnalyzer;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.v1.AnalysisOptions;
@@ -258,6 +261,43 @@ class AnalyzeStreamTest {
     } finally {
       executor.shutdownNow();
     }
+  }
+
+  @Test
+  void opensOneGenericAnalyzerSessionForTheStreamsFixedConfiguration() throws Exception {
+    final AtomicInteger opened = new AtomicInteger();
+    final AtomicReference<AnalyzeStreamConfiguration> prepared = new AtomicReference<>();
+    final DocumentAnalyzer analyzer = new DocumentAnalyzer() {
+      @Override
+      public AnalyzeDocumentResponse analyze(
+          org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest request) {
+        throw new IllegalStateException("stream bypassed its prepared analyzer session");
+      }
+
+      @Override
+      public DocumentAnalysisSession openSession(AnalyzeStreamConfiguration configuration) {
+        opened.incrementAndGet();
+        prepared.set(configuration);
+        return document -> AnalyzeDocumentResponse.newBuilder().setDocument(document).build();
+      }
+    };
+    final CapturingObserver responses = new CapturingObserver();
+    final StreamObserver<AnalyzeStreamRequest> requests = serviceWith(analyzer)
+        .analyzeStream(responses);
+    final AnalyzeStreamConfiguration configuration = AnalyzeStreamConfiguration.newBuilder()
+        .setProfileId("prepared-profile")
+        .build();
+
+    requests.onNext(AnalyzeStreamRequest.newBuilder().setConfiguration(configuration).build());
+    requests.onNext(document(1, "first"));
+    requests.onNext(document(2, "second"));
+    requests.onCompleted();
+
+    assertTrue(responses.awaitTerminal());
+    assertEquals(1, opened.get());
+    assertEquals(configuration, prepared.get());
+    assertTrue(responses.bySequence(1).hasOk());
+    assertTrue(responses.bySequence(2).hasOk());
   }
 
   private static void await(CountDownLatch latch) {
