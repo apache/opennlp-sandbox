@@ -17,16 +17,18 @@
  */
 package org.apache.opennlp.grpc.v1.server;
 
+import java.util.List;
 import java.util.Objects;
 
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
+import org.apache.opennlp.grpc.embedding.EmbeddingBatchResult;
+import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.processor.DocumentAnalyzer;
 import org.apache.opennlp.grpc.processor.PipelineStepPolicy;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
-import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.EmbedTextRequest;
@@ -136,6 +138,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
     private final io.grpc.stub.ServerCallStreamObserver<EmbedTextResponse> serverCallObserver;
     private final Object readyLock = new Object();
     private String modelId;
+    private String backendId;
     private boolean failed;
     private int writesSinceReady;
 
@@ -163,9 +166,13 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
         return;
       }
       try {
-        final float[] vector = embeddingProvider.embed(resolveModel(request), validText(request));
+        resolveRoute(request);
+        final EmbeddingBatchResult result = embeddingProvider.embedBatchResolved(
+            modelId, backendId, List.of(validText(request)));
+        final float[] vector = result.vectors().getFirst();
         final EmbedTextResponse.Builder response = EmbedTextResponse.newBuilder()
-            .setSequence(request.getSequence());
+            .setSequence(request.getSequence())
+            .setRoute(result.route());
         for (final float value : vector) {
           response.addVector(value);
         }
@@ -194,8 +201,25 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
       }
     }
 
-    private String resolveModel(EmbedTextRequest request) {
-      final String requested = request.hasModelId() ? request.getModelId().trim() : "";
+    private void resolveRoute(EmbedTextRequest request) {
+      if (request.hasModelId() && request.hasEmbeddingSelector()) {
+        throw AnalysisException.invalidArgument(
+            "EmbedText model_id and embedding_selector are mutually exclusive");
+      }
+      final String requested;
+      final String requestedBackend;
+      if (request.hasEmbeddingSelector()) {
+        requested = request.getEmbeddingSelector().getModelId().trim();
+        requestedBackend = request.getEmbeddingSelector().hasBackendId()
+            ? request.getEmbeddingSelector().getBackendId().trim() : "";
+        if (requested.isEmpty()) {
+          throw AnalysisException.invalidArgument(
+              "EmbedText embedding_selector.model_id must not be blank");
+        }
+      } else {
+        requested = request.hasModelId() ? request.getModelId().trim() : "";
+        requestedBackend = "";
+      }
       if (modelId == null) {
         final String resolved =
             embeddingProvider.resolveModelId(requested.isEmpty() ? null : requested);
@@ -204,18 +228,35 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
               + "when no single default embedding model can be determined; configured: "
               + embeddingProvider.registeredModelIds());
         }
-        if (!embeddingProvider.supportsModel(resolved)) {
-          throw AnalysisException.notFound("Unknown embedding model '" + resolved + "'");
+        final String selectedBackend = requestedBackend.isEmpty() ? null : requestedBackend;
+        if (!embeddingProvider.supportsModel(resolved, selectedBackend)
+            && (selectedBackend != null || !embeddingProvider.supportsModel(resolved))) {
+          throw AnalysisException.notFound(selectedBackend == null
+              ? "Unknown embedding model '" + resolved + "'"
+              : "Engine '" + selectedBackend + "' does not serve embedding model '"
+                  + resolved + "'");
         }
         modelId = resolved;
-        return modelId;
+        backendId = selectedBackend;
+        return;
       }
       if (!requested.isEmpty() && !requested.equals(modelId)) {
         throw AnalysisException.invalidArgument("EmbedText streams use one model: the stream "
             + "started with '" + modelId + "' but a later message names '" + requested
             + "'; open a separate stream per model");
       }
-      return modelId;
+      if (request.hasEmbeddingSelector()
+          && !Objects.equals(requestedBackend.isEmpty() ? null : requestedBackend, backendId)) {
+        throw AnalysisException.invalidArgument("EmbedText streams use one backend route: the "
+            + "stream started with '" + displayBackend(backendId)
+            + "' but a later message names '"
+            + displayBackend(requestedBackend.isEmpty() ? null : requestedBackend)
+            + "'; open a separate stream per backend route");
+      }
+    }
+
+    private static String displayBackend(String backendId) {
+      return backendId == null ? "default" : backendId;
     }
 
     private static String validText(EmbedTextRequest request) {
