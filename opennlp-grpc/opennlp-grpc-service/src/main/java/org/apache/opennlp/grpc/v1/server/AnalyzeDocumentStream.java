@@ -21,6 +21,7 @@ package org.apache.opennlp.grpc.v1.server;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -47,6 +48,7 @@ import org.slf4j.LoggerFactory;
 final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest> {
 
   private static final Logger logger = LoggerFactory.getLogger(AnalyzeDocumentStream.class);
+  private static final long READY_TIMEOUT_MILLIS = 30_000;
 
   private final DocumentAnalyzer documentAnalyzer;
   private final Executor executor;
@@ -54,6 +56,7 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
   private final ServerCallStreamObserver<AnalyzeStreamResponse> serverCallObserver;
   private final int streamWindow;
   private final Object outputLock = new Object();
+  private final Object readyLock = new Object();
   private final AtomicInteger inFlight = new AtomicInteger();
   private final AtomicBoolean terminated = new AtomicBoolean();
 
@@ -85,6 +88,7 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
       serverCallObserver = observer;
       observer.disableAutoInboundFlowControl();
       observer.setOnCancelHandler(this::cancel);
+      observer.setOnReadyHandler(this::signalReady);
       observer.request(1);
     } else {
       serverCallObserver = null;
@@ -108,6 +112,7 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
     // The caller or transport has already ended the call, so workers only need
     // the termination flag to suppress late writes.
     terminated.set(true);
+    signalReady();
     logger.debug("AnalyzeStream closed by client or transport", error);
   }
 
@@ -195,14 +200,49 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
 
   private void send(AnalyzeStreamResponse response) {
     synchronized (outputLock) {
-      if (!terminated.get()) {
-        responseObserver.onNext(response);
+      if (!terminated.get() && awaitReady()) {
+        try {
+          responseObserver.onNext(response);
+        } catch (RuntimeException e) {
+          terminated.set(true);
+          signalReady();
+          logger.debug("AnalyzeStream response transport closed during write", e);
+        }
       }
     }
   }
 
+  private boolean awaitReady() {
+    if (serverCallObserver == null) {
+      return true;
+    }
+    final long deadline = System.nanoTime()
+        + TimeUnit.MILLISECONDS.toNanos(READY_TIMEOUT_MILLIS);
+    while (!terminated.get() && !serverCallObserver.isReady()) {
+      final long remaining = deadline - System.nanoTime();
+      if (remaining <= 0) {
+        failOutput(Status.RESOURCE_EXHAUSTED
+            .withDescription("client did not drain AnalyzeStream responses"));
+        return false;
+      }
+      try {
+        synchronized (readyLock) {
+          if (!serverCallObserver.isReady() && !terminated.get()) {
+            TimeUnit.NANOSECONDS.timedWait(readyLock, remaining);
+          }
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        failOutput(Status.CANCELLED.withDescription("analysis response write interrupted"));
+        return false;
+      }
+    }
+    return !terminated.get();
+  }
+
   private void failProtocol(String description) {
     if (terminated.compareAndSet(false, true)) {
+      signalReady();
       synchronized (outputLock) {
         responseObserver.onError(Status.INVALID_ARGUMENT
             .withDescription(description).asRuntimeException());
@@ -226,5 +266,19 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
 
   private void cancel() {
     terminated.set(true);
+    signalReady();
+  }
+
+  private void failOutput(Status status) {
+    if (terminated.compareAndSet(false, true)) {
+      signalReady();
+      responseObserver.onError(status.asRuntimeException());
+    }
+  }
+
+  private void signalReady() {
+    synchronized (readyLock) {
+      readyLock.notifyAll();
+    }
   }
 }
