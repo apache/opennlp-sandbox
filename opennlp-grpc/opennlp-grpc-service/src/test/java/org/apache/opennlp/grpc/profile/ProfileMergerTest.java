@@ -20,8 +20,12 @@ package org.apache.opennlp.grpc.profile;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.NormalizationRung;
 import org.apache.opennlp.grpc.v1.NormalizationSpec;
+import org.apache.opennlp.grpc.v1.SentenceDetectorSelector;
+import org.apache.opennlp.grpc.v1.StandardSentenceDetectorEngine;
+import org.apache.opennlp.grpc.v1.StandardTokenizerEngine;
 import org.apache.opennlp.grpc.v1.StemmerAlgorithm;
 import org.apache.opennlp.grpc.v1.StemmerSpec;
+import org.apache.opennlp.grpc.v1.TokenizerSelector;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,6 +46,11 @@ class ProfileMergerTest {
             .setAlgorithm(StemmerAlgorithm.STEMMER_ALGORITHM_PORTER))
         .setWordnetLexiconId("base-wordnet")
         .setLatticeDictionaryId("base-lattice")
+        .setTokenizer(TokenizerSelector.newBuilder()
+            .setStandard(StandardTokenizerEngine.STANDARD_TOKENIZER_ENGINE_MODEL))
+        .setSentenceDetector(SentenceDetectorSelector.newBuilder()
+            .setStandard(StandardSentenceDetectorEngine
+                .STANDARD_SENTENCE_DETECTOR_ENGINE_MODEL))
         .build();
     final AnalysisProfile override = AnalysisProfile.newBuilder()
         .setNormalization(NormalizationSpec.newBuilder()
@@ -55,6 +64,11 @@ class ProfileMergerTest {
             .setAlgorithm(StemmerAlgorithm.STEMMER_ALGORITHM_HUNSPELL))
         .setWordnetLexiconId("override-wordnet")
         .setLatticeDictionaryId("override-lattice")
+        .setTokenizer(TokenizerSelector.newBuilder()
+            .setStandard(StandardTokenizerEngine.STANDARD_TOKENIZER_ENGINE_SIMPLE))
+        .setSentenceDetector(SentenceDetectorSelector.newBuilder()
+            .setStandard(StandardSentenceDetectorEngine
+                .STANDARD_SENTENCE_DETECTOR_ENGINE_NEWLINE))
         .build();
 
     final AnalysisProfile merged = ProfileMerger.merge(base, override);
@@ -70,5 +84,9 @@ class ProfileMergerTest {
         merged.getStemmer().getAlgorithm());
     assertEquals("override-wordnet", merged.getWordnetLexiconId());
     assertEquals("override-lattice", merged.getLatticeDictionaryId());
+    assertEquals(StandardTokenizerEngine.STANDARD_TOKENIZER_ENGINE_SIMPLE,
+        merged.getTokenizer().getStandard());
+    assertEquals(StandardSentenceDetectorEngine.STANDARD_SENTENCE_DETECTOR_ENGINE_NEWLINE,
+        merged.getSentenceDetector().getStandard());
   }
 }

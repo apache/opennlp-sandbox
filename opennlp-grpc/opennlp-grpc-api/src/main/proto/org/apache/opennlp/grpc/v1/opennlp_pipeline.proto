@@ -192,6 +192,55 @@ enum POSTagFormat {
 // An unpinned selector uses priority and safe fallback. ModelDescriptor reports
 // every available route and every result reports the route that produced it.
 
+// OpenNLP-owned word-tokenizer engines. These values are stable protocol choices;
+// third-party engines use TokenizerSelector.custom so adding one does not require a
+// protocol release.
+enum StandardTokenizerEngine {
+  // Unset selects the bundle's TokenizerME, matching STANDARD_TOKENIZER_ENGINE_MODEL.
+  STANDARD_TOKENIZER_ENGINE_UNSPECIFIED = 0;
+  // Statistical TokenizerME backed by the profile's model bundle.
+  STANDARD_TOKENIZER_ENGINE_MODEL = 1;
+  // Rule-based Unicode UAX #29 tokenization with Token.word_type classification.
+  STANDARD_TOKENIZER_ENGINE_UAX29 = 2;
+  // Split only at whitespace, retaining attached punctuation.
+  STANDARD_TOKENIZER_ENGINE_WHITESPACE = 3;
+  // Split on whitespace and character-class transitions.
+  STANDARD_TOKENIZER_ENGINE_SIMPLE = 4;
+  // Viterbi segmentation over the selected MeCab-format lattice dictionary.
+  STANDARD_TOKENIZER_ENGINE_LATTICE = 5;
+}
+
+// Strongly typed selection for PIPELINE_STEP_TOKENIZE. Standard engines use the
+// enum; custom holds the stable id of a TokenizerBackendFactory discovered through
+// ServiceLoader. An unset selector defaults to MODEL.
+message TokenizerSelector {
+  oneof kind {
+    StandardTokenizerEngine standard = 1;
+    string custom = 2;
+  }
+}
+
+// OpenNLP-owned sentence-detector engines. Third-party engines use
+// SentenceDetectorSelector.custom.
+enum StandardSentenceDetectorEngine {
+  // Unset selects the bundle's SentenceDetectorME.
+  STANDARD_SENTENCE_DETECTOR_ENGINE_UNSPECIFIED = 0;
+  // Statistical SentenceDetectorME backed by the profile's model bundle.
+  STANDARD_SENTENCE_DETECTOR_ENGINE_MODEL = 1;
+  // Treat each non-empty line as one sentence.
+  STANDARD_SENTENCE_DETECTOR_ENGINE_NEWLINE = 2;
+}
+
+// Strongly typed selection for PIPELINE_STEP_SENTENCE_DETECT. Standard engines use
+// the enum; custom holds the stable id of a SentenceDetectorBackendFactory discovered
+// through ServiceLoader. An unset selector defaults to MODEL.
+message SentenceDetectorSelector {
+  oneof kind {
+    StandardSentenceDetectorEngine standard = 1;
+    string custom = 2;
+  }
+}
+
 // A named, reusable analysis configuration: which steps to run and which models
 // back them. A request may name a server-side profile by id (see
 // AnalyzeDocumentRequest.profile_id), inline a profile, or both (an inline profile
@@ -231,7 +280,7 @@ message AnalysisProfile {
   // an operator-configured MeCab-format dictionary (select it with
   // lattice_dictionary_id; none configured => NOT_FOUND). Any other value =>
   // INVALID_ARGUMENT.
-  optional string tokenizer_engine = 10;
+  optional string tokenizer_engine = 10 [deprecated = true];
   // Character-level normalization layers to compute per token into
   // Token.term_layers, named by the library's Dimension enum (e.g. "NFC",
   // "CASE_FOLD", "FULL_CASE_FOLD", "ACCENT_FOLD", "EMOJI_FOLD",
@@ -273,6 +322,16 @@ message AnalysisProfile {
   // the configured default (model.lattice.default_id) or the sole configured
   // dictionary; an unknown id, or no selectable dictionary, => NOT_FOUND.
   optional string lattice_dictionary_id = 17;
+
+  // Strongly typed replacement for tokenizer_engine. Setting both fields is invalid.
+  // The standard arm covers OpenNLP-owned engines; custom selects a ServiceLoader
+  // extension by its stable id.
+  optional TokenizerSelector tokenizer = 18;
+
+  // Sentence detector used by PIPELINE_STEP_SENTENCE_DETECT. Unset selects the
+  // bundle's SentenceDetectorME. The standard arm covers OpenNLP-owned engines;
+  // custom selects a ServiceLoader extension by its stable id.
+  optional SentenceDetectorSelector sentence_detector = 19;
 }
 
 // Configuration for PIPELINE_STEP_NORMALIZE: which rungs run, in the order the
