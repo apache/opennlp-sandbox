@@ -121,6 +121,10 @@ final class LiveServerHarness implements AutoCloseable {
     return client;
   }
 
+  OpenNlpAnalysisServiceGrpc.OpenNlpAnalysisServiceStub asyncClient() {
+    return OpenNlpAnalysisServiceGrpc.newStub(channel);
+  }
+
   @Override
   public void close() {
     channel.shutdown();

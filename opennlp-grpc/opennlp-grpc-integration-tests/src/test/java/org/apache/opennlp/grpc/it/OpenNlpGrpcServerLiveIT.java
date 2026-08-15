@@ -19,8 +19,13 @@ package org.apache.opennlp.grpc.it;
 
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
+import com.google.protobuf.Struct;
+import com.google.protobuf.Value;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.Status;
@@ -36,6 +41,12 @@ import org.apache.opennlp.grpc.tei.v1.ModelType;
 import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
+import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
+import org.apache.opennlp.grpc.v1.AnalyzeStreamConfiguration;
+import org.apache.opennlp.grpc.v1.AnalyzeStreamDocument;
+import org.apache.opennlp.grpc.v1.AnalyzeStreamRequest;
+import org.apache.opennlp.grpc.v1.AnalyzeStreamResponse;
+import org.apache.opennlp.grpc.v1.AnnotationLayer;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
@@ -44,14 +55,20 @@ import org.apache.opennlp.grpc.v1.ComponentType;
 import org.apache.opennlp.grpc.v1.GetServiceInfoRequest;
 import org.apache.opennlp.grpc.v1.ListModelBundlesRequest;
 import org.apache.opennlp.grpc.v1.ModelDescriptor;
+import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpAnalysisServiceGrpc;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
+import org.apache.opennlp.grpc.v1.StandardLayer;
+import org.apache.opennlp.grpc.v1.StemmerAlgorithm;
+import org.apache.opennlp.grpc.v1.StemmerSpec;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -115,6 +132,89 @@ class OpenNlpGrpcServerLiveIT {
     assertTrue(info.getSupportedStepsList().contains(PipelineStep.PIPELINE_STEP_POS_TAG));
     assertTrue(info.getSupportedStepsList().contains(PipelineStep.PIPELINE_STEP_LEMMATIZE));
     assertTrue(info.getSupportedStepsList().contains(PipelineStep.PIPELINE_STEP_EMBED));
+    assertTrue(info.getSupportedLayersList().contains(StandardLayer.STANDARD_LAYER_SENTENCES));
+    assertTrue(info.getSupportedLayersList().contains(StandardLayer.STANDARD_LAYER_TOKENS));
+    assertTrue(info.getSupportedLayersList().contains(StandardLayer.STANDARD_LAYER_STEMS));
+  }
+
+  @Test
+  void preservesDocumentShapeAndUtf16SpansForMigrationClients() {
+    final AnalyzeDocumentRequest request = migrationRequest("migration-unary", migrationText());
+    final AnalyzeDocumentResponse response = client.analyzeDocument(request);
+    final OpenNlpDocument document = response.getDocument();
+
+    assertEquals(request.getDocument().getDocId(), document.getDocId());
+    assertEquals(request.getDocument().getMetadata(), document.getMetadata());
+    assertEquals(OffsetEncoding.OFFSET_ENCODING_UTF16_CODE_UNIT,
+        document.getOffsetEncoding());
+    for (var sentence : document.getSentencesList()) {
+      assertSpanSlicesText(document.getRawText(), sentence.getSentenceSpan());
+      for (var token : sentence.getTokensList()) {
+        assertEquals(token.getText(), slice(document.getRawText(), token.getAnnotationSpan()));
+      }
+    }
+
+    assertStandardLayer(document, StandardLayer.STANDARD_LAYER_SENTENCES,
+        "opennlp:sentences");
+    assertStandardLayer(document, StandardLayer.STANDARD_LAYER_TOKENS, "opennlp:tokens");
+    assertStandardLayer(document, StandardLayer.STANDARD_LAYER_WORD_TYPES,
+        "opennlp:word-types");
+    final AnnotationLayer stems = assertStandardLayer(document,
+        StandardLayer.STANDARD_LAYER_STEMS, "opennlp:stems");
+    assertTrue(stems.getStemValues().getAnnotationsList().stream()
+        .anyMatch(stem -> "cats".equals(slice(document.getRawText(), stem.getSpan()))
+            && "cat".equals(stem.getStem())));
+  }
+
+  @Test
+  void analysisStreamMatchesUnaryAndContinuesAfterADocumentError() throws Exception {
+    final AnalyzeDocumentRequest firstRequest = migrationRequest("migration-stream-1",
+        migrationText());
+    final AnalyzeDocumentRequest secondRequest = migrationRequest("migration-stream-2",
+        "Dogs bark.");
+    final AnalyzeDocumentResponse firstUnary = client.analyzeDocument(firstRequest);
+    final AnalyzeDocumentResponse secondUnary = client.analyzeDocument(secondRequest);
+    final var responses = new CopyOnWriteArrayList<AnalyzeStreamResponse>();
+    final AtomicReference<Throwable> failure = new AtomicReference<>();
+    final CountDownLatch done = new CountDownLatch(1);
+
+    final StreamObserver<AnalyzeStreamRequest> requests = harness.asyncClient()
+        .analyzeStream(new StreamObserver<>() {
+          @Override
+          public void onNext(AnalyzeStreamResponse response) {
+            responses.add(response);
+          }
+
+          @Override
+          public void onError(Throwable error) {
+            failure.set(error);
+            done.countDown();
+          }
+
+          @Override
+          public void onCompleted() {
+            done.countDown();
+          }
+        });
+
+    requests.onNext(AnalyzeStreamRequest.newBuilder()
+        .setConfiguration(streamConfiguration(firstRequest))
+        .build());
+    requests.onNext(streamDocument(41, firstRequest.getDocument()));
+    requests.onNext(streamDocument(42, OpenNlpDocument.newBuilder()
+        .setDocId("migration-too-long")
+        .setRawText("x".repeat(80))
+        .build()));
+    requests.onNext(streamDocument(43, secondRequest.getDocument()));
+    requests.onCompleted();
+
+    assertTrue(done.await(10, TimeUnit.SECONDS));
+    assertNull(failure.get());
+    assertEquals(3, responses.size());
+    assertEquals(firstUnary, responseFor(responses, 41).getOk());
+    assertEquals(Status.Code.INVALID_ARGUMENT.value(),
+        responseFor(responses, 42).getError().getCode());
+    assertEquals(secondUnary, responseFor(responses, 43).getOk());
   }
 
   @Test
@@ -273,6 +373,82 @@ class OpenNlpGrpcServerLiveIT {
         .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
         .addSteps(PipelineStep.PIPELINE_STEP_EMBED)
         .build();
+  }
+
+  private static String migrationText() {
+    return "Running cats \ud83d\ude00 jump. Dogs bark.";
+  }
+
+  private static AnalyzeDocumentRequest migrationRequest(String docId, String text) {
+    return AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder()
+            .setDocId(docId)
+            .setRawText(text)
+            .setMetadata(Struct.newBuilder()
+                .putFields("source", Value.newBuilder().setStringValue("migration-it").build())
+                .build())
+            .build())
+        .setProfile(AnalysisProfile.newBuilder()
+            .setProfileId("migration-contract")
+            .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+            .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+            .addSteps(PipelineStep.PIPELINE_STEP_STEM)
+            .setTokenizerEngine("uax29")
+            .setStemmer(StemmerSpec.newBuilder()
+                .setAlgorithm(StemmerAlgorithm.STEMMER_ALGORITHM_SNOWBALL)
+                .setLanguage("en")
+                .build())
+            .build())
+        .setOptions(AnalysisOptions.newBuilder()
+            .setMaxTextLength(64)
+            .setOffsetEncoding(OffsetEncoding.OFFSET_ENCODING_UTF16_CODE_UNIT)
+            .build())
+        .build();
+  }
+
+  private static AnalyzeStreamConfiguration streamConfiguration(AnalyzeDocumentRequest request) {
+    return AnalyzeStreamConfiguration.newBuilder()
+        .setProfile(request.getProfile())
+        .setOptions(request.getOptions())
+        .build();
+  }
+
+  private static AnalyzeStreamRequest streamDocument(long sequence, OpenNlpDocument document) {
+    return AnalyzeStreamRequest.newBuilder()
+        .setDocument(AnalyzeStreamDocument.newBuilder()
+            .setSequence(sequence)
+            .setDocument(document)
+            .build())
+        .build();
+  }
+
+  private static AnalyzeStreamResponse responseFor(List<AnalyzeStreamResponse> responses,
+      long sequence) {
+    return responses.stream()
+        .filter(response -> response.getSequence() == sequence)
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("No response for sequence " + sequence));
+  }
+
+  private static AnnotationLayer assertStandardLayer(OpenNlpDocument document,
+      StandardLayer standard, String id) {
+    final AnnotationLayer layer = document.getLayers().getLayersList().stream()
+        .filter(candidate -> candidate.getIdentity().getStandard() == standard)
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("No layer for " + standard));
+    assertEquals(id, layer.getId());
+    return layer;
+  }
+
+  private static void assertSpanSlicesText(String text, AnnotationSpan span) {
+    assertTrue(span.getStart() >= 0);
+    assertTrue(span.getEnd() <= text.length());
+    assertTrue(span.getStart() < span.getEnd());
+    assertFalse(slice(text, span).isBlank());
+  }
+
+  private static String slice(String text, AnnotationSpan span) {
+    return text.substring(span.getStart(), span.getEnd());
   }
 
   /** TEI Info stub reporting an embedding model. */
