@@ -17,8 +17,10 @@
  */
 package org.apache.opennlp.grpc.processor.basic;
 
+import java.util.List;
 import java.util.Map;
 
+import org.apache.opennlp.grpc.embedding.CompositeEmbeddingProvider;
 import org.apache.opennlp.grpc.embedding.StubEmbeddingProvider;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.processor.AnalysisException;
@@ -27,6 +29,7 @@ import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
+import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.junit.jupiter.api.Test;
@@ -98,5 +101,86 @@ class BasicDocumentAnalyzerEmbeddingTest {
             .build()));
 
     assertEquals(AnalysisException.FailureType.NOT_FOUND, error.getFailureType());
+  }
+
+  @Test
+  void pinsBackendAndReportsActualRoute() {
+    final CompositeEmbeddingProvider composite = twoRouteProvider();
+    final BasicDocumentAnalyzer routedAnalyzer = new BasicDocumentAnalyzer(
+        ProfileRegistry.createDefault(), modelBundleCache, composite);
+
+    final var response = routedAnalyzer.analyze(AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setRawText(TEXT).build())
+        .setProfile(embedProfile())
+        .setOptions(AnalysisOptions.newBuilder()
+            .setEmbeddingSelector(EmbeddingSelector.newBuilder()
+                .setModelId("minilm")
+                .setBackendId("slow")))
+        .build());
+
+    assertEquals(2.0f, response.getDocument().getEmbeddings(0).getVector(0));
+    assertEquals("slow", response.getDocument().getEmbeddings(0).getRoute().getBackendId());
+    assertEquals("minilm-v1", response.getDocument().getEmbeddings(0).getRoute().getVectorSpaceId());
+    assertEquals("slow", response.getDocument().getDocumentCentroids(0).getRoute().getBackendId());
+    assertEquals("slow", response.getDocument().getLayers().getLayersList().stream()
+        .filter(layer -> "opennlp:embeddings".equals(layer.getId()))
+        .findFirst().orElseThrow()
+        .getEmbeddingValues().getAnnotations(0).getRoute().getBackendId());
+  }
+
+  @Test
+  void rejectsUnknownPinnedBackend() {
+    final BasicDocumentAnalyzer routedAnalyzer = new BasicDocumentAnalyzer(
+        ProfileRegistry.createDefault(), modelBundleCache, twoRouteProvider());
+    final AnalyzeDocumentRequest request = AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setRawText(TEXT).build())
+        .setProfile(embedProfile())
+        .setOptions(AnalysisOptions.newBuilder()
+            .setEmbeddingSelector(EmbeddingSelector.newBuilder()
+                .setModelId("minilm")
+                .setBackendId("missing")))
+        .build();
+
+    final AnalysisException error = assertThrows(AnalysisException.class,
+        () -> routedAnalyzer.analyze(request));
+
+    assertEquals(AnalysisException.FailureType.NOT_FOUND, error.getFailureType());
+  }
+
+  @Test
+  void rejectsLegacyModelIdTogetherWithSelector() {
+    final AnalyzeDocumentRequest request = AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setRawText(TEXT).build())
+        .setProfile(embedProfile())
+        .setOptions(AnalysisOptions.newBuilder()
+            .setEmbeddingModelId("minilm")
+            .setEmbeddingSelector(EmbeddingSelector.newBuilder().setModelId("minilm")))
+        .build();
+
+    final AnalysisException error = assertThrows(AnalysisException.class,
+        () -> analyzer.analyze(request));
+
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+  }
+
+  private static AnalysisProfile embedProfile() {
+    return AnalysisProfile.newBuilder()
+        .setProfileId("with-embed")
+        .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+        .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+        .addSteps(PipelineStep.PIPELINE_STEP_EMBED)
+        .build();
+  }
+
+  private static CompositeEmbeddingProvider twoRouteProvider() {
+    final StubEmbeddingProvider fast = new StubEmbeddingProvider(
+        "fast", Map.of("minilm", 4), (model, text) -> new float[] {1f, 1f, 1f, 1f});
+    final StubEmbeddingProvider slow = new StubEmbeddingProvider(
+        "slow", Map.of("minilm", 4), (model, text) -> new float[] {2f, 2f, 2f, 2f});
+    return new CompositeEmbeddingProvider(List.of(fast, slow), Map.of(
+        "model.embedder.minilm.fast.priority", "100",
+        "model.embedder.minilm.slow.priority", "50",
+        "model.embedder.minilm.fast.vector_space_id", "minilm-v1",
+        "model.embedder.minilm.slow.vector_space_id", "minilm-v1"));
   }
 }
