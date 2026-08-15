@@ -18,12 +18,17 @@
  */
 package org.apache.opennlp.grpc.server;
 
+import io.grpc.ForwardingServerCall;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 
-/** Sends response headers as soon as a streaming call is accepted. */
+/**
+ * Sends response headers as soon as a call is accepted. This prevents a
+ * bidirectional stream deadlock when a client waits for response headers before
+ * submitting its first request frame.
+ */
 final class EagerHeadersInterceptor implements ServerInterceptor {
 
   @Override
@@ -31,6 +36,20 @@ final class EagerHeadersInterceptor implements ServerInterceptor {
       ServerCall<ReqT, RespT> call,
       Metadata headers,
       ServerCallHandler<ReqT, RespT> next) {
-    return next.startCall(call, headers);
+    final ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT> wrapped =
+        new ForwardingServerCall.SimpleForwardingServerCall<>(call) {
+          private boolean sent;
+
+          @Override
+          public void sendHeaders(Metadata responseHeaders) {
+            if (!sent) {
+              sent = true;
+              super.sendHeaders(responseHeaders);
+            }
+          }
+        };
+    final ServerCall.Listener<ReqT> listener = next.startCall(wrapped, headers);
+    wrapped.sendHeaders(new Metadata());
+    return listener;
   }
 }

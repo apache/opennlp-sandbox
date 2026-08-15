@@ -30,6 +30,7 @@ import java.util.concurrent.Executors;
 
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.ServerInterceptors;
 import io.grpc.health.v1.HealthCheckResponse;
 import io.grpc.protobuf.services.HealthStatusManager;
 import io.grpc.protobuf.services.ProtoReflectionServiceV1;
@@ -133,11 +134,13 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
 
     final ServerBuilder<?> builder = ServerBuilder.forPort(port)
         .executor(handlerExecutor)
-        .addService(new OpenNlpAnalysisServiceImpl(
-            documentAnalyzer,
-            profileRegistry,
-            modelBundleCache,
-            SERVER_VERSION))
+        .addService(ServerInterceptors.intercept(
+            new OpenNlpAnalysisServiceImpl(
+                documentAnalyzer,
+                profileRegistry,
+                modelBundleCache,
+                SERVER_VERSION),
+            new EagerHeadersInterceptor()))
         .addService(healthStatusManager.getHealthService())
         .maxInboundMessageSize(maxInboundMessageSize);
 
