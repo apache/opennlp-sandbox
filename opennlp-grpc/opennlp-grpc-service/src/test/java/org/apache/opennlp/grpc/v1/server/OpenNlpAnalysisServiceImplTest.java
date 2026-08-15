@@ -17,6 +17,8 @@
  */
 package org.apache.opennlp.grpc.v1.server;
 
+import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,10 +33,12 @@ import org.apache.opennlp.grpc.testing.StubSentenceDetectorBackendFactory;
 import org.apache.opennlp.grpc.testing.StubTokenizerBackendFactory;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
+import org.apache.opennlp.grpc.v1.ConfiguredResource;
 import org.apache.opennlp.grpc.v1.GetServiceInfoRequest;
 import org.apache.opennlp.grpc.v1.GetServiceInfoResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.StandardLayer;
+import org.apache.opennlp.grpc.v1.StandardResource;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,8 +56,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class OpenNlpAnalysisServiceImplTest {
 
   private static OpenNlpAnalysisServiceImpl serviceWith(DocumentAnalyzer analyzer) {
+    return serviceWith(analyzer, new ModelBundleCache(Map.of()));
+  }
+
+  private static OpenNlpAnalysisServiceImpl serviceWith(
+      DocumentAnalyzer analyzer, ModelBundleCache modelBundleCache) {
     return new OpenNlpAnalysisServiceImpl(
-        analyzer, ProfileRegistry.createDefault(), new ModelBundleCache(Map.of()), "test");
+        analyzer, ProfileRegistry.createDefault(), modelBundleCache, "test");
+  }
+
+  private static String resourcePath(String name) {
+    try {
+      return Path.of(OpenNlpAnalysisServiceImplTest.class.getResource(name).toURI()).toString();
+    } catch (URISyntaxException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   private static AnalyzeDocumentRequest request() {
@@ -122,8 +139,36 @@ class OpenNlpAnalysisServiceImplTest {
         observer.value.getCustomTokenizerIdsList());
     assertEquals(List.of(StubSentenceDetectorBackendFactory.ENGINE_ID),
         observer.value.getCustomSentenceDetectorIdsList());
+    assertTrue(observer.value.getConfiguredResourcesList().isEmpty());
     assertTrue(observer.completed);
     assertNull(observer.error);
+  }
+
+  @Test
+  void serviceInfoAdvertisesConfiguredNonModelResources() {
+    final ModelBundleCache cache = new ModelBundleCache(Map.of(
+        "model.subword.tiny.path", resourcePath("/subword/tiny-unigram-bytefb.model"),
+        "model.wordnet.mini.path", resourcePath("/wordnet/mini-wn-lmf.xml")));
+    final CapturingObserver<GetServiceInfoResponse> observer = new CapturingObserver<>();
+
+    serviceWith(request -> AnalyzeDocumentResponse.getDefaultInstance(), cache)
+        .getServiceInfo(GetServiceInfoRequest.getDefaultInstance(), observer);
+
+    assertNotNull(observer.value);
+    assertEquals(2, observer.value.getConfiguredResourcesCount());
+    assertResource(observer.value, StandardResource.STANDARD_RESOURCE_SUBWORD_MODEL, "tiny");
+    assertResource(observer.value, StandardResource.STANDARD_RESOURCE_WORDNET_LEXICON, "mini");
+    assertTrue(observer.completed);
+    assertNull(observer.error);
+  }
+
+  private static void assertResource(
+      GetServiceInfoResponse response, StandardResource type, String id) {
+    final ConfiguredResource resource = response.getConfiguredResourcesList().stream()
+        .filter(candidate -> candidate.getIdentity().getStandard() == type)
+        .findFirst().orElseThrow();
+    assertEquals(id, resource.getResourceId());
+    assertTrue(resource.getIsDefault());
   }
 
   /** Captures the terminal callback the service makes on the response stream. */

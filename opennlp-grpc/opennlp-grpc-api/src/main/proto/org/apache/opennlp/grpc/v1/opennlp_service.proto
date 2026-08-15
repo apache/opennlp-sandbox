@@ -247,6 +247,38 @@ message GetServiceInfoResponse {
   // Custom sentence-detector ids contributed by configured
   // SentenceDetectorBackendFactory providers.
   repeated string custom_sentence_detector_ids = 7;
+  // Non-model resources loaded on this server. Model-backed capabilities and
+  // embedding routes remain in ListModelBundles. A resource is listed only after
+  // startup validation and loading succeeded, so clients can distinguish a step the
+  // binary supports from a selectable resource this instance can actually serve.
+  repeated ConfiguredResource configured_resources = 8;
+}
+
+// Open identity for one family of configured, non-model resources. OpenNLP-owned
+// families use the closed enum; extension families use a stable custom id.
+message ResourceIdentity {
+  oneof kind {
+    StandardResource standard = 1;
+    string custom = 2;
+  }
+}
+
+// OpenNLP-owned configured resource families advertised by GetServiceInfo.
+enum StandardResource {
+  STANDARD_RESOURCE_UNSPECIFIED = 0;
+  STANDARD_RESOURCE_SUBWORD_MODEL = 1;
+  STANDARD_RESOURCE_HUNSPELL_DICTIONARY = 2;
+  STANDARD_RESOURCE_WORDNET_LEXICON = 3;
+  STANDARD_RESOURCE_LATTICE_DICTIONARY = 4;
+}
+
+// One loaded non-model resource that a profile can select by id.
+message ConfiguredResource {
+  ResourceIdentity identity = 1;
+  string resource_id = 2;
+  // True when an unqualified request resolves to this resource. False for every
+  // entry when several resources are configured and the operator selected no default.
+  bool is_default = 3;
 }
 
 // Input to ListModelBundles. Empty; no parameters.
