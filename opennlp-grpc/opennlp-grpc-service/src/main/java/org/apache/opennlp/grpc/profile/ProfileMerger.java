@@ -31,7 +31,9 @@ public final class ProfileMerger {
 
   /**
    * Returns {@code override} merged on top of {@code base}. Present scalar and message fields,
-   * and non-empty repeated fields, replace the corresponding base fields.
+   * and non-empty repeated fields, replace the corresponding base fields. The typed and legacy
+   * tokenizer selectors replace one another across profiles; an override that itself contains
+   * both remains invalid and is left for request validation to reject.
    *
    * @param base     The base profile. Must not be {@code null}.
    * @param override The overriding profile. Must not be {@code null}.
@@ -67,7 +69,10 @@ public final class ProfileMerger {
     if (override.hasNormalization()) {
       builder.setNormalization(override.getNormalization());
     }
-    if (override.hasTokenizerEngine()) {
+    if (override.hasTokenizerEngine() && !override.hasTokenizer()) {
+      builder.clearTokenizer();
+      builder.setTokenizerEngine(override.getTokenizerEngine());
+    } else if (override.hasTokenizerEngine()) {
       builder.setTokenizerEngine(override.getTokenizerEngine());
     }
     if (override.getTermDimensionsCount() > 0) {
@@ -91,7 +96,10 @@ public final class ProfileMerger {
     if (override.hasLatticeDictionaryId()) {
       builder.setLatticeDictionaryId(override.getLatticeDictionaryId());
     }
-    if (override.hasTokenizer()) {
+    if (override.hasTokenizer() && !override.hasTokenizerEngine()) {
+      builder.clearTokenizerEngine();
+      builder.setTokenizer(override.getTokenizer());
+    } else if (override.hasTokenizer()) {
       builder.setTokenizer(override.getTokenizer());
     }
     if (override.hasSentenceDetector()) {
