@@ -132,6 +132,10 @@ public final class ModelBundleCache {
   // model.wordnet.<id>.path, not bundled). The built expanders are thread-safe and shared;
   // empty when none is configured.
   private final WordNetRegistry wordNetRegistry;
+  // Optional MeCab-format dictionaries for the "lattice" tokenizer engine (operator-supplied
+  // via model.lattice.<id>.dir, not bundled). The built tokenizers read only immutable
+  // dictionary state and are shared; empty when none is configured.
+  private final LatticeRegistry latticeRegistry;
 
   /**
    * Eagerly loads every model and registry described by the given configuration. The classic
@@ -151,6 +155,7 @@ public final class ModelBundleCache {
     this.subwordRegistry = SubwordRegistry.create(configuration);
     this.hunspellRegistry = HunspellRegistry.create(configuration);
     this.wordNetRegistry = WordNetRegistry.create(configuration);
+    this.latticeRegistry = LatticeRegistry.create(configuration);
     final LoadedArtifact<SentenceModel> loadedSentence = loadModel(configuration,
         KEY_SENTDETECT_PATH, BUNDLED_SENTENCE_MODEL_FRAGMENT, "sentence detector",
         SentenceModel::new);
@@ -380,6 +385,14 @@ public final class ModelBundleCache {
    */
   public WordNetRegistry getWordNetRegistry() {
     return wordNetRegistry;
+  }
+
+  /**
+   * @return The registry of configured lattice dictionaries, possibly empty. Never
+   *         {@code null}.
+   */
+  public LatticeRegistry getLatticeRegistry() {
+    return latticeRegistry;
   }
 
   /**

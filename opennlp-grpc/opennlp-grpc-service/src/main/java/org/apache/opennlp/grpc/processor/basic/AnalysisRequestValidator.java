@@ -26,6 +26,7 @@ import org.apache.opennlp.grpc.chunk.ChunkEmbedProcessor;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.model.ChunkerRegistry;
 import org.apache.opennlp.grpc.model.HunspellRegistry;
+import org.apache.opennlp.grpc.model.LatticeRegistry;
 import org.apache.opennlp.grpc.model.DocCategorizerModel;
 import org.apache.opennlp.grpc.model.DocCategorizerRegistry;
 import org.apache.opennlp.grpc.model.ModelArtifactRegistry;
@@ -68,6 +69,7 @@ final class AnalysisRequestValidator {
   private final SubwordRegistry subwordRegistry;
   private final HunspellRegistry hunspellRegistry;
   private final WordNetRegistry wordNetRegistry;
+  private final LatticeRegistry latticeRegistry;
 
   AnalysisRequestValidator(
       EmbeddingProvider embeddingProvider,
@@ -79,7 +81,8 @@ final class AnalysisRequestValidator {
       ModelArtifactRegistry artifactRegistry,
       SubwordRegistry subwordRegistry,
       HunspellRegistry hunspellRegistry,
-      WordNetRegistry wordNetRegistry) {
+      WordNetRegistry wordNetRegistry,
+      LatticeRegistry latticeRegistry) {
     this.embeddingProvider = Objects.requireNonNull(embeddingProvider, "embeddingProvider");
     this.nameFinderRegistry = Objects.requireNonNull(nameFinderRegistry, "nameFinderRegistry");
     this.docCategorizerRegistry =
@@ -91,6 +94,7 @@ final class AnalysisRequestValidator {
     this.subwordRegistry = Objects.requireNonNull(subwordRegistry, "subwordRegistry");
     this.hunspellRegistry = Objects.requireNonNull(hunspellRegistry, "hunspellRegistry");
     this.wordNetRegistry = Objects.requireNonNull(wordNetRegistry, "wordNetRegistry");
+    this.latticeRegistry = Objects.requireNonNull(latticeRegistry, "latticeRegistry");
   }
 
   /**
@@ -281,6 +285,7 @@ final class AnalysisRequestValidator {
 
   /** The rule-based UAX #29 engine id for AnalysisProfile.tokenizer_engine. */
   static final String UAX29_TOKENIZER_ENGINE = "uax29";
+  static final String LATTICE_TOKENIZER_ENGINE = "lattice";
   private static final String MODEL_TOKENIZER_ENGINE = "model";
 
   private void validateNormalizeRequest(AnalysisProfile profile) {
@@ -321,10 +326,26 @@ final class AnalysisRequestValidator {
     final String engine = profile.getTokenizerEngine();
     if (!engine.isEmpty()
         && !MODEL_TOKENIZER_ENGINE.equals(engine)
-        && !UAX29_TOKENIZER_ENGINE.equals(engine)) {
+        && !UAX29_TOKENIZER_ENGINE.equals(engine)
+        && !LATTICE_TOKENIZER_ENGINE.equals(engine)) {
       throw AnalysisException.invalidArgument(
-          "Unknown tokenizer_engine '" + engine + "'; supported: \"model\", \"uax29\"");
+          "Unknown tokenizer_engine '" + engine
+              + "'; supported: \"model\", \"uax29\", \"lattice\"");
     }
+    resolveLatticeDictionaryId(profile);
+  }
+
+  /**
+   * Resolves the lattice dictionary to segment with: the profile's explicit id, or the
+   * configured default (or sole configured dictionary). Returns {@code null} when the
+   * profile does not use the lattice tokenizer engine.
+   */
+  String resolveLatticeDictionaryId(AnalysisProfile profile) {
+    if (!LATTICE_TOKENIZER_ENGINE.equals(profile.getTokenizerEngine())) {
+      return null;
+    }
+    return latticeRegistry.resolveDictionaryId(
+        profile.hasLatticeDictionaryId() ? profile.getLatticeDictionaryId() : null);
   }
 
   private void validateTermDimensions(AnalysisProfile profile) {

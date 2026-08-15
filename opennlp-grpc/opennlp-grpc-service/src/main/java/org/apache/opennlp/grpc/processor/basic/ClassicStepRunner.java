@@ -33,6 +33,7 @@ import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.tokenize.SubwordPiece;
 import opennlp.tools.tokenize.TokenizerME;
+import opennlp.tools.tokenize.lattice.LatticeTokenizer;
 import opennlp.tools.tokenize.uax29.WordToken;
 import opennlp.tools.tokenize.uax29.WordTokenizer;
 import opennlp.tools.util.Span;
@@ -317,6 +318,39 @@ final class ClassicStepRunner {
     diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_SUBWORD_TOKENIZE,
         "Encoded " + list.getAnnotationsCount() + " subword piece(s) with model '"
             + modelId + "'"));
+  }
+
+  /**
+   * Tokenizes each sentence by Viterbi lattice segmentation over the selected
+   * MeCab-format dictionary (AnalysisProfile.tokenizer_engine = "lattice"). No
+   * probabilities: the segmentation is cost-driven, not statistical.
+   */
+  void tokenizeLattice(
+      String rawText,
+      OpenNlpDocument.Builder document,
+      String dictionaryId,
+      List<ProcessingDiagnostic> diagnostics) {
+    final LatticeTokenizer tokenizer = modelBundleCache.getLatticeRegistry().get(dictionaryId);
+    int tokenCount = 0;
+    for (int i = 0; i < document.getSentencesCount(); i++) {
+      final AnnotatedSentence sentence = document.getSentences(i);
+      final AnnotationSpan sentenceSpan = sentence.getSentenceSpan();
+      final String sentenceText = rawText.substring(sentenceSpan.getStart(), sentenceSpan.getEnd());
+      final AnnotatedSentence.Builder sentenceBuilder = sentence.toBuilder();
+      for (final Span tokenSpan : tokenizer.tokenizePos(sentenceText)) {
+        sentenceBuilder.addTokens(Token.newBuilder()
+            .setText(sentenceText.substring(tokenSpan.getStart(), tokenSpan.getEnd()))
+            .setAnnotationSpan(AnnotationSpan.newBuilder()
+                .setStart(sentenceSpan.getStart() + tokenSpan.getStart())
+                .setEnd(sentenceSpan.getStart() + tokenSpan.getEnd())
+                .setSpace(CoordinateSpace.COORDINATE_SPACE_CHAR_DOCUMENT))
+            .build());
+        tokenCount++;
+      }
+      document.setSentences(i, sentenceBuilder.build());
+    }
+    diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_TOKENIZE,
+        "Tokenized " + tokenCount + " token(s) (lattice, dictionary '" + dictionaryId + "')"));
   }
 
   /**

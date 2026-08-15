@@ -124,7 +124,8 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
         modelBundleCache.getDocCategorizerRegistry(), modelBundleCache.getSentimentRegistry(),
         modelBundleCache.getParserRegistry(), modelBundleCache.getChunkerRegistry(),
         modelBundleCache.getArtifactRegistry(), modelBundleCache.getSubwordRegistry(),
-        modelBundleCache.getHunspellRegistry(), modelBundleCache.getWordNetRegistry());
+        modelBundleCache.getHunspellRegistry(), modelBundleCache.getWordNetRegistry(),
+        modelBundleCache.getLatticeRegistry());
     this.classicSteps = new ClassicStepRunner(modelBundleCache);
     this.embedChunkSteps = new EmbedChunkStepRunner(embeddingProvider, classicSteps);
   }
@@ -188,11 +189,14 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       requireSentences(document, PipelineStep.PIPELINE_STEP_TOKENIZE);
       final boolean uax29 = AnalysisRequestValidator.UAX29_TOKENIZER_ENGINE
           .equals(profile.getTokenizerEngine());
+      final String latticeDictionaryId = validator.resolveLatticeDictionaryId(profile);
       runStep(
           PipelineStep.PIPELINE_STEP_TOKENIZE,
           () -> {
             if (uax29) {
               ClassicStepRunner.tokenizeUax29(rawText, document, diagnostics);
+            } else if (latticeDictionaryId != null) {
+              classicSteps.tokenizeLattice(rawText, document, latticeDictionaryId, diagnostics);
             } else {
               classicSteps.tokenize(rawText, document, includeProbabilities, diagnostics);
             }

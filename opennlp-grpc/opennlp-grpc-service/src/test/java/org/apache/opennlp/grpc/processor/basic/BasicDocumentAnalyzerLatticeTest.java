@@ -95,6 +95,12 @@ class BasicDocumentAnalyzerLatticeTest {
     return AnalyzeDocumentRequest.newBuilder()
         .setDocument(OpenNlpDocument.newBuilder().setRawText(TEXT).build())
         .setProfile(profile.build())
+        // Pin UTF-16 offsets so the span assertions below are in Java char indices
+        // (the wire default is UTF-8 bytes, where each kanji is three units).
+        .setOptions(org.apache.opennlp.grpc.v1.AnalysisOptions.newBuilder()
+            .setOffsetEncoding(org.apache.opennlp.grpc.v1.OffsetEncoding
+                .OFFSET_ENCODING_UTF16_CODE_UNIT)
+            .build())
         .build();
   }
 
