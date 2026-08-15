@@ -29,8 +29,10 @@ import org.apache.opennlp.grpc.v1.CoordinateSpace;
 import org.apache.opennlp.grpc.v1.DocumentLayers;
 import org.apache.opennlp.grpc.v1.EmbeddingAnnotation;
 import org.apache.opennlp.grpc.v1.EmbeddingAnnotationList;
+import org.apache.opennlp.grpc.v1.LayerIdentity;
 import org.apache.opennlp.grpc.v1.LayerScope;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.StandardLayer;
 import org.apache.opennlp.grpc.v1.StringAnnotation;
 import org.apache.opennlp.grpc.v1.StringAnnotationList;
 import org.junit.jupiter.api.Test;
@@ -50,7 +52,7 @@ class DocumentLayersValidatorTest {
 
   private static AnnotationLayer strings(
       String id, LayerScope scope, StringAnnotation... annotations) {
-    return AnnotationLayer.newBuilder().setId(id).setScope(scope)
+    return DocumentShapeAssembler.layer(id).setScope(scope)
         .setStringValues(StringAnnotationList.newBuilder().addAllAnnotations(
             java.util.List.of(annotations))).build();
   }
@@ -75,8 +77,40 @@ class DocumentLayersValidatorTest {
 
   @Test
   void rejectsMissingValueArm() {
-    assertInternal(invalid(AnnotationLayer.newBuilder().setId("opennlp:empty")
+    assertInternal(invalid(DocumentShapeAssembler.layer("opennlp:empty")
         .setScope(LayerScope.LAYER_SCOPE_DOCUMENT).build()));
+  }
+
+  @Test
+  void rejectsMissingOrContradictoryLayerIdentity() {
+    final StringAnnotationList values = StringAnnotationList.newBuilder()
+        .addAnnotations(StringAnnotation.newBuilder().setSpan(span(0, 4)).setValue("café"))
+        .build();
+    assertInternal(invalid(AnnotationLayer.newBuilder()
+        .setId("opennlp:tokens")
+        .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
+        .setStringValues(values)
+        .build()));
+    assertInternal(invalid(AnnotationLayer.newBuilder()
+        .setId("opennlp:tokens")
+        .setIdentity(LayerIdentity.newBuilder()
+            .setStandard(StandardLayer.STANDARD_LAYER_SENTENCES))
+        .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
+        .setStringValues(values)
+        .build()));
+  }
+
+  @Test
+  void rejectsMissingOrContradictoryTermQualifier() {
+    final StringAnnotation annotation = StringAnnotation.newBuilder()
+        .setSpan(span(0, 4)).setValue("café").build();
+    final AnnotationLayer.Builder terms = DocumentShapeAssembler.layer("opennlp:terms:NFC")
+        .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
+        .setStringValues(StringAnnotationList.newBuilder().addAnnotations(annotation));
+    assertInternal(invalid(terms.clone().setIdentity(LayerIdentity.newBuilder()
+        .setStandard(StandardLayer.STANDARD_LAYER_TERMS)).build()));
+    assertInternal(invalid(terms.clone().setIdentity(LayerIdentity.newBuilder()
+        .setStandard(StandardLayer.STANDARD_LAYER_TERMS).setQualifier("CASE_FOLD")).build()));
   }
 
   @Test
@@ -98,7 +132,7 @@ class DocumentLayersValidatorTest {
     assertInternal(invalid(strings("opennlp:tokens", LayerScope.LAYER_SCOPE_POSITIONAL,
         StringAnnotation.newBuilder().setSpan(span(0, 4)).setValue("café")
             .setProbability(1.1d).build())));
-    assertInternal(invalid(AnnotationLayer.newBuilder().setId("opennlp:category")
+    assertInternal(invalid(DocumentShapeAssembler.layer("opennlp:category")
         .setScope(LayerScope.LAYER_SCOPE_DOCUMENT)
         .setCategoryValues(CategoryAnnotationList.newBuilder()
             .addAnnotations(CategoryAnnotation.newBuilder()
@@ -127,7 +161,7 @@ class DocumentLayersValidatorTest {
     for (float value : vector) {
       embedding.addVector(value);
     }
-    return AnnotationLayer.newBuilder().setId("opennlp:embeddings")
+    return DocumentShapeAssembler.layer("opennlp:embeddings")
         .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
         .setEmbeddingValues(EmbeddingAnnotationList.newBuilder().addAnnotations(embedding))
         .build();
