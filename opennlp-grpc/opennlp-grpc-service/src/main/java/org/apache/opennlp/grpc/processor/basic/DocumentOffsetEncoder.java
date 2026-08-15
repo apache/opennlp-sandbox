@@ -23,22 +23,29 @@ import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.CategoryAnnotationList;
 import org.apache.opennlp.grpc.v1.Chunk;
 import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
+import org.apache.opennlp.grpc.v1.ChunkGroupAnnotationList;
 import org.apache.opennlp.grpc.v1.ChunkResult;
 import org.apache.opennlp.grpc.v1.ChunkSpan;
 import org.apache.opennlp.grpc.v1.DocumentLayers;
 import org.apache.opennlp.grpc.v1.EmbeddingAnnotationList;
 import org.apache.opennlp.grpc.v1.EmbeddingResult;
+import org.apache.opennlp.grpc.v1.EntityAnnotationList;
 import org.apache.opennlp.grpc.v1.GeoAnnotationList;
+import org.apache.opennlp.grpc.v1.LexicalExpansionAnnotationList;
 import org.apache.opennlp.grpc.v1.NamedEntity;
+import org.apache.opennlp.grpc.v1.NormalizationAnnotationList;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.ParseNode;
 import org.apache.opennlp.grpc.v1.ParseTree;
+import org.apache.opennlp.grpc.v1.StemAnnotationList;
 import org.apache.opennlp.grpc.v1.StringAnnotationList;
 import org.apache.opennlp.grpc.v1.SubwordAnnotationList;
+import org.apache.opennlp.grpc.v1.SyntacticChunkAnnotationList;
 import org.apache.opennlp.grpc.v1.Token;
 import org.apache.opennlp.grpc.v1.TreeAnnotation;
 import org.apache.opennlp.grpc.v1.TreeAnnotationList;
+import org.apache.opennlp.grpc.v1.WordTypeAnnotationList;
 
 /**
  * Converts every span of a fully assembled document from Java UTF-16 indices to the
@@ -205,15 +212,120 @@ final class DocumentOffsetEncoder {
             if (tree.getTree().hasRoot()) {
               tree.setTree(remapParseTree(tree.getTree(), mapper));
             }
+            for (int alternative = 0; alternative < tree.getAlternativesCount(); alternative++) {
+              if (tree.getAlternatives(alternative).hasRoot()) {
+                tree.setAlternatives(alternative,
+                    remapParseTree(tree.getAlternatives(alternative), mapper));
+              }
+            }
             list.setAnnotations(a, tree.build());
           }
           layer.setTreeValues(list.build());
+        }
+        case WORD_TYPE_VALUES -> {
+          final WordTypeAnnotationList.Builder list = layer.getWordTypeValues().toBuilder();
+          for (int a = 0; a < list.getAnnotationsCount(); a++) {
+            list.setAnnotations(a, list.getAnnotations(a).toBuilder()
+                .setSpan(remap(list.getAnnotations(a).getSpan(), mapper)).build());
+          }
+          layer.setWordTypeValues(list.build());
+        }
+        case ENTITY_VALUES -> {
+          final EntityAnnotationList.Builder list = layer.getEntityValues().toBuilder();
+          for (int a = 0; a < list.getAnnotationsCount(); a++) {
+            list.setAnnotations(a, remapEntity(list.getAnnotations(a), mapper));
+          }
+          layer.setEntityValues(list.build());
+        }
+        case SYNTACTIC_CHUNK_VALUES -> {
+          final SyntacticChunkAnnotationList.Builder list =
+              layer.getSyntacticChunkValues().toBuilder();
+          for (int a = 0; a < list.getAnnotationsCount(); a++) {
+            list.setAnnotations(a, remapSyntacticChunk(list.getAnnotations(a), mapper));
+          }
+          layer.setSyntacticChunkValues(list.build());
+        }
+        case STEM_VALUES -> {
+          final StemAnnotationList.Builder list = layer.getStemValues().toBuilder();
+          for (int a = 0; a < list.getAnnotationsCount(); a++) {
+            list.setAnnotations(a, list.getAnnotations(a).toBuilder()
+                .setSpan(remap(list.getAnnotations(a).getSpan(), mapper)).build());
+          }
+          layer.setStemValues(list.build());
+        }
+        case LEXICAL_EXPANSION_VALUES -> {
+          final LexicalExpansionAnnotationList.Builder list =
+              layer.getLexicalExpansionValues().toBuilder();
+          for (int a = 0; a < list.getAnnotationsCount(); a++) {
+            list.setAnnotations(a, list.getAnnotations(a).toBuilder()
+                .setSpan(remap(list.getAnnotations(a).getSpan(), mapper)).build());
+          }
+          layer.setLexicalExpansionValues(list.build());
+        }
+        case NORMALIZATION_VALUES -> {
+          final NormalizationAnnotationList.Builder list =
+              layer.getNormalizationValues().toBuilder();
+          for (int a = 0; a < list.getAnnotationsCount(); a++) {
+            list.setAnnotations(a,
+                rescaleAlignment(list.getAnnotations(a), mapper, mapper.encoding()));
+          }
+          layer.setNormalizationValues(list.build());
+        }
+        case CHUNK_GROUP_VALUES -> {
+          final ChunkGroupAnnotationList.Builder list = layer.getChunkGroupValues().toBuilder();
+          for (int a = 0; a < list.getAnnotationsCount(); a++) {
+            list.setAnnotations(a, remapChunkGroup(list.getAnnotations(a), mapper));
+          }
+          layer.setChunkGroupValues(list.build());
         }
         default -> {
           // A layer without annotations carries no spans to remap.
         }
       }
       remapped.setLayers(i, layer.build());
+    }
+    return remapped.build();
+  }
+
+  private static NamedEntity remapEntity(NamedEntity entity, OffsetMapper mapper) {
+    final NamedEntity.Builder remapped = entity.toBuilder()
+        .setAnnotationSpan(remap(entity.getAnnotationSpan(), mapper));
+    for (int source = 0; source < remapped.getSourcesCount(); source++) {
+      if (remapped.getSources(source).hasAnnotationSpan()) {
+        remapped.setSources(source, remapped.getSources(source).toBuilder()
+            .setAnnotationSpan(remap(remapped.getSources(source).getAnnotationSpan(), mapper)));
+      }
+    }
+    return remapped.build();
+  }
+
+  private static ChunkSpan remapSyntacticChunk(ChunkSpan chunk, OffsetMapper mapper) {
+    final ChunkSpan.Builder remapped = chunk.toBuilder()
+        .setAnnotationSpan(remap(chunk.getAnnotationSpan(), mapper));
+    for (int source = 0; source < remapped.getSourcesCount(); source++) {
+      if (remapped.getSources(source).hasAnnotationSpan()) {
+        remapped.setSources(source, remapped.getSources(source).toBuilder()
+            .setAnnotationSpan(remap(remapped.getSources(source).getAnnotationSpan(), mapper)));
+      }
+    }
+    return remapped.build();
+  }
+
+  private static ChunkEmbeddingGroup remapChunkGroup(
+      ChunkEmbeddingGroup group, OffsetMapper mapper) {
+    final ChunkEmbeddingGroup.Builder remapped = group.toBuilder();
+    for (int chunkIndex = 0; chunkIndex < remapped.getChunksCount(); chunkIndex++) {
+      final Chunk.Builder chunk = remapped.getChunks(chunkIndex).toBuilder()
+          .setAnnotationSpan(remap(remapped.getChunks(chunkIndex).getAnnotationSpan(), mapper));
+      for (int embedding = 0; embedding < chunk.getEmbeddingsCount(); embedding++) {
+        chunk.setEmbeddings(embedding, chunk.getEmbeddings(embedding).toBuilder()
+            .setSourceSpan(remap(chunk.getEmbeddings(embedding).getSourceSpan(), mapper)));
+      }
+      remapped.setChunks(chunkIndex, chunk);
+    }
+    for (int centroid = 0; centroid < remapped.getCentroidsCount(); centroid++) {
+      remapped.setCentroids(centroid, remapped.getCentroids(centroid).toBuilder()
+          .setSourceSpan(remap(remapped.getCentroids(centroid).getSourceSpan(), mapper)));
     }
     return remapped.build();
   }
