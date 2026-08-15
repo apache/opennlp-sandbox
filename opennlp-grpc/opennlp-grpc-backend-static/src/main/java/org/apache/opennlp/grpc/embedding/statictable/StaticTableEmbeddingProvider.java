@@ -300,7 +300,7 @@ public final class StaticTableEmbeddingProvider implements EmbeddingProvider {
     } catch (IllegalArgumentException e) {
       throw AnalysisException.invalidArgument(
           "Invalid static embedding model directory for '" + modelId + "': " + e.getMessage());
-    } catch (UncheckedIOException e) {
+    } catch (IOException | UncheckedIOException e) {
       throw AnalysisException.internal(
           "Failed to read static embedding model for '" + modelId + "'", e);
     }
@@ -322,11 +322,14 @@ public final class StaticTableEmbeddingProvider implements EmbeddingProvider {
     }
     final StaticEmbeddingModel model;
     try {
-      model = StaticEmbeddingModel.load(vocab, safetensors, lowerCase, normalize);
+      model = StaticEmbeddingModel.load(vocab, safetensors,
+          lowerCase ? StaticEmbeddingModel.Casing.UNCASED : StaticEmbeddingModel.Casing.CASED,
+          normalize ? StaticEmbeddingModel.Normalization.L2
+                    : StaticEmbeddingModel.Normalization.NONE);
     } catch (IllegalArgumentException e) {
       throw AnalysisException.invalidArgument(
           "Invalid static embedding model files for '" + modelId + "': " + e.getMessage());
-    } catch (UncheckedIOException e) {
+    } catch (IOException | UncheckedIOException e) {
       throw AnalysisException.internal(
           "Failed to read static embedding model for '" + modelId + "'", e);
     }
