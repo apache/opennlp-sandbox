@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.testing.StubSentenceDetectorBackendFactory;
+import org.apache.opennlp.grpc.testing.StubTokenizerBackendFactory;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
@@ -94,6 +96,31 @@ class BasicDocumentAnalyzerSegmentationTest {
         AnalysisException.class, () -> analyze("Hello", profile));
 
     assertEquals(AnalysisException.FailureType.NOT_FOUND, error.getFailureType());
+  }
+
+  @Test
+  void customTokenizerIsDiscoveredThroughServiceLoader() {
+    final AnalysisProfile.Builder profile = AnalysisProfile.newBuilder()
+        .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+        .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+        .setTokenizer(TokenizerSelector.newBuilder()
+            .setCustom(StubTokenizerBackendFactory.ENGINE_ID));
+
+    final AnalyzeDocumentResponse response = analyze("red|blue", profile);
+
+    assertEquals(List.of("red", "blue"), tokenTexts(response));
+  }
+
+  @Test
+  void customSentenceDetectorIsDiscoveredThroughServiceLoader() {
+    final AnalysisProfile.Builder profile = AnalysisProfile.newBuilder()
+        .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+        .setSentenceDetector(SentenceDetectorSelector.newBuilder()
+            .setCustom(StubSentenceDetectorBackendFactory.ENGINE_ID));
+
+    final AnalyzeDocumentResponse response = analyze("First|Second", profile);
+
+    assertEquals(2, response.getDocument().getSentencesCount());
   }
 
   private AnalyzeDocumentResponse analyze(String text, AnalysisProfile.Builder profile) {
