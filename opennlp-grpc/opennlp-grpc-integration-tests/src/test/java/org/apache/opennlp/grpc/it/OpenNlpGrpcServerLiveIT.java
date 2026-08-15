@@ -52,6 +52,7 @@ import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
 import org.apache.opennlp.grpc.v1.ChunkingSpec;
 import org.apache.opennlp.grpc.v1.ComponentType;
+import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
 import org.apache.opennlp.grpc.v1.GetServiceInfoRequest;
 import org.apache.opennlp.grpc.v1.ListModelBundlesRequest;
 import org.apache.opennlp.grpc.v1.ModelDescriptor;
@@ -208,6 +209,41 @@ class OpenNlpGrpcServerLiveIT {
         "opennlp:sentences");
     assertStandardLayer(document, StandardLayer.STANDARD_LAYER_TOKENS,
         "opennlp:tokens");
+  }
+
+  @Test
+  void termIdentityKeepsOriginalOffsetsInTheDocumentShape() {
+    final String text = "Groß GROSS";
+    final OpenNlpDocument document = client.analyzeDocument(AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder()
+            .setDocId("term-identity")
+            .setRawText(text)
+            .build())
+        .setProfile(AnalysisProfile.newBuilder()
+            .setProfileId("term-identity")
+            .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+            .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+            .addTermDimensions("FULL_CASE_FOLD")
+            .setTokenizer(TokenizerSelector.newBuilder()
+                .setStandard(StandardTokenizerEngine
+                    .STANDARD_TOKENIZER_ENGINE_WHITESPACE))
+            .build())
+        .setOptions(AnalysisOptions.newBuilder()
+            .setOffsetEncoding(OffsetEncoding.OFFSET_ENCODING_UTF16_CODE_UNIT)
+            .build())
+        .build()).getDocument();
+
+    assertEquals(List.of("gross", "gross"), document.getSentences(0)
+        .getTokensList().stream()
+        .map(token -> token.getTermLayersOrThrow("FULL_CASE_FOLD"))
+        .toList());
+    final AnnotationLayer terms = assertStandardLayer(document,
+        StandardLayer.STANDARD_LAYER_TERMS, "opennlp:terms:FULL_CASE_FOLD");
+    assertEquals("FULL_CASE_FOLD", terms.getIdentity().getQualifier());
+    assertEquals(List.of("gross", "gross"), terms.getStringValues().getAnnotationsList()
+        .stream().map(annotation -> annotation.getValue()).toList());
+    assertEquals(List.of("Groß", "GROSS"), terms.getStringValues().getAnnotationsList()
+        .stream().map(annotation -> slice(text, annotation.getSpan())).toList());
   }
 
   @Test
@@ -374,6 +410,16 @@ class OpenNlpGrpcServerLiveIT {
       final AnnotationSpan span = embedding.getSourceSpan();
       assertEquals(span.getEnd() - span.getStart(), (int) embedding.getVector(0));
     }
+    final AnnotationLayer embeddings = assertStandardLayer(response.getDocument(),
+        StandardLayer.STANDARD_LAYER_EMBEDDINGS, "opennlp:embeddings");
+    assertEquals(2, embeddings.getEmbeddingValues().getAnnotationsList().stream()
+        .filter(annotation -> annotation.getGranularity()
+            == EmbeddingGranularity.EMBEDDING_GRANULARITY_SENTENCE)
+        .count());
+    assertEquals(1, embeddings.getEmbeddingValues().getAnnotationsList().stream()
+        .filter(annotation -> annotation.getGranularity()
+            == EmbeddingGranularity.EMBEDDING_GRANULARITY_DOCUMENT)
+        .count());
   }
 
   @Test
@@ -397,6 +443,9 @@ class OpenNlpGrpcServerLiveIT {
       assertEquals(EMBEDDING_DIMENSION, chunk.getEmbeddings(0).getVectorCount());
       assertEquals(chunk.getTextContent().length(), (int) chunk.getEmbeddings(0).getVector(0));
     }
+    final AnnotationLayer chunkGroups = assertStandardLayer(response.getDocument(),
+        StandardLayer.STANDARD_LAYER_CHUNK_GROUPS, "opennlp:chunk-groups");
+    assertEquals(1, chunkGroups.getChunkGroupValues().getAnnotationsCount());
   }
 
   @Test
