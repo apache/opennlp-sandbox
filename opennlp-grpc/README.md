@@ -28,13 +28,25 @@ ids are namespaced exactly as in the Java container (`opennlp:sentences`,
 `opennlp:tokens`, `opennlp:pos`, `opennlp:lemmas`, `opennlp:entities`,
 `opennlp:chunks`, `opennlp:parses`, `opennlp:sentiment`, `opennlp:language`,
 `opennlp:categories`, `opennlp:embeddings`, `opennlp:word-types`,
-`opennlp:stopwords`, `opennlp:terms:<DIMENSION>`), and every annotation value is
+`opennlp:stopwords`, `opennlp:terms:<DIMENSION>`, `opennlp:subwords`,
+`opennlp:stems`, `opennlp:expansions`, `opennlp:geo`), and every annotation value is
 strongly typed through the layer's value list (string, scored category,
 embedding vector, or parse tree). Layer spans use the response's offset
 encoding like every other span. Server-side, the string layers are built through
 `opennlp.tools.document.Document` itself, so the container's invariants validate
 what goes on the wire; the full inventory is documented in
 `opennlp_document.proto`.
+
+Beyond the classic pipeline, the service serves the OpenNLP 3.0 feature branches:
+SentencePiece subword encoding (`PIPELINE_STEP_SUBWORD_TOKENIZE`, models under
+`model.subword.<id>.path`), stemming across snowball, porter, the UniNE light and
+minimal tiers, and hunspell affix dictionaries (`PIPELINE_STEP_STEM`,
+`model.hunspell.<id>.affix_path`/`.dictionary_path`), lexical expansion over WN-LMF
+knowledge bases (`PIPELINE_STEP_EXPAND`, `model.wordnet.<id>.path`), CJK lattice
+tokenization over MeCab-format dictionaries (`tokenizer_engine = "lattice"`,
+`model.lattice.<id>.dir`), and geocoding of location entities against the bundled
+Natural Earth gazetteer (`PIPELINE_STEP_GEOCODE`, no configuration required, filling
+`NamedEntity.geo`).
 
 ## Modules
 
