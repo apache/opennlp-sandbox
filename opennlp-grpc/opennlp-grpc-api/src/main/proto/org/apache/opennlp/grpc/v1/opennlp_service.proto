@@ -242,6 +242,11 @@ message GetServiceInfoResponse {
   // The closed set of OpenNLP-owned document layers this server can emit.
   // ModelBundleInfo reports which model-backed producers are configured.
   repeated StandardLayer supported_layers = 5;
+  // Custom tokenizer ids contributed by configured TokenizerBackendFactory providers.
+  repeated string custom_tokenizer_ids = 6;
+  // Custom sentence-detector ids contributed by configured
+  // SentenceDetectorBackendFactory providers.
+  repeated string custom_sentence_detector_ids = 7;
 }
 
 // Input to ListModelBundles. Empty; no parameters.

@@ -17,6 +17,7 @@
  */
 package org.apache.opennlp.grpc.v1.server;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -26,6 +27,8 @@ import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.processor.DocumentAnalyzer;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
+import org.apache.opennlp.grpc.testing.StubSentenceDetectorBackendFactory;
+import org.apache.opennlp.grpc.testing.StubTokenizerBackendFactory;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.GetServiceInfoRequest;
@@ -115,6 +118,10 @@ class OpenNlpAnalysisServiceImplTest {
                 && layer != StandardLayer.UNRECOGNIZED)
             .collect(java.util.stream.Collectors.toSet()),
         Set.copyOf(observer.value.getSupportedLayersList()));
+    assertEquals(List.of(StubTokenizerBackendFactory.ENGINE_ID),
+        observer.value.getCustomTokenizerIdsList());
+    assertEquals(List.of(StubSentenceDetectorBackendFactory.ENGINE_ID),
+        observer.value.getCustomSentenceDetectorIdsList());
     assertTrue(observer.completed);
     assertNull(observer.error);
   }
