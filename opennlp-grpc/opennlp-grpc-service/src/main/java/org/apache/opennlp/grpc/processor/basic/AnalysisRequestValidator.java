@@ -25,6 +25,7 @@ import java.util.Set;
 import org.apache.opennlp.grpc.chunk.ChunkEmbedProcessor;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.model.ChunkerRegistry;
+import org.apache.opennlp.grpc.model.HunspellRegistry;
 import org.apache.opennlp.grpc.model.DocCategorizerModel;
 import org.apache.opennlp.grpc.model.DocCategorizerRegistry;
 import org.apache.opennlp.grpc.model.ModelArtifactRegistry;
@@ -64,6 +65,7 @@ final class AnalysisRequestValidator {
   private final ChunkerRegistry chunkerRegistry;
   private final ModelArtifactRegistry artifactRegistry;
   private final SubwordRegistry subwordRegistry;
+  private final HunspellRegistry hunspellRegistry;
 
   AnalysisRequestValidator(
       EmbeddingProvider embeddingProvider,
@@ -73,7 +75,8 @@ final class AnalysisRequestValidator {
       ParserRegistry parserRegistry,
       ChunkerRegistry chunkerRegistry,
       ModelArtifactRegistry artifactRegistry,
-      SubwordRegistry subwordRegistry) {
+      SubwordRegistry subwordRegistry,
+      HunspellRegistry hunspellRegistry) {
     this.embeddingProvider = Objects.requireNonNull(embeddingProvider, "embeddingProvider");
     this.nameFinderRegistry = Objects.requireNonNull(nameFinderRegistry, "nameFinderRegistry");
     this.docCategorizerRegistry =
@@ -83,6 +86,7 @@ final class AnalysisRequestValidator {
     this.chunkerRegistry = Objects.requireNonNull(chunkerRegistry, "chunkerRegistry");
     this.artifactRegistry = Objects.requireNonNull(artifactRegistry, "artifactRegistry");
     this.subwordRegistry = Objects.requireNonNull(subwordRegistry, "subwordRegistry");
+    this.hunspellRegistry = Objects.requireNonNull(hunspellRegistry, "hunspellRegistry");
   }
 
   /**
@@ -115,6 +119,7 @@ final class AnalysisRequestValidator {
     validateTermProfile(profile);
     validateStopwordLanguage(profile);
     validateSubwordRequest(profile);
+    validateStemRequest(profile);
     validateEmbeddingRequest(request, profile);
     validateChunkEmbedConfigs(request);
     validateCategoryChunkConfigs(request, profile);
@@ -151,6 +156,14 @@ final class AnalysisRequestValidator {
   /** Rejects a subword request that no configured model can serve. */
   private void validateSubwordRequest(AnalysisProfile profile) {
     resolveSubwordModelId(profile);
+  }
+
+  /** Rejects a stem request whose spec is incomplete or unservable. */
+  private void validateStemRequest(AnalysisProfile profile) {
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_STEM)) {
+      return;
+    }
+    StemmerSelector.validate(profile.getStemmer(), hunspellRegistry);
   }
 
   String resolveEmbeddingModelId(AnalyzeDocumentRequest request, AnalysisProfile profile) {

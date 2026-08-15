@@ -124,6 +124,10 @@ public final class ModelBundleCache {
   // Optional subword tokenizers (operator-supplied via model.subword.<id>.path, not bundled).
   // The loaded SentencePiece tokenizers are thread-safe and shared; empty when none is configured.
   private final SubwordRegistry subwordRegistry;
+  // Optional hunspell affix dictionaries for the STEM step (operator-supplied via
+  // model.hunspell.<id>.affix_path/.dictionary_path, not bundled). The loaded stemmers are
+  // thread-safe and shared; empty when none is configured.
+  private final HunspellRegistry hunspellRegistry;
 
   /**
    * Eagerly loads every model and registry described by the given configuration. The classic
@@ -139,8 +143,9 @@ public final class ModelBundleCache {
    */
   public ModelBundleCache(Map<String, String> configuration) {
     Objects.requireNonNull(configuration, "configuration");
-    // Loaded first: the subword registry holds no native resources, so it can never leak.
+    // Loaded first: these registries hold no native resources, so they can never leak.
     this.subwordRegistry = SubwordRegistry.create(configuration);
+    this.hunspellRegistry = HunspellRegistry.create(configuration);
     final LoadedArtifact<SentenceModel> loadedSentence = loadModel(configuration,
         KEY_SENTDETECT_PATH, BUNDLED_SENTENCE_MODEL_FRAGMENT, "sentence detector",
         SentenceModel::new);
@@ -354,6 +359,14 @@ public final class ModelBundleCache {
    */
   public SubwordRegistry getSubwordRegistry() {
     return subwordRegistry;
+  }
+
+  /**
+   * @return The registry of configured hunspell dictionaries, possibly empty. Never
+   *         {@code null}.
+   */
+  public HunspellRegistry getHunspellRegistry() {
+    return hunspellRegistry;
   }
 
   /**

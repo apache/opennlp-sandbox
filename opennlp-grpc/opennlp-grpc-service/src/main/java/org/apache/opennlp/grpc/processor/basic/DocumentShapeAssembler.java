@@ -97,6 +97,9 @@ final class DocumentShapeAssembler {
   /** The id of the subword layer. */
   static final String SUBWORDS_ID = "opennlp:subwords";
 
+  /** The id of the stem layer. */
+  static final String STEMS_ID = "opennlp:stems";
+
   private DocumentShapeAssembler() {
     // This class is a stateless rendering pass and is never instantiated.
   }

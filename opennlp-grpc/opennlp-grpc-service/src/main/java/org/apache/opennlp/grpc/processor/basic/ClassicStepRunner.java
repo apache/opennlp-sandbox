@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 
 import opennlp.subword.sentencepiece.SentencePieceTokenizer;
 import opennlp.tools.langdetect.Language;
@@ -68,6 +69,9 @@ import org.apache.opennlp.grpc.v1.ParseFormat;
 import org.apache.opennlp.grpc.v1.ParseTree;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.apache.opennlp.grpc.v1.ProcessingDiagnostic;
+import org.apache.opennlp.grpc.v1.StemmerSpec;
+import org.apache.opennlp.grpc.v1.StringAnnotation;
+import org.apache.opennlp.grpc.v1.StringAnnotationList;
 import org.apache.opennlp.grpc.v1.SubwordAnnotation;
 import org.apache.opennlp.grpc.v1.SubwordAnnotationList;
 import org.apache.opennlp.grpc.v1.Token;
@@ -198,6 +202,39 @@ final class ClassicStepRunner {
     }
     diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_TOKENIZE,
         "Tokenized " + tokenCount + " token(s) (uax29)"));
+  }
+
+  /**
+   * Runs PIPELINE_STEP_STEM: stems every word token with the stemmer the spec selects
+   * and emits the stems as the {@code opennlp:stems} document-shape layer,
+   * span-aligned with the token layer. Annotation only: tokens and lemmas are
+   * untouched. Runs after tokenization.
+   */
+  void stem(
+      OpenNlpDocument.Builder document,
+      StemmerSpec spec,
+      List<AnnotationLayer> extraLayers,
+      List<ProcessingDiagnostic> diagnostics) {
+    final UnaryOperator<String> stem =
+        StemmerSelector.newStemFunction(spec, modelBundleCache.getHunspellRegistry());
+    final StringAnnotationList.Builder list = StringAnnotationList.newBuilder();
+    for (int i = 0; i < document.getSentencesCount(); i++) {
+      for (Token token : document.getSentences(i).getTokensList()) {
+        list.addAnnotations(StringAnnotation.newBuilder()
+            .setSpan(token.getAnnotationSpan())
+            .setValue(stem.apply(token.getText()))
+            .build());
+      }
+    }
+    if (list.getAnnotationsCount() > 0) {
+      extraLayers.add(AnnotationLayer.newBuilder()
+          .setId(DocumentShapeAssembler.STEMS_ID)
+          .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
+          .setStringValues(list.build())
+          .build());
+    }
+    diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_STEM,
+        "Stemmed " + list.getAnnotationsCount() + " token(s)"));
   }
 
   /**

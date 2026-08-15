@@ -123,7 +123,8 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     this.validator = new AnalysisRequestValidator(embeddingProvider, nameFinderRegistry,
         modelBundleCache.getDocCategorizerRegistry(), modelBundleCache.getSentimentRegistry(),
         modelBundleCache.getParserRegistry(), modelBundleCache.getChunkerRegistry(),
-        modelBundleCache.getArtifactRegistry(), modelBundleCache.getSubwordRegistry());
+        modelBundleCache.getArtifactRegistry(), modelBundleCache.getSubwordRegistry(),
+        modelBundleCache.getHunspellRegistry());
     this.classicSteps = new ClassicStepRunner(modelBundleCache);
     this.embedChunkSteps = new EmbedChunkStepRunner(embeddingProvider, classicSteps);
   }
@@ -259,6 +260,21 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
           () -> classicSteps.lemmatize(document, diagnostics));
     } else {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_LEMMATIZE));
+    }
+
+    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_STEM)) {
+      if (!shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
+        throw AnalysisException.failedPrecondition(
+            PipelineStep.PIPELINE_STEP_STEM.name()
+                + " requires "
+                + PipelineStep.PIPELINE_STEP_TOKENIZE.name());
+      }
+      requireTokens(document, PipelineStep.PIPELINE_STEP_STEM);
+      runStep(
+          PipelineStep.PIPELINE_STEP_STEM,
+          () -> classicSteps.stem(document, profile.getStemmer(), extraLayers, diagnostics));
+    } else {
+      diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_STEM));
     }
 
     final String docCategorizerModelId = validator.resolveDocCategorizerModelId(profile);
