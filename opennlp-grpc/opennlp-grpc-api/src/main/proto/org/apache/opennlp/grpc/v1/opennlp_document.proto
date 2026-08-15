@@ -514,6 +514,10 @@ message DocumentClassification {
 //   opennlp:stems       positional, string values: the stem of each token under
 //                       the requested stemmer, span-aligned with opennlp:tokens
 //                       (from PIPELINE_STEP_STEM).
+//   opennlp:expansions  positional, category values: lexical expansions (synonyms,
+//                       hypernyms) of each token from the configured knowledge
+//                       base, each a scored label anchored on the expanded token's
+//                       span (from PIPELINE_STEP_EXPAND).
 
 // The typed annotation layers of one analyzed document.
 message DocumentLayers {

@@ -86,6 +86,15 @@ enum PipelineStep {
   // token layer. Annotation only: tokens and lemmas are untouched. Requires
   // TOKENIZE; requesting it without => FAILED_PRECONDITION.
   PIPELINE_STEP_STEM = 15;
+
+  // Expands every word token over a configured WordNet-style lexical knowledge base
+  // (synonyms, hypernyms), emitted only as the document-shape layer
+  // "opennlp:expansions": one scored label per expansion, anchored on the expanded
+  // token's span. The token's lemma is expanded when LEMMATIZE ran, otherwise its
+  // surface form. Requires TOKENIZE; requesting it without => FAILED_PRECONDITION.
+  // Select the knowledge base with AnalysisProfile.wordnet_lexicon_id; no configured
+  // lexicon => NOT_FOUND.
+  PIPELINE_STEP_EXPAND = 16;
 }
 
 // The stemmer families the STEM step can run. All but HUNSPELL are bundled
@@ -255,6 +264,12 @@ message AnalysisProfile {
   // Configuration for PIPELINE_STEP_STEM. Requesting the step with no spec runs
   // the default (SNOWBALL), which then requires `language`.
   StemmerSpec stemmer = 15;
+
+  // The lexical knowledge base for PIPELINE_STEP_EXPAND, one of the ids configured
+  // under model.wordnet.<id>.path (a WN-LMF file) on the server. Unset selects the
+  // configured default (model.wordnet.default_id) or the sole configured lexicon; an
+  // unknown id, or no selectable lexicon, => NOT_FOUND.
+  optional string wordnet_lexicon_id = 16;
 }
 
 // Configuration for PIPELINE_STEP_NORMALIZE: which rungs run, in the order the
