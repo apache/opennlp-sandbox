@@ -64,7 +64,43 @@ final class DocumentLayersValidator {
       if (layer.getValuesCase() == AnnotationLayer.ValuesCase.VALUES_NOT_SET) {
         fail("layer '" + layer.getId() + "' has no value arm");
       }
+      validateStandardValueArm(layer);
       validateLayer(layer, document.getRawText().length(), embeddingProvider);
+    }
+  }
+
+  private static void validateStandardValueArm(AnnotationLayer layer) {
+    if (layer.getIdentity().getKindCase()
+        != org.apache.opennlp.grpc.v1.LayerIdentity.KindCase.STANDARD) {
+      return;
+    }
+    final AnnotationLayer.ValuesCase expected = switch (layer.getIdentity().getStandard()) {
+      case STANDARD_LAYER_SENTENCES, STANDARD_LAYER_TOKENS, STANDARD_LAYER_POS_TAGS,
+          STANDARD_LAYER_LEMMAS, STANDARD_LAYER_STOPWORDS, STANDARD_LAYER_TERMS ->
+          AnnotationLayer.ValuesCase.STRING_VALUES;
+      case STANDARD_LAYER_ENTITIES -> AnnotationLayer.ValuesCase.ENTITY_VALUES;
+      case STANDARD_LAYER_SYNTACTIC_CHUNKS ->
+          AnnotationLayer.ValuesCase.SYNTACTIC_CHUNK_VALUES;
+      case STANDARD_LAYER_PARSES -> AnnotationLayer.ValuesCase.TREE_VALUES;
+      case STANDARD_LAYER_SENTIMENT, STANDARD_LAYER_LANGUAGE, STANDARD_LAYER_CATEGORIES ->
+          AnnotationLayer.ValuesCase.CATEGORY_VALUES;
+      case STANDARD_LAYER_EMBEDDINGS -> AnnotationLayer.ValuesCase.EMBEDDING_VALUES;
+      case STANDARD_LAYER_WORD_TYPES -> AnnotationLayer.ValuesCase.WORD_TYPE_VALUES;
+      case STANDARD_LAYER_SUBWORDS -> AnnotationLayer.ValuesCase.SUBWORD_VALUES;
+      case STANDARD_LAYER_STEMS -> AnnotationLayer.ValuesCase.STEM_VALUES;
+      case STANDARD_LAYER_EXPANSIONS -> AnnotationLayer.ValuesCase.LEXICAL_EXPANSION_VALUES;
+      case STANDARD_LAYER_GEO -> AnnotationLayer.ValuesCase.GEO_VALUES;
+      case STANDARD_LAYER_NORMALIZATION -> AnnotationLayer.ValuesCase.NORMALIZATION_VALUES;
+      case STANDARD_LAYER_ANALYTICS -> AnnotationLayer.ValuesCase.ANALYTICS_VALUES;
+      case STANDARD_LAYER_CHUNK_GROUPS -> AnnotationLayer.ValuesCase.CHUNK_GROUP_VALUES;
+      case STANDARD_LAYER_UNSPECIFIED, UNRECOGNIZED -> {
+        fail("standard layer identity must name a recognized layer");
+        yield AnnotationLayer.ValuesCase.VALUES_NOT_SET;
+      }
+    };
+    if (layer.getValuesCase() != expected) {
+      fail("layer '" + layer.getId() + "' uses " + layer.getValuesCase()
+          + " but its standard identity requires " + expected);
     }
   }
 
