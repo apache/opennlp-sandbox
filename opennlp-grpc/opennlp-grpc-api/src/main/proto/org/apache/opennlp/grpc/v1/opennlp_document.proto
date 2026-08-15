@@ -83,6 +83,12 @@ message OpenNlpDocument {
   // alignment that maps spans between it and raw_text. Unset when the step did
   // not run.
   optional NormalizationResult normalization = 13;
+  // The document-shape view (OPENNLP-1888) of every annotation this analysis
+  // produced: the same results as the fields above, rendered as named, typed
+  // annotation layers over raw_text. Servers at this version populate one layer
+  // per step that ran; a layer whose producing step did not run is absent.
+  // Spans use the document's offset_encoding, like every other span.
+  DocumentLayers layers = 14;
 }
 
 // One detected sentence and every annotation attached to it. Populated
@@ -462,4 +468,146 @@ message DocumentClassification {
   // Per-category score distribution from the categorizer (typically probabilities
   // summing to ~1). best_category is the highest-scoring key.
   map<string, double> category_scores = 2;
+}
+
+// ============================ The document shape ============================
+//
+// The gRPC rendering of the OpenNLP 3.0 document container (OPENNLP-1888): the
+// analyzed text plus any number of named annotation layers, each layer a list of
+// annotations whose value type is fixed by the layer. Layer ids are namespaced
+// strings exactly as in the Java container ("opennlp:" prefixes every layer the
+// toolkit itself produces; other producers use their own prefix), so the key
+// space stays open while every annotation value stays strongly typed through
+// the oneof below.
+//
+// Layers the v1 server emits, each only when its producing step ran:
+//   opennlp:sentences   positional, string values: the covered sentence text.
+//   opennlp:tokens      positional, string values: the covered token text.
+//   opennlp:pos         positional, string values: the POS tag, one annotation
+//                       per token, span-aligned with opennlp:tokens.
+//   opennlp:lemmas      positional, string values: the lemma, span-aligned with
+//                       opennlp:tokens.
+//   opennlp:entities    positional, string values: the entity type; the span
+//                       covers the mention.
+//   opennlp:chunks      positional, string values: the phrase tag of each
+//                       syntactic chunk (from PIPELINE_STEP_SYNTACTIC_CHUNK).
+//   opennlp:parses      positional, tree values: the primary constituency parse
+//                       of each parsed sentence.
+//   opennlp:sentiment   positional, category values: per-sentence label and
+//                       score, the span covering the sentence.
+//   opennlp:language    document-scoped, category values: one annotation, the
+//                       detected language code and its confidence.
+//   opennlp:categories  document-scoped, category values: the whole
+//                       classification distribution, best category first.
+//   opennlp:embeddings  positional, embedding values: sentence vectors and the
+//                       document centroid, told apart by granularity.
+//   opennlp:word-types  positional, string values: the UAX #29 word class per
+//                       token, present only when the uax29 tokenizer engine ran.
+//   opennlp:stopwords   positional, string values: the covered text of each
+//                       token the stopword list matched.
+//   opennlp:terms:<DIMENSION>  positional, string values: the per-token
+//                       normalized form of one requested term dimension,
+//                       span-aligned with opennlp:tokens.
+
+// The typed annotation layers of one analyzed document.
+message DocumentLayers {
+  // The layers, in the order their producing steps ran. Ids are unique: a layer
+  // appears at most once, mirroring the container's once-only add.
+  repeated AnnotationLayer layers = 1;
+}
+
+// One named annotation layer. The value type of every annotation in the layer
+// is fixed by which list the oneof carries, the wire form of the container's
+// LayerKey type parameter.
+message AnnotationLayer {
+  // The namespaced layer id, e.g. "opennlp:tokens".
+  string id = 1;
+  // Whether annotations carry spans (positional) or whole-document values.
+  LayerScope scope = 2;
+  // The layer's annotations. Exactly one list is set, fixing the value type.
+  oneof values {
+    // Annotations whose value is a string (text, tag, type, or code).
+    StringAnnotationList string_values = 3;
+    // Annotations whose value is a scored label.
+    CategoryAnnotationList category_values = 4;
+    // Annotations whose value is a dense vector.
+    EmbeddingAnnotationList embedding_values = 5;
+    // Annotations whose value is a constituency parse tree.
+    TreeAnnotationList tree_values = 6;
+  }
+}
+
+// Whether a layer's annotations are anchored to spans of the text or carry
+// whole-document values, mirroring the container's LayerKey.Scope.
+enum LayerScope {
+  // Unset; treat as LAYER_SCOPE_POSITIONAL.
+  LAYER_SCOPE_UNSPECIFIED = 0;
+  // Every annotation of the layer carries a span into the document text.
+  LAYER_SCOPE_POSITIONAL = 1;
+  // No annotation of the layer carries a span; values apply to the whole document.
+  LAYER_SCOPE_DOCUMENT = 2;
+}
+
+// The annotations of a string-valued layer.
+message StringAnnotationList {
+  repeated StringAnnotation annotations = 1;
+}
+
+// One string-valued annotation: a value anchored to a span of the document text,
+// or a span-less value under a document-scoped layer.
+message StringAnnotation {
+  // The annotated span. Set exactly when the layer is positional.
+  optional AnnotationSpan span = 1;
+  // The annotation value. Never empty.
+  string value = 2;
+  // Model confidence in this annotation, in [0,1]. Populated only when the
+  // request set AnalysisOptions.include_probabilities = true and the producing
+  // step reports probabilities.
+  optional double probability = 3;
+}
+
+// The annotations of a scored-label layer.
+message CategoryAnnotationList {
+  repeated CategoryAnnotation annotations = 1;
+}
+
+// One scored label: a category decision anchored to a span, or a span-less
+// whole-document decision under a document-scoped layer.
+message CategoryAnnotation {
+  // The annotated span. Set exactly when the layer is positional.
+  optional AnnotationSpan span = 1;
+  // The label, e.g. a sentiment category, a document category, or a language code.
+  string label = 2;
+  // The label's score from the producing model, in [0,1].
+  double score = 3;
+}
+
+// The annotations of an embedding layer.
+message EmbeddingAnnotationList {
+  repeated EmbeddingAnnotation annotations = 1;
+}
+
+// One embedding vector anchored to the span of text it embeds.
+message EmbeddingAnnotation {
+  // The span the vector embeds (the sentence, or the whole document for a centroid).
+  optional AnnotationSpan span = 1;
+  // The registered embedding model that produced the vector.
+  string model_id = 2;
+  // The dense vector; its length matches the model's embedding dimension.
+  repeated float vector = 3;
+  // The textual unit the vector was computed over.
+  EmbeddingGranularity granularity = 4;
+}
+
+// The annotations of a parse-tree layer.
+message TreeAnnotationList {
+  repeated TreeAnnotation annotations = 1;
+}
+
+// One constituency parse anchored to the sentence it parses.
+message TreeAnnotation {
+  // The span of the parsed sentence.
+  AnnotationSpan span = 1;
+  // The parse, in the representations the request selected via parse_formats.
+  ParseTree tree = 2;
 }
