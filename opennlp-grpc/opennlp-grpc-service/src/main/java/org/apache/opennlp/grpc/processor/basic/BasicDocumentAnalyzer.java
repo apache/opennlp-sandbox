@@ -28,6 +28,7 @@ import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.model.NameFinderRegistry;
 import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.processor.DocumentAnalysisSession;
 import org.apache.opennlp.grpc.processor.DocumentAnalyzer;
 import org.apache.opennlp.grpc.processor.PipelineStepPolicy;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
@@ -35,6 +36,7 @@ import org.apache.opennlp.grpc.profile.ProfileResolver;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
+import org.apache.opennlp.grpc.v1.AnalyzeStreamConfiguration;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationLayer;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
@@ -135,18 +137,43 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
   @Override
   public AnalyzeDocumentResponse analyze(AnalyzeDocumentRequest request) {
     Objects.requireNonNull(request, "request");
-    if (!request.hasDocument()) {
-      throw AnalysisException.invalidArgument("document is required");
-    }
+    final String rawText = requiredRawText(request);
+    final PreparedAnalysis prepared = prepare(request);
+    validator.validateDocument(request, rawText);
+    return analyzePrepared(request, prepared, rawText);
+  }
 
+  @Override
+  public DocumentAnalysisSession openSession(AnalyzeStreamConfiguration configuration) {
+    Objects.requireNonNull(configuration, "configuration");
+    final AnalyzeDocumentRequest.Builder fixed = AnalyzeDocumentRequest.newBuilder();
+    if (configuration.hasProfile()) {
+      fixed.setProfile(configuration.getProfile());
+    }
+    if (configuration.hasOptions()) {
+      fixed.setOptions(configuration.getOptions());
+    }
+    if (configuration.hasProfileId()) {
+      fixed.setProfileId(configuration.getProfileId());
+    }
+    fixed.addAllChunkEmbedConfigs(configuration.getChunkEmbedConfigsList());
+    fixed.addAllCategoryChunkConfigs(configuration.getCategoryChunkConfigsList());
+    final AnalyzeDocumentRequest template = fixed.build();
+    final PreparedAnalysis prepared = prepare(template);
+    return document -> {
+      Objects.requireNonNull(document, "document");
+      final AnalyzeDocumentRequest request = template.toBuilder().setDocument(document).build();
+      final String rawText = requiredRawText(request);
+      validator.validateDocument(request, rawText);
+      return analyzePrepared(request, prepared, rawText);
+    };
+  }
+
+  private AnalyzeDocumentResponse analyzePrepared(
+      AnalyzeDocumentRequest request, PreparedAnalysis prepared, String rawText) {
     final OpenNlpDocument input = request.getDocument();
-    final String rawText = input.getRawText();
-    if (rawText == null || rawText.isBlank()) {
-      throw AnalysisException.invalidArgument("document.raw_text is required");
-    }
-
-    final AnalysisProfile profile = profileResolver.resolve(request);
-    validator.validate(request, profile, rawText);
+    final AnalysisProfile profile = prepared.profile();
+    final Set<PipelineStep> effectiveSteps = prepared.effectiveSteps();
 
     final boolean includeProbabilities =
         request.hasOptions() && request.getOptions().getIncludeProbabilities();
@@ -162,7 +189,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       document.setMetadata(input.getMetadata());
     }
 
-    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_LANGUAGE_DETECT)) {
+    if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_LANGUAGE_DETECT)) {
       runStep(
           PipelineStep.PIPELINE_STEP_LANGUAGE_DETECT,
           () -> classicSteps.detectLanguage(rawText, document, diagnostics));
@@ -170,7 +197,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_LANGUAGE_DETECT));
     }
 
-    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_NORMALIZE)) {
+    if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_NORMALIZE)) {
       runStep(
           PipelineStep.PIPELINE_STEP_NORMALIZE,
           () -> ClassicStepRunner.normalize(
@@ -179,7 +206,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_NORMALIZE));
     }
 
-    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)) {
+    if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)) {
       runStep(
           PipelineStep.PIPELINE_STEP_SENTENCE_DETECT,
           () -> classicSteps.detectSentences(rawText, document, includeProbabilities, diagnostics));
@@ -187,7 +214,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT));
     }
 
-    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
+    if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
       requireSentences(document, PipelineStep.PIPELINE_STEP_TOKENIZE);
       final boolean uax29 = AnalysisRequestValidator.UAX29_TOKENIZER_ENGINE
           .equals(profile.getTokenizerEngine());
@@ -220,7 +247,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     }
 
     final String subwordModelId = validator.resolveSubwordModelId(profile);
-    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_SUBWORD_TOKENIZE)) {
+    if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_SUBWORD_TOKENIZE)) {
       runStep(
           PipelineStep.PIPELINE_STEP_SUBWORD_TOKENIZE,
           () -> classicSteps.subwordTokenize(rawText, subwordModelId, extraLayers, diagnostics));
@@ -229,7 +256,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     }
 
     final List<String> nerEntityTypes = validator.resolveNerEntityTypes(profile);
-    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_NER)) {
+    if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_NER)) {
       requireTokens(document, PipelineStep.PIPELINE_STEP_NER);
       runStep(
           PipelineStep.PIPELINE_STEP_NER,
@@ -243,8 +270,8 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_NER));
     }
 
-    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_GEOCODE)) {
-      if (!shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_NER)) {
+    if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_GEOCODE)) {
+      if (!shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_NER)) {
         throw AnalysisException.failedPrecondition(
             PipelineStep.PIPELINE_STEP_GEOCODE.name()
                 + " requires "
@@ -257,7 +284,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_GEOCODE));
     }
 
-    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_POS_TAG)) {
+    if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_POS_TAG)) {
       requireTokens(document, PipelineStep.PIPELINE_STEP_POS_TAG);
       runStep(
           PipelineStep.PIPELINE_STEP_POS_TAG,
@@ -267,9 +294,9 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_POS_TAG));
     }
 
-    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_LEMMATIZE)) {
+    if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_LEMMATIZE)) {
       requireTokens(document, PipelineStep.PIPELINE_STEP_LEMMATIZE);
-      if (!shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_POS_TAG)) {
+      if (!shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_POS_TAG)) {
         throw AnalysisException.failedPrecondition(
             PipelineStep.PIPELINE_STEP_LEMMATIZE.name()
                 + " requires "
@@ -282,8 +309,8 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_LEMMATIZE));
     }
 
-    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_STEM)) {
-      if (!shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
+    if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_STEM)) {
+      if (!shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
         throw AnalysisException.failedPrecondition(
             PipelineStep.PIPELINE_STEP_STEM.name()
                 + " requires "
@@ -298,8 +325,8 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     }
 
     final String wordNetLexiconId = validator.resolveWordNetLexiconId(profile);
-    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_EXPAND)) {
-      if (!shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
+    if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_EXPAND)) {
+      if (!shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
         throw AnalysisException.failedPrecondition(
             PipelineStep.PIPELINE_STEP_EXPAND.name()
                 + " requires "
@@ -314,7 +341,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     }
 
     final String docCategorizerModelId = validator.resolveDocCategorizerModelId(profile);
-    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE)) {
+    if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE)) {
       // Only classic (token-based) categorizers need tokenization; raw-text models (ONNX) can
       // classify the document text directly, so a DOC_CATEGORIZE-only profile is valid for them.
       if (validator.docCategorizerRequiresTokens(docCategorizerModelId)) {
@@ -329,7 +356,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     }
 
     final String sentimentModelId = validator.resolveSentimentModelId(profile);
-    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_SENTIMENT)) {
+    if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_SENTIMENT)) {
       // Sentiment is per sentence, so it always needs sentences; only classic (token-based)
       // models additionally need tokenization, while raw-text models score the sentence text.
       requireSentences(document, PipelineStep.PIPELINE_STEP_SENTIMENT);
@@ -345,7 +372,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     }
 
     final Set<ParseFormat> parseFormats = validator.resolveParseFormats(request, profile);
-    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_PARSE)) {
+    if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_PARSE)) {
       requireTokens(document, PipelineStep.PIPELINE_STEP_PARSE);
       runStep(
           PipelineStep.PIPELINE_STEP_PARSE,
@@ -355,7 +382,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_PARSE));
     }
 
-    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK)) {
+    if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK)) {
       // The validator already requires POS_TAG in the profile; tokens (and thus POS tags) are
       // present by the time this runs.
       requireTokens(document, PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK);
@@ -369,7 +396,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
 
     final String embeddingModelId = validator.resolveEmbeddingModelId(request, profile);
     final String embeddingBackendId = validator.resolveEmbeddingBackendId(request);
-    if (PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_EMBED)) {
+    if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_EMBED)) {
       requireSentences(document, PipelineStep.PIPELINE_STEP_EMBED);
       runStep(
           PipelineStep.PIPELINE_STEP_EMBED,
@@ -384,7 +411,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
           PipelineStep.PIPELINE_STEP_CHUNK,
           () -> embedChunkSteps.runChunkEmbedConfigs(
               rawText, document, request, profile, includeProbabilities, diagnostics));
-    } else if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_CHUNK)) {
+    } else if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_CHUNK)) {
       runStep(
           PipelineStep.PIPELINE_STEP_CHUNK,
           () -> embedChunkSteps.runProfileChunking(rawText, document, diagnostics));
@@ -422,6 +449,23 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
         .build();
   }
 
+  private static String requiredRawText(AnalyzeDocumentRequest request) {
+    if (!request.hasDocument()) {
+      throw AnalysisException.invalidArgument("document is required");
+    }
+    final String rawText = request.getDocument().getRawText();
+    if (rawText == null || rawText.isBlank()) {
+      throw AnalysisException.invalidArgument("document.raw_text is required");
+    }
+    return rawText;
+  }
+
+  private PreparedAnalysis prepare(AnalyzeDocumentRequest request) {
+    final AnalysisProfile profile = profileResolver.resolve(request);
+    validator.validateConfiguration(request, profile);
+    return new PreparedAnalysis(profile, Set.copyOf(resolveEffectiveSteps(request, profile)));
+  }
+
   /**
    * Computes the steps that effectively run for this request: the profile steps plus
    * the backbone steps implied by embedding and chunking requests.
@@ -451,9 +495,12 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     return steps;
   }
 
-  private boolean shouldRunStep(
-      AnalyzeDocumentRequest request, AnalysisProfile profile, PipelineStep step) {
-    return resolveEffectiveSteps(request, profile).contains(step);
+  private static boolean shouldRunStep(Set<PipelineStep> effectiveSteps, PipelineStep step) {
+    return effectiveSteps.contains(step);
+  }
+
+  private record PreparedAnalysis(
+      AnalysisProfile profile, Set<PipelineStep> effectiveSteps) {
   }
 
   /**

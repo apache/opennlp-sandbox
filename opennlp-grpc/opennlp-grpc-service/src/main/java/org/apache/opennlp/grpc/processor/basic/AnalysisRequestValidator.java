@@ -104,7 +104,7 @@ final class AnalysisRequestValidator {
    *
    * @throws AnalysisException If any check fails.
    */
-  void validate(AnalyzeDocumentRequest request, AnalysisProfile profile, String rawText) {
+  void validateConfiguration(AnalyzeDocumentRequest request, AnalysisProfile profile) {
     for (PipelineStep step : profile.getStepsList()) {
       if (step == PipelineStep.PIPELINE_STEP_UNSPECIFIED) {
         continue;
@@ -113,7 +113,7 @@ final class AnalysisRequestValidator {
         throw AnalysisException.unimplemented(step.name() + " is not implemented on this server");
       }
     }
-    validateOptions(request, profile, rawText);
+    validateOptions(request, profile);
     validateModelBundle(profile);
     validateNerRequest(profile);
     validateDocCategorizeRequest(profile);
@@ -132,6 +132,18 @@ final class AnalysisRequestValidator {
     validateEmbeddingRequest(request, profile);
     validateChunkEmbedConfigs(request);
     validateCategoryChunkConfigs(request, profile);
+  }
+
+  /** Validates constraints that depend on one document rather than the fixed pipeline. */
+  void validateDocument(AnalyzeDocumentRequest request, String rawText) {
+    if (request.hasOptions()
+        && request.getOptions().hasMaxTextLength()
+        && request.getOptions().getMaxTextLength() > 0
+        && rawText.length() > request.getOptions().getMaxTextLength()) {
+      throw AnalysisException.invalidArgument(
+          "document.raw_text exceeds max_text_length ("
+              + request.getOptions().getMaxTextLength() + ")");
+    }
   }
 
   /**
@@ -505,8 +517,7 @@ final class AnalysisRequestValidator {
     return formats;
   }
 
-  private void validateOptions(
-      AnalyzeDocumentRequest request, AnalysisProfile profile, String rawText) {
+  private void validateOptions(AnalyzeDocumentRequest request, AnalysisProfile profile) {
     if (!request.hasOptions()) {
       return;
     }
@@ -522,12 +533,6 @@ final class AnalysisRequestValidator {
         throw AnalysisException.invalidArgument(
             "embedding_model_id requires PIPELINE_STEP_EMBED in the analysis profile");
       }
-    }
-    if (options.hasMaxTextLength()
-        && options.getMaxTextLength() > 0
-        && rawText.length() > options.getMaxTextLength()) {
-      throw AnalysisException.invalidArgument(
-          "document.raw_text exceeds max_text_length (" + options.getMaxTextLength() + ")");
     }
   }
 

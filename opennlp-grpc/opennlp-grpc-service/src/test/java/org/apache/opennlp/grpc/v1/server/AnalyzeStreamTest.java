@@ -323,6 +323,28 @@ class AnalyzeStreamTest {
     assertTrue(responses.values.isEmpty());
   }
 
+  @Test
+  void productionAnalyzerKeepsTextLimitsAsPerDocumentErrors() throws Exception {
+    final CapturingObserver responses = new CapturingObserver();
+    final StreamObserver<AnalyzeStreamRequest> requests = serviceWith(
+        new BasicDocumentAnalyzer(Map.of())).analyzeStream(responses);
+
+    requests.onNext(AnalyzeStreamRequest.newBuilder()
+        .setConfiguration(AnalyzeStreamConfiguration.newBuilder()
+            .setOptions(AnalysisOptions.newBuilder().setMaxTextLength(4)))
+        .build());
+    requests.onNext(document(1, "too long"));
+    requests.onNext(document(2, "fine"));
+    requests.onCompleted();
+
+    assertTrue(responses.awaitTerminal());
+    assertNull(responses.error);
+    assertTrue(responses.completed);
+    assertEquals(Status.Code.INVALID_ARGUMENT.value(),
+        responses.bySequence(1).getError().getCode());
+    assertTrue(responses.bySequence(2).hasOk());
+  }
+
   private static void await(CountDownLatch latch) {
     try {
       if (!latch.await(5, TimeUnit.SECONDS)) {
