@@ -15,6 +15,14 @@ v1 protobuf definitions and generated Java stubs for the document-centric OpenNL
 `AnalyzeStreamDocument` messages. Responses arrive in completion order and carry either
 the same `AnalyzeDocumentResponse` used by unary analysis or a per-document error.
 
+Every produced annotation is available through `OpenNlpDocument.layers`. The payload
+type is selected by `AnnotationLayer.values`, and `LayerIdentity.kind` distinguishes a
+closed `StandardLayer` from an open namespaced custom id. Standard layer families use
+`LayerIdentity.qualifier` for their variable component. For example,
+`opennlp:terms:FULL_CASE_FOLD` is `STANDARD_LAYER_TERMS` qualified by
+`FULL_CASE_FOLD`. The string `AnnotationLayer.id` remains available as the stable lookup
+key for older clients. `GetServiceInfo.supported_layers` exposes the standard set.
+
 ## Maven dependency
 
 ```xml
