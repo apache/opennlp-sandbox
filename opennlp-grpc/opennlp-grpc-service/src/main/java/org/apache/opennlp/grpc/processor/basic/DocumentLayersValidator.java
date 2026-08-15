@@ -50,6 +50,14 @@ final class DocumentLayersValidator {
       if (!ids.add(layer.getId())) {
         fail("duplicate layer id '" + layer.getId() + "'");
       }
+      if (!layer.hasIdentity()) {
+        fail("layer '" + layer.getId() + "' has no typed identity");
+      }
+      final var expectedIdentity = DocumentShapeAssembler.layer(layer.getId()).getIdentity();
+      if (!expectedIdentity.equals(layer.getIdentity())) {
+        fail("layer '" + layer.getId() + "' has typed identity " + layer.getIdentity()
+            + " but expected " + expectedIdentity);
+      }
       if (layer.getScope() == LayerScope.LAYER_SCOPE_UNSPECIFIED) {
         fail("layer '" + layer.getId() + "' has unspecified scope");
       }
