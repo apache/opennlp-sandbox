@@ -21,10 +21,13 @@ package org.apache.opennlp.grpc.v1.server;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import io.grpc.Status;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.processor.AnalysisException;
@@ -228,6 +231,35 @@ class AnalyzeStreamTest {
     assertEquals(1, responses.next().getSequence());
   }
 
+  @Test
+  void couplesInboundDemandAndOutboundWritesToTransportCapacity() throws Exception {
+    final TrackingServerObserver responses = new TrackingServerObserver();
+    final ExecutorService executor = Executors.newSingleThreadExecutor();
+    try {
+      final StreamObserver<AnalyzeStreamRequest> requests = new AnalyzeDocumentStream(
+          AnalyzeStreamTest::echo, executor, 2, responses);
+
+      assertEquals(1, responses.requested.poll(5, TimeUnit.SECONDS));
+      requests.onNext(configuration());
+      assertEquals(2, responses.requested.poll(5, TimeUnit.SECONDS));
+
+      responses.ready = false;
+      requests.onNext(document(1, "wait for the reader"));
+      assertNull(responses.values.poll(250, TimeUnit.MILLISECONDS));
+
+      responses.ready = true;
+      responses.onReady.run();
+      assertEquals(1, responses.values.poll(5, TimeUnit.SECONDS).getSequence());
+      assertEquals(1, responses.requested.poll(5, TimeUnit.SECONDS));
+
+      requests.onCompleted();
+      assertTrue(responses.terminal.await(5, TimeUnit.SECONDS));
+      assertTrue(responses.completed);
+    } finally {
+      executor.shutdownNow();
+    }
+  }
+
   private static void await(CountDownLatch latch) {
     try {
       if (!latch.await(5, TimeUnit.SECONDS)) {
@@ -276,6 +308,75 @@ class AnalyzeStreamTest {
           .filter(value -> value.getSequence() == sequence)
           .findFirst()
           .orElseThrow(() -> new AssertionError("Missing response for sequence " + sequence));
+    }
+  }
+
+  /** Server-side observer exposing readiness and manual inbound demand to the test. */
+  private static final class TrackingServerObserver
+      extends ServerCallStreamObserver<AnalyzeStreamResponse> {
+    private final BlockingQueue<AnalyzeStreamResponse> values = new LinkedBlockingQueue<>();
+    private final BlockingQueue<Integer> requested = new LinkedBlockingQueue<>();
+    private final CountDownLatch terminal = new CountDownLatch(1);
+    private volatile Runnable onCancel = () -> { };
+    private volatile Runnable onReady = () -> { };
+    private volatile boolean ready = true;
+    private volatile boolean cancelled;
+    private volatile boolean completed;
+
+    @Override
+    public boolean isCancelled() {
+      return cancelled;
+    }
+
+    @Override
+    public void setOnCancelHandler(Runnable handler) {
+      onCancel = handler;
+    }
+
+    @Override
+    public void setCompression(String compression) {
+      // Compression selection is outside this test's scope.
+    }
+
+    @Override
+    public boolean isReady() {
+      return ready;
+    }
+
+    @Override
+    public void setOnReadyHandler(Runnable handler) {
+      onReady = handler;
+    }
+
+    @Override
+    public void disableAutoInboundFlowControl() {
+      // The request counts below prove that manual flow control is active.
+    }
+
+    @Override
+    public void request(int count) {
+      requested.add(count);
+    }
+
+    @Override
+    public void setMessageCompression(boolean enable) {
+      // Message compression is outside this test's scope.
+    }
+
+    @Override
+    public void onNext(AnalyzeStreamResponse value) {
+      values.add(value);
+    }
+
+    @Override
+    public void onError(Throwable error) {
+      terminal.countDown();
+    }
+
+    @Override
+    public void onCompleted() {
+      completed = true;
+      terminal.countDown();
     }
   }
 }
