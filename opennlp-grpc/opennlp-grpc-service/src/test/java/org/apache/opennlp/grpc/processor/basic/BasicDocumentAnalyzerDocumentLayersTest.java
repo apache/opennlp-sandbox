@@ -221,7 +221,10 @@ class BasicDocumentAnalyzerDocumentLayersTest {
                 .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
                 .addSteps(PipelineStep.PIPELINE_STEP_EMBED)
                 .build())
-            .setOptions(AnalysisOptions.newBuilder().setEmbeddingModelId("minilm").build())
+            .setOptions(AnalysisOptions.newBuilder()
+                .setEmbeddingModelId("minilm")
+                .setIncludeDocumentCentroid(true)
+                .build())
             .build());
 
     final AnnotationLayer embeddings = requireLayer(response, "opennlp:embeddings");

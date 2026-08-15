@@ -397,7 +397,10 @@ class OpenNlpGrpcServerLiveIT {
     final var response = client.analyzeDocument(AnalyzeDocumentRequest.newBuilder()
         .setDocument(OpenNlpDocument.newBuilder().setDocId("live-2").setRawText(TEXT).build())
         .setProfile(embedProfile())
-        .setOptions(AnalysisOptions.newBuilder().setEmbeddingModelId("minilm").build())
+        .setOptions(AnalysisOptions.newBuilder()
+            .setEmbeddingModelId("minilm")
+            .setIncludeDocumentCentroid(true)
+            .build())
         .build());
 
     assertEquals(2, response.getDocument().getSentencesCount());

@@ -60,6 +60,7 @@ class BasicDocumentAnalyzerEmbeddingTest {
             .build())
         .setOptions(AnalysisOptions.newBuilder()
             .setEmbeddingModelId("minilm")
+            .setIncludeDocumentCentroid(true)
             .build())
         .build());
 
@@ -84,6 +85,24 @@ class BasicDocumentAnalyzerEmbeddingTest {
           + response.getDocument().getEmbeddings(1).getVector(d)) / 2f;
       assertEquals(expected, centroid.getVector(d), 1e-5f);
     }
+  }
+
+  @Test
+  void omitsDocumentCentroidUnlessRequested() {
+    final var response = analyzer.analyze(AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setRawText(TEXT).build())
+        .setProfile(embedProfile())
+        .setOptions(AnalysisOptions.newBuilder()
+            .setEmbeddingModelId("minilm")
+            .build())
+        .build());
+
+    assertEquals(2, response.getDocument().getEmbeddingsCount());
+    assertEquals(0, response.getDocument().getDocumentCentroidsCount());
+    assertEquals(2, response.getDocument().getLayers().getLayersList().stream()
+        .filter(layer -> "opennlp:embeddings".equals(layer.getId()))
+        .findFirst().orElseThrow()
+        .getEmbeddingValues().getAnnotationsCount());
   }
 
   @Test
@@ -115,7 +134,8 @@ class BasicDocumentAnalyzerEmbeddingTest {
         .setOptions(AnalysisOptions.newBuilder()
             .setEmbeddingSelector(EmbeddingSelector.newBuilder()
                 .setModelId("minilm")
-                .setBackendId("slow")))
+                .setBackendId("slow"))
+            .setIncludeDocumentCentroid(true))
         .build());
 
     assertEquals(2.0f, response.getDocument().getEmbeddings(0).getVector(0));

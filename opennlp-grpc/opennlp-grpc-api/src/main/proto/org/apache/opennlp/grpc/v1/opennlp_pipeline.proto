@@ -480,6 +480,10 @@ message AnalysisOptions {
   // Additive strongly typed replacement for embedding_model_id. When set, model_id
   // selects the logical model and backend_id optionally pins one route.
   optional EmbeddingSelector embedding_selector = 8;
+  // When true, PIPELINE_STEP_EMBED also returns the mean of the sentence vectors as
+  // one EMBEDDING_GRANULARITY_DOCUMENT result. Unset or false returns only the
+  // requested sentence vectors, avoiding an aggregate the caller does not need.
+  optional bool include_document_centroid = 9;
 }
 
 // Selects which view(s) of a constituency parse the server fills in ParseTree. Independent
