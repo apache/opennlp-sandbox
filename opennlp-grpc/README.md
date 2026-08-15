@@ -53,7 +53,8 @@ SentencePiece subword encoding (`PIPELINE_STEP_SUBWORD_TOKENIZE`, models under
 minimal tiers, and hunspell affix dictionaries (`PIPELINE_STEP_STEM`,
 `model.hunspell.<id>.affix_path`/`.dictionary_path`), lexical expansion over WN-LMF
 knowledge bases (`PIPELINE_STEP_EXPAND`, `model.wordnet.<id>.path`), CJK lattice
-tokenization over MeCab-format dictionaries (`tokenizer_engine = "lattice"`,
+tokenization over MeCab-format dictionaries
+(`tokenizer.standard = STANDARD_TOKENIZER_ENGINE_LATTICE`,
 `model.lattice.<id>.dir`), and geocoding of location entities against the bundled
 Natural Earth gazetteer (`PIPELINE_STEP_GEOCODE`, no configuration required, filling
 `NamedEntity.geo`).
@@ -155,17 +156,33 @@ wire. They run entirely rule-based and need no operator-supplied models.
 | ------- | --------------- | ---------------- | ----- |
 | Offset-aware normalization | `PIPELINE_STEP_NORMALIZE` + `AnalysisProfile.normalization` (`NormalizationSpec.rungs`, `require_alignment`) | `OpenNlpDocument.normalization`: `normalized_text`, `applied_rungs`, `alignment` runs | Rungs apply in the library's canonical order. Offset-opaque rungs (NFC, NFKC, CASE_FOLD, ACCENT_FOLD, CONFUSABLE_FOLD) are rejected unless `require_alignment = false`, which returns `normalized_text` without runs plus a diagnostic. `WHITESPACE` and `WHITESPACE_PRESERVE_LINE_BREAKS` are mutually exclusive. |
 | Alignment run rescale | `AnalysisOptions.offset_encoding` | `AlignmentRun.original_units` / `normalized_units` | Alignment runs are emitted in the response's `OffsetEncoding`: UTF-8 bytes by default, UTF-16 code units on request, matching every other span in the response. |
-| UAX #29 word tokenizer | `AnalysisProfile.tokenizer_engine = "uax29"` (`"model"` selects the default statistical tokenizer) | `Token.word_type` (`ALPHANUMERIC`, `NUMERIC`, `EMOJI`, ...) | Deterministic Unicode segmentation with token classification; no model and no probabilities. Any other engine value fails with `INVALID_ARGUMENT`. |
+| Typed tokenizer choice | `AnalysisProfile.tokenizer.standard` | `OpenNlpDocument.sentences[].tokens` and `opennlp:tokens` | `MODEL` is the default. `UAX29` adds `Token.word_type`; `WHITESPACE` retains attached punctuation; `SIMPLE` splits character-class transitions; `LATTICE` selects the configured MeCab dictionary. The compatibility `tokenizer_engine` string remains accepted, but cannot be set with `tokenizer`. |
+| Typed sentence detector choice | `AnalysisProfile.sentence_detector.standard` | `OpenNlpDocument.sentences` and `opennlp:sentences` | `MODEL` is the default. `NEWLINE` treats each non-empty line as one sentence and needs no model. |
 | Per-token term layers | `AnalysisProfile.term_dimensions` (library `Dimension` names, e.g. `NFC`, `CASE_FOLD`, `FULL_CASE_FOLD`, `EMOJI_FOLD`) | `Token.term_layers` map | Requires `PIPELINE_STEP_TOKENIZE`. Character-level dimensions only: `ORIGINAL`, `STEM` and `LEMMA` are rejected (`PIPELINE_STEP_LEMMATIZE` owns lemmas). |
 | Per-language term profile | `AnalysisProfile.term_profile` (registry language, e.g. `"en"`, `"de"`) | `Token.term_layers` map carrying the profile's full ladder (including its `STEM` layer) | Requires `PIPELINE_STEP_TOKENIZE`. Mutually exclusive with `term_dimensions`; an unregistered language fails with `NOT_FOUND`. |
+
+#### Custom segmentation engines (SPI)
+
+The `TokenizerSelector.custom` and `SentenceDetectorSelector.custom` arms select open
+provider ids. Extension jars implement `TokenizerBackendFactory` or
+`SentenceDetectorBackendFactory` and register the implementation under the matching
+`META-INF/services/org.apache.opennlp.grpc.model.*BackendFactory` file. Each factory
+receives the complete server configuration and may return an empty result when it is not
+configured. Returned engines must be safe for concurrent calls. Stateful OpenNLP
+implementations can meet that requirement with a thread-local delegate.
+
+The server validates that ids are unique, lower-case, and non-blank at startup. Unknown
+custom ids fail with `NOT_FOUND`; setting both `tokenizer_engine` and `tokenizer` fails with
+`INVALID_ARGUMENT`. `GetServiceInfo.custom_tokenizer_ids` and
+`custom_sentence_detector_ids` advertise exactly the configured extension ids.
 
 ### Name finder models (optional)
 
 Name finder models are operator-supplied: unlike the sentence detector, tokenizer,
 POS tagger, lemmatizer and language detector, Apache does not distribute NER models as
 `opennlp-models-*` artifacts, so there is no default and NER is only available once you
-configure model paths. Register classic OpenNLP `.bin` name finder models — one file per
-entity type — in the server config. The middle segment of each key becomes the logical
+configure model paths. Register classic OpenNLP `.bin` name finder models, one file per
+entity type, in the server config. The middle segment of each key becomes the logical
 entity type exposed to clients via `AnalysisProfile.ner_entity_types` and
 `NamedEntity.entity_type`. Entity types are case-insensitive: keys are normalized to
 lower case, and `ner_entity_types` filters are matched the same way (so `PERSON` and
@@ -219,7 +236,7 @@ The `<id>` segment (`bert_ner` above) is an arbitrary model name. The entity typ
 produces are derived from the BIO labels file (`B-PER`/`I-PER` → `per`, `B-LOC` → `loc`,
 etc.), so one ONNX model serves every type it was trained for. These models are served by
 `opennlp-dl`'s `NameFinderDL` and reported in the catalog with `backend_id` `onnx` or `cuda`.
-They participate in NER exactly like classic models — a client requests `PIPELINE_STEP_NER`
+They participate in NER exactly like classic models: a client requests `PIPELINE_STEP_NER`
 and filters by `ner_entity_types`; the server runs each configured model once, attaches each
 entity under the model's own label, and merges the results.
 
@@ -234,13 +251,13 @@ profile downloads the ONNX export of `dslim/bert-base-NER` (MIT) from HuggingFac
 mvn -pl opennlp-grpc/opennlp-grpc-service -Pdl-ner test -Dtest=BasicDocumentAnalyzerDlNerTest
 ```
 
-The model is fetched at build time only — it is never bundled into a built artifact and is
+The model is fetched at build time only. It is never bundled into a built artifact and is
 not redistributed. Without the profile the test skips (no model present).
 
 #### Custom NER backends (SPI)
 
 Name finder backends are discovered through `java.util.ServiceLoader`, mirroring the
-embedding SPI — the built-in classic (`opennlp-me`) and ONNX (`onnx`/`cuda`) backends are
+embedding SPI: the built-in classic (`opennlp-me`) and ONNX (`onnx`/`cuda`) backends are
 themselves regular consumers of it. To add another backend (a remote NER service, a custom
 model format, any inference runtime in any language), ship a jar that implements
 `org.apache.opennlp.grpc.model.NerBackendFactory`, registers it in
@@ -249,7 +266,7 @@ server classpath. Each factory parses its own configuration namespace and return
 `NerModel` recognizers; the `NameFinderRegistry` aggregates the models from every backend, so
 several backends are active at once. A backend that needs the server's sentence detector
 obtains it from the supplied `NerBackendContext`. The new backend's entity types then
-participate in NER exactly like the built-ins — no change to the server.
+participate in NER exactly like the built-ins, with no change to the server.
 
 ### Document categorization models (optional)
 
@@ -264,7 +281,7 @@ model.doccat.default_id=topic
 ```
 
 Each `<id>` is an arbitrary model name; the categories come from the model itself. A single
-configured model is used automatically — `default_id` is only required to disambiguate when
+configured model is used automatically. `default_id` is only required to disambiguate when
 more than one is registered. Categorization is document-level, so it runs the selected model
 once over the document's tokens and stores one `DocumentClassification`.
 
@@ -285,7 +302,7 @@ model.doccat_dl.sentiment.gpu_device_id=0       # only with backend=cuda
 
 These are served by `opennlp-dl`'s `DocumentCategorizerDL`, which splits and re-tokenizes the
 raw document text internally, and are reported in the catalog with `backend_id` `onnx` or
-`cuda`. They participate in `DOC_CATEGORIZE` exactly like classic models — except that, because
+`cuda`. They participate in `DOC_CATEGORIZE` exactly like classic models, except that, because
 they consume the raw text, they need no upstream `TOKENIZE` and run under a `DOC_CATEGORIZE`-only
 profile (classic maxent categorizers still require `TOKENIZE`).
 
@@ -295,14 +312,14 @@ profile (classic maxent categorizers still require `TOKENIZE`).
 #### Custom doc categorizer backends (SPI)
 
 Document categorization backends are discovered through `java.util.ServiceLoader`, mirroring
-the NER and embedding SPIs — the built-in classic (`opennlp-me`) and ONNX (`onnx`/`cuda`)
+the NER and embedding SPIs: the built-in classic (`opennlp-me`) and ONNX (`onnx`/`cuda`)
 backends are themselves regular consumers of it. To add another backend (a remote classifier,
 a custom model format, any runtime in any language), ship a jar that implements
 `org.apache.opennlp.grpc.model.DocCategorizerBackendFactory`, registers it in
 `META-INF/services/org.apache.opennlp.grpc.model.DocCategorizerBackendFactory`, and put that
 jar on the server classpath. Each factory parses its own configuration namespace and returns
 `DocCategorizerModel`s; the `DocCategorizerRegistry` aggregates the models from every backend.
-The new backend's models then participate in `DOC_CATEGORIZE` exactly like the built-ins — no
+The new backend's models then participate in `DOC_CATEGORIZE` exactly like the built-ins, with no
 change to the server.
 
 ### Sentiment models (optional)
@@ -320,7 +337,7 @@ model.sentiment.default_id=polarity
 ```
 
 The model's categories are its sentiment classes (e.g. `positive`/`negative`, or a finer scale);
-the labels come from the model itself. A single configured model is used automatically —
+the labels come from the model itself. A single configured model is used automatically.
 `default_id` only disambiguates when more than one is registered.
 
 ONNX transformer sentiment models register under `model.sentiment_dl.*`, with the same keys as
@@ -338,7 +355,7 @@ model.sentiment_dl.bert_sst.gpu_device_id=0       # only with backend=cuda
 The `en-sentiment` profile/bundle (sentence detect + tokenize + sentiment) is advertised only
 when at least one sentiment model is configured. Custom backends need nothing new: the same
 `DocCategorizerBackendFactory` SPI serves both capabilities, so a backend written for doc
-categorization is automatically available for sentiment — configure its models under the
+categorization is automatically available for sentiment; configure its models under the
 `model.sentiment.*` namespace instead of `model.doccat.*`.
 
 ### Constituency parsing (optional)
@@ -360,7 +377,7 @@ views of the same parse so each client takes whichever fits its language and use
   tag at terminals), a document `span`, and a `probability`. Terminals also carry `token_index`,
   linking back to the sentence's token list instead of repeating token text.
 - **Bracketed** (`ParseTree.penn_treebank`): the standard Penn-Treebank-style string, e.g.
-  `(TOP (S (NP (DT The)(NN dog))(VP (VBD barked))))` — the universal interchange/debug form.
+  `(TOP (S (NP (DT The)(NN dog))(VP (VBD barked))))`, the universal interchange/debug form.
 
 Choose the representation(s) per request with `AnalysisOptions.parse_formats`
 (`PARSE_FORMAT_STRUCTURED`, `PARSE_FORMAT_BRACKETED`); an empty list defaults to both, and
@@ -373,7 +390,7 @@ detection and tokenization first.
 
 A `ChunkerME` model groups each sentence's tokens into base phrases (`NP`, `VP`, `PP`, …) when a
 request runs `PIPELINE_STEP_SYNTACTIC_CHUNK`, filling `AnnotatedSentence.syntactic_chunks`. This
-is shallow parsing — distinct from `PIPELINE_STEP_CHUNK`, which is segmentation chunking for
+is shallow parsing, distinct from `PIPELINE_STEP_CHUNK`, which is segmentation chunking for
 embedding. The model is operator-supplied (not bundled):
 
 ```ini
@@ -531,7 +548,7 @@ live integration tests.
 
 The `opennlp-grpc-backend-openvino` module delegates embedding inference to an
 [OpenVINO Model Server](https://docs.openvino.ai/2026/model-server/ovms_what_is_openvino_model_server.html)
-— or any KServe v2 compatible inference server (Triton, KServe, ...) — over the KServe
+or any KServe v2 compatible inference server (Triton, KServe, ...) over the KServe
 open inference protocol gRPC API. The served model or OVMS MediaPipe graph must accept a
 `BYTES` string tensor and return `FP32` embeddings, i.e. tokenization runs server-side
 (for OpenVINO, models converted with `openvino_tokenizers`):
@@ -557,7 +574,7 @@ tests.
 
 #### Custom embedding backends (SPI)
 
-Embedding backends are discovered through `java.util.ServiceLoader` — the TEI and
+Embedding backends are discovered through `java.util.ServiceLoader`; the TEI and
 OpenVINO modules above are regular consumers of this SPI. To add another backend
 (DJL, a custom native runtime, or any other remote inference service in any language),
 ship a jar that implements

@@ -23,6 +23,12 @@ closed `StandardLayer` from an open namespaced custom id. Standard layer familie
 `FULL_CASE_FOLD`. The string `AnnotationLayer.id` remains available as the stable lookup
 key for older clients. `GetServiceInfo.supported_layers` exposes the standard set.
 
+`AnalysisProfile.tokenizer` and `sentence_detector` use a strongly typed standard enum
+arm plus an open custom provider-id arm. Standard tokenizers cover model, UAX #29,
+whitespace, simple, and lattice segmentation; standard sentence detection covers model
+and newline modes. Existing clients may continue sending `tokenizer_engine`. Servers
+advertise configured custom ids through `GetServiceInfo`.
+
 ## Maven dependency
 
 ```xml
