@@ -94,8 +94,22 @@ final class DocumentShapeAssembler {
   /** The id of the document-classification layer. */
   static final String CATEGORIES_ID = "opennlp:categories";
 
+  /** The id of the subword layer. */
+  static final String SUBWORDS_ID = "opennlp:subwords";
+
   private DocumentShapeAssembler() {
     // This class is a stateless rendering pass and is never instantiated.
+  }
+
+  /**
+   * Builds the document-shape layers from the analyzed state alone, without
+   * step-emitted layers.
+   *
+   * @param document The fully analyzed document, spans still in UTF-16 indices.
+   * @param rawText The analyzed text every span indexes into.
+   */
+  static void apply(OpenNlpDocument.Builder document, String rawText) {
+    apply(document, rawText, List.of());
   }
 
   /**
@@ -105,8 +119,11 @@ final class DocumentShapeAssembler {
    *
    * @param document The fully analyzed document, spans still in UTF-16 indices.
    * @param rawText The analyzed text every span indexes into.
+   * @param extraLayers Layers emitted directly by steps whose results live only in
+   *                    the document shape; appended after the built-in layers.
    */
-  static void apply(OpenNlpDocument.Builder document, String rawText) {
+  static void apply(
+      OpenNlpDocument.Builder document, String rawText, List<AnnotationLayer> extraLayers) {
     try {
       final DocumentLayers.Builder layers = DocumentLayers.newBuilder();
       Document container = Document.of(rawText);
@@ -116,6 +133,9 @@ final class DocumentShapeAssembler {
       categoriesLayer(document, layers);
       parsesLayer(document, layers);
       embeddingsLayer(document, layers);
+      for (AnnotationLayer extra : extraLayers) {
+        layers.addLayers(extra);
+      }
       if (layers.getLayersCount() > 0) {
         document.setLayers(layers.build());
       }

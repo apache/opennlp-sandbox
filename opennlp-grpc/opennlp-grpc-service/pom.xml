@@ -60,6 +60,12 @@
             <groupId>org.apache.opennlp</groupId>
             <artifactId>opennlp-model-resolver</artifactId>
         </dependency>
+        <!-- SentencePiece subword tokenization for PIPELINE_STEP_SUBWORD_TOKENIZE. -->
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-subword</artifactId>
+            <version>${opennlp.version}</version>
+        </dependency>
         <!--
           ONNX embeddings support (Maven Central artifact, not the sandbox DL4J module).
           The onnxruntime jar is excluded here and supplied by exactly one of the

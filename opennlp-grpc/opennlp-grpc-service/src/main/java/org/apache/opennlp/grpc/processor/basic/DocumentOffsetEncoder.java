@@ -34,6 +34,7 @@ import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.ParseNode;
 import org.apache.opennlp.grpc.v1.ParseTree;
 import org.apache.opennlp.grpc.v1.StringAnnotationList;
+import org.apache.opennlp.grpc.v1.SubwordAnnotationList;
 import org.apache.opennlp.grpc.v1.Token;
 import org.apache.opennlp.grpc.v1.TreeAnnotation;
 import org.apache.opennlp.grpc.v1.TreeAnnotationList;
@@ -178,6 +179,14 @@ final class DocumentOffsetEncoder {
             }
           }
           layer.setEmbeddingValues(list.build());
+        }
+        case SUBWORD_VALUES -> {
+          final SubwordAnnotationList.Builder list = layer.getSubwordValues().toBuilder();
+          for (int a = 0; a < list.getAnnotationsCount(); a++) {
+            list.setAnnotations(a, list.getAnnotations(a).toBuilder()
+                .setSpan(remap(list.getAnnotations(a).getSpan(), mapper)).build());
+          }
+          layer.setSubwordValues(list.build());
         }
         case TREE_VALUES -> {
           final TreeAnnotationList.Builder list = layer.getTreeValues().toBuilder();

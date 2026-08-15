@@ -36,6 +36,7 @@ import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
+import org.apache.opennlp.grpc.v1.AnnotationLayer;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
 import org.apache.opennlp.grpc.v1.DocumentAnalytics;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
@@ -122,7 +123,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     this.validator = new AnalysisRequestValidator(embeddingProvider, nameFinderRegistry,
         modelBundleCache.getDocCategorizerRegistry(), modelBundleCache.getSentimentRegistry(),
         modelBundleCache.getParserRegistry(), modelBundleCache.getChunkerRegistry(),
-        modelBundleCache.getArtifactRegistry());
+        modelBundleCache.getArtifactRegistry(), modelBundleCache.getSubwordRegistry());
     this.classicSteps = new ClassicStepRunner(modelBundleCache);
     this.embedChunkSteps = new EmbedChunkStepRunner(embeddingProvider, classicSteps);
   }
@@ -147,6 +148,9 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
         request.hasOptions() && request.getOptions().getIncludeProbabilities();
 
     final List<ProcessingDiagnostic> diagnostics = new ArrayList<>();
+    // Layers produced directly by steps whose results live only in the document shape
+    // (no classic response field), appended by the shape assembler after the built-ins.
+    final List<AnnotationLayer> extraLayers = new ArrayList<>();
     final OpenNlpDocument.Builder document = OpenNlpDocument.newBuilder()
         .setDocId(input.getDocId())
         .setRawText(rawText);
@@ -206,6 +210,15 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
           });
     } else {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_TOKENIZE));
+    }
+
+    final String subwordModelId = validator.resolveSubwordModelId(profile);
+    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_SUBWORD_TOKENIZE)) {
+      runStep(
+          PipelineStep.PIPELINE_STEP_SUBWORD_TOKENIZE,
+          () -> classicSteps.subwordTokenize(rawText, subwordModelId, extraLayers, diagnostics));
+    } else {
+      diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_SUBWORD_TOKENIZE));
     }
 
     final List<String> nerEntityTypes = validator.resolveNerEntityTypes(profile);
@@ -344,7 +357,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
 
     // The document-shape rendering runs over UTF-16 spans; the offset encoder below
     // remaps layer spans together with every other span.
-    DocumentShapeAssembler.apply(document, rawText);
+    DocumentShapeAssembler.apply(document, rawText, extraLayers);
 
     DocumentOffsetEncoder.apply(document, rawText, requestedEncoding);
 

@@ -121,6 +121,9 @@ public final class ModelBundleCache {
   // Groups chunkers by id into a RankedBackends so a chunker can be served by several engines;
   // empty when no chunker model is configured.
   private final ChunkerRegistry chunkerRegistry;
+  // Optional subword tokenizers (operator-supplied via model.subword.<id>.path, not bundled).
+  // The loaded SentencePiece tokenizers are thread-safe and shared; empty when none is configured.
+  private final SubwordRegistry subwordRegistry;
 
   /**
    * Eagerly loads every model and registry described by the given configuration. The classic
@@ -136,6 +139,8 @@ public final class ModelBundleCache {
    */
   public ModelBundleCache(Map<String, String> configuration) {
     Objects.requireNonNull(configuration, "configuration");
+    // Loaded first: the subword registry holds no native resources, so it can never leak.
+    this.subwordRegistry = SubwordRegistry.create(configuration);
     final LoadedArtifact<SentenceModel> loadedSentence = loadModel(configuration,
         KEY_SENTDETECT_PATH, BUNDLED_SENTENCE_MODEL_FRAGMENT, "sentence detector",
         SentenceModel::new);
@@ -341,6 +346,14 @@ public final class ModelBundleCache {
    */
   public SentimentRegistry getSentimentRegistry() {
     return sentimentRegistry;
+  }
+
+  /**
+   * @return The registry of configured subword tokenizers, possibly empty. Never
+   *         {@code null}.
+   */
+  public SubwordRegistry getSubwordRegistry() {
+    return subwordRegistry;
   }
 
   /**

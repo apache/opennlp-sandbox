@@ -23,11 +23,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import opennlp.subword.sentencepiece.SentencePieceTokenizer;
 import opennlp.tools.langdetect.Language;
 import opennlp.tools.langdetect.LanguageDetectorME;
 import opennlp.tools.lemmatizer.LemmatizerME;
 import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.sentdetect.SentenceDetectorME;
+import opennlp.tools.tokenize.SubwordPiece;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.tokenize.uax29.WordToken;
 import opennlp.tools.tokenize.uax29.WordTokenizer;
@@ -49,11 +51,13 @@ import org.apache.opennlp.grpc.model.ParserRegistry;
 import org.apache.opennlp.grpc.model.SentimentRegistry;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
+import org.apache.opennlp.grpc.v1.AnnotationLayer;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.ChunkResult;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
 import org.apache.opennlp.grpc.v1.DocumentClassification;
 import org.apache.opennlp.grpc.v1.EnginePolicy;
+import org.apache.opennlp.grpc.v1.LayerScope;
 import org.apache.opennlp.grpc.v1.NamedEntity;
 import org.apache.opennlp.grpc.v1.NormalizationResult;
 import org.apache.opennlp.grpc.v1.NormalizationRung;
@@ -64,6 +68,8 @@ import org.apache.opennlp.grpc.v1.ParseFormat;
 import org.apache.opennlp.grpc.v1.ParseTree;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.apache.opennlp.grpc.v1.ProcessingDiagnostic;
+import org.apache.opennlp.grpc.v1.SubwordAnnotation;
+import org.apache.opennlp.grpc.v1.SubwordAnnotationList;
 import org.apache.opennlp.grpc.v1.Token;
 
 /**
@@ -192,6 +198,41 @@ final class ClassicStepRunner {
     }
     diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_TOKENIZE,
         "Tokenized " + tokenCount + " token(s) (uax29)"));
+  }
+
+  /**
+   * Runs PIPELINE_STEP_SUBWORD_TOKENIZE: encodes the whole document text into subword
+   * pieces with the selected SentencePiece model and emits them as the
+   * {@code opennlp:subwords} document-shape layer. Independent of sentence detection
+   * and word tokenization; the word-token results are untouched.
+   */
+  void subwordTokenize(
+      String rawText,
+      String modelId,
+      List<AnnotationLayer> extraLayers,
+      List<ProcessingDiagnostic> diagnostics) {
+    final SentencePieceTokenizer tokenizer = modelBundleCache.getSubwordRegistry().get(modelId);
+    final SubwordAnnotationList.Builder list = SubwordAnnotationList.newBuilder();
+    for (SubwordPiece piece : tokenizer.encode(rawText)) {
+      list.addAnnotations(SubwordAnnotation.newBuilder()
+          .setSpan(AnnotationSpan.newBuilder()
+              .setStart(piece.start())
+              .setEnd(piece.end())
+              .setSpace(CoordinateSpace.COORDINATE_SPACE_CHAR_DOCUMENT))
+          .setPiece(piece.piece())
+          .setVocabularyId(piece.id())
+          .build());
+    }
+    if (list.getAnnotationsCount() > 0) {
+      extraLayers.add(AnnotationLayer.newBuilder()
+          .setId(DocumentShapeAssembler.SUBWORDS_ID)
+          .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
+          .setSubwordValues(list.build())
+          .build());
+    }
+    diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_SUBWORD_TOKENIZE,
+        "Encoded " + list.getAnnotationsCount() + " subword piece(s) with model '"
+            + modelId + "'"));
   }
 
   /**

@@ -31,6 +31,7 @@ import org.apache.opennlp.grpc.model.ModelArtifactRegistry;
 import org.apache.opennlp.grpc.model.NameFinderRegistry;
 import org.apache.opennlp.grpc.model.ParserRegistry;
 import org.apache.opennlp.grpc.model.SentimentRegistry;
+import org.apache.opennlp.grpc.model.SubwordRegistry;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.processor.PipelineStepPolicy;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
@@ -62,6 +63,7 @@ final class AnalysisRequestValidator {
   private final ParserRegistry parserRegistry;
   private final ChunkerRegistry chunkerRegistry;
   private final ModelArtifactRegistry artifactRegistry;
+  private final SubwordRegistry subwordRegistry;
 
   AnalysisRequestValidator(
       EmbeddingProvider embeddingProvider,
@@ -70,7 +72,8 @@ final class AnalysisRequestValidator {
       SentimentRegistry sentimentRegistry,
       ParserRegistry parserRegistry,
       ChunkerRegistry chunkerRegistry,
-      ModelArtifactRegistry artifactRegistry) {
+      ModelArtifactRegistry artifactRegistry,
+      SubwordRegistry subwordRegistry) {
     this.embeddingProvider = Objects.requireNonNull(embeddingProvider, "embeddingProvider");
     this.nameFinderRegistry = Objects.requireNonNull(nameFinderRegistry, "nameFinderRegistry");
     this.docCategorizerRegistry =
@@ -79,6 +82,7 @@ final class AnalysisRequestValidator {
     this.parserRegistry = Objects.requireNonNull(parserRegistry, "parserRegistry");
     this.chunkerRegistry = Objects.requireNonNull(chunkerRegistry, "chunkerRegistry");
     this.artifactRegistry = Objects.requireNonNull(artifactRegistry, "artifactRegistry");
+    this.subwordRegistry = Objects.requireNonNull(subwordRegistry, "subwordRegistry");
   }
 
   /**
@@ -110,6 +114,7 @@ final class AnalysisRequestValidator {
     validateTermDimensions(profile);
     validateTermProfile(profile);
     validateStopwordLanguage(profile);
+    validateSubwordRequest(profile);
     validateEmbeddingRequest(request, profile);
     validateChunkEmbedConfigs(request);
     validateCategoryChunkConfigs(request, profile);
@@ -130,6 +135,24 @@ final class AnalysisRequestValidator {
    * Resolves the embedding model id for this request: the explicitly requested id, or
    * the provider default. Returns {@code null} when the profile does not embed.
    */
+  /**
+   * Resolves the subword model to run for this request: the profile's explicit id, or
+   * the configured default (or sole configured model). Returns {@code null} when the
+   * profile does not run the subword step.
+   */
+  String resolveSubwordModelId(AnalysisProfile profile) {
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_SUBWORD_TOKENIZE)) {
+      return null;
+    }
+    return subwordRegistry.resolveModelId(
+        profile.hasSubwordModelId() ? profile.getSubwordModelId() : null);
+  }
+
+  /** Rejects a subword request that no configured model can serve. */
+  private void validateSubwordRequest(AnalysisProfile profile) {
+    resolveSubwordModelId(profile);
+  }
+
   String resolveEmbeddingModelId(AnalyzeDocumentRequest request, AnalysisProfile profile) {
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_EMBED)) {
       return null;
