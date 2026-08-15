@@ -20,6 +20,7 @@ package org.apache.opennlp.grpc.chunk;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.opennlp.grpc.embedding.CompositeEmbeddingProvider;
 import org.apache.opennlp.grpc.embedding.StubEmbeddingProvider;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
@@ -28,6 +29,7 @@ import org.apache.opennlp.grpc.v1.Chunk;
 import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
 import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
+import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.junit.jupiter.api.Test;
 
@@ -108,6 +110,34 @@ class CategoryChunkProcessorTest {
           + negative.getEmbeddings(0).getVector(d)) / 2f;
       assertEquals(expected, group.getCentroids(0).getVector(d), 1e-5f);
     }
+  }
+
+  @Test
+  void categorySelectorPinsBackendAndReportsItsRoute() {
+    final var routedProvider = new CompositeEmbeddingProvider(
+        List.of(
+            new StubEmbeddingProvider("fast", Map.of("minilm", 3),
+                (modelId, text) -> new float[] {1f, 1f, 1f}),
+            new StubEmbeddingProvider("slow", Map.of("minilm", 3),
+                (modelId, text) -> new float[] {9f, 9f, 9f})),
+        Map.of(
+            "model.embedder.minilm.fast.priority", "100",
+            "model.embedder.minilm.slow.priority", "50",
+            "model.embedder.minilm.fast.vector_space_id", "minilm-v1",
+            "model.embedder.minilm.slow.vector_space_id", "minilm-v1"));
+    final CategoryChunkConfigEntry routedEntry = CategoryChunkConfigEntry.newBuilder()
+        .setConfigId("routed-categories")
+        .addEmbeddingSelectors(EmbeddingSelector.newBuilder()
+            .setModelId("minilm").setBackendId("slow"))
+        .build();
+
+    ChunkEmbedProcessor.validateCategoryEntry(routedEntry, routedProvider);
+    final ChunkEmbeddingGroup group = ChunkEmbedProcessor.buildCategoryGroup(
+        TEXT, labelledDocument(), routedEntry, routedProvider);
+
+    assertEquals(9f, group.getChunks(0).getEmbeddings(0).getVector(0));
+    assertEquals("slow", group.getChunks(0).getEmbeddings(0).getRoute().getBackendId());
+    assertEquals("slow", group.getCentroids(0).getRoute().getBackendId());
   }
 
   @Test

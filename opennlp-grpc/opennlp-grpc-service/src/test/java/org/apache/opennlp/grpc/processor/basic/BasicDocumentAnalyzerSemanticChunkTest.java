@@ -19,6 +19,7 @@ package org.apache.opennlp.grpc.processor.basic;
 
 import java.util.List;
 import java.util.Map;
+import org.apache.opennlp.grpc.embedding.CompositeEmbeddingProvider;
 import org.apache.opennlp.grpc.embedding.StubEmbeddingProvider;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
@@ -26,6 +27,7 @@ import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
 import org.apache.opennlp.grpc.v1.ChunkingSpec;
+import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.SemanticChunkingConfig;
 import org.junit.jupiter.api.Test;
@@ -81,5 +83,44 @@ class BasicDocumentAnalyzerSemanticChunkTest {
     assertEquals("minilm", group.getChunks(0).getEmbeddings(0).getModelId());
     assertEquals(TOPIC_BUSINESS, group.getChunks(0).getEmbeddings(0).getVectorList());
     assertEquals(TOPIC_WEATHER, group.getChunks(1).getEmbeddings(0).getVectorList());
+  }
+
+  @Test
+  void semanticSelectorPinsTheBackendUsedForBoundaryDetection() {
+    final var routedProvider = new CompositeEmbeddingProvider(
+        List.of(
+            new StubEmbeddingProvider("fast", Map.of("minilm", 3),
+                (modelId, text) -> new float[] {1f, 0f, 0f}),
+            new StubEmbeddingProvider("slow", Map.of("minilm", 3),
+                (modelId, text) -> text.contains("rain")
+                    ? new float[] {0f, 1f, 0f} : new float[] {1f, 0f, 0f})),
+        Map.of(
+            "model.embedder.minilm.fast.priority", "100",
+            "model.embedder.minilm.slow.priority", "50",
+            "model.embedder.minilm.fast.vector_space_id", "minilm-v1",
+            "model.embedder.minilm.slow.vector_space_id", "minilm-v1"));
+    final var routedAnalyzer = new BasicDocumentAnalyzer(
+        ProfileRegistry.createDefault(), new ModelBundleCache(Map.of()), routedProvider);
+
+    final var response = routedAnalyzer.analyze(AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder()
+            .setRawText("The merger closed. The deal passed. Heavy rain flooded the valley.")
+            .build())
+        .addChunkEmbedConfigs(ChunkEmbedConfigEntry.newBuilder()
+            .setConfigId("semantic-routed")
+            .setChunking(ChunkingSpec.newBuilder()
+                .setAlgorithm("semantic")
+                .setSemanticConfig(SemanticChunkingConfig.newBuilder()
+                    .setSimilarityThreshold(0.5f)
+                    .setSemanticEmbeddingSelector(EmbeddingSelector.newBuilder()
+                        .setModelId("minilm").setBackendId("slow"))))
+            .addEmbeddingSelectors(EmbeddingSelector.newBuilder()
+                .setModelId("minilm").setBackendId("slow"))
+            .build())
+        .build());
+
+    final ChunkEmbeddingGroup group = response.getDocument().getChunkEmbeddingGroups(0);
+    assertEquals(2, group.getChunksCount());
+    assertEquals("slow", group.getChunks(0).getEmbeddings(0).getRoute().getBackendId());
   }
 }

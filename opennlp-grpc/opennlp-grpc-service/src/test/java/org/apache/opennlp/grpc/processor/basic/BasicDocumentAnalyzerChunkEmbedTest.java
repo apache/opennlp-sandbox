@@ -19,6 +19,7 @@ package org.apache.opennlp.grpc.processor.basic;
 
 import java.util.Map;
 
+import org.apache.opennlp.grpc.embedding.CompositeEmbeddingProvider;
 import org.apache.opennlp.grpc.embedding.StubEmbeddingProvider;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.processor.AnalysisException;
@@ -29,6 +30,7 @@ import org.apache.opennlp.grpc.v1.CategoryChunkConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkingSpec;
 import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
+import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.junit.jupiter.api.Test;
@@ -86,6 +88,56 @@ class BasicDocumentAnalyzerChunkEmbedTest {
             "centroid component " + d + " for model " + centroid.getModelId());
       }
     }
+  }
+
+  @Test
+  void chunkEmbeddingSelectorPinsBackendAndReportsItsRoute() {
+    final var routedProvider = new CompositeEmbeddingProvider(
+        java.util.List.of(
+            new StubEmbeddingProvider("fast", Map.of("minilm", 3),
+                (modelId, text) -> new float[] {1f, 1f, 1f}),
+            new StubEmbeddingProvider("slow", Map.of("minilm", 3),
+                (modelId, text) -> new float[] {9f, 9f, 9f})),
+        Map.of(
+            "model.embedder.minilm.fast.priority", "100",
+            "model.embedder.minilm.slow.priority", "50",
+            "model.embedder.minilm.fast.vector_space_id", "minilm-v1",
+            "model.embedder.minilm.slow.vector_space_id", "minilm-v1"));
+    final var routedAnalyzer = new BasicDocumentAnalyzer(
+        ProfileRegistry.createDefault(), modelBundleCache, routedProvider);
+
+    final var response = routedAnalyzer.analyze(AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setRawText(TEXT).build())
+        .addChunkEmbedConfigs(ChunkEmbedConfigEntry.newBuilder()
+            .setConfigId("routed-chunks")
+            .setChunking(ChunkingSpec.newBuilder().setAlgorithm("sentence"))
+            .addEmbeddingSelectors(EmbeddingSelector.newBuilder()
+                .setModelId("minilm").setBackendId("slow"))
+            .build())
+        .build());
+
+    final var group = response.getDocument().getChunkEmbeddingGroups(0);
+    assertEquals(9f, group.getChunks(0).getEmbeddings(0).getVector(0));
+    assertEquals("slow", group.getChunks(0).getEmbeddings(0).getRoute().getBackendId());
+    assertEquals("minilm-v1",
+        group.getChunks(0).getEmbeddings(0).getRoute().getVectorSpaceId());
+    assertEquals("slow", group.getCentroids(0).getRoute().getBackendId());
+  }
+
+  @Test
+  void rejectsLegacyChunkModelIdsTogetherWithSelectors() {
+    final AnalysisException error = assertThrows(AnalysisException.class, () -> analyzer.analyze(
+        AnalyzeDocumentRequest.newBuilder()
+            .setDocument(OpenNlpDocument.newBuilder().setRawText(TEXT).build())
+            .addChunkEmbedConfigs(ChunkEmbedConfigEntry.newBuilder()
+                .setConfigId("ambiguous")
+                .setChunking(ChunkingSpec.newBuilder().setAlgorithm("sentence"))
+                .addEmbeddingModelIds("minilm")
+                .addEmbeddingSelectors(EmbeddingSelector.newBuilder().setModelId("minilm"))
+                .build())
+            .build()));
+
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
   }
 
   private static org.apache.opennlp.grpc.v1.EmbeddingResult chunkVector(
