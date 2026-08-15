@@ -48,6 +48,14 @@ service OpenNlpAnalysisService {
   rpc GetServiceInfo(GetServiceInfoRequest) returns (GetServiceInfoResponse);
   // Lists the model bundles loaded on the server and their aggregate capabilities.
   rpc ListModelBundles(ListModelBundlesRequest) returns (ListModelBundlesResponse);
+  // High-throughput document analysis. The first request fixes the analysis
+  // configuration for the stream; every later request carries one document.
+  // Documents execute concurrently and responses arrive in completion order,
+  // correlated by the caller's sequence number. A failure confined to one
+  // document is returned on that document's response and does not end the stream.
+  // A malformed message sequence or invalid stream configuration terminates the
+  // stream with INVALID_ARGUMENT.
+  rpc AnalyzeStream(stream AnalyzeStreamRequest) returns (stream AnalyzeStreamResponse);
   // High-throughput embedding: the client streams texts, the server streams one vector
   // per text back, in request order. Bypasses the document pipeline entirely: no sentence
   // detection, no chunking, no diagnostics; each message's text embeds as one unit (the
@@ -135,6 +143,62 @@ message AnalyzeDocumentResponse {
   // Per-step informational notes, warnings, or non-fatal errors. Fatal failures
   // are returned as a gRPC error status instead (see the service error model).
   repeated ProcessingDiagnostic diagnostics = 2;
+}
+
+// One frame sent by the client on an AnalyzeStream call. Exactly one
+// configuration frame must arrive first, followed by document frames.
+message AnalyzeStreamRequest {
+  oneof message {
+    // Fixes the analysis configuration for every document on this stream.
+    AnalyzeStreamConfiguration configuration = 1;
+    // One document to analyze under the stream's fixed configuration.
+    AnalyzeStreamDocument document = 2;
+  }
+}
+
+// The document-independent portion of AnalyzeDocumentRequest, sent once when
+// opening an AnalyzeStream call. Its fields have the same semantics and merge
+// rules as the matching AnalyzeDocumentRequest fields.
+message AnalyzeStreamConfiguration {
+  // Classic single-profile usage.
+  AnalysisProfile profile = 1;
+  // Output and execution options, including offset encoding.
+  AnalysisOptions options = 2;
+  // Optional server-side profile id. An inline profile merges over this profile.
+  optional string profile_id = 3;
+  // Per-chunking-strategy configurations.
+  repeated ChunkEmbedConfigEntry chunk_embed_configs = 4;
+  // Category-driven chunking configurations.
+  repeated CategoryChunkConfigEntry category_chunk_configs = 5;
+}
+
+// One document on an AnalyzeStream call.
+message AnalyzeStreamDocument {
+  // Caller-chosen correlation number, echoed on the matching response. The
+  // server does not interpret or require uniqueness of this value.
+  uint64 sequence = 1;
+  // The document to analyze. Validation is identical to AnalyzeDocument.
+  OpenNlpDocument document = 2;
+}
+
+// One completion-ordered result from AnalyzeStream.
+message AnalyzeStreamResponse {
+  // Sequence from the corresponding AnalyzeStreamDocument.
+  uint64 sequence = 1;
+  oneof result {
+    // Successful analysis, identical to AnalyzeDocument for the same inputs.
+    AnalyzeDocumentResponse ok = 2;
+    // A failure confined to this document. The stream remains usable.
+    AnalyzeStreamError error = 3;
+  }
+}
+
+// A per-document failure on an otherwise healthy AnalyzeStream call.
+message AnalyzeStreamError {
+  // Numeric value of the canonical io.grpc.Status.Code.
+  int32 code = 1;
+  // Human-readable failure description. Unexpected server details are not exposed.
+  string message = 2;
 }
 
 // A non-fatal note about a pipeline step's execution (ran, skipped, or had a
