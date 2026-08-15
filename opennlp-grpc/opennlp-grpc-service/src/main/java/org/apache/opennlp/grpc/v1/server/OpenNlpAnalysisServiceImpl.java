@@ -19,6 +19,7 @@ package org.apache.opennlp.grpc.v1.server;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ForkJoinPool;
 
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -31,6 +32,8 @@ import org.apache.opennlp.grpc.processor.PipelineStepPolicy;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
+import org.apache.opennlp.grpc.v1.AnalyzeStreamRequest;
+import org.apache.opennlp.grpc.v1.AnalyzeStreamResponse;
 import org.apache.opennlp.grpc.v1.EmbedTextRequest;
 import org.apache.opennlp.grpc.v1.EmbedTextResponse;
 import org.apache.opennlp.grpc.v1.GetServiceInfoRequest;
@@ -49,6 +52,8 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
   private static final Logger logger = LoggerFactory.getLogger(OpenNlpAnalysisServiceImpl.class);
 
   private static final String API_VERSION = "v1";
+  private static final int DEFAULT_ANALYSIS_STREAM_WINDOW =
+      Math.max(2, Runtime.getRuntime().availableProcessors());
 
   private final DocumentAnalyzer documentAnalyzer;
   private final ProfileRegistry profileRegistry;
@@ -77,6 +82,16 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
     this.profileRegistry = Objects.requireNonNull(profileRegistry, "profileRegistry");
     this.modelBundleCache = Objects.requireNonNull(modelBundleCache, "modelBundleCache");
     this.opennlpVersion = opennlpVersion == null ? "unknown" : opennlpVersion;
+  }
+
+  @Override
+  public StreamObserver<AnalyzeStreamRequest> analyzeStream(
+      StreamObserver<AnalyzeStreamResponse> responseObserver) {
+    return new AnalyzeDocumentStream(
+        documentAnalyzer,
+        ForkJoinPool.commonPool(),
+        DEFAULT_ANALYSIS_STREAM_WINDOW,
+        responseObserver);
   }
 
   @Override
