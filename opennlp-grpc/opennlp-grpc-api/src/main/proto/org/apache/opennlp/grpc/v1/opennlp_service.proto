@@ -239,6 +239,9 @@ message GetServiceInfoResponse {
   repeated string available_profile_ids = 3;
   // The pipeline steps this server actually implements, in execution order.
   repeated PipelineStep supported_steps = 4;
+  // The closed set of OpenNLP-owned document layers this server can emit.
+  // ModelBundleInfo reports which model-backed producers are configured.
+  repeated StandardLayer supported_layers = 5;
 }
 
 // Input to ListModelBundles. Empty; no parameters.

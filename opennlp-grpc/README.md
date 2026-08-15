@@ -40,6 +40,7 @@ Each layer also carries a `LayerIdentity` oneof. OpenNLP-owned layers use the cl
 Layer families can add a qualifier, so `opennlp:terms:FULL_CASE_FOLD` is represented as
 `STANDARD_LAYER_TERMS` plus `FULL_CASE_FOLD`. The original `id` remains the stable lookup
 key and preserves compatibility with clients that predate typed identities.
+`GetServiceInfo.supported_layers` advertises the complete closed set.
 Layer spans use the response's offset encoding like every other span. Server-side, layers
 are built through `opennlp.tools.document.Document` itself and the completed shape is
 validated before serialization, so container, scope, span, probability, and vector

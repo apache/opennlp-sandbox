@@ -17,6 +17,7 @@
  */
 package org.apache.opennlp.grpc.v1.server;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executor;
@@ -42,6 +43,7 @@ import org.apache.opennlp.grpc.v1.GetServiceInfoResponse;
 import org.apache.opennlp.grpc.v1.ListModelBundlesRequest;
 import org.apache.opennlp.grpc.v1.ListModelBundlesResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpAnalysisServiceGrpc;
+import org.apache.opennlp.grpc.v1.StandardLayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +57,10 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
   private static final String API_VERSION = "v1";
   private static final int DEFAULT_ANALYSIS_STREAM_WINDOW =
       Math.max(2, Runtime.getRuntime().availableProcessors());
+  private static final List<StandardLayer> STANDARD_LAYERS = Arrays.stream(StandardLayer.values())
+      .filter(layer -> layer != StandardLayer.STANDARD_LAYER_UNSPECIFIED
+          && layer != StandardLayer.UNRECOGNIZED)
+      .toList();
 
   private final DocumentAnalyzer documentAnalyzer;
   private final ProfileRegistry profileRegistry;
@@ -365,6 +371,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
         .setApiVersion(API_VERSION)
         .addAllAvailableProfileIds(profileRegistry.getProfiles().keySet())
         .addAllSupportedSteps(PipelineStepPolicy.implementedSteps())
+        .addAllSupportedLayers(STANDARD_LAYERS)
         .build());
     responseObserver.onCompleted();
   }
