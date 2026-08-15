@@ -128,6 +128,10 @@ public final class ModelBundleCache {
   // model.hunspell.<id>.affix_path/.dictionary_path, not bundled). The loaded stemmers are
   // thread-safe and shared; empty when none is configured.
   private final HunspellRegistry hunspellRegistry;
+  // Optional WordNet-style knowledge bases for the EXPAND step (operator-supplied via
+  // model.wordnet.<id>.path, not bundled). The built expanders are thread-safe and shared;
+  // empty when none is configured.
+  private final WordNetRegistry wordNetRegistry;
 
   /**
    * Eagerly loads every model and registry described by the given configuration. The classic
@@ -146,6 +150,7 @@ public final class ModelBundleCache {
     // Loaded first: these registries hold no native resources, so they can never leak.
     this.subwordRegistry = SubwordRegistry.create(configuration);
     this.hunspellRegistry = HunspellRegistry.create(configuration);
+    this.wordNetRegistry = WordNetRegistry.create(configuration);
     final LoadedArtifact<SentenceModel> loadedSentence = loadModel(configuration,
         KEY_SENTDETECT_PATH, BUNDLED_SENTENCE_MODEL_FRAGMENT, "sentence detector",
         SentenceModel::new);
@@ -367,6 +372,14 @@ public final class ModelBundleCache {
    */
   public HunspellRegistry getHunspellRegistry() {
     return hunspellRegistry;
+  }
+
+  /**
+   * @return The registry of configured WordNet lexicons, possibly empty. Never
+   *         {@code null}.
+   */
+  public WordNetRegistry getWordNetRegistry() {
+    return wordNetRegistry;
   }
 
   /**

@@ -33,6 +33,7 @@ import org.apache.opennlp.grpc.model.NameFinderRegistry;
 import org.apache.opennlp.grpc.model.ParserRegistry;
 import org.apache.opennlp.grpc.model.SentimentRegistry;
 import org.apache.opennlp.grpc.model.SubwordRegistry;
+import org.apache.opennlp.grpc.model.WordNetRegistry;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.processor.PipelineStepPolicy;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
@@ -66,6 +67,7 @@ final class AnalysisRequestValidator {
   private final ModelArtifactRegistry artifactRegistry;
   private final SubwordRegistry subwordRegistry;
   private final HunspellRegistry hunspellRegistry;
+  private final WordNetRegistry wordNetRegistry;
 
   AnalysisRequestValidator(
       EmbeddingProvider embeddingProvider,
@@ -76,7 +78,8 @@ final class AnalysisRequestValidator {
       ChunkerRegistry chunkerRegistry,
       ModelArtifactRegistry artifactRegistry,
       SubwordRegistry subwordRegistry,
-      HunspellRegistry hunspellRegistry) {
+      HunspellRegistry hunspellRegistry,
+      WordNetRegistry wordNetRegistry) {
     this.embeddingProvider = Objects.requireNonNull(embeddingProvider, "embeddingProvider");
     this.nameFinderRegistry = Objects.requireNonNull(nameFinderRegistry, "nameFinderRegistry");
     this.docCategorizerRegistry =
@@ -87,6 +90,7 @@ final class AnalysisRequestValidator {
     this.artifactRegistry = Objects.requireNonNull(artifactRegistry, "artifactRegistry");
     this.subwordRegistry = Objects.requireNonNull(subwordRegistry, "subwordRegistry");
     this.hunspellRegistry = Objects.requireNonNull(hunspellRegistry, "hunspellRegistry");
+    this.wordNetRegistry = Objects.requireNonNull(wordNetRegistry, "wordNetRegistry");
   }
 
   /**
@@ -120,6 +124,7 @@ final class AnalysisRequestValidator {
     validateStopwordLanguage(profile);
     validateSubwordRequest(profile);
     validateStemRequest(profile);
+    validateExpandRequest(profile);
     validateEmbeddingRequest(request, profile);
     validateChunkEmbedConfigs(request);
     validateCategoryChunkConfigs(request, profile);
@@ -164,6 +169,24 @@ final class AnalysisRequestValidator {
       return;
     }
     StemmerSelector.validate(profile.getStemmer(), hunspellRegistry);
+  }
+
+  /**
+   * Resolves the WordNet lexicon to run for this request: the profile's explicit id,
+   * or the configured default (or sole configured lexicon). Returns {@code null} when
+   * the profile does not run the expand step.
+   */
+  String resolveWordNetLexiconId(AnalysisProfile profile) {
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_EXPAND)) {
+      return null;
+    }
+    return wordNetRegistry.resolveLexiconId(
+        profile.hasWordnetLexiconId() ? profile.getWordnetLexiconId() : null);
+  }
+
+  /** Rejects an expand request that no configured lexicon can serve. */
+  private void validateExpandRequest(AnalysisProfile profile) {
+    resolveWordNetLexiconId(profile);
   }
 
   String resolveEmbeddingModelId(AnalyzeDocumentRequest request, AnalysisProfile profile) {

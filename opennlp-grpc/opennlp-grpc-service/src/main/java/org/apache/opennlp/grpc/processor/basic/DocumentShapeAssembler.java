@@ -100,6 +100,9 @@ final class DocumentShapeAssembler {
   /** The id of the stem layer. */
   static final String STEMS_ID = "opennlp:stems";
 
+  /** The id of the lexical-expansion layer. */
+  static final String EXPANSIONS_ID = "opennlp:expansions";
+
   private DocumentShapeAssembler() {
     // This class is a stateless rendering pass and is never instantiated.
   }

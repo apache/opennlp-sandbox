@@ -124,7 +124,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
         modelBundleCache.getDocCategorizerRegistry(), modelBundleCache.getSentimentRegistry(),
         modelBundleCache.getParserRegistry(), modelBundleCache.getChunkerRegistry(),
         modelBundleCache.getArtifactRegistry(), modelBundleCache.getSubwordRegistry(),
-        modelBundleCache.getHunspellRegistry());
+        modelBundleCache.getHunspellRegistry(), modelBundleCache.getWordNetRegistry());
     this.classicSteps = new ClassicStepRunner(modelBundleCache);
     this.embedChunkSteps = new EmbedChunkStepRunner(embeddingProvider, classicSteps);
   }
@@ -275,6 +275,22 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
           () -> classicSteps.stem(document, profile.getStemmer(), extraLayers, diagnostics));
     } else {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_STEM));
+    }
+
+    final String wordNetLexiconId = validator.resolveWordNetLexiconId(profile);
+    if (shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_EXPAND)) {
+      if (!shouldRunStep(request, profile, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
+        throw AnalysisException.failedPrecondition(
+            PipelineStep.PIPELINE_STEP_EXPAND.name()
+                + " requires "
+                + PipelineStep.PIPELINE_STEP_TOKENIZE.name());
+      }
+      requireTokens(document, PipelineStep.PIPELINE_STEP_EXPAND);
+      runStep(
+          PipelineStep.PIPELINE_STEP_EXPAND,
+          () -> classicSteps.expand(document, wordNetLexiconId, extraLayers, diagnostics));
+    } else {
+      diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_EXPAND));
     }
 
     final String docCategorizerModelId = validator.resolveDocCategorizerModelId(profile);

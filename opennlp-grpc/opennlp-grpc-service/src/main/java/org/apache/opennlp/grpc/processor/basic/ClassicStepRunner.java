@@ -26,6 +26,7 @@ import java.util.function.UnaryOperator;
 
 import opennlp.subword.sentencepiece.SentencePieceTokenizer;
 import opennlp.tools.langdetect.Language;
+import opennlp.wordnet.LexicalExpander;
 import opennlp.tools.langdetect.LanguageDetectorME;
 import opennlp.tools.lemmatizer.LemmatizerME;
 import opennlp.tools.postag.POSTaggerME;
@@ -54,6 +55,8 @@ import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationLayer;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
+import org.apache.opennlp.grpc.v1.CategoryAnnotation;
+import org.apache.opennlp.grpc.v1.CategoryAnnotationList;
 import org.apache.opennlp.grpc.v1.ChunkResult;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
 import org.apache.opennlp.grpc.v1.DocumentClassification;
@@ -235,6 +238,50 @@ final class ClassicStepRunner {
     }
     diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_STEM,
         "Stemmed " + list.getAnnotationsCount() + " token(s)"));
+  }
+
+  /**
+   * Runs PIPELINE_STEP_EXPAND: expands every word token over the selected WordNet
+   * knowledge base and emits the expansions as the {@code opennlp:expansions}
+   * document-shape layer, one scored label per expansion anchored on the expanded
+   * token's span. A token's lemma is expanded when lemmatization ran, otherwise its
+   * surface form. Runs after tokenization.
+   */
+  void expand(
+      OpenNlpDocument.Builder document,
+      String lexiconId,
+      List<AnnotationLayer> extraLayers,
+      List<ProcessingDiagnostic> diagnostics) {
+    final LexicalExpander expander = modelBundleCache.getWordNetRegistry().get(lexiconId);
+    final CategoryAnnotationList.Builder list = CategoryAnnotationList.newBuilder();
+    int expandedTokens = 0;
+    for (int i = 0; i < document.getSentencesCount(); i++) {
+      for (Token token : document.getSentences(i).getTokensList()) {
+        final String term = token.hasLemma() ? token.getLemma() : token.getText();
+        final List<LexicalExpander.Expansion> expansions = expander.expand(term);
+        if (expansions.isEmpty()) {
+          continue;
+        }
+        expandedTokens++;
+        for (LexicalExpander.Expansion expansion : expansions) {
+          list.addAnnotations(CategoryAnnotation.newBuilder()
+              .setSpan(token.getAnnotationSpan())
+              .setLabel(expansion.term())
+              .setScore(expansion.weight())
+              .build());
+        }
+      }
+    }
+    if (list.getAnnotationsCount() > 0) {
+      extraLayers.add(AnnotationLayer.newBuilder()
+          .setId(DocumentShapeAssembler.EXPANSIONS_ID)
+          .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
+          .setCategoryValues(list.build())
+          .build());
+    }
+    diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_EXPAND,
+        "Expanded " + expandedTokens + " token(s) into " + list.getAnnotationsCount()
+            + " expansion(s) with lexicon '" + lexiconId + "'"));
   }
 
   /**
