@@ -19,6 +19,9 @@ package org.apache.opennlp.grpc.embedding;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
 import org.apache.opennlp.grpc.processor.AnalysisException;
@@ -50,7 +53,9 @@ class CompositeEmbeddingProviderTest {
       StubEmbeddingProvider fast, StubEmbeddingProvider slow) {
     return new CompositeEmbeddingProvider(List.of(fast, slow), Map.of(
         "model.embedder.minilm.fast.priority", "100",
-        "model.embedder.minilm.slow.priority", "50"));
+        "model.embedder.minilm.slow.priority", "50",
+        "model.embedder.minilm.fast.vector_space_id", "minilm-v1-mean-normalized",
+        "model.embedder.minilm.slow.vector_space_id", "minilm-v1-mean-normalized"));
   }
 
   @Test
@@ -77,7 +82,8 @@ class CompositeEmbeddingProviderTest {
   void fallsBackToNextEngineWhenPrimaryFails() {
     final StubEmbeddingProvider fast =
         new StubEmbeddingProvider("fast", Map.of("minilm", 3), (modelId, text) -> {
-          throw new IllegalStateException("fast engine down");
+          throw AnalysisException.unavailable(
+              "fast engine down", new IllegalStateException("connection refused"));
         });
     final CompositeEmbeddingProvider composite = twoEngines(fast, engine("slow", SLOW_VECTOR));
     // Bare id falls back from the failing primary to the secondary engine.
@@ -90,11 +96,34 @@ class CompositeEmbeddingProviderTest {
   void pinnedEngineDoesNotFallBack() {
     final StubEmbeddingProvider fast =
         new StubEmbeddingProvider("fast", Map.of("minilm", 3), (modelId, text) -> {
-          throw new IllegalStateException("fast engine down");
+          throw AnalysisException.unavailable(
+              "fast engine down", new IllegalStateException("connection refused"));
         });
     final CompositeEmbeddingProvider composite = twoEngines(fast, engine("slow", SLOW_VECTOR));
-    assertThrows(IllegalStateException.class,
+    assertThrows(AnalysisException.class,
         () -> composite.embedBatchOnEngine("minilm", "fast", List.of("x")));
+  }
+
+  @Test
+  void doesNotFallBackAfterNonRetryableFailure() {
+    final AtomicInteger secondaryCalls = new AtomicInteger();
+    final StubEmbeddingProvider primary =
+        new StubEmbeddingProvider("fast", Map.of("minilm", 3), (modelId, text) -> {
+          throw AnalysisException.invalidArgument("text is not valid for this model");
+        });
+    final StubEmbeddingProvider secondary =
+        new StubEmbeddingProvider("slow", Map.of("minilm", 3), (modelId, text) -> {
+          secondaryCalls.incrementAndGet();
+          return SLOW_VECTOR;
+        });
+    final CompositeEmbeddingProvider composite = twoEngines(primary, secondary);
+
+    final AnalysisException error = assertThrows(AnalysisException.class,
+        () -> composite.embed("minilm", "hello"));
+
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+    assertEquals(0, secondaryCalls.get(),
+        "a client or model-contract failure must not be retried on another engine");
   }
 
   @Test
@@ -106,6 +135,59 @@ class CompositeEmbeddingProviderTest {
     final AnalysisException error = assertThrows(AnalysisException.class, () ->
         new CompositeEmbeddingProvider(List.of(fast, slow), Map.of()));
     assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+  }
+
+  @Test
+  void rejectsDifferentVectorSpacesEvenWhenDimensionsMatch() {
+    final StubEmbeddingProvider first = engine("fast", FAST_VECTOR);
+    final StubEmbeddingProvider second = engine("slow", SLOW_VECTOR);
+
+    final AnalysisException error = assertThrows(AnalysisException.class, () ->
+        new CompositeEmbeddingProvider(List.of(first, second), Map.of(
+            "model.embedder.minilm.fast.vector_space_id", "minilm-mean-normalized",
+            "model.embedder.minilm.slow.vector_space_id", "minilm-cls-unnormalized")));
+
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+    assertTrue(error.getMessage().contains("vector space"));
+  }
+
+  @Test
+  void requiresVectorSpaceIdentityBeforeEnablingFallback() {
+    final StubEmbeddingProvider first = engine("fast", FAST_VECTOR);
+    final StubEmbeddingProvider second = engine("slow", SLOW_VECTOR);
+
+    final AnalysisException error = assertThrows(AnalysisException.class,
+        () -> new CompositeEmbeddingProvider(List.of(first, second), Map.of()));
+
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+    assertTrue(error.getMessage().contains("vector_space_id"));
+  }
+
+  @Test
+  void artifactHashComesFromThePrimaryRoute() {
+    final EmbeddingProvider slow = providerWithHash("slow", "slow-hash", SLOW_VECTOR);
+    final EmbeddingProvider fast = providerWithHash("fast", "fast-hash", FAST_VECTOR);
+    final CompositeEmbeddingProvider composite = new CompositeEmbeddingProvider(
+        List.of(slow, fast), Map.of(
+            "model.embedder.minilm.fast.priority", "100",
+            "model.embedder.minilm.slow.priority", "50",
+            "model.embedder.minilm.fast.vector_space_id", "minilm-v1",
+            "model.embedder.minilm.slow.vector_space_id", "minilm-v1"));
+
+    assertEquals("fast", composite.backendId("minilm"));
+    assertEquals("fast-hash", composite.modelArtifactHash("minilm"));
+  }
+
+  @Test
+  void closesOwnedProvidersWhenConstructionFails() {
+    final ClosingProvider first = new ClosingProvider("fast", 3);
+    final ClosingProvider second = new ClosingProvider("slow", 4);
+
+    assertThrows(AnalysisException.class,
+        () -> new CompositeEmbeddingProvider(List.of(first, second), Map.of()));
+
+    assertTrue(first.closed.get(), "the first provider leaked after aggregate validation failed");
+    assertTrue(second.closed.get(), "the second provider leaked after aggregate validation failed");
   }
 
   @Test
@@ -131,5 +213,92 @@ class CompositeEmbeddingProviderTest {
         new CompositeEmbeddingProvider(List.of(), Map.of());
     assertEquals(false, empty.isAvailable());
     assertTrue(empty.registeredModelIds().isEmpty());
+  }
+
+  private static EmbeddingProvider providerWithHash(
+      String backendId, String artifactHash, float[] vector) {
+    return new EmbeddingProvider() {
+      @Override
+      public String backendId() {
+        return backendId;
+      }
+
+      @Override
+      public boolean isAvailable() {
+        return true;
+      }
+
+      @Override
+      public Set<String> registeredModelIds() {
+        return Set.of("minilm");
+      }
+
+      @Override
+      public boolean supportsModel(String modelId) {
+        return "minilm".equals(modelId);
+      }
+
+      @Override
+      public int embeddingDimension(String modelId) {
+        return 3;
+      }
+
+      @Override
+      public float[] embed(String modelId, String text) {
+        return vector;
+      }
+
+      @Override
+      public String modelArtifactHash(String modelId) {
+        return artifactHash;
+      }
+    };
+  }
+
+  private static final class ClosingProvider implements EmbeddingProvider, AutoCloseable {
+
+    private final String backendId;
+    private final int dimension;
+    private final AtomicBoolean closed = new AtomicBoolean();
+
+    private ClosingProvider(String backendId, int dimension) {
+      this.backendId = backendId;
+      this.dimension = dimension;
+    }
+
+    @Override
+    public String backendId() {
+      return backendId;
+    }
+
+    @Override
+    public boolean isAvailable() {
+      return true;
+    }
+
+    @Override
+    public Set<String> registeredModelIds() {
+      return Set.of("minilm");
+    }
+
+    @Override
+    public boolean supportsModel(String modelId) {
+      return "minilm".equals(modelId);
+    }
+
+    @Override
+    public int embeddingDimension(String modelId) {
+      return dimension;
+    }
+
+    @Override
+    public float[] embed(String modelId, String text) {
+      return new float[dimension];
+    }
+
+    @Override
+    public void close() {
+      closed.set(true);
+    }
   }
 }
