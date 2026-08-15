@@ -101,6 +101,27 @@ class DocumentLayersValidatorTest {
   }
 
   @Test
+  void rejectsAValueArmThatContradictsTheStandardLayer() {
+    final AnnotationLayer tokensWithEmbeddings = DocumentShapeAssembler.layer("opennlp:tokens")
+        .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
+        .setEmbeddingValues(EmbeddingAnnotationList.newBuilder()
+            .addAnnotations(EmbeddingAnnotation.newBuilder()
+                .setModelId("mini")
+                .setSpan(span(0, 4))
+                .addAllVector(java.util.List.of(1f, 2f, 3f))))
+        .build();
+    assertInternal(invalid(tokensWithEmbeddings));
+
+    final AnnotationLayer analyticsWithStrings =
+        DocumentShapeAssembler.layer("opennlp:analytics")
+            .setScope(LayerScope.LAYER_SCOPE_DOCUMENT)
+            .setStringValues(StringAnnotationList.newBuilder()
+                .addAnnotations(StringAnnotation.newBuilder().setValue("not analytics")))
+            .build();
+    assertInternal(invalid(analyticsWithStrings));
+  }
+
+  @Test
   void rejectsMissingOrContradictoryTermQualifier() {
     final StringAnnotation annotation = StringAnnotation.newBuilder()
         .setSpan(span(0, 4)).setValue("café").build();
