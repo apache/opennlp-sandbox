@@ -35,7 +35,11 @@ typed through the layer's `oneof` value list. First-class payloads retain their 
 types and provenance: entities are `NamedEntity`, syntactic chunks are `ChunkSpan`, UAX
 29 classes use `DocumentWordType`, stems carry `StemmerAlgorithm`, lexical expansions
 carry `LexicalExpansionKind`, and strategy chunks retain their embeddings and centroids.
-Layer ids remain open namespaced strings so extensions do not require protocol changes.
+Each layer also carries a `LayerIdentity` oneof. OpenNLP-owned layers use the closed
+`StandardLayer` enum, while extension layers use the open namespaced `custom` string.
+Layer families can add a qualifier, so `opennlp:terms:FULL_CASE_FOLD` is represented as
+`STANDARD_LAYER_TERMS` plus `FULL_CASE_FOLD`. The original `id` remains the stable lookup
+key and preserves compatibility with clients that predate typed identities.
 Layer spans use the response's offset encoding like every other span. Server-side, layers
 are built through `opennlp.tools.document.Document` itself and the completed shape is
 validated before serialization, so container, scope, span, probability, and vector

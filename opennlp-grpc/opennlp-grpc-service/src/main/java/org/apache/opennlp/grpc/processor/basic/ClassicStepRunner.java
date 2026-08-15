@@ -251,8 +251,7 @@ final class ClassicStepRunner {
       }
     }
     if (list.getAnnotationsCount() > 0) {
-      extraLayers.add(AnnotationLayer.newBuilder()
-          .setId(DocumentShapeAssembler.STEMS_ID)
+      extraLayers.add(DocumentShapeAssembler.layer(DocumentShapeAssembler.STEMS_ID)
           .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
           .setStemValues(list.build())
           .build());
@@ -329,8 +328,7 @@ final class ClassicStepRunner {
         m++;
       }
       if (layer.getAnnotationsCount() > 0) {
-        extraLayers.add(AnnotationLayer.newBuilder()
-            .setId(DocumentShapeAssembler.GEO_ID)
+        extraLayers.add(DocumentShapeAssembler.layer(DocumentShapeAssembler.GEO_ID)
             .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
             .setGeoValues(layer.build())
             .build());
@@ -405,8 +403,7 @@ final class ClassicStepRunner {
       }
     }
     if (list.getAnnotationsCount() > 0) {
-      extraLayers.add(AnnotationLayer.newBuilder()
-          .setId(DocumentShapeAssembler.EXPANSIONS_ID)
+      extraLayers.add(DocumentShapeAssembler.layer(DocumentShapeAssembler.EXPANSIONS_ID)
           .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
           .setLexicalExpansionValues(list.build())
           .build());
@@ -440,8 +437,7 @@ final class ClassicStepRunner {
           .build());
     }
     if (list.getAnnotationsCount() > 0) {
-      extraLayers.add(AnnotationLayer.newBuilder()
-          .setId(DocumentShapeAssembler.SUBWORDS_ID)
+      extraLayers.add(DocumentShapeAssembler.layer(DocumentShapeAssembler.SUBWORDS_ID)
           .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
           .setSubwordValues(list.build())
           .build());

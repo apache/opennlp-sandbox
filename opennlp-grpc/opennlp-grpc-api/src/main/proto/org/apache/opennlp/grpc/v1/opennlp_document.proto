@@ -595,11 +595,50 @@ message DocumentLayers {
   repeated AnnotationLayer layers = 1;
 }
 
+// Closed identities for layers that are part of the OpenNLP v1 contract. A
+// consumer can switch exhaustively over these values without parsing ids.
+enum StandardLayer {
+  STANDARD_LAYER_UNSPECIFIED = 0;
+  STANDARD_LAYER_SENTENCES = 1;
+  STANDARD_LAYER_TOKENS = 2;
+  STANDARD_LAYER_POS_TAGS = 3;
+  STANDARD_LAYER_LEMMAS = 4;
+  STANDARD_LAYER_ENTITIES = 5;
+  STANDARD_LAYER_SYNTACTIC_CHUNKS = 6;
+  STANDARD_LAYER_PARSES = 7;
+  STANDARD_LAYER_SENTIMENT = 8;
+  STANDARD_LAYER_LANGUAGE = 9;
+  STANDARD_LAYER_CATEGORIES = 10;
+  STANDARD_LAYER_EMBEDDINGS = 11;
+  STANDARD_LAYER_WORD_TYPES = 12;
+  STANDARD_LAYER_STOPWORDS = 13;
+  STANDARD_LAYER_TERMS = 14;
+  STANDARD_LAYER_SUBWORDS = 15;
+  STANDARD_LAYER_STEMS = 16;
+  STANDARD_LAYER_EXPANSIONS = 17;
+  STANDARD_LAYER_GEO = 18;
+  STANDARD_LAYER_NORMALIZATION = 19;
+  STANDARD_LAYER_ANALYTICS = 20;
+  STANDARD_LAYER_CHUNK_GROUPS = 21;
+}
+
+// Strong identity for one layer. OpenNLP-owned layers use the closed standard
+// enum. Extension layers use a globally namespaced custom id. A standard layer
+// family may carry a qualifier, for example FULL_CASE_FOLD on STANDARD_LAYER_TERMS.
+message LayerIdentity {
+  oneof kind {
+    StandardLayer standard = 1;
+    string custom = 2;
+  }
+  optional string qualifier = 3;
+}
+
 // One named annotation layer. The value type of every annotation in the layer
 // is fixed by which list the oneof carries, the wire form of the container's
 // LayerKey type parameter.
 message AnnotationLayer {
-  // The namespaced layer id, e.g. "opennlp:tokens".
+  // The namespaced layer id, e.g. "opennlp:tokens". Retained as the stable wire
+  // key for compatibility and lookup; new consumers should dispatch on identity.
   string id = 1;
   // Whether annotations carry spans (positional) or whole-document values.
   LayerScope scope = 2;
@@ -634,6 +673,9 @@ message AnnotationLayer {
     // Strategy-driven chunks, embeddings, centroids, and statistics.
     ChunkGroupAnnotationList chunk_group_values = 16;
   }
+  // Typed identity for this layer. Always populated by this server. Standard
+  // OpenNLP layers select the enum arm; extension layers select custom.
+  LayerIdentity identity = 17;
 }
 
 // Whether a layer's annotations are anchored to spans of the text or carry

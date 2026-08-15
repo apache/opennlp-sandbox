@@ -43,11 +43,13 @@ import org.apache.opennlp.grpc.v1.EmbeddingAnnotation;
 import org.apache.opennlp.grpc.v1.EmbeddingAnnotationList;
 import org.apache.opennlp.grpc.v1.EmbeddingResult;
 import org.apache.opennlp.grpc.v1.EntityAnnotationList;
+import org.apache.opennlp.grpc.v1.LayerIdentity;
 import org.apache.opennlp.grpc.v1.LayerScope;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.NormalizationAnnotationList;
 import org.apache.opennlp.grpc.v1.StringAnnotation;
 import org.apache.opennlp.grpc.v1.StringAnnotationList;
+import org.apache.opennlp.grpc.v1.StandardLayer;
 import org.apache.opennlp.grpc.v1.Token;
 import org.apache.opennlp.grpc.v1.TreeAnnotation;
 import org.apache.opennlp.grpc.v1.TreeAnnotationList;
@@ -260,8 +262,7 @@ final class DocumentShapeAssembler {
           .setSpan(span(annotation.span()))
           .setType(annotation.value()));
     }
-    layers.addLayers(AnnotationLayer.newBuilder()
-        .setId(key.id())
+    layers.addLayers(layer(key.id())
         .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
         .setWordTypeValues(values));
     return validated;
@@ -285,8 +286,7 @@ final class DocumentShapeAssembler {
     for (Annotation<org.apache.opennlp.grpc.v1.NamedEntity> annotation : validated.get(key)) {
       values.addAnnotations(annotation.value());
     }
-    layers.addLayers(AnnotationLayer.newBuilder()
-        .setId(key.id())
+    layers.addLayers(layer(key.id())
         .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
         .setEntityValues(values));
     return validated;
@@ -312,8 +312,7 @@ final class DocumentShapeAssembler {
     for (Annotation<ChunkSpan> annotation : validated.get(key)) {
       values.addAnnotations(annotation.value());
     }
-    layers.addLayers(AnnotationLayer.newBuilder()
-        .setId(key.id())
+    layers.addLayers(layer(key.id())
         .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
         .setSyntacticChunkValues(values));
     return validated;
@@ -351,8 +350,7 @@ final class DocumentShapeAssembler {
       }
       list.addAnnotations(rendered.build());
     }
-    layers.addLayers(AnnotationLayer.newBuilder()
-        .setId(key.id())
+    layers.addLayers(layer(key.id())
         .setScope(key.scope() == LayerKey.Scope.DOCUMENT
             ? LayerScope.LAYER_SCOPE_DOCUMENT
             : LayerScope.LAYER_SCOPE_POSITIONAL)
@@ -375,8 +373,7 @@ final class DocumentShapeAssembler {
       }
     }
     if (list.getAnnotationsCount() > 0) {
-      layers.addLayers(AnnotationLayer.newBuilder()
-          .setId(SENTIMENT_ID)
+      layers.addLayers(layer(SENTIMENT_ID)
           .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
           .setCategoryValues(list.build())
           .build());
@@ -393,8 +390,7 @@ final class DocumentShapeAssembler {
       return;
     }
     container.with(LANGUAGE, List.of(Annotation.of(document.getDetectedLanguage())));
-    layers.addLayers(AnnotationLayer.newBuilder()
-        .setId(LANGUAGE.id())
+    layers.addLayers(layer(LANGUAGE.id())
         .setScope(LayerScope.LAYER_SCOPE_DOCUMENT)
         .setCategoryValues(CategoryAnnotationList.newBuilder()
             .addAnnotations(CategoryAnnotation.newBuilder()
@@ -428,8 +424,7 @@ final class DocumentShapeAssembler {
             .setLabel(entry.getKey())
             .setScore(entry.getValue())
             .build()));
-    layers.addLayers(AnnotationLayer.newBuilder()
-        .setId(CATEGORIES_ID)
+    layers.addLayers(layer(CATEGORIES_ID)
         .setScope(LayerScope.LAYER_SCOPE_DOCUMENT)
         .setCategoryValues(list.build())
         .build());
@@ -451,8 +446,7 @@ final class DocumentShapeAssembler {
       }
     }
     if (list.getAnnotationsCount() > 0) {
-      layers.addLayers(AnnotationLayer.newBuilder()
-          .setId(PARSES_ID)
+      layers.addLayers(layer(PARSES_ID)
           .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
           .setTreeValues(list.build())
           .build());
@@ -470,8 +464,7 @@ final class DocumentShapeAssembler {
       list.addAnnotations(embeddingAnnotation(centroid));
     }
     if (list.getAnnotationsCount() > 0) {
-      layers.addLayers(AnnotationLayer.newBuilder()
-          .setId(EMBEDDINGS_ID)
+      layers.addLayers(layer(EMBEDDINGS_ID)
           .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
           .setEmbeddingValues(list.build())
           .build());
@@ -497,8 +490,7 @@ final class DocumentShapeAssembler {
     if (!document.hasAnalytics()) {
       return;
     }
-    layers.addLayers(AnnotationLayer.newBuilder()
-        .setId(ANALYTICS_ID)
+    layers.addLayers(layer(ANALYTICS_ID)
         .setScope(LayerScope.LAYER_SCOPE_DOCUMENT)
         .setAnalyticsValues(AnalyticsAnnotationList.newBuilder()
             .addAnnotations(document.getAnalytics())));
@@ -509,8 +501,7 @@ final class DocumentShapeAssembler {
     if (!document.hasNormalization()) {
       return;
     }
-    layers.addLayers(AnnotationLayer.newBuilder()
-        .setId(NORMALIZATION_ID)
+    layers.addLayers(layer(NORMALIZATION_ID)
         .setScope(LayerScope.LAYER_SCOPE_DOCUMENT)
         .setNormalizationValues(NormalizationAnnotationList.newBuilder()
             .addAnnotations(document.getNormalization())));
@@ -521,11 +512,52 @@ final class DocumentShapeAssembler {
     if (document.getChunkEmbeddingGroupsCount() == 0) {
       return;
     }
-    layers.addLayers(AnnotationLayer.newBuilder()
-        .setId(CHUNK_GROUPS_ID)
+    layers.addLayers(layer(CHUNK_GROUPS_ID)
         .setScope(LayerScope.LAYER_SCOPE_DOCUMENT)
         .setChunkGroupValues(ChunkGroupAnnotationList.newBuilder()
             .addAllAnnotations(document.getChunkEmbeddingGroupsList())));
+  }
+
+  /**
+   * Starts a layer with both its compatibility id and its strongly typed identity.
+   * Unknown ids remain first-class extension layers through the custom arm.
+   */
+  static AnnotationLayer.Builder layer(String id) {
+    final LayerIdentity.Builder identity = LayerIdentity.newBuilder();
+    if (id.startsWith(TERMS_ID_PREFIX)) {
+      identity.setStandard(StandardLayer.STANDARD_LAYER_TERMS)
+          .setQualifier(id.substring(TERMS_ID_PREFIX.length()));
+    } else {
+      final StandardLayer standard = switch (id) {
+        case "opennlp:sentences" -> StandardLayer.STANDARD_LAYER_SENTENCES;
+        case "opennlp:tokens" -> StandardLayer.STANDARD_LAYER_TOKENS;
+        case "opennlp:pos" -> StandardLayer.STANDARD_LAYER_POS_TAGS;
+        case "opennlp:lemmas" -> StandardLayer.STANDARD_LAYER_LEMMAS;
+        case "opennlp:entities" -> StandardLayer.STANDARD_LAYER_ENTITIES;
+        case "opennlp:chunks" -> StandardLayer.STANDARD_LAYER_SYNTACTIC_CHUNKS;
+        case PARSES_ID -> StandardLayer.STANDARD_LAYER_PARSES;
+        case SENTIMENT_ID -> StandardLayer.STANDARD_LAYER_SENTIMENT;
+        case "opennlp:language" -> StandardLayer.STANDARD_LAYER_LANGUAGE;
+        case CATEGORIES_ID -> StandardLayer.STANDARD_LAYER_CATEGORIES;
+        case EMBEDDINGS_ID -> StandardLayer.STANDARD_LAYER_EMBEDDINGS;
+        case "opennlp:word-types" -> StandardLayer.STANDARD_LAYER_WORD_TYPES;
+        case "opennlp:stopwords" -> StandardLayer.STANDARD_LAYER_STOPWORDS;
+        case SUBWORDS_ID -> StandardLayer.STANDARD_LAYER_SUBWORDS;
+        case STEMS_ID -> StandardLayer.STANDARD_LAYER_STEMS;
+        case EXPANSIONS_ID -> StandardLayer.STANDARD_LAYER_EXPANSIONS;
+        case GEO_ID -> StandardLayer.STANDARD_LAYER_GEO;
+        case NORMALIZATION_ID -> StandardLayer.STANDARD_LAYER_NORMALIZATION;
+        case ANALYTICS_ID -> StandardLayer.STANDARD_LAYER_ANALYTICS;
+        case CHUNK_GROUPS_ID -> StandardLayer.STANDARD_LAYER_CHUNK_GROUPS;
+        default -> StandardLayer.STANDARD_LAYER_UNSPECIFIED;
+      };
+      if (standard == StandardLayer.STANDARD_LAYER_UNSPECIFIED) {
+        identity.setCustom(id);
+      } else {
+        identity.setStandard(standard);
+      }
+    }
+    return AnnotationLayer.newBuilder().setId(id).setIdentity(identity);
   }
 
   private static DocumentWordType documentWordType(String value) {
