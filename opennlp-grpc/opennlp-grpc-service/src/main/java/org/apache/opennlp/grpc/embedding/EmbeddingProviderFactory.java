@@ -64,14 +64,43 @@ public final class EmbeddingProviderFactory {
     final SortedMap<String, EmbeddingBackendFactory> factories = discoverFactories();
     final List<EmbeddingProvider> available = new ArrayList<>();
     for (EmbeddingBackendFactory factory : factories.values()) {
-      final EmbeddingProvider provider = factory.create(configuration);
-      if (provider.isAvailable()) {
+      EmbeddingProvider provider = null;
+      final boolean providerAvailable;
+      try {
+        provider = Objects.requireNonNull(factory.create(configuration),
+            () -> factory.getClass().getName() + " returned a null provider");
+        providerAvailable = provider.isAvailable();
+      } catch (RuntimeException e) {
+        closeProvider(provider);
+        closeProviders(available);
+        throw e;
+      }
+      if (providerAvailable) {
         logger.info("Embedding backend '{}' serving {}",
             provider.backendId(), provider.registeredModelIds());
         available.add(provider);
+      } else {
+        closeProvider(provider);
       }
     }
     return new CompositeEmbeddingProvider(available, configuration);
+  }
+
+  private static void closeProviders(List<EmbeddingProvider> providers) {
+    for (EmbeddingProvider provider : providers) {
+      closeProvider(provider);
+    }
+  }
+
+  private static void closeProvider(EmbeddingProvider provider) {
+    if (provider instanceof AutoCloseable closeable) {
+      try {
+        closeable.close();
+      } catch (Exception e) {
+        logger.warn("Failed to close embedding provider '{}' during startup cleanup",
+            provider.backendId(), e);
+      }
+    }
   }
 
   /**
