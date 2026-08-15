@@ -434,6 +434,30 @@ enum ParseNodeKind {
   PARSE_NODE_KIND_TERMINAL = 2;
 }
 
+// Selects one logical embedding model and, optionally, one concrete backend route.
+// Model and backend ids remain open strings so ServiceLoader extensions need no
+// protocol enum changes. An absent backend_id uses the server's primary route and
+// permits safe fallback. A present backend_id pins that route with no fallback.
+message EmbeddingSelector {
+  string model_id = 1;
+  optional string backend_id = 2;
+}
+
+// The concrete route that produced an embedding or can serve an embedding model.
+message EmbeddingRoute {
+  string model_id = 1;
+  string backend_id = 2;
+  // Stable identity of the vector space, including weights, tokenization, pooling,
+  // and normalization semantics. Fallback is allowed only across matching ids.
+  string vector_space_id = 3;
+  // SHA-256 of the primary model artifact when the backend can report it.
+  optional string artifact_hash = 4;
+  // Server routing priority. Higher values are preferred.
+  int32 priority = 5;
+  // True for the route used by an unpinned request before any fallback occurs.
+  bool primary = 6;
+}
+
 // A single embedding vector and the span of text it was computed over.
 message EmbeddingResult {
   // The registered embedding model that produced this vector (its backend-agnostic id).
@@ -445,6 +469,8 @@ message EmbeddingResult {
   AnnotationSpan source_span = 3;
   // Whether this is a document-, sentence-, or chunk-level embedding.
   EmbeddingGranularity granularity = 4;
+  // The actual backend route that produced this vector, including after fallback.
+  optional EmbeddingRoute route = 5;
 }
 
 // The textual unit an embedding vector was computed over.
@@ -642,6 +668,8 @@ message EmbeddingAnnotation {
   repeated float vector = 3;
   // The textual unit the vector was computed over.
   EmbeddingGranularity granularity = 4;
+  // The actual backend route that produced this vector.
+  optional EmbeddingRoute route = 5;
 }
 
 // The annotations of a subword layer.

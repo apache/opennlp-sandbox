@@ -183,6 +183,9 @@ message SemanticChunkingConfig {
   // uses the sole entry in ChunkEmbedConfigEntry.embedding_model_ids when exactly
   // one id is present; otherwise semantic chunking is rejected with INVALID_ARGUMENT.
   optional string semantic_embedding_model_id = 5;
+  // Additive strongly typed replacement for semantic_embedding_model_id. When set,
+  // model_id selects the logical model and backend_id optionally pins one route.
+  optional EmbeddingSelector semantic_embedding_selector = 6;
 }
 
 // Desired part-of-speech tagset for the response. When the requested format differs
@@ -430,6 +433,9 @@ message AnalysisOptions {
   // Parse representations to populate for PIPELINE_STEP_PARSE. Empty selects the default set
   // (STRUCTURED + BRACKETED); listing fewer trims the response to just those views.
   repeated ParseFormat parse_formats = 7;
+  // Additive strongly typed replacement for embedding_model_id. When set, model_id
+  // selects the logical model and backend_id optionally pins one route.
+  optional EmbeddingSelector embedding_selector = 8;
 }
 
 // Selects which view(s) of a constituency parse the server fills in ParseTree. Independent
@@ -468,6 +474,9 @@ message ModelDescriptor {
   // classic maxent models or "onnx"/"cuda" for the built-in ONNX backends.
   // Third-party backends registered through the server SPI report their own ids.
   string backend_id = 8;
+  // Every backend route that can serve this logical embedding model, in routing
+  // priority order. Empty for non-embedding models and older servers.
+  repeated EmbeddingRoute embedding_routes = 9;
 }
 
 // A loaded model bundle and its aggregate capabilities, as returned by

@@ -101,6 +101,9 @@ message CategoryChunkConfigEntry {
   repeated string embedding_model_ids = 3;
   // Optional friendly label, echoed onto the resulting group's result_set_name.
   optional string result_set_name = 4;
+  // Additive strongly typed replacement for embedding_model_ids. Each selector can
+  // optionally pin a backend route independently.
+  repeated EmbeddingSelector embedding_selectors = 5;
 }
 
 // One chunking strategy + the concrete embedding models to use for the chunks
@@ -119,6 +122,9 @@ message ChunkEmbedConfigEntry {
   // The embeddings wanted for *this* chunking strategy's chunks.
   // Not a blind NxM; explicit per-strategy list.
   repeated string embedding_model_ids = 5;
+  // Additive strongly typed replacement for embedding_model_ids. Each selector can
+  // optionally pin a backend route independently.
+  repeated EmbeddingSelector embedding_selectors = 6;
 }
 
 // Output of AnalyzeDocument: the annotated document plus diagnostics describing
@@ -192,6 +198,9 @@ message EmbedTextRequest {
   // (optional there when exactly one model is configured or a default_id is set); later
   // messages may repeat it but must not name a different model (else INVALID_ARGUMENT).
   optional string model_id = 3;
+  // Additive strongly typed replacement for model_id. The first message fixes both
+  // model and optional backend for the stream; later messages may repeat the same selector.
+  optional EmbeddingSelector embedding_selector = 4;
 }
 
 // One embedding vector on an EmbedText stream, in request order.
