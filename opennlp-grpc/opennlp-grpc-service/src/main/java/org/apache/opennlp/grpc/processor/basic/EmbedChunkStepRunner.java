@@ -63,12 +63,22 @@ final class EmbedChunkStepRunner {
     this.classicSteps = Objects.requireNonNull(classicSteps, "classicSteps");
   }
 
-  /** Embeds every sentence in one batch and attaches the vectors to the document. */
+  /**
+   * Embeds every sentence in one batch and attaches the vectors to the document.
+   *
+   * @param rawText                The complete document text.
+   * @param document               The document receiving the embedding results.
+   * @param modelId                The logical embedding model id.
+   * @param backendId              The optional pinned backend id, or {@code null}.
+   * @param includeDocumentCentroid Whether to include the mean sentence vector.
+   * @param diagnostics            The diagnostic list to append to.
+   */
   void embedSentences(
       String rawText,
       OpenNlpDocument.Builder document,
       String modelId,
       String backendId,
+      boolean includeDocumentCentroid,
       List<ProcessingDiagnostic> diagnostics) {
     final List<AnnotationSpan> sentenceSpans = new ArrayList<>(document.getSentencesCount());
     final List<String> sentenceTexts = new ArrayList<>(document.getSentencesCount());
@@ -89,16 +99,18 @@ final class EmbedChunkStepRunner {
           .setRoute(embedded.route())
           .build());
     }
-    // One document centroid per model: the mean of its sentence vectors over the whole text.
-    final EmbeddingResult documentCentroid = Centroids.centroid(modelId, vectors,
-        AnnotationSpan.newBuilder()
-            .setStart(0)
-            .setEnd(rawText.length())
-            .setSpace(CoordinateSpace.COORDINATE_SPACE_CHAR_DOCUMENT)
-            .build(),
-        EmbeddingGranularity.EMBEDDING_GRANULARITY_DOCUMENT);
-    if (documentCentroid != null) {
-      document.addDocumentCentroids(documentCentroid.toBuilder().setRoute(embedded.route()).build());
+    if (includeDocumentCentroid) {
+      final EmbeddingResult documentCentroid = Centroids.centroid(modelId, vectors,
+          AnnotationSpan.newBuilder()
+              .setStart(0)
+              .setEnd(rawText.length())
+              .setSpace(CoordinateSpace.COORDINATE_SPACE_CHAR_DOCUMENT)
+              .build(),
+          EmbeddingGranularity.EMBEDDING_GRANULARITY_DOCUMENT);
+      if (documentCentroid != null) {
+        document.addDocumentCentroids(
+            documentCentroid.toBuilder().setRoute(embedded.route()).build());
+      }
     }
     diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_EMBED,
         "Generated " + vectors.size() + " sentence embedding(s) with model '" + modelId + "'"));

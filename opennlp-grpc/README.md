@@ -424,7 +424,11 @@ one model is registered). Set `embedding_selector.backend_id` to pin one concret
 route with no fallback, or omit it to use the highest-priority compatible route.
 The older `embedding_model_id` field remains as an additive compatibility field.
 The same selector shape is used by streaming, chunk, category-chunk, and semantic
-chunk requests.
+chunk requests. Set `options.include_document_centroid = true` when the response
+should also contain the mean sentence vector at document granularity. It defaults
+to false so an unneeded aggregate is not computed or transmitted. Sentence vectors
+and the optional centroid share the typed `opennlp:embeddings` layer and are
+distinguished by `EmbeddingGranularity`.
 
 Every configured ServiceLoader backend is active at the same time. When several
 backends serve one logical model, configure their priorities and a shared vector-space

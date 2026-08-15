@@ -437,7 +437,8 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       runStep(
           PipelineStep.PIPELINE_STEP_EMBED,
           () -> embedChunkSteps.embedSentences(
-              rawText, document, embeddingModelId, embeddingBackendId, diagnostics));
+              rawText, document, embeddingModelId, embeddingBackendId,
+              request.getOptions().getIncludeDocumentCentroid(), diagnostics));
     } else {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_EMBED));
     }

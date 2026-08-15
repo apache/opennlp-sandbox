@@ -88,7 +88,7 @@ message OpenNlpDocument {
   // One document centroid per embedding model: the mean of the document's sentence-level
   // embeddings for that model (granularity EMBEDDING_GRANULARITY_DOCUMENT), a single
   // representative vector for the whole document. Set only when PIPELINE_STEP_EMBED produced
-  // sentence embeddings.
+  // sentence embeddings and AnalysisOptions.include_document_centroid is true.
   repeated EmbeddingResult document_centroids = 12;
   // Result of PIPELINE_STEP_NORMALIZE: the normalized text together with the
   // alignment that maps spans between it and raw_text. Unset when the step did
@@ -174,7 +174,7 @@ message NamedEntity {
   // (see `sources`), this is the highest of their probabilities.
   optional double probability = 3;
   // The exact document text covered by `annotation_span`. Always populated, so a
-  // response is readable without re-resolving offsets — which matters when several
+  // response is readable without re-resolving offsets, which matters when several
   // providers recognized this entity at slightly different offsets (see `sources`).
   string text = 4;
   // Which recognizer(s)/engine(s) produced this entity. With one provider this holds
@@ -320,7 +320,7 @@ message ChunkSpan {
   // Chunk/phrase tag, e.g. "NP", "VP" (the chunker model's tagset).
   string chunk_tag = 2;
   // The exact document text covered by `annotation_span`. Always populated, so a response is
-  // readable without re-resolving offsets — which matters when several providers chunked at
+  // readable without re-resolving offsets, which matters when several providers chunked at
   // slightly different offsets (see `sources`).
   string text = 3;
   // Which chunker(s)/engine(s) produced this chunk. With one provider this holds a single
@@ -496,7 +496,7 @@ enum EmbeddingGranularity {
   // ChunkEmbeddingGroup's chunks).
   EMBEDDING_GRANULARITY_CHUNK_LEVEL = 3;
   reserved 4 to 10;
-  // The mean (centroid) of a ChunkEmbeddingGroup's chunk vectors for one model — a single
+  // The mean (centroid) of a ChunkEmbeddingGroup's chunk vectors for one model, a single
   // representative vector for the group, computed on CPU from the existing chunk vectors.
   EMBEDDING_GRANULARITY_GROUP_CENTROID = 11;
 }
@@ -564,8 +564,8 @@ message DocumentClassification {
 //                       detected language code and its confidence.
 //   opennlp:categories  document-scoped, category values: the whole
 //                       classification distribution, best category first.
-//   opennlp:embeddings  positional, embedding values: sentence vectors and the
-//                       document centroid, told apart by granularity.
+//   opennlp:embeddings  positional, embedding values: sentence vectors and, when
+//                       requested, the document centroid, told apart by granularity.
 //   opennlp:word-types  positional, word-type values: the closed UAX #29
 //                       DocumentWordType per token, present only for uax29.
 //   opennlp:stopwords   positional, string values: the covered text of each
