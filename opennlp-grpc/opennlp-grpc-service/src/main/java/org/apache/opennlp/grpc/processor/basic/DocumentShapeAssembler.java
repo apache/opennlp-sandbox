@@ -30,22 +30,30 @@ import opennlp.tools.document.Layers;
 import opennlp.tools.util.Span;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
+import org.apache.opennlp.grpc.v1.AnalyticsAnnotationList;
 import org.apache.opennlp.grpc.v1.AnnotationLayer;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.CategoryAnnotation;
 import org.apache.opennlp.grpc.v1.CategoryAnnotationList;
 import org.apache.opennlp.grpc.v1.ChunkSpan;
+import org.apache.opennlp.grpc.v1.ChunkGroupAnnotationList;
+import org.apache.opennlp.grpc.v1.DocumentWordType;
 import org.apache.opennlp.grpc.v1.DocumentLayers;
 import org.apache.opennlp.grpc.v1.EmbeddingAnnotation;
 import org.apache.opennlp.grpc.v1.EmbeddingAnnotationList;
 import org.apache.opennlp.grpc.v1.EmbeddingResult;
+import org.apache.opennlp.grpc.v1.EntityAnnotationList;
 import org.apache.opennlp.grpc.v1.LayerScope;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.NormalizationAnnotationList;
 import org.apache.opennlp.grpc.v1.StringAnnotation;
 import org.apache.opennlp.grpc.v1.StringAnnotationList;
 import org.apache.opennlp.grpc.v1.Token;
 import org.apache.opennlp.grpc.v1.TreeAnnotation;
 import org.apache.opennlp.grpc.v1.TreeAnnotationList;
+import org.apache.opennlp.grpc.v1.SyntacticChunkAnnotationList;
+import org.apache.opennlp.grpc.v1.WordTypeAnnotation;
+import org.apache.opennlp.grpc.v1.WordTypeAnnotationList;
 
 /**
  * Renders a fully analyzed document as the document shape of OPENNLP-1888: the typed
@@ -106,6 +114,15 @@ final class DocumentShapeAssembler {
   /** The id of the geocoding layer. */
   static final String GEO_ID = "opennlp:geo";
 
+  /** The id of the document analytics layer. */
+  static final String ANALYTICS_ID = "opennlp:analytics";
+
+  /** The id of the normalization layer. */
+  static final String NORMALIZATION_ID = "opennlp:normalization";
+
+  /** The id of the strategy chunk group layer. */
+  static final String CHUNK_GROUPS_ID = "opennlp:chunk-groups";
+
   private DocumentShapeAssembler() {
     // This class is a stateless rendering pass and is never instantiated.
   }
@@ -137,11 +154,17 @@ final class DocumentShapeAssembler {
       final DocumentLayers.Builder layers = DocumentLayers.newBuilder();
       Document container = Document.of(rawText);
       container = stringLayers(document, rawText, container, layers);
+      container = wordTypeLayer(document, container, layers);
+      container = entityLayer(document, container, layers);
+      container = syntacticChunkLayer(document, container, layers);
       sentimentLayer(document, layers);
       languageLayer(document, container, layers);
       categoriesLayer(document, layers);
       parsesLayer(document, layers);
       embeddingsLayer(document, layers);
+      analyticsLayer(document, layers);
+      normalizationLayer(document, layers);
+      chunkGroupsLayer(document, layers);
       for (AnnotationLayer extra : extraLayers) {
         layers.addLayers(extra);
       }
@@ -174,12 +197,8 @@ final class DocumentShapeAssembler {
     final List<Annotation<String>> pos = new ArrayList<>();
     final List<Double> posProbs = new ArrayList<>();
     final List<Annotation<String>> lemmas = new ArrayList<>();
-    final List<Annotation<String>> wordTypes = new ArrayList<>();
     final List<Annotation<String>> stopwords = new ArrayList<>();
     final Map<String, List<Annotation<String>>> terms = new TreeMap<>();
-    final List<Annotation<String>> entities = new ArrayList<>();
-    final List<Double> entityProbs = new ArrayList<>();
-    final List<Annotation<String>> chunks = new ArrayList<>();
 
     for (AnnotatedSentence sentence : document.getSentencesList()) {
       final AnnotationSpan sentenceSpan = sentence.getSentenceSpan();
@@ -196,9 +215,6 @@ final class DocumentShapeAssembler {
         if (token.hasLemma()) {
           lemmas.add(annotation(span, token.getLemma()));
         }
-        if (token.hasWordType()) {
-          wordTypes.add(annotation(span, token.getWordType()));
-        }
         if (token.getIsStopword()) {
           stopwords.add(annotation(span, token.getText()));
         }
@@ -207,30 +223,100 @@ final class DocumentShapeAssembler {
               .add(annotation(span, token.getTermLayersOrThrow(dimension)));
         }
       }
-      for (org.apache.opennlp.grpc.v1.NamedEntity entity : sentence.getEntitiesList()) {
-        entities.add(annotation(entity.getAnnotationSpan(), entity.getEntityType()));
-        entityProbs.add(entity.hasProbability() ? entity.getProbability() : null);
-      }
-      if (sentence.hasSyntacticChunks()) {
-        for (ChunkSpan chunk : sentence.getSyntacticChunks().getChunksList()) {
-          chunks.add(annotation(chunk.getAnnotationSpan(), chunk.getChunkTag()));
-        }
-      }
     }
 
     container = addStringLayer(container, layers, Layers.SENTENCES, sentences, sentenceProbs);
     container = addStringLayer(container, layers, Layers.TOKENS, tokens, tokenProbs);
     container = addStringLayer(container, layers, Layers.POS_TAGS, pos, posProbs);
     container = addStringLayer(container, layers, LEMMAS, lemmas, null);
-    container = addStringLayer(container, layers, WORD_TYPES, wordTypes, null);
     container = addStringLayer(container, layers, STOPWORDS, stopwords, null);
     for (Map.Entry<String, List<Annotation<String>>> term : terms.entrySet()) {
       container = addStringLayer(container, layers,
           LayerKey.of(TERMS_ID_PREFIX + term.getKey(), String.class), term.getValue(), null);
     }
-    container = addStringLayer(container, layers, Layers.ENTITIES, entities, entityProbs);
-    container = addStringLayer(container, layers, CHUNKS, chunks, null);
     return container;
+  }
+
+  private static Document wordTypeLayer(
+      OpenNlpDocument.Builder document, Document container, DocumentLayers.Builder layers) {
+    final List<Annotation<DocumentWordType>> annotations = new ArrayList<>();
+    for (AnnotatedSentence sentence : document.getSentencesList()) {
+      for (Token token : sentence.getTokensList()) {
+        if (token.hasWordType()) {
+          annotations.add(new Annotation<>(spanValue(token.getAnnotationSpan()),
+              documentWordType(token.getWordType())));
+        }
+      }
+    }
+    if (annotations.isEmpty()) {
+      return container;
+    }
+    final LayerKey<DocumentWordType> key =
+        Layers.key("word-types", DocumentWordType.class);
+    final Document validated = container.with(key, annotations);
+    final WordTypeAnnotationList.Builder values = WordTypeAnnotationList.newBuilder();
+    for (Annotation<DocumentWordType> annotation : validated.get(key)) {
+      values.addAnnotations(WordTypeAnnotation.newBuilder()
+          .setSpan(span(annotation.span()))
+          .setType(annotation.value()));
+    }
+    layers.addLayers(AnnotationLayer.newBuilder()
+        .setId(key.id())
+        .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
+        .setWordTypeValues(values));
+    return validated;
+  }
+
+  private static Document entityLayer(
+      OpenNlpDocument.Builder document, Document container, DocumentLayers.Builder layers) {
+    final List<Annotation<org.apache.opennlp.grpc.v1.NamedEntity>> annotations = new ArrayList<>();
+    for (AnnotatedSentence sentence : document.getSentencesList()) {
+      for (var entity : sentence.getEntitiesList()) {
+        annotations.add(new Annotation<>(spanValue(entity.getAnnotationSpan()), entity));
+      }
+    }
+    if (annotations.isEmpty()) {
+      return container;
+    }
+    final LayerKey<org.apache.opennlp.grpc.v1.NamedEntity> key = LayerKey.of(
+        "opennlp:entities", org.apache.opennlp.grpc.v1.NamedEntity.class);
+    final Document validated = container.with(key, annotations);
+    final EntityAnnotationList.Builder values = EntityAnnotationList.newBuilder();
+    for (Annotation<org.apache.opennlp.grpc.v1.NamedEntity> annotation : validated.get(key)) {
+      values.addAnnotations(annotation.value());
+    }
+    layers.addLayers(AnnotationLayer.newBuilder()
+        .setId(key.id())
+        .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
+        .setEntityValues(values));
+    return validated;
+  }
+
+  private static Document syntacticChunkLayer(
+      OpenNlpDocument.Builder document, Document container, DocumentLayers.Builder layers) {
+    final List<Annotation<ChunkSpan>> annotations = new ArrayList<>();
+    for (AnnotatedSentence sentence : document.getSentencesList()) {
+      if (sentence.hasSyntacticChunks()) {
+        for (ChunkSpan chunk : sentence.getSyntacticChunks().getChunksList()) {
+          annotations.add(new Annotation<>(spanValue(chunk.getAnnotationSpan()), chunk));
+        }
+      }
+    }
+    if (annotations.isEmpty()) {
+      return container;
+    }
+    final LayerKey<ChunkSpan> key = LayerKey.of("opennlp:chunks", ChunkSpan.class);
+    final Document validated = container.with(key, annotations);
+    final SyntacticChunkAnnotationList.Builder values =
+        SyntacticChunkAnnotationList.newBuilder();
+    for (Annotation<ChunkSpan> annotation : validated.get(key)) {
+      values.addAnnotations(annotation.value());
+    }
+    layers.addLayers(AnnotationLayer.newBuilder()
+        .setId(key.id())
+        .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
+        .setSyntacticChunkValues(values));
+    return validated;
   }
 
   /**
@@ -403,8 +489,56 @@ final class DocumentShapeAssembler {
     return annotation.build();
   }
 
+  private static void analyticsLayer(
+      OpenNlpDocument.Builder document, DocumentLayers.Builder layers) {
+    if (!document.hasAnalytics()) {
+      return;
+    }
+    layers.addLayers(AnnotationLayer.newBuilder()
+        .setId(ANALYTICS_ID)
+        .setScope(LayerScope.LAYER_SCOPE_DOCUMENT)
+        .setAnalyticsValues(AnalyticsAnnotationList.newBuilder()
+            .addAnnotations(document.getAnalytics())));
+  }
+
+  private static void normalizationLayer(
+      OpenNlpDocument.Builder document, DocumentLayers.Builder layers) {
+    if (!document.hasNormalization()) {
+      return;
+    }
+    layers.addLayers(AnnotationLayer.newBuilder()
+        .setId(NORMALIZATION_ID)
+        .setScope(LayerScope.LAYER_SCOPE_DOCUMENT)
+        .setNormalizationValues(NormalizationAnnotationList.newBuilder()
+            .addAnnotations(document.getNormalization())));
+  }
+
+  private static void chunkGroupsLayer(
+      OpenNlpDocument.Builder document, DocumentLayers.Builder layers) {
+    if (document.getChunkEmbeddingGroupsCount() == 0) {
+      return;
+    }
+    layers.addLayers(AnnotationLayer.newBuilder()
+        .setId(CHUNK_GROUPS_ID)
+        .setScope(LayerScope.LAYER_SCOPE_DOCUMENT)
+        .setChunkGroupValues(ChunkGroupAnnotationList.newBuilder()
+            .addAllAnnotations(document.getChunkEmbeddingGroupsList())));
+  }
+
+  private static DocumentWordType documentWordType(String value) {
+    try {
+      return DocumentWordType.valueOf("DOCUMENT_WORD_TYPE_" + value);
+    } catch (IllegalArgumentException e) {
+      throw AnalysisException.internal("Unknown UAX 29 word type '" + value + "'", e);
+    }
+  }
+
+  private static Span spanValue(AnnotationSpan span) {
+    return new Span(span.getStart(), span.getEnd());
+  }
+
   private static Annotation<String> annotation(AnnotationSpan span, String value) {
-    return new Annotation<>(new Span(span.getStart(), span.getEnd()), value);
+    return new Annotation<>(spanValue(span), value);
   }
 
   private static String covered(String rawText, AnnotationSpan span) {

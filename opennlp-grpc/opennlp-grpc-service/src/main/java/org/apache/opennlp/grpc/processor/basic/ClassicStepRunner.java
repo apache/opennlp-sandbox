@@ -61,8 +61,6 @@ import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationLayer;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
-import org.apache.opennlp.grpc.v1.CategoryAnnotation;
-import org.apache.opennlp.grpc.v1.CategoryAnnotationList;
 import org.apache.opennlp.grpc.v1.ChunkResult;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
 import org.apache.opennlp.grpc.v1.DocumentClassification;
@@ -71,6 +69,9 @@ import org.apache.opennlp.grpc.v1.GeoAnnotation;
 import org.apache.opennlp.grpc.v1.GeoAnnotationList;
 import org.apache.opennlp.grpc.v1.GeoResolutionResult;
 import org.apache.opennlp.grpc.v1.LayerScope;
+import org.apache.opennlp.grpc.v1.LexicalExpansionAnnotation;
+import org.apache.opennlp.grpc.v1.LexicalExpansionAnnotationList;
+import org.apache.opennlp.grpc.v1.LexicalExpansionKind;
 import org.apache.opennlp.grpc.v1.NamedEntity;
 import org.apache.opennlp.grpc.v1.NormalizationResult;
 import org.apache.opennlp.grpc.v1.NormalizationRung;
@@ -82,8 +83,9 @@ import org.apache.opennlp.grpc.v1.ParseTree;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.apache.opennlp.grpc.v1.ProcessingDiagnostic;
 import org.apache.opennlp.grpc.v1.StemmerSpec;
-import org.apache.opennlp.grpc.v1.StringAnnotation;
-import org.apache.opennlp.grpc.v1.StringAnnotationList;
+import org.apache.opennlp.grpc.v1.StemmerAlgorithm;
+import org.apache.opennlp.grpc.v1.StemAnnotation;
+import org.apache.opennlp.grpc.v1.StemAnnotationList;
 import org.apache.opennlp.grpc.v1.SubwordAnnotation;
 import org.apache.opennlp.grpc.v1.SubwordAnnotationList;
 import org.apache.opennlp.grpc.v1.Token;
@@ -229,20 +231,30 @@ final class ClassicStepRunner {
       List<ProcessingDiagnostic> diagnostics) {
     final UnaryOperator<String> stem =
         StemmerSelector.newStemFunction(spec, modelBundleCache.getHunspellRegistry());
-    final StringAnnotationList.Builder list = StringAnnotationList.newBuilder();
+    final StemAnnotationList.Builder list = StemAnnotationList.newBuilder();
+    final StemmerAlgorithm algorithm = spec.getAlgorithm()
+        == StemmerAlgorithm.STEMMER_ALGORITHM_UNSPECIFIED
+            ? StemmerAlgorithm.STEMMER_ALGORITHM_SNOWBALL : spec.getAlgorithm();
     for (int i = 0; i < document.getSentencesCount(); i++) {
       for (Token token : document.getSentences(i).getTokensList()) {
-        list.addAnnotations(StringAnnotation.newBuilder()
+        final StemAnnotation.Builder annotation = StemAnnotation.newBuilder()
             .setSpan(token.getAnnotationSpan())
-            .setValue(stem.apply(token.getText()))
-            .build());
+            .setStem(stem.apply(token.getText()))
+            .setAlgorithm(algorithm);
+        if (spec.hasLanguage()) {
+          annotation.setLanguage(spec.getLanguage());
+        }
+        if (spec.hasHunspellDictionaryId()) {
+          annotation.setHunspellDictionaryId(spec.getHunspellDictionaryId());
+        }
+        list.addAnnotations(annotation);
       }
     }
     if (list.getAnnotationsCount() > 0) {
       extraLayers.add(AnnotationLayer.newBuilder()
           .setId(DocumentShapeAssembler.STEMS_ID)
           .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
-          .setStringValues(list.build())
+          .setStemValues(list.build())
           .build());
     }
     diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_STEM,
@@ -364,7 +376,8 @@ final class ClassicStepRunner {
       List<AnnotationLayer> extraLayers,
       List<ProcessingDiagnostic> diagnostics) {
     final LexicalExpander expander = modelBundleCache.getWordNetRegistry().get(lexiconId);
-    final CategoryAnnotationList.Builder list = CategoryAnnotationList.newBuilder();
+    final LexicalExpansionAnnotationList.Builder list =
+        LexicalExpansionAnnotationList.newBuilder();
     int expandedTokens = 0;
     for (int i = 0; i < document.getSentencesCount(); i++) {
       for (Token token : document.getSentences(i).getTokensList()) {
@@ -375,10 +388,18 @@ final class ClassicStepRunner {
         }
         expandedTokens++;
         for (LexicalExpander.Expansion expansion : expansions) {
-          list.addAnnotations(CategoryAnnotation.newBuilder()
+          list.addAnnotations(LexicalExpansionAnnotation.newBuilder()
               .setSpan(token.getAnnotationSpan())
-              .setLabel(expansion.term())
-              .setScore(expansion.weight())
+              .setTerm(expansion.term())
+              .setKind(switch (expansion.kind()) {
+                case SYNONYM -> LexicalExpansionKind.LEXICAL_EXPANSION_KIND_SYNONYM;
+                case HYPERNYM -> LexicalExpansionKind.LEXICAL_EXPANSION_KIND_HYPERNYM;
+                case HYPONYM -> LexicalExpansionKind.LEXICAL_EXPANSION_KIND_HYPONYM;
+              })
+              .setDepth(expansion.depth())
+              .setSenseRank(expansion.senseRank())
+              .setWeight(expansion.weight())
+              .setLexiconId(lexiconId)
               .build());
         }
       }
@@ -387,7 +408,7 @@ final class ClassicStepRunner {
       extraLayers.add(AnnotationLayer.newBuilder()
           .setId(DocumentShapeAssembler.EXPANSIONS_ID)
           .setScope(LayerScope.LAYER_SCOPE_POSITIONAL)
-          .setCategoryValues(list.build())
+          .setLexicalExpansionValues(list.build())
           .build());
     }
     diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_EXPAND,
