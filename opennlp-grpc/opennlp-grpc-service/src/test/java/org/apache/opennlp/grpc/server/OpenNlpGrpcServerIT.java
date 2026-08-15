@@ -37,6 +37,9 @@ import io.grpc.health.v1.HealthCheckRequest;
 import io.grpc.health.v1.HealthCheckResponse;
 import io.grpc.health.v1.HealthGrpc;
 import io.grpc.stub.StreamObserver;
+import org.apache.opennlp.grpc.model.ClassicDocCategorizerBackendFactory;
+import org.apache.opennlp.grpc.profile.ProfileRegistry;
+import org.apache.opennlp.grpc.testing.TinyDoccatModel;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeStreamConfiguration;
 import org.apache.opennlp.grpc.v1.AnalyzeStreamDocument;
@@ -49,6 +52,7 @@ import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -59,6 +63,9 @@ class OpenNlpGrpcServerIT {
 
   private static final String SENTENCE_MODEL_PREFIX = "opennlp-en-ud-ewt-sentence-";
   private static final String TOKENIZER_MODEL_PREFIX = "opennlp-en-ud-ewt-tokens-";
+
+  @TempDir
+  static Path modelDir;
 
   private static OpenNlpGrpcServer server;
   private static ManagedChannel channel;
@@ -102,6 +109,11 @@ class OpenNlpGrpcServerIT {
     properties.setProperty("server.analysis_stream_workers", "2");
     properties.setProperty("model.sentence_detector.path", sentenceModel.toAbsolutePath().toString());
     properties.setProperty("model.tokenizer.path", tokenizerModel.toAbsolutePath().toString());
+    final Path doccatModel = TinyDoccatModel.trainTopicModel(modelDir.resolve("topic.bin"));
+    properties.setProperty(
+        ClassicDocCategorizerBackendFactory.KEY_PREFIX + "topic"
+            + ClassicDocCategorizerBackendFactory.KEY_SUFFIX,
+        doccatModel.toAbsolutePath().toString());
 
     final Path config = Files.createTempFile("opennlp-grpc-it-", ".ini");
     config.toFile().deleteOnExit();
@@ -137,6 +149,7 @@ class OpenNlpGrpcServerIT {
     assertEquals("v1", serviceInfo.getApiVersion());
     assertTrue(serviceInfo.getSupportedStepsList().contains(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT));
     assertTrue(serviceInfo.getSupportedStepsList().contains(PipelineStep.PIPELINE_STEP_TOKENIZE));
+    assertTrue(serviceInfo.getAvailableProfileIdsList().contains(ProfileRegistry.DOCCAT_PROFILE_ID));
 
     final var response = v1.analyzeDocument(AnalyzeDocumentRequest.newBuilder()
         .setDocument(OpenNlpDocument.newBuilder()
