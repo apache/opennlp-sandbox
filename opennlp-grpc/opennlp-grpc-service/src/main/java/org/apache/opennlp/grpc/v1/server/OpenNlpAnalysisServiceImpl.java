@@ -373,6 +373,9 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
         .addAllAvailableProfileIds(profileRegistry.getProfiles().keySet())
         .addAllSupportedSteps(PipelineStepPolicy.implementedSteps())
         .addAllSupportedLayers(STANDARD_LAYERS)
+        .addAllCustomTokenizerIds(modelBundleCache.getTokenizerRegistry().ids())
+        .addAllCustomSentenceDetectorIds(
+            modelBundleCache.getSentenceDetectorRegistry().ids())
         .build());
     responseObserver.onCompleted();
   }
