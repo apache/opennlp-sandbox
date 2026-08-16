@@ -628,12 +628,12 @@ public final class ModelBundleCache implements AutoCloseable {
   }
 
   /**
-   * Classpath-resolved artifact bytes and hash.
+   * Classpath-resolved artifact bytes and hash. Package-private for tests.
    *
    * @param bytes The model artifact bytes. Never {@code null}.
    * @param hash  The lowercase hex SHA-256 digest. Never {@code null}.
    */
-  private record ClasspathArtifact(byte[] bytes, String hash) {
+  record ClasspathArtifact(byte[] bytes, String hash) {
   }
 
   /** Deserializes a model from a stream; all OpenNLP model constructors fit this shape. */
@@ -658,29 +658,26 @@ public final class ModelBundleCache implements AutoCloseable {
         return new LoadedArtifact<>(new LanguageDetectorModel(new ByteArrayInputStream(bytes)),
             ModelArtifactHasher.sha256Hex(bytes));
       }
-      byte[] classpathBytes = findClasspathLanguageDetectorBytes();
-      String classpathHash = null;
-      if (classpathBytes == null) {
-        final InputStream bundled = openBundledModel(BUNDLED_LANGDETECT_MODEL_FRAGMENT);
-        if (bundled != null) {
-          try (InputStream input = bundled) {
-            classpathBytes = input.readAllBytes();
-          }
-        }
+      final ClasspathArtifact classpathArtifact = findClasspathLanguageDetectorArtifact();
+      final byte[] bytes;
+      final String hash;
+      if (classpathArtifact != null) {
+        bytes = classpathArtifact.bytes();
+        hash = classpathArtifact.hash();
       } else {
-        classpathHash = findClasspathLanguageDetectorHash();
+        final InputStream bundled = openBundledModel(BUNDLED_LANGDETECT_MODEL_FRAGMENT);
+        if (bundled == null) {
+          throw AnalysisException.notFound(
+              "No language detector model available. Configure '" + KEY_LANGDETECT_PATH
+                  + "' or add the opennlp-models-langdetect jar to the classpath.");
+        }
+        try (InputStream input = bundled) {
+          bytes = input.readAllBytes();
+        }
+        hash = ModelArtifactHasher.sha256Hex(bytes);
       }
-      if (classpathBytes == null) {
-        throw AnalysisException.notFound(
-            "No language detector model available. Configure '" + KEY_LANGDETECT_PATH
-                + "' or add the opennlp-models-langdetect jar to the classpath.");
-      }
-      final String hash = classpathHash != null
-          ? classpathHash
-          : ModelArtifactHasher.sha256Hex(classpathBytes);
       return new LoadedArtifact<>(
-          new LanguageDetectorModel(new ByteArrayInputStream(classpathBytes)),
-          hash);
+          new LanguageDetectorModel(new ByteArrayInputStream(bytes)), hash);
     } catch (FileNotFoundException e) {
       // A configured path that does not exist is an operator error, not an internal fault.
       throw AnalysisException.notFound(
@@ -694,8 +691,19 @@ public final class ModelBundleCache implements AutoCloseable {
 
 
   /**
-   * Locates a classic model binary through {@code model.properties} descriptors on the classpath.
+   * Locates a classic model binary through the {@code model.properties} descriptors on this
+   * class's own classpath; see {@link #findClasspathArtifact(ClassLoader, String, String)}.
+   */
+  private static ClasspathArtifact findClasspathArtifact(String language, String nameFragment)
+      throws IOException {
+    return findClasspathArtifact(ModelBundleCache.class.getClassLoader(), language, nameFragment);
+  }
+
+  /**
+   * Locates a classic model binary through {@code model.properties} descriptors visible to the
+   * given classloader. Package-private so tests can supply an isolated descriptor classpath.
    *
+   * @param classLoader  The classloader to scan for descriptors and model binaries.
    * @param language     The model language tag to match, e.g. {@code "en"}.
    * @param nameFragment A substring that must appear in the {@code model.name} entry.
    *
@@ -703,9 +711,8 @@ public final class ModelBundleCache implements AutoCloseable {
    *
    * @throws IOException If a descriptor or model stream cannot be read.
    */
-  private static ClasspathArtifact findClasspathArtifact(String language, String nameFragment)
-      throws IOException {
-    final ClassLoader classLoader = ModelBundleCache.class.getClassLoader();
+  static ClasspathArtifact findClasspathArtifact(
+      ClassLoader classLoader, String language, String nameFragment) throws IOException {
     final Enumeration<URL> descriptors = classLoader.getResources(MODEL_DESCRIPTOR_RESOURCE);
     while (descriptors.hasMoreElements()) {
       final Properties properties = new Properties();
@@ -735,14 +742,27 @@ public final class ModelBundleCache implements AutoCloseable {
   }
 
   /**
-   * Locates the language-detector binary bytes on the classpath.
+   * Locates the language-detector artifact through the {@code model.properties} descriptors on
+   * this class's own classpath; see {@link #findClasspathLanguageDetectorArtifact(ClassLoader)}.
+   */
+  private static ClasspathArtifact findClasspathLanguageDetectorArtifact() throws IOException {
+    return findClasspathLanguageDetectorArtifact(ModelBundleCache.class.getClassLoader());
+  }
+
+  /**
+   * Locates the language-detector binary through the {@code model.properties} descriptors
+   * visible to the given classloader, returning its bytes together with the declared (or
+   * computed) SHA-256 hash. Package-private so tests can supply an isolated descriptor
+   * classpath.
    *
-   * @return The model bytes, or {@code null} when no matching descriptor is found.
+   * @param classLoader The classloader to scan for descriptors and model binaries.
+   *
+   * @return The artifact bytes and hash, or {@code null} when no matching descriptor is found.
    *
    * @throws IOException If a descriptor or model stream cannot be read.
    */
-  private static byte[] findClasspathLanguageDetectorBytes() throws IOException {
-    final ClassLoader classLoader = ModelBundleCache.class.getClassLoader();
+  static ClasspathArtifact findClasspathLanguageDetectorArtifact(ClassLoader classLoader)
+      throws IOException {
     final Enumeration<URL> descriptors = classLoader.getResources(MODEL_DESCRIPTOR_RESOURCE);
     while (descriptors.hasMoreElements()) {
       final Properties properties = new Properties();
@@ -754,35 +774,14 @@ public final class ModelBundleCache implements AutoCloseable {
           && modelName.endsWith(MODEL_FILE_SUFFIX)) {
         try (InputStream model = classLoader.getResourceAsStream(modelName)) {
           if (model != null) {
-            return model.readAllBytes();
+            final byte[] bytes = model.readAllBytes();
+            final String declaredHash =
+                properties.getProperty("model.sha256", "").trim().toLowerCase();
+            final String hash = declaredHash.isBlank()
+                ? ModelArtifactHasher.sha256Hex(bytes)
+                : declaredHash;
+            return new ClasspathArtifact(bytes, hash);
           }
-        }
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Reads the declared {@code model.sha256} for the classpath language-detector artifact.
-   *
-   * @return The lowercase hex digest, or {@code null} when no descriptor declares one.
-   *
-   * @throws IOException If a descriptor stream cannot be read.
-   */
-  private static String findClasspathLanguageDetectorHash() throws IOException {
-    final ClassLoader classLoader = ModelBundleCache.class.getClassLoader();
-    final Enumeration<URL> descriptors = classLoader.getResources(MODEL_DESCRIPTOR_RESOURCE);
-    while (descriptors.hasMoreElements()) {
-      final Properties properties = new Properties();
-      try (InputStream input = descriptors.nextElement().openStream()) {
-        properties.load(input);
-      }
-      final String modelName = properties.getProperty("model.name", "");
-      if (modelName.contains(BUNDLED_LANGDETECT_MODEL_FRAGMENT)
-          && modelName.endsWith(MODEL_FILE_SUFFIX)) {
-        final String declaredHash = properties.getProperty("model.sha256", "").trim().toLowerCase();
-        if (!declaredHash.isBlank()) {
-          return declaredHash;
         }
       }
     }
