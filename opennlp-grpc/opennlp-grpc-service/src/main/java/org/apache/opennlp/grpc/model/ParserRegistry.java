@@ -102,8 +102,7 @@ public final class ParserRegistry {
     final RankedBackends.Builder<ParserModel> builder = RankedBackends.builder();
     final Set<String> knownEngines = new LinkedHashSet<>();
     final Set<String> seenFactories = new HashSet<>();
-    for (ParserBackendFactory factory : ServiceLoader.load(
-        ParserBackendFactory.class, ParserRegistry.class.getClassLoader())) {
+    for (ParserBackendFactory factory : ServiceLoader.load(ParserBackendFactory.class)) {
       if (!seenFactories.add(factory.factoryId())) {
         logger.warn("Ignoring duplicate parser backend factory '{}' ({})",
             factory.factoryId(), factory.getClass().getName());

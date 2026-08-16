@@ -143,8 +143,7 @@ public final class NameFinderRegistry implements AutoCloseable {
     final Map<String, List<String>> recognizerIdsByType = new LinkedHashMap<>();
     final Set<String> knownEngines = new LinkedHashSet<>();
     final Set<String> seenFactories = new HashSet<>();
-    for (NerBackendFactory factory : ServiceLoader.load(
-        NerBackendFactory.class, NameFinderRegistry.class.getClassLoader())) {
+    for (NerBackendFactory factory : ServiceLoader.load(NerBackendFactory.class)) {
       if (!seenFactories.add(factory.factoryId())) {
         logger.warn("Ignoring duplicate NER backend factory '{}' ({})",
             factory.factoryId(), factory.getClass().getName());

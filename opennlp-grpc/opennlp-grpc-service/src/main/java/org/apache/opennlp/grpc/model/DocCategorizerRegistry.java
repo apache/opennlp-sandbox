@@ -116,8 +116,8 @@ public final class DocCategorizerRegistry implements AutoCloseable {
     final Map<String, String> canonical = canonicalize(namespace, configuration);
     final Map<String, DocCategorizerModel> modelsById = new LinkedHashMap<>();
     final Set<String> seenFactories = new HashSet<>();
-    for (DocCategorizerBackendFactory factory : ServiceLoader.load(
-        DocCategorizerBackendFactory.class, DocCategorizerRegistry.class.getClassLoader())) {
+    for (DocCategorizerBackendFactory factory
+        : ServiceLoader.load(DocCategorizerBackendFactory.class)) {
       if (!seenFactories.add(factory.factoryId())) {
         logger.warn("Ignoring duplicate doc categorizer backend factory '{}' ({})",
             factory.factoryId(), factory.getClass().getName());
