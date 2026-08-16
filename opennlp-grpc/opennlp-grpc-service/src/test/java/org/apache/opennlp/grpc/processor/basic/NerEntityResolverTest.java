@@ -19,6 +19,7 @@ package org.apache.opennlp.grpc.processor.basic;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.opennlp.grpc.backend.RankedBackends;
 import org.apache.opennlp.grpc.model.NerModel;
@@ -164,11 +165,32 @@ class NerEntityResolverTest {
   }
 
   @Test
+  void invalidArgumentFailurePropagatesWithoutFallback() {
+    // A deterministic client error from the top-priority engine is not retryable: it must
+    // surface to the caller and the next engine must never run.
+    final AtomicInteger fallbackCalls = new AtomicInteger();
+    final RankedBackends<NerModel> recognizers = RankedBackends.<NerModel>builder()
+        .add("location", "opennlp-me", 0, new FakeNerModel("location", "opennlp-me", 0,
+            List.of(entity("location", 4, 17, null)), null, fallbackCalls))
+        .add("location", "onnx", 10, failingModel("location", "onnx", 10,
+            AnalysisException.invalidArgument("bad request")))
+        .build();
+    final NerEntityResolver resolver = resolver(recognizers, List.of("location"), List.of(),
+        MergeStrategy.MERGE_STRATEGY_UNSPECIFIED, Set.of("location"), false);
+
+    final AnalysisException error = assertThrows(AnalysisException.class,
+        () -> resolver.resolve(SENTENCE));
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+    assertEquals(0, fallbackCalls.get(), "a non-retryable failure must not fall back");
+  }
+
+  @Test
   void defaultFallsBackToNextEngineWhenTopPriorityFails() {
     final RankedBackends<NerModel> recognizers = RankedBackends.<NerModel>builder()
         .add("location", "opennlp-me", 0, model("location", "opennlp-me", 0,
             entity("location", 4, 17, null)))
-        .add("location", "onnx", 10, failingModel("location", "onnx", 10))
+        .add("location", "onnx", 10, failingModel("location", "onnx", 10,
+            AnalysisException.unavailable("engine unreachable", null)))
         .build();
     final NerEntityResolver resolver = resolver(recognizers, List.of("location"), List.of(),
         MergeStrategy.MERGE_STRATEGY_UNSPECIFIED, Set.of("location"), false);
@@ -181,7 +203,8 @@ class NerEntityResolverTest {
   @Test
   void rethrowsWhenEveryEngineFails() {
     final RankedBackends<NerModel> recognizers = RankedBackends.<NerModel>builder()
-        .add("location", "onnx", 0, failingModel("location", "onnx", 0))
+        .add("location", "onnx", 0, failingModel("location", "onnx", 0,
+            AnalysisException.unavailable("engine unreachable", null)))
         .build();
     final NerEntityResolver resolver = resolver(recognizers, List.of("location"), List.of(),
         MergeStrategy.MERGE_STRATEGY_UNSPECIFIED, Set.of("location"), false);
@@ -246,16 +269,21 @@ class NerEntityResolverTest {
   }
 
   private static NerModel model(String id, String engine, int priority, NamedEntity... entities) {
-    return new FakeNerModel(id, engine, priority, List.of(entities), false);
+    return new FakeNerModel(id, engine, priority, List.of(entities));
   }
 
-  private static NerModel failingModel(String id, String engine, int priority) {
-    return new FakeNerModel(id, engine, priority, List.of(), true);
+  private static NerModel failingModel(String id, String engine, int priority,
+      RuntimeException failure) {
+    return new FakeNerModel(id, engine, priority, List.of(), failure, new AtomicInteger());
   }
 
   /** A recognizer that returns preset entities (or always throws), ignoring the sentence text. */
   private record FakeNerModel(String id, String backendId, int priority, List<NamedEntity> entities,
-      boolean fail) implements NerModel {
+      RuntimeException failure, AtomicInteger calls) implements NerModel {
+
+    private FakeNerModel(String id, String backendId, int priority, List<NamedEntity> entities) {
+      this(id, backendId, priority, entities, null, new AtomicInteger());
+    }
 
     @Override
     public Set<String> entityTypes() {
@@ -274,8 +302,9 @@ class NerEntityResolverTest {
 
     @Override
     public List<NamedEntity> recognize(AnnotatedSentence sentence, boolean includeProbabilities) {
-      if (fail) {
-        throw new IllegalStateException("engine '" + backendId + "' failed");
+      calls.incrementAndGet();
+      if (failure != null) {
+        throw failure;
       }
       return entities;
     }
