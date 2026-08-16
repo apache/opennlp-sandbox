@@ -155,6 +155,39 @@ class CategoryChunkProcessorTest {
   }
 
   @Test
+  void statsReportDistinctTokenCountNotSentenceCount() {
+    // Every sentence carries several tokens, and "." repeats across sentences; the group
+    // total must count distinct tokens (by document offset, as buildGroup does), not the
+    // number of grouped sentences.
+    final OpenNlpDocument document = OpenNlpDocument.newBuilder()
+        .setRawText(TEXT)
+        .addSentences(sentence(0, 12, "Positive").toBuilder()
+            .addTokens(token(0, 1)).addTokens(token(2, 6))
+            .addTokens(token(7, 11)).addTokens(token(11, 12)))
+        .addSentences(sentence(13, 28, "Negative").toBuilder()
+            .addTokens(token(13, 15)).addTokens(token(16, 18))
+            .addTokens(token(19, 27)).addTokens(token(27, 28)))
+        .addSentences(sentence(29, 43, "positive").toBuilder()
+            .addTokens(token(29, 34)).addTokens(token(35, 42)).addTokens(token(42, 43)))
+        .addSentences(sentence(44, 58, "Negative").toBuilder()
+            .addTokens(token(44, 49)).addTokens(token(50, 57)).addTokens(token(57, 58)))
+        .build();
+
+    final ChunkEmbeddingGroup group = ChunkEmbedProcessor.buildCategoryGroup(
+        TEXT, document, entry(), embeddingProvider);
+
+    assertEquals(2, group.getStats().getChunkCount());
+    assertEquals(14, group.getStats().getTotalTokens());
+  }
+
+  private static org.apache.opennlp.grpc.v1.Token token(int start, int end) {
+    return org.apache.opennlp.grpc.v1.Token.newBuilder()
+        .setAnnotationSpan(AnnotationSpan.newBuilder().setStart(start).setEnd(end)
+            .setSpace(CoordinateSpace.COORDINATE_SPACE_CHAR_DOCUMENT))
+        .build();
+  }
+
+  @Test
   void sentencesWithoutACategoryAreIgnored() {
     final OpenNlpDocument document = OpenNlpDocument.newBuilder()
         .setRawText(TEXT)
