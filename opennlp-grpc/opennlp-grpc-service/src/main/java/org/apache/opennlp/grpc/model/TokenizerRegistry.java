@@ -115,10 +115,11 @@ public final class TokenizerRegistry implements AutoCloseable {
 
   /** Returns a normalized, validated provider id. Package-private for tests. */
   static String validId(String id, String owner) {
-    if (id == null || id.isBlank() || !id.equals(id.toLowerCase(Locale.ROOT))) {
+    if (id == null || id.isBlank() || !id.equals(id.toLowerCase(Locale.ROOT))
+        || id.chars().anyMatch(Character::isWhitespace)) {
       throw AnalysisException.invalidArgument(
           owner + " declares invalid tokenizer engine id '" + id
-              + "'; ids must be non-blank and lower-case");
+              + "'; ids must be non-blank, lower-case, and contain no whitespace");
     }
     return id;
   }

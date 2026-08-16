@@ -131,10 +131,11 @@ public final class EmbeddingProviderFactory {
 
   /** Returns a validated backend id. Package-private for tests. */
   static String validId(String id, String owner) {
-    if (id == null || id.isBlank() || !id.equals(id.toLowerCase(Locale.ROOT))) {
+    if (id == null || id.isBlank() || !id.equals(id.toLowerCase(Locale.ROOT))
+        || id.chars().anyMatch(Character::isWhitespace)) {
       throw AnalysisException.invalidArgument(
           owner + " declares an invalid backend id '" + id
-              + "'; backend ids must be non-blank and lower-case");
+              + "'; backend ids must be non-blank, lower-case, and contain no whitespace");
     }
     return id;
   }
