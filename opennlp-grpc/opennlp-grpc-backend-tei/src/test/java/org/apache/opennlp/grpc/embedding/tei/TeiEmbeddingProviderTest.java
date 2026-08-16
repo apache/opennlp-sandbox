@@ -183,8 +183,17 @@ class TeiEmbeddingProviderTest {
   }
 
   @Test
-  void rejectsNonEmbeddingModel() {
-    final Map<String, String> configuration = new HashMap<>();
+  void orphanTeiSettingWithoutTargetFailsNamingTheMissingKey() {
+    // An id mentioned by a model.embedder.<id>.tei.* setting but lacking its .tei.target must
+    // fail startup instead of vanishing silently.
+    final AnalysisException e = assertThrows(AnalysisException.class,
+        () -> new TeiEmbeddingProvider(Map.of("model.embedder.minilm.tei.truncate", "false")));
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, e.getFailureType());
+    assertTrue(e.getMessage().contains("model.embedder.minilm.tei.target"), e.getMessage());
+  }
+
+  @Test
+  void rejectsNonEmbeddingModel() {    final Map<String, String> configuration = new HashMap<>();
     configuration.put("model.embedder.minilm.tei.target",
         "localhost:" + classifierServer.getPort());
     configuration.put("model.embedder.tei.deadline_ms", "5000");
