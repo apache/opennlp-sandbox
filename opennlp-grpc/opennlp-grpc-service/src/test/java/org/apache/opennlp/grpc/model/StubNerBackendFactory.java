@@ -43,8 +43,11 @@ public final class StubNerBackendFactory implements NerBackendFactory {
   public static final String FACTORY_ID = "stub";
   public static final String KEY_TYPE = "model.name_finder_stub.type";
   public static final String KEY_CLOSEABLE_TYPE = "model.name_finder_stub.closeable_type";
+  public static final String KEY_FAILING_TYPE = "model.name_finder_stub.failing_type";
 
   private static final AtomicInteger CLOSE_COUNT = new AtomicInteger();
+  private static final AtomicInteger ADAPTIVE_DEPTH = new AtomicInteger();
+  private static final AtomicInteger CLEAR_COUNT = new AtomicInteger();
 
   /** @return How many times a closeable stub recognizer has been closed since the last reset. */
   public static int closeCount() {
@@ -54,6 +57,22 @@ public final class StubNerBackendFactory implements NerBackendFactory {
   /** Resets the close counter so a test starts from a known state. */
   public static void resetCloseCount() {
     CLOSE_COUNT.set(0);
+  }
+
+  /** @return The adaptive data depth the failing stub has accumulated since the last clear. */
+  public static int adaptiveDepth() {
+    return ADAPTIVE_DEPTH.get();
+  }
+
+  /** @return How many times the failing stub's adaptive data was cleared since the last reset. */
+  public static int clearCount() {
+    return CLEAR_COUNT.get();
+  }
+
+  /** Resets the failing stub's adaptive data and clear counter for a fresh test. */
+  public static void resetFailingState() {
+    ADAPTIVE_DEPTH.set(0);
+    CLEAR_COUNT.set(0);
   }
 
   @Override
@@ -71,6 +90,10 @@ public final class StubNerBackendFactory implements NerBackendFactory {
     final String closeableType = configuration.get(KEY_CLOSEABLE_TYPE);
     if (closeableType != null && !closeableType.isBlank()) {
       models.add(new CloseableStubNerModel(NameFinderRegistry.normalize(closeableType)));
+    }
+    final String failingType = configuration.get(KEY_FAILING_TYPE);
+    if (failingType != null && !failingType.isBlank()) {
+      models.add(new FailingStubNerModel(NameFinderRegistry.normalize(failingType)));
     }
     return models;
   }
@@ -106,6 +129,66 @@ public final class StubNerBackendFactory implements NerBackendFactory {
     @Override
     public List<NamedEntity> recognize(AnnotatedSentence sentence, boolean includeProbabilities) {
       return List.of();
+    }
+  }
+
+  /**
+   * A stateful recognizer that accumulates one unit of adaptive data per recognized sentence,
+   * throws on any sentence containing the token "boom", and shifts its entity span right by the
+   * accumulated depth, so a leaked residue from a failed document is visible in the next
+   * document's entities. Clear via {@link #clearAdaptiveData()} resets the depth.
+   */
+  private static final class FailingStubNerModel implements NerModel {
+
+    private final String type;
+
+    FailingStubNerModel(String type) {
+      this.type = type;
+    }
+
+    @Override
+    public String id() {
+      return FACTORY_ID + ":failing:" + type;
+    }
+
+    @Override
+    public String backendId() {
+      return FACTORY_ID;
+    }
+
+    @Override
+    public Set<String> entityTypes() {
+      return Set.of(type);
+    }
+
+    @Override
+    public boolean isStateful() {
+      return true;
+    }
+
+    @Override
+    public void clearAdaptiveData() {
+      ADAPTIVE_DEPTH.set(0);
+      CLEAR_COUNT.incrementAndGet();
+    }
+
+    @Override
+    public List<NamedEntity> recognize(AnnotatedSentence sentence, boolean includeProbabilities) {
+      for (var token : sentence.getTokensList()) {
+        if ("boom".equalsIgnoreCase(token.getText())) {
+          throw new IllegalStateException("stub recognizer exploded on marker token");
+        }
+      }
+      final int depth = ADAPTIVE_DEPTH.getAndIncrement();
+      final var sentenceSpan = sentence.getSentenceSpan();
+      final int start = sentenceSpan.getStart() + depth;
+      return List.of(NamedEntity.newBuilder()
+          .setEntityType(type)
+          .setAnnotationSpan(org.apache.opennlp.grpc.v1.AnnotationSpan.newBuilder()
+              .setStart(start)
+              .setEnd(Math.min(start + 4, sentenceSpan.getEnd()))
+              .setSpace(org.apache.opennlp.grpc.v1.CoordinateSpace.COORDINATE_SPACE_CHAR_DOCUMENT))
+          .build());
     }
   }
 
