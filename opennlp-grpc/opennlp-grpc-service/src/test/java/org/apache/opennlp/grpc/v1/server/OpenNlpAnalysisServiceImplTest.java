@@ -22,7 +22,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -46,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -163,6 +166,53 @@ class OpenNlpAnalysisServiceImplTest {
     assertNotNull(observer.error);
     assertEquals(Status.Code.INVALID_ARGUMENT, Status.fromThrowable(observer.error).getCode());
     assertTrue(Status.fromThrowable(observer.error).getDescription().contains("1048576"));
+  }
+
+  @Test
+  void countsSupplementaryTextAsFourUtf8Bytes() {
+    final ModelBundleCache cache = new ModelBundleCache(Map.of());
+    final AtomicInteger analyzed = new AtomicInteger();
+    final OpenNlpAnalysisServiceImpl service = new OpenNlpAnalysisServiceImpl(
+        request -> {
+          analyzed.incrementAndGet();
+          return AnalyzeDocumentResponse.getDefaultInstance();
+        },
+        ProfileRegistry.createDefault(),
+        cache,
+        "test",
+        ForkJoinPool.commonPool(),
+        1,
+        4);
+    final CapturingObserver<AnalyzeDocumentResponse> accepted = new CapturingObserver<>();
+    final CapturingObserver<AnalyzeDocumentResponse> rejected = new CapturingObserver<>();
+
+    service.analyzeDocument(AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setRawText("😀"))
+        .build(), accepted);
+    service.analyzeDocument(AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setRawText("😀a"))
+        .build(), rejected);
+
+    assertEquals(1, analyzed.get());
+    assertNull(accepted.error);
+    assertEquals(Status.Code.INVALID_ARGUMENT, Status.fromThrowable(rejected.error).getCode());
+  }
+
+  @Test
+  void rejectsANonPositiveOperatorByteLimit() {
+    final ModelBundleCache cache = new ModelBundleCache(Map.of());
+
+    final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+        () -> new OpenNlpAnalysisServiceImpl(
+            request -> AnalyzeDocumentResponse.getDefaultInstance(),
+            ProfileRegistry.createDefault(),
+            cache,
+            "test",
+            ForkJoinPool.commonPool(),
+            1,
+            0));
+
+    assertEquals("maxTextBytes must be positive", error.getMessage());
   }
 
   @Test

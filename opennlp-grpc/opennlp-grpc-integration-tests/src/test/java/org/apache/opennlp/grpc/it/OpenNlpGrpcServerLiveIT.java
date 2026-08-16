@@ -116,6 +116,7 @@ class OpenNlpGrpcServerLiveIT {
         .start();
 
     final Properties config = new Properties();
+    config.setProperty("server.max_text_bytes", "4096");
     config.setProperty("model.embedder.minilm.tei.target", "localhost:" + teiServer.getPort());
     config.setProperty("model.embedder.tei.deadline_ms", "10000");
     final Path hunspellDir = Files.createTempDirectory("opennlp-grpc-live-hunspell-");
@@ -155,6 +156,7 @@ class OpenNlpGrpcServerLiveIT {
     assertTrue(info.getSupportedLayersList().contains(StandardLayer.STANDARD_LAYER_SENTENCES));
     assertTrue(info.getSupportedLayersList().contains(StandardLayer.STANDARD_LAYER_TOKENS));
     assertTrue(info.getSupportedLayersList().contains(StandardLayer.STANDARD_LAYER_STEMS));
+    assertEquals(4096, info.getMaxTextBytes());
     final var hunspell = info.getConfiguredResourcesList().stream()
         .filter(resource -> resource.getIdentity().getStandard()
             == StandardResource.STANDARD_RESOURCE_HUNSPELL_DICTIONARY)

@@ -120,6 +120,10 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
         Integer.parseInt(
             configuration.getOrDefault("server.max_inbound_message_size", "10485760"));
 
+    final int maxTextBytes = Integer.parseInt(configuration.getOrDefault(
+        "server.max_text_bytes",
+        Integer.toString(OpenNlpAnalysisServiceImpl.DEFAULT_MAX_TEXT_BYTES)));
+
     final int analysisStreamWorkers = Integer.parseInt(configuration.getOrDefault(
         "server.analysis_stream_workers",
         Integer.toString(Math.max(2, Runtime.getRuntime().availableProcessors()))));
@@ -151,7 +155,8 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
                 modelBundleCache,
                 SERVER_VERSION,
                 analysisExecutor,
-                analysisStreamWorkers),
+                analysisStreamWorkers,
+                maxTextBytes),
             new EagerHeadersInterceptor()))
         .addService(healthStatusManager.getHealthService())
         .maxInboundMessageSize(maxInboundMessageSize);

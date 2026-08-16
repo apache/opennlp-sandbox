@@ -29,6 +29,7 @@ import org.apache.opennlp.grpc.embedding.EmbeddingBatchResult;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.processor.DocumentAnalysisSession;
 import org.apache.opennlp.grpc.processor.DocumentAnalyzer;
 import org.apache.opennlp.grpc.processor.PipelineStepPolicy;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
@@ -52,6 +53,9 @@ import org.slf4j.LoggerFactory;
  */
 public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenNlpAnalysisServiceImplBase {
 
+  /** Default operator limit for text-bearing requests, in UTF-8 encoded bytes. */
+  public static final int DEFAULT_MAX_TEXT_BYTES = 1_048_576;
+
   private static final Logger logger = LoggerFactory.getLogger(OpenNlpAnalysisServiceImpl.class);
 
   private static final String API_VERSION = "v1";
@@ -68,6 +72,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
   private final String opennlpVersion;
   private final Executor analysisExecutor;
   private final int analysisStreamWindow;
+  private final int maxTextBytes;
 
   /**
    * Creates the gRPC service adapter delegating analysis to the given orchestrator and
@@ -88,7 +93,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
       ModelBundleCache modelBundleCache,
       String opennlpVersion) {
     this(documentAnalyzer, profileRegistry, modelBundleCache, opennlpVersion,
-        ForkJoinPool.commonPool(), DEFAULT_ANALYSIS_STREAM_WINDOW);
+        ForkJoinPool.commonPool(), DEFAULT_ANALYSIS_STREAM_WINDOW, DEFAULT_MAX_TEXT_BYTES);
   }
 
   /**
@@ -109,7 +114,31 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
       String opennlpVersion,
       Executor analysisExecutor,
       int analysisStreamWindow) {
-    this.documentAnalyzer = Objects.requireNonNull(documentAnalyzer, "documentAnalyzer");
+    this(documentAnalyzer, profileRegistry, modelBundleCache, opennlpVersion,
+        analysisExecutor, analysisStreamWindow, DEFAULT_MAX_TEXT_BYTES);
+  }
+
+  /**
+   * Creates the service with explicit stream concurrency and operator text limits.
+   *
+   * @param documentAnalyzer Analyzer handling unary and streaming documents.
+   * @param profileRegistry Registry exposing available profiles.
+   * @param modelBundleCache Cache exposing models and embedding providers.
+   * @param opennlpVersion OpenNLP version reported to clients.
+   * @param analysisExecutor Shared executor for streamed document work.
+   * @param analysisStreamWindow Maximum documents admitted concurrently per stream.
+   * @param maxTextBytes Maximum UTF-8 encoded text bytes accepted on analysis and embedding
+   *     messages.
+   */
+  public OpenNlpAnalysisServiceImpl(
+      DocumentAnalyzer documentAnalyzer,
+      ProfileRegistry profileRegistry,
+      ModelBundleCache modelBundleCache,
+      String opennlpVersion,
+      Executor analysisExecutor,
+      int analysisStreamWindow,
+      int maxTextBytes) {
+    final DocumentAnalyzer delegate = Objects.requireNonNull(documentAnalyzer, "documentAnalyzer");
     this.profileRegistry = Objects.requireNonNull(profileRegistry, "profileRegistry");
     this.modelBundleCache = Objects.requireNonNull(modelBundleCache, "modelBundleCache");
     this.opennlpVersion = opennlpVersion == null ? "unknown" : opennlpVersion;
@@ -117,7 +146,12 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
     if (analysisStreamWindow < 1) {
       throw new IllegalArgumentException("analysisStreamWindow must be positive");
     }
+    if (maxTextBytes < 1) {
+      throw new IllegalArgumentException("maxTextBytes must be positive");
+    }
     this.analysisStreamWindow = analysisStreamWindow;
+    this.maxTextBytes = maxTextBytes;
+    this.documentAnalyzer = limitText(delegate, maxTextBytes);
   }
 
   /** {@inheritDoc} */
@@ -155,7 +189,8 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
   @Override
   public StreamObserver<EmbedTextRequest> embedText(
       StreamObserver<EmbedTextResponse> responseObserver) {
-    return new EmbedTextStream(modelBundleCache.getEmbeddingProvider(), responseObserver);
+    return new EmbedTextStream(
+        modelBundleCache.getEmbeddingProvider(), maxTextBytes, responseObserver);
   }
 
   /**
@@ -186,6 +221,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
     private static final int UNREADY_WRITE_WINDOW = 1_024;
 
     private final EmbeddingProvider embeddingProvider;
+    private final int maxTextBytes;
     private final StreamObserver<EmbedTextResponse> responseObserver;
     private final io.grpc.stub.ServerCallStreamObserver<EmbedTextResponse> serverCallObserver;
     private final Object readyLock = new Object();
@@ -195,8 +231,11 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
     private int writesSinceReady;
 
     private EmbedTextStream(
-        EmbeddingProvider embeddingProvider, StreamObserver<EmbedTextResponse> responseObserver) {
+        EmbeddingProvider embeddingProvider,
+        int maxTextBytes,
+        StreamObserver<EmbedTextResponse> responseObserver) {
       this.embeddingProvider = embeddingProvider;
+      this.maxTextBytes = maxTextBytes;
       this.responseObserver = responseObserver;
       // Direct unit tests pass a plain observer; the gate then degrades to always-ready,
       // which is fine because there is no transport to back up in that case.
@@ -218,9 +257,10 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
         return;
       }
       try {
+        final String text = validText(request, maxTextBytes);
         resolveRoute(request);
         final EmbeddingBatchResult result = embeddingProvider.embedBatchResolved(
-            modelId, backendId, List.of(validText(request)));
+            modelId, backendId, List.of(text));
         final float[] vector = result.vectors().getFirst();
         final EmbedTextResponse.Builder response = EmbedTextResponse.newBuilder()
             .setSequence(request.getSequence())
@@ -311,11 +351,16 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
       return backendId == null ? "default" : backendId;
     }
 
-    private static String validText(EmbedTextRequest request) {
+    private static String validText(EmbedTextRequest request, int maxTextBytes) {
       final String text = request.getText();
       if (text.isBlank()) {
         throw AnalysisException.invalidArgument(
             "EmbedText message with sequence " + request.getSequence() + " has a blank text");
+      }
+      if (exceedsUtf8Bytes(text, maxTextBytes)) {
+        throw AnalysisException.invalidArgument(
+            "EmbedText message with sequence " + request.getSequence()
+                + " exceeds server max_text_bytes (" + maxTextBytes + ")");
       }
       return text;
     }
@@ -377,6 +422,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
         .addAllCustomSentenceDetectorIds(
             modelBundleCache.getSentenceDetectorRegistry().ids())
         .addAllConfiguredResources(modelBundleCache.listConfiguredResources())
+        .setMaxTextBytes(maxTextBytes)
         .build());
     responseObserver.onCompleted();
   }
@@ -389,5 +435,61 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
         .addAllBundles(modelBundleCache.listBundles())
         .build());
     responseObserver.onCompleted();
+  }
+
+  private static DocumentAnalyzer limitText(DocumentAnalyzer delegate, int maxTextBytes) {
+    return new DocumentAnalyzer() {
+      @Override
+      public AnalyzeDocumentResponse analyze(AnalyzeDocumentRequest request) {
+        if (request != null && request.hasDocument()) {
+          validateText(request.getDocument().getRawText(), maxTextBytes);
+        }
+        return delegate.analyze(request);
+      }
+
+      @Override
+      public DocumentAnalysisSession openSession(
+          org.apache.opennlp.grpc.v1.AnalyzeStreamConfiguration configuration) {
+        final DocumentAnalysisSession session = delegate.openSession(configuration);
+        return document -> {
+          if (document != null) {
+            validateText(document.getRawText(), maxTextBytes);
+          }
+          return session.analyze(document);
+        };
+      }
+    };
+  }
+
+  private static void validateText(String text, int maxTextBytes) {
+    if (exceedsUtf8Bytes(text, maxTextBytes)) {
+      throw AnalysisException.invalidArgument(
+          "document.raw_text exceeds server max_text_bytes (" + maxTextBytes + ")");
+    }
+  }
+
+  private static boolean exceedsUtf8Bytes(String text, int maxTextBytes) {
+    int remaining = maxTextBytes;
+    for (int index = 0; index < text.length(); index++) {
+      final char value = text.charAt(index);
+      final int width;
+      if (value <= 0x7f) {
+        width = 1;
+      } else if (value <= 0x7ff) {
+        width = 2;
+      } else if (Character.isHighSurrogate(value)
+          && index + 1 < text.length()
+          && Character.isLowSurrogate(text.charAt(index + 1))) {
+        width = 4;
+        index++;
+      } else {
+        width = 3;
+      }
+      remaining -= width;
+      if (remaining < 0) {
+        return true;
+      }
+    }
+    return false;
   }
 }

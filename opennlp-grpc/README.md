@@ -56,6 +56,10 @@ type id, plus its selectable resource id and whether it is the default. The stan
 resource families are SentencePiece models, hunspell dictionaries, WordNet lexicons,
 and lattice dictionaries. A missing entry means the optional resource was not loaded;
 clients can discover that before submitting a profile that selects it.
+`GetServiceInfo.max_text_bytes` reports the operator's UTF-8 byte limit. It applies to unary
+and streaming analysis plus direct embedding even when a request omits
+`AnalysisOptions.max_text_length`. A request-level value can impose a smaller analysis
+limit but cannot raise the operator limit.
 
 Beyond the classic pipeline, the service serves the OpenNLP 3.0 feature branches:
 SentencePiece subword encoding (`PIPELINE_STEP_SUBWORD_TOKENIZE`, models under
@@ -108,6 +112,8 @@ Example config (`key=value`, `#` comments):
 ```ini
 server.enable_reflection=false
 server.max_inbound_message_size=10485760
+# UTF-8 encoded bytes per analysis document or direct embedding message.
+server.max_text_bytes=1048576
 # Full-analysis documents admitted concurrently per stream. The default is the
 # larger of 2 or the available processor count.
 server.analysis_stream_workers=8
@@ -144,7 +150,8 @@ running from a regular classpath (e.g. via Maven), they are discovered from the
 > sentence and document embeddings (`PIPELINE_STEP_EMBED`), segmentation chunking
 > (`sentence`, `token`, and `semantic` algorithms via `chunk_embed_configs` or
 > `PIPELINE_STEP_CHUNK`), category-driven chunking via `category_chunk_configs`,
-> probability reporting, `max_text_length`, offset encoding selection, parse format
+> probability reporting, caller-specific `max_text_length`, offset encoding selection,
+> parse format
 > selection, and capability discovery through `GetServiceInfo` / `ListModelBundles`.
 > The default `en-basic` profile/bundle is always present; optional `en-ner`,
 > `en-doccat`, `en-sentiment`, `en-parse`, and `en-chunk` profiles/bundles are
