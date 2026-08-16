@@ -416,7 +416,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       }
       runStep(
           PipelineStep.PIPELINE_STEP_LEMMATIZE,
-          () -> classicSteps.lemmatize(document, diagnostics));
+          () -> classicSteps.lemmatize(document, profile.getPosTagFormat(), diagnostics));
     } else {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_LEMMATIZE));
     }

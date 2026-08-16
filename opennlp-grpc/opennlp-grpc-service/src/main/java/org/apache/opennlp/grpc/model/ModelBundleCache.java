@@ -282,6 +282,24 @@ public final class ModelBundleCache implements AutoCloseable {
   }
 
   /**
+   * Reports whether tagging with the requested output format rewrites the model's native tags.
+   * When it does, consumers trained on the native tagset (the lemmatizer) must not be fed the
+   * converted {@code Token.pos_tag} values.
+   *
+   * @param requestedFormat The client-requested tagset.
+   *
+   * @return {@code true} when {@link #createPosTagger} with {@code requestedFormat} converts tags.
+   */
+  public boolean convertsPosTagFormat(org.apache.opennlp.grpc.v1.POSTagFormat requestedFormat) {
+    final POSTagFormat nativeFormat = POSTagFormatMapper.guessFormat(posModel);
+    return switch (requestedFormat) {
+      case POS_TAG_FORMAT_UD -> nativeFormat != POSTagFormat.UD;
+      case POS_TAG_FORMAT_PENN -> nativeFormat != POSTagFormat.PENN;
+      default -> false;
+    };
+  }
+
+  /**
    * Returns the shared lemmatizer. Always available through the bundled default when unconfigured.
    *
    * @return The lemmatizer. Never {@code null}.

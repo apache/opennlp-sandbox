@@ -824,10 +824,16 @@ final class ClassicStepRunner {
 
   /**
    * Assigns a lemma to every token using the statistical lemmatizer, which requires the
-   * POS tags produced by {@link PipelineStep#PIPELINE_STEP_POS_TAG}.
+   * POS tags produced by {@link PipelineStep#PIPELINE_STEP_POS_TAG}. When that step converted
+   * tags to a requested output tagset, the lemmatizer (trained on the tagger's native tagset)
+   * is fed native tags re-derived from the same model instead of the converted token tags.
    */
-  void lemmatize(OpenNlpDocument.Builder document, List<ProcessingDiagnostic> diagnostics) {
+  void lemmatize(OpenNlpDocument.Builder document, POSTagFormat posTagFormat,
+      List<ProcessingDiagnostic> diagnostics) {
     final LemmatizerME lemmatizer = modelBundleCache.getLemmatizer();
+    final POSTaggerME nativeTagger = modelBundleCache.convertsPosTagFormat(posTagFormat)
+        ? modelBundleCache.createPosTagger(POSTagFormat.POS_TAG_FORMAT_UNSPECIFIED)
+        : null;
     int lemmatizedTokens = 0;
     for (int i = 0; i < document.getSentencesCount(); i++) {
       final AnnotatedSentence sentence = document.getSentences(i);
@@ -835,9 +841,14 @@ final class ClassicStepRunner {
         continue;
       }
       final String[] tokens = tokenTexts(sentence);
-      final String[] tags = new String[sentence.getTokensCount()];
-      for (int t = 0; t < tags.length; t++) {
-        tags[t] = sentence.getTokens(t).getPosTag();
+      final String[] tags;
+      if (nativeTagger != null) {
+        tags = nativeTagger.tag(tokens);
+      } else {
+        tags = new String[sentence.getTokensCount()];
+        for (int t = 0; t < tags.length; t++) {
+          tags[t] = sentence.getTokens(t).getPosTag();
+        }
       }
       final String[] lemmas = lemmatizer.lemmatize(tokens, tags);
       final AnnotatedSentence.Builder sentenceBuilder = sentence.toBuilder();
