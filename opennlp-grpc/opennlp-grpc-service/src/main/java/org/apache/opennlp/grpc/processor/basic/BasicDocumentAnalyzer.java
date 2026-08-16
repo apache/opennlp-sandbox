@@ -370,13 +370,18 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     final List<String> nerEntityTypes = validator.resolveNerEntityTypes(profile);
     if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_NER)) {
       requireTokens(document, PipelineStep.PIPELINE_STEP_NER);
-      runStep(
-          PipelineStep.PIPELINE_STEP_NER,
-          () -> classicSteps.findNamedEntities(
-              document, nerEntityTypes, profile.getNerEnginePolicy(), includeProbabilities,
-              diagnostics));
-      if (shouldClearAdaptiveData(request)) {
-        nameFinderRegistry.clearAdaptiveData();
+      try {
+        runStep(
+            PipelineStep.PIPELINE_STEP_NER,
+            () -> classicSteps.findNamedEntities(
+                document, nerEntityTypes, profile.getNerEnginePolicy(), includeProbabilities,
+                diagnostics));
+      } finally {
+        // Clear adaptive data on failure too, or a finder that accumulated context before
+        // throwing leaks it into the next document on this thread.
+        if (shouldClearAdaptiveData(request)) {
+          nameFinderRegistry.clearAdaptiveData();
+        }
       }
     } else {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_NER));
