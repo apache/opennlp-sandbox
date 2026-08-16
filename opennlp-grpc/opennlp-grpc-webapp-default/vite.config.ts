@@ -25,5 +25,7 @@ export default defineConfig({
     outDir: "target/generated-resources/META-INF/opennlp-grpc-ui/default",
     emptyOutDir: true,
     sourcemap: false,
+    // The visualization adapter is intentionally a lazy chunk.
+    chunkSizeWarningLimit: 600,
   },
 });

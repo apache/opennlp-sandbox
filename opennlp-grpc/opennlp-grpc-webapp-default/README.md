@@ -41,10 +41,25 @@ protobuf JSON remains available in a separate result tab. The tool switcher load
 `/api/v1/ui-extensions` catalog and links every discovered ServiceLoader extension. Its static
 default entry remains usable when catalog discovery is unavailable.
 
-Model bundles are displayed as service capability information. A named analysis profile is the
-only user-selectable option sent by this initial playground.
+The optional semantic workbench uses embedding annotations from the same typed layers. An analyzed
+document can be added to an in-memory browser index, then ranked by cosine similarity against a
+query analyzed with the selected profile. The index is scoped to the current tab. It is not
+persisted and is not sent back to the service. Query similarity and typed sentiment scores are
+shown as heatmaps. The graph view links the document to its layers and annotations, and annotation
+nodes open the same details used by the Document view. Visualization code is loaded only when a
+graph or heatmap is opened.
 
-There are no runtime npm dependencies. The build-only dependencies are Vite (MIT), Vitest (MIT),
-TypeScript (Apache License 2.0), and the Node type declarations (MIT). The frontend Maven plugin is
-Apache License 2.0. Node and npm are downloaded into `target/` for the build and are not packaged
-in the module JAR.
+Frontend responsibilities are kept separate: `api.ts` owns HTTP, `document-shape.ts` owns wire
+normalization, `embedding-workbench.ts` owns vector math and the session index,
+`visualization-data.ts` creates renderer-neutral data, `charts.ts` is the Apache ECharts adapter,
+and `semantic-workbench.ts` coordinates the semantic controls. `main.ts` remains the page entry
+point and document inspector.
+
+Model bundles are displayed as service capability information. A named analysis profile remains
+the only user-selectable analysis option sent by the playground.
+
+The runtime visualization dependency is Apache ECharts (Apache License 2.0), which brings zrender
+(BSD 3-Clause) and tslib (Zero-Clause BSD). Their required license text is packaged in the JAR.
+The build-only dependencies are Vite (MIT), Vitest (MIT), TypeScript (Apache License 2.0), and the
+Node type declarations (MIT). The frontend Maven plugin is Apache License 2.0. Node and npm are
+downloaded into `target/` for the build and are not packaged in the module JAR.

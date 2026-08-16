@@ -123,12 +123,14 @@
             <plugin>
                 <groupId>org.apache.rat</groupId>
                 <artifactId>apache-rat-plugin</artifactId>
-                <configuration combine.children="append">
-                    <excludes>
+                <configuration>
+                    <excludes combine.children="append">
                         <!-- JSON does not permit comments. -->
                         <exclude>package.json</exclude>
                         <exclude>package-lock.json</exclude>
                         <exclude>tsconfig.json</exclude>
+                        <!-- Verbatim third-party license text cannot carry an ASF source header. -->
+                        <exclude>src/main/resources/META-INF/LICENSE-frontend-dependencies</exclude>
                     </excludes>
                 </configuration>
             </plugin>

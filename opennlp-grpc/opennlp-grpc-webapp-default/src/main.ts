@@ -36,6 +36,7 @@ import {
   type AnnotationView,
   type DocumentShapeView,
 } from "./document-shape";
+import { SemanticWorkbench, type ResultViewName } from "./semantic-workbench";
 import {
   activeUiExtension,
   extensionInitials,
@@ -67,6 +68,8 @@ const layerSummary = requiredElement<HTMLElement>("layer-summary");
 const annotatedText = requiredElement<HTMLElement>("annotated-text");
 const annotationDetails = requiredElement<HTMLElement>("annotation-details");
 const documentView = requiredElement<HTMLElement>("document-view");
+const heatmapView = requiredElement<HTMLElement>("heatmap-view");
+const graphView = requiredElement<HTMLElement>("graph-view");
 const jsonView = requiredElement<HTMLElement>("json-view");
 const resultTabs = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-result-tab]"));
 const layerFilter = requiredElement<HTMLInputElement>("layer-filter");
@@ -81,6 +84,21 @@ let busy = false;
 let currentJson = "";
 let currentShape: DocumentShapeView | undefined;
 
+const semanticWorkbench = new SemanticWorkbench({
+  analyzeQuery: async (text) => readDocumentShape(await analyze(createAnalysisRequest(text))),
+  openDocument: (document) => {
+    textArea.value = document.shape.rawText;
+    updateFormState();
+    renderDocumentShape(document.shape);
+    currentJson = document.json;
+    responseOutput.textContent = currentJson || "Stored response JSON is unavailable.";
+    copyButton.disabled = !currentJson;
+    semanticWorkbench.setDocument(document.title, document.shape, document.json);
+    selectResultTab("document");
+  },
+  selectAnnotation: selectAnnotationFromGraph,
+});
+
 textArea.addEventListener("input", updateFormState);
 sampleButton.addEventListener("click", () => {
   textArea.value = sampleText;
@@ -91,7 +109,7 @@ form.addEventListener("submit", submitAnalysis);
 copyButton.addEventListener("click", copyResponse);
 layerFilter.addEventListener("input", filterLayerButtons);
 for (const tab of resultTabs) {
-  tab.addEventListener("click", () => selectResultTab(tab.dataset.resultTab === "json" ? "json" : "document"));
+  tab.addEventListener("click", () => selectResultTab(resultViewName(tab.dataset.resultTab)));
   tab.addEventListener("keydown", navigateResultTabs);
 }
 
@@ -186,22 +204,16 @@ async function submitAnalysis(event: SubmitEvent): Promise<void> {
     return;
   }
 
-  const request: AnalyzeRequest = {
-    document: { rawText: text },
-    options: { offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT" },
-  };
-  if (profileSelect.value) {
-    request.profileId = profileSelect.value;
-  }
-
   setBusy(true);
   setFormStatus("Analyzing text…");
   responseOutput.textContent = "Waiting for the service response…";
   try {
-    const response = await analyze(request);
+    const response = await analyze(createAnalysisRequest(text));
     currentJson = JSON.stringify(response, null, 2);
     responseOutput.textContent = currentJson;
-    renderDocumentShape(readDocumentShape(response));
+    const shape = readDocumentShape(response);
+    renderDocumentShape(shape);
+    semanticWorkbench.setDocument(text, shape, currentJson);
     selectResultTab("document");
     copyButton.disabled = false;
     setFormStatus("Analysis complete.");
@@ -324,6 +336,20 @@ function showAnnotation(layer: AnnotationLayerView, annotation: AnnotationView):
   annotationDetails.replaceChildren(title, facts, source);
 }
 
+function selectAnnotationFromGraph(layerId: string, annotationIndex: number): void {
+  if (!currentShape) {
+    return;
+  }
+  const layer = currentShape.layers.find((candidate) => candidate.id === layerId);
+  const annotation = layer?.annotations[annotationIndex];
+  if (!layer || !annotation) {
+    return;
+  }
+  selectResultTab("document");
+  selectLayer(currentShape, layer);
+  showAnnotation(layer, annotation);
+}
+
 function filterLayerButtons(): void {
   if (!currentShape) {
     return;
@@ -388,14 +414,17 @@ function message(value: string): HTMLParagraphElement {
   return paragraph;
 }
 
-function selectResultTab(tabName: "document" | "json"): void {
+function selectResultTab(tabName: ResultViewName): void {
   documentView.hidden = tabName !== "document";
+  heatmapView.hidden = tabName !== "heatmap";
+  graphView.hidden = tabName !== "graph";
   jsonView.hidden = tabName !== "json";
   for (const tab of resultTabs) {
     const selected = tab.dataset.resultTab === tabName;
     tab.setAttribute("aria-selected", String(selected));
     tab.tabIndex = selected ? 0 : -1;
   }
+  semanticWorkbench.show(tabName);
 }
 
 function navigateResultTabs(event: KeyboardEvent): void {
@@ -407,9 +436,24 @@ function navigateResultTabs(event: KeyboardEvent): void {
   const direction = event.key === "ArrowRight" ? 1 : -1;
   const next = resultTabs[(currentIndex + direction + resultTabs.length) % resultTabs.length];
   if (next) {
-    selectResultTab(next.dataset.resultTab === "json" ? "json" : "document");
+    selectResultTab(resultViewName(next.dataset.resultTab));
     next.focus();
   }
+}
+
+function resultViewName(value: string | undefined): ResultViewName {
+  return value === "heatmap" || value === "graph" || value === "json" ? value : "document";
+}
+
+function createAnalysisRequest(text: string): AnalyzeRequest {
+  const request: AnalyzeRequest = {
+    document: { rawText: text },
+    options: { offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT" },
+  };
+  if (profileSelect.value) {
+    request.profileId = profileSelect.value;
+  }
+  return request;
 }
 
 async function copyResponse(): Promise<void> {

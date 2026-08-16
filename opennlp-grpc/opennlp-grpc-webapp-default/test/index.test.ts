@@ -44,6 +44,11 @@ describe("analysis playground markup", () => {
     expect(html).toContain('id="result-layer-count"');
     expect(html).toContain('id="result-annotation-count"');
     expect(html).toContain('id="result-offset-encoding"');
+    expect(html).toContain('data-result-tab="heatmap"');
+    expect(html).toContain('data-result-tab="graph"');
+    expect(html).toContain('id="semantic-query"');
+    expect(html).toContain('id="add-to-index-button"');
+    expect(html).toContain('id="search-results"');
     expect(html).toContain('Apache OpenNLP');
   });
 });

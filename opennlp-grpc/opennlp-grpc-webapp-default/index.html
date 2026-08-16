@@ -147,11 +147,18 @@
                 <span class="response-label">Document shape</span>
                 <h3 id="response-heading">Analysis result</h3>
               </div>
-              <button id="copy-button" type="button" class="copy-button" disabled>Copy JSON</button>
+              <div class="response-actions">
+                <button id="add-to-index-button" type="button" class="copy-button" disabled>Add to search</button>
+                <button id="copy-button" type="button" class="copy-button" disabled>Copy JSON</button>
+              </div>
             </div>
             <div class="result-tabs" role="tablist" aria-label="Analysis result views">
               <button id="document-tab" type="button" role="tab" aria-selected="true"
                 aria-controls="document-view" data-result-tab="document">Document</button>
+              <button id="heatmap-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+                aria-controls="heatmap-view" data-result-tab="heatmap">Heatmap</button>
+              <button id="graph-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+                aria-controls="graph-view" data-result-tab="graph">Graph</button>
               <button id="json-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
                 aria-controls="json-view" data-result-tab="json">Protobuf JSON</button>
             </div>
@@ -178,11 +185,66 @@
                 </aside>
               </div>
             </div>
+            <div id="heatmap-view" role="tabpanel" aria-labelledby="heatmap-tab" class="visualization-view" hidden>
+              <div class="visualization-heading">
+                <div><span>Semantic similarity</span><small>Current document compared with the latest query</small></div>
+                <p>Scores come from typed positional embedding layers using the same model as the query.</p>
+              </div>
+              <div id="semantic-heatmap" class="chart-canvas" role="img"
+                aria-label="Semantic similarity heatmap">Run a semantic query to build this heatmap.</div>
+              <div class="visualization-heading">
+                <div><span>Sentiment</span><small>Typed category scores by text span</small></div>
+              </div>
+              <div id="sentiment-heatmap" class="chart-canvas chart-canvas-small" role="img"
+                aria-label="Sentiment score heatmap">Analyze a document to inspect sentiment scores.</div>
+            </div>
+            <div id="graph-view" role="tabpanel" aria-labelledby="graph-tab" class="visualization-view" hidden>
+              <div class="visualization-heading">
+                <div><span>Document graph</span><small>Document, layer, and annotation relationships</small></div>
+                <p>Pan, zoom, or select an annotation node to return to its typed layer.</p>
+              </div>
+              <div id="document-graph" class="chart-canvas chart-canvas-graph" role="img"
+                aria-label="Document shape graph">Analyze a document to build its graph.</div>
+              <p id="graph-selection" class="graph-selection" aria-live="polite">No graph selection.</p>
+            </div>
             <div id="json-view" role="tabpanel" aria-labelledby="json-tab" hidden>
               <pre id="response-output" tabindex="0"><code>No analysis yet.</code></pre>
             </div>
           </section>
         </div>
+
+        <section class="semantic-lab" aria-labelledby="semantic-heading">
+          <div class="semantic-intro">
+            <p class="section-kicker">Session-local vector search</p>
+            <h3 id="semantic-heading">Ask the document collection</h3>
+            <p>
+              Add analyzed documents, then rank them with embeddings produced by the selected profile.
+              The index stays in this browser tab and is never sent to another service.
+            </p>
+            <dl class="semantic-facts">
+              <div><dt>Indexed</dt><dd id="index-count">0 documents</dd></div>
+              <div><dt>Similarity</dt><dd>Cosine</dd></div>
+              <div><dt>Storage</dt><dd>Browser memory</dd></div>
+            </dl>
+          </div>
+          <div class="semantic-console">
+            <form id="semantic-search-form">
+              <label for="semantic-query">Semantic query</label>
+              <textarea id="semantic-query" rows="3" disabled
+                placeholder="Add an embedding-enabled document, then describe what you want to find."></textarea>
+              <div class="form-actions">
+                <button id="search-button" type="submit" disabled>Search session</button>
+                <button id="clear-index-button" type="button" class="secondary-button" disabled>Clear index</button>
+              </div>
+            </form>
+            <p id="semantic-status" class="form-status" role="status" aria-live="polite">
+              Analyze an embedding-enabled document, then add it to search.
+            </p>
+            <div id="search-results" class="search-results" aria-label="Semantic search results">
+              <p class="empty-message">No session search results yet.</p>
+            </div>
+          </div>
+        </section>
       </section>
     </main>
 
