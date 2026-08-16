@@ -158,7 +158,7 @@ running from a regular classpath (e.g. via Maven), they are discovered from the
 > structured and/or bracketed parse views), classic shallow chunking
 > (`PIPELINE_STEP_SYNTACTIC_CHUNK`, filling `AnnotatedSentence.syntactic_chunks`),
 > sentence and document embeddings (`PIPELINE_STEP_EMBED`), segmentation chunking
-> (`sentence`, `token`, and `semantic` algorithms via `chunk_embed_configs` or
+> (typed `sentence`, `token`, and `semantic` strategies via `chunk_embed_configs` or
 > `PIPELINE_STEP_CHUNK`), category-driven chunking via `category_chunk_configs`,
 > probability reporting, caller-specific `max_text_length`, offset encoding selection,
 > parse format
@@ -643,12 +643,18 @@ Request one or more chunking strategies with per-chunk embeddings:
   "chunk_embed_configs": [
     {
       "config_id": "sentence-chunks",
-      "chunking": { "algorithm": "sentence" },
+      "chunking": {
+        "strategy": { "standard": "STANDARD_CHUNKING_STRATEGY_SENTENCE" }
+      },
       "embedding_model_ids": ["sentence-transformers"]
     },
     {
       "config_id": "token-chunks",
-      "chunking": { "algorithm": "token", "chunk_size": 128, "chunk_overlap": 16 },
+      "chunking": {
+        "strategy": { "standard": "STANDARD_CHUNKING_STRATEGY_TOKEN" },
+        "chunk_size": 128,
+        "chunk_overlap": 16
+      },
       "embedding_model_ids": ["sentence-transformers"]
     }
   ]
@@ -657,7 +663,11 @@ Request one or more chunking strategies with per-chunk embeddings:
 
 The server auto-runs sentence detection (and tokenization for `token` windows) once,
 then returns each strategy as a `chunk_embedding_groups` entry with embeddings
-attached inside each chunk.
+attached inside each chunk. `ChunkEmbeddingGroup.strategy` reports the canonical typed
+strategy, including for legacy requests. The older string-valued `algorithm` field
+remains a compatibility input but cannot be set together with `strategy`. Standard
+sentence, token, semantic, and category identities use the enum arm; the custom arm
+keeps extension strategy ids open.
 
 #### Semantic chunking
 

@@ -62,7 +62,7 @@ public final class SegmentationChunker {
    * @param rawText           The document text the annotation offsets refer to.
    * @param document          The analyzed document. Sentence spans are required; token
    *                          spans are additionally required for the {@code token} algorithm.
-   * @param spec              The chunking spec. The algorithm must be set.
+   * @param spec              The chunking spec. A strategy must be selected.
    * @param embeddingProvider The provider used for semantic chunking. Must not be
    *                          {@code null}; it is not consulted for other algorithms.
    *
@@ -95,26 +95,20 @@ public final class SegmentationChunker {
       ChunkingSpec spec,
       EmbeddingProvider embeddingProvider,
       EmbeddingSelector fallbackSelector) {
-    if (spec.getAlgorithm().isBlank()) {
-      throw AnalysisException.invalidArgument("chunking.algorithm is required");
-    }
-    if (isSemantic(spec)) {
+    final String strategy = ChunkingStrategies.selectedId(spec);
+    if (ChunkingStrategies.SEMANTIC.equals(strategy)) {
       final SemanticSelection selection =
           requireSemanticSelection(spec, embeddingProvider, fallbackSelector);
       return SemanticChunker.chunk(
           rawText, document, spec.getSemanticConfig(), embeddingProvider,
           selection.modelId(), selection.backendId());
     }
-    return switch (spec.getAlgorithm()) {
-      case "sentence" -> sentenceChunks(document);
-      case "token" -> tokenWindowChunks(document, spec);
+    return switch (strategy) {
+      case ChunkingStrategies.SENTENCE -> sentenceChunks(document);
+      case ChunkingStrategies.TOKEN -> tokenWindowChunks(document, spec);
       default -> throw AnalysisException.unimplemented(
-          "chunking algorithm '" + spec.getAlgorithm() + "' is not implemented");
+          "chunking strategy '" + strategy + "' is not implemented");
     };
-  }
-
-  private static boolean isSemantic(ChunkingSpec spec) {
-    return "semantic".equals(spec.getAlgorithm()) || spec.hasSemanticConfig();
   }
 
   private static SemanticSelection requireSemanticSelection(

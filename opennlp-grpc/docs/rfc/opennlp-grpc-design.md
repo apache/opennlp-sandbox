@@ -532,6 +532,9 @@ message ChunkEmbeddingGroup {
   // Primary granularity for the chunks/vectors in this group (CHUNK for
   // segmentation-style groups, SENTENCE, etc.).
   optional EmbeddingGranularity granularity = 7;
+
+  // Canonical typed identity of the strategy that produced this group.
+  ChunkingStrategySelector strategy = 9;
 }
 
 message ChunkGroupStats {
@@ -692,14 +695,15 @@ enum PipelineStep {
 // Configuration for a chunking strategy (used when the caller does not
 // supply a full AnalysisProfile for the entry).
 message ChunkingSpec {
-  // Algorithm: token, sentence, character, semantic (future), etc.
-  string algorithm = 1;           // e.g. "token", "sentence"
+  // Compatibility string. New clients use strategy; setting both is invalid.
+  string algorithm = 1;
   int32 chunk_size = 2;
   int32 chunk_overlap = 3;
   bool clean_text = 4;
   bool preserve_urls = 5;
-  // For semantic chunking (topic boundaries via embeddings).
+  // Its presence selects semantic chunking when neither selector is set.
   optional SemanticChunkingConfig semantic_config = 6;
+  ChunkingStrategySelector strategy = 7;
 }
 
 message SemanticChunkingConfig {
@@ -922,12 +926,18 @@ Two chunking strategies, each with explicitly named embedding models (not an aut
   "chunk_embed_configs": [
     {
       "config_id": "sentence-chunks",
-      "chunking": { "algorithm": "sentence" },
+      "chunking": {
+        "strategy": { "standard": "STANDARD_CHUNKING_STRATEGY_SENTENCE" }
+      },
       "embedding_model_ids": ["minilm-l6-v2"]
     },
     {
       "config_id": "fixed-window",
-      "chunking": { "algorithm": "token", "chunk_size": 128, "chunk_overlap": 16 },
+      "chunking": {
+        "strategy": { "standard": "STANDARD_CHUNKING_STRATEGY_TOKEN" },
+        "chunk_size": 128,
+        "chunk_overlap": 16
+      },
       "embedding_model_ids": ["minilm-l6-v2", "e5-small"]
     }
   ]

@@ -27,6 +27,7 @@ import java.util.Set;
 import opennlp.tools.sentdetect.NewlineSentenceDetector;
 import opennlp.tools.tokenize.SimpleTokenizer;
 import opennlp.tools.tokenize.WhitespaceTokenizer;
+import org.apache.opennlp.grpc.chunk.ChunkingStrategies;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.model.NameFinderRegistry;
@@ -516,7 +517,9 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     if (request.getChunkEmbedConfigsCount() > 0) {
       steps.add(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT);
       for (ChunkEmbedConfigEntry entry : request.getChunkEmbedConfigsList()) {
-        if (entry.hasChunking() && "token".equals(entry.getChunking().getAlgorithm())) {
+        if (entry.hasChunking()
+            && ChunkingStrategies.TOKEN.equals(
+                ChunkingStrategies.selectedId(entry.getChunking()))) {
           steps.add(PipelineStep.PIPELINE_STEP_TOKENIZE);
         }
       }

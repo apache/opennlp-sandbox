@@ -47,6 +47,7 @@ import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.apache.opennlp.grpc.v1.ProcessingDiagnostic;
+import org.apache.opennlp.grpc.v1.StandardChunkingStrategy;
 
 /**
  * Builds {@link ChunkEmbeddingGroup} results from {@link ChunkEmbedConfigEntry} requests.
@@ -123,7 +124,8 @@ public final class ChunkEmbedProcessor {
         .setGroupId(entry.getConfigId())
         .setChunkConfigId(entry.getConfigId())
         .addAllEmbeddingModelIds(selectors.stream().map(EmbeddingSelector::getModelId).toList())
-        .setGranularity(EmbeddingGranularity.EMBEDDING_GRANULARITY_CHUNK_LEVEL);
+        .setGranularity(EmbeddingGranularity.EMBEDDING_GRANULARITY_CHUNK_LEVEL)
+        .setStrategy(ChunkingStrategies.selectedStrategy(entry.getChunking()));
     if (entry.hasResultSetName()) {
       group.setResultSetName(entry.getResultSetName());
     }
@@ -286,7 +288,9 @@ public final class ChunkEmbedProcessor {
         .setGroupId(entry.getConfigId())
         .setChunkConfigId(entry.getConfigId())
         .addAllEmbeddingModelIds(selectors.stream().map(EmbeddingSelector::getModelId).toList())
-        .setGranularity(EmbeddingGranularity.EMBEDDING_GRANULARITY_CHUNK_LEVEL);
+        .setGranularity(EmbeddingGranularity.EMBEDDING_GRANULARITY_CHUNK_LEVEL)
+        .setStrategy(ChunkingStrategies.standard(
+            StandardChunkingStrategy.STANDARD_CHUNKING_STRATEGY_CATEGORY));
     if (entry.hasResultSetName()) {
       group.setResultSetName(entry.getResultSetName());
     }
@@ -392,7 +396,10 @@ public final class ChunkEmbedProcessor {
    */
   public static ChunkEmbeddingGroup buildSentenceGroup(
       String rawText, OpenNlpDocument document, String groupId) {
-    final ChunkingSpec spec = ChunkingSpec.newBuilder().setAlgorithm("sentence").build();
+    final ChunkingSpec spec = ChunkingSpec.newBuilder()
+        .setStrategy(ChunkingStrategies.standard(
+            StandardChunkingStrategy.STANDARD_CHUNKING_STRATEGY_SENTENCE))
+        .build();
     final ChunkEmbedConfigEntry entry = ChunkEmbedConfigEntry.newBuilder()
         .setConfigId(groupId)
         .setChunking(spec)
@@ -508,7 +515,7 @@ public final class ChunkEmbedProcessor {
   }
 
   private static boolean isSemantic(ChunkingSpec chunking) {
-    return "semantic".equals(chunking.getAlgorithm()) || chunking.hasSemanticConfig();
+    return ChunkingStrategies.isSemantic(chunking);
   }
 
   private static void collectTokenStarts(OpenNlpDocument document,

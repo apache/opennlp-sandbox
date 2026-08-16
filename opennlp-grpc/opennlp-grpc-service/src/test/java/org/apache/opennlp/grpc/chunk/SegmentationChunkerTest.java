@@ -24,8 +24,10 @@ import org.apache.opennlp.grpc.embedding.StubEmbeddingProvider;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.ChunkingSpec;
+import org.apache.opennlp.grpc.v1.ChunkingStrategySelector;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.StandardChunkingStrategy;
 import org.apache.opennlp.grpc.v1.Token;
 import org.junit.jupiter.api.Test;
 
@@ -44,7 +46,10 @@ class SegmentationChunkerTest {
         .build();
 
     final var chunks = SegmentationChunker.segment(document.getRawText(), document,
-        ChunkingSpec.newBuilder().setAlgorithm("sentence").build(), NO_MODELS);
+        ChunkingSpec.newBuilder()
+            .setStrategy(ChunkingStrategySelector.newBuilder()
+                .setStandard(StandardChunkingStrategy.STANDARD_CHUNKING_STRATEGY_SENTENCE))
+            .build(), NO_MODELS);
 
     assertEquals(2, chunks.size());
     assertEquals(0, chunks.get(0).start());
@@ -68,7 +73,8 @@ class SegmentationChunkerTest {
 
     final var chunks = SegmentationChunker.segment(document.getRawText(), document,
         ChunkingSpec.newBuilder()
-            .setAlgorithm("token")
+            .setStrategy(ChunkingStrategySelector.newBuilder()
+                .setStandard(StandardChunkingStrategy.STANDARD_CHUNKING_STRATEGY_TOKEN))
             .setChunkSize(3)
             .setChunkOverlap(1)
             .build(),

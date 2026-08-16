@@ -124,11 +124,10 @@ message StemmerSpec {
 // Configuration for a chunking strategy (used when the caller does not
 // supply a full AnalysisProfile for the entry).
 message ChunkingSpec {
-  // Chunking strategy. Required (blank => INVALID_ARGUMENT). Implemented values:
-  // "sentence" (one chunk per N sentences), "token" (sliding token windows), and
-  // "semantic" (topic boundaries via embeddings; also implied when semantic_config
-  // is set). Any other non-blank value => UNIMPLEMENTED.
-  string algorithm = 1;           // e.g. "token", "sentence"
+  // Compatibility selector for the chunking strategy. New clients should use strategy.
+  // Implemented values are "sentence", "token", and "semantic". Setting both fields
+  // => INVALID_ARGUMENT. An unknown non-blank value => UNIMPLEMENTED.
+  string algorithm = 1;
   // For "token" chunking only: window size in TOKENS. Must be > 0 (else
   // INVALID_ARGUMENT). Ignored by other algorithms.
   int32 chunk_size = 2;
@@ -143,6 +142,10 @@ message ChunkingSpec {
   // For semantic chunking (topic boundaries via embeddings). Its presence also
   // selects the "semantic" algorithm.
   optional SemanticChunkingConfig semantic_config = 6;
+  // Strongly typed standard strategy or open extension id. When neither selector is
+  // set, semantic_config selects SEMANTIC; otherwise a selector is required. CATEGORY
+  // is result-only here: request category grouping through CategoryChunkConfigEntry.
+  ChunkingStrategySelector strategy = 7;
 }
 
 // Tuning for "semantic" chunking, which places a chunk boundary between two

@@ -27,10 +27,12 @@ import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
 import org.apache.opennlp.grpc.v1.ChunkingSpec;
+import org.apache.opennlp.grpc.v1.ChunkingStrategySelector;
 import org.apache.opennlp.grpc.v1.EmbeddingBackendSelector;
 import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.SemanticChunkingConfig;
+import org.apache.opennlp.grpc.v1.StandardChunkingStrategy;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,7 +63,6 @@ class BasicDocumentAnalyzerSemanticChunkTest {
         .addChunkEmbedConfigs(ChunkEmbedConfigEntry.newBuilder()
             .setConfigId("semantic-topics")
             .setChunking(ChunkingSpec.newBuilder()
-                .setAlgorithm("semantic")
                 .setSemanticConfig(SemanticChunkingConfig.newBuilder()
                     .setSimilarityThreshold(0.5f)
                     .setSemanticEmbeddingModelId("minilm")
@@ -75,6 +76,8 @@ class BasicDocumentAnalyzerSemanticChunkTest {
     assertEquals(1, response.getDocument().getChunkEmbeddingGroupsCount());
 
     final ChunkEmbeddingGroup group = response.getDocument().getChunkEmbeddingGroups(0);
+    assertEquals(StandardChunkingStrategy.STANDARD_CHUNKING_STRATEGY_SEMANTIC,
+        group.getStrategy().getStandard());
     assertEquals(2, group.getChunksCount());
     assertEquals(List.of(0, 1), group.getChunks(0).getContainedSentenceIndicesList());
     assertEquals(List.of(2), group.getChunks(1).getContainedSentenceIndicesList());
@@ -110,7 +113,9 @@ class BasicDocumentAnalyzerSemanticChunkTest {
         .addChunkEmbedConfigs(ChunkEmbedConfigEntry.newBuilder()
             .setConfigId("semantic-routed")
             .setChunking(ChunkingSpec.newBuilder()
-                .setAlgorithm("semantic")
+                .setStrategy(ChunkingStrategySelector.newBuilder()
+                    .setStandard(StandardChunkingStrategy
+                        .STANDARD_CHUNKING_STRATEGY_SEMANTIC))
                 .setSemanticConfig(SemanticChunkingConfig.newBuilder()
                     .setSimilarityThreshold(0.5f)
                     .setSemanticEmbeddingSelector(EmbeddingSelector.newBuilder()

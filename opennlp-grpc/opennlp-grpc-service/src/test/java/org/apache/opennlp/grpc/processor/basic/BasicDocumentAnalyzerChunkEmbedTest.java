@@ -29,11 +29,14 @@ import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.CategoryChunkConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkingSpec;
+import org.apache.opennlp.grpc.v1.ChunkingStrategySelector;
 import org.apache.opennlp.grpc.v1.EmbeddingBackendSelector;
 import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
 import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
+import org.apache.opennlp.grpc.v1.StandardChunkingStrategy;
+import org.apache.opennlp.grpc.v1.StandardLayer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,7 +59,9 @@ class BasicDocumentAnalyzerChunkEmbedTest {
         .setDocument(OpenNlpDocument.newBuilder().setRawText(TEXT).build())
         .addChunkEmbedConfigs(ChunkEmbedConfigEntry.newBuilder()
             .setConfigId("sentence-chunks")
-            .setChunking(ChunkingSpec.newBuilder().setAlgorithm("sentence").build())
+            .setChunking(ChunkingSpec.newBuilder()
+                .setStrategy(standard(StandardChunkingStrategy
+                    .STANDARD_CHUNKING_STRATEGY_SENTENCE)))
             .addEmbeddingModelIds("minilm")
             .addEmbeddingModelIds("e5")
             .build())
@@ -66,6 +71,8 @@ class BasicDocumentAnalyzerChunkEmbedTest {
     assertEquals(1, response.getDocument().getChunkEmbeddingGroupsCount());
     final var group = response.getDocument().getChunkEmbeddingGroups(0);
     assertEquals("sentence-chunks", group.getGroupId());
+    assertEquals(StandardChunkingStrategy.STANDARD_CHUNKING_STRATEGY_SENTENCE,
+        group.getStrategy().getStandard());
     assertEquals(2, group.getChunksCount());
     assertEquals(2, group.getChunks(0).getEmbeddingsCount());
     assertEquals("minilm", group.getChunks(0).getEmbeddings(0).getModelId());
@@ -73,6 +80,12 @@ class BasicDocumentAnalyzerChunkEmbedTest {
         EmbeddingGranularity.EMBEDDING_GRANULARITY_CHUNK_LEVEL,
         group.getChunks(0).getEmbeddings(0).getGranularity());
     assertTrue(group.getStats().getChunkCount() > 0);
+    final var chunkLayer = response.getDocument().getLayers().getLayersList().stream()
+        .filter(layer -> layer.getIdentity().getStandard()
+            == StandardLayer.STANDARD_LAYER_CHUNK_GROUPS)
+        .findFirst()
+        .orElseThrow();
+    assertEquals(group, chunkLayer.getChunkGroupValues().getAnnotations(0));
 
     // One centroid per model, each the element-wise mean of that model's chunk vectors.
     assertEquals(2, group.getCentroidsCount());
@@ -182,6 +195,8 @@ class BasicDocumentAnalyzerChunkEmbedTest {
 
     assertEquals(1, response.getDocument().getChunkEmbeddingGroupsCount());
     assertEquals(2, response.getDocument().getChunkEmbeddingGroups(0).getChunksCount());
+    assertEquals(StandardChunkingStrategy.STANDARD_CHUNKING_STRATEGY_SENTENCE,
+        response.getDocument().getChunkEmbeddingGroups(0).getStrategy().getStandard());
     assertEquals(0, response.getDocument().getChunkEmbeddingGroups(0).getChunks(0).getEmbeddingsCount());
   }
 
@@ -192,7 +207,8 @@ class BasicDocumentAnalyzerChunkEmbedTest {
         .addChunkEmbedConfigs(ChunkEmbedConfigEntry.newBuilder()
             .setConfigId("token-chunks")
             .setChunking(ChunkingSpec.newBuilder()
-                .setAlgorithm("token")
+                .setStrategy(standard(StandardChunkingStrategy
+                    .STANDARD_CHUNKING_STRATEGY_TOKEN))
                 .setChunkSize(2)
                 .setChunkOverlap(0)
                 .build())
@@ -202,6 +218,8 @@ class BasicDocumentAnalyzerChunkEmbedTest {
 
     assertTrue(response.getDocument().getSentences(0).getTokensCount() > 0);
     assertEquals(3, response.getDocument().getChunkEmbeddingGroups(0).getChunksCount());
+    assertEquals(StandardChunkingStrategy.STANDARD_CHUNKING_STRATEGY_TOKEN,
+        response.getDocument().getChunkEmbeddingGroups(0).getStrategy().getStandard());
   }
 
   @Test
@@ -225,5 +243,9 @@ class BasicDocumentAnalyzerChunkEmbedTest {
     final var group = response.getDocument().getChunkEmbeddingGroups(0);
     assertEquals(4, group.getChunksCount());
     assertEquals(5, group.getStats().getTotalTokens());
+  }
+
+  private static ChunkingStrategySelector standard(StandardChunkingStrategy strategy) {
+    return ChunkingStrategySelector.newBuilder().setStandard(strategy).build();
   }
 }

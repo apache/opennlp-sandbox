@@ -359,6 +359,24 @@ message Chunk {
   repeated int32 contained_sentence_indices = 5;
 }
 
+// OpenNLP-owned chunking strategies whose identities are stable parts of this API.
+// CATEGORY is produced by CategoryChunkConfigEntry and is not valid in ChunkingSpec.
+enum StandardChunkingStrategy {
+  STANDARD_CHUNKING_STRATEGY_UNSPECIFIED = 0;
+  STANDARD_CHUNKING_STRATEGY_SENTENCE = 1;
+  STANDARD_CHUNKING_STRATEGY_TOKEN = 2;
+  STANDARD_CHUNKING_STRATEGY_SEMANTIC = 3;
+  STANDARD_CHUNKING_STRATEGY_CATEGORY = 4;
+}
+
+// Identifies either a standard OpenNLP chunking strategy or an extension strategy.
+message ChunkingStrategySelector {
+  oneof kind {
+    StandardChunkingStrategy standard = 1;
+    string custom = 2;
+  }
+}
+
 // One chunking strategy's output: the chunks (with their embeddings inside)
 // plus traceability for the strategy and the exact embedding models that
 // were asked for this strategy in the request.
@@ -382,6 +400,9 @@ message ChunkEmbeddingGroup {
   // vectors for that model (granularity EMBEDDING_GRANULARITY_GROUP_CENTROID), a single
   // representative vector for the group. Empty when the group has no embedded chunks.
   repeated EmbeddingResult centroids = 8;
+  // The canonical strategy that produced this group. Always populated by this server,
+  // including when the request used the legacy ChunkingSpec.algorithm string.
+  ChunkingStrategySelector strategy = 9;
 }
 
 // Typed per-group statistics/provenance (replaces an untyped metadata map).

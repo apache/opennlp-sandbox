@@ -23,6 +23,7 @@ import java.util.Objects;
 
 import org.apache.opennlp.grpc.chunk.Centroids;
 import org.apache.opennlp.grpc.chunk.ChunkEmbedProcessor;
+import org.apache.opennlp.grpc.chunk.ChunkingStrategies;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.embedding.EmbeddingBatchResult;
 import org.apache.opennlp.grpc.processor.AnalysisException;
@@ -165,13 +166,13 @@ final class EmbedChunkStepRunner {
         ? ProfileMerger.merge(requestProfile, entry.getProfile())
         : requestProfile;
     final String algorithm = entry.hasChunking()
-        ? entry.getChunking().getAlgorithm()
-        : "sentence";
+        ? ChunkingStrategies.selectedId(entry.getChunking())
+        : ChunkingStrategies.SENTENCE;
 
     if (document.getSentencesCount() == 0) {
       classicSteps.detectSentences(rawText, document, includeProbabilities, diagnostics);
     }
-    if ("token".equals(algorithm) && !isTokenized(document)) {
+    if (ChunkingStrategies.TOKEN.equals(algorithm) && !isTokenized(document)) {
       classicSteps.tokenize(rawText, document, includeProbabilities, diagnostics);
     }
     if (entry.hasProfile()

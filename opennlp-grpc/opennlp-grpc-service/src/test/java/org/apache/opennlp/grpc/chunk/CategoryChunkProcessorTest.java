@@ -32,6 +32,7 @@ import org.apache.opennlp.grpc.v1.EmbeddingBackendSelector;
 import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
 import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.StandardChunkingStrategy;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -86,6 +87,8 @@ class CategoryChunkProcessorTest {
         TEXT, labelledDocument(), entry(), embeddingProvider);
 
     assertEquals("by-sentiment", group.getGroupId());
+    assertEquals(StandardChunkingStrategy.STANDARD_CHUNKING_STRATEGY_CATEGORY,
+        group.getStrategy().getStandard());
     // First-appearance order: Positive then Negative.
     assertEquals(2, group.getChunksCount());
 
