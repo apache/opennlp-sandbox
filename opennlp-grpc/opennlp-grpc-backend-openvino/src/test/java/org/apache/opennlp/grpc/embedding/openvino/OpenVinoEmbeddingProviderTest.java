@@ -179,6 +179,22 @@ class OpenVinoEmbeddingProviderTest {
   }
 
   @Test
+  void foreignDefaultIdIsIgnoredNotRejected() {
+    // model.embedder.default_id is shared across engines; an id served by another engine
+    // must not fail this engine's startup. The composite validates the id against the
+    // union of engines, so a typo still fails loud there.
+    final Map<String, String> configuration = config(typedServer, "minilm");
+    configuration.put("model.embedder.default_id", "served-by-another-engine");
+    final OpenVinoEmbeddingProvider provider = new OpenVinoEmbeddingProvider(configuration);
+    try {
+      assertTrue(provider.isAvailable());
+      assertEquals("minilm", provider.resolveModelId(null));
+    } finally {
+      provider.close();
+    }
+  }
+
+  @Test
   void rejectsMissingModelName() {
     final Map<String, String> configuration = new HashMap<>();
     configuration.put("model.embedder.minilm.openvino.target",
