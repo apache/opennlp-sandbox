@@ -116,15 +116,34 @@ final class WebUiAssetResolver {
         || path.contains("//")) {
       return false;
     }
-    String[] segments = path.substring(1).split("/", -1);
-    for (String segment : segments) {
-      if (segment.equals(".") || segment.equals("..")) {
-        return false;
-      }
-      for (int index = 0; index < segment.length(); index++) {
-        if (Character.isISOControl(segment.charAt(index))) {
+    String remainder = path.substring(1);
+    int segmentStart = 0;
+    for (int index = 0; index <= remainder.length(); index++) {
+      if (index == remainder.length() || remainder.charAt(index) == '/') {
+        // Every segment is checked, including empty ones, matching the
+        // previous split("/", -1) semantics.
+        if (!isSafeSegment(remainder.substring(segmentStart, index))) {
           return false;
         }
+        segmentStart = index + 1;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Returns whether one path segment is safe for classpath lookup.
+   *
+   * @param segment The path segment.
+   * @return {@code true} when the segment is safe.
+   */
+  private static boolean isSafeSegment(String segment) {
+    if (segment.equals(".") || segment.equals("..")) {
+      return false;
+    }
+    for (int index = 0; index < segment.length(); index++) {
+      if (Character.isISOControl(segment.charAt(index))) {
+        return false;
       }
     }
     return true;
