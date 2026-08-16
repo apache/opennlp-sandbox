@@ -108,6 +108,24 @@ public final class HunspellRegistry {
             "Failed to load hunspell dictionary '" + id + "': " + e.getMessage());
       }
     }
+    for (Map.Entry<String, String> entry : configuration.entrySet()) {
+      final String key = entry.getKey();
+      if (!key.startsWith(KEY_PREFIX) || !key.endsWith(KEY_DICTIONARY_SUFFIX)) {
+        continue;
+      }
+      final String id =
+          key.substring(KEY_PREFIX.length(), key.length() - KEY_DICTIONARY_SUFFIX.length());
+      if (id.isBlank() || id.contains(".")) {
+        throw AnalysisException.invalidArgument(
+            "Invalid hunspell dictionary id in configuration key '" + key
+                + "'; ids must be non-blank and must not contain '.'");
+      }
+      if (!configuration.containsKey(KEY_PREFIX + id + KEY_AFFIX_SUFFIX)) {
+        throw AnalysisException.invalidArgument(
+            "Hunspell dictionary '" + id + "' declares " + key + " but no "
+                + KEY_PREFIX + id + KEY_AFFIX_SUFFIX);
+      }
+    }
     String defaultId = configuration.get(KEY_DEFAULT_ID);
     if (defaultId != null && !stemmers.containsKey(defaultId)) {
       throw AnalysisException.invalidArgument(
