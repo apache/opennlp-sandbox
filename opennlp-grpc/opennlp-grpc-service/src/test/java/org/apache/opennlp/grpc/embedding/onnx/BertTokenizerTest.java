@@ -132,4 +132,28 @@ class BertTokenizerTest {
     assertArrayEquals(new String[] {"<s>", "the", "<unk>", "fox", "</s>"}, tokens);
   }
 
+  @Test
+  void skipsEmptyWordsFromLeadingTrailingAndDoubleSpaces() {
+    // Characterization: split(" ") yields empty words for leading and repeated
+    // spaces (trailing empties are dropped by split), and all are skipped.
+    final String[] tokens = uncased(VOCABULARY).tokenize("  the   quick  ");
+
+    assertArrayEquals(new String[] {"[CLS]", "the", "quick", "[SEP]"}, tokens);
+  }
+
+  @Test
+  void emptyOrWhitespaceOnlyTextYieldsNoWordpieces() {
+    assertArrayEquals(new String[] {"[CLS]", "[SEP]"}, uncased(VOCABULARY).tokenize(""));
+    assertArrayEquals(new String[] {"[CLS]", "[SEP]"}, uncased(VOCABULARY).tokenize("   "));
+  }
+
+  @Test
+  void cjkSeparationReliesOnSpaceSplitting() {
+    // Characterization: CJK isolation wraps every ideograph in spaces, so the
+    // word split sees runs of spaces around each one and must skip the empties.
+    final String[] tokens = uncased(VOCABULARY).tokenize("我 爱");
+
+    assertArrayEquals(new String[] {"[CLS]", "我", "爱", "[SEP]"}, tokens);
+  }
+
 }
