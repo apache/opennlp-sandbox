@@ -19,7 +19,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { readDocumentShape } from "../src/document-shape";
+import { layerAccent, readDocumentShape, summarizeDocumentShape } from "../src/document-shape";
 
 describe("document shape reader", () => {
   it("reads typed annotation layers without falling back to legacy fields", () => {
@@ -118,5 +118,28 @@ describe("document shape reader", () => {
       offsetEncoding: "",
       layers: [],
     });
+  });
+
+  it("summarizes results and assigns stable layer accents", () => {
+    const shape = readDocumentShape({
+      document: {
+        rawText: "One two.",
+        offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
+        layers: {
+          layers: [
+            { id: "opennlp:tokens", stringValues: { annotations: [{ value: "One" }, { value: "two" }] } },
+            { id: "opennlp:entities", entityValues: { annotations: [{ type: "thing" }] } },
+          ],
+        },
+      },
+    });
+
+    expect(summarizeDocumentShape(shape)).toEqual({
+      layerCount: 2,
+      annotationCount: 3,
+      offsetEncodingLabel: "UTF-16",
+    });
+    expect(layerAccent(shape.layers[0]!)).toBe("cyan");
+    expect(layerAccent(shape.layers[1]!)).toBe("violet");
   });
 });

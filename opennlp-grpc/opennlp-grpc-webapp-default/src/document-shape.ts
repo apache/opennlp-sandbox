@@ -42,6 +42,14 @@ export interface AnnotationView {
   source: Record<string, unknown>;
 }
 
+export interface DocumentShapeSummary {
+  layerCount: number;
+  annotationCount: number;
+  offsetEncodingLabel: string;
+}
+
+export type LayerAccent = "blue" | "cyan" | "green" | "amber" | "violet" | "rose";
+
 const VALUE_TYPES = new Map<string, string>([
   ["stringValues", "String"],
   ["categoryValues", "Category"],
@@ -79,6 +87,34 @@ export function readDocumentShape(response: unknown): DocumentShapeView {
       return [readLayer(layer, rawText, offsetEncoding)];
     }),
   };
+}
+
+export function summarizeDocumentShape(shape: DocumentShapeView): DocumentShapeSummary {
+  return {
+    layerCount: shape.layers.length,
+    annotationCount: shape.layers.reduce((total, layer) => total + layer.annotations.length, 0),
+    offsetEncodingLabel: offsetEncodingLabel(shape.offsetEncoding),
+  };
+}
+
+export function layerAccent(layer: AnnotationLayerView): LayerAccent {
+  const identity = `${layer.id} ${layer.standardIdentity ?? ""}`.toLowerCase();
+  if (identity.includes("entit") || identity.includes("geo")) {
+    return "violet";
+  }
+  if (identity.includes("embed") || identity.includes("chunk-group")) {
+    return "rose";
+  }
+  if (identity.includes("sentiment") || identity.includes("language") || identity.includes("categor")) {
+    return "green";
+  }
+  if (identity.includes("pos") || identity.includes("parse") || identity.includes("syntactic")) {
+    return "amber";
+  }
+  if (identity.includes("token") || identity.includes("sentence") || identity.includes("subword")) {
+    return "cyan";
+  }
+  return "blue";
 }
 
 function readLayer(
@@ -171,6 +207,20 @@ function layerTitle(id: string): string {
     .filter(Boolean)
     .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
     .join(" ") || id;
+}
+
+function offsetEncodingLabel(encoding: string): string {
+  switch (encoding) {
+    case "OFFSET_ENCODING_UTF16_CODE_UNIT":
+      return "UTF-16";
+    case "OFFSET_ENCODING_UNICODE_CODE_POINT":
+      return "Unicode code points";
+    case "OFFSET_ENCODING_UTF8_BYTE":
+    case "OFFSET_ENCODING_UNSPECIFIED":
+      return "UTF-8 bytes";
+    default:
+      return encoding || "Not reported";
+  }
 }
 
 function record(value: unknown): Record<string, unknown> | undefined {

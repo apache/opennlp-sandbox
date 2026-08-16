@@ -35,7 +35,11 @@ The browser uses the same-origin HTTP facade. Analysis requests follow protobuf 
 The workbench requests UTF-16 offsets so typed annotation spans map directly to JavaScript string
 indices. Its document view reads `document.layers.layers`, lists every typed layer, highlights the
 selected layer over `document.rawText`, and exposes the complete annotation value when highlighted
-text is selected. Raw protobuf JSON remains available in a separate result tab.
+text is selected. The result summary reports layer and annotation counts plus the active offset
+encoding, and the layer list remains searchable for profiles that produce many results. Raw
+protobuf JSON remains available in a separate result tab. The tool switcher reserves clear
+navigation positions for later embedding-search and profile-comparison extensions without making
+those unfinished tools interactive.
 
 Model bundles are displayed as service capability information. A named analysis profile is the
 only user-selectable option sent by this initial playground.

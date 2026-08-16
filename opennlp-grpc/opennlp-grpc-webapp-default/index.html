@@ -54,6 +54,11 @@
             Explore the models and analysis profiles exposed by this OpenNLP service.
             Results stay transparent, portable, and ready for the next system in your pipeline.
           </p>
+          <ul class="contract-points" aria-label="Workbench capabilities">
+            <li>Typed document layers</li>
+            <li>Protobuf JSON</li>
+            <li>Pluggable interfaces</li>
+          </ul>
           <a class="primary-link" href="#playground">Open the playground <span aria-hidden="true">↓</span></a>
         </div>
         <div class="hero-sample" aria-hidden="true">
@@ -80,6 +85,20 @@
       </section>
 
       <section id="playground" class="playground" aria-labelledby="playground-heading">
+        <nav class="tool-nav" aria-label="OpenNLP tools">
+          <a href="#playground" class="is-active" aria-current="page">
+            <span class="tool-icon" aria-hidden="true">Aa</span>
+            <span><strong>Text analysis</strong><small>Live workbench</small></span>
+          </a>
+          <span class="tool-preview" aria-disabled="true">
+            <span class="tool-icon" aria-hidden="true">⌁</span>
+            <span><strong>Embedding search</strong><small>Next demonstration</small></span>
+          </span>
+          <span class="tool-preview" aria-disabled="true">
+            <span class="tool-icon" aria-hidden="true">≋</span>
+            <span><strong>Profile compare</strong><small>Planned</small></span>
+          </span>
+        </nav>
         <div class="section-heading">
           <div>
             <p class="section-kicker">Analysis playground</p>
@@ -141,11 +160,18 @@
               <button id="json-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
                 aria-controls="json-view" data-result-tab="json">Protobuf JSON</button>
             </div>
+            <dl class="result-summary" aria-label="Document result summary">
+              <div><dt>Layers</dt><dd id="result-layer-count">0</dd></div>
+              <div><dt>Annotations</dt><dd id="result-annotation-count">0</dd></div>
+              <div><dt>Offsets</dt><dd id="result-offset-encoding">Not reported</dd></div>
+            </dl>
             <div id="document-view" role="tabpanel" aria-labelledby="document-tab" class="document-view">
               <div class="layer-browser">
                 <div class="layer-heading">
                   <span>Annotation layers</span>
                   <small id="layer-summary">Analyze text to discover layers</small>
+                  <label for="layer-filter" class="visually-hidden">Filter annotation layers</label>
+                  <input id="layer-filter" type="search" placeholder="Filter layers" disabled />
                 </div>
                 <div id="layer-list" aria-label="Annotation layers" class="layer-list"></div>
               </div>

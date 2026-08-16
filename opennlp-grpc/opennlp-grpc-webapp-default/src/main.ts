@@ -22,7 +22,9 @@ import "./style.css";
 import { analyze, getHealth, getModelBundles, getServiceInfo, type AnalyzeRequest } from "./api";
 import { discoverModelBundles, discoverProfiles, type DiscoveryOption } from "./discovery";
 import {
+  layerAccent,
   readDocumentShape,
+  summarizeDocumentShape,
   type AnnotationLayerView,
   type AnnotationView,
   type DocumentShapeView,
@@ -54,10 +56,15 @@ const annotationDetails = requiredElement<HTMLElement>("annotation-details");
 const documentView = requiredElement<HTMLElement>("document-view");
 const jsonView = requiredElement<HTMLElement>("json-view");
 const resultTabs = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-result-tab]"));
+const layerFilter = requiredElement<HTMLInputElement>("layer-filter");
+const resultLayerCount = requiredElement<HTMLElement>("result-layer-count");
+const resultAnnotationCount = requiredElement<HTMLElement>("result-annotation-count");
+const resultOffsetEncoding = requiredElement<HTMLElement>("result-offset-encoding");
 
 let serviceAvailable = false;
 let busy = false;
 let currentJson = "";
+let currentShape: DocumentShapeView | undefined;
 
 textArea.addEventListener("input", updateFormState);
 sampleButton.addEventListener("click", () => {
@@ -67,6 +74,7 @@ sampleButton.addEventListener("click", () => {
 });
 form.addEventListener("submit", submitAnalysis);
 copyButton.addEventListener("click", copyResponse);
+layerFilter.addEventListener("input", filterLayerButtons);
 for (const tab of resultTabs) {
   tab.addEventListener("click", () => selectResultTab(tab.dataset.resultTab === "json" ? "json" : "document"));
   tab.addEventListener("keydown", navigateResultTabs);
@@ -152,10 +160,17 @@ async function submitAnalysis(event: SubmitEvent): Promise<void> {
 }
 
 function renderDocumentShape(shape: DocumentShapeView): void {
+  currentShape = shape;
   layerList.replaceChildren();
   annotatedText.replaceChildren();
   annotationDetails.replaceChildren(message("Select highlighted text to inspect its typed annotation."));
   layerSummary.textContent = `${shape.layers.length} ${shape.layers.length === 1 ? "layer" : "layers"}`;
+  const summary = summarizeDocumentShape(shape);
+  resultLayerCount.textContent = String(summary.layerCount);
+  resultAnnotationCount.textContent = String(summary.annotationCount);
+  resultOffsetEncoding.textContent = summary.offsetEncodingLabel;
+  layerFilter.value = "";
+  layerFilter.disabled = shape.layers.length === 0;
 
   if (!shape.rawText) {
     annotatedText.textContent = "The response did not contain document text.";
@@ -178,6 +193,8 @@ function renderDocumentShape(shape: DocumentShapeView): void {
     button.type = "button";
     button.className = "layer-button";
     button.dataset.layerId = layer.id;
+    button.dataset.searchText = `${layer.id} ${layer.title} ${layer.valueType}`.toLowerCase();
+    button.dataset.accent = layerAccent(layer);
     button.setAttribute("aria-pressed", String(layer === initialLayer));
     const name = document.createElement("span");
     name.textContent = layer.title;
@@ -197,6 +214,7 @@ function selectLayer(shape: DocumentShapeView, layer: AnnotationLayerView): void
   }
   annotationDetails.replaceChildren(layerOverview(layer));
   annotatedText.replaceChildren();
+  annotatedText.dataset.accent = layerAccent(layer);
   annotatedText.setAttribute("aria-label", `${layer.title} annotations over document text`);
 
   const positional = layer.annotations
@@ -213,6 +231,7 @@ function selectLayer(shape: DocumentShapeView, layer: AnnotationLayerView): void
     const marker = document.createElement("button");
     marker.type = "button";
     marker.className = "annotation-marker";
+    marker.dataset.accent = layerAccent(layer);
     marker.textContent = shape.rawText.slice(start, end);
     marker.title = annotation.label;
     marker.setAttribute("aria-label", `${marker.textContent}: ${annotation.label}`);
@@ -236,7 +255,7 @@ function showAnnotation(layer: AnnotationLayerView, annotation: AnnotationView):
   addFact(facts, "Layer", layer.id);
   addFact(facts, "Value type", layer.valueType);
   if (annotation.start !== undefined && annotation.end !== undefined) {
-    addFact(facts, "Span", `${annotation.start}..${annotation.end} (UTF-16)`);
+    addFact(facts, "Browser span", `${annotation.start}..${annotation.end}`);
   }
   if (annotation.probability !== undefined) {
     addFact(facts, "Probability", annotation.probability.toFixed(4));
@@ -247,6 +266,34 @@ function showAnnotation(layer: AnnotationLayerView, annotation: AnnotationView):
   const source = document.createElement("pre");
   source.textContent = JSON.stringify(annotation.source, null, 2);
   annotationDetails.replaceChildren(title, facts, source);
+}
+
+function filterLayerButtons(): void {
+  if (!currentShape) {
+    return;
+  }
+  const query = layerFilter.value.trim().toLowerCase();
+  const buttons = Array.from(layerList.querySelectorAll<HTMLButtonElement>(".layer-button"));
+  let visibleCount = 0;
+  for (const button of buttons) {
+    const visible = !query || button.dataset.searchText?.includes(query) === true;
+    button.hidden = !visible;
+    if (visible) {
+      visibleCount++;
+    }
+  }
+  layerSummary.textContent = query
+    ? `${visibleCount} of ${buttons.length} layers`
+    : `${buttons.length} ${buttons.length === 1 ? "layer" : "layers"}`;
+
+  const selected = buttons.find((button) => button.getAttribute("aria-pressed") === "true");
+  if (selected?.hidden) {
+    const next = buttons.find((button) => !button.hidden);
+    const layer = currentShape.layers.find((candidate) => candidate.id === next?.dataset.layerId);
+    if (layer) {
+      selectLayer(currentShape, layer);
+    }
+  }
 }
 
 function layerOverview(layer: AnnotationLayerView): HTMLElement {
