@@ -122,6 +122,9 @@ server.max_text_bytes=1048576
 # Full-analysis documents admitted concurrently per stream. The default is the
 # larger of 2 or the available processor count.
 server.analysis_stream_workers=8
+# Accepted RPCs may drain for this many seconds during shutdown before the
+# server cancels them. Models and provider resources close only after draining.
+server.shutdown_grace_seconds=5
 
 # Optional explicit model overrides. When omitted, the language detector and the
 # en sentence-detector, tokenizer, POS tagger and lemmatizer load from the

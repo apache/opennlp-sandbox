@@ -27,6 +27,8 @@ import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -56,6 +58,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
   private static final org.slf4j.Logger logger = LoggerFactory.getLogger(OpenNlpGrpcServer.class);
 
   private static final int INBOUND_MESSAGE_HEADROOM_BYTES = 1_048_576;
+  private static final int DEFAULT_SHUTDOWN_GRACE_SECONDS = 5;
 
   @Option(
       names = {"-p", "--port"},
@@ -74,6 +77,9 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
   private ExecutorService handlerExecutor;
   private ExecutorService analysisExecutor;
   private HealthStatusManager healthStatusManager;
+  private ModelBundleCache modelBundleCache;
+  private int shutdownGraceSeconds = DEFAULT_SHUTDOWN_GRACE_SECONDS;
+  private final AtomicBoolean stopping = new AtomicBoolean();
 
   /** Creates an unstarted server; picocli populates the options before {@link #call()} runs. */
   public OpenNlpGrpcServer() {
@@ -97,6 +103,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
       start();
       awaitTermination();
     } catch (Exception e) {
+      stop();
       logger.error(e.getLocalizedMessage(), e);
       return 1;
     }
@@ -141,7 +148,14 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
       throw new IllegalArgumentException("server.analysis_stream_workers must be positive");
     }
 
-    final ModelBundleCache modelBundleCache = new ModelBundleCache(configuration);
+    this.shutdownGraceSeconds = Integer.parseInt(configuration.getOrDefault(
+        "server.shutdown_grace_seconds",
+        Integer.toString(DEFAULT_SHUTDOWN_GRACE_SECONDS)));
+    if (shutdownGraceSeconds < 0) {
+      throw new IllegalArgumentException("server.shutdown_grace_seconds must not be negative");
+    }
+
+    this.modelBundleCache = new ModelBundleCache(configuration);
     final ProfileRegistry profileRegistry = modelBundleCache.createProfileRegistry();
     final BasicDocumentAnalyzer documentAnalyzer =
         new BasicDocumentAnalyzer(profileRegistry, modelBundleCache);
@@ -185,7 +199,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
         HealthCheckResponse.ServingStatus.SERVING);
     logger.info("Started OpenNlpGrpcServer on port {}", server.getPort());
 
-    registerShutdownHook(modelBundleCache);
+    registerShutdownHook();
   }
 
   /**
@@ -247,37 +261,68 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     return Math.max(configuredSize, (int) requiredSize);
   }
 
-  private void registerShutdownHook(ModelBundleCache modelBundleCache) {
+  private void registerShutdownHook() {
     Runtime.getRuntime()
         .addShutdownHook(
             new Thread(
-                () -> {
-                  try {
-                    stop();
-                    modelBundleCache.close();
-                  } catch (Exception e) {
-                    logger.error(
-                        "Error when trying to shutdown a lifecycle component: {}",
-                        this.getClass().getName(),
-                        e);
-                  }
-                }));
+                this::stop,
+                "opennlp-grpc-shutdown"));
   }
 
-  /** Initiates a graceful shutdown of the server; a no-op if it was never started. */
+  /**
+   * Stops accepting calls, waits for accepted RPCs to drain up to the configured grace
+   * period, and only then closes executors and model resources. If the grace period expires,
+   * outstanding calls and worker tasks are cancelled before resources close. This method is
+   * idempotent and is a no-op if no lifecycle component was created.
+   */
   public void stop() {
+    if (server == null && handlerExecutor == null && analysisExecutor == null
+        && modelBundleCache == null) {
+      return;
+    }
+    if (!stopping.compareAndSet(false, true)) {
+      return;
+    }
     if (healthStatusManager != null) {
       healthStatusManager.enterTerminalState();
     }
+    boolean forced = false;
+    boolean interrupted = false;
     if (server != null) {
       logger.info("Shutting down OpenNlpGrpcServer on port {}", server.getPort());
       server.shutdown();
+      try {
+        if (!server.awaitTermination(shutdownGraceSeconds, TimeUnit.SECONDS)) {
+          forced = true;
+          logger.warn("Forcing OpenNlpGrpcServer shutdown after {} seconds",
+              shutdownGraceSeconds);
+          server.shutdownNow();
+          server.awaitTermination(1, TimeUnit.SECONDS);
+        }
+      } catch (InterruptedException e) {
+        interrupted = true;
+        forced = true;
+        server.shutdownNow();
+      }
     }
-    if (handlerExecutor != null) {
-      handlerExecutor.shutdown();
+    stopExecutor(handlerExecutor, forced);
+    stopExecutor(analysisExecutor, forced);
+    if (modelBundleCache != null) {
+      modelBundleCache.close();
     }
-    if (analysisExecutor != null) {
-      analysisExecutor.shutdown();
+    if (interrupted) {
+      Thread.currentThread().interrupt();
+    }
+  }
+
+  private static void stopExecutor(ExecutorService executor, boolean forced) {
+    if (executor == null) {
+      return;
+    }
+    if (forced) {
+      executor.shutdownNow();
+    } else {
+      executor.shutdown();
     }
   }
 }
