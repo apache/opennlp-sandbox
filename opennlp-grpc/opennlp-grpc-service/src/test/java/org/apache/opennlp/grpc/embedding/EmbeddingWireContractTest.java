@@ -17,7 +17,12 @@
  */
 package org.apache.opennlp.grpc.embedding;
 
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.CategoryChunkConfigEntry;
@@ -51,6 +56,37 @@ class EmbeddingWireContractTest {
     assertEquals(FieldDescriptor.Type.STRING, backendId.getType());
     assertFalse(modelId.isRepeated());
     assertFalse(backendId.isRepeated());
+  }
+
+  @Test
+  void selectorAddsClosedStandardAndOpenCustomBackendIdentity() {
+    final Descriptor selector = requiredMessageField(
+        AnalysisOptions.getDescriptor(), "embedding_selector", "EmbeddingSelector", false)
+        .getMessageType();
+    final FieldDescriptor backend = requiredMessageField(
+        selector, "backend", "EmbeddingBackendSelector", false);
+    assertEquals(3, backend.getNumber());
+    assertEquals(2, requiredField(selector, "backend_id").getNumber());
+
+    final Descriptor backendSelector = backend.getMessageType();
+    assertEquals(Set.of("standard", "custom"), backendSelector.getOneofs().stream()
+        .filter(oneof -> "kind".equals(oneof.getName()))
+        .flatMap(oneof -> oneof.getFields().stream())
+        .map(FieldDescriptor::getName)
+        .collect(Collectors.toSet()));
+
+    final EnumDescriptor standard = backendSelector.getFile()
+        .findEnumTypeByName("StandardEmbeddingBackend");
+    assertNotNull(standard, "StandardEmbeddingBackend is missing");
+    assertEquals(Map.of(
+            "STANDARD_EMBEDDING_BACKEND_UNSPECIFIED", 0,
+            "STANDARD_EMBEDDING_BACKEND_ONNX", 1,
+            "STANDARD_EMBEDDING_BACKEND_CUDA", 2,
+            "STANDARD_EMBEDDING_BACKEND_STATIC", 3,
+            "STANDARD_EMBEDDING_BACKEND_TEI", 4,
+            "STANDARD_EMBEDDING_BACKEND_OPENVINO", 5),
+        standard.getValues().stream().collect(Collectors.toMap(
+            value -> value.getName(), value -> value.getNumber())));
   }
 
   @Test
