@@ -19,7 +19,6 @@ package org.apache.opennlp.grpc.webapp;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Locale;
 import java.util.Optional;
 
 import org.apache.opennlp.grpc.webapp.spi.WebUiExtension;
@@ -156,7 +155,7 @@ final class WebUiAssetResolver {
    * @return The response media type.
    */
   private String contentType(String resourceName) {
-    String lower = resourceName.toLowerCase(Locale.ROOT);
+    String lower = lowercase(resourceName);
     if (lower.endsWith(".html")) {
       return "text/html; charset=utf-8";
     }
@@ -182,5 +181,20 @@ final class WebUiAssetResolver {
       return "font/woff2";
     }
     return "application/octet-stream";
+  }
+
+  /**
+   * Returns the locale-independent lowercase form of {@code value}, mapping each
+   * code point through {@link Character#toLowerCase(int)}. This module has no
+   * opennlp-tools dependency, so StringUtil is not available here.
+   *
+   * @param value The value to lowercase.
+   * @return The lowercase value.
+   */
+  private static String lowercase(String value) {
+    StringBuilder lowered = new StringBuilder(value.length());
+    value.codePoints().forEach(codePoint ->
+        lowered.appendCodePoint(Character.toLowerCase(codePoint)));
+    return lowered.toString();
   }
 }
