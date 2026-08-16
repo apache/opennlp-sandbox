@@ -96,13 +96,30 @@ public final class ParserRegistry {
    *     same parser id is registered twice by the same engine.
    */
   public static ParserRegistry create(Map<String, String> configuration) {
+    return create(configuration, ServiceLoader.load(ParserBackendFactory.class));
+  }
+
+  /**
+   * Loads from the given factories instead of {@link ServiceLoader} discovery; package-private
+   * so tests can drive the factory set directly.
+   *
+   * @param configuration The server configuration. Must not be {@code null}.
+   * @param factories The backend factories to load parsers from.
+   *
+   * @return A registry, possibly empty when no parser is configured.
+   *
+   * @throws AnalysisException If a backend's configuration is invalid, a model fails to load, or the
+   *     same parser id is registered twice by the same engine.
+   */
+  static ParserRegistry create(
+      Map<String, String> configuration, Iterable<ParserBackendFactory> factories) {
     if (configuration == null) {
       throw new IllegalArgumentException("configuration must not be null");
     }
     final RankedBackends.Builder<ParserModel> builder = RankedBackends.builder();
     final Set<String> knownEngines = new LinkedHashSet<>();
     final Set<String> seenFactories = new HashSet<>();
-    for (ParserBackendFactory factory : ServiceLoader.load(ParserBackendFactory.class)) {
+    for (ParserBackendFactory factory : factories) {
       if (!seenFactories.add(factory.factoryId())) {
         logger.warn("Ignoring duplicate parser backend factory '{}' ({})",
             factory.factoryId(), factory.getClass().getName());

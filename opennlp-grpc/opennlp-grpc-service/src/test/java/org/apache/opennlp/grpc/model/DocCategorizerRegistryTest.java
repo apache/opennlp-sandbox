@@ -220,4 +220,90 @@ class DocCategorizerRegistryTest {
         DocCategorizerRegistry.create(Map.of(pathKey("topic"), topicModelPath.toString()));
     assertEquals(List.of("topic"), registry.modelIds());
   }
+
+  @Test
+  void duplicateFactoryIdFailsStartup() {
+    final AnalysisException error = assertThrows(AnalysisException.class, () ->
+        DocCategorizerRegistry.createForNamespace("doccat", Map.of(),
+            List.of(stubFactory("dup"), stubFactory("dup"))));
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+    assertTrue(error.getMessage().contains("dup"),
+        "the error must name the duplicate factory id: " + error.getMessage());
+  }
+
+  @Test
+  void factoryFailureClosesModelsFromEarlierFactories() {
+    // A factory that throws after an earlier factory loaded a model holding a native session
+    // must not leak that session: the half-built registry can never be close()d by the caller.
+    final CloseTrackingDocCategorizerModel model = new CloseTrackingDocCategorizerModel();
+    assertThrows(AnalysisException.class, () ->
+        DocCategorizerRegistry.createForNamespace("doccat", Map.of(),
+            List.of(stubFactory("tracking", List.of(model)), throwingFactory("zz-failing"))));
+    assertTrue(model.closed, "a model loaded before a later factory failed was leaked");
+  }
+
+  private static DocCategorizerBackendFactory stubFactory(String factoryId) {
+    return stubFactory(factoryId, List.of());
+  }
+
+  private static DocCategorizerBackendFactory stubFactory(
+      String factoryId, List<DocCategorizerModel> models) {
+    return new DocCategorizerBackendFactory() {
+      @Override
+      public String factoryId() {
+        return factoryId;
+      }
+
+      @Override
+      public List<DocCategorizerModel> create(Map<String, String> configuration) {
+        return models;
+      }
+    };
+  }
+
+  private static DocCategorizerBackendFactory throwingFactory(String factoryId) {
+    return new DocCategorizerBackendFactory() {
+      @Override
+      public String factoryId() {
+        return factoryId;
+      }
+
+      @Override
+      public List<DocCategorizerModel> create(Map<String, String> configuration) {
+        throw AnalysisException.internal("deliberate test factory failure", null);
+      }
+    };
+  }
+
+  /** A categorizer holding a pretend native resource, recording its release. */
+  private static final class CloseTrackingDocCategorizerModel
+      implements DocCategorizerModel, AutoCloseable {
+
+    private boolean closed;
+
+    @Override
+    public String id() {
+      return "tracking";
+    }
+
+    @Override
+    public String backendId() {
+      return "tracking";
+    }
+
+    @Override
+    public List<String> categories() {
+      return List.of("x");
+    }
+
+    @Override
+    public DocumentClassification classify(String documentText, String[] documentTokens) {
+      return DocumentClassification.getDefaultInstance();
+    }
+
+    @Override
+    public void close() {
+      closed = true;
+    }
+  }
 }

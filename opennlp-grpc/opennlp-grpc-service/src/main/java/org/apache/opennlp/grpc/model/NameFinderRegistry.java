@@ -135,6 +135,26 @@ public final class NameFinderRegistry implements AutoCloseable {
    */
   public static NameFinderRegistry create(
       Map<String, String> configuration, SentenceDetector sentenceDetector) {
+    return create(configuration, sentenceDetector, ServiceLoader.load(NerBackendFactory.class));
+  }
+
+  /**
+   * Loads from the given factories instead of {@link ServiceLoader} discovery; package-private
+   * so tests can drive the factory set directly.
+   *
+   * @param configuration The server configuration. Must not be {@code null}.
+   * @param sentenceDetector The sentence detector ONNX name finders need internally; may be
+   *     {@code null} when no ONNX name finder is configured.
+   * @param factories The backend factories to load models from.
+   *
+   * @return A registry, possibly empty when no name finder is configured.
+   *
+   * @throws AnalysisException If a backend's configuration is invalid, a model fails to load, or
+   *     the same recognizer id is registered twice by the same engine.
+   */
+  static NameFinderRegistry create(
+      Map<String, String> configuration, SentenceDetector sentenceDetector,
+      Iterable<NerBackendFactory> factories) {
     if (configuration == null) {
       throw new IllegalArgumentException("configuration must not be null");
     }
@@ -143,7 +163,7 @@ public final class NameFinderRegistry implements AutoCloseable {
     final Map<String, List<String>> recognizerIdsByType = new LinkedHashMap<>();
     final Set<String> knownEngines = new LinkedHashSet<>();
     final Set<String> seenFactories = new HashSet<>();
-    for (NerBackendFactory factory : ServiceLoader.load(NerBackendFactory.class)) {
+    for (NerBackendFactory factory : factories) {
       if (!seenFactories.add(factory.factoryId())) {
         logger.warn("Ignoring duplicate NER backend factory '{}' ({})",
             factory.factoryId(), factory.getClass().getName());

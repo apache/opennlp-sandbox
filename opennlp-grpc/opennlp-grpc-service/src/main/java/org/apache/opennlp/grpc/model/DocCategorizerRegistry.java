@@ -110,14 +110,34 @@ public final class DocCategorizerRegistry implements AutoCloseable {
    */
   static DocCategorizerRegistry createForNamespace(
       String namespace, Map<String, String> configuration) {
+    return createForNamespace(namespace, configuration,
+        ServiceLoader.load(DocCategorizerBackendFactory.class));
+  }
+
+  /**
+   * Loads from the given factories instead of {@link ServiceLoader} discovery; package-private
+   * so tests can drive the factory set directly.
+   *
+   * @param namespace The configuration namespace token, e.g. {@code "doccat"} or
+   *     {@code "sentiment"}.
+   * @param configuration The server configuration. Must not be {@code null}.
+   * @param factories The backend factories to load models from.
+   *
+   * @return A registry, possibly empty when no model is configured under the namespace.
+   *
+   * @throws AnalysisException If a backend's configuration is invalid, a model fails to load, or
+   *     {@code model.<namespace>.default_id} names an unknown model.
+   */
+  static DocCategorizerRegistry createForNamespace(
+      String namespace, Map<String, String> configuration,
+      Iterable<DocCategorizerBackendFactory> factories) {
     if (configuration == null) {
       throw new IllegalArgumentException("configuration must not be null");
     }
     final Map<String, String> canonical = canonicalize(namespace, configuration);
     final Map<String, DocCategorizerModel> modelsById = new LinkedHashMap<>();
     final Set<String> seenFactories = new HashSet<>();
-    for (DocCategorizerBackendFactory factory
-        : ServiceLoader.load(DocCategorizerBackendFactory.class)) {
+    for (DocCategorizerBackendFactory factory : factories) {
       if (!seenFactories.add(factory.factoryId())) {
         logger.warn("Ignoring duplicate doc categorizer backend factory '{}' ({})",
             factory.factoryId(), factory.getClass().getName());

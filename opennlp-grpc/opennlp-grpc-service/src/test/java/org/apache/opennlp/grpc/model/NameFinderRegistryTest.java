@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.testing.TinyNerModel;
@@ -223,5 +224,100 @@ class NameFinderRegistryTest {
     final NameFinderRegistry registry =
         NameFinderRegistry.create(Map.of(personKey(), personModelPath.toString()));
     assertEquals(List.of("person"), registry.entityTypes());
+  }
+
+  @Test
+  void duplicateFactoryIdFailsStartup() {
+    final AnalysisException error = assertThrows(AnalysisException.class, () ->
+        NameFinderRegistry.create(Map.of(), null,
+            List.of(stubFactory("dup"), stubFactory("dup"))));
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+    assertTrue(error.getMessage().contains("dup"),
+        "the error must name the duplicate factory id: " + error.getMessage());
+  }
+
+  @Test
+  void factoryFailureClosesModelsFromEarlierFactories() {
+    // A factory that throws after an earlier factory loaded a model holding a native session
+    // must not leak that session: the half-built registry can never be close()d by the caller.
+    final CloseTrackingNerModel model = new CloseTrackingNerModel();
+    assertThrows(AnalysisException.class, () ->
+        NameFinderRegistry.create(Map.of(), null,
+            List.of(stubFactory("tracking", List.of(model)), throwingFactory("zz-failing"))));
+    assertTrue(model.closed, "a model loaded before a later factory failed was leaked");
+  }
+
+  private static NerBackendFactory stubFactory(String factoryId) {
+    return stubFactory(factoryId, List.of());
+  }
+
+  private static NerBackendFactory stubFactory(String factoryId, List<NerModel> models) {
+    return new NerBackendFactory() {
+      @Override
+      public String factoryId() {
+        return factoryId;
+      }
+
+      @Override
+      public List<NerModel> create(Map<String, String> configuration, NerBackendContext context) {
+        return models;
+      }
+    };
+  }
+
+  private static NerBackendFactory throwingFactory(String factoryId) {
+    return new NerBackendFactory() {
+      @Override
+      public String factoryId() {
+        return factoryId;
+      }
+
+      @Override
+      public List<NerModel> create(Map<String, String> configuration, NerBackendContext context) {
+        throw AnalysisException.internal("deliberate test factory failure", null);
+      }
+    };
+  }
+
+  /** A recognizer holding a pretend native resource, recording its release. */
+  private static final class CloseTrackingNerModel implements NerModel, AutoCloseable {
+
+    private boolean closed;
+
+    @Override
+    public String id() {
+      return "tracking";
+    }
+
+    @Override
+    public String backendId() {
+      return "tracking";
+    }
+
+    @Override
+    public Set<String> entityTypes() {
+      return Set.of("gadget");
+    }
+
+    @Override
+    public boolean isStateful() {
+      return false;
+    }
+
+    @Override
+    public void clearAdaptiveData() {
+      // Stateless.
+    }
+
+    @Override
+    public List<org.apache.opennlp.grpc.v1.NamedEntity> recognize(
+        org.apache.opennlp.grpc.v1.AnnotatedSentence sentence, boolean includeProbabilities) {
+      return List.of();
+    }
+
+    @Override
+    public void close() {
+      closed = true;
+    }
   }
 }
