@@ -98,7 +98,8 @@ final class DocumentAnalyticsComputer {
       analytics.setAdjectiveDensity((float) adjectives / scoredTokens);
       analytics.setAdverbDensity((float) adverbs / scoredTokens);
       analytics.setContentWordRatio((float) contentWords / scoredTokens);
-      analytics.setLexicalDensity((float) contentWords / scoredTokens);
+      // Lexical density weighs the whole token stream, not only the POS-tagged tokens.
+      analytics.setLexicalDensity((float) contentWords / totalTokens);
     }
 
     if (hasLemmas) {
@@ -110,8 +111,7 @@ final class DocumentAnalyticsComputer {
 
   /** Returns whether a POS tag denotes a noun. */
   private static boolean isNoun(String tag) {
-    return tag.equals("NOUN") || tag.equals("PROPN")
-        || tag.startsWith("NN") || tag.equals("NNP") || tag.equals("NNPS");
+    return tag.equals("NOUN") || tag.equals("PROPN") || tag.startsWith("NN");
   }
 
   /** Returns whether a POS tag denotes a verb. */

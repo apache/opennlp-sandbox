@@ -309,7 +309,7 @@ message DocumentAnalytics {
   float content_word_ratio = 7;
   // Number of distinct lemmas when lemmatization ran.
   int32 unique_lemma_count = 8;
-  // Lexical density (content words / POS-tagged tokens), in [0,1].
+  // Lexical density (content words / total tokens, tagged or not), in [0,1].
   float lexical_density = 9;
 }
 
