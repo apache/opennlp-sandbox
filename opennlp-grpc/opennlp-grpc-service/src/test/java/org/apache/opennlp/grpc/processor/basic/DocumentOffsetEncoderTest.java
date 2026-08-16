@@ -22,6 +22,7 @@ import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.ChunkResult;
 import org.apache.opennlp.grpc.v1.ChunkSpan;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
+import org.apache.opennlp.grpc.v1.EmbeddingResult;
 import org.apache.opennlp.grpc.v1.NamedEntity;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
@@ -32,6 +33,7 @@ import org.apache.opennlp.grpc.v1.Token;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * Tests {@link DocumentOffsetEncoder}: every span the document carries, including sentence, token,
@@ -139,5 +141,22 @@ class DocumentOffsetEncoderTest {
     final AnnotationSpan entity = document.getSentences(0).getEntities(0).getAnnotationSpan();
     assertEquals(2, entity.getStart());
     assertEquals(4, entity.getEnd());
+  }
+
+  @Test
+  void embeddingsWithoutSourceSpanStaySpanless() {
+    // An embedding or centroid with no source_span must not gain a phantom [0,0) span from
+    // the encoder; every other remap in the pass is presence-guarded.
+    final OpenNlpDocument.Builder document = OpenNlpDocument.newBuilder()
+        .setRawText(TEXT)
+        .addEmbeddings(EmbeddingResult.newBuilder().addVector(1.0f))
+        .addDocumentCentroids(EmbeddingResult.newBuilder().addVector(1.0f));
+
+    DocumentOffsetEncoder.apply(document, TEXT, OffsetEncoding.OFFSET_ENCODING_UTF8_BYTE);
+
+    assertFalse(document.getEmbeddings(0).hasSourceSpan(),
+        "encoder materialized a phantom span on a spanless embedding");
+    assertFalse(document.getDocumentCentroids(0).hasSourceSpan(),
+        "encoder materialized a phantom span on a spanless centroid");
   }
 }
