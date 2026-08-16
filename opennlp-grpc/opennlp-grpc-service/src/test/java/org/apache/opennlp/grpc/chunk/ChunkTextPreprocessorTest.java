@@ -65,10 +65,9 @@ class ChunkTextPreprocessorTest {
 
   @Test
   void preserveUrlsMatchesPrefixesEmbeddedInAWord() {
-    // Leftmost scanning finds the prefix anywhere, splitting the word. Pinned quirk:
-    // the match runs to the end of the text, so trim() eats the placeholder's
-    // trailing NUL and the restore misses, leaking the placeholder.
-    assertEquals("ab \0URL1", ChunkTextPreprocessor.clean("abhttps://x.y", true));
+    // Leftmost scanning finds the prefix anywhere, splitting the word; the
+    // placeholder must be restored even when the match runs to the end of the text.
+    assertEquals("ab https://x.y", ChunkTextPreprocessor.clean("abhttps://x.y", true));
   }
 
   @Test
@@ -80,11 +79,18 @@ class ChunkTextPreprocessorTest {
 
   @Test
   void preserveUrlsEndsUrlsAtAsciiWhitespace() {
-    // Tab and vertical tab are regex whitespace and end the URL run. Pinned quirk:
-    // with the match at the very start, trim() eats the placeholder's leading NUL
-    // and the restore misses, leaking the placeholder.
-    assertEquals("URL1\0 b", ChunkTextPreprocessor.clean("http://a\tb", true));
-    assertEquals("URL1\0 b", ChunkTextPreprocessor.clean("http://a\u000Bb", true));
+    // Tab and vertical tab end the URL run; the placeholder must be restored even
+    // when the match starts the text.
+    assertEquals("http://a b", ChunkTextPreprocessor.clean("http://a\tb", true));
+    assertEquals("http://a b", ChunkTextPreprocessor.clean("http://a\u000Bb", true));
+  }
+
+  @Test
+  void preserveUrlsRestoresPlaceholdersAtTextBoundaries() {
+    // A URL spanning the whole text or touching the trailing edge must survive
+    // the collapse, trim, and restore sequence intact.
+    assertEquals("http://a", ChunkTextPreprocessor.clean("http://a", true));
+    assertEquals("see https://x.y", ChunkTextPreprocessor.clean("see   https://x.y  ", true));
   }
 
   @Test
