@@ -585,6 +585,64 @@ class AnalyzeStreamTest {
     }
   }
 
+  @Test
+  void aStuckWriteDoesNotTrapSiblingWorkersBehindTheOutputLock() throws Exception {
+    // Worker A blocks inside a stuck transport write. Worker B, waiting for readiness behind
+    // it, must observe a cancellation and finish: queueing on the outputLock monitor is
+    // uninterruptible and would trap B (and its pool thread) for as long as A is stuck. A
+    // probe task on the shared pool proves a thread actually came back.
+    final ExecutorService executor = Executors.newFixedThreadPool(2);
+    final TrackingServerObserver responses = new TrackingServerObserver();
+    responses.onNextGate = new CountDownLatch(1);
+    responses.onNextEntered = new CountDownLatch(1);
+    final CountDownLatch secondAnalyzed = new CountDownLatch(1);
+    final DocumentAnalyzer analyzer = new DocumentAnalyzer() {
+      @Override
+      public AnalyzeDocumentResponse analyze(
+          org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest request) {
+        throw new IllegalStateException("stream bypassed its prepared analyzer session");
+      }
+
+      @Override
+      public DocumentAnalysisSession openSession(AnalyzeStreamConfiguration configuration) {
+        return document -> {
+          if ("doc-2".equals(document.getDocId())) {
+            secondAnalyzed.countDown();
+          }
+          return AnalyzeDocumentResponse.newBuilder().setDocument(document).build();
+        };
+      }
+    };
+    try {
+      final AnalyzeDocumentStream requests = new AnalyzeDocumentStream(
+          analyzer, executor, 2, responses);
+      assertEquals(1, responses.requested.poll(5, TimeUnit.SECONDS));
+      requests.onNext(configuration());
+      assertEquals(2, responses.requested.poll(5, TimeUnit.SECONDS));
+      requests.onNext(document(1, "first"));
+      assertTrue(responses.onNextEntered.await(5, TimeUnit.SECONDS),
+          "the first write never reached the transport");
+      responses.ready = false;
+      requests.onNext(document(2, "second"));
+      assertTrue(secondAnalyzed.await(5, TimeUnit.SECONDS),
+          "the second document never finished analysis");
+
+      responses.cancelled = true;
+      responses.onCancel.run();
+
+      final CountDownLatch probeRan = new CountDownLatch(1);
+      executor.execute(probeRan::countDown);
+      assertTrue(probeRan.await(5, TimeUnit.SECONDS),
+          "no pool thread came back: a sibling worker stayed trapped behind the stuck "
+              + "writer after cancellation");
+      assertTrue(responses.values.isEmpty(),
+          "a cancelled stream must not emit further responses");
+    } finally {
+      responses.onNextGate.countDown();
+      executor.shutdownNow();
+    }
+  }
+
   private static void await(CountDownLatch latch) {
     try {
       if (!latch.await(5, TimeUnit.SECONDS)) {
@@ -686,6 +744,10 @@ class AnalyzeStreamTest {
     private volatile boolean ready = true;
     private volatile boolean cancelled;
     private volatile boolean completed;
+    /** When non-null, {@link #onNext} blocks until this gate opens, simulating a stuck write. */
+    private volatile CountDownLatch onNextGate;
+    /** Counted down when a gated {@link #onNext} is entered. */
+    private volatile CountDownLatch onNextEntered;
 
     @Override
     public boolean isCancelled() {
@@ -729,6 +791,26 @@ class AnalyzeStreamTest {
 
     @Override
     public void onNext(AnalyzeStreamResponse value) {
+      final CountDownLatch gate = onNextGate;
+      if (gate != null) {
+        final CountDownLatch entered = onNextEntered;
+        if (entered != null) {
+          entered.countDown();
+        }
+        // A stuck transport write ignores interrupts, like a blocked native socket write.
+        boolean interrupted = false;
+        while (true) {
+          try {
+            gate.await();
+            break;
+          } catch (InterruptedException e) {
+            interrupted = true;
+          }
+        }
+        if (interrupted) {
+          Thread.currentThread().interrupt();
+        }
+      }
       values.add(value);
     }
 
