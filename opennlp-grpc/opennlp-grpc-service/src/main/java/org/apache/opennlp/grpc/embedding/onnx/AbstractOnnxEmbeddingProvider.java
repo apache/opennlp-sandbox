@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -70,6 +71,10 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
   private static final String KEY_POOLING_SUFFIX = ".pooling";
   private static final String KEY_DEFAULT_ID = "model.embedder.default_id";
   private static final String KEY_GPU_DEVICE = "model.embedder.gpu_device_id";
+  // The two ONNX-family engines share the vocab/lowercase/pooling keys; each owns its ids
+  // through its own path suffix.
+  private static final String CPU_PATH_SUFFIX = ".onnx.path";
+  private static final String CUDA_PATH_SUFFIX = ".cuda.path";
 
   private final Map<String, OnnxSentenceEmbedder> models;
   private final Map<String, String> modelArtifactHashes;
@@ -278,19 +283,32 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
     final Map<String, OnnxSentenceEmbedder> loaded = new HashMap<>();
     final Map<String, String> hashes = new HashMap<>();
     try {
-      for (Map.Entry<String, String> entry : onnxPaths.entrySet()) {
-        final String modelId = entry.getKey();
+      for (String modelId : allModelIds(onnxPaths, vocabPaths, lowerCase, pooling)) {
+        final String onnxPath = onnxPaths.get(modelId);
+        if (onnxPath == null) {
+          // vocab/lowercase/pooling keys are shared with the sibling ONNX-family engine: an id
+          // carrying that engine's path belongs to it and leaves this engine inert. Any other
+          // orphan (a typo'd path key, a stray setting) fails startup instead of vanishing.
+          final String siblingPathSuffix = siblingPathSuffix(pathSuffix);
+          if (!configuration.containsKey(KEY_PREFIX + modelId + siblingPathSuffix)) {
+            throw AnalysisException.invalidArgument(
+                "Model '" + modelId + "' declares " + KEY_PREFIX + modelId
+                    + ".* settings but no " + KEY_PREFIX + modelId + pathSuffix
+                    + "; an ONNX model path is required to load the model");
+          }
+          continue;
+        }
         final String vocabPath = vocabPaths.get(modelId);
         if (vocabPath == null) {
           throw AnalysisException.invalidArgument(
               KEY_PREFIX + modelId + KEY_VOCAB_SUFFIX
                   + " is required when an ONNX path is configured");
         }
-        loaded.put(modelId, loadModel(modelId, entry.getValue(), vocabPath, useCuda, gpuDeviceId,
+        loaded.put(modelId, loadModel(modelId, onnxPath, vocabPath, useCuda, gpuDeviceId,
             lowerCase.getOrDefault(modelId, Boolean.TRUE),
             pooling.getOrDefault(modelId, OnnxSentenceEmbedder.Pooling.MEAN)));
         try {
-          hashes.put(modelId, ModelArtifactHasher.sha256Hex(Path.of(entry.getValue())));
+          hashes.put(modelId, ModelArtifactHasher.sha256Hex(Path.of(onnxPath)));
         } catch (IOException e) {
           throw AnalysisException.internal(
               "Failed to hash embedding model artifact for '" + modelId + "'", e);
@@ -307,6 +325,26 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
       throw e;
     }
     return new LoadedOnnxModels(Map.copyOf(loaded), Map.copyOf(hashes));
+  }
+
+  // Every id mentioned by any recognized model.embedder.<id>.* key takes part in validation,
+  // so an orphaned key (a typo'd model id, an incomplete model) fails loud instead of being
+  // dropped silently.
+  /** Returns the union of configured model ids. */
+  private static Set<String> allModelIds(Map<String, ?> onnxPaths,
+                                         Map<String, ?> vocabPaths,
+                                         Map<String, ?> lowerCase,
+                                         Map<String, ?> pooling) {
+    final Set<String> union = new HashSet<>(onnxPaths.keySet());
+    union.addAll(vocabPaths.keySet());
+    union.addAll(lowerCase.keySet());
+    union.addAll(pooling.keySet());
+    return union;
+  }
+
+  /** Returns the path key suffix of the other ONNX-family engine sharing this namespace. */
+  private static String siblingPathSuffix(String pathSuffix) {
+    return CPU_PATH_SUFFIX.equals(pathSuffix) ? CUDA_PATH_SUFFIX : CPU_PATH_SUFFIX;
   }
 
   /** Parses lowercase. */
