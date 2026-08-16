@@ -250,6 +250,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
     private String modelId;
     private String backendId;
     private boolean failed;
+    private boolean cancelled;
     private int writesSinceReady;
 
     private EmbedTextStream(
@@ -276,7 +277,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
     /** {@inheritDoc} */
     @Override
     public void onNext(EmbedTextRequest request) {
-      if (failed) {
+      if (failed || cancelled) {
         return;
       }
       try {
@@ -291,7 +292,12 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
         for (final float value : vector) {
           response.addVector(value);
         }
-        awaitReady();
+        if (!awaitReady()) {
+          // The client cancelled while the stream waited for transport capacity; the call
+          // is dead, so stop quietly instead of writing or reporting a failure.
+          cancelled = true;
+          return;
+        }
         responseObserver.onNext(response.build());
       } catch (AnalysisException e) {
         final Status status = GrpcStatusMapper.toStatus(e);
@@ -320,7 +326,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
     /** {@inheritDoc} */
     @Override
     public void onCompleted() {
-      if (!failed) {
+      if (!failed && !cancelled) {
         responseObserver.onCompleted();
       }
     }
@@ -407,17 +413,20 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
     // requests the next inbound message only after onNext returns, waiting here also stops
     // granting the client send window: backpressure propagates end to end instead of
     // accumulating on this heap.
-    /** Waits until the outbound transport can accept a response. */
-    private void awaitReady() {
+    /** Waits until the outbound transport can accept a response; false when the call is dead. */
+    private boolean awaitReady() {
       if (serverCallObserver == null) {
-        return;
+        return true;
+      }
+      if (serverCallObserver.isCancelled()) {
+        return false;
       }
       if (serverCallObserver.isReady()) {
         writesSinceReady = 0;
-        return;
+        return true;
       }
       if (++writesSinceReady <= UNREADY_WRITE_WINDOW) {
-        return;
+        return true;
       }
       final long deadline = System.currentTimeMillis() + READY_TIMEOUT_MILLIS;
       synchronized (readyLock) {
@@ -437,6 +446,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
         }
       }
       writesSinceReady = 0;
+      return !serverCallObserver.isCancelled();
     }
 
     /** Terminates the embedding stream once with the given status. */
