@@ -18,7 +18,6 @@
 package org.apache.opennlp.grpc.model;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -130,8 +129,9 @@ public final class NameFinderRegistry implements AutoCloseable {
    *
    * @return A registry, possibly empty when no name finder is configured.
    *
-   * @throws AnalysisException If a backend's configuration is invalid, a model fails to load, or
-   *     the same recognizer id is registered twice by the same engine.
+   * @throws AnalysisException If two factories declare the same factory id, a backend's
+   *     configuration is invalid, a model fails to load, or the same recognizer id is
+   *     registered twice by the same engine.
    */
   public static NameFinderRegistry create(
       Map<String, String> configuration, SentenceDetector sentenceDetector) {
@@ -149,8 +149,9 @@ public final class NameFinderRegistry implements AutoCloseable {
    *
    * @return A registry, possibly empty when no name finder is configured.
    *
-   * @throws AnalysisException If a backend's configuration is invalid, a model fails to load, or
-   *     the same recognizer id is registered twice by the same engine.
+   * @throws AnalysisException If two factories declare the same factory id, a backend's
+   *     configuration is invalid, a model fails to load, or the same recognizer id is
+   *     registered twice by the same engine.
    */
   static NameFinderRegistry create(
       Map<String, String> configuration, SentenceDetector sentenceDetector,
@@ -162,27 +163,43 @@ public final class NameFinderRegistry implements AutoCloseable {
     final RankedBackends.Builder<NerModel> builder = RankedBackends.builder();
     final Map<String, List<String>> recognizerIdsByType = new LinkedHashMap<>();
     final Set<String> knownEngines = new LinkedHashSet<>();
-    final Set<String> seenFactories = new HashSet<>();
-    for (NerBackendFactory factory : factories) {
-      if (!seenFactories.add(factory.factoryId())) {
-        logger.warn("Ignoring duplicate NER backend factory '{}' ({})",
-            factory.factoryId(), factory.getClass().getName());
-        continue;
-      }
-      for (NerModel model : factory.create(configuration, context)) {
-        // RankedBackends rejects a duplicate (id, engine); distinct engines for one id are the
-        // multi-engine case and are kept, priority-sorted.
-        builder.add(model.id(), model.backendId(), model.priority(), model);
-        knownEngines.add(model.backendId());
-        for (String type : model.entityTypes()) {
-          final List<String> ids = recognizerIdsByType.computeIfAbsent(type, k -> new ArrayList<>());
-          if (!ids.contains(model.id())) {
-            ids.add(model.id());
+    final Map<String, String> seenFactories = new LinkedHashMap<>();
+    final List<NerModel> loaded = new ArrayList<>();
+    try {
+      for (NerBackendFactory factory : factories) {
+        final String previous =
+            seenFactories.putIfAbsent(factory.factoryId(), factory.getClass().getName());
+        if (previous != null) {
+          throw AnalysisException.invalidArgument(
+              "NER backend factory id '" + factory.factoryId() + "' is declared by both "
+                  + previous + " and " + factory.getClass().getName());
+        }
+        for (NerModel model : factory.create(configuration, context)) {
+          // RankedBackends rejects a duplicate (id, engine); distinct engines for one id are the
+          // multi-engine case and are kept, priority-sorted.
+          loaded.add(model);
+          builder.add(model.id(), model.backendId(), model.priority(), model);
+          knownEngines.add(model.backendId());
+          for (String type : model.entityTypes()) {
+            final List<String> ids =
+                recognizerIdsByType.computeIfAbsent(type, k -> new ArrayList<>());
+            if (!ids.contains(model.id())) {
+              ids.add(model.id());
+            }
           }
         }
       }
+      return new NameFinderRegistry(builder.build(), recognizerIdsByType, knownEngines);
+    } catch (RuntimeException e) {
+      // A factory that throws after earlier factories loaded models must not leak the native
+      // sessions those models hold; the half-built registry can never be closed by the caller.
+      try {
+        closeModels(loaded);
+      } catch (RuntimeException closeFailure) {
+        e.addSuppressed(closeFailure);
+      }
+      throw e;
     }
-    return new NameFinderRegistry(builder.build(), recognizerIdsByType, knownEngines);
   }
 
   /**
@@ -310,6 +327,26 @@ public final class NameFinderRegistry implements AutoCloseable {
   public void clearThreadLocalState() {
     for (NerModel model : allModels()) {
       model.clearThreadLocalState();
+    }
+  }
+
+  /** Closes every closeable model, aggregating failures; used when startup fails partway. */
+  private static void closeModels(List<NerModel> models) {
+    final List<Exception> failures = new ArrayList<>();
+    for (NerModel model : models) {
+      if (model instanceof AutoCloseable closeable) {
+        try {
+          closeable.close();
+        } catch (Exception e) {
+          failures.add(e);
+        }
+      }
+    }
+    if (!failures.isEmpty()) {
+      final IllegalStateException error =
+          new IllegalStateException("Failed to close " + failures.size() + " name finder(s)");
+      failures.forEach(error::addSuppressed);
+      throw error;
     }
   }
 

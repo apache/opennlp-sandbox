@@ -17,7 +17,8 @@
  */
 package org.apache.opennlp.grpc.model;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -27,8 +28,6 @@ import java.util.Set;
 
 import org.apache.opennlp.grpc.backend.RankedBackends;
 import org.apache.opennlp.grpc.processor.AnalysisException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Catalog of {@link ParserModel} parsers grouped by logical id into a {@link RankedBackends}, so the
@@ -42,8 +41,6 @@ import org.slf4j.LoggerFactory;
  * multi-engine case; registering it twice under the same backend is an error.</p>
  */
 public final class ParserRegistry {
-
-  private static final Logger logger = LoggerFactory.getLogger(ParserRegistry.class);
 
   private final RankedBackends<ParserModel> parsers;
   private final Set<String> knownEngines;
@@ -92,8 +89,9 @@ public final class ParserRegistry {
    *
    * @return A registry, possibly empty when no parser is configured.
    *
-   * @throws AnalysisException If a backend's configuration is invalid, a model fails to load, or the
-   *     same parser id is registered twice by the same engine.
+   * @throws AnalysisException If two factories declare the same factory id, a backend's
+   *     configuration is invalid, a model fails to load, or the same parser id is registered
+   *     twice by the same engine.
    */
   public static ParserRegistry create(Map<String, String> configuration) {
     return create(configuration, ServiceLoader.load(ParserBackendFactory.class));
@@ -108,8 +106,9 @@ public final class ParserRegistry {
    *
    * @return A registry, possibly empty when no parser is configured.
    *
-   * @throws AnalysisException If a backend's configuration is invalid, a model fails to load, or the
-   *     same parser id is registered twice by the same engine.
+   * @throws AnalysisException If two factories declare the same factory id, a backend's
+   *     configuration is invalid, a model fails to load, or the same parser id is registered
+   *     twice by the same engine.
    */
   static ParserRegistry create(
       Map<String, String> configuration, Iterable<ParserBackendFactory> factories) {
@@ -118,19 +117,54 @@ public final class ParserRegistry {
     }
     final RankedBackends.Builder<ParserModel> builder = RankedBackends.builder();
     final Set<String> knownEngines = new LinkedHashSet<>();
-    final Set<String> seenFactories = new HashSet<>();
-    for (ParserBackendFactory factory : factories) {
-      if (!seenFactories.add(factory.factoryId())) {
-        logger.warn("Ignoring duplicate parser backend factory '{}' ({})",
-            factory.factoryId(), factory.getClass().getName());
-        continue;
+    final Map<String, String> seenFactories = new LinkedHashMap<>();
+    final List<ParserModel> loaded = new ArrayList<>();
+    try {
+      for (ParserBackendFactory factory : factories) {
+        final String previous =
+            seenFactories.putIfAbsent(factory.factoryId(), factory.getClass().getName());
+        if (previous != null) {
+          throw AnalysisException.invalidArgument(
+              "Parser backend factory id '" + factory.factoryId() + "' is declared by both "
+                  + previous + " and " + factory.getClass().getName());
+        }
+        for (ParserModel model : factory.create(configuration)) {
+          loaded.add(model);
+          builder.add(model.id(), model.backendId(), model.priority(), model);
+          knownEngines.add(model.backendId());
+        }
       }
-      for (ParserModel model : factory.create(configuration)) {
-        builder.add(model.id(), model.backendId(), model.priority(), model);
-        knownEngines.add(model.backendId());
+      return new ParserRegistry(builder.build(), knownEngines);
+    } catch (RuntimeException e) {
+      // A factory that throws after earlier factories loaded parsers must not leak the native
+      // resources those parsers hold; the half-built registry can never be closed by the caller.
+      try {
+        closeModels(loaded);
+      } catch (RuntimeException closeFailure) {
+        e.addSuppressed(closeFailure);
+      }
+      throw e;
+    }
+  }
+
+  /** Closes every closeable parser, aggregating failures; used when startup fails partway. */
+  private static void closeModels(List<ParserModel> models) {
+    final List<Exception> failures = new ArrayList<>();
+    for (ParserModel model : models) {
+      if (model instanceof AutoCloseable closeable) {
+        try {
+          closeable.close();
+        } catch (Exception e) {
+          failures.add(e);
+        }
       }
     }
-    return new ParserRegistry(builder.build(), knownEngines);
+    if (!failures.isEmpty()) {
+      final IllegalStateException error =
+          new IllegalStateException("Failed to close " + failures.size() + " parser(s)");
+      failures.forEach(error::addSuppressed);
+      throw error;
+    }
   }
 
   /**

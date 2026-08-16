@@ -17,12 +17,11 @@
  */
 package org.apache.opennlp.grpc.model;
 
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.ServiceLoader;
 
 import org.apache.opennlp.grpc.processor.AnalysisException;
@@ -86,7 +85,8 @@ public final class DocCategorizerRegistry implements AutoCloseable {
    *
    * @return A registry, possibly empty when no document categorizer is configured.
    *
-   * @throws AnalysisException If a backend's configuration is invalid, a model fails to load, or
+   * @throws AnalysisException If two factories declare the same factory id, a backend's
+   *     configuration is invalid, a model fails to load, or
    *     {@code model.doccat.default_id} names an unknown model.
    */
   public static DocCategorizerRegistry create(Map<String, String> configuration) {
@@ -105,7 +105,8 @@ public final class DocCategorizerRegistry implements AutoCloseable {
    *
    * @return A registry, possibly empty when no model is configured under the namespace.
    *
-   * @throws AnalysisException If a backend's configuration is invalid, a model fails to load, or
+   * @throws AnalysisException If two factories declare the same factory id, a backend's
+   *     configuration is invalid, a model fails to load, or
    *     {@code model.<namespace>.default_id} names an unknown model.
    */
   static DocCategorizerRegistry createForNamespace(
@@ -125,7 +126,8 @@ public final class DocCategorizerRegistry implements AutoCloseable {
    *
    * @return A registry, possibly empty when no model is configured under the namespace.
    *
-   * @throws AnalysisException If a backend's configuration is invalid, a model fails to load, or
+   * @throws AnalysisException If two factories declare the same factory id, a backend's
+   *     configuration is invalid, a model fails to load, or
    *     {@code model.<namespace>.default_id} names an unknown model.
    */
   static DocCategorizerRegistry createForNamespace(
@@ -136,21 +138,34 @@ public final class DocCategorizerRegistry implements AutoCloseable {
     }
     final Map<String, String> canonical = canonicalize(namespace, configuration);
     final Map<String, DocCategorizerModel> modelsById = new LinkedHashMap<>();
-    final Set<String> seenFactories = new HashSet<>();
-    for (DocCategorizerBackendFactory factory : factories) {
-      if (!seenFactories.add(factory.factoryId())) {
-        logger.warn("Ignoring duplicate doc categorizer backend factory '{}' ({})",
-            factory.factoryId(), factory.getClass().getName());
-        continue;
-      }
-      for (DocCategorizerModel model : factory.create(canonical)) {
-        // Register under the normalized id so a backend that returns a mixed-case id is still
-        // found by get()/supportsModel(), which look up by the normalized form.
-        if (modelsById.putIfAbsent(normalize(model.id()), model) != null) {
+    final Map<String, String> seenFactories = new LinkedHashMap<>();
+    try {
+      for (DocCategorizerBackendFactory factory : factories) {
+        final String previous =
+            seenFactories.putIfAbsent(factory.factoryId(), factory.getClass().getName());
+        if (previous != null) {
           throw AnalysisException.invalidArgument(
-              "Duplicate " + namespace + " model id: " + model.id());
+              "Doc categorizer backend factory id '" + factory.factoryId()
+                  + "' is declared by both " + previous + " and " + factory.getClass().getName());
+        }
+        for (DocCategorizerModel model : factory.create(canonical)) {
+          // Register under the normalized id so a backend that returns a mixed-case id is still
+          // found by get()/supportsModel(), which look up by the normalized form.
+          if (modelsById.putIfAbsent(normalize(model.id()), model) != null) {
+            throw AnalysisException.invalidArgument(
+                "Duplicate " + namespace + " model id: " + model.id());
+          }
         }
       }
+    } catch (RuntimeException e) {
+      // A factory that throws after earlier factories loaded models must not leak the native
+      // sessions those models hold; the half-built registry can never be closed by the caller.
+      try {
+        closeModels(modelsById.values());
+      } catch (RuntimeException closeFailure) {
+        e.addSuppressed(closeFailure);
+      }
+      throw e;
     }
 
     final String defaultIdKey = "model." + namespace + ".default_id";
@@ -250,6 +265,26 @@ public final class DocCategorizerRegistry implements AutoCloseable {
       return modelsById.keySet().iterator().next();
     }
     return null;
+  }
+
+  /** Closes every closeable model, aggregating failures; used when startup fails partway. */
+  private static void closeModels(Iterable<DocCategorizerModel> models) {
+    final List<Exception> failures = new ArrayList<>();
+    for (DocCategorizerModel model : models) {
+      if (model instanceof AutoCloseable closeable) {
+        try {
+          closeable.close();
+        } catch (Exception e) {
+          failures.add(e);
+        }
+      }
+    }
+    if (!failures.isEmpty()) {
+      final IllegalStateException error = new IllegalStateException(
+          "Failed to close " + failures.size() + " document categorizer(s)");
+      failures.forEach(error::addSuppressed);
+      throw error;
+    }
   }
 
   /** Closes any categorizer that holds native resources (e.g. ONNX sessions). */
