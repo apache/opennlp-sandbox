@@ -131,7 +131,8 @@ class OpenNlpGrpcWebServerTest {
   }
 
   @Test
-  void returnsGenericInternalErrorForUnexpectedGatewayFailure() throws Exception {    AnalysisRpc failing = new TestAnalysisRpc() {
+  void returnsGenericInternalErrorForUnexpectedGatewayFailure() throws Exception {
+    AnalysisRpc failing = new TestAnalysisRpc() {
       @Override
       public GetServiceInfoResponse getServiceInfo() {
         throw new IllegalStateException("internal implementation detail");
