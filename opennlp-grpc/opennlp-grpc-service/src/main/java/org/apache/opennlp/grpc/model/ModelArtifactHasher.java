@@ -30,6 +30,8 @@ import java.security.NoSuchAlgorithmException;
  */
 public final class ModelArtifactHasher {
 
+  private static final char[] HEX_DIGITS = "0123456789abcdef".toCharArray();
+
   /** Prevents instantiation. */
   private ModelArtifactHasher() {
   }
@@ -50,7 +52,7 @@ public final class ModelArtifactHasher {
       final byte[] hashed = digest.digest(bytes);
       final StringBuilder builder = new StringBuilder(hashed.length * 2);
       for (byte value : hashed) {
-        builder.append(String.format("%02x", value));
+        builder.append(HEX_DIGITS[(value >> 4) & 0xF]).append(HEX_DIGITS[value & 0xF]);
       }
       return builder.toString();
     } catch (NoSuchAlgorithmException e) {
