@@ -86,9 +86,16 @@ final class BertTokenizer {
   String[] tokenize(String text) {
     final List<String> tokens = new ArrayList<>();
     tokens.add(classificationToken);
-    for (String word : normalize(text).split(" ")) {
-      if (!word.isEmpty()) {
-        wordpiece(word, tokens);
+    final String normalized = normalize(text);
+    // Cursor split on single spaces; empty words between delimiters are skipped,
+    // matching the previous split(" ") semantics.
+    int wordStart = 0;
+    for (int i = 0; i <= normalized.length(); i++) {
+      if (i == normalized.length() || normalized.charAt(i) == ' ') {
+        if (i > wordStart) {
+          wordpiece(normalized.substring(wordStart, i), tokens);
+        }
+        wordStart = i + 1;
       }
     }
     tokens.add(separatorToken);
