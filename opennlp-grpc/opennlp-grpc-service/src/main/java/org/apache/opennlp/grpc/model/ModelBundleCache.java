@@ -732,10 +732,7 @@ public final class ModelBundleCache implements AutoCloseable {
         }
         final byte[] bytes = model.readAllBytes();
         final String declaredHash = properties.getProperty("model.sha256", "").trim().toLowerCase();
-        final String hash = declaredHash.isBlank()
-            ? ModelArtifactHasher.sha256Hex(bytes)
-            : declaredHash;
-        return new ClasspathArtifact(bytes, hash);
+        return new ClasspathArtifact(bytes, verifyDeclaredHash(modelName, bytes, declaredHash));
       }
     }
     return null;
@@ -777,15 +774,35 @@ public final class ModelBundleCache implements AutoCloseable {
             final byte[] bytes = model.readAllBytes();
             final String declaredHash =
                 properties.getProperty("model.sha256", "").trim().toLowerCase();
-            final String hash = declaredHash.isBlank()
-                ? ModelArtifactHasher.sha256Hex(bytes)
-                : declaredHash;
-            return new ClasspathArtifact(bytes, hash);
+            return new ClasspathArtifact(bytes, verifyDeclaredHash(modelName, bytes, declaredHash));
           }
         }
       }
     }
     return null;
+  }
+
+  /**
+   * Verifies a descriptor-declared {@code model.sha256} against the artifact bytes actually
+   * read: a declared hash that does not match the bytes fails startup with an integrity error
+   * rather than pinning a hash the artifact does not have. When no hash is declared, the
+   * computed digest is used.
+   *
+   * @param modelName The artifact name from the descriptor, for the error message.
+   * @param bytes The artifact bytes read from the classpath.
+   * @param declaredHash The descriptor's declared digest, lower-cased; may be blank.
+   *
+   * @return The verified lowercase hex SHA-256 digest of {@code bytes}.
+   */
+  private static String verifyDeclaredHash(String modelName, byte[] bytes, String declaredHash) {
+    final String computed = ModelArtifactHasher.sha256Hex(bytes);
+    if (!declaredHash.isBlank() && !declaredHash.equals(computed)) {
+      throw AnalysisException.internal(
+          "Integrity check failed for classpath model '" + modelName + "': the descriptor"
+              + " declares sha256 " + declaredHash + " but the artifact bytes hash to "
+              + computed, null);
+    }
+    return computed;
   }
 
   /**
