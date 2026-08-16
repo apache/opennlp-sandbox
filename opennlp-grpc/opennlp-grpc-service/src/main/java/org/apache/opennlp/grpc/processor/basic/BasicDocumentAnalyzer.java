@@ -361,6 +361,22 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_STEM));
     }
 
+    if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_TERM_VECTOR)) {
+      requireTokens(document, PipelineStep.PIPELINE_STEP_TERM_VECTOR);
+      runStep(
+          PipelineStep.PIPELINE_STEP_TERM_VECTOR,
+          () -> {
+            final AnnotationLayer layer = TermVectorStepRunner.aggregate(
+                rawText, document, extraLayers, profile.getTermVector());
+            extraLayers.add(layer);
+            diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_TERM_VECTOR,
+                "Aggregated " + layer.getTermVectorValues().getAnnotationsCount()
+                    + " distinct term(s)"));
+          });
+    } else {
+      diagnostics.add(StepDiagnostics.skipped(PipelineStep.PIPELINE_STEP_TERM_VECTOR));
+    }
+
     final String wordNetLexiconId = validator.resolveWordNetLexiconId(profile);
     if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_EXPAND)) {
       if (!shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_TOKENIZE)) {

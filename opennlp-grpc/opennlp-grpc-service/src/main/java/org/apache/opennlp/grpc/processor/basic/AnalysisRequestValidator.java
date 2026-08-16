@@ -142,6 +142,7 @@ final class AnalysisRequestValidator {
     resolveSentenceDetector(profile);
     validateTermDimensions(profile);
     validateTermProfile(profile);
+    validateTermVectorRequest(profile);
     validateStopwordLanguage(profile);
     validateSubwordRequest(profile);
     validateStemRequest(profile);
@@ -538,6 +539,57 @@ final class AnalysisRequestValidator {
       throw AnalysisException.notFound(
           "No normalization profile registered for language '" + profile.getTermProfile() + "'");
     }
+  }
+
+  private void validateTermVectorRequest(AnalysisProfile profile) {
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_TERM_VECTOR)) {
+      return;
+    }
+    if (!profile.hasTermVector()) {
+      throw AnalysisException.invalidArgument(
+          "PIPELINE_STEP_TERM_VECTOR requires AnalysisProfile.term_vector");
+    }
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
+      throw AnalysisException.invalidArgument(
+          "PIPELINE_STEP_TERM_VECTOR requires PIPELINE_STEP_TOKENIZE");
+    }
+    final var source = TermVectorStepRunner.sourceIdentity(profile.getTermVector());
+    switch (source.getStandard()) {
+      case STANDARD_LAYER_LEMMAS -> requireTermVectorStep(
+          profile, PipelineStep.PIPELINE_STEP_LEMMATIZE, "lemma");
+      case STANDARD_LAYER_STEMS -> requireTermVectorStep(
+          profile, PipelineStep.PIPELINE_STEP_STEM, "stem");
+      case STANDARD_LAYER_TERMS -> validateTermVectorDimension(profile, source.getQualifier());
+      default -> {
+        // The source resolver already restricted the remaining standard value to TOKENS.
+      }
+    }
+    TermVectorStepRunner.resolvedMode(profile.getTermVector());
+  }
+
+  private static void requireTermVectorStep(
+      AnalysisProfile profile, PipelineStep required, String source) {
+    if (!PipelineStepPolicy.shouldRun(profile, required)) {
+      throw AnalysisException.invalidArgument(
+          "term-vector " + source + " source requires " + required.name());
+    }
+  }
+
+  private static void validateTermVectorDimension(AnalysisProfile profile, String qualifier) {
+    if (profile.getTermDimensionsList().contains(qualifier)) {
+      return;
+    }
+    if (profile.hasTermProfile()) {
+      final var normalizationProfile = opennlp.tools.util.normalizer.NormalizationProfiles
+          .forLanguage(profile.getTermProfile()).orElseThrow();
+      if (normalizationProfile.matchingAnalyzer().dimensions().stream()
+          .anyMatch(dimension -> dimension.name().equals(qualifier))) {
+        return;
+      }
+    }
+    throw AnalysisException.invalidArgument(
+        "term-vector TERMS source requires term_dimensions or term_profile to produce '"
+            + qualifier + "'");
   }
 
   private void validatePosTagFormat(AnalysisProfile profile) {

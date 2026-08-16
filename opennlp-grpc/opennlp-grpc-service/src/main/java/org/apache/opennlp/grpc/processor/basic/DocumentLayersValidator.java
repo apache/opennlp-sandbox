@@ -93,6 +93,7 @@ final class DocumentLayersValidator {
       case STANDARD_LAYER_NORMALIZATION -> AnnotationLayer.ValuesCase.NORMALIZATION_VALUES;
       case STANDARD_LAYER_ANALYTICS -> AnnotationLayer.ValuesCase.ANALYTICS_VALUES;
       case STANDARD_LAYER_CHUNK_GROUPS -> AnnotationLayer.ValuesCase.CHUNK_GROUP_VALUES;
+      case STANDARD_LAYER_TERM_VECTORS -> AnnotationLayer.ValuesCase.TERM_VECTOR_VALUES;
       case STANDARD_LAYER_UNSPECIFIED, UNRECOGNIZED -> {
         fail("standard layer identity must name a recognized layer");
         yield AnnotationLayer.ValuesCase.VALUES_NOT_SET;
@@ -189,6 +190,31 @@ final class DocumentLayersValidator {
         requireDocumentScope(layer);
         layer.getChunkGroupValues().getAnnotationsList().forEach(
             group -> validateChunkGroup(group, textLength, embeddingProvider));
+      }
+      case TERM_VECTOR_VALUES -> {
+        requireDocumentScope(layer);
+        final var values = layer.getTermVectorValues();
+        if (!values.hasSourceLayer()) {
+          fail("term-vector layer has no source identity");
+        }
+        if (values.getMode()
+            == org.apache.opennlp.grpc.v1.TermVectorMode.TERM_VECTOR_MODE_UNSPECIFIED
+            || values.getMode() == org.apache.opennlp.grpc.v1.TermVectorMode.UNRECOGNIZED) {
+          fail("term-vector layer has no recognized mode");
+        }
+        values.getAnnotationsList().forEach(annotation -> {
+          if (annotation.getFrequency() < 1) {
+            fail("term-vector frequency must be at least one");
+          }
+          final int occurrences = annotation.getOccurrencesCount();
+          final boolean full = values.getMode()
+              == org.apache.opennlp.grpc.v1.TermVectorMode.TERM_VECTOR_MODE_FULL;
+          if ((full && occurrences != annotation.getFrequency())
+              || (!full && occurrences != 0)) {
+            fail("term-vector occurrences contradict the selected mode");
+          }
+          annotation.getOccurrencesList().forEach(span -> span(span, textLength));
+        });
       }
       case VALUES_NOT_SET -> fail("layer value arm is missing");
     }

@@ -49,7 +49,8 @@ class TermVectorWireContractTest {
     assertEquals("LayerIdentity", requiredMessageField(
         spec, "source_layer", "LayerIdentity").getMessageType().getName());
 
-    final EnumDescriptor mode = spec.getFile().findEnumTypeByName("TermVectorMode");
+    final EnumDescriptor mode = OpenNlpDocumentProto.getDescriptor()
+        .findEnumTypeByName("TermVectorMode");
     assertEquals(Map.of(
             "TERM_VECTOR_MODE_UNSPECIFIED", 0,
             "TERM_VECTOR_MODE_FULL", 1,

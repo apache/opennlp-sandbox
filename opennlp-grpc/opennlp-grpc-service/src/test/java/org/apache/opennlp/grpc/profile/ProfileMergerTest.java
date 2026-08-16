@@ -18,14 +18,18 @@
 package org.apache.opennlp.grpc.profile;
 
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
+import org.apache.opennlp.grpc.v1.LayerIdentity;
 import org.apache.opennlp.grpc.v1.NormalizationRung;
 import org.apache.opennlp.grpc.v1.NormalizationSpec;
 import org.apache.opennlp.grpc.v1.SentenceDetectorSelector;
 import org.apache.opennlp.grpc.v1.StandardSentenceDetectorEngine;
 import org.apache.opennlp.grpc.v1.StandardTokenizerEngine;
+import org.apache.opennlp.grpc.v1.StandardLayer;
 import org.apache.opennlp.grpc.v1.StemmerAlgorithm;
 import org.apache.opennlp.grpc.v1.StemmerSpec;
 import org.apache.opennlp.grpc.v1.TokenizerSelector;
+import org.apache.opennlp.grpc.v1.TermVectorMode;
+import org.apache.opennlp.grpc.v1.TermVectorSpec;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -85,6 +89,9 @@ class ProfileMergerTest {
         .setSentenceDetector(SentenceDetectorSelector.newBuilder()
             .setStandard(StandardSentenceDetectorEngine
                 .STANDARD_SENTENCE_DETECTOR_ENGINE_MODEL))
+        .setTermVector(TermVectorSpec.newBuilder()
+            .setSourceLayer(LayerIdentity.newBuilder()
+                .setStandard(StandardLayer.STANDARD_LAYER_TOKENS)))
         .build();
     final AnalysisProfile override = AnalysisProfile.newBuilder()
         .setNormalization(NormalizationSpec.newBuilder()
@@ -103,6 +110,10 @@ class ProfileMergerTest {
         .setSentenceDetector(SentenceDetectorSelector.newBuilder()
             .setStandard(StandardSentenceDetectorEngine
                 .STANDARD_SENTENCE_DETECTOR_ENGINE_NEWLINE))
+        .setTermVector(TermVectorSpec.newBuilder()
+            .setMode(TermVectorMode.TERM_VECTOR_MODE_SCORING_ONLY)
+            .setSourceLayer(LayerIdentity.newBuilder()
+                .setStandard(StandardLayer.STANDARD_LAYER_STEMS)))
         .build();
 
     final AnalysisProfile merged = ProfileMerger.merge(base, override);
@@ -122,5 +133,9 @@ class ProfileMergerTest {
         merged.getTokenizer().getStandard());
     assertEquals(StandardSentenceDetectorEngine.STANDARD_SENTENCE_DETECTOR_ENGINE_NEWLINE,
         merged.getSentenceDetector().getStandard());
+    assertEquals(TermVectorMode.TERM_VECTOR_MODE_SCORING_ONLY,
+        merged.getTermVector().getMode());
+    assertEquals(StandardLayer.STANDARD_LAYER_STEMS,
+        merged.getTermVector().getSourceLayer().getStandard());
   }
 }

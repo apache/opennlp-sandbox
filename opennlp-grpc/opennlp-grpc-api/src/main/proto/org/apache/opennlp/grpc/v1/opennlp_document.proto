@@ -629,6 +629,8 @@ message DocumentClassification {
 //   opennlp:analytics   document-scoped typed DocumentAnalytics values.
 //   opennlp:chunk-groups  document-scoped strategy chunks, vectors, centroids,
 //                       routes, and statistics.
+//   opennlp:term-vectors document-scoped distinct terms, frequencies, occurrence
+//                       spans, and source-layer provenance.
 
 // The typed annotation layers of one analyzed document.
 message DocumentLayers {
@@ -662,6 +664,18 @@ enum StandardLayer {
   STANDARD_LAYER_NORMALIZATION = 19;
   STANDARD_LAYER_ANALYTICS = 20;
   STANDARD_LAYER_CHUNK_GROUPS = 21;
+  // Document-scoped aggregate term frequencies and optional occurrence spans.
+  STANDARD_LAYER_TERM_VECTORS = 22;
+}
+
+// How much each aggregate term vector records.
+enum TermVectorMode {
+  // Defaults to FULL.
+  TERM_VECTOR_MODE_UNSPECIFIED = 0;
+  // Frequency plus every occurrence span in the requested offset encoding.
+  TERM_VECTOR_MODE_FULL = 1;
+  // Frequency only, with no occurrence spans.
+  TERM_VECTOR_MODE_SCORING_ONLY = 2;
 }
 
 // Strong identity for one layer. OpenNLP-owned layers use the closed standard
@@ -714,6 +728,8 @@ message AnnotationLayer {
     AnalyticsAnnotationList analytics_values = 15;
     // Strategy-driven chunks, embeddings, centroids, and statistics.
     ChunkGroupAnnotationList chunk_group_values = 16;
+    // Aggregate term frequencies and occurrence offsets with source provenance.
+    TermVectorAnnotationList term_vector_values = 18;
   }
   // Typed identity for this layer. Always populated by this server. Standard
   // OpenNLP layers select the enum arm; extension layers select custom.
@@ -902,4 +918,25 @@ message AnalyticsAnnotationList {
 
 message ChunkGroupAnnotationList {
   repeated ChunkEmbeddingGroup annotations = 1;
+}
+
+// Aggregate term vectors plus the configuration that produced them.
+message TermVectorAnnotationList {
+  // One entry per distinct term, in first-occurrence order.
+  repeated TermVectorAnnotation annotations = 1;
+  // Whether annotations retain occurrence spans or only frequencies.
+  TermVectorMode mode = 2;
+  // The positional document layer whose values defined term identity.
+  LayerIdentity source_layer = 3;
+}
+
+// One distinct term in a document, its frequency, and optional occurrence offsets.
+message TermVectorAnnotation {
+  // The exact identity under which occurrences were grouped. May be empty when
+  // the selected source normalization deliberately removes a token's entire value.
+  string term = 1;
+  // The number of source annotations grouped under this term. Always at least one.
+  int32 frequency = 2;
+  // Original-text occurrence spans in FULL mode; empty in SCORING_ONLY mode.
+  repeated AnnotationSpan occurrences = 3;
 }

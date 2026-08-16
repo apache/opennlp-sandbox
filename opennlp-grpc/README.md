@@ -30,11 +30,13 @@ ids are namespaced exactly as in the Java container (`opennlp:sentences`,
 `opennlp:categories`, `opennlp:embeddings`, `opennlp:word-types`,
 `opennlp:stopwords`, `opennlp:terms:<DIMENSION>`, `opennlp:subwords`,
 `opennlp:stems`, `opennlp:expansions`, `opennlp:geo`, `opennlp:normalization`,
-`opennlp:analytics`, `opennlp:chunk-groups`), and every annotation value is strongly
+`opennlp:analytics`, `opennlp:chunk-groups`, `opennlp:term-vectors`), and every annotation value is strongly
 typed through the layer's `oneof` value list. First-class payloads retain their complete
 types and provenance: entities are `NamedEntity`, syntactic chunks are `ChunkSpan`, UAX
 29 classes use `DocumentWordType`, stems carry `StemmerAlgorithm`, lexical expansions
 carry `LexicalExpansionKind`, and strategy chunks retain their embeddings and centroids.
+Aggregate term vectors retain their mode, source-layer identity, frequency, and optional
+original-text occurrence spans.
 Each layer also carries a `LayerIdentity` oneof. OpenNLP-owned layers use the closed
 `StandardLayer` enum, while extension layers use the open namespaced `custom` string.
 Layer families can add a qualifier, so `opennlp:terms:FULL_CASE_FOLD` is represented as
@@ -76,7 +78,8 @@ tokenization over MeCab-format dictionaries
 (`tokenizer.standard = STANDARD_TOKENIZER_ENGINE_LATTICE`,
 `model.lattice.<id>.dir`), and geocoding of location entities against the bundled
 Natural Earth gazetteer (`PIPELINE_STEP_GEOCODE`, no configuration required, filling
-`NamedEntity.geo`).
+`NamedEntity.geo`), and aggregate term vectors from PR #1212
+(`PIPELINE_STEP_TERM_VECTOR`).
 
 ## Modules
 
@@ -201,6 +204,14 @@ wire. They run entirely rule-based and need no operator-supplied models.
 | Typed sentence detector choice | `AnalysisProfile.sentence_detector.standard` | `OpenNlpDocument.sentences` and `opennlp:sentences` | `MODEL` is the default. `NEWLINE` treats each non-empty line as one sentence and needs no model. |
 | Per-token term layers | `AnalysisProfile.term_dimensions` (library `Dimension` names, e.g. `NFC`, `CASE_FOLD`, `FULL_CASE_FOLD`, `EMOJI_FOLD`) | `Token.term_layers` map | Requires `PIPELINE_STEP_TOKENIZE`. Character-level dimensions only: `ORIGINAL`, `STEM` and `LEMMA` are rejected (`PIPELINE_STEP_LEMMATIZE` owns lemmas). |
 | Per-language term profile | `AnalysisProfile.term_profile` (registry language, e.g. `"en"`, `"de"`) | `Token.term_layers` map carrying the profile's full ladder (including its `STEM` layer) | Requires `PIPELINE_STEP_TOKENIZE`. Mutually exclusive with `term_dimensions`; an unregistered language fails with `NOT_FOUND`. |
+| Aggregate term vectors | `PIPELINE_STEP_TERM_VECTOR` + `AnalysisProfile.term_vector` | Typed document layer `opennlp:term-vectors` | `source_layer` is a `LayerIdentity`: unset means `STANDARD_LAYER_TOKENS`; `LEMMAS`, `STEMS`, and qualified `TERMS` reuse the corresponding produced document layer as term identity. `FULL` includes one original-text occurrence span per token; `SCORING_ONLY` returns frequencies without spans. The result repeats the resolved source and mode as provenance. |
+
+For a BM25 index over normalized stems, request `term_profile: "en"`, select
+`STANDARD_LAYER_TERMS` with qualifier `STEM`, and use `TERM_VECTOR_MODE_FULL`.
+This composes the library's language profile once, groups identical stem identities,
+and keeps every posting offset anchored to `raw_text`. Selecting `STANDARD_LAYER_STEMS`
+instead uses the independently configured `PIPELINE_STEP_STEM` output. Unary and
+`AnalyzeStream` calls share this exact analysis path and response shape.
 
 #### Custom segmentation engines (SPI)
 

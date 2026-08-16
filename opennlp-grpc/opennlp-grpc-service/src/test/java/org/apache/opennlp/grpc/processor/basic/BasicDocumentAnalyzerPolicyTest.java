@@ -104,8 +104,8 @@ class BasicDocumentAnalyzerPolicyTest {
 
   @Test
   void implementsEveryDefinedPipelineStep() {
-    // PARSE was the last unimplemented step; the server now implements the whole PipelineStep
-    // surface. Only the UNSPECIFIED sentinel is not implemented (and the validator skips it), so
+    // The server implements the whole PipelineStep surface. Only the UNSPECIFIED sentinel is not
+    // implemented (and the validator skips it), so
     // the UNIMPLEMENTED guard is now a forward-compatibility net for future enum additions. This
     // also fails fast if a step is ever dropped from PipelineStepPolicy's implemented set.
     for (PipelineStep step : PipelineStep.values()) {

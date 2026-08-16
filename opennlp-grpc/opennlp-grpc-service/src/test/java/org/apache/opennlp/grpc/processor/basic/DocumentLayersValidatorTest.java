@@ -35,6 +35,9 @@ import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.StandardLayer;
 import org.apache.opennlp.grpc.v1.StringAnnotation;
 import org.apache.opennlp.grpc.v1.StringAnnotationList;
+import org.apache.opennlp.grpc.v1.TermVectorAnnotation;
+import org.apache.opennlp.grpc.v1.TermVectorAnnotationList;
+import org.apache.opennlp.grpc.v1.TermVectorMode;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -167,6 +170,15 @@ class DocumentLayersValidatorTest {
   }
 
   @Test
+  void rejectsTermVectorShapesThatContradictTheirMode() {
+    assertInternal(invalid(termVectors(TermVectorMode.TERM_VECTOR_MODE_FULL,
+        TermVectorAnnotation.newBuilder().setTerm("café").setFrequency(1).build())));
+    assertInternal(invalid(termVectors(TermVectorMode.TERM_VECTOR_MODE_SCORING_ONLY,
+        TermVectorAnnotation.newBuilder().setTerm("café").setFrequency(1)
+            .addOccurrences(span(0, 4)).build())));
+  }
+
+  @Test
   void acceptsAWellFormedLayerSet() {
     final OpenNlpDocument valid = document(
         strings("opennlp:tokens", LayerScope.LAYER_SCOPE_POSITIONAL,
@@ -174,6 +186,18 @@ class DocumentLayersValidatorTest {
                 .setProbability(0.9d).build()),
         embeddingLayer(1f, 2f, 3f));
     DocumentLayersValidator.validate(valid, EMBEDDINGS);
+  }
+
+  private static AnnotationLayer termVectors(
+      TermVectorMode mode, TermVectorAnnotation annotation) {
+    return DocumentShapeAssembler.layer("opennlp:term-vectors")
+        .setScope(LayerScope.LAYER_SCOPE_DOCUMENT)
+        .setTermVectorValues(TermVectorAnnotationList.newBuilder()
+            .setMode(mode)
+            .setSourceLayer(LayerIdentity.newBuilder()
+                .setStandard(StandardLayer.STANDARD_LAYER_TOKENS))
+            .addAnnotations(annotation))
+        .build();
   }
 
   private static AnnotationLayer embeddingLayer(float... vector) {

@@ -278,6 +278,19 @@ final class DocumentOffsetEncoder {
           }
           layer.setChunkGroupValues(list.build());
         }
+        case TERM_VECTOR_VALUES -> {
+          final var list = layer.getTermVectorValues().toBuilder();
+          for (int a = 0; a < list.getAnnotationsCount(); a++) {
+            final var annotation = list.getAnnotations(a).toBuilder();
+            for (int occurrence = 0;
+                occurrence < annotation.getOccurrencesCount(); occurrence++) {
+              annotation.setOccurrences(occurrence,
+                  remap(annotation.getOccurrences(occurrence), mapper));
+            }
+            list.setAnnotations(a, annotation.build());
+          }
+          layer.setTermVectorValues(list.build());
+        }
         default -> {
           // A layer without annotations carries no spans to remap.
         }

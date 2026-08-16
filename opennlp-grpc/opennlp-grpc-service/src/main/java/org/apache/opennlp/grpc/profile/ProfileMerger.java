@@ -105,6 +105,9 @@ public final class ProfileMerger {
     if (override.hasSentenceDetector()) {
       builder.setSentenceDetector(override.getSentenceDetector());
     }
+    if (override.hasTermVector()) {
+      builder.setTermVector(override.getTermVector());
+    }
     return builder.build();
   }
 }

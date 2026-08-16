@@ -124,6 +124,7 @@ final class DocumentShapeAssembler {
 
   /** The id of the strategy chunk group layer. */
   static final String CHUNK_GROUPS_ID = "opennlp:chunk-groups";
+  static final String TERM_VECTORS_ID = "opennlp:term-vectors";
 
   private DocumentShapeAssembler() {
     // This class is a stateless rendering pass and is never instantiated.
@@ -549,6 +550,7 @@ final class DocumentShapeAssembler {
         case NORMALIZATION_ID -> StandardLayer.STANDARD_LAYER_NORMALIZATION;
         case ANALYTICS_ID -> StandardLayer.STANDARD_LAYER_ANALYTICS;
         case CHUNK_GROUPS_ID -> StandardLayer.STANDARD_LAYER_CHUNK_GROUPS;
+        case TERM_VECTORS_ID -> StandardLayer.STANDARD_LAYER_TERM_VECTORS;
         default -> StandardLayer.STANDARD_LAYER_UNSPECIFIED;
       };
       if (standard == StandardLayer.STANDARD_LAYER_UNSPECIFIED) {

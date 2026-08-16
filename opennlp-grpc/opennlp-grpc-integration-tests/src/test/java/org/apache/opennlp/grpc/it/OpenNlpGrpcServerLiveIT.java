@@ -56,6 +56,7 @@ import org.apache.opennlp.grpc.v1.ChunkingSpec;
 import org.apache.opennlp.grpc.v1.ComponentType;
 import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
 import org.apache.opennlp.grpc.v1.GetServiceInfoRequest;
+import org.apache.opennlp.grpc.v1.LayerIdentity;
 import org.apache.opennlp.grpc.v1.ListModelBundlesRequest;
 import org.apache.opennlp.grpc.v1.ModelDescriptor;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
@@ -69,6 +70,7 @@ import org.apache.opennlp.grpc.v1.StandardSentenceDetectorEngine;
 import org.apache.opennlp.grpc.v1.StandardTokenizerEngine;
 import org.apache.opennlp.grpc.v1.StemmerAlgorithm;
 import org.apache.opennlp.grpc.v1.StemmerSpec;
+import org.apache.opennlp.grpc.v1.TermVectorSpec;
 import org.apache.opennlp.grpc.v1.TokenizerSelector;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -217,6 +219,12 @@ class OpenNlpGrpcServerLiveIT {
     assertTrue(stems.getStemValues().getAnnotationsList().stream()
         .anyMatch(stem -> "cats".equals(slice(document.getRawText(), stem.getSpan()))
             && "cat".equals(stem.getStem())));
+    final AnnotationLayer termVectors = assertStandardLayer(document,
+        StandardLayer.STANDARD_LAYER_TERM_VECTORS, "opennlp:term-vectors");
+    assertEquals(StandardLayer.STANDARD_LAYER_STEMS,
+        termVectors.getTermVectorValues().getSourceLayer().getStandard());
+    assertTrue(termVectors.getTermVectorValues().getAnnotationsList().stream()
+        .anyMatch(vector -> "cat".equals(vector.getTerm()) && vector.getFrequency() == 1));
   }
 
   @Test
@@ -537,12 +545,16 @@ class OpenNlpGrpcServerLiveIT {
             .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
             .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
             .addSteps(PipelineStep.PIPELINE_STEP_STEM)
+            .addSteps(PipelineStep.PIPELINE_STEP_TERM_VECTOR)
             .setTokenizer(TokenizerSelector.newBuilder()
                 .setStandard(StandardTokenizerEngine.STANDARD_TOKENIZER_ENGINE_UAX29))
             .setStemmer(StemmerSpec.newBuilder()
                 .setAlgorithm(StemmerAlgorithm.STEMMER_ALGORITHM_SNOWBALL)
                 .setLanguage("en")
                 .build())
+            .setTermVector(TermVectorSpec.newBuilder()
+                .setSourceLayer(LayerIdentity.newBuilder()
+                    .setStandard(StandardLayer.STANDARD_LAYER_STEMS)))
             .build())
         .setOptions(AnalysisOptions.newBuilder()
             .setMaxTextLength(64)

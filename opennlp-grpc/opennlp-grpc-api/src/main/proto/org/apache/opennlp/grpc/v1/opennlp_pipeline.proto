@@ -102,6 +102,23 @@ enum PipelineStep {
   // mention is left without a resolution, never fabricated. Requires NER; requesting
   // it without => FAILED_PRECONDITION.
   PIPELINE_STEP_GEOCODE = 17;
+
+  // Aggregates one positional string-valued document layer into distinct terms with
+  // frequencies and optional original-text occurrence spans. Requires TOKENIZE; select
+  // tokens, lemmas, stems, or a qualified term-normalization layer with
+  // AnalysisProfile.term_vector.
+  PIPELINE_STEP_TERM_VECTOR = 18;
+}
+
+// Configuration for PIPELINE_STEP_TERM_VECTOR.
+message TermVectorSpec {
+  // Defaults to FULL.
+  TermVectorMode mode = 1;
+  // The positional document layer that defines term identity. Unset defaults to
+  // STANDARD_LAYER_TOKENS. Supported standard layers are TOKENS, LEMMAS, STEMS,
+  // and TERMS. TERMS requires its Dimension name in qualifier. The producing step
+  // and configuration must also be present in this profile.
+  LayerIdentity source_layer = 2;
 }
 
 // The stemmer families the STEM step can run. All but HUNSPELL are bundled
@@ -336,6 +353,9 @@ message AnalysisProfile {
   // bundle's SentenceDetectorME. The standard arm covers OpenNLP-owned engines;
   // custom selects a ServiceLoader extension by its stable id.
   optional SentenceDetectorSelector sentence_detector = 19;
+
+  // Configuration for PIPELINE_STEP_TERM_VECTOR. Required when that step is selected.
+  TermVectorSpec term_vector = 20;
 }
 
 // Configuration for PIPELINE_STEP_NORMALIZE: which rungs run, in the order the
