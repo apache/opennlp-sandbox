@@ -118,12 +118,7 @@ public final class EmbeddingProviderFactory {
   private static SortedMap<String, EmbeddingBackendFactory> discoverFactories() {
     final SortedMap<String, EmbeddingBackendFactory> factories = new TreeMap<>();
     for (EmbeddingBackendFactory factory : ServiceLoader.load(EmbeddingBackendFactory.class)) {
-      final String id = factory.backendId();
-      if (id == null || id.isBlank() || !id.equals(id.toLowerCase(Locale.ROOT))) {
-        throw AnalysisException.invalidArgument(
-            factory.getClass().getName() + " declares an invalid backend id '" + id
-                + "'; backend ids must be non-blank and lower-case");
-      }
+      final String id = validId(factory.backendId(), factory.getClass().getName());
       final EmbeddingBackendFactory duplicate = factories.putIfAbsent(id, factory);
       if (duplicate != null) {
         throw AnalysisException.invalidArgument(
@@ -132,5 +127,15 @@ public final class EmbeddingProviderFactory {
       }
     }
     return factories;
+  }
+
+  /** Returns a validated backend id. Package-private for tests. */
+  static String validId(String id, String owner) {
+    if (id == null || id.isBlank() || !id.equals(id.toLowerCase(Locale.ROOT))) {
+      throw AnalysisException.invalidArgument(
+          owner + " declares an invalid backend id '" + id
+              + "'; backend ids must be non-blank and lower-case");
+    }
+    return id;
   }
 }

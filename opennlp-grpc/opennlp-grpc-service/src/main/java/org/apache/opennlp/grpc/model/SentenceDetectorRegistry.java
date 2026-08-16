@@ -114,8 +114,8 @@ public final class SentenceDetectorRegistry implements AutoCloseable {
     closeAll(detectors.values());
   }
 
-  /** Returns a normalized, validated provider id. */
-  private static String validId(String id, String owner) {
+  /** Returns a normalized, validated provider id. Package-private for tests. */
+  static String validId(String id, String owner) {
     if (id == null || id.isBlank() || !id.equals(id.toLowerCase(Locale.ROOT))) {
       throw AnalysisException.invalidArgument(
           owner + " declares invalid sentence detector engine id '" + id

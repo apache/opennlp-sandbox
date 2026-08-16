@@ -17,8 +17,10 @@
  */
 package org.apache.opennlp.grpc.embedding;
 
+import java.util.List;
 import java.util.Map;
 
+import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -71,5 +73,20 @@ class EmbeddingProviderFactoryTest {
 
     assertTrue(TrackingEmbeddingBackendFactory.wasClosed(),
         "a provider created before a later factory failed was leaked");
+  }
+
+  @Test
+  void rejectsWhitespaceInBackendId() {
+    // A backend id with leading, trailing, or inner whitespace would be advertised verbatim.
+    for (String id : List.of("onnx ", " onnx", "on nx", "onnx\t")) {
+      final AnalysisException error = assertThrows(AnalysisException.class,
+          () -> EmbeddingProviderFactory.validId(id, "test"), "id '" + id + "'");
+      assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+    }
+  }
+
+  @Test
+  void acceptsPlainLowercaseBackendId() {
+    assertEquals("onnx", EmbeddingProviderFactory.validId("onnx", "test"));
   }
 }
