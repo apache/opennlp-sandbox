@@ -241,7 +241,7 @@ class BasicDocumentAnalyzerTermVectorTest {
             .setSourceLayer(standard(StandardLayer.STANDARD_LAYER_STEMS)));
     final AnalysisException absentStem = assertThrows(AnalysisException.class,
         () -> analyzer.analyze(request("dog", stems, null)));
-    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, absentStem.getFailureType());
+    assertEquals(AnalysisException.FailureType.FAILED_PRECONDITION, absentStem.getFailureType());
   }
 
   private AnnotationLayer analyze(

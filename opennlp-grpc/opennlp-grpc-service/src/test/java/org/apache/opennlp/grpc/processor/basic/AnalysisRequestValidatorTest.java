@@ -21,13 +21,18 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
+import org.apache.opennlp.grpc.v1.LayerIdentity;
 import org.apache.opennlp.grpc.v1.NormalizationRung;
 import org.apache.opennlp.grpc.v1.NormalizationSpec;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
+import org.apache.opennlp.grpc.v1.StandardLayer;
+import org.apache.opennlp.grpc.v1.TermLayerSpec;
+import org.apache.opennlp.grpc.v1.TermVectorSpec;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -222,7 +227,7 @@ class AnalysisRequestValidatorTest {
         AnalysisProfile.newBuilder()
             .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
             .addTermDimensions("NFC"),
-        AnalysisException.FailureType.INVALID_ARGUMENT,
+        AnalysisException.FailureType.FAILED_PRECONDITION,
         "term_dimensions requires PIPELINE_STEP_TOKENIZE");
   }
 
@@ -272,8 +277,72 @@ class AnalysisRequestValidatorTest {
         AnalysisProfile.newBuilder()
             .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
             .setTermProfile("en"),
-        AnalysisException.FailureType.INVALID_ARGUMENT,
+        AnalysisException.FailureType.FAILED_PRECONDITION,
         "term_profile requires PIPELINE_STEP_TOKENIZE");
+  }
+
+  // ---------- step-dependency failures are FAILED_PRECONDITION per the proto error model ----------
+
+  @Test
+  void rejectsStopwordLanguageWithoutTokenizeStep() {
+    assertRejected(
+        AnalysisProfile.newBuilder()
+            .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+            .setStopwordLanguage("en"),
+        AnalysisException.FailureType.FAILED_PRECONDITION,
+        "stopword_language requires PIPELINE_STEP_TOKENIZE");
+  }
+
+  @Test
+  void rejectsTermLayersWithoutTokenizeStep() {
+    assertRejected(
+        AnalysisProfile.newBuilder()
+            .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+            .addTermLayers(TermLayerSpec.newBuilder()
+                .setQualifier("folded")
+                .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_CASE_FOLD)),
+        AnalysisException.FailureType.FAILED_PRECONDITION,
+        "term_layers requires PIPELINE_STEP_TOKENIZE");
+  }
+
+  @Test
+  void rejectsTermVectorWithoutTokenizeStep() {
+    assertRejected(
+        AnalysisProfile.newBuilder()
+            .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+            .addSteps(PipelineStep.PIPELINE_STEP_TERM_VECTOR)
+            .setTermVector(TermVectorSpec.getDefaultInstance()),
+        AnalysisException.FailureType.FAILED_PRECONDITION,
+        "PIPELINE_STEP_TERM_VECTOR requires PIPELINE_STEP_TOKENIZE");
+  }
+
+  @Test
+  void rejectsLemmaVectorSourceWithoutLemmatizeStep() {
+    assertRejected(
+        AnalysisProfile.newBuilder()
+            .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+            .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+            .addSteps(PipelineStep.PIPELINE_STEP_TERM_VECTOR)
+            .setTermVector(TermVectorSpec.newBuilder()
+                .setSourceLayer(LayerIdentity.newBuilder()
+                    .setStandard(StandardLayer.STANDARD_LAYER_LEMMAS))),
+        AnalysisException.FailureType.FAILED_PRECONDITION,
+        "term-vector lemma source requires PIPELINE_STEP_LEMMATIZE");
+  }
+
+  @Test
+  void rejectsEmbeddingModelIdWithoutEmbedStep() {
+    final AnalysisException error = assertThrows(AnalysisException.class,
+        () -> analyzer.analyze(AnalyzeDocumentRequest.newBuilder()
+            .setDocument(OpenNlpDocument.newBuilder().setRawText(TEXT).build())
+            .setProfile(AnalysisProfile.newBuilder()
+                .setProfileId("inline-test")
+                .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT))
+            .setOptions(AnalysisOptions.newBuilder().setEmbeddingModelId("minilm"))
+            .build()));
+    assertEquals(AnalysisException.FailureType.FAILED_PRECONDITION, error.getFailureType());
+    assertTrue(error.getMessage().contains("embedding_model_id requires PIPELINE_STEP_EMBED"),
+        "Expected embedding_model_id prerequisite but was: " + error.getMessage());
   }
 
   @Test
