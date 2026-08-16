@@ -273,7 +273,10 @@ AnalysisProfile {
 
 `AnalysisOptions.clear_adaptive_data` (default `true`) controls whether the server
 calls `NameFinderME.clearAdaptiveData()` after each request, matching the OpenNLP
-manual's per-document reset semantics.
+manual's per-document reset semantics. On `AnalyzeStream`, a configuration with
+`clear_adaptive_data: false` routes the stream's documents through a single dedicated
+worker, so the accumulated adaptive state is confined to one thread, documents see it
+in submission order, and it is released when the stream ends.
 
 > Pair each name finder with a tokenizer trained for the same tokenization scheme.
 > The bundled UD English tokenizer works with `opennlp-models` artifacts; legacy
