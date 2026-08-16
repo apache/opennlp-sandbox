@@ -269,7 +269,32 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
       int parameterStart = contentType.indexOf(';');
       String mediaType = parameterStart < 0
           ? contentType : contentType.substring(0, parameterStart);
-      return mediaType.strip().equalsIgnoreCase(JSON_MEDIA_TYPE);
+      return equalsIgnoreCaseAscii(mediaType.strip(), JSON_MEDIA_TYPE);
+    }
+
+    /**
+     * Returns whether two media type tokens match case-insensitively. Media types
+     * are ASCII, so a cursor compare replaces the locale-aware equalsIgnoreCase.
+     *
+     * @param value The token to test.
+     * @param expected The expected token, in lower case.
+     * @return {@code true} when the tokens match.
+     */
+    private static boolean equalsIgnoreCaseAscii(String value, String expected) {
+      if (value.length() != expected.length()) {
+        return false;
+      }
+      for (int index = 0; index < value.length(); index++) {
+        if (asciiLower(value.charAt(index)) != asciiLower(expected.charAt(index))) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    /** Folds ASCII upper case to lower case, leaving every other character untouched. */
+    private static char asciiLower(char character) {
+      return character >= 'A' && character <= 'Z' ? (char) (character + ('a' - 'A')) : character;
     }
 
     /**
