@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -35,6 +34,7 @@ import com.google.protobuf.ByteString;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
+import opennlp.tools.util.StringUtil;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.kserve.v2.GRPCInferenceServiceGrpc;
 import org.apache.opennlp.grpc.kserve.v2.InferTensorContents;
@@ -548,7 +548,7 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
 
   /** Parses a strict, case-insensitive boolean configuration value. */
   private static boolean parseBoolean(String key, String value) {
-    final String normalized = value.trim().toLowerCase(Locale.ROOT);
+    final String normalized = StringUtil.toLowerCase(value.trim());
     if (normalized.equals("true") || normalized.equals("false")) {
       return Boolean.parseBoolean(normalized);
     }

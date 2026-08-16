@@ -24,11 +24,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 import ai.onnxruntime.OrtException;
+import opennlp.tools.util.StringUtil;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.model.ModelArtifactHasher;
 import org.apache.opennlp.grpc.processor.AnalysisException;
@@ -349,7 +349,7 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
 
   /** Parses lowercase. */
   private static boolean parseLowercase(String modelId, String value) {
-    final String normalized = value.trim().toLowerCase(Locale.ROOT);
+    final String normalized = StringUtil.toLowerCase(value.trim());
     if (normalized.equals("true") || normalized.equals("false")) {
       return Boolean.parseBoolean(normalized);
     }
@@ -359,7 +359,7 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
 
   /** Parses pooling. */
   private static OnnxSentenceEmbedder.Pooling parsePooling(String modelId, String value) {
-    return switch (value.trim().toLowerCase(Locale.ROOT)) {
+    return switch (StringUtil.toLowerCase(value.trim())) {
       case "mean" -> OnnxSentenceEmbedder.Pooling.MEAN;
       case "cls" -> OnnxSentenceEmbedder.Pooling.CLS;
       default -> throw AnalysisException.invalidArgument(

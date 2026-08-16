@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -36,6 +35,7 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import opennlp.tools.util.StringUtil;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.tei.v1.EmbedGrpc;
@@ -485,7 +485,7 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
 
   /** Parses a strict, case-insensitive boolean configuration value. */
   private static boolean parseBoolean(String key, String value) {
-    final String normalized = value.trim().toLowerCase(Locale.ROOT);
+    final String normalized = StringUtil.toLowerCase(value.trim());
     if (normalized.equals("true") || normalized.equals("false")) {
       return Boolean.parseBoolean(normalized);
     }

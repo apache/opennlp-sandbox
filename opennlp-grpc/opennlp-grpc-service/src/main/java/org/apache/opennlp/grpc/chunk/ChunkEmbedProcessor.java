@@ -21,10 +21,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import opennlp.tools.util.StringUtil;
 import org.apache.opennlp.grpc.embedding.EmbeddingBatchResult;
 import org.apache.opennlp.grpc.embedding.EmbeddingBackendSelections;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
@@ -354,7 +354,7 @@ public final class ChunkEmbedProcessor {
 
   /** Normalizes category. */
   private static String normalizeCategory(String value) {
-    return value.trim().toLowerCase(Locale.ROOT);
+    return StringUtil.toLowerCase(value.trim());
   }
 
   /** Accumulates one category's sentences: their texts (for concat) and their bounding span. */

@@ -25,11 +25,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 import opennlp.embeddings.StaticEmbeddingModel;
+import opennlp.tools.util.StringUtil;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.model.ModelArtifactHasher;
 import org.apache.opennlp.grpc.processor.AnalysisException;
@@ -374,7 +374,7 @@ public final class StaticTableEmbeddingProvider implements EmbeddingProvider {
 
   /** Parses a strict, case-insensitive per-model boolean setting. */
   private static boolean parseBoolean(String modelId, String suffix, String value) {
-    final String normalized = value.trim().toLowerCase(Locale.ROOT);
+    final String normalized = StringUtil.toLowerCase(value.trim());
     if (normalized.equals("true") || normalized.equals("false")) {
       return Boolean.parseBoolean(normalized);
     }

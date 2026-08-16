@@ -43,6 +43,7 @@ import opennlp.tools.tokenize.lattice.LatticeTokenizer;
 import opennlp.tools.tokenize.uax29.WordToken;
 import opennlp.tools.tokenize.uax29.WordTokenizer;
 import opennlp.tools.util.Span;
+import opennlp.tools.util.StringUtil;
 import opennlp.tools.util.normalizer.AlignedText;
 import opennlp.tools.util.normalizer.Dimension;
 import opennlp.tools.util.normalizer.NormalizationProfile;
@@ -348,7 +349,7 @@ final class ClassicStepRunner {
       for (int e = 0; e < sentence.getEntitiesCount(); e++) {
         final NamedEntity entity = sentence.getEntities(e);
         if (GEOCODABLE_ENTITY_TYPES.contains(
-            entity.getEntityType().toLowerCase(java.util.Locale.ROOT))) {
+            StringUtil.toLowerCase(entity.getEntityType()))) {
           mentions.add(new Span(entity.getAnnotationSpan().getStart(),
               entity.getAnnotationSpan().getEnd()));
           entityRefs.add(new int[] {s, e});

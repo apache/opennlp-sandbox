@@ -25,13 +25,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import ai.onnxruntime.OrtException;
 import opennlp.dl.InferenceOptions;
 import opennlp.dl.doccat.DocumentCategorizerDL;
 import opennlp.dl.doccat.scoring.AverageClassificationScoringStrategy;
+import opennlp.tools.util.StringUtil;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,7 +99,7 @@ public final class OnnxDocCategorizerBackendFactory implements DocCategorizerBac
         throw AnalysisException.invalidArgument(
             "Invalid ONNX document categorizer key: " + key + "; id must not be blank");
       }
-      final String attr = remainder.substring(lastDot + 1).trim().toLowerCase(Locale.ROOT);
+      final String attr = StringUtil.toLowerCase(remainder.substring(lastDot + 1).trim());
       byId.computeIfAbsent(id, k -> new LinkedHashMap<>()).put(attr, entry.getValue());
     }
     final Map<String, DlConfig> configs = new LinkedHashMap<>();
@@ -115,7 +115,7 @@ public final class OnnxDocCategorizerBackendFactory implements DocCategorizerBac
     final String vocabPath = requiredAttr(id, attrs, "vocab");
     final String categoriesPath = requiredAttr(id, attrs, "categories");
     final String backend =
-        attrs.getOrDefault("backend", BACKEND_ONNX).trim().toLowerCase(Locale.ROOT);
+        StringUtil.toLowerCase(attrs.getOrDefault("backend", BACKEND_ONNX).trim());
     if (!BACKEND_ONNX.equals(backend) && !BACKEND_CUDA.equals(backend)) {
       throw AnalysisException.invalidArgument(
           "ONNX document categorizer '" + id + "' has unsupported backend '" + backend

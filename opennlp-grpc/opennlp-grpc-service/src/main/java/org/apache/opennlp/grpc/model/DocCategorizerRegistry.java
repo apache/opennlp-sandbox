@@ -20,10 +20,10 @@ package org.apache.opennlp.grpc.model;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.ServiceLoader;
 
+import opennlp.tools.util.StringUtil;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +74,7 @@ public final class DocCategorizerRegistry implements AutoCloseable {
    * @return The normalized id, or {@code null} if {@code id} is {@code null}.
    */
   public static String normalize(String id) {
-    return id == null ? null : id.trim().toLowerCase(Locale.ROOT);
+    return id == null ? null : StringUtil.toLowerCase(id.trim());
   }
 
   /**

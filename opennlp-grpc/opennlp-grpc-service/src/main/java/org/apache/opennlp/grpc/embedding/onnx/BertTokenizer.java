@@ -20,8 +20,9 @@ package org.apache.opennlp.grpc.embedding.onnx;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
+
+import opennlp.tools.util.StringUtil;
 
 /**
  * The full BERT tokenization pipeline: basic tokenization (text normalization)
@@ -148,7 +149,7 @@ final class BertTokenizer {
     String normalized = cleanText(text);
     normalized = isolateCjkCharacters(normalized);
     if (lowerCase) {
-      normalized = stripAccents(normalized.toLowerCase(Locale.ROOT));
+      normalized = stripAccents(StringUtil.toLowerCase(normalized));
     }
     return isolatePunctuation(normalized);
   }

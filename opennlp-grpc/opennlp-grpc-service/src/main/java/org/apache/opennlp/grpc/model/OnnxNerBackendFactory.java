@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -34,6 +33,7 @@ import ai.onnxruntime.OrtException;
 import opennlp.dl.InferenceOptions;
 import opennlp.dl.namefinder.NameFinderDL;
 import opennlp.tools.sentdetect.SentenceDetector;
+import opennlp.tools.util.StringUtil;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,7 +99,7 @@ public final class OnnxNerBackendFactory implements NerBackendFactory {
         throw AnalysisException.invalidArgument("Invalid ONNX name finder key: " + key);
       }
       final String id = NameFinderRegistry.normalize(remainder.substring(0, lastDot));
-      final String attr = remainder.substring(lastDot + 1).trim().toLowerCase(Locale.ROOT);
+      final String attr = StringUtil.toLowerCase(remainder.substring(lastDot + 1).trim());
       byId.computeIfAbsent(id, k -> new LinkedHashMap<>()).put(attr, entry.getValue());
     }
     final Map<String, DlConfig> configs = new LinkedHashMap<>();
@@ -114,7 +114,8 @@ public final class OnnxNerBackendFactory implements NerBackendFactory {
     final String modelPath = requiredAttr(id, attrs, "path");
     final String vocabPath = requiredAttr(id, attrs, "vocab");
     final String labelsPath = requiredAttr(id, attrs, "labels");
-    final String backend = attrs.getOrDefault("backend", BACKEND_ONNX).trim().toLowerCase(Locale.ROOT);
+    final String backend =
+        StringUtil.toLowerCase(attrs.getOrDefault("backend", BACKEND_ONNX).trim());
     if (!BACKEND_ONNX.equals(backend) && !BACKEND_CUDA.equals(backend)) {
       throw AnalysisException.invalidArgument(
           "ONNX name finder '" + id + "' has unsupported backend '" + backend

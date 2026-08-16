@@ -21,11 +21,11 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 
+import opennlp.tools.util.StringUtil;
 import org.apache.opennlp.grpc.backend.RankedBackends;
 import org.apache.opennlp.grpc.backend.RankedBackends.Registration;
 import org.apache.opennlp.grpc.processor.AnalysisException;
@@ -62,7 +62,7 @@ public final class ChunkerRegistry implements AutoCloseable {
    * @return The normalized value, or {@code null} if {@code value} is {@code null}.
    */
   public static String normalize(String value) {
-    return value == null ? null : value.trim().toLowerCase(Locale.ROOT);
+    return value == null ? null : StringUtil.toLowerCase(value.trim());
   }
 
   /**
