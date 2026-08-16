@@ -257,6 +257,9 @@ message GetServiceInfoResponse {
   // message. This operator limit applies even when an analysis
   // request omits AnalysisOptions.max_text_length.
   int32 max_text_bytes = 9;
+  // Version of this gRPC service artifact, or "dev" when running from an
+  // unpackaged development classpath.
+  string service_version = 10;
 }
 
 // Open identity for one family of configured, non-model resources. OpenNLP-owned

@@ -147,6 +147,7 @@ class OpenNlpGrpcServerLiveIT {
   void serviceInfoReportsEmbeddingSupport() {
     final var info = client.getServiceInfo(GetServiceInfoRequest.getDefaultInstance());
     assertEquals("v1", info.getApiVersion());
+    assertEquals("3.0.0-SNAPSHOT", info.getServiceVersion());
     assertTrue(info.getSupportedStepsList().contains(PipelineStep.PIPELINE_STEP_LANGUAGE_DETECT));
     assertTrue(info.getSupportedStepsList().contains(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT));
     assertTrue(info.getSupportedStepsList().contains(PipelineStep.PIPELINE_STEP_TOKENIZE));

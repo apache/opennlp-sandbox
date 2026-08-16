@@ -49,7 +49,9 @@ invariants apply to what goes on the wire. The full inventory is documented in
 
 Capability discovery separates implementation support from configured readiness.
 `GetServiceInfo.supported_steps` and `supported_layers` describe the binary's protocol
-surface. `ListModelBundles` reports loaded model artifacts and embedding routes, while
+surface. It also reports the packaged gRPC service version separately from the wrapped
+OpenNLP library version, so operators can identify both sides of a deployed combination.
+`ListModelBundles` reports loaded model artifacts and embedding routes, while
 `GetServiceInfo.configured_resources` reports loaded non-model resources. Each resource
 uses a `ResourceIdentity` oneof with a closed `StandardResource` enum or an open custom
 type id, plus its selectable resource id and whether it is the default. The standard

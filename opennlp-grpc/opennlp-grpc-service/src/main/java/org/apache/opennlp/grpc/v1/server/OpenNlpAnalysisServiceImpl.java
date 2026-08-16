@@ -59,6 +59,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
   private static final Logger logger = LoggerFactory.getLogger(OpenNlpAnalysisServiceImpl.class);
 
   private static final String API_VERSION = "v1";
+  private static final String SERVICE_VERSION = serviceVersion();
   private static final int DEFAULT_ANALYSIS_STREAM_WINDOW =
       Math.max(2, Runtime.getRuntime().availableProcessors());
   private static final List<StandardLayer> STANDARD_LAYERS = Arrays.stream(StandardLayer.values())
@@ -423,6 +424,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
             modelBundleCache.getSentenceDetectorRegistry().ids())
         .addAllConfiguredResources(modelBundleCache.listConfiguredResources())
         .setMaxTextBytes(maxTextBytes)
+        .setServiceVersion(SERVICE_VERSION)
         .build());
     responseObserver.onCompleted();
   }
@@ -435,6 +437,13 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
         .addAllBundles(modelBundleCache.listBundles())
         .build());
     responseObserver.onCompleted();
+  }
+
+  private static String serviceVersion() {
+    final String implementationVersion = OpenNlpAnalysisServiceImpl.class
+        .getPackage().getImplementationVersion();
+    return implementationVersion == null || implementationVersion.isBlank()
+        ? "dev" : implementationVersion;
   }
 
   private static DocumentAnalyzer limitText(DocumentAnalyzer delegate, int maxTextBytes) {
