@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  * {@code EnginePolicy}):</p>
  * <ul>
  *   <li><b>none</b>: each recognizer runs its highest-priority engine, falling back to the next on
- *       failure;</li>
+ *       a retryable failure ({@link RankedBackends#isRetryable});</li>
  *   <li><b>one</b>: that engine is pinned (no fallback); recognizers it does not serve are
  *       skipped;</li>
  *   <li><b>two or more</b>: all listed engines run and their entities are unioned, each tagged with
@@ -141,16 +141,23 @@ final class NerEntityResolver {
     }
   }
 
-  /** Runs the highest-priority engine, falling back to the next on failure; rethrows if all fail. */
+  /**
+   * Runs the highest-priority engine, falling back to the next on a retryable failure (the
+   * shared {@link RankedBackends#isRetryable} policy); rethrows when all engines fail, and
+   * propagates non-retryable failures immediately.
+   */
   private void runWithFallback(String recognizerId, AnnotatedSentence sentence, List<Hit> hits) {
     final List<Registration<NerModel>> ranked = recognizers.resolve(recognizerId);
-    RuntimeException last = null;
+    AnalysisException last = null;
     for (Registration<NerModel> registration : ranked) {
       final int before = hits.size();
       try {
         addHits(recognizerId, registration.value(), sentence, hits);
         return;
-      } catch (RuntimeException e) {
+      } catch (AnalysisException e) {
+        if (!RankedBackends.isRetryable(e)) {
+          throw e;
+        }
         // Drop any partial hits from the failed engine before trying the next one.
         hits.subList(before, hits.size()).clear();
         last = e;

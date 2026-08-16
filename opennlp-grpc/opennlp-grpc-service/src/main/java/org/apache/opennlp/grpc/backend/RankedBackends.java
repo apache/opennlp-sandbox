@@ -245,8 +245,16 @@ public final class RankedBackends<T> {
     throw last;
   }
 
-  /** Returns whether a backend failure permits fallback. */
-  private static boolean isRetryable(AnalysisException failure) {
+  /**
+   * Returns whether a backend failure permits fallback to the next engine: only
+   * {@link AnalysisException.FailureType#UNAVAILABLE} and
+   * {@link AnalysisException.FailureType#RESOURCE_EXHAUSTED} are retryable.
+   *
+   * @param failure The failure an engine raised. Must not be {@code null}.
+   *
+   * @return {@code true} when the failure is transient and the next engine may be tried.
+   */
+  public static boolean isRetryable(AnalysisException failure) {
     return failure.getFailureType() == AnalysisException.FailureType.UNAVAILABLE
         || failure.getFailureType() == AnalysisException.FailureType.RESOURCE_EXHAUSTED;
   }
