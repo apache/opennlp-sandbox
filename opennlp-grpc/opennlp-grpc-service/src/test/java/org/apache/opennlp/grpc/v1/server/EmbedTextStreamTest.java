@@ -18,10 +18,14 @@
 package org.apache.opennlp.grpc.v1.server;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import io.grpc.Status;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.opennlp.grpc.embedding.StubEmbeddingBackendFactory;
 import org.apache.opennlp.grpc.embedding.TrackingEmbeddingBackendFactory;
@@ -266,6 +270,124 @@ class EmbedTextStreamTest {
 
     assertNotNull(responses.error);
     assertEquals(Status.Code.NOT_FOUND, Status.fromThrowable(responses.error).getCode());
+  }
+
+  @Test
+  void cancellationWhileWaitingForReadinessStopsQuietly() throws Exception {
+    // The writer exhausts the elastic unready-write window (1024 responses) and then blocks on
+    // transport readiness. Cancelling mid-wait must stop the stream quietly: a write to the
+    // cancelled call throws at the transport, and mapping that to INTERNAL misreports a dead
+    // call as a server fault.
+    final TrackingEmbedServerObserver responses = new TrackingEmbedServerObserver();
+    responses.ready = false;
+    final StreamObserver<EmbedTextRequest> requests =
+        serviceWithStubModel().embedText(responses);
+    final CountDownLatch pumpDone = new CountDownLatch(1);
+    final Thread pump = new Thread(() -> {
+      try {
+        for (int sequence = 0; sequence < 1100; sequence++) {
+          requests.onNext(text(sequence, "text " + sequence));
+        }
+      } finally {
+        pumpDone.countDown();
+      }
+    }, "embed-pump");
+    pump.start();
+    try {
+      awaitParked(pump);
+      responses.cancelled = true;
+
+      assertTrue(pumpDone.await(5, TimeUnit.SECONDS),
+          "the writer kept working after cancellation");
+      assertNull(responses.error,
+          "a cancelled call must not see a failure status: " + responses.error);
+      assertEquals(1024, responses.values.size(),
+          "no response may be written after cancellation");
+      assertFalse(responses.completed);
+    } finally {
+      pump.interrupt();
+    }
+  }
+
+  /** Waits until the writer thread parks on the readiness gate (its only blocking point). */
+  private static void awaitParked(Thread writer) {
+    final long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+    while (writer.getState() != Thread.State.TIMED_WAITING) {
+      if (System.nanoTime() > deadline) {
+        throw new AssertionError("the writer never parked on the readiness gate");
+      }
+      java.util.concurrent.locks.LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
+    }
+  }
+
+  /** Server-side observer with controllable readiness and cancellation. */
+  private static final class TrackingEmbedServerObserver
+      extends ServerCallStreamObserver<EmbedTextResponse> {
+    private final List<EmbedTextResponse> values =
+        Collections.synchronizedList(new ArrayList<>());
+    private volatile boolean ready = true;
+    private volatile boolean cancelled;
+    private volatile Throwable error;
+    private volatile boolean completed;
+
+    @Override
+    public boolean isCancelled() {
+      return cancelled;
+    }
+
+    @Override
+    public void setOnCancelHandler(Runnable handler) {
+      // The embed stream observes cancellation through isCancelled, not a handler.
+    }
+
+    @Override
+    public void setCompression(String compression) {
+      // Compression selection is outside this test's scope.
+    }
+
+    @Override
+    public boolean isReady() {
+      return ready;
+    }
+
+    @Override
+    public void setOnReadyHandler(Runnable handler) {
+      // The test flips readiness directly; the readiness wait polls at most 1s.
+    }
+
+    @Override
+    public void disableAutoInboundFlowControl() {
+      // Automatic inbound flow control stays on for this stream.
+    }
+
+    @Override
+    public void request(int count) {
+      // Inbound demand is outside this test's scope.
+    }
+
+    @Override
+    public void setMessageCompression(boolean enable) {
+      // Message compression is outside this test's scope.
+    }
+
+    @Override
+    public void onNext(EmbedTextResponse value) {
+      if (cancelled) {
+        // The real transport rejects writes to a cancelled call.
+        throw Status.CANCELLED.withDescription("call is cancelled").asRuntimeException();
+      }
+      values.add(value);
+    }
+
+    @Override
+    public void onError(Throwable error) {
+      this.error = error;
+    }
+
+    @Override
+    public void onCompleted() {
+      completed = true;
+    }
   }
 
   /** Captures everything the service emits on the response stream. */
