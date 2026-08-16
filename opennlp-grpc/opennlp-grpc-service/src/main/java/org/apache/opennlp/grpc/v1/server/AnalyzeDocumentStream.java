@@ -217,8 +217,14 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
           .setOk(analysisSession.analyze(document.getDocument()))
           .build());
     } catch (AnalysisException e) {
-      sendFailure(document.getSequence(), GrpcStatusMapper.toStatus(e)
-          .withDescription(e.getMessage()));
+      final Status status = GrpcStatusMapper.toStatus(e);
+      // Server-caused failures reach the client as a bare status; without logging here
+      // a model throwing on pathological input leaves no server-side trace.
+      if (status.getCode() == Status.Code.INTERNAL
+          || status.getCode() == Status.Code.UNAVAILABLE) {
+        logger.error("AnalyzeStream document analysis failed", e);
+      }
+      sendFailure(document.getSequence(), status.withDescription(e.getMessage()));
     } catch (RuntimeException e) {
       logger.error("Unexpected error handling AnalyzeStream document", e);
       sendFailure(document.getSequence(), Status.INTERNAL

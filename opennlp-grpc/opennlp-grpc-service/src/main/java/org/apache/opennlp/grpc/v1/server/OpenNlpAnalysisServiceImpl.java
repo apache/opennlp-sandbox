@@ -189,6 +189,12 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
       responseObserver.onCompleted();
     } catch (AnalysisException e) {
       final Status status = GrpcStatusMapper.toStatus(e);
+      // Server-caused failures reach the client as a bare status; without logging here
+      // a model throwing on pathological input leaves no server-side trace.
+      if (status.getCode() == Status.Code.INTERNAL
+          || status.getCode() == Status.Code.UNAVAILABLE) {
+        logger.error("AnalyzeDocument failed", e);
+      }
       responseObserver.onError(
           status.withDescription(e.getMessage()).withCause(e.getCause()).asRuntimeException());
     } catch (RuntimeException e) {
@@ -288,8 +294,15 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
         awaitReady();
         responseObserver.onNext(response.build());
       } catch (AnalysisException e) {
-        fail(GrpcStatusMapper.toStatus(e)
-            .withDescription(e.getMessage()).withCause(e.getCause()).asRuntimeException());
+        final Status status = GrpcStatusMapper.toStatus(e);
+        // Server-caused failures reach the client as a bare status; without logging here
+        // a model throwing on pathological input leaves no server-side trace.
+        if (status.getCode() == Status.Code.INTERNAL
+            || status.getCode() == Status.Code.UNAVAILABLE) {
+          logger.error("EmbedText failed", e);
+        }
+        fail(status.withDescription(e.getMessage()).withCause(e.getCause())
+            .asRuntimeException());
       } catch (RuntimeException e) {
         logger.error("Unexpected error handling EmbedText", e);
         fail(Status.INTERNAL
