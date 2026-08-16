@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.embedding.EmbeddingProviderFactory;
@@ -58,25 +59,42 @@ class TeiEmbeddingProviderTest {
 
   private static Server embeddingServer;
   private static Server classifierServer;
+  private static Server invalidArgumentServer;
+  private static Server unavailableServer;
+  private static Server deadlineExceededServer;
 
   @BeforeAll
   static void startServers() throws IOException {
     embeddingServer = ServerBuilder.forPort(0)
         .addService(new StubInfoService(ModelType.MODEL_TYPE_EMBEDDING))
-        .addService(new StubEmbedService())
+        .addService(new StubEmbedService(null))
         .build()
         .start();
     classifierServer = ServerBuilder.forPort(0)
         .addService(new StubInfoService(ModelType.MODEL_TYPE_CLASSIFIER))
-        .addService(new StubEmbedService())
+        .addService(new StubEmbedService(null))
         .build()
         .start();
+    invalidArgumentServer = failingServer(Status.INVALID_ARGUMENT);
+    unavailableServer = failingServer(Status.UNAVAILABLE);
+    deadlineExceededServer = failingServer(Status.DEADLINE_EXCEEDED);
   }
 
   @AfterAll
   static void stopServers() throws InterruptedException {
-    embeddingServer.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
-    classifierServer.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+    for (Server server : List.of(embeddingServer, classifierServer,
+        invalidArgumentServer, unavailableServer, deadlineExceededServer)) {
+      server.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+    }
+  }
+
+  /** Starts an embedding server whose Embed calls fail with the given status. */
+  private static Server failingServer(Status embedFailure) throws IOException {
+    return ServerBuilder.forPort(0)
+        .addService(new StubInfoService(ModelType.MODEL_TYPE_EMBEDDING))
+        .addService(new StubEmbedService(embedFailure))
+        .build()
+        .start();
   }
 
   @Test
@@ -199,6 +217,48 @@ class TeiEmbeddingProviderTest {
   }
 
   @Test
+  void remoteInvalidArgumentIsNotRetryable() {
+    // A deterministic remote rejection is a client error, not a transient fault: it must
+    // surface as INVALID_ARGUMENT and never be fallback-eligible.
+    final TeiEmbeddingProvider provider =
+        new TeiEmbeddingProvider(config(invalidArgumentServer, "minilm"));
+    try {
+      final AnalysisException e = assertThrows(AnalysisException.class,
+          () -> provider.embed("minilm", StubEmbedService.FAILURE_TRIGGER));
+      assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, e.getFailureType());
+    } finally {
+      provider.close();
+    }
+  }
+
+  @Test
+  void remoteUnavailableStaysRetryable() {
+    final TeiEmbeddingProvider provider =
+        new TeiEmbeddingProvider(config(unavailableServer, "minilm"));
+    try {
+      final AnalysisException e = assertThrows(AnalysisException.class,
+          () -> provider.embed("minilm", StubEmbedService.FAILURE_TRIGGER));
+      assertEquals(AnalysisException.FailureType.UNAVAILABLE, e.getFailureType());
+    } finally {
+      provider.close();
+    }
+  }
+
+  @Test
+  void remoteDeadlineExceededIsRetryable() {
+    // A remote deadline maps to UNAVAILABLE so the engine remains fallback-eligible.
+    final TeiEmbeddingProvider provider =
+        new TeiEmbeddingProvider(config(deadlineExceededServer, "minilm"));
+    try {
+      final AnalysisException e = assertThrows(AnalysisException.class,
+          () -> provider.embed("minilm", StubEmbedService.FAILURE_TRIGGER));
+      assertEquals(AnalysisException.FailureType.UNAVAILABLE, e.getFailureType());
+    } finally {
+      provider.close();
+    }
+  }
+
+  @Test
   void rejectsInvalidDeadline() {
     final Map<String, String> configuration = config("minilm");
     configuration.put("model.embedder.tei.deadline_ms", "soon");
@@ -208,9 +268,13 @@ class TeiEmbeddingProviderTest {
   }
 
   private static Map<String, String> config(String modelId) {
+    return config(embeddingServer, modelId);
+  }
+
+  private static Map<String, String> config(Server server, String modelId) {
     final Map<String, String> configuration = new HashMap<>();
     configuration.put("model.embedder." + modelId + ".tei.target",
-        "localhost:" + embeddingServer.getPort());
+        "localhost:" + server.getPort());
     configuration.put("model.embedder.tei.deadline_ms", "5000");
     return configuration;
   }
@@ -236,8 +300,18 @@ class TeiEmbeddingProviderTest {
     }
   }
 
-  /** Embed stub returning {@code [length(inputs), 1, 1]} for every request, unary and streamed. */
+  /** Embed stub returning {@code [length(inputs), 1, 1]} for every request, unary and streamed;
+   * when {@code embedFailure} is set, calls for {@link #FAILURE_TRIGGER} fail with that status. */
   private static final class StubEmbedService extends EmbedGrpc.EmbedImplBase {
+
+    /** Input text that triggers the configured failure (the construction probe uses another text). */
+    private static final String FAILURE_TRIGGER = "explode";
+
+    private final Status embedFailure;
+
+    private StubEmbedService(Status embedFailure) {
+      this.embedFailure = embedFailure;
+    }
 
     private static EmbedResponse embedding(EmbedRequest request) {
       return EmbedResponse.newBuilder()
@@ -249,6 +323,10 @@ class TeiEmbeddingProviderTest {
 
     @Override
     public void embed(EmbedRequest request, StreamObserver<EmbedResponse> observer) {
+      if (embedFailure != null && FAILURE_TRIGGER.equals(request.getInputs())) {
+        observer.onError(embedFailure.asRuntimeException());
+        return;
+      }
       observer.onNext(embedding(request));
       observer.onCompleted();
     }

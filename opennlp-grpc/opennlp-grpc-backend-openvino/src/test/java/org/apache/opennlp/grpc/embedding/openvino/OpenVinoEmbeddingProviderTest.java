@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.protobuf.ByteString;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.embedding.EmbeddingProviderFactory;
@@ -67,23 +68,36 @@ class OpenVinoEmbeddingProviderTest {
   private static Server rawServer;
   private static Server notReadyServer;
   private static Server tokenInputServer;
+  private static Server invalidArgumentServer;
+  private static Server unavailableServer;
+  private static Server deadlineExceededServer;
   private static StubInferenceService typedService;
 
   @BeforeAll
   static void startServers() throws IOException {
-    typedService = new StubInferenceService(true, false, "BYTES");
+    typedService = new StubInferenceService(true, false, "BYTES", null);
     typedServer = ServerBuilder.forPort(0).addService(typedService).build().start();
     rawServer = ServerBuilder.forPort(0)
-        .addService(new StubInferenceService(true, true, "BYTES")).build().start();
+        .addService(new StubInferenceService(true, true, "BYTES", null)).build().start();
     notReadyServer = ServerBuilder.forPort(0)
-        .addService(new StubInferenceService(false, false, "BYTES")).build().start();
+        .addService(new StubInferenceService(false, false, "BYTES", null)).build().start();
     tokenInputServer = ServerBuilder.forPort(0)
-        .addService(new StubInferenceService(true, false, "INT64")).build().start();
+        .addService(new StubInferenceService(true, false, "INT64", null)).build().start();
+    invalidArgumentServer = ServerBuilder.forPort(0)
+        .addService(new StubInferenceService(true, false, "BYTES", Status.INVALID_ARGUMENT))
+        .build().start();
+    unavailableServer = ServerBuilder.forPort(0)
+        .addService(new StubInferenceService(true, false, "BYTES", Status.UNAVAILABLE))
+        .build().start();
+    deadlineExceededServer = ServerBuilder.forPort(0)
+        .addService(new StubInferenceService(true, false, "BYTES", Status.DEADLINE_EXCEEDED))
+        .build().start();
   }
 
   @AfterAll
   static void stopServers() throws InterruptedException {
-    for (Server server : List.of(typedServer, rawServer, notReadyServer, tokenInputServer)) {
+    for (Server server : List.of(typedServer, rawServer, notReadyServer, tokenInputServer,
+        invalidArgumentServer, unavailableServer, deadlineExceededServer)) {
       server.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
     }
   }
@@ -195,6 +209,48 @@ class OpenVinoEmbeddingProviderTest {
   }
 
   @Test
+  void remoteInvalidArgumentSurfacesAsClientError() {
+    // A deterministic remote rejection is a client error, not a transient fault: it must
+    // surface as INVALID_ARGUMENT and never be fallback-eligible.
+    final OpenVinoEmbeddingProvider provider =
+        new OpenVinoEmbeddingProvider(config(invalidArgumentServer, "minilm"));
+    try {
+      final AnalysisException e = assertThrows(AnalysisException.class,
+          () -> provider.embed("minilm", StubInferenceService.FAILURE_TRIGGER));
+      assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, e.getFailureType());
+    } finally {
+      provider.close();
+    }
+  }
+
+  @Test
+  void remoteUnavailableStaysRetryable() {
+    final OpenVinoEmbeddingProvider provider =
+        new OpenVinoEmbeddingProvider(config(unavailableServer, "minilm"));
+    try {
+      final AnalysisException e = assertThrows(AnalysisException.class,
+          () -> provider.embed("minilm", StubInferenceService.FAILURE_TRIGGER));
+      assertEquals(AnalysisException.FailureType.UNAVAILABLE, e.getFailureType());
+    } finally {
+      provider.close();
+    }
+  }
+
+  @Test
+  void remoteDeadlineExceededIsRetryable() {
+    // A remote deadline maps to UNAVAILABLE so the engine remains fallback-eligible.
+    final OpenVinoEmbeddingProvider provider =
+        new OpenVinoEmbeddingProvider(config(deadlineExceededServer, "minilm"));
+    try {
+      final AnalysisException e = assertThrows(AnalysisException.class,
+          () -> provider.embed("minilm", StubInferenceService.FAILURE_TRIGGER));
+      assertEquals(AnalysisException.FailureType.UNAVAILABLE, e.getFailureType());
+    } finally {
+      provider.close();
+    }
+  }
+
+  @Test
   void rejectsMissingModelName() {
     final Map<String, String> configuration = new HashMap<>();
     configuration.put("model.embedder.minilm.openvino.target",
@@ -243,20 +299,28 @@ class OpenVinoEmbeddingProviderTest {
 
   /**
    * KServe v2 stub serving one model with a single string input and a single FP32
-   * output of dimension 3 where {@code vector[0] == length(text)}.
+   * output of dimension 3 where {@code vector[0] == length(text)}. When {@code inferFailure}
+   * is set, {@code modelInfer} of {@link #FAILURE_TRIGGER} fails with that status instead
+   * of serving a vector (the construction probe uses another text).
    */
   private static final class StubInferenceService
       extends GRPCInferenceServiceGrpc.GRPCInferenceServiceImplBase {
 
+    /** Input text that triggers the configured inference failure. */
+    private static final String FAILURE_TRIGGER = "explode";
+
     private final boolean ready;
     private final boolean rawOutput;
     private final String inputDatatype;
+    private final Status inferFailure;
     private final AtomicInteger inferCalls = new AtomicInteger();
 
-    private StubInferenceService(boolean ready, boolean rawOutput, String inputDatatype) {
+    private StubInferenceService(boolean ready, boolean rawOutput, String inputDatatype,
+        Status inferFailure) {
       this.ready = ready;
       this.rawOutput = rawOutput;
       this.inputDatatype = inputDatatype;
+      this.inferFailure = inferFailure;
     }
 
     @Override
@@ -287,6 +351,11 @@ class OpenVinoEmbeddingProviderTest {
     public void modelInfer(ModelInferRequest request, StreamObserver<ModelInferResponse> observer) {
       inferCalls.incrementAndGet();
       final List<ByteString> texts = request.getInputs(0).getContents().getBytesContentsList();
+      if (inferFailure != null && texts.stream()
+          .anyMatch(t -> FAILURE_TRIGGER.equals(t.toString(StandardCharsets.UTF_8)))) {
+        observer.onError(inferFailure.asRuntimeException());
+        return;
+      }
       final ModelInferResponse.Builder response = ModelInferResponse.newBuilder()
           .setModelName(request.getModelName());
       final ModelInferResponse.InferOutputTensor.Builder output =
