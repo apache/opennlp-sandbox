@@ -131,7 +131,7 @@ class ParityStepsTest {
     // "  A" + sharp s: whitespace collapse trims/contracts, full case fold expands.
     final var aligned = TextNormalizer.builder().whitespace().fullCaseFold().buildAligned()
         .normalizeAligned("  A" + cp(0x00DF));
-    final List<AlignmentRun> runs = AlignmentRuns.from(aligned.alignment());
+    final List<AlignmentRun> runs = AlignmentRuns.from(aligned);
     int original = 0;
     int normalized = 0;
     for (final AlignmentRun run : runs) {

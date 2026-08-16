@@ -48,7 +48,7 @@ class AlignmentRunsTest {
         .normalizeAligned(rawText);
 
     assertEquals(rawText, aligned.normalizedString());
-    final List<AlignmentRun> runs = AlignmentRuns.from(aligned.alignment());
+    final List<AlignmentRun> runs = AlignmentRuns.from(aligned);
 
     assertEquals(1, runs.size(), "identity normalization should yield one equal run");
     assertTrue(runs.getFirst().getEqual());
@@ -64,7 +64,7 @@ class AlignmentRunsTest {
         .normalizeAligned("a" + cp(0x2013) + "b");
 
     assertEquals("a-b", aligned.normalizedString());
-    final List<AlignmentRun> runs = AlignmentRuns.from(aligned.alignment());
+    final List<AlignmentRun> runs = AlignmentRuns.from(aligned);
 
     assertEquals(3, runs.size(), "expected equal/replace/equal runs, got: " + runs);
     assertTrue(runs.get(0).getEqual());
@@ -80,7 +80,7 @@ class AlignmentRunsTest {
         .normalizeAligned("AB");
 
     assertEquals("ab", aligned.normalizedString());
-    for (final AlignmentRun run : AlignmentRuns.from(aligned.alignment())) {
+    for (final AlignmentRun run : AlignmentRuns.from(aligned)) {
       assertFalse(run.getEqual(), "folded text must not be labeled equal: " + run);
     }
   }
@@ -93,7 +93,7 @@ class AlignmentRunsTest {
         .normalizeAligned(cp(0x1F600));
 
     assertEquals(":D", aligned.normalizedString());
-    final List<AlignmentRun> runs = AlignmentRuns.from(aligned.alignment());
+    final List<AlignmentRun> runs = AlignmentRuns.from(aligned);
     assertEquals(1, runs.size());
     assertFalse(runs.getFirst().getEqual());
     assertEquals(2, runs.getFirst().getOriginalUnits());

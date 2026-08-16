@@ -567,7 +567,7 @@ final class ClassicStepRunner {
       final OffsetAwareNormalizer aligned = builder.buildAligned();
       final AlignedText alignedText = aligned.normalizeAligned(rawText);
       result.setNormalizedText(alignedText.normalizedString());
-      result.addAllAlignment(AlignmentRuns.from(alignedText.alignment()));
+      result.addAllAlignment(AlignmentRuns.from(alignedText));
     } else {
       result.setNormalizedText(builder.build().normalize(rawText).toString());
       diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_NORMALIZE,

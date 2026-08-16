@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import opennlp.tools.util.Span;
+import opennlp.tools.util.normalizer.AlignedText;
 import opennlp.tools.util.normalizer.Alignment;
 import org.apache.opennlp.grpc.v1.AlignmentRun;
 
@@ -28,17 +29,20 @@ import org.apache.opennlp.grpc.v1.AlignmentRun;
  * Reconstructs the ordered edit runs of a library {@link Alignment} for the wire
  * ({@link AlignmentRun}), in Java UTF-16 units. The library does not expose its runs
  * directly, but they are fully recoverable: each normalized unit maps to its original
- * block via {@code toOriginalSpan(i, i + 1)}; contiguous 1:1 blocks form equal runs,
- * shared or empty blocks form replace runs, and gaps between consecutive blocks (or at
- * the edges) are deletions. The final offset-encoding pass rescales run lengths to the
- * client's requested unit.
+ * block via {@code toOriginalSpan(i, i + 1)}; contiguous blocks whose original and produced
+ * units match in count and content form equal runs, shared or empty blocks form replace
+ * runs, and gaps between consecutive blocks (or at the edges) are deletions. The final
+ * offset-encoding pass rescales run lengths to the client's requested unit.
  */
 final class AlignmentRuns {
 
   private AlignmentRuns() {
   }
 
-  static List<AlignmentRun> from(Alignment alignment) {
+  static List<AlignmentRun> from(AlignedText alignedText) {
+    final Alignment alignment = alignedText.alignment();
+    final String original = alignedText.original().toString();
+    final String normalized = alignedText.normalizedString();
     final List<AlignmentRun> runs = new ArrayList<>();
     final int normalizedLength = alignment.normalizedLength();
     final int originalLength = alignment.originalLength();
@@ -63,8 +67,12 @@ final class AlignmentRuns {
         equalUnits = flushEqual(runs, equalUnits);
         runs.add(replace(block.getStart() - originalPos, 0));
       }
-      if (blockLength == 1 && producedUnits == 1) {
-        equalUnits++; // a 1:1 copy; merged into one equal run with its neighbors
+      // A copy, whatever its unit length (a supplementary character is two UTF-16 units),
+      // only when the produced units are byte-identical to the original block; a one-to-one
+      // substitution (case fold, dash, digit) changes content and stays a replace run.
+      if (blockLength == producedUnits
+          && original.regionMatches(block.getStart(), normalized, i, blockLength)) {
+        equalUnits += producedUnits; // merged into one equal run with its neighbors
       } else {
         equalUnits = flushEqual(runs, equalUnits);
         runs.add(replace(blockLength, producedUnits));
