@@ -559,7 +559,7 @@ final class AnalysisRequestValidator {
           "PIPELINE_STEP_PARSE requested but no parser model is configured on this server; "
               + "set model.parser.<id>.path");
     }
-    for (String engine : profile.getParseEnginePolicy().getEnginesList()) {
+    for (String engine : EngineSelections.ids(profile.getParseEnginePolicy())) {
       if (engine == null || engine.isBlank()) {
         throw AnalysisException.invalidArgument(
             "parse_engine_policy.engines must not contain blank values");
@@ -586,7 +586,7 @@ final class AnalysisRequestValidator {
           PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK.name() + " requires "
               + PipelineStep.PIPELINE_STEP_POS_TAG.name());
     }
-    for (String engine : profile.getChunkEnginePolicy().getEnginesList()) {
+    for (String engine : EngineSelections.ids(profile.getChunkEnginePolicy())) {
       if (engine == null || engine.isBlank()) {
         throw AnalysisException.invalidArgument(
             "chunk_engine_policy.engines must not contain blank values");
@@ -709,7 +709,7 @@ final class AnalysisRequestValidator {
                 + nameFinderRegistry.entityTypes());
       }
     }
-    for (String engine : profile.getNerEnginePolicy().getEnginesList()) {
+    for (String engine : EngineSelections.ids(profile.getNerEnginePolicy())) {
       if (engine == null || engine.isBlank()) {
         throw AnalysisException.invalidArgument(
             "ner_engine_policy.engines must not contain blank values");

@@ -32,11 +32,13 @@ import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.EnginePolicy;
+import org.apache.opennlp.grpc.v1.EngineSelector;
 import org.apache.opennlp.grpc.v1.ModelBundleRef;
 import org.apache.opennlp.grpc.v1.NamedEntity;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
+import org.apache.opennlp.grpc.v1.StandardInferenceEngine;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -105,7 +107,7 @@ class BasicDocumentAnalyzerNerTest {
         assertEquals("person", entity.getEntityType());
         assertTrue(entity.hasAnnotationSpan());
         assertTrue(entity.getAnnotationSpan().getEnd() > entity.getAnnotationSpan().getStart());
-        // The matched text really is "Vinken" — span maps back to the document correctly.
+        // The matched text really is "Vinken", so the span maps back to the document correctly.
         final String matched = TEXT.substring(
             entity.getAnnotationSpan().getStart(), entity.getAnnotationSpan().getEnd());
         assertTrue(matched.contains("Vinken"), "unexpected entity text: '" + matched + "'");
@@ -219,5 +221,28 @@ class BasicDocumentAnalyzerNerTest {
       entityCount += sentence.getEntitiesCount();
     }
     assertTrue(entityCount > 0, "pinning the configured engine found no entities");
+  }
+
+  @Test
+  void typedStandardEnginePinsTheConfiguredEngine() {
+    final AnalyzeDocumentResponse response = analyzerWithPersonModel().analyze(
+        AnalyzeDocumentRequest.newBuilder()
+            .setDocument(OpenNlpDocument.newBuilder().setRawText(TEXT).build())
+            .setProfile(AnalysisProfile.newBuilder()
+                .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+                .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+                .addSteps(PipelineStep.PIPELINE_STEP_NER)
+                .addNerEntityTypes("person")
+                .setNerEnginePolicy(EnginePolicy.newBuilder()
+                    .addSelectors(EngineSelector.newBuilder()
+                        .setStandard(StandardInferenceEngine
+                            .STANDARD_INFERENCE_ENGINE_OPENNLP_ME)
+                        .build())
+                    .build())
+                .build())
+            .build());
+
+    assertTrue(response.getDocument().getSentencesList().stream()
+        .anyMatch(sentence -> sentence.getEntitiesCount() > 0));
   }
 }

@@ -700,8 +700,9 @@ final class ClassicStepRunner {
       requested.add(NameFinderRegistry.normalize(entityType));
     }
     final List<String> recognizerIds = registry.recognizerIdsForTypes(entityTypes);
-    final List<String> engines = new ArrayList<>(enginePolicy.getEnginesCount());
-    for (String engine : enginePolicy.getEnginesList()) {
+    final List<String> selections = EngineSelections.ids(enginePolicy);
+    final List<String> engines = new ArrayList<>(selections.size());
+    for (String engine : selections) {
       engines.add(NameFinderRegistry.normalize(engine));
     }
     final NerEntityResolver resolver = new NerEntityResolver(
@@ -875,8 +876,9 @@ final class ClassicStepRunner {
       List<ProcessingDiagnostic> diagnostics) {
     final ParserRegistry registry = modelBundleCache.getParserRegistry();
     final List<String> parserIds = registry.parserIds();
-    final List<String> engines = new ArrayList<>(enginePolicy.getEnginesCount());
-    for (String engine : enginePolicy.getEnginesList()) {
+    final List<String> selections = EngineSelections.ids(enginePolicy);
+    final List<String> engines = new ArrayList<>(selections.size());
+    for (String engine : selections) {
       engines.add(ParserRegistry.normalize(engine));
     }
     final ParseResolver resolver = new ParseResolver(registry.parsers(), parserIds, engines,
@@ -916,8 +918,9 @@ final class ClassicStepRunner {
       List<ProcessingDiagnostic> diagnostics) {
     final ChunkerRegistry registry = modelBundleCache.getChunkerRegistry();
     final List<String> chunkerIds = registry.chunkerIds();
-    final List<String> engines = new ArrayList<>(enginePolicy.getEnginesCount());
-    for (String engine : enginePolicy.getEnginesList()) {
+    final List<String> selections = EngineSelections.ids(enginePolicy);
+    final List<String> engines = new ArrayList<>(selections.size());
+    for (String engine : selections) {
       engines.add(ChunkerRegistry.normalize(engine));
     }
     final ChunkResolver resolver = new ChunkResolver(

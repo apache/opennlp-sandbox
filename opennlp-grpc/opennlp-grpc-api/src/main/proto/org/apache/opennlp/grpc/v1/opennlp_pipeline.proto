@@ -371,10 +371,27 @@ enum NormalizationRung {
   NORMALIZATION_RUNG_CONFUSABLE_FOLD = 16;
 }
 
+// OpenNLP-owned inference engines whose identifiers are stable parts of this API.
+// ServiceLoader extensions use EngineSelector.custom so their namespace remains open.
+enum StandardInferenceEngine {
+  STANDARD_INFERENCE_ENGINE_UNSPECIFIED = 0;
+  STANDARD_INFERENCE_ENGINE_OPENNLP_ME = 1;
+  STANDARD_INFERENCE_ENGINE_ONNX = 2;
+  STANDARD_INFERENCE_ENGINE_CUDA = 3;
+}
+
+// Selects either a standard OpenNLP inference engine or an extension-provided engine id.
+message EngineSelector {
+  oneof kind {
+    StandardInferenceEngine standard = 1;
+    string custom = 2;
+  }
+}
+
 // Selects which engine(s) run for a span-producing capability (NER, chunking) when a
 // logical component is served by more than one provider, and how their outputs are
-// combined. The number of `engines` listed drives the behavior, so the common cases need
-// no mode flag:
+// combined. The number of `selectors` (or legacy `engines`) listed drives the behavior,
+// so the common cases need no mode flag:
 //   - empty  => run each component's highest-priority engine, falling back to the next on
 //               failure (the resilient default);
 //   - one    => pin that engine (no fallback); components it does not serve are skipped;
@@ -383,11 +400,14 @@ enum NormalizationRung {
 // An engine id that is not registered for any component => NOT_FOUND. For parsing, which
 // produces trees rather than spans, `merge` is ignored and a union yields one tree per engine.
 message EnginePolicy {
-  // Engine/backend ids to run (e.g. "onnx", "opennlp-me"). See the message comment for
-  // how the count is interpreted.
+  // Compatibility field for engine/backend ids (e.g. "onnx", "opennlp-me"). New clients
+  // should use `selectors`. Setting both fields => INVALID_ARGUMENT.
   repeated string engines = 1;
   // How overlapping items from different providers are reconciled in the response.
   MergeStrategy merge = 2;
+  // Strongly typed standard engines or open extension ids. See the message comment for how
+  // the count is interpreted. Setting both this field and `engines` => INVALID_ARGUMENT.
+  repeated EngineSelector selectors = 3;
 }
 
 // How a multi-engine union reconciles span items (entities, chunks) that more than one

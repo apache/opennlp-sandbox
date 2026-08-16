@@ -173,6 +173,20 @@ running from a regular classpath (e.g. via Maven), they are discovered from the
 > and `ChunkingSpec.clean_text` / `preserve_urls` are implemented on the v1 contract.
 > `POS_TAG_FORMAT_CUSTOM` remains unsupported.
 
+#### Typed inference engine selection
+
+NER, syntactic chunking, and parsing share `EnginePolicy`. New clients use its
+`selectors` field: `StandardInferenceEngine` strongly types the built-in `OPENNLP_ME`,
+`ONNX`, and `CUDA` choices, while `EngineSelector.custom` accepts a ServiceLoader
+extension's provider id. The original string-valued `engines` field remains available for
+wire-compatible clients, but a request cannot set both `engines` and `selectors`.
+
+For either field, an empty list uses each component's highest-priority engine with fallback,
+one selector pins that engine, and multiple selectors run a union in request order. NER and
+chunking reconcile union results according to `merge`; parsing returns one tree per engine.
+An unspecified standard selector, an empty custom id, or an unknown provider id fails the
+request instead of silently falling back.
+
 ### Unicode text analysis (model-free parity surfaces)
 
 These request surfaces expose the `opennlp-tools` Unicode stack (offset-aware
