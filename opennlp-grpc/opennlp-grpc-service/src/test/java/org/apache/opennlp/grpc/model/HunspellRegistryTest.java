@@ -52,4 +52,16 @@ class HunspellRegistryTest {
     assertTrue(error.getMessage().contains(key),
         "the error must name the offending key: " + error.getMessage());
   }
+
+  @Test
+  void orphanedDictionaryPathIsRejectedNamingTheKey() {
+    // Only affix keys drive dictionary loading, so a dictionary_path without its affix
+    // companion would otherwise vanish silently.
+    final String key = "model.hunspell.en.dictionary_path";
+    final AnalysisException error = assertThrows(AnalysisException.class,
+        () -> HunspellRegistry.create(Map.of(key, "/tmp/whatever.dic")));
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+    assertTrue(error.getMessage().contains(key),
+        "the error must name the orphan key: " + error.getMessage());
+  }
 }
