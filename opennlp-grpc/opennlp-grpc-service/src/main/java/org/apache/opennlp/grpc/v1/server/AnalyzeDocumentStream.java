@@ -21,6 +21,8 @@ package org.apache.opennlp.grpc.v1.server;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +48,12 @@ import org.slf4j.LoggerFactory;
  * while documents execute concurrently through the transport-neutral
  * {@link DocumentAnalyzer}. Results are serialized onto the response observer in
  * completion order.
+ *
+ * <p>A stream that opts out of clearing adaptive NER state
+ * ({@code clear_adaptive_data=false}) is the exception to concurrent execution: that
+ * state is per-thread in OpenNLP 3.x, so the stream's documents run serially on one
+ * dedicated worker, giving deterministic cross-document continuity, confining the state
+ * away from shared pool threads, and letting it die with the stream.</p>
  */
 final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest> {
 
@@ -66,6 +74,8 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
   private volatile AnalyzeStreamConfiguration configuration;
   private volatile DocumentAnalysisSession analysisSession;
   private volatile boolean clientCompleted;
+  /** Dedicated serial worker for adaptive-continuity streams; {@code null} otherwise. */
+  private volatile ExecutorService adaptiveWorker;
 
   /**
    * Creates a stream and, when a real server transport is present, grants the one
@@ -155,7 +165,18 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
       failStream(Status.INTERNAL.withDescription("Internal server error"));
       return;
     }
+    if (keepsAdaptiveData(requestedConfiguration)) {
+      adaptiveWorker = Executors.newSingleThreadExecutor(
+          Thread.ofVirtual().name("opennlp-stream-adaptive-", 0).factory());
+    }
     request(streamWindow);
+  }
+
+  /** Returns whether the stream opts out of clearing adaptive NER data between documents. */
+  private static boolean keepsAdaptiveData(AnalyzeStreamConfiguration configuration) {
+    return configuration.hasOptions()
+        && configuration.getOptions().hasClearAdaptiveData()
+        && !configuration.getOptions().getClearAdaptiveData();
   }
 
   /** Admits one document to the bounded worker set or reports capacity exhaustion. */
@@ -181,7 +202,7 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
       return;
     }
     try {
-      executor.execute(task);
+      documentWorker().execute(task);
     } catch (RejectedExecutionException e) {
       if (!terminated.get()) {
         sendFailure(document.getSequence(), Status.RESOURCE_EXHAUSTED
@@ -202,6 +223,23 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
   /** Returns the number of accepted documents that have not reached a terminal task state. */
   int inFlightCount() {
     return inFlight.get();
+  }
+
+  /**
+   * Returns where document work runs: the dedicated serial worker when this stream keeps
+   * adaptive state between documents, otherwise the shared analysis executor.
+   */
+  private Executor documentWorker() {
+    final ExecutorService dedicated = adaptiveWorker;
+    return dedicated != null ? dedicated : executor;
+  }
+
+  /** Stops the dedicated adaptive-continuity worker when this stream created one. */
+  private void shutdownAdaptiveWorker() {
+    final ExecutorService dedicated = adaptiveWorker;
+    if (dedicated != null) {
+      dedicated.shutdown();
+    }
   }
 
   /** Returns the number of tasks retained for cancellation. */
@@ -297,6 +335,7 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
   private void failStream(Status status) {
     if (terminated.compareAndSet(false, true)) {
       cancelTasks();
+      shutdownAdaptiveWorker();
       synchronized (outputLock) {
         responseObserver.onError(status.asRuntimeException());
       }
@@ -313,6 +352,7 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
   /** Completes the response after the client closes and all work finishes. */
   private void maybeComplete() {
     if (clientCompleted && inFlight.get() == 0 && terminated.compareAndSet(false, true)) {
+      shutdownAdaptiveWorker();
       synchronized (outputLock) {
         responseObserver.onCompleted();
       }
@@ -328,6 +368,7 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
   private void failOutput(Status status) {
     if (terminated.compareAndSet(false, true)) {
       cancelTasks();
+      shutdownAdaptiveWorker();
       responseObserver.onError(status.asRuntimeException());
     }
   }
@@ -336,6 +377,7 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
   private void terminateWorkers() {
     if (terminated.compareAndSet(false, true)) {
       cancelTasks();
+      shutdownAdaptiveWorker();
     }
   }
 
