@@ -59,7 +59,10 @@ clients can discover that before submitting a profile that selects it.
 `GetServiceInfo.max_text_bytes` reports the operator's UTF-8 byte limit. It applies to unary
 and streaming analysis plus direct embedding even when a request omits
 `AnalysisOptions.max_text_length`. A request-level value can impose a smaller analysis
-limit but cannot raise the operator limit.
+limit but cannot raise the operator limit. The server keeps the inbound gRPC message cap
+at least 1 MiB above this text limit so protobuf envelope data cannot make the advertised
+text capacity unreachable. A lower `server.max_inbound_message_size` setting is raised to
+that floor at startup.
 
 Beyond the classic pipeline, the service serves the OpenNLP 3.0 feature branches:
 SentencePiece subword encoding (`PIPELINE_STEP_SUBWORD_TOKENIZE`, models under
@@ -111,6 +114,8 @@ Example config (`key=value`, `#` comments):
 
 ```ini
 server.enable_reflection=false
+# Overall protobuf message limit. The effective value is never lower than
+# server.max_text_bytes plus 1 MiB of envelope headroom.
 server.max_inbound_message_size=10485760
 # UTF-8 encoded bytes per analysis document or direct embedding message.
 server.max_text_bytes=1048576

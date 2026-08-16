@@ -55,6 +55,8 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
 
   private static final org.slf4j.Logger logger = LoggerFactory.getLogger(OpenNlpGrpcServer.class);
 
+  private static final int INBOUND_MESSAGE_HEADROOM_BYTES = 1_048_576;
+
   @Option(
       names = {"-p", "--port"},
       defaultValue = "7071",
@@ -116,13 +118,21 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
         Boolean.parseBoolean(
             configuration.getOrDefault("server.enable_reflection", "false"));
 
-    final int maxInboundMessageSize =
+    final int configuredMaxInboundMessageSize =
         Integer.parseInt(
             configuration.getOrDefault("server.max_inbound_message_size", "10485760"));
 
     final int maxTextBytes = Integer.parseInt(configuration.getOrDefault(
         "server.max_text_bytes",
         Integer.toString(OpenNlpAnalysisServiceImpl.DEFAULT_MAX_TEXT_BYTES)));
+    final int maxInboundMessageSize = maxInboundMessageSize(
+        configuredMaxInboundMessageSize, maxTextBytes);
+    if (maxInboundMessageSize != configuredMaxInboundMessageSize) {
+      logger.info(
+          "Raised server.max_inbound_message_size from {} to {} so max_text_bytes {} "
+              + "remains reachable",
+          configuredMaxInboundMessageSize, maxInboundMessageSize, maxTextBytes);
+    }
 
     final int analysisStreamWorkers = Integer.parseInt(configuration.getOrDefault(
         "server.analysis_stream_workers",
@@ -220,6 +230,21 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
       configuration.put(name, properties.getProperty(name));
     }
     return configuration;
+  }
+
+  private static int maxInboundMessageSize(int configuredSize, int maxTextBytes) {
+    if (configuredSize < 1) {
+      throw new IllegalArgumentException("server.max_inbound_message_size must be positive");
+    }
+    if (maxTextBytes < 1) {
+      throw new IllegalArgumentException("server.max_text_bytes must be positive");
+    }
+    final long requiredSize = (long) maxTextBytes + INBOUND_MESSAGE_HEADROOM_BYTES;
+    if (requiredSize > Integer.MAX_VALUE) {
+      throw new IllegalArgumentException(
+          "server.max_text_bytes leaves no room for the protobuf request envelope");
+    }
+    return Math.max(configuredSize, (int) requiredSize);
   }
 
   private void registerShutdownHook(ModelBundleCache modelBundleCache) {
