@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
-import java.util.Locale;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
@@ -33,6 +32,8 @@ import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 final class GrpcJsonApi {
 
   static final String JSON_CONTENT_TYPE = "application/json; charset=utf-8";
+
+  private static final char[] HEX_DIGITS = "0123456789abcdef".toCharArray();
 
   private final AnalysisRpc rpc;
   private final JsonFormat.Parser parser;
@@ -174,7 +175,11 @@ final class GrpcJsonApi {
         case '\t' -> escaped.append("\\t");
         default -> {
           if (character < 0x20) {
-            escaped.append(String.format(Locale.ROOT, "\\u%04x", (int) character));
+            escaped.append("\\u")
+                .append(HEX_DIGITS[(character >> 12) & 0xF])
+                .append(HEX_DIGITS[(character >> 8) & 0xF])
+                .append(HEX_DIGITS[(character >> 4) & 0xF])
+                .append(HEX_DIGITS[character & 0xF]);
           } else {
             escaped.append(character);
           }
