@@ -47,6 +47,7 @@ import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.tokenize.TokenizerModel;
+import opennlp.tools.util.StringUtil;
 import opennlp.tools.util.model.BaseModel;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.embedding.EmbeddingProviderFactory;
@@ -733,7 +734,8 @@ public final class ModelBundleCache implements AutoCloseable {
           continue;
         }
         final byte[] bytes = model.readAllBytes();
-        final String declaredHash = properties.getProperty("model.sha256", "").trim().toLowerCase();
+        final String declaredHash =
+            StringUtil.toLowerCase(properties.getProperty("model.sha256", "").trim());
         return new ClasspathArtifact(bytes, verifyDeclaredHash(modelName, bytes, declaredHash));
       }
     }
@@ -775,7 +777,7 @@ public final class ModelBundleCache implements AutoCloseable {
           if (model != null) {
             final byte[] bytes = model.readAllBytes();
             final String declaredHash =
-                properties.getProperty("model.sha256", "").trim().toLowerCase();
+                StringUtil.toLowerCase(properties.getProperty("model.sha256", "").trim());
             return new ClasspathArtifact(bytes, verifyDeclaredHash(modelName, bytes, declaredHash));
           }
         }

@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import opennlp.tools.util.StringUtil;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.ComponentModelRef;
 import org.apache.opennlp.grpc.v1.ComponentType;
@@ -204,6 +205,6 @@ public final class ModelArtifactRegistry {
 
   /** Normalizes a client-supplied hash to lowercase trimmed hex. */
   private static String normalizeHash(String hash) {
-    return hash.trim().toLowerCase();
+    return StringUtil.toLowerCase(hash.trim());
   }
 }
