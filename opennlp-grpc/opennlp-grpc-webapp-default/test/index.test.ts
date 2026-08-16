@@ -38,10 +38,12 @@ describe("analysis playground markup", () => {
     expect(html).toContain('id="annotated-text"');
     expect(html).toContain('id="annotation-details"');
     expect(html).toContain('aria-label="OpenNLP tools"');
+    expect(html).toContain('id="tool-navigation"');
+    expect(html).toContain('id="tool-navigation-status"');
     expect(html).toContain('id="layer-filter"');
     expect(html).toContain('id="result-layer-count"');
     expect(html).toContain('id="result-annotation-count"');
     expect(html).toContain('id="result-offset-encoding"');
-    expect(html).toContain('Embedding search');
+    expect(html).toContain('Apache OpenNLP');
   });
 });

@@ -248,7 +248,7 @@ h1 span { color: var(--blue); }
   color: white;
 }
 
-.tool-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.7rem; margin: -3.2rem 0 4rem; padding: 0.65rem; border: 1px solid #303b4f; border-radius: 0.95rem; background: rgb(23 33 53 / 92%); box-shadow: 0 22px 55px rgb(0 0 0 / 18%); }
+.tool-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 0.7rem; margin: -3.2rem 0 4rem; padding: 0.65rem; border: 1px solid #303b4f; border-radius: 0.95rem; background: rgb(23 33 53 / 92%); box-shadow: 0 22px 55px rgb(0 0 0 / 18%); }
 .tool-nav > * { display: flex; align-items: center; gap: 0.8rem; min-width: 0; padding: 0.75rem 0.85rem; border: 1px solid transparent; border-radius: 0.65rem; color: #8997ac; text-decoration: none; }
 .tool-nav a:hover { border-color: #3a4b66; background: #1d2a41; color: white; }
 .tool-nav .is-active { border-color: #315f91; background: linear-gradient(135deg, #17355a, #172b48); color: white; }
@@ -256,7 +256,6 @@ h1 span { color: var(--blue); }
 .tool-nav strong { overflow: hidden; font-size: 0.76rem; text-overflow: ellipsis; white-space: nowrap; }
 .tool-nav small { margin-top: 0.18rem; color: #75849a; font-size: 0.62rem; }
 .tool-nav .is-active small { color: #89bbec; }
-.tool-preview { cursor: default; }
 .tool-icon { display: grid !important; width: 2rem; height: 2rem; flex: 0 0 auto; place-items: center; border: 1px solid #3a4960; border-radius: 0.48rem; background: #111a2b; color: #8ca0bb; font: 0.68rem/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .is-active .tool-icon { border-color: #3f7ab6; background: #1c4774; color: #b8e8f7; }
 

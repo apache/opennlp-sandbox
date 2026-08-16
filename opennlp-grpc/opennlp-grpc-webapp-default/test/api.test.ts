@@ -19,7 +19,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 
-import { analyze, getHealth, getModelBundles, getServiceInfo } from "../src/api";
+import { analyze, getHealth, getModelBundles, getServiceInfo, getUiExtensions } from "../src/api";
 
 describe("API client", () => {
   it("uses the same-origin service endpoints", async () => {
@@ -35,6 +35,7 @@ describe("API client", () => {
     await expect(getHealth(fetcher)).resolves.toBe("ok");
     await getServiceInfo(fetcher);
     await getModelBundles(fetcher);
+    await getUiExtensions(fetcher);
     await analyze(
       {
         document: { rawText: "A test." },
@@ -48,9 +49,10 @@ describe("API client", () => {
       "/healthz",
       "/api/v1/service-info",
       "/api/v1/model-bundles",
+      "/api/v1/ui-extensions",
       "/api/v1/analyze",
     ]);
-    expect(fetcher.mock.calls[3]?.[1]).toMatchObject({
+    expect(fetcher.mock.calls[4]?.[1]).toMatchObject({
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({

@@ -80,7 +80,8 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
     this.executor = Executors.newVirtualThreadPerTaskExecutor();
     server.setExecutor(executor);
     server.createContext("/", new WebHandler(
-        new GrpcJsonApi(rpc), new WebUiAssetResolver(extensionRegistry), maxRequestBytes));
+        new GrpcJsonApi(rpc), new WebUiCatalogJson(extensionRegistry),
+        new WebUiAssetResolver(extensionRegistry), maxRequestBytes));
   }
 
   /** Starts accepting HTTP requests. */
@@ -133,6 +134,7 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
         "HTTP method is not allowed for this endpoint";
 
     private final GrpcJsonApi api;
+    private final WebUiCatalogJson catalog;
     private final WebUiAssetResolver assets;
     private final int maxRequestBytes;
 
@@ -140,11 +142,17 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
      * Creates the single host request handler.
      *
      * @param api The protobuf JSON API.
+     * @param catalog The UI extension catalog.
      * @param assets The static asset resolver.
      * @param maxRequestBytes The largest accepted request body.
      */
-    private WebHandler(GrpcJsonApi api, WebUiAssetResolver assets, int maxRequestBytes) {
+    private WebHandler(
+        GrpcJsonApi api,
+        WebUiCatalogJson catalog,
+        WebUiAssetResolver assets,
+        int maxRequestBytes) {
       this.api = api;
+      this.catalog = catalog;
       this.assets = assets;
       this.maxRequestBytes = maxRequestBytes;
     }
@@ -197,7 +205,9 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
           return;
         }
         exchange.getResponseHeaders().set("Cache-Control", "no-store");
-        send(exchange, api.handle(method, rawPath, body));
+        WebHttpResponse response = rawPath.equals("/api/v1/ui-extensions")
+            ? catalog.handle(method) : api.handle(method, rawPath, body);
+        send(exchange, response);
         return;
       }
       if (!method.equals(HTTP_GET) && !method.equals(HTTP_HEAD)) {

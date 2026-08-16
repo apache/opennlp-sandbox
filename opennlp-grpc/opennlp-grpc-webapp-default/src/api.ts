@@ -47,6 +47,10 @@ export function getModelBundles(fetcher: Fetcher = fetch): Promise<unknown> {
   return requestJson("/api/v1/model-bundles", undefined, fetcher);
 }
 
+export function getUiExtensions(fetcher: Fetcher = fetch): Promise<unknown> {
+  return requestJson("/api/v1/ui-extensions", undefined, fetcher);
+}
+
 export function analyze(request: AnalyzeRequest, fetcher: Fetcher = fetch): Promise<unknown> {
   return requestJson(
     "/api/v1/analyze",

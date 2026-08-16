@@ -35,11 +35,13 @@ The host exposes:
 - `GET /healthz`
 - `GET /api/v1/service-info`
 - `GET /api/v1/model-bundles`
+- `GET /api/v1/ui-extensions`
 - `POST /api/v1/analyze`
 
-The three API responses and the analysis request use protobuf JSON for the existing gRPC message
-types. Analysis therefore retains the full `OpenNlpDocument` shape and typed annotation layers.
-HTTP error bodies contain a stable gRPC status code and a message.
+The service-info, model-bundle, and analysis endpoints use protobuf JSON for the existing gRPC
+message types. Analysis therefore retains the full `OpenNlpDocument` shape and typed annotation
+layers. The host-specific UI extension endpoint returns the validated provider ID, title, and
+mount path for navigation. HTTP error bodies contain a stable gRPC status code and a message.
 
 Use `--help` for all options. The HTTP listener accepts loopback addresses by default. A
 non-loopback bind also requires `--allow-remote`, so deployment behind an authenticated TLS
@@ -48,5 +50,5 @@ TLS.
 
 Additional extension JARs can be placed on the application classpath. Each provider is discovered
 with Java ServiceLoader and mounted at its typed `WebUiMountPath`. Extensions contribute static
-resources only and cannot install handlers into the host.
-
+resources only and cannot install handlers into the host. The extension catalog is ordered by
+mount path so clients receive stable navigation.

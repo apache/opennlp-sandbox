@@ -37,9 +37,9 @@ indices. Its document view reads `document.layers.layers`, lists every typed lay
 selected layer over `document.rawText`, and exposes the complete annotation value when highlighted
 text is selected. The result summary reports layer and annotation counts plus the active offset
 encoding, and the layer list remains searchable for profiles that produce many results. Raw
-protobuf JSON remains available in a separate result tab. The tool switcher reserves clear
-navigation positions for later embedding-search and profile-comparison extensions without making
-those unfinished tools interactive.
+protobuf JSON remains available in a separate result tab. The tool switcher loads the host's
+`/api/v1/ui-extensions` catalog and links every discovered ServiceLoader extension. Its static
+default entry remains usable when catalog discovery is unavailable.
 
 Model bundles are displayed as service capability information. A named analysis profile is the
 only user-selectable option sent by this initial playground.

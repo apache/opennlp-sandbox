@@ -19,7 +19,14 @@
 
 import "./style.css";
 
-import { analyze, getHealth, getModelBundles, getServiceInfo, type AnalyzeRequest } from "./api";
+import {
+  analyze,
+  getHealth,
+  getModelBundles,
+  getServiceInfo,
+  getUiExtensions,
+  type AnalyzeRequest,
+} from "./api";
 import { discoverModelBundles, discoverProfiles, type DiscoveryOption } from "./discovery";
 import {
   layerAccent,
@@ -29,6 +36,12 @@ import {
   type AnnotationView,
   type DocumentShapeView,
 } from "./document-shape";
+import {
+  activeUiExtension,
+  extensionInitials,
+  readUiExtensions,
+  type UiExtension,
+} from "./ui-extensions";
 
 const sampleText =
   "Apache OpenNLP helps developers build applications that process natural language. " +
@@ -60,6 +73,8 @@ const layerFilter = requiredElement<HTMLInputElement>("layer-filter");
 const resultLayerCount = requiredElement<HTMLElement>("result-layer-count");
 const resultAnnotationCount = requiredElement<HTMLElement>("result-annotation-count");
 const resultOffsetEncoding = requiredElement<HTMLElement>("result-offset-encoding");
+const toolNavigation = requiredElement<HTMLElement>("tool-navigation");
+const toolNavigationStatus = requiredElement<HTMLElement>("tool-navigation-status");
 
 let serviceAvailable = false;
 let busy = false;
@@ -83,6 +98,7 @@ for (const tab of resultTabs) {
 void initialize();
 
 async function initialize(): Promise<void> {
+  void initializeToolNavigation();
   setServiceState("loading", "Connecting");
   setFormStatus("Checking service capabilities and model bundles.");
 
@@ -121,6 +137,46 @@ async function initialize(): Promise<void> {
     setFormStatus("Ready. Enter text or load the sample to begin.");
   }
   updateFormState();
+}
+
+async function initializeToolNavigation(): Promise<void> {
+  try {
+    const extensions = readUiExtensions(await getUiExtensions());
+    if (extensions.length === 0) {
+      toolNavigationStatus.textContent = "No UI extensions were discovered. Showing the default tool.";
+      return;
+    }
+    renderToolNavigation(extensions);
+    toolNavigationStatus.textContent = `${extensions.length} UI ${extensions.length === 1 ? "extension" : "extensions"} available.`;
+  } catch {
+    toolNavigationStatus.textContent = "UI extension discovery is unavailable. Showing the default tool.";
+  }
+}
+
+function renderToolNavigation(extensions: UiExtension[]): void {
+  const activeId = activeUiExtension(extensions, window.location.pathname);
+  toolNavigation.replaceChildren(...extensions.map((extension) => {
+    const link = document.createElement("a");
+    link.href = extension.mountPath;
+    if (extension.id === activeId) {
+      link.className = "is-active";
+      link.setAttribute("aria-current", "page");
+    }
+
+    const icon = document.createElement("span");
+    icon.className = "tool-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = extensionInitials(extension.title);
+
+    const label = document.createElement("span");
+    const title = document.createElement("strong");
+    title.textContent = extension.title;
+    const mount = document.createElement("small");
+    mount.textContent = extension.mountPath === "/" ? "Default extension" : extension.mountPath;
+    label.append(title, mount);
+    link.append(icon, label);
+    return link;
+  }));
 }
 
 async function submitAnalysis(event: SubmitEvent): Promise<void> {

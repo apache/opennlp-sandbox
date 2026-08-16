@@ -85,20 +85,15 @@
       </section>
 
       <section id="playground" class="playground" aria-labelledby="playground-heading">
-        <nav class="tool-nav" aria-label="OpenNLP tools">
-          <a href="#playground" class="is-active" aria-current="page">
-            <span class="tool-icon" aria-hidden="true">Aa</span>
-            <span><strong>Text analysis</strong><small>Live workbench</small></span>
+        <nav id="tool-navigation" class="tool-nav" aria-label="OpenNLP tools">
+          <a href="/" class="is-active" aria-current="page">
+            <span class="tool-icon" aria-hidden="true">AO</span>
+            <span><strong>Apache OpenNLP</strong><small>Default extension</small></span>
           </a>
-          <span class="tool-preview" aria-disabled="true">
-            <span class="tool-icon" aria-hidden="true">⌁</span>
-            <span><strong>Embedding search</strong><small>Next demonstration</small></span>
-          </span>
-          <span class="tool-preview" aria-disabled="true">
-            <span class="tool-icon" aria-hidden="true">≋</span>
-            <span><strong>Profile compare</strong><small>Planned</small></span>
-          </span>
         </nav>
+        <p id="tool-navigation-status" class="visually-hidden" role="status" aria-live="polite">
+          Discovering UI extensions.
+        </p>
         <div class="section-heading">
           <div>
             <p class="section-kicker">Analysis playground</p>

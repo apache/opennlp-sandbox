@@ -59,6 +59,11 @@ class OpenNlpGrpcWebServerTest {
       assertEquals("nosniff", page.headers().firstValue("x-content-type-options").orElseThrow());
       assertTrue(page.body().endsWith("test console\n"));
 
+      HttpResponse<String> extensions = get(client, server, "/api/v1/ui-extensions");
+      assertEquals(200, extensions.statusCode());
+      assertTrue(extensions.body().contains("\"id\": \"test-console\""));
+      assertTrue(extensions.body().contains("\"mountPath\": \"/console\""));
+
       HttpRequest analyze = request(server, "/api/v1/analyze")
           .header("Content-Type", "application/json")
           .POST(HttpRequest.BodyPublishers.ofString(
@@ -99,6 +104,13 @@ class OpenNlpGrpcWebServerTest {
           HttpResponse.BodyHandlers.discarding()).statusCode());
 
       assertEquals(404, get(client, server, "/api").statusCode());
+
+      HttpRequest catalogPost = request(server, "/api/v1/ui-extensions")
+          .header("Content-Type", "application/json")
+          .POST(HttpRequest.BodyPublishers.ofString("{}"))
+          .build();
+      assertEquals(405, client.send(catalogPost,
+          HttpResponse.BodyHandlers.discarding()).statusCode());
     }
   }
 
