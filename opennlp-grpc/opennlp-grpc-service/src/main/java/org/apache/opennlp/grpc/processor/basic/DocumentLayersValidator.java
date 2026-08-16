@@ -235,6 +235,8 @@ final class DocumentLayersValidator {
       validateOptionalSpan(annotation.hasSpan(), annotation.getSpan(), positional, textLength);
     }
     validateVector(annotation.getModelId(), annotation.getVectorList(), embeddingProvider);
+    validateVectorNormalization(
+        annotation.getVectorNormalization(), annotation.getVectorList());
   }
 
   private static void validateChunkGroup(
@@ -245,6 +247,8 @@ final class DocumentLayersValidator {
       chunk.getEmbeddingsList().forEach(embedding -> {
         span(embedding.getSourceSpan(), textLength);
         validateVector(embedding.getModelId(), embedding.getVectorList(), embeddingProvider);
+        validateVectorNormalization(
+            embedding.getVectorNormalization(), embedding.getVectorList());
       });
     }
     group.getCentroidsList().forEach(centroid -> {
@@ -252,7 +256,30 @@ final class DocumentLayersValidator {
         span(centroid.getSourceSpan(), textLength);
       }
       validateVector(centroid.getModelId(), centroid.getVectorList(), embeddingProvider);
+      validateVectorNormalization(
+          centroid.getVectorNormalization(), centroid.getVectorList());
     });
+  }
+
+  private static void validateVectorNormalization(
+      org.apache.opennlp.grpc.v1.VectorNormalization normalization,
+      java.util.List<Float> vector) {
+    switch (normalization) {
+      case VECTOR_NORMALIZATION_UNSPECIFIED, VECTOR_NORMALIZATION_NONE -> {
+        // Backend vectors can leave normalization unspecified. NONE is the
+        // explicit provenance for an unnormalized service-side centroid.
+      }
+      case VECTOR_NORMALIZATION_L2 -> {
+        double squaredNorm = 0.0d;
+        for (float value : vector) {
+          squaredNorm += value * value;
+        }
+        if (Math.abs(Math.sqrt(squaredNorm) - 1.0d) > 1.0e-5d) {
+          fail("embedding marked L2-normalized does not have unit norm");
+        }
+      }
+      case UNRECOGNIZED -> fail("embedding vector normalization is not recognized");
+    }
   }
 
   private static void validateVector(

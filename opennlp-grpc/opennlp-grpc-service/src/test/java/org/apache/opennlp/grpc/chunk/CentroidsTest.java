@@ -22,10 +22,13 @@ import java.util.List;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
 import org.apache.opennlp.grpc.v1.EmbeddingResult;
+import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.v1.VectorNormalization;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /** Unit tests for {@link Centroids}: the element-wise mean and its metadata. */
 class CentroidsTest {
@@ -43,6 +46,31 @@ class CentroidsTest {
         centroid.getGranularity());
     assertEquals(SPAN, centroid.getSourceSpan());
     assertEquals(List.of(1f, 3f, 6f), centroid.getVectorList());
+    assertEquals(VectorNormalization.VECTOR_NORMALIZATION_NONE,
+        centroid.getVectorNormalization());
+  }
+
+  @Test
+  void l2NormalizesTheArithmeticMean() {
+    final EmbeddingResult centroid = Centroids.centroid("m",
+        List.of(new float[] {3f, 4f}, new float[] {3f, 4f}),
+        SPAN, EmbeddingGranularity.EMBEDDING_GRANULARITY_DOCUMENT,
+        VectorNormalization.VECTOR_NORMALIZATION_L2);
+
+    assertEquals(List.of(0.6f, 0.8f), centroid.getVectorList());
+    assertEquals(VectorNormalization.VECTOR_NORMALIZATION_L2,
+        centroid.getVectorNormalization());
+  }
+
+  @Test
+  void refusesToNormalizeAZeroCentroid() {
+    final AnalysisException error = assertThrows(AnalysisException.class,
+        () -> Centroids.centroid("m",
+            List.of(new float[] {1f, 0f}, new float[] {-1f, 0f}),
+            SPAN, EmbeddingGranularity.EMBEDDING_GRANULARITY_DOCUMENT,
+            VectorNormalization.VECTOR_NORMALIZATION_L2));
+
+    assertEquals(AnalysisException.FailureType.FAILED_PRECONDITION, error.getFailureType());
   }
 
   @Test

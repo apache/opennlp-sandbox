@@ -476,7 +476,8 @@ final class DocumentShapeAssembler {
     final EmbeddingAnnotation.Builder annotation = EmbeddingAnnotation.newBuilder()
         .setModelId(embedding.getModelId())
         .addAllVector(embedding.getVectorList())
-        .setGranularity(embedding.getGranularity());
+        .setGranularity(embedding.getGranularity())
+        .setVectorNormalization(embedding.getVectorNormalization());
     if (embedding.hasSourceSpan()) {
       annotation.setSpan(embedding.getSourceSpan());
     }

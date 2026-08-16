@@ -41,6 +41,7 @@ import org.apache.opennlp.grpc.v1.EmbeddingResult;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.apache.opennlp.grpc.v1.ProcessingDiagnostic;
+import org.apache.opennlp.grpc.v1.VectorNormalization;
 
 /**
  * Executes the embedding and chunking steps: sentence-level embeddings through the
@@ -72,6 +73,7 @@ final class EmbedChunkStepRunner {
    * @param modelId                The logical embedding model id.
    * @param backendId              The optional pinned backend id, or {@code null}.
    * @param includeDocumentCentroid Whether to include the mean sentence vector.
+   * @param centroidNormalization  Post-processing for the document centroid.
    * @param diagnostics            The diagnostic list to append to.
    */
   void embedSentences(
@@ -80,6 +82,7 @@ final class EmbedChunkStepRunner {
       String modelId,
       String backendId,
       boolean includeDocumentCentroid,
+      VectorNormalization centroidNormalization,
       List<ProcessingDiagnostic> diagnostics) {
     final List<AnnotationSpan> sentenceSpans = new ArrayList<>(document.getSentencesCount());
     final List<String> sentenceTexts = new ArrayList<>(document.getSentencesCount());
@@ -107,7 +110,8 @@ final class EmbedChunkStepRunner {
               .setEnd(rawText.length())
               .setSpace(CoordinateSpace.COORDINATE_SPACE_CHAR_DOCUMENT)
               .build(),
-          EmbeddingGranularity.EMBEDDING_GRANULARITY_DOCUMENT);
+          EmbeddingGranularity.EMBEDDING_GRANULARITY_DOCUMENT,
+          centroidNormalization);
       if (documentCentroid != null) {
         document.addDocumentCentroids(
             documentCentroid.toBuilder().setRoute(embedded.route()).build());

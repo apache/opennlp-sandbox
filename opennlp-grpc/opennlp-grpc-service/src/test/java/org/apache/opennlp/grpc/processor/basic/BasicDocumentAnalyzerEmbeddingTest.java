@@ -33,6 +33,7 @@ import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
 import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
+import org.apache.opennlp.grpc.v1.VectorNormalization;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -80,12 +81,61 @@ class BasicDocumentAnalyzerEmbeddingTest {
     final var centroid = response.getDocument().getDocumentCentroids(0);
     assertEquals("minilm", centroid.getModelId());
     assertEquals(EmbeddingGranularity.EMBEDDING_GRANULARITY_DOCUMENT, centroid.getGranularity());
+    assertEquals(VectorNormalization.VECTOR_NORMALIZATION_NONE,
+        centroid.getVectorNormalization());
     assertEquals(4, centroid.getVectorCount());
     for (int d = 0; d < centroid.getVectorCount(); d++) {
       final float expected = (response.getDocument().getEmbeddings(0).getVector(d)
           + response.getDocument().getEmbeddings(1).getVector(d)) / 2f;
       assertEquals(expected, centroid.getVector(d), 1e-5f);
     }
+  }
+
+  @Test
+  void l2NormalizesDocumentCentroidAndRetainsDocumentLayerProvenance() {
+    final var response = analyzer.analyze(AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setRawText(TEXT))
+        .setProfile(embedProfile())
+        .setOptions(AnalysisOptions.newBuilder()
+            .setEmbeddingModelId("minilm")
+            .setIncludeDocumentCentroid(true)
+            .setDocumentCentroidNormalization(
+                VectorNormalization.VECTOR_NORMALIZATION_L2))
+        .build());
+
+    final var centroid = response.getDocument().getDocumentCentroids(0);
+    double squaredNorm = 0.0d;
+    for (float value : centroid.getVectorList()) {
+      squaredNorm += value * value;
+    }
+    assertEquals(1.0d, Math.sqrt(squaredNorm), 1.0e-5d);
+    assertEquals(VectorNormalization.VECTOR_NORMALIZATION_L2,
+        centroid.getVectorNormalization());
+    final var layerCentroid = response.getDocument().getLayers().getLayersList().stream()
+        .filter(layer -> "opennlp:embeddings".equals(layer.getId()))
+        .findFirst().orElseThrow()
+        .getEmbeddingValues().getAnnotationsList().stream()
+        .filter(annotation -> annotation.getGranularity()
+            == EmbeddingGranularity.EMBEDDING_GRANULARITY_DOCUMENT)
+        .findFirst().orElseThrow();
+    assertEquals(VectorNormalization.VECTOR_NORMALIZATION_L2,
+        layerCentroid.getVectorNormalization());
+  }
+
+  @Test
+  void centroidNormalizationRequiresTheCentroid() {
+    final AnalyzeDocumentRequest request = AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setRawText(TEXT))
+        .setProfile(embedProfile())
+        .setOptions(AnalysisOptions.newBuilder()
+            .setEmbeddingModelId("minilm")
+            .setDocumentCentroidNormalization(
+                VectorNormalization.VECTOR_NORMALIZATION_L2))
+        .build();
+
+    final AnalysisException error = assertThrows(AnalysisException.class,
+        () -> analyzer.analyze(request));
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
   }
 
   @Test

@@ -643,6 +643,14 @@ message EmbeddingResult {
   repeated float vector = 2;
   AnnotationSpan source_span = 3;
   EmbeddingGranularity granularity = 4;
+  optional EmbeddingRoute route = 5;
+  VectorNormalization vector_normalization = 6;
+}
+
+enum VectorNormalization {
+  VECTOR_NORMALIZATION_UNSPECIFIED = 0;
+  VECTOR_NORMALIZATION_NONE = 1;
+  VECTOR_NORMALIZATION_L2 = 2;
 }
 
 enum EmbeddingGranularity {
@@ -769,6 +777,10 @@ message AnalysisOptions {
   optional int32 max_text_length = 4;
   optional string embedding_model_id = 5;
   OffsetEncoding offset_encoding = 6;
+  repeated ParseFormat parse_formats = 7;
+  optional EmbeddingSelector embedding_selector = 8;
+  optional bool include_document_centroid = 9;
+  VectorNormalization document_centroid_normalization = 10;
 }
 
 message ModelDescriptor {

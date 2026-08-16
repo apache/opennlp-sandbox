@@ -550,6 +550,9 @@ message AnalysisOptions {
   // one EMBEDDING_GRANULARITY_DOCUMENT result. Unset or false returns only the
   // requested sentence vectors, avoiding an aggregate the caller does not need.
   optional bool include_document_centroid = 9;
+  // Post-processing for the optional document centroid. Unset means NONE.
+  // Setting this while include_document_centroid is false is invalid.
+  VectorNormalization document_centroid_normalization = 10;
 }
 
 // Selects which view(s) of a constituency parse the server fills in ParseTree. Independent

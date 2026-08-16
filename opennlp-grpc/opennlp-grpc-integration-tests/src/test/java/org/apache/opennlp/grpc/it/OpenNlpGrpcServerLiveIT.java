@@ -59,6 +59,7 @@ import org.apache.opennlp.grpc.v1.GetServiceInfoRequest;
 import org.apache.opennlp.grpc.v1.LayerIdentity;
 import org.apache.opennlp.grpc.v1.ListModelBundlesRequest;
 import org.apache.opennlp.grpc.v1.ModelDescriptor;
+import org.apache.opennlp.grpc.v1.NormalizationRung;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpAnalysisServiceGrpc;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
@@ -70,8 +71,10 @@ import org.apache.opennlp.grpc.v1.StandardSentenceDetectorEngine;
 import org.apache.opennlp.grpc.v1.StandardTokenizerEngine;
 import org.apache.opennlp.grpc.v1.StemmerAlgorithm;
 import org.apache.opennlp.grpc.v1.StemmerSpec;
+import org.apache.opennlp.grpc.v1.TermLayerSpec;
 import org.apache.opennlp.grpc.v1.TermVectorSpec;
 import org.apache.opennlp.grpc.v1.TokenizerSelector;
+import org.apache.opennlp.grpc.v1.VectorNormalization;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -221,8 +224,13 @@ class OpenNlpGrpcServerLiveIT {
             && "cat".equals(stem.getStem())));
     final AnnotationLayer termVectors = assertStandardLayer(document,
         StandardLayer.STANDARD_LAYER_TERM_VECTORS, "opennlp:term-vectors");
-    assertEquals(StandardLayer.STANDARD_LAYER_STEMS,
+    assertEquals(StandardLayer.STANDARD_LAYER_TERMS,
         termVectors.getTermVectorValues().getSourceLayer().getStandard());
+    assertEquals("court-folded",
+        termVectors.getTermVectorValues().getSourceLayer().getQualifier());
+    final AnnotationLayer terms = assertStandardLayer(document,
+        StandardLayer.STANDARD_LAYER_TERMS, "opennlp:terms:court-folded");
+    assertEquals("court-folded", terms.getIdentity().getQualifier());
     assertTrue(termVectors.getTermVectorValues().getAnnotationsList().stream()
         .anyMatch(vector -> "cat".equals(vector.getTerm()) && vector.getFrequency() == 1));
   }
@@ -456,6 +464,8 @@ class OpenNlpGrpcServerLiveIT {
         .setOptions(AnalysisOptions.newBuilder()
             .setEmbeddingModelId("minilm")
             .setIncludeDocumentCentroid(true)
+            .setDocumentCentroidNormalization(
+                VectorNormalization.VECTOR_NORMALIZATION_L2)
             .build())
         .build());
 
@@ -479,6 +489,19 @@ class OpenNlpGrpcServerLiveIT {
         .filter(annotation -> annotation.getGranularity()
             == EmbeddingGranularity.EMBEDDING_GRANULARITY_DOCUMENT)
         .count());
+    final var centroid = response.getDocument().getDocumentCentroids(0);
+    double squaredNorm = 0.0d;
+    for (float value : centroid.getVectorList()) {
+      squaredNorm += value * value;
+    }
+    assertEquals(1.0d, Math.sqrt(squaredNorm), 1.0e-5d);
+    assertEquals(VectorNormalization.VECTOR_NORMALIZATION_L2,
+        centroid.getVectorNormalization());
+    assertEquals(VectorNormalization.VECTOR_NORMALIZATION_L2,
+        embeddings.getEmbeddingValues().getAnnotationsList().stream()
+            .filter(annotation -> annotation.getGranularity()
+                == EmbeddingGranularity.EMBEDDING_GRANULARITY_DOCUMENT)
+            .findFirst().orElseThrow().getVectorNormalization());
   }
 
   @Test
@@ -552,9 +575,19 @@ class OpenNlpGrpcServerLiveIT {
                 .setAlgorithm(StemmerAlgorithm.STEMMER_ALGORITHM_SNOWBALL)
                 .setLanguage("en")
                 .build())
+            .addTermLayers(TermLayerSpec.newBuilder()
+                .setQualifier("court-folded")
+                .addNormalizationRungs(
+                    NormalizationRung.NORMALIZATION_RUNG_STRIP_INVISIBLE)
+                .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_WHITESPACE)
+                .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_FULL_CASE_FOLD)
+                .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_ACCENT_FOLD)
+                .setStemmer(StemmerSpec.newBuilder()
+                    .setAlgorithm(StemmerAlgorithm.STEMMER_ALGORITHM_PORTER)))
             .setTermVector(TermVectorSpec.newBuilder()
                 .setSourceLayer(LayerIdentity.newBuilder()
-                    .setStandard(StandardLayer.STANDARD_LAYER_STEMS)))
+                    .setStandard(StandardLayer.STANDARD_LAYER_TERMS)
+                    .setQualifier("court-folded")))
             .build())
         .setOptions(AnalysisOptions.newBuilder()
             .setMaxTextLength(64)

@@ -486,9 +486,12 @@ The older `embedding_model_id` field remains as an additive compatibility field.
 The same selector shape is used by streaming, chunk, category-chunk, and semantic
 chunk requests. Set `options.include_document_centroid = true` when the response
 should also contain the mean sentence vector at document granularity. It defaults
-to false so an unneeded aggregate is not computed or transmitted. Sentence vectors
-and the optional centroid share the typed `opennlp:embeddings` layer and are
-distinguished by `EmbeddingGranularity`.
+to false so an unneeded aggregate is not computed or transmitted. Set
+`options.document_centroid_normalization` to `VECTOR_NORMALIZATION_L2` when a
+unit-length mean is required for cosine search; unset retains the arithmetic mean.
+The result records `vector_normalization`, and a zero mean requested as L2 fails with
+`FAILED_PRECONDITION`. Sentence vectors and the optional centroid share the typed
+`opennlp:embeddings` layer and are distinguished by `EmbeddingGranularity`.
 
 Every configured ServiceLoader backend is active at the same time. When several
 backends serve one logical model, configure their priorities and a shared vector-space

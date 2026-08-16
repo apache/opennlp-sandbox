@@ -524,6 +524,21 @@ message EmbeddingResult {
   EmbeddingGranularity granularity = 4;
   // The actual backend route that produced this vector, including after fallback.
   optional EmbeddingRoute route = 5;
+  // Post-processing applied after aggregating member vectors. Sentence and direct
+  // backend vectors leave this UNSPECIFIED because their normalization is part of
+  // the route's vector_space_id rather than a service-side aggregation step.
+  VectorNormalization vector_normalization = 6;
+}
+
+// Service-side normalization applied after vectors are aggregated.
+enum VectorNormalization {
+  // No explicit choice. On centroid requests this resolves to NONE.
+  VECTOR_NORMALIZATION_UNSPECIFIED = 0;
+  // Retain the element-wise arithmetic mean unchanged.
+  VECTOR_NORMALIZATION_NONE = 1;
+  // Scale the aggregate to unit Euclidean norm. A zero aggregate fails with
+  // FAILED_PRECONDITION because no unit direction exists.
+  VECTOR_NORMALIZATION_L2 = 2;
 }
 
 // The textual unit an embedding vector was computed over.
@@ -798,6 +813,8 @@ message EmbeddingAnnotation {
   EmbeddingGranularity granularity = 4;
   // The actual backend route that produced this vector.
   optional EmbeddingRoute route = 5;
+  // Post-processing applied after aggregating member vectors.
+  VectorNormalization vector_normalization = 6;
 }
 
 // The annotations of a subword layer.

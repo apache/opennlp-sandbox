@@ -60,6 +60,7 @@ import org.apache.opennlp.grpc.v1.StandardSentenceDetectorEngine;
 import org.apache.opennlp.grpc.v1.StandardTokenizerEngine;
 import org.apache.opennlp.grpc.v1.TermLayerSpec;
 import org.apache.opennlp.grpc.v1.TokenizerSelector;
+import org.apache.opennlp.grpc.v1.VectorNormalization;
 import opennlp.tools.sentdetect.SentenceDetector;
 import opennlp.tools.tokenize.Tokenizer;
 
@@ -748,6 +749,16 @@ final class AnalysisRequestValidator {
         throw AnalysisException.invalidArgument(
             "embedding_model_id requires PIPELINE_STEP_EMBED in the analysis profile");
       }
+    }
+    if (options.getDocumentCentroidNormalization() == VectorNormalization.UNRECOGNIZED) {
+      throw AnalysisException.invalidArgument(
+          "document_centroid_normalization must be recognized");
+    }
+    if (options.getDocumentCentroidNormalization()
+            != VectorNormalization.VECTOR_NORMALIZATION_UNSPECIFIED
+        && !options.getIncludeDocumentCentroid()) {
+      throw AnalysisException.invalidArgument(
+          "document_centroid_normalization requires include_document_centroid");
     }
   }
 

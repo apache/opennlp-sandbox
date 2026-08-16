@@ -33,6 +33,11 @@ whitespace, simple, and lattice segmentation; standard sentence detection covers
 and newline modes. Existing clients may continue sending `tokenizer_engine`. Servers
 advertise configured custom ids through `GetServiceInfo`.
 
+Document centroids are opt-in through `AnalysisOptions.include_document_centroid`.
+`document_centroid_normalization` selects either the raw arithmetic mean or typed L2
+normalization, and both `EmbeddingResult` and its document-layer
+`EmbeddingAnnotation` retain the applied `VectorNormalization` value.
+
 ## Maven dependency
 
 ```xml
