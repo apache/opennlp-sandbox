@@ -108,6 +108,9 @@ public final class ProfileMerger {
     if (override.hasTermVector()) {
       builder.setTermVector(override.getTermVector());
     }
+    if (override.getTermLayersCount() > 0) {
+      builder.clearTermLayers().addAllTermLayers(override.getTermLayersList());
+    }
     return builder.build();
   }
 }

@@ -85,18 +85,34 @@ final class StemmerSelector {
    */
   static UnaryOperator<String> newStemFunction(
       StemmerSpec spec, HunspellRegistry hunspellRegistry) {
+    return newStemFunction(spec, hunspellRegistry, true);
+  }
+
+  /**
+   * Creates a stem function without an implicit lowercase transform. Configurable
+   * term layers use this form because their normalization rungs define the complete
+   * input to the stemmer, including whether case is preserved or folded.
+   */
+  static UnaryOperator<String> newRawStemFunction(
+      StemmerSpec spec, HunspellRegistry hunspellRegistry) {
+    return newStemFunction(spec, hunspellRegistry, false);
+  }
+
+  private static UnaryOperator<String> newStemFunction(
+      StemmerSpec spec, HunspellRegistry hunspellRegistry, boolean lowercaseInput) {
     final StemmerAlgorithm algorithm =
         spec.getAlgorithm() == StemmerAlgorithm.STEMMER_ALGORITHM_UNSPECIFIED
             ? StemmerAlgorithm.STEMMER_ALGORITHM_SNOWBALL
             : spec.getAlgorithm();
     return switch (algorithm) {
       case STEMMER_ALGORITHM_SNOWBALL ->
-          lowercased(new SnowballStemmer(snowballAlgorithm(language(spec, "SNOWBALL"))));
-      case STEMMER_ALGORITHM_PORTER -> lowercased(new PorterStemmer());
+          selected(new SnowballStemmer(snowballAlgorithm(language(spec, "SNOWBALL"))),
+              lowercaseInput);
+      case STEMMER_ALGORITHM_PORTER -> selected(new PorterStemmer(), lowercaseInput);
       case STEMMER_ALGORITHM_LIGHT ->
-          lowercased(lightFactory(language(spec, "LIGHT")).newStemmer());
+          selected(lightFactory(language(spec, "LIGHT")).newStemmer(), lowercaseInput);
       case STEMMER_ALGORITHM_MINIMAL ->
-          lowercased(minimalFactory(language(spec, "MINIMAL")).newStemmer());
+          selected(minimalFactory(language(spec, "MINIMAL")).newStemmer(), lowercaseInput);
       case STEMMER_ALGORITHM_HUNSPELL -> {
         final HunspellStemmer stemmer = hunspellRegistry.get(
             hunspellRegistry.resolveDictionaryId(
@@ -106,6 +122,10 @@ final class StemmerSelector {
       default -> throw AnalysisException.unimplemented(
           "Stemmer algorithm " + spec.getAlgorithm().name() + " is not implemented");
     };
+  }
+
+  private static UnaryOperator<String> selected(Stemmer stemmer, boolean lowercaseInput) {
+    return lowercaseInput ? lowercased(stemmer) : word -> stemmer.stem(word).toString();
   }
 
   private static UnaryOperator<String> lowercased(Stemmer stemmer) {

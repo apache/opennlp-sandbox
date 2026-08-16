@@ -27,6 +27,7 @@ import org.apache.opennlp.grpc.v1.StandardTokenizerEngine;
 import org.apache.opennlp.grpc.v1.StandardLayer;
 import org.apache.opennlp.grpc.v1.StemmerAlgorithm;
 import org.apache.opennlp.grpc.v1.StemmerSpec;
+import org.apache.opennlp.grpc.v1.TermLayerSpec;
 import org.apache.opennlp.grpc.v1.TokenizerSelector;
 import org.apache.opennlp.grpc.v1.TermVectorMode;
 import org.apache.opennlp.grpc.v1.TermVectorSpec;
@@ -92,6 +93,9 @@ class ProfileMergerTest {
         .setTermVector(TermVectorSpec.newBuilder()
             .setSourceLayer(LayerIdentity.newBuilder()
                 .setStandard(StandardLayer.STANDARD_LAYER_TOKENS)))
+        .addTermLayers(TermLayerSpec.newBuilder()
+            .setQualifier("base")
+            .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_CASE_FOLD))
         .build();
     final AnalysisProfile override = AnalysisProfile.newBuilder()
         .setNormalization(NormalizationSpec.newBuilder()
@@ -114,6 +118,9 @@ class ProfileMergerTest {
             .setMode(TermVectorMode.TERM_VECTOR_MODE_SCORING_ONLY)
             .setSourceLayer(LayerIdentity.newBuilder()
                 .setStandard(StandardLayer.STANDARD_LAYER_STEMS)))
+        .addTermLayers(TermLayerSpec.newBuilder()
+            .setQualifier("override")
+            .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_FULL_CASE_FOLD))
         .build();
 
     final AnalysisProfile merged = ProfileMerger.merge(base, override);
@@ -137,5 +144,7 @@ class ProfileMergerTest {
         merged.getTermVector().getMode());
     assertEquals(StandardLayer.STANDARD_LAYER_STEMS,
         merged.getTermVector().getSourceLayer().getStandard());
+    assertEquals(1, merged.getTermLayersCount());
+    assertEquals("override", merged.getTermLayers(0).getQualifier());
   }
 }

@@ -27,6 +27,7 @@ import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.AnnotationLayer;
 import org.apache.opennlp.grpc.v1.LayerIdentity;
 import org.apache.opennlp.grpc.v1.LayerScope;
+import org.apache.opennlp.grpc.v1.NormalizationRung;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
@@ -34,6 +35,7 @@ import org.apache.opennlp.grpc.v1.StandardLayer;
 import org.apache.opennlp.grpc.v1.StandardTokenizerEngine;
 import org.apache.opennlp.grpc.v1.StemmerAlgorithm;
 import org.apache.opennlp.grpc.v1.StemmerSpec;
+import org.apache.opennlp.grpc.v1.TermLayerSpec;
 import org.apache.opennlp.grpc.v1.TermVectorMode;
 import org.apache.opennlp.grpc.v1.TermVectorSpec;
 import org.apache.opennlp.grpc.v1.TokenizerSelector;
@@ -121,6 +123,79 @@ class BasicDocumentAnalyzerTermVectorTest {
   }
 
   @Test
+  void configurableTermLayersPreserveExactFoldedAndCasedIdentities() {
+    final TermLayerSpec folded = TermLayerSpec.newBuilder()
+        .setQualifier("court-folded")
+        .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_STRIP_INVISIBLE)
+        .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_WHITESPACE)
+        .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_FULL_CASE_FOLD)
+        .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_ACCENT_FOLD)
+        .setStemmer(StemmerSpec.newBuilder()
+            .setAlgorithm(StemmerAlgorithm.STEMMER_ALGORITHM_PORTER))
+        .build();
+    final TermLayerSpec cased = TermLayerSpec.newBuilder()
+        .setQualifier("court-cased")
+        .setStemmer(StemmerSpec.newBuilder()
+            .setAlgorithm(StemmerAlgorithm.STEMMER_ALGORITHM_PORTER))
+        .build();
+    final LayerIdentity source = LayerIdentity.newBuilder()
+        .setStandard(StandardLayer.STANDARD_LAYER_TERMS)
+        .setQualifier("court-folded")
+        .build();
+    final AnalyzeDocumentResponse response = analyzer.analyze(request(
+        "Groß GROSS Rodríguez RODRÍGUEZ Running running Court court",
+        baseProfile()
+            .addTermLayers(folded)
+            .addTermLayers(cased)
+            .setTermVector(TermVectorSpec.newBuilder().setSourceLayer(source)),
+        OffsetEncoding.OFFSET_ENCODING_UTF16_CODE_UNIT));
+
+    final AnnotationLayer vectors = layer(
+        response, StandardLayer.STANDARD_LAYER_TERM_VECTORS, "");
+    assertEquals(source, vectors.getTermVectorValues().getSourceLayer());
+    assertEquals(Map.of("gross", 2, "rodriguez", 2, "run", 2, "court", 2),
+        vectors.getTermVectorValues().getAnnotationsList().stream()
+            .collect(java.util.stream.Collectors.toMap(
+                annotation -> annotation.getTerm(), annotation -> annotation.getFrequency())));
+
+    final AnnotationLayer foldedLayer =
+        layer(response, StandardLayer.STANDARD_LAYER_TERMS, "court-folded");
+    assertEquals("opennlp:terms:court-folded", foldedLayer.getId());
+    assertEquals("court-folded", foldedLayer.getIdentity().getQualifier());
+    assertEquals("gross", foldedLayer.getStringValues().getAnnotations(0).getValue());
+    assertEquals("gross", foldedLayer.getStringValues().getAnnotations(1).getValue());
+
+    final AnnotationLayer casedLayer =
+        layer(response, StandardLayer.STANDARD_LAYER_TERMS, "court-cased");
+    assertEquals("Court", casedLayer.getStringValues().getAnnotations(6).getValue());
+    assertEquals("court", casedLayer.getStringValues().getAnnotations(7).getValue());
+  }
+
+  @Test
+  void configurableTermLayersRejectAmbiguousIdentity() {
+    final TermLayerSpec empty = TermLayerSpec.newBuilder()
+        .setQualifier("court")
+        .build();
+    final AnalysisException noOperation = assertThrows(AnalysisException.class,
+        () -> analyzer.analyze(request("court", baseProfile()
+            .addTermLayers(empty)
+            .setTermVector(TermVectorSpec.getDefaultInstance()), null)));
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, noOperation.getFailureType());
+
+    final TermLayerSpec duplicate = TermLayerSpec.newBuilder()
+        .setQualifier("FULL_CASE_FOLD")
+        .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_FULL_CASE_FOLD)
+        .build();
+    final AnalysisException duplicateIdentity = assertThrows(AnalysisException.class,
+        () -> analyzer.analyze(request("court", baseProfile()
+            .addTermDimensions("FULL_CASE_FOLD")
+            .addTermLayers(duplicate)
+            .setTermVector(TermVectorSpec.getDefaultInstance()), null)));
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT,
+        duplicateIdentity.getFailureType());
+  }
+
+  @Test
   void rejectsMissingConfigAndUnproducedSourceLayers() {
     final AnalysisException missing = assertThrows(AnalysisException.class,
         () -> analyzer.analyze(request("dog", baseProfile(), null)));
@@ -141,6 +216,16 @@ class BasicDocumentAnalyzerTermVectorTest {
         .filter(layer -> layer.getIdentity().getKindCase() == LayerIdentity.KindCase.STANDARD)
         .filter(layer -> layer.getIdentity().getStandard()
             == StandardLayer.STANDARD_LAYER_TERM_VECTORS)
+        .findFirst()
+        .orElseThrow();
+  }
+
+  private static AnnotationLayer layer(
+      AnalyzeDocumentResponse response, StandardLayer standard, String qualifier) {
+    return response.getDocument().getLayers().getLayersList().stream()
+        .filter(value -> value.getIdentity().getKindCase() == LayerIdentity.KindCase.STANDARD)
+        .filter(value -> value.getIdentity().getStandard() == standard)
+        .filter(value -> value.getIdentity().getQualifier().equals(qualifier))
         .findFirst()
         .orElseThrow();
   }

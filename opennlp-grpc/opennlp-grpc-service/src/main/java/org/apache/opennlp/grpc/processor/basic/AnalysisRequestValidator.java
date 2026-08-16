@@ -18,6 +18,7 @@
 package org.apache.opennlp.grpc.processor.basic;
 
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -57,6 +58,7 @@ import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.apache.opennlp.grpc.v1.SentenceDetectorSelector;
 import org.apache.opennlp.grpc.v1.StandardSentenceDetectorEngine;
 import org.apache.opennlp.grpc.v1.StandardTokenizerEngine;
+import org.apache.opennlp.grpc.v1.TermLayerSpec;
 import org.apache.opennlp.grpc.v1.TokenizerSelector;
 import opennlp.tools.sentdetect.SentenceDetector;
 import opennlp.tools.tokenize.Tokenizer;
@@ -142,6 +144,7 @@ final class AnalysisRequestValidator {
     resolveSentenceDetector(profile);
     validateTermDimensions(profile);
     validateTermProfile(profile);
+    validateTermLayers(profile);
     validateTermVectorRequest(profile);
     validateStopwordLanguage(profile);
     validateSubwordRequest(profile);
@@ -541,6 +544,56 @@ final class AnalysisRequestValidator {
     }
   }
 
+  private void validateTermLayers(AnalysisProfile profile) {
+    if (profile.getTermLayersCount() == 0) {
+      return;
+    }
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
+      throw AnalysisException.invalidArgument(
+          "AnalysisProfile.term_layers requires PIPELINE_STEP_TOKENIZE in the profile steps");
+    }
+    final Set<String> qualifiers = new HashSet<>(profile.getTermDimensionsList());
+    if (profile.hasTermProfile()) {
+      opennlp.tools.util.normalizer.NormalizationProfiles
+          .forLanguage(profile.getTermProfile()).orElseThrow().matchingAnalyzer().dimensions()
+          .forEach(dimension -> qualifiers.add(dimension.name()));
+    }
+    for (final TermLayerSpec spec : profile.getTermLayersList()) {
+      if (spec.getQualifier().isBlank()) {
+        throw AnalysisException.invalidArgument("term_layers.qualifier must not be blank");
+      }
+      if (!qualifiers.add(spec.getQualifier())) {
+        throw AnalysisException.invalidArgument(
+            "term layer qualifier '" + spec.getQualifier() + "' is produced more than once");
+      }
+      if (spec.getNormalizationRungsCount() == 0 && !spec.hasStemmer()) {
+        throw AnalysisException.invalidArgument(
+            "term layer '" + spec.getQualifier()
+                + "' requires at least one normalization rung or a stemmer");
+      }
+      final List<NormalizationRung> rungs =
+          NormalizationRungs.canonicalOrder(spec.getNormalizationRungsList());
+      if (spec.getNormalizationRungsCount() > 0 && rungs.isEmpty()) {
+        throw AnalysisException.invalidArgument(
+            "term layer '" + spec.getQualifier() + "' contains no recognized rung");
+      }
+      if (rungs.contains(NormalizationRung.NORMALIZATION_RUNG_WHITESPACE)
+          && rungs.contains(
+              NormalizationRung.NORMALIZATION_RUNG_WHITESPACE_PRESERVE_LINE_BREAKS)) {
+        throw AnalysisException.invalidArgument(
+            "WHITESPACE and WHITESPACE_PRESERVE_LINE_BREAKS are mutually exclusive rungs");
+      }
+      if (rungs.contains(NormalizationRung.NORMALIZATION_RUNG_CASE_FOLD)
+          && rungs.contains(NormalizationRung.NORMALIZATION_RUNG_FULL_CASE_FOLD)) {
+        throw AnalysisException.invalidArgument(
+            "CASE_FOLD and FULL_CASE_FOLD are mutually exclusive rungs");
+      }
+      if (spec.hasStemmer()) {
+        StemmerSelector.validate(spec.getStemmer(), hunspellRegistry);
+      }
+    }
+  }
+
   private void validateTermVectorRequest(AnalysisProfile profile) {
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_TERM_VECTOR)) {
       return;
@@ -577,6 +630,10 @@ final class AnalysisRequestValidator {
 
   private static void validateTermVectorDimension(AnalysisProfile profile, String qualifier) {
     if (profile.getTermDimensionsList().contains(qualifier)) {
+      return;
+    }
+    if (profile.getTermLayersList().stream()
+        .anyMatch(spec -> spec.getQualifier().equals(qualifier))) {
       return;
     }
     if (profile.hasTermProfile()) {

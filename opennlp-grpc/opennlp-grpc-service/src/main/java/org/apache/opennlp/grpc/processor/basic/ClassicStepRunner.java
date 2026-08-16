@@ -90,6 +90,7 @@ import org.apache.opennlp.grpc.v1.StemAnnotation;
 import org.apache.opennlp.grpc.v1.StemAnnotationList;
 import org.apache.opennlp.grpc.v1.SubwordAnnotation;
 import org.apache.opennlp.grpc.v1.SubwordAnnotationList;
+import org.apache.opennlp.grpc.v1.TermLayerSpec;
 import org.apache.opennlp.grpc.v1.Token;
 
 /**
@@ -680,6 +681,45 @@ final class ClassicStepRunner {
     diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_TOKENIZE,
         "Computed profile '" + language + "' term layers (" + dimensions.size()
             + " dimension(s)) for " + tokenCount + " token(s)"));
+  }
+
+  /**
+   * Produces caller-qualified term layers from explicit typed normalization and
+   * stemming pipelines. Each layer is computed per token, so its value retains the
+   * token's original document span even when normalization expands or removes code
+   * points.
+   */
+  void computeConfiguredTermLayers(
+      OpenNlpDocument.Builder document,
+      List<TermLayerSpec> specs,
+      List<ProcessingDiagnostic> diagnostics) {
+    for (final TermLayerSpec spec : specs) {
+      final TextNormalizer.Builder normalizerBuilder = TextNormalizer.builder();
+      for (final NormalizationRung rung
+          : NormalizationRungs.canonicalOrder(spec.getNormalizationRungsList())) {
+        NormalizationRungs.apply(normalizerBuilder, rung);
+      }
+      final var normalizer = normalizerBuilder.build();
+      final UnaryOperator<String> stem = spec.hasStemmer()
+          ? StemmerSelector.newRawStemFunction(
+              spec.getStemmer(), modelBundleCache.getHunspellRegistry())
+          : UnaryOperator.identity();
+      int tokenCount = 0;
+      for (int i = 0; i < document.getSentencesCount(); i++) {
+        final AnnotatedSentence.Builder sentence = document.getSentences(i).toBuilder();
+        for (int t = 0; t < sentence.getTokensCount(); t++) {
+          final Token.Builder token = sentence.getTokens(t).toBuilder();
+          final String normalized = normalizer.normalize(token.getText()).toString();
+          token.putTermLayers(spec.getQualifier(), stem.apply(normalized));
+          sentence.setTokens(t, token.build());
+          tokenCount++;
+        }
+        document.setSentences(i, sentence.build());
+      }
+      diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_TOKENIZE,
+          "Computed configured term layer '" + spec.getQualifier() + "' for "
+              + tokenCount + " token(s)"));
+    }
   }
 
   /**

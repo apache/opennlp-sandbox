@@ -121,6 +121,24 @@ message TermVectorSpec {
   LayerIdentity source_layer = 2;
 }
 
+// Produces one qualified STANDARD_LAYER_TERMS document layer from every word
+// token. Normalization runs per token in the enum's canonical order, then the
+// optional stemmer runs over that normalized value. The qualifier is both the
+// typed layer qualifier and the suffix of the stable layer id
+// "opennlp:terms:<qualifier>". Multiple entries let one analysis expose, for
+// example, folded and case-preserving BM25 identities in the same document.
+message TermLayerSpec {
+  // Caller-owned stable identity for this analyzer result. Must be non-blank
+  // and unique across all term layers produced by the profile.
+  string qualifier = 1;
+  // Per-token normalization rungs. They are deduplicated and applied in
+  // canonical enum order, independent of request order.
+  repeated NormalizationRung normalization_rungs = 2;
+  // Optional final stemmer. Unlike the standalone STEM step, this receives
+  // exactly the output of normalization_rungs with no implicit case folding.
+  optional StemmerSpec stemmer = 3;
+}
+
 // The stemmer families the STEM step can run. All but HUNSPELL are bundled
 // algorithms; HUNSPELL stems against an operator-supplied affix dictionary.
 // Configuration for PIPELINE_STEP_STEM.
@@ -356,6 +374,11 @@ message AnalysisProfile {
 
   // Configuration for PIPELINE_STEP_TERM_VECTOR. Required when that step is selected.
   TermVectorSpec term_vector = 20;
+
+  // Configurable per-token term identities rendered as qualified
+  // STANDARD_LAYER_TERMS document layers. Requires TOKENIZE. An entry must
+  // contain at least one normalization rung or a stemmer.
+  repeated TermLayerSpec term_layers = 21;
 }
 
 // Configuration for PIPELINE_STEP_NORMALIZE: which rungs run, in the order the

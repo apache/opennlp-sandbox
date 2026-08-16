@@ -1022,7 +1022,7 @@ Two chunking strategies, each with explicitly named embedding models (not an aut
 | DOC_CATEGORIZE  | `DocumentCategorizerME` / `DocumentCategorizerDL` |
 | SENTIMENT       | `SentimentME`                                     |
 | EMBED           | `SentenceVectorsDL`                               |
-| TERM_VECTOR     | `TermVectorAnnotator` over a selected document layer |
+| TERM_VECTOR     | `TermVectorAnnotator` over a selected document layer, including a qualified layer produced by typed normalization and stemming configuration |
 
 
 ---
