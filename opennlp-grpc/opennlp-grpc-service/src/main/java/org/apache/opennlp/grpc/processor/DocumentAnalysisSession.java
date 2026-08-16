@@ -24,7 +24,10 @@ import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 /**
  * A document analyzer prepared for one fixed streaming configuration.
  * Implementations may pre-resolve models and compile pipeline state when the
- * session opens, then safely analyze its documents concurrently.
+ * session opens, then safely analyze its documents concurrently. Stream
+ * cancellation interrupts active worker threads on a best-effort basis, so
+ * implementations should preserve interruption and return promptly when their
+ * underlying operations support cancellation.
  */
 @FunctionalInterface
 public interface DocumentAnalysisSession {

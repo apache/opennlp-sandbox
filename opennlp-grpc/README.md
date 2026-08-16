@@ -686,7 +686,9 @@ protocol failure and closes the stream with `INVALID_ARGUMENT`. Inbound demand t
 the configured worker count, outbound writes wait for transport readiness, and a client
 that stops draining responses is closed with `RESOURCE_EXHAUSTED`. The server sends
 response headers as soon as the call is accepted, which lets clients open the stream
-before submitting its configuration. Unary and streaming calls share the generic
+before submitting its configuration. Client cancellation interrupts active analysis on
+a best-effort basis and removes queued documents so abandoned streams release their
+worker capacity. Unary and streaming calls share the generic
 `DocumentAnalyzer` interface; a provider may override `openSession` to validate or
 compile the fixed plan once.
 

@@ -19,7 +19,10 @@
 package org.apache.opennlp.grpc.v1.server;
 
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -59,6 +62,7 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
   private final Object readyLock = new Object();
   private final AtomicInteger inFlight = new AtomicInteger();
   private final AtomicBoolean terminated = new AtomicBoolean();
+  private final Set<FutureTask<Void>> tasks = ConcurrentHashMap.newKeySet();
 
   private volatile AnalyzeStreamConfiguration configuration;
   private volatile DocumentAnalysisSession analysisSession;
@@ -112,10 +116,7 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
   /** {@inheritDoc} */
   @Override
   public void onError(Throwable error) {
-    // The caller or transport has already ended the call, so workers only need
-    // the termination flag to suppress late writes.
-    terminated.set(true);
-    signalReady();
+    terminateWorkers();
     logger.debug("AnalyzeStream closed by client or transport", error);
   }
 
@@ -153,15 +154,41 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
       return;
     }
     inFlight.incrementAndGet();
-    try {
-      executor.execute(() -> analyze(document));
-    } catch (RejectedExecutionException e) {
-      inFlight.decrementAndGet();
-      sendFailure(document.getSequence(), Status.RESOURCE_EXHAUSTED
-          .withDescription("analysis capacity is exhausted"));
-      request(1);
-      maybeComplete();
+    final FutureTask<Void> task = new FutureTask<>(() -> {
+      analyze(document);
+      return null;
+    }) {
+      @Override
+      public void run() {
+        try {
+          super.run();
+        } finally {
+          completeTask(this);
+        }
+      }
+    };
+    tasks.add(task);
+    if (terminated.get()) {
+      task.cancel(true);
+      return;
     }
+    try {
+      executor.execute(task);
+    } catch (RejectedExecutionException e) {
+      if (!terminated.get()) {
+        sendFailure(document.getSequence(), Status.RESOURCE_EXHAUSTED
+            .withDescription("analysis capacity is exhausted"));
+      }
+      task.cancel(false);
+      completeTask(task);
+    }
+  }
+
+  private void completeTask(FutureTask<Void> task) {
+    tasks.remove(task);
+    inFlight.decrementAndGet();
+    request(1);
+    maybeComplete();
   }
 
   private void analyze(AnalyzeStreamDocument document) {
@@ -177,10 +204,6 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
       logger.error("Unexpected error handling AnalyzeStream document", e);
       sendFailure(document.getSequence(), Status.INTERNAL
           .withDescription("Internal server error"));
-    } finally {
-      inFlight.decrementAndGet();
-      request(1);
-      maybeComplete();
     }
   }
 
@@ -243,7 +266,7 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
 
   private void failStream(Status status) {
     if (terminated.compareAndSet(false, true)) {
-      signalReady();
+      cancelTasks();
       synchronized (outputLock) {
         responseObserver.onError(status.asRuntimeException());
       }
@@ -265,15 +288,25 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
   }
 
   private void cancel() {
-    terminated.set(true);
-    signalReady();
+    terminateWorkers();
   }
 
   private void failOutput(Status status) {
     if (terminated.compareAndSet(false, true)) {
-      signalReady();
+      cancelTasks();
       responseObserver.onError(status.asRuntimeException());
     }
+  }
+
+  private void terminateWorkers() {
+    if (terminated.compareAndSet(false, true)) {
+      cancelTasks();
+    }
+  }
+
+  private void cancelTasks() {
+    signalReady();
+    tasks.forEach(task -> task.cancel(true));
   }
 
   private void signalReady() {
