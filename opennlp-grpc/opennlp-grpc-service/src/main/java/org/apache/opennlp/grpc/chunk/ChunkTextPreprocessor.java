@@ -30,6 +30,14 @@ import org.apache.opennlp.grpc.v1.ChunkingSpec;
  */
 public final class ChunkTextPreprocessor {
 
+  /**
+   * Placeholder sentinel for preserved URLs: a private-use character above {@code 0x20},
+   * so {@code trim()} cannot eat it when a placeholder lands at a text boundary (the
+   * previous NUL sentinel was trimmed away and the restore missed). Private use also
+   * makes collision with real input text vanishingly unlikely.
+   */
+  private static final String PLACEHOLDER_SENTINEL = "\uE000";
+
   /** Prevents instantiation. */
   private ChunkTextPreprocessor() {
   }
@@ -76,14 +84,16 @@ public final class ChunkTextPreprocessor {
     while (urlStart >= 0) {
       final int urlEnd = urlEnd(text, urlStart);
       preserved.add(text.substring(urlStart, urlEnd));
-      buffer.append(text, pos, urlStart).append(" \0URL").append(preserved.size()).append("\0 ");
+      buffer.append(text, pos, urlStart).append(" ").append(PLACEHOLDER_SENTINEL).append("URL").append(preserved.size())
+          .append(PLACEHOLDER_SENTINEL).append(" ");
       pos = urlEnd;
       urlStart = findUrlStart(text, urlEnd);
     }
     buffer.append(text, pos, text.length());
     String cleaned = collapseWhitespace(buffer.toString()).trim();
     for (int i = 0; i < preserved.size(); i++) {
-      cleaned = cleaned.replace("\0URL" + (i + 1) + "\0", preserved.get(i));
+      cleaned = cleaned.replace(
+          PLACEHOLDER_SENTINEL + "URL" + (i + 1) + PLACEHOLDER_SENTINEL, preserved.get(i));
     }
     return collapseWhitespace(cleaned).trim();
   }
