@@ -284,8 +284,15 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
 
   /** Sends one response when the transport is ready. */
   private void send(AnalyzeStreamResponse response) {
+    // Wait for readiness outside outputLock: the lock only serializes the write itself.
+    // Holding it across the wait would park sibling workers on an uninterruptible monitor
+    // where they can neither observe termination nor be cancelled while the writer is stuck.
+    if (terminated.get() || !awaitReady()) {
+      return;
+    }
     synchronized (outputLock) {
-      if (!terminated.get() && awaitReady()) {
+      // Re-check under the lock: the stream may have terminated while this worker waited.
+      if (!terminated.get()) {
         try {
           responseObserver.onNext(response);
         } catch (RuntimeException e) {
