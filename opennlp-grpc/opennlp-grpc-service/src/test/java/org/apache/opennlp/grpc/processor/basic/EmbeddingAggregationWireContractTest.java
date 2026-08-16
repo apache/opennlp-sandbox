@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import org.apache.opennlp.grpc.v1.AnalysisOptions;
+import org.apache.opennlp.grpc.v1.EmbeddingAnnotation;
 import org.apache.opennlp.grpc.v1.EmbeddingResult;
 import org.apache.opennlp.grpc.v1.OpenNlpDocumentProto;
 import org.junit.jupiter.api.Test;
@@ -58,6 +59,14 @@ class EmbeddingAggregationWireContractTest {
         EmbeddingResult.getDescriptor(), "vector_normalization");
     assertEquals(6, result.getNumber());
     assertEquals("VectorNormalization", result.getEnumType().getName());
+  }
+
+  @Test
+  void embeddingDocumentLayerRetainsAppliedVectorNormalization() {
+    final FieldDescriptor documentLayer = requiredField(
+        EmbeddingAnnotation.getDescriptor(), "vector_normalization");
+    assertEquals(6, documentLayer.getNumber());
+    assertEquals("VectorNormalization", documentLayer.getEnumType().getName());
   }
 
   private static FieldDescriptor requiredField(
