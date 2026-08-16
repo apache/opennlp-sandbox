@@ -19,6 +19,8 @@ package org.apache.opennlp.grpc.embedding;
 
 import java.util.Map;
 
+import org.apache.opennlp.grpc.processor.AnalysisException;
+
 /**
  * Test-only {@link EmbeddingBackendFactory} registered via {@code META-INF/services},
  * proving that external jars can contribute embedding backends without changes to the
@@ -29,6 +31,8 @@ public final class StubEmbeddingBackendFactory implements EmbeddingBackendFactor
   public static final String BACKEND_ID = "stub";
   /** When set, the stub contributes one model with this id; otherwise it stays inert. */
   public static final String KEY_MODEL_ID = "model.embedder.stub.model_id";
+  /** When set, embedding this exact text fails with an INTERNAL {@link AnalysisException}. */
+  public static final String KEY_FAIL_TEXT = "model.embedder.stub.fail_text";
 
   @Override
   public String backendId() {
@@ -42,6 +46,16 @@ public final class StubEmbeddingBackendFactory implements EmbeddingBackendFactor
       // Inert unless explicitly activated, so the composite stays empty in unrelated tests.
       return new StubEmbeddingProvider(Map.of());
     }
-    return new StubEmbeddingProvider(Map.of(modelId, 3));
+    final String failText = configuration.get(KEY_FAIL_TEXT);
+    if (failText == null || failText.isBlank()) {
+      return new StubEmbeddingProvider(Map.of(modelId, 3));
+    }
+    return new StubEmbeddingProvider(Map.of(modelId, 3), (id, text) -> {
+      if (failText.equals(text)) {
+        throw AnalysisException.internal(
+            "embed failed on pathological input", new IllegalStateException("stubbed fault"));
+      }
+      return new float[] {0.1f, 0.2f, 0.3f};
+    });
   }
 }
