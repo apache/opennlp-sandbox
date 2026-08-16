@@ -123,6 +123,12 @@ public final class OnnxNerBackendFactory implements NerBackendFactory {
     int gpuDeviceId = 0;
     final String gpu = attrs.get("gpu_device_id");
     if (gpu != null && !gpu.isBlank()) {
+      if (!BACKEND_CUDA.equals(backend)) {
+        throw AnalysisException.invalidArgument(
+            KEY_DL_PREFIX + id + ".gpu_device_id applies only with backend '"
+                + BACKEND_CUDA + "' but ONNX name finder '" + id + "' uses backend '" + backend
+                + "'");
+      }
       try {
         gpuDeviceId = Integer.parseInt(gpu.trim());
       } catch (NumberFormatException e) {
