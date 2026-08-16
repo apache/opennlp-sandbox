@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import opennlp.tools.sentdetect.NewlineSentenceDetector;
 import opennlp.tools.tokenize.SimpleTokenizer;
@@ -76,39 +76,46 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
   private final EmbedChunkStepRunner embedChunkSteps;
   private final NameFinderRegistry nameFinderRegistry;
   private final EmbeddingProvider embeddingProvider;
+  private final ModelBundleCache modelBundleCache;
+  private final boolean ownsModelBundleCache;
+  private final AtomicBoolean closed = new AtomicBoolean();
 
   /**
    * Creates an analyzer backed by a fresh {@link ModelBundleCache} built from the given
    * configuration. The default profile registry is derived from the model capabilities
-   * the cache discovers.
+   * the cache discovers. Closing the analyzer closes this cache.
    *
    * @param configuration The model-loading configuration passed through to
    *                      {@link ModelBundleCache}. Must not be {@code null}.
+   * @throws IllegalArgumentException If {@code configuration} is {@code null}.
    */
   public BasicDocumentAnalyzer(Map<String, String> configuration) {
-    this(new ModelBundleCache(configuration));
+    this(createOwnedModelBundleCache(configuration), true);
   }
 
-  private BasicDocumentAnalyzer(ModelBundleCache modelBundleCache) {
-    this(modelBundleCache.createProfileRegistry(), modelBundleCache);
+  /** Creates an analyzer and records whether it owns the supplied cache. */
+  private BasicDocumentAnalyzer(ModelBundleCache modelBundleCache, boolean ownsModelBundleCache) {
+    this(modelBundleCache.createProfileRegistry(), modelBundleCache,
+        modelBundleCache.getEmbeddingProvider(), ownsModelBundleCache);
   }
 
   /**
    * Creates an analyzer with an explicit profile registry and model cache, using the
-   * embedding provider exposed by the cache.
+   * embedding provider exposed by the cache. The caller retains ownership of the cache.
    *
    * @param profileRegistry  The profile registry resolving requested profiles. Must not
    *                        be {@code null}.
    * @param modelBundleCache The cache supplying loaded models and registries. Must not be
    *                        {@code null}.
+   * @throws IllegalArgumentException If either argument is {@code null}.
    */
   public BasicDocumentAnalyzer(ProfileRegistry profileRegistry, ModelBundleCache modelBundleCache) {
-    this(profileRegistry, modelBundleCache, modelBundleCache.getEmbeddingProvider());
+    this(profileRegistry, modelBundleCache, embeddingProvider(modelBundleCache), false);
   }
 
   /**
    * Creates an analyzer with an explicit profile registry, model cache, and embedding
-   * provider. This is the canonical constructor the other constructors delegate to.
+   * provider. The caller retains ownership of both injected resources.
    *
    * @param profileRegistry   The profile registry resolving requested profiles. Must not
    *                         be {@code null}.
@@ -116,15 +123,33 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
    *                         {@code null}.
    * @param embeddingProvider The provider used for embedding and semantic-chunk steps.
    *                         Must not be {@code null}.
+   * @throws IllegalArgumentException If any argument is {@code null}.
    */
   public BasicDocumentAnalyzer(
       ProfileRegistry profileRegistry,
       ModelBundleCache modelBundleCache,
       EmbeddingProvider embeddingProvider) {
-    Objects.requireNonNull(profileRegistry, "profileRegistry");
-    Objects.requireNonNull(modelBundleCache, "modelBundleCache");
-    Objects.requireNonNull(embeddingProvider, "embeddingProvider");
+    this(profileRegistry, modelBundleCache, embeddingProvider, false);
+  }
+
+  /** Initializes the analyzer and its cache-ownership policy. */
+  private BasicDocumentAnalyzer(
+      ProfileRegistry profileRegistry,
+      ModelBundleCache modelBundleCache,
+      EmbeddingProvider embeddingProvider,
+      boolean ownsModelBundleCache) {
+    if (profileRegistry == null) {
+      throw new IllegalArgumentException("profileRegistry must not be null");
+    }
+    if (modelBundleCache == null) {
+      throw new IllegalArgumentException("modelBundleCache must not be null");
+    }
+    if (embeddingProvider == null) {
+      throw new IllegalArgumentException("embeddingProvider must not be null");
+    }
     this.profileResolver = new ProfileResolver(profileRegistry);
+    this.modelBundleCache = modelBundleCache;
+    this.ownsModelBundleCache = ownsModelBundleCache;
     this.nameFinderRegistry = modelBundleCache.getNameFinderRegistry();
     this.embeddingProvider = embeddingProvider;
     this.validator = new AnalysisRequestValidator(embeddingProvider, nameFinderRegistry,
@@ -138,21 +163,39 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     this.embedChunkSteps = new EmbedChunkStepRunner(embeddingProvider, classicSteps);
   }
 
+  /** Creates the analyzer-owned cache after validating the public constructor input. */
+  private static ModelBundleCache createOwnedModelBundleCache(Map<String, String> configuration) {
+    if (configuration == null) {
+      throw new IllegalArgumentException("configuration must not be null");
+    }
+    return new ModelBundleCache(configuration);
+  }
+
+  /** Returns the cache's embedding provider after validating the public constructor input. */
+  private static EmbeddingProvider embeddingProvider(ModelBundleCache modelBundleCache) {
+    if (modelBundleCache == null) {
+      throw new IllegalArgumentException("modelBundleCache must not be null");
+    }
+    return modelBundleCache.getEmbeddingProvider();
+  }
+
   /** {@inheritDoc} */
   @Override
   public AnalyzeDocumentResponse analyze(AnalyzeDocumentRequest request) {
+    ensureOpen();
     if (request == null) {
       throw new IllegalArgumentException("request must not be null");
     }
     final String rawText = requiredRawText(request);
     final PreparedAnalysis prepared = prepare(request);
     validator.validateDocument(request, rawText);
-    return analyzePrepared(request, prepared, rawText);
+    return analyzeWithCleanup(request, prepared, rawText);
   }
 
   /** {@inheritDoc} */
   @Override
   public DocumentAnalysisSession openSession(AnalyzeStreamConfiguration configuration) {
+    ensureOpen();
     if (configuration == null) {
       throw new IllegalArgumentException("configuration must not be null");
     }
@@ -171,16 +214,44 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     final AnalyzeDocumentRequest template = fixed.build();
     final PreparedAnalysis prepared = prepare(template);
     return document -> {
+      ensureOpen();
       if (document == null) {
         throw new IllegalArgumentException("document must not be null");
       }
       final AnalyzeDocumentRequest request = template.toBuilder().setDocument(document).build();
       final String rawText = requiredRawText(request);
       validator.validateDocument(request, rawText);
-      return analyzePrepared(request, prepared, rawText);
+      return analyzeWithCleanup(request, prepared, rawText);
     };
   }
 
+  /** Releases resources created by the configuration constructor. */
+  @Override
+  public void close() {
+    if (closed.compareAndSet(false, true) && ownsModelBundleCache) {
+      modelBundleCache.close();
+    }
+  }
+
+  /** Rejects work after the analyzer has been closed. */
+  private void ensureOpen() {
+    if (closed.get()) {
+      throw new IllegalStateException(
+          "BasicDocumentAnalyzer is closed and cannot analyze documents");
+    }
+  }
+
+  /** Runs prepared analysis and releases decoder state owned by the calling worker. */
+  private AnalyzeDocumentResponse analyzeWithCleanup(
+      AnalyzeDocumentRequest request, PreparedAnalysis prepared, String rawText) {
+    try {
+      return analyzePrepared(request, prepared, rawText);
+    } finally {
+      modelBundleCache.clearThreadLocalState();
+    }
+  }
+
+  /** Runs a validated, prepared analysis. */
   private AnalyzeDocumentResponse analyzePrepared(
       AnalyzeDocumentRequest request, PreparedAnalysis prepared, String rawText) {
     final OpenNlpDocument input = request.getDocument();
@@ -508,6 +579,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
         .build();
   }
 
+  /** Returns the required document text. */
   private static String requiredRawText(AnalyzeDocumentRequest request) {
     if (!request.hasDocument()) {
       throw AnalysisException.invalidArgument("document is required");
@@ -519,6 +591,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     return rawText;
   }
 
+  /** Resolves and validates the fixed analysis configuration. */
   private PreparedAnalysis prepare(AnalyzeDocumentRequest request) {
     final AnalysisProfile profile = profileResolver.resolve(request);
     validator.validateConfiguration(request, profile);
@@ -556,6 +629,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     return steps;
   }
 
+  /** Returns whether the effective profile includes a step. */
   private static boolean shouldRunStep(Set<PipelineStep> effectiveSteps, PipelineStep step) {
     return effectiveSteps.contains(step);
   }
@@ -585,6 +659,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     }
   }
 
+  /** Returns detected sentences or raises the requesting step's failed precondition. */
   private static void requireSentences(OpenNlpDocument.Builder document, PipelineStep step) {
     if (document.getSentencesCount() == 0) {
       throw AnalysisException.failedPrecondition(
@@ -592,6 +667,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
     }
   }
 
+  /** Returns tokenized sentences or raises the requesting step's failed precondition. */
   private static void requireTokens(OpenNlpDocument.Builder document, PipelineStep step) {
     boolean tokenized = document.getSentencesCount() > 0;
     for (AnnotatedSentence sentence : document.getSentencesList()) {

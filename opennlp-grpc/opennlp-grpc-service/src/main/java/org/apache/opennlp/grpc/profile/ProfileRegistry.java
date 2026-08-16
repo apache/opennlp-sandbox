@@ -281,6 +281,7 @@ public final class ProfileRegistry {
     return Map.copyOf(profiles);
   }
 
+  /** Builds the default profile. */
   private static AnalysisProfile defaultProfile() {
     return AnalysisProfile.newBuilder()
         .setProfileId(DEFAULT_PROFILE_ID)
@@ -290,6 +291,7 @@ public final class ProfileRegistry {
         .build();
   }
 
+  /** Builds the standard named-entity profile. */
   private static AnalysisProfile nerProfile() {
     return AnalysisProfile.newBuilder()
         .setProfileId(NER_PROFILE_ID)
@@ -300,6 +302,7 @@ public final class ProfileRegistry {
         .build();
   }
 
+  /** Builds the standard document-categorization profile. */
   private static AnalysisProfile doccatProfile() {
     return AnalysisProfile.newBuilder()
         .setProfileId(DOCCAT_PROFILE_ID)
@@ -310,6 +313,7 @@ public final class ProfileRegistry {
         .build();
   }
 
+  /** Builds the standard sentiment profile. */
   private static AnalysisProfile sentimentProfile() {
     return AnalysisProfile.newBuilder()
         .setProfileId(SENTIMENT_PROFILE_ID)
@@ -320,6 +324,7 @@ public final class ProfileRegistry {
         .build();
   }
 
+  /** Builds the standard constituency-parsing profile. */
   private static AnalysisProfile parseProfile() {
     return AnalysisProfile.newBuilder()
         .setProfileId(PARSE_PROFILE_ID)
@@ -330,6 +335,7 @@ public final class ProfileRegistry {
         .build();
   }
 
+  /** Builds the standard syntactic-chunk profile. */
   private static AnalysisProfile chunkProfile() {
     return AnalysisProfile.newBuilder()
         .setProfileId(CHUNK_PROFILE_ID)

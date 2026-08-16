@@ -98,6 +98,7 @@ final class StemmerSelector {
     return newStemFunction(spec, hunspellRegistry, false);
   }
 
+  /** Creates the stemming function selected by the specification. */
   private static UnaryOperator<String> newStemFunction(
       StemmerSpec spec, HunspellRegistry hunspellRegistry, boolean lowercaseInput) {
     final StemmerAlgorithm algorithm =
@@ -124,14 +125,17 @@ final class StemmerSelector {
     };
   }
 
+  /** Applies optional lowercasing around the selected stemmer. */
   private static UnaryOperator<String> selected(Stemmer stemmer, boolean lowercaseInput) {
     return lowercaseInput ? lowercased(stemmer) : word -> stemmer.stem(word).toString();
   }
 
+  /** Wraps a stemmer with locale-neutral lowercasing. */
   private static UnaryOperator<String> lowercased(Stemmer stemmer) {
     return word -> stemmer.stem(word.toLowerCase(Locale.ROOT)).toString();
   }
 
+  /** Returns the required normalized language code. */
   private static String language(StemmerSpec spec, String algorithmName) {
     if (!spec.hasLanguage() || spec.getLanguage().isBlank()) {
       throw AnalysisException.invalidArgument(
@@ -140,6 +144,7 @@ final class StemmerSelector {
     return spec.getLanguage().toLowerCase(Locale.ROOT);
   }
 
+  /** Maps a language code to its Snowball algorithm. */
   private static SnowballStemmer.ALGORITHM snowballAlgorithm(String language) {
     return switch (language) {
       case "ar" -> SnowballStemmer.ALGORITHM.ARABIC;
@@ -167,6 +172,7 @@ final class StemmerSelector {
     };
   }
 
+  /** Returns the light-stemmer factory for a language. */
   private static StemmerFactory lightFactory(String language) {
     return switch (language) {
       case "de" -> new GermanLightStemmer();
@@ -184,6 +190,7 @@ final class StemmerSelector {
     };
   }
 
+  /** Returns the minimal-stemmer factory for a language. */
   private static StemmerFactory minimalFactory(String language) {
     return switch (language) {
       case "de" -> new GermanMinimalStemmer();

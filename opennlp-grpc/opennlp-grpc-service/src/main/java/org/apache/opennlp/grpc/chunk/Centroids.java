@@ -83,6 +83,7 @@ public final class Centroids {
         VectorNormalization.VECTOR_NORMALIZATION_NONE, route);
   }
 
+  /** Computes the centroid vector and its provenance. */
   private static EmbeddingResult centroid(
       String modelId,
       List<float[]> vectors,

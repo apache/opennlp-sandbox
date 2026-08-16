@@ -55,11 +55,13 @@ public final class ClassicParserBackendFactory implements ParserBackendFactory {
   public ClassicParserBackendFactory() {
   }
 
+  /** {@inheritDoc} */
   @Override
   public String factoryId() {
     return FACTORY_ID;
   }
 
+  /** {@inheritDoc} */
   @Override
   public List<ParserModel> create(Map<String, String> configuration) {
     final Map<String, ClassicEntry> entries = parseConfiguredPaths(configuration);
@@ -75,6 +77,7 @@ public final class ClassicParserBackendFactory implements ParserBackendFactory {
   private record ClassicEntry(String path, int priority) {
   }
 
+  /** Parses configured paths. */
   private static Map<String, ClassicEntry> parseConfiguredPaths(Map<String, String> configuration) {
     final Map<String, ClassicEntry> entries = new LinkedHashMap<>();
     for (Map.Entry<String, String> entry : configuration.entrySet()) {
@@ -101,6 +104,7 @@ public final class ClassicParserBackendFactory implements ParserBackendFactory {
     return entries;
   }
 
+  /** Loads parser model. */
   private static opennlp.tools.parser.ParserModel loadParserModel(String id, String path) {
     try (InputStream input = new FileInputStream(path)) {
       final opennlp.tools.parser.ParserModel model = new opennlp.tools.parser.ParserModel(input);

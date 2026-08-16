@@ -4,7 +4,7 @@ Remote embedding backend for the OpenNLP gRPC server, delegating inference to
 [HuggingFace Text Embeddings Inference](https://github.com/huggingface/text-embeddings-inference)
 over TEI's native gRPC API (`tei.v1.Embed`). TEI handles tokenization, truncation,
 pooling and normalization server-side, runs on CPU or NVIDIA GPUs, and serves any
-embedding model from the HuggingFace Hub — so the OpenNLP server gains GPU-accelerated,
+embedding model from the HuggingFace Hub, so the OpenNLP server gains GPU-accelerated,
 model-agnostic embeddings without any ONNX Runtime or model files of its own.
 
 ```

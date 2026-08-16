@@ -133,7 +133,7 @@ class OpenNlpGrpcServerNerLiveIT {
   @Test
   void enNerProfileIsAdvertisedAndUsableById() {
     // With NER models configured, the en-ner profile must be advertised and resolvable
-    // by id alone (no inline profile) — the positive counterpart to hiding it otherwise.
+    // by id alone (no inline profile), the positive counterpart to hiding it otherwise.
     final var info = client.getServiceInfo(GetServiceInfoRequest.getDefaultInstance());
     assertTrue(info.getAvailableProfileIdsList().contains("en-ner"),
         "en-ner not advertised: " + info.getAvailableProfileIdsList());

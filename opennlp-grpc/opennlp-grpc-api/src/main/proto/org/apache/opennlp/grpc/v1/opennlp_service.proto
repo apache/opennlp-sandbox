@@ -19,12 +19,12 @@ syntax = "proto3";
 
 package org.apache.opennlp.grpc.v1;
 
-option java_package = "org.apache.opennlp.grpc.v1";
-option java_multiple_files = true;
-option java_outer_classname = "OpenNlpServiceProto";
-
 import "org/apache/opennlp/grpc/v1/opennlp_document.proto";
 import "org/apache/opennlp/grpc/v1/opennlp_pipeline.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "OpenNlpServiceProto";
+option java_package = "org.apache.opennlp.grpc.v1";
 
 // The v1 document-centric OpenNLP analysis API: one unary RPC to analyze a
 // document, plus two capability-discovery RPCs.
@@ -89,7 +89,7 @@ message AnalyzeDocumentRequest {
   // The server shares the base NLP analysis (sentences etc.) across all entries.
   repeated ChunkEmbedConfigEntry chunk_embed_configs = 5;
 
-  // Category-driven chunking: group sentences by their per-sentence category (today the
+  // Category-driven chunking: group sentences by their per-sentence category from the
   // PIPELINE_STEP_SENTIMENT label), concatenate each category's sentences into one chunk, and
   // embed it. Requires SENTIMENT in the profile so sentences carry labels. Each entry yields one
   // ChunkEmbeddingGroup whose chunks are the category groups (chunk_tag = the category label),
@@ -110,8 +110,7 @@ message CategoryChunkConfigEntry {
   repeated string embedding_model_ids = 3;
   // Optional friendly label, echoed onto the resulting group's result_set_name.
   optional string result_set_name = 4;
-  // Additive strongly typed replacement for embedding_model_ids. Each selector can
-  // optionally pin a backend route independently.
+  // Typed embedding selections. Each selector can optionally pin a backend route.
   repeated EmbeddingSelector embedding_selectors = 5;
 }
 
@@ -131,8 +130,7 @@ message ChunkEmbedConfigEntry {
   // The embeddings wanted for *this* chunking strategy's chunks.
   // Not a blind NxM; explicit per-strategy list.
   repeated string embedding_model_ids = 5;
-  // Additive strongly typed replacement for embedding_model_ids. Each selector can
-  // optionally pin a backend route independently.
+  // Typed embedding selections. Each selector can optionally pin a backend route.
   repeated EmbeddingSelector embedding_selectors = 6;
 }
 
@@ -149,6 +147,7 @@ message AnalyzeDocumentResponse {
 // One frame sent by the client on an AnalyzeStream call. Exactly one
 // configuration frame must arrive first, followed by document frames.
 message AnalyzeStreamRequest {
+  // The configuration or document carried by this frame.
   oneof message {
     // Fixes the analysis configuration for every document on this stream.
     AnalyzeStreamConfiguration configuration = 1;
@@ -186,6 +185,7 @@ message AnalyzeStreamDocument {
 message AnalyzeStreamResponse {
   // Sequence from the corresponding AnalyzeStreamDocument.
   uint64 sequence = 1;
+  // The successful response or per-document failure.
   oneof result {
     // Successful analysis, identical to AnalyzeDocument for the same inputs.
     AnalyzeDocumentResponse ok = 2;
@@ -194,10 +194,50 @@ message AnalyzeStreamResponse {
   }
 }
 
+// Canonical gRPC status codes that can describe a document-local stream failure.
+// Numeric values match the gRPC status-code registry. OK is intentionally omitted
+// because this enum is used only for failures.
+enum GrpcStatusCode {
+  // No error code was supplied. Servers never emit this value.
+  GRPC_STATUS_CODE_UNSPECIFIED = 0;
+  // The operation was cancelled, typically by the caller.
+  GRPC_STATUS_CODE_CANCELLED = 1;
+  // The failure does not fit another canonical status.
+  GRPC_STATUS_CODE_UNKNOWN = 2;
+  // The request contains an invalid argument.
+  GRPC_STATUS_CODE_INVALID_ARGUMENT = 3;
+  // The deadline expired before the operation completed.
+  GRPC_STATUS_CODE_DEADLINE_EXCEEDED = 4;
+  // A requested resource was not found.
+  GRPC_STATUS_CODE_NOT_FOUND = 5;
+  // A resource the caller attempted to create already exists.
+  GRPC_STATUS_CODE_ALREADY_EXISTS = 6;
+  // The caller lacks permission to perform the operation.
+  GRPC_STATUS_CODE_PERMISSION_DENIED = 7;
+  // A resource limit or quota was exhausted.
+  GRPC_STATUS_CODE_RESOURCE_EXHAUSTED = 8;
+  // The system is not in the state required for the operation.
+  GRPC_STATUS_CODE_FAILED_PRECONDITION = 9;
+  // The operation was aborted because of a concurrency conflict.
+  GRPC_STATUS_CODE_ABORTED = 10;
+  // The operation addressed data outside the valid range.
+  GRPC_STATUS_CODE_OUT_OF_RANGE = 11;
+  // The operation is not implemented or supported.
+  GRPC_STATUS_CODE_UNIMPLEMENTED = 12;
+  // An internal invariant failed.
+  GRPC_STATUS_CODE_INTERNAL = 13;
+  // The service is temporarily unavailable.
+  GRPC_STATUS_CODE_UNAVAILABLE = 14;
+  // Unrecoverable data loss or corruption occurred.
+  GRPC_STATUS_CODE_DATA_LOSS = 15;
+  // The request lacks valid authentication credentials.
+  GRPC_STATUS_CODE_UNAUTHENTICATED = 16;
+}
+
 // A per-document failure on an otherwise healthy AnalyzeStream call.
 message AnalyzeStreamError {
-  // Numeric value of the canonical io.grpc.Status.Code.
-  int32 code = 1;
+  // Canonical gRPC status describing the document-local failure.
+  GrpcStatusCode code = 1;
   // Human-readable failure description. Unexpected server details are not exposed.
   string message = 2;
 }
@@ -265,24 +305,34 @@ message GetServiceInfoResponse {
 // Open identity for one family of configured, non-model resources. OpenNLP-owned
 // families use the closed enum; extension families use a stable custom id.
 message ResourceIdentity {
+  // The selected standard resource family or extension id.
   oneof kind {
+    // A resource family defined by this contract.
     StandardResource standard = 1;
+    // The stable id of an extension-provided resource family.
     string custom = 2;
   }
 }
 
 // OpenNLP-owned configured resource families advertised by GetServiceInfo.
 enum StandardResource {
+  // No standard resource family was selected.
   STANDARD_RESOURCE_UNSPECIFIED = 0;
+  // A SentencePiece subword model.
   STANDARD_RESOURCE_SUBWORD_MODEL = 1;
+  // A Hunspell affix and dictionary pair.
   STANDARD_RESOURCE_HUNSPELL_DICTIONARY = 2;
+  // A WordNet-compatible lexical database.
   STANDARD_RESOURCE_WORDNET_LEXICON = 3;
+  // A MeCab-format lattice-tokenizer dictionary.
   STANDARD_RESOURCE_LATTICE_DICTIONARY = 4;
 }
 
 // One loaded non-model resource that a profile can select by id.
 message ConfiguredResource {
+  // The resource family.
   ResourceIdentity identity = 1;
+  // The deployment-defined id within that family.
   string resource_id = 2;
   // True when an unqualified request resolves to this resource. False for every
   // entry when several resources are configured and the operator selected no default.
@@ -310,8 +360,8 @@ message EmbedTextRequest {
   // (optional there when exactly one model is configured or a default_id is set); later
   // messages may repeat it but must not name a different model (else INVALID_ARGUMENT).
   optional string model_id = 3;
-  // Additive strongly typed replacement for model_id. The first message fixes both
-  // model and optional backend for the stream; later messages may repeat the same selector.
+  // Typed model and optional backend selection. The first message fixes this selection for
+  // the stream; later messages may repeat the same selector.
   optional EmbeddingSelector embedding_selector = 4;
 }
 

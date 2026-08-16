@@ -35,7 +35,7 @@ only a real embedding model can deliver: a substantial embedding dimension in th
 catalog, L2-normalized vectors, and topical similarity ordering (related sentences are
 closer than unrelated ones).
 
-Start a real TEI server with the helper script — CPU or GPU:
+Start a real TEI server with the helper script, using either CPU or GPU:
 
 ```bash
 ./scripts/tei-server.sh start --cpu                  # default model: all-MiniLM-L6-v2
@@ -63,7 +63,7 @@ same semantic assertions through the KServe v2 gRPC API.
 
 OVMS serves raw tensor models, so the helper script first exports the embedding model
 as a single OpenVINO graph (HuggingFace tokenizer fused via `openvino_tokenizers`, plus
-mean pooling and L2 normalization) with a string input — see the
+mean pooling and L2 normalization) with a string input. See the
 `opennlp-grpc-backend-openvino` README for details. Requires Docker and
 [uv](https://docs.astral.sh/uv/):
 

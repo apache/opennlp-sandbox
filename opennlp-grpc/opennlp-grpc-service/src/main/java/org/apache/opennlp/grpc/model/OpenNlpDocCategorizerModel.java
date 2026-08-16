@@ -19,7 +19,6 @@ package org.apache.opennlp.grpc.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import opennlp.tools.doccat.DocumentCategorizer;
 import org.apache.opennlp.grpc.processor.AnalysisException;
@@ -32,7 +31,7 @@ import org.apache.opennlp.grpc.v1.DocumentClassification;
  * <p>The two differ only in the shape of the input they expect, captured by {@link InputMode}:
  * the classic maxent categorizer scores a token array, whereas the transformer categorizer
  * scores the whole document text (which it splits and re-tokenizes internally). Everything
- * downstream — category enumeration, score extraction, best-category selection — is uniform.</p>
+ * downstream, including category enumeration, score extraction, and best-category selection, is uniform.</p>
  *
  * <p>Implementations of {@link DocumentCategorizer} are not declared thread-safe in general, but
  * the two used here are stateless at inference time (the ONNX session is immutable; the maxent
@@ -54,12 +53,32 @@ final class OpenNlpDocCategorizerModel implements DocCategorizerModel, AutoClose
   private final InputMode inputMode;
   private final List<String> categories;
 
+  /**
+   * Creates a document-categorizer registration.
+   *
+   * @param id The logical model id.
+   * @param backendId The serving backend id.
+   * @param categorizer The initialized categorizer.
+   * @param inputMode Whether the model consumes tokens or raw text.
+   */
   OpenNlpDocCategorizerModel(String id, String backendId,
       DocumentCategorizer categorizer, InputMode inputMode) {
-    this.id = Objects.requireNonNull(id, "id");
-    this.backendId = Objects.requireNonNull(backendId, "backendId");
-    this.categorizer = Objects.requireNonNull(categorizer, "categorizer");
-    this.inputMode = Objects.requireNonNull(inputMode, "inputMode");
+    if (id == null) {
+      throw new IllegalArgumentException("id must not be null");
+    }
+    this.id = id;
+    if (backendId == null) {
+      throw new IllegalArgumentException("backendId must not be null");
+    }
+    this.backendId = backendId;
+    if (categorizer == null) {
+      throw new IllegalArgumentException("categorizer must not be null");
+    }
+    this.categorizer = categorizer;
+    if (inputMode == null) {
+      throw new IllegalArgumentException("inputMode must not be null");
+    }
+    this.inputMode = inputMode;
     final List<String> labels = new ArrayList<>(categorizer.getNumberOfCategories());
     for (int i = 0; i < categorizer.getNumberOfCategories(); i++) {
       labels.add(categorizer.getCategory(i));
@@ -67,21 +86,25 @@ final class OpenNlpDocCategorizerModel implements DocCategorizerModel, AutoClose
     this.categories = List.copyOf(labels);
   }
 
+  /** {@inheritDoc} */
   @Override
   public String id() {
     return id;
   }
 
+  /** {@inheritDoc} */
   @Override
   public String backendId() {
     return backendId;
   }
 
+  /** {@inheritDoc} */
   @Override
   public List<String> categories() {
     return categories;
   }
 
+  /** {@inheritDoc} */
   @Override
   public boolean requiresTokens() {
     // Classic maxent categorizers classify the token bag; transformer models re-tokenize the
@@ -89,6 +112,7 @@ final class OpenNlpDocCategorizerModel implements DocCategorizerModel, AutoClose
     return inputMode == InputMode.TOKENS;
   }
 
+  /** {@inheritDoc} */
   @Override
   public DocumentClassification classify(String documentText, String[] documentTokens) {
     final String[] input = inputMode == InputMode.RAW_TEXT
@@ -118,9 +142,17 @@ final class OpenNlpDocCategorizerModel implements DocCategorizerModel, AutoClose
 
   /** Closes the underlying categorizer when it holds native resources (e.g. an ONNX session). */
   @Override
-  public void close() throws Exception {
+  public void close() {
     if (categorizer instanceof AutoCloseable closeable) {
-      closeable.close();
+      try {
+        closeable.close();
+      } catch (Exception e) {
+        if (e instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
+        throw new IllegalStateException("Failed to close document categorizer '" + id
+            + "' on backend '" + backendId + "'", e);
+      }
     }
   }
 }

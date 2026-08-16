@@ -23,14 +23,11 @@ import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.ChunkSpan;
 
 /**
- * A shallow (syntactic) chunker keyed by a logical chunker id. One id may be served by several
- * engines at once (e.g. a classic maxent chunker and a future neural one); the orchestrator picks
- * among them by the request's engine policy.
+ * A shallow syntactic chunker keyed by a logical chunker id. One id may be served by several
+ * engines. Returned {@link ChunkSpan} values use document-relative Java UTF-16 offsets and are
+ * converted to the requested wire encoding later.
  *
- * <p>Each implementation owns its own coordinate mapping: it returns {@link ChunkSpan} records
- * whose {@link org.apache.opennlp.grpc.v1.AnnotationSpan} is in document character offsets (Java
- * UTF-16 indices, later converted to the client encoding). The orchestrator attaches each chunk's
- * provenance and surface text and merges across engines.</p>
+ * <p>Thread safety is implementation specific.</p>
  */
 public interface ChunkerModel {
 

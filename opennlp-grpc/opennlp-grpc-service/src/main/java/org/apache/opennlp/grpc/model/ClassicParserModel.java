@@ -17,7 +17,6 @@
  */
 package org.apache.opennlp.grpc.model;
 
-import java.util.Objects;
 
 import opennlp.tools.parser.Parse;
 import opennlp.tools.parser.Parser;
@@ -40,28 +39,44 @@ final class ClassicParserModel implements ParserModel {
   private final int priority;
   private final ThreadLocal<Parser> parser;
 
+  /**
+   * Creates a classic parser registration with one decoder per calling thread.
+   *
+   * @param id The logical parser id.
+   * @param model The immutable OpenNLP parser model.
+   * @param priority The selection priority among engines serving {@code id}.
+   */
   ClassicParserModel(String id, opennlp.tools.parser.ParserModel model, int priority) {
-    this.id = Objects.requireNonNull(id, "id");
-    Objects.requireNonNull(model, "model");
+    if (id == null) {
+      throw new IllegalArgumentException("id must not be null");
+    }
+    this.id = id;
+    if (model == null) {
+      throw new IllegalArgumentException("model must not be null");
+    }
     this.priority = priority;
     this.parser = ThreadLocal.withInitial(() -> ParserFactory.create(model));
   }
 
+  /** {@inheritDoc} */
   @Override
   public String id() {
     return id;
   }
 
+  /** {@inheritDoc} */
   @Override
   public String backendId() {
     return BACKEND_ID;
   }
 
+  /** {@inheritDoc} */
   @Override
   public int priority() {
     return priority;
   }
 
+  /** {@inheritDoc} */
   @Override
   public ParseTree parse(AnnotatedSentence sentence, boolean structured, boolean bracketed,
       boolean includeProbabilities) {

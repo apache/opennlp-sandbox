@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import ai.onnxruntime.OrtException;
@@ -90,8 +89,12 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
    */
   protected AbstractOnnxEmbeddingProvider(
       Map<String, String> configuration, boolean useCuda, String pathSuffix) {
-    Objects.requireNonNull(configuration, "configuration must not be null");
-    Objects.requireNonNull(pathSuffix, "pathSuffix must not be null");
+    if (configuration == null) {
+      throw new IllegalArgumentException("configuration must not be null");
+    }
+    if (pathSuffix == null) {
+      throw new IllegalArgumentException("pathSuffix must not be null");
+    }
     final int gpuDeviceId = gpuDeviceId(configuration, useCuda);
     final LoadedOnnxModels loaded = loadModels(configuration, useCuda, gpuDeviceId, pathSuffix);
     this.models = loaded.embedders();
@@ -109,29 +112,36 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
       Map<String, OnnxSentenceEmbedder> embedders, Map<String, String> hashes) {
   }
 
+  /** {@inheritDoc} */
   @Override
   public boolean isAvailable() {
     return !models.isEmpty();
   }
 
+  /** {@inheritDoc} */
   @Override
   public Set<String> registeredModelIds() {
     return models.keySet();
   }
 
+  /** {@inheritDoc} */
   @Override
   public boolean supportsModel(String modelId) {
     return modelId != null && !modelId.isBlank() && models.containsKey(modelId);
   }
 
+  /** {@inheritDoc} */
   @Override
   public int embeddingDimension(String modelId) {
     return requireModel(modelId).embeddingDimension();
   }
 
+  /** {@inheritDoc} */
   @Override
   public float[] embed(String modelId, String text) {
-    Objects.requireNonNull(text, "text must not be null");
+    if (text == null) {
+      throw new IllegalArgumentException("text must not be null");
+    }
     final OnnxSentenceEmbedder embedder = requireModel(modelId);
     try {
       return embedder.embed(text);
@@ -140,9 +150,12 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
     }
   }
 
+  /** {@inheritDoc} */
   @Override
   public List<float[]> embedBatch(String modelId, List<String> texts) {
-    Objects.requireNonNull(texts, "texts must not be null");
+    if (texts == null) {
+      throw new IllegalArgumentException("texts must not be null");
+    }
     final OnnxSentenceEmbedder embedder = requireModel(modelId);
     try {
       // One padded [batch, maxLength] inference call instead of per-text dispatch.
@@ -152,6 +165,7 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
     }
   }
 
+  /** {@inheritDoc} */
   @Override
   public String resolveModelId(String requestedModelId) {
     if (requestedModelId != null && !requestedModelId.isBlank()) {
@@ -189,6 +203,7 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
     }
   }
 
+  /** Returns the initialized embedder for a required registered model id. */
   private OnnxSentenceEmbedder requireModel(String modelId) {
     if (modelId == null || modelId.isBlank()) {
       throw AnalysisException.invalidArgument("embedding model id is required");
@@ -200,6 +215,7 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
     return embedder;
   }
 
+  /** Returns the configured CUDA device id. */
   private static int gpuDeviceId(Map<String, String> configuration, boolean useCuda) {
     // gpu_device_id only applies to the CUDA engine; the CPU engine ignores it.
     if (!useCuda) {
@@ -217,6 +233,7 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
     }
   }
 
+  /** Parses, loads, and hashes every model configured for this ONNX engine. */
   private static LoadedOnnxModels loadModels(
       Map<String, String> configuration, boolean useCuda, int gpuDeviceId, String pathSuffix) {
     final Map<String, String> onnxPaths = new HashMap<>();
@@ -292,6 +309,7 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
     return new LoadedOnnxModels(Map.copyOf(loaded), Map.copyOf(hashes));
   }
 
+  /** Parses lowercase. */
   private static boolean parseLowercase(String modelId, String value) {
     final String normalized = value.trim().toLowerCase(Locale.ROOT);
     if (normalized.equals("true") || normalized.equals("false")) {
@@ -301,6 +319,7 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
         KEY_PREFIX + modelId + KEY_LOWERCASE_SUFFIX + " must be 'true' or 'false': " + value);
   }
 
+  /** Parses pooling. */
   private static OnnxSentenceEmbedder.Pooling parsePooling(String modelId, String value) {
     return switch (value.trim().toLowerCase(Locale.ROOT)) {
       case "mean" -> OnnxSentenceEmbedder.Pooling.MEAN;
@@ -310,6 +329,7 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
     };
   }
 
+  /** Validates and initializes one ONNX model and its WordPiece vocabulary. */
   private static OnnxSentenceEmbedder loadModel(
       String modelId, String onnxPath, String vocabPath, boolean useCuda, int gpuDeviceId,
       boolean lowerCase, OnnxSentenceEmbedder.Pooling pooling) {
@@ -341,6 +361,7 @@ public abstract class AbstractOnnxEmbeddingProvider implements EmbeddingProvider
   // engine is not an error here, it just means this engine has no default of its own.
   // CompositeEmbeddingProvider validates the id against the union of all engines, so a
   // typo still fails loud at startup.
+  /** Resolves this engine's default only when the shared id belongs to this engine. */
   private static String resolveDefaultModelId(
       Map<String, String> configuration, Map<String, OnnxSentenceEmbedder> models) {
     final String configured = configuration.get(KEY_DEFAULT_ID);

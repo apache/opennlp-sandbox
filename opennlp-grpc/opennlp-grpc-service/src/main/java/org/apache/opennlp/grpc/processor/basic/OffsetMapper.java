@@ -66,14 +66,22 @@ final class OffsetMapper {
     return new OffsetMapper(map, resolved);
   }
 
+  /** Returns the target offset encoding used by this mapper. */
   OffsetEncoding encoding() {
     return encoding;
   }
 
+  /**
+   * Converts one Java UTF-16 index to the target encoding.
+   *
+   * @param javaIndex The Java UTF-16 index to convert.
+   * @return The equivalent offset in the target encoding.
+   */
   int toTarget(int javaIndex) {
     return javaIndexToTarget[javaIndex];
   }
 
+  /** Returns the encoded unit count for one code point. */
   private static int unitsFor(int codePoint, OffsetEncoding encoding, int charCount) {
     return switch (encoding) {
       case OFFSET_ENCODING_UTF16_CODE_UNIT -> charCount;
@@ -82,6 +90,7 @@ final class OffsetMapper {
     };
   }
 
+  /** Returns the UTF-8 byte length of one Unicode code point. */
   private static int utf8ByteLength(int codePoint) {
     if (codePoint < 0x80) {
       return 1;

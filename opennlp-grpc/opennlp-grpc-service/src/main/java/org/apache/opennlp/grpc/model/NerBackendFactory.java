@@ -21,17 +21,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Service provider interface for named entity recognition backends. Each factory parses its
- * own configuration namespace and produces {@link NerModel} recognizers; the
- * {@link NameFinderRegistry} discovers all factories via {@link java.util.ServiceLoader} and
- * aggregates their models, so several backends can be active at once.
+ * Service provider interface for named entity recognition backends discovered through
+ * {@link java.util.ServiceLoader}. Each factory contributes the models configured in its
+ * namespace.
  *
- * <p>This mirrors the embedding backend SPI: ship a jar with a {@code NerBackendFactory}
- * implementation registered in
- * {@code META-INF/services/org.apache.opennlp.grpc.model.NerBackendFactory} and its models
- * are loaded alongside the built-in classic ({@code opennlp-me}) and ONNX ({@code onnx}/
- * {@code cuda}) backends — no change to the server. Implementations must have a public no-arg
- * constructor.</p>
+ * <p>Thread safety is implementation specific.</p>
  */
 public interface NerBackendFactory {
 
@@ -56,6 +50,8 @@ public interface NerBackendFactory {
    *
    * @throws org.apache.opennlp.grpc.processor.AnalysisException If the configuration is
    *     invalid or a model fails to load.
+   * @throws IllegalArgumentException If {@code configuration} or {@code context} is
+   *     {@code null}.
    */
   List<NerModel> create(Map<String, String> configuration, NerBackendContext context);
 }

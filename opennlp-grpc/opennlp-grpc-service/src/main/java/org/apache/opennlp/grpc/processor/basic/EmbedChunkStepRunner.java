@@ -19,7 +19,6 @@ package org.apache.opennlp.grpc.processor.basic;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import org.apache.opennlp.grpc.chunk.Centroids;
 import org.apache.opennlp.grpc.chunk.ChunkEmbedProcessor;
@@ -61,8 +60,14 @@ final class EmbedChunkStepRunner {
    *                          {@code null}.
    */
   EmbedChunkStepRunner(EmbeddingProvider embeddingProvider, ClassicStepRunner classicSteps) {
-    this.embeddingProvider = Objects.requireNonNull(embeddingProvider, "embeddingProvider");
-    this.classicSteps = Objects.requireNonNull(classicSteps, "classicSteps");
+    if (embeddingProvider == null) {
+      throw new IllegalArgumentException("embeddingProvider must not be null");
+    }
+    this.embeddingProvider = embeddingProvider;
+    if (classicSteps == null) {
+      throw new IllegalArgumentException("classicSteps must not be null");
+    }
+    this.classicSteps = classicSteps;
   }
 
   /**

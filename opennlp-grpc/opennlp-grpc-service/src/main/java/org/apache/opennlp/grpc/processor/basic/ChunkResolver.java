@@ -109,6 +109,7 @@ final class ChunkResolver {
     return result.build();
   }
 
+  /** Runs the selected engine policy for one logical chunker and accumulates its hits. */
   private void collectHits(String chunkerId, AnnotatedSentence sentence, List<Hit> hits) {
     if (engines.isEmpty()) {
       runWithFallback(chunkerId, sentence, hits);
@@ -149,6 +150,7 @@ final class ChunkResolver {
     }
   }
 
+  /** Executes one chunker model and records provider provenance for each result. */
   private void addHits(String chunkerId, ChunkerModel model, AnnotatedSentence sentence,
       List<Hit> hits) {
     for (ChunkSpan chunk : model.chunk(sentence)) {
@@ -156,6 +158,7 @@ final class ChunkResolver {
     }
   }
 
+  /** Preserves every provider result while normalizing ordering and source metadata. */
   private List<ChunkSpan> mergeRaw(List<Hit> hits) {
     final List<Hit> sorted = sortedBySpan(hits);
     final List<ChunkSpan> chunks = new ArrayList<>(sorted.size());
@@ -170,6 +173,7 @@ final class ChunkResolver {
     return chunks;
   }
 
+  /** Collapses overlapping same-tag hits into consensus chunks with combined provenance. */
   private List<ChunkSpan> mergeConsensus(List<Hit> hits) {
     final Map<String, List<Hit>> byTag = new LinkedHashMap<>();
     for (Hit hit : hits) {
@@ -228,6 +232,7 @@ final class ChunkResolver {
     return chunk.build();
   }
 
+  /** Builds source provenance for one chunk hit. */
   private ChunkSource sourceOf(Hit hit, AnnotationSpan canonicalSpan) {
     final ChunkSource.Builder source = ChunkSource.newBuilder()
         .setChunkerId(hit.chunkerId())
@@ -238,6 +243,7 @@ final class ChunkResolver {
     return source.build();
   }
 
+  /** Returns hits in stable span and backend order. */
   private static List<Hit> sortedBySpan(List<Hit> hits) {
     final List<Hit> sorted = new ArrayList<>(hits);
     sorted.sort(Comparator
@@ -247,6 +253,7 @@ final class ChunkResolver {
     return sorted;
   }
 
+  /** Returns the document text covered by a valid span. */
   private String textOf(AnnotationSpan span) {
     final int start = span.getStart();
     final int end = span.getEnd();

@@ -35,11 +35,13 @@ public final class OnnxEmbeddingBackendFactory implements EmbeddingBackendFactor
   /** The backend id: {@value}. */
   public static final String BACKEND_ID = "onnx";
 
+  /** {@inheritDoc} */
   @Override
   public String backendId() {
     return BACKEND_ID;
   }
 
+  /** {@inheritDoc} */
   @Override
   public EmbeddingProvider create(Map<String, String> configuration) {
     return new OnnxRuntimeEmbeddingProvider(configuration);

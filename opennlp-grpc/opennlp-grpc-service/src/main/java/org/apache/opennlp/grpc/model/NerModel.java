@@ -24,16 +24,11 @@ import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.NamedEntity;
 
 /**
- * A named entity recognizer keyed by a model id rather than by entity type. One model may
- * produce several entity types (e.g. a transformer NER model emitting PER/ORG/LOC), so the
- * orchestrator runs each model once and filters the emitted entities by the requested
- * types, instead of running one model per requested type.
+ * A named entity recognizer keyed by a model id. One model may produce several entity types.
+ * Returned {@link NamedEntity} spans use document-relative Java UTF-16 offsets and are converted
+ * to the requested wire encoding later.
  *
- * <p>Each implementation owns its own coordinate mapping: it returns {@link NamedEntity}
- * records whose {@link org.apache.opennlp.grpc.v1.AnnotationSpan} is in document character
- * offsets (Java UTF-16 indices, later converted to the client encoding). This is the seam
- * that absorbs the difference between classic token-index spans and ONNX models that
- * re-tokenize internally.</p>
+ * <p>Thread safety is implementation specific.</p>
  */
 public interface NerModel {
 
@@ -90,6 +85,11 @@ public interface NerModel {
 
   /** Resets the calling thread's adaptive state; a no-op for stateless models. */
   void clearAdaptiveData();
+
+  /** Releases caller-specific inference state held for the current thread. */
+  default void clearThreadLocalState() {
+    // Stateless backends hold no caller-specific inference state.
+  }
 
   /**
    * Recognizes entities in one already-tokenized sentence, returning {@link NamedEntity}

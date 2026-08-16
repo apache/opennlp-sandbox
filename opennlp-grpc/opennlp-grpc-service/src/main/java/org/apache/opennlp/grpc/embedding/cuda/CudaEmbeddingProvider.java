@@ -40,6 +40,7 @@ public final class CudaEmbeddingProvider extends AbstractOnnxEmbeddingProvider {
     super(configuration, true, "." + CudaEmbeddingBackendFactory.BACKEND_ID + ".path");
   }
 
+  /** {@inheritDoc} */
   @Override
   public String backendId() {
     return CudaEmbeddingBackendFactory.BACKEND_ID;

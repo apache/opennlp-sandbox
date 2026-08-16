@@ -18,7 +18,6 @@
 package org.apache.opennlp.grpc.embedding;
 
 import java.util.List;
-import java.util.Objects;
 
 import org.apache.opennlp.grpc.v1.EmbeddingRoute;
 
@@ -32,7 +31,12 @@ public record EmbeddingBatchResult(List<float[]> vectors, EmbeddingRoute route) 
 
   /** Validates and defensively copies the batch result. */
   public EmbeddingBatchResult {
-    vectors = List.copyOf(Objects.requireNonNull(vectors, "vectors"));
-    Objects.requireNonNull(route, "route");
+    if (vectors == null) {
+      throw new IllegalArgumentException("vectors must not be null");
+    }
+    vectors = List.copyOf(vectors);
+    if (route == null) {
+      throw new IllegalArgumentException("route must not be null");
+    }
   }
 }

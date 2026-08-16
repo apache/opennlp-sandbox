@@ -17,7 +17,6 @@
  */
 package org.apache.opennlp.grpc.profile;
 
-import java.util.Objects;
 
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
@@ -45,7 +44,10 @@ public final class ProfileResolver {
    *     default profile. Must not be {@code null}.
    */
   public ProfileResolver(ProfileRegistry registry) {
-    this.registry = Objects.requireNonNull(registry, "registry");
+    if (registry == null) {
+      throw new IllegalArgumentException("registry must not be null");
+    }
+    this.registry = registry;
   }
 
   /**
@@ -61,7 +63,9 @@ public final class ProfileResolver {
    * @throws AnalysisException If a referenced {@code profile_id} is not in the catalog.
    */
   public AnalysisProfile resolve(AnalyzeDocumentRequest request) {
-    Objects.requireNonNull(request, "request");
+    if (request == null) {
+      throw new IllegalArgumentException("request must not be null");
+    }
 
     final boolean hasProfileId = request.hasProfileId() && !request.getProfileId().isBlank();
     final boolean hasInlineProfile = request.hasProfile();
@@ -88,6 +92,7 @@ public final class ProfileResolver {
     return registry.getDefaultProfile();
   }
 
+  /** Merges an inline profile over a registered base profile. */
   private static AnalysisProfile merge(AnalysisProfile base, AnalysisProfile override) {
     return ProfileMerger.merge(base, override);
   }

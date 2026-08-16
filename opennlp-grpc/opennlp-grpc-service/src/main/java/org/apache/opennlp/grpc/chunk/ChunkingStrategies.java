@@ -17,7 +17,6 @@
  */
 package org.apache.opennlp.grpc.chunk;
 
-import java.util.Objects;
 
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.ChunkingSpec;
@@ -79,12 +78,17 @@ public final class ChunkingStrategies {
    * @return A selector carrying the standard enum arm.
    */
   public static ChunkingStrategySelector standard(StandardChunkingStrategy strategy) {
-    Objects.requireNonNull(strategy, "strategy");
+    if (strategy == null) {
+      throw new IllegalArgumentException("strategy must not be null");
+    }
     return ChunkingStrategySelector.newBuilder().setStandard(strategy).build();
   }
 
+  /** Resolves a strategy from the compatibility and typed fields. */
   private static Selection resolve(ChunkingSpec spec) {
-    Objects.requireNonNull(spec, "spec");
+    if (spec == null) {
+      throw new IllegalArgumentException("spec must not be null");
+    }
     final String legacy = spec.getAlgorithm().trim();
     if (!legacy.isEmpty() && spec.hasStrategy()) {
       throw AnalysisException.invalidArgument(
@@ -113,6 +117,7 @@ public final class ChunkingStrategies {
     return selection;
   }
 
+  /** Resolves a typed strategy selector. */
   private static Selection resolve(ChunkingStrategySelector selector) {
     return switch (selector.getKindCase()) {
       case STANDARD -> standardSelection(selector.getStandard());
@@ -129,6 +134,7 @@ public final class ChunkingStrategies {
     };
   }
 
+  /** Builds a resolved standard strategy selection. */
   private static Selection standardSelection(StandardChunkingStrategy strategy) {
     final String id = switch (strategy) {
       case STANDARD_CHUNKING_STRATEGY_SENTENCE -> SENTENCE;
@@ -142,6 +148,7 @@ public final class ChunkingStrategies {
     return new Selection(id, standard(strategy));
   }
 
+  /** Resolves a strategy from its open id. */
   private static Selection fromId(String id) {
     return switch (id) {
       case SENTENCE -> standardSelection(StandardChunkingStrategy.STANDARD_CHUNKING_STRATEGY_SENTENCE);

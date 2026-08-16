@@ -19,6 +19,7 @@ package org.apache.opennlp.grpc.v1.server;
 
 import io.grpc.Status;
 import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.v1.GrpcStatusCode;
 
 /**
  * Maps domain failures to canonical gRPC {@link Status} codes.
@@ -37,8 +38,12 @@ public final class GrpcStatusMapper {
    *
    * @return The gRPC status corresponding to the exception's
    *     {@link AnalysisException.FailureType}.
+   * @throws IllegalArgumentException If {@code exception} is {@code null}.
    */
   public static Status toStatus(AnalysisException exception) {
+    if (exception == null) {
+      throw new IllegalArgumentException("exception must not be null");
+    }
     return switch (exception.getFailureType()) {
       case INVALID_ARGUMENT -> Status.INVALID_ARGUMENT;
       case NOT_FOUND -> Status.NOT_FOUND;
@@ -47,6 +52,40 @@ public final class GrpcStatusMapper {
       case UNAVAILABLE -> Status.UNAVAILABLE;
       case RESOURCE_EXHAUSTED -> Status.RESOURCE_EXHAUSTED;
       case INTERNAL -> Status.INTERNAL;
+    };
+  }
+
+  /**
+   * Converts a non-OK transport status to its typed document-error representation.
+   *
+   * @param status The gRPC status to convert. Must not be {@code null} or {@code OK}.
+   *
+   * @return The corresponding typed wire status.
+   * @throws IllegalArgumentException If {@code status} is {@code null} or has code {@code OK}.
+   */
+  public static GrpcStatusCode toWireCode(Status status) {
+    if (status == null) {
+      throw new IllegalArgumentException("status must not be null");
+    }
+    return switch (status.getCode()) {
+      case OK -> throw new IllegalArgumentException(
+          "gRPC status code OK cannot represent an AnalyzeStreamError");
+      case CANCELLED -> GrpcStatusCode.GRPC_STATUS_CODE_CANCELLED;
+      case UNKNOWN -> GrpcStatusCode.GRPC_STATUS_CODE_UNKNOWN;
+      case INVALID_ARGUMENT -> GrpcStatusCode.GRPC_STATUS_CODE_INVALID_ARGUMENT;
+      case DEADLINE_EXCEEDED -> GrpcStatusCode.GRPC_STATUS_CODE_DEADLINE_EXCEEDED;
+      case NOT_FOUND -> GrpcStatusCode.GRPC_STATUS_CODE_NOT_FOUND;
+      case ALREADY_EXISTS -> GrpcStatusCode.GRPC_STATUS_CODE_ALREADY_EXISTS;
+      case PERMISSION_DENIED -> GrpcStatusCode.GRPC_STATUS_CODE_PERMISSION_DENIED;
+      case RESOURCE_EXHAUSTED -> GrpcStatusCode.GRPC_STATUS_CODE_RESOURCE_EXHAUSTED;
+      case FAILED_PRECONDITION -> GrpcStatusCode.GRPC_STATUS_CODE_FAILED_PRECONDITION;
+      case ABORTED -> GrpcStatusCode.GRPC_STATUS_CODE_ABORTED;
+      case OUT_OF_RANGE -> GrpcStatusCode.GRPC_STATUS_CODE_OUT_OF_RANGE;
+      case UNIMPLEMENTED -> GrpcStatusCode.GRPC_STATUS_CODE_UNIMPLEMENTED;
+      case INTERNAL -> GrpcStatusCode.GRPC_STATUS_CODE_INTERNAL;
+      case UNAVAILABLE -> GrpcStatusCode.GRPC_STATUS_CODE_UNAVAILABLE;
+      case DATA_LOSS -> GrpcStatusCode.GRPC_STATUS_CODE_DATA_LOSS;
+      case UNAUTHENTICATED -> GrpcStatusCode.GRPC_STATUS_CODE_UNAUTHENTICATED;
     };
   }
 }

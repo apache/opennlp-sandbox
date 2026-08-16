@@ -55,6 +55,7 @@ public final class ClassicNerBackendFactory implements NerBackendFactory {
 
   private static final Logger logger = LoggerFactory.getLogger(ClassicNerBackendFactory.class);
 
+  /** {@inheritDoc} */
   @Override
   public String factoryId() {
     return FACTORY_ID;
@@ -63,6 +64,7 @@ public final class ClassicNerBackendFactory implements NerBackendFactory {
   /** Suffix completing a per-type priority key: {@code model.name_finder.<type>.priority}. */
   public static final String KEY_PRIORITY_SUFFIX = ".priority";
 
+  /** {@inheritDoc} */
   @Override
   public List<NerModel> create(Map<String, String> configuration, NerBackendContext context) {
     final Map<String, ClassicEntry> entries = parseConfiguredPaths(configuration);
@@ -88,6 +90,7 @@ public final class ClassicNerBackendFactory implements NerBackendFactory {
   private record LoadedClassicNer(NameFinderME nameFinder, String artifactHash) {
   }
 
+  /** Parses configured paths. */
   private static Map<String, ClassicEntry> parseConfiguredPaths(Map<String, String> configuration) {
     final Map<String, ClassicEntry> entries = new LinkedHashMap<>();
     for (Map.Entry<String, String> entry : configuration.entrySet()) {
@@ -120,6 +123,7 @@ public final class ClassicNerBackendFactory implements NerBackendFactory {
     return entries;
   }
 
+  /** Loads name finder. */
   private static LoadedClassicNer loadNameFinder(String entityType, String path) {
     try {
       final byte[] bytes = Files.readAllBytes(Path.of(path));

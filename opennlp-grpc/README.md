@@ -729,8 +729,9 @@ chunk configurations for the stream. Later frames carry a caller sequence plus o
 so clients correlate them by sequence rather than arrival position.
 
 A document-local validation or processing failure returns an `AnalyzeStreamError` for
-that sequence and the stream continues. Missing, late, or repeated configuration is a
-protocol failure and closes the stream with `INVALID_ARGUMENT`. Inbound demand tracks
+that sequence and the stream continues. Its `code` is the typed `GrpcStatusCode` enum;
+the nonzero values retain the canonical gRPC status numbers. Missing, late, or repeated
+configuration is a protocol failure and closes the stream with `INVALID_ARGUMENT`. Inbound demand tracks
 the configured worker count, outbound writes wait for transport readiness, and a client
 that stops draining responses is closed with `RESOURCE_EXHAUSTED`. The server sends
 response headers as soon as the call is accepted, which lets clients open the stream
@@ -738,7 +739,9 @@ before submitting its configuration. Client cancellation interrupts active analy
 a best-effort basis and removes queued documents so abandoned streams release their
 worker capacity. Unary and streaming calls share the generic
 `DocumentAnalyzer` interface; a provider may override `openSession` to validate or
-compile the fixed plan once.
+compile the fixed plan once. `DocumentAnalyzer` is `AutoCloseable`. A
+`BasicDocumentAnalyzer` created from a configuration map owns and closes its model cache;
+constructors that accept a `ModelBundleCache` leave that cache under caller ownership.
 
 The server also registers the standard `grpc.health.v1.Health` service. Check
 `org.apache.opennlp.grpc.v1.OpenNlpAnalysisService` or the empty service name for

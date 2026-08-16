@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -110,7 +109,9 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
    *                           than failing, so it can coexist with other engines in the composite.
    */
   public TeiEmbeddingProvider(Map<String, String> configuration) {
-    Objects.requireNonNull(configuration, "configuration must not be null");
+    if (configuration == null) {
+      throw new IllegalArgumentException("configuration must not be null");
+    }
     this.deadlineMs = parseDeadline(configuration);
     final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
     try {
@@ -127,34 +128,42 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
     this.defaultModelId = resolveDefaultModelId(configuration, models);
   }
 
+  /** {@inheritDoc} */
   @Override
   public String backendId() {
     return TeiEmbeddingBackendFactory.BACKEND_ID;
   }
 
+  /** {@inheritDoc} */
   @Override
   public boolean isAvailable() {
     return !models.isEmpty();
   }
 
+  /** {@inheritDoc} */
   @Override
   public Set<String> registeredModelIds() {
     return models.keySet();
   }
 
+  /** {@inheritDoc} */
   @Override
   public boolean supportsModel(String modelId) {
     return modelId != null && !modelId.isBlank() && models.containsKey(modelId);
   }
 
+  /** {@inheritDoc} */
   @Override
   public int embeddingDimension(String modelId) {
     return requireModel(modelId).dimension;
   }
 
+  /** {@inheritDoc} */
   @Override
   public float[] embed(String modelId, String text) {
-    Objects.requireNonNull(text, "text must not be null");
+    if (text == null) {
+      throw new IllegalArgumentException("text must not be null");
+    }
     final TeiEndpoint endpoint = requireModel(modelId);
     try {
       final EmbedResponse response = endpoint.blockingStub
@@ -166,9 +175,12 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
     }
   }
 
+  /** {@inheritDoc} */
   @Override
   public List<float[]> embedBatch(String modelId, List<String> texts) {
-    Objects.requireNonNull(texts, "texts must not be null");
+    if (texts == null) {
+      throw new IllegalArgumentException("texts must not be null");
+    }
     final TeiEndpoint endpoint = requireModel(modelId);
     if (texts.isEmpty()) {
       return List.of();
@@ -182,17 +194,20 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
     final StreamObserver<EmbedRequest> requests = EmbedGrpc.newStub(endpoint.channel)
         .withDeadlineAfter(deadlineMs, TimeUnit.MILLISECONDS)
         .embedStream(new StreamObserver<>() {
+          /** {@inheritDoc} */
           @Override
           public void onNext(EmbedResponse response) {
             vectors.add(toVector(response));
           }
 
+          /** {@inheritDoc} */
           @Override
           public void onError(Throwable t) {
             failure.set(t);
             completed.countDown();
           }
 
+          /** {@inheritDoc} */
           @Override
           public void onCompleted() {
             completed.countDown();
@@ -200,7 +215,9 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
         });
     try {
       for (String text : texts) {
-        Objects.requireNonNull(text, "texts must not contain null elements");
+        if (text == null) {
+          throw new IllegalArgumentException("texts must not contain null elements");
+        }
         requests.onNext(embedRequest(endpoint, text));
       }
       requests.onCompleted();
@@ -232,6 +249,7 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
     return vectors;
   }
 
+  /** {@inheritDoc} */
   @Override
   public String resolveModelId(String requestedModelId) {
     if (requestedModelId != null && !requestedModelId.isBlank()) {
@@ -257,6 +275,7 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
     }
   }
 
+  /** Returns the endpoint for a required registered model id. */
   private TeiEndpoint requireModel(String modelId) {
     if (modelId == null || modelId.isBlank()) {
       throw AnalysisException.invalidArgument("embedding model id is required");
@@ -268,6 +287,7 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
     return endpoint;
   }
 
+  /** Builds a TEI request for one text. */
   private static EmbedRequest embedRequest(TeiEndpoint endpoint, String text) {
     return EmbedRequest.newBuilder()
         .setInputs(text)
@@ -276,6 +296,7 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
         .build();
   }
 
+  /** Copies a TEI response vector to a primitive array. */
   private static float[] toVector(EmbedResponse response) {
     final float[] vector = new float[response.getEmbeddingsCount()];
     for (int i = 0; i < vector.length; i++) {
@@ -284,6 +305,7 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
     return vector;
   }
 
+  /** Maps a remote TEI transport failure to the service's retryable analysis error model. */
   private static AnalysisException remoteFailure(
       String operation, String modelId, String target, Throwable cause) {
     // A remote backend that is unreachable, times out, or returns a transport error is an
@@ -294,6 +316,7 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
         cause);
   }
 
+  /** Parses, connects, and validates every configured TEI model endpoint. */
   private static Map<String, TeiEndpoint> connectAll(
       Map<String, String> configuration, long deadlineMs, ExecutorService channelExecutor) {
     final Map<String, String> targets = new HashMap<>();
@@ -351,6 +374,7 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
     return Map.copyOf(connected);
   }
 
+  /** Connects one TEI endpoint and probes its model type and vector shape. */
   private static TeiEndpoint connect(
       String modelId, String target, boolean useTls, boolean truncate, boolean normalize,
       long deadlineMs, ExecutorService channelExecutor) {
@@ -410,6 +434,7 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
     }
   }
 
+  /** Shuts down one model channel, forcing closure after the bounded grace period. */
   private static void shutdownChannel(String modelId, ManagedChannel channel) {
     channel.shutdown();
     try {
@@ -423,6 +448,7 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
     }
   }
 
+  /** Returns the configured positive request deadline, or the server default. */
   private static long parseDeadline(Map<String, String> configuration) {
     final String configured = configuration.get(KEY_DEADLINE);
     if (configured == null || configured.isBlank()) {
@@ -439,6 +465,7 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
     }
   }
 
+  /** Parses a strict, case-insensitive boolean configuration value. */
   private static boolean parseBoolean(String key, String value) {
     final String normalized = value.trim().toLowerCase(Locale.ROOT);
     if (normalized.equals("true") || normalized.equals("false")) {
@@ -451,6 +478,7 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
   // engine is not an error here, it just means this engine has no default of its own.
   // CompositeEmbeddingProvider validates the id against the union of all engines, so a
   // typo still fails loud at startup.
+  /** Resolves this backend's default only when the shared id belongs to this backend. */
   private static String resolveDefaultModelId(
       Map<String, String> configuration, Map<String, TeiEndpoint> models) {
     final String configured = configuration.get(KEY_DEFAULT_ID);

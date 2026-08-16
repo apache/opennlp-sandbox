@@ -21,7 +21,6 @@ import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -66,7 +65,10 @@ final class BertTokenizer {
    */
   BertTokenizer(Set<String> vocabulary, boolean lowerCase,
       String classificationToken, String separatorToken, String unknownToken) {
-    this.vocabulary = Objects.requireNonNull(vocabulary, "vocabulary must not be null");
+    if (vocabulary == null) {
+      throw new IllegalArgumentException("vocabulary must not be null");
+    }
+    this.vocabulary = vocabulary;
     this.lowerCase = lowerCase;
     this.classificationToken = classificationToken;
     this.separatorToken = separatorToken;
@@ -133,7 +135,9 @@ final class BertTokenizer {
    * Applies the BERT basic tokenization (normalization) stage.
    */
   private String normalize(String text) {
-    Objects.requireNonNull(text, "text must not be null");
+    if (text == null) {
+      throw new IllegalArgumentException("text must not be null");
+    }
     String normalized = cleanText(text);
     normalized = isolateCjkCharacters(normalized);
     if (lowerCase) {

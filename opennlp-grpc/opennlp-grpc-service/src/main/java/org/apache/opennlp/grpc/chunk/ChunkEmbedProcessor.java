@@ -344,6 +344,7 @@ public final class ChunkEmbedProcessor {
     return group.build();
   }
 
+  /** Normalizes category. */
   private static String normalizeCategory(String value) {
     return value.trim().toLowerCase(Locale.ROOT);
   }
@@ -444,6 +445,7 @@ public final class ChunkEmbedProcessor {
     }
   }
 
+  /** Validates semantic chunking. */
   private static void validateSemanticChunking(ChunkEmbedConfigEntry entry) {
     final var semantic = entry.getChunking().getSemanticConfig();
     if (semantic.hasSemanticEmbeddingModelId() && semantic.hasSemanticEmbeddingSelector()) {
@@ -467,6 +469,7 @@ public final class ChunkEmbedProcessor {
         "semantic chunking requires a semantic embedding selector or exactly one chunk embedding selector");
   }
 
+  /** Resolves typed selectors and compatibility model ids. */
   private static List<EmbeddingSelector> embeddingSelectors(ChunkEmbedConfigEntry entry) {
     if (entry.getEmbeddingModelIdsCount() > 0 && entry.getEmbeddingSelectorsCount() > 0) {
       throw AnalysisException.invalidArgument(
@@ -480,6 +483,7 @@ public final class ChunkEmbedProcessor {
         .toList();
   }
 
+  /** Resolves typed selectors and compatibility model ids. */
   private static List<EmbeddingSelector> embeddingSelectors(CategoryChunkConfigEntry entry) {
     if (entry.getEmbeddingModelIdsCount() > 0 && entry.getEmbeddingSelectorsCount() > 0) {
       throw AnalysisException.invalidArgument(
@@ -493,6 +497,7 @@ public final class ChunkEmbedProcessor {
         .toList();
   }
 
+  /** Validates selector. */
   private static void validateSelector(
       EmbeddingSelector selector, EmbeddingProvider embeddingProvider) {
     final String modelId = selector.getModelId().trim();
@@ -510,14 +515,17 @@ public final class ChunkEmbedProcessor {
     }
   }
 
+  /** Returns the selected backend id. */
   private static String selectedBackend(EmbeddingSelector selector) {
     return EmbeddingBackendSelections.selectedId(selector);
   }
 
+  /** Returns whether semantic chunking is selected. */
   private static boolean isSemantic(ChunkingSpec chunking) {
     return ChunkingStrategies.isSemantic(chunking);
   }
 
+  /** Collects token starts. */
   private static void collectTokenStarts(OpenNlpDocument document,
       SegmentationChunker.ChunkSegment segment, Set<Integer> tokenStarts) {
     for (int sentenceIndex : segment.sentenceIndices()) {
@@ -531,6 +539,7 @@ public final class ChunkEmbedProcessor {
     }
   }
 
+  /** Converts offsets to an annotation span. */
   private static AnnotationSpan toSpan(int start, int end) {
     return AnnotationSpan.newBuilder()
         .setStart(start)
@@ -539,6 +548,7 @@ public final class ChunkEmbedProcessor {
         .build();
   }
 
+  /** Copies a primitive vector into its protobuf representation. */
   private static List<Float> toFloatList(float[] vector) {
     final List<Float> values = new ArrayList<>(vector.length);
     for (float value : vector) {
@@ -549,31 +559,37 @@ public final class ChunkEmbedProcessor {
 
   /** Embedding provider that rejects embed calls; used for chunk-only groups. */
   private static final class NoOpEmbeddingProvider implements EmbeddingProvider {
+    /** {@inheritDoc} */
     @Override
     public String backendId() {
       return "none";
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean isAvailable() {
       return false;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Set<String> registeredModelIds() {
       return Set.of();
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean supportsModel(String modelId) {
       return false;
     }
 
+    /** {@inheritDoc} */
     @Override
     public int embeddingDimension(String modelId) {
       return 0;
     }
 
+    /** {@inheritDoc} */
     @Override
     public float[] embed(String modelId, String text) {
       throw AnalysisException.failedPrecondition("embeddings were not requested for this group");

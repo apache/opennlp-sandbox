@@ -59,11 +59,13 @@ public final class OnnxNerBackendFactory implements NerBackendFactory {
 
   private static final Logger logger = LoggerFactory.getLogger(OnnxNerBackendFactory.class);
 
+  /** {@inheritDoc} */
   @Override
   public String factoryId() {
     return FACTORY_ID;
   }
 
+  /** {@inheritDoc} */
   @Override
   public List<NerModel> create(Map<String, String> configuration, NerBackendContext context) {
     final Map<String, DlConfig> configs = parseDlConfigs(configuration);
@@ -83,6 +85,7 @@ public final class OnnxNerBackendFactory implements NerBackendFactory {
       String backend, int gpuDeviceId, int priority) {
   }
 
+  /** Parses ONNX name-finder configuration entries. */
   private static Map<String, DlConfig> parseDlConfigs(Map<String, String> configuration) {
     final Map<String, Map<String, String>> byId = new LinkedHashMap<>();
     for (Map.Entry<String, String> entry : configuration.entrySet()) {
@@ -106,6 +109,7 @@ public final class OnnxNerBackendFactory implements NerBackendFactory {
     return configs;
   }
 
+  /** Validates and converts one ONNX configuration entry. */
   private static DlConfig toDlConfig(String id, Map<String, String> attrs) {
     final String modelPath = requiredAttr(id, attrs, "path");
     final String vocabPath = requiredAttr(id, attrs, "vocab");
@@ -131,6 +135,7 @@ public final class OnnxNerBackendFactory implements NerBackendFactory {
     return new DlConfig(id, modelPath, vocabPath, labelsPath, backend, gpuDeviceId, priority);
   }
 
+  /** Returns a required ONNX configuration attribute. */
   private static String requiredAttr(String id, Map<String, String> attrs, String attr) {
     final String value = attrs.get(attr);
     if (value == null || value.isBlank()) {
@@ -140,6 +145,7 @@ public final class OnnxNerBackendFactory implements NerBackendFactory {
     return value.trim();
   }
 
+  /** Loads one ONNX name-finder model. */
   private static NerModel loadDlModel(DlConfig config, SentenceDetector sentenceDetector) {
     final File model = requireReadable(config.id(), "path", config.modelPath());
     final File vocab = requireReadable(config.id(), "vocab", config.vocabPath());
@@ -203,6 +209,7 @@ public final class OnnxNerBackendFactory implements NerBackendFactory {
     return ids2Labels;
   }
 
+  /** Returns a required readable model artifact. */
   private static File requireReadable(String id, String attr, String path) {
     final File file = new File(path);
     if (!file.isFile() || !file.canRead()) {

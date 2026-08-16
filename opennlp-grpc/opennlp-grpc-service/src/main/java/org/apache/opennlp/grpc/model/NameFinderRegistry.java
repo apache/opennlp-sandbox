@@ -136,7 +136,7 @@ public final class NameFinderRegistry implements AutoCloseable {
   public static NameFinderRegistry create(
       Map<String, String> configuration, SentenceDetector sentenceDetector) {
     if (configuration == null) {
-      throw new NullPointerException("configuration");
+      throw new IllegalArgumentException("configuration must not be null");
     }
     final NerBackendContext context = new NerBackendContext(sentenceDetector);
     final RankedBackends.Builder<NerModel> builder = RankedBackends.builder();
@@ -284,6 +284,13 @@ public final class NameFinderRegistry implements AutoCloseable {
       if (model.isStateful()) {
         model.clearAdaptiveData();
       }
+    }
+  }
+
+  /** Releases caller-specific inference state for every recognizer on the current thread. */
+  public void clearThreadLocalState() {
+    for (NerModel model : allModels()) {
+      model.clearThreadLocalState();
     }
   }
 

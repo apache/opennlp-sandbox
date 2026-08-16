@@ -97,6 +97,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     System.exit(exitCode);
   }
 
+  /** {@inheritDoc} */
   @Override
   public Integer call() {
     try {
@@ -224,6 +225,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     return server != null ? server.getPort() : port;
   }
 
+  /** Loads the optional properties file into a stable string configuration map. */
   private Map<String, String> loadConfiguration() throws IOException {
     final Map<String, String> configuration = new HashMap<>();
 
@@ -246,6 +248,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     return configuration;
   }
 
+  /** Ensures the inbound message limit includes text and envelope headroom. */
   private static int maxInboundMessageSize(int configuredSize, int maxTextBytes) {
     if (configuredSize < 1) {
       throw new IllegalArgumentException("server.max_inbound_message_size must be positive");
@@ -261,6 +264,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     return Math.max(configuredSize, (int) requiredSize);
   }
 
+  /** Registers graceful server and model shutdown. */
   private void registerShutdownHook() {
     Runtime.getRuntime()
         .addShutdownHook(
@@ -315,6 +319,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     }
   }
 
+  /** Stops an executor gracefully or immediately. */
   private static void stopExecutor(ExecutorService executor, boolean forced) {
     if (executor == null) {
       return;

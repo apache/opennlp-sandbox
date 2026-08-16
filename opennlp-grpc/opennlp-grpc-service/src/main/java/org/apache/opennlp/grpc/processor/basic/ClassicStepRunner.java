@@ -20,7 +20,6 @@ package org.apache.opennlp.grpc.processor.basic;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 
@@ -106,8 +105,16 @@ final class ClassicStepRunner {
 
   private final ModelBundleCache modelBundleCache;
 
+  /**
+   * Creates a runner over one loaded model bundle.
+   *
+   * @param modelBundleCache The models and registries used by classic pipeline steps.
+   */
   ClassicStepRunner(ModelBundleCache modelBundleCache) {
-    this.modelBundleCache = Objects.requireNonNull(modelBundleCache, "modelBundleCache");
+    if (modelBundleCache == null) {
+      throw new IllegalArgumentException("modelBundleCache must not be null");
+    }
+    this.modelBundleCache = modelBundleCache;
   }
 
   /**
@@ -127,6 +134,7 @@ final class ClassicStepRunner {
             + language.getConfidence() + ")"));
   }
 
+  /** Detects sentences and appends document-relative spans to the document shape. */
   void detectSentences(
       String rawText,
       OpenNlpDocument.Builder document,
@@ -169,6 +177,7 @@ final class ClassicStepRunner {
         "Detected " + spans.length + " sentence(s) (" + engineId + ")"));
   }
 
+  /** Tokenizes every sentence and preserves document-relative token offsets. */
   void tokenize(
       String rawText,
       OpenNlpDocument.Builder document,
@@ -722,6 +731,7 @@ final class ClassicStepRunner {
     }
   }
 
+  /** Adds term layer. */
   private static void putTermLayer(Token.Builder token, String qualifier, String value) {
     if (!value.isEmpty()) {
       token.putTermLayers(qualifier, value);
@@ -986,6 +996,7 @@ final class ClassicStepRunner {
         "Found " + chunkCount + " syntactic chunk(s) across " + chunkerIds.size() + " chunker(s)"));
   }
 
+  /** Returns sentence token text in order. */
   private static String[] tokenTexts(AnnotatedSentence sentence) {
     final String[] tokens = new String[sentence.getTokensCount()];
     for (int t = 0; t < tokens.length; t++) {

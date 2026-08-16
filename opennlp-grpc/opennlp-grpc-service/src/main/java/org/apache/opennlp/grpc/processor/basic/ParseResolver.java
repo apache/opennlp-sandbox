@@ -88,6 +88,7 @@ final class ParseResolver {
     return trees;
   }
 
+  /** Collects trees. */
   private void collectTrees(String parserId, AnnotatedSentence sentence, List<ParseTree> trees) {
     if (engines.isEmpty()) {
       runWithFallback(parserId, sentence, trees);
@@ -126,6 +127,7 @@ final class ParseResolver {
     }
   }
 
+  /** Adds parser provenance and document offsets to one tree. */
   private ParseTree stamp(String parserId, ParserModel model, AnnotatedSentence sentence) {
     return model.parse(sentence, structured, bracketed, includeProbabilities).toBuilder()
         .setParserId(parserId)

@@ -19,7 +19,6 @@ package org.apache.opennlp.grpc.embedding;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import org.apache.opennlp.grpc.backend.RankedBackends;
@@ -47,7 +46,8 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
   /** Backend id of the aggregate itself; the per-model engine is reported by {@link #backendId(String)}. */
   static final String BACKEND_ID = "composite";
 
-  private static final String KEY_DEFAULT_ID = "model.embedder.default_id";
+  private static final String KEY_PREFIX = "model.embedder.";
+  private static final String KEY_DEFAULT_ID = KEY_PREFIX + "default_id";
 
   private static final Logger logger = LoggerFactory.getLogger(CompositeEmbeddingProvider.class);
 
@@ -69,8 +69,12 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
    */
   public CompositeEmbeddingProvider(
       List<EmbeddingProvider> providers, Map<String, String> configuration) {
-    Objects.requireNonNull(providers, "providers");
-    Objects.requireNonNull(configuration, "configuration");
+    if (providers == null) {
+      throw new IllegalArgumentException("providers must not be null");
+    }
+    if (configuration == null) {
+      throw new IllegalArgumentException("configuration must not be null");
+    }
     this.providers = List.copyOf(providers);
     this.configuration = Map.copyOf(configuration);
     try {
@@ -96,15 +100,16 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
     }
   }
 
+  /** Returns the configured route priority. */
   private static int priority(Map<String, String> configuration, String modelId, String engine) {
-    final String raw = configuration.get("model.embedder." + modelId + "." + engine + ".priority");
+    final String raw = configuration.get(KEY_PREFIX + modelId + "." + engine + ".priority");
     if (raw == null || raw.isBlank()) {
       return 0;
     }
     try {
       return Integer.parseInt(raw.trim());
     } catch (NumberFormatException e) {
-      throw AnalysisException.invalidArgument("model.embedder." + modelId + "." + engine
+      throw AnalysisException.invalidArgument(KEY_PREFIX + modelId + "." + engine
           + ".priority must be an integer, was '" + raw + "'");
     }
   }
@@ -135,7 +140,7 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
       }
       String expected = null;
       for (Registration<EmbeddingProvider> registration : registrations) {
-        final String key = "model.embedder." + logicalId + "." + registration.engineId()
+        final String key = KEY_PREFIX + logicalId + "." + registration.engineId()
             + ".vector_space_id";
         final String configured = configuration.get(key);
         if (configured == null || configured.isBlank()) {
@@ -154,56 +159,70 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
     }
   }
 
+  /** {@inheritDoc} */
   @Override
   public String backendId() {
     return BACKEND_ID;
   }
 
+  /** {@inheritDoc} */
   @Override
   public String backendId(String modelId) {
     return backends.primary(modelId).engineId();
   }
 
+  /** {@inheritDoc} */
   @Override
   public boolean isAvailable() {
     return !backends.isEmpty();
   }
 
+  /** {@inheritDoc} */
   @Override
   public Set<String> registeredModelIds() {
     return backends.ids();
   }
 
+  /** {@inheritDoc} */
   @Override
   public boolean supportsModel(String modelId) {
     return backends.supports(modelId);
   }
 
+  /** {@inheritDoc} */
   @Override
   public boolean supportsModel(String modelId, String backendId) {
     return backends.supports(modelId, backendId);
   }
 
+  /** {@inheritDoc} */
   @Override
   public int embeddingDimension(String modelId) {
     return backends.primary(modelId).value().embeddingDimension(modelId);
   }
 
+  /** {@inheritDoc} */
   @Override
   public float[] embed(String modelId, String text) {
     return backends.invoke(modelId, registration -> registration.value().embed(modelId, text));
   }
 
+  /** {@inheritDoc} */
   @Override
   public List<float[]> embedBatch(String modelId, List<String> texts) {
-    Objects.requireNonNull(texts, "texts must not be null");
+    if (texts == null) {
+      throw new IllegalArgumentException("texts must not be null");
+    }
     return embedBatchResolved(modelId, null, texts).vectors();
   }
 
+  /** {@inheritDoc} */
   @Override
   public EmbeddingBatchResult embedBatchResolved(
       String modelId, String backendId, List<String> texts) {
-    Objects.requireNonNull(texts, "texts must not be null");
+    if (texts == null) {
+      throw new IllegalArgumentException("texts must not be null");
+    }
     final Invocation<EmbeddingProvider, List<float[]>> invocation;
     if (backendId == null || backendId.isBlank()) {
       invocation = backends.invokeResolved(modelId,
@@ -216,6 +235,7 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
     return new EmbeddingBatchResult(invocation.result(), route(invocation.registration()));
   }
 
+  /** {@inheritDoc} */
   @Override
   public List<EmbeddingRoute> routesForModel(String modelId) {
     if (!supportsModel(modelId)) {
@@ -239,7 +259,7 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
   }
 
   /**
-   * Embeds on a specific engine (no fallback) — the strongly-typed engine pin: the model id and
+   * Embeds on a specific engine with no fallback. The model id and
    * engine are separate arguments, never a parsed composite string.
    *
    * @param modelId The logical model id.
@@ -253,6 +273,7 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
     return embedBatchResolved(modelId, engine, texts).vectors();
   }
 
+  /** Builds the advertised route for a backend registration. */
   private EmbeddingRoute route(Registration<EmbeddingProvider> registration) {
     final String modelId = registration.logicalId();
     final String engineId = registration.engineId();
@@ -262,7 +283,7 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
         .setPriority(registration.priority())
         .setPrimary(backends.primary(modelId).engineId().equals(engineId));
     final String vectorSpaceId = configuration.get(
-        "model.embedder." + modelId + "." + engineId + ".vector_space_id");
+        KEY_PREFIX + modelId + "." + engineId + ".vector_space_id");
     if (vectorSpaceId != null && !vectorSpaceId.isBlank()) {
       route.setVectorSpaceId(vectorSpaceId.trim());
     }
@@ -273,6 +294,7 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
     return route.build();
   }
 
+  /** {@inheritDoc} */
   @Override
   public String resolveModelId(String requestedModelId) {
     if (requestedModelId != null && !requestedModelId.isBlank()) {
@@ -291,6 +313,7 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
     closeProviders(providers);
   }
 
+  /** Closes every provider while preserving later cleanup. */
   private static void closeProviders(List<EmbeddingProvider> providers) {
     for (EmbeddingProvider provider : providers) {
       if (provider instanceof AutoCloseable closeable) {

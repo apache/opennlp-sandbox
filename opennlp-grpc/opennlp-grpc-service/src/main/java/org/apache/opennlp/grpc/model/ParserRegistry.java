@@ -97,7 +97,7 @@ public final class ParserRegistry {
    */
   public static ParserRegistry create(Map<String, String> configuration) {
     if (configuration == null) {
-      throw new NullPointerException("configuration");
+      throw new IllegalArgumentException("configuration must not be null");
     }
     final RankedBackends.Builder<ParserModel> builder = RankedBackends.builder();
     final Set<String> knownEngines = new LinkedHashSet<>();

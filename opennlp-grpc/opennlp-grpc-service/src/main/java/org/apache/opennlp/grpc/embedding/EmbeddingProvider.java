@@ -19,24 +19,15 @@ package org.apache.opennlp.grpc.embedding;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.EmbeddingRoute;
 
 /**
- * Embedding backend for the {@code PIPELINE_STEP_EMBED} pipeline step.
+ * Supplies registered embedding models and reports the route used for each result.
  *
- * <p>Implementations own their model lifecycle: models are registered at construction
- * time and identified by a stable model id. Implementations that hold native resources
- * or remote connections should also implement {@link AutoCloseable}; the server closes
- * such providers on shutdown.</p>
- *
- * <p>Inference may run in-process (ONNX Runtime, CUDA, DJL, OpenVINO, ...) or be
- * delegated to a remote service; the server is agnostic. Batch-capable backends should
- * override {@link #embedBatch(String, List)}, which the server prefers whenever it has
- * more than one text to embed.</p>
+ * <p>Thread safety is implementation specific.</p>
  */
 public interface EmbeddingProvider {
 
@@ -114,6 +105,8 @@ public interface EmbeddingProvider {
    * @param text    The text to embed. Must not be {@code null}.
    *
    * @return The embedding vector of length {@link #embeddingDimension(String)}.
+   *
+   * @throws IllegalArgumentException If {@code text} is {@code null}.
    */
   float[] embed(String modelId, String text);
 
@@ -127,9 +120,14 @@ public interface EmbeddingProvider {
    *                {@code null} elements.
    *
    * @return One embedding vector per input text, in input order.
+   *
+   * @throws IllegalArgumentException If {@code texts} is {@code null} or contains a
+   *         {@code null} element.
    */
   default List<float[]> embedBatch(String modelId, List<String> texts) {
-    Objects.requireNonNull(texts, "texts must not be null");
+    if (texts == null) {
+      throw new IllegalArgumentException("texts must not be null");
+    }
     final List<float[]> vectors = new ArrayList<>(texts.size());
     for (String text : texts) {
       vectors.add(embed(modelId, text));

@@ -43,11 +43,13 @@ public final class OpenVinoEmbeddingBackendFactory implements EmbeddingBackendFa
   public OpenVinoEmbeddingBackendFactory() {
   }
 
+  /** {@inheritDoc} */
   @Override
   public String backendId() {
     return BACKEND_ID;
   }
 
+  /** {@inheritDoc} */
   @Override
   public EmbeddingProvider create(Map<String, String> configuration) {
     return new OpenVinoEmbeddingProvider(configuration);

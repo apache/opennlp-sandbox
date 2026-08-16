@@ -80,6 +80,7 @@ final class AlignmentRuns {
     return runs;
   }
 
+  /** Appends one accumulated identity run and resets its unit count. */
   private static int flushEqual(List<AlignmentRun> runs, int equalUnits) {
     if (equalUnits > 0) {
       runs.add(AlignmentRun.newBuilder()
@@ -91,6 +92,7 @@ final class AlignmentRuns {
     return 0;
   }
 
+  /** Builds a replacement alignment run when either side is non-empty. */
   private static AlignmentRun replace(int originalUnits, int normalizedUnits) {
     return AlignmentRun.newBuilder()
         .setOriginalUnits(originalUnits)

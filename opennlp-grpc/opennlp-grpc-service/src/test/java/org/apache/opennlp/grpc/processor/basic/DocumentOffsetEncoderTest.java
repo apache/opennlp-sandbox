@@ -34,8 +34,8 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Tests {@link DocumentOffsetEncoder}: every span the document carries — sentence, token, named
- * entity, and parse-tree node — must be converted from internal UTF-16 indices into the requested
+ * Tests {@link DocumentOffsetEncoder}: every span the document carries, including sentence, token,
+ * named entity, and parse-tree node spans, must be converted from internal UTF-16 indices into the requested
  * {@link OffsetEncoding}, consistently. Uses non-ASCII text so UTF-16, UTF-8 byte, and codepoint
  * coordinates genuinely differ, which is where unencoded or mis-encoded spans surface.
  */

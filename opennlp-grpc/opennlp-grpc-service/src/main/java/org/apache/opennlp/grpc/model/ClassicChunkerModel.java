@@ -19,7 +19,6 @@ package org.apache.opennlp.grpc.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import opennlp.tools.chunker.ChunkerME;
 import opennlp.tools.util.Span;
@@ -42,27 +41,44 @@ final class ClassicChunkerModel implements ChunkerModel {
   private final ChunkerME chunker;
   private final int priority;
 
+  /**
+   * Creates a classic chunker registration.
+   *
+   * @param id The logical chunker id.
+   * @param chunker The initialized OpenNLP chunker.
+   * @param priority The selection priority among engines serving {@code id}.
+   */
   ClassicChunkerModel(String id, ChunkerME chunker, int priority) {
-    this.id = Objects.requireNonNull(id, "id");
-    this.chunker = Objects.requireNonNull(chunker, "chunker");
+    if (id == null) {
+      throw new IllegalArgumentException("id must not be null");
+    }
+    this.id = id;
+    if (chunker == null) {
+      throw new IllegalArgumentException("chunker must not be null");
+    }
+    this.chunker = chunker;
     this.priority = priority;
   }
 
+  /** {@inheritDoc} */
   @Override
   public String id() {
     return id;
   }
 
+  /** {@inheritDoc} */
   @Override
   public String backendId() {
     return BACKEND_ID;
   }
 
+  /** {@inheritDoc} */
   @Override
   public int priority() {
     return priority;
   }
 
+  /** {@inheritDoc} */
   @Override
   public List<ChunkSpan> chunk(AnnotatedSentence sentence) {
     if (sentence.getTokensCount() == 0) {

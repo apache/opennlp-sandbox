@@ -27,7 +27,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import opennlp.embeddings.StaticEmbeddingModel;
@@ -104,7 +103,9 @@ public final class StaticTableEmbeddingProvider implements EmbeddingProvider {
    *                           directory is missing, or a model fails to load.
    */
   public StaticTableEmbeddingProvider(Map<String, String> configuration) {
-    Objects.requireNonNull(configuration, "configuration must not be null");
+    if (configuration == null) {
+      throw new IllegalArgumentException("configuration must not be null");
+    }
     this.models = loadModels(configuration);
     this.defaultModelId = resolveDefaultModelId(configuration, models);
   }
@@ -118,51 +119,65 @@ public final class StaticTableEmbeddingProvider implements EmbeddingProvider {
   private record LoadedModel(StaticEmbeddingModel model, String artifactHash) {
   }
 
+  /** {@inheritDoc} */
   @Override
   public String backendId() {
     return StaticTableEmbeddingBackendFactory.BACKEND_ID;
   }
 
+  /** {@inheritDoc} */
   @Override
   public boolean isAvailable() {
     return !models.isEmpty();
   }
 
+  /** {@inheritDoc} */
   @Override
   public Set<String> registeredModelIds() {
     return models.keySet();
   }
 
+  /** {@inheritDoc} */
   @Override
   public boolean supportsModel(String modelId) {
     return modelId != null && !modelId.isBlank() && models.containsKey(modelId);
   }
 
+  /** {@inheritDoc} */
   @Override
   public int embeddingDimension(String modelId) {
     return requireModel(modelId).model().dimension();
   }
 
+  /** {@inheritDoc} */
   @Override
   public float[] embed(String modelId, String text) {
-    Objects.requireNonNull(text, "text must not be null");
+    if (text == null) {
+      throw new IllegalArgumentException("text must not be null");
+    }
     return requireModel(modelId).model().embed(text);
   }
 
+  /** {@inheritDoc} */
   @Override
   public List<float[]> embedBatch(String modelId, List<String> texts) {
-    Objects.requireNonNull(texts, "texts must not be null");
+    if (texts == null) {
+      throw new IllegalArgumentException("texts must not be null");
+    }
     // Table lookup has no batched-inference advantage; this override only hoists the model
     // resolution out of the per-text loop.
     final StaticEmbeddingModel model = requireModel(modelId).model();
     final List<float[]> vectors = new ArrayList<>(texts.size());
     for (String text : texts) {
-      Objects.requireNonNull(text, "texts must not contain null elements");
+      if (text == null) {
+        throw new IllegalArgumentException("texts must not contain null elements");
+      }
       vectors.add(model.embed(text));
     }
     return vectors;
   }
 
+  /** {@inheritDoc} */
   @Override
   public String resolveModelId(String requestedModelId) {
     if (requestedModelId != null && !requestedModelId.isBlank()) {
@@ -186,6 +201,7 @@ public final class StaticTableEmbeddingProvider implements EmbeddingProvider {
     return loaded == null ? "" : loaded.artifactHash();
   }
 
+  /** Returns the loaded table for a required registered model id. */
   private LoadedModel requireModel(String modelId) {
     if (modelId == null || modelId.isBlank()) {
       throw AnalysisException.invalidArgument("embedding model id is required");
@@ -197,6 +213,7 @@ public final class StaticTableEmbeddingProvider implements EmbeddingProvider {
     return loaded;
   }
 
+  /** Parses and loads every statically configured embedding table. */
   private static Map<String, LoadedModel> loadModels(Map<String, String> configuration) {
     final Map<String, String> dirs = new HashMap<>();
     final Map<String, String> safetensorsPaths = new HashMap<>();
@@ -249,6 +266,7 @@ public final class StaticTableEmbeddingProvider implements EmbeddingProvider {
   // Every id that mentioned any .static.* key takes part in validation, so an orphaned key
   // (a typo'd model id, or a form mismatch) fails loud in loadModel instead of being dropped
   // silently.
+  /** Returns the union of configured model ids. */
   private static Set<String> allModelIds(Map<String, String> dirs,
                                          Map<String, String> safetensorsPaths,
                                          Map<String, String> vocabPaths,
@@ -262,6 +280,7 @@ public final class StaticTableEmbeddingProvider implements EmbeddingProvider {
     return union;
   }
 
+  /** Validates one model's source form and dispatches to the matching loader. */
   private static LoadedModel loadModel(String modelId, String dir, String safetensorsPath,
                                        String vocabPath, Boolean lowerCase, Boolean normalize) {
     if (dir != null && (safetensorsPath != null || vocabPath != null)) {
@@ -288,6 +307,7 @@ public final class StaticTableEmbeddingProvider implements EmbeddingProvider {
         lowerCase == null || lowerCase, normalize == null || normalize);
   }
 
+  /** Loads a standard model directory and hashes its safetensors artifact. */
   private static LoadedModel loadFromDirectory(String modelId, String dir) {
     final Path directory = Path.of(dir);
     if (!Files.isDirectory(directory)) {
@@ -307,6 +327,7 @@ public final class StaticTableEmbeddingProvider implements EmbeddingProvider {
     return loaded(modelId, model, directory.resolve(SAFETENSORS_FILE_NAME), dir);
   }
 
+  /** Loads explicitly named vocabulary and safetensors files with caller-selected transforms. */
   private static LoadedModel loadFromFiles(String modelId, String safetensorsPath,
                                            String vocabPath, boolean lowerCase,
                                            boolean normalize) {
@@ -336,6 +357,7 @@ public final class StaticTableEmbeddingProvider implements EmbeddingProvider {
     return loaded(modelId, model, safetensors, safetensorsPath);
   }
 
+  /** Creates a loaded-model descriptor and validates its metadata. */
   private static LoadedModel loaded(String modelId, StaticEmbeddingModel model,
                                     Path safetensors, String source) {
     final String hash;
@@ -350,6 +372,7 @@ public final class StaticTableEmbeddingProvider implements EmbeddingProvider {
     return new LoadedModel(model, hash);
   }
 
+  /** Parses a strict, case-insensitive per-model boolean setting. */
   private static boolean parseBoolean(String modelId, String suffix, String value) {
     final String normalized = value.trim().toLowerCase(Locale.ROOT);
     if (normalized.equals("true") || normalized.equals("false")) {
@@ -361,6 +384,7 @@ public final class StaticTableEmbeddingProvider implements EmbeddingProvider {
 
   // Lenient by design: a default_id naming another engine's model resolves to no engine-level
   // default here; CompositeEmbeddingProvider validates the id against the union of engines.
+  /** Resolves this backend's default only when the shared id belongs to this backend. */
   private static String resolveDefaultModelId(
       Map<String, String> configuration, Map<String, LoadedModel> models) {
     final String configured = configuration.get(KEY_DEFAULT_ID);

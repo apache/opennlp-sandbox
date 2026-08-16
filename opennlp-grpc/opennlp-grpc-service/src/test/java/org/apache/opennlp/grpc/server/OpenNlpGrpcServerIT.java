@@ -54,6 +54,7 @@ import org.apache.opennlp.grpc.v1.AnalyzeStreamConfiguration;
 import org.apache.opennlp.grpc.v1.AnalyzeStreamDocument;
 import org.apache.opennlp.grpc.v1.AnalyzeStreamRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeStreamResponse;
+import org.apache.opennlp.grpc.v1.GrpcStatusCode;
 import org.apache.opennlp.grpc.v1.EmbedTextRequest;
 import org.apache.opennlp.grpc.v1.EmbedTextResponse;
 import org.apache.opennlp.grpc.v1.GetServiceInfoRequest;
@@ -240,7 +241,7 @@ class OpenNlpGrpcServerIT {
     assertTrue(done.await(10, TimeUnit.SECONDS));
     assertNull(error.get());
     assertEquals(2, responses.size());
-    assertEquals(Status.Code.INVALID_ARGUMENT.value(), responses.stream()
+    assertEquals(GrpcStatusCode.GRPC_STATUS_CODE_INVALID_ARGUMENT, responses.stream()
         .filter(response -> response.getSequence() == 21)
         .findFirst().orElseThrow().getError().getCode());
     assertTrue(responses.stream()

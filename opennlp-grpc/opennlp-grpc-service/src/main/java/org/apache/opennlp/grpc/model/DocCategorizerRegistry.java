@@ -111,7 +111,7 @@ public final class DocCategorizerRegistry implements AutoCloseable {
   static DocCategorizerRegistry createForNamespace(
       String namespace, Map<String, String> configuration) {
     if (configuration == null) {
-      throw new NullPointerException("configuration");
+      throw new IllegalArgumentException("configuration must not be null");
     }
     final Map<String, String> canonical = canonicalize(namespace, configuration);
     final Map<String, DocCategorizerModel> modelsById = new LinkedHashMap<>();

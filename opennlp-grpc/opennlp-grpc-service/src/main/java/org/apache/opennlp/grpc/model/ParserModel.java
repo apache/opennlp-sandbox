@@ -21,14 +21,11 @@ import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.ParseTree;
 
 /**
- * A constituency parser keyed by a logical parser id. One id may be served by several engines at
- * once; the orchestrator picks among them by the request's engine policy. Unlike the span-producing
- * capabilities, a multi-engine union returns one tree per engine rather than a merged tree.
+ * A constituency parser keyed by a logical parser id. One id may be served by several engines.
+ * Multi-engine selection returns one tree per engine. Returned spans use document-relative Java
+ * UTF-16 offsets and are converted to the requested wire encoding later.
  *
- * <p>The method returns the engine-agnostic gRPC {@link ParseTree} (so a non-OpenNLP engine can
- * implement it); the orchestrator stamps each tree with its {@link #id() parser id} and
- * {@link #backendId() engine}. Spans are document character offsets (Java UTF-16 indices), later
- * converted to the client encoding.</p>
+ * <p>Thread safety is implementation specific.</p>
  */
 public interface ParserModel {
 

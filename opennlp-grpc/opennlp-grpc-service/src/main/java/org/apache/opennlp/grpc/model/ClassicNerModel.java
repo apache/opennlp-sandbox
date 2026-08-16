@@ -19,7 +19,6 @@ package org.apache.opennlp.grpc.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 import opennlp.tools.namefind.NameFinderME;
@@ -45,18 +44,34 @@ final class ClassicNerModel implements NerModel {
   private final int priority;
   private final String artifactHash;
 
+  /**
+   * Creates a classic name-finder registration.
+   *
+   * @param entityType The logical entity type and model id.
+   * @param nameFinder The initialized OpenNLP name finder.
+   * @param priority The selection priority among engines serving {@code entityType}.
+   * @param artifactHash The model artifact hash, or blank when unavailable.
+   */
   ClassicNerModel(String entityType, NameFinderME nameFinder, int priority, String artifactHash) {
-    this.entityType = Objects.requireNonNull(entityType, "entityType");
-    this.nameFinder = Objects.requireNonNull(nameFinder, "nameFinder");
+    if (entityType == null) {
+      throw new IllegalArgumentException("entityType must not be null");
+    }
+    this.entityType = entityType;
+    if (nameFinder == null) {
+      throw new IllegalArgumentException("nameFinder must not be null");
+    }
+    this.nameFinder = nameFinder;
     this.priority = priority;
     this.artifactHash = artifactHash == null ? "" : artifactHash;
   }
 
+  /** {@inheritDoc} */
   @Override
   public String id() {
     return entityType;
   }
 
+  /** {@inheritDoc} */
   @Override
   public String backendId() {
     return BACKEND_ID;
@@ -68,26 +83,37 @@ final class ClassicNerModel implements NerModel {
     return artifactHash;
   }
 
+  /** {@inheritDoc} */
   @Override
   public int priority() {
     return priority;
   }
 
+  /** {@inheritDoc} */
   @Override
   public Set<String> entityTypes() {
     return Set.of(entityType);
   }
 
+  /** {@inheritDoc} */
   @Override
   public boolean isStateful() {
     return true;
   }
 
+  /** {@inheritDoc} */
   @Override
   public void clearAdaptiveData() {
     nameFinder.clearAdaptiveData();
   }
 
+  /** {@inheritDoc} */
+  @Override
+  public void clearThreadLocalState() {
+    nameFinder.clearThreadLocalState();
+  }
+
+  /** {@inheritDoc} */
   @Override
   public List<NamedEntity> recognize(AnnotatedSentence sentence, boolean includeProbabilities) {
     if (sentence.getTokensCount() == 0) {
@@ -109,6 +135,7 @@ final class ClassicNerModel implements NerModel {
     return entities;
   }
 
+  /** Returns sentence token text in order. */
   private static String[] tokenTexts(AnnotatedSentence sentence) {
     final String[] tokens = new String[sentence.getTokensCount()];
     for (int t = 0; t < tokens.length; t++) {
@@ -117,6 +144,7 @@ final class ClassicNerModel implements NerModel {
     return tokens;
   }
 
+  /** Converts a token-index span to document offsets. */
   private static AnnotationSpan tokenSpanToDocumentSpan(AnnotatedSentence sentence, Span tokenSpan) {
     final int startToken = tokenSpan.getStart();
     final int endToken = tokenSpan.getEnd();
@@ -135,7 +163,7 @@ final class ClassicNerModel implements NerModel {
   /**
    * The authoritative entity type is the one the model emits on the span (set by
    * multi-class models). Single-type models leave it unset, so we fall back to the
-   * configured type the finder was registered under — this is the intended label for
+   * configured type under which the finder was registered. This is the intended label for
    * such models, not a guess.
    */
   private static String resolveEntityType(String configuredType, Span span) {

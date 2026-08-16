@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit tests for the generic multi-backend resolver {@link RankedBackends}: priority ordering,
- * fallback, strongly-typed engine pinning (id and engine are separate arguments — no string
+ * fallback, strongly-typed engine pinning (id and engine are separate arguments, with no string
  * parsing), advertised ids, and registration validation.
  */
 class RankedBackendsTest {

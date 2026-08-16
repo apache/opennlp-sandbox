@@ -25,7 +25,7 @@ import org.apache.opennlp.grpc.v1.AnalyzeStreamConfiguration;
 /**
  * Analyzes OpenNLP documents from typed pipeline requests.
  */
-public interface DocumentAnalyzer {
+public interface DocumentAnalyzer extends AutoCloseable {
 
   /**
    * Runs the configured analysis pipeline over the given request and returns the
@@ -75,5 +75,13 @@ public interface DocumentAnalyzer {
       }
       return analyze(template.toBuilder().setDocument(document).build());
     };
+  }
+
+  /**
+   * Releases resources owned by this analyzer. Calling this method more than once has no
+   * additional effect.
+   */
+  @Override
+  default void close() {
   }
 }

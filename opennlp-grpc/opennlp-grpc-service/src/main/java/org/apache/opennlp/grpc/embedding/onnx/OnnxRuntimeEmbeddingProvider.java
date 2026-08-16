@@ -35,6 +35,7 @@ public final class OnnxRuntimeEmbeddingProvider extends AbstractOnnxEmbeddingPro
     super(configuration, false, "." + OnnxEmbeddingBackendFactory.BACKEND_ID + ".path");
   }
 
+  /** {@inheritDoc} */
   @Override
   public String backendId() {
     return OnnxEmbeddingBackendFactory.BACKEND_ID;

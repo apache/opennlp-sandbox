@@ -79,7 +79,9 @@ class AnalyzeStreamWireContractTest {
     assertMessageField(response, result, "error", "AnalyzeStreamError");
 
     final Descriptor error = requiredMessage(file, "AnalyzeStreamError");
-    assertEquals(FieldDescriptor.Type.INT32, requiredField(error, "code").getType());
+    final FieldDescriptor code = requiredField(error, "code");
+    assertEquals(FieldDescriptor.Type.ENUM, code.getType());
+    assertEquals("GrpcStatusCode", code.getEnumType().getName());
     assertStringField(error, "message");
   }
 

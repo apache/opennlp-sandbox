@@ -18,7 +18,6 @@
  */
 package org.apache.opennlp.grpc.v1.server;
 
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -82,13 +81,22 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
       Executor executor,
       int streamWindow,
       StreamObserver<AnalyzeStreamResponse> responseObserver) {
-    this.documentAnalyzer = Objects.requireNonNull(documentAnalyzer, "documentAnalyzer");
-    this.executor = Objects.requireNonNull(executor, "executor");
+    if (documentAnalyzer == null) {
+      throw new IllegalArgumentException("documentAnalyzer must not be null");
+    }
+    this.documentAnalyzer = documentAnalyzer;
+    if (executor == null) {
+      throw new IllegalArgumentException("executor must not be null");
+    }
+    this.executor = executor;
     if (streamWindow < 1) {
       throw new IllegalArgumentException("streamWindow must be positive");
     }
     this.streamWindow = streamWindow;
-    this.responseObserver = Objects.requireNonNull(responseObserver, "responseObserver");
+    if (responseObserver == null) {
+      throw new IllegalArgumentException("responseObserver must not be null");
+    }
+    this.responseObserver = responseObserver;
     if (responseObserver instanceof ServerCallStreamObserver<AnalyzeStreamResponse> observer) {
       serverCallObserver = observer;
       observer.disableAutoInboundFlowControl();
@@ -127,6 +135,7 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
     maybeComplete();
   }
 
+  /** Fixes and validates the reusable analysis session from the first stream frame. */
   private void acceptConfiguration(AnalyzeStreamConfiguration requestedConfiguration) {
     if (configuration != null) {
       failProtocol("configuration may only be the first message of the stream");
@@ -134,9 +143,10 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
     }
     configuration = requestedConfiguration;
     try {
-      analysisSession = Objects.requireNonNull(
-          documentAnalyzer.openSession(requestedConfiguration),
-          "DocumentAnalyzer.openSession returned null");
+      analysisSession = documentAnalyzer.openSession(requestedConfiguration);
+      if (analysisSession == null) {
+        throw new IllegalStateException("DocumentAnalyzer.openSession returned null");
+      }
     } catch (AnalysisException e) {
       failStream(GrpcStatusMapper.toStatus(e).withDescription(e.getMessage()));
       return;
@@ -148,6 +158,7 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
     request(streamWindow);
   }
 
+  /** Admits one document to the bounded worker set or reports capacity exhaustion. */
   private void acceptDocument(AnalyzeStreamDocument document) {
     if (configuration == null) {
       failProtocol("the first message of the stream must carry configuration");
@@ -158,13 +169,10 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
       analyze(document);
       return null;
     }) {
+      /** Releases stream accounting whether the task ran or was cancelled while queued. */
       @Override
-      public void run() {
-        try {
-          super.run();
-        } finally {
-          completeTask(this);
-        }
+      protected void done() {
+        completeTask(this);
       }
     };
     tasks.add(task);
@@ -180,10 +188,10 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
             .withDescription("analysis capacity is exhausted"));
       }
       task.cancel(false);
-      completeTask(task);
     }
   }
 
+  /** Releases one completed task and replenishes inbound demand. */
   private void completeTask(FutureTask<Void> task) {
     tasks.remove(task);
     inFlight.decrementAndGet();
@@ -191,6 +199,17 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
     maybeComplete();
   }
 
+  /** Returns the number of accepted documents that have not reached a terminal task state. */
+  int inFlightCount() {
+    return inFlight.get();
+  }
+
+  /** Returns the number of tasks retained for cancellation. */
+  int trackedTaskCount() {
+    return tasks.size();
+  }
+
+  /** Analyzes one document and sends a document-local result. */
   private void analyze(AnalyzeStreamDocument document) {
     try {
       send(AnalyzeStreamResponse.newBuilder()
@@ -207,17 +226,19 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
     }
   }
 
+  /** Sends one document-local failure response. */
   private void sendFailure(long sequence, Status status) {
     final String description = status.getDescription() == null
         ? status.getCode().name() : status.getDescription();
     send(AnalyzeStreamResponse.newBuilder()
         .setSequence(sequence)
         .setError(AnalyzeStreamError.newBuilder()
-            .setCode(status.getCode().value())
+            .setCode(GrpcStatusMapper.toWireCode(status))
             .setMessage(description))
         .build());
   }
 
+  /** Sends one response when the transport is ready. */
   private void send(AnalyzeStreamResponse response) {
     synchronized (outputLock) {
       if (!terminated.get() && awaitReady()) {
@@ -232,6 +253,7 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
     }
   }
 
+  /** Waits until the outbound transport can accept a response. */
   private boolean awaitReady() {
     if (serverCallObserver == null) {
       return true;
@@ -260,10 +282,12 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
     return !terminated.get();
   }
 
+  /** Terminates the stream after a protocol violation. */
   private void failProtocol(String description) {
     failStream(Status.INVALID_ARGUMENT.withDescription(description));
   }
 
+  /** Terminates the stream with the given status. */
   private void failStream(Status status) {
     if (terminated.compareAndSet(false, true)) {
       cancelTasks();
@@ -273,12 +297,14 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
     }
   }
 
+  /** Requests more inbound frames when the stream remains active. */
   private void request(int count) {
     if (serverCallObserver != null && !terminated.get()) {
       serverCallObserver.request(count);
     }
   }
 
+  /** Completes the response after the client closes and all work finishes. */
   private void maybeComplete() {
     if (clientCompleted && inFlight.get() == 0 && terminated.compareAndSet(false, true)) {
       synchronized (outputLock) {
@@ -287,10 +313,12 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
     }
   }
 
+  /** Cancels active and queued document work. */
   private void cancel() {
     terminateWorkers();
   }
 
+  /** Terminates output after a transport failure. */
   private void failOutput(Status status) {
     if (terminated.compareAndSet(false, true)) {
       cancelTasks();
@@ -298,17 +326,20 @@ final class AnalyzeDocumentStream implements StreamObserver<AnalyzeStreamRequest
     }
   }
 
+  /** Stops accepting output and cancels active work. */
   private void terminateWorkers() {
     if (terminated.compareAndSet(false, true)) {
       cancelTasks();
     }
   }
 
+  /** Cancels every active or queued document task without waiting for termination. */
   private void cancelTasks() {
     signalReady();
     tasks.forEach(task -> task.cancel(true));
   }
 
+  /** Wakes workers waiting for outbound transport capacity. */
   private void signalReady() {
     synchronized (readyLock) {
       readyLock.notifyAll();

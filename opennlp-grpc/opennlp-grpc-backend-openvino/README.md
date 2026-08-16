@@ -2,7 +2,7 @@
 
 Remote embedding backend for the OpenNLP gRPC server, delegating inference to
 [OpenVINO Model Server](https://docs.openvino.ai/2026/model-server/ovms_what_is_openvino_model_server.html)
-(OVMS) — or any other inference server implementing the KServe v2 "open inference
+(OVMS), or any other inference server implementing the KServe v2 "open inference
 protocol" gRPC API (`inference.GRPCInferenceService`), such as NVIDIA Triton.
 
 ```
@@ -15,7 +15,7 @@ aggregate embedding provider.
 
 ## 1. The served model must map text to vectors
 
-Unlike TEI, OVMS serves raw tensor models — it has no built-in tokenizer. This backend
+Unlike TEI, OVMS serves raw tensor models, so it has no built-in tokenizer. This backend
 deliberately keeps tokenization server-side, so the served model (or OVMS MediaPipe
 graph) must accept a `BYTES` string tensor and return an `FP32` embedding matrix. The
 provider enforces this against the model metadata at startup.
@@ -24,7 +24,7 @@ For OpenVINO this is a solved problem:
 [openvino_tokenizers](https://github.com/openvinotoolkit/openvino_tokenizers) converts
 any HuggingFace tokenizer into OpenVINO graph operations that can be fused with the
 transformer into a single model. The helper script in
-`opennlp-grpc-integration-tests/scripts/` automates the full export — tokenizer +
+`opennlp-grpc-integration-tests/scripts/` automates the full export, including tokenizer +
 encoder + attention-mask-aware mean pooling + L2 normalization, fused into one graph
 with a string input and a `[batch, dim]` float output:
 
@@ -38,7 +38,7 @@ cd opennlp-grpc-integration-tests
 (exported with `optimum-intel` and `openvino_tokenizers` via `uv`); `start` serves it
 with the stock `openvino/model_server` image, which bundles the tokenizer operations.
 OVMS runs on CPU (x86_64) everywhere; `--gpu` targets Intel GPUs (iGPU, Arc, Flex)
-through `/dev/dri` passthrough — there is no CUDA variant of OVMS.
+through `/dev/dri` passthrough. There is no CUDA variant of OVMS.
 
 ## 2. Configure the OpenNLP gRPC server
 
@@ -71,7 +71,7 @@ when unambiguous), and one probe inference determines the embedding dimension, w
 then published in the model catalog (`ListModelBundles`, with `backend_id: "openvino"`).
 Misconfiguration fails the server start, not the first request.
 
-Batches are sent as a single `ModelInfer` call with a leading batch dimension — the
+Batches are sent as a single `ModelInfer` call with a leading batch dimension. The
 native KServe batching model. Both `raw_output_contents` (little-endian) and typed
 `InferTensorContents` responses are supported.
 

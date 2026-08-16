@@ -23,12 +23,11 @@ import java.util.Optional;
 import opennlp.tools.sentdetect.SentenceDetector;
 
 /**
- * Service provider interface for custom sentence-detector engines. The server discovers
- * factories through {@link java.util.ServiceLoader}; clients select an available engine
- * with {@code AnalysisProfile.sentence_detector.custom}.
+ * Service provider interface for custom sentence-detector engines discovered through
+ * {@link java.util.ServiceLoader}. Clients select an available engine with
+ * {@code AnalysisProfile.sentence_detector.custom}.
  *
- * <p>The returned detector must be safe for concurrent calls. A backend wrapping a
- * stateful implementation can satisfy that contract with a thread-local delegate.</p>
+ * <p>Thread safety is implementation specific.</p>
  */
 public interface SentenceDetectorBackendFactory {
 
@@ -45,6 +44,8 @@ public interface SentenceDetectorBackendFactory {
    * @param configuration The complete server configuration. Must not be {@code null}.
    *
    * @return The configured detector, or empty when this backend is not configured.
+   *
+   * @throws IllegalArgumentException If {@code configuration} is {@code null}.
    */
   Optional<SentenceDetector> create(Map<String, String> configuration);
 }

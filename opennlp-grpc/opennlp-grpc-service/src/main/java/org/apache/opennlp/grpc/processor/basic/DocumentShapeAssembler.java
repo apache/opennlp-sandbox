@@ -58,7 +58,7 @@ import org.apache.opennlp.grpc.v1.WordTypeAnnotation;
 import org.apache.opennlp.grpc.v1.WordTypeAnnotationList;
 
 /**
- * Renders a fully analyzed document as the document shape of OPENNLP-1888: the typed
+ * Renders a fully analyzed document as typed, namespaced annotation layers: the
  * annotation layers under {@link OpenNlpDocument#getLayers()}.
  *
  * <p>The string-valued layers are routed through the library's
@@ -240,6 +240,7 @@ final class DocumentShapeAssembler {
     return container;
   }
 
+  /** Builds the typed word-classification layer. */
   private static Document wordTypeLayer(
       OpenNlpDocument.Builder document, Document container, DocumentLayers.Builder layers) {
     final List<Annotation<DocumentWordType>> annotations = new ArrayList<>();
@@ -269,6 +270,7 @@ final class DocumentShapeAssembler {
     return validated;
   }
 
+  /** Builds the named-entity layer. */
   private static Document entityLayer(
       OpenNlpDocument.Builder document, Document container, DocumentLayers.Builder layers) {
     final List<Annotation<org.apache.opennlp.grpc.v1.NamedEntity>> annotations = new ArrayList<>();
@@ -293,6 +295,7 @@ final class DocumentShapeAssembler {
     return validated;
   }
 
+  /** Builds the syntactic-chunk layer. */
   private static Document syntacticChunkLayer(
       OpenNlpDocument.Builder document, Document container, DocumentLayers.Builder layers) {
     final List<Annotation<ChunkSpan>> annotations = new ArrayList<>();
@@ -472,6 +475,7 @@ final class DocumentShapeAssembler {
     }
   }
 
+  /** Builds one typed embedding annotation. */
   private static EmbeddingAnnotation embeddingAnnotation(EmbeddingResult embedding) {
     final EmbeddingAnnotation.Builder annotation = EmbeddingAnnotation.newBuilder()
         .setModelId(embedding.getModelId())
@@ -487,6 +491,7 @@ final class DocumentShapeAssembler {
     return annotation.build();
   }
 
+  /** Adds document analytics to the layer set. */
   private static void analyticsLayer(
       OpenNlpDocument.Builder document, DocumentLayers.Builder layers) {
     if (!document.hasAnalytics()) {
@@ -498,6 +503,7 @@ final class DocumentShapeAssembler {
             .addAnnotations(document.getAnalytics())));
   }
 
+  /** Adds normalization output to the layer set. */
   private static void normalizationLayer(
       OpenNlpDocument.Builder document, DocumentLayers.Builder layers) {
     if (!document.hasNormalization()) {
@@ -509,6 +515,7 @@ final class DocumentShapeAssembler {
             .addAnnotations(document.getNormalization())));
   }
 
+  /** Adds chunk groups to the layer set. */
   private static void chunkGroupsLayer(
       OpenNlpDocument.Builder document, DocumentLayers.Builder layers) {
     if (document.getChunkEmbeddingGroupsCount() == 0) {
@@ -563,6 +570,7 @@ final class DocumentShapeAssembler {
     return AnnotationLayer.newBuilder().setId(id).setIdentity(identity);
   }
 
+  /** Maps a wire word type to the document-container value. */
   private static DocumentWordType documentWordType(String value) {
     try {
       return DocumentWordType.valueOf("DOCUMENT_WORD_TYPE_" + value);
@@ -571,18 +579,22 @@ final class DocumentShapeAssembler {
     }
   }
 
+  /** Converts a wire span to the document-container value. */
   private static Span spanValue(AnnotationSpan span) {
     return new Span(span.getStart(), span.getEnd());
   }
 
+  /** Builds a document-container annotation. */
   private static Annotation<String> annotation(AnnotationSpan span, String value) {
     return new Annotation<>(spanValue(span), value);
   }
 
+  /** Returns the text covered by a span. */
   private static String covered(String rawText, AnnotationSpan span) {
     return rawText.substring(span.getStart(), span.getEnd());
   }
 
+  /** Converts a document-container span to the wire value. */
   private static AnnotationSpan span(Span span) {
     return AnnotationSpan.newBuilder()
         .setStart(span.getStart())

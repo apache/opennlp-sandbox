@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -51,7 +50,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Remote {@link EmbeddingProvider} delegating inference to an
  * <a href="https://docs.openvino.ai/2026/model-server/ovms_what_is_openvino_model_server.html">
- * OpenVINO Model Server</a> — or any other server implementing the KServe v2
+ * OpenVINO Model Server</a>, or any other server implementing the KServe v2
  * "open inference protocol" gRPC API ({@code inference.GRPCInferenceService}).
  *
  * <p>The served model (or OVMS MediaPipe graph) must accept a {@code BYTES} string
@@ -118,7 +117,9 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
    *                           can coexist with other engines in the composite.
    */
   public OpenVinoEmbeddingProvider(Map<String, String> configuration) {
-    Objects.requireNonNull(configuration, "configuration must not be null");
+    if (configuration == null) {
+      throw new IllegalArgumentException("configuration must not be null");
+    }
     this.deadlineMs = parseDeadline(configuration);
     final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
     try {
@@ -135,40 +136,51 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
     this.defaultModelId = resolveDefaultModelId(configuration, models);
   }
 
+  /** {@inheritDoc} */
   @Override
   public String backendId() {
     return OpenVinoEmbeddingBackendFactory.BACKEND_ID;
   }
 
+  /** {@inheritDoc} */
   @Override
   public boolean isAvailable() {
     return !models.isEmpty();
   }
 
+  /** {@inheritDoc} */
   @Override
   public Set<String> registeredModelIds() {
     return models.keySet();
   }
 
+  /** {@inheritDoc} */
   @Override
   public boolean supportsModel(String modelId) {
     return modelId != null && !modelId.isBlank() && models.containsKey(modelId);
   }
 
+  /** {@inheritDoc} */
   @Override
   public int embeddingDimension(String modelId) {
     return requireModel(modelId).dimension;
   }
 
+  /** {@inheritDoc} */
   @Override
   public float[] embed(String modelId, String text) {
-    Objects.requireNonNull(text, "text must not be null");
+    if (text == null) {
+      throw new IllegalArgumentException("text must not be null");
+    }
     return embedBatch(modelId, List.of(text)).get(0);
   }
 
+  /** {@inheritDoc} */
   @Override
   public List<float[]> embedBatch(String modelId, List<String> texts) {
-    Objects.requireNonNull(texts, "texts must not be null");
+    if (texts == null) {
+      throw new IllegalArgumentException("texts must not be null");
+    }
     final OvmsEndpoint endpoint = requireModel(modelId);
     if (texts.isEmpty()) {
       return List.of();
@@ -194,6 +206,7 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
     return vectors;
   }
 
+  /** {@inheritDoc} */
   @Override
   public String resolveModelId(String requestedModelId) {
     if (requestedModelId != null && !requestedModelId.isBlank()) {
@@ -219,6 +232,7 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
     }
   }
 
+  /** Returns the endpoint for a required registered model id. */
   private OvmsEndpoint requireModel(String modelId) {
     if (modelId == null || modelId.isBlank()) {
       throw AnalysisException.invalidArgument("embedding model id is required");
@@ -234,7 +248,9 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
   private static float[] infer(OvmsEndpoint endpoint, List<String> texts, long deadlineMs) {
     final InferTensorContents.Builder contents = InferTensorContents.newBuilder();
     for (String text : texts) {
-      Objects.requireNonNull(text, "texts must not contain null elements");
+      if (text == null) {
+        throw new IllegalArgumentException("texts must not contain null elements");
+      }
       contents.addBytesContents(ByteString.copyFrom(text, StandardCharsets.UTF_8));
     }
     final ModelInferRequest.Builder request = ModelInferRequest.newBuilder()
@@ -289,6 +305,7 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
             + outputName + "'", null);
   }
 
+  /** Maps a remote KServe transport failure to the service's analysis error model. */
   private static AnalysisException remoteFailure(
       String operation, String modelId, String target, Throwable cause) {
     return AnalysisException.internal(
@@ -296,6 +313,7 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
         cause);
   }
 
+  /** Parses, connects, and validates every configured KServe model endpoint. */
   private static Map<String, OvmsEndpoint> connectAll(
       Map<String, String> configuration, long deadlineMs, ExecutorService channelExecutor) {
     final Map<String, Map<String, String>> settings = new HashMap<>();
@@ -332,6 +350,7 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
     return Map.copyOf(connected);
   }
 
+  /** Returns the recognized per-model configuration suffix of a key, if any. */
   private static String matchSuffix(String key) {
     if (key.endsWith(KEY_TARGET_SUFFIX)) {
       return KEY_TARGET_SUFFIX;
@@ -354,6 +373,7 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
     return null;
   }
 
+  /** Connects one KServe endpoint and probes its readiness, metadata, and vector shape. */
   private static OvmsEndpoint connect(
       String modelId, Map<String, String> settings, long deadlineMs,
       ExecutorService channelExecutor) {
@@ -420,6 +440,7 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
     }
   }
 
+  /** Requires the selected remote model version to report ready before startup completes. */
   private static void checkModelReady(
       GRPCInferenceServiceGrpc.GRPCInferenceServiceBlockingStub stub, String modelId,
       String modelName, String modelVersion, String target, long deadlineMs) {
@@ -441,6 +462,7 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
     }
   }
 
+  /** Fetches the tensor metadata needed to validate and route raw-text inference. */
   private static ModelMetadataResponse fetchMetadata(
       GRPCInferenceServiceGrpc.GRPCInferenceServiceBlockingStub stub, String modelId,
       String modelName, String modelVersion, String target, long deadlineMs) {
@@ -493,6 +515,7 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
     return resolved.name;
   }
 
+  /** Shuts down one model channel, forcing closure after the bounded grace period. */
   private static void shutdownChannel(String modelId, ManagedChannel channel) {
     channel.shutdown();
     try {
@@ -506,6 +529,7 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
     }
   }
 
+  /** Returns the configured positive request deadline, or the server default. */
   private static long parseDeadline(Map<String, String> configuration) {
     final String configured = configuration.get(KEY_DEADLINE);
     if (configured == null || configured.isBlank()) {
@@ -522,6 +546,7 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
     }
   }
 
+  /** Parses a strict, case-insensitive boolean configuration value. */
   private static boolean parseBoolean(String key, String value) {
     final String normalized = value.trim().toLowerCase(Locale.ROOT);
     if (normalized.equals("true") || normalized.equals("false")) {
@@ -530,6 +555,7 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
     throw AnalysisException.invalidArgument(key + " must be 'true' or 'false': " + value);
   }
 
+  /** Resolves the configured default model, or the sole registered model when unambiguous. */
   private static String resolveDefaultModelId(
       Map<String, String> configuration, Map<String, OvmsEndpoint> models) {
     final String configured = configuration.get(KEY_DEFAULT_ID);

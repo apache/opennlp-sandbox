@@ -42,6 +42,8 @@ public interface ChunkerBackendFactory {
    * @param configuration The server configuration. Must not be {@code null}.
    *
    * @return The chunkers found, possibly empty; never {@code null}.
+   *
+   * @throws IllegalArgumentException If {@code configuration} is {@code null}.
    */
   List<ChunkerModel> create(Map<String, String> configuration);
 }

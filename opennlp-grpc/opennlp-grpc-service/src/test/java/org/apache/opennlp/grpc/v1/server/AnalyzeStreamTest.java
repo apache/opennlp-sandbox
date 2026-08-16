@@ -19,6 +19,7 @@
 package org.apache.opennlp.grpc.v1.server;
 
 import java.util.Map;
+import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -44,6 +45,7 @@ import org.apache.opennlp.grpc.v1.AnalyzeStreamConfiguration;
 import org.apache.opennlp.grpc.v1.AnalyzeStreamDocument;
 import org.apache.opennlp.grpc.v1.AnalyzeStreamRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeStreamResponse;
+import org.apache.opennlp.grpc.v1.GrpcStatusCode;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
@@ -170,7 +172,7 @@ class AnalyzeStreamTest {
     assertTrue(responses.completed);
     assertNull(responses.error);
     assertTrue(responses.bySequence(1).hasOk());
-    assertEquals(Status.Code.INVALID_ARGUMENT.value(),
+    assertEquals(GrpcStatusCode.GRPC_STATUS_CODE_INVALID_ARGUMENT,
         responses.bySequence(2).getError().getCode());
     assertTrue(responses.bySequence(2).getError().getMessage().contains("bad document"));
     assertTrue(responses.bySequence(3).hasOk());
@@ -189,7 +191,7 @@ class AnalyzeStreamTest {
 
     assertTrue(responses.awaitTerminal());
     final var error = responses.bySequence(4).getError();
-    assertEquals(Status.Code.INTERNAL.value(), error.getCode());
+    assertEquals(GrpcStatusCode.GRPC_STATUS_CODE_INTERNAL, error.getCode());
     assertEquals("Internal server error", error.getMessage());
     assertFalse(error.getMessage().contains("secret"));
   }
@@ -326,6 +328,29 @@ class AnalyzeStreamTest {
   }
 
   @Test
+  void clientCancellationReleasesTasksThatNeverStarted() throws Exception {
+    final QueuedExecutorService executor = new QueuedExecutorService();
+    final TrackingServerObserver responses = new TrackingServerObserver();
+    try {
+      final AnalyzeDocumentStream requests = new AnalyzeDocumentStream(
+          AnalyzeStreamTest::echo, executor, 2, responses);
+      requests.onNext(configuration());
+      requests.onNext(document(1, "never starts"));
+
+      assertEquals(1, requests.trackedTaskCount());
+      assertEquals(1, requests.inFlightCount());
+
+      responses.cancelled = true;
+      responses.onCancel.run();
+
+      assertEquals(0, requests.trackedTaskCount());
+      assertEquals(0, requests.inFlightCount());
+    } finally {
+      executor.shutdownNow();
+    }
+  }
+
+  @Test
   void opensOneGenericAnalyzerSessionForTheStreamsFixedConfiguration() throws Exception {
     final AtomicInteger opened = new AtomicInteger();
     final AtomicReference<AnalyzeStreamConfiguration> prepared = new AtomicReference<>();
@@ -401,7 +426,7 @@ class AnalyzeStreamTest {
     assertTrue(responses.awaitTerminal());
     assertNull(responses.error);
     assertTrue(responses.completed);
-    assertEquals(Status.Code.INVALID_ARGUMENT.value(),
+    assertEquals(GrpcStatusCode.GRPC_STATUS_CODE_INVALID_ARGUMENT,
         responses.bySequence(1).getError().getCode());
     assertTrue(responses.bySequence(2).hasOk());
   }
@@ -414,6 +439,45 @@ class AnalyzeStreamTest {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new IllegalStateException("test synchronization interrupted", e);
+    }
+  }
+
+  /** Executor that retains submitted work without starting a worker thread. */
+  private static final class QueuedExecutorService extends AbstractExecutorService {
+    private final BlockingQueue<Runnable> queued = new LinkedBlockingQueue<>();
+    private volatile boolean shutdown;
+
+    @Override
+    public void shutdown() {
+      shutdown = true;
+    }
+
+    @Override
+    public java.util.List<Runnable> shutdownNow() {
+      shutdown = true;
+      final java.util.List<Runnable> remaining = new java.util.ArrayList<>();
+      queued.drainTo(remaining);
+      return remaining;
+    }
+
+    @Override
+    public boolean isShutdown() {
+      return shutdown;
+    }
+
+    @Override
+    public boolean isTerminated() {
+      return shutdown && queued.isEmpty();
+    }
+
+    @Override
+    public boolean awaitTermination(long timeout, TimeUnit unit) {
+      return isTerminated();
+    }
+
+    @Override
+    public void execute(Runnable command) {
+      queued.add(command);
     }
   }
 

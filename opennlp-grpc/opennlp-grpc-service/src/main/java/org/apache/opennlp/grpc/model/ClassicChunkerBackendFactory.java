@@ -56,11 +56,13 @@ public final class ClassicChunkerBackendFactory implements ChunkerBackendFactory
   public ClassicChunkerBackendFactory() {
   }
 
+  /** {@inheritDoc} */
   @Override
   public String factoryId() {
     return FACTORY_ID;
   }
 
+  /** {@inheritDoc} */
   @Override
   public List<ChunkerModel> create(Map<String, String> configuration) {
     final Map<String, ClassicEntry> entries = parseConfiguredPaths(configuration);
@@ -76,6 +78,7 @@ public final class ClassicChunkerBackendFactory implements ChunkerBackendFactory
   private record ClassicEntry(String path, int priority) {
   }
 
+  /** Parses configured paths. */
   private static Map<String, ClassicEntry> parseConfiguredPaths(Map<String, String> configuration) {
     final Map<String, ClassicEntry> entries = new LinkedHashMap<>();
     for (Map.Entry<String, String> entry : configuration.entrySet()) {
@@ -103,6 +106,7 @@ public final class ClassicChunkerBackendFactory implements ChunkerBackendFactory
     return entries;
   }
 
+  /** Loads chunker. */
   private static ChunkerME loadChunker(String id, String path) {
     try (InputStream input = new FileInputStream(path)) {
       final ChunkerME chunker = new ChunkerME(new opennlp.tools.chunker.ChunkerModel(input));

@@ -42,6 +42,8 @@ public interface ParserBackendFactory {
    * @param configuration The server configuration. Must not be {@code null}.
    *
    * @return The parsers found, possibly empty; never {@code null}.
+   *
+   * @throws IllegalArgumentException If {@code configuration} is {@code null}.
    */
   List<ParserModel> create(Map<String, String> configuration);
 }

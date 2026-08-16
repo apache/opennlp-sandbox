@@ -19,7 +19,6 @@ package org.apache.opennlp.grpc.processor.basic;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.EnginePolicy;
@@ -44,7 +43,9 @@ final class EngineSelections {
    * @throws AnalysisException If compatibility and typed fields are mixed, or a selector is empty.
    */
   static List<String> ids(EnginePolicy policy) {
-    Objects.requireNonNull(policy, "policy");
+    if (policy == null) {
+      throw new IllegalArgumentException("policy must not be null");
+    }
     if (policy.getEnginesCount() > 0 && policy.getSelectorsCount() > 0) {
       throw AnalysisException.invalidArgument(
           "EnginePolicy.engines and EnginePolicy.selectors are mutually exclusive");
@@ -77,6 +78,7 @@ final class EngineSelections {
     return List.copyOf(ids);
   }
 
+  /** Returns the open id for a standard enum value. */
   private static String standardId(StandardInferenceEngine engine) {
     switch (engine) {
       case STANDARD_INFERENCE_ENGINE_OPENNLP_ME:

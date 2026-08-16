@@ -19,9 +19,9 @@ package org.apache.opennlp.grpc.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
+import ai.onnxruntime.OrtException;
 import opennlp.dl.namefinder.NameFinderDL;
 import opennlp.tools.util.Span;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
@@ -35,7 +35,7 @@ import org.apache.opennlp.grpc.v1.NamedEntity;
  *
  * <p>Coordinate mapping is the subtlety here: {@code NameFinderDL.find} joins the input
  * tokens with single spaces, runs its own WordPiece tokenization, and returns spans as
- * <em>character offsets into that joined string</em> — not token indices and not document
+ * <em>character offsets into that joined string</em>, not token indices or document
  * offsets. {@link #documentSpan} maps those joined-text character offsets back to the
  * tokens' document character offsets, which the offset-encoding pass then converts to the
  * client encoding.</p>
@@ -52,51 +52,84 @@ final class DlNerModel implements NerModel, AutoCloseable {
   private final int priority;
   private final NameFinderDL nameFinderDL;
 
+  /**
+   * Creates a deep-learning name-finder registration.
+   *
+   * @param id The logical model id.
+   * @param entityTypes The entity types emitted by the model.
+   * @param backendId The serving backend id.
+   * @param priority The selection priority among engines serving {@code id}.
+   * @param nameFinderDL The initialized deep-learning name finder.
+   */
   DlNerModel(String id, Set<String> entityTypes, String backendId, int priority,
       NameFinderDL nameFinderDL) {
-    this.id = Objects.requireNonNull(id, "id");
-    this.entityTypes = Set.copyOf(Objects.requireNonNull(entityTypes, "entityTypes"));
-    this.backendId = Objects.requireNonNull(backendId, "backendId");
+    if (id == null) {
+      throw new IllegalArgumentException("id must not be null");
+    }
+    this.id = id;
+    if (entityTypes == null) {
+      throw new IllegalArgumentException("entityTypes must not be null");
+    }
+    this.entityTypes = Set.copyOf(entityTypes);
+    if (backendId == null) {
+      throw new IllegalArgumentException("backendId must not be null");
+    }
+    this.backendId = backendId;
     this.priority = priority;
-    this.nameFinderDL = Objects.requireNonNull(nameFinderDL, "nameFinderDL");
+    if (nameFinderDL == null) {
+      throw new IllegalArgumentException("nameFinderDL must not be null");
+    }
+    this.nameFinderDL = nameFinderDL;
   }
 
   /** Releases the underlying ONNX session held by the {@link NameFinderDL}. */
   @Override
-  public void close() throws Exception {
-    nameFinderDL.close();
+  public void close() {
+    try {
+      nameFinderDL.close();
+    } catch (OrtException e) {
+      throw new IllegalStateException(
+          "Failed to close NER model '" + id + "' on backend '" + backendId + "'", e);
+    }
   }
 
+  /** {@inheritDoc} */
   @Override
   public String id() {
     return id;
   }
 
+  /** {@inheritDoc} */
   @Override
   public String backendId() {
     return backendId;
   }
 
+  /** {@inheritDoc} */
   @Override
   public int priority() {
     return priority;
   }
 
+  /** {@inheritDoc} */
   @Override
   public Set<String> entityTypes() {
     return entityTypes;
   }
 
+  /** {@inheritDoc} */
   @Override
   public boolean isStateful() {
     return false;
   }
 
+  /** {@inheritDoc} */
   @Override
   public void clearAdaptiveData() {
     // Transformer inference holds no document-level adaptive state.
   }
 
+  /** {@inheritDoc} */
   @Override
   public List<NamedEntity> recognize(AnnotatedSentence sentence, boolean includeProbabilities) {
     if (sentence.getTokensCount() == 0) {
@@ -165,6 +198,7 @@ final class DlNerModel implements NerModel, AutoCloseable {
         .build();
   }
 
+  /** Returns sentence token text in order. */
   private static String[] tokenTexts(AnnotatedSentence sentence) {
     final String[] tokens = new String[sentence.getTokensCount()];
     for (int t = 0; t < tokens.length; t++) {

@@ -20,23 +20,11 @@ package org.apache.opennlp.grpc.embedding;
 import java.util.Map;
 
 /**
- * Service provider interface for embedding backends, discovered via
- * {@link java.util.ServiceLoader}.
+ * Service provider interface for embedding backends discovered through
+ * {@link java.util.ServiceLoader}. Each backend contributes its configured models to
+ * the aggregate provider under one stable backend id.
  *
- * <p>A backend module registers its implementation in
- * {@code META-INF/services/org.apache.opennlp.grpc.embedding.EmbeddingBackendFactory}
- * and its configured models join the aggregate provider without any change to the gRPC
- * server. Clients may let routing priority choose it or pin its open backend id through
- * {@code EmbeddingSelector.backend}. This is the extension point for additional
- * inference runtimes shipped as separate jars: in-process engines (OpenVINO, DJL, ...)
- * as well as remote backends whose provider is a client to an external inference
- * service. A remote provider implements the same surface ({@code embed},
- * {@code embedBatch}, model registry) over a connection it owns, which keeps the
- * actual inference free to live in another process or language entirely.</p>
- *
- * <p>Implementations must be stateless and provide a public no-argument constructor.
- * Providers that hold connections or native resources should implement
- * {@link AutoCloseable}; the server closes them on shutdown.</p>
+ * <p>Thread safety is implementation specific.</p>
  */
 public interface EmbeddingBackendFactory {
 
@@ -57,6 +45,7 @@ public interface EmbeddingBackendFactory {
    *
    * @throws org.apache.opennlp.grpc.processor.AnalysisException If the model configuration
    *         is invalid or a model fails to load.
+   * @throws IllegalArgumentException If {@code configuration} is {@code null}.
    */
   EmbeddingProvider create(Map<String, String> configuration);
 }

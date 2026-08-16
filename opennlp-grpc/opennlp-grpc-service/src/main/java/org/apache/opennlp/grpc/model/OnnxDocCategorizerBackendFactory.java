@@ -59,11 +59,13 @@ public final class OnnxDocCategorizerBackendFactory implements DocCategorizerBac
   private static final Logger logger =
       LoggerFactory.getLogger(OnnxDocCategorizerBackendFactory.class);
 
+  /** {@inheritDoc} */
   @Override
   public String factoryId() {
     return FACTORY_ID;
   }
 
+  /** {@inheritDoc} */
   @Override
   public List<DocCategorizerModel> create(Map<String, String> configuration) {
     final Map<String, DlConfig> configs = parseDlConfigs(configuration);
@@ -79,6 +81,7 @@ public final class OnnxDocCategorizerBackendFactory implements DocCategorizerBac
       String backend, int gpuDeviceId) {
   }
 
+  /** Parses ONNX document-categorizer configuration entries. */
   private static Map<String, DlConfig> parseDlConfigs(Map<String, String> configuration) {
     final Map<String, Map<String, String>> byId = new LinkedHashMap<>();
     for (Map.Entry<String, String> entry : configuration.entrySet()) {
@@ -106,6 +109,7 @@ public final class OnnxDocCategorizerBackendFactory implements DocCategorizerBac
     return configs;
   }
 
+  /** Validates and converts one ONNX configuration entry. */
   private static DlConfig toDlConfig(String id, Map<String, String> attrs) {
     final String modelPath = requiredAttr(id, attrs, "path");
     final String vocabPath = requiredAttr(id, attrs, "vocab");
@@ -130,6 +134,7 @@ public final class OnnxDocCategorizerBackendFactory implements DocCategorizerBac
     return new DlConfig(id, modelPath, vocabPath, categoriesPath, backend, gpuDeviceId);
   }
 
+  /** Returns a required ONNX configuration attribute. */
   private static String requiredAttr(String id, Map<String, String> attrs, String attr) {
     final String value = attrs.get(attr);
     if (value == null || value.isBlank()) {
@@ -139,6 +144,7 @@ public final class OnnxDocCategorizerBackendFactory implements DocCategorizerBac
     return value.trim();
   }
 
+  /** Loads one ONNX document-categorizer model. */
   private static DocCategorizerModel loadDlModel(DlConfig config) {
     final File model = requireReadable(config.id(), "path", config.modelPath());
     final File vocab = requireReadable(config.id(), "vocab", config.vocabPath());
@@ -189,6 +195,7 @@ public final class OnnxDocCategorizerBackendFactory implements DocCategorizerBac
     return categories;
   }
 
+  /** Returns a required readable model artifact. */
   private static File requireReadable(String id, String attr, String path) {
     final File file = new File(path);
     if (!file.isFile() || !file.canRead()) {

@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -60,15 +59,20 @@ public final class EmbeddingProviderFactory {
    *     configuration is invalid, or engines serving one logical id disagree on dimension.
    */
   public static EmbeddingProvider create(Map<String, String> configuration) {
-    Objects.requireNonNull(configuration, "configuration");
+    if (configuration == null) {
+      throw new IllegalArgumentException("configuration must not be null");
+    }
     final SortedMap<String, EmbeddingBackendFactory> factories = discoverFactories();
     final List<EmbeddingProvider> available = new ArrayList<>();
     for (EmbeddingBackendFactory factory : factories.values()) {
       EmbeddingProvider provider = null;
       final boolean providerAvailable;
       try {
-        provider = Objects.requireNonNull(factory.create(configuration),
-            () -> factory.getClass().getName() + " returned a null provider");
+        provider = factory.create(configuration);
+        if (provider == null) {
+          throw new IllegalStateException(
+              factory.getClass().getName() + " returned a null provider");
+        }
         providerAvailable = provider.isAvailable();
       } catch (RuntimeException e) {
         closeProvider(provider);
@@ -86,12 +90,14 @@ public final class EmbeddingProviderFactory {
     return new CompositeEmbeddingProvider(available, configuration);
   }
 
+  /** Closes every provider while preserving later cleanup. */
   private static void closeProviders(List<EmbeddingProvider> providers) {
     for (EmbeddingProvider provider : providers) {
       closeProvider(provider);
     }
   }
 
+  /** Closes one provider when it owns resources. */
   private static void closeProvider(EmbeddingProvider provider) {
     if (provider instanceof AutoCloseable closeable) {
       try {

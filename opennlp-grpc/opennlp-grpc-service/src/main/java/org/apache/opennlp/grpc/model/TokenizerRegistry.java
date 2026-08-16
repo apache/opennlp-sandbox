@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.SortedMap;
@@ -47,7 +46,9 @@ public final class TokenizerRegistry implements AutoCloseable {
    * @return The custom tokenizer registry. Never {@code null}.
    */
   public static TokenizerRegistry create(Map<String, String> configuration) {
-    Objects.requireNonNull(configuration, "configuration");
+    if (configuration == null) {
+      throw new IllegalArgumentException("configuration must not be null");
+    }
     final SortedMap<String, TokenizerBackendFactory> factories = new TreeMap<>();
     for (TokenizerBackendFactory factory : ServiceLoader.load(TokenizerBackendFactory.class)) {
       final String id = validId(factory.engineId(), factory.getClass().getName());
@@ -62,9 +63,11 @@ public final class TokenizerRegistry implements AutoCloseable {
     final SortedMap<String, Tokenizer> tokenizers = new TreeMap<>();
     try {
       for (Map.Entry<String, TokenizerBackendFactory> entry : factories.entrySet()) {
-        final Optional<Tokenizer> tokenizer = Objects.requireNonNull(
-            entry.getValue().create(configuration),
-            entry.getValue().getClass().getName() + ".create returned null");
+        final Optional<Tokenizer> tokenizer = entry.getValue().create(configuration);
+        if (tokenizer == null) {
+          throw new IllegalStateException(
+              entry.getValue().getClass().getName() + ".create returned null");
+        }
         tokenizer.ifPresent(value -> tokenizers.put(entry.getKey(), value));
       }
       return new TokenizerRegistry(tokenizers);
@@ -104,11 +107,13 @@ public final class TokenizerRegistry implements AutoCloseable {
     return List.copyOf(tokenizers.keySet());
   }
 
+  /** {@inheritDoc} */
   @Override
   public void close() {
     closeAll(tokenizers.values());
   }
 
+  /** Returns a normalized, validated provider id. */
   private static String validId(String id, String owner) {
     if (id == null || id.isBlank() || !id.equals(id.toLowerCase(Locale.ROOT))) {
       throw AnalysisException.invalidArgument(
@@ -118,6 +123,7 @@ public final class TokenizerRegistry implements AutoCloseable {
     return id;
   }
 
+  /** Closes every configured provider. */
   private static void closeAll(Iterable<Tokenizer> tokenizers) {
     final List<Exception> failures = new ArrayList<>();
     for (Tokenizer tokenizer : tokenizers) {

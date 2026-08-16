@@ -19,11 +19,11 @@ syntax = "proto3";
 
 package org.apache.opennlp.grpc.v1;
 
-option java_package = "org.apache.opennlp.grpc.v1";
+import "org/apache/opennlp/grpc/v1/opennlp_document.proto";
+
 option java_multiple_files = true;
 option java_outer_classname = "OpenNlpPipelineProto";
-
-import "org/apache/opennlp/grpc/v1/opennlp_document.proto";
+option java_package = "org.apache.opennlp.grpc.v1";
 
 // Pipeline steps supported by AnalyzeDocument (and future streaming variants). A
 // profile lists the steps to run; the server runs them in a fixed execution order
@@ -172,6 +172,7 @@ message ChunkingSpec {
   // Must satisfy 0 <= chunk_overlap < chunk_size (else INVALID_ARGUMENT). Defaults
   // to 0 (no overlap).
   int32 chunk_overlap = 3;
+  // Whether to normalize whitespace in each produced chunk before embedding.
   bool clean_text = 4;
   // When clean_text is true, URL substrings are preserved verbatim while surrounding
   // whitespace is normalized.
@@ -207,7 +208,7 @@ message SemanticChunkingConfig {
   // uses the sole entry in ChunkEmbedConfigEntry.embedding_model_ids when exactly
   // one id is present; otherwise semantic chunking is rejected with INVALID_ARGUMENT.
   optional string semantic_embedding_model_id = 5;
-  // Additive strongly typed replacement for semantic_embedding_model_id. When set,
+  // Typed semantic embedding selection. When set,
   // model_id selects the logical model and backend optionally pins one route.
   optional EmbeddingSelector semantic_embedding_selector = 6;
 }
@@ -254,8 +255,11 @@ enum StandardTokenizerEngine {
 // enum; custom holds the stable id of a TokenizerBackendFactory discovered through
 // ServiceLoader. An unset selector defaults to MODEL.
 message TokenizerSelector {
+  // The selected standard tokenizer or extension id.
   oneof kind {
+    // A tokenizer engine defined by this contract.
     StandardTokenizerEngine standard = 1;
+    // The stable id of a ServiceLoader-provided tokenizer.
     string custom = 2;
   }
 }
@@ -275,8 +279,11 @@ enum StandardSentenceDetectorEngine {
 // the enum; custom holds the stable id of a SentenceDetectorBackendFactory discovered
 // through ServiceLoader. An unset selector defaults to MODEL.
 message SentenceDetectorSelector {
+  // The selected standard detector or extension id.
   oneof kind {
+    // A sentence-detector engine defined by this contract.
     StandardSentenceDetectorEngine standard = 1;
+    // The stable id of a ServiceLoader-provided sentence detector.
     string custom = 2;
   }
 }
@@ -313,9 +320,8 @@ message AnalysisProfile {
   EnginePolicy parse_engine_policy = 8;
   // Rungs for PIPELINE_STEP_NORMALIZE. Required when that step is requested.
   NormalizationSpec normalization = 9;
-  // Compatibility tokenizer selector retained for existing v1 clients; new clients
-  // should use tokenizer. Unset or "model" selects the
-  // bundle's TokenizerME (the previous behavior). "uax29" selects the rule-based
+  // Open tokenizer selector. Unset or "model" selects the bundle's TokenizerME.
+  // "uax29" selects the rule-based
   // Unicode UAX #29 word tokenizer, which needs no model and additionally
   // populates Token.word_type. "lattice" selects Viterbi lattice segmentation over
   // an operator-configured MeCab-format dictionary (select it with
@@ -364,7 +370,7 @@ message AnalysisProfile {
   // dictionary; an unknown id, or no selectable dictionary, => NOT_FOUND.
   optional string lattice_dictionary_id = 17;
 
-  // Strongly typed replacement for tokenizer_engine. Setting both fields is invalid.
+  // Typed tokenizer selection. Setting both tokenizer fields is invalid.
   // The standard arm covers OpenNLP-owned engines; custom selects a ServiceLoader
   // extension by its stable id.
   optional TokenizerSelector tokenizer = 18;
@@ -400,45 +406,69 @@ message NormalizationSpec {
 // subset (everything except NFC, NFKC, CASE_FOLD, ACCENT_FOLD, CONFUSABLE_FOLD)
 // composes into an aligned pipeline that reports exact span mappings.
 enum NormalizationRung {
+  // No normalization rung was selected.
   NORMALIZATION_RUNG_UNSPECIFIED = 0;
+  // Remove invisible formatting characters.
   NORMALIZATION_RUNG_STRIP_INVISIBLE = 1;
+  // Apply Unicode canonical composition.
   NORMALIZATION_RUNG_NFC = 2;
+  // Apply Unicode compatibility composition.
   NORMALIZATION_RUNG_NFKC = 3;
+  // Collapse whitespace, including line breaks.
   NORMALIZATION_RUNG_WHITESPACE = 4;
+  // Collapse whitespace while retaining line breaks.
   NORMALIZATION_RUNG_WHITESPACE_PRESERVE_LINE_BREAKS = 5;
+  // Normalize quotation-mark variants.
   NORMALIZATION_RUNG_QUOTES = 6;
+  // Normalize dash variants.
   NORMALIZATION_RUNG_DASHES = 7;
+  // Normalize digit variants.
   NORMALIZATION_RUNG_DIGITS = 8;
+  // Normalize ellipsis variants.
   NORMALIZATION_RUNG_ELLIPSIS = 9;
+  // Normalize bullet variants.
   NORMALIZATION_RUNG_BULLETS = 10;
+  // Apply simple Unicode case folding.
   NORMALIZATION_RUNG_CASE_FOLD = 11;
+  // Apply full Unicode case folding with length-changing mappings.
   NORMALIZATION_RUNG_FULL_CASE_FOLD = 12;
+  // Remove accents through Unicode decomposition and mark removal.
   NORMALIZATION_RUNG_ACCENT_FOLD = 13;
+  // Convert supported emoji to text emoticons.
   NORMALIZATION_RUNG_EMOJI_TO_EMOTICON = 14;
+  // Convert supported text emoticons to emoji.
   NORMALIZATION_RUNG_EMOTICON_TO_EMOJI = 15;
+  // Fold Unicode confusables to their skeleton form.
   NORMALIZATION_RUNG_CONFUSABLE_FOLD = 16;
 }
 
 // OpenNLP-owned inference engines whose identifiers are stable parts of this API.
 // ServiceLoader extensions use EngineSelector.custom so their namespace remains open.
 enum StandardInferenceEngine {
+  // No standard inference engine was selected.
   STANDARD_INFERENCE_ENGINE_UNSPECIFIED = 0;
+  // The classic OpenNLP maximum-entropy runtime.
   STANDARD_INFERENCE_ENGINE_OPENNLP_ME = 1;
+  // Local inference through ONNX Runtime.
   STANDARD_INFERENCE_ENGINE_ONNX = 2;
+  // Local GPU inference through the CUDA backend.
   STANDARD_INFERENCE_ENGINE_CUDA = 3;
 }
 
 // Selects either a standard OpenNLP inference engine or an extension-provided engine id.
 message EngineSelector {
+  // The selected standard engine or extension id.
   oneof kind {
+    // An inference engine defined by this contract.
     StandardInferenceEngine standard = 1;
+    // The stable id of a ServiceLoader-provided engine.
     string custom = 2;
   }
 }
 
 // Selects which engine(s) run for a span-producing capability (NER, chunking) when a
 // logical component is served by more than one provider, and how their outputs are
-// combined. The number of `selectors` (or legacy `engines`) listed drives the behavior,
+// combined. The number of `selectors` or `engines` listed drives the behavior,
 // so the common cases need no mode flag:
 //   - empty  => run each component's highest-priority engine, falling back to the next on
 //               failure (the resilient default);
@@ -545,7 +575,7 @@ message AnalysisOptions {
   // Parse representations to populate for PIPELINE_STEP_PARSE. Empty selects the default set
   // (STRUCTURED + BRACKETED); listing fewer trims the response to just those views.
   repeated ParseFormat parse_formats = 7;
-  // Additive strongly typed replacement for embedding_model_id. When set, model_id
+  // Typed embedding selection. When set, model_id
   // selects the logical model and backend optionally pins one route.
   optional EmbeddingSelector embedding_selector = 8;
   // When true, PIPELINE_STEP_EMBED also returns the mean of the sentence vectors as

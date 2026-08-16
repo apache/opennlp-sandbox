@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.SortedMap;
@@ -47,7 +46,9 @@ public final class SentenceDetectorRegistry implements AutoCloseable {
    * @return The custom sentence-detector registry. Never {@code null}.
    */
   public static SentenceDetectorRegistry create(Map<String, String> configuration) {
-    Objects.requireNonNull(configuration, "configuration");
+    if (configuration == null) {
+      throw new IllegalArgumentException("configuration must not be null");
+    }
     final SortedMap<String, SentenceDetectorBackendFactory> factories = new TreeMap<>();
     for (SentenceDetectorBackendFactory factory
         : ServiceLoader.load(SentenceDetectorBackendFactory.class)) {
@@ -63,9 +64,11 @@ public final class SentenceDetectorRegistry implements AutoCloseable {
     final SortedMap<String, SentenceDetector> detectors = new TreeMap<>();
     try {
       for (Map.Entry<String, SentenceDetectorBackendFactory> entry : factories.entrySet()) {
-        final Optional<SentenceDetector> detector = Objects.requireNonNull(
-            entry.getValue().create(configuration),
-            entry.getValue().getClass().getName() + ".create returned null");
+        final Optional<SentenceDetector> detector = entry.getValue().create(configuration);
+        if (detector == null) {
+          throw new IllegalStateException(
+              entry.getValue().getClass().getName() + ".create returned null");
+        }
         detector.ifPresent(value -> detectors.put(entry.getKey(), value));
       }
       return new SentenceDetectorRegistry(detectors);
@@ -105,11 +108,13 @@ public final class SentenceDetectorRegistry implements AutoCloseable {
     return List.copyOf(detectors.keySet());
   }
 
+  /** {@inheritDoc} */
   @Override
   public void close() {
     closeAll(detectors.values());
   }
 
+  /** Returns a normalized, validated provider id. */
   private static String validId(String id, String owner) {
     if (id == null || id.isBlank() || !id.equals(id.toLowerCase(Locale.ROOT))) {
       throw AnalysisException.invalidArgument(
@@ -119,6 +124,7 @@ public final class SentenceDetectorRegistry implements AutoCloseable {
     return id;
   }
 
+  /** Closes every configured provider. */
   private static void closeAll(Iterable<SentenceDetector> detectors) {
     final List<Exception> failures = new ArrayList<>();
     for (SentenceDetector detector : detectors) {

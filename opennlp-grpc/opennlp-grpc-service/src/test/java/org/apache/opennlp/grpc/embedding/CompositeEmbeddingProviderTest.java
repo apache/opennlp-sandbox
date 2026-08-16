@@ -34,8 +34,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link CompositeEmbeddingProvider}'s multi-engine routing — the same logical model served
- * by several engines with priority, fallback, and {@code id@engine} pinning — using stub providers
+ * Tests {@link CompositeEmbeddingProvider}'s multi-engine routing: the same logical model served
+ * by several engines with priority, fallback, and {@code id@engine} pinning, using stub providers
  * with distinct backend ids, so no real engine is needed.
  */
 class CompositeEmbeddingProviderTest {

@@ -300,6 +300,7 @@ final class DocumentOffsetEncoder {
     return remapped.build();
   }
 
+  /** Remaps entity. */
   private static NamedEntity remapEntity(NamedEntity entity, OffsetMapper mapper) {
     final NamedEntity.Builder remapped = entity.toBuilder()
         .setAnnotationSpan(remap(entity.getAnnotationSpan(), mapper));
@@ -312,6 +313,7 @@ final class DocumentOffsetEncoder {
     return remapped.build();
   }
 
+  /** Remaps syntactic chunk. */
   private static ChunkSpan remapSyntacticChunk(ChunkSpan chunk, OffsetMapper mapper) {
     final ChunkSpan.Builder remapped = chunk.toBuilder()
         .setAnnotationSpan(remap(chunk.getAnnotationSpan(), mapper));
@@ -324,6 +326,7 @@ final class DocumentOffsetEncoder {
     return remapped.build();
   }
 
+  /** Remaps chunk group. */
   private static ChunkEmbeddingGroup remapChunkGroup(
       ChunkEmbeddingGroup group, OffsetMapper mapper) {
     final ChunkEmbeddingGroup.Builder remapped = group.toBuilder();
@@ -357,6 +360,7 @@ final class DocumentOffsetEncoder {
     return builder.build();
   }
 
+  /** Remaps one annotation span to the requested coordinate space. */
   private static AnnotationSpan remap(AnnotationSpan span, OffsetMapper mapper) {
     return span.toBuilder()
         .setStart(mapper.toTarget(span.getStart()))
@@ -367,6 +371,7 @@ final class DocumentOffsetEncoder {
   // Rescales NormalizationResult alignment runs from Java UTF-16 units to the requested
   // encoding. Run boundaries are exact span boundaries on both texts, so each side converts
   // through its own OffsetMapper by differencing cumulative positions.
+  /** Rescales normalization alignment lengths to the requested encoding. */
   private static org.apache.opennlp.grpc.v1.NormalizationResult rescaleAlignment(
       org.apache.opennlp.grpc.v1.NormalizationResult normalization,
       OffsetMapper originalMapper,

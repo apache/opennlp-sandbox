@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -46,9 +45,15 @@ public final class ModelArtifactRegistry {
   public record Artifact(ComponentType componentType, String hash, String name) {
     /** Validates non-null fields. */
     public Artifact {
-      Objects.requireNonNull(componentType, "componentType");
-      Objects.requireNonNull(hash, "hash");
-      Objects.requireNonNull(name, "name");
+      if (componentType == null) {
+        throw new IllegalArgumentException("componentType must not be null");
+      }
+      if (hash == null) {
+        throw new IllegalArgumentException("hash must not be null");
+      }
+      if (name == null) {
+        throw new IllegalArgumentException("name must not be null");
+      }
     }
   }
 
@@ -161,10 +166,15 @@ public final class ModelArtifactRegistry {
      * @param hash          The lowercase hex SHA-256 digest. Must not be blank.
      * @param name          The logical model name or id. Must not be blank.
      *
-     * @return This builder.
-     */
+   * @return This builder.
+   *
+   * @throws IllegalArgumentException If {@code componentType} is {@code null}, or if
+   *         {@code hash} or {@code name} is blank.
+   */
     public Builder register(ComponentType componentType, String hash, String name) {
-      Objects.requireNonNull(componentType, "componentType");
+      if (componentType == null) {
+        throw new IllegalArgumentException("componentType must not be null");
+      }
       if (hash == null || hash.isBlank()) {
         throw new IllegalArgumentException("hash must not be blank");
       }

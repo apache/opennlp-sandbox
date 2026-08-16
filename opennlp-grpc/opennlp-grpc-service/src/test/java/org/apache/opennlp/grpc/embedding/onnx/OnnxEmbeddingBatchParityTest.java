@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Verifies that the ONNX padded-tensor {@link AbstractOnnxEmbeddingProvider#embedBatch batch path}
- * produces exactly the same vectors as embedding each text on its own — the property that makes
+ * produces exactly the same vectors as embedding each text on its own. This property makes
  * batching a pure performance optimization. The texts deliberately differ in token length so the
  * batch is right-padded and the attention mask must exclude the padding from pooling.
  *

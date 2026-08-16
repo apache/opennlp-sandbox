@@ -23,15 +23,10 @@ import org.apache.opennlp.grpc.v1.DocumentClassification;
 
 /**
  * A whole-document classifier keyed by a model id. One model emits a fixed set of categories
- * with a score for each; the orchestrator runs the selected model once per document and stores
- * the result in {@link org.apache.opennlp.grpc.v1.OpenNlpDocument#getClassification()}.
+ * with a score for each. The classification input provides both raw text and tokens so the model
+ * can select the representation it requires.
  *
- * <p>This is the document-categorization analogue of {@link NerModel}: built-in backends wrap
- * OpenNLP's classic {@code DocumentCategorizerME} and ONNX {@code DocumentCategorizerDL}, while
- * a third-party backend (e.g. a remote classifier) implements this interface directly. The
- * interface deliberately accepts both the raw document text and its tokens so an implementation
- * can use whichever its model expects — classic maxent consumes tokens, transformer models
- * re-tokenize the raw text internally.</p>
+ * <p>Thread safety is implementation specific.</p>
  */
 public interface DocCategorizerModel {
 
@@ -57,14 +52,8 @@ public interface DocCategorizerModel {
   List<String> categories();
 
   /**
-   * Whether this model needs tokens (classic maxent, which classifies a bag of tokens) rather
-   * than only the raw text (transformer models that re-tokenize the text internally). The
-   * orchestrator uses this to decide whether tokenization must run before the model: a
-   * raw-text model can therefore classify under a {@code DOC_CATEGORIZE}-only profile without
-   * {@code TOKENIZE}.
-   *
-   * <p>Defaults to {@code true} so existing backends keep their conservative tokenized behavior
-   * unless they explicitly opt into raw-text classification.</p>
+   * Reports whether tokenization must run before this model. A raw-text model may classify under
+   * a {@code DOC_CATEGORIZE}-only profile without {@code TOKENIZE}. The default is {@code true}.
    *
    * @return {@code true} if the model must be given tokens; {@code false} if the raw text
    *     suffices.

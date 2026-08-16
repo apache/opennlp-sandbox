@@ -20,6 +20,9 @@ package org.apache.opennlp.grpc.processor.basic;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
+import org.apache.opennlp.grpc.model.ModelBundleCache;
+import org.apache.opennlp.grpc.model.StubNerBackendFactory;
+import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
@@ -66,11 +69,62 @@ class BasicDocumentAnalyzerTest {
   }
 
   @Test
+  void rejectsNullInjectedModelCacheAtPublicBoundary() {
+    final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+        () -> new BasicDocumentAnalyzer(ProfileRegistry.createDefault(), null));
+    assertEquals("modelBundleCache must not be null", error.getMessage());
+  }
+
+  @Test
   void preparedSessionRejectsNullDocumentAtPublicBoundary() {
     final var session = analyzer.openSession(AnalyzeStreamConfiguration.getDefaultInstance());
     final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
         () -> session.analyze(null));
     assertEquals("document must not be null", error.getMessage());
+  }
+
+  @Test
+  void closesResourcesCreatedByConfigurationConstructor() {
+    StubNerBackendFactory.resetCloseCount();
+
+    try (BasicDocumentAnalyzer owned = new BasicDocumentAnalyzer(
+        Map.of(StubNerBackendFactory.KEY_CLOSEABLE_TYPE, "person"))) {
+      assertTrue(owned instanceof AutoCloseable);
+      assertEquals(0, StubNerBackendFactory.closeCount());
+    }
+
+    assertEquals(1, StubNerBackendFactory.closeCount());
+  }
+
+  @Test
+  void leavesInjectedModelCacheUnderCallerOwnership() {
+    StubNerBackendFactory.resetCloseCount();
+    final ModelBundleCache cache = new ModelBundleCache(
+        Map.of(StubNerBackendFactory.KEY_CLOSEABLE_TYPE, "person"));
+    final BasicDocumentAnalyzer injected = new BasicDocumentAnalyzer(
+        ProfileRegistry.createDefault(), cache);
+
+    injected.close();
+    assertEquals(0, StubNerBackendFactory.closeCount());
+
+    cache.close();
+    assertEquals(1, StubNerBackendFactory.closeCount());
+  }
+
+  @Test
+  void closeIsIdempotentAndRejectsFurtherAnalysis() {
+    StubNerBackendFactory.resetCloseCount();
+    final BasicDocumentAnalyzer owned = new BasicDocumentAnalyzer(
+        Map.of(StubNerBackendFactory.KEY_CLOSEABLE_TYPE, "person"));
+
+    owned.close();
+    owned.close();
+
+    assertEquals(1, StubNerBackendFactory.closeCount());
+    final IllegalStateException error = assertThrows(IllegalStateException.class,
+        () -> owned.analyze(AnalyzeDocumentRequest.getDefaultInstance()));
+    assertEquals("BasicDocumentAnalyzer is closed and cannot analyze documents",
+        error.getMessage());
   }
 
   @Test

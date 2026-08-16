@@ -56,11 +56,13 @@ public final class ClassicDocCategorizerBackendFactory implements DocCategorizer
   private static final Logger logger =
       LoggerFactory.getLogger(ClassicDocCategorizerBackendFactory.class);
 
+  /** {@inheritDoc} */
   @Override
   public String factoryId() {
     return FACTORY_ID;
   }
 
+  /** {@inheritDoc} */
   @Override
   public List<DocCategorizerModel> create(Map<String, String> configuration) {
     final Map<String, String> paths = parseConfiguredPaths(configuration);
@@ -71,6 +73,7 @@ public final class ClassicDocCategorizerBackendFactory implements DocCategorizer
     return models;
   }
 
+  /** Parses configured paths. */
   private static Map<String, String> parseConfiguredPaths(Map<String, String> configuration) {
     final Map<String, String> paths = new LinkedHashMap<>();
     for (Map.Entry<String, String> entry : configuration.entrySet()) {
@@ -105,6 +108,7 @@ public final class ClassicDocCategorizerBackendFactory implements DocCategorizer
     return paths;
   }
 
+  /** Loads categorizer. */
   private static DocCategorizerModel loadCategorizer(String id, String path) {
     try (InputStream input = new FileInputStream(path)) {
       final DocumentCategorizerME categorizer = new DocumentCategorizerME(new DoccatModel(input));

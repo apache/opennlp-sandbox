@@ -17,7 +17,6 @@
  */
 package org.apache.opennlp.grpc.embedding;
 
-import java.util.Objects;
 
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.EmbeddingBackendSelector;
@@ -44,7 +43,9 @@ public final class EmbeddingBackendSelections {
    * @throws AnalysisException If typed and compatibility fields are mixed or typed input is empty.
    */
   public static String selectedId(EmbeddingSelector selector) {
-    Objects.requireNonNull(selector, "selector");
+    if (selector == null) {
+      throw new IllegalArgumentException("selector must not be null");
+    }
     if (selector.hasBackendId() && selector.hasBackend()) {
       throw AnalysisException.invalidArgument(
           "EmbeddingSelector.backend_id and EmbeddingSelector.backend are mutually exclusive");
@@ -75,6 +76,7 @@ public final class EmbeddingBackendSelections {
     }
   }
 
+  /** Returns the open id for a standard enum value. */
   private static String standardId(StandardEmbeddingBackend backend) {
     switch (backend) {
       case STANDARD_EMBEDDING_BACKEND_ONNX:

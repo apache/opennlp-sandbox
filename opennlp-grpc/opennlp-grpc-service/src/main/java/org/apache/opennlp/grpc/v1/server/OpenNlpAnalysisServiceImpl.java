@@ -140,11 +140,23 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
       Executor analysisExecutor,
       int analysisStreamWindow,
       int maxTextBytes) {
-    final DocumentAnalyzer delegate = Objects.requireNonNull(documentAnalyzer, "documentAnalyzer");
-    this.profileRegistry = Objects.requireNonNull(profileRegistry, "profileRegistry");
-    this.modelBundleCache = Objects.requireNonNull(modelBundleCache, "modelBundleCache");
+    if (documentAnalyzer == null) {
+      throw new IllegalArgumentException("documentAnalyzer must not be null");
+    }
+    final DocumentAnalyzer delegate = documentAnalyzer;
+    if (profileRegistry == null) {
+      throw new IllegalArgumentException("profileRegistry must not be null");
+    }
+    this.profileRegistry = profileRegistry;
+    if (modelBundleCache == null) {
+      throw new IllegalArgumentException("modelBundleCache must not be null");
+    }
+    this.modelBundleCache = modelBundleCache;
     this.opennlpVersion = opennlpVersion == null ? "unknown" : opennlpVersion;
-    this.analysisExecutor = Objects.requireNonNull(analysisExecutor, "analysisExecutor");
+    if (analysisExecutor == null) {
+      throw new IllegalArgumentException("analysisExecutor must not be null");
+    }
+    this.analysisExecutor = analysisExecutor;
     if (analysisStreamWindow < 1) {
       throw new IllegalArgumentException("analysisStreamWindow must be positive");
     }
@@ -167,6 +179,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
         responseObserver);
   }
 
+  /** {@inheritDoc} */
   @Override
   public void analyzeDocument(
       AnalyzeDocumentRequest request,
@@ -188,6 +201,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
     }
   }
 
+  /** {@inheritDoc} */
   @Override
   public StreamObserver<EmbedTextRequest> embedText(
       StreamObserver<EmbedTextResponse> responseObserver) {
@@ -253,6 +267,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
       }
     }
 
+    /** {@inheritDoc} */
     @Override
     public void onNext(EmbedTextRequest request) {
       if (failed) {
@@ -282,12 +297,14 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
       }
     }
 
+    /** {@inheritDoc} */
     @Override
     public void onError(Throwable t) {
       // The client cancelled or the transport failed; nothing to send back on a dead call.
       logger.debug("EmbedText stream closed by client/transport", t);
     }
 
+    /** {@inheritDoc} */
     @Override
     public void onCompleted() {
       if (!failed) {
@@ -295,6 +312,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
       }
     }
 
+    /** Resolves and fixes the embedding route for this stream. */
     private void resolveRoute(EmbedTextRequest request) {
       if (request.hasModelId() && request.hasEmbeddingSelector()) {
         throw AnalysisException.invalidArgument(
@@ -350,10 +368,12 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
       }
     }
 
+    /** Returns a client-facing backend label. */
     private static String displayBackend(String backendId) {
       return backendId == null ? "default" : backendId;
     }
 
+    /** Returns validated request text. */
     private static String validText(EmbedTextRequest request, int maxTextBytes) {
       final String text = request.getText();
       if (text.isBlank()) {
@@ -374,6 +394,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
     // requests the next inbound message only after onNext returns, waiting here also stops
     // granting the client send window: backpressure propagates end to end instead of
     // accumulating on this heap.
+    /** Waits until the outbound transport can accept a response. */
     private void awaitReady() {
       if (serverCallObserver == null) {
         return;
@@ -405,12 +426,14 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
       writesSinceReady = 0;
     }
 
+    /** Terminates the embedding stream once with the given status. */
     private void fail(RuntimeException statusException) {
       failed = true;
       responseObserver.onError(statusException);
     }
   }
 
+  /** {@inheritDoc} */
   @Override
   public void getServiceInfo(
       GetServiceInfoRequest request,
@@ -431,6 +454,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
     responseObserver.onCompleted();
   }
 
+  /** {@inheritDoc} */
   @Override
   public void listModelBundles(
       ListModelBundlesRequest request,
@@ -441,6 +465,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
     responseObserver.onCompleted();
   }
 
+  /** Returns the packaged service version or a development fallback. */
   private static String serviceVersion() {
     final String implementationVersion = OpenNlpAnalysisServiceImpl.class
         .getPackage().getImplementationVersion();
@@ -448,8 +473,10 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
         ? "dev" : implementationVersion;
   }
 
+  /** Wraps an analyzer with the operator text-size limit. */
   private static DocumentAnalyzer limitText(DocumentAnalyzer delegate, int maxTextBytes) {
     return new DocumentAnalyzer() {
+      /** {@inheritDoc} */
       @Override
       public AnalyzeDocumentResponse analyze(AnalyzeDocumentRequest request) {
         if (request != null && request.hasDocument()) {
@@ -458,6 +485,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
         return delegate.analyze(request);
       }
 
+      /** {@inheritDoc} */
       @Override
       public DocumentAnalysisSession openSession(
           org.apache.opennlp.grpc.v1.AnalyzeStreamConfiguration configuration) {
@@ -472,6 +500,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
     };
   }
 
+  /** Validates text. */
   private static void validateText(String text, int maxTextBytes) {
     if (exceedsUtf8Bytes(text, maxTextBytes)) {
       throw AnalysisException.invalidArgument(
@@ -479,6 +508,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
     }
   }
 
+  /** Returns whether UTF-8 encoding exceeds the configured byte limit. */
   private static boolean exceedsUtf8Bytes(String text, int maxTextBytes) {
     int remaining = maxTextBytes;
     for (int index = 0; index < text.length(); index++) {

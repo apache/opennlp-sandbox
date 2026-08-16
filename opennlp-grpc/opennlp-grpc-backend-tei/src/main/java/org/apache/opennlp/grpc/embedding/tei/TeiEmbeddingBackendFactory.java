@@ -44,11 +44,13 @@ public final class TeiEmbeddingBackendFactory implements EmbeddingBackendFactory
   public TeiEmbeddingBackendFactory() {
   }
 
+  /** {@inheritDoc} */
   @Override
   public String backendId() {
     return BACKEND_ID;
   }
 
+  /** {@inheritDoc} */
   @Override
   public EmbeddingProvider create(Map<String, String> configuration) {
     return new TeiEmbeddingProvider(configuration);

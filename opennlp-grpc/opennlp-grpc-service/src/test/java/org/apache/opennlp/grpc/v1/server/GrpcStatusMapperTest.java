@@ -22,11 +22,13 @@ import java.util.EnumMap;
 import io.grpc.Status;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.processor.AnalysisException.FailureType;
+import org.apache.opennlp.grpc.v1.GrpcStatusCode;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class GrpcStatusMapperTest {
 
@@ -59,6 +61,35 @@ class GrpcStatusMapperTest {
       seen.put(type, code);
     }
     assertEquals(FailureType.values().length, seen.size());
+  }
+
+  @Test
+  void mapsEveryNonOkGrpcCodeToTheSameWireNumber() {
+    for (Status.Code code : Status.Code.values()) {
+      if (code != Status.Code.OK) {
+        final GrpcStatusCode wireCode = GrpcStatusMapper.toWireCode(Status.fromCode(code));
+        assertEquals(code.value(), wireCode.getNumber(), code.name());
+      }
+    }
+  }
+
+  @Test
+  void rejectsOkAsADocumentErrorCode() {
+    final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+        () -> GrpcStatusMapper.toWireCode(Status.OK));
+    assertEquals("gRPC status code OK cannot represent an AnalyzeStreamError",
+        error.getMessage());
+  }
+
+  @Test
+  void rejectsNullStatusInputsAtThePublicBoundary() {
+    final IllegalArgumentException domainError = assertThrows(IllegalArgumentException.class,
+        () -> GrpcStatusMapper.toStatus(null));
+    assertEquals("exception must not be null", domainError.getMessage());
+
+    final IllegalArgumentException wireError = assertThrows(IllegalArgumentException.class,
+        () -> GrpcStatusMapper.toWireCode(null));
+    assertEquals("status must not be null", wireError.getMessage());
   }
 
   private static AnalysisException exceptionFor(FailureType type) {

@@ -36,11 +36,13 @@ public final class StaticTableEmbeddingBackendFactory implements EmbeddingBacken
   /** The backend id: {@value}. */
   public static final String BACKEND_ID = "static";
 
+  /** {@inheritDoc} */
   @Override
   public String backendId() {
     return BACKEND_ID;
   }
 
+  /** {@inheritDoc} */
   @Override
   public EmbeddingProvider create(Map<String, String> configuration) {
     return new StaticTableEmbeddingProvider(configuration);

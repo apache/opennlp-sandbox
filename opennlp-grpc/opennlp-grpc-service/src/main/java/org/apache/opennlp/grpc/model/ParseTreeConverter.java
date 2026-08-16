@@ -32,7 +32,7 @@ import org.apache.opennlp.grpc.v1.ParseTree;
  * parser model required.
  *
  * <p>The structured tree links terminals back to the sentence's tokens by index (rather than
- * repeating token text), and computes nonterminal spans from their descendants — both in the
+ * repeating token text), and computes nonterminal spans from their descendants, both in the
  * document UTF-16 coordinate space the final offset-encoding pass expects. The bracketed view is
  * OpenNLP's own {@link Parse#show(StringBuffer)} output (Penn-Treebank style).</p>
  */

@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import ai.onnxruntime.NodeInfo;
@@ -195,7 +194,9 @@ final class OnnxSentenceEmbedder extends AbstractDL {
    * @throws OrtException If inference fails.
    */
   float[][] embedBatch(List<String> texts) throws OrtException {
-    Objects.requireNonNull(texts, "texts must not be null");
+    if (texts == null) {
+      throw new IllegalArgumentException("texts must not be null");
+    }
     final int batch = texts.size();
     if (batch == 0) {
       return new float[0][];
@@ -203,7 +204,11 @@ final class OnnxSentenceEmbedder extends AbstractDL {
     final long[][] ids = new long[batch][];
     int maxLength = 0;
     for (int i = 0; i < batch; i++) {
-      ids[i] = tokenIds(Objects.requireNonNull(texts.get(i), "texts must not contain null elements"));
+      final String text = texts.get(i);
+      if (text == null) {
+        throw new IllegalArgumentException("texts must not contain null elements");
+      }
+      ids[i] = tokenIds(text);
       maxLength = Math.max(maxLength, ids[i].length);
     }
 
@@ -283,6 +288,7 @@ final class OnnxSentenceEmbedder extends AbstractDL {
     return mean;
   }
 
+  /** Encodes text as padded model token ids. */
   private long[] tokenIds(String text) {
     String[] tokens = bertTokenizer.tokenize(text);
     if (tokens.length > MAX_SEQUENCE_TOKENS) {

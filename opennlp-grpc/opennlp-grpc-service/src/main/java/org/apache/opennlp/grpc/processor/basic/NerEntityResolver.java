@@ -44,11 +44,11 @@ import org.slf4j.LoggerFactory;
  * <p>The number of {@code engines} requested drives the behavior (matching
  * {@code EnginePolicy}):</p>
  * <ul>
- *   <li><b>none</b> — each recognizer runs its highest-priority engine, falling back to the next on
+ *   <li><b>none</b>: each recognizer runs its highest-priority engine, falling back to the next on
  *       failure;</li>
- *   <li><b>one</b> — that engine is pinned (no fallback); recognizers it does not serve are
+ *   <li><b>one</b>: that engine is pinned (no fallback); recognizers it does not serve are
  *       skipped;</li>
- *   <li><b>two or more</b> — all listed engines run and their entities are unioned, each tagged with
+ *   <li><b>two or more</b>: all listed engines run and their entities are unioned, each tagged with
  *       its producer.</li>
  * </ul>
  *
@@ -122,6 +122,7 @@ final class NerEntityResolver {
     return raw ? mergeRaw(hits) : mergeConsensus(hits);
   }
 
+  /** Runs the selected engine policy for one logical recognizer and accumulates its hits. */
   private void collectHits(String recognizerId, AnnotatedSentence sentence, List<Hit> hits) {
     if (engines.isEmpty()) {
       runWithFallback(recognizerId, sentence, hits);
@@ -163,6 +164,7 @@ final class NerEntityResolver {
     }
   }
 
+  /** Executes one recognizer model and records provider provenance for each result. */
   private void addHits(String recognizerId, NerModel model, AnnotatedSentence sentence,
       List<Hit> hits) {
     for (NamedEntity entity : model.recognize(sentence, includeProbabilities)) {
@@ -170,6 +172,7 @@ final class NerEntityResolver {
     }
   }
 
+  /** Preserves every provider result while normalizing ordering and source metadata. */
   private List<NamedEntity> mergeRaw(List<Hit> hits) {
     final List<Hit> sorted = sortedBySpan(hits);
     final List<NamedEntity> entities = new ArrayList<>(sorted.size());
@@ -187,6 +190,7 @@ final class NerEntityResolver {
     return entities;
   }
 
+  /** Collapses overlapping same-type hits into consensus entities with combined provenance. */
   private List<NamedEntity> mergeConsensus(List<Hit> hits) {
     final Map<String, List<Hit>> byType = new LinkedHashMap<>();
     for (Hit hit : hits) {
@@ -253,6 +257,7 @@ final class NerEntityResolver {
     return entity.build();
   }
 
+  /** Builds source provenance for one entity hit. */
   private EntitySource sourceOf(Hit hit, AnnotationSpan canonicalSpan) {
     final EntitySource.Builder source = EntitySource.newBuilder()
         .setRecognizerId(hit.recognizerId())
@@ -267,10 +272,12 @@ final class NerEntityResolver {
     return source.build();
   }
 
+  /** Returns the hit probability or {@link Double#NaN} when absent. */
   private static double probabilityOrNaN(Hit hit) {
     return hit.entity().hasProbability() ? hit.entity().getProbability() : Double.NaN;
   }
 
+  /** Returns hits in stable span and backend order. */
   private static List<Hit> sortedBySpan(List<Hit> hits) {
     final List<Hit> sorted = new ArrayList<>(hits);
     sorted.sort(Comparator
@@ -280,6 +287,7 @@ final class NerEntityResolver {
     return sorted;
   }
 
+  /** Returns the document text covered by a valid span. */
   private String textOf(AnnotationSpan span) {
     final int start = span.getStart();
     final int end = span.getEnd();

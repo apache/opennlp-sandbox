@@ -1,4 +1,4 @@
-# Local-only buf proto tooling — intentionally NOT committed (buf ties generation to its hosted
+# Local-only buf proto tooling, intentionally NOT committed (buf ties generation to its hosted
 # Buf Schema Registry; we keep these for local `buf lint` / `buf generate` only). The proto
 # comments themselves live in the .proto files and are committed.
 **/buf.yaml

@@ -69,6 +69,7 @@ final class DocumentLayersValidator {
     }
   }
 
+  /** Validates standard value arm. */
   private static void validateStandardValueArm(AnnotationLayer layer) {
     if (layer.getIdentity().getKindCase()
         != org.apache.opennlp.grpc.v1.LayerIdentity.KindCase.STANDARD) {
@@ -105,6 +106,7 @@ final class DocumentLayersValidator {
     }
   }
 
+  /** Validates layer. */
   private static void validateLayer(
       AnnotationLayer layer, int textLength, EmbeddingProvider embeddingProvider) {
     final boolean positional = layer.getScope() == LayerScope.LAYER_SCOPE_POSITIONAL;
@@ -220,6 +222,7 @@ final class DocumentLayersValidator {
     }
   }
 
+  /** Validates embedding. */
   private static void validateEmbedding(
       EmbeddingAnnotation annotation,
       boolean positional,
@@ -239,6 +242,7 @@ final class DocumentLayersValidator {
         annotation.getVectorNormalization(), annotation.getVectorList());
   }
 
+  /** Validates chunk group. */
   private static void validateChunkGroup(
       ChunkEmbeddingGroup group, int textLength, EmbeddingProvider embeddingProvider) {
     nonBlank(group.getGroupId(), "chunk group id");
@@ -261,6 +265,7 @@ final class DocumentLayersValidator {
     });
   }
 
+  /** Validates vector normalization. */
   private static void validateVectorNormalization(
       org.apache.opennlp.grpc.v1.VectorNormalization normalization,
       java.util.List<Float> vector) {
@@ -282,6 +287,7 @@ final class DocumentLayersValidator {
     }
   }
 
+  /** Validates vector. */
   private static void validateVector(
       String modelId, java.util.List<Float> vector, EmbeddingProvider embeddingProvider) {
     nonBlank(modelId, "embedding model id");
@@ -300,12 +306,14 @@ final class DocumentLayersValidator {
     }
   }
 
+  /** Validates parse tree. */
   private static void validateParseTree(ParseTree tree, int textLength) {
     if (tree.hasRoot()) {
       validateParseNode(tree.getRoot(), textLength);
     }
   }
 
+  /** Validates parse node. */
   private static void validateParseNode(ParseNode node, int textLength) {
     span(node.getSpan(), textLength);
     if (node.hasProbability()) {
@@ -314,6 +322,7 @@ final class DocumentLayersValidator {
     node.getChildrenList().forEach(child -> validateParseNode(child, textLength));
   }
 
+  /** Validates optional span. */
   private static void validateOptionalSpan(
       boolean hasSpan, AnnotationSpan annotationSpan, boolean positional, int textLength) {
     if (positional != hasSpan) {
@@ -325,6 +334,7 @@ final class DocumentLayersValidator {
     }
   }
 
+  /** Returns a required span after validating its bounds and coordinate space. */
   private static void requireSpan(
       AnnotationSpan annotationSpan, boolean positional, int textLength) {
     if (!positional) {
@@ -333,6 +343,7 @@ final class DocumentLayersValidator {
     span(annotationSpan, textLength);
   }
 
+  /** Converts a document-container span to the wire value. */
   private static void span(AnnotationSpan span, int textLength) {
     if (span.getStart() < 0 || span.getEnd() <= span.getStart() || span.getEnd() > textLength) {
       fail("invalid annotation span [" + span.getStart() + "," + span.getEnd()
@@ -340,30 +351,35 @@ final class DocumentLayersValidator {
     }
   }
 
+  /** Validates that a layer contains one document-scoped annotation. */
   private static void requireDocumentScope(AnnotationLayer layer) {
     if (layer.getScope() != LayerScope.LAYER_SCOPE_DOCUMENT) {
       fail("layer '" + layer.getId() + "' must be document-scoped");
     }
   }
 
+  /** Validates a probability in the inclusive unit interval. */
   private static void probability(double value, String name) {
     if (!Double.isFinite(value) || value < 0d || value > 1d) {
       fail(name + " must be finite and in [0,1]");
     }
   }
 
+  /** Validates a finite numeric value. */
   private static void finite(double value, String name) {
     if (!Double.isFinite(value)) {
       fail(name + " must be finite");
     }
   }
 
+  /** Validates a required non-blank string. */
   private static void nonBlank(String value, String name) {
     if (value == null || value.isBlank()) {
       fail(name + " must not be blank");
     }
   }
 
+  /** Raises a document-layer invariant violation. */
   private static void fail(String message) {
     throw AnalysisException.internal("Invalid document shape: " + message, null);
   }

@@ -53,6 +53,8 @@ class EmbeddingProviderDefaultsTest {
 
   @Test
   void embedBatchRejectsNullTexts() {
-    assertThrows(NullPointerException.class, () -> provider.embedBatch("minilm", null));
+    final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+        () -> provider.embedBatch("minilm", null));
+    assertEquals("texts must not be null", error.getMessage());
   }
 }

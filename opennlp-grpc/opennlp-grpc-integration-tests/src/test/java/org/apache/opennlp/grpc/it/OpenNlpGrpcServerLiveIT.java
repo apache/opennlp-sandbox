@@ -48,6 +48,7 @@ import org.apache.opennlp.grpc.v1.AnalyzeStreamConfiguration;
 import org.apache.opennlp.grpc.v1.AnalyzeStreamDocument;
 import org.apache.opennlp.grpc.v1.AnalyzeStreamRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeStreamResponse;
+import org.apache.opennlp.grpc.v1.GrpcStatusCode;
 import org.apache.opennlp.grpc.v1.AnnotationLayer;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
@@ -394,7 +395,7 @@ class OpenNlpGrpcServerLiveIT {
     assertNull(failure.get());
     assertEquals(3, responses.size());
     assertEquals(firstUnary, responseFor(responses, 41).getOk());
-    assertEquals(Status.Code.INVALID_ARGUMENT.value(),
+    assertEquals(GrpcStatusCode.GRPC_STATUS_CODE_INVALID_ARGUMENT,
         responseFor(responses, 42).getError().getCode());
     assertEquals(secondUnary, responseFor(responses, 43).getOk());
   }

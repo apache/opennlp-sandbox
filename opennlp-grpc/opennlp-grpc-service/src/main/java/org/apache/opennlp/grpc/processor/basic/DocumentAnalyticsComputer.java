@@ -108,24 +108,29 @@ final class DocumentAnalyticsComputer {
     return analytics.build();
   }
 
+  /** Returns whether a POS tag denotes a noun. */
   private static boolean isNoun(String tag) {
     return tag.equals("NOUN") || tag.equals("PROPN")
         || tag.startsWith("NN") || tag.equals("NNP") || tag.equals("NNPS");
   }
 
+  /** Returns whether a POS tag denotes a verb. */
   private static boolean isVerb(String tag) {
     return tag.equals("VERB") || tag.equals("AUX")
         || tag.startsWith("VB") || tag.equals("MD");
   }
 
+  /** Returns whether a POS tag denotes an adjective. */
   private static boolean isAdjective(String tag) {
     return tag.equals("ADJ") || tag.startsWith("JJ");
   }
 
+  /** Returns whether a POS tag denotes an adverb. */
   private static boolean isAdverb(String tag) {
     return tag.equals("ADV") || tag.startsWith("RB");
   }
 
+  /** Returns whether a POS tag denotes punctuation. */
   private static boolean isPunctuation(String tag) {
     return tag.equals("PUNCT") || tag.equals(".") || tag.equals(",") || tag.equals("''")
         || tag.equals("``") || tag.equals(":") || tag.equals("-LRB-") || tag.equals("-RRB-");

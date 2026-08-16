@@ -90,6 +90,7 @@ public final class ChunkTextPreprocessor {
     return collapseWhitespace(cleaned).trim();
   }
 
+  /** Collapses whitespace. */
   private static String collapseWhitespace(String text) {
     final StringBuilder builder = new StringBuilder(text.length());
     boolean previousWhitespace = false;

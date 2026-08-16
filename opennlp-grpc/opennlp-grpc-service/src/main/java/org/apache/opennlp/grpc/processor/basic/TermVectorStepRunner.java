@@ -128,6 +128,7 @@ final class TermVectorStepRunner {
     };
   }
 
+  /** Returns annotations from the selected source layer. */
   private static List<Annotation<String>> sourceValues(
       OpenNlpDocument.Builder document,
       List<AnnotationLayer> extraLayers,
@@ -142,6 +143,7 @@ final class TermVectorStepRunner {
     };
   }
 
+  /** Returns token annotations for term-vector aggregation. */
   private static List<Annotation<String>> tokenValues(
       OpenNlpDocument.Builder document, SourceValue source, String qualifier) {
     final List<Annotation<String>> values = new ArrayList<>();
@@ -169,6 +171,7 @@ final class TermVectorStepRunner {
     return values;
   }
 
+  /** Returns stem annotations from produced layers. */
   private static List<Annotation<String>> stemValues(List<AnnotationLayer> extraLayers) {
     for (AnnotationLayer layer : extraLayers) {
       if (layer.getIdentity().getKindCase() == LayerIdentity.KindCase.STANDARD
@@ -184,10 +187,12 @@ final class TermVectorStepRunner {
         "term-vector stem source requires PIPELINE_STEP_STEM");
   }
 
+  /** Builds a document-container annotation. */
   private static Annotation<String> annotation(AnnotationSpan span, String value) {
     return new Annotation<>(new Span(span.getStart(), span.getEnd()), value);
   }
 
+  /** Converts a document-container span to the wire value. */
   private static AnnotationSpan span(Span span) {
     return AnnotationSpan.newBuilder()
         .setStart(span.getStart())
@@ -196,6 +201,7 @@ final class TermVectorStepRunner {
         .build();
   }
 
+  /** Builds a standard layer identity. */
   private static LayerIdentity standard(StandardLayer layer) {
     return LayerIdentity.newBuilder().setStandard(layer).build();
   }

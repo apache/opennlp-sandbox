@@ -21,17 +21,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Service provider interface for document categorization backends, the document-classification
- * analogue of {@link NerBackendFactory}. Each factory parses its own configuration namespace and
- * produces {@link DocCategorizerModel}s; {@link DocCategorizerRegistry} discovers all factories
- * via {@link java.util.ServiceLoader} and aggregates their models, so several backends can be
- * active at once.
+ * Service provider interface for document categorization backends discovered through
+ * {@link java.util.ServiceLoader}. Each factory contributes the models configured in its
+ * namespace.
  *
- * <p>Ship a jar with an implementation registered in
- * {@code META-INF/services/org.apache.opennlp.grpc.model.DocCategorizerBackendFactory} to add a
- * backend (a remote classifier, a custom model format, any runtime in any language) alongside the
- * built-in classic ({@code opennlp-me}) and ONNX ({@code onnx}/{@code cuda}) backends — no change
- * to the server. Implementations must have a public no-arg constructor.</p>
+ * <p>Thread safety is implementation specific.</p>
  */
 public interface DocCategorizerBackendFactory {
 
@@ -54,6 +48,7 @@ public interface DocCategorizerBackendFactory {
    *
    * @throws org.apache.opennlp.grpc.processor.AnalysisException If the configuration is invalid
    *     or a model fails to load.
+   * @throws IllegalArgumentException If {@code configuration} is {@code null}.
    */
   List<DocCategorizerModel> create(Map<String, String> configuration);
 }

@@ -20,7 +20,6 @@ package org.apache.opennlp.grpc.processor.basic;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 import org.apache.opennlp.grpc.chunk.ChunkEmbedProcessor;
@@ -85,6 +84,23 @@ final class AnalysisRequestValidator {
   private final TokenizerRegistry tokenizerRegistry;
   private final SentenceDetectorRegistry sentenceDetectorRegistry;
 
+  /**
+   * Creates a validator over the capabilities available to the analyzer.
+   *
+   * @param embeddingProvider The configured embedding provider.
+   * @param nameFinderRegistry The configured named-entity models.
+   * @param docCategorizerRegistry The configured document categorizers.
+   * @param sentimentRegistry The configured sentiment models.
+   * @param parserRegistry The configured parsers.
+   * @param chunkerRegistry The configured syntactic chunkers.
+   * @param artifactRegistry The model-artifact registry.
+   * @param subwordRegistry The configured subword models.
+   * @param hunspellRegistry The configured Hunspell dictionaries.
+   * @param wordNetRegistry The configured WordNet lexicons.
+   * @param latticeRegistry The configured lattice tokenizers.
+   * @param tokenizerRegistry The configured word-tokenizer engines.
+   * @param sentenceDetectorRegistry The configured sentence-detector engines.
+   */
   AnalysisRequestValidator(
       EmbeddingProvider embeddingProvider,
       NameFinderRegistry nameFinderRegistry,
@@ -99,21 +115,58 @@ final class AnalysisRequestValidator {
       LatticeRegistry latticeRegistry,
       TokenizerRegistry tokenizerRegistry,
       SentenceDetectorRegistry sentenceDetectorRegistry) {
-    this.embeddingProvider = Objects.requireNonNull(embeddingProvider, "embeddingProvider");
-    this.nameFinderRegistry = Objects.requireNonNull(nameFinderRegistry, "nameFinderRegistry");
-    this.docCategorizerRegistry =
-        Objects.requireNonNull(docCategorizerRegistry, "docCategorizerRegistry");
-    this.sentimentRegistry = Objects.requireNonNull(sentimentRegistry, "sentimentRegistry");
-    this.parserRegistry = Objects.requireNonNull(parserRegistry, "parserRegistry");
-    this.chunkerRegistry = Objects.requireNonNull(chunkerRegistry, "chunkerRegistry");
-    this.artifactRegistry = Objects.requireNonNull(artifactRegistry, "artifactRegistry");
-    this.subwordRegistry = Objects.requireNonNull(subwordRegistry, "subwordRegistry");
-    this.hunspellRegistry = Objects.requireNonNull(hunspellRegistry, "hunspellRegistry");
-    this.wordNetRegistry = Objects.requireNonNull(wordNetRegistry, "wordNetRegistry");
-    this.latticeRegistry = Objects.requireNonNull(latticeRegistry, "latticeRegistry");
-    this.tokenizerRegistry = Objects.requireNonNull(tokenizerRegistry, "tokenizerRegistry");
-    this.sentenceDetectorRegistry =
-        Objects.requireNonNull(sentenceDetectorRegistry, "sentenceDetectorRegistry");
+    if (embeddingProvider == null) {
+      throw new IllegalArgumentException("embeddingProvider must not be null");
+    }
+    this.embeddingProvider = embeddingProvider;
+    if (nameFinderRegistry == null) {
+      throw new IllegalArgumentException("nameFinderRegistry must not be null");
+    }
+    this.nameFinderRegistry = nameFinderRegistry;
+    if (docCategorizerRegistry == null) {
+      throw new IllegalArgumentException("docCategorizerRegistry must not be null");
+    }
+    this.docCategorizerRegistry = docCategorizerRegistry;
+    if (sentimentRegistry == null) {
+      throw new IllegalArgumentException("sentimentRegistry must not be null");
+    }
+    this.sentimentRegistry = sentimentRegistry;
+    if (parserRegistry == null) {
+      throw new IllegalArgumentException("parserRegistry must not be null");
+    }
+    this.parserRegistry = parserRegistry;
+    if (chunkerRegistry == null) {
+      throw new IllegalArgumentException("chunkerRegistry must not be null");
+    }
+    this.chunkerRegistry = chunkerRegistry;
+    if (artifactRegistry == null) {
+      throw new IllegalArgumentException("artifactRegistry must not be null");
+    }
+    this.artifactRegistry = artifactRegistry;
+    if (subwordRegistry == null) {
+      throw new IllegalArgumentException("subwordRegistry must not be null");
+    }
+    this.subwordRegistry = subwordRegistry;
+    if (hunspellRegistry == null) {
+      throw new IllegalArgumentException("hunspellRegistry must not be null");
+    }
+    this.hunspellRegistry = hunspellRegistry;
+    if (wordNetRegistry == null) {
+      throw new IllegalArgumentException("wordNetRegistry must not be null");
+    }
+    this.wordNetRegistry = wordNetRegistry;
+    if (latticeRegistry == null) {
+      throw new IllegalArgumentException("latticeRegistry must not be null");
+    }
+    this.latticeRegistry = latticeRegistry;
+    if (tokenizerRegistry == null) {
+      throw new IllegalArgumentException("tokenizerRegistry must not be null");
+    }
+    this.tokenizerRegistry = tokenizerRegistry;
+    if (sentenceDetectorRegistry == null) {
+      throw new IllegalArgumentException("sentenceDetectorRegistry must not be null");
+    }
+    this.sentenceDetectorRegistry = sentenceDetectorRegistry;
   }
 
   /**
@@ -223,6 +276,7 @@ final class AnalysisRequestValidator {
     resolveWordNetLexiconId(profile);
   }
 
+  /** Resolves the requested, profiled, or server-default embedding model id. */
   String resolveEmbeddingModelId(AnalyzeDocumentRequest request, AnalysisProfile profile) {
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_EMBED)) {
       return null;
@@ -242,6 +296,7 @@ final class AnalysisRequestValidator {
     return embeddingProvider.resolveModelId(requested);
   }
 
+  /** Resolves the concrete embedding backend id, or blank for default routing. */
   String resolveEmbeddingBackendId(AnalyzeDocumentRequest request) {
     if (!request.hasOptions() || !request.getOptions().hasEmbeddingSelector()) {
       return null;
@@ -271,6 +326,7 @@ final class AnalysisRequestValidator {
     return model == null || model.requiresTokens();
   }
 
+  /** Validates doc categorize request. */
   private void validateDocCategorizeRequest(AnalysisProfile profile) {
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE)) {
       return;
@@ -309,6 +365,7 @@ final class AnalysisRequestValidator {
     return model == null || model.requiresTokens();
   }
 
+  /** Validates sentiment request. */
   private void validateSentimentRequest(AnalysisProfile profile) {
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_SENTIMENT)) {
       return;
@@ -330,6 +387,7 @@ final class AnalysisRequestValidator {
   static final String LATTICE_TOKENIZER_ENGINE = "lattice";
   private static final String MODEL_TOKENIZER_ENGINE = "model";
 
+  /** Validates normalize request. */
   private void validateNormalizeRequest(AnalysisProfile profile) {
     final boolean requested =
         PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_NORMALIZE);
@@ -364,6 +422,7 @@ final class AnalysisRequestValidator {
     }
   }
 
+  /** Validates tokenizer engine. */
   private void validateTokenizerEngine(AnalysisProfile profile) {
     resolveTokenizer(profile);
     resolveLatticeDictionaryId(profile);
@@ -462,10 +521,12 @@ final class AnalysisRequestValidator {
   record TokenizerSelection(
       StandardTokenizerEngine standard, String customId, Tokenizer custom) {
 
+    /** Creates a standard tokenizer selection. */
     private static TokenizerSelection standard(StandardTokenizerEngine engine) {
       return new TokenizerSelection(engine, null, null);
     }
 
+    /** Creates a custom tokenizer selection. */
     private static TokenizerSelection custom(String id, Tokenizer tokenizer) {
       return new TokenizerSelection(null, id, tokenizer);
     }
@@ -475,15 +536,18 @@ final class AnalysisRequestValidator {
   record SentenceDetectorSelection(
       StandardSentenceDetectorEngine standard, String customId, SentenceDetector custom) {
 
+    /** Creates a standard sentence-detector selection. */
     private static SentenceDetectorSelection standard(StandardSentenceDetectorEngine engine) {
       return new SentenceDetectorSelection(engine, null, null);
     }
 
+    /** Creates a custom sentence-detector selection. */
     private static SentenceDetectorSelection custom(String id, SentenceDetector detector) {
       return new SentenceDetectorSelection(null, id, detector);
     }
   }
 
+  /** Validates term dimensions. */
   private void validateTermDimensions(AnalysisProfile profile) {
     if (profile.getTermDimensionsCount() == 0) {
       return;
@@ -510,6 +574,7 @@ final class AnalysisRequestValidator {
     }
   }
 
+  /** Validates stopword language. */
   private void validateStopwordLanguage(AnalysisProfile profile) {
     if (!profile.hasStopwordLanguage()) {
       return;
@@ -525,6 +590,7 @@ final class AnalysisRequestValidator {
     }
   }
 
+  /** Validates term profile. */
   private void validateTermProfile(AnalysisProfile profile) {
     if (!profile.hasTermProfile()) {
       return;
@@ -545,6 +611,7 @@ final class AnalysisRequestValidator {
     }
   }
 
+  /** Validates term layers. */
   private void validateTermLayers(AnalysisProfile profile) {
     if (profile.getTermLayersCount() == 0) {
       return;
@@ -595,6 +662,7 @@ final class AnalysisRequestValidator {
     }
   }
 
+  /** Validates term vector request. */
   private void validateTermVectorRequest(AnalysisProfile profile) {
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_TERM_VECTOR)) {
       return;
@@ -621,6 +689,7 @@ final class AnalysisRequestValidator {
     TermVectorStepRunner.resolvedMode(profile.getTermVector());
   }
 
+  /** Returns the required term-vector step configuration. */
   private static void requireTermVectorStep(
       AnalysisProfile profile, PipelineStep required, String source) {
     if (!PipelineStepPolicy.shouldRun(profile, required)) {
@@ -629,6 +698,7 @@ final class AnalysisRequestValidator {
     }
   }
 
+  /** Validates term vector dimension. */
   private static void validateTermVectorDimension(AnalysisProfile profile, String qualifier) {
     if (profile.getTermDimensionsList().contains(qualifier)) {
       return;
@@ -650,6 +720,7 @@ final class AnalysisRequestValidator {
             + qualifier + "'");
   }
 
+  /** Validates pos tag format. */
   private void validatePosTagFormat(AnalysisProfile profile) {
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_POS_TAG)) {
       return;
@@ -660,6 +731,7 @@ final class AnalysisRequestValidator {
     }
   }
 
+  /** Validates parse request. */
   private void validateParseRequest(AnalysisProfile profile) {
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_PARSE)) {
       return;
@@ -681,6 +753,7 @@ final class AnalysisRequestValidator {
     }
   }
 
+  /** Validates syntactic chunk request. */
   private void validateSyntacticChunkRequest(AnalysisProfile profile) {
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK)) {
       return;
@@ -733,6 +806,7 @@ final class AnalysisRequestValidator {
     return formats;
   }
 
+  /** Validates options. */
   private void validateOptions(AnalyzeDocumentRequest request, AnalysisProfile profile) {
     if (!request.hasOptions()) {
       return;
@@ -762,6 +836,7 @@ final class AnalysisRequestValidator {
     }
   }
 
+  /** Validates embedding request. */
   private void validateEmbeddingRequest(AnalyzeDocumentRequest request, AnalysisProfile profile) {
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_EMBED)) {
       return;
@@ -785,6 +860,7 @@ final class AnalysisRequestValidator {
     }
   }
 
+  /** Validates chunk embed configs. */
   private void validateChunkEmbedConfigs(AnalyzeDocumentRequest request) {
     if (request.getChunkEmbedConfigsCount() == 0) {
       return;
@@ -794,6 +870,7 @@ final class AnalysisRequestValidator {
     }
   }
 
+  /** Validates category chunk configs. */
   private void validateCategoryChunkConfigs(
       AnalyzeDocumentRequest request, AnalysisProfile profile) {
     if (request.getCategoryChunkConfigsCount() == 0) {
@@ -810,6 +887,7 @@ final class AnalysisRequestValidator {
     }
   }
 
+  /** Validates ner request. */
   private void validateNerRequest(AnalysisProfile profile) {
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_NER)) {
       return;
@@ -841,6 +919,7 @@ final class AnalysisRequestValidator {
     }
   }
 
+  /** Validates model bundle. */
   private void validateModelBundle(AnalysisProfile profile) {
     if (!profile.hasModelBundle()) {
       return;

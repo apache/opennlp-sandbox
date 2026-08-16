@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 /**
  * End-to-end NER through the ONNX {@code DlNerModel} backend against a real model. Opt-in:
  * runs only when {@code -Ddl.ner.model.dir=<dir>} points at a directory containing
- * {@code model.onnx} and {@code vocab.txt} — the ONNX export of {@code dslim/bert-base-NER}
+ * {@code model.onnx} and {@code vocab.txt}, the ONNX export of {@code dslim/bert-base-NER}
  * (see the {@code dl-ner} build profile, which downloads them into {@code target/}). The
  * model is downloaded at build time only and is never bundled or redistributed.
  */

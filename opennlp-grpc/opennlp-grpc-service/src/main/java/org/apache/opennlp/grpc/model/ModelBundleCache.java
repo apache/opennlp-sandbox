@@ -31,7 +31,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -44,12 +43,10 @@ import opennlp.tools.postag.POSModel;
 import opennlp.tools.postag.POSTagFormat;
 import opennlp.tools.postag.POSTagFormatMapper;
 import opennlp.tools.postag.POSTaggerME;
-import opennlp.tools.sentdetect.SentenceDetector;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.tokenize.TokenizerModel;
-import opennlp.tools.util.Span;
 import opennlp.tools.util.model.BaseModel;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.embedding.EmbeddingProviderFactory;
@@ -77,11 +74,16 @@ import org.slf4j.LoggerFactory;
  * merged into a single executable jar, which is how the server is distributed and run
  * ({@code java -jar opennlp-grpc-server-*.jar}).
  */
-public final class ModelBundleCache {
+public final class ModelBundleCache implements AutoCloseable {
 
   private static final Logger logger = LoggerFactory.getLogger(ModelBundleCache.class);
 
   private static final String DEFAULT_LANGUAGE = "en";
+  private static final String SENTENCE_MODEL_NAME =
+      "opennlp-models-sentdetect-" + DEFAULT_LANGUAGE;
+  private static final String TOKENIZER_MODEL_NAME =
+      "opennlp-models-tokenizer-" + DEFAULT_LANGUAGE;
+  private static final String POS_MODEL_NAME = "opennlp-models-pos-" + DEFAULT_LANGUAGE;
   private static final String KEY_SENTDETECT_PATH = "model.sentence_detector.path";
   private static final String KEY_TOKENIZER_PATH = "model.tokenizer.path";
   private static final String KEY_POS_TAGGER_PATH = "model.pos_tagger.path";
@@ -102,15 +104,14 @@ public final class ModelBundleCache {
 
   private final Map<String, ModelBundleInfo> bundles;
   private final ModelArtifactRegistry artifactRegistry;
-  // The *Model artifacts are immutable and shared; the *ME decoders keep per-call state
-  // (probabilities of the last run, beam search buffers) and are NOT safe for concurrent
-  // use, so every server thread decodes with its own instance over the shared model.
+  // The *Model artifacts and thread-safe *ME decoders are shared. Each decoder keeps
+  // caller-specific result state internally and releases it after each document.
   private final POSModel posModel;
-  private final ThreadLocal<SentenceDetectorME> sentenceDetector;
-  private final ThreadLocal<TokenizerME> tokenizer;
-  private final ThreadLocal<POSTaggerME> posTagger;
-  private final ThreadLocal<LemmatizerME> lemmatizer;
-  private final ThreadLocal<LanguageDetectorME> languageDetector;
+  private final SentenceDetectorME sentenceDetector;
+  private final TokenizerME tokenizer;
+  private final POSTaggerME posTagger;
+  private final LemmatizerME lemmatizer;
+  private final LanguageDetectorME languageDetector;
   private final EmbeddingProvider embeddingProvider;
   private final NameFinderRegistry nameFinderRegistry;
   private final DocCategorizerRegistry docCategorizerRegistry;
@@ -156,7 +157,9 @@ public final class ModelBundleCache {
    * @throws AnalysisException If a configured model path is invalid or a model fails to load.
    */
   public ModelBundleCache(Map<String, String> configuration) {
-    Objects.requireNonNull(configuration, "configuration");
+    if (configuration == null) {
+      throw new IllegalArgumentException("configuration must not be null");
+    }
     // Loaded first: these registries hold no native resources, so they can never leak.
     this.subwordRegistry = SubwordRegistry.create(configuration);
     this.hunspellRegistry = HunspellRegistry.create(configuration);
@@ -173,17 +176,12 @@ public final class ModelBundleCache {
         KEY_LEMMATIZER_PATH, BUNDLED_LEMMATIZER_MODEL_FRAGMENT, "lemmatizer", LemmatizerModel::new);
     final LoadedArtifact<LanguageDetectorModel> loadedLangDetect =
         loadLanguageDetectorModel(configuration);
-    final SentenceModel sentenceModel = loadedSentence.model();
-    this.sentenceDetector = ThreadLocal.withInitial(() -> new SentenceDetectorME(sentenceModel));
-    final TokenizerModel tokenizerModel = loadedTokenizer.model();
-    this.tokenizer = ThreadLocal.withInitial(() -> new TokenizerME(tokenizerModel));
+    this.sentenceDetector = new SentenceDetectorME(loadedSentence.model());
+    this.tokenizer = new TokenizerME(loadedTokenizer.model());
     this.posModel = loadedPos.model();
-    this.posTagger = ThreadLocal.withInitial(() -> new POSTaggerME(posModel));
-    final LemmatizerModel lemmatizerModel = loadedLemma.model();
-    this.lemmatizer = ThreadLocal.withInitial(() -> new LemmatizerME(lemmatizerModel));
-    final LanguageDetectorModel languageDetectorModel = loadedLangDetect.model();
-    this.languageDetector =
-        ThreadLocal.withInitial(() -> new LanguageDetectorME(languageDetectorModel));
+    this.posTagger = new POSTaggerME(posModel);
+    this.lemmatizer = new LemmatizerME(loadedLemma.model());
+    this.languageDetector = new LanguageDetectorME(loadedLangDetect.model());
     // The embedding provider and the three registries may hold native resources (ONNX sessions,
     // remote connections). If a later load fails, release the ones already created so a failed
     // startup does not leak native sessions.
@@ -199,19 +197,7 @@ public final class ModelBundleCache {
       tokenizerRegistry = TokenizerRegistry.create(configuration);
       sentenceDetectorRegistry = SentenceDetectorRegistry.create(configuration);
       embeddingProvider = EmbeddingProviderFactory.create(configuration);
-      // The registry may call the detector from any of its threads; hand it a view that
-      // resolves to the calling thread's own instance rather than one shared decoder.
-      nameFinderRegistry = NameFinderRegistry.create(configuration, new SentenceDetector() {
-        @Override
-        public String[] sentDetect(CharSequence text) {
-          return sentenceDetector.get().sentDetect(text);
-        }
-
-        @Override
-        public Span[] sentPosDetect(CharSequence text) {
-          return sentenceDetector.get().sentPosDetect(text);
-        }
-      });
+      nameFinderRegistry = NameFinderRegistry.create(configuration, sentenceDetector);
       docCategorizerRegistry = DocCategorizerRegistry.create(configuration);
       sentimentRegistry = SentimentRegistry.create(configuration);
       chunkerRegistry = ChunkerRegistry.create(configuration);
@@ -244,36 +230,31 @@ public final class ModelBundleCache {
   }
 
   /**
-   * Returns the calling thread's sentence detector over the shared model. Always available
-   * (bundled default when unconfigured). Per-thread because {@link SentenceDetectorME} keeps
-   * per-call state (e.g. the probabilities of the last run) and is not safe for concurrent use.
+   * Returns the shared sentence detector. Always available through the bundled default when
+   * unconfigured.
    *
-   * @return The calling thread's sentence detector. Never {@code null}.
+   * @return The sentence detector. Never {@code null}.
    */
   public SentenceDetectorME getSentenceDetector() {
-    return sentenceDetector.get();
+    return sentenceDetector;
   }
 
   /**
-   * Returns the calling thread's tokenizer over the shared model. Always available (bundled
-   * default when unconfigured). Per-thread because {@link TokenizerME} keeps per-call state
-   * and is not safe for concurrent use.
+   * Returns the shared tokenizer. Always available through the bundled default when unconfigured.
    *
-   * @return The calling thread's tokenizer. Never {@code null}.
+   * @return The tokenizer. Never {@code null}.
    */
   public TokenizerME getTokenizer() {
-    return tokenizer.get();
+    return tokenizer;
   }
 
   /**
-   * Returns the calling thread's POS tagger over the shared model. Always available (bundled
-   * default when unconfigured). Per-thread because {@link POSTaggerME} keeps per-call state
-   * and is not safe for concurrent use.
+   * Returns the shared POS tagger. Always available through the bundled default when unconfigured.
    *
-   * @return The calling thread's POS tagger. Never {@code null}.
+   * @return The POS tagger. Never {@code null}.
    */
   public POSTaggerME getPosTagger() {
-    return posTagger.get();
+    return posTagger;
   }
 
   /**
@@ -301,25 +282,33 @@ public final class ModelBundleCache {
   }
 
   /**
-   * Returns the calling thread's lemmatizer over the shared model. Always available (bundled
-   * default when unconfigured). Per-thread because {@link LemmatizerME} keeps per-call state
-   * and is not safe for concurrent use.
+   * Returns the shared lemmatizer. Always available through the bundled default when unconfigured.
    *
-   * @return The calling thread's lemmatizer. Never {@code null}.
+   * @return The lemmatizer. Never {@code null}.
    */
   public LemmatizerME getLemmatizer() {
-    return lemmatizer.get();
+    return lemmatizer;
   }
 
   /**
-   * Returns the calling thread's language detector over the shared model. Always available
-   * (bundled default when unconfigured). Per-thread because {@link LanguageDetectorME} keeps
-   * per-call state and is not safe for concurrent use.
+   * Returns the shared language detector. Always available through the bundled default when
+   * unconfigured.
    *
-   * @return The calling thread's language detector. Never {@code null}.
+   * @return The language detector. Never {@code null}.
    */
   public LanguageDetectorME getLanguageDetector() {
-    return languageDetector.get();
+    return languageDetector;
+  }
+
+  /**
+   * Releases caller-specific decoder state after one document finishes on the current thread.
+   */
+  public void clearThreadLocalState() {
+    sentenceDetector.clearThreadLocalState();
+    tokenizer.clearThreadLocalState();
+    posTagger.clearThreadLocalState();
+    lemmatizer.clearThreadLocalState();
+    nameFinderRegistry.clearThreadLocalState();
   }
 
   /**
@@ -352,6 +341,7 @@ public final class ModelBundleCache {
     return List.copyOf(resources);
   }
 
+  /** Adds configured resources to the capability catalog. */
   private static void addResources(
       List<ConfiguredResource> resources,
       StandardResource type,
@@ -528,6 +518,7 @@ public final class ModelBundleCache {
    * logged so the remaining shutdown is not interrupted. The classic {@code *ME} backbone models
    * and the parser hold no native resources and need no release.
    */
+  @Override
   public void close() {
     if (embeddingProvider instanceof AutoCloseable closeable) {
       try {
@@ -801,11 +792,11 @@ public final class ModelBundleCache {
         .register(ComponentType.COMPONENT_TYPE_LANGUAGE_DETECTOR, langDetectHash,
             "opennlp-models-langdetect")
         .register(ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR, sentenceHash,
-            "opennlp-models-sentdetect-" + DEFAULT_LANGUAGE)
+            SENTENCE_MODEL_NAME)
         .register(ComponentType.COMPONENT_TYPE_TOKENIZER, tokenizerHash,
-            "opennlp-models-tokenizer-" + DEFAULT_LANGUAGE)
+            TOKENIZER_MODEL_NAME)
         .register(ComponentType.COMPONENT_TYPE_POS_TAGGER, posHash,
-            "opennlp-models-pos-" + DEFAULT_LANGUAGE)
+            POS_MODEL_NAME)
         .register(ComponentType.COMPONENT_TYPE_LEMMATIZER, lemmaHash,
             "opennlp-models-lemmatizer-" + DEFAULT_LANGUAGE);
     for (String modelId : embeddingProvider.registeredModelIds()) {
@@ -918,6 +909,7 @@ public final class ModelBundleCache {
     }
   }
 
+  /** Builds the complete model-bundle capability catalog. */
   private Map<String, ModelBundleInfo> buildBundleCatalog(
       String langDetectHash,
       String sentenceHash,
@@ -938,17 +930,17 @@ public final class ModelBundleCache {
             "root",
             langDetectHash))
         .addModels(classicModelDescriptor(
-            "opennlp-models-sentdetect-" + DEFAULT_LANGUAGE,
+            SENTENCE_MODEL_NAME,
             ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR,
             DEFAULT_LANGUAGE,
             sentenceHash))
         .addModels(classicModelDescriptor(
-            "opennlp-models-tokenizer-" + DEFAULT_LANGUAGE,
+            TOKENIZER_MODEL_NAME,
             ComponentType.COMPONENT_TYPE_TOKENIZER,
             DEFAULT_LANGUAGE,
             tokenizerHash))
         .addModels(classicModelDescriptor(
-            "opennlp-models-pos-" + DEFAULT_LANGUAGE,
+            POS_MODEL_NAME,
             ComponentType.COMPONENT_TYPE_POS_TAGGER,
             DEFAULT_LANGUAGE,
             posHash))
@@ -1001,6 +993,7 @@ public final class ModelBundleCache {
     return catalog;
   }
 
+  /** Builds the syntactic-chunk model bundle. */
   private ModelBundleInfo buildChunkBundleCatalog(
       String sentenceHash, String tokenizerHash, String posHash) {
     // Shallow chunking consumes POS-tagged English tokens, so the bundle constrains input to
@@ -1013,17 +1006,17 @@ public final class ModelBundleCache {
         .addSupportedSteps(PipelineStep.PIPELINE_STEP_POS_TAG)
         .addSupportedSteps(PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK)
         .addModels(classicModelDescriptor(
-            "opennlp-models-sentdetect-" + DEFAULT_LANGUAGE,
+            SENTENCE_MODEL_NAME,
             ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR,
             DEFAULT_LANGUAGE,
             sentenceHash))
         .addModels(classicModelDescriptor(
-            "opennlp-models-tokenizer-" + DEFAULT_LANGUAGE,
+            TOKENIZER_MODEL_NAME,
             ComponentType.COMPONENT_TYPE_TOKENIZER,
             DEFAULT_LANGUAGE,
             tokenizerHash))
         .addModels(classicModelDescriptor(
-            "opennlp-models-pos-" + DEFAULT_LANGUAGE,
+            POS_MODEL_NAME,
             ComponentType.COMPONENT_TYPE_POS_TAGGER,
             DEFAULT_LANGUAGE,
             posHash))
@@ -1036,6 +1029,7 @@ public final class ModelBundleCache {
         .build();
   }
 
+  /** Builds the parser model bundle. */
   private ModelBundleInfo buildParseBundleCatalog(String sentenceHash, String tokenizerHash) {
     // Parsing consumes the English tokenizer's output, so the bundle constrains input to English;
     // the parser model is operator-supplied and its language is unknown to the server.
@@ -1046,12 +1040,12 @@ public final class ModelBundleCache {
         .addSupportedSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
         .addSupportedSteps(PipelineStep.PIPELINE_STEP_PARSE)
         .addModels(classicModelDescriptor(
-            "opennlp-models-sentdetect-" + DEFAULT_LANGUAGE,
+            SENTENCE_MODEL_NAME,
             ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR,
             DEFAULT_LANGUAGE,
             sentenceHash))
         .addModels(classicModelDescriptor(
-            "opennlp-models-tokenizer-" + DEFAULT_LANGUAGE,
+            TOKENIZER_MODEL_NAME,
             ComponentType.COMPONENT_TYPE_TOKENIZER,
             DEFAULT_LANGUAGE,
             tokenizerHash))
@@ -1064,6 +1058,7 @@ public final class ModelBundleCache {
         .build();
   }
 
+  /** Builds the name-finder model bundle. */
   private ModelBundleInfo buildNerBundleCatalog(String sentenceHash, String tokenizerHash) {
     // The sentence-detector and tokenizer backbone is English, so the bundle constrains
     // input to English; the name finder models themselves are operator-supplied and their
@@ -1075,12 +1070,12 @@ public final class ModelBundleCache {
         .addSupportedSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
         .addSupportedSteps(PipelineStep.PIPELINE_STEP_NER)
         .addModels(classicModelDescriptor(
-            "opennlp-models-sentdetect-" + DEFAULT_LANGUAGE,
+            SENTENCE_MODEL_NAME,
             ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR,
             DEFAULT_LANGUAGE,
             sentenceHash))
         .addModels(classicModelDescriptor(
-            "opennlp-models-tokenizer-" + DEFAULT_LANGUAGE,
+            TOKENIZER_MODEL_NAME,
             ComponentType.COMPONENT_TYPE_TOKENIZER,
             DEFAULT_LANGUAGE,
             tokenizerHash));
@@ -1100,6 +1095,7 @@ public final class ModelBundleCache {
     return bundle.build();
   }
 
+  /** Builds the document-categorizer model bundle. */
   private ModelBundleInfo buildDoccatBundleCatalog(String sentenceHash, String tokenizerHash) {
     // The classic categorizer consumes the English tokenizer's output, so the bundle constrains
     // input to English; the categorizer models themselves are operator-supplied and their
@@ -1111,12 +1107,12 @@ public final class ModelBundleCache {
         .addSupportedSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
         .addSupportedSteps(PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE)
         .addModels(classicModelDescriptor(
-            "opennlp-models-sentdetect-" + DEFAULT_LANGUAGE,
+            SENTENCE_MODEL_NAME,
             ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR,
             DEFAULT_LANGUAGE,
             sentenceHash))
         .addModels(classicModelDescriptor(
-            "opennlp-models-tokenizer-" + DEFAULT_LANGUAGE,
+            TOKENIZER_MODEL_NAME,
             ComponentType.COMPONENT_TYPE_TOKENIZER,
             DEFAULT_LANGUAGE,
             tokenizerHash));
@@ -1131,6 +1127,7 @@ public final class ModelBundleCache {
     return bundle.build();
   }
 
+  /** Builds the sentiment model bundle. */
   private ModelBundleInfo buildSentimentBundleCatalog(String sentenceHash, String tokenizerHash) {
     // Sentiment runs per sentence, so it needs the English sentence-detector and tokenizer
     // backbone; the sentiment models themselves are operator-supplied and their language is
@@ -1142,12 +1139,12 @@ public final class ModelBundleCache {
         .addSupportedSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
         .addSupportedSteps(PipelineStep.PIPELINE_STEP_SENTIMENT)
         .addModels(classicModelDescriptor(
-            "opennlp-models-sentdetect-" + DEFAULT_LANGUAGE,
+            SENTENCE_MODEL_NAME,
             ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR,
             DEFAULT_LANGUAGE,
             sentenceHash))
         .addModels(classicModelDescriptor(
-            "opennlp-models-tokenizer-" + DEFAULT_LANGUAGE,
+            TOKENIZER_MODEL_NAME,
             ComponentType.COMPONENT_TYPE_TOKENIZER,
             DEFAULT_LANGUAGE,
             tokenizerHash));

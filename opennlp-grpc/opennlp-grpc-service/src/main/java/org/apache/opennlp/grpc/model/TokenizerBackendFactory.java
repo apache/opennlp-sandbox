@@ -23,12 +23,11 @@ import java.util.Optional;
 import opennlp.tools.tokenize.Tokenizer;
 
 /**
- * Service provider interface for custom word-tokenizer engines. The server discovers
- * factories through {@link java.util.ServiceLoader}; clients select an available engine
- * with {@code AnalysisProfile.tokenizer.custom}.
+ * Service provider interface for custom word-tokenizer engines discovered through
+ * {@link java.util.ServiceLoader}. Clients select an available engine with
+ * {@code AnalysisProfile.tokenizer.custom}.
  *
- * <p>The returned tokenizer must be safe for concurrent calls. A backend wrapping a
- * stateful implementation can satisfy that contract with a thread-local delegate.</p>
+ * <p>Thread safety is implementation specific.</p>
  */
 public interface TokenizerBackendFactory {
 
@@ -45,6 +44,8 @@ public interface TokenizerBackendFactory {
    * @param configuration The complete server configuration. Must not be {@code null}.
    *
    * @return The configured tokenizer, or empty when this backend is not configured.
+   *
+   * @throws IllegalArgumentException If {@code configuration} is {@code null}.
    */
   Optional<Tokenizer> create(Map<String, String> configuration);
 }

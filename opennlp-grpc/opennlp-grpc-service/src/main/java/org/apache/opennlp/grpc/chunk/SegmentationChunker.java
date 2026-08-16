@@ -111,6 +111,7 @@ public final class SegmentationChunker {
     };
   }
 
+  /** Returns semantic selection, rejecting invalid input. */
   private static SemanticSelection requireSemanticSelection(
       ChunkingSpec spec, EmbeddingProvider provider, EmbeddingSelector fallbackSelector) {
     if (!spec.hasSemanticConfig()) {
@@ -147,6 +148,7 @@ public final class SegmentationChunker {
   private record SemanticSelection(String modelId, String backendId) {
   }
 
+  /** Creates one chunk per sentence. */
   private static List<ChunkSegment> sentenceChunks(OpenNlpDocument document) {
     final List<ChunkSegment> chunks = new ArrayList<>();
     for (int i = 0; i < document.getSentencesCount(); i++) {
@@ -156,6 +158,7 @@ public final class SegmentationChunker {
     return chunks;
   }
 
+  /** Creates chunks from fixed-size token windows. */
   private static List<ChunkSegment> tokenWindowChunks(OpenNlpDocument document, ChunkingSpec spec) {
     final int chunkSize = spec.getChunkSize();
     final int chunkOverlap = spec.getChunkOverlap();
@@ -189,6 +192,7 @@ public final class SegmentationChunker {
     return chunks;
   }
 
+  /** Flattens sentence tokens while retaining sentence indices. */
   private static List<FlatToken> flattenTokens(OpenNlpDocument document) {
     final List<FlatToken> tokens = new ArrayList<>();
     for (int sentenceIndex = 0; sentenceIndex < document.getSentencesCount(); sentenceIndex++) {
@@ -200,6 +204,7 @@ public final class SegmentationChunker {
     return tokens;
   }
 
+  /** Returns the sentence indices covered by a token window. */
   private static List<Integer> sentenceIndices(
       List<FlatToken> flatTokens, int startToken, int endToken) {
     final Set<Integer> indices = new LinkedHashSet<>();

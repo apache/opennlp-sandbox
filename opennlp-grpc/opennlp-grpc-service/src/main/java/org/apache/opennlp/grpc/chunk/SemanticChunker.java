@@ -138,6 +138,7 @@ public final class SemanticChunker {
     return chunks;
   }
 
+  /** Resolves threshold. */
   private static float resolveThreshold(SemanticChunkingConfig config, float[] similarities) {
     if (config.getPercentileThreshold() > 0) {
       if (config.getPercentileThreshold() >= 100) {
@@ -151,6 +152,7 @@ public final class SemanticChunker {
     return DEFAULT_SIMILARITY_THRESHOLD;
   }
 
+  /** Computes a percentile from the similarity values. */
   private static float percentile(float[] values, int percentile) {
     final float[] sorted = values.clone();
     Arrays.sort(sorted);
@@ -207,6 +209,7 @@ public final class SemanticChunker {
     }
   }
 
+  /** Converts a semantic boundary to a chunk segment. */
   private static SegmentationChunker.ChunkSegment toSegment(
       String rawText,
       OpenNlpDocument document,

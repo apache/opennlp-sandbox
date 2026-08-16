@@ -22,7 +22,6 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -34,7 +33,7 @@ import org.slf4j.LoggerFactory;
  * Generic registry for the server's multi-backend pattern: one <em>logical</em> id (an embedding
  * model, an entity type, a categorizer, ...) may be served by several <em>engines</em> at once,
  * each registered with a priority. Resolution is the same everywhere and is <b>strongly typed</b>
- * — the logical id and the engine are always separate arguments, never a parsed string:
+ * because the logical id and engine are always separate arguments, never a parsed string:
  *
  * <ul>
  *   <li>{@link #invoke(String, Function)} runs against the engines for an id in <b>descending
@@ -246,6 +245,7 @@ public final class RankedBackends<T> {
     throw last;
   }
 
+  /** Returns whether a backend failure permits fallback. */
   private static boolean isRetryable(AnalysisException failure) {
     return failure.getFailureType() == AnalysisException.FailureType.UNAVAILABLE
         || failure.getFailureType() == AnalysisException.FailureType.RESOURCE_EXHAUSTED;
@@ -288,11 +288,19 @@ public final class RankedBackends<T> {
      *
      * @return This builder.
      * @throws AnalysisException If the same {@code (logicalId, engineId)} pair is registered twice.
+     * @throws IllegalArgumentException If {@code logicalId}, {@code engineId}, or {@code value}
+     *         is {@code null}.
      */
     public Builder<T> add(String logicalId, String engineId, int priority, T value) {
-      Objects.requireNonNull(logicalId, "logicalId");
-      Objects.requireNonNull(engineId, "engineId");
-      Objects.requireNonNull(value, "value");
+      if (logicalId == null) {
+        throw new IllegalArgumentException("logicalId must not be null");
+      }
+      if (engineId == null) {
+        throw new IllegalArgumentException("engineId must not be null");
+      }
+      if (value == null) {
+        throw new IllegalArgumentException("value must not be null");
+      }
       final List<Registration<T>> ranked =
           byLogicalId.computeIfAbsent(logicalId, k -> new ArrayList<>());
       if (ranked.stream().anyMatch(r -> r.engineId().equals(engineId))) {

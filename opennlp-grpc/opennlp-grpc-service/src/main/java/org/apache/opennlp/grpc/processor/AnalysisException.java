@@ -23,7 +23,7 @@ package org.apache.opennlp.grpc.processor;
  */
 public final class AnalysisException extends RuntimeException {
 
-  private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 5305435724794684877L;
 
   /**
    * The category of failure, used by {@link org.apache.opennlp.grpc.v1.server.GrpcStatusMapper}

@@ -19,23 +19,29 @@ syntax = "proto3";
 
 package org.apache.opennlp.grpc.v1;
 
-option java_package = "org.apache.opennlp.grpc.v1";
+import "google/protobuf/struct.proto";
+
 option java_multiple_files = true;
 // Explicit outer classname: without it, protoc derives "OpennlpDocument" from
 // the filename, which collides with the OpenNlpDocument message on
 // case-insensitive filesystems (macOS, Windows).
 option java_outer_classname = "OpenNlpDocumentProto";
-
-import "google/protobuf/struct.proto";
+option java_package = "org.apache.opennlp.grpc.v1";
 
 // The closed stemmer families supported by the service. Defined in the document
 // contract so typed stem annotations can retain their producer configuration.
 enum StemmerAlgorithm {
+  // No algorithm was selected.
   STEMMER_ALGORITHM_UNSPECIFIED = 0;
+  // Language-specific Snowball stemming.
   STEMMER_ALGORITHM_SNOWBALL = 1;
+  // The original English Porter stemming algorithm.
   STEMMER_ALGORITHM_PORTER = 2;
+  // A language-specific light stemmer.
   STEMMER_ALGORITHM_LIGHT = 3;
+  // A language-specific minimal stemmer.
   STEMMER_ALGORITHM_MINIMAL = 4;
+  // Dictionary-driven Hunspell stemming.
   STEMMER_ALGORITHM_HUNSPELL = 5;
 }
 
@@ -93,7 +99,7 @@ message OpenNlpDocument {
   // alignment that maps spans between it and raw_text. Unset when the step did
   // not run.
   optional NormalizationResult normalization = 13;
-  // The document-shape view (OPENNLP-1888) of every annotation this analysis
+  // The document-shape view of every annotation this analysis
   // produced: the same results as the fields above, rendered as named, typed
   // annotation layers over raw_text. Servers at this version populate one layer
   // per step that ran; a layer whose producing step did not run is absent.
@@ -362,17 +368,25 @@ message Chunk {
 // OpenNLP-owned chunking strategies whose identities are stable parts of this API.
 // CATEGORY is produced by CategoryChunkConfigEntry and is not valid in ChunkingSpec.
 enum StandardChunkingStrategy {
+  // No standard strategy was selected.
   STANDARD_CHUNKING_STRATEGY_UNSPECIFIED = 0;
+  // Produce one chunk per sentence.
   STANDARD_CHUNKING_STRATEGY_SENTENCE = 1;
+  // Produce overlapping or disjoint token windows.
   STANDARD_CHUNKING_STRATEGY_TOKEN = 2;
+  // Split at semantic boundaries derived from sentence embeddings.
   STANDARD_CHUNKING_STRATEGY_SEMANTIC = 3;
+  // Group spans by document-category output.
   STANDARD_CHUNKING_STRATEGY_CATEGORY = 4;
 }
 
 // Identifies either a standard OpenNLP chunking strategy or an extension strategy.
 message ChunkingStrategySelector {
+  // The selected standard strategy or extension id.
   oneof kind {
+    // A strategy defined by this contract.
     StandardChunkingStrategy standard = 1;
+    // The stable id of an extension-provided strategy.
     string custom = 2;
   }
 }
@@ -466,18 +480,27 @@ enum ParseNodeKind {
 // OpenNLP-owned embedding backends whose identifiers are stable parts of this API.
 // ServiceLoader extensions use EmbeddingBackendSelector.custom.
 enum StandardEmbeddingBackend {
+  // No standard backend was selected.
   STANDARD_EMBEDDING_BACKEND_UNSPECIFIED = 0;
+  // Local inference through ONNX Runtime.
   STANDARD_EMBEDDING_BACKEND_ONNX = 1;
+  // Local GPU inference through the CUDA backend.
   STANDARD_EMBEDDING_BACKEND_CUDA = 2;
+  // Static lookup-table embeddings.
   STANDARD_EMBEDDING_BACKEND_STATIC = 3;
+  // Remote Hugging Face Text Embeddings Inference.
   STANDARD_EMBEDDING_BACKEND_TEI = 4;
+  // Remote OpenVINO Model Server inference.
   STANDARD_EMBEDDING_BACKEND_OPENVINO = 5;
 }
 
 // Selects either a standard OpenNLP embedding backend or an extension-provided id.
 message EmbeddingBackendSelector {
+  // The selected standard backend or extension id.
   oneof kind {
+    // A backend defined by this contract.
     StandardEmbeddingBackend standard = 1;
+    // The stable id of a ServiceLoader-provided backend.
     string custom = 2;
   }
 }
@@ -487,6 +510,7 @@ message EmbeddingBackendSelector {
 // uses the server's primary route and permits safe fallback. A present choice pins that
 // route with no fallback.
 message EmbeddingSelector {
+  // The deployment-defined logical model id.
   string model_id = 1;
   // Compatibility input for an open backend id. New clients should use `backend`.
   // Setting both fields => INVALID_ARGUMENT.
@@ -498,7 +522,9 @@ message EmbeddingSelector {
 
 // The concrete route that produced an embedding or can serve an embedding model.
 message EmbeddingRoute {
+  // The deployment-defined logical model id.
   string model_id = 1;
+  // The concrete backend id that serves the model.
   string backend_id = 2;
   // Stable identity of the vector space, including weights, tokenization, pooling,
   // and normalization semantics. Fallback is allowed only across matching ids.
@@ -579,11 +605,15 @@ message NormalizationResult {
 // unchanged; replace runs map as one block (a position inside one maps to the
 // whole block, matching the library's Alignment semantics).
 message AlignmentRun {
+  // Number of source-text units covered by this run.
   int32 original_units = 1;
+  // Number of normalized-text units produced by this run.
   int32 normalized_units = 2;
+  // Whether the source and normalized units are identical.
   bool equal = 3;
 }
 
+// A document categorizer's winning category and complete score distribution.
 message DocumentClassification {
   // The winning category: argmax over category_scores, as decided by the categorizer model.
   string best_category = 1;
@@ -594,7 +624,7 @@ message DocumentClassification {
 
 // ============================ The document shape ============================
 //
-// The gRPC rendering of the OpenNLP 3.0 document container (OPENNLP-1888): the
+// The gRPC rendering of the OpenNLP 3.0 document container: the
 // analyzed text plus any number of named annotation layers, each layer a list of
 // annotations whose value type is fixed by the layer. Layer ids are namespaced
 // strings exactly as in the Java container ("opennlp:" prefixes every layer the
@@ -657,27 +687,49 @@ message DocumentLayers {
 // Closed identities for layers that are part of the OpenNLP v1 contract. A
 // consumer can switch exhaustively over these values without parsing ids.
 enum StandardLayer {
+  // No standard layer was selected.
   STANDARD_LAYER_UNSPECIFIED = 0;
+  // Sentence spans and covered text.
   STANDARD_LAYER_SENTENCES = 1;
+  // Token spans and covered text.
   STANDARD_LAYER_TOKENS = 2;
+  // Part-of-speech tags aligned with tokens.
   STANDARD_LAYER_POS_TAGS = 3;
+  // Lemmas aligned with tokens.
   STANDARD_LAYER_LEMMAS = 4;
+  // Named entities with model provenance.
   STANDARD_LAYER_ENTITIES = 5;
+  // Shallow syntactic chunks.
   STANDARD_LAYER_SYNTACTIC_CHUNKS = 6;
+  // Constituency parse trees.
   STANDARD_LAYER_PARSES = 7;
+  // Sentence-level sentiment labels.
   STANDARD_LAYER_SENTIMENT = 8;
+  // Whole-document language detection.
   STANDARD_LAYER_LANGUAGE = 9;
+  // Whole-document category scores.
   STANDARD_LAYER_CATEGORIES = 10;
+  // Dense vector embeddings.
   STANDARD_LAYER_EMBEDDINGS = 11;
+  // Closed UAX 29 word-type classifications.
   STANDARD_LAYER_WORD_TYPES = 12;
+  // Tokens matched by the stopword list.
   STANDARD_LAYER_STOPWORDS = 13;
+  // Normalized per-token terms, qualified by dimension.
   STANDARD_LAYER_TERMS = 14;
+  // SentencePiece subword annotations.
   STANDARD_LAYER_SUBWORDS = 15;
+  // Token stems with stemmer provenance.
   STANDARD_LAYER_STEMS = 16;
+  // Lexical expansions with lexicon provenance.
   STANDARD_LAYER_EXPANSIONS = 17;
+  // Geocoded named-entity resolutions.
   STANDARD_LAYER_GEO = 18;
+  // Whole-document normalized text and alignment.
   STANDARD_LAYER_NORMALIZATION = 19;
+  // Whole-document analytic statistics.
   STANDARD_LAYER_ANALYTICS = 20;
+  // Strategy-driven chunk and embedding groups.
   STANDARD_LAYER_CHUNK_GROUPS = 21;
   // Document-scoped aggregate term frequencies and optional occurrence spans.
   STANDARD_LAYER_TERM_VECTORS = 22;
@@ -697,10 +749,14 @@ enum TermVectorMode {
 // enum. Extension layers use a globally namespaced custom id. A standard layer
 // family may carry a qualifier, for example FULL_CASE_FOLD on STANDARD_LAYER_TERMS.
 message LayerIdentity {
+  // The selected standard layer or extension id.
   oneof kind {
+    // A layer defined by this contract.
     StandardLayer standard = 1;
+    // A globally namespaced extension layer id.
     string custom = 2;
   }
+  // A stable discriminator within a standard layer family.
   optional string qualifier = 3;
 }
 
@@ -764,6 +820,7 @@ enum LayerScope {
 
 // The annotations of a string-valued layer.
 message StringAnnotationList {
+  // String annotations in layer order.
   repeated StringAnnotation annotations = 1;
 }
 
@@ -782,6 +839,7 @@ message StringAnnotation {
 
 // The annotations of a scored-label layer.
 message CategoryAnnotationList {
+  // Scored labels in layer order.
   repeated CategoryAnnotation annotations = 1;
 }
 
@@ -798,6 +856,7 @@ message CategoryAnnotation {
 
 // The annotations of an embedding layer.
 message EmbeddingAnnotationList {
+  // Embeddings in layer order.
   repeated EmbeddingAnnotation annotations = 1;
 }
 
@@ -819,6 +878,7 @@ message EmbeddingAnnotation {
 
 // The annotations of a subword layer.
 message SubwordAnnotationList {
+  // Subword pieces in source order.
   repeated SubwordAnnotation annotations = 1;
 }
 
@@ -836,6 +896,7 @@ message SubwordAnnotation {
 
 // The annotations of a geocoding layer.
 message GeoAnnotationList {
+  // Resolved location mentions in source order.
   repeated GeoAnnotation annotations = 1;
 }
 
@@ -849,6 +910,7 @@ message GeoAnnotation {
 
 // The annotations of a parse-tree layer.
 message TreeAnnotationList {
+  // Parsed sentences in source order.
   repeated TreeAnnotation annotations = 1;
 }
 
@@ -864,76 +926,123 @@ message TreeAnnotation {
 
 // Closed UAX 29 word token classes from OpenNLP's tokenizer.
 enum DocumentWordType {
+  // No UAX 29 word type was determined.
   DOCUMENT_WORD_TYPE_UNSPECIFIED = 0;
+  // Letters, or a combination of letters and numbers.
   DOCUMENT_WORD_TYPE_ALPHANUMERIC = 1;
+  // A numeric token.
   DOCUMENT_WORD_TYPE_NUMERIC = 2;
+  // A CJK ideographic token.
   DOCUMENT_WORD_TYPE_IDEOGRAPHIC = 3;
+  // A Japanese hiragana token.
   DOCUMENT_WORD_TYPE_HIRAGANA = 4;
+  // A Japanese katakana token.
   DOCUMENT_WORD_TYPE_KATAKANA = 5;
+  // A Korean hangul token.
   DOCUMENT_WORD_TYPE_HANGUL = 6;
+  // A token in a Southeast Asian script.
   DOCUMENT_WORD_TYPE_SOUTHEAST_ASIAN = 7;
+  // An emoji token.
   DOCUMENT_WORD_TYPE_EMOJI = 8;
 }
 
+// The annotations of a UAX 29 word-type layer.
 message WordTypeAnnotationList {
+  // Word types in source order.
   repeated WordTypeAnnotation annotations = 1;
 }
 
+// One UAX 29 word type anchored to its token span.
 message WordTypeAnnotation {
+  // The classified token span.
   AnnotationSpan span = 1;
+  // The token's closed UAX 29 word type.
   DocumentWordType type = 2;
 }
 
+// The annotations of a named-entity layer.
 message EntityAnnotationList {
+  // Named entities in source order.
   repeated NamedEntity annotations = 1;
 }
 
+// The annotations of a shallow syntactic-chunk layer.
 message SyntacticChunkAnnotationList {
+  // Syntactic chunks in source order.
   repeated ChunkSpan annotations = 1;
 }
 
+// The annotations of a stem layer.
 message StemAnnotationList {
+  // Token stems in source order.
   repeated StemAnnotation annotations = 1;
 }
 
+// One stem anchored to its source token with producer provenance.
 message StemAnnotation {
+  // The source token span.
   AnnotationSpan span = 1;
+  // The stem produced for the token.
   string stem = 2;
+  // The algorithm family that produced the stem.
   StemmerAlgorithm algorithm = 3;
+  // The configured language for language-specific algorithms.
   optional string language = 4;
+  // The configured dictionary id when Hunspell produced the stem.
   optional string hunspell_dictionary_id = 5;
 }
 
+// The lexical relation between a source term and an expansion.
 enum LexicalExpansionKind {
+  // No lexical relation was specified.
   LEXICAL_EXPANSION_KIND_UNSPECIFIED = 0;
+  // A term with the same or similar meaning.
   LEXICAL_EXPANSION_KIND_SYNONYM = 1;
+  // A more general term.
   LEXICAL_EXPANSION_KIND_HYPERNYM = 2;
+  // A more specific term.
   LEXICAL_EXPANSION_KIND_HYPONYM = 3;
 }
 
+// The annotations of a lexical-expansion layer.
 message LexicalExpansionAnnotationList {
+  // Lexical expansions in source and traversal order.
   repeated LexicalExpansionAnnotation annotations = 1;
 }
 
+// One lexicon-derived term related to a source span.
 message LexicalExpansionAnnotation {
+  // The source term span.
   AnnotationSpan span = 1;
+  // The related term returned by the lexicon.
   string term = 2;
+  // The lexical relation to the source term.
   LexicalExpansionKind kind = 3;
+  // The graph distance from the source term.
   int32 depth = 4;
+  // The one-based rank of the source sense used for this result.
   int32 sense_rank = 5;
+  // The expansion weight assigned by the lexical expander.
   double weight = 6;
+  // The configured lexicon that produced the expansion.
   string lexicon_id = 7;
 }
 
+// The annotations of a document-normalization layer.
 message NormalizationAnnotationList {
+  // Normalization results, normally exactly one document-scoped value.
   repeated NormalizationResult annotations = 1;
 }
 
+// The annotations of a document-analytics layer.
 message AnalyticsAnnotationList {
+  // Analytics results, normally exactly one document-scoped value.
   repeated DocumentAnalytics annotations = 1;
 }
 
+// The annotations of a chunk-group layer.
 message ChunkGroupAnnotationList {
+  // Chunk groups in request order.
   repeated ChunkEmbeddingGroup annotations = 1;
 }
 
