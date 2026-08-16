@@ -17,3 +17,4 @@
 org.apache.opennlp.grpc.embedding.StubEmbeddingBackendFactory
 org.apache.opennlp.grpc.embedding.TrackingEmbeddingBackendFactory
 org.apache.opennlp.grpc.embedding.FailingEmbeddingBackendFactory
+org.apache.opennlp.grpc.embedding.BlockingEmbeddingBackendFactory

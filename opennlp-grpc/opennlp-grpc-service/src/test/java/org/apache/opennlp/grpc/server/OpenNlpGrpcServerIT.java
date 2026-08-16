@@ -27,7 +27,10 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
@@ -39,6 +42,7 @@ import io.grpc.health.v1.HealthCheckRequest;
 import io.grpc.health.v1.HealthCheckResponse;
 import io.grpc.health.v1.HealthGrpc;
 import io.grpc.stub.StreamObserver;
+import org.apache.opennlp.grpc.embedding.BlockingEmbeddingBackendFactory;
 import org.apache.opennlp.grpc.model.ClassicDocCategorizerBackendFactory;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.testing.TinyDoccatModel;
@@ -47,6 +51,8 @@ import org.apache.opennlp.grpc.v1.AnalyzeStreamConfiguration;
 import org.apache.opennlp.grpc.v1.AnalyzeStreamDocument;
 import org.apache.opennlp.grpc.v1.AnalyzeStreamRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeStreamResponse;
+import org.apache.opennlp.grpc.v1.EmbedTextRequest;
+import org.apache.opennlp.grpc.v1.EmbedTextResponse;
 import org.apache.opennlp.grpc.v1.GetServiceInfoRequest;
 import org.apache.opennlp.grpc.v1.OpenNlpAnalysisServiceGrpc;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
@@ -101,6 +107,11 @@ class OpenNlpGrpcServerIT {
    * across operating systems and Maven classloader layouts.
    */
   private static Path writeIntegrationConfig() throws IOException, URISyntaxException {
+    return writeIntegrationConfig(new Properties());
+  }
+
+  private static Path writeIntegrationConfig(Properties overrides)
+      throws IOException, URISyntaxException {
     final Path modelsDir = Paths.get(
         Objects.requireNonNull(OpenNlpGrpcServerIT.class.getResource("/models/")).toURI());
     final Path sentenceModel = requireModelFile(modelsDir, SENTENCE_MODEL_PREFIX);
@@ -118,6 +129,7 @@ class OpenNlpGrpcServerIT {
         ClassicDocCategorizerBackendFactory.KEY_PREFIX + "topic"
             + ClassicDocCategorizerBackendFactory.KEY_SUFFIX,
         doccatModel.toAbsolutePath().toString());
+    properties.putAll(overrides);
 
     final Path config = Files.createTempFile("opennlp-grpc-it-", ".ini");
     config.toFile().deleteOnExit();
@@ -241,6 +253,128 @@ class OpenNlpGrpcServerIT {
             .build());
 
     assertEquals(HealthCheckResponse.ServingStatus.SERVING, response.getStatus());
+  }
+
+  @Test
+  void stopDrainsAnAcceptedRpcBeforeClosingItsProvider() throws Exception {
+    BlockingEmbeddingBackendFactory.reset();
+    final Properties overrides = new Properties();
+    overrides.setProperty(BlockingEmbeddingBackendFactory.KEY_MODEL_ID, "slow");
+    overrides.setProperty("server.shutdown_grace_seconds", "3");
+    final OpenNlpGrpcServer drainingServer = new OpenNlpGrpcServer();
+    drainingServer.port = 0;
+    drainingServer.config = writeIntegrationConfig(overrides).toString();
+    final ExecutorService stopExecutor = Executors.newSingleThreadExecutor();
+    ManagedChannel drainingChannel = null;
+    try {
+      drainingServer.start();
+      drainingChannel = ManagedChannelBuilder
+          .forAddress("localhost", drainingServer.getPort())
+          .usePlaintext()
+          .build();
+      final CountDownLatch terminal = new CountDownLatch(1);
+      final AtomicReference<EmbedTextResponse> response = new AtomicReference<>();
+      final AtomicReference<Throwable> error = new AtomicReference<>();
+      final StreamObserver<EmbedTextRequest> requests =
+          OpenNlpAnalysisServiceGrpc.newStub(drainingChannel)
+              .embedText(new StreamObserver<>() {
+                @Override
+                public void onNext(EmbedTextResponse value) {
+                  response.set(value);
+                }
+
+                @Override
+                public void onError(Throwable failure) {
+                  error.set(failure);
+                  terminal.countDown();
+                }
+
+                @Override
+                public void onCompleted() {
+                  terminal.countDown();
+                }
+              });
+
+      requests.onNext(EmbedTextRequest.newBuilder()
+          .setSequence(17)
+          .setModelId("slow")
+          .setText("accepted before shutdown")
+          .build());
+      requests.onCompleted();
+      assertTrue(BlockingEmbeddingBackendFactory.awaitStarted(5, TimeUnit.SECONDS));
+
+      final var stopping = stopExecutor.submit(drainingServer::stop);
+      assertThrows(TimeoutException.class, () -> stopping.get(200, TimeUnit.MILLISECONDS));
+      assertFalse(BlockingEmbeddingBackendFactory.wasClosed());
+
+      BlockingEmbeddingBackendFactory.release();
+      assertTrue(terminal.await(5, TimeUnit.SECONDS));
+      stopping.get(5, TimeUnit.SECONDS);
+      assertNull(error.get());
+      assertEquals(17, response.get().getSequence());
+      assertTrue(BlockingEmbeddingBackendFactory.wasClosed());
+    } finally {
+      BlockingEmbeddingBackendFactory.release();
+      drainingServer.stop();
+      if (drainingChannel != null) {
+        drainingChannel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+      }
+      stopExecutor.shutdownNow();
+    }
+  }
+
+  @Test
+  void stopForcesAnExpiredGracePeriodBeforeClosingItsProvider() throws Exception {
+    BlockingEmbeddingBackendFactory.reset();
+    final Properties overrides = new Properties();
+    overrides.setProperty(BlockingEmbeddingBackendFactory.KEY_MODEL_ID, "forced");
+    overrides.setProperty("server.shutdown_grace_seconds", "0");
+    final OpenNlpGrpcServer forcedServer = new OpenNlpGrpcServer();
+    forcedServer.port = 0;
+    forcedServer.config = writeIntegrationConfig(overrides).toString();
+    final ExecutorService stopExecutor = Executors.newSingleThreadExecutor();
+    ManagedChannel forcedChannel = null;
+    try {
+      forcedServer.start();
+      forcedChannel = ManagedChannelBuilder
+          .forAddress("localhost", forcedServer.getPort())
+          .usePlaintext()
+          .build();
+      final StreamObserver<EmbedTextRequest> requests =
+          OpenNlpAnalysisServiceGrpc.newStub(forcedChannel)
+              .embedText(new StreamObserver<>() {
+                @Override
+                public void onNext(EmbedTextResponse value) {
+                }
+
+                @Override
+                public void onError(Throwable failure) {
+                }
+
+                @Override
+                public void onCompleted() {
+                }
+              });
+
+      requests.onNext(EmbedTextRequest.newBuilder()
+          .setSequence(23)
+          .setModelId("forced")
+          .setText("held beyond grace")
+          .build());
+      requests.onCompleted();
+      assertTrue(BlockingEmbeddingBackendFactory.awaitStarted(5, TimeUnit.SECONDS));
+
+      final var stopping = stopExecutor.submit(forcedServer::stop);
+      stopping.get(2, TimeUnit.SECONDS);
+      assertTrue(BlockingEmbeddingBackendFactory.wasClosed());
+    } finally {
+      BlockingEmbeddingBackendFactory.release();
+      forcedServer.stop();
+      if (forcedChannel != null) {
+        forcedChannel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+      }
+      stopExecutor.shutdownNow();
+    }
   }
 
   @Test
