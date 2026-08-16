@@ -68,6 +68,37 @@ class WebUiAssetResolverTest {
     assertFalse(resolver.resolve("/console/assets\\app.js").isPresent());
   }
 
+  @Test
+  void trailingSlashOnTheMountServesTheIndex() {
+    // Characterization: the split keeps the trailing empty segment (limit -1
+    // semantics), the segment checks pass it, and the empty relative path maps
+    // to the index document, exactly as the bare mount does.
+    Optional<WebUiAsset> result = resolver.resolve("/console/");
+
+    assertTrue(result.isPresent());
+    assertTrue(new String(result.orElseThrow().content(), StandardCharsets.UTF_8)
+        .endsWith("test console\n"));
+  }
+
+  @Test
+  void trailingSlashBelowTheMountServesTheFileAsOctetStream() {
+    // Characterization: the trailing empty segment passes the checks, and the
+    // JDK classloader serves the file content anyway; the name no longer ends
+    // with a known suffix, so the media type degrades to octet-stream.
+    Optional<WebUiAsset> result = resolver.resolve("/console/assets/app.js/");
+
+    assertTrue(result.isPresent());
+    assertEquals("application/octet-stream", result.orElseThrow().contentType());
+  }
+
+  @Test
+  void emptySegmentsElsewhereResolveToNothing() {
+    // Characterization: double slashes are rejected up front, and the bare
+    // root matches no extension mount.
+    assertFalse(resolver.resolve("/console//assets/app.js").isPresent());
+    assertFalse(resolver.resolve("/").isPresent());
+  }
+
   private static WebUiExtension extension() {
     WebUiExtensionDescriptor descriptor = new WebUiExtensionDescriptor(
         new WebUiExtensionId("test-console"),
