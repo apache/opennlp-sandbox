@@ -108,7 +108,7 @@ class OpenNlpGrpcServerIT {
 
     final Properties properties = new Properties();
     properties.setProperty("server.enable_reflection", "false");
-    properties.setProperty("server.max_inbound_message_size", "10485760");
+    properties.setProperty("server.max_inbound_message_size", "64");
     properties.setProperty("server.max_text_bytes", "128");
     properties.setProperty("server.analysis_stream_workers", "2");
     properties.setProperty("model.sentence_detector.path", sentenceModel.toAbsolutePath().toString());
@@ -168,6 +168,19 @@ class OpenNlpGrpcServerIT {
     assertFalse(response.getDocument().getSentences(0).getTokensList().isEmpty());
     assertTrue(response.getDiagnosticsList().stream()
         .anyMatch(d -> d.getStep() == PipelineStep.PIPELINE_STEP_SENTENCE_DETECT));
+  }
+
+  @Test
+  void acceptsTextWithinAdvertisedLimitWhenConfiguredTransportLimitIsSmaller() {
+    final String text = "word ".repeat(20).trim();
+    final var response = OpenNlpAnalysisServiceGrpc.newBlockingStub(channel)
+        .analyzeDocument(AnalyzeDocumentRequest.newBuilder()
+            .setDocument(OpenNlpDocument.newBuilder()
+                .setDocId("transport-floor")
+                .setRawText(text))
+            .build());
+
+    assertEquals(text, response.getDocument().getRawText());
   }
 
   @Test
