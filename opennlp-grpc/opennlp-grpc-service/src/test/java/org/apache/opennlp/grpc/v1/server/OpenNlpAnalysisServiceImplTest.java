@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -140,8 +141,28 @@ class OpenNlpAnalysisServiceImplTest {
     assertEquals(List.of(StubSentenceDetectorBackendFactory.ENGINE_ID),
         observer.value.getCustomSentenceDetectorIdsList());
     assertTrue(observer.value.getConfiguredResourcesList().isEmpty());
+    assertEquals(1_048_576, observer.value.getMaxTextBytes());
     assertTrue(observer.completed);
     assertNull(observer.error);
+  }
+
+  @Test
+  void rejectsTextBeyondTheOperatorLimitBeforeCallingTheAnalyzer() {
+    final AtomicBoolean analyzed = new AtomicBoolean();
+    final CapturingObserver<AnalyzeDocumentResponse> observer = new CapturingObserver<>();
+    final AnalyzeDocumentRequest oversized = AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setRawText("é".repeat(524_289)))
+        .build();
+
+    serviceWith(request -> {
+      analyzed.set(true);
+      return AnalyzeDocumentResponse.getDefaultInstance();
+    }).analyzeDocument(oversized, observer);
+
+    assertFalse(analyzed.get());
+    assertNotNull(observer.error);
+    assertEquals(Status.Code.INVALID_ARGUMENT, Status.fromThrowable(observer.error).getCode());
+    assertTrue(Status.fromThrowable(observer.error).getDescription().contains("1048576"));
   }
 
   @Test

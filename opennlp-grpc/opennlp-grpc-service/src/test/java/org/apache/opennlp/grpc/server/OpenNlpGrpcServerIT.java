@@ -33,6 +33,8 @@ import java.util.stream.Stream;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.health.v1.HealthCheckRequest;
 import io.grpc.health.v1.HealthCheckResponse;
 import io.grpc.health.v1.HealthGrpc;
@@ -57,6 +59,7 @@ import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OpenNlpGrpcServerIT {
@@ -106,6 +109,7 @@ class OpenNlpGrpcServerIT {
     final Properties properties = new Properties();
     properties.setProperty("server.enable_reflection", "false");
     properties.setProperty("server.max_inbound_message_size", "10485760");
+    properties.setProperty("server.max_text_bytes", "128");
     properties.setProperty("server.analysis_stream_workers", "2");
     properties.setProperty("model.sentence_detector.path", sentenceModel.toAbsolutePath().toString());
     properties.setProperty("model.tokenizer.path", tokenizerModel.toAbsolutePath().toString());
@@ -147,6 +151,7 @@ class OpenNlpGrpcServerIT {
 
     final var serviceInfo = v1.getServiceInfo(GetServiceInfoRequest.getDefaultInstance());
     assertEquals("v1", serviceInfo.getApiVersion());
+    assertEquals(128, serviceInfo.getMaxTextBytes());
     assertTrue(serviceInfo.getSupportedStepsList().contains(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT));
     assertTrue(serviceInfo.getSupportedStepsList().contains(PipelineStep.PIPELINE_STEP_TOKENIZE));
     assertTrue(serviceInfo.getAvailableProfileIdsList().contains(ProfileRegistry.DOCCAT_PROFILE_ID));
@@ -163,6 +168,56 @@ class OpenNlpGrpcServerIT {
     assertFalse(response.getDocument().getSentences(0).getTokensList().isEmpty());
     assertTrue(response.getDiagnosticsList().stream()
         .anyMatch(d -> d.getStep() == PipelineStep.PIPELINE_STEP_SENTENCE_DETECT));
+  }
+
+  @Test
+  void enforcesTheOperatorTextLimitAcrossUnaryAndStreamingAnalysis() throws Exception {
+    final OpenNlpAnalysisServiceGrpc.OpenNlpAnalysisServiceBlockingStub blocking =
+        OpenNlpAnalysisServiceGrpc.newBlockingStub(channel);
+    final StatusRuntimeException unaryError = assertThrows(StatusRuntimeException.class,
+        () -> blocking.analyzeDocument(AnalyzeDocumentRequest.newBuilder()
+            .setDocument(OpenNlpDocument.newBuilder().setRawText("x".repeat(129)))
+            .build()));
+    assertEquals(Status.Code.INVALID_ARGUMENT, unaryError.getStatus().getCode());
+
+    final var responses = new CopyOnWriteArrayList<AnalyzeStreamResponse>();
+    final AtomicReference<Throwable> error = new AtomicReference<>();
+    final CountDownLatch done = new CountDownLatch(1);
+    final StreamObserver<AnalyzeStreamRequest> requests =
+        OpenNlpAnalysisServiceGrpc.newStub(channel).analyzeStream(new StreamObserver<>() {
+          @Override
+          public void onNext(AnalyzeStreamResponse response) {
+            responses.add(response);
+          }
+
+          @Override
+          public void onError(Throwable failure) {
+            error.set(failure);
+            done.countDown();
+          }
+
+          @Override
+          public void onCompleted() {
+            done.countDown();
+          }
+        });
+
+    requests.onNext(AnalyzeStreamRequest.newBuilder()
+        .setConfiguration(AnalyzeStreamConfiguration.getDefaultInstance())
+        .build());
+    requests.onNext(streamDocument(21, "x".repeat(129)));
+    requests.onNext(streamDocument(22, "within limit"));
+    requests.onCompleted();
+
+    assertTrue(done.await(10, TimeUnit.SECONDS));
+    assertNull(error.get());
+    assertEquals(2, responses.size());
+    assertEquals(Status.Code.INVALID_ARGUMENT.value(), responses.stream()
+        .filter(response -> response.getSequence() == 21)
+        .findFirst().orElseThrow().getError().getCode());
+    assertTrue(responses.stream()
+        .filter(response -> response.getSequence() == 22)
+        .findFirst().orElseThrow().hasOk());
   }
 
   @Test

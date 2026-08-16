@@ -63,4 +63,12 @@ class ServiceCapabilityWireContractTest {
         "STANDARD_RESOURCE_LATTICE_DICTIONARY"),
         standard.getValues().stream().map(value -> value.getName()).collect(Collectors.toSet()));
   }
+
+  @Test
+  void serviceInfoPinsTheOperatorTextLimitField() {
+    final var field = GetServiceInfoResponse.getDescriptor().findFieldByName("max_text_bytes");
+
+    assertEquals(9, field.getNumber());
+    assertEquals("int32", field.getType().name().toLowerCase());
+  }
 }

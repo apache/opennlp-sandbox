@@ -240,6 +240,22 @@ class EmbedTextStreamTest {
   }
 
   @Test
+  void rejectsTextBeyondTheOperatorLimit() {
+    final CapturingObserver responses = new CapturingObserver();
+    final StreamObserver<EmbedTextRequest> requests =
+        serviceWithStubModel().embedText(responses);
+
+    requests.onNext(text(43, "é".repeat(524_289)));
+
+    assertNotNull(responses.error);
+    final Status status = Status.fromThrowable(responses.error);
+    assertEquals(Status.Code.INVALID_ARGUMENT, status.getCode());
+    assertTrue(status.getDescription().contains("43"));
+    assertTrue(status.getDescription().contains("1048576"));
+    assertTrue(responses.values.isEmpty());
+  }
+
+  @Test
   void rejectsAStreamWithNoResolvableModel() {
     final CapturingObserver responses = new CapturingObserver();
     final StreamObserver<EmbedTextRequest> requests =

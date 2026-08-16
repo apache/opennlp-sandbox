@@ -44,7 +44,8 @@ service OpenNlpAnalysisService {
   // service-level error model above.
   rpc AnalyzeDocument(AnalyzeDocumentRequest) returns (AnalyzeDocumentResponse);
   // Reports server identity and capabilities: OpenNLP/API versions, the ids of the
-  // profiles registered on the server, and the pipeline steps this server implements.
+  // profiles registered on the server, the pipeline steps this server implements,
+  // loaded resources, and the operator text limit.
   rpc GetServiceInfo(GetServiceInfoRequest) returns (GetServiceInfoResponse);
   // Lists the model bundles loaded on the server and their aggregate capabilities.
   rpc ListModelBundles(ListModelBundlesRequest) returns (ListModelBundlesResponse);
@@ -252,6 +253,10 @@ message GetServiceInfoResponse {
   // startup validation and loading succeeded, so clients can distinguish a step the
   // binary supports from a selectable resource this instance can actually serve.
   repeated ConfiguredResource configured_resources = 8;
+  // Maximum UTF-8 encoded text bytes accepted by every analysis or direct-embedding
+  // message. This operator limit applies even when an analysis
+  // request omits AnalysisOptions.max_text_length.
+  int32 max_text_bytes = 9;
 }
 
 // Open identity for one family of configured, non-model resources. OpenNLP-owned
