@@ -85,7 +85,9 @@ public final class HunspellRegistry {
       final String id =
           key.substring(KEY_PREFIX.length(), key.length() - KEY_AFFIX_SUFFIX.length());
       if (id.isBlank() || id.contains(".")) {
-        continue;
+        throw AnalysisException.invalidArgument(
+            "Invalid hunspell dictionary id in configuration key '" + key
+                + "'; ids must be non-blank and must not contain '.'");
       }
       final String wordsValue = configuration.get(KEY_PREFIX + id + KEY_DICTIONARY_SUFFIX);
       if (wordsValue == null) {

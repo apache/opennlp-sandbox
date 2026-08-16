@@ -76,7 +76,9 @@ public final class SubwordRegistry {
       }
       final String id = key.substring(KEY_PREFIX.length(), key.length() - KEY_SUFFIX.length());
       if (id.isBlank() || id.contains(".")) {
-        continue;
+        throw AnalysisException.invalidArgument(
+            "Invalid subword model id in configuration key '" + key
+                + "'; ids must be non-blank and must not contain '.'");
       }
       final Path path = Path.of(entry.getValue());
       if (!Files.isRegularFile(path)) {
