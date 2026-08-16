@@ -18,9 +18,11 @@
 package org.apache.opennlp.grpc.processor.basic;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.opennlp.grpc.backend.RankedBackends;
 import org.apache.opennlp.grpc.model.ParserModel;
+import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.ParseTree;
 import org.apache.opennlp.grpc.v1.Token;
@@ -83,10 +85,30 @@ class ParseResolverTest {
   }
 
   @Test
+  void invalidArgumentFailurePropagatesWithoutFallback() {
+    // A deterministic client error from the top-priority engine is not retryable: it must
+    // surface to the caller and the next engine must never run.
+    final AtomicInteger fallbackCalls = new AtomicInteger();
+    final RankedBackends<ParserModel> parsers = RankedBackends.<ParserModel>builder()
+        .add("default", "opennlp-me", 0,
+            new FakeParserModel("default", "opennlp-me", 0, null, fallbackCalls))
+        .add("default", "neural", 10, failingModel("default", "neural", 10,
+            AnalysisException.invalidArgument("bad parse request")))
+        .build();
+    final ParseResolver resolver = resolver(parsers, List.of());
+
+    final AnalysisException error = assertThrows(AnalysisException.class,
+        () -> resolver.resolve(SENTENCE));
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+    assertEquals(0, fallbackCalls.get(), "a non-retryable failure must not fall back");
+  }
+
+  @Test
   void defaultFallsBackToNextEngineWhenTopPriorityFails() {
     final RankedBackends<ParserModel> parsers = RankedBackends.<ParserModel>builder()
         .add("default", "opennlp-me", 0, model("default", "opennlp-me", 0))
-        .add("default", "neural", 10, failingModel("default", "neural", 10))
+        .add("default", "neural", 10, failingModel("default", "neural", 10,
+            AnalysisException.unavailable("engine unreachable", null)))
         .build();
     final List<ParseTree> trees = resolver(parsers, List.of()).resolve(SENTENCE);
 
@@ -97,11 +119,12 @@ class ParseResolverTest {
   @Test
   void rethrowsWhenEveryEngineFails() {
     final RankedBackends<ParserModel> parsers = RankedBackends.<ParserModel>builder()
-        .add("default", "neural", 0, failingModel("default", "neural", 0))
+        .add("default", "neural", 0, failingModel("default", "neural", 0,
+            AnalysisException.unavailable("engine unreachable", null)))
         .build();
     final ParseResolver resolver = resolver(parsers, List.of());
 
-    assertThrows(RuntimeException.class, () -> resolver.resolve(SENTENCE));
+    assertThrows(AnalysisException.class, () -> resolver.resolve(SENTENCE));
   }
 
   private static ParseResolver resolver(RankedBackends<ParserModel> parsers, List<String> engines) {
@@ -109,22 +132,24 @@ class ParseResolverTest {
   }
 
   private static ParserModel model(String id, String engine, int priority) {
-    return new FakeParserModel(id, engine, priority, false);
+    return new FakeParserModel(id, engine, priority, null, new AtomicInteger());
   }
 
-  private static ParserModel failingModel(String id, String engine, int priority) {
-    return new FakeParserModel(id, engine, priority, true);
+  private static ParserModel failingModel(String id, String engine, int priority,
+      RuntimeException failure) {
+    return new FakeParserModel(id, engine, priority, failure, new AtomicInteger());
   }
 
   /** A parser that returns a fixed (empty) tree, or always throws, ignoring the sentence. */
-  private record FakeParserModel(String id, String backendId, int priority, boolean fail)
-      implements ParserModel {
+  private record FakeParserModel(String id, String backendId, int priority, RuntimeException failure,
+      AtomicInteger invocations) implements ParserModel {
 
     @Override
     public ParseTree parse(AnnotatedSentence sentence, boolean structured, boolean bracketed,
         boolean includeProbabilities) {
-      if (fail) {
-        throw new IllegalStateException("engine '" + backendId + "' failed");
+      invocations.incrementAndGet();
+      if (failure != null) {
+        throw failure;
       }
       return ParseTree.newBuilder().setPennTreebank("(TOP)").build();
     }
