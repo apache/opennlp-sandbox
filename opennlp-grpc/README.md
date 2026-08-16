@@ -103,11 +103,28 @@ Natural Earth gazetteer (`PIPELINE_STEP_GEOCODE`, no configuration required, fil
 
 ## Build
 
+The gRPC modules pin `opennlp.version` to `3.0.0-OPENNLP-1833-SNAPSHOT`, a local
+test coordinate produced by the `OPENNLP-1833-grpc-helper` branch of
+[apache/opennlp](https://github.com/apache/opennlp/tree/OPENNLP-1833-grpc-helper).
+That branch aggregates every open feature PR head (drafts included) on top of
+apache main and is never deployed anywhere, so build it once into your local
+Maven repository first:
+
+```bash
+git clone https://github.com/apache/opennlp.git
+cd opennlp
+git checkout OPENNLP-1833-grpc-helper
+./mvnw install -DskipTests
+```
+
+Then build this repository (JDK 21+):
+
 ```bash
 mvn clean install
 ```
 
-Requires JDK 21+.
+Once the depended-on PRs merge to apache main, the pin reverts to plain
+`3.0.0-SNAPSHOT` and the helper step goes away.
 
 ## Run the server
 
