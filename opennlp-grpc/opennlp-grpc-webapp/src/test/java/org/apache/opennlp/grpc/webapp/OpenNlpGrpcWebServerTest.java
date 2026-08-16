@@ -115,8 +115,23 @@ class OpenNlpGrpcWebServerTest {
   }
 
   @Test
-  void returnsGenericInternalErrorForUnexpectedGatewayFailure() throws Exception {
-    AnalysisRpc failing = new TestAnalysisRpc() {
+  void acceptsTheJsonMediaTypeCaseInsensitivelyWithParameters() throws Exception {
+    // Characterization: the media type is matched case-insensitively after
+    // parameters and surrounding whitespace are stripped.
+    try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
+        new InetSocketAddress(InetAddress.getLoopbackAddress(), 0),
+        new TestAnalysisRpc(), new WebUiExtensionRegistry(List.of(testExtension())), 128)) {
+      server.start();
+      HttpClient client = HttpClient.newHttpClient();
+
+      assertEquals(200, postAnalyze(client, server, "Application/JSON; charset=utf-8"));
+      assertEquals(200, postAnalyze(client, server, "APPLICATION/JSON ; charset=utf-8"));
+      assertEquals(415, postAnalyze(client, server, "application/jsonx"));
+    }
+  }
+
+  @Test
+  void returnsGenericInternalErrorForUnexpectedGatewayFailure() throws Exception {    AnalysisRpc failing = new TestAnalysisRpc() {
       @Override
       public GetServiceInfoResponse getServiceInfo() {
         throw new IllegalStateException("internal implementation detail");
@@ -140,6 +155,15 @@ class OpenNlpGrpcWebServerTest {
       HttpClient client, OpenNlpGrpcWebServer server, String path) throws Exception {
     return client.send(request(server, path).GET().build(),
         HttpResponse.BodyHandlers.ofString());
+  }
+
+  private static int postAnalyze(
+      HttpClient client, OpenNlpGrpcWebServer server, String contentType) throws Exception {
+    HttpRequest request = request(server, "/api/v1/analyze")
+        .header("Content-Type", contentType)
+        .POST(HttpRequest.BodyPublishers.ofString("{\"document\":{\"rawText\":\"Hello\"}}"))
+        .build();
+    return client.send(request, HttpResponse.BodyHandlers.discarding()).statusCode();
   }
 
   private static HttpRequest.Builder request(OpenNlpGrpcWebServer server, String path) {
