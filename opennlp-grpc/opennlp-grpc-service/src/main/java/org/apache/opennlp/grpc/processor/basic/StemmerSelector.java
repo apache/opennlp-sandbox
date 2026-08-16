@@ -53,9 +53,10 @@ import org.apache.opennlp.grpc.v1.StemmerSpec;
  * hunspell dictionaries.
  *
  * <p>The bundled algorithm stemmers expect lowercase input, so the returned function
- * lowercases with {@link StringUtil#toLowerCase(CharSequence)} before stemming; hunspell performs its own case
- * analysis and receives the token as is. The returned function is for single-threaded
- * use within one request; the shared hunspell stemmer it may wrap is thread-safe.</p>
+ * lowercases with {@link StringUtil#toLowerCase(CharSequence)} before stemming; hunspell
+ * performs its own case analysis and receives the token as is. The returned function is for
+ * single-threaded use within one request; the shared hunspell stemmer it may wrap is
+ * thread-safe.</p>
  */
 final class StemmerSelector {
 
