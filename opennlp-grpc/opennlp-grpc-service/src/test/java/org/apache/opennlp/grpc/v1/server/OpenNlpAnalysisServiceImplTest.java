@@ -150,6 +150,23 @@ class OpenNlpAnalysisServiceImplTest {
   }
 
   @Test
+  void serviceInfoReportsTheServiceBuildVersionOnItsPinnedField() {
+    final var serviceVersion = GetServiceInfoResponse.getDescriptor()
+        .findFieldByName("service_version");
+    assertNotNull(serviceVersion, "GetServiceInfoResponse.service_version is missing");
+    assertEquals(10, serviceVersion.getNumber());
+    final CapturingObserver<GetServiceInfoResponse> observer = new CapturingObserver<>();
+
+    serviceWith(request -> AnalyzeDocumentResponse.getDefaultInstance())
+        .getServiceInfo(GetServiceInfoRequest.getDefaultInstance(), observer);
+
+    assertNotNull(observer.value);
+    assertEquals("dev", observer.value.getField(serviceVersion));
+    assertTrue(observer.completed);
+    assertNull(observer.error);
+  }
+
+  @Test
   void rejectsTextBeyondTheOperatorLimitBeforeCallingTheAnalyzer() {
     final AtomicBoolean analyzed = new AtomicBoolean();
     final CapturingObserver<AnalyzeDocumentResponse> observer = new CapturingObserver<>();
