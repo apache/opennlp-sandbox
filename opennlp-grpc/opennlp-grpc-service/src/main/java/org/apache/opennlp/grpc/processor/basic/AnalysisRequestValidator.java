@@ -187,6 +187,7 @@ final class AnalysisRequestValidator {
     }
     validateOptions(request, profile);
     validateModelBundle(profile);
+    validateStepDependencies(profile);
     validateNerRequest(profile);
     validateDocCategorizeRequest(profile);
     validateSentimentRequest(profile);
@@ -207,6 +208,34 @@ final class AnalysisRequestValidator {
     validateEmbeddingRequest(request, profile);
     validateChunkEmbedConfigs(request);
     validateCategoryChunkConfigs(request, profile);
+  }
+
+  /**
+   * Rejects requested steps whose pipeline dependency the profile does not run, so the
+   * request fails fast here with FAILED_PRECONDITION (the runtime guards in
+   * {@code BasicDocumentAnalyzer} stay as defense in depth).
+   */
+  private static void validateStepDependencies(AnalysisProfile profile) {
+    requireStep(profile, PipelineStep.PIPELINE_STEP_TOKENIZE,
+        PipelineStep.PIPELINE_STEP_SENTENCE_DETECT);
+    requireStep(profile, PipelineStep.PIPELINE_STEP_LEMMATIZE,
+        PipelineStep.PIPELINE_STEP_POS_TAG);
+    requireStep(profile, PipelineStep.PIPELINE_STEP_GEOCODE,
+        PipelineStep.PIPELINE_STEP_NER);
+    requireStep(profile, PipelineStep.PIPELINE_STEP_STEM,
+        PipelineStep.PIPELINE_STEP_TOKENIZE);
+    requireStep(profile, PipelineStep.PIPELINE_STEP_EXPAND,
+        PipelineStep.PIPELINE_STEP_TOKENIZE);
+  }
+
+  /** Rejects a requested step whose dependency the profile does not run. */
+  private static void requireStep(
+      AnalysisProfile profile, PipelineStep step, PipelineStep dependency) {
+    if (PipelineStepPolicy.shouldRun(profile, step)
+        && !PipelineStepPolicy.shouldRun(profile, dependency)) {
+      throw AnalysisException.failedPrecondition(
+          step.name() + " requires " + dependency.name());
+    }
   }
 
   /** Validates constraints that depend on one document rather than the fixed pipeline. */
@@ -553,7 +582,7 @@ final class AnalysisRequestValidator {
       return;
     }
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
-      throw AnalysisException.invalidArgument(
+      throw AnalysisException.failedPrecondition(
           "AnalysisProfile.term_dimensions requires PIPELINE_STEP_TOKENIZE in the profile steps");
     }
     for (final String name : profile.getTermDimensionsList()) {
@@ -580,7 +609,7 @@ final class AnalysisRequestValidator {
       return;
     }
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
-      throw AnalysisException.invalidArgument(
+      throw AnalysisException.failedPrecondition(
           "AnalysisProfile.stopword_language requires PIPELINE_STEP_TOKENIZE in the profile steps");
     }
     if (!opennlp.tools.stopword.StopwordLists.supportedLanguages()
@@ -601,7 +630,7 @@ final class AnalysisRequestValidator {
               + "defines its dimension ladder");
     }
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
-      throw AnalysisException.invalidArgument(
+      throw AnalysisException.failedPrecondition(
           "AnalysisProfile.term_profile requires PIPELINE_STEP_TOKENIZE in the profile steps");
     }
     if (opennlp.tools.util.normalizer.NormalizationProfiles
@@ -617,7 +646,7 @@ final class AnalysisRequestValidator {
       return;
     }
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
-      throw AnalysisException.invalidArgument(
+      throw AnalysisException.failedPrecondition(
           "AnalysisProfile.term_layers requires PIPELINE_STEP_TOKENIZE in the profile steps");
     }
     final Set<String> qualifiers = new HashSet<>(profile.getTermDimensionsList());
@@ -672,7 +701,7 @@ final class AnalysisRequestValidator {
           "PIPELINE_STEP_TERM_VECTOR requires AnalysisProfile.term_vector");
     }
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
-      throw AnalysisException.invalidArgument(
+      throw AnalysisException.failedPrecondition(
           "PIPELINE_STEP_TERM_VECTOR requires PIPELINE_STEP_TOKENIZE");
     }
     final var source = TermVectorStepRunner.sourceIdentity(profile.getTermVector());
@@ -693,7 +722,7 @@ final class AnalysisRequestValidator {
   private static void requireTermVectorStep(
       AnalysisProfile profile, PipelineStep required, String source) {
     if (!PipelineStepPolicy.shouldRun(profile, required)) {
-      throw AnalysisException.invalidArgument(
+      throw AnalysisException.failedPrecondition(
           "term-vector " + source + " source requires " + required.name());
     }
   }
@@ -820,7 +849,7 @@ final class AnalysisRequestValidator {
     }
     if (options.hasEmbeddingModelId() && !options.getEmbeddingModelId().isBlank()) {
       if (!embedRequested) {
-        throw AnalysisException.invalidArgument(
+        throw AnalysisException.failedPrecondition(
             "embedding_model_id requires PIPELINE_STEP_EMBED in the analysis profile");
       }
     }

@@ -202,7 +202,7 @@ class BasicDocumentAnalyzerPolicyTest {
             .setOptions(AnalysisOptions.newBuilder().setEmbeddingModelId("minilm").build())
             .build()));
 
-    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+    assertEquals(AnalysisException.FailureType.FAILED_PRECONDITION, error.getFailureType());
   }
 
   @Test
