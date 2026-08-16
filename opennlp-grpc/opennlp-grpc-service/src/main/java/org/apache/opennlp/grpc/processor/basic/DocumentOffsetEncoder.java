@@ -117,14 +117,19 @@ final class DocumentOffsetEncoder {
     }
     for (int e = 0; e < document.getEmbeddingsCount(); e++) {
       final EmbeddingResult embedding = document.getEmbeddings(e);
-      document.setEmbeddings(e, embedding.toBuilder()
-          .setSourceSpan(remap(embedding.getSourceSpan(), mapper))
-          .build());
+      if (embedding.hasSourceSpan()) {
+        document.setEmbeddings(e, embedding.toBuilder()
+            .setSourceSpan(remap(embedding.getSourceSpan(), mapper))
+            .build());
+      }
     }
     for (int e = 0; e < document.getDocumentCentroidsCount(); e++) {
-      document.setDocumentCentroids(e, document.getDocumentCentroids(e).toBuilder()
-          .setSourceSpan(remap(document.getDocumentCentroids(e).getSourceSpan(), mapper))
-          .build());
+      final EmbeddingResult centroid = document.getDocumentCentroids(e);
+      if (centroid.hasSourceSpan()) {
+        document.setDocumentCentroids(e, centroid.toBuilder()
+            .setSourceSpan(remap(centroid.getSourceSpan(), mapper))
+            .build());
+      }
     }
     for (int g = 0; g < document.getChunkEmbeddingGroupsCount(); g++) {
       final ChunkEmbeddingGroup.Builder group = document.getChunkEmbeddingGroups(g).toBuilder();
@@ -133,16 +138,21 @@ final class DocumentOffsetEncoder {
         chunk.setAnnotationSpan(remap(chunk.getAnnotationSpan(), mapper));
         for (int e = 0; e < chunk.getEmbeddingsCount(); e++) {
           final EmbeddingResult embedding = chunk.getEmbeddings(e);
-          chunk.setEmbeddings(e, embedding.toBuilder()
-              .setSourceSpan(remap(embedding.getSourceSpan(), mapper))
-              .build());
+          if (embedding.hasSourceSpan()) {
+            chunk.setEmbeddings(e, embedding.toBuilder()
+                .setSourceSpan(remap(embedding.getSourceSpan(), mapper))
+                .build());
+          }
         }
         group.setChunks(c, chunk.build());
       }
       for (int e = 0; e < group.getCentroidsCount(); e++) {
-        group.setCentroids(e, group.getCentroids(e).toBuilder()
-            .setSourceSpan(remap(group.getCentroids(e).getSourceSpan(), mapper))
-            .build());
+        final EmbeddingResult centroid = group.getCentroids(e);
+        if (centroid.hasSourceSpan()) {
+          group.setCentroids(e, centroid.toBuilder()
+              .setSourceSpan(remap(centroid.getSourceSpan(), mapper))
+              .build());
+        }
       }
       document.setChunkEmbeddingGroups(g, group.build());
     }
