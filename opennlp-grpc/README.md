@@ -47,6 +47,16 @@ validated before serialization, so container, scope, span, probability, and vect
 invariants apply to what goes on the wire. The full inventory is documented in
 `opennlp_document.proto`.
 
+Capability discovery separates implementation support from configured readiness.
+`GetServiceInfo.supported_steps` and `supported_layers` describe the binary's protocol
+surface. `ListModelBundles` reports loaded model artifacts and embedding routes, while
+`GetServiceInfo.configured_resources` reports loaded non-model resources. Each resource
+uses a `ResourceIdentity` oneof with a closed `StandardResource` enum or an open custom
+type id, plus its selectable resource id and whether it is the default. The standard
+resource families are SentencePiece models, hunspell dictionaries, WordNet lexicons,
+and lattice dictionaries. A missing entry means the optional resource was not loaded;
+clients can discover that before submitting a profile that selects it.
+
 Beyond the classic pipeline, the service serves the OpenNLP 3.0 feature branches:
 SentencePiece subword encoding (`PIPELINE_STEP_SUBWORD_TOKENIZE`, models under
 `model.subword.<id>.path`), stemming across snowball, porter, the UniNE light and

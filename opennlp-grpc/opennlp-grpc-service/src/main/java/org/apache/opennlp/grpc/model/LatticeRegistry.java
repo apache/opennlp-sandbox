@@ -122,7 +122,12 @@ public final class LatticeRegistry {
     return tokenizers.keySet().stream().sorted().toList();
   }
 
-  /** Reports whether an unqualified request resolves to the given dictionary id. */
+  /**
+   * Reports whether an unqualified request resolves to the given dictionary id.
+   *
+   * @param dictionaryId The configured dictionary id to inspect.
+   * @return {@code true} when this is the configured or implicit default.
+   */
   public boolean isDefault(String dictionaryId) {
     return dictionaryId != null && dictionaryId.equals(defaultId);
   }

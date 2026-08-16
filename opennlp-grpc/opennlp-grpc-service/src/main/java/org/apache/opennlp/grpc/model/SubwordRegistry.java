@@ -119,7 +119,12 @@ public final class SubwordRegistry {
     return tokenizers.keySet().stream().sorted().toList();
   }
 
-  /** Reports whether an unqualified request resolves to the given model id. */
+  /**
+   * Reports whether an unqualified request resolves to the given model id.
+   *
+   * @param modelId The configured model id to inspect.
+   * @return {@code true} when this is the configured or implicit default.
+   */
   public boolean isDefault(String modelId) {
     return modelId != null && modelId.equals(defaultId);
   }

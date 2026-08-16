@@ -121,7 +121,12 @@ public final class WordNetRegistry {
     return expanders.keySet().stream().sorted().toList();
   }
 
-  /** Reports whether an unqualified request resolves to the given lexicon id. */
+  /**
+   * Reports whether an unqualified request resolves to the given lexicon id.
+   *
+   * @param lexiconId The configured lexicon id to inspect.
+   * @return {@code true} when this is the configured or implicit default.
+   */
   public boolean isDefault(String lexiconId) {
     return lexiconId != null && lexiconId.equals(defaultId);
   }
