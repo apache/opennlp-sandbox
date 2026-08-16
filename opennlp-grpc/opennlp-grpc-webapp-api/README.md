@@ -31,4 +31,3 @@ private static final WebUiExtensionDescriptor DESCRIPTOR = new WebUiExtensionDes
 The resource root must contain an `index.html`. References from the page should remain below the
 extension mount. The host rejects duplicate ids, duplicate mount paths, path traversal, encoded
 separators, and mounts in its reserved `/api` namespace.
-
