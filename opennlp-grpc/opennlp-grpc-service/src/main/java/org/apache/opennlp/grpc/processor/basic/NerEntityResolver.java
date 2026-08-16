@@ -28,6 +28,7 @@ import org.apache.opennlp.grpc.backend.RankedBackends;
 import org.apache.opennlp.grpc.backend.RankedBackends.Registration;
 import org.apache.opennlp.grpc.model.NameFinderRegistry;
 import org.apache.opennlp.grpc.model.NerModel;
+import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.EntitySource;
@@ -291,8 +292,13 @@ final class NerEntityResolver {
   private String textOf(AnnotationSpan span) {
     final int start = span.getStart();
     final int end = span.getEnd();
-    if (rawText == null || start < 0 || end > rawText.length() || start > end) {
-      return "";
+    if (start < 0 || end > rawText.length() || start > end) {
+      // A produced span outside the document text is a server bug; fail loudly instead of
+      // emitting an entity with empty text on the wire.
+      throw AnalysisException.internal(
+          "NER entity span [" + start + ", " + end + ") is out of bounds for a document text "
+              + "of length " + rawText.length(),
+          new IndexOutOfBoundsException("[" + start + ", " + end + ")"));
     }
     return rawText.substring(start, end);
   }
