@@ -31,6 +31,7 @@ public final class PipelineStepPolicy {
   /** Steps implemented by the current processor, in execution order. */
   private static final List<PipelineStep> IMPLEMENTED_STEPS = List.of(
       PipelineStep.PIPELINE_STEP_LANGUAGE_DETECT,
+      PipelineStep.PIPELINE_STEP_NORMALIZE,
       PipelineStep.PIPELINE_STEP_SENTENCE_DETECT,
       PipelineStep.PIPELINE_STEP_TOKENIZE,
       PipelineStep.PIPELINE_STEP_SUBWORD_TOKENIZE,
@@ -45,9 +46,8 @@ public final class PipelineStepPolicy {
       PipelineStep.PIPELINE_STEP_SENTIMENT,
       PipelineStep.PIPELINE_STEP_PARSE,
       PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK,
-      PipelineStep.PIPELINE_STEP_NORMALIZE,
-      PipelineStep.PIPELINE_STEP_CHUNK,
-      PipelineStep.PIPELINE_STEP_EMBED);
+      PipelineStep.PIPELINE_STEP_EMBED,
+      PipelineStep.PIPELINE_STEP_CHUNK);
 
   private static final Set<PipelineStep> IMPLEMENTED_STEP_SET = Set.copyOf(IMPLEMENTED_STEPS);
 
