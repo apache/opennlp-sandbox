@@ -288,8 +288,12 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
   /**
    * Stops accepting calls, waits for accepted RPCs to drain up to the configured grace
    * period, and only then closes executors and model resources. If the grace period expires,
-   * outstanding calls and worker tasks are cancelled before resources close. This method is
-   * idempotent and is a no-op if no lifecycle component was created.
+   * outstanding calls and worker tasks are cancelled before resources close. In both cases the
+   * executors get one further bounded wait to quiesce before the model cache closes:
+   * {@code shutdownNow()} only interrupts, and a worker inside a native (ONNX) inference call
+   * cannot be interrupted, so closing the cache without that wait could free native sessions
+   * under live inference. This method is idempotent and is a no-op if no lifecycle component
+   * was created.
    */
   public void stop() {
     if (server == null && handlerExecutor == null && analysisExecutor == null
@@ -323,11 +327,36 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     }
     stopExecutor(handlerExecutor, forced);
     stopExecutor(analysisExecutor, forced);
+    interrupted |= awaitQuiescence(handlerExecutor, "handler");
+    interrupted |= awaitQuiescence(analysisExecutor, "analysis");
     if (modelBundleCache != null) {
       modelBundleCache.close();
     }
     if (interrupted) {
       Thread.currentThread().interrupt();
+    }
+  }
+
+  /**
+   * Waits up to the shutdown grace period for an executor's workers to quiesce before the
+   * model cache closes, logging when they do not. {@code shutdown()} and
+   * {@code shutdownNow()} only initiate termination; a worker that ignores interrupts (native
+   * inference cannot be interrupted) is still running when they return.
+   *
+   * @return {@code true} when the wait itself was interrupted.
+   */
+  private boolean awaitQuiescence(ExecutorService executor, String name) {
+    if (executor == null) {
+      return false;
+    }
+    try {
+      if (!executor.awaitTermination(shutdownGraceSeconds, TimeUnit.SECONDS)) {
+        logger.warn("{} executor did not quiesce within {} second(s) during shutdown; "
+            + "closing models with work possibly still in flight", name, shutdownGraceSeconds);
+      }
+      return false;
+    } catch (InterruptedException e) {
+      return true;
     }
   }
 
