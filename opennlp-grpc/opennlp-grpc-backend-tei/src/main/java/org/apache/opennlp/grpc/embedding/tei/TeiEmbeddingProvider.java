@@ -305,13 +305,10 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
     return vector;
   }
 
-  /** Maps a remote TEI transport failure to the service's retryable analysis error model. */
+  /** Maps a remote TEI failure to the service's analysis error model, keyed by status code. */
   private static AnalysisException remoteFailure(
       String operation, String modelId, String target, Throwable cause) {
-    // A remote backend that is unreachable, times out, or returns a transport error is an
-    // upstream availability problem (retryable), not an internal server bug, so surface it as
-    // UNAVAILABLE rather than collapsing every remote fault to INTERNAL.
-    return AnalysisException.unavailable(
+    return AnalysisException.fromRemoteStatus(
         operation + " to TEI backend '" + target + "' failed for model '" + modelId + "'",
         cause);
   }

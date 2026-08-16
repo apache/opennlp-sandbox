@@ -305,10 +305,10 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
             + outputName + "'", null);
   }
 
-  /** Maps a remote KServe transport failure to the service's analysis error model. */
+  /** Maps a remote KServe failure to the service's analysis error model, keyed by status code. */
   private static AnalysisException remoteFailure(
       String operation, String modelId, String target, Throwable cause) {
-    return AnalysisException.internal(
+    return AnalysisException.fromRemoteStatus(
         operation + " to KServe backend '" + target + "' failed for model '" + modelId + "'",
         cause);
   }

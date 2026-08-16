@@ -17,6 +17,8 @@
  */
 package org.apache.opennlp.grpc.processor;
 
+import io.grpc.StatusRuntimeException;
+
 /**
  * Fatal analysis failure mapped to a gRPC status by
  * {@link org.apache.opennlp.grpc.v1.server.GrpcStatusMapper}.
@@ -149,5 +151,35 @@ public final class AnalysisException extends RuntimeException {
    */
   public static AnalysisException internal(String message, Throwable cause) {
     return new AnalysisException(FailureType.INTERNAL, message, cause);
+  }
+
+  /**
+   * Creates an exception for a failed call to a remote backend, keyed by the gRPC status code
+   * of the cause so fallback semantics are identical across embedding engines:
+   * {@code UNAVAILABLE} and {@code DEADLINE_EXCEEDED} map to {@link FailureType#UNAVAILABLE}
+   * and {@code RESOURCE_EXHAUSTED} stays {@link FailureType#RESOURCE_EXHAUSTED}, keeping the
+   * failure retryable; deterministic codes ({@code INVALID_ARGUMENT}, {@code NOT_FOUND},
+   * {@code FAILED_PRECONDITION}, {@code UNIMPLEMENTED}) keep their own category and are never
+   * retried; anything else is {@link FailureType#INTERNAL}. A cause without a gRPC status
+   * (e.g. a timeout waiting on a stream) maps to {@link FailureType#UNAVAILABLE}.
+   *
+   * @param message The human-readable failure detail.
+   * @param cause   The underlying remote failure, usually a {@link StatusRuntimeException}.
+   *
+   * @return A new exception whose failure type follows the cause's gRPC status code.
+   */
+  public static AnalysisException fromRemoteStatus(String message, Throwable cause) {
+    if (cause instanceof StatusRuntimeException statusFailure) {
+      return switch (statusFailure.getStatus().getCode()) {
+        case UNAVAILABLE, DEADLINE_EXCEEDED -> unavailable(message, cause);
+        case RESOURCE_EXHAUSTED -> resourceExhausted(message);
+        case INVALID_ARGUMENT -> invalidArgument(message);
+        case NOT_FOUND -> notFound(message);
+        case FAILED_PRECONDITION -> failedPrecondition(message);
+        case UNIMPLEMENTED -> unimplemented(message);
+        default -> internal(message, cause);
+      };
+    }
+    return unavailable(message, cause);
   }
 }
