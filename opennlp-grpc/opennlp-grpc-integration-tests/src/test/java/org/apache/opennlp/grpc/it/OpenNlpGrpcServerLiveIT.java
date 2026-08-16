@@ -17,6 +17,8 @@
  */
 package org.apache.opennlp.grpc.it;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -62,6 +64,7 @@ import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.apache.opennlp.grpc.v1.SentenceDetectorSelector;
 import org.apache.opennlp.grpc.v1.StandardLayer;
+import org.apache.opennlp.grpc.v1.StandardResource;
 import org.apache.opennlp.grpc.v1.StandardSentenceDetectorEngine;
 import org.apache.opennlp.grpc.v1.StandardTokenizerEngine;
 import org.apache.opennlp.grpc.v1.StemmerAlgorithm;
@@ -89,8 +92,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * test client --gRPC--&gt; opennlp-grpc-server process --gRPC--&gt; stub TEI server
  * </pre>
  *
- * <p>No model paths are configured, so the test also covers loading the bundled
- * sentence detector and tokenizer models from the shaded jar itself.</p>
+ * <p>No classic model paths are configured, so the test also covers loading the
+ * bundled sentence detector and tokenizer models from the shaded jar itself. A tiny
+ * hunspell dictionary is configured to exercise non-model resource discovery through
+ * the deployable artifact.</p>
  */
 class OpenNlpGrpcServerLiveIT {
 
@@ -113,6 +118,16 @@ class OpenNlpGrpcServerLiveIT {
     final Properties config = new Properties();
     config.setProperty("model.embedder.minilm.tei.target", "localhost:" + teiServer.getPort());
     config.setProperty("model.embedder.tei.deadline_ms", "10000");
+    final Path hunspellDir = Files.createTempDirectory("opennlp-grpc-live-hunspell-");
+    final Path affix = hunspellDir.resolve("tiny.aff");
+    final Path words = hunspellDir.resolve("tiny.dic");
+    Files.writeString(affix, String.join("\n",
+        "SET UTF-8",
+        "SFX S Y 1",
+        "SFX S 0 s ."));
+    Files.writeString(words, String.join("\n", "2", "cat/S", "dog/S"));
+    config.setProperty("model.hunspell.tiny.affix_path", affix.toString());
+    config.setProperty("model.hunspell.tiny.dictionary_path", words.toString());
     harness = LiveServerHarness.start(config);
     client = harness.client();
   }
@@ -140,6 +155,36 @@ class OpenNlpGrpcServerLiveIT {
     assertTrue(info.getSupportedLayersList().contains(StandardLayer.STANDARD_LAYER_SENTENCES));
     assertTrue(info.getSupportedLayersList().contains(StandardLayer.STANDARD_LAYER_TOKENS));
     assertTrue(info.getSupportedLayersList().contains(StandardLayer.STANDARD_LAYER_STEMS));
+    final var hunspell = info.getConfiguredResourcesList().stream()
+        .filter(resource -> resource.getIdentity().getStandard()
+            == StandardResource.STANDARD_RESOURCE_HUNSPELL_DICTIONARY)
+        .findFirst().orElseThrow();
+    assertEquals("tiny", hunspell.getResourceId());
+    assertTrue(hunspell.getIsDefault());
+  }
+
+  @Test
+  void configuredHunspellResourceRunsInShadedServer() {
+    final String text = "cats dogs";
+    final var response = client.analyzeDocument(AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setRawText(text))
+        .setProfile(AnalysisProfile.newBuilder()
+            .setProfileId("live-hunspell")
+            .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+            .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+            .addSteps(PipelineStep.PIPELINE_STEP_STEM)
+            .setTokenizer(TokenizerSelector.newBuilder()
+                .setStandard(StandardTokenizerEngine.STANDARD_TOKENIZER_ENGINE_WHITESPACE))
+            .setStemmer(StemmerSpec.newBuilder()
+                .setAlgorithm(StemmerAlgorithm.STEMMER_ALGORITHM_HUNSPELL)))
+        .setOptions(AnalysisOptions.newBuilder()
+            .setOffsetEncoding(OffsetEncoding.OFFSET_ENCODING_UTF16_CODE_UNIT))
+        .build());
+
+    final AnnotationLayer stems = assertStandardLayer(response.getDocument(),
+        StandardLayer.STANDARD_LAYER_STEMS, "opennlp:stems");
+    assertEquals(List.of("cat", "dog"), stems.getStemValues().getAnnotationsList().stream()
+        .map(stem -> stem.getStem()).toList());
   }
 
   @Test
