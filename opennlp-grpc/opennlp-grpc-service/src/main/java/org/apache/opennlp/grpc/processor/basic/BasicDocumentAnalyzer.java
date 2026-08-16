@@ -680,7 +680,7 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
   private static void requireTokens(OpenNlpDocument.Builder document, PipelineStep step) {
     boolean tokenized = document.getSentencesCount() > 0;
     for (AnnotatedSentence sentence : document.getSentencesList()) {
-      tokenized &= sentence.getTokensCount() > 0;
+      tokenized = tokenized && sentence.getTokensCount() > 0;
     }
     if (!tokenized) {
       throw AnalysisException.failedPrecondition(
