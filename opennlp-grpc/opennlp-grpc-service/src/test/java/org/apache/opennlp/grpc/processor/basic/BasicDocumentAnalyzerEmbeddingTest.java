@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.opennlp.grpc.embedding.CompositeEmbeddingProvider;
+import org.apache.opennlp.grpc.embedding.MiscountingEmbeddingProvider;
 import org.apache.opennlp.grpc.embedding.StubEmbeddingProvider;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.processor.AnalysisException;
@@ -171,6 +172,48 @@ class BasicDocumentAnalyzerEmbeddingTest {
             .build()));
 
     assertEquals(AnalysisException.FailureType.NOT_FOUND, error.getFailureType());
+  }
+
+  @Test
+  void shortEmbeddingBatchFailsWithExpectedAndActualCounts() {
+    // The provider returns one vector for two sentences; the trailing embedding must not
+    // vanish silently.
+    final BasicDocumentAnalyzer miscounting = new BasicDocumentAnalyzer(
+        ProfileRegistry.createDefault(), modelBundleCache,
+        new MiscountingEmbeddingProvider("minilm", 4, -1));
+
+    final AnalysisException error = assertThrows(AnalysisException.class,
+        () -> miscounting.analyze(AnalyzeDocumentRequest.newBuilder()
+            .setDocument(OpenNlpDocument.newBuilder().setRawText(TEXT).build())
+            .setProfile(embedProfile())
+            .setOptions(AnalysisOptions.newBuilder().setEmbeddingModelId("minilm").build())
+            .build()));
+
+    assertEquals(AnalysisException.FailureType.INTERNAL, error.getFailureType());
+    assertTrue(error.getMessage().contains("2"), "message names expected count: "
+        + error.getMessage());
+    assertTrue(error.getMessage().contains("1"), "message names actual count: "
+        + error.getMessage());
+  }
+
+  @Test
+  void longEmbeddingBatchFailsWithExpectedAndActualCounts() {
+    final BasicDocumentAnalyzer miscounting = new BasicDocumentAnalyzer(
+        ProfileRegistry.createDefault(), modelBundleCache,
+        new MiscountingEmbeddingProvider("minilm", 4, 1));
+
+    final AnalysisException error = assertThrows(AnalysisException.class,
+        () -> miscounting.analyze(AnalyzeDocumentRequest.newBuilder()
+            .setDocument(OpenNlpDocument.newBuilder().setRawText(TEXT).build())
+            .setProfile(embedProfile())
+            .setOptions(AnalysisOptions.newBuilder().setEmbeddingModelId("minilm").build())
+            .build()));
+
+    assertEquals(AnalysisException.FailureType.INTERNAL, error.getFailureType());
+    assertTrue(error.getMessage().contains("2"), "message names expected count: "
+        + error.getMessage());
+    assertTrue(error.getMessage().contains("3"), "message names actual count: "
+        + error.getMessage());
   }
 
   @Test
