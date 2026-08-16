@@ -274,6 +274,18 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
   }
 
   /**
+   * Injects lifecycle components into an unstarted server. Package-private test seam; the
+   * production path builds these in {@link #start()}.
+   */
+  void injectLifecycleForTest(
+      ExecutorService analysisExecutor, ModelBundleCache modelBundleCache,
+      int shutdownGraceSeconds) {
+    this.analysisExecutor = analysisExecutor;
+    this.modelBundleCache = modelBundleCache;
+    this.shutdownGraceSeconds = shutdownGraceSeconds;
+  }
+
+  /**
    * Stops accepting calls, waits for accepted RPCs to drain up to the configured grace
    * period, and only then closes executors and model resources. If the grace period expires,
    * outstanding calls and worker tasks are cancelled before resources close. This method is
