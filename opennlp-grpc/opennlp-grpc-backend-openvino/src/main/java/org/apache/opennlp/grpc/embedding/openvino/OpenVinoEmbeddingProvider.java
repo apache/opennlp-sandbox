@@ -555,15 +555,16 @@ public final class OpenVinoEmbeddingProvider implements EmbeddingProvider, AutoC
     throw AnalysisException.invalidArgument(key + " must be 'true' or 'false': " + value);
   }
 
-  /** Resolves the configured default model, or the sole registered model when unambiguous. */
+  /**
+   * Resolves the configured default model, or the sole registered model when unambiguous. A
+   * configured id this engine does not serve names a model on another engine and is ignored here;
+   * the composite provider validates it against the union of engines.
+   */
   private static String resolveDefaultModelId(
       Map<String, String> configuration, Map<String, OvmsEndpoint> models) {
     final String configured = configuration.get(KEY_DEFAULT_ID);
-    if (configured != null && !configured.isBlank()) {
-      if (!models.containsKey(configured)) {
-        throw AnalysisException.notFound(KEY_DEFAULT_ID + " '" + configured + "' is not registered");
-      }
-      return configured;
+    if (configured != null && !configured.isBlank() && models.containsKey(configured.trim())) {
+      return configured.trim();
     }
     return models.size() == 1 ? models.keySet().iterator().next() : null;
   }
