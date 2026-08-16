@@ -19,6 +19,7 @@ package org.apache.opennlp.grpc.embedding.tei;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -354,9 +355,17 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
 
     final Map<String, TeiEndpoint> connected = new HashMap<>();
     try {
-      for (Map.Entry<String, String> entry : targets.entrySet()) {
-        final String modelId = entry.getKey();
-        connected.put(modelId, connect(modelId, entry.getValue(),
+      for (String modelId : allModelIds(targets, useTls, truncate, normalize)) {
+        final String target = targets.get(modelId);
+        if (target == null) {
+          // Every id mentioned by a model.embedder.<id>.tei.* key takes part in validation, so
+          // an orphaned setting (a typo'd target key) fails loud instead of vanishing silently.
+          throw AnalysisException.invalidArgument(
+              "Model '" + modelId + "' declares " + KEY_PREFIX + modelId
+                  + ".tei.* settings but no " + KEY_PREFIX + modelId + KEY_TARGET_SUFFIX
+                  + "; a TEI target is required to connect the model");
+        }
+        connected.put(modelId, connect(modelId, target,
             useTls.getOrDefault(modelId, Boolean.FALSE),
             truncate.getOrDefault(modelId, Boolean.TRUE),
             normalize.getOrDefault(modelId, Boolean.TRUE),
@@ -369,6 +378,18 @@ public final class TeiEmbeddingProvider implements EmbeddingProvider, AutoClosea
       throw e;
     }
     return Map.copyOf(connected);
+  }
+
+  /** Returns the union of configured model ids. */
+  private static Set<String> allModelIds(Map<String, ?> targets,
+                                         Map<String, ?> useTls,
+                                         Map<String, ?> truncate,
+                                         Map<String, ?> normalize) {
+    final Set<String> union = new HashSet<>(targets.keySet());
+    union.addAll(useTls.keySet());
+    union.addAll(truncate.keySet());
+    union.addAll(normalize.keySet());
+    return union;
   }
 
   /** Connects one TEI endpoint and probes its model type and vector shape. */
