@@ -603,7 +603,7 @@ final class ClassicStepRunner {
       for (int t = 0; t < tokens.length; t++) {
         final Token.Builder token = sentenceBuilder.getTokens(t).toBuilder();
         for (final Dimension dimension : dimensions) {
-          token.putTermLayers(dimension.name(), terms.get(t).at(dimension));
+          putTermLayer(token, dimension.name(), terms.get(t).at(dimension));
         }
         sentenceBuilder.setTokens(t, token.build());
         tokenCount++;
@@ -671,7 +671,7 @@ final class ClassicStepRunner {
       for (int t = 0; t < tokens.length; t++) {
         final Token.Builder token = sentenceBuilder.getTokens(t).toBuilder();
         for (final Dimension dimension : dimensions) {
-          token.putTermLayers(dimension.name(), terms.get(t).at(dimension));
+          putTermLayer(token, dimension.name(), terms.get(t).at(dimension));
         }
         sentenceBuilder.setTokens(t, token.build());
         tokenCount++;
@@ -687,7 +687,7 @@ final class ClassicStepRunner {
    * Produces caller-qualified term layers from explicit typed normalization and
    * stemming pipelines. Each layer is computed per token, so its value retains the
    * token's original document span even when normalization expands or removes code
-   * points.
+   * points. A token whose final value is empty is omitted from that term layer.
    */
   void computeConfiguredTermLayers(
       OpenNlpDocument.Builder document,
@@ -710,7 +710,7 @@ final class ClassicStepRunner {
         for (int t = 0; t < sentence.getTokensCount(); t++) {
           final Token.Builder token = sentence.getTokens(t).toBuilder();
           final String normalized = normalizer.normalize(token.getText()).toString();
-          token.putTermLayers(spec.getQualifier(), stem.apply(normalized));
+          putTermLayer(token, spec.getQualifier(), stem.apply(normalized));
           sentence.setTokens(t, token.build());
           tokenCount++;
         }
@@ -719,6 +719,12 @@ final class ClassicStepRunner {
       diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_TOKENIZE,
           "Computed configured term layer '" + spec.getQualifier() + "' for "
               + tokenCount + " token(s)"));
+    }
+  }
+
+  private static void putTermLayer(Token.Builder token, String qualifier, String value) {
+    if (!value.isEmpty()) {
+      token.putTermLayers(qualifier, value);
     }
   }
 

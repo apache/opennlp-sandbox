@@ -25,7 +25,8 @@ key for older clients. `GetServiceInfo.supported_layers` exposes the standard se
 `AnalysisProfile.term_layers` can produce caller-qualified term layers from typed
 normalization rungs and an optional typed stemmer. Term vectors select those results
 through the same `LayerIdentity`, so analyzer configuration and aggregate provenance
-remain part of the document contract.
+remain part of the document contract. Tokens whose configured transformation produces
+an empty value are omitted from that qualified layer and from aggregates sourced from it.
 
 `AnalysisProfile.tokenizer` and `sentence_detector` use a strongly typed standard enum
 arm plus an open custom provider-id arm. Standard tokenizers cover model, UAX #29,

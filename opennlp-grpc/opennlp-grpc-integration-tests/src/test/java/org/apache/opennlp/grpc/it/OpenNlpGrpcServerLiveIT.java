@@ -236,6 +236,44 @@ class OpenNlpGrpcServerLiveIT {
   }
 
   @Test
+  void omitsInvisibleOnlyTermsInShadedServer() {
+    final AnalyzeDocumentResponse response = client.analyzeDocument(
+        AnalyzeDocumentRequest.newBuilder()
+            .setDocument(OpenNlpDocument.newBuilder()
+                .setDocId("empty-normalized-term")
+                .setRawText("court \u200B law"))
+            .setProfile(AnalysisProfile.newBuilder()
+                .setProfileId("empty-normalized-term")
+                .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+                .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+                .addSteps(PipelineStep.PIPELINE_STEP_TERM_VECTOR)
+                .setTokenizer(TokenizerSelector.newBuilder()
+                    .setStandard(StandardTokenizerEngine.STANDARD_TOKENIZER_ENGINE_WHITESPACE))
+                .addTermLayers(TermLayerSpec.newBuilder()
+                    .setQualifier("folded")
+                    .addNormalizationRungs(
+                        NormalizationRung.NORMALIZATION_RUNG_STRIP_INVISIBLE))
+                .setTermVector(TermVectorSpec.newBuilder()
+                    .setSourceLayer(LayerIdentity.newBuilder()
+                        .setStandard(StandardLayer.STANDARD_LAYER_TERMS)
+                        .setQualifier("folded"))))
+            .setOptions(AnalysisOptions.newBuilder()
+                .setOffsetEncoding(OffsetEncoding.OFFSET_ENCODING_UTF16_CODE_UNIT))
+            .build());
+
+    final AnnotationLayer terms = assertStandardLayer(response.getDocument(),
+        StandardLayer.STANDARD_LAYER_TERMS, "opennlp:terms:folded");
+    assertEquals(List.of("court", "law"), terms.getStringValues().getAnnotationsList().stream()
+        .map(annotation -> annotation.getValue()).toList());
+
+    final AnnotationLayer vectors = assertStandardLayer(response.getDocument(),
+        StandardLayer.STANDARD_LAYER_TERM_VECTORS, "opennlp:term-vectors");
+    assertEquals(List.of("court", "law"),
+        vectors.getTermVectorValues().getAnnotationsList().stream()
+            .map(annotation -> annotation.getTerm()).toList());
+  }
+
+  @Test
   void typedModelFreeSegmentationProducesExactDocumentLayers() {
     final String text = "First line, here\n\nSecond 123!";
     final var response = client.analyzeDocument(AnalyzeDocumentRequest.newBuilder()

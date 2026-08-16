@@ -147,6 +147,9 @@ final class TermVectorStepRunner {
     final List<Annotation<String>> values = new ArrayList<>();
     for (AnnotatedSentence sentence : document.getSentencesList()) {
       for (Token token : sentence.getTokensList()) {
+        if (source == SourceValue.TERM && !token.containsTermLayers(qualifier)) {
+          continue;
+        }
         final String value = switch (source) {
           case TOKEN -> token.getText();
           case LEMMA -> {
@@ -156,15 +159,11 @@ final class TermVectorStepRunner {
             }
             yield token.getLemma();
           }
-          case TERM -> {
-            if (!token.containsTermLayers(qualifier)) {
-              throw AnalysisException.failedPrecondition(
-                  "term-vector TERMS source requires produced term layer '" + qualifier + "'");
-            }
-            yield token.getTermLayersOrThrow(qualifier);
-          }
+          case TERM -> token.getTermLayersOrThrow(qualifier);
         };
-        values.add(annotation(token.getAnnotationSpan(), value));
+        if (!value.isEmpty()) {
+          values.add(annotation(token.getAnnotationSpan(), value));
+        }
       }
     }
     return values;

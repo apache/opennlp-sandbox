@@ -132,7 +132,9 @@ message TermLayerSpec {
   // and unique across all term layers produced by the profile.
   string qualifier = 1;
   // Per-token normalization rungs. They are deduplicated and applied in
-  // canonical enum order, independent of request order.
+  // canonical enum order, independent of request order. A token whose final
+  // value is empty is omitted from this term layer and from aggregates sourced
+  // from it.
   repeated NormalizationRung normalization_rungs = 2;
   // Optional final stemmer. Unlike the standalone STEM step, this receives
   // exactly the output of normalization_rungs with no implicit case folding.
