@@ -1,0 +1,174 @@
+<!doctype html>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing,
+  software distributed under the License is distributed on an
+  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, either express or implied.  See the License for the
+  specific language governing permissions and limitations
+  under the License.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111827" />
+    <meta name="description" content="Explore the Apache OpenNLP gRPC service." />
+    <title>Apache OpenNLP gRPC</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#playground">Skip to playground</a>
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="Apache OpenNLP home">
+        <span class="brand-mark" aria-hidden="true">NLP</span>
+        <span>
+          <strong>Apache OpenNLP</strong>
+          <small>gRPC Workbench</small>
+        </span>
+      </a>
+      <nav class="site-nav" aria-label="Workbench navigation">
+        <a href="#overview">Overview</a>
+        <a href="#playground">Workbench</a>
+      </nav>
+      <div id="service-status" role="status" aria-live="polite" class="service-status is-loading">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span data-status-label>Connecting</span>
+      </div>
+    </header>
+
+    <main>
+      <section id="overview" class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow">Natural language processing, served</p>
+          <h1 id="hero-title">Turn text into <span>structured insight.</span></h1>
+          <p class="hero-summary">
+            Explore the models and analysis profiles exposed by this OpenNLP service.
+            Results stay transparent, portable, and ready for the next system in your pipeline.
+          </p>
+          <a class="primary-link" href="#playground">Open the playground <span aria-hidden="true">↓</span></a>
+        </div>
+        <div class="hero-sample" aria-hidden="true">
+          <div class="sample-toolbar"><i></i><i></i><i></i><span>analysis.json</span></div>
+          <pre><code><span class="code-key">"sentences"</span>: [
+  { <span class="code-key">"text"</span>: <span class="code-value">"OpenNLP makes text useful."</span> }
+],
+<span class="code-key">"tokens"</span>: [<span class="code-value">"OpenNLP"</span>, <span class="code-value">"makes"</span>, <span class="code-value">"text"</span>],
+<span class="code-key">"language"</span>: <span class="code-value">"eng"</span></code></pre>
+        </div>
+      </section>
+
+      <section class="service-panel" aria-labelledby="service-heading">
+        <div>
+          <p class="section-kicker">Live service</p>
+          <h2 id="service-heading">Ready when your text is</h2>
+          <p id="service-description">Checking service capabilities and available models.</p>
+        </div>
+        <dl class="service-facts">
+          <div><dt>Service</dt><dd id="service-name">Discovering</dd></div>
+          <div><dt>Profiles</dt><dd id="profile-count">...</dd></div>
+          <div><dt>Model bundles</dt><dd id="model-count">...</dd></div>
+        </dl>
+      </section>
+
+      <section id="playground" class="playground" aria-labelledby="playground-heading">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Analysis playground</p>
+            <h2 id="playground-heading">See what OpenNLP finds</h2>
+          </div>
+          <p>Choose a discovered configuration, enter text, and inspect the complete response.</p>
+        </div>
+
+        <div class="workspace">
+          <form id="analysis-form" class="analysis-form">
+            <div class="field text-field">
+              <div class="label-row">
+                <label for="analysis-text">Text to analyze</label>
+                <span id="character-count">0 characters</span>
+              </div>
+              <textarea id="analysis-text" name="text" rows="10" required
+                placeholder="Paste a paragraph, article excerpt, or sentence here…"></textarea>
+            </div>
+
+            <div class="options-grid">
+              <div class="field">
+                <label for="profile-select">Analysis profile</label>
+                <select id="profile-select" name="profile">
+                  <option value="">Automatic</option>
+                </select>
+              </div>
+              <div class="field model-discovery">
+                <span class="field-label">Available model bundles</span>
+                <ul id="model-list" aria-label="Available model bundles">
+                  <li>Discovering</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button id="analyze-button" type="submit" disabled>
+                <span data-button-label>Analyze text</span>
+                <span aria-hidden="true">→</span>
+              </button>
+              <button id="sample-button" type="button" class="secondary-button">Use sample text</button>
+            </div>
+            <p class="model-note">Model bundles describe service capabilities. The selected profile controls analysis.</p>
+            <p id="form-status" role="status" aria-live="polite" class="form-status">
+              Connect to the service and enter text to begin.
+            </p>
+          </form>
+
+          <section class="response-panel" aria-labelledby="response-heading">
+            <div class="response-header">
+              <div>
+                <span class="response-label">Document shape</span>
+                <h3 id="response-heading">Analysis result</h3>
+              </div>
+              <button id="copy-button" type="button" class="copy-button" disabled>Copy JSON</button>
+            </div>
+            <div class="result-tabs" role="tablist" aria-label="Analysis result views">
+              <button id="document-tab" type="button" role="tab" aria-selected="true"
+                aria-controls="document-view" data-result-tab="document">Document</button>
+              <button id="json-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+                aria-controls="json-view" data-result-tab="json">Protobuf JSON</button>
+            </div>
+            <div id="document-view" role="tabpanel" aria-labelledby="document-tab" class="document-view">
+              <div class="layer-browser">
+                <div class="layer-heading">
+                  <span>Annotation layers</span>
+                  <small id="layer-summary">Analyze text to discover layers</small>
+                </div>
+                <div id="layer-list" aria-label="Annotation layers" class="layer-list"></div>
+              </div>
+              <div class="annotation-canvas">
+                <p class="canvas-hint">Choose a layer, then select highlighted text to inspect its typed annotation.</p>
+                <div id="annotated-text" class="annotated-text" tabindex="0">No analysis yet.</div>
+                <aside id="annotation-details" class="annotation-details" aria-live="polite">
+                  <p>Annotation details will appear here.</p>
+                </aside>
+              </div>
+            </div>
+            <div id="json-view" role="tabpanel" aria-labelledby="json-tab" hidden>
+              <pre id="response-output" tabindex="0"><code>No analysis yet.</code></pre>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>Apache OpenNLP</p>
+      <p>Open source natural language processing for the JVM and beyond.</p>
+    </footer>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

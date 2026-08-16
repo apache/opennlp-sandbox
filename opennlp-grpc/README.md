@@ -93,6 +93,9 @@ Natural Earth gazetteer (`PIPELINE_STEP_GEOCODE`, no configuration required, fil
   Model Server and other KServe v2 compatible inference servers
 - **opennlp-grpc-backend-static** - optional in-process embedding backend serving static
   (non-contextual) embedding tables through the `opennlp-embeddings` extension module
+- **opennlp-grpc-webapp-api** - typed ServiceLoader API for static browser interface extensions
+- **opennlp-grpc-webapp-default** - default TypeScript homepage and analysis playground
+- **opennlp-grpc-webapp** - optional standalone HTTP host and protobuf JSON gateway
 - **opennlp-grpc-integration-tests** - black-box integration tests that launch the
   shaded server jar as a separate process and exercise it over the network, including
   a remote TEI embedding backend
@@ -149,6 +152,23 @@ and lemmatizer models (Apache-distributed UD models). When running from the
 executable jar, the models merged into the jar by the build are used directly; when
 running from a regular classpath (e.g. via Maven), they are discovered from the
 `opennlp-models-*` runtime dependencies.
+
+## Run the optional web application
+
+With the gRPC service running on its default port, start the separate web application:
+
+```bash
+java -jar opennlp-grpc-webapp/target/opennlp-grpc-webapp-3.0.0-SNAPSHOT.jar
+```
+
+Open `http://127.0.0.1:7072/`. The default TypeScript interface discovers configured profiles and
+model bundles, then sends `AnalyzeDocumentRequest` protobuf JSON to the same-origin gateway. The
+response is the complete `AnalyzeDocumentResponse`, including the document shape and typed layers.
+The workbench renders those layers as navigable highlights over the source text, with click-through
+typed annotation details and a separate raw protobuf JSON view.
+The web host loads additional static interfaces through the `WebUiExtension` ServiceLoader API.
+See [opennlp-grpc-webapp/README.md](opennlp-grpc-webapp/README.md) for endpoints, security defaults,
+and command-line options.
 
 > v1 note: this slice implements language detection (`PIPELINE_STEP_LANGUAGE_DETECT`,
 > filling `detected_language` with an ISO 639-3 code plus `language_confidence`),

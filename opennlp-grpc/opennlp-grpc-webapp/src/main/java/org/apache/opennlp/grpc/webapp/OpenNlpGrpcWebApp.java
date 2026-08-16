@@ -1,0 +1,181 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+package org.apache.opennlp.grpc.webapp;
+
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.time.Duration;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.IVersionProvider;
+import picocli.CommandLine.Option;
+
+/** Runs the optional browser interface and JSON gateway for an OpenNLP gRPC service. */
+@Command(
+    name = "opennlp-grpc-webapp",
+    description = "Serve Web UI extensions backed by an OpenNLP gRPC service.",
+    mixinStandardHelpOptions = true,
+    versionProvider = OpenNlpGrpcWebApp.VersionProvider.class)
+public final class OpenNlpGrpcWebApp implements Callable<Integer> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpenNlpGrpcWebApp.class);
+
+  @Option(names = "--http-host", defaultValue = "127.0.0.1",
+      description = "HTTP bind address. Default: ${DEFAULT-VALUE}")
+  private String httpHost;
+
+  @Option(names = "--http-port", defaultValue = "7072",
+      description = "HTTP port. Default: ${DEFAULT-VALUE}")
+  private int httpPort;
+
+  @Option(names = "--grpc-target", defaultValue = "127.0.0.1:7071",
+      description = "OpenNLP gRPC target. Default: ${DEFAULT-VALUE}")
+  private String grpcTarget;
+
+  @Option(names = "--grpc-plaintext", defaultValue = "true", negatable = true,
+      description = "Use a plaintext gRPC connection. Default: ${DEFAULT-VALUE}")
+  private boolean grpcPlaintext;
+
+  @Option(names = "--request-timeout-seconds", defaultValue = "30",
+      description = "Per-RPC deadline in seconds. Default: ${DEFAULT-VALUE}")
+  private int requestTimeoutSeconds;
+
+  @Option(names = "--max-request-bytes", defaultValue = "1048576",
+      description = "Maximum JSON request body size. Default: ${DEFAULT-VALUE}")
+  private int maxRequestBytes;
+
+  @Option(names = "--allow-remote",
+      description = "Allow binding HTTP to a non-loopback address.")
+  private boolean allowRemote;
+
+  /** Creates the command with its documented defaults. */
+  public OpenNlpGrpcWebApp() {
+  }
+
+  /** Supplies the artifact version recorded in this application's manifest. */
+  public static final class VersionProvider implements IVersionProvider {
+
+    /** Creates the version provider used by picocli. */
+    public VersionProvider() {
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public String[] getVersion() {
+      String implementationVersion = OpenNlpGrpcWebApp.class.getPackage()
+          .getImplementationVersion();
+      return new String[] {"opennlp-grpc-webapp "
+          + (implementationVersion == null ? "development" : implementationVersion)};
+    }
+  }
+
+  /**
+   * Runs the web application until the process receives a shutdown signal.
+   *
+   * @return Zero after an orderly shutdown.
+   * @throws Exception If configuration, startup, or shutdown fails.
+   */
+  @Override
+  public Integer call() throws Exception {
+    if (httpPort < 0 || httpPort > 65535) {
+      throw new IllegalArgumentException("http port must be between 0 and 65535");
+    }
+    if (requestTimeoutSeconds < 1) {
+      throw new IllegalArgumentException("request timeout must be positive");
+    }
+    InetAddress bindAddress = InetAddress.getByName(httpHost);
+    validateBindAddress(bindAddress, allowRemote);
+
+    ManagedChannelBuilder<?> channelBuilder = ManagedChannelBuilder.forTarget(grpcTarget);
+    if (grpcPlaintext) {
+      channelBuilder.usePlaintext();
+    } else {
+      channelBuilder.useTransportSecurity();
+    }
+    ManagedChannel channel = channelBuilder.build();
+    ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+    ClassLoader extensionClassLoader = contextClassLoader == null
+        ? OpenNlpGrpcWebApp.class.getClassLoader() : contextClassLoader;
+    WebUiExtensionRegistry registry = WebUiExtensionRegistry.load(extensionClassLoader);
+    GrpcAnalysisRpc rpc = new GrpcAnalysisRpc(
+        channel, Duration.ofSeconds(requestTimeoutSeconds));
+    try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
+        new InetSocketAddress(bindAddress, httpPort), rpc, registry, maxRequestBytes)) {
+      Thread shutdownHook = new Thread(() -> {
+        server.stop();
+        channel.shutdown();
+      }, "opennlp-grpc-webapp-shutdown");
+      Runtime.getRuntime().addShutdownHook(shutdownHook);
+      try {
+        server.start();
+        LOGGER.info("OpenNLP gRPC web application listening on http://{}:{} with {} UI extension(s)",
+            server.address().getHostString(), server.address().getPort(), registry.extensions().size());
+        server.awaitTermination();
+      } finally {
+        try {
+          Runtime.getRuntime().removeShutdownHook(shutdownHook);
+        } catch (IllegalStateException ignored) {
+          // The JVM is already running shutdown hooks.
+        }
+      }
+    } finally {
+      channel.shutdown();
+      if (!channel.awaitTermination(5, TimeUnit.SECONDS)) {
+        channel.shutdownNow();
+        channel.awaitTermination(5, TimeUnit.SECONDS);
+      }
+    }
+    return 0;
+  }
+
+  /**
+   * Validates the HTTP bind policy.
+   *
+   * @param address The resolved bind address.
+   * @param allowRemote Whether a non-loopback address is allowed.
+   * @throws IllegalArgumentException If the address is {@code null} or violates the bind policy.
+   */
+  static void validateBindAddress(InetAddress address, boolean allowRemote) {
+    if (address == null) {
+      throw new IllegalArgumentException("address must not be null");
+    }
+    if (!allowRemote && !address.isLoopbackAddress()) {
+      throw new IllegalArgumentException(
+          "refusing non-loopback HTTP bind without --allow-remote: " + address.getHostAddress());
+    }
+  }
+
+  /**
+   * Starts the command-line application.
+   *
+   * @param args Command-line arguments.
+   */
+  public static void main(String[] args) {
+    int exitCode = new CommandLine(new OpenNlpGrpcWebApp()).execute(args);
+    if (exitCode != 0) {
+      System.exit(exitCode);
+    }
+  }
+}
