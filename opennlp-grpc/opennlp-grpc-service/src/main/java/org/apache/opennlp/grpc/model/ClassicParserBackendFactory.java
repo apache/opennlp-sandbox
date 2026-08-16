@@ -47,6 +47,9 @@ public final class ClassicParserBackendFactory implements ParserBackendFactory {
   /** Suffix completing a parser priority key: {@code model.parser.<id>.priority}. */
   public static final String KEY_PRIORITY_SUFFIX = ".priority";
 
+  /** Id the documented no-id form {@code model.parser.path} registers its single parser under. */
+  public static final String DEFAULT_ID = "default";
+
   static final String FACTORY_ID = "classic";
 
   private static final Logger logger = LoggerFactory.getLogger(ClassicParserBackendFactory.class);
@@ -86,7 +89,11 @@ public final class ClassicParserBackendFactory implements ParserBackendFactory {
         continue;
       }
       final String base = key.substring(0, key.length() - KEY_SUFFIX.length());
-      final String id = ParserRegistry.normalize(base.substring(KEY_PREFIX.length()));
+      // The documented no-id form ("model.parser.path") is shorter than the id-form prefix; it
+      // registers the single configured parser under the default id.
+      final String id = key.equals(KEY_PREFIX + "path")
+          ? DEFAULT_ID
+          : ParserRegistry.normalize(base.substring(KEY_PREFIX.length()));
       if (id.isEmpty()) {
         throw AnalysisException.invalidArgument(
             "Invalid parser configuration key '" + key + "'; parser id must not be blank");

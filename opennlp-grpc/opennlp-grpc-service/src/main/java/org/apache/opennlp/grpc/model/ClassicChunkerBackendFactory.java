@@ -48,6 +48,9 @@ public final class ClassicChunkerBackendFactory implements ChunkerBackendFactory
   /** Suffix completing a chunker priority key: {@code model.chunker.<id>.priority}. */
   public static final String KEY_PRIORITY_SUFFIX = ".priority";
 
+  /** Id the documented no-id form {@code model.chunker.path} registers its single chunker under. */
+  public static final String DEFAULT_ID = "default";
+
   static final String FACTORY_ID = "classic";
 
   private static final Logger logger = LoggerFactory.getLogger(ClassicChunkerBackendFactory.class);
@@ -87,7 +90,11 @@ public final class ClassicChunkerBackendFactory implements ChunkerBackendFactory
         continue;
       }
       final String base = key.substring(0, key.length() - KEY_SUFFIX.length());
-      final String id = ChunkerRegistry.normalize(base.substring(KEY_PREFIX.length()));
+      // The documented no-id form ("model.chunker.path") is shorter than the id-form prefix; it
+      // registers the single configured chunker under the default id.
+      final String id = key.equals(KEY_PREFIX + "path")
+          ? DEFAULT_ID
+          : ChunkerRegistry.normalize(base.substring(KEY_PREFIX.length()));
       if (id.isEmpty()) {
         throw AnalysisException.invalidArgument(
             "Invalid chunker configuration key '" + key + "'; chunker id must not be blank");
