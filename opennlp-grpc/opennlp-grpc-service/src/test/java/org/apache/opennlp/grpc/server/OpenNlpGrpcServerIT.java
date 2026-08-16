@@ -41,6 +41,9 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.health.v1.HealthCheckRequest;
 import io.grpc.health.v1.HealthCheckResponse;
 import io.grpc.health.v1.HealthGrpc;
+import io.grpc.reflection.v1.ServerReflectionGrpc;
+import io.grpc.reflection.v1.ServerReflectionRequest;
+import io.grpc.reflection.v1.ServerReflectionResponse;
 import io.grpc.stub.StreamObserver;
 import org.apache.opennlp.grpc.embedding.BlockingEmbeddingBackendFactory;
 import org.apache.opennlp.grpc.model.ClassicDocCategorizerBackendFactory;
@@ -251,8 +254,41 @@ class OpenNlpGrpcServerIT {
         .check(HealthCheckRequest.newBuilder()
             .setService("org.apache.opennlp.grpc.v1.OpenNlpAnalysisService")
             .build());
+    final HealthCheckResponse wholeServer = HealthGrpc.newBlockingStub(channel)
+        .check(HealthCheckRequest.newBuilder().setService("").build());
 
     assertEquals(HealthCheckResponse.ServingStatus.SERVING, response.getStatus());
+    assertEquals(HealthCheckResponse.ServingStatus.SERVING, wholeServer.getStatus());
+  }
+
+  @Test
+  void reflectionIsDisabledByDefaultAndEnumeratesServicesWhenEnabled() throws Exception {
+    final ReflectionResult disabled = listServices(channel);
+    assertEquals(Status.Code.UNIMPLEMENTED, Status.fromThrowable(disabled.error()).getCode());
+
+    final Properties overrides = new Properties();
+    overrides.setProperty("server.enable_reflection", "true");
+    final OpenNlpGrpcServer reflectionServer = new OpenNlpGrpcServer();
+    reflectionServer.port = 0;
+    reflectionServer.config = writeIntegrationConfig(overrides).toString();
+    ManagedChannel reflectionChannel = null;
+    try {
+      reflectionServer.start();
+      reflectionChannel = ManagedChannelBuilder
+          .forAddress("localhost", reflectionServer.getPort())
+          .usePlaintext()
+          .build();
+
+      final ReflectionResult enabled = listServices(reflectionChannel);
+      assertNull(enabled.error());
+      assertTrue(enabled.response().getListServicesResponse().getServiceList().stream()
+          .anyMatch(service -> OpenNlpAnalysisServiceGrpc.SERVICE_NAME.equals(service.getName())));
+    } finally {
+      reflectionServer.stop();
+      if (reflectionChannel != null) {
+        reflectionChannel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+      }
+    }
   }
 
   @Test
@@ -426,5 +462,38 @@ class OpenNlpGrpcServerIT {
                 .setDocId("stream-" + sequence)
                 .setRawText(text)))
         .build();
+  }
+
+  private static ReflectionResult listServices(ManagedChannel targetChannel)
+      throws InterruptedException {
+    final CountDownLatch terminal = new CountDownLatch(1);
+    final AtomicReference<ServerReflectionResponse> response = new AtomicReference<>();
+    final AtomicReference<Throwable> error = new AtomicReference<>();
+    final StreamObserver<ServerReflectionRequest> requests = ServerReflectionGrpc
+        .newStub(targetChannel)
+        .serverReflectionInfo(new StreamObserver<>() {
+          @Override
+          public void onNext(ServerReflectionResponse value) {
+            response.set(value);
+          }
+
+          @Override
+          public void onError(Throwable failure) {
+            error.set(failure);
+            terminal.countDown();
+          }
+
+          @Override
+          public void onCompleted() {
+            terminal.countDown();
+          }
+        });
+    requests.onNext(ServerReflectionRequest.newBuilder().setListServices("").build());
+    requests.onCompleted();
+    assertTrue(terminal.await(5, TimeUnit.SECONDS), "reflection call did not terminate");
+    return new ReflectionResult(response.get(), error.get());
+  }
+
+  private record ReflectionResult(ServerReflectionResponse response, Throwable error) {
   }
 }
