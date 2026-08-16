@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.apache.opennlp.grpc.backend.RankedBackends;
 import org.apache.opennlp.grpc.model.NerModel;
+import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
@@ -189,8 +190,23 @@ class NerEntityResolverTest {
   }
 
   @Test
-  void keepsOnlyRequestedTypes() {
+  void outOfBoundsEntitySpanFailsLoudlyInsteadOfEmittingEmptyText() {
+    // A produced span outside the document text is a server bug: it must surface as INTERNAL,
+    // not as an entity with empty text on the wire.
     final RankedBackends<NerModel> recognizers = RankedBackends.<NerModel>builder()
+        .add("location", "opennlp-me", 0, model("location", "opennlp-me", 0,
+            entity("location", 4, TEXT.length() + 10, null)))
+        .build();
+    final NerEntityResolver resolver = resolver(recognizers, List.of("location"), List.of(),
+        MergeStrategy.MERGE_STRATEGY_UNSPECIFIED, Set.of("location"), false);
+
+    final AnalysisException error = assertThrows(AnalysisException.class,
+        () -> resolver.resolve(SENTENCE));
+    assertEquals(AnalysisException.FailureType.INTERNAL, error.getFailureType());
+  }
+
+  @Test
+  void keepsOnlyRequestedTypes() {    final RankedBackends<NerModel> recognizers = RankedBackends.<NerModel>builder()
         .add("multi", "onnx", 0, model("multi", "onnx", 0,
             entity("location", 4, 17, null), entity("money", 0, 3, null)))
         .build();
