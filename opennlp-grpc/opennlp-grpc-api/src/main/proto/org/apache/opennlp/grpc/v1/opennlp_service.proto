@@ -107,10 +107,12 @@ message CategoryChunkConfigEntry {
   // category that no sentence carries is simply absent from the output.
   repeated string categories = 2;
   // The embedding models to attach to each category group's concatenated text.
+  // Setting both this field and `embedding_selectors` => INVALID_ARGUMENT.
   repeated string embedding_model_ids = 3;
   // Optional friendly label, echoed onto the resulting group's result_set_name.
   optional string result_set_name = 4;
   // Typed embedding selections. Each selector can optionally pin a backend route.
+  // Setting both this field and `embedding_model_ids` => INVALID_ARGUMENT.
   repeated EmbeddingSelector embedding_selectors = 5;
 }
 
@@ -129,8 +131,10 @@ message ChunkEmbedConfigEntry {
   optional ChunkingSpec chunking = 4;
   // The embeddings wanted for *this* chunking strategy's chunks.
   // Not a blind NxM; explicit per-strategy list.
+  // Setting both this field and `embedding_selectors` => INVALID_ARGUMENT.
   repeated string embedding_model_ids = 5;
   // Typed embedding selections. Each selector can optionally pin a backend route.
+  // Setting both this field and `embedding_model_ids` => INVALID_ARGUMENT.
   repeated EmbeddingSelector embedding_selectors = 6;
 }
 
@@ -295,7 +299,9 @@ message GetServiceInfoResponse {
   repeated ConfiguredResource configured_resources = 8;
   // Maximum UTF-8 encoded text bytes accepted by every analysis or direct-embedding
   // message. This operator limit applies even when an analysis
-  // request omits AnalysisOptions.max_text_length.
+  // request omits AnalysisOptions.max_text_length. Note the unit difference:
+  // AnalysisOptions.max_text_length is measured in Java UTF-16 code units, and a
+  // request-level value there can only tighten this operator limit, never raise it.
   int32 max_text_bytes = 9;
   // Version of this gRPC service artifact, or "dev" when running from an
   // unpackaged development classpath.
@@ -359,9 +365,11 @@ message EmbedTextRequest {
   // The registered embedding model for this stream. Resolved on the first message
   // (optional there when exactly one model is configured or a default_id is set); later
   // messages may repeat it but must not name a different model (else INVALID_ARGUMENT).
+  // Setting both this field and `embedding_selector` => INVALID_ARGUMENT.
   optional string model_id = 3;
   // Typed model and optional backend selection. The first message fixes this selection for
   // the stream; later messages may repeat the same selector.
+  // Setting both this field and `model_id` => INVALID_ARGUMENT.
   optional EmbeddingSelector embedding_selector = 4;
 }
 

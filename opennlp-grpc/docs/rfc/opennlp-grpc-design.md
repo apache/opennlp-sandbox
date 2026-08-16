@@ -450,7 +450,9 @@ Out of scope for proto, noted for implementers:
 
 **Note:** The authoritative .proto sources that will be used to start the sandbox implementation
 live under `opennlp-grpc-api/src/main/proto/org/apache/opennlp/grpc/v1/`. The blocks below
-are the canonical text form for the RFC and are kept in sync with those files.
+are illustrative excerpts from the original Phase 1 draft; they lag those sources of truth
+(for example the layer/LayerIdentity system, later Token fields, step values beyond 11, and
+newer message fields are absent here), so always read the .proto files for the current contract.
 
 ### 11.1 `opennlp_document.proto`
 
@@ -1028,7 +1030,8 @@ Two chunking strategies, each with explicitly named embedding models (not an aut
 | TOKENIZE        | `TokenizerME`                                     |
 | POS_TAG         | `POSTaggerME`                                     |
 | NER             | `NameFinderME` (per type)                         |
-| CHUNK           | `ChunkerME`                                       |
+| CHUNK           | Segmentation chunking (`SegmentationChunker` sentence/token/semantic strategies), not `ChunkerME` |
+| SYNTACTIC_CHUNK | `ChunkerME`                                       |
 | PARSE           | `Parser`                                          |
 | LEMMATIZE       | `LemmatizerME`                                    |
 | DOC_CATEGORIZE  | `DocumentCategorizerME` / `DocumentCategorizerDL` |

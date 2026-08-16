@@ -145,8 +145,10 @@ message Token {
   string text = 1;
   // The token's span within the document text.
   AnnotationSpan annotation_span = 2;
-  // Part-of-speech tag (from PIPELINE_STEP_POS_TAG). Always the tagger model's
-  // native tagset; the server does not translate tagsets (see POSTagFormat).
+  // Part-of-speech tag (from PIPELINE_STEP_POS_TAG). The tag reflects the requested
+  // AnalysisProfile.pos_tag_format: the server converts between the Penn and UD
+  // tagsets using OpenNLP's mapping tables, and an unset format defaults to the
+  // tagger model's native tagset (see POSTagFormat).
   optional string pos_tag = 3;
   // Lemma / dictionary form (from PIPELINE_STEP_LEMMATIZE, which requires POS_TAG).
   optional string lemma = 4;
@@ -187,6 +189,8 @@ message NamedEntity {
   // it lists every provider that found this entity, so provenance and cross-provider
   // agreement are explicit. Empty only on responses from servers that predate this field.
   repeated EntitySource sources = 5;
+  // Field numbers 6 to 9 were skipped in pre-release drafts and never shipped.
+  reserved 6 to 9;
   // Geocoding of a location-typed entity (from PIPELINE_STEP_GEOCODE): the resolved
   // gazetteer entry and the resolution confidence. Unset when the step did not run,
   // the entity is not location-typed, or the mention did not resolve.
@@ -584,7 +588,6 @@ enum EmbeddingGranularity {
   EMBEDDING_GRANULARITY_GROUP_CENTROID = 11;
 }
 
-// Whole-document categorization result from PIPELINE_STEP_DOC_CATEGORIZE.
 // Result of PIPELINE_STEP_NORMALIZE. The alignment lets a client map any span
 // between raw_text and normalized_text without re-implementing the fold logic:
 // runs are contiguous and ordered, covering both texts exactly.
@@ -613,7 +616,8 @@ message AlignmentRun {
   bool equal = 3;
 }
 
-// A document categorizer's winning category and complete score distribution.
+// Whole-document categorization result from PIPELINE_STEP_DOC_CATEGORIZE:
+// a document categorizer's winning category and complete score distribution.
 message DocumentClassification {
   // The winning category: argmax over category_scores, as decided by the categorizer model.
   string best_category = 1;

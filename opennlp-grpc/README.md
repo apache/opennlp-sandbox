@@ -62,7 +62,9 @@ and lattice dictionaries. A missing entry means the optional resource was not lo
 clients can discover that before submitting a profile that selects it.
 `GetServiceInfo.max_text_bytes` reports the operator's UTF-8 byte limit. It applies to unary
 and streaming analysis plus direct embedding even when a request omits
-`AnalysisOptions.max_text_length`. A request-level value can impose a smaller analysis
+`AnalysisOptions.max_text_length`. The two limits use different units: `max_text_bytes`
+counts UTF-8 bytes while `AnalysisOptions.max_text_length` counts Java UTF-16 code units.
+A request-level value can impose a smaller analysis
 limit but cannot raise the operator limit. The server keeps the inbound gRPC message cap
 at least 1 MiB above this text limit so protobuf envelope data cannot make the advertised
 text capacity unreachable. A lower `server.max_inbound_message_size` setting is raised to
@@ -152,7 +154,8 @@ running from a regular classpath (e.g. via Maven), they are discovered from the
 > filling `detected_language` with an ISO 639-3 code plus `language_confidence`),
 > sentence detection, tokenization, named entity recognition (`PIPELINE_STEP_NER`,
 > filling `AnnotatedSentence.entities`), POS tagging (`PIPELINE_STEP_POS_TAG`,
-> filling `Token.pos_tag` with the model's native tagset), lemmatization
+> filling `Token.pos_tag`, converted to the requested
+> `AnalysisProfile.pos_tag_format` and defaulting to the model's native tagset), lemmatization
 > (`PIPELINE_STEP_LEMMATIZE`, filling `Token.lemma`; requires POS), document
 > categorization (`PIPELINE_STEP_DOC_CATEGORIZE`, filling
 > `OpenNlpDocument.classification`), per-sentence sentiment
@@ -171,9 +174,12 @@ running from a regular classpath (e.g. via Maven), they are discovered from the
 > advertised only when their operator-supplied models are configured. NER, syntactic
 > chunking, and parsing support multi-provider engine policy; embeddings support
 > ONNX CPU/CUDA plus optional TEI and OpenVINO/KServe backends through SPI modules.
-> `DocumentAnalytics`, `ModelDescriptor.hash`, `ModelBundleRef.component_models`,
-> `AnalysisProfile.pos_tag_format` (UD/Penn conversion), per-entry chunk profiles,
-> and `ChunkingSpec.clean_text` / `preserve_urls` are implemented on the v1 contract.
+> `DocumentAnalytics`, `AnalysisProfile.pos_tag_format` (UD/Penn conversion), per-entry
+> chunk profiles, and `ChunkingSpec.clean_text` / `preserve_urls` are implemented on the
+> v1 contract. `ModelDescriptor.hash` / `ModelBundleRef.component_models` pinning is
+> implemented for the backbone models, classic NER models, and the primary embedder
+> route; DL NER, document categorizer, sentiment, parser, chunker, and fallback
+> embedder routes do not yet carry hashes.
 > `POS_TAG_FORMAT_CUSTOM` remains unsupported.
 
 #### Typed inference engine selection
@@ -603,8 +609,9 @@ model.embedder.tei.deadline_ms=30000         # optional
 ```
 
 Endpoints are validated at startup (TEI `Info` RPC plus one probe embedding that also
-determines the vector dimension). Batches are fanned out as concurrent calls on the
-multiplexed HTTP/2 connection; TEI applies its own server-side batching.
+determines the vector dimension). Each batch is sent on one bidirectional `EmbedStream`
+call: every text streams over that single call on the multiplexed HTTP/2 connection and
+TEI returns the vectors in order; TEI applies its own server-side batching.
 
 See [opennlp-grpc-backend-tei/README.md](opennlp-grpc-backend-tei/README.md) for the
 full deployment guide: the TEI Docker image matrix (CPU and per-CUDA-architecture GPU

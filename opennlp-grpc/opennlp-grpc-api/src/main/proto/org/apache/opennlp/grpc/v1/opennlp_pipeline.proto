@@ -42,8 +42,9 @@ enum PipelineStep {
   PIPELINE_STEP_SENTENCE_DETECT = 2;
   // Tokenize each sentence. Requires SENTENCE_DETECT.
   PIPELINE_STEP_TOKENIZE = 3;
-  // Part-of-speech tag the tokens. Requires TOKENIZE. Emits the tagger's native
-  // tagset (see POSTagFormat).
+  // Part-of-speech tag the tokens. Requires TOKENIZE. Emits tags converted to the
+  // requested AnalysisProfile.pos_tag_format, defaulting to the tagger's native
+  // tagset when the format is unset (see POSTagFormat).
   PIPELINE_STEP_POS_TAG = 4;
   // Named-entity recognition. Requires TOKENIZE.
   PIPELINE_STEP_NER = 5;
@@ -177,12 +178,16 @@ message ChunkingSpec {
   // When clean_text is true, URL substrings are preserved verbatim while surrounding
   // whitespace is normalized.
   bool preserve_urls = 5;
-  // For semantic chunking (topic boundaries via embeddings). Its presence also
-  // selects the "semantic" algorithm.
+  // For semantic chunking (topic boundaries via embeddings). When neither a strategy
+  // selector nor the legacy algorithm is set, its presence selects the "semantic"
+  // algorithm; setting it while a non-semantic strategy is selected => INVALID_ARGUMENT.
   optional SemanticChunkingConfig semantic_config = 6;
-  // Strongly typed standard strategy or open extension id. When neither selector is
-  // set, semantic_config selects SEMANTIC; otherwise a selector is required. CATEGORY
-  // is result-only here: request category grouping through CategoryChunkConfigEntry.
+  // Strongly typed standard strategy or open extension id. When neither this selector
+  // nor the legacy algorithm is set, semantic_config selects SEMANTIC; with neither a
+  // selector/algorithm nor semantic_config present, the entry is rejected with
+  // INVALID_ARGUMENT. semantic_config together with a non-semantic strategy =>
+  // INVALID_ARGUMENT. CATEGORY is result-only here: request category grouping
+  // through CategoryChunkConfigEntry.
   ChunkingStrategySelector strategy = 7;
 }
 
@@ -563,12 +568,16 @@ message AnalysisOptions {
   reserved 3;
   reserved "inference_backend";
   // Maximum allowed length of document.raw_text. When set and > 0, a longer text
-  // is rejected with INVALID_ARGUMENT. Length is measured in Java UTF-16 code units.
+  // is rejected with INVALID_ARGUMENT. Length is measured in Java UTF-16 code units,
+  // unlike GetServiceInfoResponse.max_text_bytes, which reports the operator limit
+  // in UTF-8 bytes. A request-level value can only tighten the operator limit,
+  // never raise it.
   optional int32 max_text_length = 4;
   // The registered embedding model to use for PIPELINE_STEP_EMBED. The id is
   // backend-agnostic; the server resolves it against the configured provider.
   // Requires EMBED in the profile (else INVALID_ARGUMENT); an unknown id =>
   // NOT_FOUND. Optional when exactly one embedding model is configured.
+  // Setting both this field and `embedding_selector` => INVALID_ARGUMENT.
   optional string embedding_model_id = 5;
   // Unit for response AnnotationSpan offsets. Unset => UTF-8 bytes (the default).
   OffsetEncoding offset_encoding = 6;
@@ -577,6 +586,7 @@ message AnalysisOptions {
   repeated ParseFormat parse_formats = 7;
   // Typed embedding selection. When set, model_id
   // selects the logical model and backend optionally pins one route.
+  // Setting both this field and `embedding_model_id` => INVALID_ARGUMENT.
   optional EmbeddingSelector embedding_selector = 8;
   // When true, PIPELINE_STEP_EMBED also returns the mean of the sentence vectors as
   // one EMBEDDING_GRANULARITY_DOCUMENT result. Unset or false returns only the
