@@ -590,8 +590,12 @@ public class BasicDocumentAnalyzer implements DocumentAnalyzer {
       throw AnalysisException.invalidArgument("document is required");
     }
     final String rawText = request.getDocument().getRawText();
-    if (rawText == null || rawText.isBlank()) {
+    if (rawText.isEmpty()) {
       throw AnalysisException.invalidArgument("document.raw_text is required");
+    }
+    if (rawText.isBlank()) {
+      throw AnalysisException.invalidArgument(
+          "document.raw_text must contain non-whitespace characters");
     }
     return rawText;
   }
