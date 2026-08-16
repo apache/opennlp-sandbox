@@ -172,6 +172,41 @@ class BasicDocumentAnalyzerTermVectorTest {
   }
 
   @Test
+  void configurableTermLayersDropTokensThatNormalizeToEmpty() {
+    final TermLayerSpec folded = TermLayerSpec.newBuilder()
+        .setQualifier("folded")
+        .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_STRIP_INVISIBLE)
+        .build();
+    final LayerIdentity source = LayerIdentity.newBuilder()
+        .setStandard(StandardLayer.STANDARD_LAYER_TERMS)
+        .setQualifier("folded")
+        .build();
+    final AnalyzeDocumentResponse response = analyzer.analyze(request(
+        "court \u200B law",
+        baseProfile()
+            .addTermLayers(folded)
+            .setTermVector(TermVectorSpec.newBuilder().setSourceLayer(source)),
+        OffsetEncoding.OFFSET_ENCODING_UTF16_CODE_UNIT));
+
+    final AnnotationLayer terms = layer(response, StandardLayer.STANDARD_LAYER_TERMS, "folded");
+    assertEquals(java.util.List.of("court", "law"),
+        terms.getStringValues().getAnnotationsList().stream()
+            .map(annotation -> annotation.getValue())
+            .toList());
+
+    final AnnotationLayer vectors = layer(
+        response, StandardLayer.STANDARD_LAYER_TERM_VECTORS, "");
+    assertEquals(java.util.List.of("court", "law"),
+        vectors.getTermVectorValues().getAnnotationsList().stream()
+            .map(annotation -> annotation.getTerm())
+            .toList());
+    assertEquals(0, vectors.getTermVectorValues().getAnnotations(0).getOccurrences(0).getStart());
+    assertEquals(5, vectors.getTermVectorValues().getAnnotations(0).getOccurrences(0).getEnd());
+    assertEquals(8, vectors.getTermVectorValues().getAnnotations(1).getOccurrences(0).getStart());
+    assertEquals(11, vectors.getTermVectorValues().getAnnotations(1).getOccurrences(0).getEnd());
+  }
+
+  @Test
   void configurableTermLayersRejectAmbiguousIdentity() {
     final TermLayerSpec empty = TermLayerSpec.newBuilder()
         .setQualifier("court")
