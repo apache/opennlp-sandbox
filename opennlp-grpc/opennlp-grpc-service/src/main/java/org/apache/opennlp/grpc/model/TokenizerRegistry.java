@@ -19,7 +19,6 @@ package org.apache.opennlp.grpc.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
@@ -27,6 +26,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import opennlp.tools.tokenize.Tokenizer;
+import opennlp.tools.util.StringUtil;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 
 /** Discovers and owns custom tokenizer engines contributed through ServiceLoader. */
@@ -115,7 +115,7 @@ public final class TokenizerRegistry implements AutoCloseable {
 
   /** Returns a normalized, validated provider id. Package-private for tests. */
   static String validId(String id, String owner) {
-    if (id == null || id.isBlank() || !id.equals(id.toLowerCase(Locale.ROOT))
+    if (id == null || id.isBlank() || !id.equals(StringUtil.toLowerCase(id))
         || id.chars().anyMatch(Character::isWhitespace)) {
       throw AnalysisException.invalidArgument(
           owner + " declares invalid tokenizer engine id '" + id
