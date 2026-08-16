@@ -75,6 +75,7 @@ public final class StubChunkerBackendFactory implements ChunkerBackendFactory {
       return List.of();
     }
 
+    @Override
     public void clearThreadLocalState() {
       CLEAR_COUNT.incrementAndGet();
     }

@@ -17,6 +17,7 @@
  */
 package org.apache.opennlp.grpc.model;
 
+import java.util.function.Supplier;
 
 import opennlp.tools.parser.Parse;
 import opennlp.tools.parser.Parser;
@@ -28,7 +29,9 @@ import org.apache.opennlp.grpc.v1.ParseTree;
  * A {@link ParserModel} backed by a classic OpenNLP constituency parser. OpenNLP's parser is
  * <b>not</b> thread-safe (its beam search mutates per-instance state), so each thread gets its own
  * {@link Parser} from a {@link ThreadLocal}, all built from the shared, immutable
- * {@link opennlp.tools.parser.ParserModel}.
+ * {@link opennlp.tools.parser.ParserModel}. {@link #clearThreadLocalState()} drops the calling
+ * thread's parser; the per-document cleanup in the analyzer calls it so pooled workers do not
+ * retain parser instances for the pool's lifetime.
  */
 final class ClassicParserModel implements ParserModel {
 
@@ -47,15 +50,33 @@ final class ClassicParserModel implements ParserModel {
    * @param priority The selection priority among engines serving {@code id}.
    */
   ClassicParserModel(String id, opennlp.tools.parser.ParserModel model, int priority) {
+    this(id, priority, () -> ParserFactory.create(requireModel(model)));
+  }
+
+  /**
+   * Creates a classic parser registration minting per-thread parsers from the given supplier.
+   * Package-private test seam; production registrations are built from a parser model.
+   *
+   * @param id The logical parser id.
+   * @param priority The selection priority among engines serving {@code id}.
+   * @param parserSupplier Mints the per-thread {@link Parser}.
+   */
+  ClassicParserModel(String id, int priority, Supplier<Parser> parserSupplier) {
     if (id == null) {
       throw new IllegalArgumentException("id must not be null");
     }
     this.id = id;
+    this.priority = priority;
+    this.parser = ThreadLocal.withInitial(parserSupplier);
+  }
+
+  /** Validates the model argument before it is captured by the parser supplier. */
+  private static opennlp.tools.parser.ParserModel requireModel(
+      opennlp.tools.parser.ParserModel model) {
     if (model == null) {
       throw new IllegalArgumentException("model must not be null");
     }
-    this.priority = priority;
-    this.parser = ThreadLocal.withInitial(() -> ParserFactory.create(model));
+    return model;
   }
 
   /** {@inheritDoc} */
@@ -74,6 +95,12 @@ final class ClassicParserModel implements ParserModel {
   @Override
   public int priority() {
     return priority;
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void clearThreadLocalState() {
+    parser.remove();
   }
 
   /** {@inheritDoc} */

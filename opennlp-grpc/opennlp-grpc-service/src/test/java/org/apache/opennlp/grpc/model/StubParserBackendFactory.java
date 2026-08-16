@@ -76,6 +76,7 @@ public final class StubParserBackendFactory implements ParserBackendFactory {
       return ParseTree.getDefaultInstance();
     }
 
+    @Override
     public void clearThreadLocalState() {
       CLEAR_COUNT.incrementAndGet();
     }

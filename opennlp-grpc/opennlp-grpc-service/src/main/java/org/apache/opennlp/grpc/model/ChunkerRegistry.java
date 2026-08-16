@@ -156,6 +156,15 @@ public final class ChunkerRegistry implements AutoCloseable {
     return engine != null && knownEngines.contains(normalize(engine));
   }
 
+  /** Releases caller-specific inference state for every chunker on the current thread. */
+  public void clearThreadLocalState() {
+    for (String id : chunkers.ids()) {
+      for (Registration<ChunkerModel> registration : chunkers.resolve(id)) {
+        registration.value().clearThreadLocalState();
+      }
+    }
+  }
+
   /**
    * Closes any chunker that holds native resources; classic {@code ChunkerME} models hold none.
    * A failure closing one is logged and does not stop the others.

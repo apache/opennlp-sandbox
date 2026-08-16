@@ -80,6 +80,12 @@ final class ClassicChunkerModel implements ChunkerModel {
 
   /** {@inheritDoc} */
   @Override
+  public void clearThreadLocalState() {
+    chunker.clearThreadLocalState();
+  }
+
+  /** {@inheritDoc} */
+  @Override
   public List<ChunkSpan> chunk(AnnotatedSentence sentence) {
     if (sentence.getTokensCount() == 0) {
       return List.of();

@@ -56,6 +56,11 @@ public interface ChunkerModel {
     return 0;
   }
 
+  /** Releases caller-specific inference state held for the current thread. */
+  default void clearThreadLocalState() {
+    // Stateless backends hold no caller-specific inference state.
+  }
+
   /**
    * Groups the sentence's tokens into base phrases, returning one {@link ChunkSpan} per chunk with
    * a document-relative span and its phrase tag. The orchestrator adds provenance and text.

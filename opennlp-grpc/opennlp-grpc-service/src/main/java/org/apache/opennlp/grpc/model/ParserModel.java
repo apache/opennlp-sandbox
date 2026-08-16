@@ -54,6 +54,11 @@ public interface ParserModel {
     return 0;
   }
 
+  /** Releases caller-specific inference state held for the current thread. */
+  default void clearThreadLocalState() {
+    // Stateless backends hold no caller-specific inference state.
+  }
+
   /**
    * Parses one tokenized sentence into the requested constituency-parse views.
    *

@@ -27,6 +27,7 @@ import java.util.ServiceLoader;
 import java.util.Set;
 
 import org.apache.opennlp.grpc.backend.RankedBackends;
+import org.apache.opennlp.grpc.backend.RankedBackends.Registration;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 
 /**
@@ -203,5 +204,14 @@ public final class ParserRegistry {
    */
   public boolean knowsEngine(String engine) {
     return engine != null && knownEngines.contains(normalize(engine));
+  }
+
+  /** Releases caller-specific inference state for every parser on the current thread. */
+  public void clearThreadLocalState() {
+    for (String id : parsers.ids()) {
+      for (Registration<ParserModel> registration : parsers.resolve(id)) {
+        registration.value().clearThreadLocalState();
+      }
+    }
   }
 }

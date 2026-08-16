@@ -327,6 +327,8 @@ public final class ModelBundleCache implements AutoCloseable {
     posTagger.clearThreadLocalState();
     lemmatizer.clearThreadLocalState();
     nameFinderRegistry.clearThreadLocalState();
+    chunkerRegistry.clearThreadLocalState();
+    parserRegistry.clearThreadLocalState();
   }
 
   /**
