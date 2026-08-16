@@ -111,6 +111,20 @@ class GrpcJsonApiTest {
         api.handle("GET", "/api/v1/not-present", new byte[0]).status());
   }
 
+  @Test
+  void escapesJsonSpecialCharactersExactly() {
+    // Characterization: named escapes for the quote, backslash, and the C0
+    // controls with short forms; every other character below 0x20 becomes a
+    // lowercase four digit \\u00XX sequence; DEL, non-ASCII, and supplementary
+    // plane characters pass through unescaped.
+    WebHttpResponse response = GrpcJsonApi.error(400, Status.Code.INVALID_ARGUMENT,
+        "q\"\\\b\f\n\r\t\u0001\u001F\u007F\u00E9\uD83D\uDE00");
+
+    assertEquals("{\"code\":\"INVALID_ARGUMENT\",\"message\":"
+        + "\"q\\\"\\\\\\b\\f\\n\\r\\t\\u0001\\u001f\u007F\u00E9\uD83D\uDE00\"}",
+        response.bodyUtf8());
+  }
+
   private static class StubAnalysisRpc implements AnalysisRpc {
 
     @Override
