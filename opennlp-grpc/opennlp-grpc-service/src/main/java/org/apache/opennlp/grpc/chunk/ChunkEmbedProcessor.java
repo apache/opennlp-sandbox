@@ -247,7 +247,10 @@ public final class ChunkEmbedProcessor {
     final List<EmbeddingSelector> selectors = embeddingSelectors(entry);
 
     // Bucket sentence text by normalized category label, preserving first-appearance order.
+    // Category chunks never overlap, so a token's (unique) character start offset identifies
+    // it for the group total, matching buildGroup's dedup semantics.
     final Map<String, CategoryBucket> buckets = new LinkedHashMap<>();
+    final Set<Integer> distinctTokenStarts = new HashSet<>();
     for (int i = 0; i < document.getSentencesCount(); i++) {
       final AnnotatedSentence sentence = document.getSentences(i);
       final String label = sentence.getSentimentLabel();
@@ -256,6 +259,9 @@ public final class ChunkEmbedProcessor {
       }
       buckets.computeIfAbsent(normalizeCategory(label), k -> new CategoryBucket(label))
           .add(i, sentence, rawText);
+      for (var token : sentence.getTokensList()) {
+        distinctTokenStarts.add(token.getAnnotationSpan().getStart());
+      }
     }
 
     // Ordered categories: the allowlist (normalized, deduplicated) if given, else first-appearance.
@@ -295,12 +301,10 @@ public final class ChunkEmbedProcessor {
       group.setResultSetName(entry.getResultSetName());
     }
 
-    int groupedSentences = 0;
     int spanStart = Integer.MAX_VALUE;
     int spanEnd = Integer.MIN_VALUE;
     for (int g = 0; g < order.size(); g++) {
       final CategoryBucket bucket = buckets.get(order.get(g));
-      groupedSentences += bucket.indices.size();
       spanStart = Math.min(spanStart, bucket.start);
       spanEnd = Math.max(spanEnd, bucket.end);
       final Chunk.Builder chunk = Chunk.newBuilder()
@@ -338,7 +342,7 @@ public final class ChunkEmbedProcessor {
 
     group.setStats(ChunkGroupStats.newBuilder()
         .setChunkCount(order.size())
-        .setTotalTokens(groupedSentences)
+        .setTotalTokens(distinctTokenStarts.size())
         .setProcessingTimeMs(System.currentTimeMillis() - started)
         .build());
     return group.build();
