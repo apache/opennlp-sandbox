@@ -33,4 +33,70 @@ class ChunkTextPreprocessorTest {
     assertEquals("see https://example.com now",
         ChunkTextPreprocessor.clean("see   https://example.com   now", true));
   }
+
+  @Test
+  void preserveUrlsMatchesWwwWithoutScheme() {
+    assertEquals("visit www.example.com today",
+        ChunkTextPreprocessor.clean("visit   www.example.com   today", true));
+  }
+
+  @Test
+  void preserveUrlsMatchesSchemeCaseInsensitively() {
+    assertEquals("GO HTTP://EXAMPLE.COM/PATH NOW",
+        ChunkTextPreprocessor.clean("GO   HTTP://EXAMPLE.COM/PATH   NOW", true));
+    assertEquals("go HttPs://Example.COM now",
+        ChunkTextPreprocessor.clean("go   HttPs://Example.COM   now", true));
+  }
+
+  @Test
+  void preserveUrlsKeepsPortsPathsAndTrailingPunctuationInTheUrl() {
+    // The URL run is greedy over non-whitespace, so the comma stays glued to it.
+    assertEquals("see https://example.com:8080/a/b?x=1, then",
+        ChunkTextPreprocessor.clean("see   https://example.com:8080/a/b?x=1,   then", true));
+  }
+
+  @Test
+  void preserveUrlsRejectsBarePrefixesWithoutAFollowingCharacter() {
+    // A prefix alone (nothing or only whitespace after it) is not a URL.
+    assertEquals("http:// www. end",
+        ChunkTextPreprocessor.clean("http://  www.  end", true));
+    assertEquals("www.", ChunkTextPreprocessor.clean("www.", true));
+  }
+
+  @Test
+  void preserveUrlsMatchesPrefixesEmbeddedInAWord() {
+    // Leftmost scanning finds the prefix anywhere, splitting the word. Pinned quirk:
+    // the match runs to the end of the text, so trim() eats the placeholder's
+    // trailing NUL and the restore misses, leaking the placeholder.
+    assertEquals("ab \0URL1", ChunkTextPreprocessor.clean("abhttps://x.y", true));
+  }
+
+  @Test
+  void preserveUrlsTreatsNonAsciiWhitespaceAsUrlCharacters() {
+    // No-break space is not regex whitespace, so it stays inside the URL run.
+    assertEquals("go http://x\u00A0y done",
+        ChunkTextPreprocessor.clean("go   http://x\u00A0y   done", true));
+  }
+
+  @Test
+  void preserveUrlsEndsUrlsAtAsciiWhitespace() {
+    // Tab and vertical tab are regex whitespace and end the URL run. Pinned quirk:
+    // with the match at the very start, trim() eats the placeholder's leading NUL
+    // and the restore misses, leaking the placeholder.
+    assertEquals("URL1\0 b", ChunkTextPreprocessor.clean("http://a\tb", true));
+    assertEquals("URL1\0 b", ChunkTextPreprocessor.clean("http://a\u000Bb", true));
+  }
+
+  @Test
+  void preserveUrlsKeepsMultipleUrls() {
+    assertEquals("a http://x.y b www.z c",
+        ChunkTextPreprocessor.clean("a   http://x.y   b   www.z   c", true));
+  }
+
+  @Test
+  void preserveUrlsLeavesNonUrlsAlone() {
+    assertEquals("ftp://example.com x",
+        ChunkTextPreprocessor.clean("ftp://example.com  x", true));
+    assertEquals("", ChunkTextPreprocessor.clean("", true));
+  }
 }
