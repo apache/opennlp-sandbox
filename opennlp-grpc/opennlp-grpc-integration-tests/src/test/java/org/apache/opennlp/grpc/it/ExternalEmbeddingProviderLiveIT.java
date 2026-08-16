@@ -36,6 +36,7 @@ import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.ComponentType;
+import org.apache.opennlp.grpc.v1.EmbeddingBackendSelector;
 import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.ListModelBundlesRequest;
 import org.apache.opennlp.grpc.v1.ModelDescriptor;
@@ -86,7 +87,7 @@ class ExternalEmbeddingProviderLiveIT {
           .setOptions(AnalysisOptions.newBuilder().setEmbeddingSelector(
               EmbeddingSelector.newBuilder()
                   .setModelId("external-model")
-                  .setBackendId("external")))
+                  .setBackend(EmbeddingBackendSelector.newBuilder().setCustom("external"))))
           .build());
 
       assertEquals(1, response.getDocument().getEmbeddingsCount());

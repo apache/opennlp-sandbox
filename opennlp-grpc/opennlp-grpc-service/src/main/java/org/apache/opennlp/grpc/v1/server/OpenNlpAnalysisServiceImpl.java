@@ -26,6 +26,7 @@ import java.util.concurrent.ForkJoinPool;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.apache.opennlp.grpc.embedding.EmbeddingBatchResult;
+import org.apache.opennlp.grpc.embedding.EmbeddingBackendSelections;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.processor.AnalysisException;
@@ -303,8 +304,9 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
       final String requestedBackend;
       if (request.hasEmbeddingSelector()) {
         requested = request.getEmbeddingSelector().getModelId().trim();
-        requestedBackend = request.getEmbeddingSelector().hasBackendId()
-            ? request.getEmbeddingSelector().getBackendId().trim() : "";
+        final String selectedBackend = EmbeddingBackendSelections.selectedId(
+            request.getEmbeddingSelector());
+        requestedBackend = selectedBackend == null ? "" : selectedBackend;
         if (requested.isEmpty()) {
           throw AnalysisException.invalidArgument(
               "EmbedText embedding_selector.model_id must not be blank");

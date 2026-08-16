@@ -442,13 +442,37 @@ enum ParseNodeKind {
   PARSE_NODE_KIND_TERMINAL = 2;
 }
 
+// OpenNLP-owned embedding backends whose identifiers are stable parts of this API.
+// ServiceLoader extensions use EmbeddingBackendSelector.custom.
+enum StandardEmbeddingBackend {
+  STANDARD_EMBEDDING_BACKEND_UNSPECIFIED = 0;
+  STANDARD_EMBEDDING_BACKEND_ONNX = 1;
+  STANDARD_EMBEDDING_BACKEND_CUDA = 2;
+  STANDARD_EMBEDDING_BACKEND_STATIC = 3;
+  STANDARD_EMBEDDING_BACKEND_TEI = 4;
+  STANDARD_EMBEDDING_BACKEND_OPENVINO = 5;
+}
+
+// Selects either a standard OpenNLP embedding backend or an extension-provided id.
+message EmbeddingBackendSelector {
+  oneof kind {
+    StandardEmbeddingBackend standard = 1;
+    string custom = 2;
+  }
+}
+
 // Selects one logical embedding model and, optionally, one concrete backend route.
-// Model and backend ids remain open strings so ServiceLoader extensions need no
-// protocol enum changes. An absent backend_id uses the server's primary route and
-// permits safe fallback. A present backend_id pins that route with no fallback.
+// Model ids remain open strings because deployments own them. An absent backend choice
+// uses the server's primary route and permits safe fallback. A present choice pins that
+// route with no fallback.
 message EmbeddingSelector {
   string model_id = 1;
+  // Compatibility input for an open backend id. New clients should use `backend`.
+  // Setting both fields => INVALID_ARGUMENT.
   optional string backend_id = 2;
+  // Strongly typed standard backend or open ServiceLoader extension id. Setting this
+  // field together with `backend_id` => INVALID_ARGUMENT.
+  EmbeddingBackendSelector backend = 3;
 }
 
 // The concrete route that produced an embedding or can serve an embedding model.

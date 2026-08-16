@@ -22,6 +22,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.opennlp.grpc.embedding.EmbeddingBackendSelections;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
@@ -131,8 +132,8 @@ public final class SegmentationChunker {
     final String requested = selector != null
         ? selector.getModelId()
         : semantic.hasSemanticEmbeddingModelId() ? semantic.getSemanticEmbeddingModelId() : null;
-    final String backendId = selector != null && selector.hasBackendId()
-        && !selector.getBackendId().isBlank() ? selector.getBackendId().trim() : null;
+    final String backendId = selector == null
+        ? null : EmbeddingBackendSelections.selectedId(selector);
     final String modelId = provider.resolveModelId(requested);
     if (modelId == null || modelId.isBlank()) {
       throw AnalysisException.invalidArgument(

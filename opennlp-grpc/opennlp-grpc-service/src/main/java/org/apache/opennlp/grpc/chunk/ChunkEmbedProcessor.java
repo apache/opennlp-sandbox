@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.opennlp.grpc.embedding.EmbeddingBatchResult;
+import org.apache.opennlp.grpc.embedding.EmbeddingBackendSelections;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.processor.PipelineStepPolicy;
@@ -503,10 +504,7 @@ public final class ChunkEmbedProcessor {
   }
 
   private static String selectedBackend(EmbeddingSelector selector) {
-    if (!selector.hasBackendId() || selector.getBackendId().isBlank()) {
-      return null;
-    }
-    return selector.getBackendId().trim();
+    return EmbeddingBackendSelections.selectedId(selector);
   }
 
   private static boolean isSemantic(ChunkingSpec chunking) {

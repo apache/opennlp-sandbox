@@ -29,6 +29,7 @@ import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.CategoryChunkConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkingSpec;
+import org.apache.opennlp.grpc.v1.EmbeddingBackendSelector;
 import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
 import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
@@ -112,7 +113,8 @@ class BasicDocumentAnalyzerChunkEmbedTest {
             .setConfigId("routed-chunks")
             .setChunking(ChunkingSpec.newBuilder().setAlgorithm("sentence"))
             .addEmbeddingSelectors(EmbeddingSelector.newBuilder()
-                .setModelId("minilm").setBackendId("slow"))
+                .setModelId("minilm")
+                .setBackend(EmbeddingBackendSelector.newBuilder().setCustom("slow")))
             .build())
         .build());
 

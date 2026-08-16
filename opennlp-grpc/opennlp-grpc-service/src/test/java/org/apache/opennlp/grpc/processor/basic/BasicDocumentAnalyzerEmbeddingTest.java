@@ -28,6 +28,7 @@ import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
+import org.apache.opennlp.grpc.v1.EmbeddingBackendSelector;
 import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
 import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
@@ -134,7 +135,7 @@ class BasicDocumentAnalyzerEmbeddingTest {
         .setOptions(AnalysisOptions.newBuilder()
             .setEmbeddingSelector(EmbeddingSelector.newBuilder()
                 .setModelId("minilm")
-                .setBackendId("slow"))
+                .setBackend(EmbeddingBackendSelector.newBuilder().setCustom("slow")))
             .setIncludeDocumentCentroid(true))
         .build());
 

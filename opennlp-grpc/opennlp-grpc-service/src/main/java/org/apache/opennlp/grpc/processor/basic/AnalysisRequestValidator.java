@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.apache.opennlp.grpc.chunk.ChunkEmbedProcessor;
+import org.apache.opennlp.grpc.embedding.EmbeddingBackendSelections;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.model.ChunkerRegistry;
 import org.apache.opennlp.grpc.model.HunspellRegistry;
@@ -237,12 +238,11 @@ final class AnalysisRequestValidator {
   }
 
   String resolveEmbeddingBackendId(AnalyzeDocumentRequest request) {
-    if (!request.hasOptions() || !request.getOptions().hasEmbeddingSelector()
-        || !request.getOptions().getEmbeddingSelector().hasBackendId()) {
+    if (!request.hasOptions() || !request.getOptions().hasEmbeddingSelector()) {
       return null;
     }
-    final String backendId = request.getOptions().getEmbeddingSelector().getBackendId().trim();
-    return backendId.isEmpty() ? null : backendId;
+    return EmbeddingBackendSelections.selectedId(
+        request.getOptions().getEmbeddingSelector());
   }
 
   /**

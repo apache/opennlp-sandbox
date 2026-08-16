@@ -27,7 +27,7 @@ import java.util.Map;
  * {@code META-INF/services/org.apache.opennlp.grpc.embedding.EmbeddingBackendFactory}
  * and its configured models join the aggregate provider without any change to the gRPC
  * server. Clients may let routing priority choose it or pin its open backend id through
- * {@code EmbeddingSelector.backend_id}. This is the extension point for additional
+ * {@code EmbeddingSelector.backend}. This is the extension point for additional
  * inference runtimes shipped as separate jars: in-process engines (OpenVINO, DJL, ...)
  * as well as remote backends whose provider is a client to an external inference
  * service. A remote provider implements the same surface ({@code embed},

@@ -27,6 +27,7 @@ import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;
 import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
 import org.apache.opennlp.grpc.v1.ChunkingSpec;
+import org.apache.opennlp.grpc.v1.EmbeddingBackendSelector;
 import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.SemanticChunkingConfig;
@@ -113,9 +114,11 @@ class BasicDocumentAnalyzerSemanticChunkTest {
                 .setSemanticConfig(SemanticChunkingConfig.newBuilder()
                     .setSimilarityThreshold(0.5f)
                     .setSemanticEmbeddingSelector(EmbeddingSelector.newBuilder()
-                        .setModelId("minilm").setBackendId("slow"))))
+                        .setModelId("minilm")
+                        .setBackend(EmbeddingBackendSelector.newBuilder().setCustom("slow")))))
             .addEmbeddingSelectors(EmbeddingSelector.newBuilder()
-                .setModelId("minilm").setBackendId("slow"))
+                .setModelId("minilm")
+                .setBackend(EmbeddingBackendSelector.newBuilder().setCustom("slow")))
             .build())
         .build());
 

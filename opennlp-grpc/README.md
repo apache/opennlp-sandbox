@@ -461,8 +461,11 @@ model.embedder.sentence-transformers.pooling=mean
 
 Request embeddings by adding `PIPELINE_STEP_EMBED` to the analysis profile and
 setting `options.embedding_selector.model_id` (or rely on `default_id` when only
-one model is registered). Set `embedding_selector.backend_id` to pin one concrete
-route with no fallback, or omit it to use the highest-priority compatible route.
+one model is registered). Set `embedding_selector.backend.standard` to pin the
+built-in ONNX, CUDA, static-table, TEI, or OpenVINO route. ServiceLoader extensions
+use `embedding_selector.backend.custom`. Omit the backend choice to use the
+highest-priority compatible route with safe fallback. The older string-valued
+`backend_id` remains a compatibility input but cannot be set together with `backend`.
 The older `embedding_model_id` field remains as an additive compatibility field.
 The same selector shape is used by streaming, chunk, category-chunk, and semantic
 chunk requests. Set `options.include_document_centroid = true` when the response
@@ -627,7 +630,7 @@ ship a jar that implements
 `META-INF/services/org.apache.opennlp.grpc.embedding.EmbeddingBackendFactory`, and put
 that jar on the server classpath. Its configured models join the aggregate provider
 without any server change. Clients can leave route choice to priority/fallback or pin
-the backend's open id through `EmbeddingSelector.backend_id`. The shaded server merges
+the backend's open id through `EmbeddingSelector.backend.custom`. The shaded server merges
 service descriptors, and the integration suite verifies loading and invoking a provider
 compiled and packaged outside this reactor.
 

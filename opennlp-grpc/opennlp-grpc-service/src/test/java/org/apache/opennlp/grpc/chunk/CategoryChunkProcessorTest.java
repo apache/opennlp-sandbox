@@ -28,6 +28,7 @@ import org.apache.opennlp.grpc.v1.CategoryChunkConfigEntry;
 import org.apache.opennlp.grpc.v1.Chunk;
 import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
+import org.apache.opennlp.grpc.v1.EmbeddingBackendSelector;
 import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
 import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
@@ -128,7 +129,8 @@ class CategoryChunkProcessorTest {
     final CategoryChunkConfigEntry routedEntry = CategoryChunkConfigEntry.newBuilder()
         .setConfigId("routed-categories")
         .addEmbeddingSelectors(EmbeddingSelector.newBuilder()
-            .setModelId("minilm").setBackendId("slow"))
+            .setModelId("minilm")
+            .setBackend(EmbeddingBackendSelector.newBuilder().setCustom("slow")))
         .build();
 
     ChunkEmbedProcessor.validateCategoryEntry(routedEntry, routedProvider);

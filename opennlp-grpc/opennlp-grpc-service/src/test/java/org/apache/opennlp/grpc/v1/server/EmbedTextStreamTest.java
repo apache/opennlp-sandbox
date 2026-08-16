@@ -27,6 +27,7 @@ import org.apache.opennlp.grpc.embedding.StubEmbeddingBackendFactory;
 import org.apache.opennlp.grpc.embedding.TrackingEmbeddingBackendFactory;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
+import org.apache.opennlp.grpc.v1.EmbeddingBackendSelector;
 import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.EmbedTextRequest;
 import org.apache.opennlp.grpc.v1.EmbedTextResponse;
@@ -135,7 +136,7 @@ class EmbedTextStreamTest {
         serviceWithTwoRoutes().embedText(responses);
     final EmbeddingSelector selector = EmbeddingSelector.newBuilder()
         .setModelId("mini")
-        .setBackendId("tracking")
+        .setBackend(EmbeddingBackendSelector.newBuilder().setCustom("tracking"))
         .build();
 
     requests.onNext(EmbedTextRequest.newBuilder()

@@ -168,7 +168,7 @@ message SemanticChunkingConfig {
   // one id is present; otherwise semantic chunking is rejected with INVALID_ARGUMENT.
   optional string semantic_embedding_model_id = 5;
   // Additive strongly typed replacement for semantic_embedding_model_id. When set,
-  // model_id selects the logical model and backend_id optionally pins one route.
+  // model_id selects the logical model and backend optionally pins one route.
   optional EmbeddingSelector semantic_embedding_selector = 6;
 }
 
@@ -188,7 +188,7 @@ enum POSTagFormat {
 
 // Backend discovery and configuration are server deployment concerns, extensible
 // through the ServiceLoader SPI. Clients request logical models by open string id
-// and may optionally pin one advertised route with EmbeddingSelector.backend_id.
+// and may optionally pin one advertised route with EmbeddingSelector.backend.
 // An unpinned selector uses priority and safe fallback. ModelDescriptor reports
 // every available route and every result reports the route that produced it.
 
@@ -498,7 +498,7 @@ message AnalysisOptions {
   // (STRUCTURED + BRACKETED); listing fewer trims the response to just those views.
   repeated ParseFormat parse_formats = 7;
   // Additive strongly typed replacement for embedding_model_id. When set, model_id
-  // selects the logical model and backend_id optionally pins one route.
+  // selects the logical model and backend optionally pins one route.
   optional EmbeddingSelector embedding_selector = 8;
   // When true, PIPELINE_STEP_EMBED also returns the mean of the sentence vectors as
   // one EMBEDDING_GRANULARITY_DOCUMENT result. Unset or false returns only the
