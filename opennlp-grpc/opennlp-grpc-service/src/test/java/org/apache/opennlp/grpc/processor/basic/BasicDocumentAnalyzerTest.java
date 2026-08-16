@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.model.StubNerBackendFactory;
+import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
@@ -59,6 +60,21 @@ class BasicDocumentAnalyzerTest {
     final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
         () -> analyzer.analyze(null));
     assertEquals("request must not be null", error.getMessage());
+  }
+
+  @Test
+  void whitespaceOnlyTextNamesTheActualProblem() {
+    final AnalysisException error = assertThrows(AnalysisException.class,
+        () -> analyze("  \t \n ", null));
+    assertEquals("document.raw_text must contain non-whitespace characters",
+        error.getMessage());
+  }
+
+  @Test
+  void absentTextIsStillReportedAsRequired() {
+    final AnalysisException error = assertThrows(AnalysisException.class,
+        () -> analyze("", null));
+    assertEquals("document.raw_text is required", error.getMessage());
   }
 
   @Test
