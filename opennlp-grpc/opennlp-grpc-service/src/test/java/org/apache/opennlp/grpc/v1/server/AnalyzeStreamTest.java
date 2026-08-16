@@ -18,6 +18,9 @@
  */
 package org.apache.opennlp.grpc.v1.server;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.BlockingQueue;
@@ -70,6 +73,37 @@ class AnalyzeStreamTest {
     return AnalyzeStreamRequest.newBuilder()
         .setConfiguration(AnalyzeStreamConfiguration.newBuilder().build())
         .build();
+  }
+
+  /** Returns a stream configuration with an explicit {@code clear_adaptive_data} value. */
+  private static AnalyzeStreamRequest configurationWithClearAdaptiveData(boolean clear) {
+    return AnalyzeStreamRequest.newBuilder()
+        .setConfiguration(AnalyzeStreamConfiguration.newBuilder()
+            .setOptions(AnalysisOptions.newBuilder().setClearAdaptiveData(clear)))
+        .build();
+  }
+
+  /** Analyzer whose session records the worker thread and order of every analyzed document. */
+  private static DocumentAnalyzer recordingAnalyzer(
+      List<Thread> threads, List<String> analyzed, AtomicReference<Thread> firstWorker) {
+    return new DocumentAnalyzer() {
+      @Override
+      public AnalyzeDocumentResponse analyze(
+          org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest request) {
+        throw new IllegalStateException("stream bypassed its prepared analyzer session");
+      }
+
+      @Override
+      public DocumentAnalysisSession openSession(AnalyzeStreamConfiguration configuration) {
+        return document -> {
+          final Thread thread = Thread.currentThread();
+          threads.add(thread);
+          firstWorker.compareAndSet(null, thread);
+          analyzed.add(document.getDocId());
+          return AnalyzeDocumentResponse.newBuilder().setDocument(document).build();
+        };
+      }
+    };
   }
 
   private static AnalyzeStreamRequest document(long sequence, String text) {
@@ -429,6 +463,126 @@ class AnalyzeStreamTest {
     assertEquals(GrpcStatusCode.GRPC_STATUS_CODE_INVALID_ARGUMENT,
         responses.bySequence(1).getError().getCode());
     assertTrue(responses.bySequence(2).hasOk());
+  }
+
+  @Test
+  void adaptiveContinuityStreamRunsSeriallyOnOneDedicatedThreadInSubmissionOrder()
+      throws Exception {
+    // clear_adaptive_data=false promises cross-document adaptive NER continuity, but adaptive
+    // state is per-thread in OpenNLP 3.x: only a single confined worker per stream can deliver
+    // deterministic continuity. On the shared pool every document would land on an arbitrary
+    // thread (a fixed pool starts one worker per task until its core size is reached).
+    final ExecutorService pool = Executors.newFixedThreadPool(4);
+    final List<Thread> threads = Collections.synchronizedList(new ArrayList<>());
+    final List<String> analyzed = Collections.synchronizedList(new ArrayList<>());
+    final AtomicReference<Thread> firstWorker = new AtomicReference<>();
+    try {
+      final CapturingObserver responses = new CapturingObserver();
+      final StreamObserver<AnalyzeStreamRequest> requests = new AnalyzeDocumentStream(
+          recordingAnalyzer(threads, analyzed, firstWorker), pool, 4, responses);
+
+      requests.onNext(configurationWithClearAdaptiveData(false));
+      for (int sequence = 1; sequence <= 4; sequence++) {
+        requests.onNext(document(sequence, "text " + sequence));
+      }
+      requests.onCompleted();
+
+      assertTrue(responses.awaitTerminal());
+      assertNull(responses.error);
+      assertTrue(responses.completed);
+      assertEquals(1, threads.stream().distinct().count(),
+          "an adaptive-continuity stream must confine every document to one worker thread");
+      assertEquals(List.of("doc-1", "doc-2", "doc-3", "doc-4"), analyzed,
+          "an adaptive-continuity stream must analyze documents in submission order");
+      assertTrue(firstWorker.get().getName().startsWith("opennlp-stream-adaptive-"),
+          "continuity must run on a dedicated worker, not a shared pool thread: "
+              + firstWorker.get());
+      for (int sequence = 1; sequence <= 4; sequence++) {
+        assertEquals(sequence, responses.next().getSequence());
+      }
+    } finally {
+      pool.shutdownNow();
+    }
+  }
+
+  @Test
+  void defaultStreamStillRunsDocumentsConcurrently() throws Exception {
+    // Guard: the serial confinement above must apply only to streams that opt out of clearing
+    // adaptive data. A default stream whose documents rendezvous mid-analysis only completes
+    // when two documents run at once.
+    final ExecutorService pool = Executors.newFixedThreadPool(2);
+    final CountDownLatch bothStarted = new CountDownLatch(2);
+    final DocumentAnalyzer analyzer = new DocumentAnalyzer() {
+      @Override
+      public AnalyzeDocumentResponse analyze(
+          org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest request) {
+        throw new IllegalStateException("stream bypassed its prepared analyzer session");
+      }
+
+      @Override
+      public DocumentAnalysisSession openSession(AnalyzeStreamConfiguration configuration) {
+        return document -> {
+          bothStarted.countDown();
+          await(bothStarted);
+          return AnalyzeDocumentResponse.newBuilder().setDocument(document).build();
+        };
+      }
+    };
+    try {
+      final CapturingObserver responses = new CapturingObserver();
+      final StreamObserver<AnalyzeStreamRequest> requests = new AnalyzeDocumentStream(
+          analyzer, pool, 2, responses);
+
+      requests.onNext(configuration());
+      requests.onNext(document(1, "first"));
+      requests.onNext(document(2, "second"));
+      requests.onCompleted();
+
+      assertTrue(responses.awaitTerminal());
+      assertNull(responses.error);
+      assertTrue(responses.completed);
+      assertTrue(responses.bySequence(1).hasOk());
+      assertTrue(responses.bySequence(2).hasOk());
+    } finally {
+      pool.shutdownNow();
+    }
+  }
+
+  @Test
+  void dedicatedAdaptiveWorkerDiesWithItsStream() throws Exception {
+    // The per-stream continuity worker holds the accumulated adaptive state on its thread; it
+    // must be released when the stream terminates, or many streams pile up live workers (and
+    // their retained state) for the lifetime of the pool.
+    final ExecutorService pool = Executors.newFixedThreadPool(2);
+    final List<Thread> workers = new ArrayList<>();
+    try {
+      for (int stream = 0; stream < 4; stream++) {
+        final List<Thread> threads = Collections.synchronizedList(new ArrayList<>());
+        final List<String> analyzed = Collections.synchronizedList(new ArrayList<>());
+        final AtomicReference<Thread> firstWorker = new AtomicReference<>();
+        final CapturingObserver responses = new CapturingObserver();
+        final StreamObserver<AnalyzeStreamRequest> requests = new AnalyzeDocumentStream(
+            recordingAnalyzer(threads, analyzed, firstWorker), pool, 2, responses);
+
+        requests.onNext(configurationWithClearAdaptiveData(false));
+        requests.onNext(document(1, "one"));
+        requests.onCompleted();
+
+        assertTrue(responses.awaitTerminal());
+        assertTrue(responses.completed);
+        assertNotNull(firstWorker.get());
+        workers.add(firstWorker.get());
+      }
+      assertEquals(4, workers.stream().distinct().count(),
+          "each adaptive-continuity stream must get its own confined worker");
+      for (Thread worker : workers) {
+        worker.join(TimeUnit.SECONDS.toMillis(2));
+        assertFalse(worker.isAlive(),
+            "adaptive-continuity worker outlived its stream: " + worker);
+      }
+    } finally {
+      pool.shutdownNow();
+    }
   }
 
   private static void await(CountDownLatch latch) {
