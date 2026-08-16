@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.opennlp.grpc.backend.RankedBackends;
 import org.apache.opennlp.grpc.backend.RankedBackends.Registration;
 import org.apache.opennlp.grpc.model.ParserModel;
+import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.ParseTree;
 import org.slf4j.Logger;
@@ -106,15 +107,22 @@ final class ParseResolver {
     }
   }
 
-  /** Parses on the highest-priority engine, falling back to the next on failure; rethrows if all fail. */
+  /**
+   * Parses on the highest-priority engine, falling back to the next on a retryable failure (the
+   * shared {@link RankedBackends#isRetryable} policy); rethrows when all engines fail, and
+   * propagates non-retryable failures immediately.
+   */
   private void runWithFallback(String parserId, AnnotatedSentence sentence, List<ParseTree> trees) {
     final List<Registration<ParserModel>> ranked = parsers.resolve(parserId);
-    RuntimeException last = null;
+    AnalysisException last = null;
     for (Registration<ParserModel> registration : ranked) {
       try {
         trees.add(stamp(parserId, registration.value(), sentence));
         return;
-      } catch (RuntimeException e) {
+      } catch (AnalysisException e) {
+        if (!RankedBackends.isRetryable(e)) {
+          throw e;
+        }
         last = e;
         if (ranked.size() > 1) {
           logger.warn("Parser '{}' failed on engine '{}'; falling back",
