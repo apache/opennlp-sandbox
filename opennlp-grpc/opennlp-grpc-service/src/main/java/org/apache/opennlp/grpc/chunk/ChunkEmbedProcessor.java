@@ -141,8 +141,10 @@ public final class ChunkEmbedProcessor {
     final List<EmbeddingBatchResult> batches = new ArrayList<>(selectors.size());
     if (!segments.isEmpty()) {
       for (EmbeddingSelector selector : selectors) {
-        batches.add(embeddingProvider.embedBatchResolved(selector.getModelId(),
-            selectedBackend(selector), chunkTexts));
+        final EmbeddingBatchResult batch = embeddingProvider.embedBatchResolved(
+            selector.getModelId(), selectedBackend(selector), chunkTexts);
+        requireFullBatch(selector.getModelId(), batch, chunkTexts.size(), "chunk");
+        batches.add(batch);
       }
     }
 
@@ -285,8 +287,10 @@ public final class ChunkEmbedProcessor {
     final List<EmbeddingBatchResult> batches = new ArrayList<>(selectors.size());
     if (!order.isEmpty()) {
       for (EmbeddingSelector selector : selectors) {
-        batches.add(embeddingProvider.embedBatchResolved(selector.getModelId(),
-            selectedBackend(selector), categoryTexts));
+        final EmbeddingBatchResult batch = embeddingProvider.embedBatchResolved(
+            selector.getModelId(), selectedBackend(selector), categoryTexts);
+        requireFullBatch(selector.getModelId(), batch, categoryTexts.size(), "category chunk");
+        batches.add(batch);
       }
     }
 
@@ -552,9 +556,17 @@ public final class ChunkEmbedProcessor {
         .build();
   }
 
+  /** Verifies the provider returned exactly one vector per input text. */
+  private static void requireFullBatch(String modelId, EmbeddingBatchResult batch, int expected,
+      String unit) {
+    if (batch.vectors().size() != expected) {
+      throw AnalysisException.internal("Embedding model '" + modelId + "' returned "
+          + batch.vectors().size() + " vector(s) for " + expected + " " + unit + " text(s)", null);
+    }
+  }
+
   /** Copies a primitive vector into its protobuf representation. */
-  private static List<Float> toFloatList(float[] vector) {
-    final List<Float> values = new ArrayList<>(vector.length);
+  private static List<Float> toFloatList(float[] vector) {    final List<Float> values = new ArrayList<>(vector.length);
     for (float value : vector) {
       values.add(value);
     }

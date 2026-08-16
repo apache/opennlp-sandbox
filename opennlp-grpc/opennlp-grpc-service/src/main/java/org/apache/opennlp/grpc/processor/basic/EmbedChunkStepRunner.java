@@ -99,6 +99,10 @@ final class EmbedChunkStepRunner {
     final EmbeddingBatchResult embedded =
         embeddingProvider.embedBatchResolved(modelId, backendId, sentenceTexts);
     final List<float[]> vectors = embedded.vectors();
+    if (vectors.size() != sentenceTexts.size()) {
+      throw AnalysisException.internal("Embedding model '" + modelId + "' returned "
+          + vectors.size() + " vector(s) for " + sentenceTexts.size() + " sentence text(s)", null);
+    }
     for (int i = 0; i < vectors.size(); i++) {
       document.addEmbeddings(EmbeddingResult.newBuilder()
           .setModelId(modelId)
