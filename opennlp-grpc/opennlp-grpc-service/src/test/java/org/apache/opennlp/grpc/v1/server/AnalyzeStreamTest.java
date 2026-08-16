@@ -280,6 +280,52 @@ class AnalyzeStreamTest {
   }
 
   @Test
+  void clientCancellationInterruptsActiveAnalysisAndDropsQueuedWork() throws Exception {
+    final CountDownLatch activeStarted = new CountDownLatch(1);
+    final CountDownLatch activeInterrupted = new CountDownLatch(1);
+    final CountDownLatch queuedStarted = new CountDownLatch(1);
+    final TrackingServerObserver responses = new TrackingServerObserver();
+    final ExecutorService executor = Executors.newSingleThreadExecutor();
+    try {
+      final DocumentAnalyzer analyzer = request -> {
+        if (request.getDocument().getRawText().equals("active")) {
+          activeStarted.countDown();
+          try {
+            new CountDownLatch(1).await();
+          } catch (InterruptedException e) {
+            activeInterrupted.countDown();
+            Thread.currentThread().interrupt();
+            throw AnalysisException.internal("active analysis interrupted", e);
+          }
+        } else {
+          queuedStarted.countDown();
+        }
+        return echo(request);
+      };
+      final StreamObserver<AnalyzeStreamRequest> requests = new AnalyzeDocumentStream(
+          analyzer, executor, 2, responses);
+
+      assertEquals(1, responses.requested.poll(5, TimeUnit.SECONDS));
+      requests.onNext(configuration());
+      assertEquals(2, responses.requested.poll(5, TimeUnit.SECONDS));
+      requests.onNext(document(1, "active"));
+      requests.onNext(document(2, "queued"));
+      assertTrue(activeStarted.await(5, TimeUnit.SECONDS));
+
+      responses.cancelled = true;
+      responses.onCancel.run();
+
+      assertTrue(activeInterrupted.await(5, TimeUnit.SECONDS),
+          "client cancellation did not interrupt the active analysis");
+      assertFalse(queuedStarted.await(250, TimeUnit.MILLISECONDS),
+          "client cancellation allowed queued analysis to start");
+      assertTrue(responses.values.isEmpty());
+    } finally {
+      executor.shutdownNow();
+    }
+  }
+
+  @Test
   void opensOneGenericAnalyzerSessionForTheStreamsFixedConfiguration() throws Exception {
     final AtomicInteger opened = new AtomicInteger();
     final AtomicReference<AnalyzeStreamConfiguration> prepared = new AtomicReference<>();
