@@ -18,6 +18,7 @@
 package org.apache.opennlp.grpc.server;
 
 import java.util.Map;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -25,6 +26,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.opennlp.grpc.model.ModelBundleCache;
+import org.apache.opennlp.grpc.search.SearchIndexProvider;
+import org.apache.opennlp.grpc.search.SearchIndexRegistry;
+import org.apache.opennlp.grpc.search.SearchResult;
+import org.apache.opennlp.grpc.v1.EmbeddingRoute;
+import org.apache.opennlp.grpc.v1.SearchCorpusDescriptor;
+import org.apache.opennlp.grpc.v1.SearchIndexBuildDescriptor;
+import org.apache.opennlp.grpc.v1.SearchIndexDescriptor;
+import org.apache.opennlp.grpc.v1.SearchMetric;
+import org.apache.opennlp.grpc.v1.SearchProviderSelector;
+import org.apache.opennlp.grpc.v1.StandardSearchProvider;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -39,6 +50,34 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * before {@code close()} frees it.
  */
 class OpenNlpGrpcServerStopTest {
+
+  @Test
+  void stopClosesTheSearchRegistry() {
+    final AtomicBoolean providerClosed = new AtomicBoolean();
+    final SearchIndexProvider provider = new SearchIndexProvider() {
+      @Override
+      public SearchIndexDescriptor descriptor() {
+        return searchDescriptor();
+      }
+
+      @Override
+      public List<SearchResult> search(float[] queryVector, int topK) {
+        return List.of();
+      }
+
+      @Override
+      public void close() {
+        providerClosed.set(true);
+      }
+    };
+    final OpenNlpGrpcServer server = new OpenNlpGrpcServer();
+    server.injectLifecycleForTest(null, new ModelBundleCache(Map.of()),
+        new SearchIndexRegistry(List.of(provider)), 0);
+
+    server.stop();
+
+    assertTrue(providerClosed.get());
+  }
 
   @Test
   void stopWaitsForUninterruptibleInferenceBeforeClosingModels() throws Exception {
@@ -132,6 +171,35 @@ class OpenNlpGrpcServerStopTest {
     server.injectLifecycleForTest(
         analysisExecutor, new ModelBundleCache(Map.of()), shutdownGraceSeconds);
     return server;
+  }
+
+  private static SearchIndexDescriptor searchDescriptor() {
+    return SearchIndexDescriptor.newBuilder()
+        .setIndexId("test")
+        .setDisplayName("Test")
+        .setProvider(SearchProviderSelector.newBuilder()
+            .setStandard(StandardSearchProvider.STANDARD_SEARCH_PROVIDER_TURBO_QUANT))
+        .setEmbeddingRoute(EmbeddingRoute.newBuilder()
+            .setModelId("model")
+            .setBackendId("backend")
+            .setVectorSpaceId("space"))
+        .setDimension(1)
+        .setMetric(SearchMetric.SEARCH_METRIC_COSINE)
+        .setSize(1)
+        .setImmutable(true)
+        .setCorpus(SearchCorpusDescriptor.newBuilder()
+            .setTitle("Corpus")
+            .setProvenanceSummary("Test"))
+        .setMaxTopK(1)
+        .setMaxQueryBytes(1)
+        .setMaxResponseBytes(1_024)
+        .setBuild(SearchIndexBuildDescriptor.newBuilder()
+            .setBundleFormatVersion(1)
+            .setBundleArtifactHash("a".repeat(64))
+            .setBuilderId("builder")
+            .setBuilderVersion("1")
+            .setPreparationConfigHash("b".repeat(64)))
+        .build();
   }
 
   /** Polls the flag for up to {@code budgetMillis}; returns true as soon as it is set. */

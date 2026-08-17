@@ -24,6 +24,8 @@ import {
   type SessionDocument,
 } from "./embedding-workbench";
 import type { DocumentShapeView } from "./document-shape";
+import { collapseWhitespace, ellipsizeCodePoints } from "./text-utils";
+import { emptyMessage, requiredElement } from "./ui-utils";
 import {
   buildDocumentGraph,
   buildHeatmapRows,
@@ -236,26 +238,10 @@ export class SemanticWorkbench {
   }
 }
 
-function requiredElement<T extends HTMLElement>(id: string): T {
-  const element = document.getElementById(id);
-  if (!element) {
-    throw new Error(`Required element #${id} is missing.`);
-  }
-  return element as T;
-}
-
-function emptyMessage(value: string): HTMLParagraphElement {
-  const paragraph = document.createElement("p");
-  paragraph.className = "empty-message";
-  paragraph.textContent = value;
-  return paragraph;
-}
-
 function documentTitle(text: string): string {
   return textPreview(text, 52) || "Untitled document";
 }
 
 function textPreview(text: string, limit: number): string {
-  const normalized = text.replace(/\s+/gu, " ").trim();
-  return normalized.length > limit ? `${normalized.slice(0, limit - 1)}…` : normalized;
+  return ellipsizeCodePoints(collapseWhitespace(text), limit);
 }

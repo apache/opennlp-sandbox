@@ -17,6 +17,8 @@
  * under the License.
  */
 
+import type { SearchRequest } from "./search-adapter";
+
 export interface AnalyzeRequest {
   document: {
     docId?: string;
@@ -49,6 +51,22 @@ export function getModelBundles(fetcher: Fetcher = fetch): Promise<unknown> {
 
 export function getUiExtensions(fetcher: Fetcher = fetch): Promise<unknown> {
   return requestJson("/api/v1/ui-extensions", undefined, fetcher);
+}
+
+export function getSearchIndexes(fetcher: Fetcher = fetch): Promise<unknown> {
+  return requestJson("/api/v1/search-indexes", undefined, fetcher);
+}
+
+export function searchIndex(request: SearchRequest, fetcher: Fetcher = fetch): Promise<unknown> {
+  return requestJson(
+    "/api/v1/search",
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(request),
+    },
+    fetcher,
+  );
 }
 
 export function analyze(request: AnalyzeRequest, fetcher: Fetcher = fetch): Promise<unknown> {

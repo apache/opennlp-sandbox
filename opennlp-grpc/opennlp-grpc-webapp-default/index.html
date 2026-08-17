@@ -38,6 +38,7 @@
       <nav class="site-nav" aria-label="Workbench navigation">
         <a href="#overview">Overview</a>
         <a href="#playground">Workbench</a>
+        <a href="#server-search">Search</a>
       </nav>
       <div id="service-status" role="status" aria-live="polite" class="service-status is-loading">
         <span class="status-dot" aria-hidden="true"></span>
@@ -148,7 +149,7 @@
                 <h3 id="response-heading">Analysis result</h3>
               </div>
               <div class="response-actions">
-                <button id="add-to-index-button" type="button" class="copy-button" disabled>Add to search</button>
+                <button id="add-to-index-button" type="button" class="copy-button" disabled>Add to session search</button>
                 <button id="copy-button" type="button" class="copy-button" disabled>Copy JSON</button>
               </div>
             </div>
@@ -213,10 +214,114 @@
           </section>
         </div>
 
+        <section id="server-search" class="server-search-lens" aria-labelledby="server-search-heading">
+          <div class="search-lens-heading">
+            <div>
+              <p class="section-kicker">Server-backed semantic search</p>
+              <h3 id="server-search-heading">Explore an immutable index</h3>
+              <p>Search a configured corpus, compare transformed chunks with their authoritative source spans,
+                and inspect the document evidence behind every score.</p>
+            </div>
+            <div id="score-legend" aria-label="Similarity score color scale from minus one to one"
+              class="score-legend">
+              <span>−1</span><i aria-hidden="true"></i><span>0</span><i aria-hidden="true"></i><span>+1</span>
+              <small>less similar&nbsp;&nbsp; cosine score &nbsp;&nbsp;more similar</small>
+            </div>
+          </div>
+
+          <form id="server-search-form" class="server-search-form">
+            <div class="field">
+              <label for="server-search-index">Search index</label>
+              <select id="server-search-index" required disabled>
+                <option value="">Discovering configured indexes</option>
+              </select>
+            </div>
+            <div class="field server-query-field">
+              <label for="server-search-query">Natural-language query</label>
+              <input id="server-search-query" type="search" required disabled
+                placeholder="What should this corpus help you find?" />
+            </div>
+            <div class="field top-k-field">
+              <label for="server-search-top-k">Results</label>
+              <input id="server-search-top-k" type="number" min="1" max="50" value="8" inputmode="numeric" />
+            </div>
+            <button id="server-search-button" type="submit" disabled>Search index <span aria-hidden="true">→</span></button>
+          </form>
+          <p id="server-index-description" class="index-description">Discovering server-configured indexes.</p>
+          <p id="server-search-status" role="status" aria-live="polite" class="form-status">
+            Search becomes available when the server reports an index.
+          </p>
+
+          <div class="server-search-workspace">
+            <section class="server-results-panel" aria-labelledby="server-results-heading">
+              <div class="panel-heading">
+                <div><span>Ranked evidence</span><h4 id="server-results-heading">Search results</h4></div>
+                <small id="server-result-count">0 hits</small>
+              </div>
+              <div id="server-search-results" aria-label="Server search results" class="server-search-results">
+                <p class="empty-message">Run a query to inspect scored source chunks.</p>
+              </div>
+            </section>
+
+            <section id="search-inspector" class="search-inspector" aria-labelledby="search-inspector-heading">
+              <div class="panel-heading">
+                <div><span>Selected evidence</span><h4 id="search-inspector-heading">Result inspector</h4></div>
+                <output id="selected-search-score" class="selected-score">No score</output>
+              </div>
+
+              <dl id="search-analytics" aria-label="Selected document analytics" class="search-analytics">
+                <div><dt>Sentences</dt><dd id="search-sentence-count">0</dd></div>
+                <div><dt>Tokens</dt><dd id="search-token-count">0</dd></div>
+                <div><dt>Entities</dt><dd id="search-entity-count">0</dd></div>
+                <div><dt>Chunks</dt><dd id="search-chunk-count">0</dd></div>
+                <div><dt>Terms</dt><dd id="search-term-count">0</dd></div>
+              </dl>
+
+              <div class="source-evidence">
+                <div class="evidence-heading">
+                  <span>Authoritative source</span>
+                  <small>Selected span is painted with its fixed score color.</small>
+                </div>
+                <div id="search-source-text" class="search-source-text" tabindex="0">
+                  Select a result to view its original document.
+                </div>
+              </div>
+
+              <div class="chunk-comparison" aria-label="Original and emitted chunk comparison">
+                <article>
+                  <span>Original source span</span>
+                  <pre id="search-original-span">No selection</pre>
+                </article>
+                <article>
+                  <span>Emitted chunk</span>
+                  <pre id="search-emitted-chunk">No selection</pre>
+                </article>
+              </div>
+              <p id="chunk-comparison-status" class="comparison-status">No chunk comparison yet.</p>
+
+              <div class="inspector-grid">
+                <div>
+                  <h5>Identity and provenance</h5>
+                  <dl id="search-hit-facts" class="search-hit-facts">
+                    <div><dt>Document</dt><dd>Not selected</dd></div>
+                  </dl>
+                </div>
+                <div>
+                  <h5>Intersecting annotations</h5>
+                  <div id="search-hit-annotations" class="search-hit-annotations" aria-live="polite">
+                    <p class="empty-message">Select a hit to inspect typed layers.</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
         <section class="semantic-lab" aria-labelledby="semantic-heading">
           <div class="semantic-intro">
-            <p class="section-kicker">Session-local vector search</p>
-            <h3 id="semantic-heading">Ask the document collection</h3>
+            <p class="section-kicker">Local demonstration mode</p>
+            <p class="local-mode-badge">Browser memory only</p>
+            <h3 id="semantic-heading">Browser-session vector search</h3>
             <p>
               Add analyzed documents, then rank them with embeddings produced by the selected profile.
               The index stays in this browser tab and is never sent to another service.

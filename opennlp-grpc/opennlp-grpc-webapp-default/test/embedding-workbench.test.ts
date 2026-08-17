@@ -23,6 +23,7 @@ import { readDocumentShape } from "../src/document-shape";
 import {
   cosineSimilarity,
   readEmbeddingVectors,
+  representativeVectors,
   SessionVectorIndex,
 } from "../src/embedding-workbench";
 
@@ -79,6 +80,13 @@ describe("embedding workbench", () => {
     expect(cosineSimilarity([0, 0], [1, 0])).toBeUndefined();
   });
 
+  it("recognizes lowercase ASCII document granularity", () => {
+    const shape = embeddedDocument("A short sentence.", [1, 0], [0.8, 0.2]);
+    shape.layers[0]!.annotations[0]!.source.granularity = "document";
+
+    expect(representativeVectors(shape)).toMatchObject([{ granularity: "document", vector: [1, 0] }]);
+  });
+
   it("ranks session documents with matching model vectors", () => {
     const index = new SessionVectorIndex();
     expect(index.add("doc-a", "Apache text", embeddedDocument("Apache text", [1, 0], [1, 0]))).toBe(true);
@@ -90,6 +98,15 @@ describe("embedding workbench", () => {
     expect(hits.map((hit) => hit.document.id)).toEqual(["doc-a", "doc-b"]);
     expect(hits[0]?.modelId).toBe("tiny-test");
     expect(hits[0]?.score).toBeGreaterThan(hits[1]?.score ?? 1);
+  });
+
+  it("breaks equal-score ties by locale-independent document id order", () => {
+    const index = new SessionVectorIndex();
+    index.add("ä", "Unicode", embeddedDocument("Unicode", [1, 0], [1, 0]));
+    index.add("z", "ASCII", embeddedDocument("ASCII", [1, 0], [1, 0]));
+
+    expect(index.search(embeddedDocument("Query", [1, 0], [1, 0])).map((hit) => hit.document.id))
+      .toEqual(["z", "ä"]);
   });
 
   it("does not index an all-zero embedding", () => {

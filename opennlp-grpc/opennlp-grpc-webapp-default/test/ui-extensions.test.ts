@@ -41,6 +41,27 @@ describe("UI extension catalog", () => {
     })).toEqual(extensions.slice(0, 2));
   });
 
+  it("rejects unsafe or non-normalized extension mount paths", () => {
+    expect(readUiExtensions({
+      extensions: [
+        extensions[0],
+        extensions[1],
+        { id: "protocol-relative", title: "Protocol relative", mountPath: "//evil.example" },
+        { id: "empty-segment", title: "Empty segment", mountPath: "/tools//detail" },
+        { id: "dot-segment", title: "Dot segment", mountPath: "/tools/./detail" },
+        { id: "traversal", title: "Traversal", mountPath: "/tools/../admin" },
+        { id: "backslash", title: "Backslash", mountPath: "/tools\\detail" },
+        { id: "query", title: "Query", mountPath: "/tools?tab=detail" },
+        { id: "fragment", title: "Fragment", mountPath: "/tools#detail" },
+        { id: "encoded", title: "Encoded", mountPath: "/tools%2fdetail" },
+        { id: "whitespace", title: "Whitespace", mountPath: "/tools\u2003detail" },
+        { id: "control", title: "Control", mountPath: "/tools\u0000detail" },
+        { id: "api", title: "API", mountPath: "/api" },
+        { id: "api-case", title: "API case", mountPath: "/ApI/detail" },
+      ],
+    })).toEqual(extensions.slice(0, 2));
+  });
+
   it("selects the most specific matching mount", () => {
     expect(activeUiExtension(extensions, "/search/detail/item")).toBe("detail");
     expect(activeUiExtension(extensions, "/search/results")).toBe("search");
@@ -50,5 +71,7 @@ describe("UI extension catalog", () => {
   it("creates short text icons without assuming provider artwork", () => {
     expect(extensionInitials("Embedding Search")).toBe("ES");
     expect(extensionInitials("Tokenizer")).toBe("TO");
+    expect(extensionInitials("\t😀tools\u00a0search ")).toBe("😀S");
+    expect(extensionInitials("éclair api")).toBe("éA");
   });
 });

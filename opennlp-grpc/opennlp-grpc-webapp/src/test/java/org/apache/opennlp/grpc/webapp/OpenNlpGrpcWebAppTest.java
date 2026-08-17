@@ -24,11 +24,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.InetAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
 
 class OpenNlpGrpcWebAppTest {
+
+  @TempDir
+  Path temporaryDirectory;
 
   @Test
   void exposesSelfContainedCommandHelp() {
@@ -40,6 +46,7 @@ class OpenNlpGrpcWebAppTest {
     assertTrue(output.toString().contains("--grpc-target"));
     assertTrue(output.toString().contains("--max-request-bytes"));
     assertTrue(output.toString().contains("--allow-remote"));
+    assertTrue(output.toString().contains("--bound-port-file"));
   }
 
   @Test
@@ -60,5 +67,16 @@ class OpenNlpGrpcWebAppTest {
         () -> OpenNlpGrpcWebApp.validateBindAddress(wildcard, false));
     OpenNlpGrpcWebApp.validateBindAddress(wildcard, true);
     OpenNlpGrpcWebApp.validateBindAddress(InetAddress.getLoopbackAddress(), false);
+  }
+
+  @Test
+  void writesOneCompleteBoundPortReadinessFile() throws Exception {
+    Path readinessFile = temporaryDirectory.resolve("bound-port");
+
+    OpenNlpGrpcWebApp.writeBoundPortFile(readinessFile, 43210);
+
+    assertEquals("43210\n", Files.readString(readinessFile));
+    assertThrows(IllegalArgumentException.class,
+        () -> OpenNlpGrpcWebApp.writeBoundPortFile(readinessFile, 43211));
   }
 }

@@ -24,6 +24,7 @@ import {
   type EmbeddingVector,
   type VectorQuery,
 } from "./embedding-workbench";
+import { asciiLowerCase, collapseWhitespace, ellipsizeCodePoints } from "./text-utils";
 
 export interface HeatmapRow {
   start: number;
@@ -138,10 +139,9 @@ function hasAnnotationSpan(annotation: AnnotationView): boolean {
 }
 
 function isSentimentLayer(id: string, standardIdentity: string | undefined): boolean {
-  return `${id} ${standardIdentity ?? ""}`.toLowerCase().includes("sentiment");
+  return asciiLowerCase(`${id} ${standardIdentity ?? ""}`).includes("sentiment");
 }
 
 function preview(value: string, limit: number): string {
-  const normalized = value.replace(/\s+/gu, " ").trim();
-  return normalized.length > limit ? `${normalized.slice(0, limit - 1)}…` : normalized;
+  return ellipsizeCodePoints(collapseWhitespace(value), limit);
 }

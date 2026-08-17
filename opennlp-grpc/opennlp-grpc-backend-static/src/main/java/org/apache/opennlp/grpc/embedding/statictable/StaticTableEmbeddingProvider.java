@@ -90,6 +90,7 @@ public final class StaticTableEmbeddingProvider implements EmbeddingProvider {
   private static final String KEY_DEFAULT_ID = "model.embedder.default_id";
 
   private static final String SAFETENSORS_FILE_NAME = "model.safetensors";
+  private static final String QUANTIZED_FILE_NAME = "model.quantized";
 
   private final Map<String, LoadedModel> models;
   private final String defaultModelId;
@@ -111,10 +112,10 @@ public final class StaticTableEmbeddingProvider implements EmbeddingProvider {
   }
 
   /**
-   * A loaded model and the SHA-256 digest of its safetensors artifact.
+   * A loaded model and the SHA-256 digest of its matrix artifact.
    *
    * @param model        The loaded, immutable embedding model.
-   * @param artifactHash The lowercase hex digest of the model's safetensors file.
+   * @param artifactHash The lowercase hex digest of the model's matrix file.
    */
   private record LoadedModel(StaticEmbeddingModel model, String artifactHash) {
   }
@@ -307,7 +308,7 @@ public final class StaticTableEmbeddingProvider implements EmbeddingProvider {
         lowerCase == null || lowerCase, normalize == null || normalize);
   }
 
-  /** Loads a standard model directory and hashes its safetensors artifact. */
+  /** Loads a standard model directory and hashes its selected matrix artifact. */
   private static LoadedModel loadFromDirectory(String modelId, String dir) {
     final Path directory = Path.of(dir);
     if (!Files.isDirectory(directory)) {
@@ -324,7 +325,14 @@ public final class StaticTableEmbeddingProvider implements EmbeddingProvider {
       throw AnalysisException.internal(
           "Failed to read static embedding model for '" + modelId + "'", e);
     }
-    return loaded(modelId, model, directory.resolve(SAFETENSORS_FILE_NAME), dir);
+    return loaded(modelId, model, matrixArtifact(directory), dir);
+  }
+
+  /** Returns the matrix artifact selected by the directory loader. */
+  private static Path matrixArtifact(Path directory) {
+    final Path quantized = directory.resolve(QUANTIZED_FILE_NAME);
+    return Files.isRegularFile(quantized)
+        ? quantized : directory.resolve(SAFETENSORS_FILE_NAME);
   }
 
   /** Loads explicitly named vocabulary and safetensors files with caller-selected transforms. */
@@ -359,10 +367,10 @@ public final class StaticTableEmbeddingProvider implements EmbeddingProvider {
 
   /** Creates a loaded-model descriptor and validates its metadata. */
   private static LoadedModel loaded(String modelId, StaticEmbeddingModel model,
-                                    Path safetensors, String source) {
+                                    Path artifact, String source) {
     final String hash;
     try {
-      hash = ModelArtifactHasher.sha256Hex(safetensors);
+      hash = ModelArtifactHasher.sha256Hex(artifact);
     } catch (IOException e) {
       throw AnalysisException.internal(
           "Failed to hash embedding model artifact for '" + modelId + "'", e);

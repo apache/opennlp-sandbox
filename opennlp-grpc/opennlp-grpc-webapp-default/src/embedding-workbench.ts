@@ -18,6 +18,7 @@
  */
 
 import type { DocumentShapeView } from "./document-shape";
+import { asciiUpperCase, compareCodePoints } from "./text-utils";
 
 export interface EmbeddingVector {
   modelId: string;
@@ -72,7 +73,7 @@ export function representativeVectors(shape: DocumentShapeView): EmbeddingVector
   }
   return [...byModel.entries()].flatMap(([, embeddings]) => {
     const documentVector = embeddings.find((embedding) =>
-      embedding.granularity.toUpperCase().includes("DOCUMENT")
+      asciiUpperCase(embedding.granularity).includes("DOCUMENT")
       || (embedding.start === undefined && embedding.end === undefined));
     if (documentVector) {
       return [documentVector];
@@ -129,7 +130,7 @@ export class SessionVectorIndex {
     const queryVectors = representativeVectors(query);
     return [...this.#documents.values()]
       .flatMap((document) => bestMatch(document, queryVectors))
-      .sort((left, right) => right.score - left.score || left.document.id.localeCompare(right.document.id))
+      .sort((left, right) => right.score - left.score || compareCodePoints(left.document.id, right.document.id))
       .slice(0, Math.max(0, limit));
   }
 }

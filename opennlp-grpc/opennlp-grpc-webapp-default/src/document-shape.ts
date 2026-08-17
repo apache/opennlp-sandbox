@@ -17,6 +17,9 @@
  * under the License.
  */
 
+import { toBrowserOffset } from "./offsets";
+import { asciiLowerCase, asciiUpperCase, splitOnCharacters } from "./text-utils";
+
 export interface DocumentShapeView {
   rawText: string;
   offsetEncoding: string;
@@ -98,7 +101,7 @@ export function summarizeDocumentShape(shape: DocumentShapeView): DocumentShapeS
 }
 
 export function layerAccent(layer: AnnotationLayerView): LayerAccent {
-  const identity = `${layer.id} ${layer.standardIdentity ?? ""}`.toLowerCase();
+  const identity = asciiLowerCase(`${layer.id} ${layer.standardIdentity ?? ""}`);
   if (identity.includes("entit") || identity.includes("geo")) {
     return "violet";
   }
@@ -151,8 +154,8 @@ function readAnnotation(
   const span = record(annotation.span);
   const start = numberValue(span?.start);
   const end = numberValue(span?.end);
-  const convertedStart = start === undefined ? undefined : browserOffset(rawText, start, offsetEncoding);
-  const convertedEnd = end === undefined ? undefined : browserOffset(rawText, end, offsetEncoding);
+  const convertedStart = start === undefined ? undefined : toBrowserOffset(rawText, start, offsetEncoding);
+  const convertedEnd = end === undefined ? undefined : toBrowserOffset(rawText, end, offsetEncoding);
 
   return {
     start: convertedStart,
@@ -179,33 +182,10 @@ function annotationLabel(annotation: Record<string, unknown>, index: number): st
   return `Annotation ${index + 1}`;
 }
 
-function browserOffset(text: string, offset: number, encoding: string): number {
-  const safeOffset = Math.max(0, offset);
-  if (encoding === "OFFSET_ENCODING_UNICODE_CODE_POINT") {
-    return [...text].slice(0, safeOffset).join("").length;
-  }
-  if (encoding === "OFFSET_ENCODING_UTF8_BYTE" || encoding === "OFFSET_ENCODING_UNSPECIFIED" || !encoding) {
-    let byteOffset = 0;
-    let browserIndex = 0;
-    const encoder = new TextEncoder();
-    for (const character of text) {
-      if (byteOffset >= safeOffset) {
-        return browserIndex;
-      }
-      byteOffset += encoder.encode(character).length;
-      browserIndex += character.length;
-    }
-    return text.length;
-  }
-  return Math.min(safeOffset, text.length);
-}
-
 function layerTitle(id: string): string {
   const localName = id.includes(":") ? id.slice(id.lastIndexOf(":") + 1) : id;
-  return localName
-    .split(/[-_]/u)
-    .filter(Boolean)
-    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+  return splitOnCharacters(localName, "-_")
+    .map((part) => `${asciiUpperCase(part.charAt(0))}${part.slice(1)}`)
     .join(" ") || id;
 }
 

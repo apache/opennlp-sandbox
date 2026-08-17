@@ -29,6 +29,7 @@ import {
 import { getInstanceByDom, init, use, type ComposeOption, type ECharts } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 
+import { escapeHtml } from "./text-utils";
 import type { DocumentGraph, DocumentGraphNode, HeatmapRow } from "./visualization-data";
 
 type ChartOption = ComposeOption<
@@ -157,14 +158,4 @@ function disposeExisting(element: HTMLElement): void {
     instance.dispose();
   }
   delete element.dataset.chartActive;
-}
-
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/gu, (character) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    "\"": "&quot;",
-    "'": "&#39;",
-  })[character]!);
 }

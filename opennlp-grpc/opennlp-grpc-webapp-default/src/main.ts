@@ -23,8 +23,10 @@ import {
   analyze,
   getHealth,
   getModelBundles,
+  getSearchIndexes,
   getServiceInfo,
   getUiExtensions,
+  searchIndex,
   type AnalyzeRequest,
 } from "./api";
 import { discoverModelBundles, discoverProfiles, type DiscoveryOption } from "./discovery";
@@ -37,12 +39,16 @@ import {
   type DocumentShapeView,
 } from "./document-shape";
 import { SemanticWorkbench, type ResultViewName } from "./semantic-workbench";
+import { readSearchIndexes, readSearchResponse } from "./search-adapter";
+import { ServerSearchWorkbench } from "./server-search-workbench";
+import { asciiLowerCase, formatInteger } from "./text-utils";
 import {
   activeUiExtension,
   extensionInitials,
   readUiExtensions,
   type UiExtension,
 } from "./ui-extensions";
+import { errorMessage, requiredElement } from "./ui-utils";
 
 const sampleText =
   "Apache OpenNLP helps developers build applications that process natural language. " +
@@ -99,6 +105,18 @@ const semanticWorkbench = new SemanticWorkbench({
   selectAnnotation: selectAnnotationFromGraph,
 });
 
+const serverSearchWorkbench = new ServerSearchWorkbench({
+  listIndexes: async () => readSearchIndexes(await getSearchIndexes()),
+  search: async (request) => readSearchResponse(await searchIndex(request)),
+  analyzeSource: async (hit) => readDocumentShape(await analyze({
+    document: {
+      docId: hit.documentId,
+      rawText: hit.sourceText,
+    },
+    options: { offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT" },
+  })),
+});
+
 textArea.addEventListener("input", updateFormState);
 sampleButton.addEventListener("click", () => {
   textArea.value = sampleText;
@@ -134,6 +152,7 @@ async function initialize(): Promise<void> {
 
   serviceAvailable = true;
   setServiceState("ready", "Connected");
+  void serverSearchWorkbench.initialize();
   const [infoResult, bundlesResult] = await Promise.allSettled([getServiceInfo(), getModelBundles()]);
   const serviceInfo = infoResult.status === "fulfilled" ? infoResult.value : undefined;
   const bundlesInfo = bundlesResult.status === "fulfilled" ? bundlesResult.value : undefined;
@@ -165,7 +184,8 @@ async function initializeToolNavigation(): Promise<void> {
       return;
     }
     renderToolNavigation(extensions);
-    toolNavigationStatus.textContent = `${extensions.length} UI ${extensions.length === 1 ? "extension" : "extensions"} available.`;
+    toolNavigationStatus.textContent = `${extensions.length} UI `
+      + `${extensions.length === 1 ? "extension" : "extensions"} available.`;
   } catch {
     toolNavigationStatus.textContent = "UI extension discovery is unavailable. Showing the default tool.";
   }
@@ -261,7 +281,7 @@ function renderDocumentShape(shape: DocumentShapeView): void {
     button.type = "button";
     button.className = "layer-button";
     button.dataset.layerId = layer.id;
-    button.dataset.searchText = `${layer.id} ${layer.title} ${layer.valueType}`.toLowerCase();
+    button.dataset.searchText = asciiLowerCase(`${layer.id} ${layer.title} ${layer.valueType}`);
     button.dataset.accent = layerAccent(layer);
     button.setAttribute("aria-pressed", String(layer === initialLayer));
     const name = document.createElement("span");
@@ -354,7 +374,7 @@ function filterLayerButtons(): void {
   if (!currentShape) {
     return;
   }
-  const query = layerFilter.value.trim().toLowerCase();
+  const query = asciiLowerCase(layerFilter.value.trim());
   const buttons = Array.from(layerList.querySelectorAll<HTMLButtonElement>(".layer-button"));
   let visibleCount = 0;
   for (const button of buttons) {
@@ -384,7 +404,7 @@ function layerOverview(layer: AnnotationLayerView): HTMLElement {
   title.textContent = layer.title;
   const description = document.createElement("p");
   const identity = layer.standardIdentity ?? layer.id;
-  description.textContent = `${identity} contains ${layer.annotations.length} ${layer.valueType.toLowerCase()} `
+  description.textContent = `${identity} contains ${layer.annotations.length} ${asciiLowerCase(layer.valueType)} `
     + `${layer.annotations.length === 1 ? "annotation" : "annotations"}.`;
   container.append(title, description);
   return container;
@@ -511,7 +531,7 @@ function setBusy(value: boolean): void {
 
 function updateFormState(): void {
   const count = textArea.value.length;
-  characterCount.textContent = `${count.toLocaleString()} ${count === 1 ? "character" : "characters"}`;
+  characterCount.textContent = `${formatInteger(count)} ${count === 1 ? "character" : "characters"}`;
   analyzeButton.disabled = busy || !serviceAvailable || textArea.value.trim().length === 0;
 }
 
@@ -540,16 +560,4 @@ function discoverServiceName(value: unknown): string {
     }
   }
   return "OpenNLP gRPC";
-}
-
-function errorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error && error.message ? error.message : fallback;
-}
-
-function requiredElement<T extends HTMLElement>(id: string): T {
-  const element = document.getElementById(id);
-  if (!element) {
-    throw new Error(`Required element #${id} is missing.`);
-  }
-  return element as T;
 }

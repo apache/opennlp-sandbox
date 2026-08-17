@@ -51,4 +51,17 @@ describe("analysis playground markup", () => {
     expect(html).toContain('id="search-results"');
     expect(html).toContain('Apache OpenNLP');
   });
+
+  it("provides an accessible server search lens and clearly labels browser-local search", () => {
+    expect(html).toContain('<label for="server-search-index">');
+    expect(html).toContain('<label for="server-search-query">');
+    expect(html).toContain('id="server-search-status" role="status" aria-live="polite"');
+    expect(html).toContain('id="server-search-results" aria-label="Server search results"');
+    expect(html).toContain('id="score-legend" aria-label="Similarity score color scale from minus one to one"');
+    expect(html).toContain('id="search-source-text"');
+    expect(html).toContain('id="search-inspector"');
+    expect(html).toContain('id="search-analytics" aria-label="Selected document analytics"');
+    expect(html).toContain('Browser-session vector search');
+    expect(html).toContain('The index stays in this browser tab');
+  });
 });

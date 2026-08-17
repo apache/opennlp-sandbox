@@ -28,28 +28,38 @@ import com.google.protobuf.util.JsonFormat;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
+import org.apache.opennlp.grpc.v1.SearchIndexRequest;
 
 final class GrpcJsonApi {
 
   static final String JSON_CONTENT_TYPE = "application/json; charset=utf-8";
 
   private static final char[] HEX_DIGITS = "0123456789abcdef".toCharArray();
+  private static final String INVALID_UTF8_MESSAGE = "Request body must contain valid UTF-8";
+  private static final String MALFORMED_PROTOBUF_JSON_PREFIX =
+      "Malformed protobuf JSON request: ";
 
-  private final AnalysisRpc rpc;
+  private final AnalysisRpc analysisRpc;
+  private final SearchRpc searchRpc;
   private final JsonFormat.Parser parser;
   private final JsonFormat.Printer printer;
 
   /**
    * Creates the JSON facade.
    *
-   * @param rpc The analysis service adapter.
-   * @throws IllegalArgumentException If {@code rpc} is {@code null}.
+   * @param analysisRpc The analysis service adapter.
+   * @param searchRpc The search service adapter.
+   * @throws IllegalArgumentException If an argument is {@code null}.
    */
-  GrpcJsonApi(AnalysisRpc rpc) {
-    if (rpc == null) {
-      throw new IllegalArgumentException("rpc must not be null");
+  GrpcJsonApi(AnalysisRpc analysisRpc, SearchRpc searchRpc) {
+    if (analysisRpc == null) {
+      throw new IllegalArgumentException("analysisRpc must not be null");
     }
-    this.rpc = rpc;
+    if (searchRpc == null) {
+      throw new IllegalArgumentException("searchRpc must not be null");
+    }
+    this.analysisRpc = analysisRpc;
+    this.searchRpc = searchRpc;
     this.parser = JsonFormat.parser();
     this.printer = JsonFormat.printer();
   }
@@ -76,11 +86,15 @@ final class GrpcJsonApi {
     try {
       return switch (path) {
         case "/api/v1/service-info" -> method.equals("GET")
-            ? protobufJson(rpc.getServiceInfo()) : methodNotAllowed();
+            ? protobufJson(analysisRpc.getServiceInfo()) : methodNotAllowed();
         case "/api/v1/model-bundles" -> method.equals("GET")
-            ? protobufJson(rpc.listModelBundles()) : methodNotAllowed();
+            ? protobufJson(analysisRpc.listModelBundles()) : methodNotAllowed();
         case "/api/v1/analyze" -> method.equals("POST")
             ? analyze(body) : methodNotAllowed();
+        case "/api/v1/search-indexes" -> method.equals("GET")
+            ? protobufJson(searchRpc.listSearchIndexes()) : methodNotAllowed();
+        case "/api/v1/search" -> method.equals("POST")
+            ? search(body) : methodNotAllowed();
         default -> error(404, Status.Code.NOT_FOUND, "Unknown API endpoint");
       };
     } catch (StatusRuntimeException exception) {
@@ -104,22 +118,55 @@ final class GrpcJsonApi {
     AnalyzeDocumentRequest.Builder request = AnalyzeDocumentRequest.newBuilder();
     final String json;
     try {
-      json = StandardCharsets.UTF_8.newDecoder()
-          .onMalformedInput(CodingErrorAction.REPORT)
-          .onUnmappableCharacter(CodingErrorAction.REPORT)
-          .decode(ByteBuffer.wrap(body))
-          .toString();
+      json = decodeUtf8(body);
     } catch (CharacterCodingException exception) {
-      return error(400, Status.Code.INVALID_ARGUMENT,
-          "Request body must contain valid UTF-8");
+      return error(400, Status.Code.INVALID_ARGUMENT, INVALID_UTF8_MESSAGE);
     }
     try {
       parser.merge(json, request);
     } catch (InvalidProtocolBufferException exception) {
       return error(400, Status.Code.INVALID_ARGUMENT,
-          "Malformed protobuf JSON request: " + exception.getMessage());
+          MALFORMED_PROTOBUF_JSON_PREFIX + exception.getMessage());
     }
-    return protobufJson(rpc.analyze(request.build()));
+    return protobufJson(analysisRpc.analyze(request.build()));
+  }
+
+  /**
+   * Parses and forwards a bounded search request.
+   *
+   * @param body The protobuf JSON request body.
+   * @return The encoded search response.
+   */
+  private WebHttpResponse search(byte[] body) {
+    SearchIndexRequest.Builder request = SearchIndexRequest.newBuilder();
+    final String json;
+    try {
+      json = decodeUtf8(body);
+    } catch (CharacterCodingException exception) {
+      return error(400, Status.Code.INVALID_ARGUMENT, INVALID_UTF8_MESSAGE);
+    }
+    try {
+      parser.merge(json, request);
+    } catch (InvalidProtocolBufferException exception) {
+      return error(400, Status.Code.INVALID_ARGUMENT,
+          MALFORMED_PROTOBUF_JSON_PREFIX + exception.getMessage());
+    }
+    return protobufJson(searchRpc.search(request.build()));
+  }
+
+  /**
+   * Decodes a request body without replacing malformed input.
+   *
+   * @param body The encoded request body.
+   * @return The decoded request body.
+   * @throws CharacterCodingException If the body is not valid UTF-8.
+   */
+  private String decodeUtf8(byte[] body) throws CharacterCodingException {
+    return StandardCharsets.UTF_8.newDecoder()
+        .onMalformedInput(CodingErrorAction.REPORT)
+        .onUnmappableCharacter(CodingErrorAction.REPORT)
+        .decode(ByteBuffer.wrap(body))
+        .toString();
   }
 
   /**

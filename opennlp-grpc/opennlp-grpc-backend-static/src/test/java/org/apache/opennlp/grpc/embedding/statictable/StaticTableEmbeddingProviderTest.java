@@ -29,8 +29,10 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 
+import opennlp.embeddings.ModelQuantizer;
 import org.apache.opennlp.grpc.embedding.EmbeddingBackendFactory;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.model.ModelArtifactHasher;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -97,6 +99,21 @@ class StaticTableEmbeddingProviderTest {
         provider.embed("potion", "HELLO WORLD"), 1e-5f);
     assertEquals(64, provider.modelArtifactHash("potion").length());
     assertEquals("static", provider.backendId());
+  }
+
+  @Test
+  void testLoadsAndHashesAQuantizedOnlyModelDirectory(@TempDir Path dir) throws IOException {
+    writeModelDirectory(dir);
+    ModelQuantizer.quantize(dir, 4, 1234L);
+    final Path quantizedArtifact = dir.resolve("model.quantized");
+    Files.delete(dir.resolve("model.safetensors"));
+
+    final StaticTableEmbeddingProvider provider = new StaticTableEmbeddingProvider(
+        Map.of("model.embedder.potion.static.dir", dir.toString()));
+
+    assertEquals(DIMENSION, provider.embeddingDimension("potion"));
+    assertEquals(ModelArtifactHasher.sha256Hex(quantizedArtifact),
+        provider.modelArtifactHash("potion"));
   }
 
   @Test

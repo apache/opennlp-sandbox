@@ -49,11 +49,24 @@ shown as heatmaps. The graph view links the document to its layers and annotatio
 nodes open the same details used by the Document view. Visualization code is loaded only when a
 graph or heatmap is opened.
 
+The server-backed search lens is separate from that browser-session demonstration. It discovers
+immutable indexes from `GET /api/v1/search-indexes` and sends document-shaped queries to
+`POST /api/v1/search`. Search response parsing is isolated in `search-adapter.ts`. Each result
+keeps its numeric cosine score, authoritative source span, emitted chunk text, configured and
+actual query embedding routes, and corpus provenance. Discovered query and response byte caps are
+shown with the selected index, and server response truncation is reported as a bounded successful
+result. The inspector uses a fixed red-neutral-green scale over `[-1, 1]`, compares the original
+and emitted text, and lazily analyzes the selected source document when typed layers are not
+already present. Shared offset utilities reject invalid UTF-8 and UTF-16 boundaries and
+out-of-range code-point offsets.
+
 Frontend responsibilities are kept separate: `api.ts` owns HTTP, `document-shape.ts` owns wire
 normalization, `embedding-workbench.ts` owns vector math and the session index,
 `visualization-data.ts` creates renderer-neutral data, `charts.ts` is the Apache ECharts adapter,
-and `semantic-workbench.ts` coordinates the semantic controls. `main.ts` remains the page entry
-point and document inspector.
+`semantic-workbench.ts` coordinates the local semantic controls, and `server-search-workbench.ts`
+coordinates server search. Locale-independent cursor helpers in `text-utils.ts` own casing,
+whitespace, identifier splitting, and tooltip escaping. `main.ts` remains the page entry point and
+document inspector.
 
 Model bundles are displayed as service capability information. A named analysis profile remains
 the only user-selectable analysis option sent by the playground.

@@ -60,6 +60,12 @@
             <groupId>org.apache.opennlp</groupId>
             <artifactId>opennlp-model-resolver</artifactId>
         </dependency>
+        <!-- Immutable vector indexes and the normalized legal-passage interchange contract. -->
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-embeddings</artifactId>
+            <version>${opennlp.version}</version>
+        </dependency>
         <!-- SentencePiece subword tokenization for PIPELINE_STEP_SUBWORD_TOKENIZE. -->
         <dependency>
             <groupId>org.apache.opennlp</groupId>

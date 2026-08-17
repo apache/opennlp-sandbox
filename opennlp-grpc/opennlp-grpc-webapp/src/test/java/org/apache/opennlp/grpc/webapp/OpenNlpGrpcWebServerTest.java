@@ -32,6 +32,12 @@ import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.GetServiceInfoResponse;
 import org.apache.opennlp.grpc.v1.ListModelBundlesResponse;
+import org.apache.opennlp.grpc.v1.ListSearchIndexesResponse;
+import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.SearchHit;
+import org.apache.opennlp.grpc.v1.SearchIndexDescriptor;
+import org.apache.opennlp.grpc.v1.SearchIndexRequest;
+import org.apache.opennlp.grpc.v1.SearchIndexResponse;
 import org.apache.opennlp.grpc.webapp.spi.WebUiClasspathResource;
 import org.apache.opennlp.grpc.webapp.spi.WebUiExtension;
 import org.apache.opennlp.grpc.webapp.spi.WebUiExtensionDescriptor;
@@ -41,12 +47,15 @@ import org.junit.jupiter.api.Test;
 
 class OpenNlpGrpcWebServerTest {
 
+  private static final String SEARCH_INDEX_ID = "legal-demo";
+  private static final String SEARCH_DOCUMENT_ID = "passage-1";
+
   @Test
   void servesHealthApiAndSpiAssetsOverHttp() throws Exception {
     WebUiExtensionRegistry registry = new WebUiExtensionRegistry(List.of(testExtension()));
     try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
         new InetSocketAddress(InetAddress.getLoopbackAddress(), 0),
-        new TestAnalysisRpc(), registry, 128)) {
+        new TestAnalysisRpc(), new EmptySearchRpc(), registry, 128)) {
       server.start();
       HttpClient client = HttpClient.newHttpClient();
 
@@ -77,10 +86,38 @@ class OpenNlpGrpcWebServerTest {
   }
 
   @Test
+  void servesSearchCatalogAndDocumentShapedHitsOverHttp() throws Exception {
+    try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
+        new InetSocketAddress(InetAddress.getLoopbackAddress(), 0),
+        new TestAnalysisRpc(), new TestSearchRpc(),
+        new WebUiExtensionRegistry(List.of(testExtension())), 512)) {
+      server.start();
+      HttpClient client = HttpClient.newHttpClient();
+
+      HttpResponse<String> indexes = get(client, server, "/api/v1/search-indexes");
+      assertEquals(200, indexes.statusCode());
+      assertTrue(indexes.body().contains("\"indexId\": \"" + SEARCH_INDEX_ID + "\""));
+
+      HttpRequest search = request(server, "/api/v1/search")
+          .header("Content-Type", "application/json")
+          .POST(HttpRequest.BodyPublishers.ofString("""
+              {"indexId":"%s","query":{"docId":"query","rawText":"habeas"},"topK":3}
+              """.formatted(SEARCH_INDEX_ID)))
+          .build();
+      HttpResponse<String> response = client.send(search, HttpResponse.BodyHandlers.ofString());
+
+      assertEquals(200, response.statusCode());
+      assertTrue(response.body().contains("\"documentId\": \"" + SEARCH_DOCUMENT_ID + "\""));
+      assertTrue(response.body().contains("\"rawText\": \"The writ must issue.\""));
+    }
+  }
+
+  @Test
   void rejectsOversizedBodiesAndUnsupportedMethods() throws Exception {
     try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
         new InetSocketAddress(InetAddress.getLoopbackAddress(), 0),
-        new TestAnalysisRpc(), new WebUiExtensionRegistry(List.of(testExtension())), 16)) {
+        new TestAnalysisRpc(), new EmptySearchRpc(),
+        new WebUiExtensionRegistry(List.of(testExtension())), 16)) {
       server.start();
       HttpClient client = HttpClient.newHttpClient();
 
@@ -120,7 +157,8 @@ class OpenNlpGrpcWebServerTest {
     // parameters and surrounding whitespace are stripped.
     try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
         new InetSocketAddress(InetAddress.getLoopbackAddress(), 0),
-        new TestAnalysisRpc(), new WebUiExtensionRegistry(List.of(testExtension())), 128)) {
+        new TestAnalysisRpc(), new EmptySearchRpc(),
+        new WebUiExtensionRegistry(List.of(testExtension())), 128)) {
       server.start();
       HttpClient client = HttpClient.newHttpClient();
 
@@ -140,7 +178,8 @@ class OpenNlpGrpcWebServerTest {
     };
     try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
         new InetSocketAddress(InetAddress.getLoopbackAddress(), 0),
-        failing, new WebUiExtensionRegistry(List.of(testExtension())), 128)) {
+        failing, new EmptySearchRpc(),
+        new WebUiExtensionRegistry(List.of(testExtension())), 128)) {
       server.start();
 
       HttpResponse<String> response = get(HttpClient.newHttpClient(), server,
@@ -206,6 +245,37 @@ class OpenNlpGrpcWebServerTest {
     @Override
     public AnalyzeDocumentResponse analyze(AnalyzeDocumentRequest request) {
       return AnalyzeDocumentResponse.newBuilder().setDocument(request.getDocument()).build();
+    }
+  }
+
+  private static final class TestSearchRpc implements SearchRpc {
+
+    @Override
+    public ListSearchIndexesResponse listSearchIndexes() {
+      return ListSearchIndexesResponse.newBuilder()
+          .addIndexes(SearchIndexDescriptor.newBuilder()
+              .setIndexId(SEARCH_INDEX_ID)
+              .setDisplayName("Legal demo")
+              .setMaxTopK(25))
+          .build();
+    }
+
+    @Override
+    public SearchIndexResponse search(SearchIndexRequest request) {
+      assertEquals(SEARCH_INDEX_ID, request.getIndexId());
+      assertEquals("query", request.getQuery().getDocId());
+      assertEquals("habeas", request.getQuery().getRawText());
+      assertEquals(3, request.getTopK());
+      return SearchIndexResponse.newBuilder()
+          .setIndex(SearchIndexDescriptor.newBuilder().setIndexId(request.getIndexId()))
+          .addHits(SearchHit.newBuilder()
+              .setDocumentId(SEARCH_DOCUMENT_ID)
+              .setChunkId(SEARCH_DOCUMENT_ID)
+              .setScore(0.75)
+              .setSourceDocument(OpenNlpDocument.newBuilder()
+                  .setDocId(SEARCH_DOCUMENT_ID)
+                  .setRawText("The writ must issue.")))
+          .build();
     }
   }
 }

@@ -36,17 +36,24 @@ The host exposes:
 - `GET /api/v1/service-info`
 - `GET /api/v1/model-bundles`
 - `GET /api/v1/ui-extensions`
+- `GET /api/v1/search-indexes`
 - `POST /api/v1/analyze`
+- `POST /api/v1/search`
 
-The service-info, model-bundle, and analysis endpoints use protobuf JSON for the existing gRPC
+The service-info, model-bundle, analysis, and search endpoints use protobuf JSON for the gRPC
 message types. Analysis therefore retains the full `OpenNlpDocument` shape and typed annotation
-layers. The host-specific UI extension endpoint returns the validated provider ID, title, and
-mount path for navigation. HTTP error bodies contain a stable gRPC status code and a message.
+layers. Search requests use a document-shaped query, and hits retain their source document,
+authoritative span, emitted text, score, and index provenance. The host-specific UI extension
+endpoint returns the validated provider ID, title, and mount path for navigation. HTTP error
+bodies contain a stable gRPC status code and a message.
 
 Use `--help` for all options. The HTTP listener accepts loopback addresses by default. A
 non-loopback bind also requires `--allow-remote`, so deployment behind an authenticated TLS
 reverse proxy is an explicit operator choice. Use `--no-grpc-plaintext` when the gRPC target uses
-TLS.
+TLS. Process managers and tests can combine `--http-port 0` with `--bound-port-file PATH`. The
+webapp binds and retains the operating-system-assigned socket before it creates `PATH` with the
+decimal port and a trailing newline. The path must not already exist. This avoids the
+reserve-close-rebind race that occurs when a parent process probes for a free port.
 
 Additional extension JARs can be placed on the application classpath. Each provider is discovered
 with Java ServiceLoader and mounted at its typed `WebUiMountPath`. Extensions contribute static

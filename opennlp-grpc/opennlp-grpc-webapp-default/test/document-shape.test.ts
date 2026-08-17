@@ -142,4 +142,20 @@ describe("document shape reader", () => {
     expect(layerAccent(shape.layers[0]!)).toBe("cyan");
     expect(layerAccent(shape.layers[1]!)).toBe("violet");
   });
+
+  it("formats delimiter-separated layer names and matches ASCII identities without locale casing", () => {
+    const shape = readDocumentShape({
+      document: {
+        rawText: "Text",
+        layers: { layers: [{
+          id: "opennlp:CHUNK_group-values",
+          identity: { standard: "STANDARD_LAYER_ENTITIES" },
+          stringValues: { annotations: [] },
+        }] },
+      },
+    });
+
+    expect(shape.layers[0]?.title).toBe("CHUNK Group Values");
+    expect(layerAccent(shape.layers[0]!)).toBe("violet");
+  });
 });

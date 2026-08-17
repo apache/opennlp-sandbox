@@ -17,6 +17,14 @@
  * under the License.
  */
 
+import {
+  asciiLowerCase,
+  asciiUpperCase,
+  firstCodePoints,
+  isWhitespaceCodePoint,
+  splitWords,
+} from "./text-utils";
+
 export interface UiExtension {
   id: string;
   title: string;
@@ -54,11 +62,11 @@ export function activeUiExtension(extensions: UiExtension[], pathname: string): 
 }
 
 export function extensionInitials(title: string): string {
-  const words = title.trim().split(/\s+/u).filter(Boolean);
+  const words = splitWords(title);
   if (words.length > 1) {
-    return `${firstCharacter(words[0])}${firstCharacter(words[1])}`.toLocaleUpperCase();
+    return asciiUpperCase(`${firstCodePoints(words[0] ?? "", 1)}${firstCodePoints(words[1] ?? "", 1)}`);
   }
-  return Array.from(words[0] ?? "UI").slice(0, 2).join("").toLocaleUpperCase();
+  return asciiUpperCase(firstCodePoints(words[0] ?? "UI", 2));
 }
 
 function matchesMount(pathname: string, mountPath: string): boolean {
@@ -77,11 +85,44 @@ function readMountPath(value: unknown): string | undefined {
   if (!path || !path.startsWith("/") || (path.length > 1 && path.endsWith("/"))) {
     return undefined;
   }
+  if (path.length === 1) {
+    return path;
+  }
+  if (isApiNamespace(path)) {
+    return undefined;
+  }
+  for (const character of path) {
+    const codePoint = character.codePointAt(0)!;
+    if (character === "\\" || character === "?" || character === "#" || character === "%"
+        || isControlCodePoint(codePoint) || isWhitespaceCodePoint(codePoint)) {
+      return undefined;
+    }
+  }
+  let segmentStart = 1;
+  for (let index = 1; index <= path.length; index++) {
+    if (index !== path.length && path.charAt(index) !== "/") {
+      continue;
+    }
+    const segmentLength = index - segmentStart;
+    if (segmentLength === 0
+        || (segmentLength === 1 && path.charAt(segmentStart) === ".")
+        || (segmentLength === 2 && path.charAt(segmentStart) === "."
+          && path.charAt(segmentStart + 1) === ".")) {
+      return undefined;
+    }
+    segmentStart = index + 1;
+  }
   return path;
 }
 
-function firstCharacter(value: string | undefined): string {
-  return Array.from(value ?? "")[0] ?? "";
+function isApiNamespace(path: string): boolean {
+  return path.length >= 4
+    && asciiLowerCase(path.slice(0, 4)) === "/api"
+    && (path.length === 4 || path.charAt(4) === "/");
+}
+
+function isControlCodePoint(codePoint: number): boolean {
+  return codePoint <= 0x001f || (codePoint >= 0x007f && codePoint <= 0x009f);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

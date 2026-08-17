@@ -30,10 +30,10 @@
     <artifactId>opennlp-grpc-integration-tests</artifactId>
     <name>Apache OpenNLP gRPC Integration Tests</name>
     <description>
-        Black-box integration tests that launch the opennlp-grpc-server SNAPSHOT shaded
-        jar as a separate process and exercise it over the network, including remote
-        embedding backends. This module produces no artifact of value; it only verifies
-        the deployable server.
+        Black-box integration tests that launch the opennlp-grpc-server and webapp
+        SNAPSHOT shaded jars as separate processes and exercise them over the network,
+        including remote embedding backends and the browser search gateway. This module
+        produces no artifact of value; it only verifies the deployable applications.
     </description>
 
     <dependencies>
@@ -49,6 +49,14 @@
         <dependency>
             <groupId>org.apache.opennlp</groupId>
             <artifactId>opennlp-grpc-api</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- Build-order dependency: the shaded browser application is launched by the
+             end-to-end search workbench test. -->
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-grpc-webapp</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
@@ -112,6 +120,7 @@
                 <configuration>
                     <systemPropertyVariables>
                         <opennlp.grpc.server.jar>${project.basedir}/../opennlp-grpc-service/target/opennlp-grpc-server-${project.version}.jar</opennlp.grpc.server.jar>
+                        <opennlp.grpc.webapp.jar>${project.basedir}/../opennlp-grpc-webapp/target/opennlp-grpc-webapp-${project.version}.jar</opennlp.grpc.webapp.jar>
                         <opennlp.grpc.tei.backend.jar>${project.basedir}/../opennlp-grpc-backend-tei/target/opennlp-grpc-backend-tei-${project.version}.jar</opennlp.grpc.tei.backend.jar>
                         <opennlp.grpc.openvino.backend.jar>${project.basedir}/../opennlp-grpc-backend-openvino/target/opennlp-grpc-backend-openvino-${project.version}.jar</opennlp.grpc.openvino.backend.jar>
                     </systemPropertyVariables>

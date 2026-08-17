@@ -85,8 +85,10 @@ Natural Earth gazetteer (`PIPELINE_STEP_GEOCODE`, no configuration required, fil
 
 ## Modules
 
-- **opennlp-grpc-api** - v1 protos (`org.apache.opennlp.grpc.v1`) and generated stubs
-- **opennlp-grpc-service** - `OpenNlpGrpcServer` and `OpenNlpAnalysisService` implementation
+- **opennlp-grpc-api** - v1 analysis, document-shape, and immutable-search protos
+  (`org.apache.opennlp.grpc.v1`) plus generated stubs
+- **opennlp-grpc-service** - `OpenNlpGrpcServer`, analysis and search services, the search-provider
+  SPI, and the bounded TurboQuant bundle builder
 - **opennlp-grpc-backend-tei** - optional remote embedding backend for HuggingFace Text
   Embeddings Inference (TEI) gRPC endpoints
 - **opennlp-grpc-backend-openvino** - optional remote embedding backend for OpenVINO
@@ -94,11 +96,11 @@ Natural Earth gazetteer (`PIPELINE_STEP_GEOCODE`, no configuration required, fil
 - **opennlp-grpc-backend-static** - optional in-process embedding backend serving static
   (non-contextual) embedding tables through the `opennlp-embeddings` extension module
 - **opennlp-grpc-webapp-api** - typed ServiceLoader API for static browser interface extensions
-- **opennlp-grpc-webapp-default** - default TypeScript homepage and analysis playground
+- **opennlp-grpc-webapp-default** - default TypeScript analysis and semantic-search workbench
 - **opennlp-grpc-webapp** - optional standalone HTTP host and protobuf JSON gateway
 - **opennlp-grpc-integration-tests** - black-box integration tests that launch the
-  shaded server jar as a separate process and exercise it over the network, including
-  a remote TEI embedding backend
+  shaded server and web application as separate processes and exercise analysis, search,
+  and a remote TEI embedding backend over real network listeners
 - **examples** - v1 client stub-generation scaffolding (Python sample TBD)
 
 ## Build
@@ -186,6 +188,111 @@ typed annotation details and a separate raw protobuf JSON view.
 The web host loads additional static interfaces through the `WebUiExtension` ServiceLoader API.
 See [opennlp-grpc-webapp/README.md](opennlp-grpc-webapp/README.md) for endpoints, security defaults,
 and command-line options.
+
+## Build and explore a bounded legal-passage index
+
+The first search provider loads one immutable TurboQuant index fully into memory. It is intended
+for a bounded collection of passages, such as one opinion, one matter, or a curated local corpus.
+It is not a distributed search engine and does not expose remote index mutation. A later provider
+can implement the same ServiceLoader contract for another index implementation without changing
+the gRPC or browser contracts.
+
+Start with normalized UTF-8 JSON Lines in the `CasePassage` interchange shape. Each physical
+record has six string fields:
+
+```json
+{"id":"case-001-0-0001","case":"Example v. State","cite":"1 Example 1","date":"2026-01-01","vol":"1","text":"A court may order an appropriate remedy."}
+{"id":"case-002-0-0001","case":"Sample v. City","cite":"2 Example 10","date":"2026-02-01","vol":"2","text":"The claimant must establish standing."}
+```
+
+Use stable, unique IDs with no line breaks. `text` is both the retained source document and the
+text embedded by this first builder. Keep an exact preparation record beside the corpus. The
+builder hashes this file into the bundle provenance but does not apply its contents:
+
+```ini
+recipe.id=legal-passages-v1
+source.artifact.sha256=<sha-256-of-the-source-export>
+normalization=unicode-nfc-and-whitespace-v1
+chunking=opinion-paragraph-runs-v1
+```
+
+Configure any embedding backend already supported by the server. For example, an ONNX route can
+be used both while building and while serving queries:
+
+```ini
+model.embedder.default_id=legal-encoder
+model.embedder.legal-encoder.onnx.path=/srv/opennlp/models/legal-encoder.onnx
+model.embedder.legal-encoder.vocab.path=/srv/opennlp/models/vocab.txt
+model.embedder.legal-encoder.onnx.vector_space_id=legal-encoder-v1
+```
+
+Build a new bundle. The command refuses to replace an existing output path, snapshots both input
+files before embedding, and enforces record, input, query, batch, and output limits:
+
+```bash
+java -cp opennlp-grpc-service/target/opennlp-grpc-server-3.0.0-SNAPSHOT.jar \
+  org.apache.opennlp.grpc.search.bundle.TurboQuantSearchBundleCommand \
+  --server-config /srv/opennlp/legal/server.properties \
+  --passages /srv/opennlp/legal/passages.jsonl \
+  --preparation-config /srv/opennlp/legal/preparation.properties \
+  --output-dir /srv/opennlp/legal/legal-index-v1 \
+  --index-id legal-opinions \
+  --display-name "Legal opinions" \
+  --model-id legal-encoder \
+  --bits 4 \
+  --seed 42 \
+  --corpus-title "Curated legal opinions" \
+  --corpus-provenance "Normalized from the verified source export dated 2026-08-16" \
+  --corpus-source-uri https://example.org/legal-corpus \
+  --license-name CC0-1.0 \
+  --license-uri https://creativecommons.org/publicdomain/zero/1.0/
+```
+
+The selected model must resolve to one stable nonblank vector-space ID for every build batch.
+The built bundle records its corpus digest, bundle digest, builder identity, preparation digest,
+embedding route, dimension, metric, bit width, and seed. Verify the corpus source and license for
+the material you actually index; the example metadata above is illustrative.
+
+Add the immutable bundle to the same server configuration. `passages.jsonl` is copied into the
+bundle, so the serving configuration can remain self-contained:
+
+```ini
+search.indexes=legal-opinions
+search.max_indexes=32
+search.index.legal-opinions.provider=turbo_quant
+search.index.legal-opinions.directory=/srv/opennlp/legal/legal-index-v1
+search.index.legal-opinions.passages=/srv/opennlp/legal/legal-index-v1/passages.jsonl
+search.index.legal-opinions.max_top_k=50
+search.index.legal-opinions.max_query_bytes=16384
+search.index.legal-opinions.max_response_bytes=8388608
+search.index.legal-opinions.max_records=100000
+search.index.legal-opinions.max_source_document_bytes=10485760
+search.index.legal-opinions.max_emitted_text_bytes=1048576
+search.index.legal-opinions.max_bundle_bytes=536870912
+```
+
+Start the gRPC server with that file, then start the web application on its separate loopback
+port:
+
+```bash
+java -jar opennlp-grpc-service/target/opennlp-grpc-server-3.0.0-SNAPSHOT.jar \
+  --config /srv/opennlp/legal/server.properties
+
+java -jar opennlp-grpc-webapp/target/opennlp-grpc-webapp-3.0.0-SNAPSHOT.jar \
+  --grpc-target 127.0.0.1:7071
+```
+
+Open `http://127.0.0.1:7072/` and select **Search**. The browser discovers index limits and
+provenance, sends a document-shaped query, maps cosine scores across a fixed red-neutral-green
+scale, highlights the authoritative span in the original source text, compares it with emitted
+chunk text, and opens typed OpenNLP annotations for a selected source document. All remote query
+and response sizes remain bounded by the descriptor advertised to the browser.
+
+The search API is also available directly as
+`org.apache.opennlp.grpc.v1.OpenNlpSearchService`. `ListSearchIndexes` returns stable descriptors;
+`SearchIndex` accepts `index_id`, a complete `OpenNlpDocument` query, and `top_k`. Query routing
+may fall back to another embedding backend only when model ID, vector-space ID, and dimension
+remain compatible with the route that built the index.
 
 > v1 note: this slice implements language detection (`PIPELINE_STEP_LANGUAGE_DETECT`,
 > filling `detected_language` with an ISO 639-3 code plus `language_confidence`),

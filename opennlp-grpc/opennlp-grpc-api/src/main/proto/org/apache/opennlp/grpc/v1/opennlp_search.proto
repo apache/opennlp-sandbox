@@ -1,0 +1,196 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+syntax = "proto3";
+
+package org.apache.opennlp.grpc.v1;
+
+import "org/apache/opennlp/grpc/v1/opennlp_document.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "OpenNlpSearchProto";
+option java_package = "org.apache.opennlp.grpc.v1";
+
+// Read-only search over immutable indexes configured and loaded by the operator
+// before the server begins accepting requests. This service does not expose index
+// construction, mutation, deletion, or persistence orchestration.
+//
+// SearchIndex reports INVALID_ARGUMENT for a blank query or invalid top_k,
+// NOT_FOUND for an unknown index, FAILED_PRECONDITION for an incompatible
+// embedding route or vector space, UNAVAILABLE for a retryable embedding backend
+// failure, and INTERNAL for an unexpected provider failure.
+service OpenNlpSearchService {
+  // Lists every immutable search index loaded at server startup.
+  rpc ListSearchIndexes(ListSearchIndexesRequest) returns (ListSearchIndexesResponse);
+  // Embeds one document-shaped query through a configured backend serving the
+  // index's model, vector space, and dimension, then returns up to top_k ranked,
+  // document-shaped source passages.
+  rpc SearchIndex(SearchIndexRequest) returns (SearchIndexResponse);
+}
+
+// Input to ListSearchIndexes. Empty because the server exposes only configured
+// indexes and the first bounded contract has no remote filtering or pagination.
+message ListSearchIndexesRequest {}
+
+// The immutable search indexes available on this server.
+message ListSearchIndexesResponse {
+  // Index descriptors in stable index-id order.
+  repeated SearchIndexDescriptor indexes = 1;
+}
+
+// One configured immutable vector index and the vector and corpus identities
+// required to interpret its results.
+message SearchIndexDescriptor {
+  // Deployment-defined stable identifier used in SearchIndexRequest.index_id.
+  string index_id = 1;
+  // Human-readable name suitable for an index selector.
+  string display_name = 2;
+  // Search implementation that owns the persisted vector data.
+  SearchProviderSelector provider = 3;
+  // Embedding route used to build the index. Query compatibility requires the
+  // same nonblank model_id and vector_space_id plus the declared dimension. A
+  // different backend may serve that same vector space at query time.
+  EmbeddingRoute embedding_route = 4;
+  // Number of float components in every indexed and query vector.
+  int32 dimension = 5;
+  // Similarity function used for ranking and the meaning of SearchHit.score.
+  SearchMetric metric = 6;
+  // Number of stored vectors and source records. Index implementations in this
+  // API are int-addressed, so the wire type deliberately has the same bound.
+  uint32 size = 7;
+  // Always true in this API version. Remote index mutation is not supported.
+  bool immutable = 8;
+  // Corpus identity and provenance shared by every hit in this index.
+  SearchCorpusDescriptor corpus = 9;
+  // Largest top_k accepted for this index under the operator's configuration.
+  int32 max_top_k = 10;
+  // Largest UTF-8 encoded query.raw_text accepted for this index.
+  int32 max_query_bytes = 11;
+  // Reproducible build and bundle provenance.
+  SearchIndexBuildDescriptor build = 12;
+  // Largest serialized SearchIndexResponse emitted for this index.
+  uint32 max_response_bytes = 13;
+}
+
+// Reproducible build identity for one immutable index bundle.
+message SearchIndexBuildDescriptor {
+  // Version of the bundle descriptor and file-layout contract.
+  uint32 bundle_format_version = 1;
+  // Lowercase SHA-256 digest identifying the built bundle artifact.
+  string bundle_artifact_hash = 2;
+  // Stable identifier of the tool that built the bundle.
+  string builder_id = 3;
+  // Version of the builder implementation.
+  string builder_version = 4;
+  // Lowercase SHA-256 digest of canonical preparation and builder configuration.
+  string preparation_config_hash = 5;
+}
+
+// Corpus identity and provenance retained once on the index descriptor and inherited
+// by every returned hit through SearchIndexResponse.index.
+message SearchCorpusDescriptor {
+  // Human-readable corpus title.
+  string title = 1;
+  // Operator-supplied summary of origin, preparation, and licensing provenance.
+  string provenance_summary = 2;
+  // Optional stable URI for the source corpus or its provenance record.
+  optional string source_uri = 3;
+  // Optional SPDX identifier or human-readable license name for the indexed corpus.
+  optional string license_name = 4;
+  // Optional URI for the exact license terms governing the indexed corpus.
+  optional string license_uri = 5;
+  // Optional lowercase SHA-256 digest of the normalized corpus artifact used to
+  // construct the index bundle.
+  optional string artifact_hash = 6;
+}
+
+// Similarity function used by a search index.
+enum SearchMetric {
+  // No metric was supplied. Loaded index descriptors never use this value.
+  SEARCH_METRIC_UNSPECIFIED = 0;
+  // Cosine similarity, producing scores in [-1, 1].
+  SEARCH_METRIC_COSINE = 1;
+}
+
+// Search providers whose identifiers are stable parts of this API.
+enum StandardSearchProvider {
+  // No standard provider was selected.
+  STANDARD_SEARCH_PROVIDER_UNSPECIFIED = 0;
+  // OpenNLP's exact in-memory float-vector index implementation.
+  STANDARD_SEARCH_PROVIDER_FLAT_FLOAT = 1;
+  // OpenNLP's persisted TurboQuant index implementation.
+  STANDARD_SEARCH_PROVIDER_TURBO_QUANT = 2;
+}
+
+// Selects either a standard OpenNLP search provider or an extension-provided id.
+message SearchProviderSelector {
+  // The selected standard provider or open extension id.
+  oneof kind {
+    // A provider defined by this contract.
+    StandardSearchProvider standard = 1;
+    // Stable id of an extension-provided search implementation.
+    string custom = 2;
+  }
+}
+
+// One natural-language query against a configured immutable index.
+message SearchIndexRequest {
+  // Stable id from ListSearchIndexes. Required.
+  string index_id = 1;
+  // Document-shaped query. query.raw_text must be non-blank. The complete shape
+  // preserves caller identity and metadata for future typed query annotations.
+  OpenNlpDocument query = 2;
+  // Maximum hits to return. Must be positive and no larger than the operator's
+  // configured server maximum.
+  int32 top_k = 3;
+}
+
+// Ranked results for one immutable index query.
+message SearchIndexResponse {
+  // Descriptor of the index that served this response.
+  SearchIndexDescriptor index = 1;
+  // Hits ordered by descending score with a deterministic tie break.
+  repeated SearchHit hits = 2;
+  // Actual route used to embed the query after route resolution. Its model id,
+  // vector space id, and dimension are checked against index.embedding_route;
+  // its backend id may differ from the backend used to build the index.
+  EmbeddingRoute query_embedding_route = 3;
+  // True when ranked hits were omitted to stay within index.max_response_bytes.
+  bool truncated = 4;
+}
+
+// One scored source passage from an immutable search index.
+message SearchHit {
+  // Stable identity of the source document represented by source_document.
+  string document_id = 1;
+  // Stable identity of the indexed passage or chunk within the source corpus.
+  string chunk_id = 2;
+  // Similarity under the index metric. Cosine indexes return a value in [-1, 1].
+  double score = 3;
+  // Source text retained by the index bundle in the common OpenNlpDocument shape.
+  // The corpus provenance describes offline normalization or other preparation.
+  // raw_text may differ from emitted_text when later chunk transforms were applied.
+  OpenNlpDocument source_document = 4;
+  // Authoritative span within source_document.raw_text. Its units are named by
+  // source_document.offset_encoding.
+  AnnotationSpan source_span = 5;
+  // Exact text emitted by offline chunk preparation and embedded into the index.
+  string emitted_text = 6;
+  // Index, embedding, build, and corpus provenance are inherited from
+  // SearchIndexResponse.index and are not repeated on every hit.
+  reserved 7 to 9;
+}

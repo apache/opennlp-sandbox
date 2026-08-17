@@ -58,8 +58,10 @@ import org.apache.opennlp.grpc.v1.GrpcStatusCode;
 import org.apache.opennlp.grpc.v1.EmbedTextRequest;
 import org.apache.opennlp.grpc.v1.EmbedTextResponse;
 import org.apache.opennlp.grpc.v1.GetServiceInfoRequest;
+import org.apache.opennlp.grpc.v1.ListSearchIndexesRequest;
 import org.apache.opennlp.grpc.v1.OpenNlpAnalysisServiceGrpc;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.OpenNlpSearchServiceGrpc;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -263,6 +265,19 @@ class OpenNlpGrpcServerIT {
   }
 
   @Test
+  void exposesAnEmptySearchCatalogAndAdvertisesItAsServingWhenSearchIsDisabled() {
+    final var catalog = OpenNlpSearchServiceGrpc.newBlockingStub(channel)
+        .listSearchIndexes(ListSearchIndexesRequest.getDefaultInstance());
+    final HealthCheckResponse health = HealthGrpc.newBlockingStub(channel)
+        .check(HealthCheckRequest.newBuilder()
+            .setService(OpenNlpSearchServiceGrpc.SERVICE_NAME)
+            .build());
+
+    assertEquals(0, catalog.getIndexesCount());
+    assertEquals(HealthCheckResponse.ServingStatus.SERVING, health.getStatus());
+  }
+
+  @Test
   void reflectionIsDisabledByDefaultAndEnumeratesServicesWhenEnabled() throws Exception {
     final ReflectionResult disabled = listServices(channel);
     assertEquals(Status.Code.UNIMPLEMENTED, Status.fromThrowable(disabled.error()).getCode());
@@ -284,12 +299,32 @@ class OpenNlpGrpcServerIT {
       assertNull(enabled.error());
       assertTrue(enabled.response().getListServicesResponse().getServiceList().stream()
           .anyMatch(service -> OpenNlpAnalysisServiceGrpc.SERVICE_NAME.equals(service.getName())));
+      assertTrue(enabled.response().getListServicesResponse().getServiceList().stream()
+          .anyMatch(service -> OpenNlpSearchServiceGrpc.SERVICE_NAME.equals(service.getName())));
     } finally {
       reflectionServer.stop();
       if (reflectionChannel != null) {
         reflectionChannel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
       }
     }
+  }
+
+  @Test
+  void failedPublicStartClosesAlreadyConstructedModelResources() throws Exception {
+    BlockingEmbeddingBackendFactory.reset();
+    final Properties overrides = new Properties();
+    overrides.setProperty(BlockingEmbeddingBackendFactory.KEY_MODEL_ID, "cleanup");
+    overrides.setProperty("search.indexes", "broken");
+    overrides.setProperty("search.index.broken.provider", "missing-provider");
+    overrides.setProperty("search.index.broken.directory", modelDir.toString());
+    overrides.setProperty("search.index.broken.passages", modelDir.resolve("missing.jsonl").toString());
+    final OpenNlpGrpcServer failedServer = new OpenNlpGrpcServer();
+    failedServer.port = 0;
+    failedServer.config = writeIntegrationConfig(overrides).toString();
+
+    assertThrows(IllegalArgumentException.class, failedServer::start);
+
+    assertTrue(BlockingEmbeddingBackendFactory.wasClosed());
   }
 
   @Test

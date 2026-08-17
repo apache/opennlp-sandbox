@@ -17,8 +17,14 @@
  */
 package org.apache.opennlp.grpc.webapp;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -70,6 +76,10 @@ public final class OpenNlpGrpcWebApp implements Callable<Integer> {
       description = "Allow binding HTTP to a non-loopback address.")
   private boolean allowRemote;
 
+  @Option(names = "--bound-port-file",
+      description = "Create this readiness file with the bound HTTP port after startup.")
+  private Path boundPortFile;
+
   /** Creates the command with its documented defaults. */
   public OpenNlpGrpcWebApp() {
   }
@@ -119,10 +129,12 @@ public final class OpenNlpGrpcWebApp implements Callable<Integer> {
     ClassLoader extensionClassLoader = contextClassLoader == null
         ? OpenNlpGrpcWebApp.class.getClassLoader() : contextClassLoader;
     WebUiExtensionRegistry registry = WebUiExtensionRegistry.load(extensionClassLoader);
-    GrpcAnalysisRpc rpc = new GrpcAnalysisRpc(
-        channel, Duration.ofSeconds(requestTimeoutSeconds));
+    Duration requestTimeout = Duration.ofSeconds(requestTimeoutSeconds);
+    GrpcAnalysisRpc analysisRpc = new GrpcAnalysisRpc(channel, requestTimeout);
+    GrpcSearchRpc searchRpc = new GrpcSearchRpc(channel, requestTimeout);
     try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
-        new InetSocketAddress(bindAddress, httpPort), rpc, registry, maxRequestBytes)) {
+        new InetSocketAddress(bindAddress, httpPort), analysisRpc, searchRpc,
+        registry, maxRequestBytes)) {
       Thread shutdownHook = new Thread(() -> {
         server.stop();
         channel.shutdown();
@@ -130,6 +142,9 @@ public final class OpenNlpGrpcWebApp implements Callable<Integer> {
       Runtime.getRuntime().addShutdownHook(shutdownHook);
       try {
         server.start();
+        if (boundPortFile != null) {
+          writeBoundPortFile(boundPortFile, server.address().getPort());
+        }
         LOGGER.info("OpenNLP gRPC web application listening on http://{}:{} with {} UI extension(s)",
             server.address().getHostString(), server.address().getPort(), registry.extensions().size());
         server.awaitTermination();
@@ -164,6 +179,30 @@ public final class OpenNlpGrpcWebApp implements Callable<Integer> {
     if (!allowRemote && !address.isLoopbackAddress()) {
       throw new IllegalArgumentException(
           "refusing non-loopback HTTP bind without --allow-remote: " + address.getHostAddress());
+    }
+  }
+
+  /**
+   * Creates an interprocess readiness file after the HTTP listener owns its port.
+   *
+   * @param readinessFile File to create. An existing path is rejected.
+   * @param port Bound listener port.
+   * @throws IOException If the file cannot be written.
+   * @throws IllegalArgumentException If the path exists or the port is invalid.
+   */
+  static void writeBoundPortFile(Path readinessFile, int port) throws IOException {
+    if (readinessFile == null) {
+      throw new IllegalArgumentException("readinessFile must not be null");
+    }
+    if (port < 1 || port > 65535) {
+      throw new IllegalArgumentException("bound port must be between 1 and 65535");
+    }
+    try {
+      Files.writeString(readinessFile, Integer.toString(port) + "\n", StandardCharsets.US_ASCII,
+          StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+    } catch (FileAlreadyExistsException e) {
+      throw new IllegalArgumentException("bound port readiness file already exists: "
+          + readinessFile, e);
     }
   }
 

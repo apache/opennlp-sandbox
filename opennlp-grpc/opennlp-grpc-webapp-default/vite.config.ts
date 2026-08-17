@@ -27,5 +27,12 @@ export default defineConfig({
     sourcemap: false,
     // The visualization adapter is intentionally a lazy chunk.
     chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        entryFileNames: "assets/app.js",
+        chunkFileNames: "assets/[name].js",
+        assetFileNames: "assets/[name][extname]",
+      },
+    },
   },
 });

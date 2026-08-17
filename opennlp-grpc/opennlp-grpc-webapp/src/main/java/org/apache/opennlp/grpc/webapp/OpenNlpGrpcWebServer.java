@@ -52,7 +52,8 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
    * Creates a web server without starting it.
    *
    * @param address The HTTP bind address.
-   * @param rpc The analysis service adapter.
+   * @param analysisRpc The analysis service adapter.
+   * @param searchRpc The search service adapter.
    * @param extensionRegistry The static UI extensions.
    * @param maxRequestBytes The largest accepted request body.
    * @throws IOException If the HTTP listener cannot be created.
@@ -60,14 +61,18 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
    */
   OpenNlpGrpcWebServer(
       InetSocketAddress address,
-      AnalysisRpc rpc,
+      AnalysisRpc analysisRpc,
+      SearchRpc searchRpc,
       WebUiExtensionRegistry extensionRegistry,
       int maxRequestBytes) throws IOException {
     if (address == null) {
       throw new IllegalArgumentException("address must not be null");
     }
-    if (rpc == null) {
-      throw new IllegalArgumentException("rpc must not be null");
+    if (analysisRpc == null) {
+      throw new IllegalArgumentException("analysisRpc must not be null");
+    }
+    if (searchRpc == null) {
+      throw new IllegalArgumentException("searchRpc must not be null");
     }
     if (extensionRegistry == null) {
       throw new IllegalArgumentException("extensionRegistry must not be null");
@@ -80,7 +85,7 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
     this.executor = Executors.newVirtualThreadPerTaskExecutor();
     server.setExecutor(executor);
     server.createContext("/", new WebHandler(
-        new GrpcJsonApi(rpc), new WebUiCatalogJson(extensionRegistry),
+        new GrpcJsonApi(analysisRpc, searchRpc), new WebUiCatalogJson(extensionRegistry),
         new WebUiAssetResolver(extensionRegistry), maxRequestBytes));
   }
 

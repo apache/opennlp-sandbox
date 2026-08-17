@@ -39,7 +39,10 @@ import io.grpc.protobuf.services.ProtoReflectionServiceV1;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.processor.basic.BasicDocumentAnalyzer;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
+import org.apache.opennlp.grpc.search.OpenNlpSearchServiceImpl;
+import org.apache.opennlp.grpc.search.SearchIndexRegistry;
 import org.apache.opennlp.grpc.v1.OpenNlpAnalysisServiceGrpc;
+import org.apache.opennlp.grpc.v1.OpenNlpSearchServiceGrpc;
 import org.apache.opennlp.grpc.v1.server.OpenNlpAnalysisServiceImpl;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -78,6 +81,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
   private ExecutorService analysisExecutor;
   private HealthStatusManager healthStatusManager;
   private ModelBundleCache modelBundleCache;
+  private SearchIndexRegistry searchIndexRegistry;
   private int shutdownGraceSeconds = DEFAULT_SHUTDOWN_GRACE_SECONDS;
   private final AtomicBoolean stopping = new AtomicBoolean();
 
@@ -120,6 +124,16 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
    *     server fails to bind or start.
    */
   public void start() throws Exception {
+    try {
+      startConfigured();
+    } catch (Exception | Error failure) {
+      stop();
+      throw failure;
+    }
+  }
+
+  /** Constructs and starts all configured services after public lifecycle guarding. */
+  private void startConfigured() throws Exception {
     final Map<String, String> configuration = loadConfiguration();
 
     final boolean enableReflection =
@@ -157,6 +171,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     }
 
     this.modelBundleCache = new ModelBundleCache(configuration);
+    this.searchIndexRegistry = SearchIndexRegistry.fromConfiguration(configuration);
     final ProfileRegistry profileRegistry = modelBundleCache.createProfileRegistry();
     final BasicDocumentAnalyzer documentAnalyzer =
         new BasicDocumentAnalyzer(profileRegistry, modelBundleCache);
@@ -183,6 +198,10 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
                 analysisStreamWorkers,
                 maxTextBytes),
             new EagerHeadersInterceptor()))
+        .addService(ServerInterceptors.intercept(
+            new OpenNlpSearchServiceImpl(
+                searchIndexRegistry, modelBundleCache.getEmbeddingProvider()),
+            new EagerHeadersInterceptor()))
         .addService(healthStatusManager.getHealthService())
         .maxInboundMessageSize(maxInboundMessageSize);
 
@@ -197,6 +216,9 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
         HealthCheckResponse.ServingStatus.SERVING);
     healthStatusManager.setStatus(
         OpenNlpAnalysisServiceGrpc.SERVICE_NAME,
+        HealthCheckResponse.ServingStatus.SERVING);
+    healthStatusManager.setStatus(
+        OpenNlpSearchServiceGrpc.SERVICE_NAME,
         HealthCheckResponse.ServingStatus.SERVING);
     logger.info("Started OpenNlpGrpcServer on port {}", server.getPort());
 
@@ -280,8 +302,17 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
   void injectLifecycleForTest(
       ExecutorService analysisExecutor, ModelBundleCache modelBundleCache,
       int shutdownGraceSeconds) {
+    injectLifecycleForTest(
+        analysisExecutor, modelBundleCache, null, shutdownGraceSeconds);
+  }
+
+  /** Injects lifecycle components including the search registry for shutdown tests. */
+  void injectLifecycleForTest(
+      ExecutorService analysisExecutor, ModelBundleCache modelBundleCache,
+      SearchIndexRegistry searchIndexRegistry, int shutdownGraceSeconds) {
     this.analysisExecutor = analysisExecutor;
     this.modelBundleCache = modelBundleCache;
+    this.searchIndexRegistry = searchIndexRegistry;
     this.shutdownGraceSeconds = shutdownGraceSeconds;
   }
 
@@ -297,7 +328,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
    */
   public void stop() {
     if (server == null && handlerExecutor == null && analysisExecutor == null
-        && modelBundleCache == null) {
+        && modelBundleCache == null && searchIndexRegistry == null) {
       return;
     }
     if (!stopping.compareAndSet(false, true)) {
@@ -309,7 +340,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     boolean forced = false;
     boolean interrupted = false;
     if (server != null) {
-      logger.info("Shutting down OpenNlpGrpcServer on port {}", server.getPort());
+      logger.info("Shutting down OpenNlpGrpcServer");
       server.shutdown();
       try {
         if (!server.awaitTermination(shutdownGraceSeconds, TimeUnit.SECONDS)) {
@@ -329,8 +360,14 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     stopExecutor(analysisExecutor, forced);
     interrupted |= awaitQuiescence(handlerExecutor, "handler");
     interrupted |= awaitQuiescence(analysisExecutor, "analysis");
-    if (modelBundleCache != null) {
-      modelBundleCache.close();
+    try {
+      if (searchIndexRegistry != null) {
+        searchIndexRegistry.close();
+      }
+    } finally {
+      if (modelBundleCache != null) {
+        modelBundleCache.close();
+      }
     }
     if (interrupted) {
       Thread.currentThread().interrupt();

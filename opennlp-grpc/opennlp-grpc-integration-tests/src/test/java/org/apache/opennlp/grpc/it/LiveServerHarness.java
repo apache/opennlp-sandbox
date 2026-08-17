@@ -20,9 +20,9 @@ package org.apache.opennlp.grpc.it;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -31,6 +31,7 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import org.apache.opennlp.grpc.v1.GetServiceInfoRequest;
 import org.apache.opennlp.grpc.v1.OpenNlpAnalysisServiceGrpc;
+import org.apache.opennlp.grpc.v1.OpenNlpSearchServiceGrpc;
 
 /**
  * Spawns the shaded {@code opennlp-grpc-server} SNAPSHOT jar as a separate JVM process
@@ -50,12 +51,14 @@ final class LiveServerHarness implements AutoCloseable {
   private final Path log;
   private final ManagedChannel channel;
   private final OpenNlpAnalysisServiceGrpc.OpenNlpAnalysisServiceBlockingStub client;
+  private final int serverPort;
 
-  private LiveServerHarness(Process process, Path log, ManagedChannel channel) {
+  private LiveServerHarness(Process process, Path log, ManagedChannel channel, int serverPort) {
     this.process = process;
     this.log = log;
     this.channel = channel;
     this.client = OpenNlpAnalysisServiceGrpc.newBlockingStub(channel);
+    this.serverPort = serverPort;
   }
 
   /**
@@ -74,7 +77,6 @@ final class LiveServerHarness implements AutoCloseable {
   /** Starts the server with additional extension jars appended to its classpath. */
   static LiveServerHarness start(Properties serverConfig, Path... extensionJars)
       throws IOException, InterruptedException {
-    final int serverPort = freePort();
     final Properties properties = new Properties();
     properties.putAll(serverConfig);
     properties.setProperty("server.enable_reflection", "false");
@@ -99,15 +101,24 @@ final class LiveServerHarness implements AutoCloseable {
     }
     final Process process = new ProcessBuilder(
         javaBin, "-cp", classpath.toString(), "org.apache.opennlp.grpc.server.OpenNlpGrpcServer",
-        "-p", Integer.toString(serverPort), "-c", config.toString())
+        "-p", "0", "-c", config.toString())
         .redirectErrorStream(true)
         .redirectOutput(log.toFile())
         .start();
 
+    final int serverPort;
+    try {
+      serverPort = LiveProcessHarnessSupport.awaitBoundPort(
+          process, log, "Started OpenNlpGrpcServer on port ",
+          Duration.ofMillis(STARTUP_TIMEOUT_MS), "Server");
+    } catch (IOException | InterruptedException | RuntimeException e) {
+      process.destroyForcibly();
+      throw e;
+    }
     final ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", serverPort)
         .usePlaintext()
         .build();
-    final LiveServerHarness harness = new LiveServerHarness(process, log, channel);
+    final LiveServerHarness harness = new LiveServerHarness(process, log, channel, serverPort);
     try {
       harness.awaitReady();
     } catch (RuntimeException | InterruptedException e) {
@@ -119,6 +130,16 @@ final class LiveServerHarness implements AutoCloseable {
 
   OpenNlpAnalysisServiceGrpc.OpenNlpAnalysisServiceBlockingStub client() {
     return client;
+  }
+
+  /** Returns a blocking client for immutable search indexes. */
+  OpenNlpSearchServiceGrpc.OpenNlpSearchServiceBlockingStub searchClient() {
+    return OpenNlpSearchServiceGrpc.newBlockingStub(channel);
+  }
+
+  /** Returns the loopback target of the spawned gRPC server. */
+  String grpcTarget() {
+    return "127.0.0.1:" + serverPort;
   }
 
   /** Returns an asynchronous client for streaming RPCs. */
@@ -171,9 +192,4 @@ final class LiveServerHarness implements AutoCloseable {
     return path;
   }
 
-  private static int freePort() throws IOException {
-    try (ServerSocket socket = new ServerSocket(0)) {
-      return socket.getLocalPort();
-    }
-  }
 }

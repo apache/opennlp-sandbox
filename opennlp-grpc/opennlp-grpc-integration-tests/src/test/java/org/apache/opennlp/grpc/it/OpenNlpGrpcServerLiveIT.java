@@ -17,6 +17,11 @@
  */
 package org.apache.opennlp.grpc.it;
 
+import java.io.OutputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -33,6 +38,8 @@ import io.grpc.ServerBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import opennlp.embeddings.corpus.CasePassage;
+import opennlp.embeddings.index.TurboQuantIndex;
 import org.apache.opennlp.grpc.tei.v1.EmbedGrpc;
 import org.apache.opennlp.grpc.tei.v1.EmbedRequest;
 import org.apache.opennlp.grpc.tei.v1.EmbedResponse;
@@ -40,6 +47,7 @@ import org.apache.opennlp.grpc.tei.v1.InfoGrpc;
 import org.apache.opennlp.grpc.tei.v1.InfoRequest;
 import org.apache.opennlp.grpc.tei.v1.InfoResponse;
 import org.apache.opennlp.grpc.tei.v1.ModelType;
+import org.apache.opennlp.grpc.search.bundle.TurboQuantBundleDigest;
 import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
@@ -64,6 +72,8 @@ import org.apache.opennlp.grpc.v1.NormalizationRung;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpAnalysisServiceGrpc;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.ListSearchIndexesRequest;
+import org.apache.opennlp.grpc.v1.SearchIndexRequest;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.apache.opennlp.grpc.v1.SentenceDetectorSelector;
 import org.apache.opennlp.grpc.v1.StandardLayer;
@@ -124,7 +134,9 @@ class OpenNlpGrpcServerLiveIT {
     final Properties config = new Properties();
     config.setProperty("server.max_text_bytes", "4096");
     config.setProperty("model.embedder.minilm.tei.target", "localhost:" + teiServer.getPort());
+    config.setProperty("model.embedder.minilm.tei.vector_space_id", "minilm-live-v1");
     config.setProperty("model.embedder.tei.deadline_ms", "10000");
+    configureSearchBundle(config);
     final Path hunspellDir = Files.createTempDirectory("opennlp-grpc-live-hunspell-");
     final Path affix = hunspellDir.resolve("tiny.aff");
     final Path words = hunspellDir.resolve("tiny.dic");
@@ -170,6 +182,112 @@ class OpenNlpGrpcServerLiveIT {
         .findFirst().orElseThrow();
     assertEquals("tiny", hunspell.getResourceId());
     assertTrue(hunspell.getIsDefault());
+  }
+
+  @Test
+  void searchesPersistedTurboQuantBundleThroughShadedServer() {
+    final var searchClient = harness.searchClient();
+    final var indexes = searchClient.listSearchIndexes(
+        ListSearchIndexesRequest.getDefaultInstance());
+
+    assertEquals(1, indexes.getIndexesCount());
+    assertEquals("legal-demo", indexes.getIndexes(0).getIndexId());
+    assertEquals("minilm-live-v1",
+        indexes.getIndexes(0).getEmbeddingRoute().getVectorSpaceId());
+
+    final var response = searchClient.searchIndex(SearchIndexRequest.newBuilder()
+        .setIndexId("legal-demo")
+        .setQuery(OpenNlpDocument.newBuilder()
+            .setDocId("live-query")
+            .setRawText("remedy"))
+        .setTopK(2)
+        .build());
+
+    assertEquals("legal-demo", response.getIndex().getIndexId());
+    assertEquals(2, response.getHitsCount());
+    assertEquals("remedy", response.getHits(0).getDocumentId());
+    assertEquals(response.getHits(0).getDocumentId(),
+        response.getHits(0).getSourceDocument().getDocId());
+    assertEquals("A remedy follows a violation.",
+        response.getHits(0).getSourceDocument().getRawText());
+    assertEquals("minilm-live-v1", response.getQueryEmbeddingRoute().getVectorSpaceId());
+  }
+
+  @Test
+  void servesSearchWorkbenchAndJsonSearchThroughShadedWebapp() throws Exception {
+    try (LiveWebAppHarness webapp = LiveWebAppHarness.start(harness.grpcTarget())) {
+      final HttpClient http = HttpClient.newHttpClient();
+      final HttpResponse<String> page = http.send(HttpRequest.newBuilder(
+          URI.create(webapp.baseUri() + "/")).GET().build(),
+          HttpResponse.BodyHandlers.ofString());
+      assertEquals(200, page.statusCode());
+      assertTrue(page.body().contains("Server-backed semantic search"));
+
+      final HttpResponse<String> indexes = http.send(HttpRequest.newBuilder(
+          URI.create(webapp.baseUri() + "/api/v1/search-indexes")).GET().build(),
+          HttpResponse.BodyHandlers.ofString());
+      assertEquals(200, indexes.statusCode());
+      assertTrue(indexes.body().contains("\"indexId\": \"legal-demo\""));
+
+      final HttpResponse<String> search = http.send(HttpRequest.newBuilder(
+          URI.create(webapp.baseUri() + "/api/v1/search"))
+          .header("Content-Type", "application/json")
+          .POST(HttpRequest.BodyPublishers.ofString("""
+              {"indexId":"legal-demo","query":{"docId":"web-query","rawText":"remedy"},"topK":2}
+              """))
+          .build(), HttpResponse.BodyHandlers.ofString());
+      assertEquals(200, search.statusCode());
+      assertTrue(search.body().contains("\"documentId\": \"remedy\""));
+      assertTrue(search.body().contains("\"rawText\": \"A remedy follows a violation.\""));
+    }
+  }
+
+  private static void configureSearchBundle(Properties config) throws Exception {
+    final Path indexDirectory = Files.createTempDirectory("opennlp-grpc-live-search-index-")
+        .toAbsolutePath().normalize();
+    final TurboQuantIndex index = new TurboQuantIndex(EMBEDDING_DIMENSION, 4, 42);
+    index.add("remedy", new float[] {6, 1, 1});
+    index.add("longer", new float[] {24, 1, 1});
+    index.freeze();
+    index.write(indexDirectory);
+
+    final Path passages = Files.createTempFile("opennlp-grpc-live-passages-", ".jsonl")
+        .toAbsolutePath().normalize();
+    CasePassage.writeJsonl(List.of(
+        new CasePassage("remedy", "Remedy v. State", "1 Test 1", "2026", "1",
+            "A remedy follows a violation."),
+        new CasePassage("longer", "Length v. State", "2 Test 2", "2026", "2",
+            "A much longer unrelated source passage.")), passages);
+
+    final Properties descriptor = new Properties();
+    descriptor.setProperty("format.version", "1");
+    descriptor.setProperty("index.id", "legal-demo");
+    descriptor.setProperty("display.name", "Legal demo");
+    descriptor.setProperty("provider.id", "turbo_quant");
+    descriptor.setProperty("embedding.model.id", "minilm");
+    descriptor.setProperty("embedding.backend.id", "tei");
+    descriptor.setProperty("embedding.vector_space.id", "minilm-live-v1");
+    descriptor.setProperty("dimension", Integer.toString(EMBEDDING_DIMENSION));
+    descriptor.setProperty("metric", "cosine");
+    descriptor.setProperty("corpus.title", "Hermetic legal examples");
+    descriptor.setProperty("corpus.provenance", "Generated only for the live integration test");
+    descriptor.setProperty("corpus.license.name", "Apache-2.0");
+    descriptor.setProperty("corpus.artifact.sha256",
+        TurboQuantBundleDigest.sha256(passages));
+    descriptor.setProperty("bundle.artifact.sha256",
+        TurboQuantBundleDigest.bundleArtifactHash(indexDirectory, passages));
+    descriptor.setProperty("builder.id", "opennlp-live-it");
+    descriptor.setProperty("builder.version", "1");
+    descriptor.setProperty("preparation.config.sha256", "b".repeat(64));
+    try (OutputStream output = Files.newOutputStream(
+        indexDirectory.resolve("search-index.properties"))) {
+      descriptor.store(output, null);
+    }
+
+    config.setProperty("search.indexes", "legal-demo");
+    config.setProperty("search.index.legal-demo.provider", "turbo_quant");
+    config.setProperty("search.index.legal-demo.directory", indexDirectory.toString());
+    config.setProperty("search.index.legal-demo.passages", passages.toString());
   }
 
   @Test

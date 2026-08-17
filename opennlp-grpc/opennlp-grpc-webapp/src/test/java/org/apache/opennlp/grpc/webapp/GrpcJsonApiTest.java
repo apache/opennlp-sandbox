@@ -33,7 +33,7 @@ class GrpcJsonApiTest {
 
   @Test
   void rendersServiceInfoAsProtobufJson() {
-    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc());
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc());
 
     WebHttpResponse response = api.handle("GET", "/api/v1/service-info", new byte[0]);
 
@@ -44,7 +44,7 @@ class GrpcJsonApiTest {
 
   @Test
   void parsesAnalyzeRequestAndRendersDocumentShape() {
-    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc());
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc());
     byte[] request = """
         {"document":{"docId":"one","rawText":"Hello world."}}
         """.getBytes(StandardCharsets.UTF_8);
@@ -58,7 +58,7 @@ class GrpcJsonApiTest {
 
   @Test
   void rejectsMalformedJsonWithCanonicalErrorPayload() {
-    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc());
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc());
 
     WebHttpResponse response = api.handle("POST", "/api/v1/analyze",
         "not-json".getBytes(StandardCharsets.UTF_8));
@@ -70,7 +70,7 @@ class GrpcJsonApiTest {
 
   @Test
   void rejectsMalformedUtf8BeforeParsingProtobufJson() {
-    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc());
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc());
 
     WebHttpResponse response = api.handle("POST", "/api/v1/analyze",
         new byte[] {(byte) 0xc3, (byte) 0x28});
@@ -90,7 +90,7 @@ class GrpcJsonApiTest {
             .asRuntimeException();
       }
     };
-    GrpcJsonApi api = new GrpcJsonApi(unavailable);
+    GrpcJsonApi api = new GrpcJsonApi(unavailable, new EmptySearchRpc());
 
     WebHttpResponse response = api.handle("POST", "/api/v1/analyze",
         "{\"document\":{\"rawText\":\"Hello\"}}".getBytes(StandardCharsets.UTF_8));
@@ -103,7 +103,7 @@ class GrpcJsonApiTest {
 
   @Test
   void enforcesMethodsAndKnownApiPaths() {
-    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc());
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc());
 
     assertEquals(405,
         api.handle("GET", "/api/v1/analyze", new byte[0]).status());
