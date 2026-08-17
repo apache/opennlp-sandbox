@@ -19,7 +19,13 @@
 
 import { describe, expect, it } from "vitest";
 
-import { layerAccent, readDocumentShape, summarizeDocumentShape } from "../src/document-shape";
+import {
+  combinedAnnotationSegments,
+  documentScopedAnnotations,
+  layerAccent,
+  readDocumentShape,
+  summarizeDocumentShape,
+} from "../src/document-shape";
 
 describe("document shape reader", () => {
   it("reads typed annotation layers without falling back to legacy fields", () => {
@@ -111,6 +117,31 @@ describe("document shape reader", () => {
     expect(result.layers[1]?.annotations[0]).toMatchObject({ label: "mini (3 dimensions)" });
   });
 
+  it("reads entity annotation spans and display text from protobuf JSON", () => {
+    const result = readDocumentShape({
+      document: {
+        rawText: "George Washington visited Paris.",
+        offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
+        layers: { layers: [{
+          id: "opennlp:entities",
+          entityValues: { annotations: [{
+            annotationSpan: { end: 17, space: "COORDINATE_SPACE_CHAR_DOCUMENT" },
+            entityType: "person",
+            text: "George Washington",
+            probability: 0.92,
+          }] },
+        }] },
+      },
+    });
+
+    expect(result.layers[0]?.annotations[0]).toMatchObject({
+      start: 0,
+      end: 17,
+      label: "George Washington",
+      probability: 0.92,
+    });
+  });
+
   it("returns an empty view for malformed responses", () => {
     expect(readDocumentShape(null)).toEqual({ rawText: "", offsetEncoding: "", layers: [] });
     expect(readDocumentShape({ document: { rawText: 42, layers: [] } })).toEqual({
@@ -157,5 +188,41 @@ describe("document shape reader", () => {
 
     expect(shape.layers[0]?.title).toBe("CHUNK Group Values");
     expect(layerAccent(shape.layers[0]!)).toBe("violet");
+  });
+
+  it("builds one combined projection across overlapping typed layers", () => {
+    const shape = readDocumentShape({
+      document: {
+        rawText: "Paris wins.",
+        offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
+        layers: { layers: [
+          { id: "opennlp:tokens", stringValues: { annotations: [
+            { span: { end: 5 }, value: "Paris" },
+            { span: { start: 6, end: 10 }, value: "wins" },
+          ] } },
+          { id: "opennlp:entities", entityValues: { annotations: [
+            { annotationSpan: { end: 5 }, entityType: "location", text: "Paris" },
+          ] } },
+          { id: "opennlp:analytics", analyticsValues: { annotations: [
+            { totalTokens: 2, totalSentences: 1 },
+          ] } },
+        ] },
+      },
+    });
+
+    expect(combinedAnnotationSegments(shape)).toMatchObject([
+      {
+        start: 0,
+        end: 5,
+        entries: [
+          { layer: { id: "opennlp:tokens" }, annotation: { label: "Paris" } },
+          { layer: { id: "opennlp:entities" }, annotation: { label: "Paris" } },
+        ],
+      },
+      { start: 6, end: 10, entries: [{ layer: { id: "opennlp:tokens" } }] },
+    ]);
+    expect(documentScopedAnnotations(shape)).toMatchObject([
+      { layer: { id: "opennlp:analytics" }, annotation: { label: "Annotation 1" } },
+    ]);
   });
 });

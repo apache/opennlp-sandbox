@@ -112,11 +112,24 @@ export function buildDocumentGraph(shape: DocumentShapeView, maxAnnotations = 12
     nodes.push({ id: layerId, label: layer.title, kind: "layer", layerId: layer.id });
     links.push({ source: "document", target: layerId });
     availableAnnotations += layer.annotations.length;
+  }
 
-    for (const [index, annotation] of layer.annotations.entries()) {
-      if (annotationCount >= maxAnnotations) {
+  const budget = Math.max(0, Math.floor(maxAnnotations));
+  const nextIndexes = shape.layers.map(() => 0);
+  while (annotationCount < budget) {
+    let progressed = false;
+    for (const [layerIndex, layer] of shape.layers.entries()) {
+      if (annotationCount >= budget) {
+        break;
+      }
+      const index = nextIndexes[layerIndex]!;
+      const annotation = layer.annotations[index];
+      if (!annotation) {
         continue;
       }
+      nextIndexes[layerIndex] = index + 1;
+      progressed = true;
+      const layerId = `layer:${layer.id}`;
       const annotationId = `${layerId}:annotation:${index}`;
       nodes.push({
         id: annotationId,
@@ -129,6 +142,9 @@ export function buildDocumentGraph(shape: DocumentShapeView, maxAnnotations = 12
       });
       links.push({ source: layerId, target: annotationId });
       annotationCount++;
+    }
+    if (!progressed) {
+      break;
     }
   }
 

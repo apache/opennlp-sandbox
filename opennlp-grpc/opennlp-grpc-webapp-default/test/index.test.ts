@@ -46,6 +46,7 @@ describe("analysis playground markup", () => {
     expect(html).toContain('id="result-offset-encoding"');
     expect(html).toContain('data-result-tab="heatmap"');
     expect(html).toContain('data-result-tab="graph"');
+    expect(html).toContain('id="graph-completeness"');
     expect(html).toContain('id="heatmap-mode-query"');
     expect(html).toContain('id="heatmap-mode-sentiment"');
     expect(html).toContain('id="heatmap-query"');

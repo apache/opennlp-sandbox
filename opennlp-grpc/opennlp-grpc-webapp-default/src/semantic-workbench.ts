@@ -79,6 +79,7 @@ export class SemanticWorkbench {
   readonly #heatmapSelection = requiredElement<HTMLElement>("heatmap-selection");
   readonly #graphCanvas = requiredElement<HTMLElement>("document-graph");
   readonly #graphSelection = requiredElement<HTMLElement>("graph-selection");
+  readonly #graphCompleteness = requiredElement<HTMLButtonElement>("graph-completeness");
 
   #current?: CurrentDocument;
   #workspace?: SearchIndex;
@@ -92,6 +93,7 @@ export class SemanticWorkbench {
   #documentRevision = 0;
   #heatmapRevision = -1;
   #heatmapMode: HeatmapMode = "query";
+  #graphComplete = false;
   #activeView: ResultViewName = "document";
 
   constructor(options: SemanticWorkbenchOptions) {
@@ -104,6 +106,7 @@ export class SemanticWorkbench {
     this.#heatmapQuery.addEventListener("input", () => this.updateControls());
     this.#queryModeButton.addEventListener("click", () => this.selectHeatmapMode("query"));
     this.#sentimentModeButton.addEventListener("click", () => this.selectHeatmapMode("sentiment"));
+    this.#graphCompleteness.addEventListener("click", () => this.toggleCompleteGraph());
     window.addEventListener("resize", () => this.resize());
     this.updateControls();
   }
@@ -117,14 +120,12 @@ export class SemanticWorkbench {
       modelId: indexed?.modelId,
       groupIds: indexed?.groupIds ?? [],
     };
-    this.#graph = buildDocumentGraph(shape);
+    this.#graphComplete = false;
+    this.rebuildGraph();
     this.#heatmaps = buildHeatmapRows(shape);
     this.#documentRevision++;
     this.#heatmapSelection.textContent = "Select a colored segment to inspect its text and score.";
     this.updateHeatmapStatus();
-    this.#graphSelection.textContent = this.#graph.truncated
-      ? "The graph shows the first 120 annotations. Select a node to inspect it."
-      : "Select a layer or annotation node to inspect it in the Document view.";
     this.updateControls();
   }
 
@@ -361,6 +362,34 @@ export class SemanticWorkbench {
     this.#graphChart = this.#graph
       ? renderDocumentGraph(this.#graphCanvas, this.#graph, (node) => this.selectGraphNode(node))
       : undefined;
+  }
+
+  private toggleCompleteGraph(): void {
+    if (!this.#current) {
+      return;
+    }
+    this.#graphComplete = !this.#graphComplete;
+    this.rebuildGraph();
+    if (this.#activeView === "graph") {
+      void this.renderGraph();
+    }
+  }
+
+  private rebuildGraph(): void {
+    const shape = this.#current?.shape;
+    if (!shape) {
+      this.#graph = undefined;
+      this.#graphCompleteness.hidden = true;
+      return;
+    }
+    const total = shape.layers.reduce((count, layer) => count + layer.annotations.length, 0);
+    this.#graph = buildDocumentGraph(shape, this.#graphComplete ? total : 120);
+    this.#graphCompleteness.hidden = total <= 120;
+    this.#graphCompleteness.setAttribute("aria-pressed", String(this.#graphComplete));
+    this.#graphCompleteness.textContent = this.#graphComplete ? "Show balanced overview" : "Show complete graph";
+    this.#graphSelection.textContent = this.#graph.truncated
+      ? `Balanced overview of 120 of ${total} annotations across every layer. Select a node or show the complete graph.`
+      : `Complete graph with ${total} annotations across ${shape.layers.length} layers. Select a node to inspect it.`;
   }
 
   private selectGraphNode(node: DocumentGraphNode): void {

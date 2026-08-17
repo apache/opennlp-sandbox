@@ -113,8 +113,11 @@ describe("server search API adapter", () => {
     })]);
   });
 
-  it("accepts mutable server workspace descriptors", () => {
-    expect(readSearchIndexes({ indexes: [indexDescriptor({ immutable: false })] })[0]?.immutable).toBe(false);
+  it("accepts mutable server workspace descriptors whose default false flag is omitted", () => {
+    const descriptor = indexDescriptor();
+    delete descriptor.immutable;
+
+    expect(readSearchIndexes({ indexes: [descriptor] })[0]?.immutable).toBe(false);
   });
 
   it("rejects descriptors without typed search semantics", () => {
@@ -189,6 +192,15 @@ describe("server search API adapter", () => {
 
     expect(result.hits.map((hit) => hit.id)).toEqual(["doc-a/chunk-a", "doc-b/chunk-b", "doc-c/chunk-c"]);
     expect(result.hits[0]).toMatchObject({ score: 1, sourceText: "OpenNLP works.", start: 0, end: 7 });
+  });
+
+  it("accepts a protobuf JSON source span whose zero start is omitted", () => {
+    const result = readSearchResponse(searchResponse([searchHit({
+      sourceSpan: { end: 7, space: "COORDINATE_SPACE_CHAR_DOCUMENT" },
+    })]));
+
+    expect(result.hits).toHaveLength(1);
+    expect(result.hits[0]).toMatchObject({ start: 0, end: 7, emittedChunkText: "OpenNLP" });
   });
 
   it("rejects missing, unspecified, and unsupported offset encodings", () => {

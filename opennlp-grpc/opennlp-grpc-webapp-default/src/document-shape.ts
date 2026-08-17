@@ -45,6 +45,17 @@ export interface AnnotationView {
   source: Record<string, unknown>;
 }
 
+export interface AnnotationEntry {
+  layer: AnnotationLayerView;
+  annotation: AnnotationView;
+}
+
+export interface CombinedAnnotationSegment {
+  start: number;
+  end: number;
+  entries: AnnotationEntry[];
+}
+
 export interface DocumentShapeSummary {
   layerCount: number;
   annotationCount: number;
@@ -100,6 +111,41 @@ export function summarizeDocumentShape(shape: DocumentShapeView): DocumentShapeS
   };
 }
 
+/** Builds non-overlapping text segments carrying every positional annotation that covers them. */
+export function combinedAnnotationSegments(shape: DocumentShapeView): CombinedAnnotationSegment[] {
+  const boundaries = new Set<number>();
+  for (const layer of shape.layers) {
+    for (const annotation of layer.annotations) {
+      if (hasUsableSpan(annotation, shape.rawText.length)) {
+        boundaries.add(annotation.start);
+        boundaries.add(annotation.end);
+      }
+    }
+  }
+  const ordered = [...boundaries].sort((left, right) => left - right);
+  const segments: CombinedAnnotationSegment[] = [];
+  for (let index = 0; index + 1 < ordered.length; index++) {
+    const start = ordered[index]!;
+    const end = ordered[index + 1]!;
+    if (end <= start) {
+      continue;
+    }
+    const entries = shape.layers.flatMap((layer) => layer.annotations.flatMap((annotation) =>
+      hasUsableSpan(annotation, shape.rawText.length)
+        && annotation.start <= start && annotation.end >= end ? [{ layer, annotation }] : []));
+    if (entries.length > 0) {
+      segments.push({ start, end, entries });
+    }
+  }
+  return segments;
+}
+
+/** Returns document-scoped annotations that cannot be projected onto a text span. */
+export function documentScopedAnnotations(shape: DocumentShapeView): AnnotationEntry[] {
+  return shape.layers.flatMap((layer) => layer.annotations.flatMap((annotation) =>
+    hasUsableSpan(annotation, shape.rawText.length) ? [] : [{ layer, annotation }]));
+}
+
 export function layerAccent(layer: AnnotationLayerView): LayerAccent {
   const identity = asciiLowerCase(`${layer.id} ${layer.standardIdentity ?? ""}`);
   if (identity.includes("entit") || identity.includes("geo")) {
@@ -151,9 +197,9 @@ function readAnnotation(
   rawText: string,
   offsetEncoding: string,
 ): AnnotationView {
-  const span = record(annotation.span);
-  const start = numberValue(span?.start);
-  const end = numberValue(span?.end);
+  const span = record(annotation.span) ?? record(annotation.annotationSpan);
+  const start = span ? numberValue(span.start) ?? 0 : undefined;
+  const end = span ? numberValue(span.end) ?? 0 : undefined;
   const convertedStart = start === undefined ? undefined : toBrowserOffset(rawText, start, offsetEncoding);
   const convertedEnd = end === undefined ? undefined : toBrowserOffset(rawText, end, offsetEncoding);
 
@@ -168,7 +214,10 @@ function readAnnotation(
 }
 
 function annotationLabel(annotation: Record<string, unknown>, index: number): string {
-  for (const key of ["value", "label", "entityType", "type", "stem", "term", "piece", "chunkTag"]) {
+  for (const key of [
+    "value", "label", "text", "stem", "term", "piece", "chunkTag", "entityType", "type",
+    "resultSetName", "groupId", "lexiconId", "algorithm",
+  ]) {
     const value = optionalString(annotation[key]);
     if (value) {
       return value;
@@ -178,6 +227,10 @@ function annotationLabel(annotation: Record<string, unknown>, index: number): st
   const vector = Array.isArray(annotation.vector) ? annotation.vector : [];
   if (modelId || vector.length > 0) {
     return `${modelId || "Embedding"} (${vector.length} dimensions)`;
+  }
+  const resolutionName = optionalString(record(annotation.resolution)?.name);
+  if (resolutionName) {
+    return resolutionName;
   }
   return `Annotation ${index + 1}`;
 }
@@ -220,4 +273,12 @@ function optionalString(value: unknown): string | undefined {
 
 function numberValue(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function hasUsableSpan(annotation: AnnotationView, textLength: number): annotation is AnnotationView & {
+  start: number;
+  end: number;
+} {
+  return annotation.start !== undefined && annotation.end !== undefined
+    && annotation.start >= 0 && annotation.end > annotation.start && annotation.end <= textLength;
 }

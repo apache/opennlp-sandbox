@@ -373,8 +373,14 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.annotation-marker { margin: 0 0.08rem; padding: 0.12rem 0.18rem; border: 0; border-bottom: 2px solid var(--layer-accent); border-radius: 0.2rem; background: var(--layer-soft); color: #eaf8fc; font: inherit; line-height: inherit; transition: background 120ms ease, box-shadow 120ms ease; }
+.annotation-marker { margin: 0; padding: 0.08rem 0.03rem; border: 0; border-bottom: 2px solid var(--layer-accent); border-radius: 0.15rem; background: var(--layer-soft); color: #eaf8fc; font: inherit; line-height: inherit; transition: background 120ms ease, box-shadow 120ms ease; }
 .annotation-marker:hover, .annotation-marker:focus-visible { background: var(--layer-soft); box-shadow: 0 0 0 3px var(--layer-soft); color: white; }
+.document-annotation-strip { display: block; margin: 0 0 1.2rem; padding: 0.8rem; border: 1px solid #2a374c; border-radius: 0.55rem; background: #101a2a; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+.document-annotation-strip > strong { display: block; margin-bottom: 0.55rem; color: #e7eef8; font-size: 0.68rem; }
+.document-annotation-strip > div { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.document-annotation-chip { padding: 0.3rem 0.5rem; border: 1px solid var(--layer-accent); border-radius: 999px; background: var(--layer-soft); color: var(--layer-accent); font-size: 0.62rem; font-weight: 750; }
+.annotation-entry { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #2a374c; }
+.annotation-entry:first-of-type { margin-top: 0.8rem; }
 .annotation-details { max-height: 12rem; overflow: auto; padding: 1rem 1.15rem; border-top: 1px solid #303b4f; background: #0d1523; color: #aebbd0; font-size: 0.7rem; }
 .annotation-details > p, .annotation-details div p { margin: 0.35rem 0 0; line-height: 1.5; }
 .annotation-details strong { color: #f1f6fc; font-size: 0.76rem; }
@@ -419,6 +425,10 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 .chart-canvas { display: grid; min-height: 13rem; padding: 0.8rem; place-items: center; color: #7e8da4; font-size: 0.72rem; text-align: center; }
 .chart-canvas-small { min-height: 9rem; border-top: 1px solid #253147; }
 .chart-canvas-graph { min-height: 25rem; padding: 0; }
+.graph-heading-actions { display: grid; justify-items: end; gap: 0.5rem; }
+.graph-heading-actions p { max-width: 23rem; }
+.graph-heading-actions button { padding: 0.42rem 0.7rem; border: 1px solid #3b91ee; border-radius: 0.45rem; background: #12315a; color: #cfe5ff; font-size: 0.62rem; font-weight: 800; }
+.graph-heading-actions button[aria-pressed="true"] { background: #1769e0; color: white; }
 .chart-canvas[data-chart-active="true"] { display: block; }
 .heatmap-controls { display: grid; grid-template-columns: auto minmax(18rem, 1fr); align-items: end; gap: 1rem; padding: 1rem; border-bottom: 1px solid #253147; background: #0d1727; }
 .heatmap-mode { display: inline-flex; padding: 0.22rem; border: 1px solid #33435a; border-radius: 0.65rem; background: #101b2c; }

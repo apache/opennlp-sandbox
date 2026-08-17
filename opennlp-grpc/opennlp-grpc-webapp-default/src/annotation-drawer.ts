@@ -18,7 +18,7 @@
  */
 
 import type { ChunkProjectionGroup, ChunkProjectionItem } from "./chunk-projection";
-import type { AnnotationLayerView, AnnotationView } from "./document-shape";
+import type { AnnotationEntry, AnnotationLayerView, AnnotationView } from "./document-shape";
 import { asciiLowerCase } from "./text-utils";
 import { emptyMessage, requiredElement } from "./ui-utils";
 
@@ -85,6 +85,23 @@ export class AnnotationDrawer {
     this.open(trigger);
   }
 
+  showAnnotations(
+    text: string,
+    start: number,
+    end: number,
+    entries: AnnotationEntry[],
+    trigger?: HTMLElement,
+  ): void {
+    const title = document.createElement("strong");
+    title.textContent = text;
+    const summary = document.createElement("p");
+    summary.textContent = `${entries.length} ${entries.length === 1 ? "annotation" : "annotations"} cover `
+      + `characters ${start}..${end}.`;
+    this.#content.replaceChildren(title, summary,
+      ...entries.map((entry) => annotationBlock(entry.layer, entry.annotation)));
+    this.open(trigger);
+  }
+
   showChunk(group: ChunkProjectionGroup, chunk: ChunkProjectionItem, trigger: HTMLElement): void {
     const title = document.createElement("strong");
     title.textContent = `${group.title}, chunk ${chunk.index}`;
@@ -124,6 +141,27 @@ export class AnnotationDrawer {
     }
     this.#returnFocus = undefined;
   }
+}
+
+function annotationBlock(layer: AnnotationLayerView, annotation: AnnotationView): HTMLElement {
+  const block = document.createElement("section");
+  block.className = "annotation-entry";
+  const title = document.createElement("strong");
+  title.textContent = `${layer.title}: ${annotation.label}`;
+  const facts = document.createElement("dl");
+  facts.className = "annotation-facts";
+  addFact(facts, "Layer", layer.id);
+  addFact(facts, "Value type", layer.valueType);
+  if (annotation.probability !== undefined) {
+    addFact(facts, "Probability", annotation.probability.toFixed(4));
+  }
+  if (annotation.score !== undefined) {
+    addFact(facts, "Score", annotation.score.toFixed(4));
+  }
+  const source = document.createElement("pre");
+  source.textContent = JSON.stringify(annotation.source, null, 2);
+  block.append(title, facts, source);
+  return block;
 }
 
 function addFact(list: HTMLDListElement, term: string, value: string): void {

@@ -108,4 +108,19 @@ describe("visualization data", () => {
     expect(graph.links).toContainEqual({ source: "document", target: "layer:opennlp:sentiment" });
     expect(graph.truncated).toBe(true);
   });
+
+  it("shares a bounded graph budget across every returned layer", () => {
+    const graph = buildDocumentGraph(shape, 2);
+
+    expect(graph.nodes.filter((node) => node.kind === "annotation").map((node) => node.layerId))
+      .toEqual(["opennlp:sentence-embeddings", "opennlp:sentiment"]);
+    expect(graph.truncated).toBe(true);
+  });
+
+  it("can project every annotation when the caller requests a complete graph", () => {
+    const graph = buildDocumentGraph(shape, 5);
+
+    expect(graph.nodes.filter((node) => node.kind === "annotation")).toHaveLength(5);
+    expect(graph.truncated).toBe(false);
+  });
 });

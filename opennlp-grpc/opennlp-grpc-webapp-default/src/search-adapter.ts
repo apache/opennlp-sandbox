@@ -122,7 +122,8 @@ export function readSearchIndexes(response: unknown): SearchIndex[] {
     const providerId = providerIdentity(provider);
     const embeddingRoute = readEmbeddingRoute(route);
     const metric = text(descriptor.metric);
-    if (!providerId || !embeddingRoute || typeof descriptor.immutable !== "boolean"
+    const immutable = descriptor.immutable === undefined ? false : descriptor.immutable;
+    if (!providerId || !embeddingRoute || typeof immutable !== "boolean"
         || metric !== "SEARCH_METRIC_COSINE") {
       return [];
     }
@@ -140,7 +141,7 @@ export function readSearchIndexes(response: unknown): SearchIndex[] {
       maxTopK: positiveInteger(descriptor.maxTopK),
       maxQueryBytes: positiveInteger(descriptor.maxQueryBytes),
       maxResponseBytes: positiveInteger(descriptor.maxResponseBytes),
-      immutable: descriptor.immutable,
+      immutable,
       corpusTitle: text(corpus?.title) || "Untitled corpus",
       provenance: text(corpus?.provenanceSummary),
       sourceUri: safeUri(corpus?.sourceUri),
@@ -176,7 +177,7 @@ export function readSearchResponse(response: unknown): SearchResponse {
     const sourceDocumentId = nonBlankText(sourceDocument?.docId);
     const chunkId = nonBlankText(hit?.chunkId);
     const emittedChunkText = nonBlankText(hit?.emittedText);
-    const start = nonNegativeInteger(sourceSpan?.start);
+    const start = sourceSpan?.start === undefined ? 0 : nonNegativeInteger(sourceSpan.start);
     const end = nonNegativeInteger(sourceSpan?.end);
     const score = finiteNumber(hit?.score);
     const offsetEncoding = text(sourceDocument?.offsetEncoding);

@@ -35,9 +35,12 @@ import { AnalysisControls } from "./analysis-controls";
 import { AnnotationDrawer } from "./annotation-drawer";
 import { ChunkProjectionView } from "./chunk-projection-view";
 import {
+  combinedAnnotationSegments,
+  documentScopedAnnotations,
   layerAccent,
   readDocumentShape,
   summarizeDocumentShape,
+  type AnnotationEntry,
   type AnnotationLayerView,
   type AnnotationView,
   type DocumentShapeView,
@@ -300,20 +303,31 @@ function renderDocumentShape(shape: DocumentShapeView): void {
     return;
   }
 
-  const initialLayer = shape.layers.find((layer) => layer.id === "opennlp:tokens")
-    ?? shape.layers.find((layer) => layer.annotations.some(hasUsableSpan))
-    ?? shape.layers[0];
-  if (!initialLayer) {
-    return;
-  }
+  const allButton = document.createElement("button");
+  allButton.type = "button";
+  allButton.className = "layer-button";
+  allButton.dataset.layerKind = "all";
+  allButton.dataset.searchText = "all annotations combined";
+  allButton.dataset.accent = "blue";
+  allButton.setAttribute("aria-pressed", "true");
+  const allName = document.createElement("span");
+  allName.textContent = "All annotations";
+  const allCount = document.createElement("small");
+  allCount.textContent = String(summary.annotationCount);
+  allButton.append(allName, allCount);
+  allButton.title = "Combined projection of every returned annotation layer";
+  allButton.addEventListener("click", () => selectAllLayers(shape));
+  layerList.append(allButton);
+
   for (const layer of shape.layers) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "layer-button";
+    button.dataset.layerKind = "layer";
     button.dataset.layerId = layer.id;
     button.dataset.searchText = asciiLowerCase(`${layer.id} ${layer.title} ${layer.valueType}`);
     button.dataset.accent = layerAccent(layer);
-    button.setAttribute("aria-pressed", String(layer === initialLayer));
+    button.setAttribute("aria-pressed", "false");
     const name = document.createElement("span");
     name.textContent = layer.title;
     const count = document.createElement("small");
@@ -323,7 +337,7 @@ function renderDocumentShape(shape: DocumentShapeView): void {
     button.addEventListener("click", () => selectLayer(shape, layer));
     layerList.append(button);
   }
-  selectLayer(shape, initialLayer);
+  selectAllLayers(shape);
 }
 
 function parseStoredResponse(value: string): unknown {
@@ -376,6 +390,69 @@ function selectLayer(shape: DocumentShapeView, layer: AnnotationLayerView): void
   }
 }
 
+function selectAllLayers(shape: DocumentShapeView): void {
+  for (const button of layerList.querySelectorAll<HTMLButtonElement>(".layer-button")) {
+    button.setAttribute("aria-pressed", String(button.dataset.layerKind === "all"));
+  }
+  annotatedText.replaceChildren();
+  annotatedText.dataset.accent = "blue";
+  annotatedText.setAttribute("aria-label", "All typed annotations over document text");
+
+  const documentEntries = documentScopedAnnotations(shape);
+  if (documentEntries.length > 0) {
+    const scoped = document.createElement("section");
+    scoped.className = "document-annotation-strip";
+    const heading = document.createElement("strong");
+    heading.textContent = "Document-wide results";
+    const chips = document.createElement("div");
+    for (const entry of documentEntries) {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "document-annotation-chip";
+      chip.dataset.accent = layerAccent(entry.layer);
+      chip.textContent = `${entry.layer.title}: ${entry.annotation.label}`;
+      chip.addEventListener("click", () => annotationDrawer.showAnnotation(entry.layer, entry.annotation, chip));
+      chips.append(chip);
+    }
+    scoped.append(heading, chips);
+    annotatedText.append(scoped);
+  }
+
+  let cursor = 0;
+  for (const segment of combinedAnnotationSegments(shape)) {
+    appendText(shape.rawText.slice(cursor, segment.start));
+    const text = shape.rawText.slice(segment.start, segment.end);
+    if (!text.trim()) {
+      appendText(text);
+    } else {
+      const marker = document.createElement("button");
+      marker.type = "button";
+      marker.className = "annotation-marker annotation-marker-combined";
+      marker.dataset.accent = combinedAccent(segment.entries);
+      marker.textContent = text;
+      const layerNames = [...new Set(segment.entries.map((entry) => entry.layer.title))];
+      marker.title = layerNames.join(", ");
+      marker.setAttribute("aria-label", `${text}: ${segment.entries.length} typed annotations`);
+      marker.addEventListener("click", () => annotationDrawer.showAnnotations(
+        text, segment.start, segment.end, segment.entries, marker,
+      ));
+      annotatedText.append(marker);
+    }
+    cursor = segment.end;
+  }
+  appendText(shape.rawText.slice(cursor));
+}
+
+function combinedAccent(entries: AnnotationEntry[]): ReturnType<typeof layerAccent> {
+  const accents = new Set(entries.map((entry) => layerAccent(entry.layer)));
+  for (const accent of ["violet", "green", "rose", "amber", "cyan", "blue"] as const) {
+    if (accents.has(accent)) {
+      return accent;
+    }
+  }
+  return "blue";
+}
+
 function selectAnnotationFromGraph(layerId: string, annotationIndex: number): void {
   if (!currentShape) {
     return;
@@ -396,24 +473,29 @@ function filterLayerButtons(): void {
   }
   const query = asciiLowerCase(layerFilter.value.trim());
   const buttons = Array.from(layerList.querySelectorAll<HTMLButtonElement>(".layer-button"));
+  const layerButtons = buttons.filter((button) => button.dataset.layerKind === "layer");
   let visibleCount = 0;
   for (const button of buttons) {
     const visible = !query || button.dataset.searchText?.includes(query) === true;
     button.hidden = !visible;
-    if (visible) {
+    if (visible && button.dataset.layerKind === "layer") {
       visibleCount++;
     }
   }
   layerSummary.textContent = query
-    ? `${visibleCount} of ${buttons.length} layers`
-    : `${buttons.length} ${buttons.length === 1 ? "layer" : "layers"}`;
+    ? `${visibleCount} of ${layerButtons.length} layers`
+    : `${layerButtons.length} ${layerButtons.length === 1 ? "layer" : "layers"}`;
 
   const selected = buttons.find((button) => button.getAttribute("aria-pressed") === "true");
   if (selected?.hidden) {
     const next = buttons.find((button) => !button.hidden);
-    const layer = currentShape.layers.find((candidate) => candidate.id === next?.dataset.layerId);
-    if (layer) {
-      selectLayer(currentShape, layer);
+    if (next?.dataset.layerKind === "all") {
+      selectAllLayers(currentShape);
+    } else {
+      const layer = currentShape.layers.find((candidate) => candidate.id === next?.dataset.layerId);
+      if (layer) {
+        selectLayer(currentShape, layer);
+      }
     }
   }
 }
