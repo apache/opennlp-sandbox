@@ -44,6 +44,7 @@ class OpenNlpGrpcWebAppTest {
 
     assertEquals(0, commandLine.execute("--help"));
     assertTrue(output.toString().contains("--grpc-target"));
+    assertTrue(output.toString().contains("--grpc-max-inbound-message-bytes"));
     assertTrue(output.toString().contains("--max-request-bytes"));
     assertTrue(output.toString().contains("--allow-remote"));
     assertTrue(output.toString().contains("--bound-port-file"));

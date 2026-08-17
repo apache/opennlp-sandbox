@@ -64,6 +64,11 @@ public final class OpenNlpGrpcWebApp implements Callable<Integer> {
       description = "Use a plaintext gRPC connection. Default: ${DEFAULT-VALUE}")
   private boolean grpcPlaintext;
 
+  @Option(names = "--grpc-max-inbound-message-bytes", defaultValue = "104857600",
+      description = "Maximum gRPC message size in bytes accepted from the server."
+          + " Default: ${DEFAULT-VALUE}")
+  private int grpcMaxInboundMessageBytes;
+
   @Option(names = "--request-timeout-seconds", defaultValue = "30",
       description = "Per-RPC deadline in seconds. Default: ${DEFAULT-VALUE}")
   private int requestTimeoutSeconds;
@@ -115,11 +120,13 @@ public final class OpenNlpGrpcWebApp implements Callable<Integer> {
     if (requestTimeoutSeconds < 1) {
       throw new IllegalArgumentException("request timeout must be positive");
     }
+    if (grpcMaxInboundMessageBytes < 1) {
+      throw new IllegalArgumentException("grpc max inbound message bytes must be positive");
+    }
     InetAddress bindAddress = InetAddress.getByName(httpHost);
     validateBindAddress(bindAddress, allowRemote);
 
-    ManagedChannel channel = newChannel(grpcTarget, grpcPlaintext,
-        DEFAULT_GRPC_MAX_INBOUND_MESSAGE_BYTES);
+    ManagedChannel channel = newChannel(grpcTarget, grpcPlaintext, grpcMaxInboundMessageBytes);
     ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
     ClassLoader extensionClassLoader = contextClassLoader == null
         ? OpenNlpGrpcWebApp.class.getClassLoader() : contextClassLoader;
@@ -179,7 +186,7 @@ public final class OpenNlpGrpcWebApp implements Callable<Integer> {
     } else {
       channelBuilder.useTransportSecurity();
     }
-    return channelBuilder.build();
+    return channelBuilder.maxInboundMessageSize(maxInboundMessageBytes).build();
   }
 
   /**
