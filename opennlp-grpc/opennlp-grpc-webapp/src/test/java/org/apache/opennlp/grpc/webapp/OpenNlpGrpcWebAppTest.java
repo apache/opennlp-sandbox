@@ -51,8 +51,16 @@ class OpenNlpGrpcWebAppTest {
   }
 
   @Test
-  void obtainsVersionFromPackageMetadata() {
-    StringWriter output = new StringWriter();
+  void defaultsToHundredMegabyteRequestBodies() {
+    // Whole pasted books must fit through the JSON gateway by default.
+    CommandLine.Model.OptionSpec option = new CommandLine(new OpenNlpGrpcWebApp())
+        .getCommandSpec().findOption("--max-request-bytes");
+
+    assertEquals("104857600", option.defaultValue());
+  }
+
+  @Test
+  void obtainsVersionFromPackageMetadata() {    StringWriter output = new StringWriter();
     CommandLine commandLine = new CommandLine(new OpenNlpGrpcWebApp());
     commandLine.setOut(new PrintWriter(output));
 
