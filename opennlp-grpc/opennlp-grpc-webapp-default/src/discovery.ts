@@ -22,18 +22,6 @@ export interface DiscoveryOption {
   label: string;
 }
 
-/** Profile id of the server's embedding-enabled built-in profile. */
-export const EMBED_PROFILE_ID = "en-embed";
-
-/**
- * Returns the profile id to preselect at initialization time: the {@code en-embed} profile
- * when the server advertises it, since its presence is the server's embedding-capability
- * advertisement. Returns {@code undefined} otherwise, leaving the default selection alone.
- */
-export function preferredProfileId(options: DiscoveryOption[]): string | undefined {
-  return options.some((option) => option.id === EMBED_PROFILE_ID) ? EMBED_PROFILE_ID : undefined;
-}
-
 export function discoverProfiles(value: unknown): DiscoveryOption[] {
   return normalizeOptions(findArray(value, ["availableProfileIds", "profiles", "availableProfiles", "analysisProfiles"]));
 }

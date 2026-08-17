@@ -26,7 +26,7 @@ import {
   type AnalysisSelection,
 } from "./analysis-config";
 import type { AnalyzeRequest } from "./api";
-import { preferredProfileId, type DiscoveryOption } from "./discovery";
+import type { DiscoveryOption } from "./discovery";
 import { replaceCharacter, withoutPrefix } from "./text-utils";
 import { requiredElement } from "./ui-utils";
 
@@ -64,11 +64,6 @@ export class AnalysisControls {
   configure(serviceValue: unknown, bundlesValue: unknown): AnalysisCapabilities {
     this.#capabilities = discoverAnalysisCapabilities(serviceValue, bundlesValue);
     this.populateProfiles(this.#capabilities.profiles);
-    const preferred = preferredProfileId(this.#capabilities.profiles);
-    if (preferred) {
-      // Preselect only here, at discovery time, so an explicit user choice stays sticky.
-      this.#profile.value = `profile:${preferred}`;
-    }
     this.populateEmbeddingModels(this.#capabilities.embeddingModels);
     this.populateModelList(this.#capabilities.bundles);
     this.#customSteps = new Set(this.#capabilities.maxSteps);

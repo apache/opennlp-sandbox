@@ -40,22 +40,63 @@ function serviceInfo(profileIds: string[]): unknown {
   return { availableProfileIds: profileIds };
 }
 
-describe("analysis controls profile preselection", () => {
+describe("analysis controls profile selection", () => {
   beforeEach(() => {
     mountControlsDom();
   });
 
-  it("preselects the en-embed profile when the server advertises it", () => {
+  it("starts with every ready feature selectable when named profiles are advertised", () => {
     const controls = new AnalysisControls(() => undefined);
 
-    controls.configure(serviceInfo(["en-basic", "en-embed"]), undefined);
+    controls.configure({
+      availableProfileIds: ["en-basic", "en-ner", "en-embed"],
+      supportedSteps: [
+        "PIPELINE_STEP_TOKENIZE",
+        "PIPELINE_STEP_NER",
+        "PIPELINE_STEP_GEOCODE",
+        "PIPELINE_STEP_EMBED",
+      ],
+    }, {
+      bundles: [
+        {
+          bundleId: "en-ner",
+          supportedLanguages: ["en"],
+          supportedSteps: ["PIPELINE_STEP_TOKENIZE", "PIPELINE_STEP_NER"],
+        },
+        {
+          bundleId: "en-embed",
+          supportedLanguages: ["en"],
+          supportedSteps: ["PIPELINE_STEP_EMBED"],
+          models: [{
+            name: "legal-minilm-full",
+            componentType: "COMPONENT_TYPE_EMBEDDER",
+            embeddingDimension: 256,
+            backendId: "static",
+          }],
+        },
+      ],
+    });
 
     const select = document.getElementById("profile-select") as HTMLSelectElement;
-    expect(select.value).toBe("profile:en-embed");
-    expect(controls.request("Some text.").profileId).toBe("en-embed");
+    expect(select.value).toBe("max");
+    const featureInputs = [...document.querySelectorAll<HTMLInputElement>("#feature-options input")];
+    const readyInputs = featureInputs.filter((input) => [
+      "PIPELINE_STEP_TOKENIZE",
+      "PIPELINE_STEP_NER",
+      "PIPELINE_STEP_GEOCODE",
+      "PIPELINE_STEP_EMBED",
+    ].includes(input.value));
+    expect(readyInputs).toHaveLength(4);
+    expect(readyInputs.every((input) => input.checked && !input.disabled)).toBe(true);
+    expect(controls.request("Some text.").profile?.steps).toEqual([
+      "PIPELINE_STEP_TOKENIZE",
+      "PIPELINE_STEP_NER",
+      "PIPELINE_STEP_GEOCODE",
+      "PIPELINE_STEP_EMBED",
+    ]);
   });
 
-  it("leaves the default selection alone when en-embed is not advertised", () => {
+  it("starts with all available features when only a basic profile is advertised", () => {
     const controls = new AnalysisControls(() => undefined);
 
     controls.configure(serviceInfo(["en-basic"]), undefined);

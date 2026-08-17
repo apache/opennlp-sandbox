@@ -19,7 +19,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { discoverModelBundles, discoverProfiles, preferredProfileId } from "../src/discovery";
+import { discoverModelBundles, discoverProfiles } from "../src/discovery";
 
 describe("service discovery", () => {
   it("normalizes profile names from common response envelopes", () => {
@@ -44,19 +44,5 @@ describe("service discovery", () => {
   it("ignores malformed discovery entries", () => {
     expect(discoverProfiles({ profiles: [null, {}, 42, ""] })).toEqual([]);
     expect(discoverModelBundles({ bundles: [{ displayName: "Missing id" }] })).toEqual([]);
-  });
-
-  it("prefers the en-embed profile only when the server advertises it", () => {
-    // The profile's presence is the server's embedding-capability advertisement.
-    expect(preferredProfileId([
-      { id: "en-basic", label: "en-basic" },
-      { id: "en-embed", label: "en-embed" },
-    ])).toBe("en-embed");
-    expect(preferredProfileId([
-      { id: "en-embed", label: "en-embed" },
-      { id: "en-basic", label: "en-basic" },
-    ])).toBe("en-embed");
-    expect(preferredProfileId([{ id: "en-basic", label: "en-basic" }])).toBeUndefined();
-    expect(preferredProfileId([])).toBeUndefined();
   });
 });
