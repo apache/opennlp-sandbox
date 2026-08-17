@@ -189,6 +189,38 @@ resource atomically. Add the installed paths to the server configuration, such a
 server. The web workbench's **Models & data** tab reports which pipeline features are ready and
 which still need an operator-provided model or data resource.
 
+For the complete demonstration setup, use the checksum-pinned downloader. Its preferred embedding
+provider is a static table produced by OpenNLP's `DistillModel` command:
+
+```bash
+./demo-model-download.sh \
+  --embedding-dir /srv/opennlp/models/legal-minilm-full \
+  --embedding-model-id legal-minilm-full
+```
+
+The script writes `demo-models/demo-server.properties` and a model-source manifest, then prints the
+exact classpath command needed to start the static embedding provider. It also installs the ONNX NER
+and sentiment models, SentencePiece data, and Open English WordNet needed by the richer workbench
+profiles. Current Apache `opennlp-models-*` Maven dependencies provide language detection plus the
+English sentence, token, POS, and lemma models. Parser and syntactic chunker models remain explicit
+operator inputs because this script does not use the retired SourceForge 1.5 artifacts.
+
+To create the embedding directory, follow
+`opennlp-extensions/opennlp-embeddings/TRAINING.md` in the corresponding OpenNLP checkout. The basic
+flow is:
+
+```bash
+opennlp-embeddings DistillModel \
+  -teacher sentence-transformers/all-MiniLM-L6-v2 \
+  -out /srv/opennlp/models/legal-minilm-full \
+  -pcaDims 256
+```
+
+`DistillModel` writes the static matrix, vocabulary or tokenizer files, and configuration consumed
+by `--embedding-dir`. The teacher model's license carries onto the distilled table, so verify it
+before publishing the result. For a quick public fallback instead of a locally distilled table,
+pass `--public-embedding-fallback`; this choice is explicit and is not the demo default.
+
 ## Run the optional web application
 
 With the gRPC service running on its default port, start the separate web application:

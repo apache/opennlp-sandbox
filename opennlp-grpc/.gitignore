@@ -5,3 +5,4 @@
 **/buf.gen.yaml
 **/buf.lock
 opennlp-grpc-api/API.md
+/demo-models/
