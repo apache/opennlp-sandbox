@@ -402,6 +402,7 @@ List of third-party dependencies grouped by their license type.
 
     Public Domain
 
+        * Alice's Adventures in Wonderland (Lewis Carroll, 1865)
         * JSON in Java (org.json:json:20260719 - https://github.com/douglascrockford/JSON-java)
 
     The Apache Software License, version 2.0

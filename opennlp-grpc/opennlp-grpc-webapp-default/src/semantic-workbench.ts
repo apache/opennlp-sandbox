@@ -20,6 +20,7 @@
 import type { ChartHandle } from "./charts";
 import type { IndexDocumentsRequest } from "./api";
 import type { DocumentShapeView } from "./document-shape";
+import { supportsCompleteGraph } from "./document-window";
 import type { SearchHit, SearchIndex, SearchRequest, SearchResponse } from "./search-adapter";
 import { collapseWhitespace, ellipsizeCodePoints } from "./text-utils";
 import { emptyMessage, requiredElement } from "./ui-utils";
@@ -91,6 +92,7 @@ export class SemanticWorkbench {
   #busy = false;
   #nextDocumentId = 1;
   #documentRevision = 0;
+  #workspaceDocumentRevision = -1;
   #heatmapRevision = -1;
   #heatmapMode: HeatmapMode = "query";
   #graphComplete = false;
@@ -111,8 +113,8 @@ export class SemanticWorkbench {
     this.updateControls();
   }
 
-  setDocument(title: string, shape: DocumentShapeView, json = ""): void {
-    const indexed = indexableDocument(json);
+  setDocument(title: string, shape: DocumentShapeView, response?: unknown): void {
+    const indexed = indexableDocument(response);
     this.#current = {
       title: title.trim(),
       shape,
@@ -140,7 +142,7 @@ export class SemanticWorkbench {
 
   private async addCurrentDocument(): Promise<void> {
     const current = this.#current;
-    if (!current?.wireDocument || !current.modelId || this.#busy) {
+    if (!isIndexableCurrentDocument(current) || this.#busy) {
       this.setStatus("This result has no indexed chunk embeddings. Select an embedding model and chunk strategy.", true);
       return;
     }
@@ -148,18 +150,8 @@ export class SemanticWorkbench {
     this.setStatus("Sending the analyzed document shape to the gRPC workspace index.");
     this.updateControls();
     try {
-      const document = { ...current.wireDocument };
-      if (typeof document.docId !== "string" || !document.docId.trim()) {
-        document.docId = `workbench-document-${this.#nextDocumentId++}`;
-      }
-      this.#workspace = await this.#options.index({
-        ...(this.#workspace ? { indexId: this.#workspace.id } : {}),
-        displayName: "Workbench index",
-        documents: [document],
-        embedding: { modelId: current.modelId },
-        chunkGroupIds: current.groupIds,
-      });
-      this.setStatus(`Indexed by the gRPC server. ${this.#workspace.size ?? 0} chunks available.`);
+      const workspace = await this.indexCurrentDocument(current);
+      this.setStatus(`Indexed by the gRPC server. ${workspace.size ?? 0} chunks available.`);
     } catch (error) {
       this.setStatus(error instanceof Error ? error.message : "Server-side indexing failed.", true);
     } finally {
@@ -177,6 +169,7 @@ export class SemanticWorkbench {
     try {
       await this.#options.deleteIndex(this.#workspace.id);
       this.#workspace = undefined;
+      this.#workspaceDocumentRevision = -1;
       this.#results.replaceChildren(emptyMessage("No workspace search results yet."));
       this.setStatus("The gRPC server deleted the workspace index.");
     } catch (error) {
@@ -190,18 +183,28 @@ export class SemanticWorkbench {
   private async search(event: SubmitEvent): Promise<void> {
     event.preventDefault();
     const query = this.#query.value.trim();
-    if (!query || this.#busy || !this.#workspace) {
+    const current = this.#current;
+    if (!query || this.#busy || (!this.#workspace && !isIndexableCurrentDocument(current))) {
       return;
     }
 
     this.#busy = true;
-    this.setStatus("The gRPC server is embedding and searching the workspace query.");
+    this.setStatus("Preparing the latest document for server-side search.");
     this.updateControls();
     try {
+      if (isIndexableCurrentDocument(current)
+          && this.#workspaceDocumentRevision !== this.#documentRevision) {
+        await this.indexCurrentDocument(current);
+      }
+      const workspace = this.#workspace;
+      if (!workspace) {
+        throw new Error("No server workspace is available for this query.");
+      }
+      this.setStatus("The gRPC server is embedding and searching the workspace query.");
       const response = await this.#options.search({
-        indexId: this.#workspace.id,
+        indexId: workspace.id,
         query: { rawText: query },
-        topK: Math.min(50, this.#workspace.maxTopK ?? 50),
+        topK: Math.min(50, workspace.maxTopK ?? 50),
       });
       this.renderSearchResults(response.hits);
       this.updateServerHeatmap(response.hits);
@@ -214,6 +217,22 @@ export class SemanticWorkbench {
       this.#busy = false;
       this.updateControls();
     }
+  }
+
+  private async indexCurrentDocument(current: IndexableCurrentDocument): Promise<SearchIndex> {
+    const document = indexDocumentProjection(current.wireDocument);
+    if (typeof document.docId !== "string" || !document.docId.trim()) {
+      document.docId = `workbench-document-${this.#nextDocumentId++}`;
+    }
+    this.#workspace = await this.#options.index({
+      ...(this.#workspace ? { indexId: this.#workspace.id } : {}),
+      displayName: "Workbench index",
+      documents: [document],
+      embedding: { modelId: current.modelId },
+      chunkGroupIds: current.groupIds,
+    });
+    this.#workspaceDocumentRevision = this.#documentRevision;
+    return this.#workspace;
   }
 
   private async searchHeatmap(event: SubmitEvent): Promise<void> {
@@ -259,7 +278,10 @@ export class SemanticWorkbench {
     if (this.#heatmapWorkspace && this.#heatmapRevision === this.#documentRevision) {
       return this.#heatmapWorkspace;
     }
-    const document = { ...current.wireDocument, docId: "heatmap-current-document" };
+    const document = {
+      ...indexDocumentProjection(current.wireDocument),
+      docId: "heatmap-current-document",
+    };
     this.#heatmapWorkspace = await this.#options.index({
       ...(this.#heatmapWorkspace ? { indexId: this.#heatmapWorkspace.id } : {}),
       displayName: "Current document heatmap",
@@ -365,7 +387,7 @@ export class SemanticWorkbench {
   }
 
   private toggleCompleteGraph(): void {
-    if (!this.#current) {
+    if (!this.#current || !supportsCompleteGraph(this.annotationCount())) {
       return;
     }
     this.#graphComplete = !this.#graphComplete;
@@ -383,13 +405,28 @@ export class SemanticWorkbench {
       return;
     }
     const total = shape.layers.reduce((count, layer) => count + layer.annotations.length, 0);
+    const completeAllowed = supportsCompleteGraph(total);
+    if (!completeAllowed) {
+      this.#graphComplete = false;
+    }
     this.#graph = buildDocumentGraph(shape, this.#graphComplete ? total : 120);
     this.#graphCompleteness.hidden = total <= 120;
+    this.#graphCompleteness.disabled = !completeAllowed;
     this.#graphCompleteness.setAttribute("aria-pressed", String(this.#graphComplete));
-    this.#graphCompleteness.textContent = this.#graphComplete ? "Show balanced overview" : "Show complete graph";
+    this.#graphCompleteness.textContent = !completeAllowed
+      ? "Complete graph limited for large documents"
+      : this.#graphComplete ? "Show balanced overview" : "Show complete graph";
     this.#graphSelection.textContent = this.#graph.truncated
-      ? `Balanced overview of 120 of ${total} annotations across every layer. Select a node or show the complete graph.`
+      ? completeAllowed
+        ? `Balanced overview of 120 of ${total} annotations across every layer. Select a node or show the complete graph.`
+        : `Balanced overview of 120 of ${total} annotations. The complete graph is intentionally bounded.`
       : `Complete graph with ${total} annotations across ${shape.layers.length} layers. Select a node to inspect it.`;
+  }
+
+  private annotationCount(): number {
+    return this.#current?.shape.layers.reduce(
+      (count, layer) => count + layer.annotations.length, 0,
+    ) ?? 0;
   }
 
   private selectGraphNode(node: DocumentGraphNode): void {
@@ -408,10 +445,11 @@ export class SemanticWorkbench {
 
   private updateControls(): void {
     const indexable = Boolean(this.#current?.wireDocument && this.#current.modelId);
+    const searchable = Boolean(this.#workspace) || indexable;
     this.#addButton.disabled = !indexable || this.#busy;
     this.#clearButton.disabled = !this.#workspace || this.#busy;
-    this.#searchButton.disabled = !this.#workspace || !this.#query.value.trim() || this.#busy;
-    this.#query.disabled = !this.#workspace || this.#busy;
+    this.#searchButton.disabled = !searchable || !this.#query.value.trim() || this.#busy;
+    this.#query.disabled = !searchable || this.#busy;
     const heatmapIndexable = Boolean(this.#current?.wireDocument && this.#current.modelId);
     this.#heatmapQuery.disabled = this.#heatmapMode !== "query" || !heatmapIndexable || this.#busy;
     this.#heatmapQueryButton.disabled = this.#heatmapMode !== "query" || !heatmapIndexable
@@ -430,14 +468,14 @@ export class SemanticWorkbench {
   }
 }
 
-function indexableDocument(json: string): {
+function indexableDocument(response: unknown): {
   document: Record<string, unknown>;
   modelId: string;
   groupIds: string[];
 } | undefined {
   try {
-    const envelope = JSON.parse(json) as Record<string, unknown>;
-    const document = record(envelope.document);
+    const envelope = record(response);
+    const document = record(envelope?.document);
     const groups: Array<Record<string, unknown>> = [];
     if (Array.isArray(document?.chunkEmbeddingGroups)) {
       for (const value of document.chunkEmbeddingGroups) {
@@ -454,6 +492,22 @@ function indexableDocument(json: string): {
   } catch {
     return undefined;
   }
+}
+
+function indexDocumentProjection(document: Record<string, unknown>): Record<string, unknown> {
+  const projected: Record<string, unknown> = {};
+  for (const field of [
+    "docId",
+    "rawText",
+    "offsetEncoding",
+    "metadata",
+    "chunkEmbeddingGroups",
+  ]) {
+    if (document[field] !== undefined) {
+      projected[field] = document[field];
+    }
+  }
+  return projected;
 }
 
 function record(value: unknown): Record<string, unknown> | undefined {

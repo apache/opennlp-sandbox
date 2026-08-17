@@ -39,7 +39,8 @@ class GrpcJsonApiTest {
 
     assertEquals(200, response.status());
     assertEquals("application/json; charset=utf-8", response.contentType());
-    assertTrue(response.bodyUtf8().contains("\"opennlpVersion\": \"3.0.0\""));
+    assertTrue(response.bodyUtf8().contains("\"opennlpVersion\":\"3.0.0\""));
+    assertTrue(!response.bodyUtf8().contains("\n"));
   }
 
   @Test
@@ -52,8 +53,8 @@ class GrpcJsonApiTest {
     WebHttpResponse response = api.handle("POST", "/api/v1/analyze", request);
 
     assertEquals(200, response.status());
-    assertTrue(response.bodyUtf8().contains("\"docId\": \"one\""));
-    assertTrue(response.bodyUtf8().contains("\"rawText\": \"Hello world.\""));
+    assertTrue(response.bodyUtf8().contains("\"docId\":\"one\""));
+    assertTrue(response.bodyUtf8().contains("\"rawText\":\"Hello world.\""));
   }
 
   @Test

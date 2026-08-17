@@ -31,11 +31,14 @@ describe("analysis playground markup", () => {
     expect(html).toContain('id="service-status" role="status" aria-live="polite"');
     expect(html).toContain('id="form-status" role="status" aria-live="polite"');
     expect(html).toContain('id="response-output"');
+    expect(html).toContain('id="download-button"');
     expect(html).toContain('aria-label="Workbench navigation"');
     expect(html).toContain('role="tablist" aria-label="Analysis result views"');
     expect(html).toContain('id="document-view" role="tabpanel"');
     expect(html).toContain('id="layer-list" aria-label="Annotation layers"');
     expect(html).toContain('id="annotated-text"');
+    expect(html).toContain('id="document-window-position"');
+    expect(html).toContain('id="document-window-label"');
     expect(html).toContain('id="annotation-details"');
     expect(html).toContain('aria-label="OpenNLP tools"');
     expect(html).toContain('id="tool-navigation"');
@@ -56,6 +59,7 @@ describe("analysis playground markup", () => {
     expect(html).not.toContain('id="semantic-heatmap"');
     expect(html).not.toContain('id="sentiment-heatmap"');
     expect(html).toContain('id="semantic-query"');
+    expect(html).toContain('id="alice-sample-button"');
     expect(html).toContain('id="add-to-index-button"');
     expect(html).toContain('id="search-results"');
     expect(html).toContain('Apache OpenNLP');

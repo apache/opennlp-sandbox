@@ -85,7 +85,7 @@ class OpenNlpGrpcWebServerTest {
       HttpResponse<String> analysis = client.send(analyze,
           HttpResponse.BodyHandlers.ofString());
       assertEquals(200, analysis.statusCode());
-      assertTrue(analysis.body().contains("\"docId\": \"http\""));
+      assertTrue(analysis.body().contains("\"docId\":\"http\""));
     }
   }
 
@@ -100,7 +100,7 @@ class OpenNlpGrpcWebServerTest {
 
       HttpResponse<String> indexes = get(client, server, "/api/v1/search-indexes");
       assertEquals(200, indexes.statusCode());
-      assertTrue(indexes.body().contains("\"indexId\": \"" + SEARCH_INDEX_ID + "\""));
+      assertTrue(indexes.body().contains("\"indexId\":\"" + SEARCH_INDEX_ID + "\""));
 
       HttpRequest search = request(server, "/api/v1/search")
           .header("Content-Type", "application/json")
@@ -111,8 +111,8 @@ class OpenNlpGrpcWebServerTest {
       HttpResponse<String> response = client.send(search, HttpResponse.BodyHandlers.ofString());
 
       assertEquals(200, response.statusCode());
-      assertTrue(response.body().contains("\"documentId\": \"" + SEARCH_DOCUMENT_ID + "\""));
-      assertTrue(response.body().contains("\"rawText\": \"The writ must issue.\""));
+      assertTrue(response.body().contains("\"documentId\":\"" + SEARCH_DOCUMENT_ID + "\""));
+      assertTrue(response.body().contains("\"rawText\":\"The writ must issue.\""));
     }
   }
 

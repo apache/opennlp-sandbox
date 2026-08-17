@@ -113,31 +113,62 @@ export function summarizeDocumentShape(shape: DocumentShapeView): DocumentShapeS
 
 /** Builds non-overlapping text segments carrying every positional annotation that covers them. */
 export function combinedAnnotationSegments(shape: DocumentShapeView): CombinedAnnotationSegment[] {
-  const boundaries = new Set<number>();
+  interface OrderedEntry extends AnnotationEntry {
+    order: number;
+  }
+  interface BoundaryEvents {
+    starts: OrderedEntry[];
+    ends: OrderedEntry[];
+  }
+  const events = new Map<number, BoundaryEvents>();
+  let order = 0;
   for (const layer of shape.layers) {
     for (const annotation of layer.annotations) {
       if (hasUsableSpan(annotation, shape.rawText.length)) {
-        boundaries.add(annotation.start);
-        boundaries.add(annotation.end);
+        const entry = { layer, annotation, order: order++ };
+        boundaryEvents(events, annotation.start).starts.push(entry);
+        boundaryEvents(events, annotation.end).ends.push(entry);
       }
     }
   }
-  const ordered = [...boundaries].sort((left, right) => left - right);
+  const boundaries = [...events.keys()].sort((left, right) => left - right);
+  const active = new Map<number, OrderedEntry>();
   const segments: CombinedAnnotationSegment[] = [];
-  for (let index = 0; index + 1 < ordered.length; index++) {
-    const start = ordered[index]!;
-    const end = ordered[index + 1]!;
+  for (let index = 0; index + 1 < boundaries.length; index++) {
+    const start = boundaries[index]!;
+    const end = boundaries[index + 1]!;
+    const boundary = events.get(start)!;
+    for (const entry of boundary.ends) {
+      active.delete(entry.order);
+    }
+    for (const entry of boundary.starts) {
+      active.set(entry.order, entry);
+    }
     if (end <= start) {
       continue;
     }
-    const entries = shape.layers.flatMap((layer) => layer.annotations.flatMap((annotation) =>
-      hasUsableSpan(annotation, shape.rawText.length)
-        && annotation.start <= start && annotation.end >= end ? [{ layer, annotation }] : []));
-    if (entries.length > 0) {
+    if (active.size > 0) {
+      const entries = [...active.values()]
+        .sort((left, right) => left.order - right.order)
+        .map(({ layer, annotation }) => ({ layer, annotation }));
       segments.push({ start, end, entries });
     }
   }
   return segments;
+}
+
+function boundaryEvents(
+  events: Map<number, { starts: Array<AnnotationEntry & { order: number }>;
+    ends: Array<AnnotationEntry & { order: number }> }>,
+  offset: number,
+): { starts: Array<AnnotationEntry & { order: number }>;
+  ends: Array<AnnotationEntry & { order: number }> } {
+  let result = events.get(offset);
+  if (!result) {
+    result = { starts: [], ends: [] };
+    events.set(offset, result);
+  }
+  return result;
 }
 
 /** Returns document-scoped annotations that cannot be projected onto a text span. */

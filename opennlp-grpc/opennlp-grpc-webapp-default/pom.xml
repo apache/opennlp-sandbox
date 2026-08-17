@@ -131,6 +131,8 @@
                         <exclude>tsconfig.json</exclude>
                         <!-- Verbatim third-party license text cannot carry an ASF source header. -->
                         <exclude>src/main/resources/META-INF/LICENSE-frontend-dependencies</exclude>
+                        <!-- Public-domain literary demo data is binary-compressed. -->
+                        <exclude>public/data/alice-in-wonderland.txt.gz</exclude>
                     </excludes>
                 </configuration>
             </plugin>

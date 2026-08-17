@@ -43,8 +43,13 @@ import {
   type AnnotationEntry,
   type AnnotationLayerView,
   type AnnotationView,
+  type CombinedAnnotationSegment,
   type DocumentShapeView,
 } from "./document-shape";
+import {
+  documentWindow,
+  pageForDocumentOffset,
+} from "./document-window";
 import { readNormalizationXray, renderNormalizationXray } from "./normalization-xray";
 import { SemanticWorkbench, type ResultViewName } from "./semantic-workbench";
 import { ModelDataWorkbench } from "./model-data-workbench";
@@ -59,6 +64,8 @@ import {
 } from "./ui-extensions";
 import { errorMessage, requiredElement } from "./ui-utils";
 import { WorkbenchNavigation } from "./workbench-navigation";
+import { loadAliceDemo } from "./demo-data";
+import { jsonPresentation } from "./json-response";
 
 const sampleText =
   "Apache OpenNLP helps developers build applications that process natural language. " +
@@ -68,7 +75,9 @@ const form = requiredElement<HTMLFormElement>("analysis-form");
 const textArea = requiredElement<HTMLTextAreaElement>("analysis-text");
 const analyzeButton = requiredElement<HTMLButtonElement>("analyze-button");
 const sampleButton = requiredElement<HTMLButtonElement>("sample-button");
+const aliceSampleButton = requiredElement<HTMLButtonElement>("alice-sample-button");
 const copyButton = requiredElement<HTMLButtonElement>("copy-button");
+const downloadButton = requiredElement<HTMLButtonElement>("download-button");
 const responseOutput = requiredElement<HTMLElement>("response-output");
 const formStatus = requiredElement<HTMLElement>("form-status");
 const serviceStatus = requiredElement<HTMLElement>("service-status");
@@ -80,6 +89,9 @@ const characterCount = requiredElement<HTMLElement>("character-count");
 const layerList = requiredElement<HTMLElement>("layer-list");
 const layerSummary = requiredElement<HTMLElement>("layer-summary");
 const annotatedText = requiredElement<HTMLElement>("annotated-text");
+const documentWindowControls = requiredElement<HTMLElement>("document-window-controls");
+const documentWindowPosition = requiredElement<HTMLInputElement>("document-window-position");
+const documentWindowLabel = requiredElement<HTMLElement>("document-window-label");
 const xrayToggle = requiredElement<HTMLInputElement>("normalization-xray-toggle");
 const normalizationXray = requiredElement<HTMLElement>("normalization-xray");
 const documentView = requiredElement<HTMLElement>("document-view");
@@ -98,7 +110,10 @@ const toolNavigationStatus = requiredElement<HTMLElement>("tool-navigation-statu
 let serviceAvailable = false;
 let busy = false;
 let currentJson = "";
+let currentResponse: unknown;
 let currentShape: DocumentShapeView | undefined;
+let currentLayer: AnnotationLayerView | undefined;
+let currentCombinedSegments: CombinedAnnotationSegment[] = [];
 
 const analysisControls = new AnalysisControls(updateFormState);
 const annotationDrawer = new AnnotationDrawer();
@@ -125,11 +140,10 @@ const semanticWorkbench = new SemanticWorkbench({
     updateFormState();
     renderDocumentShape(shape);
     normalizationXray.hidden = true;
-    currentJson = JSON.stringify({ document: hit.sourceDocument }, null, 2);
-    responseOutput.textContent = currentJson;
+    const response = { document: hit.sourceDocument };
+    storeResponse(response, shape);
     chunkProjectionView.render({ document: hit.sourceDocument });
-    copyButton.disabled = !currentJson;
-    semanticWorkbench.setDocument(hit.documentId, shape, currentJson);
+    semanticWorkbench.setDocument(hit.documentId, shape, response);
     selectResultTab("document");
   },
   selectAnnotation: selectAnnotationFromGraph,
@@ -153,9 +167,12 @@ sampleButton.addEventListener("click", () => {
   updateFormState();
   textArea.focus();
 });
+aliceSampleButton.addEventListener("click", () => void loadAliceSample());
 form.addEventListener("submit", submitAnalysis);
 copyButton.addEventListener("click", copyResponse);
+downloadButton.addEventListener("click", downloadResponse);
 layerFilter.addEventListener("input", filterLayerButtons);
+documentWindowPosition.addEventListener("input", renderCurrentDocumentWindow);
 for (const tab of resultTabs) {
   tab.addEventListener("click", () => selectResultTab(resultViewName(tab.dataset.resultTab)));
   tab.addEventListener("keydown", navigateResultTabs);
@@ -259,19 +276,19 @@ async function submitAnalysis(event: SubmitEvent): Promise<void> {
   responseOutput.textContent = "Waiting for the service response…";
   try {
     const response = await analyze(createAnalysisRequest(text));
-    currentJson = JSON.stringify(response, null, 2);
-    responseOutput.textContent = currentJson;
     const shape = readDocumentShape(response);
+    storeResponse(response, shape);
     chunkProjectionView.render(response);
     renderDocumentShape(shape);
     renderXray(response);
-    semanticWorkbench.setDocument(text, shape, currentJson);
+    semanticWorkbench.setDocument(text, shape, response);
     selectResultTab("document");
-    copyButton.disabled = false;
     setFormStatus("Analysis complete.");
   } catch (error) {
     currentJson = "";
+    currentResponse = undefined;
     copyButton.disabled = true;
+    downloadButton.disabled = true;
     normalizationXray.hidden = true;
     responseOutput.textContent = "The analysis request did not complete.";
     setFormStatus(errorMessage(error, "Analysis failed. Please try again."), true);
@@ -280,8 +297,25 @@ async function submitAnalysis(event: SubmitEvent): Promise<void> {
   }
 }
 
+async function loadAliceSample(): Promise<void> {
+  aliceSampleButton.disabled = true;
+  setFormStatus("Loading the compressed public-domain Alice demo.");
+  try {
+    textArea.value = await loadAliceDemo();
+    updateFormState();
+    textArea.focus();
+    setFormStatus("Alice’s Adventures in Wonderland loaded. All configured features are ready to run.");
+  } catch (error) {
+    setFormStatus(errorMessage(error, "Could not load the Alice demo."), true);
+  } finally {
+    aliceSampleButton.disabled = false;
+  }
+}
+
 function renderDocumentShape(shape: DocumentShapeView): void {
   currentShape = shape;
+  currentLayer = undefined;
+  currentCombinedSegments = [];
   layerList.replaceChildren();
   annotatedText.replaceChildren();
   annotationDrawer.reset();
@@ -290,6 +324,7 @@ function renderDocumentShape(shape: DocumentShapeView): void {
   resultLayerCount.textContent = String(summary.layerCount);
   resultAnnotationCount.textContent = String(summary.annotationCount);
   resultOffsetEncoding.textContent = summary.offsetEncodingLabel;
+  configureDocumentWindow(shape.rawText.length);
   layerFilter.value = "";
   layerFilter.disabled = shape.layers.length === 0;
 
@@ -340,18 +375,8 @@ function renderDocumentShape(shape: DocumentShapeView): void {
   selectAllLayers(shape);
 }
 
-function parseStoredResponse(value: string): unknown {
-  if (!value) {
-    return undefined;
-  }
-  try {
-    return JSON.parse(value) as unknown;
-  } catch {
-    return undefined;
-  }
-}
-
 function selectLayer(shape: DocumentShapeView, layer: AnnotationLayerView): void {
+  currentLayer = layer;
   for (const button of layerList.querySelectorAll<HTMLButtonElement>(".layer-button")) {
     button.setAttribute("aria-pressed", String(button.dataset.layerId === layer.id));
   }
@@ -360,13 +385,15 @@ function selectLayer(shape: DocumentShapeView, layer: AnnotationLayerView): void
   annotatedText.dataset.accent = layerAccent(layer);
   annotatedText.setAttribute("aria-label", `${layer.title} annotations over document text`);
 
+  const view = currentDocumentWindow(shape.rawText.length);
   const positional = layer.annotations
-    .filter(hasUsableSpan)
+    .filter((annotation) => hasUsableSpan(annotation)
+      && annotation.end! > view.start && annotation.start! < view.end)
     .sort((left, right) => left.start! - right.start! || left.end! - right.end!);
-  let cursor = 0;
+  let cursor = view.start;
   for (const annotation of positional) {
-    const start = Math.max(cursor, Math.min(annotation.start!, shape.rawText.length));
-    const end = Math.max(start, Math.min(annotation.end!, shape.rawText.length));
+    const start = Math.max(cursor, view.start, Math.min(annotation.start!, view.end));
+    const end = Math.max(start, Math.min(annotation.end!, view.end));
     if (end <= cursor) {
       continue;
     }
@@ -382,15 +409,18 @@ function selectLayer(shape: DocumentShapeView, layer: AnnotationLayerView): void
     annotatedText.append(marker);
     cursor = end;
   }
-  appendText(shape.rawText.slice(cursor));
+  appendText(shape.rawText.slice(cursor, view.end));
 
   if (positional.length === 0) {
-    annotatedText.textContent = shape.rawText;
-    annotationDrawer.describeLayer(layer, "This document-scoped layer has no selectable text spans.");
+    annotatedText.textContent = shape.rawText.slice(view.start, view.end);
+    annotationDrawer.describeLayer(layer, layer.annotations.some(hasUsableSpan)
+      ? "This layer has no selectable text spans in the current document window."
+      : "This document-scoped layer has no selectable text spans.");
   }
 }
 
 function selectAllLayers(shape: DocumentShapeView): void {
+  currentLayer = undefined;
   for (const button of layerList.querySelectorAll<HTMLButtonElement>(".layer-button")) {
     button.setAttribute("aria-pressed", String(button.dataset.layerKind === "all"));
   }
@@ -418,10 +448,19 @@ function selectAllLayers(shape: DocumentShapeView): void {
     annotatedText.append(scoped);
   }
 
-  let cursor = 0;
-  for (const segment of combinedAnnotationSegments(shape)) {
-    appendText(shape.rawText.slice(cursor, segment.start));
-    const text = shape.rawText.slice(segment.start, segment.end);
+  if (currentCombinedSegments.length === 0) {
+    currentCombinedSegments = combinedAnnotationSegments(shape);
+  }
+  const view = currentDocumentWindow(shape.rawText.length);
+  let cursor = view.start;
+  for (const segment of currentCombinedSegments) {
+    if (segment.end <= view.start || segment.start >= view.end) {
+      continue;
+    }
+    const start = Math.max(segment.start, view.start);
+    const end = Math.min(segment.end, view.end);
+    appendText(shape.rawText.slice(cursor, start));
+    const text = shape.rawText.slice(start, end);
     if (!text.trim()) {
       appendText(text);
     } else {
@@ -434,13 +473,13 @@ function selectAllLayers(shape: DocumentShapeView): void {
       marker.title = layerNames.join(", ");
       marker.setAttribute("aria-label", `${text}: ${segment.entries.length} typed annotations`);
       marker.addEventListener("click", () => annotationDrawer.showAnnotations(
-        text, segment.start, segment.end, segment.entries, marker,
+        text, start, end, segment.entries, marker,
       ));
       annotatedText.append(marker);
     }
-    cursor = segment.end;
+    cursor = end;
   }
-  appendText(shape.rawText.slice(cursor));
+  appendText(shape.rawText.slice(cursor, view.end));
 }
 
 function combinedAccent(entries: AnnotationEntry[]): ReturnType<typeof layerAccent> {
@@ -462,9 +501,46 @@ function selectAnnotationFromGraph(layerId: string, annotationIndex: number): vo
   if (!layer || !annotation) {
     return;
   }
+  if (annotation.start !== undefined) {
+    documentWindowPosition.value = String(pageForDocumentOffset(annotation.start));
+    updateDocumentWindowLabel(currentDocumentWindow(currentShape.rawText.length));
+  }
   selectResultTab("document");
   selectLayer(currentShape, layer);
   annotationDrawer.showAnnotation(layer, annotation);
+}
+
+function configureDocumentWindow(textLength: number): void {
+  const view = documentWindow(textLength, 0);
+  documentWindowPosition.value = "0";
+  documentWindowPosition.max = String(view.pageCount - 1);
+  documentWindowControls.hidden = view.pageCount === 1;
+  updateDocumentWindowLabel(view);
+}
+
+function currentDocumentWindow(textLength: number): ReturnType<typeof documentWindow> {
+  return documentWindow(textLength, documentWindowPosition.valueAsNumber);
+}
+
+function updateDocumentWindowLabel(view: ReturnType<typeof documentWindow>): void {
+  documentWindowLabel.textContent = view.pageCount === 1
+    ? `Complete document, ${formatInteger(view.end)} characters`
+    : `Characters ${formatInteger(view.start + 1)} to ${formatInteger(view.end)} of `
+      + `${formatInteger(currentShape?.rawText.length ?? view.end)}, window ${view.page + 1} of ${view.pageCount}`;
+}
+
+function renderCurrentDocumentWindow(): void {
+  if (!currentShape) {
+    return;
+  }
+  const view = currentDocumentWindow(currentShape.rawText.length);
+  updateDocumentWindowLabel(view);
+  annotatedText.scrollTop = 0;
+  if (currentLayer) {
+    selectLayer(currentShape, currentLayer);
+  } else {
+    selectAllLayers(currentShape);
+  }
 }
 
 function filterLayerButtons(): void {
@@ -578,11 +654,11 @@ function withXrayNormalization(
 }
 
 async function copyResponse(): Promise<void> {
-  if (!currentJson) {
+  if (currentResponse === undefined) {
     return;
   }
   try {
-    await navigator.clipboard.writeText(currentJson);
+    await navigator.clipboard.writeText(storedJson());
     copyButton.textContent = "Copied";
     window.setTimeout(() => {
       copyButton.textContent = "Copy JSON";
@@ -591,6 +667,32 @@ async function copyResponse(): Promise<void> {
     setFormStatus("Copy failed. Select the response text and copy it manually.", true);
     responseOutput.focus();
   }
+}
+
+function downloadResponse(): void {
+  if (currentResponse === undefined) {
+    return;
+  }
+  const url = URL.createObjectURL(new Blob([storedJson()], { type: "application/json" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "opennlp-analysis.json";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function storeResponse(response: unknown, shape: DocumentShapeView): void {
+  currentResponse = response;
+  const summary = summarizeDocumentShape(shape);
+  const presentation = jsonPresentation(response, shape.rawText.length, summary.annotationCount);
+  currentJson = presentation.inline ? presentation.text : "";
+  responseOutput.textContent = presentation.text;
+  copyButton.disabled = false;
+  downloadButton.disabled = false;
+}
+
+function storedJson(): string {
+  return currentJson || JSON.stringify(currentResponse);
 }
 
 function setBusy(value: boolean): void {

@@ -158,7 +158,10 @@
                 <span data-button-label>Analyze text</span>
                 <span aria-hidden="true">›</span>
               </button>
-              <button id="sample-button" type="button" class="secondary-button">Use sample text</button>
+              <span class="sample-actions">
+                <button id="sample-button" type="button" class="secondary-button">Use short sample</button>
+                <button id="alice-sample-button" type="button" class="secondary-button">Load Alice novel</button>
+              </span>
               <span class="checkbox-field">
                 <input id="normalization-xray-toggle" type="checkbox" name="normalization-xray" />
                 <label for="normalization-xray-toggle">Normalization X-ray</label>
@@ -178,6 +181,7 @@
               <div class="response-actions">
                 <button id="add-to-index-button" type="button" class="copy-button" disabled>Add to server workspace</button>
                 <button id="copy-button" type="button" class="copy-button" disabled>Copy JSON</button>
+                <button id="download-button" type="button" class="copy-button" disabled>Download JSON</button>
               </div>
             </div>
             <div class="result-tabs" role="tablist" aria-label="Analysis result views">
@@ -210,6 +214,12 @@
               <div class="annotation-canvas">
                 <p class="canvas-hint">All layers are overlaid by default. Click text to inspect every annotation
                   covering it, or choose one layer to isolate that projection.</p>
+                <div id="document-window-controls" class="document-window-controls" hidden>
+                  <label id="document-window-label" for="document-window-position">
+                    Complete document
+                  </label>
+                  <input id="document-window-position" type="range" min="0" max="0" value="0" />
+                </div>
                 <div id="annotated-text" class="annotated-text" tabindex="0">No analysis yet.</div>
                 <section id="normalization-xray" class="normalization-xray" aria-label="Normalization X-ray" hidden>
                 </section>

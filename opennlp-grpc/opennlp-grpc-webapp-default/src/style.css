@@ -300,6 +300,7 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 .model-discovery li { overflow: hidden; max-width: 10rem; padding: 0.28rem 0.5rem; border-radius: 0.35rem; background: #25344e; color: #dbe7f6; font-size: 0.69rem; text-overflow: ellipsis; white-space: nowrap; }
 .model-discovery li.is-empty { color: #8491a8; background: transparent; }
 .form-actions { display: flex; gap: 0.8rem; margin-top: 1.4rem; }
+.sample-actions { display: inline-flex; flex-wrap: wrap; gap: 0.55rem; }
 
 .form-actions button, .copy-button {
   border: 1px solid transparent;
@@ -360,8 +361,12 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 [data-accent="violet"] { --layer-accent: #b89cff; --layer-soft: rgb(133 93 214 / 19%); }
 [data-accent="rose"] { --layer-accent: #ff91b5; --layer-soft: rgb(218 76 126 / 18%); }
 
-.annotation-canvas { display: grid; grid-template-rows: auto minmax(12rem, 1fr) auto; min-width: 0; }
+.annotation-canvas { display: grid; grid-template-rows: auto auto minmax(12rem, 1fr) auto; min-width: 0; }
 .canvas-hint { margin: 0; padding: 0.8rem 1rem; border-bottom: 1px solid #253147; color: #7e8da4; font-size: 0.67rem; line-height: 1.45; }
+.document-window-controls { display: grid; grid-template-columns: minmax(12rem, max-content) minmax(10rem, 1fr); gap: 1rem; align-items: center; padding: 0.65rem 1rem; border-bottom: 1px solid #253147; background: #101a2a; }
+.document-window-controls[hidden] { display: none; }
+.document-window-controls label { color: #9eacc0; font-size: 0.68rem; font-weight: 700; }
+.document-window-controls input { width: 100%; accent-color: #67d5f5; }
 .annotated-text {
   overflow-y: auto;
   overflow-x: hidden;

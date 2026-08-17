@@ -63,7 +63,7 @@ final class GrpcJsonApi {
     this.analysisRpc = analysisRpc;
     this.searchRpc = searchRpc;
     this.parser = JsonFormat.parser();
-    this.printer = JsonFormat.printer();
+    this.printer = JsonFormat.printer().omittingInsignificantWhitespace();
   }
 
   /**

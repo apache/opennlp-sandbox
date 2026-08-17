@@ -96,13 +96,24 @@ search. The tool switcher is a separate extension-level control. It loads the ho
 links every additional ServiceLoader extension when present.
 
 The Workspace search workbench uses chunk embeddings already present in the same document shape.
-It sends the complete analyzed documents to `IndexDocuments`; the gRPC server validates routes,
-spans, dimensions, and limits before atomically publishing a process-local flat index. Queries go
-through `SearchIndex`, and only server-ranked scores return to the browser. Clearing the workspace
-calls `DeleteSearchIndex`. Query similarity and typed sentiment scores are shown as heatmaps. The
+The browser sends only document identity, source text, metadata, offset encoding, and selected chunk
+embedding groups to `IndexDocuments`; the gRPC server validates routes, spans, dimensions, and
+limits before atomically publishing a process-local flat index. The first query automatically adds
+the current document when needed, while the explicit Add button supports building a multi-document
+workspace. Queries go through `SearchIndex`, and only server-ranked scores return to the browser.
+Clearing the workspace calls `DeleteSearchIndex`. Query similarity and typed sentiment scores are shown as heatmaps. The
 graph view links the document to its layers and annotations, and annotation nodes open the same
 details used by the Document view. Visualization code is loaded only when a graph or heatmap is
 opened.
+
+The bundled Alice's Adventures in Wonderland demo exercises the long-document path without a
+network dependency. It is a deterministic gzip of the public-domain novel text with Project
+Gutenberg's header, footer, and branding removed; `public/data/README.md` records the source and
+both artifact hashes. The Document projection keeps the complete response while rendering one
+16,000-character annotation window at a time, selected with a native position slider. Large
+results do not eagerly create a second, formatted JSON copy. Copy JSON and Download JSON remain
+explicit actions when the complete protobuf JSON is needed. Graphs keep a balanced 120-annotation
+overview, and explicit complete-graph expansion is limited to 5,000 annotations.
 
 The immutable Corpus search lens is separate from the process-local Workspace search. It discovers
 immutable indexes from `GET /api/v1/search-indexes` and sends document-shaped queries to

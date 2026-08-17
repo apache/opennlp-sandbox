@@ -51,9 +51,9 @@ class GrpcJsonSearchApiTest {
     WebHttpResponse response = api.handle("GET", "/api/v1/search-indexes", new byte[0]);
 
     assertEquals(200, response.status());
-    assertTrue(response.bodyUtf8().contains("\"indexId\": \"" + INDEX_ID + "\""));
-    assertTrue(response.bodyUtf8().contains("\"maxTopK\": 25"));
-    assertTrue(response.bodyUtf8().contains("\"maxResponseBytes\": 1048576"));
+    assertTrue(response.bodyUtf8().contains("\"indexId\":\"" + INDEX_ID + "\""));
+    assertTrue(response.bodyUtf8().contains("\"maxTopK\":25"));
+    assertTrue(response.bodyUtf8().contains("\"maxResponseBytes\":1048576"));
   }
 
   @Test
@@ -66,10 +66,10 @@ class GrpcJsonSearchApiTest {
     WebHttpResponse response = api.handle("POST", "/api/v1/search", request);
 
     assertEquals(200, response.status());
-    assertTrue(response.bodyUtf8().contains("\"documentId\": \"" + DOCUMENT_ID + "\""));
-    assertTrue(response.bodyUtf8().contains("\"score\": 0.75"));
-    assertTrue(response.bodyUtf8().contains("\"rawText\": \"The writ must issue.\""));
-    assertTrue(response.bodyUtf8().contains("\"truncated\": true"));
+    assertTrue(response.bodyUtf8().contains("\"documentId\":\"" + DOCUMENT_ID + "\""));
+    assertTrue(response.bodyUtf8().contains("\"score\":0.75"));
+    assertTrue(response.bodyUtf8().contains("\"rawText\":\"The writ must issue.\""));
+    assertTrue(response.bodyUtf8().contains("\"truncated\":true"));
   }
 
   @Test
@@ -105,9 +105,9 @@ class GrpcJsonSearchApiTest {
         ("{\"indexId\":\"" + INDEX_ID + "\"}").getBytes(StandardCharsets.UTF_8));
 
     assertEquals(200, indexed.status());
-    assertTrue(indexed.bodyUtf8().contains("\"indexId\": \"" + INDEX_ID + "\""));
+    assertTrue(indexed.bodyUtf8().contains("\"indexId\":\"" + INDEX_ID + "\""));
     assertEquals(200, deleted.status());
-    assertTrue(deleted.bodyUtf8().contains("\"deleted\": true"));
+    assertTrue(deleted.bodyUtf8().contains("\"deleted\":true"));
   }
 
   private static final class StubSearchRpc implements SearchRpc {

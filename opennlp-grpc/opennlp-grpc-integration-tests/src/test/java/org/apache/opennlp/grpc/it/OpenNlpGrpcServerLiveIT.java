@@ -222,12 +222,14 @@ class OpenNlpGrpcServerLiveIT {
           HttpResponse.BodyHandlers.ofString());
       assertEquals(200, page.statusCode());
       assertTrue(page.body().contains("Server-backed semantic search"));
+      assertTrue(page.body().contains("document-window-position"));
+      assertTrue(page.body().contains("Download JSON"));
 
       final HttpResponse<String> indexes = http.send(HttpRequest.newBuilder(
           URI.create(webapp.baseUri() + "/api/v1/search-indexes")).GET().build(),
           HttpResponse.BodyHandlers.ofString());
       assertEquals(200, indexes.statusCode());
-      assertTrue(indexes.body().contains("\"indexId\": \"legal-demo\""));
+      assertTrue(indexes.body().contains("\"indexId\":\"legal-demo\""));
 
       final HttpResponse<String> search = http.send(HttpRequest.newBuilder(
           URI.create(webapp.baseUri() + "/api/v1/search"))
@@ -237,8 +239,8 @@ class OpenNlpGrpcServerLiveIT {
               """))
           .build(), HttpResponse.BodyHandlers.ofString());
       assertEquals(200, search.statusCode());
-      assertTrue(search.body().contains("\"documentId\": \"remedy\""));
-      assertTrue(search.body().contains("\"rawText\": \"A remedy follows a violation.\""));
+      assertTrue(search.body().contains("\"documentId\":\"remedy\""));
+      assertTrue(search.body().contains("\"rawText\":\"A remedy follows a violation.\""));
     }
   }
 

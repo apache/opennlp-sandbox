@@ -225,4 +225,31 @@ describe("document shape reader", () => {
       { layer: { id: "opennlp:analytics" }, annotation: { label: "Annotation 1" } },
     ]);
   });
+
+  it("builds thirty thousand annotation segments within a bounded time", () => {
+    const annotationCount = 30_000;
+    const rawText = "x ".repeat(annotationCount);
+    const annotations = Array.from({ length: annotationCount }, (_, index) => ({
+      start: index * 2,
+      end: index * 2 + 1,
+      label: `token-${index}`,
+      source: {},
+    }));
+    const started = performance.now();
+
+    const segments = combinedAnnotationSegments({
+      rawText,
+      offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
+      layers: [{
+        id: "opennlp:tokens",
+        title: "Tokens",
+        scope: "LAYER_SCOPE_POSITIONAL",
+        valueType: "String",
+        annotations,
+      }],
+    });
+
+    expect(segments).toHaveLength(annotationCount);
+    expect(performance.now() - started).toBeLessThan(1_000);
+  }, 2_000);
 });

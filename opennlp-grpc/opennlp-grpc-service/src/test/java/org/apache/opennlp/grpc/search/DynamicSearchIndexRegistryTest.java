@@ -68,6 +68,21 @@ class DynamicSearchIndexRegistryTest {
   }
 
   @Test
+  void storesOnlyTheSourceIdentityTextMetadataAndOffsetsInSearchHits() {
+    final DynamicSearchIndexRegistry registry = new DynamicSearchIndexRegistry();
+    final var created = registry.index(request(null, "doc-1", "alpha", 1, 0));
+
+    final OpenNlpDocument source = registry.require(created.getIndex().getIndexId())
+        .search(new float[] {1, 0}, 1).getFirst().record().sourceDocument();
+
+    assertEquals("doc-1", source.getDocId());
+    assertEquals("alpha", source.getRawText());
+    assertEquals(OffsetEncoding.OFFSET_ENCODING_UTF16_CODE_UNIT, source.getOffsetEncoding());
+    assertEquals(0, source.getChunkEmbeddingGroupsCount());
+    assertFalse(source.hasLayers());
+  }
+
+  @Test
   void rejectsDocumentsWithoutASelectedChunkEmbedding() {
     final DynamicSearchIndexRegistry registry = new DynamicSearchIndexRegistry();
     final IndexDocumentsRequest request = request(null, "doc-1", "alpha", 1, 0).toBuilder()

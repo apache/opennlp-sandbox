@@ -359,12 +359,32 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
       org.apache.opennlp.grpc.v1.AnnotationSpan span,
       String emittedText) {
     try {
-      return new SearchRecord(document.getDocId(), chunkId, document, span, emittedText);
+      return new SearchRecord(document.getDocId(), chunkId, searchSource(document), span,
+          emittedText);
     } catch (IllegalArgumentException e) {
       throw AnalysisException.failedPrecondition(
           "Document '" + document.getDocId() + "' contains an invalid indexed chunk: "
               + e.getMessage());
     }
+  }
+
+  /**
+   * Retains only fields required to identify and map a search hit. Chunk vectors and
+   * analysis layers are indexing input, not hit source data, and retaining them would
+   * repeat an entire analyzed document in every returned hit.
+   *
+   * @param document An analyzed document supplied for indexing.
+   * @return A bounded source document for search results.
+   */
+  private static OpenNlpDocument searchSource(OpenNlpDocument document) {
+    final OpenNlpDocument.Builder source = OpenNlpDocument.newBuilder()
+        .setDocId(document.getDocId())
+        .setRawText(document.getRawText())
+        .setOffsetEncoding(document.getOffsetEncoding());
+    if (document.hasMetadata()) {
+      source.setMetadata(document.getMetadata());
+    }
+    return source.build();
   }
 
   /**
