@@ -390,6 +390,9 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 .annotation-details > p, .annotation-details div p { margin: 0.35rem 0 0; line-height: 1.5; }
 .annotation-details strong { color: #f1f6fc; font-size: 0.76rem; }
 .annotation-details pre { margin: 0.7rem 0 0; padding: 0.7rem; border: 1px solid #2a374c; border-radius: 0.4rem; background: #101a2a; color: #b8c8dc; font: 0.66rem/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.embedding-preview { margin-top: 1rem; padding: 0.85rem; border: 1px solid #35445d; border-radius: 0.55rem; background: #101a2a; }
+.embedding-preview > strong { color: #ffb0c8; }
+.embedding-preview .vector-copy { margin-top: 0.75rem; }
 .annotation-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.25rem 0.65rem; margin: 0.65rem 0 0; }
 .annotation-facts dt { color: #73829a; }
 .annotation-facts dd { overflow-wrap: anywhere; margin: 0; color: #cdd8e6; }

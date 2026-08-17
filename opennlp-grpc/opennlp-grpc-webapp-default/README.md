@@ -90,6 +90,11 @@ highlights the selected layer over `document.rawText`. Selecting text, a graph n
 opens typed details in a dismissible side drawer instead of narrowing the document canvas. The
 result summary reports layer and annotation counts plus the active offset encoding.
 
+Combined word popovers omit sentence embeddings that merely cover the selected word. Selecting
+the Embeddings layer exposes vectors at their sentence or document span, while selecting a chunk
+exposes vectors attached to that complete chunk. Vector details show the model, granularity,
+dimension count, and first three values. Copy vector copies the complete numeric array.
+
 The top-level navigation separates Analyze, immutable Corpus search, and process-local Workspace
 search. The tool switcher is a separate extension-level control. It loads the host's
 `/api/v1/ui-extensions` catalog, remains hidden when only the default extension is installed, and

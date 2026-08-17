@@ -23,6 +23,13 @@ export interface ChunkProjectionItem {
   end: number;
   text: string;
   embeddingCount: number;
+  embeddings: ChunkProjectionEmbedding[];
+}
+
+export interface ChunkProjectionEmbedding {
+  modelId: string;
+  granularity: string;
+  vector: number[];
 }
 
 export interface ChunkProjectionGroup {
@@ -68,6 +75,18 @@ export function readChunkProjection(value: unknown): ChunkProjectionGroup[] {
         end,
         text: content,
         embeddingCount: array(chunk.embeddings).length,
+        embeddings: array(chunk.embeddings).flatMap((value) => {
+          const embedding = record(value);
+          if (!embedding) {
+            return [];
+          }
+          const route = record(embedding.route);
+          return [{
+            modelId: text(embedding.modelId) || text(route?.modelId) || "Unidentified model",
+            granularity: text(embedding.granularity),
+            vector: numberVector(embedding.vector),
+          }];
+        }),
       });
     }
     result.push({
@@ -101,4 +120,18 @@ function wholeNumber(value: unknown, fallback: number): number {
 
 function nonEmpty(value: string): boolean {
   return value.length > 0;
+}
+
+function numberVector(value: unknown): number[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const result: number[] = [];
+  for (const entry of value) {
+    if (typeof entry !== "number" || !Number.isFinite(entry)) {
+      return [];
+    }
+    result.push(entry);
+  }
+  return result;
 }

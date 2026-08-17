@@ -35,7 +35,11 @@ describe("chunk projection", () => {
               {
                 annotationSpan: { start: 0, end: 14 },
                 textContent: "We the People.",
-                embeddings: [{ route: { modelId: "legal-mini" } }],
+                embeddings: [{
+                  modelId: "legal-mini",
+                  granularity: "EMBEDDING_GRANULARITY_CHUNK_LEVEL",
+                  vector: [0.125, -0.5, 0.75, 0.25],
+                }],
               },
             ],
           },
@@ -61,14 +65,32 @@ describe("chunk projection", () => {
         title: "Sentence chunks",
         strategy: "Sentence",
         embeddingModelIds: ["legal-mini"],
-        chunks: [{ index: 1, start: 0, end: 14, text: "We the People.", embeddingCount: 1 }],
+        chunks: [{
+          index: 1,
+          start: 0,
+          end: 14,
+          text: "We the People.",
+          embeddingCount: 1,
+          embeddings: [{
+            modelId: "legal-mini",
+            granularity: "EMBEDDING_GRANULARITY_CHUNK_LEVEL",
+            vector: [0.125, -0.5, 0.75, 0.25],
+          }],
+        }],
       },
       {
         id: "token-chunks",
         title: "Token windows",
         strategy: "Token window",
         embeddingModelIds: [],
-        chunks: [{ index: 1, start: 0, end: 29, text: "We the People of the United", embeddingCount: 0 }],
+        chunks: [{
+          index: 1,
+          start: 0,
+          end: 29,
+          text: "We the People of the United",
+          embeddingCount: 0,
+          embeddings: [],
+        }],
       },
     ]);
   });

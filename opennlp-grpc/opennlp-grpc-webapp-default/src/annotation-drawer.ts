@@ -17,7 +17,11 @@
  * under the License.
  */
 
-import type { ChunkProjectionGroup, ChunkProjectionItem } from "./chunk-projection";
+import type {
+  ChunkProjectionEmbedding,
+  ChunkProjectionGroup,
+  ChunkProjectionItem,
+} from "./chunk-projection";
 import type { AnnotationEntry, AnnotationLayerView, AnnotationView } from "./document-shape";
 import { asciiLowerCase } from "./text-utils";
 import { emptyMessage, requiredElement } from "./ui-utils";
@@ -79,9 +83,15 @@ export class AnnotationDrawer {
     if (annotation.score !== undefined) {
       addFact(facts, "Score", annotation.score.toFixed(4));
     }
-    const source = document.createElement("pre");
-    source.textContent = JSON.stringify(annotation.source, null, 2);
-    this.#content.replaceChildren(title, facts, source);
+    if (layer.valueType === "Embedding") {
+      const embedding = embeddingFromSource(annotation.source);
+      const summary = embeddingSummary(embedding);
+      this.#content.replaceChildren(title, facts, summary);
+    } else {
+      const source = document.createElement("pre");
+      source.textContent = JSON.stringify(annotation.source, null, 2);
+      this.#content.replaceChildren(title, facts, source);
+    }
     this.open(trigger);
   }
 
@@ -92,13 +102,14 @@ export class AnnotationDrawer {
     entries: AnnotationEntry[],
     trigger?: HTMLElement,
   ): void {
+    const visibleEntries = entries.filter((entry) => entry.layer.valueType !== "Embedding");
     const title = document.createElement("strong");
     title.textContent = text;
     const summary = document.createElement("p");
-    summary.textContent = `${entries.length} ${entries.length === 1 ? "annotation" : "annotations"} cover `
+    summary.textContent = `${visibleEntries.length} ${visibleEntries.length === 1 ? "annotation" : "annotations"} cover `
       + `characters ${start}..${end}.`;
     this.#content.replaceChildren(title, summary,
-      ...entries.map((entry) => annotationBlock(entry.layer, entry.annotation)));
+      ...visibleEntries.map((entry) => annotationBlock(entry.layer, entry.annotation)));
     this.open(trigger);
   }
 
@@ -117,7 +128,8 @@ export class AnnotationDrawer {
     const text = document.createElement("p");
     text.className = "drawer-chunk-text";
     text.textContent = chunk.text;
-    this.#content.replaceChildren(title, facts, text);
+    this.#content.replaceChildren(title, facts, text,
+      ...chunk.embeddings.map((embedding) => embeddingSummary(embedding)));
     this.open(trigger);
   }
 
@@ -162,6 +174,78 @@ function annotationBlock(layer: AnnotationLayerView, annotation: AnnotationView)
   source.textContent = JSON.stringify(annotation.source, null, 2);
   block.append(title, facts, source);
   return block;
+}
+
+function embeddingFromSource(source: Record<string, unknown>): ChunkProjectionEmbedding {
+  return {
+    modelId: textValue(source.modelId) || "Unidentified model",
+    granularity: textValue(source.granularity),
+    vector: vectorValue(source.vector),
+  };
+}
+
+function embeddingSummary(embedding: ChunkProjectionEmbedding): HTMLElement {
+  const section = document.createElement("section");
+  section.className = "embedding-preview";
+  const title = document.createElement("strong");
+  title.textContent = embedding.modelId;
+  const facts = document.createElement("dl");
+  facts.className = "annotation-facts";
+  addFact(facts, "Granularity", granularityLabel(embedding.granularity));
+  addFact(facts, "Dimensions", `${embedding.vector.length} dimensions`);
+  addFact(facts, "First 3 values", firstVectorValues(embedding.vector));
+  const copy = document.createElement("button");
+  copy.type = "button";
+  copy.className = "copy-button vector-copy";
+  copy.textContent = "Copy vector";
+  copy.disabled = embedding.vector.length === 0;
+  copy.addEventListener("click", () => void copyVector(copy, embedding.vector));
+  section.append(title, facts, copy);
+  return section;
+}
+
+async function copyVector(button: HTMLButtonElement, vector: number[]): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(JSON.stringify(vector));
+    button.textContent = "Copied";
+  } catch {
+    button.textContent = "Copy failed";
+  }
+}
+
+function firstVectorValues(vector: number[]): string {
+  if (vector.length === 0) {
+    return "Not returned";
+  }
+  return vector.slice(0, 3).map((value) => value.toFixed(6)).join(", ");
+}
+
+function granularityLabel(value: string): string {
+  const labels: Readonly<Record<string, string>> = {
+    EMBEDDING_GRANULARITY_DOCUMENT: "Document",
+    EMBEDDING_GRANULARITY_SENTENCE: "Sentence",
+    EMBEDDING_GRANULARITY_CHUNK_LEVEL: "Chunk",
+    EMBEDDING_GRANULARITY_GROUP_CENTROID: "Group centroid",
+  };
+  return labels[value] ?? (value || "Unspecified");
+}
+
+function textValue(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function vectorValue(value: unknown): number[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const vector: number[] = [];
+  for (const entry of value) {
+    if (typeof entry !== "number" || !Number.isFinite(entry)) {
+      return [];
+    }
+    vector.push(entry);
+  }
+  return vector;
 }
 
 function addFact(list: HTMLDListElement, term: string, value: string): void {
