@@ -409,7 +409,8 @@ public final class ModelBundleCache implements AutoCloseable {
         docCategorizerRegistry.isAvailable(),
         sentimentRegistry.isAvailable(),
         isParserAvailable(),
-        isChunkerAvailable());
+        isChunkerAvailable(),
+        embeddingProvider.isAvailable());
   }
 
   /**
