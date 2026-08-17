@@ -26,10 +26,14 @@ import {
   getSearchIndexes,
   getServiceInfo,
   getUiExtensions,
+  indexDocuments,
+  deleteSearchIndex,
   searchIndex,
   type AnalyzeRequest,
 } from "./api";
-import { discoverModelBundles, discoverProfiles, type DiscoveryOption } from "./discovery";
+import { AnalysisControls } from "./analysis-controls";
+import { AnnotationDrawer } from "./annotation-drawer";
+import { ChunkProjectionView } from "./chunk-projection-view";
 import {
   layerAccent,
   readDocumentShape,
@@ -39,6 +43,7 @@ import {
   type DocumentShapeView,
 } from "./document-shape";
 import { SemanticWorkbench, type ResultViewName } from "./semantic-workbench";
+import { ModelDataWorkbench } from "./model-data-workbench";
 import { readSearchIndexes, readSearchResponse } from "./search-adapter";
 import { ServerSearchWorkbench } from "./server-search-workbench";
 import { asciiLowerCase, formatInteger } from "./text-utils";
@@ -49,6 +54,7 @@ import {
   type UiExtension,
 } from "./ui-extensions";
 import { errorMessage, requiredElement } from "./ui-utils";
+import { WorkbenchNavigation } from "./workbench-navigation";
 
 const sampleText =
   "Apache OpenNLP helps developers build applications that process natural language. " +
@@ -56,8 +62,6 @@ const sampleText =
 
 const form = requiredElement<HTMLFormElement>("analysis-form");
 const textArea = requiredElement<HTMLTextAreaElement>("analysis-text");
-const profileSelect = requiredElement<HTMLSelectElement>("profile-select");
-const modelList = requiredElement<HTMLUListElement>("model-list");
 const analyzeButton = requiredElement<HTMLButtonElement>("analyze-button");
 const sampleButton = requiredElement<HTMLButtonElement>("sample-button");
 const copyButton = requiredElement<HTMLButtonElement>("copy-button");
@@ -72,8 +76,8 @@ const characterCount = requiredElement<HTMLElement>("character-count");
 const layerList = requiredElement<HTMLElement>("layer-list");
 const layerSummary = requiredElement<HTMLElement>("layer-summary");
 const annotatedText = requiredElement<HTMLElement>("annotated-text");
-const annotationDetails = requiredElement<HTMLElement>("annotation-details");
 const documentView = requiredElement<HTMLElement>("document-view");
+const chunksView = requiredElement<HTMLElement>("chunks-view");
 const heatmapView = requiredElement<HTMLElement>("heatmap-view");
 const graphView = requiredElement<HTMLElement>("graph-view");
 const jsonView = requiredElement<HTMLElement>("json-view");
@@ -90,16 +94,35 @@ let busy = false;
 let currentJson = "";
 let currentShape: DocumentShapeView | undefined;
 
+const analysisControls = new AnalysisControls(updateFormState);
+const annotationDrawer = new AnnotationDrawer();
+const modelDataWorkbench = new ModelDataWorkbench();
+const chunkProjectionView = new ChunkProjectionView((group, chunk, trigger) => {
+  annotationDrawer.showChunk(group, chunk, trigger);
+});
+new WorkbenchNavigation();
+
 const semanticWorkbench = new SemanticWorkbench({
-  analyzeQuery: async (text) => readDocumentShape(await analyze(createAnalysisRequest(text))),
-  openDocument: (document) => {
-    textArea.value = document.shape.rawText;
+  index: async (request) => {
+    const response = await indexDocuments(request) as Record<string, unknown>;
+    const index = readSearchIndexes({ indexes: response.index ? [response.index] : [] })[0];
+    if (!index) {
+      throw new Error("The server returned an invalid dynamic index descriptor.");
+    }
+    return index;
+  },
+  search: async (request) => readSearchResponse(await searchIndex(request)),
+  deleteIndex: async (indexId) => { await deleteSearchIndex(indexId); },
+  openDocument: (hit) => {
+    const shape = readDocumentShape(hit.sourceDocument);
+    textArea.value = shape.rawText;
     updateFormState();
-    renderDocumentShape(document.shape);
-    currentJson = document.json;
-    responseOutput.textContent = currentJson || "Stored response JSON is unavailable.";
+    renderDocumentShape(shape);
+    currentJson = JSON.stringify({ document: hit.sourceDocument }, null, 2);
+    responseOutput.textContent = currentJson;
+    chunkProjectionView.render({ document: hit.sourceDocument });
     copyButton.disabled = !currentJson;
-    semanticWorkbench.setDocument(document.title, document.shape, document.json);
+    semanticWorkbench.setDocument(hit.documentId, shape, currentJson);
     selectResultTab("document");
   },
   selectAnnotation: selectAnnotationFromGraph,
@@ -156,11 +179,10 @@ async function initialize(): Promise<void> {
   const [infoResult, bundlesResult] = await Promise.allSettled([getServiceInfo(), getModelBundles()]);
   const serviceInfo = infoResult.status === "fulfilled" ? infoResult.value : undefined;
   const bundlesInfo = bundlesResult.status === "fulfilled" ? bundlesResult.value : undefined;
-  const profiles = discoverProfiles(serviceInfo);
-  const bundles = discoverModelBundles(bundlesInfo);
-
-  populateSelect(profileSelect, profiles);
-  populateModelList(bundles);
+  const capabilities = analysisControls.configure(serviceInfo, bundlesInfo);
+  modelDataWorkbench.configure(capabilities);
+  const profiles = capabilities.profiles;
+  const bundles = capabilities.bundles;
   profileCount.textContent = String(profiles.length);
   modelCount.textContent = String(bundles.length);
   serviceName.textContent = discoverServiceName(serviceInfo);
@@ -193,6 +215,7 @@ async function initializeToolNavigation(): Promise<void> {
 
 function renderToolNavigation(extensions: UiExtension[]): void {
   const activeId = activeUiExtension(extensions, window.location.pathname);
+  toolNavigation.hidden = extensions.length <= 1;
   toolNavigation.replaceChildren(...extensions.map((extension) => {
     const link = document.createElement("a");
     link.href = extension.mountPath;
@@ -232,6 +255,7 @@ async function submitAnalysis(event: SubmitEvent): Promise<void> {
     currentJson = JSON.stringify(response, null, 2);
     responseOutput.textContent = currentJson;
     const shape = readDocumentShape(response);
+    chunkProjectionView.render(response);
     renderDocumentShape(shape);
     semanticWorkbench.setDocument(text, shape, currentJson);
     selectResultTab("document");
@@ -251,7 +275,7 @@ function renderDocumentShape(shape: DocumentShapeView): void {
   currentShape = shape;
   layerList.replaceChildren();
   annotatedText.replaceChildren();
-  annotationDetails.replaceChildren(message("Select highlighted text to inspect its typed annotation."));
+  annotationDrawer.reset();
   layerSummary.textContent = `${shape.layers.length} ${shape.layers.length === 1 ? "layer" : "layers"}`;
   const summary = summarizeDocumentShape(shape);
   resultLayerCount.textContent = String(summary.layerCount);
@@ -266,7 +290,7 @@ function renderDocumentShape(shape: DocumentShapeView): void {
   }
   if (shape.layers.length === 0) {
     annotatedText.textContent = shape.rawText;
-    annotationDetails.replaceChildren(message("This analysis returned no document-shape layers."));
+    annotationDrawer.showMessage("This analysis returned no document-shape layers.");
     return;
   }
 
@@ -296,11 +320,22 @@ function renderDocumentShape(shape: DocumentShapeView): void {
   selectLayer(shape, initialLayer);
 }
 
+function parseStoredResponse(value: string): unknown {
+  if (!value) {
+    return undefined;
+  }
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    return undefined;
+  }
+}
+
 function selectLayer(shape: DocumentShapeView, layer: AnnotationLayerView): void {
   for (const button of layerList.querySelectorAll<HTMLButtonElement>(".layer-button")) {
     button.setAttribute("aria-pressed", String(button.dataset.layerId === layer.id));
   }
-  annotationDetails.replaceChildren(layerOverview(layer));
+  annotationDrawer.describeLayer(layer);
   annotatedText.replaceChildren();
   annotatedText.dataset.accent = layerAccent(layer);
   annotatedText.setAttribute("aria-label", `${layer.title} annotations over document text`);
@@ -323,7 +358,7 @@ function selectLayer(shape: DocumentShapeView, layer: AnnotationLayerView): void
     marker.textContent = shape.rawText.slice(start, end);
     marker.title = annotation.label;
     marker.setAttribute("aria-label", `${marker.textContent}: ${annotation.label}`);
-    marker.addEventListener("click", () => showAnnotation(layer, annotation));
+    marker.addEventListener("click", () => annotationDrawer.showAnnotation(layer, annotation, marker));
     annotatedText.append(marker);
     cursor = end;
   }
@@ -331,29 +366,8 @@ function selectLayer(shape: DocumentShapeView, layer: AnnotationLayerView): void
 
   if (positional.length === 0) {
     annotatedText.textContent = shape.rawText;
-    annotationDetails.append(message("This document-scoped layer has no selectable text spans."));
+    annotationDrawer.describeLayer(layer, "This document-scoped layer has no selectable text spans.");
   }
-}
-
-function showAnnotation(layer: AnnotationLayerView, annotation: AnnotationView): void {
-  const title = document.createElement("strong");
-  title.textContent = annotation.label;
-  const facts = document.createElement("dl");
-  facts.className = "annotation-facts";
-  addFact(facts, "Layer", layer.id);
-  addFact(facts, "Value type", layer.valueType);
-  if (annotation.start !== undefined && annotation.end !== undefined) {
-    addFact(facts, "Browser span", `${annotation.start}..${annotation.end}`);
-  }
-  if (annotation.probability !== undefined) {
-    addFact(facts, "Probability", annotation.probability.toFixed(4));
-  }
-  if (annotation.score !== undefined) {
-    addFact(facts, "Score", annotation.score.toFixed(4));
-  }
-  const source = document.createElement("pre");
-  source.textContent = JSON.stringify(annotation.source, null, 2);
-  annotationDetails.replaceChildren(title, facts, source);
 }
 
 function selectAnnotationFromGraph(layerId: string, annotationIndex: number): void {
@@ -367,7 +381,7 @@ function selectAnnotationFromGraph(layerId: string, annotationIndex: number): vo
   }
   selectResultTab("document");
   selectLayer(currentShape, layer);
-  showAnnotation(layer, annotation);
+  annotationDrawer.showAnnotation(layer, annotation);
 }
 
 function filterLayerButtons(): void {
@@ -398,26 +412,6 @@ function filterLayerButtons(): void {
   }
 }
 
-function layerOverview(layer: AnnotationLayerView): HTMLElement {
-  const container = document.createElement("div");
-  const title = document.createElement("strong");
-  title.textContent = layer.title;
-  const description = document.createElement("p");
-  const identity = layer.standardIdentity ?? layer.id;
-  description.textContent = `${identity} contains ${layer.annotations.length} ${asciiLowerCase(layer.valueType)} `
-    + `${layer.annotations.length === 1 ? "annotation" : "annotations"}.`;
-  container.append(title, description);
-  return container;
-}
-
-function addFact(list: HTMLDListElement, term: string, value: string): void {
-  const name = document.createElement("dt");
-  name.textContent = term;
-  const detail = document.createElement("dd");
-  detail.textContent = value;
-  list.append(name, detail);
-}
-
 function appendText(value: string): void {
   if (value) {
     annotatedText.append(document.createTextNode(value));
@@ -428,14 +422,9 @@ function hasUsableSpan(annotation: AnnotationView): boolean {
   return annotation.start !== undefined && annotation.end !== undefined && annotation.end > annotation.start;
 }
 
-function message(value: string): HTMLParagraphElement {
-  const paragraph = document.createElement("p");
-  paragraph.textContent = value;
-  return paragraph;
-}
-
 function selectResultTab(tabName: ResultViewName): void {
   documentView.hidden = tabName !== "document";
+  chunksView.hidden = tabName !== "chunks";
   heatmapView.hidden = tabName !== "heatmap";
   graphView.hidden = tabName !== "graph";
   jsonView.hidden = tabName !== "json";
@@ -462,18 +451,13 @@ function navigateResultTabs(event: KeyboardEvent): void {
 }
 
 function resultViewName(value: string | undefined): ResultViewName {
-  return value === "heatmap" || value === "graph" || value === "json" ? value : "document";
+  return value === "chunks" || value === "heatmap" || value === "graph" || value === "json"
+    ? value
+    : "document";
 }
 
-function createAnalysisRequest(text: string): AnalyzeRequest {
-  const request: AnalyzeRequest = {
-    document: { rawText: text },
-    options: { offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT" },
-  };
-  if (profileSelect.value) {
-    request.profileId = profileSelect.value;
-  }
-  return request;
+function createAnalysisRequest(text: string, includeChunks = true): AnalyzeRequest {
+  return analysisControls.request(text, includeChunks);
 }
 
 async function copyResponse(): Promise<void> {
@@ -492,36 +476,6 @@ async function copyResponse(): Promise<void> {
   }
 }
 
-function populateSelect(select: HTMLSelectElement, options: DiscoveryOption[]): void {
-  for (const option of options) {
-    select.add(new Option(option.label, option.id));
-  }
-  select.disabled = options.length === 0;
-}
-
-function populateModelList(options: DiscoveryOption[]): void {
-  modelList.replaceChildren();
-  const visibleOptions = options.slice(0, 4);
-  if (visibleOptions.length === 0) {
-    const item = document.createElement("li");
-    item.textContent = "None reported";
-    item.className = "is-empty";
-    modelList.append(item);
-    return;
-  }
-  for (const option of visibleOptions) {
-    const item = document.createElement("li");
-    item.textContent = option.label;
-    item.title = option.id;
-    modelList.append(item);
-  }
-  if (options.length > visibleOptions.length) {
-    const item = document.createElement("li");
-    item.textContent = `+${options.length - visibleOptions.length} more`;
-    modelList.append(item);
-  }
-}
-
 function setBusy(value: boolean): void {
   busy = value;
   form.setAttribute("aria-busy", String(value));
@@ -532,7 +486,8 @@ function setBusy(value: boolean): void {
 function updateFormState(): void {
   const count = textArea.value.length;
   characterCount.textContent = `${formatInteger(count)} ${count === 1 ? "character" : "characters"}`;
-  analyzeButton.disabled = busy || !serviceAvailable || textArea.value.trim().length === 0;
+  analyzeButton.disabled = busy || !serviceAvailable || textArea.value.trim().length === 0
+    || !analysisControls.valid;
 }
 
 function setServiceState(state: "loading" | "ready" | "unavailable", label: string): void {

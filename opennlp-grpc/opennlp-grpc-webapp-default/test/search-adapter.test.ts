@@ -113,9 +113,12 @@ describe("server search API adapter", () => {
     })]);
   });
 
-  it("rejects descriptors without immutable search semantics", () => {
+  it("accepts mutable server workspace descriptors", () => {
+    expect(readSearchIndexes({ indexes: [indexDescriptor({ immutable: false })] })[0]?.immutable).toBe(false);
+  });
+
+  it("rejects descriptors without typed search semantics", () => {
     const invalid = [
-      indexDescriptor({ immutable: false }),
       indexDescriptor({ provider: {} }),
       indexDescriptor({ provider: { standard: "STANDARD_SEARCH_PROVIDER_UNSPECIFIED" } }),
       indexDescriptor({ metric: "SEARCH_METRIC_UNSPECIFIED" }),

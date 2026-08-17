@@ -172,6 +172,23 @@ executable jar, the models merged into the jar by the build are used directly; w
 running from a regular classpath (e.g. via Maven), they are discovered from the
 `opennlp-models-*` runtime dependencies.
 
+Install additional operator-approved models or data with the same executable before startup:
+
+```bash
+java -jar opennlp-grpc-service/target/opennlp-grpc-server-3.0.0-SNAPSHOT.jar \
+  install-resource \
+  --source https://example.invalid/en-ner-person.bin \
+  --checksum <sha256-or-sha512> \
+  --target /srv/opennlp/models
+```
+
+The checksum is mandatory. The OPENNLP-1909 `ResourceInstaller` bounds the transfer and expansion,
+verifies the downloaded bytes, stages extraction on the target filesystem, and publishes the
+resource atomically. Add the installed paths to the server configuration, such as
+`model.name_finder.person.path=/srv/opennlp/models/en-ner-person.bin`, then start or restart the
+server. The web workbench's **Models & data** tab reports which pipeline features are ready and
+which still need an operator-provided model or data resource.
+
 ## Run the optional web application
 
 With the gRPC service running on its default port, start the separate web application:
@@ -180,11 +197,17 @@ With the gRPC service running on its default port, start the separate web applic
 java -jar opennlp-grpc-webapp/target/opennlp-grpc-webapp-3.0.0-SNAPSHOT.jar
 ```
 
-Open `http://127.0.0.1:7072/`. The default TypeScript interface discovers configured profiles and
-model bundles, then sends `AnalyzeDocumentRequest` protobuf JSON to the same-origin gateway. The
-response is the complete `AnalyzeDocumentResponse`, including the document shape and typed layers.
-The workbench renders those layers as navigable highlights over the source text, with click-through
-typed annotation details and a separate raw protobuf JSON view.
+Open `http://127.0.0.1:7072/`. The default TypeScript interface discovers configured profiles,
+models, resources, and supported pipeline steps. Its default preset requests the richest safe
+combination that is actually available, while named profiles and automatic server selection remain
+available. Sentence and token-window chunking can be enabled independently or together. The
+same-origin gateway returns the complete `AnalyzeDocumentResponse`, including the document shape,
+typed layers, and chunk groups.
+
+The Analyze workbench gives the output the full page width and provides Document, Chunks, Heatmap,
+Graph, and Protobuf JSON projections over the same response. Long source text and annotated output
+scroll vertically without a horizontal scrollbar. Selecting an annotation, graph node, or chunk
+opens details in a side drawer so the document does not collapse into a narrow column.
 The web host loads additional static interfaces through the `WebUiExtension` ServiceLoader API.
 See [opennlp-grpc-webapp/README.md](opennlp-grpc-webapp/README.md) for endpoints, security defaults,
 and command-line options.
@@ -259,6 +282,7 @@ bundle, so the serving configuration can remain self-contained:
 ```ini
 search.indexes=legal-opinions
 search.max_indexes=32
+search.dynamic.enabled=true
 search.index.legal-opinions.provider=turbo_quant
 search.index.legal-opinions.directory=/srv/opennlp/legal/legal-index-v1
 search.index.legal-opinions.passages=/srv/opennlp/legal/legal-index-v1/passages.jsonl
@@ -282,7 +306,7 @@ java -jar opennlp-grpc-webapp/target/opennlp-grpc-webapp-3.0.0-SNAPSHOT.jar \
   --grpc-target 127.0.0.1:7071
 ```
 
-Open `http://127.0.0.1:7072/` and select **Search**. The browser discovers index limits and
+Open `http://127.0.0.1:7072/` and select **Corpus search**. The browser discovers index limits and
 provenance, sends a document-shaped query, maps cosine scores across a fixed red-neutral-green
 scale, highlights the authoritative span in the original source text, compares it with emitted
 chunk text, and opens typed OpenNLP annotations for a selected source document. All remote query
@@ -293,6 +317,13 @@ The search API is also available directly as
 `SearchIndex` accepts `index_id`, a complete `OpenNlpDocument` query, and `top_k`. Query routing
 may fall back to another embedding backend only when model ID, vector-space ID, and dimension
 remain compatible with the route that built the index.
+
+`IndexDocuments` also accepts analyzed `OpenNlpDocument` values whose chunk groups already carry
+embeddings. It creates or atomically extends a bounded flat index in server memory, so the browser
+never stores vectors or computes similarity. `DeleteSearchIndex` releases that process-local
+workspace. Dynamic indexing is enabled by default for the workbench and can be disabled with
+`search.dynamic.enabled=false`. Per-index document, serialized source-document, chunk, and
+dimension limits are combined with server-wide serialized-document and vector-memory ceilings.
 
 > v1 note: this slice implements language detection (`PIPELINE_STEP_LANGUAGE_DETECT`,
 > filling `detected_language` with an ISO 639-3 code plus `language_confidence`),

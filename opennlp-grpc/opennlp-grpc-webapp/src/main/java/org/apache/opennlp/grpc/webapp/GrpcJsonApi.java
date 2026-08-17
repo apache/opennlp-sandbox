@@ -28,6 +28,8 @@ import com.google.protobuf.util.JsonFormat;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
+import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
+import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
 import org.apache.opennlp.grpc.v1.SearchIndexRequest;
 
 final class GrpcJsonApi {
@@ -95,6 +97,10 @@ final class GrpcJsonApi {
             ? protobufJson(searchRpc.listSearchIndexes()) : methodNotAllowed();
         case "/api/v1/search" -> method.equals("POST")
             ? search(body) : methodNotAllowed();
+        case "/api/v1/index-documents" -> method.equals("POST")
+            ? indexDocuments(body) : methodNotAllowed();
+        case "/api/v1/delete-search-index" -> method.equals("POST")
+            ? deleteSearchIndex(body) : methodNotAllowed();
         default -> error(404, Status.Code.NOT_FOUND, "Unknown API endpoint");
       };
     } catch (StatusRuntimeException exception) {
@@ -152,6 +158,53 @@ final class GrpcJsonApi {
           MALFORMED_PROTOBUF_JSON_PREFIX + exception.getMessage());
     }
     return protobufJson(searchRpc.search(request.build()));
+  }
+
+  /**
+   * Parses and forwards one dynamic indexing request.
+   *
+   * @param body Protobuf JSON request body.
+   * @return Encoded index response or parse failure.
+   */
+  private WebHttpResponse indexDocuments(byte[] body) {
+    final IndexDocumentsRequest.Builder request = IndexDocumentsRequest.newBuilder();
+    final WebHttpResponse parseFailure = merge(body, request);
+    return parseFailure != null ? parseFailure : protobufJson(searchRpc.index(request.build()));
+  }
+
+  /**
+   * Parses and forwards one dynamic index deletion request.
+   *
+   * @param body Protobuf JSON request body.
+   * @return Encoded deletion response or parse failure.
+   */
+  private WebHttpResponse deleteSearchIndex(byte[] body) {
+    final DeleteSearchIndexRequest.Builder request = DeleteSearchIndexRequest.newBuilder();
+    final WebHttpResponse parseFailure = merge(body, request);
+    return parseFailure != null ? parseFailure : protobufJson(searchRpc.delete(request.build()));
+  }
+
+  /**
+   * Decodes and merges protobuf JSON into a request builder.
+   *
+   * @param body Encoded request body.
+   * @param request Destination builder.
+   * @return A parse failure, or {@code null} after a successful merge.
+   */
+  private WebHttpResponse merge(byte[] body, Message.Builder request) {
+    final String json;
+    try {
+      json = decodeUtf8(body);
+    } catch (CharacterCodingException exception) {
+      return error(400, Status.Code.INVALID_ARGUMENT, INVALID_UTF8_MESSAGE);
+    }
+    try {
+      parser.merge(json, request);
+      return null;
+    } catch (InvalidProtocolBufferException exception) {
+      return error(400, Status.Code.INVALID_ARGUMENT,
+          MALFORMED_PROTOBUF_JSON_PREFIX + exception.getMessage());
+    }
   }
 
   /**

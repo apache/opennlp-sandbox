@@ -35,10 +35,15 @@
           <small>gRPC Workbench</small>
         </span>
       </a>
-      <nav class="site-nav" aria-label="Workbench navigation">
-        <a href="#overview">Overview</a>
-        <a href="#playground">Workbench</a>
-        <a href="#server-search">Search</a>
+      <nav class="site-nav" role="tablist" aria-label="Workbench navigation">
+        <button id="analysis-workbench-tab" type="button" role="tab" aria-selected="true"
+          aria-controls="analysis-workbench" data-workbench-tab="analysis">Analyze</button>
+        <button id="corpus-search-workbench-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+          aria-controls="server-search" data-workbench-tab="corpus-search">Corpus search</button>
+        <button id="session-search-workbench-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+          aria-controls="session-search" data-workbench-tab="session-search">Workspace search</button>
+        <button id="models-workbench-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+          aria-controls="model-data-workbench" data-workbench-tab="models">Models &amp; data</button>
       </nav>
       <div id="service-status" role="status" aria-live="polite" class="service-status is-loading">
         <span class="status-dot" aria-hidden="true"></span>
@@ -47,46 +52,23 @@
     </header>
 
     <main>
-      <section id="overview" class="hero" aria-labelledby="hero-title">
-        <div class="hero-copy">
-          <p class="eyebrow">Natural language processing, served</p>
-          <h1 id="hero-title">Turn text into <span>structured insight.</span></h1>
-          <p class="hero-summary">
-            Explore the models and analysis profiles exposed by this OpenNLP service.
-            Results stay transparent, portable, and ready for the next system in your pipeline.
-          </p>
-          <ul class="contract-points" aria-label="Workbench capabilities">
-            <li>Typed document layers</li>
-            <li>Protobuf JSON</li>
-            <li>Pluggable interfaces</li>
-          </ul>
-          <a class="primary-link" href="#playground">Open the playground <span aria-hidden="true">↓</span></a>
-        </div>
-        <div class="hero-sample" aria-hidden="true">
-          <div class="sample-toolbar"><i></i><i></i><i></i><span>analysis.json</span></div>
-          <pre><code><span class="code-key">"sentences"</span>: [
-  { <span class="code-key">"text"</span>: <span class="code-value">"OpenNLP makes text useful."</span> }
-],
-<span class="code-key">"tokens"</span>: [<span class="code-value">"OpenNLP"</span>, <span class="code-value">"makes"</span>, <span class="code-value">"text"</span>],
-<span class="code-key">"language"</span>: <span class="code-value">"eng"</span></code></pre>
-        </div>
-      </section>
-
-      <section class="service-panel" aria-labelledby="service-heading">
-        <div>
-          <p class="section-kicker">Live service</p>
-          <h2 id="service-heading">Ready when your text is</h2>
-          <p id="service-description">Checking service capabilities and available models.</p>
-        </div>
-        <dl class="service-facts">
-          <div><dt>Service</dt><dd id="service-name">Discovering</dd></div>
-          <div><dt>Profiles</dt><dd id="profile-count">...</dd></div>
-          <div><dt>Model bundles</dt><dd id="model-count">...</dd></div>
-        </dl>
-      </section>
-
       <section id="playground" class="playground" aria-labelledby="playground-heading">
-        <nav id="tool-navigation" class="tool-nav" aria-label="OpenNLP tools">
+        <div class="workbench-heading">
+          <div>
+            <p class="section-kicker">Apache OpenNLP gRPC</p>
+            <h1 id="playground-heading">Document analysis workbench</h1>
+            <p id="service-description">
+              Connecting to the service and discovering the analysis features available on this instance.
+            </p>
+          </div>
+          <dl class="service-facts">
+            <div><dt>Service</dt><dd id="service-name">Discovering</dd></div>
+            <div><dt>Profiles</dt><dd id="profile-count">...</dd></div>
+            <div><dt>Bundles</dt><dd id="model-count">...</dd></div>
+          </dl>
+        </div>
+
+        <nav id="tool-navigation" class="tool-nav extension-switcher" aria-label="OpenNLP tools" hidden>
           <a href="/" class="is-active" aria-current="page">
             <span class="tool-icon" aria-hidden="true">AO</span>
             <span><strong>Apache OpenNLP</strong><small>Default extension</small></span>
@@ -95,51 +77,92 @@
         <p id="tool-navigation-status" class="visually-hidden" role="status" aria-live="polite">
           Discovering UI extensions.
         </p>
-        <div class="section-heading">
-          <div>
-            <p class="section-kicker">Analysis playground</p>
-            <h2 id="playground-heading">See what OpenNLP finds</h2>
-          </div>
-          <p>Choose a discovered configuration, enter text, and inspect the complete response.</p>
-        </div>
 
-        <div class="workspace">
-          <form id="analysis-form" class="analysis-form">
+        <div id="analysis-workbench" class="workspace workspace-wide" role="tabpanel"
+          aria-labelledby="analysis-workbench-tab">
+          <form id="analysis-form" class="analysis-form analysis-composer">
             <div class="field text-field">
               <div class="label-row">
-                <label for="analysis-text">Text to analyze</label>
+                <label for="analysis-text">Document text</label>
                 <span id="character-count">0 characters</span>
               </div>
-              <textarea id="analysis-text" name="text" rows="10" required
-                placeholder="Paste a paragraph, article excerpt, or sentence here…"></textarea>
+              <textarea id="analysis-text" name="text" rows="7" required
+                placeholder="Paste a paragraph, article, contract, or other document here."></textarea>
             </div>
 
-            <div class="options-grid">
-              <div class="field">
-                <label for="profile-select">Analysis profile</label>
-                <select id="profile-select" name="profile">
-                  <option value="">Automatic</option>
-                </select>
+            <div class="configuration-grid">
+              <div class="configuration-column">
+                <div class="field">
+                  <label for="profile-select">Feature preset</label>
+                  <select id="profile-select" name="profile">
+                    <option value="max" selected>All available features</option>
+                    <option value="custom">Choose features</option>
+                    <option value="automatic">Server automatic</option>
+                  </select>
+                  <small class="field-help">Combines every safely configured feature reported by this server.</small>
+                </div>
+                <div class="field">
+                  <label for="embedding-model-select">Embedding model</label>
+                  <select id="embedding-model-select" disabled>
+                    <option value="">No embedding model configured</option>
+                  </select>
+                  <small class="field-help">When available, vectors are attached to document and chunk output.</small>
+                </div>
               </div>
-              <div class="field model-discovery">
-                <span class="field-label">Available model bundles</span>
-                <ul id="model-list" aria-label="Available model bundles">
-                  <li>Discovering</li>
-                </ul>
+
+              <fieldset class="chunk-controls">
+                <legend>Chunk output</legend>
+                <p>Return either strategy or both in the same response.</p>
+                <label class="check-control" for="sentence-chunks">
+                  <input id="sentence-chunks" type="checkbox" checked />
+                  <span><strong>Sentence chunks</strong><small>One chunk per detected sentence</small></span>
+                </label>
+                <label class="check-control" for="token-chunks">
+                  <input id="token-chunks" type="checkbox" checked />
+                  <span><strong>Token windows</strong><small>Overlapping windows across the document</small></span>
+                </label>
+                <div class="token-window-fields">
+                  <label for="token-chunk-size">Window <input id="token-chunk-size" type="number"
+                    min="1" max="4096" value="96" inputmode="numeric" /></label>
+                  <label for="token-chunk-overlap">Overlap <input id="token-chunk-overlap" type="number"
+                    min="0" max="4095" value="12" inputmode="numeric" /></label>
+                </div>
+              </fieldset>
+
+              <div class="capability-summary">
+                <div>
+                  <span class="field-label">Enabled features</span>
+                  <ul id="enabled-feature-list" aria-label="Enabled analysis features">
+                    <li>Discovering</li>
+                  </ul>
+                </div>
+                <details>
+                  <summary>Loaded model bundles</summary>
+                  <ul id="model-list" aria-label="Available model bundles">
+                    <li>Discovering</li>
+                  </ul>
+                </details>
               </div>
             </div>
+
+            <fieldset class="feature-picker">
+              <legend>Analysis features</legend>
+              <p>Select any configured feature. Required backbone steps are added automatically.</p>
+              <div id="feature-options" class="feature-options" aria-label="Selectable analysis features">
+                <p class="empty-message">Discovering server features.</p>
+              </div>
+            </fieldset>
 
             <div class="form-actions">
               <button id="analyze-button" type="submit" disabled>
                 <span data-button-label>Analyze text</span>
-                <span aria-hidden="true">→</span>
+                <span aria-hidden="true">›</span>
               </button>
               <button id="sample-button" type="button" class="secondary-button">Use sample text</button>
+              <p id="form-status" role="status" aria-live="polite" class="form-status">
+                Connect to the service and enter text to begin.
+              </p>
             </div>
-            <p class="model-note">Model bundles describe service capabilities. The selected profile controls analysis.</p>
-            <p id="form-status" role="status" aria-live="polite" class="form-status">
-              Connect to the service and enter text to begin.
-            </p>
           </form>
 
           <section class="response-panel" aria-labelledby="response-heading">
@@ -149,13 +172,15 @@
                 <h3 id="response-heading">Analysis result</h3>
               </div>
               <div class="response-actions">
-                <button id="add-to-index-button" type="button" class="copy-button" disabled>Add to session search</button>
+                <button id="add-to-index-button" type="button" class="copy-button" disabled>Add to server workspace</button>
                 <button id="copy-button" type="button" class="copy-button" disabled>Copy JSON</button>
               </div>
             </div>
             <div class="result-tabs" role="tablist" aria-label="Analysis result views">
               <button id="document-tab" type="button" role="tab" aria-selected="true"
                 aria-controls="document-view" data-result-tab="document">Document</button>
+              <button id="chunks-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+                aria-controls="chunks-view" data-result-tab="chunks">Chunks</button>
               <button id="heatmap-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
                 aria-controls="heatmap-view" data-result-tab="heatmap">Heatmap</button>
               <button id="graph-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
@@ -171,7 +196,7 @@
             <div id="document-view" role="tabpanel" aria-labelledby="document-tab" class="document-view">
               <div class="layer-browser">
                 <div class="layer-heading">
-                  <span>Annotation layers</span>
+                  <span>Layers</span>
                   <small id="layer-summary">Analyze text to discover layers</small>
                   <label for="layer-filter" class="visually-hidden">Filter annotation layers</label>
                   <input id="layer-filter" type="search" placeholder="Filter layers" disabled />
@@ -179,11 +204,17 @@
                 <div id="layer-list" aria-label="Annotation layers" class="layer-list"></div>
               </div>
               <div class="annotation-canvas">
-                <p class="canvas-hint">Choose a layer, then select highlighted text to inspect its typed annotation.</p>
+                <p class="canvas-hint">Choose a layer, then click highlighted text for its typed annotation.</p>
                 <div id="annotated-text" class="annotated-text" tabindex="0">No analysis yet.</div>
-                <aside id="annotation-details" class="annotation-details" aria-live="polite">
-                  <p>Annotation details will appear here.</p>
-                </aside>
+              </div>
+            </div>
+            <div id="chunks-view" role="tabpanel" aria-labelledby="chunks-tab" class="chunks-view" hidden>
+              <div class="visualization-heading">
+                <div><span>Chunk projections</span><small>Compare every requested strategy over the same document</small></div>
+                <p>Each column preserves its typed group identity, source span, and attached embedding count.</p>
+              </div>
+              <div id="chunk-projection" class="chunk-projection">
+                <p class="empty-message">Analyze text with a chunk strategy to compare its output.</p>
               </div>
             </div>
             <div id="heatmap-view" role="tabpanel" aria-labelledby="heatmap-tab" class="visualization-view" hidden>
@@ -214,7 +245,23 @@
           </section>
         </div>
 
-        <section id="server-search" class="server-search-lens" aria-labelledby="server-search-heading">
+        <div id="annotation-drawer-backdrop" class="drawer-backdrop" hidden></div>
+        <aside id="annotation-details" class="annotation-drawer" role="dialog" aria-modal="true"
+          aria-labelledby="annotation-details-heading" hidden>
+          <header>
+            <div>
+              <span>Typed annotation</span>
+              <h2 id="annotation-details-heading">Selection details</h2>
+            </div>
+            <button id="annotation-details-close" type="button" aria-label="Close annotation details">×</button>
+          </header>
+          <div id="annotation-details-content" class="annotation-details-content" aria-live="polite">
+            <p>Choose a highlighted span to inspect its annotation.</p>
+          </div>
+        </aside>
+
+        <section id="server-search" class="server-search-lens" role="tabpanel"
+          aria-labelledby="corpus-search-workbench-tab" hidden>
           <div class="search-lens-heading">
             <div>
               <p class="section-kicker">Server-backed semantic search</p>
@@ -317,19 +364,20 @@
           </div>
         </section>
 
-        <section class="semantic-lab" aria-labelledby="semantic-heading">
+        <section id="session-search" class="semantic-lab" role="tabpanel"
+          aria-labelledby="session-search-workbench-tab" hidden>
           <div class="semantic-intro">
-            <p class="section-kicker">Local demonstration mode</p>
-            <p class="local-mode-badge">Browser memory only</p>
-            <h3 id="semantic-heading">Browser-session vector search</h3>
+            <p class="section-kicker">Dynamic gRPC search</p>
+            <p class="local-mode-badge">Server memory</p>
+            <h3 id="semantic-heading">On-the-fly workspace index</h3>
             <p>
-              Add analyzed documents, then rank them with embeddings produced by the selected profile.
-              The index stays in this browser tab and is never sent to another service.
+              Add analyzed documents, then let the gRPC service build and search a bounded in-memory flat index.
+              The browser renders server scores and never performs vector ranking.
             </p>
             <dl class="semantic-facts">
-              <div><dt>Indexed</dt><dd id="index-count">0 documents</dd></div>
+              <div><dt>Indexed chunks</dt><dd id="index-count">0</dd></div>
               <div><dt>Similarity</dt><dd>Cosine</dd></div>
-              <div><dt>Storage</dt><dd>Browser memory</dd></div>
+              <div><dt>Storage</dt><dd>gRPC server memory</dd></div>
             </dl>
           </div>
           <div class="semantic-console">
@@ -338,17 +386,61 @@
               <textarea id="semantic-query" rows="3" disabled
                 placeholder="Add an embedding-enabled document, then describe what you want to find."></textarea>
               <div class="form-actions">
-                <button id="search-button" type="submit" disabled>Search session</button>
+                <button id="search-button" type="submit" disabled>Search workspace</button>
                 <button id="clear-index-button" type="button" class="secondary-button" disabled>Clear index</button>
               </div>
             </form>
             <p id="semantic-status" class="form-status" role="status" aria-live="polite">
-              Analyze an embedding-enabled document, then add it to search.
+              Analyze an embedding-enabled document, then add it to the server workspace.
             </p>
             <div id="search-results" class="search-results" aria-label="Semantic search results">
-              <p class="empty-message">No session search results yet.</p>
+              <p class="empty-message">No workspace search results yet.</p>
             </div>
           </div>
+        </section>
+
+        <section id="model-data-workbench" class="model-data-workbench" role="tabpanel"
+          aria-labelledby="models-workbench-tab" hidden>
+          <header class="model-data-heading">
+            <div>
+              <p class="section-kicker">Server capability inventory</p>
+              <h3>Models &amp; data</h3>
+              <p>See what this server can run now and what still needs an operator-provided resource.</p>
+            </div>
+            <strong id="resource-summary">Discovering resources</strong>
+          </header>
+          <div class="model-data-grid">
+            <section>
+              <h4>Pipeline readiness</h4>
+              <div id="resource-feature-list" class="resource-feature-list">
+                <p class="empty-message">Discovering server features.</p>
+              </div>
+            </section>
+            <section>
+              <h4>Loaded bundles</h4>
+              <ul id="resource-bundle-list" class="resource-bundle-list">
+                <li>Discovering model bundles.</li>
+              </ul>
+            </section>
+          </div>
+          <section class="resource-installer-card">
+            <div>
+              <span>Verified resource installer</span>
+              <h4>Download before server startup</h4>
+              <p>
+                The server CLI accepts an operator-approved HTTP(S) or file URI and requires a SHA-256 or
+                SHA-512 digest. Downloads are bounded, verified, staged, and installed atomically.
+              </p>
+            </div>
+            <pre id="resource-install-command">java -jar opennlp-grpc-server.jar install-resource \
+  --source https://example.invalid/resource.bin \
+  --checksum &lt;sha256-or-sha512&gt; \
+  --target /srv/opennlp/models</pre>
+            <button id="copy-resource-command" type="button" class="secondary-button">Copy command</button>
+            <p id="resource-install-status" class="form-status" role="status" aria-live="polite">
+              Configure the installed paths, then restart the server to load the new capabilities.
+            </p>
+          </section>
         </section>
       </section>
     </main>

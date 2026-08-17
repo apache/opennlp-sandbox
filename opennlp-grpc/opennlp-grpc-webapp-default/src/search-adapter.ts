@@ -19,7 +19,7 @@
 
 import { toBrowserSpan } from "./offsets";
 
-/** Stable browser view of one server-configured immutable search index. */
+/** Stable browser view of one server-owned static or dynamic search index. */
 export interface SearchIndexBuild {
   bundleFormatVersion?: number;
   bundleArtifactHash?: string;
@@ -122,7 +122,7 @@ export function readSearchIndexes(response: unknown): SearchIndex[] {
     const providerId = providerIdentity(provider);
     const embeddingRoute = readEmbeddingRoute(route);
     const metric = text(descriptor.metric);
-    if (!providerId || !embeddingRoute || descriptor.immutable !== true
+    if (!providerId || !embeddingRoute || typeof descriptor.immutable !== "boolean"
         || metric !== "SEARCH_METRIC_COSINE") {
       return [];
     }
@@ -140,7 +140,7 @@ export function readSearchIndexes(response: unknown): SearchIndex[] {
       maxTopK: positiveInteger(descriptor.maxTopK),
       maxQueryBytes: positiveInteger(descriptor.maxQueryBytes),
       maxResponseBytes: positiveInteger(descriptor.maxResponseBytes),
-      immutable: descriptor.immutable === true,
+      immutable: descriptor.immutable,
       corpusTitle: text(corpus?.title) || "Untitled corpus",
       provenance: text(corpus?.provenanceSummary),
       sourceUri: safeUri(corpus?.sourceUri),

@@ -26,6 +26,8 @@ import {
   getSearchIndexes,
   getServiceInfo,
   getUiExtensions,
+  indexDocuments,
+  deleteSearchIndex,
   searchIndex,
 } from "../src/api";
 
@@ -46,6 +48,12 @@ describe("API client", () => {
     await getUiExtensions(fetcher);
     await getSearchIndexes(fetcher);
     await searchIndex({ indexId: "guides", query: { rawText: "OpenNLP" }, topK: 3 }, fetcher);
+    await indexDocuments({
+      displayName: "Workbench",
+      documents: [{ docId: "doc-1", rawText: "OpenNLP" }],
+      embedding: { modelId: "demo" },
+    }, fetcher);
+    await deleteSearchIndex("workspace-1", fetcher);
     await analyze(
       {
         document: { rawText: "A test." },
@@ -62,6 +70,8 @@ describe("API client", () => {
       "/api/v1/ui-extensions",
       "/api/v1/search-indexes",
       "/api/v1/search",
+      "/api/v1/index-documents",
+      "/api/v1/delete-search-index",
       "/api/v1/analyze",
     ]);
     expect(fetcher.mock.calls[5]?.[1]).toMatchObject({
@@ -70,6 +80,18 @@ describe("API client", () => {
       body: JSON.stringify({ indexId: "guides", query: { rawText: "OpenNLP" }, topK: 3 }),
     });
     expect(fetcher.mock.calls[6]?.[1]).toMatchObject({
+      method: "POST",
+      body: JSON.stringify({
+        displayName: "Workbench",
+        documents: [{ docId: "doc-1", rawText: "OpenNLP" }],
+        embedding: { modelId: "demo" },
+      }),
+    });
+    expect(fetcher.mock.calls[7]?.[1]).toMatchObject({
+      method: "POST",
+      body: JSON.stringify({ indexId: "workspace-1" }),
+    });
+    expect(fetcher.mock.calls[8]?.[1]).toMatchObject({
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({

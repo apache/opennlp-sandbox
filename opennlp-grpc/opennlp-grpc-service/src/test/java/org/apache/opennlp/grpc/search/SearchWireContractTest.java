@@ -46,16 +46,58 @@ class SearchWireContractTest {
     final var service = OpenNlpSearchProto.getDescriptor()
         .findServiceByName("OpenNlpSearchService");
     assertNotNull(service);
-    assertEquals(2, service.getMethods().size());
+    assertEquals(4, service.getMethods().size());
     final MethodDescriptor list = service.findMethodByName("ListSearchIndexes");
     final MethodDescriptor search = service.findMethodByName("SearchIndex");
+    final MethodDescriptor index = service.findMethodByName("IndexDocuments");
+    final MethodDescriptor delete = service.findMethodByName("DeleteSearchIndex");
 
     assertNotNull(list);
     assertNotNull(search);
+    assertNotNull(index);
+    assertNotNull(delete);
     assertEquals("ListSearchIndexesRequest", list.getInputType().getName());
     assertEquals("ListSearchIndexesResponse", list.getOutputType().getName());
     assertEquals("SearchIndexRequest", search.getInputType().getName());
     assertEquals("SearchIndexResponse", search.getOutputType().getName());
+    assertEquals("IndexDocumentsRequest", index.getInputType().getName());
+    assertEquals("IndexDocumentsResponse", index.getOutputType().getName());
+    assertEquals("DeleteSearchIndexRequest", delete.getInputType().getName());
+    assertEquals("DeleteSearchIndexResponse", delete.getOutputType().getName());
+  }
+
+  @Test
+  void dynamicIndexingUsesTheDocumentShapeAndSelectsExistingEmbeddings() {
+    final Descriptor request = OpenNlpSearchProto.getDescriptor()
+        .findMessageTypeByName("IndexDocumentsRequest");
+    assertNotNull(request);
+    assertField(request, "index_id", FieldDescriptor.JavaType.STRING, 1);
+    assertTrue(request.findFieldByName("index_id").toProto().getProto3Optional());
+    assertField(request, "display_name", FieldDescriptor.JavaType.STRING, 2);
+    assertEquals("OpenNlpDocument", request.findFieldByName("documents")
+        .getMessageType().getName());
+    assertTrue(request.findFieldByName("documents").isRepeated());
+    assertEquals("EmbeddingSelector", request.findFieldByName("embedding")
+        .getMessageType().getName());
+    assertField(request, "chunk_group_ids", FieldDescriptor.JavaType.STRING, 5);
+    assertTrue(request.findFieldByName("chunk_group_ids").isRepeated());
+
+    final Descriptor response = OpenNlpSearchProto.getDescriptor()
+        .findMessageTypeByName("IndexDocumentsResponse");
+    assertNotNull(response);
+    assertMessageField(response, "index", SearchIndexDescriptor.getDescriptor(), 1);
+    assertField(response, "indexed_documents", FieldDescriptor.JavaType.INT, 2);
+    assertField(response, "indexed_chunks", FieldDescriptor.JavaType.INT, 3);
+
+    final Descriptor deleteRequest = OpenNlpSearchProto.getDescriptor()
+        .findMessageTypeByName("DeleteSearchIndexRequest");
+    assertNotNull(deleteRequest);
+    assertField(deleteRequest, "index_id", FieldDescriptor.JavaType.STRING, 1);
+    final Descriptor deleteResponse = OpenNlpSearchProto.getDescriptor()
+        .findMessageTypeByName("DeleteSearchIndexResponse");
+    assertNotNull(deleteResponse);
+    assertField(deleteResponse, "index_id", FieldDescriptor.JavaType.STRING, 1);
+    assertField(deleteResponse, "deleted", FieldDescriptor.JavaType.BOOLEAN, 2);
   }
 
   @Test

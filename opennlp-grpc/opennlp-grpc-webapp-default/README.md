@@ -19,37 +19,92 @@ executing package-provided code that the build does not need.
 For Java-only reactor work, skip all frontend goals with:
 
 ```shell
-./mvnw -Dfrontend.skip=true package
+mvn -Dfrontend.skip=true package
 ```
 
-The browser uses the same-origin HTTP facade. Analysis requests follow protobuf JSON exactly:
+The browser uses the same-origin HTTP facade. Analysis requests follow protobuf JSON exactly.
+The default feature preset builds an inline profile from features that the service reports as
+both supported and configured. For example:
 
 ```json
 {
   "document": { "rawText": "Text to analyze" },
-  "profileId": "en-basic",
-  "options": { "offsetEncoding": "OFFSET_ENCODING_UTF16_CODE_UNIT" }
+  "profile": {
+    "steps": [
+      "PIPELINE_STEP_LANGUAGE_DETECT",
+      "PIPELINE_STEP_SENTENCE_DETECT",
+      "PIPELINE_STEP_TOKENIZE",
+      "PIPELINE_STEP_POS_TAG",
+      "PIPELINE_STEP_LEMMATIZE",
+      "PIPELINE_STEP_STEM",
+      "PIPELINE_STEP_TERM_VECTOR"
+    ]
+  },
+  "options": { "offsetEncoding": "OFFSET_ENCODING_UTF16_CODE_UNIT" },
+  "chunkEmbedConfigs": [
+    {
+      "configId": "sentence-chunks",
+      "resultSetName": "Sentence chunks",
+      "chunking": {
+        "strategy": { "standard": "STANDARD_CHUNKING_STRATEGY_SENTENCE" },
+        "cleanText": true,
+        "preserveUrls": true
+      }
+    },
+    {
+      "configId": "token-chunks",
+      "resultSetName": "Token windows",
+      "chunking": {
+        "strategy": { "standard": "STANDARD_CHUNKING_STRATEGY_TOKEN" },
+        "chunkSize": 128,
+        "chunkOverlap": 16,
+        "cleanText": true,
+        "preserveUrls": true
+      }
+    }
+  ]
 }
 ```
 
+The named profiles and server automatic selection remain available as explicit alternatives. The
+sentence and token-window chunk strategies are independent controls, so one analysis can return
+both projections. Chunks do not require an embedding model. If a configured model is selected,
+the same controls request attached chunk embeddings.
+
+The feature matrix shows every pipeline step implemented by the server. Configured steps can be
+selected individually; supported steps that lack a model or data resource remain visible with a
+clear unavailable status. Choosing a dependent feature automatically adds its configured sentence,
+token, POS, or NER backbone in canonical execution order.
+
+The Models & data tab presents the same readiness inventory outside the request form and shows the
+checksum-required `install-resource` server command. Installation stays an explicit operator action
+before server startup; the unauthenticated browser facade never accepts an arbitrary download URL
+or writes into the server's model directory.
+
 The workbench requests UTF-16 offsets so typed annotation spans map directly to JavaScript string
-indices. Its document view reads `document.layers.layers`, lists every typed layer, highlights the
-selected layer over `document.rawText`, and exposes the complete annotation value when highlighted
-text is selected. The result summary reports layer and annotation counts plus the active offset
-encoding, and the layer list remains searchable for profiles that produce many results. Raw
-protobuf JSON remains available in a separate result tab. The tool switcher loads the host's
-`/api/v1/ui-extensions` catalog and links every discovered ServiceLoader extension. Its static
-default entry remains usable when catalog discovery is unavailable.
+indices. The Analyze tab uses the full available width. Its source editor and annotated document
+scroll vertically for long input and never require horizontal scrolling. Result projections reuse
+the same response: Document, Chunks, Heatmap, Graph, and Protobuf JSON. The Document projection
+reads `document.layers.layers`, places every typed layer in a searchable horizontal rail, and
+highlights the selected layer over `document.rawText`. Selecting text, a graph node, or a chunk
+opens typed details in a dismissible side drawer instead of narrowing the document canvas. The
+result summary reports layer and annotation counts plus the active offset encoding.
 
-The optional semantic workbench uses embedding annotations from the same typed layers. An analyzed
-document can be added to an in-memory browser index, then ranked by cosine similarity against a
-query analyzed with the selected profile. The index is scoped to the current tab. It is not
-persisted and is not sent back to the service. Query similarity and typed sentiment scores are
-shown as heatmaps. The graph view links the document to its layers and annotations, and annotation
-nodes open the same details used by the Document view. Visualization code is loaded only when a
-graph or heatmap is opened.
+The top-level navigation separates Analyze, immutable Corpus search, and process-local Workspace
+search. The tool switcher is a separate extension-level control. It loads the host's
+`/api/v1/ui-extensions` catalog, remains hidden when only the default extension is installed, and
+links every additional ServiceLoader extension when present.
 
-The server-backed search lens is separate from that browser-session demonstration. It discovers
+The Workspace search workbench uses chunk embeddings already present in the same document shape.
+It sends the complete analyzed documents to `IndexDocuments`; the gRPC server validates routes,
+spans, dimensions, and limits before atomically publishing a process-local flat index. Queries go
+through `SearchIndex`, and only server-ranked scores return to the browser. Clearing the workspace
+calls `DeleteSearchIndex`. Query similarity and typed sentiment scores are shown as heatmaps. The
+graph view links the document to its layers and annotations, and annotation nodes open the same
+details used by the Document view. Visualization code is loaded only when a graph or heatmap is
+opened.
+
+The immutable Corpus search lens is separate from the process-local Workspace search. It discovers
 immutable indexes from `GET /api/v1/search-indexes` and sends document-shaped queries to
 `POST /api/v1/search`. Search response parsing is isolated in `search-adapter.ts`. Each result
 keeps its numeric cosine score, authoritative source span, emitted chunk text, configured and
@@ -60,16 +115,16 @@ and emitted text, and lazily analyzes the selected source document when typed la
 already present. Shared offset utilities reject invalid UTF-8 and UTF-16 boundaries and
 out-of-range code-point offsets.
 
-Frontend responsibilities are kept separate: `api.ts` owns HTTP, `document-shape.ts` owns wire
-normalization, `embedding-workbench.ts` owns vector math and the session index,
-`visualization-data.ts` creates renderer-neutral data, `charts.ts` is the Apache ECharts adapter,
-`semantic-workbench.ts` coordinates the local semantic controls, and `server-search-workbench.ts`
-coordinates server search. Locale-independent cursor helpers in `text-utils.ts` own casing,
-whitespace, identifier splitting, and tooltip escaping. `main.ts` remains the page entry point and
-document inspector.
-
-Model bundles are displayed as service capability information. A named analysis profile remains
-the only user-selectable analysis option sent by the playground.
+Frontend responsibilities are kept separate: `api.ts` owns HTTP, `analysis-config.ts` owns pure
+capability and request shaping, `analysis-controls.ts` owns the associated form controls,
+`document-shape.ts` owns wire normalization, `chunk-projection.ts` owns chunk wire parsing, and
+`chunk-projection-view.ts` owns its DOM rendering. `annotation-drawer.ts` owns detail disclosure and
+focus restoration. `workbench-navigation.ts` owns the top-level tabs. `visualization-data.ts`
+creates renderer-neutral data, `charts.ts` is the Apache ECharts adapter,
+`semantic-workbench.ts` coordinates server-owned workspace indexing, and
+`server-search-workbench.ts` coordinates immutable corpus search. Locale-independent cursor
+helpers in `text-utils.ts` own casing, whitespace, identifier splitting, and tooltip escaping.
+`main.ts` remains the page entry point and document projection coordinator.
 
 The runtime visualization dependency is Apache ECharts (Apache License 2.0), which brings zrender
 (BSD 3-Clause) and tslib (Zero-Clause BSD). Their required license text is packaged in the JAR.

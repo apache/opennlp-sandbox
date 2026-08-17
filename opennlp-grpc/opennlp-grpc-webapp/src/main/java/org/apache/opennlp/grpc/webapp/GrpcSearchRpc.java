@@ -22,6 +22,10 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import io.grpc.Channel;
+import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
+import org.apache.opennlp.grpc.v1.DeleteSearchIndexResponse;
+import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
+import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesRequest;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpSearchServiceGrpc;
@@ -64,6 +68,18 @@ final class GrpcSearchRpc implements SearchRpc {
   @Override
   public SearchIndexResponse search(SearchIndexRequest request) {
     return deadlineStub().searchIndex(request);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public IndexDocumentsResponse index(IndexDocumentsRequest request) {
+    return deadlineStub().indexDocuments(request);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public DeleteSearchIndexResponse delete(DeleteSearchIndexRequest request) {
+    return deadlineStub().deleteSearchIndex(request);
   }
 
   /** @return A stub carrying the configured deadline. */

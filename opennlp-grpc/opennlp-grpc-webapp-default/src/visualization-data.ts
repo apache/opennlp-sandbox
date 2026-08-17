@@ -18,12 +18,6 @@
  */
 
 import type { AnnotationView, DocumentShapeView } from "./document-shape";
-import {
-  cosineSimilarity,
-  readEmbeddingVectors,
-  type EmbeddingVector,
-  type VectorQuery,
-} from "./embedding-workbench";
 import { asciiLowerCase, collapseWhitespace, ellipsizeCodePoints } from "./text-utils";
 
 export interface HeatmapRow {
@@ -61,22 +55,7 @@ export interface DocumentGraph {
   truncated: boolean;
 }
 
-export function buildHeatmapRows(shape: DocumentShapeView, queries: VectorQuery[]): HeatmapRows {
-  const semantic = readEmbeddingVectors(shape)
-    .filter(hasSpan)
-    .flatMap((embedding) => {
-      const query = queries.find((candidate) => candidate.modelId === embedding.modelId
-        && candidate.vector.length === embedding.vector.length);
-      const score = query ? cosineSimilarity(embedding.vector, query.vector) : undefined;
-      return score === undefined ? [] : [{
-        start: embedding.start!,
-        end: embedding.end!,
-        label: shape.rawText.slice(embedding.start, embedding.end),
-        score,
-        modelId: embedding.modelId,
-      }];
-    });
-
+export function buildHeatmapRows(shape: DocumentShapeView): HeatmapRows {
   const sentiment = shape.layers
     .filter((layer) => layer.valueType === "Category" && isSentimentLayer(layer.id, layer.standardIdentity))
     .flatMap((layer) => layer.annotations)
@@ -89,7 +68,7 @@ export function buildHeatmapRows(shape: DocumentShapeView, queries: VectorQuery[
       category: annotation.label,
     }]);
 
-  return { semantic, sentiment };
+  return { semantic: [], sentiment };
 }
 
 export function buildDocumentGraph(shape: DocumentShapeView, maxAnnotations = 120): DocumentGraph {
@@ -128,10 +107,6 @@ export function buildDocumentGraph(shape: DocumentShapeView, maxAnnotations = 12
   }
 
   return { nodes, links, truncated: availableAnnotations > annotationCount };
-}
-
-function hasSpan(embedding: EmbeddingVector): boolean {
-  return embedding.start !== undefined && embedding.end !== undefined && embedding.end > embedding.start;
 }
 
 function hasAnnotationSpan(annotation: AnnotationView): boolean {

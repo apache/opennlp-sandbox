@@ -19,6 +19,10 @@
 package org.apache.opennlp.grpc.webapp;
 
 import org.apache.opennlp.grpc.v1.ListSearchIndexesResponse;
+import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
+import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
+import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
+import org.apache.opennlp.grpc.v1.DeleteSearchIndexResponse;
 import org.apache.opennlp.grpc.v1.SearchIndexRequest;
 import org.apache.opennlp.grpc.v1.SearchIndexResponse;
 
@@ -32,5 +36,15 @@ final class EmptySearchRpc implements SearchRpc {
   @Override
   public SearchIndexResponse search(SearchIndexRequest request) {
     return SearchIndexResponse.getDefaultInstance();
+  }
+
+  @Override
+  public IndexDocumentsResponse index(IndexDocumentsRequest request) {
+    return IndexDocumentsResponse.getDefaultInstance();
+  }
+
+  @Override
+  public DeleteSearchIndexResponse delete(DeleteSearchIndexRequest request) {
+    return DeleteSearchIndexResponse.getDefaultInstance();
   }
 }

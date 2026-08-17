@@ -211,6 +211,16 @@ public final class SearchIndexRegistry implements AutoCloseable {
     return provider;
   }
 
+  /**
+   * Returns a configured immutable provider.
+   *
+   * @param indexId Opaque index identifier.
+   * @return Matching provider, or {@code null} when the id is unknown.
+   */
+  SearchIndexProvider find(String indexId) {
+    return providers.get(indexId);
+  }
+
   /** Releases provider-owned resources in reverse load order. This method is idempotent. */
   @Override
   public void close() {

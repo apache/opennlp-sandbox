@@ -19,6 +19,7 @@
 package org.apache.opennlp.grpc.search;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +30,11 @@ import io.grpc.stub.StreamObserver;
 import org.apache.opennlp.grpc.embedding.EmbeddingBatchResult;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
+import org.apache.opennlp.grpc.v1.DeleteSearchIndexResponse;
 import org.apache.opennlp.grpc.v1.EmbeddingRoute;
+import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
+import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesRequest;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpSearchServiceGrpc;
@@ -41,7 +46,7 @@ import org.apache.opennlp.grpc.v1.server.GrpcStatusMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** gRPC adapter for bounded read-only search over configured immutable indexes. */
+/** gRPC adapter for bounded search over static and process-local dynamic indexes. */
 public final class OpenNlpSearchServiceImpl
     extends OpenNlpSearchServiceGrpc.OpenNlpSearchServiceImplBase {
 
@@ -52,6 +57,7 @@ public final class OpenNlpSearchServiceImpl
           .thenComparing(result -> result.record().documentId());
 
   private final SearchIndexRegistry registry;
+  private final DynamicSearchIndexRegistry dynamicRegistry;
   private final EmbeddingProvider embeddingProvider;
   private final Map<String, String> queryBackendByIndex;
 
@@ -64,13 +70,32 @@ public final class OpenNlpSearchServiceImpl
    */
   public OpenNlpSearchServiceImpl(
       SearchIndexRegistry registry, EmbeddingProvider embeddingProvider) {
+    this(registry, new DynamicSearchIndexRegistry(), embeddingProvider);
+  }
+
+  /**
+   * Creates a service over immutable and server-owned dynamic index registries.
+   *
+   * @param registry Startup-loaded immutable indexes.
+   * @param dynamicRegistry Bounded in-memory indexes owned by the server lifecycle.
+   * @param embeddingProvider Query embedding provider.
+   * @throws IllegalArgumentException If an argument or index route is invalid.
+   */
+  public OpenNlpSearchServiceImpl(
+      SearchIndexRegistry registry,
+      DynamicSearchIndexRegistry dynamicRegistry,
+      EmbeddingProvider embeddingProvider) {
     if (registry == null) {
       throw new IllegalArgumentException("registry must not be null");
     }
     if (embeddingProvider == null) {
       throw new IllegalArgumentException("embeddingProvider must not be null");
     }
+    if (dynamicRegistry == null) {
+      throw new IllegalArgumentException("dynamicRegistry must not be null");
+    }
     this.registry = registry;
+    this.dynamicRegistry = dynamicRegistry;
     this.embeddingProvider = embeddingProvider;
     final Map<String, String> selectedBackends = new TreeMap<>();
     for (SearchIndexDescriptor descriptor : registry.descriptors()) {
@@ -91,16 +116,61 @@ public final class OpenNlpSearchServiceImpl
     this.queryBackendByIndex = Map.copyOf(selectedBackends);
   }
 
+  /** {@inheritDoc} */
   @Override
   public void listSearchIndexes(
       ListSearchIndexesRequest request,
       StreamObserver<ListSearchIndexesResponse> responseObserver) {
+    final List<SearchIndexDescriptor> descriptors = new ArrayList<>(registry.descriptors());
+    descriptors.addAll(dynamicRegistry.descriptors());
+    descriptors.sort(Comparator.comparing(SearchIndexDescriptor::getIndexId));
     responseObserver.onNext(ListSearchIndexesResponse.newBuilder()
-        .addAllIndexes(registry.descriptors())
+        .addAllIndexes(descriptors)
         .build());
     responseObserver.onCompleted();
   }
 
+  /** {@inheritDoc} */
+  @Override
+  public void indexDocuments(
+      IndexDocumentsRequest request, StreamObserver<IndexDocumentsResponse> responseObserver) {
+    try {
+      responseObserver.onNext(dynamicRegistry.index(request));
+      responseObserver.onCompleted();
+    } catch (AnalysisException e) {
+      respondAnalysisFailure("IndexDocuments", e, responseObserver);
+    } catch (RuntimeException e) {
+      respondUnexpectedFailure("IndexDocuments", e, responseObserver);
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void deleteSearchIndex(
+      DeleteSearchIndexRequest request,
+      StreamObserver<DeleteSearchIndexResponse> responseObserver) {
+    try {
+      if (request == null || request.getIndexId().isBlank()) {
+        throw AnalysisException.invalidArgument("DeleteSearchIndex index_id must not be blank");
+      }
+      if (registry.find(request.getIndexId()) != null) {
+        throw AnalysisException.failedPrecondition(
+            "DeleteSearchIndex cannot delete immutable index '" + request.getIndexId() + "'");
+      }
+      final boolean deleted = dynamicRegistry.delete(request.getIndexId());
+      responseObserver.onNext(DeleteSearchIndexResponse.newBuilder()
+          .setIndexId(request.getIndexId())
+          .setDeleted(deleted)
+          .build());
+      responseObserver.onCompleted();
+    } catch (AnalysisException e) {
+      respondAnalysisFailure("DeleteSearchIndex", e, responseObserver);
+    } catch (RuntimeException e) {
+      respondUnexpectedFailure("DeleteSearchIndex", e, responseObserver);
+    }
+  }
+
+  /** {@inheritDoc} */
   @Override
   public void searchIndex(
       SearchIndexRequest request, StreamObserver<SearchIndexResponse> responseObserver) {
@@ -109,7 +179,7 @@ public final class OpenNlpSearchServiceImpl
       final SearchIndexDescriptor descriptor = provider.descriptor();
       final EmbeddingRoute configuredRoute = descriptor.getEmbeddingRoute();
       final EmbeddingBatchResult embedding = embeddingProvider.embedBatchResolved(
-          configuredRoute.getModelId(), queryBackendByIndex.get(descriptor.getIndexId()),
+          configuredRoute.getModelId(), queryBackend(descriptor),
           List.of(request.getQuery().getRawText()));
       validateResolvedRoute(descriptor, embedding);
       final float[] queryVector = embedding.vectors().getFirst();
@@ -155,20 +225,19 @@ public final class OpenNlpSearchServiceImpl
       responseObserver.onNext(response.build());
       responseObserver.onCompleted();
     } catch (AnalysisException e) {
-      final Status status = GrpcStatusMapper.toStatus(e);
-      if (status.getCode() == Status.Code.INTERNAL
-          || status.getCode() == Status.Code.UNAVAILABLE) {
-        logger.error("SearchIndex failed", e);
-      }
-      responseObserver.onError(status.withDescription(e.getMessage()).withCause(e.getCause())
-          .asRuntimeException());
+      respondAnalysisFailure("SearchIndex", e, responseObserver);
     } catch (RuntimeException e) {
-      logger.error("Unexpected error handling SearchIndex", e);
-      responseObserver.onError(Status.INTERNAL.withDescription("Internal server error")
-          .withCause(e).asRuntimeException());
+      respondUnexpectedFailure("SearchIndex", e, responseObserver);
     }
   }
 
+  /**
+   * Validates a search request and resolves its provider.
+   *
+   * @param request Search request.
+   * @return Matching static or dynamic provider.
+   * @throws AnalysisException If the request violates its index contract.
+   */
   private SearchIndexProvider validateRequest(SearchIndexRequest request) {
     if (request == null) {
       throw AnalysisException.invalidArgument("SearchIndex request must not be null");
@@ -176,7 +245,7 @@ public final class OpenNlpSearchServiceImpl
     if (request.getIndexId().isBlank()) {
       throw AnalysisException.invalidArgument("SearchIndex index_id must not be blank");
     }
-    final SearchIndexProvider provider = registry.require(request.getIndexId());
+    final SearchIndexProvider provider = findProvider(request.getIndexId());
     if (!request.hasQuery() || request.getQuery().getRawText().isBlank()) {
       throw AnalysisException.invalidArgument("SearchIndex query.raw_text must not be blank");
     }
@@ -193,6 +262,71 @@ public final class OpenNlpSearchServiceImpl
     return provider;
   }
 
+  /**
+   * Resolves a provider from either registry.
+   *
+   * @param indexId Opaque index identifier.
+   * @return Matching provider.
+   * @throws AnalysisException If no provider has the identifier.
+   */
+  private SearchIndexProvider findProvider(String indexId) {
+    final SearchIndexProvider immutable = registry.find(indexId);
+    return immutable != null ? immutable : dynamicRegistry.require(indexId);
+  }
+
+  /**
+   * Selects a compatible backend for a static or dynamic index.
+   *
+   * @param descriptor Index descriptor.
+   * @return Backend identifier.
+   * @throws IllegalArgumentException If no compatible backend exists.
+   */
+  private String queryBackend(SearchIndexDescriptor descriptor) {
+    final String configured = queryBackendByIndex.get(descriptor.getIndexId());
+    return configured != null
+        ? configured : selectConfiguredRoute(descriptor, embeddingProvider).getBackendId();
+  }
+
+  /**
+   * Maps an expected analysis failure to gRPC status.
+   *
+   * @param operation RPC operation name.
+   * @param failure Failure to map.
+   * @param observer Response observer.
+   */
+  private static void respondAnalysisFailure(
+      String operation, AnalysisException failure, StreamObserver<?> observer) {
+    final Status status = GrpcStatusMapper.toStatus(failure);
+    if (status.getCode() == Status.Code.INTERNAL
+        || status.getCode() == Status.Code.UNAVAILABLE) {
+      logger.error("{} failed", operation, failure);
+    }
+    observer.onError(status.withDescription(failure.getMessage()).withCause(failure.getCause())
+        .asRuntimeException());
+  }
+
+  /**
+   * Maps an unexpected runtime failure to a sanitized gRPC status.
+   *
+   * @param operation RPC operation name.
+   * @param failure Failure to log.
+   * @param observer Response observer.
+   */
+  private static void respondUnexpectedFailure(
+      String operation, RuntimeException failure, StreamObserver<?> observer) {
+    logger.error("Unexpected error handling {}", operation, failure);
+    observer.onError(Status.INTERNAL.withDescription("Internal server error")
+        .withCause(failure).asRuntimeException());
+  }
+
+  /**
+   * Selects an available backend in the index vector space.
+   *
+   * @param descriptor Index descriptor.
+   * @param embeddingProvider Available embedding provider.
+   * @return Compatible resolved route.
+   * @throws IllegalArgumentException If the required vector space is unavailable.
+   */
   private static EmbeddingRoute selectConfiguredRoute(
       SearchIndexDescriptor descriptor, EmbeddingProvider embeddingProvider) {
     final EmbeddingRoute route = descriptor.getEmbeddingRoute();
@@ -217,6 +351,14 @@ public final class OpenNlpSearchServiceImpl
         + "' requires unavailable vector space '" + route.getVectorSpaceId() + "'");
   }
 
+  /**
+   * Validates a provider's resolved query embedding.
+   *
+   * @param descriptor Target index descriptor.
+   * @param embedding Provider result.
+   * @throws AnalysisException If the route or dimension is incompatible.
+   * @throws IllegalStateException If the provider response is malformed.
+   */
   private static void validateResolvedRoute(
       SearchIndexDescriptor descriptor, EmbeddingBatchResult embedding) {
     if (embedding == null || embedding.route() == null || embedding.vectors() == null
@@ -238,8 +380,24 @@ public final class OpenNlpSearchServiceImpl
           + embedding.vectors().getFirst().length + " does not match index '"
           + descriptor.getIndexId() + "' dimension " + descriptor.getDimension());
     }
+    double norm = 0;
+    for (float value : embedding.vectors().getFirst()) {
+      if (!Float.isFinite(value)) {
+        throw new IllegalStateException("Embedding provider returned a non-finite query vector");
+      }
+      norm += (double) value * value;
+    }
+    if (norm == 0) {
+      throw new IllegalStateException("Embedding provider returned a zero query vector");
+    }
   }
 
+  /**
+   * Converts one provider result to its wire representation.
+   *
+   * @param result Provider result.
+   * @return Search hit.
+   */
   private static SearchHit toHit(SearchResult result) {
     final SearchRecord record = result.record();
     return SearchHit.newBuilder()

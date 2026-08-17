@@ -25,10 +25,47 @@ export interface AnalyzeRequest {
     rawText: string;
   };
   profileId?: string;
+  profile?: {
+    steps: string[];
+    normalization?: { rungs: string[] };
+    termProfile?: string;
+    stopwordLanguage?: string;
+    subwordModelId?: string;
+    stemmer?: { algorithm: string; language?: string; hunspellDictionaryId?: string };
+    wordnetLexiconId?: string;
+    termVector?: {
+      mode: string;
+      sourceLayer: { standard: string; qualifier?: string };
+    };
+  };
   options?: {
+    includeProbabilities?: boolean;
+    embeddingModelId?: string;
+    includeDocumentCentroid?: boolean;
+    parseFormats?: string[];
     offsetEncoding?: "OFFSET_ENCODING_UTF8_BYTE" | "OFFSET_ENCODING_UTF16_CODE_UNIT" |
       "OFFSET_ENCODING_UNICODE_CODE_POINT";
   };
+  chunkEmbedConfigs?: Array<{
+    configId: string;
+    resultSetName: string;
+    chunking: {
+      strategy: { standard: string };
+      chunkSize?: number;
+      chunkOverlap?: number;
+      cleanText: boolean;
+      preserveUrls: boolean;
+    };
+    embeddingModelIds?: string[];
+  }>;
+}
+
+export interface IndexDocumentsRequest {
+  indexId?: string;
+  displayName: string;
+  documents: Array<Record<string, unknown>>;
+  embedding: { modelId: string };
+  chunkGroupIds?: string[];
 }
 
 export type Fetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -64,6 +101,33 @@ export function searchIndex(request: SearchRequest, fetcher: Fetcher = fetch): P
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(request),
+    },
+    fetcher,
+  );
+}
+
+export function indexDocuments(
+  request: IndexDocumentsRequest,
+  fetcher: Fetcher = fetch,
+): Promise<unknown> {
+  return requestJson(
+    "/api/v1/index-documents",
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(request),
+    },
+    fetcher,
+  );
+}
+
+export function deleteSearchIndex(indexId: string, fetcher: Fetcher = fetch): Promise<unknown> {
+  return requestJson(
+    "/api/v1/delete-search-index",
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ indexId }),
     },
     fetcher,
   );

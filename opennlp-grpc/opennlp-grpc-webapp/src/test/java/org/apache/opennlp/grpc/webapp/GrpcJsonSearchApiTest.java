@@ -25,7 +25,11 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
+import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
+import org.apache.opennlp.grpc.v1.DeleteSearchIndexResponse;
 import org.apache.opennlp.grpc.v1.GetServiceInfoResponse;
+import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
+import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
 import org.apache.opennlp.grpc.v1.ListModelBundlesResponse;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
@@ -88,6 +92,24 @@ class GrpcJsonSearchApiTest {
     assertEquals(405, api.handle("GET", "/api/v1/search", new byte[0]).status());
   }
 
+  @Test
+  void indexesAndDeletesAWorkspaceThroughProtobufJson() {
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new StubSearchRpc());
+    byte[] indexRequest = """
+        {"displayName":"Workbench","documents":[{"docId":"passage-1",\
+        "rawText":"The writ must issue."}],"embedding":{"modelId":"demo"}}
+        """.getBytes(StandardCharsets.UTF_8);
+
+    WebHttpResponse indexed = api.handle("POST", "/api/v1/index-documents", indexRequest);
+    WebHttpResponse deleted = api.handle("POST", "/api/v1/delete-search-index",
+        ("{\"indexId\":\"" + INDEX_ID + "\"}").getBytes(StandardCharsets.UTF_8));
+
+    assertEquals(200, indexed.status());
+    assertTrue(indexed.bodyUtf8().contains("\"indexId\": \"" + INDEX_ID + "\""));
+    assertEquals(200, deleted.status());
+    assertTrue(deleted.bodyUtf8().contains("\"deleted\": true"));
+  }
+
   private static final class StubSearchRpc implements SearchRpc {
 
     @Override
@@ -113,6 +135,22 @@ class GrpcJsonSearchApiTest {
               .setSourceDocument(OpenNlpDocument.newBuilder()
                   .setDocId(DOCUMENT_ID)
                   .setRawText("The writ must issue.")))
+          .build();
+    }
+
+    @Override
+    public IndexDocumentsResponse index(IndexDocumentsRequest request) {
+      return IndexDocumentsResponse.newBuilder()
+          .setIndex(SearchIndexDescriptor.newBuilder().setIndexId(INDEX_ID).setImmutable(false))
+          .setIndexedDocuments(request.getDocumentsCount())
+          .build();
+    }
+
+    @Override
+    public DeleteSearchIndexResponse delete(DeleteSearchIndexRequest request) {
+      return DeleteSearchIndexResponse.newBuilder()
+          .setIndexId(request.getIndexId())
+          .setDeleted(true)
           .build();
     }
   }

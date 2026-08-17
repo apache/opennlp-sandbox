@@ -28,6 +28,10 @@ import io.grpc.Server;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
+import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
+import org.apache.opennlp.grpc.v1.DeleteSearchIndexResponse;
+import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
+import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesRequest;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
@@ -43,7 +47,7 @@ class GrpcSearchRpcTest {
   private static final String QUERY_ID = "query-1";
 
   @Test
-  void delegatesBothUnarySearchCalls() throws Exception {
+  void delegatesAllUnarySearchCalls() throws Exception {
     String name = InProcessServerBuilder.generateName();
     Server server = InProcessServerBuilder.forName(name)
         .directExecutor()
@@ -60,6 +64,13 @@ class GrpcSearchRpcTest {
           .setQuery(OpenNlpDocument.newBuilder().setDocId(QUERY_ID).setRawText("writ"))
           .setTopK(3)
           .build()).getHits(0).getDocumentId());
+      assertEquals(1, rpc.index(IndexDocumentsRequest.newBuilder()
+          .setDisplayName("Workbench")
+          .addDocuments(OpenNlpDocument.newBuilder().setDocId(QUERY_ID).setRawText("writ"))
+          .build()).getIndexedDocuments());
+      assertEquals(INDEX_ID, rpc.delete(DeleteSearchIndexRequest.newBuilder()
+          .setIndexId(INDEX_ID)
+          .build()).getIndexId());
     } finally {
       channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
       server.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
@@ -86,6 +97,27 @@ class GrpcSearchRpcTest {
       observer.onNext(SearchIndexResponse.newBuilder()
           .addHits(org.apache.opennlp.grpc.v1.SearchHit.newBuilder()
               .setDocumentId(request.getQuery().getDocId()))
+          .build());
+      observer.onCompleted();
+    }
+
+    @Override
+    public void indexDocuments(
+        IndexDocumentsRequest request,
+        StreamObserver<IndexDocumentsResponse> observer) {
+      observer.onNext(IndexDocumentsResponse.newBuilder()
+          .setIndexedDocuments(request.getDocumentsCount())
+          .build());
+      observer.onCompleted();
+    }
+
+    @Override
+    public void deleteSearchIndex(
+        DeleteSearchIndexRequest request,
+        StreamObserver<DeleteSearchIndexResponse> observer) {
+      observer.onNext(DeleteSearchIndexResponse.newBuilder()
+          .setIndexId(request.getIndexId())
+          .setDeleted(true)
           .build());
       observer.onCompleted();
     }

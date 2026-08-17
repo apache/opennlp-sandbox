@@ -1,0 +1,794 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.apache.opennlp.grpc.search;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
+import org.apache.opennlp.grpc.v1.EmbeddingResult;
+import org.apache.opennlp.grpc.v1.EmbeddingRoute;
+import org.apache.opennlp.grpc.v1.EmbeddingSelector;
+import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
+import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
+import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.SearchCorpusDescriptor;
+import org.apache.opennlp.grpc.v1.SearchIndexBuildDescriptor;
+import org.apache.opennlp.grpc.v1.SearchIndexDescriptor;
+import org.apache.opennlp.grpc.v1.SearchMetric;
+import org.apache.opennlp.grpc.v1.SearchProviderSelector;
+import org.apache.opennlp.grpc.v1.StandardEmbeddingBackend;
+import org.apache.opennlp.grpc.v1.StandardSearchProvider;
+
+/** Bounded registry of flat, server-owned indexes created from analyzed document shapes. */
+public final class DynamicSearchIndexRegistry implements AutoCloseable {
+
+  static final int MAX_INDEXES = 32;
+  static final int MAX_DOCUMENTS_PER_REQUEST = 16;
+  static final int MAX_DOCUMENTS_PER_INDEX = 256;
+  static final int MAX_CHUNKS_PER_INDEX = 10_000;
+  static final int MAX_SOURCE_DOCUMENT_BYTES_PER_INDEX = 16 * 1024 * 1024;
+  static final int MAX_VECTOR_DIMENSION = 65_536;
+  static final long MAX_VECTOR_VALUES = 16_000_000;
+  static final long MAX_SOURCE_BYTES = 128L * 1024 * 1024;
+
+  private final Map<String, DynamicIndex> indexes = new LinkedHashMap<>();
+  private final int maxIndexes;
+  private final long maxVectorValues;
+  private final long maxSourceBytes;
+  private final boolean enabled;
+  private boolean closed;
+
+  /** Creates an empty bounded dynamic registry. */
+  public DynamicSearchIndexRegistry() {
+    this(true, MAX_INDEXES, MAX_VECTOR_VALUES, MAX_SOURCE_BYTES);
+  }
+
+  /**
+   * Creates a registry with testable limits below the fixed safety ceilings.
+   *
+   * @param maxIndexes Maximum retained indexes.
+   * @param maxVectorValues Maximum retained float values.
+   * @param maxSourceBytes Maximum retained serialized document bytes.
+   * @throws IllegalArgumentException If a limit is outside its fixed safety ceiling.
+   */
+  DynamicSearchIndexRegistry(int maxIndexes, long maxVectorValues, long maxSourceBytes) {
+    this(true, maxIndexes, maxVectorValues, maxSourceBytes);
+  }
+
+  /**
+   * Creates a registry with explicit safety limits.
+   *
+   * @param enabled Whether mutation is enabled.
+   * @param maxIndexes Maximum retained indexes.
+   * @param maxVectorValues Maximum retained float values.
+   * @param maxSourceBytes Maximum retained serialized document bytes.
+   * @throws IllegalArgumentException If a limit is outside its fixed safety ceiling.
+   */
+  private DynamicSearchIndexRegistry(
+      boolean enabled, int maxIndexes, long maxVectorValues, long maxSourceBytes) {
+    if (maxIndexes < 1 || maxIndexes > MAX_INDEXES || maxVectorValues < 1
+        || maxVectorValues > MAX_VECTOR_VALUES || maxSourceBytes < 1
+        || maxSourceBytes > MAX_SOURCE_BYTES) {
+      throw new IllegalArgumentException("Dynamic search limits are outside their safety bounds");
+    }
+    this.maxIndexes = maxIndexes;
+    this.maxVectorValues = maxVectorValues;
+    this.maxSourceBytes = maxSourceBytes;
+    this.enabled = enabled;
+  }
+
+  /**
+   * Returns a registry that exposes no dynamic indexes and rejects mutation RPCs.
+   *
+   * @return Disabled registry.
+   */
+  public static DynamicSearchIndexRegistry disabled() {
+    return new DynamicSearchIndexRegistry(false, 1, 1, 1);
+  }
+
+  /**
+   * Creates or extends one index after validating the complete request.
+   *
+   * @param request Documents and embedding selection to index.
+   * @return The published index snapshot summary.
+   * @throws AnalysisException If the request is invalid or exceeds a bound.
+   */
+  synchronized IndexDocumentsResponse index(IndexDocumentsRequest request) {
+    requireOpen();
+    requireEnabled();
+    if (request == null) {
+      throw AnalysisException.invalidArgument("IndexDocuments request must not be null");
+    }
+    if (request.getDocumentsCount() < 1
+        || request.getDocumentsCount() > MAX_DOCUMENTS_PER_REQUEST) {
+      throw AnalysisException.invalidArgument("IndexDocuments documents must contain between 1 and "
+          + MAX_DOCUMENTS_PER_REQUEST + " entries");
+    }
+    validateSelector(request.getEmbedding());
+    final DynamicIndex existing = request.hasIndexId()
+        ? requireDynamic(request.getIndexId()) : null;
+    if (existing == null && indexes.size() >= maxIndexes) {
+      throw AnalysisException.resourceExhausted("Dynamic search index count reached " + maxIndexes);
+    }
+    final String indexId = existing == null ? newIndexId() : existing.descriptor().getIndexId();
+    final String displayName = existing == null
+        ? requireDisplayName(request.getDisplayName()) : existing.descriptor().getDisplayName();
+    final List<IndexedChunk> additions = extract(request, existing);
+    final DynamicIndex target = existing == null
+        ? new DynamicIndex(indexId, displayName, additions.getFirst().route()) : existing;
+    final Snapshot candidate = target.prepare(request.getDocumentsList(), additions);
+    validateGlobalBudget(existing, candidate);
+    target.publish(candidate);
+    if (existing == null) {
+      indexes.put(indexId, target);
+    }
+    return IndexDocumentsResponse.newBuilder()
+        .setIndex(target.descriptor())
+        .setIndexedDocuments(request.getDocumentsCount())
+        .setIndexedChunks(additions.size())
+        .build();
+  }
+
+  /**
+   * Returns current dynamic index descriptors in creation order.
+   *
+   * @return Immutable descriptor snapshots.
+   */
+  synchronized List<SearchIndexDescriptor> descriptors() {
+    requireOpen();
+    return indexes.values().stream().map(DynamicIndex::descriptor).toList();
+  }
+
+  /**
+   * Resolves one dynamic index.
+   *
+   * @param indexId Opaque dynamic index identifier.
+   * @return The matching provider.
+   * @throws AnalysisException If the identifier is blank or unknown.
+   */
+  synchronized SearchIndexProvider require(String indexId) {
+    requireOpen();
+    return requireDynamic(indexId);
+  }
+
+  /**
+   * Deletes one dynamic index.
+   *
+   * @param indexId Opaque dynamic index identifier.
+   * @return {@code true} when an index was removed.
+   * @throws AnalysisException If mutation is disabled or the identifier is blank.
+   */
+  synchronized boolean delete(String indexId) {
+    requireOpen();
+    requireEnabled();
+    if (indexId == null || indexId.isBlank()) {
+      throw AnalysisException.invalidArgument("DeleteSearchIndex index_id must not be blank");
+    }
+    final DynamicIndex removed = indexes.remove(indexId);
+    if (removed != null) {
+      removed.close();
+      return true;
+    }
+    return false;
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public synchronized void close() {
+    if (closed) {
+      return;
+    }
+    closed = true;
+    indexes.values().forEach(DynamicIndex::close);
+    indexes.clear();
+  }
+
+  /**
+   * Resolves one dynamic index without repeating lifecycle validation.
+   *
+   * @param indexId Opaque dynamic index identifier.
+   * @return The matching index.
+   * @throws AnalysisException If the identifier is blank or unknown.
+   */
+  private DynamicIndex requireDynamic(String indexId) {
+    if (indexId == null || indexId.isBlank()) {
+      throw AnalysisException.invalidArgument("Dynamic search index_id must not be blank");
+    }
+    final DynamicIndex index = indexes.get(indexId);
+    if (index == null) {
+      throw AnalysisException.notFound("Unknown dynamic search index '" + indexId + "'");
+    }
+    return index;
+  }
+
+  /**
+   * Validates a candidate snapshot against server-wide memory ceilings.
+   *
+   * @param replaced Existing index replaced by the candidate, or {@code null}.
+   * @param candidate Candidate snapshot.
+   * @throws AnalysisException If a global ceiling would be exceeded.
+   */
+  private void validateGlobalBudget(DynamicIndex replaced, Snapshot candidate) {
+    long vectorValues = candidate.vectorValues();
+    long sourceBytes = candidate.sourceDocumentBytes();
+    for (DynamicIndex index : indexes.values()) {
+      if (index != replaced) {
+        vectorValues += index.snapshot().vectorValues();
+        sourceBytes += index.snapshot().sourceDocumentBytes();
+      }
+    }
+    if (vectorValues > maxVectorValues) {
+      throw AnalysisException.resourceExhausted(
+          "Dynamic search vector memory exceeds the server-wide value limit of "
+              + maxVectorValues);
+    }
+    if (sourceBytes > maxSourceBytes) {
+      throw AnalysisException.resourceExhausted(
+          "Dynamic search source documents exceed the server-wide byte limit of "
+              + maxSourceBytes);
+    }
+  }
+
+  /**
+   * Extracts matching embedded chunks from an indexing request.
+   *
+   * @param request Indexing request.
+   * @param existing Existing target index, or {@code null} for a new index.
+   * @return Validated chunks ready for publication.
+   * @throws AnalysisException If documents or embeddings violate the contract.
+   */
+  private static List<IndexedChunk> extract(
+      IndexDocumentsRequest request, DynamicIndex existing) {
+    final List<IndexedChunk> additions = new ArrayList<>();
+    final Set<String> requestedGroups = new HashSet<>(request.getChunkGroupIdsList());
+    if (requestedGroups.size() != request.getChunkGroupIdsCount()
+        || requestedGroups.stream().anyMatch(String::isBlank)) {
+      throw AnalysisException.invalidArgument(
+          "IndexDocuments chunk_group_ids must be distinct and nonblank");
+    }
+    final Set<String> documentIds = new HashSet<>();
+    for (OpenNlpDocument document : request.getDocumentsList()) {
+      if (document.getDocId().isBlank() || !documentIds.add(document.getDocId())) {
+        throw AnalysisException.invalidArgument(
+            "IndexDocuments documents require distinct nonblank doc_id values");
+      }
+      int selectedInDocument = 0;
+      final Set<String> documentGroupIds = new HashSet<>();
+      for (int groupIndex = 0;
+          groupIndex < document.getChunkEmbeddingGroupsCount(); groupIndex++) {
+        final ChunkEmbeddingGroup group = document.getChunkEmbeddingGroups(groupIndex);
+        if (group.getGroupId().isBlank()
+            || !group.getGroupId().equals(group.getGroupId().trim())
+            || !documentGroupIds.add(group.getGroupId())) {
+          throw AnalysisException.failedPrecondition("Document '" + document.getDocId()
+              + "' chunk groups require distinct nonblank trimmed group_id values");
+        }
+        if (!requestedGroups.isEmpty() && !requestedGroups.contains(group.getGroupId())) {
+          continue;
+        }
+        for (int chunkIndex = 0; chunkIndex < group.getChunksCount(); chunkIndex++) {
+          final var chunk = group.getChunks(chunkIndex);
+          for (EmbeddingResult embedding : chunk.getEmbeddingsList()) {
+            if (!matches(request.getEmbedding(), embedding)) {
+              continue;
+            }
+            validateEmbedding(embedding, existing);
+            final String chunkId = document.getDocId() + ":" + groupIndex
+                + ":" + chunkIndex;
+            final String emitted = chunk.hasTextContent()
+                ? chunk.getTextContent() : coveredText(document, chunk.getAnnotationSpan());
+            additions.add(new IndexedChunk(
+                searchRecord(document, chunkId, chunk.getAnnotationSpan(), emitted),
+                toArray(embedding), embedding.getRoute()));
+            selectedInDocument++;
+            break;
+          }
+        }
+      }
+      if (selectedInDocument == 0) {
+        throw AnalysisException.failedPrecondition("Document '" + document.getDocId()
+            + "' has no chunk embedding for model '" + request.getEmbedding().getModelId() + "'");
+      }
+    }
+    final EmbeddingRoute first = additions.getFirst().route();
+    for (IndexedChunk addition : additions) {
+      if (addition.vector().length != additions.getFirst().vector().length
+          || !compatible(first, addition.route())) {
+        throw AnalysisException.failedPrecondition(
+            "Selected chunk embeddings do not share one vector space and dimension");
+      }
+    }
+    return List.copyOf(additions);
+  }
+
+  /**
+   * Tests whether one embedding matches the requested model and backend.
+   *
+   * @param selector Requested embedding selector.
+   * @param embedding Candidate embedding.
+   * @return {@code true} when the candidate matches.
+   */
+  private static boolean matches(EmbeddingSelector selector, EmbeddingResult embedding) {
+    if (!selector.getModelId().equals(embedding.getModelId()) || !embedding.hasRoute()) {
+      return false;
+    }
+    final String backend = selectedBackend(selector);
+    return backend == null || backend.equals(embedding.getRoute().getBackendId());
+  }
+
+  /**
+   * Creates a validated search record and maps shape errors to a client failure.
+   *
+   * @param document Source document.
+   * @param chunkId Stable chunk identifier.
+   * @param span Chunk span in the source document.
+   * @param emittedText Exact text represented by the embedding.
+   * @return Validated search record.
+   * @throws AnalysisException If the document shape is inconsistent.
+   */
+  private static SearchRecord searchRecord(
+      OpenNlpDocument document,
+      String chunkId,
+      org.apache.opennlp.grpc.v1.AnnotationSpan span,
+      String emittedText) {
+    try {
+      return new SearchRecord(document.getDocId(), chunkId, document, span, emittedText);
+    } catch (IllegalArgumentException e) {
+      throw AnalysisException.failedPrecondition(
+          "Document '" + document.getDocId() + "' contains an invalid indexed chunk: "
+              + e.getMessage());
+    }
+  }
+
+  /**
+   * Validates the requested embedding selector.
+   *
+   * @param selector Selector to validate.
+   * @throws AnalysisException If the selector is ambiguous or incomplete.
+   */
+  private static void validateSelector(EmbeddingSelector selector) {
+    if (selector == null || selector.getModelId().isBlank()
+        || !selector.getModelId().equals(selector.getModelId().trim())) {
+      throw AnalysisException.invalidArgument(
+          "IndexDocuments embedding.model_id must be nonblank and trimmed");
+    }
+    if (selector.hasBackendId() && selector.getBackend().getKindCase()
+        != org.apache.opennlp.grpc.v1.EmbeddingBackendSelector.KindCase.KIND_NOT_SET) {
+      throw AnalysisException.invalidArgument(
+          "IndexDocuments embedding cannot set both backend_id and backend");
+    }
+    selectedBackend(selector);
+  }
+
+  /**
+   * Resolves a selector's optional backend identifier.
+   *
+   * @param selector Validated embedding selector.
+   * @return Backend identifier, or {@code null} when any compatible backend is allowed.
+   * @throws AnalysisException If an explicitly selected backend is invalid.
+   */
+  private static String selectedBackend(EmbeddingSelector selector) {
+    if (selector.hasBackendId()) {
+      if (selector.getBackendId().isBlank()
+          || !selector.getBackendId().equals(selector.getBackendId().trim())) {
+        throw AnalysisException.invalidArgument(
+            "embedding.backend_id must be nonblank and trimmed");
+      }
+      return selector.getBackendId();
+    }
+    if (selector.getBackend().hasCustom()) {
+      final String custom = selector.getBackend().getCustom();
+      if (custom.isBlank() || !custom.equals(custom.trim())) {
+        throw AnalysisException.invalidArgument(
+            "embedding.backend.custom must be nonblank and trimmed");
+      }
+      return custom;
+    }
+    if (!selector.getBackend().hasStandard()) {
+      return null;
+    }
+    return switch (selector.getBackend().getStandard()) {
+      case STANDARD_EMBEDDING_BACKEND_ONNX -> "onnx";
+      case STANDARD_EMBEDDING_BACKEND_CUDA -> "cuda";
+      case STANDARD_EMBEDDING_BACKEND_STATIC -> "static";
+      case STANDARD_EMBEDDING_BACKEND_TEI -> "tei";
+      case STANDARD_EMBEDDING_BACKEND_OPENVINO -> "openvino";
+      case STANDARD_EMBEDDING_BACKEND_UNSPECIFIED, UNRECOGNIZED -> throw
+          AnalysisException.invalidArgument("embedding.backend.standard must be specified");
+    };
+  }
+
+  /**
+   * Validates one selected embedding and its compatibility with the target index.
+   *
+   * @param embedding Embedding to validate.
+   * @param existing Existing target index, or {@code null}.
+   * @throws AnalysisException If the embedding is invalid or incompatible.
+   */
+  private static void validateEmbedding(EmbeddingResult embedding, DynamicIndex existing) {
+    if (!embedding.hasRoute() || embedding.getRoute().getModelId().isBlank()
+        || embedding.getRoute().getBackendId().isBlank()
+        || embedding.getRoute().getVectorSpaceId().isBlank()) {
+      throw AnalysisException.failedPrecondition(
+          "Selected chunk embedding must carry a complete resolved route");
+    }
+    if (embedding.getVectorCount() < 1 || embedding.getVectorCount() > MAX_VECTOR_DIMENSION) {
+      throw AnalysisException.failedPrecondition(
+          "Selected chunk embedding dimension must be between 1 and " + MAX_VECTOR_DIMENSION);
+    }
+    double norm = 0;
+    for (float value : embedding.getVectorList()) {
+      if (!Float.isFinite(value)) {
+        throw AnalysisException.failedPrecondition(
+            "Selected chunk embedding contains a non-finite value");
+      }
+      norm += (double) value * value;
+    }
+    if (norm == 0) {
+      throw AnalysisException.failedPrecondition(
+          "Selected chunk embedding must not be a zero vector");
+    }
+    if (existing != null && (embedding.getVectorCount() != existing.dimension()
+        || !compatible(existing.route(), embedding.getRoute()))) {
+      throw AnalysisException.failedPrecondition(
+          "Selected chunk embedding is incompatible with the existing dynamic index");
+    }
+  }
+
+  /**
+   * Tests whether two routes identify the same model vector space.
+   *
+   * @param left First route.
+   * @param right Second route.
+   * @return {@code true} when model and vector-space identifiers match.
+   */
+  private static boolean compatible(EmbeddingRoute left, EmbeddingRoute right) {
+    return left.getModelId().equals(right.getModelId())
+        && left.getVectorSpaceId().equals(right.getVectorSpaceId());
+  }
+
+  /**
+   * Copies a protobuf vector to a primitive array.
+   *
+   * @param embedding Source embedding.
+   * @return Independent primitive vector.
+   */
+  private static float[] toArray(EmbeddingResult embedding) {
+    final float[] vector = new float[embedding.getVectorCount()];
+    for (int index = 0; index < vector.length; index++) {
+      vector[index] = embedding.getVector(index);
+    }
+    return vector;
+  }
+
+  /**
+   * Resolves a chunk span to source text when no emitted text is present.
+   *
+   * @param document Source document.
+   * @param span Chunk span.
+   * @return Covered UTF-16 text.
+   * @throws AnalysisException If the offset encoding or span is invalid.
+   */
+  private static String coveredText(
+      OpenNlpDocument document, org.apache.opennlp.grpc.v1.AnnotationSpan span) {
+    if (document.getOffsetEncoding()
+        != org.apache.opennlp.grpc.v1.OffsetEncoding.OFFSET_ENCODING_UTF16_CODE_UNIT) {
+      throw AnalysisException.failedPrecondition(
+          "Dynamic indexing requires text_content for non-UTF-16 document offsets");
+    }
+    if (span.getStart() < 0 || span.getEnd() < span.getStart()
+        || span.getEnd() > document.getRawText().length()) {
+      throw AnalysisException.failedPrecondition("Chunk span is outside document raw_text");
+    }
+    return document.getRawText().substring(span.getStart(), span.getEnd());
+  }
+
+  /**
+   * Validates a display name for a new index.
+   *
+   * @param value Proposed display name.
+   * @return The validated value.
+   * @throws AnalysisException If the value is blank or padded.
+   */
+  private static String requireDisplayName(String value) {
+    if (value == null || value.isBlank() || !value.equals(value.trim())) {
+      throw AnalysisException.invalidArgument(
+          "IndexDocuments display_name must be nonblank and trimmed for a new index");
+    }
+    return value;
+  }
+
+  /** @return A new opaque process-local index identifier. */
+  private static String newIndexId() {
+    return "workspace-" + UUID.randomUUID();
+  }
+
+  /** @throws IllegalStateException If this registry has been closed. */
+  private void requireOpen() {
+    if (closed) {
+      throw new IllegalStateException("dynamic search index registry is closed");
+    }
+  }
+
+  /** @throws AnalysisException If dynamic mutation is disabled. */
+  private void requireEnabled() {
+    if (!enabled) {
+      throw AnalysisException.unimplemented(
+          "Dynamic search indexing is disabled by the server operator");
+    }
+  }
+
+  private record IndexedChunk(SearchRecord record, float[] vector, EmbeddingRoute route) {
+  }
+
+  private static final class DynamicIndex implements SearchIndexProvider {
+    private final String indexId;
+    private final String displayName;
+    private final EmbeddingRoute route;
+    private volatile Snapshot snapshot = new Snapshot(List.of(), 0, 0, 0,
+        contentHash(List.of()));
+
+    /**
+     * Creates an unpublished dynamic index.
+     *
+     * @param indexId Opaque identifier.
+     * @param displayName User-facing name.
+     * @param route Embedding route shared by all chunks.
+     */
+    DynamicIndex(String indexId, String displayName, EmbeddingRoute route) {
+      this.indexId = indexId;
+      this.displayName = displayName;
+      this.route = route;
+    }
+
+    /**
+     * Builds a bounded replacement snapshot without publishing it.
+     *
+     * @param documents Documents whose prior chunks should be replaced.
+     * @param additions New indexed chunks.
+     * @return Candidate immutable snapshot.
+     * @throws AnalysisException If a per-index bound is exceeded.
+     */
+    synchronized Snapshot prepare(
+        List<OpenNlpDocument> documents, List<IndexedChunk> additions) {
+      final Set<String> replaced = documents.stream()
+          .map(OpenNlpDocument::getDocId).collect(java.util.stream.Collectors.toSet());
+      final List<IndexedChunk> merged = new ArrayList<>();
+      for (IndexedChunk chunk : snapshot.chunks()) {
+        if (!replaced.contains(chunk.record().documentId())) {
+          merged.add(chunk);
+        }
+      }
+      merged.addAll(additions);
+      final int documentCount = Math.toIntExact(merged.stream()
+          .map(chunk -> chunk.record().documentId()).distinct().count());
+      final long sourceDocumentBytes = merged.stream()
+          .collect(java.util.stream.Collectors.toMap(
+              chunk -> chunk.record().documentId(),
+              chunk -> chunk.record().sourceDocument().getSerializedSize(),
+              (left, right) -> left))
+          .values().stream().mapToLong(Integer::longValue).sum();
+      final long vectorValues = merged.stream().mapToLong(chunk -> chunk.vector().length).sum();
+      if (documentCount > MAX_DOCUMENTS_PER_INDEX || merged.size() > MAX_CHUNKS_PER_INDEX
+          || sourceDocumentBytes > MAX_SOURCE_DOCUMENT_BYTES_PER_INDEX) {
+        throw AnalysisException.resourceExhausted(
+            "Dynamic index exceeds its document, chunk, or source-document limit");
+      }
+      final List<IndexedChunk> chunks = List.copyOf(merged);
+      return new Snapshot(chunks, documentCount, sourceDocumentBytes, vectorValues,
+          contentHash(chunks));
+    }
+
+    /**
+     * Atomically publishes a validated snapshot.
+     *
+     * @param candidate Snapshot to publish.
+     */
+    synchronized void publish(Snapshot candidate) {
+      snapshot = candidate;
+    }
+
+    /** @return The current immutable snapshot. */
+    Snapshot snapshot() {
+      return snapshot;
+    }
+
+    /** @return The current vector dimension, or zero for an empty index. */
+    int dimension() {
+      return snapshot.chunks().isEmpty() ? 0 : snapshot.chunks().getFirst().vector().length;
+    }
+
+    /** @return The index embedding route. */
+    EmbeddingRoute route() {
+      return route;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public SearchIndexDescriptor descriptor() {
+      final Snapshot current = snapshot;
+      return SearchIndexDescriptor.newBuilder()
+          .setIndexId(indexId)
+          .setDisplayName(displayName)
+          .setProvider(SearchProviderSelector.newBuilder()
+              .setStandard(StandardSearchProvider.STANDARD_SEARCH_PROVIDER_FLAT_FLOAT))
+          .setEmbeddingRoute(route)
+          .setDimension(dimension())
+          .setMetric(SearchMetric.SEARCH_METRIC_COSINE)
+          .setSize(current.chunks().size())
+          .setImmutable(false)
+          .setCorpus(SearchCorpusDescriptor.newBuilder()
+              .setTitle(displayName)
+              .setProvenanceSummary("Server-owned in-memory workspace"))
+          .setMaxTopK(Math.min(1000, Math.max(1, current.chunks().size())))
+          .setMaxQueryBytes(65_536)
+          .setBuild(SearchIndexBuildDescriptor.newBuilder()
+              .setBundleFormatVersion(1)
+              .setBundleArtifactHash(current.contentHash())
+              .setBuilderId("opennlp-grpc-workspace")
+              .setBuilderVersion("1")
+              .setPreparationConfigHash(preparationHash(route)))
+          .setMaxResponseBytes(4 * 1024 * 1024)
+          .build();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public List<SearchResult> search(float[] queryVector, int topK) {
+      if (queryVector == null || queryVector.length != dimension()) {
+        throw new IllegalArgumentException("queryVector must match the dynamic index dimension");
+      }
+      return snapshot.chunks().stream()
+          .map(chunk -> new SearchResult(chunk.record(), cosine(queryVector, chunk.vector())))
+          .sorted(Comparator.comparingDouble(SearchResult::score).reversed()
+              .thenComparing(result -> result.record().chunkId()))
+          .limit(topK)
+          .toList();
+    }
+
+    /**
+     * Computes cosine similarity for two nonzero vectors.
+     *
+     * @param left Query vector.
+     * @param right Indexed vector.
+     * @return Cosine similarity.
+     * @throws IllegalArgumentException If either vector has zero norm.
+     */
+    private static double cosine(float[] left, float[] right) {
+      double dot = 0;
+      double leftNorm = 0;
+      double rightNorm = 0;
+      for (int index = 0; index < left.length; index++) {
+        dot += (double) left[index] * right[index];
+        leftNorm += (double) left[index] * left[index];
+        rightNorm += (double) right[index] * right[index];
+      }
+      if (leftNorm == 0 || rightNorm == 0) {
+        throw new IllegalArgumentException("cosine vectors must not be zero");
+      }
+      return dot / (Math.sqrt(leftNorm) * Math.sqrt(rightNorm));
+    }
+
+  }
+
+  private record Snapshot(
+      List<IndexedChunk> chunks,
+      int documents,
+      long sourceDocumentBytes,
+      long vectorValues,
+      String contentHash) {
+  }
+
+  /**
+   * Hashes the complete indexed content for descriptor provenance.
+   *
+   * @param chunks Published chunks.
+   * @return Lowercase SHA-256 digest.
+   */
+  private static String contentHash(List<IndexedChunk> chunks) {
+    final MessageDigest digest = sha256();
+    for (IndexedChunk chunk : chunks) {
+      updateLengthPrefixed(digest, chunk.record().documentId().getBytes(StandardCharsets.UTF_8));
+      updateLengthPrefixed(digest, chunk.record().chunkId().getBytes(StandardCharsets.UTF_8));
+      updateLengthPrefixed(digest, chunk.record().sourceDocument().toByteArray());
+      updateLengthPrefixed(digest, chunk.record().sourceSpan().toByteArray());
+      updateLengthPrefixed(digest, chunk.record().emittedText().getBytes(StandardCharsets.UTF_8));
+      updateLengthPrefixed(digest, chunk.route().toByteArray());
+      for (float value : chunk.vector()) {
+        final int bits = Float.floatToIntBits(value);
+        digest.update((byte) (bits >>> 24));
+        digest.update((byte) (bits >>> 16));
+        digest.update((byte) (bits >>> 8));
+        digest.update((byte) bits);
+      }
+    }
+    return hex(digest.digest());
+  }
+
+  /**
+   * Adds unambiguous length-prefixed bytes to a digest.
+   *
+   * @param digest Destination digest.
+   * @param value Bytes to add.
+   */
+  private static void updateLengthPrefixed(MessageDigest digest, byte[] value) {
+    final int length = value.length;
+    digest.update((byte) (length >>> 24));
+    digest.update((byte) (length >>> 16));
+    digest.update((byte) (length >>> 8));
+    digest.update((byte) length);
+    digest.update(value);
+  }
+
+  /**
+   * Hashes the embedding preparation identity.
+   *
+   * @param route Index embedding route.
+   * @return Lowercase SHA-256 digest.
+   */
+  private static String preparationHash(EmbeddingRoute route) {
+    final MessageDigest digest = sha256();
+    digest.update(route.getModelId().getBytes(StandardCharsets.UTF_8));
+    digest.update((byte) 0);
+    digest.update(route.getVectorSpaceId().getBytes(StandardCharsets.UTF_8));
+    return hex(digest.digest());
+  }
+
+  /**
+   * Creates a SHA-256 digest instance.
+   *
+   * @return SHA-256 digest.
+   * @throws IllegalStateException If the required JDK digest is unavailable.
+   */
+  private static MessageDigest sha256() {
+    try {
+      return MessageDigest.getInstance("SHA-256");
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException("SHA-256 is unavailable", e);
+    }
+  }
+
+  /**
+   * Encodes bytes as lowercase hexadecimal.
+   *
+   * @param bytes Bytes to encode.
+   * @return Lowercase hexadecimal text.
+   */
+  private static String hex(byte[] bytes) {
+    final char[] digits = "0123456789abcdef".toCharArray();
+    final char[] result = new char[bytes.length * 2];
+    for (int index = 0; index < bytes.length; index++) {
+      final int value = bytes[index] & 0xff;
+      result[index * 2] = digits[value >>> 4];
+      result[index * 2 + 1] = digits[value & 0x0f];
+    }
+    return new String(result);
+  }
+}

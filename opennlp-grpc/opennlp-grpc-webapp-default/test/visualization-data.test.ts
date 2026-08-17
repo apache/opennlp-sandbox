@@ -52,13 +52,10 @@ const shape = readDocumentShape({
 });
 
 describe("visualization data", () => {
-  it("builds semantic and sentiment rows from typed layers", () => {
-    const rows = buildHeatmapRows(shape, [{ modelId: "tiny-test", vector: [1, 0] }]);
+  it("leaves semantic ranking to the server and reads typed sentiment rows", () => {
+    const rows = buildHeatmapRows(shape);
 
-    expect(rows.semantic).toMatchObject([
-      { start: 0, end: 14, score: 1, label: "OpenNLP works." },
-      { start: 15, end: 32, score: 0, label: "Search is useful." },
-    ]);
+    expect(rows.semantic).toEqual([]);
     expect(rows.sentiment).toMatchObject([
       { start: 0, end: 14, score: 0.8, category: "positive" },
       { start: 15, end: 32, score: 0.1, category: "neutral" },

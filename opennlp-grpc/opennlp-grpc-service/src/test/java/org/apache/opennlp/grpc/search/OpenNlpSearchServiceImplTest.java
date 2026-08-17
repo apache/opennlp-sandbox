@@ -28,7 +28,10 @@ import org.apache.opennlp.grpc.embedding.EmbeddingBatchResult;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
+import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
+import org.apache.opennlp.grpc.v1.DeleteSearchIndexResponse;
 import org.apache.opennlp.grpc.v1.EmbeddingRoute;
+import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesRequest;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesResponse;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
@@ -60,6 +63,38 @@ class OpenNlpSearchServiceImplTest {
         .map(SearchIndexDescriptor::getIndexId).toList());
     assertTrue(observer.completed);
     assertNull(observer.error);
+  }
+
+  @Test
+  void indexesSearchesAndDeletesAWorkspaceThroughGrpcMethods() {
+    final DynamicSearchIndexRegistry dynamicRegistry = new DynamicSearchIndexRegistry();
+    final EmbeddingRoute workspaceRoute = EmbeddingRoute.newBuilder()
+        .setModelId("demo")
+        .setBackendId("static")
+        .setVectorSpaceId("demo-space")
+        .build();
+    final OpenNlpSearchServiceImpl service = new OpenNlpSearchServiceImpl(
+        new SearchIndexRegistry(List.of()),
+        dynamicRegistry,
+        new StubEmbeddingProvider(workspaceRoute, 2, List.of(workspaceRoute),
+            new float[] {1, 0}));
+    final CapturingObserver<IndexDocumentsResponse> indexed = new CapturingObserver<>();
+
+    service.indexDocuments(
+        DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha", 1, 0), indexed);
+
+    assertNull(indexed.error);
+    final String indexId = indexed.value.getIndex().getIndexId();
+    final CapturingObserver<SearchIndexResponse> searched = new CapturingObserver<>();
+    service.searchIndex(request(indexId, "alpha", 1), searched);
+    assertNull(searched.error);
+    assertEquals("doc-1", searched.value.getHits(0).getDocumentId());
+
+    final CapturingObserver<DeleteSearchIndexResponse> deleted = new CapturingObserver<>();
+    service.deleteSearchIndex(DeleteSearchIndexRequest.newBuilder()
+        .setIndexId(indexId).build(), deleted);
+    assertTrue(deleted.value.getDeleted());
+    assertTrue(dynamicRegistry.descriptors().isEmpty());
   }
 
   @Test
@@ -252,6 +287,21 @@ class OpenNlpSearchServiceImplTest {
     assertEquals("Internal server error", status.getDescription());
   }
 
+  @Test
+  void rejectsANonFiniteQueryVector() {
+    final SearchIndexProvider provider = provider(
+        SearchIndexRegistryTest.descriptor("legal"), List.of());
+    final OpenNlpSearchServiceImpl service = new OpenNlpSearchServiceImpl(
+        new SearchIndexRegistry(List.of(provider)),
+        new StubEmbeddingProvider(route(), 4, List.of(route()),
+            new float[] {Float.NaN, 0, 0, 0}));
+    final CapturingObserver<SearchIndexResponse> observer = new CapturingObserver<>();
+
+    service.searchIndex(request("legal", "query", 1), observer);
+
+    assertEquals(Status.Code.INTERNAL, Status.fromThrowable(observer.error).getCode());
+  }
+
   private static OpenNlpSearchServiceImpl service(SearchIndexProvider... providers) {
     return new OpenNlpSearchServiceImpl(
         new SearchIndexRegistry(List.of(providers)), new StubEmbeddingProvider(route(), 4));
@@ -322,6 +372,7 @@ class OpenNlpSearchServiceImplTest {
     private final EmbeddingRoute resultRoute;
     private final int dimension;
     private final List<EmbeddingRoute> routes;
+    private final float[] resultVector;
     private final AtomicReference<String> requestedBackend = new AtomicReference<>();
 
     private StubEmbeddingProvider(EmbeddingRoute resultRoute, int dimension) {
@@ -330,9 +381,18 @@ class OpenNlpSearchServiceImplTest {
 
     private StubEmbeddingProvider(
         EmbeddingRoute resultRoute, int dimension, List<EmbeddingRoute> routes) {
+      this(resultRoute, dimension, routes, unitVector(dimension));
+    }
+
+    private StubEmbeddingProvider(
+        EmbeddingRoute resultRoute,
+        int dimension,
+        List<EmbeddingRoute> routes,
+        float[] resultVector) {
       this.resultRoute = resultRoute;
       this.dimension = dimension;
       this.routes = routes;
+      this.resultVector = resultVector.clone();
     }
 
     @Override
@@ -347,12 +407,12 @@ class OpenNlpSearchServiceImplTest {
 
     @Override
     public Set<String> registeredModelIds() {
-      return Set.of("mini");
+      return Set.of(resultRoute.getModelId());
     }
 
     @Override
     public boolean supportsModel(String modelId) {
-      return modelId.equals("mini");
+      return modelId.equals(resultRoute.getModelId());
     }
 
     @Override
@@ -369,7 +429,7 @@ class OpenNlpSearchServiceImplTest {
     public EmbeddingBatchResult embedBatchResolved(
         String modelId, String backendId, List<String> texts) {
       requestedBackend.set(backendId);
-      return new EmbeddingBatchResult(List.of(new float[dimension]), resultRoute);
+      return new EmbeddingBatchResult(List.of(resultVector.clone()), resultRoute);
     }
 
     @Override
@@ -380,6 +440,14 @@ class OpenNlpSearchServiceImplTest {
     @Override
     public String modelArtifactHash(String modelId) {
       return "a".repeat(64);
+    }
+
+    private static float[] unitVector(int dimension) {
+      final float[] vector = new float[dimension];
+      if (dimension > 0) {
+        vector[0] = 1;
+      }
+      return vector;
     }
   }
 

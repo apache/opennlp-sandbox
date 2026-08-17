@@ -39,6 +39,7 @@ import io.grpc.protobuf.services.ProtoReflectionServiceV1;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.processor.basic.BasicDocumentAnalyzer;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
+import org.apache.opennlp.grpc.search.DynamicSearchIndexRegistry;
 import org.apache.opennlp.grpc.search.OpenNlpSearchServiceImpl;
 import org.apache.opennlp.grpc.search.SearchIndexRegistry;
 import org.apache.opennlp.grpc.v1.OpenNlpAnalysisServiceGrpc;
@@ -52,7 +53,11 @@ import picocli.CommandLine.Option;
 /**
  * gRPC server exposing the v1 {@code OpenNlpAnalysisService} document-centric API.
  */
-@Command(name = "OpenNLP gRPC Server", mixinStandardHelpOptions = true, version = OpenNlpGrpcServer.SERVER_VERSION)
+@Command(
+    name = "OpenNLP gRPC Server",
+    mixinStandardHelpOptions = true,
+    version = OpenNlpGrpcServer.SERVER_VERSION,
+    subcommands = OpenNlpGrpcResourceInstallerCommand.class)
 public class OpenNlpGrpcServer implements Callable<Integer> {
 
   /** Server build version, also reported as {@code GetServiceInfoResponse.opennlp_version}. */
@@ -82,6 +87,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
   private HealthStatusManager healthStatusManager;
   private ModelBundleCache modelBundleCache;
   private SearchIndexRegistry searchIndexRegistry;
+  private DynamicSearchIndexRegistry dynamicSearchIndexRegistry;
   private int shutdownGraceSeconds = DEFAULT_SHUTDOWN_GRACE_SECONDS;
   private final AtomicBoolean stopping = new AtomicBoolean();
 
@@ -139,6 +145,8 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     final boolean enableReflection =
         Boolean.parseBoolean(
             configuration.getOrDefault("server.enable_reflection", "false"));
+    final boolean enableDynamicSearch = Boolean.parseBoolean(
+        configuration.getOrDefault("search.dynamic.enabled", "true"));
 
     final int configuredMaxInboundMessageSize =
         Integer.parseInt(
@@ -172,6 +180,8 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
 
     this.modelBundleCache = new ModelBundleCache(configuration);
     this.searchIndexRegistry = SearchIndexRegistry.fromConfiguration(configuration);
+    this.dynamicSearchIndexRegistry = enableDynamicSearch
+        ? new DynamicSearchIndexRegistry() : DynamicSearchIndexRegistry.disabled();
     final ProfileRegistry profileRegistry = modelBundleCache.createProfileRegistry();
     final BasicDocumentAnalyzer documentAnalyzer =
         new BasicDocumentAnalyzer(profileRegistry, modelBundleCache);
@@ -200,7 +210,9 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
             new EagerHeadersInterceptor()))
         .addService(ServerInterceptors.intercept(
             new OpenNlpSearchServiceImpl(
-                searchIndexRegistry, modelBundleCache.getEmbeddingProvider()),
+                searchIndexRegistry,
+                dynamicSearchIndexRegistry,
+                modelBundleCache.getEmbeddingProvider()),
             new EagerHeadersInterceptor()))
         .addService(healthStatusManager.getHealthService())
         .maxInboundMessageSize(maxInboundMessageSize);
@@ -328,7 +340,8 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
    */
   public void stop() {
     if (server == null && handlerExecutor == null && analysisExecutor == null
-        && modelBundleCache == null && searchIndexRegistry == null) {
+        && modelBundleCache == null && searchIndexRegistry == null
+        && dynamicSearchIndexRegistry == null) {
       return;
     }
     if (!stopping.compareAndSet(false, true)) {
@@ -361,8 +374,14 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     interrupted |= awaitQuiescence(handlerExecutor, "handler");
     interrupted |= awaitQuiescence(analysisExecutor, "analysis");
     try {
-      if (searchIndexRegistry != null) {
-        searchIndexRegistry.close();
+      try {
+        if (dynamicSearchIndexRegistry != null) {
+          dynamicSearchIndexRegistry.close();
+        }
+      } finally {
+        if (searchIndexRegistry != null) {
+          searchIndexRegistry.close();
+        }
       }
     } finally {
       if (modelBundleCache != null) {

@@ -25,41 +25,89 @@ option java_multiple_files = true;
 option java_outer_classname = "OpenNlpSearchProto";
 option java_package = "org.apache.opennlp.grpc.v1";
 
-// Read-only search over immutable indexes configured and loaded by the operator
-// before the server begins accepting requests. This service does not expose index
-// construction, mutation, deletion, or persistence orchestration.
+// Search over immutable indexes loaded by the operator and bounded dynamic flat
+// indexes created from analyzed document shapes. Dynamic indexes live only for
+// the server process and can be disabled by the operator.
 //
 // SearchIndex reports INVALID_ARGUMENT for a blank query or invalid top_k,
 // NOT_FOUND for an unknown index, FAILED_PRECONDITION for an incompatible
 // embedding route or vector space, UNAVAILABLE for a retryable embedding backend
 // failure, and INTERNAL for an unexpected provider failure.
 service OpenNlpSearchService {
-  // Lists every immutable search index loaded at server startup.
+  // Lists every static and dynamic search index currently owned by the server.
   rpc ListSearchIndexes(ListSearchIndexesRequest) returns (ListSearchIndexesResponse);
   // Embeds one document-shaped query through a configured backend serving the
   // index's model, vector space, and dimension, then returns up to top_k ranked,
   // document-shaped source passages.
   rpc SearchIndex(SearchIndexRequest) returns (SearchIndexResponse);
+
+  // Creates or extends a bounded in-memory flat index from chunk embeddings
+  // already carried by OpenNlpDocument. When index_id is absent, the server
+  // creates an opaque workspace id. Dynamic indexing can be disabled by the
+  // operator and never mutates startup-loaded immutable indexes.
+  rpc IndexDocuments(IndexDocumentsRequest) returns (IndexDocumentsResponse);
+
+  // Deletes an in-memory index created through IndexDocuments. Immutable,
+  // startup-loaded indexes cannot be deleted through this API.
+  rpc DeleteSearchIndex(DeleteSearchIndexRequest) returns (DeleteSearchIndexResponse);
+}
+
+// Adds analyzed document shapes to a bounded server-owned in-memory index.
+// The service validates every selected chunk vector, route, span, and document
+// identity before publishing an atomic new index snapshot.
+message IndexDocumentsRequest {
+  // Existing dynamic index to extend. When absent, a new opaque id is created.
+  optional string index_id = 1;
+  // Human-readable label used only when creating an index.
+  string display_name = 2;
+  // Analyzed documents containing chunk_embedding_groups. At least one is required.
+  repeated OpenNlpDocument documents = 3;
+  // Embedding model and optional backend to select from each chunk.
+  EmbeddingSelector embedding = 4;
+  // Optional group-id filter. Empty selects every compatible embedded chunk group.
+  repeated string chunk_group_ids = 5;
+}
+
+// Result of atomically adding one request's documents to a dynamic index.
+message IndexDocumentsResponse {
+  // Current descriptor after the new snapshot is published.
+  SearchIndexDescriptor index = 1;
+  // Number of documents accepted from this request.
+  uint32 indexed_documents = 2;
+  // Number of chunk vectors accepted from this request.
+  uint32 indexed_chunks = 3;
+}
+
+// Deletes one dynamic index by its opaque id.
+message DeleteSearchIndexRequest {
+  string index_id = 1;
+}
+
+// Confirms whether the dynamic index existed and was deleted.
+message DeleteSearchIndexResponse {
+  string index_id = 1;
+  bool deleted = 2;
 }
 
 // Input to ListSearchIndexes. Empty because the server exposes only configured
 // indexes and the first bounded contract has no remote filtering or pagination.
 message ListSearchIndexesRequest {}
 
-// The immutable search indexes available on this server.
+// The static and dynamic search indexes available on this server.
 message ListSearchIndexesResponse {
   // Index descriptors in stable index-id order.
   repeated SearchIndexDescriptor indexes = 1;
 }
 
-// One configured immutable vector index and the vector and corpus identities
-// required to interpret its results.
+// One server-owned vector index and the vector and corpus identities required
+// to interpret its results.
 message SearchIndexDescriptor {
-  // Deployment-defined stable identifier used in SearchIndexRequest.index_id.
+  // Server-owned identifier used in SearchIndexRequest.index_id. Dynamic ids
+  // remain valid only for the lifetime of their server process.
   string index_id = 1;
   // Human-readable name suitable for an index selector.
   string display_name = 2;
-  // Search implementation that owns the persisted vector data.
+  // Search implementation that owns the stored vector data.
   SearchProviderSelector provider = 3;
   // Embedding route used to build the index. Query compatibility requires the
   // same nonblank model_id and vector_space_id plus the declared dimension. A
@@ -72,7 +120,7 @@ message SearchIndexDescriptor {
   // Number of stored vectors and source records. Index implementations in this
   // API are int-addressed, so the wire type deliberately has the same bound.
   uint32 size = 7;
-  // Always true in this API version. Remote index mutation is not supported.
+  // True for operator-loaded indexes and false for process-local dynamic indexes.
   bool immutable = 8;
   // Corpus identity and provenance shared by every hit in this index.
   SearchCorpusDescriptor corpus = 9;
@@ -86,11 +134,11 @@ message SearchIndexDescriptor {
   uint32 max_response_bytes = 13;
 }
 
-// Reproducible build identity for one immutable index bundle.
+// Reproducible bundle-build or dynamic-snapshot identity for one index.
 message SearchIndexBuildDescriptor {
-  // Version of the bundle descriptor and file-layout contract.
+  // Version of the bundle or dynamic-snapshot descriptor contract.
   uint32 bundle_format_version = 1;
-  // Lowercase SHA-256 digest identifying the built bundle artifact.
+  // Lowercase SHA-256 digest identifying the bundle or complete dynamic snapshot.
   string bundle_artifact_hash = 2;
   // Stable identifier of the tool that built the bundle.
   string builder_id = 3;
@@ -147,7 +195,7 @@ message SearchProviderSelector {
   }
 }
 
-// One natural-language query against a configured immutable index.
+// One natural-language query against a server-owned index.
 message SearchIndexRequest {
   // Stable id from ListSearchIndexes. Required.
   string index_id = 1;
@@ -159,7 +207,7 @@ message SearchIndexRequest {
   int32 top_k = 3;
 }
 
-// Ranked results for one immutable index query.
+// Ranked results for one server-owned index query.
 message SearchIndexResponse {
   // Descriptor of the index that served this response.
   SearchIndexDescriptor index = 1;
@@ -173,7 +221,7 @@ message SearchIndexResponse {
   bool truncated = 4;
 }
 
-// One scored source passage from an immutable search index.
+// One scored source passage from a static or dynamic search index.
 message SearchHit {
   // Stable identity of the source document represented by source_document.
   string document_id = 1;
