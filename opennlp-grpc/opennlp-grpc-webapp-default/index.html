@@ -159,6 +159,10 @@
                 <span aria-hidden="true">›</span>
               </button>
               <button id="sample-button" type="button" class="secondary-button">Use sample text</button>
+              <span class="checkbox-field">
+                <input id="normalization-xray-toggle" type="checkbox" name="normalization-xray" />
+                <label for="normalization-xray-toggle">Normalization X-ray</label>
+              </span>
               <p id="form-status" role="status" aria-live="polite" class="form-status">
                 Connect to the service and enter text to begin.
               </p>
@@ -206,6 +210,8 @@
               <div class="annotation-canvas">
                 <p class="canvas-hint">Choose a layer, then click highlighted text for its typed annotation.</p>
                 <div id="annotated-text" class="annotated-text" tabindex="0">No analysis yet.</div>
+                <section id="normalization-xray" class="normalization-xray" aria-label="Normalization X-ray" hidden>
+                </section>
               </div>
             </div>
             <div id="chunks-view" role="tabpanel" aria-labelledby="chunks-tab" class="chunks-view" hidden>

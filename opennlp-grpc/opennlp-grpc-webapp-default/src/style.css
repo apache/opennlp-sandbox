@@ -383,6 +383,28 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 .annotation-facts dt { color: #73829a; }
 .annotation-facts dd { overflow-wrap: anywhere; margin: 0; color: #cdd8e6; }
 
+.checkbox-field { display: flex; align-items: center; gap: 0.45rem; color: var(--muted); font-size: 0.78rem; font-weight: 600; }
+.checkbox-field input { width: 1rem; height: 1rem; margin: 0; accent-color: var(--blue); }
+.checkbox-field label { cursor: pointer; }
+
+.normalization-xray { border-top: 1px solid #253147; background: #0d1523; }
+.xray-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: 0.85rem 1rem 0; }
+.xray-heading strong { color: #f1f6fc; font-size: 0.76rem; }
+.xray-caption { color: #73829a; font-size: 0.65rem; }
+.xray-rungs { display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0.55rem 1rem 0; }
+.xray-chip { padding: 0.14rem 0.5rem; border: 1px solid #2a374c; border-radius: 999px; background: #101a2a; color: #9cabc1; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.04em; }
+.xray-chip.is-empty { border-style: dashed; color: #63728a; font-weight: 500; }
+.xray-panes { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; overflow: hidden; margin: 0.8rem 1rem 1rem; border: 1px solid #2a374c; border-radius: 0.5rem; background: #2a374c; }
+.xray-pane { min-width: 0; background: #101a2a; }
+.xray-pane-label { display: block; padding: 0.5rem 0.7rem 0; color: #67d5f5; font-size: 0.58rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+.xray-pane-body { padding: 0.5rem 0.7rem 0.8rem; color: #d9e3f1; font: 0.8rem/2 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.xray-segment { margin: 0; padding: 0.1rem 0.14rem; border: 0; border-bottom: 2px solid transparent; border-radius: 0.2rem; background: transparent; color: inherit; font: inherit; line-height: inherit; transition: background 120ms ease, box-shadow 120ms ease; }
+.xray-segment.is-equal { color: #8d9cb3; }
+.xray-segment.is-replaced { border-bottom-color: #ff91b5; background: rgb(218 76 126 / 14%); color: #ffd7e4; }
+.xray-segment.is-empty { color: #63728a; }
+.xray-segment.is-active { background: rgb(53 188 232 / 22%); box-shadow: 0 0 0 3px rgb(53 188 232 / 22%); color: white; }
+.xray-segment:focus-visible { outline: 2px solid rgb(103 213 245 / 55%); outline-offset: 1px; }
+
 #json-view { min-height: 0; flex: 1; }
 #json-view:not([hidden]) { display: flex; }
 .response-panel #response-output { flex: 1; overflow-y: auto; overflow-x: hidden; max-width: 100%; margin: 0; padding: 1.5rem; color: #c8d7ea; font: 0.75rem/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -909,6 +931,7 @@ main { overflow: clip; margin-top: 1rem; }
   .section-heading { align-items: start; flex-direction: column; }
   .tool-nav { margin-top: -2.5rem; }
   .document-view { grid-template-columns: 1fr; }
+  .xray-panes { grid-template-columns: 1fr; }
   .layer-browser { border-right: 0; border-bottom: 1px solid #303b4f; }
   .layer-list { max-height: 9rem; overflow-y: auto; flex-direction: row; }
   .layer-button { width: auto; min-width: 8rem; }

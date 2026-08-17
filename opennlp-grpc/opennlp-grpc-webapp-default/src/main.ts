@@ -42,6 +42,7 @@ import {
   type AnnotationView,
   type DocumentShapeView,
 } from "./document-shape";
+import { readNormalizationXray, renderNormalizationXray } from "./normalization-xray";
 import { SemanticWorkbench, type ResultViewName } from "./semantic-workbench";
 import { ModelDataWorkbench } from "./model-data-workbench";
 import { readSearchIndexes, readSearchResponse } from "./search-adapter";
@@ -76,6 +77,8 @@ const characterCount = requiredElement<HTMLElement>("character-count");
 const layerList = requiredElement<HTMLElement>("layer-list");
 const layerSummary = requiredElement<HTMLElement>("layer-summary");
 const annotatedText = requiredElement<HTMLElement>("annotated-text");
+const xrayToggle = requiredElement<HTMLInputElement>("normalization-xray-toggle");
+const normalizationXray = requiredElement<HTMLElement>("normalization-xray");
 const documentView = requiredElement<HTMLElement>("document-view");
 const chunksView = requiredElement<HTMLElement>("chunks-view");
 const heatmapView = requiredElement<HTMLElement>("heatmap-view");
@@ -118,6 +121,7 @@ const semanticWorkbench = new SemanticWorkbench({
     textArea.value = shape.rawText;
     updateFormState();
     renderDocumentShape(shape);
+    normalizationXray.hidden = true;
     currentJson = JSON.stringify({ document: hit.sourceDocument }, null, 2);
     responseOutput.textContent = currentJson;
     chunkProjectionView.render({ document: hit.sourceDocument });
@@ -257,6 +261,7 @@ async function submitAnalysis(event: SubmitEvent): Promise<void> {
     const shape = readDocumentShape(response);
     chunkProjectionView.render(response);
     renderDocumentShape(shape);
+    renderXray(response);
     semanticWorkbench.setDocument(text, shape, currentJson);
     selectResultTab("document");
     copyButton.disabled = false;
@@ -264,6 +269,7 @@ async function submitAnalysis(event: SubmitEvent): Promise<void> {
   } catch (error) {
     currentJson = "";
     copyButton.disabled = true;
+    normalizationXray.hidden = true;
     responseOutput.textContent = "The analysis request did not complete.";
     setFormStatus(errorMessage(error, "Analysis failed. Please try again."), true);
   } finally {
@@ -456,8 +462,37 @@ function resultViewName(value: string | undefined): ResultViewName {
     : "document";
 }
 
+function renderXray(response: unknown): void {
+  const view = readNormalizationXray(response);
+  normalizationXray.hidden = !view;
+  if (view) {
+    renderNormalizationXray(normalizationXray, view);
+  }
+}
+
 function createAnalysisRequest(text: string, includeChunks = true): AnalyzeRequest {
-  return analysisControls.request(text, includeChunks);
+  const request = analysisControls.request(text, includeChunks);
+  if (xrayToggle.checked) {
+    request.profile = withXrayNormalization(request.profile);
+  }
+  return request;
+}
+
+const XRAY_STEP = "PIPELINE_STEP_NORMALIZE";
+const XRAY_RUNGS = ["NORMALIZATION_RUNG_STRIP_INVISIBLE", "NORMALIZATION_RUNG_WHITESPACE"];
+
+// The X-ray needs the offset-transparent rungs with alignment, merged over whatever profile
+// the analysis controls built (an inline profile merges over a named profileId server-side).
+function withXrayNormalization(
+  profile: AnalyzeRequest["profile"],
+): NonNullable<AnalyzeRequest["profile"]> {
+  const steps = profile?.steps ?? [];
+  const rungs = new Set([...XRAY_RUNGS, ...(profile?.normalization?.rungs ?? [])]);
+  return {
+    ...profile,
+    steps: steps.includes(XRAY_STEP) ? steps : [XRAY_STEP, ...steps],
+    normalization: { rungs: [...rungs], requireAlignment: true },
+  };
 }
 
 async function copyResponse(): Promise<void> {

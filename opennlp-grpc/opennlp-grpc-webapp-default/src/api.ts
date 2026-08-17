@@ -27,7 +27,7 @@ export interface AnalyzeRequest {
   profileId?: string;
   profile?: {
     steps: string[];
-    normalization?: { rungs: string[] };
+    normalization?: { rungs: string[]; requireAlignment?: boolean };
     termProfile?: string;
     stopwordLanguage?: string;
     subwordModelId?: string;

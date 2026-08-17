@@ -346,7 +346,9 @@ dimension limits are combined with server-wide serialized-document and vector-me
 > selection, and capability discovery through `GetServiceInfo` / `ListModelBundles`.
 > The default `en-basic` profile/bundle is always present; optional `en-ner`,
 > `en-doccat`, `en-sentiment`, `en-parse`, and `en-chunk` profiles/bundles are
-> advertised only when their operator-supplied models are configured. NER, syntactic
+> advertised only when their operator-supplied models are configured, and the
+> `en-embed` profile (sentence detect + tokenize + embed, riding the `en-basic`
+> bundle) is advertised only when an embedding model is configured. NER, syntactic
 > chunking, and parsing support multi-provider engine policy; embeddings support
 > ONNX CPU/CUDA plus optional TEI and OpenVINO/KServe backends through SPI modules.
 > `DocumentAnalytics`, `AnalysisProfile.pos_tag_format` (UD/Penn conversion), per-entry

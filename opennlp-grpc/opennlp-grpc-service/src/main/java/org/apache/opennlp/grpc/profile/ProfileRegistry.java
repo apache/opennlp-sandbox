@@ -60,6 +60,9 @@ public final class ProfileRegistry {
   /** Bundle id referenced by the shallow-chunk profile. */
   public static final String CHUNK_BUNDLE_ID = "en-chunk";
 
+  /** Id of the embedding profile, registered only when an embedding model is configured. */
+  public static final String EMBED_PROFILE_ID = "en-embed";
+
   private final Map<String, AnalysisProfile> profiles = new LinkedHashMap<>();
 
   /** Creates a registry holding only the default profile. */
@@ -115,7 +118,8 @@ public final class ProfileRegistry {
 
   /**
    * Creates a registry with the default profile plus each optional profile whose models are
-   * available, so the advertised profile catalog stays consistent with the model catalog.
+   * available, so the advertised profile catalog stays consistent with the model catalog
+   * (no embedding profile).
    *
    * @param nerAvailable Whether name finder models are configured. The {@code en-ner}
    *     profile is registered only when {@code true}, so the advertised profile catalog
@@ -134,6 +138,36 @@ public final class ProfileRegistry {
    */
   public ProfileRegistry(boolean nerAvailable, boolean doccatAvailable,
       boolean sentimentAvailable, boolean parserAvailable, boolean chunkerAvailable) {
+    this(nerAvailable, doccatAvailable, sentimentAvailable, parserAvailable, chunkerAvailable,
+        false);
+  }
+
+  /**
+   * Creates a registry with the default profile plus each optional profile whose models are
+   * available, so the advertised profile catalog stays consistent with the model catalog.
+   *
+   * @param nerAvailable Whether name finder models are configured. The {@code en-ner}
+   *     profile is registered only when {@code true}, so the advertised profile catalog
+   *     matches the model catalog, which likewise hides the {@code en-ner} bundle when no
+   *     name finder models are loaded. A request for {@code en-ner} without models would
+   *     fail anyway; this keeps the two catalogs honest and consistent.
+   * @param doccatAvailable Whether document categorizer models are configured. The
+   *     {@code en-doccat} profile is registered only when {@code true}, for the same
+   *     catalog-consistency reason as {@code nerAvailable}.
+   * @param sentimentAvailable Whether sentiment models are configured. The {@code en-sentiment}
+   *     profile is registered only when {@code true}, for the same catalog-consistency reason.
+   * @param parserAvailable Whether a parser model is configured. The {@code en-parse} profile is
+   *     registered only when {@code true}, for the same catalog-consistency reason.
+   * @param chunkerAvailable Whether a chunker model is configured. The {@code en-chunk} profile is
+   *     registered only when {@code true}, for the same catalog-consistency reason.
+   * @param embeddingAvailable Whether an embedding model is configured. The {@code en-embed}
+   *     profile is registered only when {@code true}, for the same catalog-consistency reason:
+   *     the model catalog advertises embedder models only when an embedding backend is
+   *     configured.
+   */
+  public ProfileRegistry(boolean nerAvailable, boolean doccatAvailable,
+      boolean sentimentAvailable, boolean parserAvailable, boolean chunkerAvailable,
+      boolean embeddingAvailable) {
     register(defaultProfile());
     if (nerAvailable) {
       register(nerProfile());
@@ -149,6 +183,9 @@ public final class ProfileRegistry {
     }
     if (chunkerAvailable) {
       register(chunkProfile());
+    }
+    if (embeddingAvailable) {
+      register(embedProfile());
     }
   }
 
@@ -232,6 +269,26 @@ public final class ProfileRegistry {
       boolean sentimentAvailable, boolean parserAvailable, boolean chunkerAvailable) {
     return new ProfileRegistry(
         nerAvailable, doccatAvailable, sentimentAvailable, parserAvailable, chunkerAvailable);
+  }
+
+  /**
+   * Creates a default registry, additionally registering each optional profile whose models
+   * are available.
+   *
+   * @param nerAvailable       Whether to register the {@code en-ner} profile.
+   * @param doccatAvailable    Whether to register the {@code en-doccat} profile.
+   * @param sentimentAvailable Whether to register the {@code en-sentiment} profile.
+   * @param parserAvailable    Whether to register the {@code en-parse} profile.
+   * @param chunkerAvailable   Whether to register the {@code en-chunk} profile.
+   * @param embeddingAvailable Whether to register the {@code en-embed} profile.
+   *
+   * @return A new registry.
+   */
+  public static ProfileRegistry createDefault(boolean nerAvailable, boolean doccatAvailable,
+      boolean sentimentAvailable, boolean parserAvailable, boolean chunkerAvailable,
+      boolean embeddingAvailable) {
+    return new ProfileRegistry(nerAvailable, doccatAvailable, sentimentAvailable, parserAvailable,
+        chunkerAvailable, embeddingAvailable);
   }
 
   /**
@@ -344,6 +401,22 @@ public final class ProfileRegistry {
         .addSteps(PipelineStep.PIPELINE_STEP_POS_TAG)
         .addSteps(PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK)
         .setModelBundle(ModelBundleRef.newBuilder().setBundleId(CHUNK_BUNDLE_ID).build())
+        .build();
+  }
+
+  /**
+   * Builds the standard embedding profile. Embedding models resolve through the composite
+   * embedding provider's default route rather than the model-bundle catalog, so the profile
+   * rides the default bundle, which advertises {@code PIPELINE_STEP_EMBED} among its
+   * supported steps whenever an embedding model is configured.
+   */
+  private static AnalysisProfile embedProfile() {
+    return AnalysisProfile.newBuilder()
+        .setProfileId(EMBED_PROFILE_ID)
+        .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+        .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+        .addSteps(PipelineStep.PIPELINE_STEP_EMBED)
+        .setModelBundle(ModelBundleRef.newBuilder().setBundleId(DEFAULT_BUNDLE_ID).build())
         .build();
   }
 }

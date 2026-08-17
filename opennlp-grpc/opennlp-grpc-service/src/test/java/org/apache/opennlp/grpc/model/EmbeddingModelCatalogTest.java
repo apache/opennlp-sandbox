@@ -25,9 +25,11 @@ import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.v1.ComponentType;
 import org.apache.opennlp.grpc.v1.ModelBundleInfo;
 import org.apache.opennlp.grpc.v1.ModelDescriptor;
+import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EmbeddingModelCatalogTest {
@@ -63,6 +65,26 @@ class EmbeddingModelCatalogTest {
       assertEquals("mini-v1", model.getEmbeddingRoutes(1).getVectorSpaceId());
     } finally {
       cache.close();
+    }
+  }
+
+  @Test
+  void profileRegistryAdvertisesEmbedProfileOnlyWhenAnEmbeddingModelIsConfigured() {
+    try (ModelBundleCache cache = new ModelBundleCache(Map.of())) {
+      assertFalse(cache.createProfileRegistry()
+          .find(ProfileRegistry.EMBED_PROFILE_ID).isPresent());
+    }
+    try (ModelBundleCache cache = new ModelBundleCache(Map.of(
+        StubEmbeddingBackendFactory.KEY_MODEL_ID, "mini"))) {
+      assertTrue(cache.createProfileRegistry()
+          .find(ProfileRegistry.EMBED_PROFILE_ID).isPresent());
+      // The profile catalog and the bundle catalog stay consistent: the default bundle the
+      // en-embed profile rides lists EMBED among its supported steps.
+      final ModelBundleInfo defaultBundle = cache.listBundles().stream()
+          .filter(bundle -> ProfileRegistry.DEFAULT_BUNDLE_ID.equals(bundle.getBundleId()))
+          .findFirst()
+          .orElseThrow();
+      assertTrue(defaultBundle.getSupportedStepsList().contains(PipelineStep.PIPELINE_STEP_EMBED));
     }
   }
 }
