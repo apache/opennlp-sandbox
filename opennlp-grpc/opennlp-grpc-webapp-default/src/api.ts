@@ -25,6 +25,13 @@ export interface AnalyzeRequest {
     rawText: string;
   };
   profileId?: string;
+  profile?: {
+    steps: string[];
+    normalization: {
+      rungs: string[];
+      requireAlignment: boolean;
+    };
+  };
   options?: {
     offsetEncoding?: "OFFSET_ENCODING_UTF8_BYTE" | "OFFSET_ENCODING_UTF16_CODE_UNIT" |
       "OFFSET_ENCODING_UNICODE_CODE_POINT";

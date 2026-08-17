@@ -38,6 +38,7 @@ import {
   type AnnotationView,
   type DocumentShapeView,
 } from "./document-shape";
+import { readNormalizationXray, renderNormalizationXray } from "./normalization-xray";
 import { SemanticWorkbench, type ResultViewName } from "./semantic-workbench";
 import { readSearchIndexes, readSearchResponse } from "./search-adapter";
 import { ServerSearchWorkbench } from "./server-search-workbench";
@@ -73,6 +74,8 @@ const layerList = requiredElement<HTMLElement>("layer-list");
 const layerSummary = requiredElement<HTMLElement>("layer-summary");
 const annotatedText = requiredElement<HTMLElement>("annotated-text");
 const annotationDetails = requiredElement<HTMLElement>("annotation-details");
+const xrayToggle = requiredElement<HTMLInputElement>("normalization-xray-toggle");
+const normalizationXray = requiredElement<HTMLElement>("normalization-xray");
 const documentView = requiredElement<HTMLElement>("document-view");
 const heatmapView = requiredElement<HTMLElement>("heatmap-view");
 const graphView = requiredElement<HTMLElement>("graph-view");
@@ -96,6 +99,7 @@ const semanticWorkbench = new SemanticWorkbench({
     textArea.value = document.shape.rawText;
     updateFormState();
     renderDocumentShape(document.shape);
+    normalizationXray.hidden = true;
     currentJson = document.json;
     responseOutput.textContent = currentJson || "Stored response JSON is unavailable.";
     copyButton.disabled = !currentJson;
@@ -233,6 +237,7 @@ async function submitAnalysis(event: SubmitEvent): Promise<void> {
     responseOutput.textContent = currentJson;
     const shape = readDocumentShape(response);
     renderDocumentShape(shape);
+    renderXray(response);
     semanticWorkbench.setDocument(text, shape, currentJson);
     selectResultTab("document");
     copyButton.disabled = false;
@@ -240,6 +245,7 @@ async function submitAnalysis(event: SubmitEvent): Promise<void> {
   } catch (error) {
     currentJson = "";
     copyButton.disabled = true;
+    normalizationXray.hidden = true;
     responseOutput.textContent = "The analysis request did not complete.";
     setFormStatus(errorMessage(error, "Analysis failed. Please try again."), true);
   } finally {
@@ -465,6 +471,14 @@ function resultViewName(value: string | undefined): ResultViewName {
   return value === "heatmap" || value === "graph" || value === "json" ? value : "document";
 }
 
+function renderXray(response: unknown): void {
+  const view = readNormalizationXray(response);
+  normalizationXray.hidden = !view;
+  if (view) {
+    renderNormalizationXray(normalizationXray, view);
+  }
+}
+
 function createAnalysisRequest(text: string): AnalyzeRequest {
   const request: AnalyzeRequest = {
     document: { rawText: text },
@@ -472,6 +486,15 @@ function createAnalysisRequest(text: string): AnalyzeRequest {
   };
   if (profileSelect.value) {
     request.profileId = profileSelect.value;
+  }
+  if (xrayToggle.checked) {
+    request.profile = {
+      steps: ["PIPELINE_STEP_NORMALIZE"],
+      normalization: {
+        rungs: ["NORMALIZATION_RUNG_STRIP_INVISIBLE", "NORMALIZATION_RUNG_WHITESPACE"],
+        requireAlignment: true,
+      },
+    };
   }
   return request;
 }

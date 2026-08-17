@@ -135,6 +135,10 @@
                 <span aria-hidden="true">→</span>
               </button>
               <button id="sample-button" type="button" class="secondary-button">Use sample text</button>
+              <span class="checkbox-field">
+                <input id="normalization-xray-toggle" type="checkbox" name="normalization-xray" />
+                <label for="normalization-xray-toggle">Normalization X-ray</label>
+              </span>
             </div>
             <p class="model-note">Model bundles describe service capabilities. The selected profile controls analysis.</p>
             <p id="form-status" role="status" aria-live="polite" class="form-status">
@@ -185,6 +189,8 @@
                   <p>Annotation details will appear here.</p>
                 </aside>
               </div>
+              <section id="normalization-xray" class="normalization-xray" aria-label="Normalization X-ray" hidden>
+              </section>
             </div>
             <div id="heatmap-view" role="tabpanel" aria-labelledby="heatmap-tab" class="visualization-view" hidden>
               <div class="visualization-heading">
