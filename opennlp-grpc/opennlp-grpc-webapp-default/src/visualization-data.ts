@@ -34,6 +34,16 @@ export interface HeatmapRows {
   sentiment: HeatmapRow[];
 }
 
+export interface SimilarityHeatmapHit {
+  sourceText: string;
+  offsetEncoding: string;
+  start: number;
+  end: number;
+  emittedChunkText: string;
+  score: number;
+  modelId: string;
+}
+
 export interface DocumentGraphNode {
   id: string;
   label: string;
@@ -64,11 +74,27 @@ export function buildHeatmapRows(shape: DocumentShapeView): HeatmapRows {
       start: annotation.start!,
       end: annotation.end!,
       label: shape.rawText.slice(annotation.start, annotation.end),
-      score: annotation.score,
+      score: signedSentimentScore(annotation.label, annotation.score),
       category: annotation.label,
     }]);
 
   return { semantic: [], sentiment };
+}
+
+/** Converts server-ranked chunks for one browser document into heatmap rows. */
+export function buildSimilarityHeatmapRows(
+  sourceText: string,
+  hits: SimilarityHeatmapHit[],
+): HeatmapRow[] {
+  return hits.filter((hit) => hit.sourceText === sourceText
+      && hit.offsetEncoding === "OFFSET_ENCODING_UTF16_CODE_UNIT")
+    .map((hit) => ({
+      start: hit.start,
+      end: hit.end,
+      label: hit.emittedChunkText,
+      score: hit.score,
+      modelId: hit.modelId,
+    }));
 }
 
 export function buildDocumentGraph(shape: DocumentShapeView, maxAnnotations = 120): DocumentGraph {
@@ -115,6 +141,21 @@ function hasAnnotationSpan(annotation: AnnotationView): boolean {
 
 function isSentimentLayer(id: string, standardIdentity: string | undefined): boolean {
   return asciiLowerCase(`${id} ${standardIdentity ?? ""}`).includes("sentiment");
+}
+
+function signedSentimentScore(label: string, score: number): number {
+  const category = asciiLowerCase(label);
+  const magnitude = Math.min(1, Math.abs(score));
+  if (category.includes("negative")) {
+    return -magnitude;
+  }
+  if (category.includes("neutral")) {
+    return 0;
+  }
+  if (category.includes("positive")) {
+    return magnitude;
+  }
+  return Math.max(-1, Math.min(1, score));
 }
 
 function preview(value: string, limit: number): string {

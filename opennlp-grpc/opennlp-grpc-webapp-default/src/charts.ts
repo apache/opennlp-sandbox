@@ -43,7 +43,12 @@ export interface ChartHandle {
   resize(): void;
 }
 
-export function renderHeatmap(element: HTMLElement, rows: HeatmapRow[], emptyMessage: string): ChartHandle | undefined {
+export function renderHeatmap(
+  element: HTMLElement,
+  rows: HeatmapRow[],
+  emptyMessage: string,
+  onSelect?: (row: HeatmapRow) => void,
+): ChartHandle | undefined {
   disposeExisting(element);
   if (rows.length === 0) {
     element.textContent = emptyMessage;
@@ -75,10 +80,17 @@ export function renderHeatmap(element: HTMLElement, rows: HeatmapRow[], emptyMes
       left: "center",
       bottom: 0,
       textStyle: { color: "#aeb9ca" },
-      inRange: { color: ["#9f456a", "#29364d", "#42c8a3"] },
+      inRange: { color: ["#b42318", "#e5e7eb", "#16835a"] },
     },
     series: [{ type: "heatmap", data: values, itemStyle: { borderColor: "#101827", borderWidth: 3 } }],
   } satisfies ChartOption);
+  chart.on("click", (event) => {
+    const dataIndex = typeof event.dataIndex === "number" ? event.dataIndex : -1;
+    const row = rows[dataIndex];
+    if (row && onSelect) {
+      onSelect(row);
+    }
+  });
   element.dataset.chartActive = "true";
   return handle(chart, element);
 }

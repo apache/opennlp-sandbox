@@ -46,6 +46,14 @@ describe("analysis playground markup", () => {
     expect(html).toContain('id="result-offset-encoding"');
     expect(html).toContain('data-result-tab="heatmap"');
     expect(html).toContain('data-result-tab="graph"');
+    expect(html).toContain('id="heatmap-mode-query"');
+    expect(html).toContain('id="heatmap-mode-sentiment"');
+    expect(html).toContain('id="heatmap-query"');
+    expect(html).toContain('id="heatmap-status" class="heatmap-status" role="status" aria-live="polite"');
+    expect(html).toContain('id="document-heatmap"');
+    expect(html).toContain('id="heatmap-selection"');
+    expect(html).not.toContain('id="semantic-heatmap"');
+    expect(html).not.toContain('id="sentiment-heatmap"');
     expect(html).toContain('id="semantic-query"');
     expect(html).toContain('id="add-to-index-button"');
     expect(html).toContain('id="search-results"');

@@ -219,16 +219,31 @@
             </div>
             <div id="heatmap-view" role="tabpanel" aria-labelledby="heatmap-tab" class="visualization-view" hidden>
               <div class="visualization-heading">
-                <div><span>Semantic similarity</span><small>Current document compared with the latest query</small></div>
-                <p>Scores come from typed positional embedding layers using the same model as the query.</p>
+                <div><span>Document heatmap</span><small>One projection, two typed score sources</small></div>
+                <p>Query ranking runs in the gRPC server. Sentiment reads the current document shape.</p>
               </div>
-              <div id="semantic-heatmap" class="chart-canvas" role="img"
-                aria-label="Semantic similarity heatmap">Run a semantic query to build this heatmap.</div>
-              <div class="visualization-heading">
-                <div><span>Sentiment</span><small>Typed category scores by text span</small></div>
+              <div class="heatmap-controls">
+                <div class="heatmap-mode" role="group" aria-label="Heatmap score source">
+                  <button id="heatmap-mode-query" type="button" aria-pressed="true">Query similarity</button>
+                  <button id="heatmap-mode-sentiment" type="button" aria-pressed="false">Sentiment</button>
+                </div>
+                <form id="heatmap-query-form" class="heatmap-query-form">
+                  <label for="heatmap-query">Find related chunks in this document</label>
+                  <div>
+                    <input id="heatmap-query" type="search"
+                      placeholder="Try: individual liberty or separation of powers" disabled />
+                    <button id="heatmap-query-button" type="submit" disabled>Score chunks</button>
+                  </div>
+                </form>
               </div>
-              <div id="sentiment-heatmap" class="chart-canvas chart-canvas-small" role="img"
-                aria-label="Sentiment score heatmap">Analyze a document to inspect sentiment scores.</div>
+              <p id="heatmap-status" class="heatmap-status" role="status" aria-live="polite">
+                Analyze text with document embeddings to score its chunks.
+              </p>
+              <div id="document-heatmap" class="chart-canvas document-heatmap" role="img"
+                aria-label="Document score heatmap">Analyze a document to build its heatmap.</div>
+              <p id="heatmap-selection" class="heatmap-selection" aria-live="polite">
+                Select a colored segment to inspect its text and score.
+              </p>
             </div>
             <div id="graph-view" role="tabpanel" aria-labelledby="graph-tab" class="visualization-view" hidden>
               <div class="visualization-heading">

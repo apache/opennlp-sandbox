@@ -20,7 +20,11 @@
 import { describe, expect, it } from "vitest";
 
 import { readDocumentShape } from "../src/document-shape";
-import { buildDocumentGraph, buildHeatmapRows } from "../src/visualization-data";
+import {
+  buildDocumentGraph,
+  buildHeatmapRows,
+  buildSimilarityHeatmapRows,
+} from "../src/visualization-data";
 
 const shape = readDocumentShape({
   document: {
@@ -42,7 +46,8 @@ const shape = readDocumentShape({
           categoryValues: {
             annotations: [
               { span: { start: 0, end: 14 }, label: "positive", score: 0.8 },
-              { span: { start: 15, end: 32 }, label: "neutral", score: 0.1 },
+              { span: { start: 15, end: 24 }, label: "negative", score: 0.7 },
+              { span: { start: 25, end: 32 }, label: "neutral", score: 0.1 },
             ],
           },
         },
@@ -58,8 +63,40 @@ describe("visualization data", () => {
     expect(rows.semantic).toEqual([]);
     expect(rows.sentiment).toMatchObject([
       { start: 0, end: 14, score: 0.8, category: "positive" },
-      { start: 15, end: 32, score: 0.1, category: "neutral" },
+      { start: 15, end: 24, score: -0.7, category: "negative" },
+      { start: 25, end: 32, score: 0, category: "neutral" },
     ]);
+  });
+
+  it("maps only server-ranked chunks from the current document into the shared heatmap", () => {
+    const rows = buildSimilarityHeatmapRows(shape.rawText, [
+      {
+        sourceText: shape.rawText,
+        offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
+        start: 0,
+        end: 14,
+        emittedChunkText: "OpenNLP works.",
+        score: 0.91,
+        modelId: "tiny-test",
+      },
+      {
+        sourceText: "Another document",
+        offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
+        start: 0,
+        end: 7,
+        emittedChunkText: "Another",
+        score: 0.99,
+        modelId: "tiny-test",
+      },
+    ]);
+
+    expect(rows).toEqual([{
+      start: 0,
+      end: 14,
+      label: "OpenNLP works.",
+      score: 0.91,
+      modelId: "tiny-test",
+    }]);
   });
 
   it("builds a bounded graph that preserves layer and annotation references", () => {

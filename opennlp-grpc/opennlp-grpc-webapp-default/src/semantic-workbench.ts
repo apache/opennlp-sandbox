@@ -26,8 +26,10 @@ import { emptyMessage, requiredElement } from "./ui-utils";
 import {
   buildDocumentGraph,
   buildHeatmapRows,
+  buildSimilarityHeatmapRows,
   type DocumentGraph,
   type DocumentGraphNode,
+  type HeatmapRow,
   type HeatmapRows,
 } from "./visualization-data";
 
@@ -49,6 +51,13 @@ interface CurrentDocument {
   groupIds: string[];
 }
 
+type IndexableCurrentDocument = CurrentDocument & {
+  wireDocument: Record<string, unknown>;
+  modelId: string;
+};
+
+type HeatmapMode = "query" | "sentiment";
+
 /** Coordinates server-owned, in-memory workspace indexing and query rendering. */
 export class SemanticWorkbench {
   readonly #options: SemanticWorkbenchOptions;
@@ -60,20 +69,29 @@ export class SemanticWorkbench {
   readonly #indexCount = requiredElement<HTMLElement>("index-count");
   readonly #status = requiredElement<HTMLElement>("semantic-status");
   readonly #results = requiredElement<HTMLElement>("search-results");
-  readonly #semanticHeatmap = requiredElement<HTMLElement>("semantic-heatmap");
-  readonly #sentimentHeatmap = requiredElement<HTMLElement>("sentiment-heatmap");
+  readonly #heatmapQueryForm = requiredElement<HTMLFormElement>("heatmap-query-form");
+  readonly #heatmapQuery = requiredElement<HTMLInputElement>("heatmap-query");
+  readonly #heatmapQueryButton = requiredElement<HTMLButtonElement>("heatmap-query-button");
+  readonly #queryModeButton = requiredElement<HTMLButtonElement>("heatmap-mode-query");
+  readonly #sentimentModeButton = requiredElement<HTMLButtonElement>("heatmap-mode-sentiment");
+  readonly #heatmapStatus = requiredElement<HTMLElement>("heatmap-status");
+  readonly #heatmapCanvas = requiredElement<HTMLElement>("document-heatmap");
+  readonly #heatmapSelection = requiredElement<HTMLElement>("heatmap-selection");
   readonly #graphCanvas = requiredElement<HTMLElement>("document-graph");
   readonly #graphSelection = requiredElement<HTMLElement>("graph-selection");
 
   #current?: CurrentDocument;
   #workspace?: SearchIndex;
+  #heatmapWorkspace?: SearchIndex;
   #heatmaps: HeatmapRows = { semantic: [], sentiment: [] };
   #graph?: DocumentGraph;
-  #semanticChart?: ChartHandle;
-  #sentimentChart?: ChartHandle;
+  #heatmapChart?: ChartHandle;
   #graphChart?: ChartHandle;
   #busy = false;
   #nextDocumentId = 1;
+  #documentRevision = 0;
+  #heatmapRevision = -1;
+  #heatmapMode: HeatmapMode = "query";
   #activeView: ResultViewName = "document";
 
   constructor(options: SemanticWorkbenchOptions) {
@@ -82,6 +100,10 @@ export class SemanticWorkbench {
     this.#clearButton.addEventListener("click", () => void this.clear());
     this.#searchForm.addEventListener("submit", (event) => void this.search(event));
     this.#query.addEventListener("input", () => this.updateControls());
+    this.#heatmapQueryForm.addEventListener("submit", (event) => void this.searchHeatmap(event));
+    this.#heatmapQuery.addEventListener("input", () => this.updateControls());
+    this.#queryModeButton.addEventListener("click", () => this.selectHeatmapMode("query"));
+    this.#sentimentModeButton.addEventListener("click", () => this.selectHeatmapMode("sentiment"));
     window.addEventListener("resize", () => this.resize());
     this.updateControls();
   }
@@ -97,6 +119,9 @@ export class SemanticWorkbench {
     };
     this.#graph = buildDocumentGraph(shape);
     this.#heatmaps = buildHeatmapRows(shape);
+    this.#documentRevision++;
+    this.#heatmapSelection.textContent = "Select a colored segment to inspect its text and score.";
+    this.updateHeatmapStatus();
     this.#graphSelection.textContent = this.#graph.truncated
       ? "The graph shows the first 120 annotations. Select a node to inspect it."
       : "Select a layer or annotation node to inspect it in the Document view.";
@@ -106,7 +131,7 @@ export class SemanticWorkbench {
   show(view: ResultViewName): void {
     this.#activeView = view;
     if (view === "heatmap") {
-      void this.renderHeatmaps();
+      void this.renderHeatmap();
     } else if (view === "graph") {
       void this.renderGraph();
     }
@@ -190,6 +215,61 @@ export class SemanticWorkbench {
     }
   }
 
+  private async searchHeatmap(event: SubmitEvent): Promise<void> {
+    event.preventDefault();
+    const current = this.#current;
+    const query = this.#heatmapQuery.value.trim();
+    if (!isIndexableCurrentDocument(current) || !query || this.#busy) {
+      return;
+    }
+
+    this.#busy = true;
+    this.setHeatmapStatus("The gRPC server is indexing this document and scoring its chunks.");
+    this.updateControls();
+    try {
+      const index = await this.ensureHeatmapIndex(current);
+      const response = await this.#options.search({
+        indexId: index.id,
+        query: { rawText: query },
+        topK: Math.min(index.size ?? 1, index.maxTopK ?? 50),
+      });
+      this.#heatmaps = {
+        semantic: buildSimilarityHeatmapRows(current.shape.rawText, response.hits),
+        sentiment: this.#heatmaps.sentiment,
+      };
+      this.setHeatmapStatus(response.hits.length === 0
+        ? "The gRPC server returned no compatible chunks for this document."
+        : `${response.hits.length} chunks scored by the gRPC server for “${query}”.`);
+      await this.renderHeatmap();
+    } catch (error) {
+      this.setHeatmapStatus(error instanceof Error ? error.message : "Document heatmap search failed.", true);
+    } finally {
+      this.#busy = false;
+      this.updateControls();
+    }
+  }
+
+  private async ensureHeatmapIndex(current: IndexableCurrentDocument): Promise<SearchIndex> {
+    if (this.#heatmapWorkspace && this.#heatmapWorkspace.modelId !== current.modelId) {
+      await this.#options.deleteIndex(this.#heatmapWorkspace.id);
+      this.#heatmapWorkspace = undefined;
+      this.#heatmapRevision = -1;
+    }
+    if (this.#heatmapWorkspace && this.#heatmapRevision === this.#documentRevision) {
+      return this.#heatmapWorkspace;
+    }
+    const document = { ...current.wireDocument, docId: "heatmap-current-document" };
+    this.#heatmapWorkspace = await this.#options.index({
+      ...(this.#heatmapWorkspace ? { indexId: this.#heatmapWorkspace.id } : {}),
+      displayName: "Current document heatmap",
+      documents: [document],
+      embedding: { modelId: current.modelId },
+      chunkGroupIds: current.groupIds,
+    });
+    this.#heatmapRevision = this.#documentRevision;
+    return this.#heatmapWorkspace;
+  }
+
   private renderSearchResults(hits: SearchHit[]): void {
     if (hits.length === 0) {
       this.#results.replaceChildren(emptyMessage("No compatible vectors were found in the server workspace."));
@@ -223,36 +303,56 @@ export class SemanticWorkbench {
   private updateServerHeatmap(hits: SearchHit[]): void {
     const sourceText = this.#current?.shape.rawText;
     this.#heatmaps = {
-      semantic: hits.filter((hit) => hit.sourceText === sourceText
-          && hit.offsetEncoding === "OFFSET_ENCODING_UTF16_CODE_UNIT")
-        .map((hit) => ({
-          start: hit.start,
-          end: hit.end,
-          label: hit.emittedChunkText,
-          score: hit.score,
-          modelId: hit.modelId,
-        })),
+      semantic: sourceText ? buildSimilarityHeatmapRows(sourceText, hits) : [],
       sentiment: this.#heatmaps.sentiment,
     };
     if (this.#activeView === "heatmap") {
-      void this.renderHeatmaps();
+      void this.renderHeatmap();
     }
   }
 
-  private async renderHeatmaps(): Promise<void> {
+  private async renderHeatmap(): Promise<void> {
     const { renderHeatmap } = await import("./charts");
-    this.#semanticChart?.dispose();
-    this.#sentimentChart?.dispose();
-    this.#semanticChart = renderHeatmap(
-      this.#semanticHeatmap,
-      this.#heatmaps.semantic,
-      "Run a workspace query to display scores returned by the gRPC search service.",
+    this.#heatmapChart?.dispose();
+    const rows = this.#heatmapMode === "query" ? this.#heatmaps.semantic : this.#heatmaps.sentiment;
+    this.#heatmapChart = renderHeatmap(
+      this.#heatmapCanvas,
+      rows,
+      this.#heatmapMode === "query"
+        ? "Enter a query above. The gRPC server will index and score this document's chunks."
+        : "This document has no typed sentiment layer with positional scores.",
+      (row) => this.selectHeatmapRow(row),
     );
-    this.#sentimentChart = renderHeatmap(
-      this.#sentimentHeatmap,
-      this.#heatmaps.sentiment,
-      "This document has no typed sentiment layer with positional scores.",
-    );
+  }
+
+  private selectHeatmapMode(mode: HeatmapMode): void {
+    this.#heatmapMode = mode;
+    this.#queryModeButton.setAttribute("aria-pressed", String(mode === "query"));
+    this.#sentimentModeButton.setAttribute("aria-pressed", String(mode === "sentiment"));
+    this.#heatmapQueryForm.hidden = mode !== "query";
+    this.updateHeatmapStatus();
+    this.updateControls();
+    void this.renderHeatmap();
+  }
+
+  private selectHeatmapRow(row: HeatmapRow): void {
+    const kind = this.#heatmapMode === "query" ? "Similarity" : row.category ?? "Sentiment";
+    this.#heatmapSelection.textContent = `${kind} ${row.score.toFixed(4)} · characters ${row.start}`
+      + ` to ${row.end} · ${row.label}`;
+  }
+
+  private updateHeatmapStatus(): void {
+    if (!this.#current) {
+      this.setHeatmapStatus("Analyze text to build a document heatmap.");
+    } else if (this.#heatmapMode === "sentiment") {
+      this.setHeatmapStatus(this.#heatmaps.sentiment.length > 0
+        ? `${this.#heatmaps.sentiment.length} typed sentiment spans are available in this analysis response.`
+        : "No typed sentiment layer was returned. Enable Sentiment and install its model data first.");
+    } else if (!this.#current.wireDocument || !this.#current.modelId) {
+      this.setHeatmapStatus("Enable document embeddings and at least one chunk strategy, then analyze again.");
+    } else {
+      this.setHeatmapStatus("Enter a term or phrase. The gRPC server will score this document's chunks.");
+    }
   }
 
   private async renderGraph(): Promise<void> {
@@ -273,8 +373,7 @@ export class SemanticWorkbench {
   }
 
   private resize(): void {
-    this.#semanticChart?.resize();
-    this.#sentimentChart?.resize();
+    this.#heatmapChart?.resize();
     this.#graphChart?.resize();
   }
 
@@ -284,12 +383,21 @@ export class SemanticWorkbench {
     this.#clearButton.disabled = !this.#workspace || this.#busy;
     this.#searchButton.disabled = !this.#workspace || !this.#query.value.trim() || this.#busy;
     this.#query.disabled = !this.#workspace || this.#busy;
+    const heatmapIndexable = Boolean(this.#current?.wireDocument && this.#current.modelId);
+    this.#heatmapQuery.disabled = this.#heatmapMode !== "query" || !heatmapIndexable || this.#busy;
+    this.#heatmapQueryButton.disabled = this.#heatmapMode !== "query" || !heatmapIndexable
+      || !this.#heatmapQuery.value.trim() || this.#busy;
     this.#indexCount.textContent = String(this.#workspace?.size ?? 0);
   }
 
   private setStatus(value: string, error = false): void {
     this.#status.textContent = value;
     this.#status.classList.toggle("is-error", error);
+  }
+
+  private setHeatmapStatus(value: string, error = false): void {
+    this.#heatmapStatus.textContent = value;
+    this.#heatmapStatus.classList.toggle("is-error", error);
   }
 }
 
@@ -322,6 +430,12 @@ function indexableDocument(json: string): {
 function record(value: unknown): Record<string, unknown> | undefined {
   return typeof value === "object" && value !== null && !Array.isArray(value)
     ? value as Record<string, unknown> : undefined;
+}
+
+function isIndexableCurrentDocument(
+  current: CurrentDocument | undefined,
+): current is IndexableCurrentDocument {
+  return Boolean(current?.wireDocument && current.modelId);
 }
 
 function textPreview(text: string, limit: number): string {
