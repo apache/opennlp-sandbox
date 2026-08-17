@@ -73,7 +73,7 @@ public final class OpenNlpGrpcWebApp implements Callable<Integer> {
       description = "Per-RPC deadline in seconds. Default: ${DEFAULT-VALUE}")
   private int requestTimeoutSeconds;
 
-  @Option(names = "--max-request-bytes", defaultValue = "1048576",
+  @Option(names = "--max-request-bytes", defaultValue = "104857600",
       description = "Maximum JSON request body size. Default: ${DEFAULT-VALUE}")
   private int maxRequestBytes;
 
