@@ -29,7 +29,7 @@ import {
   searchIndex,
   type AnalyzeRequest,
 } from "./api";
-import { discoverModelBundles, discoverProfiles, type DiscoveryOption } from "./discovery";
+import { discoverModelBundles, discoverProfiles, preferredProfileId, type DiscoveryOption } from "./discovery";
 import {
   layerAccent,
   readDocumentShape,
@@ -164,6 +164,11 @@ async function initialize(): Promise<void> {
   const bundles = discoverModelBundles(bundlesInfo);
 
   populateSelect(profileSelect, profiles);
+  const preferredProfile = preferredProfileId(profiles);
+  if (preferredProfile) {
+    // Preselect only here, at initialization time, so an explicit user choice stays sticky.
+    profileSelect.value = preferredProfile;
+  }
   populateModelList(bundles);
   profileCount.textContent = String(profiles.length);
   modelCount.textContent = String(bundles.length);

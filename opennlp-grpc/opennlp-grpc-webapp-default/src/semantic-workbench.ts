@@ -81,11 +81,18 @@ export class SemanticWorkbench {
   setDocument(title: string, shape: DocumentShapeView, json = ""): void {
     this.#current = { id: `document-${this.#nextDocumentId++}`, title: title.trim(), shape, json };
     this.#graph = buildDocumentGraph(shape);
-    this.#heatmaps = buildHeatmapRows(shape, []);
+    // Score each positional embedding against the document's own representative vector, so
+    // the heatmap renders immediately after analysis when the profile returns embeddings.
+    this.#heatmaps = buildHeatmapRows(shape, representativeVectors(shape));
     this.#graphSelection.textContent = this.#graph.truncated
       ? "The graph shows the first 120 annotations. Select a node to inspect it."
       : "Select a layer or annotation node to inspect it in the Document view.";
     this.updateControls();
+  }
+
+  /** Returns the heatmap rows computed for the current document. */
+  heatmapRows(): HeatmapRows {
+    return this.#heatmaps;
   }
 
   show(view: ResultViewName): void {
@@ -191,7 +198,7 @@ export class SemanticWorkbench {
     this.#semanticChart = renderHeatmap(
       this.#semanticHeatmap,
       this.#heatmaps.semantic,
-      "Run a semantic query to compare it with positional embedding layers.",
+      "This document has no positional embedding layers. Choose an embedding-enabled profile.",
     );
     this.#sentimentChart = renderHeatmap(
       this.#sentimentHeatmap,
