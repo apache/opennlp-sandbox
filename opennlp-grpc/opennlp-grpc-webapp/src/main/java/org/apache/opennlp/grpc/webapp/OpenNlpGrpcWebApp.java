@@ -118,13 +118,8 @@ public final class OpenNlpGrpcWebApp implements Callable<Integer> {
     InetAddress bindAddress = InetAddress.getByName(httpHost);
     validateBindAddress(bindAddress, allowRemote);
 
-    ManagedChannelBuilder<?> channelBuilder = ManagedChannelBuilder.forTarget(grpcTarget);
-    if (grpcPlaintext) {
-      channelBuilder.usePlaintext();
-    } else {
-      channelBuilder.useTransportSecurity();
-    }
-    ManagedChannel channel = channelBuilder.build();
+    ManagedChannel channel = newChannel(grpcTarget, grpcPlaintext,
+        DEFAULT_GRPC_MAX_INBOUND_MESSAGE_BYTES);
     ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
     ClassLoader extensionClassLoader = contextClassLoader == null
         ? OpenNlpGrpcWebApp.class.getClassLoader() : contextClassLoader;
@@ -163,6 +158,28 @@ public final class OpenNlpGrpcWebApp implements Callable<Integer> {
       }
     }
     return 0;
+  }
+
+  /** Default cap in bytes for gRPC messages accepted from the server: 100 MiB. */
+  static final int DEFAULT_GRPC_MAX_INBOUND_MESSAGE_BYTES = 100 * 1024 * 1024;
+
+  /**
+   * Builds the channel to the analysis service.
+   *
+   * @param grpcTarget The gRPC target string.
+   * @param grpcPlaintext Whether to use a plaintext connection.
+   * @param maxInboundMessageBytes Cap in bytes for messages accepted from the server.
+   * @return The connected channel.
+   */
+  static ManagedChannel newChannel(String grpcTarget, boolean grpcPlaintext,
+      int maxInboundMessageBytes) {
+    ManagedChannelBuilder<?> channelBuilder = ManagedChannelBuilder.forTarget(grpcTarget);
+    if (grpcPlaintext) {
+      channelBuilder.usePlaintext();
+    } else {
+      channelBuilder.useTransportSecurity();
+    }
+    return channelBuilder.build();
   }
 
   /**

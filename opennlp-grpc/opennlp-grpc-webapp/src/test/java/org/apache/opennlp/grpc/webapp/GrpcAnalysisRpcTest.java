@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
+import io.grpc.ServerBuilder;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
@@ -34,6 +35,7 @@ import org.apache.opennlp.grpc.v1.GetServiceInfoResponse;
 import org.apache.opennlp.grpc.v1.ListModelBundlesRequest;
 import org.apache.opennlp.grpc.v1.ListModelBundlesResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpAnalysisServiceGrpc;
+import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.junit.jupiter.api.Test;
 
 class GrpcAnalysisRpcTest {
@@ -63,6 +65,37 @@ class GrpcAnalysisRpcTest {
     }
   }
 
+  /** Six MiB of response text, past the 4 MiB gRPC default inbound limit. */
+  private static final String LARGE_RESPONSE_TEXT = "x".repeat(6 * 1024 * 1024);
+
+  @Test
+  void acceptsResponsesBeyondTheGrpcDefaultMessageLimit() throws Exception {
+    // Whole-document analysis with embeddings can exceed the 4 MiB gRPC default;
+    // the channel the application builds must accept such responses.
+    Server server = ServerBuilder.forPort(0)
+        .directExecutor()
+        .addService(new TestAnalysisService())
+        .build()
+        .start();
+    ManagedChannel channel = OpenNlpGrpcWebApp.newChannel(
+        "127.0.0.1:" + server.getPort(), true,
+        OpenNlpGrpcWebApp.DEFAULT_GRPC_MAX_INBOUND_MESSAGE_BYTES);
+    try {
+      GrpcAnalysisRpc rpc = new GrpcAnalysisRpc(channel, Duration.ofSeconds(30));
+
+      AnalyzeDocumentResponse response = rpc.analyze(AnalyzeDocumentRequest.newBuilder()
+          .setDocument(OpenNlpDocument.newBuilder()
+              .setDocId("big")
+              .setRawText("pad"))
+          .build());
+
+      assertEquals(LARGE_RESPONSE_TEXT.length(), response.getDocument().getRawText().length());
+    } finally {
+      channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+      server.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+    }
+  }
+
   private static final class TestAnalysisService
       extends OpenNlpAnalysisServiceGrpc.OpenNlpAnalysisServiceImplBase {
 
@@ -83,8 +116,12 @@ class GrpcAnalysisRpcTest {
     @Override
     public void analyzeDocument(
         AnalyzeDocumentRequest request, StreamObserver<AnalyzeDocumentResponse> observer) {
+      OpenNlpDocument document = request.getDocument();
+      if ("big".equals(document.getDocId())) {
+        document = document.toBuilder().setRawText(LARGE_RESPONSE_TEXT).build();
+      }
       observer.onNext(AnalyzeDocumentResponse.newBuilder()
-          .setDocument(request.getDocument())
+          .setDocument(document)
           .build());
       observer.onCompleted();
     }
