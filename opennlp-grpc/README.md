@@ -221,6 +221,42 @@ by `--embedding-dir`. The teacher model's license carries onto the distilled tab
 before publishing the result. For a quick public fallback instead of a locally distilled table,
 pass `--public-embedding-fallback`; this choice is explicit and is not the demo default.
 
+TEI and OpenVINO Model Server are optional remote providers. Their endpoints, served-model
+identities, TLS choice, and route policy are operator configuration. The repository does not carry
+deployment-specific values. For example, add TEI to the generated startup configuration with:
+
+```bash
+./demo-model-download.sh \
+  --embedding-dir /srv/opennlp/models/legal-minilm-full \
+  --embedding-model-id legal-minilm-full \
+  --tei-target tei.example.org:8080 \
+  --tei-model-id remote-minilm \
+  --tei-vector-space-id minilm-v1 \
+  --tei-use-tls
+```
+
+Or add an OpenVINO/KServe v2 endpoint with:
+
+```bash
+./demo-model-download.sh \
+  --embedding-dir /srv/opennlp/models/legal-minilm-full \
+  --embedding-model-id legal-minilm-full \
+  --openvino-target ovms.example.org:9000 \
+  --openvino-model-id remote-ovms \
+  --openvino-model-name minilm \
+  --openvino-model-version 1 \
+  --openvino-vector-space-id minilm-v1 \
+  --openvino-use-tls
+```
+
+The script adds a remote backend jar to the printed server classpath only when that backend is
+configured. It writes the supplied values only to the generated `demo-models` configuration, which
+is excluded from Git. The local OpenNLP-distilled model remains the default. Use the same logical
+model id and exact vector-space id to make compatible engines participate in priority and fallback
+routing, or use distinct logical ids when clients should select them explicitly. Run
+`./demo-model-download.sh --help` for deadline, priority, TEI normalization/truncation, and OpenVINO
+tensor-name options. Remote providers are contacted and validated when the gRPC server starts.
+
 ## Run the optional web application
 
 With the gRPC service running on its default port, start the separate web application:

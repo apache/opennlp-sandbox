@@ -20,10 +20,14 @@ set -euo pipefail
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 default_jar=$script_dir/opennlp-grpc-service/target/opennlp-grpc-server-3.0.0-SNAPSHOT.jar
 default_static_backend_jar=$script_dir/opennlp-grpc-backend-static/target/opennlp-grpc-backend-static-3.0.0-SNAPSHOT.jar
+default_tei_backend_jar=$script_dir/opennlp-grpc-backend-tei/target/opennlp-grpc-backend-tei-3.0.0-SNAPSHOT.jar
+default_openvino_backend_jar=$script_dir/opennlp-grpc-backend-openvino/target/opennlp-grpc-backend-openvino-3.0.0-SNAPSHOT.jar
 target=$script_dir/demo-models
 config=
 server_jar=$default_jar
 static_backend_jar=$default_static_backend_jar
+tei_backend_jar=$default_tei_backend_jar
+openvino_backend_jar=$default_openvino_backend_jar
 parser_source=
 parser_checksum=
 chunker_source=
@@ -31,6 +35,24 @@ chunker_checksum=
 embedding_dir=
 embedding_model_id=opennlp-legal-demo
 public_embedding_fallback=false
+tei_target=
+tei_model_id=
+tei_vector_space_id=
+tei_use_tls=false
+tei_deadline_ms=
+tei_truncate=true
+tei_normalize=true
+tei_priority=
+openvino_target=
+openvino_model_id=
+openvino_model_name=
+openvino_vector_space_id=
+openvino_model_version=
+openvino_use_tls=false
+openvino_input_name=
+openvino_output_name=
+openvino_deadline_ms=
+openvino_priority=
 list_only=false
 
 ner_revision=24c7e5aba9ae350923357a6f0b92571be34037ec
@@ -69,6 +91,9 @@ Options:
   --config FILE             Generated properties file (default: DIR/demo-server.properties)
   --server-jar FILE         Shaded gRPC server jar containing install-resource
   --static-backend-jar FILE Static embedding provider jar
+  --tei-backend-jar FILE    TEI embedding provider jar
+  --openvino-backend-jar FILE
+                            OpenVINO embedding provider jar
   --parser-source URI       Current operator-approved OpenNLP parser model
   --parser-checksum HEX     SHA-256 or SHA-512 for --parser-source
   --chunker-source URI      Current operator-approved OpenNLP chunker model
@@ -77,6 +102,26 @@ Options:
   --embedding-model-id ID   Logical id for --embedding-dir (default: $embedding_model_id)
   --public-embedding-fallback
                             Use checksum-pinned Potion when no trained model is supplied
+  --tei-target TARGET       Optional TEI gRPC target, such as host:port
+  --tei-model-id ID         Logical model id served by --tei-target
+  --tei-vector-space-id ID  Exact vector-space identity served by --tei-target
+  --tei-use-tls             Use TLS for the TEI connection
+  --tei-deadline-ms N       Override the TEI RPC deadline in milliseconds
+  --tei-no-truncate         Tell TEI not to truncate over-length input
+  --tei-no-normalize        Tell TEI not to L2-normalize embeddings
+  --tei-priority N          Route priority for this TEI provider
+  --openvino-target TARGET  Optional OpenVINO/KServe gRPC target
+  --openvino-model-id ID    Logical model id served by --openvino-target
+  --openvino-model-name ID  Model name registered in OpenVINO Model Server
+  --openvino-vector-space-id ID
+                            Exact vector-space identity served by OpenVINO
+  --openvino-model-version VERSION
+                            Optional OpenVINO served-model version
+  --openvino-input-name ID  Input tensor name when inference metadata is ambiguous
+  --openvino-output-name ID Output tensor name when inference metadata is ambiguous
+  --openvino-use-tls        Use TLS for the OpenVINO connection
+  --openvino-deadline-ms N  Override the OpenVINO RPC deadline in milliseconds
+  --openvino-priority N     Route priority for this OpenVINO provider
   --list                    Print the resource and feature map without downloading
   -h, --help                Show this help
 
@@ -117,6 +162,16 @@ while (($# > 0)); do
       static_backend_jar=$2
       shift 2
       ;;
+    --tei-backend-jar)
+      require_value "$@"
+      tei_backend_jar=$2
+      shift 2
+      ;;
+    --openvino-backend-jar)
+      require_value "$@"
+      openvino_backend_jar=$2
+      shift 2
+      ;;
     --parser-source)
       require_value "$@"
       parser_source=$2
@@ -150,6 +205,92 @@ while (($# > 0)); do
     --public-embedding-fallback)
       public_embedding_fallback=true
       shift
+      ;;
+    --tei-target)
+      require_value "$@"
+      tei_target=$2
+      shift 2
+      ;;
+    --tei-model-id)
+      require_value "$@"
+      tei_model_id=$2
+      shift 2
+      ;;
+    --tei-vector-space-id)
+      require_value "$@"
+      tei_vector_space_id=$2
+      shift 2
+      ;;
+    --tei-use-tls)
+      tei_use_tls=true
+      shift
+      ;;
+    --tei-deadline-ms)
+      require_value "$@"
+      tei_deadline_ms=$2
+      shift 2
+      ;;
+    --tei-no-truncate)
+      tei_truncate=false
+      shift
+      ;;
+    --tei-no-normalize)
+      tei_normalize=false
+      shift
+      ;;
+    --tei-priority)
+      require_value "$@"
+      tei_priority=$2
+      shift 2
+      ;;
+    --openvino-target)
+      require_value "$@"
+      openvino_target=$2
+      shift 2
+      ;;
+    --openvino-model-id)
+      require_value "$@"
+      openvino_model_id=$2
+      shift 2
+      ;;
+    --openvino-model-name)
+      require_value "$@"
+      openvino_model_name=$2
+      shift 2
+      ;;
+    --openvino-vector-space-id)
+      require_value "$@"
+      openvino_vector_space_id=$2
+      shift 2
+      ;;
+    --openvino-model-version)
+      require_value "$@"
+      openvino_model_version=$2
+      shift 2
+      ;;
+    --openvino-input-name)
+      require_value "$@"
+      openvino_input_name=$2
+      shift 2
+      ;;
+    --openvino-output-name)
+      require_value "$@"
+      openvino_output_name=$2
+      shift 2
+      ;;
+    --openvino-use-tls)
+      openvino_use_tls=true
+      shift
+      ;;
+    --openvino-deadline-ms)
+      require_value "$@"
+      openvino_deadline_ms=$2
+      shift 2
+      ;;
+    --openvino-priority)
+      require_value "$@"
+      openvino_priority=$2
+      shift 2
       ;;
     --list)
       list_only=true
@@ -186,6 +327,9 @@ Embedding choices:
 Optional operator resources:
   Parser: operator-supplied current model required
   Syntactic chunker: operator-supplied current model required
+  TEI: pass --tei-target, --tei-model-id, and --tei-vector-space-id
+  OpenVINO: pass --openvino-target, --openvino-model-id, --openvino-model-name,
+    and --openvino-vector-space-id
 
 No SourceForge 1.5 model is installed by this script.
 EOF
@@ -235,20 +379,133 @@ validate_external_pair parser "$parser_source" "$parser_checksum"
 validate_external_pair chunker "$chunker_source" "$chunker_checksum"
 
 validate_model_id() {
-  local value=$1
-  [[ -n $value ]] || die "embedding model id must not be blank"
+  local label=$1
+  local value=$2
+  [[ -n $value ]] || die "$label must not be blank"
   local index
   local character
   for ((index = 0; index < ${#value}; index++)); do
     character=${value:index:1}
     case "$character" in
       [a-z0-9_-]) ;;
-      *) die "embedding model id must contain only lower-case ASCII letters, digits, '_' or '-'" ;;
+      *) die "$label must contain only lower-case ASCII letters, digits, '_' or '-'" ;;
     esac
   done
 }
 
-validate_model_id "$embedding_model_id"
+validate_config_value() {
+  local label=$1
+  local value=$2
+  [[ -n $value ]] || die "$label must not be blank"
+  local index
+  local character
+  for ((index = 0; index < ${#value}; index++)); do
+    character=${value:index:1}
+    case "$character" in
+      ' '|$'\t'|$'\f'|$'\r'|$'\n'|'\\')
+        die "$label must be a single configuration token without whitespace or backslashes"
+        ;;
+    esac
+  done
+}
+
+validate_positive_decimal() {
+  local label=$1
+  local value=$2
+  [[ -n $value ]] || die "$label must not be blank"
+  local index
+  local character
+  for ((index = 0; index < ${#value}; index++)); do
+    character=${value:index:1}
+    case "$character" in
+      [0-9]) ;;
+      *) die "$label must be a positive decimal integer" ;;
+    esac
+  done
+  [[ ${#value} -le 9 && $((10#$value)) -gt 0 ]] \
+    || die "$label must be between 1 and 999999999"
+}
+
+validate_priority() {
+  local label=$1
+  local value=$2
+  [[ -n $value ]] || die "$label must not be blank"
+  local digits=$value
+  if [[ ${digits:0:1} == '-' ]]; then
+    digits=${digits:1}
+  fi
+  [[ -n $digits ]] || die "$label must be a decimal integer"
+  local index
+  local character
+  for ((index = 0; index < ${#digits}; index++)); do
+    character=${digits:index:1}
+    case "$character" in
+      [0-9]) ;;
+      *) die "$label must be a decimal integer" ;;
+    esac
+  done
+  [[ ${#digits} -le 6 ]] || die "$label must be between -999999 and 999999"
+}
+
+validate_model_id "embedding model id" "$embedding_model_id"
+
+tei_requested=false
+if [[ -n $tei_target || -n $tei_model_id || -n $tei_vector_space_id \
+      || $tei_use_tls == true || -n $tei_deadline_ms || $tei_truncate == false \
+      || $tei_normalize == false || -n $tei_priority ]]; then
+  tei_requested=true
+fi
+if [[ $tei_requested == true ]]; then
+  if [[ -z $tei_target || -z $tei_model_id || -z $tei_vector_space_id ]]; then
+    die "TEI configuration requires --tei-target, --tei-model-id, and --tei-vector-space-id"
+  fi
+  validate_model_id "TEI model id" "$tei_model_id"
+  validate_config_value "TEI target" "$tei_target"
+  validate_config_value "TEI vector-space id" "$tei_vector_space_id"
+  if [[ -n $tei_deadline_ms ]]; then
+    validate_positive_decimal "TEI deadline" "$tei_deadline_ms"
+  fi
+  if [[ -n $tei_priority ]]; then
+    validate_priority "TEI priority" "$tei_priority"
+  fi
+fi
+
+openvino_requested=false
+if [[ -n $openvino_target || -n $openvino_model_id || -n $openvino_model_name \
+      || -n $openvino_vector_space_id || -n $openvino_model_version \
+      || $openvino_use_tls == true || -n $openvino_input_name \
+      || -n $openvino_output_name || -n $openvino_deadline_ms \
+      || -n $openvino_priority ]]; then
+  openvino_requested=true
+fi
+if [[ $openvino_requested == true ]]; then
+  if [[ -z $openvino_target || -z $openvino_model_id || -z $openvino_model_name \
+        || -z $openvino_vector_space_id ]]; then
+    openvino_required="OpenVINO configuration requires --openvino-target,"
+    openvino_required+=" --openvino-model-id, --openvino-model-name,"
+    openvino_required+=" and --openvino-vector-space-id"
+    die "$openvino_required"
+  fi
+  validate_model_id "OpenVINO model id" "$openvino_model_id"
+  validate_config_value "OpenVINO target" "$openvino_target"
+  validate_config_value "OpenVINO model name" "$openvino_model_name"
+  validate_config_value "OpenVINO vector-space id" "$openvino_vector_space_id"
+  if [[ -n $openvino_model_version ]]; then
+    validate_config_value "OpenVINO model version" "$openvino_model_version"
+  fi
+  if [[ -n $openvino_input_name ]]; then
+    validate_config_value "OpenVINO input name" "$openvino_input_name"
+  fi
+  if [[ -n $openvino_output_name ]]; then
+    validate_config_value "OpenVINO output name" "$openvino_output_name"
+  fi
+  if [[ -n $openvino_deadline_ms ]]; then
+    validate_positive_decimal "OpenVINO deadline" "$openvino_deadline_ms"
+  fi
+  if [[ -n $openvino_priority ]]; then
+    validate_priority "OpenVINO priority" "$openvino_priority"
+  fi
+fi
 
 if [[ -n $embedding_dir && $public_embedding_fallback == true ]]; then
   die "choose either --embedding-dir or --public-embedding-fallback, not both"
@@ -259,6 +516,14 @@ fi
 
 [[ -f $server_jar ]] || die "server jar not found: $server_jar; build it with ./mvnw package"
 [[ -f $static_backend_jar ]] || die "static backend jar not found: $static_backend_jar; build it with ./mvnw package"
+if [[ $tei_requested == true ]]; then
+  [[ -f $tei_backend_jar ]] \
+    || die "TEI backend jar not found: $tei_backend_jar; build it with ./mvnw package"
+fi
+if [[ $openvino_requested == true ]]; then
+  [[ -f $openvino_backend_jar ]] \
+    || die "OpenVINO backend jar not found: $openvino_backend_jar; build it with ./mvnw package"
+fi
 command -v java >/dev/null 2>&1 || die "java was not found on PATH"
 command -v sha256sum >/dev/null 2>&1 || die "sha256sum was not found on PATH"
 
@@ -404,6 +669,50 @@ if [[ -n $chunker_source ]]; then
   chunker_property=model.chunker.default.path=$target/chunker/$chunker_name
 fi
 
+tei_properties=
+if [[ $tei_requested == true ]]; then
+  printf -v tei_properties '%s\n%s\n%s\n%s\n%s\n' \
+    "model.embedder.$tei_model_id.tei.target=$tei_target" \
+    "model.embedder.$tei_model_id.tei.use_tls=$tei_use_tls" \
+    "model.embedder.$tei_model_id.tei.truncate=$tei_truncate" \
+    "model.embedder.$tei_model_id.tei.normalize=$tei_normalize" \
+    "model.embedder.$tei_model_id.tei.vector_space_id=$tei_vector_space_id"
+  if [[ -n $tei_priority ]]; then
+    tei_properties+="model.embedder.$tei_model_id.tei.priority=$tei_priority"$'\n'
+  fi
+  if [[ -n $tei_deadline_ms ]]; then
+    tei_properties+="model.embedder.tei.deadline_ms=$tei_deadline_ms"$'\n'
+  fi
+fi
+
+openvino_properties=
+if [[ $openvino_requested == true ]]; then
+  printf -v openvino_properties '%s\n%s\n%s\n%s\n' \
+    "model.embedder.$openvino_model_id.openvino.target=$openvino_target" \
+    "model.embedder.$openvino_model_id.openvino.model_name=$openvino_model_name" \
+    "model.embedder.$openvino_model_id.openvino.use_tls=$openvino_use_tls" \
+    "model.embedder.$openvino_model_id.openvino.vector_space_id=$openvino_vector_space_id"
+  if [[ -n $openvino_model_version ]]; then
+    openvino_properties+="model.embedder.$openvino_model_id.openvino.model_version="
+    openvino_properties+="$openvino_model_version"$'\n'
+  fi
+  if [[ -n $openvino_input_name ]]; then
+    openvino_properties+="model.embedder.$openvino_model_id.openvino.input_name="
+    openvino_properties+="$openvino_input_name"$'\n'
+  fi
+  if [[ -n $openvino_output_name ]]; then
+    openvino_properties+="model.embedder.$openvino_model_id.openvino.output_name="
+    openvino_properties+="$openvino_output_name"$'\n'
+  fi
+  if [[ -n $openvino_priority ]]; then
+    openvino_properties+="model.embedder.$openvino_model_id.openvino.priority="
+    openvino_properties+="$openvino_priority"$'\n'
+  fi
+  if [[ -n $openvino_deadline_ms ]]; then
+    openvino_properties+="model.embedder.openvino.deadline_ms=$openvino_deadline_ms"$'\n'
+  fi
+fi
+
 config_content=$(cat <<EOF
 # Generated by demo-model-download.sh. Rerun the script to refresh this file.
 # The English sentence, tokenizer, POS, lemma, and language models are classpath resources.
@@ -432,6 +741,7 @@ model.embedder.$embedding_provider_id.static.dir=$embedding_provider_dir
 model.embedder.$embedding_provider_id.static.vector_space_id=$embedding_vector_space
 model.embedder.default_id=$embedding_provider_id
 
+$tei_properties$openvino_properties
 $parser_property
 $chunker_property
 EOF
@@ -469,6 +779,12 @@ write_text_file "$target/MODEL-SOURCES.md" "$sources_content"$'\n'
 
 printf '\nDemo model configuration: %s\n' "$config"
 server_classpath=$server_jar:$static_backend_jar
+if [[ $tei_requested == true ]]; then
+  server_classpath+=:$tei_backend_jar
+fi
+if [[ $openvino_requested == true ]]; then
+  server_classpath+=:$openvino_backend_jar
+fi
 printf 'Start the service with:\n  java -cp %q %s --config %q\n' \
   "$server_classpath" org.apache.opennlp.grpc.server.OpenNlpGrpcServer "$config"
 if [[ -z $parser_source || -z $chunker_source ]]; then

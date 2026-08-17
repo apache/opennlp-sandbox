@@ -40,6 +40,8 @@ assert_file_contains() {
 mkdir -p "$test_root/bin"
 printf 'fake jar\n' > "$test_root/server.jar"
 printf 'fake backend jar\n' > "$test_root/static-backend.jar"
+printf 'fake TEI backend jar\n' > "$test_root/tei-backend.jar"
+printf 'fake OpenVINO backend jar\n' > "$test_root/openvino-backend.jar"
 
 cat > "$test_root/bin/java" <<'FAKE_JAVA'
 #!/usr/bin/env bash
@@ -107,6 +109,10 @@ assert_file_contains "$target/MODEL-SOURCES.md" "Apache Maven runtime dependenci
 assert_file_contains "$target/MODEL-SOURCES.md" "No SourceForge 1.5 model is installed"
 assert_file_contains "$run_output" "-cp"
 assert_file_contains "$run_output" "$test_root/server.jar:$test_root/static-backend.jar"
+if grep -Fq "$test_root/tei-backend.jar" "$run_output" \
+    || grep -Fq "$test_root/openvino-backend.jar" "$run_output"; then
+  fail "an unconfigured remote backend leaked into the startup classpath"
+fi
 
 first_count=$(wc -l < "$log_file")
 [[ $first_count -eq 12 ]] || fail "expected 12 installer calls, found $first_count"
@@ -152,6 +158,94 @@ assert_file_contains "$test_root/own-models/MODEL-SOURCES.md" "$own_matrix_check
 if grep -Fq 'minishlab/potion-base-8M' "$own_log"; then
   fail "the public fallback was downloaded despite an operator-trained embedding model"
 fi
+
+remote_config=$test_root/remote-demo-server.properties
+remote_output=$test_root/remote-output.txt
+PATH="$test_root/bin:$PATH" DEMO_TEST_LOG="$test_root/remote-installer.log" \
+  "$script_dir/demo-model-download.sh" \
+  --server-jar "$test_root/server.jar" \
+  --static-backend-jar "$test_root/static-backend.jar" \
+  --tei-backend-jar "$test_root/tei-backend.jar" \
+  --openvino-backend-jar "$test_root/openvino-backend.jar" \
+  --target "$test_root/remote-models" \
+  --config "$remote_config" \
+  --embedding-dir "$own_model" \
+  --embedding-model-id opennlp-legal-demo \
+  --tei-target tei.example.invalid:8080 \
+  --tei-model-id remote-minilm \
+  --tei-vector-space-id minilm-v1 \
+  --tei-use-tls \
+  --tei-deadline-ms 45000 \
+  --tei-no-truncate \
+  --tei-no-normalize \
+  --tei-priority 20 \
+  --openvino-target ovms.example.invalid:9000 \
+  --openvino-model-id remote-ovms \
+  --openvino-model-name minilm \
+  --openvino-vector-space-id minilm-v1 \
+  --openvino-model-version 3 \
+  --openvino-input-name texts \
+  --openvino-output-name embeddings \
+  --openvino-use-tls \
+  --openvino-deadline-ms 45000 \
+  --openvino-priority 10 > "$remote_output"
+assert_file_contains "$remote_config" \
+  "model.embedder.remote-minilm.tei.target=tei.example.invalid:8080"
+assert_file_contains "$remote_config" "model.embedder.remote-minilm.tei.use_tls=true"
+assert_file_contains "$remote_config" "model.embedder.remote-minilm.tei.truncate=false"
+assert_file_contains "$remote_config" "model.embedder.remote-minilm.tei.normalize=false"
+assert_file_contains "$remote_config" \
+  "model.embedder.remote-minilm.tei.vector_space_id=minilm-v1"
+assert_file_contains "$remote_config" "model.embedder.remote-minilm.tei.priority=20"
+assert_file_contains "$remote_config" "model.embedder.tei.deadline_ms=45000"
+assert_file_contains "$remote_config" \
+  "model.embedder.remote-ovms.openvino.target=ovms.example.invalid:9000"
+assert_file_contains "$remote_config" \
+  "model.embedder.remote-ovms.openvino.model_name=minilm"
+assert_file_contains "$remote_config" \
+  "model.embedder.remote-ovms.openvino.model_version=3"
+assert_file_contains "$remote_config" \
+  "model.embedder.remote-ovms.openvino.input_name=texts"
+assert_file_contains "$remote_config" \
+  "model.embedder.remote-ovms.openvino.output_name=embeddings"
+assert_file_contains "$remote_config" "model.embedder.remote-ovms.openvino.use_tls=true"
+assert_file_contains "$remote_config" \
+  "model.embedder.remote-ovms.openvino.vector_space_id=minilm-v1"
+assert_file_contains "$remote_config" "model.embedder.remote-ovms.openvino.priority=10"
+assert_file_contains "$remote_config" "model.embedder.openvino.deadline_ms=45000"
+assert_file_contains "$remote_output" "$test_root/tei-backend.jar"
+assert_file_contains "$remote_output" "$test_root/openvino-backend.jar"
+
+if grep -Fq '.tei.' "$own_config" || grep -Fq '.openvino.' "$own_config"; then
+  fail "an unconfigured remote provider leaked into the generated configuration"
+fi
+
+incomplete_remote_output=$test_root/incomplete-remote.txt
+if PATH="$test_root/bin:$PATH" DEMO_TEST_LOG="$test_root/incomplete-remote.log" \
+  "$script_dir/demo-model-download.sh" \
+  --server-jar "$test_root/server.jar" \
+  --static-backend-jar "$test_root/static-backend.jar" \
+  --target "$test_root/incomplete-remote-models" \
+  --embedding-dir "$own_model" \
+  --tei-target tei.example.invalid:8080 > "$incomplete_remote_output" 2>&1; then
+  fail "an incomplete TEI configuration was accepted"
+fi
+assert_file_contains "$incomplete_remote_output" "--tei-model-id"
+assert_file_contains "$incomplete_remote_output" "--tei-vector-space-id"
+
+incomplete_openvino_output=$test_root/incomplete-openvino.txt
+if PATH="$test_root/bin:$PATH" DEMO_TEST_LOG="$test_root/incomplete-openvino.log" \
+  "$script_dir/demo-model-download.sh" \
+  --server-jar "$test_root/server.jar" \
+  --static-backend-jar "$test_root/static-backend.jar" \
+  --target "$test_root/incomplete-openvino-models" \
+  --embedding-dir "$own_model" \
+  --openvino-target ovms.example.invalid:9000 > "$incomplete_openvino_output" 2>&1; then
+  fail "an incomplete OpenVINO configuration was accepted"
+fi
+assert_file_contains "$incomplete_openvino_output" "--openvino-model-id"
+assert_file_contains "$incomplete_openvino_output" "--openvino-model-name"
+assert_file_contains "$incomplete_openvino_output" "--openvino-vector-space-id"
 
 missing_embedding_output=$test_root/missing-embedding.txt
 if PATH="$test_root/bin:$PATH" DEMO_TEST_LOG="$test_root/missing-embedding.log" \
