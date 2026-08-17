@@ -17,8 +17,13 @@
  */
 package org.apache.opennlp.grpc.profile;
 
+import java.util.List;
+
+import org.apache.opennlp.grpc.v1.AnalysisProfile;
+import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -40,5 +45,32 @@ class ProfileRegistryTest {
         .find(ProfileRegistry.NER_PROFILE_ID).isPresent());
     assertTrue(ProfileRegistry.createDefault(true)
         .find(ProfileRegistry.NER_PROFILE_ID).isPresent());
+  }
+
+  @Test
+  void embedProfileRegisteredOnlyWhenEmbeddingModelsAvailable() {
+    // Mirrors the model catalog, which advertises embedder models only when an embedding
+    // backend is configured: the profile list must not promise embeddings the server
+    // cannot produce.
+    assertFalse(ProfileRegistry.createDefault(false, false, false, false, false, false)
+        .find(ProfileRegistry.EMBED_PROFILE_ID).isPresent());
+    assertTrue(ProfileRegistry.createDefault(false, false, false, false, false, true)
+        .find(ProfileRegistry.EMBED_PROFILE_ID).isPresent());
+  }
+
+  @Test
+  void embedProfileRunsSentenceDetectTokenizeEmbed() {
+    final AnalysisProfile profile =
+        ProfileRegistry.createDefault(false, false, false, false, false, true)
+            .find(ProfileRegistry.EMBED_PROFILE_ID).orElseThrow();
+
+    assertEquals(List.of(
+        PipelineStep.PIPELINE_STEP_SENTENCE_DETECT,
+        PipelineStep.PIPELINE_STEP_TOKENIZE,
+        PipelineStep.PIPELINE_STEP_EMBED), profile.getStepsList());
+    // Embeddings resolve through the composite embedding provider, not the bundle catalog,
+    // so the profile rides the default bundle, which advertises EMBED as a supported step
+    // whenever an embedding model is configured.
+    assertEquals(ProfileRegistry.DEFAULT_BUNDLE_ID, profile.getModelBundle().getBundleId());
   }
 }
