@@ -87,8 +87,8 @@ Natural Earth gazetteer (`PIPELINE_STEP_GEOCODE`, no configuration required, fil
 
 - **opennlp-grpc-api** - v1 analysis, document-shape, and immutable-search protos
   (`org.apache.opennlp.grpc.v1`) plus generated stubs
-- **opennlp-grpc-service** - `OpenNlpGrpcServer`, analysis and search services, the search-provider
-  SPI, and the bounded TurboQuant bundle builder
+- **opennlp-grpc-service** - `OpenNlpGrpcServer`, analysis, search, and vocabulary services, the
+  search and dictionary-format SPIs, and the bounded TurboQuant bundle builder
 - **opennlp-grpc-backend-tei** - optional remote embedding backend for HuggingFace Text
   Embeddings Inference (TEI) gRPC endpoints
 - **opennlp-grpc-backend-openvino** - optional remote embedding backend for OpenVINO
@@ -279,6 +279,57 @@ opens details in a side drawer so the document does not collapse into a narrow c
 The web host loads additional static interfaces through the `WebUiExtension` ServiceLoader API.
 See [opennlp-grpc-webapp/README.md](opennlp-grpc-webapp/README.md) for endpoints, security defaults,
 and command-line options.
+
+## Import a dictionary and learn a vocabulary
+
+`org.apache.opennlp.grpc.v1.OpenNlpVocabularyService` exposes OpenNLP's existing vocabulary
+learning workflow without allowing callers to choose server filesystem paths. The service is
+always registered so clients can discover formats and limits, but imports, learning, and downloads
+are disabled until the operator configures an artifact root:
+
+```ini
+vocabulary.artifact_root=/srv/opennlp/vocabulary-artifacts
+vocabulary.max_dictionary_bytes=67108864
+vocabulary.max_dictionary_entries=1000000
+vocabulary.max_corpus_documents=100000
+vocabulary.max_corpus_bytes=104857600
+vocabulary.max_vocabulary_terms=1000000
+vocabulary.max_concurrent_writes=1
+```
+
+The defaults shown above are conservative per-operation caps. `max_concurrent_writes` is shared by
+dictionary imports and vocabulary builds, so multiple client streams cannot multiply their bounded
+working sets without an explicit operator choice. Values are validated against fixed safety
+ceilings at startup.
+
+The four RPCs form one explicit artifact flow:
+
+1. `ListDictionaryFormats` returns built-in and extension formats plus the effective limits.
+2. `ImportDictionary` accepts a start frame followed by bounded encoded byte frames. The built-ins
+   accept UTF-8 headword-and-definition TSV, one UTF-8 headword per line, and OpenNLP dictionary
+   XML. The server publishes a normalized, hashed dictionary artifact atomically.
+3. `LearnVocabulary` accepts a start frame followed by `OpenNlpDocument` values. Each document's
+   `raw_text` contributes corpus counts, and the imported dictionary preserves required headwords.
+4. `DownloadVocabulary` streams the exact hashed UTF-8 `term<TAB>count<TAB>source` artifact. The
+   downloaded table can be supplied to the OpenNLP embeddings `DistillModel` workflow as its terms
+   input.
+
+This RPC learns and persists vocabulary counts. It does not run a teacher model or train embedding
+weights inside the long-running server. Distillation remains an explicit offline command so its
+teacher identity, licensing, resource use, and output location stay under operator control.
+
+Dictionary encodings are extensible without changing the wire contract. A provider implements
+`org.apache.opennlp.grpc.vocabulary.DictionaryFormatProvider`, returns a stable custom selector,
+and registers its class in:
+
+```text
+META-INF/services/org.apache.opennlp.grpc.vocabulary.DictionaryFormatProvider
+```
+
+Provider jars go on the server classpath. Duplicate selectors, malformed descriptors, unspecified
+standard values, and unstable custom ids fail server startup. Artifact descriptors retain format,
+source and license metadata, SHA-256, byte size, term counts, learning controls, and creation time.
+Existing artifacts are verified before they are admitted again after restart.
 
 ## Build and explore a bounded legal-passage index
 

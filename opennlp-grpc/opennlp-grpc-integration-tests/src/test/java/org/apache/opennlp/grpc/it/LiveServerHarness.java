@@ -32,6 +32,7 @@ import io.grpc.StatusRuntimeException;
 import org.apache.opennlp.grpc.v1.GetServiceInfoRequest;
 import org.apache.opennlp.grpc.v1.OpenNlpAnalysisServiceGrpc;
 import org.apache.opennlp.grpc.v1.OpenNlpSearchServiceGrpc;
+import org.apache.opennlp.grpc.v1.OpenNlpVocabularyServiceGrpc;
 
 /**
  * Spawns the shaded {@code opennlp-grpc-server} SNAPSHOT jar as a separate JVM process
@@ -135,6 +136,11 @@ final class LiveServerHarness implements AutoCloseable {
   /** Returns a blocking client for immutable search indexes. */
   OpenNlpSearchServiceGrpc.OpenNlpSearchServiceBlockingStub searchClient() {
     return OpenNlpSearchServiceGrpc.newBlockingStub(channel);
+  }
+
+  /** Returns a blocking client for vocabulary discovery and downloads. */
+  OpenNlpVocabularyServiceGrpc.OpenNlpVocabularyServiceBlockingStub vocabularyClient() {
+    return OpenNlpVocabularyServiceGrpc.newBlockingStub(channel);
   }
 
   /** Returns the loopback target of the spawned gRPC server. */

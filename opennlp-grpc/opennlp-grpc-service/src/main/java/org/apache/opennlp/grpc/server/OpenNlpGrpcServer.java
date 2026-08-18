@@ -44,7 +44,11 @@ import org.apache.opennlp.grpc.search.OpenNlpSearchServiceImpl;
 import org.apache.opennlp.grpc.search.SearchIndexRegistry;
 import org.apache.opennlp.grpc.v1.OpenNlpAnalysisServiceGrpc;
 import org.apache.opennlp.grpc.v1.OpenNlpSearchServiceGrpc;
+import org.apache.opennlp.grpc.v1.OpenNlpVocabularyServiceGrpc;
 import org.apache.opennlp.grpc.v1.server.OpenNlpAnalysisServiceImpl;
+import org.apache.opennlp.grpc.vocabulary.DictionaryFormatRegistry;
+import org.apache.opennlp.grpc.vocabulary.OpenNlpVocabularyServiceImpl;
+import org.apache.opennlp.grpc.vocabulary.VocabularyArtifactStore;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -182,6 +186,9 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     this.searchIndexRegistry = SearchIndexRegistry.fromConfiguration(configuration);
     this.dynamicSearchIndexRegistry = enableDynamicSearch
         ? new DynamicSearchIndexRegistry() : DynamicSearchIndexRegistry.disabled();
+    final DictionaryFormatRegistry dictionaryFormats = DictionaryFormatRegistry.discover();
+    final VocabularyArtifactStore vocabularyArtifacts =
+        VocabularyArtifactStore.fromConfiguration(configuration, dictionaryFormats);
     final ProfileRegistry profileRegistry = modelBundleCache.createProfileRegistry();
     final BasicDocumentAnalyzer documentAnalyzer =
         new BasicDocumentAnalyzer(profileRegistry, modelBundleCache);
@@ -214,6 +221,9 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
                 dynamicSearchIndexRegistry,
                 modelBundleCache.getEmbeddingProvider()),
             new EagerHeadersInterceptor()))
+        .addService(ServerInterceptors.intercept(
+            new OpenNlpVocabularyServiceImpl(dictionaryFormats, vocabularyArtifacts),
+            new EagerHeadersInterceptor()))
         .addService(healthStatusManager.getHealthService())
         .maxInboundMessageSize(maxInboundMessageSize);
 
@@ -231,6 +241,9 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
         HealthCheckResponse.ServingStatus.SERVING);
     healthStatusManager.setStatus(
         OpenNlpSearchServiceGrpc.SERVICE_NAME,
+        HealthCheckResponse.ServingStatus.SERVING);
+    healthStatusManager.setStatus(
+        OpenNlpVocabularyServiceGrpc.SERVICE_NAME,
         HealthCheckResponse.ServingStatus.SERVING);
     logger.info("Started OpenNlpGrpcServer on port {}", server.getPort());
 

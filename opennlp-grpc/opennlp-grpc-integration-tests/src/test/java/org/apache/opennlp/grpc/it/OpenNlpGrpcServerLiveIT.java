@@ -67,6 +67,7 @@ import org.apache.opennlp.grpc.v1.EmbeddingGranularity;
 import org.apache.opennlp.grpc.v1.GetServiceInfoRequest;
 import org.apache.opennlp.grpc.v1.LayerIdentity;
 import org.apache.opennlp.grpc.v1.ListModelBundlesRequest;
+import org.apache.opennlp.grpc.v1.ListDictionaryFormatsRequest;
 import org.apache.opennlp.grpc.v1.ModelDescriptor;
 import org.apache.opennlp.grpc.v1.NormalizationRung;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
@@ -79,6 +80,7 @@ import org.apache.opennlp.grpc.v1.SentenceDetectorSelector;
 import org.apache.opennlp.grpc.v1.StandardLayer;
 import org.apache.opennlp.grpc.v1.StandardResource;
 import org.apache.opennlp.grpc.v1.StandardSentenceDetectorEngine;
+import org.apache.opennlp.grpc.v1.StandardDictionaryFormat;
 import org.apache.opennlp.grpc.v1.StandardTokenizerEngine;
 import org.apache.opennlp.grpc.v1.StemmerAlgorithm;
 import org.apache.opennlp.grpc.v1.StemmerSpec;
@@ -211,6 +213,22 @@ class OpenNlpGrpcServerLiveIT {
     assertEquals("A remedy follows a violation.",
         response.getHits(0).getSourceDocument().getRawText());
     assertEquals("minilm-live-v1", response.getQueryEmbeddingRoute().getVectorSpaceId());
+  }
+
+  @Test
+  void discoversServiceLoadedDictionaryFormatsThroughShadedServer() {
+    final var response = harness.vocabularyClient().listDictionaryFormats(
+        ListDictionaryFormatsRequest.getDefaultInstance());
+
+    assertFalse(response.getWritesEnabled());
+    assertEquals(List.of(
+        StandardDictionaryFormat.STANDARD_DICTIONARY_FORMAT_HEADWORD_DEFINITION_TSV,
+        StandardDictionaryFormat.STANDARD_DICTIONARY_FORMAT_HEADWORD_LINES,
+        StandardDictionaryFormat.STANDARD_DICTIONARY_FORMAT_OPENNLP_XML),
+        response.getFormatsList().stream()
+            .map(format -> format.getFormat().getStandard())
+            .toList());
+    assertEquals(1, response.getMaxConcurrentWrites());
   }
 
   @Test

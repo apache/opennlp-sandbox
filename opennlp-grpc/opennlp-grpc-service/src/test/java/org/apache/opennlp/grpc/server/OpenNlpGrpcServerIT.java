@@ -59,9 +59,11 @@ import org.apache.opennlp.grpc.v1.EmbedTextRequest;
 import org.apache.opennlp.grpc.v1.EmbedTextResponse;
 import org.apache.opennlp.grpc.v1.GetServiceInfoRequest;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesRequest;
+import org.apache.opennlp.grpc.v1.ListDictionaryFormatsRequest;
 import org.apache.opennlp.grpc.v1.OpenNlpAnalysisServiceGrpc;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.OpenNlpSearchServiceGrpc;
+import org.apache.opennlp.grpc.v1.OpenNlpVocabularyServiceGrpc;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -278,6 +280,20 @@ class OpenNlpGrpcServerIT {
   }
 
   @Test
+  void exposesVocabularyFormatsAndAdvertisesTheWriteDisabledServiceAsServing() {
+    final var formats = OpenNlpVocabularyServiceGrpc.newBlockingStub(channel)
+        .listDictionaryFormats(ListDictionaryFormatsRequest.getDefaultInstance());
+    final HealthCheckResponse health = HealthGrpc.newBlockingStub(channel)
+        .check(HealthCheckRequest.newBuilder()
+            .setService(OpenNlpVocabularyServiceGrpc.SERVICE_NAME)
+            .build());
+
+    assertEquals(3, formats.getFormatsCount());
+    assertFalse(formats.getWritesEnabled());
+    assertEquals(HealthCheckResponse.ServingStatus.SERVING, health.getStatus());
+  }
+
+  @Test
   void reflectionIsDisabledByDefaultAndEnumeratesServicesWhenEnabled() throws Exception {
     final ReflectionResult disabled = listServices(channel);
     assertEquals(Status.Code.UNIMPLEMENTED, Status.fromThrowable(disabled.error()).getCode());
@@ -301,6 +317,8 @@ class OpenNlpGrpcServerIT {
           .anyMatch(service -> OpenNlpAnalysisServiceGrpc.SERVICE_NAME.equals(service.getName())));
       assertTrue(enabled.response().getListServicesResponse().getServiceList().stream()
           .anyMatch(service -> OpenNlpSearchServiceGrpc.SERVICE_NAME.equals(service.getName())));
+      assertTrue(enabled.response().getListServicesResponse().getServiceList().stream()
+          .anyMatch(service -> OpenNlpVocabularyServiceGrpc.SERVICE_NAME.equals(service.getName())));
     } finally {
       reflectionServer.stop();
       if (reflectionChannel != null) {
