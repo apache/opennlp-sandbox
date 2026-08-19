@@ -129,8 +129,13 @@ class VocabularyArtifactStoreTest {
 
     assertThrows(java.io.IOException.class, () -> store.importDictionary(
         importStart("too many"), "one\tfirst\ntwo\tsecond\n".getBytes(StandardCharsets.UTF_8)));
-    try (var artifacts = Files.list(temporaryDirectory.resolve("dictionaries"))) {
-      assertEquals(0, artifacts.count());
+    // Kind directories appear on the first successful publication, so a rejected
+    // import leaves the directory absent or empty, and never a partial artifact.
+    final Path dictionaries = temporaryDirectory.resolve("dictionaries");
+    if (Files.exists(dictionaries)) {
+      try (var artifacts = Files.list(dictionaries)) {
+        assertEquals(0, artifacts.count());
+      }
     }
   }
 
