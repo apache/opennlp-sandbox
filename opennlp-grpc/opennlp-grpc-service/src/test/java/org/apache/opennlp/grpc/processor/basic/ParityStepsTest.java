@@ -25,7 +25,7 @@ import org.apache.opennlp.grpc.v1.AlignmentRun;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
-import org.apache.opennlp.grpc.v1.NormalizationRung;
+import org.apache.opennlp.grpc.v1.Normalizer;
 import org.apache.opennlp.grpc.v1.NormalizationSpec;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
@@ -89,16 +89,16 @@ class ParityStepsTest {
     final String rawText = "ok   :-)";
     final OpenNlpDocument.Builder document = OpenNlpDocument.newBuilder().setRawText(rawText);
     final NormalizationSpec spec = NormalizationSpec.newBuilder()
-        .addRungs(NormalizationRung.NORMALIZATION_RUNG_EMOTICON_TO_EMOJI)
-        .addRungs(NormalizationRung.NORMALIZATION_RUNG_WHITESPACE)
+        .addNormalizers(Normalizer.NORMALIZER_EMOTICON_TO_EMOJI)
+        .addNormalizers(Normalizer.NORMALIZER_WHITESPACE)
         .build();
     final List<ProcessingDiagnostic> diagnostics = new ArrayList<>();
     ClassicStepRunner.normalize(rawText, spec, document, diagnostics);
     assertEquals("ok " + cp(0x1F642), document.getNormalization().getNormalizedText());
     // Canonical order is enum order (WHITESPACE before EMOTICON_TO_EMOJI), not request order.
-    assertEquals(List.of("NORMALIZATION_RUNG_WHITESPACE",
-            "NORMALIZATION_RUNG_EMOTICON_TO_EMOJI"),
-        document.getNormalization().getAppliedRungsList());
+    assertEquals(List.of("NORMALIZER_WHITESPACE",
+            "NORMALIZER_EMOTICON_TO_EMOJI"),
+        document.getNormalization().getAppliedNormalizersList());
     // Runs cover both texts exactly (UTF-16 units before the encoding pass).
     int original = 0;
     int normalized = 0;
@@ -111,10 +111,10 @@ class ParityStepsTest {
   }
 
   @Test
-  void normalizeWithoutAlignmentWhenOpaqueRungPermitted() {
+  void normalizeWithoutAlignmentWhenOpaqueNormalizerPermitted() {
     final OpenNlpDocument.Builder document = OpenNlpDocument.newBuilder().setRawText("Cafe" + cp(0x0301) + "");
     final NormalizationSpec spec = NormalizationSpec.newBuilder()
-        .addRungs(NormalizationRung.NORMALIZATION_RUNG_NFC)
+        .addNormalizers(Normalizer.NORMALIZER_NFC)
         .setRequireAlignment(false)
         .build();
     final List<ProcessingDiagnostic> diagnostics = new ArrayList<>();
@@ -168,8 +168,8 @@ class ParityStepsTest {
     final String rawText = "ok   :-)";
     final OpenNlpDocument.Builder document = OpenNlpDocument.newBuilder().setRawText(rawText);
     final NormalizationSpec spec = NormalizationSpec.newBuilder()
-        .addRungs(NormalizationRung.NORMALIZATION_RUNG_EMOTICON_TO_EMOJI)
-        .addRungs(NormalizationRung.NORMALIZATION_RUNG_WHITESPACE)
+        .addNormalizers(Normalizer.NORMALIZER_EMOTICON_TO_EMOJI)
+        .addNormalizers(Normalizer.NORMALIZER_WHITESPACE)
         .build();
     ClassicStepRunner.normalize(rawText, spec, document, new ArrayList<>());
     DocumentOffsetEncoder.apply(document, rawText, OffsetEncoding.OFFSET_ENCODING_UTF8_BYTE);
@@ -210,20 +210,20 @@ class ParityStepsTest {
     assertTrue(e.getMessage().contains("zz"));
   }
 
-  // ---------- Rung mapping invariants ----------
+  // ---------- Normalizer mapping invariants ----------
 
   @Test
-  void everyDeclaredRungMapsIntoTheBuilder() {
-    // Mirrors the pipeline-step policy test: a rung added to the proto without a builder
+  void everyDeclaredNormalizerMapsIntoTheBuilder() {
+    // Mirrors the pipeline-step policy test: a normalizer added to the proto without a builder
     // mapping must fail here, not at request time.
-    for (final NormalizationRung rung : NormalizationRung.values()) {
-      if (rung == NormalizationRung.NORMALIZATION_RUNG_UNSPECIFIED
-          || rung == NormalizationRung.UNRECOGNIZED) {
+    for (final Normalizer normalizer : Normalizer.values()) {
+      if (normalizer == Normalizer.NORMALIZER_UNSPECIFIED
+          || normalizer == Normalizer.UNRECOGNIZED) {
         continue;
       }
       final TextNormalizer.Builder builder = TextNormalizer.builder();
-      NormalizationRungs.apply(builder, rung); // must not throw
-      if (!NormalizationRungs.OFFSET_OPAQUE.contains(rung)) {
+      Normalizers.apply(builder, normalizer); // must not throw
+      if (!Normalizers.OFFSET_OPAQUE.contains(normalizer)) {
         builder.buildAligned(); // offset-aware claims must hold against the library
       }
     }

@@ -42,10 +42,10 @@ class TermLayerWireContractTest {
     final Descriptor spec = layers.getMessageType();
     assertEquals(1, requiredField(spec, "qualifier").getNumber());
 
-    final FieldDescriptor rungs = requiredField(spec, "normalization_rungs");
-    assertEquals(2, rungs.getNumber());
-    assertTrue(rungs.isRepeated());
-    assertEquals("NormalizationRung", rungs.getEnumType().getName());
+    final FieldDescriptor normalizers = requiredField(spec, "normalizers");
+    assertEquals(2, normalizers.getNumber());
+    assertTrue(normalizers.isRepeated());
+    assertEquals("Normalizer", normalizers.getEnumType().getName());
 
     final FieldDescriptor stemmer = requiredField(spec, "stemmer");
     assertEquals(3, stemmer.getNumber());

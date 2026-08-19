@@ -69,7 +69,7 @@ import org.apache.opennlp.grpc.v1.LayerIdentity;
 import org.apache.opennlp.grpc.v1.ListModelBundlesRequest;
 import org.apache.opennlp.grpc.v1.ListDictionaryFormatsRequest;
 import org.apache.opennlp.grpc.v1.ModelDescriptor;
-import org.apache.opennlp.grpc.v1.NormalizationRung;
+import org.apache.opennlp.grpc.v1.Normalizer;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpAnalysisServiceGrpc;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
@@ -390,8 +390,8 @@ class OpenNlpGrpcServerLiveIT {
                     .setStandard(StandardTokenizerEngine.STANDARD_TOKENIZER_ENGINE_WHITESPACE))
                 .addTermLayers(TermLayerSpec.newBuilder()
                     .setQualifier("folded")
-                    .addNormalizationRungs(
-                        NormalizationRung.NORMALIZATION_RUNG_STRIP_INVISIBLE))
+                    .addNormalizers(
+                        Normalizer.NORMALIZER_STRIP_INVISIBLE))
                 .setTermVector(TermVectorSpec.newBuilder()
                     .setSourceLayer(LayerIdentity.newBuilder()
                         .setStandard(StandardLayer.STANDARD_LAYER_TERMS)
@@ -754,11 +754,11 @@ class OpenNlpGrpcServerLiveIT {
                 .build())
             .addTermLayers(TermLayerSpec.newBuilder()
                 .setQualifier("court-folded")
-                .addNormalizationRungs(
-                    NormalizationRung.NORMALIZATION_RUNG_STRIP_INVISIBLE)
-                .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_WHITESPACE)
-                .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_FULL_CASE_FOLD)
-                .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_ACCENT_FOLD)
+                .addNormalizers(
+                    Normalizer.NORMALIZER_STRIP_INVISIBLE)
+                .addNormalizers(Normalizer.NORMALIZER_WHITESPACE)
+                .addNormalizers(Normalizer.NORMALIZER_FULL_CASE_FOLD)
+                .addNormalizers(Normalizer.NORMALIZER_ACCENT_FOLD)
                 .setStemmer(StemmerSpec.newBuilder()
                     .setAlgorithm(StemmerAlgorithm.STEMMER_ALGORITHM_PORTER)))
             .setTermVector(TermVectorSpec.newBuilder()

@@ -41,7 +41,7 @@ class AlignmentRunsTest {
 
   @Test
   void supplementaryCharacterCopiedThroughFormsAnEqualRun() {
-    // The emoji is one code point but two UTF-16 units; an offset-transparent rung copies it
+    // The emoji is one code point but two UTF-16 units; an offset-transparent normalizer copies it
     // unchanged, so the run covering it must be equal regardless of its unit length.
     final String rawText = "a " + cp(0x1F642) + " b";
     final var aligned = TextNormalizer.builder().whitespace().buildAligned()

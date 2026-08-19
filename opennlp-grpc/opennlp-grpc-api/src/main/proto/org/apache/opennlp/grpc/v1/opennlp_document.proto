@@ -592,15 +592,15 @@ enum EmbeddingGranularity {
 // between raw_text and normalized_text without re-implementing the fold logic:
 // runs are contiguous and ordered, covering both texts exactly.
 message NormalizationResult {
-  // The normalized text produced by the requested rungs, applied in order.
+  // The normalized text produced by the requested normalizers, applied in order.
   string normalized_text = 1;
   // Ordered edit runs from raw_text to normalized_text. The units of both sides
   // are the response's OffsetEncoding (UTF-8 bytes by default), converted by the
   // server, so clients consume them in the same unit as every AnnotationSpan.
   repeated AlignmentRun alignment = 2;
-  // The rungs that were applied, in application order, using
-  // NormalizationRung enum value names.
-  repeated string applied_rungs = 3;
+  // The normalizers that were applied, in application order, using
+  // Normalizer enum value names.
+  repeated string applied_normalizers = 3;
 }
 
 // One run of a text alignment: `original_units` units of raw_text correspond to

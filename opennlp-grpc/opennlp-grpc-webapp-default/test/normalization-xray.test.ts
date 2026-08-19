@@ -40,7 +40,7 @@ function xrayResponse(normalization: unknown, rawText = "Hello   world") {
 function sampleView(): NormalizationXrayView {
   const view = readNormalizationXray(xrayResponse({
     normalizedText: "Hello world",
-    appliedRungs: ["NORMALIZATION_RUNG_STRIP_INVISIBLE", "NORMALIZATION_RUNG_WHITESPACE"],
+    appliedNormalizers: ["NORMALIZER_STRIP_INVISIBLE", "NORMALIZER_WHITESPACE"],
     alignment: [
       { originalUnits: 5, normalizedUnits: 5, equal: true },
       { originalUnits: 3, normalizedUnits: 1 },
@@ -59,7 +59,7 @@ describe("normalization x-ray reader", () => {
 
     expect(view.rawText).toBe("Hello   world");
     expect(view.normalizedText).toBe("Hello world");
-    expect(view.appliedRungs).toEqual(["NORMALIZATION_RUNG_STRIP_INVISIBLE", "NORMALIZATION_RUNG_WHITESPACE"]);
+    expect(view.appliedNormalizers).toEqual(["NORMALIZER_STRIP_INVISIBLE", "NORMALIZER_WHITESPACE"]);
     expect(view.runs).toEqual([
       { rawStart: 0, rawEnd: 5, normStart: 0, normEnd: 5, equal: true },
       { rawStart: 5, rawEnd: 8, normStart: 5, normEnd: 6, equal: false },
@@ -78,7 +78,7 @@ describe("normalization x-ray reader", () => {
   it("counts a surrogate-pair emoji as two units on the raw side", () => {
     const view = readNormalizationXray(xrayResponse({
       normalizedText: "a:b",
-      appliedRungs: ["NORMALIZATION_RUNG_EMOJI_TO_EMOTICON"],
+      appliedNormalizers: ["NORMALIZER_EMOJI_TO_EMOTICON"],
       alignment: [
         { originalUnits: 1, normalizedUnits: 1, equal: true },
         { originalUnits: 2, normalizedUnits: 1 },
@@ -97,7 +97,7 @@ describe("normalization x-ray reader", () => {
   it("treats unit counts omitted by proto3 JSON as zero", () => {
     const view = readNormalizationXray(xrayResponse({
       normalizedText: "ab",
-      appliedRungs: [],
+      appliedNormalizers: [],
       alignment: [
         { normalizedUnits: 1 },
         { originalUnits: 1, normalizedUnits: 1, equal: true },
@@ -113,7 +113,7 @@ describe("normalization x-ray reader", () => {
   it("drops malformed runs and tolerates trailing data past the text lengths", () => {
     const malformed = readNormalizationXray(xrayResponse({
       normalizedText: "Hello world",
-      appliedRungs: ["NORMALIZATION_RUNG_WHITESPACE", 42, ""],
+      appliedNormalizers: ["NORMALIZER_WHITESPACE", 42, ""],
       alignment: [
         { originalUnits: 6, normalizedUnits: 6, equal: true },
         { originalUnits: "three", normalizedUnits: 1 },
@@ -123,11 +123,11 @@ describe("normalization x-ray reader", () => {
     expect(malformed?.runs).toEqual([
       { rawStart: 0, rawEnd: 6, normStart: 0, normEnd: 6, equal: true },
     ]);
-    expect(malformed?.appliedRungs).toEqual(["NORMALIZATION_RUNG_WHITESPACE"]);
+    expect(malformed?.appliedNormalizers).toEqual(["NORMALIZER_WHITESPACE"]);
 
     const overrunning = readNormalizationXray(xrayResponse({
       normalizedText: "Hello world",
-      appliedRungs: [],
+      appliedNormalizers: [],
       alignment: [
         { originalUnits: 6, normalizedUnits: 6, equal: true },
         { originalUnits: 100, normalizedUnits: 1 },
@@ -168,13 +168,13 @@ describe("normalization x-ray renderer", () => {
     expect(segments[1]?.classList.contains("is-equal")).toBe(false);
   });
 
-  it("shows applied rungs as chips with a run summary caption", () => {
+  it("shows applied normalizers as chips with a run summary caption", () => {
     const container = document.createElement("section");
     renderNormalizationXray(container, sampleView());
 
     const chips = [...container.querySelectorAll<HTMLElement>(".xray-chip")];
     expect(chips.map((chip) => chip.textContent)).toEqual(["strip invisible", "whitespace"]);
-    expect(chips[0]?.title).toBe("NORMALIZATION_RUNG_STRIP_INVISIBLE");
+    expect(chips[0]?.title).toBe("NORMALIZER_STRIP_INVISIBLE");
     expect(container.querySelector(".xray-caption")?.textContent).toBe("3 alignment runs, 1 changed");
   });
 
@@ -208,7 +208,7 @@ describe("normalization x-ray renderer", () => {
   it("marks segments emptied by a run with an empty-state class", () => {
     const view = readNormalizationXray(xrayResponse({
       normalizedText: "b",
-      appliedRungs: ["NORMALIZATION_RUNG_STRIP_INVISIBLE"],
+      appliedNormalizers: ["NORMALIZER_STRIP_INVISIBLE"],
       alignment: [
         { originalUnits: 1 },
         { originalUnits: 1, normalizedUnits: 1, equal: true },

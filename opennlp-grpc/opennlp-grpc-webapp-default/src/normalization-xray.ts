@@ -22,7 +22,7 @@ import { asciiLowerCase, replaceCharacter, withoutPrefix } from "./text-utils";
 export interface NormalizationXrayView {
   rawText: string;
   normalizedText: string;
-  appliedRungs: string[];
+  appliedNormalizers: string[];
   runs: NormalizationRunView[];
 }
 
@@ -45,10 +45,10 @@ export function readNormalizationXray(response: unknown): NormalizationXrayView 
 
   const rawText = stringValue(document.rawText);
   const normalizedText = stringValue(normalization.normalizedText);
-  const appliedRungs = (Array.isArray(normalization.appliedRungs) ? normalization.appliedRungs : [])
+  const appliedNormalizers = (Array.isArray(normalization.appliedNormalizers) ? normalization.appliedNormalizers : [])
     .flatMap((value) => {
-      const rung = optionalString(value);
-      return rung ? [rung] : [];
+      const normalizer = optionalString(value);
+      return normalizer ? [normalizer] : [];
     });
 
   const runs: NormalizationRunView[] = [];
@@ -78,7 +78,7 @@ export function readNormalizationXray(response: unknown): NormalizationXrayView 
     normCursor += normalizedUnits;
   }
 
-  return { rawText, normalizedText, appliedRungs, runs };
+  return { rawText, normalizedText, appliedNormalizers, runs };
 }
 
 /** Renders the two-pane normalization X-ray into the given container. */
@@ -95,21 +95,21 @@ export function renderNormalizationXray(container: HTMLElement, view: Normalizat
   caption.textContent = `${view.runs.length} alignment ${view.runs.length === 1 ? "run" : "runs"}, ${changed} changed`;
   heading.append(title, caption);
 
-  const rungs = document.createElement("div");
-  rungs.className = "xray-rungs";
-  rungs.setAttribute("aria-label", "Applied normalization rungs");
-  if (view.appliedRungs.length === 0) {
+  const normalizers = document.createElement("div");
+  normalizers.className = "xray-normalizers";
+  normalizers.setAttribute("aria-label", "Applied normalizers");
+  if (view.appliedNormalizers.length === 0) {
     const chip = document.createElement("span");
     chip.className = "xray-chip is-empty";
-    chip.textContent = "No rungs reported";
-    rungs.append(chip);
+    chip.textContent = "No normalizers reported";
+    normalizers.append(chip);
   }
-  for (const rung of view.appliedRungs) {
+  for (const normalizer of view.appliedNormalizers) {
     const chip = document.createElement("span");
     chip.className = "xray-chip";
-    chip.textContent = rungLabel(rung);
-    chip.title = rung;
-    rungs.append(chip);
+    chip.textContent = normalizerLabel(normalizer);
+    chip.title = normalizer;
+    normalizers.append(chip);
   }
 
   const panes = document.createElement("div");
@@ -119,7 +119,7 @@ export function renderNormalizationXray(container: HTMLElement, view: Normalizat
     xrayPane(panes, "Normalized text", view, "normalized"),
   );
 
-  container.append(heading, rungs, panes);
+  container.append(heading, normalizers, panes);
 }
 
 function xrayPane(
@@ -192,6 +192,6 @@ function unitCount(value: unknown): number | undefined {
   return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : undefined;
 }
 
-function rungLabel(rung: string): string {
-  return asciiLowerCase(replaceCharacter(withoutPrefix(rung, "NORMALIZATION_RUNG_"), "_", " "));
+function normalizerLabel(normalizer: string): string {
+  return asciiLowerCase(replaceCharacter(withoutPrefix(normalizer, "NORMALIZER_"), "_", " "));
 }

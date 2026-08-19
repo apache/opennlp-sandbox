@@ -69,7 +69,7 @@ enum PipelineStep {
   // from CHUNK (which is segmentation for embedding). Requires POS_TAG (and thus TOKENIZE).
   PIPELINE_STEP_SYNTACTIC_CHUNK = 12;
   // Offset-aware text normalization. No preconditions; runs on raw text and
-  // populates OpenNlpDocument.normalization. Configure the rungs with
+  // populates OpenNlpDocument.normalization. Configure the normalizers with
   // AnalysisProfile.normalization; requesting the step without a spec =>
   // INVALID_ARGUMENT.
   PIPELINE_STEP_NORMALIZE = 13;
@@ -132,13 +132,13 @@ message TermLayerSpec {
   // Caller-owned stable identity for this analyzer result. Must be non-blank
   // and unique across all term layers produced by the profile.
   string qualifier = 1;
-  // Per-token normalization rungs. They are deduplicated and applied in
+  // Per-token normalizers. They are deduplicated and applied in
   // canonical enum order, independent of request order. A token whose final
   // value is empty is omitted from this term layer and from aggregates sourced
   // from it.
-  repeated NormalizationRung normalization_rungs = 2;
+  repeated Normalizer normalizers = 2;
   // Optional final stemmer. Unlike the standalone STEM step, this receives
-  // exactly the output of normalization_rungs with no implicit case folding.
+  // exactly the output of normalizers with no implicit case folding.
   optional StemmerSpec stemmer = 3;
 }
 
@@ -323,7 +323,7 @@ message AnalysisProfile {
   // one. Unlike span producers, a union returns one parse tree per engine rather than a
   // merged tree (see AnnotatedSentence.parse_trees); MergeStrategy is ignored. See EnginePolicy.
   EnginePolicy parse_engine_policy = 8;
-  // Rungs for PIPELINE_STEP_NORMALIZE. Required when that step is requested.
+  // Normalizers for PIPELINE_STEP_NORMALIZE. Required when that step is requested.
   NormalizationSpec normalization = 9;
   // Open tokenizer selector. Unset or "model" selects the bundle's TokenizerME.
   // "uax29" selects the rule-based
@@ -390,61 +390,61 @@ message AnalysisProfile {
 
   // Configurable per-token term identities rendered as qualified
   // STANDARD_LAYER_TERMS document layers. Requires TOKENIZE. An entry must
-  // contain at least one normalization rung or a stemmer.
+  // contain at least one normalizer or a stemmer.
   repeated TermLayerSpec term_layers = 21;
 }
 
-// Configuration for PIPELINE_STEP_NORMALIZE: which rungs run, in the order the
+// Configuration for PIPELINE_STEP_NORMALIZE: which normalizers run, in the order the
 // server applies them (the library's canonical builder order, not list order).
 message NormalizationSpec {
-  // The rungs to apply. Empty while the step is requested => INVALID_ARGUMENT.
-  repeated NormalizationRung rungs = 1;
-  // When true (the default), every requested rung must be offset-aware so the
-  // response carries a complete alignment; requesting an offset-opaque rung
+  // The normalizers to apply. Empty while the step is requested => INVALID_ARGUMENT.
+  repeated Normalizer normalizers = 1;
+  // When true (the default), every requested normalizer must be offset-aware so the
+  // response carries a complete alignment; requesting an offset-opaque normalizer
   // (NFC, NFKC, CASE_FOLD, ACCENT_FOLD, CONFUSABLE_FOLD) => INVALID_ARGUMENT.
-  // When false, opaque rungs are permitted: the response carries
+  // When false, opaque normalizers are permitted: the response carries
   // normalized_text without alignment runs, plus a diagnostic.
   optional bool require_alignment = 2;
 }
 
-// A normalization rung of the library's TextNormalizer builder. The offset-aware
+// One normalizer of the library's TextNormalizer builder. The offset-aware
 // subset (everything except NFC, NFKC, CASE_FOLD, ACCENT_FOLD, CONFUSABLE_FOLD)
 // composes into an aligned pipeline that reports exact span mappings.
-enum NormalizationRung {
-  // No normalization rung was selected.
-  NORMALIZATION_RUNG_UNSPECIFIED = 0;
+enum Normalizer {
+  // No normalizer was selected.
+  NORMALIZER_UNSPECIFIED = 0;
   // Remove invisible formatting characters.
-  NORMALIZATION_RUNG_STRIP_INVISIBLE = 1;
+  NORMALIZER_STRIP_INVISIBLE = 1;
   // Apply Unicode canonical composition.
-  NORMALIZATION_RUNG_NFC = 2;
+  NORMALIZER_NFC = 2;
   // Apply Unicode compatibility composition.
-  NORMALIZATION_RUNG_NFKC = 3;
+  NORMALIZER_NFKC = 3;
   // Collapse whitespace, including line breaks.
-  NORMALIZATION_RUNG_WHITESPACE = 4;
+  NORMALIZER_WHITESPACE = 4;
   // Collapse whitespace while retaining line breaks.
-  NORMALIZATION_RUNG_WHITESPACE_PRESERVE_LINE_BREAKS = 5;
+  NORMALIZER_WHITESPACE_PRESERVE_LINE_BREAKS = 5;
   // Normalize quotation-mark variants.
-  NORMALIZATION_RUNG_QUOTES = 6;
+  NORMALIZER_QUOTES = 6;
   // Normalize dash variants.
-  NORMALIZATION_RUNG_DASHES = 7;
+  NORMALIZER_DASHES = 7;
   // Normalize digit variants.
-  NORMALIZATION_RUNG_DIGITS = 8;
+  NORMALIZER_DIGITS = 8;
   // Normalize ellipsis variants.
-  NORMALIZATION_RUNG_ELLIPSIS = 9;
+  NORMALIZER_ELLIPSIS = 9;
   // Normalize bullet variants.
-  NORMALIZATION_RUNG_BULLETS = 10;
+  NORMALIZER_BULLETS = 10;
   // Apply simple Unicode case folding.
-  NORMALIZATION_RUNG_CASE_FOLD = 11;
+  NORMALIZER_CASE_FOLD = 11;
   // Apply full Unicode case folding with length-changing mappings.
-  NORMALIZATION_RUNG_FULL_CASE_FOLD = 12;
+  NORMALIZER_FULL_CASE_FOLD = 12;
   // Remove accents through Unicode decomposition and mark removal.
-  NORMALIZATION_RUNG_ACCENT_FOLD = 13;
+  NORMALIZER_ACCENT_FOLD = 13;
   // Convert supported emoji to text emoticons.
-  NORMALIZATION_RUNG_EMOJI_TO_EMOTICON = 14;
+  NORMALIZER_EMOJI_TO_EMOTICON = 14;
   // Convert supported text emoticons to emoji.
-  NORMALIZATION_RUNG_EMOTICON_TO_EMOJI = 15;
+  NORMALIZER_EMOTICON_TO_EMOJI = 15;
   // Fold Unicode confusables to their skeleton form.
-  NORMALIZATION_RUNG_CONFUSABLE_FOLD = 16;
+  NORMALIZER_CONFUSABLE_FOLD = 16;
 }
 
 // OpenNLP-owned inference engines whose identifiers are stable parts of this API.

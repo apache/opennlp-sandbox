@@ -23,7 +23,7 @@ closed `StandardLayer` from an open namespaced custom id. Standard layer familie
 `FULL_CASE_FOLD`. The string `AnnotationLayer.id` remains available as the stable lookup
 key for older clients. `GetServiceInfo.supported_layers` exposes the standard set.
 `AnalysisProfile.term_layers` can produce caller-qualified term layers from typed
-normalization rungs and an optional typed stemmer. Term vectors select those results
+normalizers and an optional typed stemmer. Term vectors select those results
 through the same `LayerIdentity`, so analyzer configuration and aggregate provenance
 remain part of the document contract. Tokens whose configured transformation produces
 an empty value are omitted from that qualified layer and from aggregates sourced from it.

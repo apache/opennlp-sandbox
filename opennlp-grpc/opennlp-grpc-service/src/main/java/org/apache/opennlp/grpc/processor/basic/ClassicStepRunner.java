@@ -76,7 +76,7 @@ import org.apache.opennlp.grpc.v1.LexicalExpansionAnnotationList;
 import org.apache.opennlp.grpc.v1.LexicalExpansionKind;
 import org.apache.opennlp.grpc.v1.NamedEntity;
 import org.apache.opennlp.grpc.v1.NormalizationResult;
-import org.apache.opennlp.grpc.v1.NormalizationRung;
+import org.apache.opennlp.grpc.v1.Normalizer;
 import org.apache.opennlp.grpc.v1.NormalizationSpec;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.POSTagFormat;
@@ -543,9 +543,9 @@ final class ClassicStepRunner {
   }
 
   /**
-   * Runs PIPELINE_STEP_NORMALIZE: applies the requested rungs in the library's canonical
+   * Runs PIPELINE_STEP_NORMALIZE: applies the requested normalizers in the library's canonical
    * order and records the normalized text in {@code OpenNlpDocument.normalization}. When
-   * every rung is offset-aware the result carries the full alignment (in UTF-16 units at
+   * every normalizer is offset-aware the result carries the full alignment (in UTF-16 units at
    * this stage; the offset-encoding pass rescales); otherwise, which the validator only
    * permits with {@code require_alignment = false}, the alignment is omitted and a
    * diagnostic says so.
@@ -555,16 +555,16 @@ final class ClassicStepRunner {
       NormalizationSpec spec,
       OpenNlpDocument.Builder document,
       List<ProcessingDiagnostic> diagnostics) {
-    final List<NormalizationRung> ordered = NormalizationRungs.canonicalOrder(spec.getRungsList());
+    final List<Normalizer> ordered = Normalizers.canonicalOrder(spec.getNormalizersList());
     final TextNormalizer.Builder builder = TextNormalizer.builder();
-    for (final NormalizationRung rung : ordered) {
-      NormalizationRungs.apply(builder, rung);
+    for (final Normalizer normalizer : ordered) {
+      Normalizers.apply(builder, normalizer);
     }
     final NormalizationResult.Builder result = NormalizationResult.newBuilder();
-    for (final NormalizationRung rung : ordered) {
-      result.addAppliedRungs(rung.name());
+    for (final Normalizer normalizer : ordered) {
+      result.addAppliedNormalizers(normalizer.name());
     }
-    if (NormalizationRungs.allOffsetAware(ordered)) {
+    if (Normalizers.allOffsetAware(ordered)) {
       final OffsetAwareNormalizer aligned = builder.buildAligned();
       final AlignedText alignedText = aligned.normalizeAligned(rawText);
       result.setNormalizedText(alignedText.normalizedString());
@@ -572,11 +572,11 @@ final class ClassicStepRunner {
     } else {
       result.setNormalizedText(builder.build().normalize(rawText).toString());
       diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_NORMALIZE,
-          "Offset-opaque rung(s) requested; normalized_text carries no alignment"));
+          "Offset-opaque normalizer(s) requested; normalized_text carries no alignment"));
     }
     document.setNormalization(result.build());
     diagnostics.add(StepDiagnostics.info(PipelineStep.PIPELINE_STEP_NORMALIZE,
-        "Applied " + ordered.size() + " normalization rung(s)"));
+        "Applied " + ordered.size() + " normalizer(s)"));
   }
 
   /**
@@ -705,9 +705,9 @@ final class ClassicStepRunner {
       List<ProcessingDiagnostic> diagnostics) {
     for (final TermLayerSpec spec : specs) {
       final TextNormalizer.Builder normalizerBuilder = TextNormalizer.builder();
-      for (final NormalizationRung rung
-          : NormalizationRungs.canonicalOrder(spec.getNormalizationRungsList())) {
-        NormalizationRungs.apply(normalizerBuilder, rung);
+      for (final Normalizer normalizer
+          : Normalizers.canonicalOrder(spec.getNormalizersList())) {
+        Normalizers.apply(normalizerBuilder, normalizer);
       }
       final var normalizer = normalizerBuilder.build();
       final UnaryOperator<String> stem = spec.hasStemmer()

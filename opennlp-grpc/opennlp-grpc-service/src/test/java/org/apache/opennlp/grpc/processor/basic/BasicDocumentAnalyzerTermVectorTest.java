@@ -27,7 +27,7 @@ import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.AnnotationLayer;
 import org.apache.opennlp.grpc.v1.LayerIdentity;
 import org.apache.opennlp.grpc.v1.LayerScope;
-import org.apache.opennlp.grpc.v1.NormalizationRung;
+import org.apache.opennlp.grpc.v1.Normalizer;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
@@ -126,10 +126,10 @@ class BasicDocumentAnalyzerTermVectorTest {
   void configurableTermLayersPreserveExactFoldedAndCasedIdentities() {
     final TermLayerSpec folded = TermLayerSpec.newBuilder()
         .setQualifier("court-folded")
-        .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_STRIP_INVISIBLE)
-        .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_WHITESPACE)
-        .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_FULL_CASE_FOLD)
-        .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_ACCENT_FOLD)
+        .addNormalizers(Normalizer.NORMALIZER_STRIP_INVISIBLE)
+        .addNormalizers(Normalizer.NORMALIZER_WHITESPACE)
+        .addNormalizers(Normalizer.NORMALIZER_FULL_CASE_FOLD)
+        .addNormalizers(Normalizer.NORMALIZER_ACCENT_FOLD)
         .setStemmer(StemmerSpec.newBuilder()
             .setAlgorithm(StemmerAlgorithm.STEMMER_ALGORITHM_PORTER))
         .build();
@@ -175,7 +175,7 @@ class BasicDocumentAnalyzerTermVectorTest {
   void configurableTermLayersDropTokensThatNormalizeToEmpty() {
     final TermLayerSpec folded = TermLayerSpec.newBuilder()
         .setQualifier("folded")
-        .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_STRIP_INVISIBLE)
+        .addNormalizers(Normalizer.NORMALIZER_STRIP_INVISIBLE)
         .build();
     final LayerIdentity source = LayerIdentity.newBuilder()
         .setStandard(StandardLayer.STANDARD_LAYER_TERMS)
@@ -219,7 +219,7 @@ class BasicDocumentAnalyzerTermVectorTest {
 
     final TermLayerSpec duplicate = TermLayerSpec.newBuilder()
         .setQualifier("FULL_CASE_FOLD")
-        .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_FULL_CASE_FOLD)
+        .addNormalizers(Normalizer.NORMALIZER_FULL_CASE_FOLD)
         .build();
     final AnalysisException duplicateIdentity = assertThrows(AnalysisException.class,
         () -> analyzer.analyze(request("court", baseProfile()

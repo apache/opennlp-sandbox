@@ -417,7 +417,7 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 .xray-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: 0.85rem 1rem 0; }
 .xray-heading strong { color: #f1f6fc; font-size: 0.76rem; }
 .xray-caption { color: #73829a; font-size: 0.65rem; }
-.xray-rungs { display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0.55rem 1rem 0; }
+.xray-normalizers { display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0.55rem 1rem 0; }
 .xray-chip { padding: 0.14rem 0.5rem; border: 1px solid #2a374c; border-radius: 999px; background: #101a2a; color: #9cabc1; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.04em; }
 .xray-chip.is-empty { border-style: dashed; color: #63728a; font-weight: 500; }
 .xray-panes { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; overflow: hidden; margin: 0.8rem 1rem 1rem; border: 1px solid #2a374c; border-radius: 0.5rem; background: #2a374c; }

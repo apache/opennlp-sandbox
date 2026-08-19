@@ -134,14 +134,14 @@ describe("analysis capability planning", () => {
 
     expect(request.profile?.steps).toContain("PIPELINE_STEP_NER");
     expect(request.profile?.normalization).toEqual({
-      rungs: [
-        "NORMALIZATION_RUNG_STRIP_INVISIBLE",
-        "NORMALIZATION_RUNG_WHITESPACE_PRESERVE_LINE_BREAKS",
-        "NORMALIZATION_RUNG_QUOTES",
-        "NORMALIZATION_RUNG_DASHES",
-        "NORMALIZATION_RUNG_DIGITS",
-        "NORMALIZATION_RUNG_ELLIPSIS",
-        "NORMALIZATION_RUNG_BULLETS",
+      normalizers: [
+        "NORMALIZER_STRIP_INVISIBLE",
+        "NORMALIZER_WHITESPACE_PRESERVE_LINE_BREAKS",
+        "NORMALIZER_QUOTES",
+        "NORMALIZER_DASHES",
+        "NORMALIZER_DIGITS",
+        "NORMALIZER_ELLIPSIS",
+        "NORMALIZER_BULLETS",
       ],
     });
     expect(request.profile?.stemmer).toEqual({ algorithm: "STEMMER_ALGORITHM_SNOWBALL", language: "en" });
@@ -285,23 +285,23 @@ describe("x-ray normalization merge", () => {
   it("keeps the profile's whitespace variant instead of requesting both", () => {
     const merged = withXrayNormalization({
       steps: ["PIPELINE_STEP_NORMALIZE", "PIPELINE_STEP_TOKENIZE"],
-      normalization: { rungs: [
-        "NORMALIZATION_RUNG_WHITESPACE_PRESERVE_LINE_BREAKS",
-        "NORMALIZATION_RUNG_QUOTES",
+      normalization: { normalizers: [
+        "NORMALIZER_WHITESPACE_PRESERVE_LINE_BREAKS",
+        "NORMALIZER_QUOTES",
       ] },
     });
-    const rungs = merged.normalization?.rungs ?? [];
-    expect(rungs).toContain("NORMALIZATION_RUNG_WHITESPACE_PRESERVE_LINE_BREAKS");
-    expect(rungs).not.toContain("NORMALIZATION_RUNG_WHITESPACE");
-    expect(rungs).toContain("NORMALIZATION_RUNG_STRIP_INVISIBLE");
-    expect(rungs).toContain("NORMALIZATION_RUNG_QUOTES");
+    const normalizers = merged.normalization?.normalizers ?? [];
+    expect(normalizers).toContain("NORMALIZER_WHITESPACE_PRESERVE_LINE_BREAKS");
+    expect(normalizers).not.toContain("NORMALIZER_WHITESPACE");
+    expect(normalizers).toContain("NORMALIZER_STRIP_INVISIBLE");
+    expect(normalizers).toContain("NORMALIZER_QUOTES");
     expect(merged.normalization?.requireAlignment).toBe(true);
   });
 
   it("adds the whitespace default when the profile requests neither variant", () => {
     const merged = withXrayNormalization({ steps: [] });
     expect(merged.steps[0]).toBe("PIPELINE_STEP_NORMALIZE");
-    expect(merged.normalization?.rungs).toContain("NORMALIZATION_RUNG_WHITESPACE");
+    expect(merged.normalization?.normalizers).toContain("NORMALIZER_WHITESPACE");
   });
 
   it("does not duplicate an already requested normalize step", () => {

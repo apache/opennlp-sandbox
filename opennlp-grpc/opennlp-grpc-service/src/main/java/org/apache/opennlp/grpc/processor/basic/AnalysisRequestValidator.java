@@ -50,7 +50,7 @@ import org.apache.opennlp.grpc.v1.ComponentModelRef;
 import org.apache.opennlp.grpc.v1.ComponentType;
 import org.apache.opennlp.grpc.v1.ModelBundleRef;
 import opennlp.tools.util.normalizer.Dimension;
-import org.apache.opennlp.grpc.v1.NormalizationRung;
+import org.apache.opennlp.grpc.v1.Normalizer;
 import org.apache.opennlp.grpc.v1.POSTagFormat;
 import org.apache.opennlp.grpc.v1.ParseFormat;
 import org.apache.opennlp.grpc.v1.PipelineStep;
@@ -427,25 +427,25 @@ final class AnalysisRequestValidator {
       }
       return;
     }
-    if (!profile.hasNormalization() || profile.getNormalization().getRungsCount() == 0) {
+    if (!profile.hasNormalization() || profile.getNormalization().getNormalizersCount() == 0) {
       throw AnalysisException.invalidArgument(
-          "PIPELINE_STEP_NORMALIZE requires AnalysisProfile.normalization with at least one rung");
+          "PIPELINE_STEP_NORMALIZE requires AnalysisProfile.normalization with at least one normalizer");
     }
     final var spec = profile.getNormalization();
-    final var rungs = NormalizationRungs.canonicalOrder(spec.getRungsList());
-    if (rungs.isEmpty()) {
+    final var normalizers = Normalizers.canonicalOrder(spec.getNormalizersList());
+    if (normalizers.isEmpty()) {
       throw AnalysisException.invalidArgument(
-          "AnalysisProfile.normalization.rungs contains no recognized rung");
+          "AnalysisProfile.normalization.normalizers contains no recognized normalizer");
     }
-    if (rungs.contains(NormalizationRung.NORMALIZATION_RUNG_WHITESPACE)
-        && rungs.contains(NormalizationRung.NORMALIZATION_RUNG_WHITESPACE_PRESERVE_LINE_BREAKS)) {
+    if (normalizers.contains(Normalizer.NORMALIZER_WHITESPACE)
+        && normalizers.contains(Normalizer.NORMALIZER_WHITESPACE_PRESERVE_LINE_BREAKS)) {
       throw AnalysisException.invalidArgument(
-          "WHITESPACE and WHITESPACE_PRESERVE_LINE_BREAKS are mutually exclusive rungs");
+          "WHITESPACE and WHITESPACE_PRESERVE_LINE_BREAKS are mutually exclusive normalizers");
     }
     final boolean requireAlignment = !spec.hasRequireAlignment() || spec.getRequireAlignment();
-    if (requireAlignment && !NormalizationRungs.allOffsetAware(rungs)) {
+    if (requireAlignment && !Normalizers.allOffsetAware(normalizers)) {
       throw AnalysisException.invalidArgument(
-          "The requested rungs include offset-opaque one(s) (NFC, NFKC, CASE_FOLD, ACCENT_FOLD, "
+          "The requested normalizers include offset-opaque one(s) (NFC, NFKC, CASE_FOLD, ACCENT_FOLD, "
               + "CONFUSABLE_FOLD), which cannot report an alignment; drop them or set "
               + "normalization.require_alignment = false to accept normalized text without one");
     }
@@ -663,27 +663,27 @@ final class AnalysisRequestValidator {
         throw AnalysisException.invalidArgument(
             "term layer qualifier '" + spec.getQualifier() + "' is produced more than once");
       }
-      if (spec.getNormalizationRungsCount() == 0 && !spec.hasStemmer()) {
+      if (spec.getNormalizersCount() == 0 && !spec.hasStemmer()) {
         throw AnalysisException.invalidArgument(
             "term layer '" + spec.getQualifier()
-                + "' requires at least one normalization rung or a stemmer");
+                + "' requires at least one normalizer or a stemmer");
       }
-      final List<NormalizationRung> rungs =
-          NormalizationRungs.canonicalOrder(spec.getNormalizationRungsList());
-      if (spec.getNormalizationRungsCount() > 0 && rungs.isEmpty()) {
+      final List<Normalizer> normalizers =
+          Normalizers.canonicalOrder(spec.getNormalizersList());
+      if (spec.getNormalizersCount() > 0 && normalizers.isEmpty()) {
         throw AnalysisException.invalidArgument(
-            "term layer '" + spec.getQualifier() + "' contains no recognized rung");
+            "term layer '" + spec.getQualifier() + "' contains no recognized normalizer");
       }
-      if (rungs.contains(NormalizationRung.NORMALIZATION_RUNG_WHITESPACE)
-          && rungs.contains(
-              NormalizationRung.NORMALIZATION_RUNG_WHITESPACE_PRESERVE_LINE_BREAKS)) {
+      if (normalizers.contains(Normalizer.NORMALIZER_WHITESPACE)
+          && normalizers.contains(
+              Normalizer.NORMALIZER_WHITESPACE_PRESERVE_LINE_BREAKS)) {
         throw AnalysisException.invalidArgument(
-            "WHITESPACE and WHITESPACE_PRESERVE_LINE_BREAKS are mutually exclusive rungs");
+            "WHITESPACE and WHITESPACE_PRESERVE_LINE_BREAKS are mutually exclusive normalizers");
       }
-      if (rungs.contains(NormalizationRung.NORMALIZATION_RUNG_CASE_FOLD)
-          && rungs.contains(NormalizationRung.NORMALIZATION_RUNG_FULL_CASE_FOLD)) {
+      if (normalizers.contains(Normalizer.NORMALIZER_CASE_FOLD)
+          && normalizers.contains(Normalizer.NORMALIZER_FULL_CASE_FOLD)) {
         throw AnalysisException.invalidArgument(
-            "CASE_FOLD and FULL_CASE_FOLD are mutually exclusive rungs");
+            "CASE_FOLD and FULL_CASE_FOLD are mutually exclusive normalizers");
       }
       if (spec.hasStemmer()) {
         StemmerSelector.validate(spec.getStemmer(), hunspellRegistry);

@@ -91,7 +91,7 @@ final class StemmerSelector {
 
   /**
    * Creates a stem function without an implicit lowercase transform. Configurable
-   * term layers use this form because their normalization rungs define the complete
+   * term layers use this form because their normalizers define the complete
    * input to the stemmer, including whether case is preserved or folded.
    */
   static UnaryOperator<String> newRawStemFunction(

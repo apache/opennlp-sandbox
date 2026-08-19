@@ -67,18 +67,18 @@ const MODEL_FREE_STEPS = [
 ] as const;
 
 const OFFSET_AWARE_NORMALIZATION = [
-  "NORMALIZATION_RUNG_STRIP_INVISIBLE",
-  "NORMALIZATION_RUNG_WHITESPACE_PRESERVE_LINE_BREAKS",
-  "NORMALIZATION_RUNG_QUOTES",
-  "NORMALIZATION_RUNG_DASHES",
-  "NORMALIZATION_RUNG_DIGITS",
-  "NORMALIZATION_RUNG_ELLIPSIS",
-  "NORMALIZATION_RUNG_BULLETS",
+  "NORMALIZER_STRIP_INVISIBLE",
+  "NORMALIZER_WHITESPACE_PRESERVE_LINE_BREAKS",
+  "NORMALIZER_QUOTES",
+  "NORMALIZER_DASHES",
+  "NORMALIZER_DIGITS",
+  "NORMALIZER_ELLIPSIS",
+  "NORMALIZER_BULLETS",
 ];
 
 const XRAY_STEP = "PIPELINE_STEP_NORMALIZE";
-const XRAY_WHITESPACE = "NORMALIZATION_RUNG_WHITESPACE";
-const PRESERVING_WHITESPACE = "NORMALIZATION_RUNG_WHITESPACE_PRESERVE_LINE_BREAKS";
+const XRAY_WHITESPACE = "NORMALIZER_WHITESPACE";
+const PRESERVING_WHITESPACE = "NORMALIZER_WHITESPACE_PRESERVE_LINE_BREAKS";
 
 /**
  * Merges the x-ray's normalization needs over whatever profile the analysis controls
@@ -91,15 +91,15 @@ export function withXrayNormalization(
   profile: AnalyzeRequest["profile"],
 ): NonNullable<AnalyzeRequest["profile"]> {
   const steps = profile?.steps ?? [];
-  const requested = profile?.normalization?.rungs ?? [];
-  const rungs = new Set(["NORMALIZATION_RUNG_STRIP_INVISIBLE", ...requested]);
-  if (!rungs.has(PRESERVING_WHITESPACE)) {
-    rungs.add(XRAY_WHITESPACE);
+  const requested = profile?.normalization?.normalizers ?? [];
+  const normalizers = new Set(["NORMALIZER_STRIP_INVISIBLE", ...requested]);
+  if (!normalizers.has(PRESERVING_WHITESPACE)) {
+    normalizers.add(XRAY_WHITESPACE);
   }
   return {
     ...profile,
     steps: steps.includes(XRAY_STEP) ? steps : [XRAY_STEP, ...steps],
-    normalization: { rungs: [...rungs], requireAlignment: true },
+    normalization: { normalizers: [...normalizers], requireAlignment: true },
   };
 }
 
@@ -253,7 +253,7 @@ function maximalProfile(
 ): NonNullable<AnalyzeRequest["profile"]> {
   const profile: NonNullable<AnalyzeRequest["profile"]> = { steps };
   if (steps.includes("PIPELINE_STEP_NORMALIZE")) {
-    profile.normalization = { rungs: OFFSET_AWARE_NORMALIZATION };
+    profile.normalization = { normalizers: OFFSET_AWARE_NORMALIZATION };
   }
   if (steps.includes("PIPELINE_STEP_TOKENIZE") && capabilities.language) {
     profile.termProfile = capabilities.language;

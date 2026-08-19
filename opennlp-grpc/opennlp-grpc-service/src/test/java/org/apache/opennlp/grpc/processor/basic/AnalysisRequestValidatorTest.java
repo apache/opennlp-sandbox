@@ -26,7 +26,7 @@ import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.LayerIdentity;
-import org.apache.opennlp.grpc.v1.NormalizationRung;
+import org.apache.opennlp.grpc.v1.Normalizer;
 import org.apache.opennlp.grpc.v1.NormalizationSpec;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for every {@link AnalysisRequestValidator} guard added with the library-parity
- * surfaces: the NORMALIZE spec/step pairing, rung consistency, alignment requirements,
+ * surfaces: the NORMALIZE spec/step pairing, normalizer consistency, alignment requirements,
  * tokenizer_engine values, term_dimensions prerequisites and name checks, and the
  * term_profile exclusivity and registry lookup. The guards are exercised through
  * {@link BasicDocumentAnalyzer#analyze}, the public entry that runs the validator, so
@@ -81,7 +81,7 @@ class AnalysisRequestValidatorTest {
         AnalysisProfile.newBuilder()
             .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
             .setNormalization(NormalizationSpec.newBuilder()
-                .addRungs(NormalizationRung.NORMALIZATION_RUNG_WHITESPACE)),
+                .addNormalizers(Normalizer.NORMALIZER_WHITESPACE)),
         AnalysisException.FailureType.INVALID_ARGUMENT,
         "requires PIPELINE_STEP_NORMALIZE");
   }
@@ -92,7 +92,7 @@ class AnalysisRequestValidatorTest {
         AnalysisProfile.newBuilder()
             .addSteps(PipelineStep.PIPELINE_STEP_NORMALIZE),
         AnalysisException.FailureType.INVALID_ARGUMENT,
-        "at least one rung");
+        "at least one normalizer");
   }
 
   @Test
@@ -102,23 +102,23 @@ class AnalysisRequestValidatorTest {
             .addSteps(PipelineStep.PIPELINE_STEP_NORMALIZE)
             .setNormalization(NormalizationSpec.newBuilder()),
         AnalysisException.FailureType.INVALID_ARGUMENT,
-        "at least one rung");
+        "at least one normalizer");
   }
 
   @Test
-  void rejectsSpecWhoseOnlyRungIsUnspecified() {
-    // The rung list is non-empty, so the presence check passes; the canonical-order pass
+  void rejectsSpecWhoseOnlyNormalizerIsUnspecified() {
+    // The normalizer list is non-empty, so the presence check passes; the canonical-order pass
     // must still catch that nothing recognizable is left.
     assertRejected(
         AnalysisProfile.newBuilder()
             .addSteps(PipelineStep.PIPELINE_STEP_NORMALIZE)
             .setNormalization(NormalizationSpec.newBuilder()
-                .addRungs(NormalizationRung.NORMALIZATION_RUNG_UNSPECIFIED)),
+                .addNormalizers(Normalizer.NORMALIZER_UNSPECIFIED)),
         AnalysisException.FailureType.INVALID_ARGUMENT,
-        "no recognized rung");
+        "no recognized normalizer");
   }
 
-  // ---------- Rung consistency ----------
+  // ---------- Normalizer consistency ----------
 
   @Test
   void rejectsWhitespaceAndPreserveLineBreaksTogether() {
@@ -126,58 +126,58 @@ class AnalysisRequestValidatorTest {
         AnalysisProfile.newBuilder()
             .addSteps(PipelineStep.PIPELINE_STEP_NORMALIZE)
             .setNormalization(NormalizationSpec.newBuilder()
-                .addRungs(NormalizationRung.NORMALIZATION_RUNG_WHITESPACE)
-                .addRungs(NormalizationRung
-                    .NORMALIZATION_RUNG_WHITESPACE_PRESERVE_LINE_BREAKS)),
+                .addNormalizers(Normalizer.NORMALIZER_WHITESPACE)
+                .addNormalizers(Normalizer
+                    .NORMALIZER_WHITESPACE_PRESERVE_LINE_BREAKS)),
         AnalysisException.FailureType.INVALID_ARGUMENT,
-        "mutually exclusive rungs");
+        "mutually exclusive normalizers");
   }
 
-  // ---------- Alignment requirement vs offset-opaque rungs ----------
+  // ---------- Alignment requirement vs offset-opaque normalizers ----------
 
   @Test
-  void rejectsOffsetOpaqueRungsWhenAlignmentRequiredByDefault() {
+  void rejectsOffsetOpaqueNormalizersWhenAlignmentRequiredByDefault() {
     // require_alignment is unset: the validator must treat that as true.
     assertRejected(
         AnalysisProfile.newBuilder()
             .addSteps(PipelineStep.PIPELINE_STEP_NORMALIZE)
             .setNormalization(NormalizationSpec.newBuilder()
-                .addRungs(NormalizationRung.NORMALIZATION_RUNG_NFC)),
+                .addNormalizers(Normalizer.NORMALIZER_NFC)),
         AnalysisException.FailureType.INVALID_ARGUMENT,
         "require_alignment");
   }
 
   @Test
-  void rejectsOffsetOpaqueRungsWhenAlignmentRequiredExplicitly() {
+  void rejectsOffsetOpaqueNormalizersWhenAlignmentRequiredExplicitly() {
     assertRejected(
         AnalysisProfile.newBuilder()
             .addSteps(PipelineStep.PIPELINE_STEP_NORMALIZE)
             .setNormalization(NormalizationSpec.newBuilder()
-                .addRungs(NormalizationRung.NORMALIZATION_RUNG_CONFUSABLE_FOLD)
+                .addNormalizers(Normalizer.NORMALIZER_CONFUSABLE_FOLD)
                 .setRequireAlignment(true)),
         AnalysisException.FailureType.INVALID_ARGUMENT,
         "require_alignment");
   }
 
   @Test
-  void acceptsOffsetOpaqueRungsWhenAlignmentWaived() {
+  void acceptsOffsetOpaqueNormalizersWhenAlignmentWaived() {
     final AnalyzeDocumentResponse response = analyze(
         AnalysisProfile.newBuilder()
             .addSteps(PipelineStep.PIPELINE_STEP_NORMALIZE)
             .setNormalization(NormalizationSpec.newBuilder()
-                .addRungs(NormalizationRung.NORMALIZATION_RUNG_NFC)
+                .addNormalizers(Normalizer.NORMALIZER_NFC)
                 .setRequireAlignment(false)));
     assertFalse(response.getDocument().getNormalization().getNormalizedText().isEmpty());
     assertEquals(0, response.getDocument().getNormalization().getAlignmentCount());
   }
 
   @Test
-  void acceptsOffsetAwareRungsWithAlignmentRequired() {
+  void acceptsOffsetAwareNormalizersWithAlignmentRequired() {
     final AnalyzeDocumentResponse response = analyze(
         AnalysisProfile.newBuilder()
             .addSteps(PipelineStep.PIPELINE_STEP_NORMALIZE)
             .setNormalization(NormalizationSpec.newBuilder()
-                .addRungs(NormalizationRung.NORMALIZATION_RUNG_WHITESPACE)
+                .addNormalizers(Normalizer.NORMALIZER_WHITESPACE)
                 .setRequireAlignment(true)));
     assertTrue(response.getDocument().getNormalization().getAlignmentCount() > 0);
   }
@@ -300,7 +300,7 @@ class AnalysisRequestValidatorTest {
             .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
             .addTermLayers(TermLayerSpec.newBuilder()
                 .setQualifier("folded")
-                .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_CASE_FOLD)),
+                .addNormalizers(Normalizer.NORMALIZER_CASE_FOLD)),
         AnalysisException.FailureType.FAILED_PRECONDITION,
         "term_layers requires PIPELINE_STEP_TOKENIZE");
   }

@@ -19,7 +19,7 @@ package org.apache.opennlp.grpc.profile;
 
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.LayerIdentity;
-import org.apache.opennlp.grpc.v1.NormalizationRung;
+import org.apache.opennlp.grpc.v1.Normalizer;
 import org.apache.opennlp.grpc.v1.NormalizationSpec;
 import org.apache.opennlp.grpc.v1.SentenceDetectorSelector;
 import org.apache.opennlp.grpc.v1.StandardSentenceDetectorEngine;
@@ -75,7 +75,7 @@ class ProfileMergerTest {
   void extendedFieldsOverrideNamedProfileValues() {
     final AnalysisProfile base = AnalysisProfile.newBuilder()
         .setNormalization(NormalizationSpec.newBuilder()
-            .addRungs(NormalizationRung.NORMALIZATION_RUNG_WHITESPACE))
+            .addNormalizers(Normalizer.NORMALIZER_WHITESPACE))
         .setTokenizerEngine("model")
         .addTermDimensions("NFC")
         .setTermProfile("en")
@@ -95,11 +95,11 @@ class ProfileMergerTest {
                 .setStandard(StandardLayer.STANDARD_LAYER_TOKENS)))
         .addTermLayers(TermLayerSpec.newBuilder()
             .setQualifier("base")
-            .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_CASE_FOLD))
+            .addNormalizers(Normalizer.NORMALIZER_CASE_FOLD))
         .build();
     final AnalysisProfile override = AnalysisProfile.newBuilder()
         .setNormalization(NormalizationSpec.newBuilder()
-            .addRungs(NormalizationRung.NORMALIZATION_RUNG_QUOTES))
+            .addNormalizers(Normalizer.NORMALIZER_QUOTES))
         .setTokenizerEngine("uax29")
         .addTermDimensions("CASE_FOLD")
         .setTermProfile("de")
@@ -120,13 +120,13 @@ class ProfileMergerTest {
                 .setStandard(StandardLayer.STANDARD_LAYER_STEMS)))
         .addTermLayers(TermLayerSpec.newBuilder()
             .setQualifier("override")
-            .addNormalizationRungs(NormalizationRung.NORMALIZATION_RUNG_FULL_CASE_FOLD))
+            .addNormalizers(Normalizer.NORMALIZER_FULL_CASE_FOLD))
         .build();
 
     final AnalysisProfile merged = ProfileMerger.merge(base, override);
 
-    assertEquals(NormalizationRung.NORMALIZATION_RUNG_QUOTES,
-        merged.getNormalization().getRungs(0));
+    assertEquals(Normalizer.NORMALIZER_QUOTES,
+        merged.getNormalization().getNormalizers(0));
     assertEquals("uax29", merged.getTokenizerEngine());
     assertEquals("CASE_FOLD", merged.getTermDimensions(0));
     assertEquals("de", merged.getTermProfile());
