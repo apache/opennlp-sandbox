@@ -31,6 +31,7 @@ import {
   searchIndex,
   type AnalyzeRequest,
 } from "./api";
+import { withXrayNormalization } from "./analysis-config";
 import { AnalysisControls } from "./analysis-controls";
 import { AnnotationDrawer } from "./annotation-drawer";
 import { ChunkProjectionView } from "./chunk-projection-view";
@@ -648,23 +649,6 @@ function createAnalysisRequest(text: string, includeChunks = true): AnalyzeReque
     request.profile = withXrayNormalization(request.profile);
   }
   return request;
-}
-
-const XRAY_STEP = "PIPELINE_STEP_NORMALIZE";
-const XRAY_RUNGS = ["NORMALIZATION_RUNG_STRIP_INVISIBLE", "NORMALIZATION_RUNG_WHITESPACE"];
-
-// The X-ray needs the offset-transparent rungs with alignment, merged over whatever profile
-// the analysis controls built (an inline profile merges over a named profileId server-side).
-function withXrayNormalization(
-  profile: AnalyzeRequest["profile"],
-): NonNullable<AnalyzeRequest["profile"]> {
-  const steps = profile?.steps ?? [];
-  const rungs = new Set([...XRAY_RUNGS, ...(profile?.normalization?.rungs ?? [])]);
-  return {
-    ...profile,
-    steps: steps.includes(XRAY_STEP) ? steps : [XRAY_STEP, ...steps],
-    normalization: { rungs: [...rungs], requireAlignment: true },
-  };
 }
 
 async function copyResponse(): Promise<void> {

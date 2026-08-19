@@ -76,6 +76,33 @@ const OFFSET_AWARE_NORMALIZATION = [
   "NORMALIZATION_RUNG_BULLETS",
 ];
 
+const XRAY_STEP = "PIPELINE_STEP_NORMALIZE";
+const XRAY_WHITESPACE = "NORMALIZATION_RUNG_WHITESPACE";
+const PRESERVING_WHITESPACE = "NORMALIZATION_RUNG_WHITESPACE_PRESERVE_LINE_BREAKS";
+
+/**
+ * Merges the x-ray's normalization needs over whatever profile the analysis controls
+ * built (an inline profile merges over a named profileId server-side). The x-ray needs
+ * offset-transparent normalization with alignment; a profile that already requests
+ * either whitespace variant keeps its choice, because the server rejects a request
+ * carrying both.
+ */
+export function withXrayNormalization(
+  profile: AnalyzeRequest["profile"],
+): NonNullable<AnalyzeRequest["profile"]> {
+  const steps = profile?.steps ?? [];
+  const requested = profile?.normalization?.rungs ?? [];
+  const rungs = new Set(["NORMALIZATION_RUNG_STRIP_INVISIBLE", ...requested]);
+  if (!rungs.has(PRESERVING_WHITESPACE)) {
+    rungs.add(XRAY_WHITESPACE);
+  }
+  return {
+    ...profile,
+    steps: steps.includes(XRAY_STEP) ? steps : [XRAY_STEP, ...steps],
+    normalization: { rungs: [...rungs], requireAlignment: true },
+  };
+}
+
 export interface AnalysisCapabilities {
   profiles: DiscoveryOption[];
   bundles: DiscoveryOption[];
