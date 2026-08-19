@@ -51,6 +51,7 @@ import {
   pageForDocumentOffset,
 } from "./document-window";
 import { readNormalizationXray, renderNormalizationXray } from "./normalization-xray";
+import { isTermVectorLayer, renderTermVectorStack } from "./term-vector-stack";
 import { SemanticWorkbench, type ResultViewName } from "./semantic-workbench";
 import { ModelDataWorkbench } from "./model-data-workbench";
 import { readSearchIndexes, readSearchResponse } from "./search-adapter";
@@ -417,6 +418,12 @@ function selectLayer(shape: DocumentShapeView, layer: AnnotationLayerView): void
       ? "This layer has no selectable text spans in the current document window."
       : "This document-scoped layer has no selectable text spans.");
   }
+  if (isTermVectorLayer(layer) && layer.annotations.length > 0) {
+    annotatedText.prepend(renderTermVectorStack(layer, layerAccent(layer),
+      (trigger) => annotationDrawer.showTermVectorList(layer, trigger)));
+    annotationDrawer.describeLayer(layer,
+      "All term vectors combine into the stacked bar above the text; select it for the ranked term list.");
+  }
 }
 
 function selectAllLayers(shape: DocumentShapeView): void {
@@ -428,8 +435,11 @@ function selectAllLayers(shape: DocumentShapeView): void {
   annotatedText.dataset.accent = "blue";
   annotatedText.setAttribute("aria-label", "All typed annotations over document text");
 
-  const documentEntries = documentScopedAnnotations(shape);
-  if (documentEntries.length > 0) {
+  const documentEntries = documentScopedAnnotations(shape)
+    .filter((entry) => !isTermVectorLayer(entry.layer));
+  const termVectorLayers = shape.layers
+    .filter((layer) => isTermVectorLayer(layer) && layer.annotations.length > 0);
+  if (documentEntries.length > 0 || termVectorLayers.length > 0) {
     const scoped = document.createElement("section");
     scoped.className = "document-annotation-strip";
     const heading = document.createElement("strong");
@@ -445,6 +455,10 @@ function selectAllLayers(shape: DocumentShapeView): void {
       chips.append(chip);
     }
     scoped.append(heading, chips);
+    for (const layer of termVectorLayers) {
+      scoped.append(renderTermVectorStack(layer, layerAccent(layer),
+        (trigger) => annotationDrawer.showTermVectorList(layer, trigger)));
+    }
     annotatedText.append(scoped);
   }
 

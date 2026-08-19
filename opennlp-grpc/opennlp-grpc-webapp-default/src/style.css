@@ -384,6 +384,18 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 .document-annotation-strip > strong { display: block; margin-bottom: 0.55rem; color: #e7eef8; font-size: 0.68rem; }
 .document-annotation-strip > div { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .document-annotation-chip { padding: 0.3rem 0.5rem; border: 1px solid var(--layer-accent); border-radius: 999px; background: var(--layer-soft); color: var(--layer-accent); font-size: 0.62rem; font-weight: 750; }
+.term-vector-stack { display: block; margin: 0.9rem 0; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+.term-vector-stack > strong { display: block; margin-bottom: 0.4rem; color: #e7eef8; font-size: 0.68rem; }
+.term-vector-stack-bar { display: flex; width: 100%; height: 1.9rem; padding: 0; border: 1px solid var(--layer-accent); border-radius: 0.45rem; overflow: hidden; background: var(--layer-soft); cursor: pointer; transition: box-shadow 120ms ease; }
+.term-vector-stack-bar:hover, .term-vector-stack-bar:focus-visible { box-shadow: 0 0 0 3px var(--layer-soft); }
+.term-vector-stack-segment { flex-basis: 0; min-width: 0.4rem; overflow: hidden; padding: 0 0.3rem; border-right: 1px solid #0b1220; background: var(--layer-accent); color: #0b1220; font-size: 0.6rem; font-weight: 750; line-height: 1.8rem; white-space: nowrap; text-overflow: ellipsis; text-align: left; }
+.term-vector-stack-segment:last-child { border-right: 0; }
+.term-vector-stack-other { background: transparent; color: var(--layer-accent); }
+.term-vector-list { display: grid; gap: 0.3rem; margin: 0; padding: 0 0 0 1.5rem; color: #9fb2cc; font-size: 0.66rem; }
+.term-vector-row { display: flex; justify-content: space-between; gap: 0.6rem; width: 100%; padding: 0.35rem 0.5rem; border: 1px solid #2a374c; border-radius: 0.4rem; background: #101a2a; color: #e7eef8; font: inherit; text-align: left; cursor: pointer; transition: border-color 120ms ease; }
+.term-vector-row:hover, .term-vector-row:focus-visible { border-color: #69a9ff; }
+.term-vector-row-term { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.term-vector-row-count { flex-shrink: 0; color: #9fb2cc; font-variant-numeric: tabular-nums; }
 .annotation-entry { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #2a374c; }
 .annotation-entry:first-of-type { margin-top: 0.8rem; }
 .annotation-details { max-height: 12rem; overflow: auto; padding: 1rem 1.15rem; border-top: 1px solid #303b4f; background: #0d1523; color: #aebbd0; font-size: 0.7rem; }

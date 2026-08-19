@@ -23,6 +23,7 @@ import type {
   ChunkProjectionItem,
 } from "./chunk-projection";
 import type { AnnotationEntry, AnnotationLayerView, AnnotationView } from "./document-shape";
+import { buildTermVectorStack, rankedTermVectors, summaryText } from "./term-vector-stack";
 import { asciiLowerCase } from "./text-utils";
 import { emptyMessage, requiredElement } from "./ui-utils";
 
@@ -110,6 +111,36 @@ export class AnnotationDrawer {
       + `characters ${start}..${end}.`;
     this.#content.replaceChildren(title, summary,
       ...visibleEntries.map((entry) => annotationBlock(entry.layer, entry.annotation)));
+    this.open(trigger);
+  }
+
+  /** Pops out one term-vector layer as its full ranked term list. */
+  showTermVectorList(layer: AnnotationLayerView, trigger?: HTMLElement): void {
+    const ranked = rankedTermVectors(layer);
+    const title = document.createElement("strong");
+    title.textContent = layer.title;
+    const summary = document.createElement("p");
+    summary.textContent = `${summaryText(buildTermVectorStack(layer, ranked.length))}, `
+      + "ranked by frequency. Select a term for its typed annotation.";
+    const list = document.createElement("ol");
+    list.className = "term-vector-list";
+    for (const segment of ranked) {
+      const item = document.createElement("li");
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "term-vector-row";
+      const term = document.createElement("span");
+      term.className = "term-vector-row-term";
+      term.textContent = segment.term;
+      const count = document.createElement("span");
+      count.className = "term-vector-row-count";
+      count.textContent = `${segment.frequency} (${(segment.share * 100).toFixed(0)}%)`;
+      row.append(term, count);
+      row.addEventListener("click", () => this.showAnnotation(layer, segment.annotation, trigger));
+      item.append(row);
+      list.append(item);
+    }
+    this.#content.replaceChildren(title, summary, list);
     this.open(trigger);
   }
 

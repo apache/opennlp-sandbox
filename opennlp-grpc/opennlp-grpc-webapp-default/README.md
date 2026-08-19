@@ -90,6 +90,11 @@ highlights the selected layer over `document.rawText`. Selecting text, a graph n
 opens typed details in a dismissible side drawer instead of narrowing the document canvas. The
 result summary reports layer and annotation counts plus the active offset encoding.
 
+A term-vector layer combines into one stacked bar instead of one chip per term: each segment is
+sized by the term's frequency, the highest-frequency terms are shown and the tail folds into a
+remainder segment, and selecting the bar pops out the full frequency-ranked term list in the
+drawer, where each row drills into that term's typed annotation.
+
 Combined word popovers omit sentence embeddings that merely cover the selected word. Selecting
 the Embeddings layer exposes vectors at their sentence or document span, while selecting a chunk
 exposes vectors attached to that complete chunk. Vector details show the model, granularity,
