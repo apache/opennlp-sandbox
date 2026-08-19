@@ -19,7 +19,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { buildAnalysisRequest, discoverAnalysisCapabilities } from "../src/analysis-config";
+import { buildAnalysisRequest, discoverAnalysisCapabilities, withXrayNormalization } from "../src/analysis-config";
 
 const serviceInfo = {
   availableProfileIds: ["en-basic", "en-ner"],
@@ -278,5 +278,34 @@ describe("analysis capability planning", () => {
       },
       capabilities,
     )).toThrow("Token overlap must be smaller than the token window");
+  });
+});
+
+describe("x-ray normalization merge", () => {
+  it("keeps the profile's whitespace variant instead of requesting both", () => {
+    const merged = withXrayNormalization({
+      steps: ["PIPELINE_STEP_NORMALIZE", "PIPELINE_STEP_TOKENIZE"],
+      normalization: { rungs: [
+        "NORMALIZATION_RUNG_WHITESPACE_PRESERVE_LINE_BREAKS",
+        "NORMALIZATION_RUNG_QUOTES",
+      ] },
+    });
+    const rungs = merged.normalization?.rungs ?? [];
+    expect(rungs).toContain("NORMALIZATION_RUNG_WHITESPACE_PRESERVE_LINE_BREAKS");
+    expect(rungs).not.toContain("NORMALIZATION_RUNG_WHITESPACE");
+    expect(rungs).toContain("NORMALIZATION_RUNG_STRIP_INVISIBLE");
+    expect(rungs).toContain("NORMALIZATION_RUNG_QUOTES");
+    expect(merged.normalization?.requireAlignment).toBe(true);
+  });
+
+  it("adds the whitespace default when the profile requests neither variant", () => {
+    const merged = withXrayNormalization({ steps: [] });
+    expect(merged.steps[0]).toBe("PIPELINE_STEP_NORMALIZE");
+    expect(merged.normalization?.rungs).toContain("NORMALIZATION_RUNG_WHITESPACE");
+  });
+
+  it("does not duplicate an already requested normalize step", () => {
+    const merged = withXrayNormalization({ steps: ["PIPELINE_STEP_NORMALIZE"] });
+    expect(merged.steps.filter((step) => step === "PIPELINE_STEP_NORMALIZE")).toHaveLength(1);
   });
 });
