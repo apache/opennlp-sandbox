@@ -90,6 +90,43 @@ class OpenNlpGrpcWebServerTest {
   }
 
   @Test
+  void transcodesSavedResponsesOverHttp() throws Exception {
+    WebUiExtensionRegistry registry = new WebUiExtensionRegistry(List.of(testExtension()));
+    try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
+        new InetSocketAddress(InetAddress.getLoopbackAddress(), 0),
+        new TestAnalysisRpc(), new EmptySearchRpc(), registry, 4096)) {
+      server.start();
+      HttpClient client = HttpClient.newHttpClient();
+
+      HttpRequest encode = request(server, "/api/v1/response/encode")
+          .header("Content-Type", "application/json")
+          .POST(HttpRequest.BodyPublishers.ofString(
+              "{\"document\":{\"docId\":\"saved\",\"rawText\":\"Hello\"}}"))
+          .build();
+      HttpResponse<byte[]> encoded = client.send(encode, HttpResponse.BodyHandlers.ofByteArray());
+      assertEquals(200, encoded.statusCode());
+      assertEquals("application/x-protobuf",
+          encoded.headers().firstValue("content-type").orElseThrow());
+      assertEquals("saved",
+          AnalyzeDocumentResponse.parseFrom(encoded.body()).getDocument().getDocId());
+
+      HttpRequest decode = request(server, "/api/v1/response/decode")
+          .header("Content-Type", "application/x-protobuf")
+          .POST(HttpRequest.BodyPublishers.ofByteArray(encoded.body()))
+          .build();
+      HttpResponse<String> decoded = client.send(decode, HttpResponse.BodyHandlers.ofString());
+      assertEquals(200, decoded.statusCode());
+      assertTrue(decoded.body().contains("\"docId\":\"saved\""));
+
+      HttpRequest wrongType = request(server, "/api/v1/response/decode")
+          .header("Content-Type", "application/json")
+          .POST(HttpRequest.BodyPublishers.ofByteArray(encoded.body()))
+          .build();
+      assertEquals(415, client.send(wrongType, HttpResponse.BodyHandlers.ofString()).statusCode());
+    }
+  }
+
+  @Test
   void servesSearchCatalogAndDocumentShapedHitsOverHttp() throws Exception {
     try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
         new InetSocketAddress(InetAddress.getLoopbackAddress(), 0),

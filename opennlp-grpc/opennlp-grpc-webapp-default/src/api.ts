@@ -145,6 +145,41 @@ export function analyze(request: AnalyzeRequest, fetcher: Fetcher = fetch): Prom
   );
 }
 
+/**
+ * Turns the stored response JSON into serialized protobuf bytes through the gateway, so
+ * the browser can save a .pb file without a protobuf runtime of its own.
+ */
+export async function encodeAnalyzeResponsePb(
+  responseJson: string,
+  fetcher: Fetcher = fetch,
+): Promise<ArrayBuffer> {
+  const response = await fetcher("/api/v1/response/encode", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: responseJson,
+  });
+  if (!response.ok) {
+    throw await responseError(response);
+  }
+  return response.arrayBuffer();
+}
+
+/** Turns a saved .pb response back into the JSON shape every view consumes. */
+export function decodeAnalyzeResponsePb(
+  bytes: ArrayBuffer,
+  fetcher: Fetcher = fetch,
+): Promise<unknown> {
+  return requestJson(
+    "/api/v1/response/decode",
+    {
+      method: "POST",
+      headers: { "content-type": "application/x-protobuf" },
+      body: bytes,
+    },
+    fetcher,
+  );
+}
+
 async function requestJson(path: string, init: RequestInit | undefined, fetcher: Fetcher): Promise<unknown> {
   const response = await fetcher(path, init ?? { headers: { accept: "application/json" } });
   if (!response.ok) {

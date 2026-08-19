@@ -21,6 +21,8 @@ import "./style.css";
 
 import {
   analyze,
+  decodeAnalyzeResponsePb,
+  encodeAnalyzeResponsePb,
   getHealth,
   getModelBundles,
   getSearchIndexes,
@@ -80,6 +82,9 @@ const sampleButton = requiredElement<HTMLButtonElement>("sample-button");
 const aliceSampleButton = requiredElement<HTMLButtonElement>("alice-sample-button");
 const copyButton = requiredElement<HTMLButtonElement>("copy-button");
 const downloadButton = requiredElement<HTMLButtonElement>("download-button");
+const downloadPbButton = requiredElement<HTMLButtonElement>("download-pb-button");
+const loadResponseButton = requiredElement<HTMLButtonElement>("load-response-button");
+const loadResponseInput = requiredElement<HTMLInputElement>("load-response-input");
 const responseOutput = requiredElement<HTMLElement>("response-output");
 const formStatus = requiredElement<HTMLElement>("form-status");
 const serviceStatus = requiredElement<HTMLElement>("service-status");
@@ -173,6 +178,14 @@ aliceSampleButton.addEventListener("click", () => void loadAliceSample());
 form.addEventListener("submit", submitAnalysis);
 copyButton.addEventListener("click", copyResponse);
 downloadButton.addEventListener("click", downloadResponse);
+downloadPbButton.addEventListener("click", () => void downloadResponsePb());
+loadResponseButton.addEventListener("click", () => loadResponseInput.click());
+loadResponseInput.addEventListener("change", () => {
+  const file = loadResponseInput.files?.[0];
+  if (file) {
+    void loadLocalResponse(file);
+  }
+});
 layerFilter.addEventListener("input", filterLayerButtons);
 documentWindowPosition.addEventListener("input", renderCurrentDocumentWindow);
 for (const tab of resultTabs) {
@@ -291,6 +304,7 @@ async function submitAnalysis(event: SubmitEvent): Promise<void> {
     currentResponse = undefined;
     copyButton.disabled = true;
     downloadButton.disabled = true;
+    downloadPbButton.disabled = true;
     normalizationXray.hidden = true;
     responseOutput.textContent = "The analysis request did not complete.";
     setFormStatus(errorMessage(error, "Analysis failed. Please try again."), true);
@@ -671,12 +685,58 @@ function downloadResponse(): void {
   if (currentResponse === undefined) {
     return;
   }
-  const url = URL.createObjectURL(new Blob([storedJson()], { type: "application/json" }));
+  saveBlob(new Blob([storedJson()], { type: "application/json" }), "opennlp-analysis.json");
+}
+
+/** Saves the stored response as serialized protobuf, transcoded by the gateway. */
+async function downloadResponsePb(): Promise<void> {
+  if (currentResponse === undefined) {
+    return;
+  }
+  try {
+    const bytes = await encodeAnalyzeResponsePb(storedJson());
+    saveBlob(new Blob([bytes], { type: "application/x-protobuf" }), "opennlp-analysis.pb");
+  } catch (error) {
+    setFormStatus(errorMessage(error, "The .pb download did not complete."), true);
+  }
+}
+
+/** Hands one blob to the browser's save flow under the given file name. */
+function saveBlob(blob: Blob, name: string): void {
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "opennlp-analysis.json";
+  link.download = name;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+/** Loads a previously saved response, .pb through the gateway and .json directly. */
+async function loadLocalResponse(file: File): Promise<void> {
+  try {
+    const response = file.name.endsWith(".pb")
+      ? await decodeAnalyzeResponsePb(await file.arrayBuffer())
+      : JSON.parse(await file.text()) as unknown;
+    presentLoadedResponse(response, file.name);
+  } catch (error) {
+    setFormStatus(errorMessage(error, `Could not load ${file.name}.`), true);
+  } finally {
+    loadResponseInput.value = "";
+  }
+}
+
+/** Presents a loaded response through the same views a live analysis uses. */
+function presentLoadedResponse(response: unknown, name: string): void {
+  const shape = readDocumentShape(response);
+  textArea.value = shape.rawText;
+  updateFormState();
+  storeResponse(response, shape);
+  chunkProjectionView.render(response);
+  renderDocumentShape(shape);
+  renderXray(response);
+  semanticWorkbench.setDocument(shape.rawText, shape, response);
+  selectResultTab("document");
+  setFormStatus(`Loaded ${name}.`);
 }
 
 function storeResponse(response: unknown, shape: DocumentShapeView): void {
@@ -687,6 +747,7 @@ function storeResponse(response: unknown, shape: DocumentShapeView): void {
   responseOutput.textContent = presentation.text;
   copyButton.disabled = false;
   downloadButton.disabled = false;
+  downloadPbButton.disabled = false;
 }
 
 function storedJson(): string {

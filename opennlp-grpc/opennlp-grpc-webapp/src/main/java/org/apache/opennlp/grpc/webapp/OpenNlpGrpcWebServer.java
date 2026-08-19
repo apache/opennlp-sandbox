@@ -204,10 +204,13 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
               "HTTP request body exceeds " + maxRequestBytes + " bytes"));
           return;
         }
-        if (method.equals(HTTP_POST) && !hasJsonContentType(exchange.getRequestHeaders())) {
-          send(exchange, GrpcJsonApi.error(415, Status.Code.INVALID_ARGUMENT,
-              "Content-Type must be application/json"));
-          return;
+        if (method.equals(HTTP_POST)) {
+          final String required = requiredContentType(rawPath);
+          if (!hasContentType(exchange.getRequestHeaders(), required)) {
+            send(exchange, GrpcJsonApi.error(415, Status.Code.INVALID_ARGUMENT,
+                "Content-Type must be " + required));
+            return;
+          }
         }
         exchange.getResponseHeaders().set("Cache-Control", "no-store");
         WebHttpResponse response = rawPath.equals("/api/v1/ui-extensions")
@@ -261,12 +264,13 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
     }
 
     /**
-     * Returns whether the request declares the protobuf JSON media type.
+     * Returns whether the request declares the required media type.
      *
      * @param headers The request headers.
-     * @return {@code true} for {@code application/json}.
+     * @param required The media type the path requires.
+     * @return {@code true} when the declared media type matches.
      */
-    private boolean hasJsonContentType(Headers headers) {
+    private boolean hasContentType(Headers headers, String required) {
       String contentType = headers.getFirst("Content-Type");
       if (contentType == null) {
         return false;
@@ -274,7 +278,19 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
       int parameterStart = contentType.indexOf(';');
       String mediaType = parameterStart < 0
           ? contentType : contentType.substring(0, parameterStart);
-      return equalsIgnoreCaseAscii(mediaType.strip(), JSON_MEDIA_TYPE);
+      return equalsIgnoreCaseAscii(mediaType.strip(), required);
+    }
+
+    /**
+     * The content type one API path requires: serialized protobuf for the saved
+     * response decoder, protobuf JSON everywhere else.
+     *
+     * @param path The request path.
+     * @return The required media type.
+     */
+    private static String requiredContentType(String path) {
+      return path.equals("/api/v1/response/decode")
+          ? GrpcJsonApi.PROTOBUF_CONTENT_TYPE : JSON_MEDIA_TYPE;
     }
 
     /**

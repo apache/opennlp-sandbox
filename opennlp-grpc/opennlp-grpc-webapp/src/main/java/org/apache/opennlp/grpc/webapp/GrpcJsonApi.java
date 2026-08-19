@@ -28,6 +28,7 @@ import com.google.protobuf.util.JsonFormat;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
+import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
 import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
 import org.apache.opennlp.grpc.v1.SearchIndexRequest;
@@ -35,6 +36,7 @@ import org.apache.opennlp.grpc.v1.SearchIndexRequest;
 final class GrpcJsonApi {
 
   static final String JSON_CONTENT_TYPE = "application/json; charset=utf-8";
+  static final String PROTOBUF_CONTENT_TYPE = "application/x-protobuf";
 
   private static final char[] HEX_DIGITS = "0123456789abcdef".toCharArray();
   private static final String INVALID_UTF8_MESSAGE = "Request body must contain valid UTF-8";
@@ -93,6 +95,10 @@ final class GrpcJsonApi {
             ? protobufJson(analysisRpc.listModelBundles()) : methodNotAllowed();
         case "/api/v1/analyze" -> method.equals("POST")
             ? analyze(body) : methodNotAllowed();
+        case "/api/v1/response/encode" -> method.equals("POST")
+            ? encodeResponse(body) : methodNotAllowed();
+        case "/api/v1/response/decode" -> method.equals("POST")
+            ? decodeResponse(body) : methodNotAllowed();
         case "/api/v1/search-indexes" -> method.equals("GET")
             ? protobufJson(searchRpc.listSearchIndexes()) : methodNotAllowed();
         case "/api/v1/search" -> method.equals("POST")
@@ -135,6 +141,37 @@ final class GrpcJsonApi {
           MALFORMED_PROTOBUF_JSON_PREFIX + exception.getMessage());
     }
     return protobufJson(analysisRpc.analyze(request.build()));
+  }
+
+  /**
+   * Re-encodes a saved analysis response: protobuf JSON in, serialized protobuf out, so
+   * the browser can save a {@code .pb} file without a protobuf runtime of its own. No
+   * RPC is made; the transcode is local to the gateway.
+   *
+   * @param body The protobuf JSON of one analysis response.
+   * @return The serialized response bytes, or a parse failure.
+   */
+  private WebHttpResponse encodeResponse(byte[] body) {
+    final AnalyzeDocumentResponse.Builder response = AnalyzeDocumentResponse.newBuilder();
+    final WebHttpResponse parseFailure = merge(body, response);
+    return parseFailure != null ? parseFailure
+        : new WebHttpResponse(200, PROTOBUF_CONTENT_TYPE, response.build().toByteArray());
+  }
+
+  /**
+   * Decodes a saved {@code .pb} analysis response back into protobuf JSON, so the
+   * browser can load a file it saved earlier. No RPC is made.
+   *
+   * @param body The serialized response bytes.
+   * @return The protobuf JSON of the response, or a parse failure.
+   */
+  private WebHttpResponse decodeResponse(byte[] body) {
+    try {
+      return protobufJson(AnalyzeDocumentResponse.parseFrom(body));
+    } catch (InvalidProtocolBufferException exception) {
+      return error(400, Status.Code.INVALID_ARGUMENT,
+          "Malformed protobuf response bytes: " + exception.getMessage());
+    }
   }
 
   /**
