@@ -297,6 +297,14 @@ vocabulary.max_vocabulary_terms=1000000
 vocabulary.max_concurrent_writes=1
 ```
 
+`vocabulary.artifact_root` is a plain directory path or a URI whose scheme selects the
+durable store. A plain path or a `file` URI uses the built-in filesystem store, which
+stages each artifact and publishes it with one atomic directory move. Other schemes
+resolve through the `VocabularyStoreProvider` ServiceLoader interface in
+`org.apache.opennlp.grpc.vocabulary.store`, so a remote tier such as S3 plugs in by
+adding the JAR that provides its scheme to the classpath; the service itself carries
+no cloud dependency. A scheme with no provider on the classpath fails loud at startup.
+
 The defaults shown above are conservative per-operation caps. `max_concurrent_writes` is shared by
 dictionary imports and vocabulary builds, so multiple client streams cannot multiply their bounded
 working sets without an explicit operator choice. Values are validated against fixed safety
