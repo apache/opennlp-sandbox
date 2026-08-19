@@ -27,6 +27,7 @@ import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.GetServiceInfoResponse;
 import org.apache.opennlp.grpc.v1.ListModelBundlesResponse;
+import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.junit.jupiter.api.Test;
 
 class GrpcJsonApiTest {
@@ -55,6 +56,70 @@ class GrpcJsonApiTest {
     assertEquals(200, response.status());
     assertTrue(response.bodyUtf8().contains("\"docId\":\"one\""));
     assertTrue(response.bodyUtf8().contains("\"rawText\":\"Hello world.\""));
+  }
+
+
+  @Test
+  void encodesAnalyzeResponseJsonAsProtobufBytes() throws Exception {
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc());
+    byte[] json = """
+        {"document":{"docId":"one","rawText":"Hello world."}}
+        """.getBytes(StandardCharsets.UTF_8);
+
+    WebHttpResponse response = api.handle("POST", "/api/v1/response/encode", json);
+
+    assertEquals(200, response.status());
+    assertEquals("application/x-protobuf", response.contentType());
+    AnalyzeDocumentResponse decoded = AnalyzeDocumentResponse.parseFrom(response.body());
+    assertEquals("one", decoded.getDocument().getDocId());
+    assertEquals("Hello world.", decoded.getDocument().getRawText());
+  }
+
+  @Test
+  void decodesProtobufBytesBackToAnalyzeResponseJson() {
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc());
+    byte[] bytes = AnalyzeDocumentResponse.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setDocId("one").setRawText("Hello world."))
+        .build()
+        .toByteArray();
+
+    WebHttpResponse response = api.handle("POST", "/api/v1/response/decode", bytes);
+
+    assertEquals(200, response.status());
+    assertEquals("application/json; charset=utf-8", response.contentType());
+    assertTrue(response.bodyUtf8().contains("\"docId\":\"one\""));
+    assertTrue(response.bodyUtf8().contains("\"rawText\":\"Hello world.\""));
+  }
+
+  @Test
+  void rejectsMalformedResponseBytesLoudly() {
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc());
+
+    WebHttpResponse response = api.handle("POST", "/api/v1/response/decode",
+        new byte[] {(byte) 0xFF, (byte) 0xFF, (byte) 0xFF});
+
+    assertEquals(400, response.status());
+    assertTrue(response.bodyUtf8().contains("\"code\":\"INVALID_ARGUMENT\""));
+    assertTrue(response.bodyUtf8().contains("Malformed protobuf response bytes"));
+  }
+
+  @Test
+  void rejectsMalformedResponseJsonBeforeEncoding() {
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc());
+
+    WebHttpResponse response = api.handle("POST", "/api/v1/response/encode",
+        "not-json".getBytes(StandardCharsets.UTF_8));
+
+    assertEquals(400, response.status());
+    assertTrue(response.bodyUtf8().contains("\"code\":\"INVALID_ARGUMENT\""));
+  }
+
+  @Test
+  void transcodeEndpointsRejectNonPostMethods() {
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc());
+
+    assertEquals(405, api.handle("GET", "/api/v1/response/encode", new byte[0]).status());
+    assertEquals(405, api.handle("GET", "/api/v1/response/decode", new byte[0]).status());
   }
 
   @Test
