@@ -327,6 +327,41 @@ class OpenNlpGrpcWebServerTest {
     }
 
     @Override
+    public org.apache.opennlp.grpc.v1.PersistIndexResponse persist(
+        org.apache.opennlp.grpc.v1.PersistIndexRequest request) {
+      return org.apache.opennlp.grpc.v1.PersistIndexResponse.getDefaultInstance();
+    }
+
+    @Override
+    public org.apache.opennlp.grpc.v1.SealIndexResponse seal(
+        org.apache.opennlp.grpc.v1.SealIndexRequest request) {
+      return org.apache.opennlp.grpc.v1.SealIndexResponse.getDefaultInstance();
+    }
+
+    @Override
+    public org.apache.opennlp.grpc.v1.ReindexIndexResponse reindex(
+        org.apache.opennlp.grpc.v1.ReindexIndexRequest request) {
+      return org.apache.opennlp.grpc.v1.ReindexIndexResponse.getDefaultInstance();
+    }
+
+    @Override
+    public org.apache.opennlp.grpc.v1.SetIndexAliasResponse setAlias(
+        org.apache.opennlp.grpc.v1.SetIndexAliasRequest request) {
+      return org.apache.opennlp.grpc.v1.SetIndexAliasResponse.getDefaultInstance();
+    }
+
+    @Override
+    public org.apache.opennlp.grpc.v1.DeleteIndexAliasResponse deleteAlias(
+        org.apache.opennlp.grpc.v1.DeleteIndexAliasRequest request) {
+      return org.apache.opennlp.grpc.v1.DeleteIndexAliasResponse.getDefaultInstance();
+    }
+
+    @Override
+    public org.apache.opennlp.grpc.v1.ListIndexAliasesResponse listAliases() {
+      return org.apache.opennlp.grpc.v1.ListIndexAliasesResponse.getDefaultInstance();
+    }
+
+    @Override
     public ListSearchIndexesResponse listSearchIndexes() {
       return ListSearchIndexesResponse.newBuilder()
           .addIndexes(SearchIndexDescriptor.newBuilder()

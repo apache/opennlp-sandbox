@@ -18,14 +18,25 @@
  */
 package org.apache.opennlp.grpc.webapp;
 
+import org.apache.opennlp.grpc.v1.DeleteIndexAliasRequest;
+import org.apache.opennlp.grpc.v1.DeleteIndexAliasResponse;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexResponse;
 import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
 import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
+import org.apache.opennlp.grpc.v1.ListIndexAliasesResponse;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesResponse;
 import org.apache.opennlp.grpc.v1.ListSearchProvidersResponse;
+import org.apache.opennlp.grpc.v1.PersistIndexRequest;
+import org.apache.opennlp.grpc.v1.PersistIndexResponse;
+import org.apache.opennlp.grpc.v1.ReindexIndexRequest;
+import org.apache.opennlp.grpc.v1.ReindexIndexResponse;
+import org.apache.opennlp.grpc.v1.SealIndexRequest;
+import org.apache.opennlp.grpc.v1.SealIndexResponse;
 import org.apache.opennlp.grpc.v1.SearchIndexRequest;
 import org.apache.opennlp.grpc.v1.SearchIndexResponse;
+import org.apache.opennlp.grpc.v1.SetIndexAliasRequest;
+import org.apache.opennlp.grpc.v1.SetIndexAliasResponse;
 
 interface SearchRpc {
 
@@ -34,6 +45,49 @@ interface SearchRpc {
 
   /** @return Configured search provider instances and their capabilities. */
   ListSearchProvidersResponse listSearchProviders();
+
+  /**
+   * Persists one dynamic index as a checkpoint.
+   *
+   * @param request Index id or alias to persist.
+   * @return Descriptor with its persisted flag set.
+   */
+  PersistIndexResponse persist(PersistIndexRequest request);
+
+  /**
+   * Persists one dynamic index and marks it immutable.
+   *
+   * @param request Index id or alias to seal.
+   * @return Descriptor, immutable and persisted.
+   */
+  SealIndexResponse seal(SealIndexRequest request);
+
+  /**
+   * Builds a new index beside an existing one under a new embedding selection.
+   *
+   * @param request Source, embedding selection, and optional alias swap.
+   * @return The newly built index and replay counts.
+   */
+  ReindexIndexResponse reindex(ReindexIndexRequest request);
+
+  /**
+   * Creates or repoints one alias.
+   *
+   * @param request Alias name and target index id.
+   * @return The stored alias.
+   */
+  SetIndexAliasResponse setAlias(SetIndexAliasRequest request);
+
+  /**
+   * Deletes one alias.
+   *
+   * @param request Alias name.
+   * @return Whether the alias existed and was deleted.
+   */
+  DeleteIndexAliasResponse deleteAlias(DeleteIndexAliasRequest request);
+
+  /** @return Every alias in stable alias order. */
+  ListIndexAliasesResponse listAliases();
 
   /**
    * Searches one server-owned index.

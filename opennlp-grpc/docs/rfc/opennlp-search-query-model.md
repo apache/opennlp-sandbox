@@ -256,7 +256,17 @@ requests set exactly one of the two.
    for keyword legs follows the provider SPI step.
 3. Index persistence as the existing bundle format written to a configured
    local directory, plus the collection descriptor file and the lifecycle
-   RPCs (persist, seal, reindex, aliases, watch).
+   RPCs (persist, seal, reindex, aliases, watch). Landed on this branch:
+   workspace checkpoints under `search.persist.root` (the bundle-style
+   properties descriptor beside a `chunks.pb` stream retaining raw vectors,
+   staged and swapped so the last complete write wins), restore at startup
+   with content-hash integrity, explicit `PersistIndex` and `SealIndex` with
+   the optional `search.persist.checkpoint_seconds` auto-checkpoint, alias
+   RPCs persisted as `aliases.pb` and resolved wherever an index id is
+   accepted, and blue/green `ReindexIndex` replaying retained chunks through
+   a newly selected embedding route with the alias swapping only after a
+   successful build. Remaining in this step: the collection descriptor file
+   and the watch stream.
 4. `opennlp-grpc-search-lucene` as the first external provider module, mapped
    mechanically: join to BooleanQuery, boost to BoostQuery, semantic to
    KnnFloatVectorQuery.

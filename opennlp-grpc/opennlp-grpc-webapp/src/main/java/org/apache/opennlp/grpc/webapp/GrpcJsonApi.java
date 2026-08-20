@@ -30,7 +30,12 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
+import org.apache.opennlp.grpc.v1.DeleteIndexAliasRequest;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
+import org.apache.opennlp.grpc.v1.PersistIndexRequest;
+import org.apache.opennlp.grpc.v1.ReindexIndexRequest;
+import org.apache.opennlp.grpc.v1.SealIndexRequest;
+import org.apache.opennlp.grpc.v1.SetIndexAliasRequest;
 import org.apache.opennlp.grpc.v1.DeleteStaticModelRequest;
 import org.apache.opennlp.grpc.v1.DownloadVocabularyRequest;
 import org.apache.opennlp.grpc.v1.ImportDictionaryUpload;
@@ -130,6 +135,18 @@ final class GrpcJsonApi {
             ? indexDocuments(body) : methodNotAllowed();
         case "/api/v1/delete-search-index" -> method.equals("POST")
             ? deleteSearchIndex(body) : methodNotAllowed();
+        case "/api/v1/persist-index" -> method.equals("POST")
+            ? persistIndex(body) : methodNotAllowed();
+        case "/api/v1/seal-index" -> method.equals("POST")
+            ? sealIndex(body) : methodNotAllowed();
+        case "/api/v1/reindex-index" -> method.equals("POST")
+            ? reindexIndex(body) : methodNotAllowed();
+        case "/api/v1/set-index-alias" -> method.equals("POST")
+            ? setIndexAlias(body) : methodNotAllowed();
+        case "/api/v1/delete-index-alias" -> method.equals("POST")
+            ? deleteIndexAlias(body) : methodNotAllowed();
+        case "/api/v1/index-aliases" -> method.equals("GET")
+            ? protobufJson(searchRpc.listAliases()) : methodNotAllowed();
         case "/api/v1/dictionary-formats" -> method.equals("GET")
             ? protobufJson(vocabularyRpc.listDictionaryFormats()) : methodNotAllowed();
         case "/api/v1/import-dictionary" -> method.equals("POST")
@@ -256,6 +273,67 @@ final class GrpcJsonApi {
     final DeleteSearchIndexRequest.Builder request = DeleteSearchIndexRequest.newBuilder();
     final WebHttpResponse parseFailure = merge(body, request);
     return parseFailure != null ? parseFailure : protobufJson(searchRpc.delete(request.build()));
+  }
+
+  /**
+   * Parses and forwards one checkpoint request.
+   *
+   * @param body Protobuf JSON request body.
+   * @return Encoded persisted descriptor or parse failure.
+   */
+  private WebHttpResponse persistIndex(byte[] body) {
+    final PersistIndexRequest.Builder request = PersistIndexRequest.newBuilder();
+    final WebHttpResponse parseFailure = merge(body, request);
+    return parseFailure != null ? parseFailure : protobufJson(searchRpc.persist(request.build()));
+  }
+
+  /**
+   * Parses and forwards one seal request.
+   *
+   * @param body Protobuf JSON request body.
+   * @return Encoded sealed descriptor or parse failure.
+   */
+  private WebHttpResponse sealIndex(byte[] body) {
+    final SealIndexRequest.Builder request = SealIndexRequest.newBuilder();
+    final WebHttpResponse parseFailure = merge(body, request);
+    return parseFailure != null ? parseFailure : protobufJson(searchRpc.seal(request.build()));
+  }
+
+  /**
+   * Parses and forwards one blue/green reindex request.
+   *
+   * @param body Protobuf JSON request body.
+   * @return Encoded reindex result or parse failure.
+   */
+  private WebHttpResponse reindexIndex(byte[] body) {
+    final ReindexIndexRequest.Builder request = ReindexIndexRequest.newBuilder();
+    final WebHttpResponse parseFailure = merge(body, request);
+    return parseFailure != null ? parseFailure : protobufJson(searchRpc.reindex(request.build()));
+  }
+
+  /**
+   * Parses and forwards one alias upsert.
+   *
+   * @param body Protobuf JSON request body.
+   * @return Encoded stored alias or parse failure.
+   */
+  private WebHttpResponse setIndexAlias(byte[] body) {
+    final SetIndexAliasRequest.Builder request = SetIndexAliasRequest.newBuilder();
+    final WebHttpResponse parseFailure = merge(body, request);
+    return parseFailure != null ? parseFailure : protobufJson(searchRpc.setAlias(request.build()));
+  }
+
+  /**
+   * Parses and forwards one alias deletion.
+   *
+   * @param body Protobuf JSON request body.
+   * @return Encoded deletion result or parse failure.
+   */
+  private WebHttpResponse deleteIndexAlias(byte[] body) {
+    final DeleteIndexAliasRequest.Builder request = DeleteIndexAliasRequest.newBuilder();
+    final WebHttpResponse parseFailure = merge(body, request);
+    return parseFailure != null ? parseFailure
+        : protobufJson(searchRpc.deleteAlias(request.build()));
   }
 
   /**

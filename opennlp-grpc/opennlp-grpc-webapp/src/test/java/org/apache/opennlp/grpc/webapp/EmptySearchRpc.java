@@ -18,8 +18,19 @@
  */
 package org.apache.opennlp.grpc.webapp;
 
+import org.apache.opennlp.grpc.v1.DeleteIndexAliasRequest;
+import org.apache.opennlp.grpc.v1.DeleteIndexAliasResponse;
+import org.apache.opennlp.grpc.v1.ListIndexAliasesResponse;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesResponse;
 import org.apache.opennlp.grpc.v1.ListSearchProvidersResponse;
+import org.apache.opennlp.grpc.v1.PersistIndexRequest;
+import org.apache.opennlp.grpc.v1.PersistIndexResponse;
+import org.apache.opennlp.grpc.v1.ReindexIndexRequest;
+import org.apache.opennlp.grpc.v1.ReindexIndexResponse;
+import org.apache.opennlp.grpc.v1.SealIndexRequest;
+import org.apache.opennlp.grpc.v1.SealIndexResponse;
+import org.apache.opennlp.grpc.v1.SetIndexAliasRequest;
+import org.apache.opennlp.grpc.v1.SetIndexAliasResponse;
 import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
 import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
@@ -52,5 +63,35 @@ final class EmptySearchRpc implements SearchRpc {
   @Override
   public DeleteSearchIndexResponse delete(DeleteSearchIndexRequest request) {
     return DeleteSearchIndexResponse.getDefaultInstance();
+  }
+
+  @Override
+  public PersistIndexResponse persist(PersistIndexRequest request) {
+    return PersistIndexResponse.getDefaultInstance();
+  }
+
+  @Override
+  public SealIndexResponse seal(SealIndexRequest request) {
+    return SealIndexResponse.getDefaultInstance();
+  }
+
+  @Override
+  public ReindexIndexResponse reindex(ReindexIndexRequest request) {
+    return ReindexIndexResponse.getDefaultInstance();
+  }
+
+  @Override
+  public SetIndexAliasResponse setAlias(SetIndexAliasRequest request) {
+    return SetIndexAliasResponse.getDefaultInstance();
+  }
+
+  @Override
+  public DeleteIndexAliasResponse deleteAlias(DeleteIndexAliasRequest request) {
+    return DeleteIndexAliasResponse.getDefaultInstance();
+  }
+
+  @Override
+  public ListIndexAliasesResponse listAliases() {
+    return ListIndexAliasesResponse.getDefaultInstance();
   }
 }

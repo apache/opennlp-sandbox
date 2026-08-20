@@ -30,9 +30,21 @@ import org.apache.opennlp.grpc.v1.DeleteSearchIndexResponse;
 import org.apache.opennlp.grpc.v1.GetServiceInfoResponse;
 import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
 import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
+import org.apache.opennlp.grpc.v1.DeleteIndexAliasRequest;
+import org.apache.opennlp.grpc.v1.DeleteIndexAliasResponse;
+import org.apache.opennlp.grpc.v1.IndexAlias;
+import org.apache.opennlp.grpc.v1.ListIndexAliasesResponse;
 import org.apache.opennlp.grpc.v1.ListModelBundlesResponse;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesResponse;
 import org.apache.opennlp.grpc.v1.ListSearchProvidersResponse;
+import org.apache.opennlp.grpc.v1.PersistIndexRequest;
+import org.apache.opennlp.grpc.v1.PersistIndexResponse;
+import org.apache.opennlp.grpc.v1.ReindexIndexRequest;
+import org.apache.opennlp.grpc.v1.ReindexIndexResponse;
+import org.apache.opennlp.grpc.v1.SealIndexRequest;
+import org.apache.opennlp.grpc.v1.SealIndexResponse;
+import org.apache.opennlp.grpc.v1.SetIndexAliasRequest;
+import org.apache.opennlp.grpc.v1.SetIndexAliasResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.SearchProviderCapability;
 import org.apache.opennlp.grpc.v1.SearchProviderInstance;
@@ -108,6 +120,45 @@ class GrpcJsonSearchApiTest {
         .getOperands(0).getTerm().getText());
     assertTrue(response.bodyUtf8().contains(
         "\"matchedSpans\":[{\"start\":4,\"end\":10,\"term\":\"habeas\"}]"));
+  }
+
+  @Test
+  void drivesTheIndexLifecycleThroughProtobufJson() {
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new StubSearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
+    byte[] indexBody = ("{\"indexId\":\"" + INDEX_ID + "\"}").getBytes(StandardCharsets.UTF_8);
+
+    WebHttpResponse persisted = api.handle("POST", "/api/v1/persist-index", indexBody);
+    assertEquals(200, persisted.status());
+    assertTrue(persisted.bodyUtf8().contains("\"persisted\":true"));
+
+    WebHttpResponse sealed = api.handle("POST", "/api/v1/seal-index", indexBody);
+    assertEquals(200, sealed.status());
+    assertTrue(sealed.bodyUtf8().contains("\"immutable\":true"));
+
+    WebHttpResponse reindexed = api.handle("POST", "/api/v1/reindex-index", """
+        {"indexId":"%s","embedding":{"modelId":"demo"},"alias":"legal-current"}
+        """.formatted(INDEX_ID).getBytes(StandardCharsets.UTF_8));
+    assertEquals(200, reindexed.status());
+    assertTrue(reindexed.bodyUtf8().contains("\"sourceIndexId\":\"" + INDEX_ID + "\""));
+    assertTrue(reindexed.bodyUtf8().contains("\"reindexedChunks\":1"));
+
+    WebHttpResponse aliasSet = api.handle("POST", "/api/v1/set-index-alias", """
+        {"alias":"legal-current","indexId":"%s"}
+        """.formatted(INDEX_ID).getBytes(StandardCharsets.UTF_8));
+    assertEquals(200, aliasSet.status());
+    assertTrue(aliasSet.bodyUtf8().contains("\"alias\":\"legal-current\""));
+
+    WebHttpResponse aliases = api.handle("GET", "/api/v1/index-aliases", new byte[0]);
+    assertEquals(200, aliases.status());
+    assertTrue(aliases.bodyUtf8().contains("\"indexId\":\"" + INDEX_ID + "\""));
+
+    WebHttpResponse aliasDeleted = api.handle("POST", "/api/v1/delete-index-alias",
+        "{\"alias\":\"legal-current\"}".getBytes(StandardCharsets.UTF_8));
+    assertEquals(200, aliasDeleted.status());
+    assertTrue(aliasDeleted.bodyUtf8().contains("\"deleted\":true"));
+
+    assertEquals(405, api.handle("GET", "/api/v1/persist-index", new byte[0]).status());
+    assertEquals(405, api.handle("POST", "/api/v1/index-aliases", new byte[0]).status());
   }
 
   @Test
@@ -201,6 +252,61 @@ class GrpcJsonSearchApiTest {
       return IndexDocumentsResponse.newBuilder()
           .setIndex(SearchIndexDescriptor.newBuilder().setIndexId(INDEX_ID).setImmutable(false))
           .setIndexedDocuments(request.getDocumentsCount())
+          .build();
+    }
+
+    @Override
+    public PersistIndexResponse persist(PersistIndexRequest request) {
+      return PersistIndexResponse.newBuilder()
+          .setIndex(SearchIndexDescriptor.newBuilder()
+              .setIndexId(request.getIndexId())
+              .setPersisted(true))
+          .build();
+    }
+
+    @Override
+    public SealIndexResponse seal(SealIndexRequest request) {
+      return SealIndexResponse.newBuilder()
+          .setIndex(SearchIndexDescriptor.newBuilder()
+              .setIndexId(request.getIndexId())
+              .setPersisted(true)
+              .setImmutable(true))
+          .build();
+    }
+
+    @Override
+    public ReindexIndexResponse reindex(ReindexIndexRequest request) {
+      return ReindexIndexResponse.newBuilder()
+          .setIndex(SearchIndexDescriptor.newBuilder().setIndexId("workspace-reindexed"))
+          .setSourceIndexId(request.getIndexId())
+          .setReindexedDocuments(1)
+          .setReindexedChunks(1)
+          .build();
+    }
+
+    @Override
+    public SetIndexAliasResponse setAlias(SetIndexAliasRequest request) {
+      return SetIndexAliasResponse.newBuilder()
+          .setAlias(IndexAlias.newBuilder()
+              .setAlias(request.getAlias())
+              .setIndexId(request.getIndexId()))
+          .build();
+    }
+
+    @Override
+    public DeleteIndexAliasResponse deleteAlias(DeleteIndexAliasRequest request) {
+      return DeleteIndexAliasResponse.newBuilder()
+          .setAlias(request.getAlias())
+          .setDeleted(true)
+          .build();
+    }
+
+    @Override
+    public ListIndexAliasesResponse listAliases() {
+      return ListIndexAliasesResponse.newBuilder()
+          .addAliases(IndexAlias.newBuilder()
+              .setAlias("legal-current")
+              .setIndexId(INDEX_ID))
           .build();
     }
 
