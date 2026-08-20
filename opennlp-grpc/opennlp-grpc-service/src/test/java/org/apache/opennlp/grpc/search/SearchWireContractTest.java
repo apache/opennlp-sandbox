@@ -46,7 +46,7 @@ class SearchWireContractTest {
     final var service = OpenNlpSearchProto.getDescriptor()
         .findServiceByName("OpenNlpSearchService");
     assertNotNull(service);
-    assertEquals(11, service.getMethods().size());
+    assertEquals(16, service.getMethods().size());
     final MethodDescriptor list = service.findMethodByName("ListSearchIndexes");
     final MethodDescriptor providers = service.findMethodByName("ListSearchProviders");
     final MethodDescriptor search = service.findMethodByName("SearchIndex");
