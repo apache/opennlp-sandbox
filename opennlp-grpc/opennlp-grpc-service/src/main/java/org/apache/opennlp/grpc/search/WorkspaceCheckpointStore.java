@@ -46,7 +46,8 @@ import org.apache.opennlp.grpc.v1.PersistedSearchChunk;
  * length-delimited {@link PersistedSearchChunk} records with raw vectors. Writes stage
  * into a hidden temporary directory and swap it in, so the last complete write wins and
  * readers never observe a partial checkpoint. Restore skips hidden directories left by
- * an interrupted swap.</p>
+ * an interrupted swap and the reserved
+ * {@value SearchCollectionRegistry#COLLECTIONS_DIR} directory.</p>
  */
 public final class WorkspaceCheckpointStore {
 
@@ -192,7 +193,9 @@ public final class WorkspaceCheckpointStore {
     try (DirectoryStream<Path> entries = Files.newDirectoryStream(root)) {
       for (Path entry : entries) {
         if (Files.isDirectory(entry)
-            && !entry.getFileName().toString().startsWith(".")) {
+            && !entry.getFileName().toString().startsWith(".")
+            && !SearchCollectionRegistry.COLLECTIONS_DIR
+                .equals(entry.getFileName().toString())) {
           directories.add(entry);
         }
       }
@@ -333,7 +336,7 @@ public final class WorkspaceCheckpointStore {
    * @param directory Directory to remove.
    * @throws IOException If a deletion fails.
    */
-  private static void deleteRecursively(Path directory) throws IOException {
+  static void deleteRecursively(Path directory) throws IOException {
     if (!Files.exists(directory)) {
       return;
     }
