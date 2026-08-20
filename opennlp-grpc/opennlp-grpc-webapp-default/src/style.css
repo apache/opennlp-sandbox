@@ -981,6 +981,17 @@ main { overflow: clip; margin-top: 1rem; }
   .capability-summary { grid-column: 1 / -1; }
 }
 
+.semantic-intro > label { display: block; margin-top: 0.9rem; color: #91a0b7; font-size: 0.68rem; }
+.semantic-intro > select {
+  margin-top: 0.3rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #304058;
+  border-radius: 0.45rem;
+  background: #101a2a;
+  color: #dce7f5;
+  font-size: 0.74rem;
+}
+
 .vocabulary-trainer {
   margin-top: 0;
   padding: clamp(1.3rem, 3vw, 2.2rem);
