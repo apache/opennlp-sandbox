@@ -20,6 +20,7 @@ syntax = "proto3";
 package org.apache.opennlp.grpc.v1;
 
 import "org/apache/opennlp/grpc/v1/opennlp_document.proto";
+import "org/apache/opennlp/grpc/v1/opennlp_search.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "OpenNlpSearchStorageProto";
@@ -30,6 +31,12 @@ option java_package = "org.apache.opennlp.grpc.v1";
 // file of length-delimited PersistedSearchChunk records; the raw vectors are
 // retained so accretion continues across restarts, and the quantized form is
 // rebuilt deterministically on load from the provider's fixed parameters.
+
+// The complete alias set, persisted as one local file with last write wins.
+message PersistedIndexAliases {
+  // Aliases in stable alias order.
+  repeated IndexAlias aliases = 1;
+}
 
 // One persisted chunk of a live search index checkpoint.
 message PersistedSearchChunk {

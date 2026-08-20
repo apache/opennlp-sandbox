@@ -253,6 +253,17 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
   }
 
   /**
+   * Returns one dynamic index without failing.
+   *
+   * @param indexId Opaque dynamic index identifier.
+   * @return The matching provider, or {@code null} when the id is unknown.
+   */
+  synchronized SearchIndexProvider find(String indexId) {
+    requireOpen();
+    return indexId == null ? null : indexes.get(indexId);
+  }
+
+  /**
    * Deletes one dynamic index.
    *
    * @param indexId Opaque dynamic index identifier.

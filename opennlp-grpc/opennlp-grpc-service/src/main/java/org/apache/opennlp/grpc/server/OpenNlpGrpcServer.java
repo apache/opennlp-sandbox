@@ -40,9 +40,11 @@ import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.processor.basic.BasicDocumentAnalyzer;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.search.DynamicSearchIndexRegistry;
+import org.apache.opennlp.grpc.search.IndexAliasRegistry;
 import org.apache.opennlp.grpc.search.OpenNlpSearchServiceImpl;
 import org.apache.opennlp.grpc.search.SearchIndexRegistry;
 import org.apache.opennlp.grpc.search.SearchProviderCatalog;
+import org.apache.opennlp.grpc.search.WorkspaceCheckpointStore;
 import org.apache.opennlp.grpc.training.OpenNlpModelTrainingServiceImpl;
 import org.apache.opennlp.grpc.training.StaticModelArtifactStore;
 import org.apache.opennlp.grpc.training.StaticModelTrainer;
@@ -93,6 +95,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
   private Server server;
   private ExecutorService handlerExecutor;
   private ExecutorService analysisExecutor;
+  private java.util.concurrent.ScheduledExecutorService checkpointScheduler;
   private HealthStatusManager healthStatusManager;
   private ModelBundleCache modelBundleCache;
   private SearchIndexRegistry searchIndexRegistry;
@@ -189,9 +192,34 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
 
     this.modelBundleCache = new ModelBundleCache(configuration);
     this.searchIndexRegistry = SearchIndexRegistry.fromConfiguration(configuration);
+    final WorkspaceCheckpointStore checkpointStore =
+        WorkspaceCheckpointStore.fromConfiguration(configuration);
     this.dynamicSearchIndexRegistry = enableDynamicSearch
-        ? new DynamicSearchIndexRegistry(SearchProviderCatalog.fromConfiguration(configuration))
+        ? new DynamicSearchIndexRegistry(
+            SearchProviderCatalog.fromConfiguration(configuration), checkpointStore)
         : DynamicSearchIndexRegistry.disabled();
+    final IndexAliasRegistry indexAliasRegistry =
+        IndexAliasRegistry.fromConfiguration(configuration);
+    final int checkpointSeconds = Integer.parseInt(configuration.getOrDefault(
+        "search.persist.checkpoint_seconds", "0"));
+    if (checkpointSeconds < 0) {
+      throw new IllegalArgumentException(
+          "search.persist.checkpoint_seconds must not be negative");
+    }
+    if (checkpointSeconds > 0 && checkpointStore != null && enableDynamicSearch) {
+      this.checkpointScheduler = Executors.newSingleThreadScheduledExecutor(
+          Thread.ofPlatform().name("opennlp-search-checkpoint").daemon().factory());
+      checkpointScheduler.scheduleWithFixedDelay(() -> {
+        try {
+          final int rewritten = dynamicSearchIndexRegistry.checkpointPersistedIndexes();
+          if (rewritten > 0) {
+            logger.info("Auto-checkpoint rewrote {} search index checkpoint(s)", rewritten);
+          }
+        } catch (RuntimeException e) {
+          logger.error("Auto-checkpoint of search indexes failed", e);
+        }
+      }, checkpointSeconds, checkpointSeconds, TimeUnit.SECONDS);
+    }
     final DictionaryFormatRegistry dictionaryFormats = DictionaryFormatRegistry.discover();
     final VocabularyArtifactStore vocabularyArtifacts =
         VocabularyArtifactStore.fromConfiguration(configuration, dictionaryFormats);
@@ -228,7 +256,8 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
             new OpenNlpSearchServiceImpl(
                 searchIndexRegistry,
                 dynamicSearchIndexRegistry,
-                modelBundleCache.getEmbeddingProvider()),
+                modelBundleCache.getEmbeddingProvider(),
+                indexAliasRegistry),
             new EagerHeadersInterceptor()))
         .addService(ServerInterceptors.intercept(
             new OpenNlpVocabularyServiceImpl(dictionaryFormats, vocabularyArtifacts),
@@ -377,6 +406,9 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     }
     if (healthStatusManager != null) {
       healthStatusManager.enterTerminalState();
+    }
+    if (checkpointScheduler != null) {
+      checkpointScheduler.shutdownNow();
     }
     boolean forced = false;
     boolean interrupted = false;
