@@ -18,8 +18,13 @@
  */
 package org.apache.opennlp.grpc.search;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import org.apache.opennlp.grpc.search.query.KeywordQueryIndex;
+import org.apache.opennlp.grpc.search.query.QueryCandidate;
+import org.apache.opennlp.grpc.search.query.TermsKeywordQueryIndex;
 import org.apache.opennlp.grpc.v1.AnalysisChainDescriptor;
 import org.apache.opennlp.grpc.v1.SearchProviderCapability;
 
@@ -28,6 +33,22 @@ import org.apache.opennlp.grpc.v1.SearchProviderCapability;
  * over retained emitted text.
  */
 public final class TermsSearchIndexProviderFactory implements SearchIndexProviderFactory {
+
+  /** Typed stateless configuration of the built-in term provider. */
+  public record Configuration() implements ConfiguredProvider {
+
+    /** {@inheritDoc} */
+    @Override
+    public AnalysisChainDescriptor analysisChain() {
+      return chain();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public KeywordQueryIndex createKeywordQueryIndex(List<QueryCandidate> candidates) {
+      return new TermsKeywordQueryIndex(candidates);
+    }
+  }
 
   /** Stable configuration identifier for this provider. */
   public static final String PROVIDER_ID = "terms";
@@ -61,7 +82,23 @@ public final class TermsSearchIndexProviderFactory implements SearchIndexProvide
 
   /** {@inheritDoc} */
   @Override
+  public ConfiguredProvider configureInstance(
+      String instanceId, Map<String, String> options) {
+    if (!options.isEmpty()) {
+      throw new IllegalArgumentException("search provider instance '" + instanceId
+          + "' does not support term-provider options " + options.keySet());
+    }
+    return new Configuration();
+  }
+
+  /** {@inheritDoc} */
+  @Override
   public AnalysisChainDescriptor analysisChain() {
+    return chain();
+  }
+
+  /** Returns the built-in chain descriptor shared by default and configured instances. */
+  private static AnalysisChainDescriptor chain() {
     return AnalysisChainDescriptor.newBuilder()
         .setChainId(CHAIN_ID)
         .setChainVersion(CHAIN_VERSION)

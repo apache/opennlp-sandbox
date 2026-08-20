@@ -21,20 +21,34 @@ import org.apache.opennlp.grpc.search.SearchRecord;
 
 /**
  * One indexed chunk offered to compound query execution: its retained search record and
- * its raw embedding vector. The vector is shared, not copied; callers must not mutate it.
+ * an optional raw embedding vector. Provider-delegated execution needs only the record;
+ * the local exact-search convenience path requires the vector.
  *
  * @param record Retained source and chunk metadata.
- * @param vector Raw indexed embedding.
+ * @param vector Raw indexed embedding, or {@code null} when the vector provider owns storage.
  */
 public record QueryCandidate(SearchRecord record, float[] vector) {
 
-  /** Validates that both parts are present and the vector is non-empty. */
+  /** Validates the record and any supplied vector. */
   public QueryCandidate {
     if (record == null) {
       throw new IllegalArgumentException("record must not be null");
     }
-    if (vector == null || vector.length == 0) {
-      throw new IllegalArgumentException("vector must not be null or empty");
+    if (vector != null && vector.length == 0) {
+      throw new IllegalArgumentException("vector must not be empty");
     }
+  }
+
+  /**
+   * Returns the raw vector required by the local exact-search convenience path.
+   *
+   * @return Raw vector.
+   * @throws IllegalStateException If the provider owns vector storage.
+   */
+  float[] requireVector() {
+    if (vector == null) {
+      throw new IllegalStateException("candidate vector is owned by its search provider");
+    }
+    return vector;
   }
 }

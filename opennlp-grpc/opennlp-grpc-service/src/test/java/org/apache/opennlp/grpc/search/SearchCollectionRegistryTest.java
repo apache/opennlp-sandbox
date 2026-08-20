@@ -19,11 +19,14 @@
 package org.apache.opennlp.grpc.search;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.opennlp.grpc.v1.CollectionDescriptor;
 import org.apache.opennlp.grpc.v1.CollectionEvent;
@@ -38,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class SearchCollectionRegistryTest {
 
@@ -174,6 +178,43 @@ class SearchCollectionRegistryTest {
   }
 
   @Test
+  void failedPersistentMutationsLeaveThePublishedCollectionUnchanged(@TempDir Path root)
+      throws Exception {
+    final DynamicSearchIndexRegistry indexes = new DynamicSearchIndexRegistry();
+    final String indexId = indexes
+        .index(DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha", 1, 0))
+        .getIndex().getIndexId();
+    final Path collectionsRoot = root.resolve(SearchCollectionRegistry.COLLECTIONS_DIR);
+    final SearchCollectionRegistry registry = SearchCollectionRegistry.at(
+        collectionsRoot, indexes, NO_VOCABULARIES);
+    registry.set(SetCollectionRequest.newBuilder()
+        .setCollectionId("legal")
+        .setDisplayName("Original name")
+        .addMemberIndexIds(indexId)
+        .build());
+    final Path collectionDirectory = collectionsRoot.resolve("legal");
+    assumeTrue(Files.getFileStore(collectionDirectory).supportsFileAttributeView("posix"));
+    final Set<PosixFilePermission> original =
+        Files.getPosixFilePermissions(collectionDirectory);
+    Files.setPosixFilePermissions(collectionDirectory, Set.of(
+        PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_EXECUTE));
+    try {
+      assertThrows(UncheckedIOException.class, () -> registry.set(
+          SetCollectionRequest.newBuilder()
+              .setCollectionId("legal")
+              .setDisplayName("Unpublished replacement")
+              .addMemberIndexIds(indexId)
+              .build()));
+      assertEquals("Original name", registry.find("legal").getDisplayName());
+
+      assertThrows(UncheckedIOException.class, () -> registry.delete("legal"));
+      assertEquals("Original name", registry.find("legal").getDisplayName());
+    } finally {
+      Files.setPosixFilePermissions(collectionDirectory, original);
+    }
+  }
+
+  @Test
   void validatesIdsMembersAndTheVocabularyArtifact() {
     final DynamicSearchIndexRegistry indexes = new DynamicSearchIndexRegistry();
     final SearchCollectionRegistry registry =
@@ -211,6 +252,16 @@ class SearchCollectionRegistryTest {
             .addMemberIndexIds(indexId)
             .addMemberIndexIds(indexId)
             .build()));
+    assertThrows(IllegalArgumentException.class, () -> registry.set(null));
+    registry.set(SetCollectionRequest.newBuilder()
+        .setCollectionId("legal")
+        .setDisplayName("Legal corpus")
+        .addMemberIndexIds(indexId)
+        .build());
+    assertThrows(IllegalArgumentException.class,
+        () -> registry.watch("legal", null, () -> { }));
+    assertThrows(IllegalArgumentException.class,
+        () -> registry.watch("legal", event -> { }, null));
   }
 
   @Test
@@ -328,5 +379,132 @@ class SearchCollectionRegistryTest {
     assertEquals(List.of("done"), completions);
     assertNull(registry.find("legal"));
     assertFalse(registry.delete("legal"));
+  }
+
+  @Test
+  void failedInitialWatchDeliveryDoesNotLeaveARegisteredWatcher() {
+    final DynamicSearchIndexRegistry indexes = new DynamicSearchIndexRegistry();
+    final String indexId = indexes
+        .index(DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha", 1, 0))
+        .getIndex().getIndexId();
+    final SearchCollectionRegistry registry =
+        SearchCollectionRegistry.inMemory(indexes, NO_VOCABULARIES);
+    registry.set(SetCollectionRequest.newBuilder()
+        .setCollectionId("legal")
+        .setDisplayName("Legal corpus")
+        .addMemberIndexIds(indexId)
+        .build());
+    final List<String> completions = new ArrayList<>();
+
+    assertThrows(IllegalStateException.class,
+        () -> registry.watch("legal", event -> {
+          throw new IllegalStateException("transport closed");
+        }, () -> completions.add("done")));
+    registry.delete("legal");
+
+    assertTrue(completions.isEmpty());
+  }
+
+  @Test
+  void watcherCallbacksNeverRunWhileHoldingTheRegistryMonitor() {
+    final DynamicSearchIndexRegistry indexes = new DynamicSearchIndexRegistry();
+    final String indexId = indexes
+        .index(DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha", 1, 0))
+        .getIndex().getIndexId();
+    final SearchCollectionRegistry registry =
+        SearchCollectionRegistry.inMemory(indexes, NO_VOCABULARIES);
+    registry.set(SetCollectionRequest.newBuilder()
+        .setCollectionId("legal")
+        .setDisplayName("Legal corpus")
+        .addMemberIndexIds(indexId)
+        .build());
+    final List<Boolean> lockStates = new ArrayList<>();
+
+    registry.watch("legal",
+        event -> lockStates.add(Thread.holdsLock(registry)),
+        () -> lockStates.add(Thread.holdsLock(registry)));
+    registry.notifyIndexPersisted(indexId);
+    registry.delete("legal");
+
+    assertEquals(List.of(false, false, false), lockStates);
+  }
+
+  @Test
+  void driftRejectsMoreDistinctTermsThanItsConfiguredBound() {
+    final DynamicSearchIndexRegistry indexes = new DynamicSearchIndexRegistry();
+    final String indexId = indexes
+        .index(DynamicSearchIndexRegistryTest.request(
+            null, "doc-1", "alpha beta gamma", 1, 0))
+        .getIndex().getIndexId();
+    final SearchCollectionRegistry registry =
+        SearchCollectionRegistry.inMemory(indexes, NO_VOCABULARIES, 2);
+
+    final org.apache.opennlp.grpc.processor.AnalysisException failure = assertThrows(
+        org.apache.opennlp.grpc.processor.AnalysisException.class,
+        () -> registry.set(SetCollectionRequest.newBuilder()
+            .setCollectionId("legal")
+            .setDisplayName("Legal corpus")
+            .addMemberIndexIds(indexId)
+            .build()));
+
+    assertEquals(org.apache.opennlp.grpc.processor.AnalysisException.FailureType
+        .RESOURCE_EXHAUSTED, failure.getFailureType());
+  }
+
+  @Test
+  void vocabularyAndDriftRebuildsRunOutsideTheRegistryMonitor() {
+    final DynamicSearchIndexRegistry indexes = new DynamicSearchIndexRegistry();
+    final String indexId = indexes
+        .index(DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha", 1, 0))
+        .getIndex().getIndexId();
+    final List<Boolean> lockStates = new ArrayList<>();
+    final SearchCollectionRegistry[] holder = new SearchCollectionRegistry[1];
+    final SearchCollectionRegistry registry = SearchCollectionRegistry.inMemory(
+        indexes, artifactId -> {
+          lockStates.add(Thread.holdsLock(holder[0]));
+          return List.of("alpha");
+        });
+    holder[0] = registry;
+    registry.set(SetCollectionRequest.newBuilder()
+        .setCollectionId("legal")
+        .setDisplayName("Legal corpus")
+        .addMemberIndexIds(indexId)
+        .setVocabularyArtifactId("vocabulary-1")
+        .setDriftNewTermThreshold(1)
+        .build());
+    lockStates.clear();
+
+    registry.find("legal");
+    registry.notifyIndexed(indexId);
+
+    assertEquals(List.of(false, false), lockStates);
+  }
+
+  @Test
+  void everyCollectionDescriptorRebuildRunsOutsideTheRegistryMonitor() {
+    final DynamicSearchIndexRegistry indexes = new DynamicSearchIndexRegistry();
+    final String indexId = indexes
+        .index(DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha", 1, 0))
+        .getIndex().getIndexId();
+    final List<Boolean> lockStates = new ArrayList<>();
+    final SearchCollectionRegistry[] holder = new SearchCollectionRegistry[1];
+    final SearchCollectionRegistry registry = SearchCollectionRegistry.inMemory(
+        indexes, artifactId -> {
+          lockStates.add(Thread.holdsLock(holder[0]));
+          return List.of("alpha");
+        });
+    holder[0] = registry;
+
+    registry.set(SetCollectionRequest.newBuilder()
+        .setCollectionId("legal")
+        .setDisplayName("Legal corpus")
+        .addMemberIndexIds(indexId)
+        .setVocabularyArtifactId("vocabulary-1")
+        .build());
+    registry.watch("legal", event -> { }, () -> { });
+    registry.notifyIndexPersisted(indexId);
+    registry.notifyModelPublished("model-1", "vocabulary-1");
+
+    assertEquals(List.of(false, false, false, false), lockStates);
   }
 }

@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import com.google.protobuf.ByteString;
 import opennlp.embeddings.index.VectorIndex;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
@@ -51,6 +52,7 @@ import org.apache.opennlp.grpc.v1.SearchProviderCapability;
 import org.apache.opennlp.grpc.v1.SearchProviderSelector;
 import org.apache.opennlp.grpc.v1.StandardEmbeddingBackend;
 import org.apache.opennlp.grpc.v1.StandardSearchProvider;
+import org.apache.opennlp.grpc.search.query.KeywordQueryIndex;
 
 /** Bounded registry of flat, server-owned indexes created from analyzed document shapes. */
 public final class DynamicSearchIndexRegistry implements AutoCloseable {
@@ -165,6 +167,64 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
   }
 
   /**
+   * Reports whether callers may create and mutate dynamic indexes.
+   *
+   * @return Whether dynamic indexing is enabled.
+   */
+  public boolean isEnabled() {
+    return enabled;
+  }
+
+  /**
+   * Validates a provider selection for a new live vector index.
+   *
+   * @param selector Provider selection, or the unset default instance.
+   * @throws AnalysisException If the selection is unknown or lacks live vector support.
+   */
+  public void validateProvider(SearchProviderSelector selector) {
+    requireOpen();
+    requireEnabled();
+    if (selector == null || selector.getKindCase()
+        == SearchProviderSelector.KindCase.KIND_NOT_SET) {
+      defaultVectorInstance();
+      return;
+    }
+    final SearchProviderCatalog.Instance instance = catalog.resolve(selector);
+    if (!instance.has(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_VECTOR)
+        || !instance.has(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_LIVE)) {
+      throw AnalysisException.failedPrecondition("Search provider instance '"
+          + instance.instanceId() + "' does not serve live vector legs");
+    }
+  }
+
+  /**
+   * Returns the maximum documents retained by one dynamic index.
+   *
+   * @return Per-index document limit.
+   */
+  public int maxDocumentsPerIndex() {
+    return MAX_DOCUMENTS_PER_INDEX;
+  }
+
+  /**
+   * Returns the maximum documents accepted by one indexing request.
+   *
+   * @return Per-request document limit.
+   */
+  public int maxDocumentsPerRequest() {
+    return MAX_DOCUMENTS_PER_REQUEST;
+  }
+
+  /**
+   * Returns the maximum serialized source-document bytes retained by one dynamic index.
+   *
+   * @return Per-index source-document byte limit.
+   */
+  public int maxSourceDocumentBytesPerIndex() {
+    return MAX_SOURCE_DOCUMENT_BYTES_PER_INDEX;
+  }
+
+  /**
    * Returns the provider catalog behind this registry.
    *
    * @return The configured catalog, never {@code null}.
@@ -180,7 +240,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
    * @return The published index snapshot summary.
    * @throws AnalysisException If the request is invalid or exceeds a bound.
    */
-  synchronized IndexDocumentsResponse index(IndexDocumentsRequest request) {
+  public synchronized IndexDocumentsResponse index(IndexDocumentsRequest request) {
     requireOpen();
     requireEnabled();
     if (request == null) {
@@ -270,9 +330,26 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
    * @return Immutable chunks in snapshot order.
    * @throws AnalysisException If the identifier is blank or unknown.
    */
-  synchronized List<IndexedChunk> retainedChunks(String indexId) {
+  synchronized List<RetainedChunk> retainedChunks(String indexId) {
     requireOpen();
-    return requireDynamic(indexId).snapshot().chunks();
+    return requireDynamic(indexId).snapshot().chunks().stream()
+        .map(chunk -> new RetainedChunk(chunk.record(), chunk.route()))
+        .toList();
+  }
+
+  /**
+   * Returns the number of raw float values retained by one published snapshot.
+   *
+   * @param indexId Opaque dynamic index identifier.
+   * @return Retained raw float count.
+   * @throws AnalysisException If the index is unknown.
+   */
+  synchronized long retainedRawVectorValues(String indexId) {
+    requireOpen();
+    return requireDynamic(indexId).snapshot().chunks().stream()
+        .filter(chunk -> chunk.rawVector() != null)
+        .mapToLong(chunk -> chunk.rawVector().length)
+        .sum();
   }
 
   /**
@@ -348,16 +425,15 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
    * @return {@code true} when an index was removed.
    * @throws AnalysisException If mutation is disabled or the identifier is blank.
    */
-  synchronized boolean delete(String indexId) {
+  public synchronized boolean delete(String indexId) {
     requireOpen();
     requireEnabled();
     if (indexId == null || indexId.isBlank()) {
       throw AnalysisException.invalidArgument("DeleteSearchIndex index_id must not be blank");
     }
-    final DynamicIndex removed = indexes.remove(indexId);
-    if (removed != null) {
-      removed.close();
-      if (checkpointStore != null && removed.persisted()) {
+    final DynamicIndex existing = indexes.get(indexId);
+    if (existing != null) {
+      if (checkpointStore != null && existing.persisted()) {
         try {
           checkpointStore.delete(indexId);
         } catch (IOException e) {
@@ -365,6 +441,8 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
               "Failed to delete the checkpoint of index '" + indexId + "'", e);
         }
       }
+      indexes.remove(indexId);
+      existing.close();
       return true;
     }
     return false;
@@ -441,14 +519,17 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
     }
     final Snapshot snapshot = index.snapshot();
     final List<PersistedSearchChunk> chunks = new ArrayList<>(snapshot.chunks().size());
-    for (IndexedChunk chunk : snapshot.chunks()) {
+    for (StoredChunk chunk : snapshot.chunks()) {
       chunks.add(toChunkProto(chunk));
     }
     final String indexId = index.descriptor().getIndexId();
     try {
       checkpointStore.write(new WorkspaceCheckpointStore.CheckpointHeader(
           indexId, index.descriptor().getDisplayName(), index.instance().instanceId(),
-          index.route(), index.dimension(), sealed, snapshot.contentHash()), chunks);
+          index.route(), index.dimension(), sealed, snapshot.contentHash()), chunks,
+          snapshot.vectorSegments().size(),
+          (segment, directory) -> index.instance().configured()
+              .writeLiveVectorIndex(snapshot.vectorSegments().get(segment).index(), directory));
     } catch (IOException e) {
       throw new UncheckedIOException(
           "Failed to persist the checkpoint of index '" + indexId + "'", e);
@@ -469,6 +550,10 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
     } catch (IOException e) {
       throw new IllegalStateException("Failed to restore search index checkpoints", e);
     }
+    if (checkpoints.size() > maxIndexes) {
+      throw new IllegalStateException("Stored checkpoint count " + checkpoints.size()
+          + " exceeds the configured dynamic index limit of " + maxIndexes);
+    }
     for (WorkspaceCheckpointStore.RestoredCheckpoint checkpoint : checkpoints) {
       final WorkspaceCheckpointStore.CheckpointHeader header = checkpoint.header();
       final SearchProviderCatalog.Instance instance =
@@ -477,14 +562,55 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
         throw new IllegalStateException("Checkpoint of index '" + header.indexId()
             + "' names unavailable provider instance '" + header.providerInstanceId() + "'");
       }
-      final List<IndexedChunk> chunks = new ArrayList<>(checkpoint.chunks().size());
-      for (PersistedSearchChunk chunk : checkpoint.chunks()) {
-        if (chunk.getVectorCount() != header.dimension()) {
+      if (!instance.has(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_VECTOR)
+          || !instance.has(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_LIVE)
+          || !instance.has(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_PERSISTENT)) {
+        throw new IllegalStateException("Checkpoint of index '" + header.indexId()
+            + "' requires a persistent live vector provider instance, but '"
+            + header.providerInstanceId() + "' does not declare those capabilities");
+      }
+      final List<VectorSegment> vectorSegments = new ArrayList<>(
+          checkpoint.vectorSegments().size());
+      final Set<String> restoredVectorIds = new HashSet<>();
+      for (var segmentDirectory : checkpoint.vectorSegments()) {
+        final SearchIndexProviderFactory.ConfiguredProvider.RestoredVectorIndex restored;
+        try {
+          restored = instance.configured().readLiveVectorIndex(segmentDirectory);
+        } catch (IOException e) {
           throw new IllegalStateException("Checkpoint of index '" + header.indexId()
-              + "' contains a chunk whose vector dimension does not match "
-              + header.dimension());
+              + "' has an unreadable provider vector segment", e);
         }
-        chunks.add(fromChunkProto(chunk));
+        if (restored.index().dimension() != header.dimension()) {
+          throw new IllegalStateException("Checkpoint of index '" + header.indexId()
+              + "' has a provider vector segment with the wrong dimension");
+        }
+        final Set<String> ids = Set.copyOf(restored.ids());
+        if (ids.size() != restored.ids().size()
+            || ids.stream().anyMatch(id -> !restoredVectorIds.add(id))) {
+          throw new IllegalStateException("Checkpoint of index '" + header.indexId()
+              + "' has duplicate provider vector ids");
+        }
+        vectorSegments.add(new VectorSegment(restored.index(), ids));
+      }
+      final List<StoredChunk> chunks = new ArrayList<>(checkpoint.chunks().size());
+      for (PersistedSearchChunk chunk : checkpoint.chunks()) {
+        if (!chunk.hasVectorId() || chunk.getVectorId().isBlank()
+            || !chunk.hasVectorSegment()
+            || chunk.getVectorSegment() >= vectorSegments.size()
+            || !vectorSegments.get(chunk.getVectorSegment()).ids().contains(chunk.getVectorId())) {
+          throw new IllegalStateException("Checkpoint of index '" + header.indexId()
+              + "' contains an invalid provider vector reference");
+        }
+        if (!chunk.hasVectorSha256() || chunk.getVectorSha256().size() != 32) {
+          throw new IllegalStateException("Checkpoint of index '" + header.indexId()
+              + "' contains an invalid vector digest");
+        }
+        final StoredChunk restored = storedFromChunkProto(chunk);
+        if (!compatible(header.route(), restored.route())) {
+          throw new IllegalStateException("Checkpoint of index '" + header.indexId()
+              + "' contains a chunk whose embedding route is incompatible with its header");
+        }
+        chunks.add(restored);
       }
       if (!contentHash(chunks).equals(header.contentHash())) {
         throw new IllegalStateException("Checkpoint of index '" + header.indexId()
@@ -492,7 +618,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
       }
       final DynamicIndex index = new DynamicIndex(header.indexId(), header.displayName(),
           header.route(), instance, keywordInstance);
-      final Snapshot snapshot = index.prepare(List.of(), chunks);
+      final Snapshot snapshot = index.restoreSnapshot(chunks, vectorSegments);
       validateGlobalBudget(null, snapshot);
       index.publish(snapshot);
       index.markPersisted(header.contentHash());
@@ -509,16 +635,21 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
    * @param chunk Snapshot chunk.
    * @return Persisted chunk record.
    */
-  private static PersistedSearchChunk toChunkProto(IndexedChunk chunk) {
+  private static PersistedSearchChunk toChunkProto(StoredChunk chunk) {
     final PersistedSearchChunk.Builder builder = PersistedSearchChunk.newBuilder()
         .setDocumentId(chunk.record().documentId())
         .setChunkId(chunk.record().chunkId())
         .setSourceDocument(chunk.record().sourceDocument())
         .setSourceSpan(chunk.record().sourceSpan())
         .setEmittedText(chunk.record().emittedText())
-        .setRoute(chunk.route());
-    for (float value : chunk.vector()) {
-      builder.addVector(value);
+        .setRoute(chunk.route())
+        .setVectorId(chunk.vectorId())
+        .setVectorSegment(chunk.vectorSegment())
+        .setVectorSha256(chunk.vectorSha256());
+    if (chunk.rawVector() != null) {
+      for (float value : chunk.rawVector()) {
+        builder.addVector(value);
+      }
     }
     return builder.build();
   }
@@ -530,16 +661,13 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
    * @return Snapshot chunk.
    * @throws IllegalStateException If the record shape is invalid.
    */
-  private static IndexedChunk fromChunkProto(PersistedSearchChunk chunk) {
-    final float[] vector = new float[chunk.getVectorCount()];
-    for (int index = 0; index < vector.length; index++) {
-      vector[index] = chunk.getVector(index);
-    }
+  private static StoredChunk storedFromChunkProto(PersistedSearchChunk chunk) {
     try {
-      return new IndexedChunk(
+      return new StoredChunk(
           new SearchRecord(chunk.getDocumentId(), chunk.getChunkId(),
               chunk.getSourceDocument(), chunk.getSourceSpan(), chunk.getEmittedText()),
-          vector, chunk.getRoute());
+          null, chunk.getRoute(), chunk.getVectorId(), chunk.getVectorSegment(),
+          chunk.getVectorSha256());
     } catch (IllegalArgumentException e) {
       throw new IllegalStateException("Checkpoint chunk '" + chunk.getChunkId()
           + "' is invalid: " + e.getMessage(), e);
@@ -959,14 +1087,18 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
   record IndexedChunk(SearchRecord record, float[] vector, EmbeddingRoute route) {
   }
 
+  /** One retained source chunk used for drift and re-embedding without its old vector. */
+  record RetainedChunk(SearchRecord record, EmbeddingRoute route) {
+  }
+
   private static final class DynamicIndex implements SearchIndexProvider {
     private final String indexId;
     private final String displayName;
     private final EmbeddingRoute route;
     private final SearchProviderCatalog.Instance instance;
     private final SearchProviderCatalog.Instance keywordInstance;
-    private volatile Snapshot snapshot = new Snapshot(List.of(), 0, 0, 0,
-        contentHash(List.of()), null);
+    private volatile Snapshot snapshot = new Snapshot(List.of(), 0, 0, 0, 0,
+        contentHash(List.of()), List.of(), null);
     private volatile boolean persisted;
     private volatile boolean sealed;
     private volatile String lastPersistedContentHash;
@@ -1037,13 +1169,55 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
         List<OpenNlpDocument> documents, List<IndexedChunk> additions) {
       final Set<String> replaced = documents.stream()
           .map(OpenNlpDocument::getDocId).collect(java.util.stream.Collectors.toSet());
-      final List<IndexedChunk> merged = new ArrayList<>();
-      for (IndexedChunk chunk : snapshot.chunks()) {
+      final List<StoredChunk> merged = new ArrayList<>();
+      for (StoredChunk chunk : snapshot.chunks()) {
         if (!replaced.contains(chunk.record().documentId())) {
           merged.add(chunk);
         }
       }
-      merged.addAll(additions);
+      final List<VectorSegment> vectorSegments;
+      final long vectorValues;
+      if (instance.configured().retainRawVectors()) {
+        final List<StoredChunk> reassigned = new ArrayList<>(merged.size() + additions.size());
+        int row = 0;
+        for (StoredChunk chunk : merged) {
+          reassigned.add(new StoredChunk(chunk.record(), chunk.rawVector(), chunk.route(),
+              "row-" + row, 0, chunk.vectorSha256()));
+          row++;
+        }
+        for (IndexedChunk addition : additions) {
+          reassigned.add(stored(addition, "row-" + row, 0, true));
+          row++;
+        }
+        merged.clear();
+        merged.addAll(reassigned);
+        vectorSegments = List.of(buildVectorSegment(merged));
+        vectorValues = merged.stream().mapToLong(chunk -> chunk.rawVector().length).sum();
+      } else {
+        final int segmentIndex = snapshot.vectorSegments().size();
+        if (segmentIndex >= WorkspaceCheckpointStore.MAX_VECTOR_SEGMENTS) {
+          throw AnalysisException.resourceExhausted(
+              "Dynamic index provider vector segments reached "
+                  + WorkspaceCheckpointStore.MAX_VECTOR_SEGMENTS);
+        }
+        final VectorIndex leg = instance.configured()
+            .createLiveVectorIndex(additions.getFirst().vector().length);
+        final Set<String> ids = new HashSet<>();
+        int row = 0;
+        for (IndexedChunk addition : additions) {
+          final String vectorId = "segment-" + segmentIndex + "-row-" + row;
+          leg.add(vectorId, addition.vector());
+          ids.add(vectorId);
+          merged.add(stored(addition, vectorId, segmentIndex, false));
+          row++;
+        }
+        leg.freeze();
+        final List<VectorSegment> appended = new ArrayList<>(snapshot.vectorSegments());
+        appended.add(new VectorSegment(leg, Set.copyOf(ids)));
+        vectorSegments = List.copyOf(appended);
+        vectorValues = snapshot.vectorValues()
+            + additions.stream().mapToLong(chunk -> chunk.vector().length).sum();
+      }
       final int documentCount = Math.toIntExact(merged.stream()
           .map(chunk -> chunk.record().documentId()).distinct().count());
       final long sourceDocumentBytes = merged.stream()
@@ -1052,36 +1226,76 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
               chunk -> chunk.record().sourceDocument().getSerializedSize(),
               (left, right) -> left))
           .values().stream().mapToLong(Integer::longValue).sum();
-      final long vectorValues = merged.stream().mapToLong(chunk -> chunk.vector().length).sum();
       if (documentCount > MAX_DOCUMENTS_PER_INDEX || merged.size() > MAX_CHUNKS_PER_INDEX
           || sourceDocumentBytes > MAX_SOURCE_DOCUMENT_BYTES_PER_INDEX) {
         throw AnalysisException.resourceExhausted(
             "Dynamic index exceeds its document, chunk, or source-document limit");
       }
-      final List<IndexedChunk> chunks = List.copyOf(merged);
+      final List<StoredChunk> chunks = List.copyOf(merged);
       return new Snapshot(chunks, documentCount, sourceDocumentBytes, vectorValues,
-          contentHash(chunks), buildVectorLeg(chunks));
+          additions.getFirst().vector().length, contentHash(chunks), vectorSegments,
+          buildKeywordLeg(chunks));
     }
 
     /**
-     * Builds the frozen vector leg for a snapshot through the index's provider instance.
-     * Rebuilding on every publish keeps the frozen leg immutable and matches the bounded
-     * chunk budget; freezing is the one expensive step.
+     * Builds one frozen leg from chunks that retain their raw vectors.
      *
-     * @param chunks Snapshot chunks.
-     * @return Frozen vector leg, or {@code null} for an empty snapshot.
+     * @param chunks Published chunks with raw vectors.
+     * @return Frozen provider vector segment.
      */
-    private VectorIndex buildVectorLeg(List<IndexedChunk> chunks) {
-      if (chunks.isEmpty()) {
-        return null;
-      }
-      final VectorIndex leg = instance.factory()
-          .createLiveVectorIndex(chunks.getFirst().vector().length);
-      for (IndexedChunk chunk : chunks) {
-        leg.add(chunk.record().chunkId(), chunk.vector());
+    private VectorSegment buildVectorSegment(List<StoredChunk> chunks) {
+      final VectorIndex leg = instance.configured()
+          .createLiveVectorIndex(chunks.getFirst().rawVector().length);
+      final Set<String> ids = new HashSet<>();
+      for (StoredChunk chunk : chunks) {
+        leg.add(chunk.vectorId(), chunk.rawVector());
+        ids.add(chunk.vectorId());
       }
       leg.freeze();
-      return leg;
+      return new VectorSegment(leg, Set.copyOf(ids));
+    }
+
+    /** Builds the immutable keyword leg through its separately selected SPI instance. */
+    private KeywordQueryIndex buildKeywordLeg(List<StoredChunk> chunks) {
+      if (keywordInstance == null) {
+        return null;
+      }
+      final List<org.apache.opennlp.grpc.search.query.QueryCandidate> candidates = chunks.stream()
+          .map(chunk -> new org.apache.opennlp.grpc.search.query.QueryCandidate(
+              chunk.record(), chunk.rawVector()))
+          .toList();
+      return keywordInstance.configured().createKeywordQueryIndex(candidates);
+    }
+
+    /**
+     * Rebuilds immutable non-vector legs around restored provider-owned segments.
+     *
+     * @param chunks Restored active chunks.
+     * @param vectorSegments Restored provider vector segments.
+     * @return Validated immutable snapshot.
+     * @throws IllegalStateException If a fixed index bound is exceeded.
+     */
+    private Snapshot restoreSnapshot(
+        List<StoredChunk> chunks, List<VectorSegment> vectorSegments) {
+      final int documentCount = Math.toIntExact(chunks.stream()
+          .map(chunk -> chunk.record().documentId()).distinct().count());
+      final long sourceDocumentBytes = chunks.stream()
+          .collect(java.util.stream.Collectors.toMap(
+              chunk -> chunk.record().documentId(),
+              chunk -> chunk.record().sourceDocument().getSerializedSize(),
+              (left, right) -> left))
+          .values().stream().mapToLong(Integer::longValue).sum();
+      final long vectorValues = vectorSegments.stream()
+          .mapToLong(segment -> (long) segment.index().size() * segment.index().dimension())
+          .sum();
+      if (documentCount > MAX_DOCUMENTS_PER_INDEX || chunks.size() > MAX_CHUNKS_PER_INDEX
+          || sourceDocumentBytes > MAX_SOURCE_DOCUMENT_BYTES_PER_INDEX) {
+        throw new IllegalStateException("Restored dynamic index exceeds a fixed safety bound");
+      }
+      return new Snapshot(List.copyOf(chunks), documentCount, sourceDocumentBytes,
+          vectorValues, vectorSegments.getFirst().index().dimension(), contentHash(chunks),
+          List.copyOf(vectorSegments),
+          buildKeywordLeg(chunks));
     }
 
     /**
@@ -1100,7 +1314,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
 
     /** @return The current vector dimension, or zero for an empty index. */
     int dimension() {
-      return snapshot.chunks().isEmpty() ? 0 : snapshot.chunks().getFirst().vector().length;
+      return snapshot.dimension();
     }
 
     /** @return The index embedding route. */
@@ -1133,7 +1347,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
               .setBuilderId("opennlp-grpc-workspace")
               .setBuilderVersion("1")
               .setPreparationConfigHash(preparationHash(route,
-                  instance.factory().preparationIdentity())))
+                  instance.configured().preparationIdentity())))
           .setMaxResponseBytes(4 * 1024 * 1024);
       descriptor.addLegs(SearchIndexLeg.newBuilder()
           .setKind(SearchLegKind.SEARCH_LEG_KIND_VECTOR)
@@ -1142,7 +1356,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
         descriptor.addLegs(SearchIndexLeg.newBuilder()
             .setKind(SearchLegKind.SEARCH_LEG_KIND_KEYWORD)
             .setProviderInstanceId(keywordInstance.instanceId())
-            .setAnalysisChain(keywordInstance.factory().analysisChain()));
+            .setAnalysisChain(keywordInstance.configured().analysisChain()));
       }
       return descriptor.build();
     }
@@ -1152,8 +1366,14 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
     public List<org.apache.opennlp.grpc.search.query.QueryCandidate> queryCandidates() {
       return snapshot.chunks().stream()
           .map(chunk -> new org.apache.opennlp.grpc.search.query.QueryCandidate(
-              chunk.record(), chunk.vector()))
+              chunk.record(), chunk.rawVector()))
           .toList();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public KeywordQueryIndex keywordQueryIndex() {
+      return snapshot.keywordLeg();
     }
 
     /** {@inheritDoc} */
@@ -1163,37 +1383,73 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
       if (queryVector == null || queryVector.length != dimension()) {
         throw new IllegalArgumentException("queryVector must match the dynamic index dimension");
       }
-      if (current.vectorLeg() == null) {
+      if (current.vectorSegments().isEmpty()) {
         return List.of();
       }
-      final Map<String, IndexedChunk> byChunkId = new LinkedHashMap<>();
-      for (IndexedChunk chunk : current.chunks()) {
-        byChunkId.put(chunk.record().chunkId(), chunk);
+      final Map<String, StoredChunk> activeByVectorId = new LinkedHashMap<>();
+      for (StoredChunk chunk : current.chunks()) {
+        activeByVectorId.put(chunk.vectorId(), chunk);
       }
       final List<SearchResult> results = new ArrayList<>();
-      for (VectorIndex.Hit hit : current.vectorLeg()
-          .topK(queryVector, Math.min(topK, current.chunks().size()))) {
-        final IndexedChunk chunk = byChunkId.get(hit.id());
-        if (chunk == null) {
-          throw new IllegalStateException(
-              "The vector leg returned an id absent from the snapshot: " + hit.id());
+      for (VectorSegment segment : current.vectorSegments()) {
+        for (VectorIndex.Hit hit : segment.index().topK(queryVector, segment.index().size())) {
+          final StoredChunk chunk = activeByVectorId.get(hit.id());
+          if (chunk == null) {
+            continue;
+          }
+          results.add(new SearchResult(chunk.record(),
+              Math.max(-1, Math.min(1, hit.score()))));
         }
-        // Quantized cosine can drift a few ulps past 1; clamp like the bundle loader.
-        results.add(new SearchResult(chunk.record(),
-            Math.max(-1, Math.min(1, hit.score()))));
       }
-      return List.copyOf(results);
+      return results.stream()
+          .sorted(java.util.Comparator.comparingDouble(SearchResult::score).reversed()
+              .thenComparing(result -> result.record().chunkId())
+              .thenComparing(result -> result.record().documentId()))
+          .limit(Math.min(topK, results.size()))
+          .toList();
     }
 
   }
 
   private record Snapshot(
-      List<IndexedChunk> chunks,
+      List<StoredChunk> chunks,
       int documents,
       long sourceDocumentBytes,
       long vectorValues,
+      int dimension,
       String contentHash,
-      VectorIndex vectorLeg) {
+      List<VectorSegment> vectorSegments,
+      KeywordQueryIndex keywordLeg) {
+  }
+
+  /** One immutable provider vector leg and the row ids it owns. */
+  private record VectorSegment(VectorIndex index, Set<String> ids) {
+  }
+
+  /** One published source record and its provider-owned vector reference. */
+  private record StoredChunk(
+      SearchRecord record,
+      float[] rawVector,
+      EmbeddingRoute route,
+      String vectorId,
+      int vectorSegment,
+      ByteString vectorSha256) {
+  }
+
+  /**
+   * Converts one validated input chunk to its immutable published representation.
+   *
+   * @param chunk Validated input chunk.
+   * @param vectorId Provider row identifier.
+   * @param vectorSegment Provider segment number.
+   * @param retainRawVector Whether to retain the original float array.
+   * @return Published chunk.
+   */
+  private static StoredChunk stored(
+      IndexedChunk chunk, String vectorId, int vectorSegment, boolean retainRawVector) {
+    return new StoredChunk(chunk.record(), retainRawVector ? chunk.vector() : null,
+        chunk.route(), vectorId, vectorSegment,
+        ByteString.copyFrom(vectorSha256(chunk.vector())));
   }
 
   /**
@@ -1202,24 +1458,36 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
    * @param chunks Published chunks.
    * @return Lowercase SHA-256 digest.
    */
-  private static String contentHash(List<IndexedChunk> chunks) {
+  private static String contentHash(List<StoredChunk> chunks) {
     final MessageDigest digest = sha256();
-    for (IndexedChunk chunk : chunks) {
+    for (StoredChunk chunk : chunks) {
       updateLengthPrefixed(digest, chunk.record().documentId().getBytes(StandardCharsets.UTF_8));
       updateLengthPrefixed(digest, chunk.record().chunkId().getBytes(StandardCharsets.UTF_8));
       updateLengthPrefixed(digest, chunk.record().sourceDocument().toByteArray());
       updateLengthPrefixed(digest, chunk.record().sourceSpan().toByteArray());
       updateLengthPrefixed(digest, chunk.record().emittedText().getBytes(StandardCharsets.UTF_8));
       updateLengthPrefixed(digest, chunk.route().toByteArray());
-      for (float value : chunk.vector()) {
-        final int bits = Float.floatToIntBits(value);
-        digest.update((byte) (bits >>> 24));
-        digest.update((byte) (bits >>> 16));
-        digest.update((byte) (bits >>> 8));
-        digest.update((byte) bits);
-      }
+      updateLengthPrefixed(digest, chunk.vectorSha256().toByteArray());
     }
     return hex(digest.digest());
+  }
+
+  /**
+   * Returns the canonical SHA-256 of one raw float vector.
+   *
+   * @param vector Raw float vector.
+   * @return SHA-256 bytes.
+   */
+  private static byte[] vectorSha256(float[] vector) {
+    final MessageDigest digest = sha256();
+    for (float value : vector) {
+      final int bits = Float.floatToIntBits(value);
+      digest.update((byte) (bits >>> 24));
+      digest.update((byte) (bits >>> 16));
+      digest.update((byte) (bits >>> 8));
+      digest.update((byte) bits);
+    }
+    return digest.digest();
   }
 
   /**

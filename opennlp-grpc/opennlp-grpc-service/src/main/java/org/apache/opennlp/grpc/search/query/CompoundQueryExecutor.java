@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.search.SearchResult;
 import org.apache.opennlp.grpc.search.query.QueryTermAnalyzer.Term;
 import org.apache.opennlp.grpc.v1.BoostClause;
 import org.apache.opennlp.grpc.v1.CelScore;
@@ -79,6 +80,20 @@ public final class CompoundQueryExecutor {
     float[] embed(OpenNlpDocument queryDocument);
   }
 
+  /** Executes one semantic leaf through the index provider selected by the descriptor. */
+  @FunctionalInterface
+  public interface SemanticSearcher {
+
+    /**
+     * Searches the provider's vector leg.
+     *
+     * @param queryVector Embedded semantic query.
+     * @param topK Maximum returned results.
+     * @return Ranked provider results.
+     */
+    List<SearchResult> search(float[] queryVector, int topK);
+  }
+
   /**
    * One ranked compound query result.
    *
@@ -103,9 +118,56 @@ public final class CompoundQueryExecutor {
    */
   public List<QueryHit> execute(
       QueryNode root, List<QueryCandidate> candidates, QueryEmbedder embedder, int topK) {
+    return execute(root, candidates, embedder, (queryVector, limit) -> candidates.stream()
+        .map(candidate -> new SearchResult(candidate.record(),
+            cosine(queryVector, candidate.requireVector())))
+        .sorted(java.util.Comparator.comparingDouble(SearchResult::score).reversed())
+        .limit(limit)
+        .toList(), new TermsKeywordQueryIndex(candidates), topK);
+  }
+
+  /**
+   * Executes one validated compound query, delegating semantic leaves to the selected
+   * index provider.
+   *
+   * @param root Root query node.
+   * @param candidates Index candidates in stable index order.
+   * @param embedder Embedder for semantic clauses.
+   * @param semanticSearcher Provider vector search for semantic clauses.
+   * @param topK Maximum hits to return, at least one.
+   * @return Ranked hits, largest score first.
+   * @throws AnalysisException If the tree is invalid, CEL support is missing, or a
+   *     clause fails to execute.
+   */
+  public List<QueryHit> execute(QueryNode root, List<QueryCandidate> candidates,
+      QueryEmbedder embedder, SemanticSearcher semanticSearcher, int topK) {
+    return execute(root, candidates, embedder, semanticSearcher,
+        new TermsKeywordQueryIndex(candidates), topK);
+  }
+
+  /**
+   * Executes one validated compound query with both semantic and keyword leaves
+   * delegated to their selected provider instances.
+   *
+   * @param root Root query node.
+   * @param candidates Retained candidate metadata in stable order.
+   * @param embedder Semantic query embedder.
+   * @param semanticSearcher Vector-leg provider.
+   * @param keywordIndex Keyword-leg provider.
+   * @param topK Maximum returned hits.
+   * @return Ranked compound hits.
+   */
+  public List<QueryHit> execute(QueryNode root, List<QueryCandidate> candidates,
+      QueryEmbedder embedder, SemanticSearcher semanticSearcher,
+      KeywordQueryIndex keywordIndex, int topK) {
     CompoundQueryValidator.validate(root);
-    if (candidates == null || embedder == null) {
-      throw new IllegalArgumentException("candidates and embedder must not be null");
+    if (candidates == null || embedder == null || semanticSearcher == null) {
+      throw new IllegalArgumentException(
+          "compound query dependencies must not be null");
+    }
+    if (keywordIndex == null && CompoundQueryValidator.containsKeywordClause(root)) {
+      throw AnalysisException.unimplemented(
+          "The selected index has no configured keyword query provider");
     }
     if (topK < 1) {
       throw AnalysisException.invalidArgument("top_k must be positive, was " + topK);
@@ -117,7 +179,7 @@ public final class CompoundQueryExecutor {
     if (candidates.isEmpty()) {
       return List.of();
     }
-    final Context context = new Context(candidates, embedder);
+    final Context context = new Context(candidates, embedder, semanticSearcher, keywordIndex);
     final NodeResult result = evaluate(root, context);
     final List<String> ranked = new ArrayList<>(result.scores().keySet());
     ranked.sort(Comparator
@@ -136,16 +198,20 @@ public final class CompoundQueryExecutor {
     return List.copyOf(hits);
   }
 
-  /** Shared per-execution state: candidates and lazily analyzed chunk terms. */
+  /** Shared per-execution state for provider-delegated query clauses. */
   private static final class Context {
     private final List<QueryCandidate> candidates;
     private final Map<String, QueryCandidate> byChunkId = new LinkedHashMap<>();
-    private final Map<String, List<Term>> termsByChunkId = new HashMap<>();
     private final QueryEmbedder embedder;
+    private final SemanticSearcher semanticSearcher;
+    private final KeywordQueryIndex keywordIndex;
 
-    Context(List<QueryCandidate> candidates, QueryEmbedder embedder) {
+    Context(List<QueryCandidate> candidates, QueryEmbedder embedder,
+        SemanticSearcher semanticSearcher, KeywordQueryIndex keywordIndex) {
       this.candidates = candidates;
       this.embedder = embedder;
+      this.semanticSearcher = semanticSearcher;
+      this.keywordIndex = keywordIndex;
       for (QueryCandidate candidate : candidates) {
         byChunkId.put(candidate.record().chunkId(), candidate);
       }
@@ -153,11 +219,6 @@ public final class CompoundQueryExecutor {
 
     QueryCandidate candidate(String chunkId) {
       return byChunkId.get(chunkId);
-    }
-
-    List<Term> terms(QueryCandidate candidate) {
-      return termsByChunkId.computeIfAbsent(candidate.record().chunkId(),
-          chunkId -> QueryTermAnalyzer.analyze(candidate.record().emittedText()));
     }
   }
 
@@ -204,17 +265,32 @@ public final class CompoundQueryExecutor {
    */
   private NodeResult evaluateSemantic(OpenNlpDocument document, Context context) {
     final float[] query = context.embedder.embed(document);
-    final int dimension = context.candidates.getFirst().vector().length;
-    if (query == null || query.length != dimension) {
-      throw AnalysisException.failedPrecondition("Semantic clause embedding dimension "
-          + (query == null ? "null" : query.length) + " does not match index dimension "
-          + dimension);
+    if (query == null) {
+      throw AnalysisException.failedPrecondition(
+          "Semantic clause embedding provider returned a null vector");
     }
     final NodeResult result = NodeResult.empty();
-    for (QueryCandidate candidate : context.candidates) {
-      final double similarity = cosine(query, candidate.vector());
-      result.scores().put(candidate.record().chunkId(),
-          Math.min(1, Math.max(0, (similarity + 1) / 2)));
+    final List<SearchResult> searched =
+        context.semanticSearcher.search(query, context.candidates.size());
+    if (searched == null || searched.size() > context.candidates.size()) {
+      throw new IllegalStateException(
+          "Semantic search provider returned an invalid result count");
+    }
+    for (SearchResult searchedResult : searched) {
+      if (searchedResult == null || !Double.isFinite(searchedResult.score())
+          || searchedResult.score() < -1 || searchedResult.score() > 1) {
+        throw new IllegalStateException(
+            "Semantic search provider returned an invalid result");
+      }
+      final String chunkId = searchedResult.record().chunkId();
+      final QueryCandidate candidate = context.candidate(chunkId);
+      if (candidate == null || !candidate.record().equals(searchedResult.record())
+          || result.scores().containsKey(chunkId)) {
+        throw new IllegalStateException(
+            "Semantic search provider returned an unknown or duplicate candidate");
+      }
+      result.scores().put(chunkId,
+          Math.min(1, Math.max(0, (searchedResult.score() + 1) / 2)));
     }
     return result;
   }
@@ -228,40 +304,7 @@ public final class CompoundQueryExecutor {
    * @return Matched candidates with normalized scores and occurrence spans.
    */
   private NodeResult evaluateTerm(String text, TermMatchMode mode, Context context) {
-    final List<Term> analyzed = QueryTermAnalyzer.analyze(text);
-    if (analyzed.isEmpty()) {
-      throw AnalysisException.invalidArgument(
-          "term.text contains no analyzable terms: '" + text + "'");
-    }
-    final Set<String> queryTerms = new LinkedHashSet<>();
-    for (Term term : analyzed) {
-      queryTerms.add(term.text());
-    }
-    final boolean requireAll = mode == TermMatchMode.TERM_MATCH_MODE_ALL;
-    final NodeResult result = NodeResult.empty();
-    final Map<String, Double> raw = new LinkedHashMap<>();
-    for (QueryCandidate candidate : context.candidates) {
-      final Map<String, Integer> frequency = new HashMap<>();
-      final List<MatchedSpan> spans = new ArrayList<>();
-      for (Term term : context.terms(candidate)) {
-        if (queryTerms.contains(term.text())) {
-          frequency.merge(term.text(), 1, Integer::sum);
-          spans.add(span(term.start(), term.end(), term.text()));
-        }
-      }
-      final boolean matched = requireAll
-          ? frequency.size() == queryTerms.size() : !frequency.isEmpty();
-      if (matched) {
-        double score = 0;
-        for (int count : frequency.values()) {
-          score += 1 + Math.log(count);
-        }
-        raw.put(candidate.record().chunkId(), score);
-        result.spans().put(candidate.record().chunkId(), spans);
-      }
-    }
-    normalizeByMax(raw, result.scores());
-    return result;
+    return keywordResults(context.keywordIndex.term(text, mode), context);
   }
 
   /**
@@ -273,32 +316,30 @@ public final class CompoundQueryExecutor {
    * @return Matched candidates with normalized occurrence scores and phrase spans.
    */
   private NodeResult evaluatePhrase(String text, int slop, Context context) {
-    final List<Term> analyzed = QueryTermAnalyzer.analyze(text);
-    if (analyzed.isEmpty()) {
-      throw AnalysisException.invalidArgument(
-          "phrase.text contains no analyzable terms: '" + text + "'");
+    return keywordResults(context.keywordIndex.phrase(text, slop), context);
+  }
+
+  /** Validates provider-owned keyword results and converts them into node algebra. */
+  private static NodeResult keywordResults(
+      List<KeywordQueryIndex.Hit> hits, Context context) {
+    if (hits == null || hits.size() > context.candidates.size()) {
+      throw new IllegalStateException("Keyword search provider returned an invalid result count");
     }
-    final List<String> phrase = analyzed.stream().map(Term::text).toList();
-    final String phraseLabel = String.join(" ", phrase);
     final NodeResult result = NodeResult.empty();
-    final Map<String, Double> raw = new LinkedHashMap<>();
-    for (QueryCandidate candidate : context.candidates) {
-      final List<Term> terms = context.terms(candidate);
-      final List<MatchedSpan> spans = new ArrayList<>();
-      int occurrences = 0;
-      for (int start = 0; start < terms.size(); start++) {
-        final int end = matchPhraseAt(terms, start, phrase, slop);
-        if (end >= 0) {
-          occurrences++;
-          spans.add(span(terms.get(start).start(), terms.get(end).end(), phraseLabel));
-        }
+    for (KeywordQueryIndex.Hit hit : hits) {
+      if (hit == null || !Double.isFinite(hit.score())
+          || hit.score() < 0 || hit.score() > 1) {
+        throw new IllegalStateException("Keyword search provider returned an invalid result");
       }
-      if (occurrences > 0) {
-        raw.put(candidate.record().chunkId(), (double) occurrences);
-        result.spans().put(candidate.record().chunkId(), spans);
+      final String chunkId = hit.record().chunkId();
+      final QueryCandidate candidate = context.candidate(chunkId);
+      if (candidate == null || !candidate.record().equals(hit.record())
+          || result.scores().putIfAbsent(chunkId, hit.score()) != null) {
+        throw new IllegalStateException(
+            "Keyword search provider returned an unknown or duplicate candidate");
       }
+      result.spans().put(chunkId, hit.matchedSpans());
     }
-    normalizeByMax(raw, result.scores());
     return result;
   }
 

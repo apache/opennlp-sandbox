@@ -28,9 +28,9 @@ option java_package = "org.apache.opennlp.grpc.v1";
 
 // On-disk storage records for persisted live search indexes. A checkpoint
 // directory holds the versioned properties descriptor next to a chunks.pb
-// file of length-delimited PersistedSearchChunk records; the raw vectors are
-// retained so accretion continues across restarts, and the quantized form is
-// rebuilt deterministically on load from the provider's fixed parameters.
+// file of length-delimited PersistedSearchChunk records and provider-owned
+// immutable vector segments. Format 3 stores vector references and digests,
+// so quantized providers do not retain a second raw-float representation.
 
 // The complete alias set, persisted as one local file with last write wins.
 message PersistedIndexAliases {
@@ -63,5 +63,13 @@ message PersistedSearchChunk {
   // Resolved embedding route shared by every chunk of one index.
   EmbeddingRoute route = 6;
   // Raw embedding vector in the index's declared dimension.
+  // Legacy format 2 checkpoints use this field. Provider-owned format 3
+  // checkpoints leave it empty.
   repeated float vector = 7;
+  // Provider-owned row id when vector is stored in an immutable segment.
+  optional string vector_id = 8;
+  // Zero-based provider-owned vector segment containing vector_id.
+  optional uint32 vector_segment = 9;
+  // SHA-256 of the original float vector, used for content provenance.
+  optional bytes vector_sha256 = 10;
 }

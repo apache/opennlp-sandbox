@@ -133,7 +133,7 @@ class LifecycleWireContractTest {
   }
 
   @Test
-  void persistedChunksKeepRawVectorsBesideTheSourceRecord() {
+  void persistedChunksCanReferenceProviderOwnedVectorSegments() {
     final Descriptor chunk = OpenNlpSearchStorageProto.getDescriptor()
         .findMessageTypeByName("PersistedSearchChunk");
     assertNotNull(chunk);
@@ -152,6 +152,12 @@ class LifecycleWireContractTest {
     final FieldDescriptor vector = chunk.findFieldByName("vector");
     assertTrue(vector.isRepeated());
     assertEquals(FieldDescriptor.JavaType.FLOAT, vector.getJavaType());
+    assertEquals(FieldDescriptor.JavaType.STRING,
+        chunk.findFieldByName("vector_id").getJavaType());
+    assertEquals(FieldDescriptor.JavaType.INT,
+        chunk.findFieldByName("vector_segment").getJavaType());
+    assertEquals(FieldDescriptor.JavaType.BYTE_STRING,
+        chunk.findFieldByName("vector_sha256").getJavaType());
   }
 
   private static ServiceDescriptor searchService() {

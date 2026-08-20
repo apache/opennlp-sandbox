@@ -20,6 +20,8 @@ package org.apache.opennlp.grpc.search;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.SearchProviderCapability;
@@ -73,13 +75,33 @@ class SearchProviderCatalogTest {
   @Test
   void configuredInstancesJoinTheDefaultsUnderTheirOwnIds() {
     final SearchProviderCatalog catalog = SearchProviderCatalog.fromConfiguration(Map.of(
-        "search.provider.fast-workspace.type", "turbo_quant"));
+        "search.provider.fast-workspace.type", "turbo_quant",
+        "search.provider.fast-workspace.option.bits", "3",
+        "search.provider.fast-workspace.option.seed", "42"));
 
     assertEquals(List.of("fast-workspace", "flat_float", "terms", "turbo_quant"),
         catalog.instances().stream().map(SearchProviderInstance::getInstanceId).toList());
     final SearchProviderInstance configured = catalog.instances().getFirst();
     assertEquals("turbo_quant", configured.getProviderId());
     assertTrue(!configured.hasStandard());
+    final TurboQuantSearchIndexProviderFactory.Configuration typed =
+        (TurboQuantSearchIndexProviderFactory.Configuration)
+            catalog.find("fast-workspace").configured();
+    assertEquals(3, typed.bits());
+    assertEquals(42L, typed.seed());
+    assertEquals(3, typed.createLiveVectorIndex(3).bits());
+  }
+
+  @Test
+  void parsesOptionsAfterTheCompleteConfiguredInstanceId() {
+    final SearchProviderCatalog catalog = SearchProviderCatalog.fromConfiguration(Map.of(
+        "search.provider.fast.option.workspace.type", "turbo_quant",
+        "search.provider.fast.option.workspace.option.bits", "3"));
+
+    final TurboQuantSearchIndexProviderFactory.Configuration typed =
+        (TurboQuantSearchIndexProviderFactory.Configuration)
+            catalog.find("fast.option.workspace").configured();
+    assertEquals(3, typed.bits());
   }
 
   @Test
@@ -155,13 +177,13 @@ class SearchProviderCatalogTest {
   }
 
   @Test
-  void rejectsUnknownInstanceConfigurationKeys() {
+  void rejectsUnknownProviderOptionsThroughTheSelectedProvider() {
     final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
         () -> SearchProviderCatalog.fromConfiguration(Map.of(
             "search.provider.fast.type", "turbo_quant",
-            "search.provider.fast.bits", "8")));
+            "search.provider.fast.option.unknown", "8")));
 
-    assertTrue(exception.getMessage().contains("search.provider.fast.bits"));
+    assertTrue(exception.getMessage().contains("unknown"));
   }
 
   @Test
@@ -171,9 +193,34 @@ class SearchProviderCatalogTest {
     final SearchProviderCatalog.Instance terms = catalog.resolve(
         SearchProviderSelector.newBuilder().setCustom("terms").build());
 
-    final var chain = terms.factory().analysisChain();
+    final var chain = terms.configured().analysisChain();
     assertEquals(TermsSearchIndexProviderFactory.CHAIN_ID, chain.getChainId());
     assertEquals(TermsSearchIndexProviderFactory.CHAIN_VERSION, chain.getChainVersion());
     assertTrue(!chain.hasConfigurationHash());
+  }
+
+  @Test
+  void snapshotsFactoryCapabilitiesExactlyOnceAtDiscovery() {
+    final AtomicInteger calls = new AtomicInteger();
+    final SearchIndexProviderFactory factory = new SearchIndexProviderFactory() {
+      @Override
+      public String providerId() {
+        return "stateful-test";
+      }
+
+      @Override
+      public Set<SearchProviderCapability> capabilities() {
+        calls.incrementAndGet();
+        return Set.of(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_VECTOR);
+      }
+    };
+
+    final SearchProviderCatalog catalog = SearchProviderCatalog.fromConfiguration(
+        Map.of(), List.of(factory));
+    catalog.instances();
+    catalog.find("stateful-test").has(
+        SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_VECTOR);
+
+    assertEquals(1, calls.get());
   }
 }

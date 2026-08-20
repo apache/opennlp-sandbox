@@ -19,16 +19,28 @@
 package org.apache.opennlp.grpc.training;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.ServerCallStreamObserver;
+import io.grpc.stub.StreamObserver;
 import org.apache.opennlp.grpc.v1.DeleteStaticModelRequest;
 import org.apache.opennlp.grpc.v1.DeleteStaticModelResponse;
 import org.apache.opennlp.grpc.v1.ListStaticModelsRequest;
 import org.apache.opennlp.grpc.v1.ListStaticModelsResponse;
 import org.apache.opennlp.grpc.v1.ListTeachersRequest;
 import org.apache.opennlp.grpc.v1.ListTeachersResponse;
+import org.apache.opennlp.grpc.v1.StaticModelDescriptor;
+import org.apache.opennlp.grpc.v1.StreamingTrainingModelPlan;
+import org.apache.opennlp.grpc.v1.StreamingTrainingRequest;
+import org.apache.opennlp.grpc.v1.StreamingTrainingStart;
+import org.apache.opennlp.grpc.v1.StreamingTrainingUpdate;
 import org.apache.opennlp.grpc.v1.TrainStaticModelRequest;
 import org.apache.opennlp.grpc.v1.TrainStaticModelUpdate;
 import org.apache.opennlp.grpc.vocabulary.DictionaryFormatRegistry;
@@ -143,6 +155,74 @@ class OpenNlpModelTrainingServiceImplTest {
     assertFalse(again.values.getFirst().getDeleted());
   }
 
+  @Test
+  void cancellationStopsTrainingBeforePublication() throws Exception {
+    final DictionaryFormatRegistry formats = DictionaryFormatRegistry.discover();
+    final VocabularyArtifactStore vocabularies = VocabularyArtifactStore.fromConfiguration(
+        Map.of("vocabulary.artifact_root", temporaryDirectory.toString()), formats);
+    final String vocabularyId = TrainingTestSupport.vocabularyArtifact(formats, vocabularies);
+    final TrainedModelEmbeddingProvider registry =
+        new TrainedModelEmbeddingProvider(TrainingTestSupport.baseProvider());
+    final AtomicInteger iterations = new AtomicInteger();
+    final StaticModelTrainer trainer = (teacher, output, dimensions, terms, progress) -> {
+      for (int iteration = 0; iteration < 10; iteration++) {
+        iterations.incrementAndGet();
+        progress.progress("iteration " + iteration);
+      }
+      throw new AssertionError("cancelled training continued through every iteration");
+    };
+    final StaticModelArtifactStore store = StaticModelArtifactStore.fromConfiguration(
+        Map.of(
+            "vocabulary.artifact_root", temporaryDirectory.toString(),
+            "training.teacher.mini.ref", "minishlab/potion-base-8M"),
+        vocabularies, trainer, registry);
+    final OpenNlpModelTrainingServiceImpl service =
+        new OpenNlpModelTrainingServiceImpl(store);
+    final CancellingObserver updates = new CancellingObserver();
+
+    service.trainStaticModel(request(vocabularyId, "mini"), updates);
+
+    assertEquals(1, iterations.get());
+    assertEquals(1, updates.values.size());
+    assertFalse(updates.completed);
+    assertNull(updates.error);
+    assertTrue(store.models().isEmpty());
+  }
+
+  @Test
+  void streamingSessionsShareTheTrainingAdmissionBoundAndReleaseOnCancellation()
+      throws Exception {
+    final DictionaryFormatRegistry formats = DictionaryFormatRegistry.discover();
+    final VocabularyArtifactStore vocabularies = VocabularyArtifactStore.fromConfiguration(
+        Map.of(), formats);
+    final StaticModelArtifactStore store = StaticModelArtifactStore.fromConfiguration(
+        Map.of(
+            "training.max_concurrent_trainings", "1",
+            "training.teacher.mini.ref", "minishlab/potion-base-8M"),
+        vocabularies,
+        new TrainingTestSupport.RecordingTrainer(),
+        new TrainedModelEmbeddingProvider(TrainingTestSupport.baseProvider()));
+    final OpenNlpModelTrainingServiceImpl service =
+        new OpenNlpModelTrainingServiceImpl(store, new AdmissionPipeline());
+    final TrainingTestSupport.CapturingObserver<StreamingTrainingUpdate> firstResponse =
+        new TrainingTestSupport.CapturingObserver<>();
+    final StreamObserver<StreamingTrainingRequest> first =
+        service.streamingTraining(firstResponse);
+
+    final TrainingTestSupport.CapturingObserver<StreamingTrainingUpdate> rejected =
+        new TrainingTestSupport.CapturingObserver<>();
+    service.streamingTraining(rejected);
+    assertEquals(Status.Code.RESOURCE_EXHAUSTED,
+        ((StatusRuntimeException) rejected.error).getStatus().getCode());
+
+    first.onError(new java.io.IOException("client cancelled"));
+    final TrainingTestSupport.CapturingObserver<StreamingTrainingUpdate> admitted =
+        new TrainingTestSupport.CapturingObserver<>();
+    final StreamObserver<StreamingTrainingRequest> third = service.streamingTraining(admitted);
+    assertNull(admitted.error);
+    third.onError(new java.io.IOException("client cancelled"));
+  }
+
   private Status.Code trainStatus(Fixture fixture, TrainStaticModelRequest request) {
     final TrainingTestSupport.CapturingObserver<TrainStaticModelUpdate> updates =
         new TrainingTestSupport.CapturingObserver<>();
@@ -180,5 +260,117 @@ class OpenNlpModelTrainingServiceImplTest {
         .setDisplayName("Legal static model")
         .setProvenanceSummary("Authored test distillation")
         .build();
+  }
+
+  private static final class CancellingObserver
+      extends ServerCallStreamObserver<TrainStaticModelUpdate> {
+
+    private final List<TrainStaticModelUpdate> values = new ArrayList<>();
+    private boolean cancelled;
+    private boolean completed;
+    private Throwable error;
+    private Runnable cancelHandler;
+
+    @Override
+    public boolean isCancelled() {
+      return cancelled;
+    }
+
+    @Override
+    public void setOnCancelHandler(Runnable handler) {
+      cancelHandler = handler;
+    }
+
+    @Override
+    public void setCompression(String compression) {
+    }
+
+    @Override
+    public boolean isReady() {
+      return true;
+    }
+
+    @Override
+    public void setOnReadyHandler(Runnable handler) {
+    }
+
+    @Override
+    public void disableAutoInboundFlowControl() {
+    }
+
+    @Override
+    public void request(int count) {
+    }
+
+    @Override
+    public void setMessageCompression(boolean enable) {
+    }
+
+    @Override
+    public void onNext(TrainStaticModelUpdate value) {
+      values.add(value);
+      cancelled = true;
+      if (cancelHandler != null) {
+        cancelHandler.run();
+      }
+    }
+
+    @Override
+    public void onError(Throwable throwable) {
+      error = throwable;
+    }
+
+    @Override
+    public void onCompleted() {
+      completed = true;
+    }
+  }
+
+  /** Pipeline used only to keep admission sessions open without publishing artifacts. */
+  private static final class AdmissionPipeline implements StreamingTrainingPipeline {
+
+    @Override
+    public Limits limits() {
+      return new Limits(1, 1, false, false);
+    }
+
+    @Override
+    public org.apache.opennlp.grpc.processor.DocumentAnalysisSession openAnalysis(
+        org.apache.opennlp.grpc.v1.AnalyzeStreamConfiguration configuration) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public org.apache.opennlp.grpc.v1.VocabularyArtifactDescriptor learnVocabulary(
+        org.apache.opennlp.grpc.v1.LearnVocabularyStart start,
+        List<org.apache.opennlp.grpc.v1.OpenNlpDocument> documents) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public StaticModelDescriptor trainModel(
+        StreamingTrainingModelPlan plan,
+        String vocabularyArtifactId,
+        Consumer<String> progress,
+        BooleanSupplier cancelled) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public IndexPublication createIndex(
+        StreamingTrainingStart start,
+        StaticModelDescriptor model,
+        List<org.apache.opennlp.grpc.v1.OpenNlpDocument> documents,
+        BooleanSupplier cancelled) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void deleteModel(String artifactId) {
+    }
+
+    @Override
+    public void deleteVocabulary(String artifactId) {
+    }
   }
 }

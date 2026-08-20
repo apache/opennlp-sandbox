@@ -36,18 +36,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BooleanSupplier;
 
 import com.google.protobuf.Timestamp;
 import opennlp.embeddings.ModelDistiller;
 import opennlp.embeddings.StaticEmbeddingModel;
 import org.apache.opennlp.grpc.v1.StaticModelDescriptor;
+import org.apache.opennlp.grpc.v1.StreamingTrainingModelPlan;
 import org.apache.opennlp.grpc.v1.TeacherDescriptor;
 import org.apache.opennlp.grpc.v1.TrainStaticModelRequest;
 import org.apache.opennlp.grpc.vocabulary.VocabularyArtifactStore;
 import org.apache.opennlp.grpc.vocabulary.store.ArtifactDigests;
 import org.apache.opennlp.grpc.vocabulary.store.VocabularyStore;
 import org.apache.opennlp.grpc.vocabulary.store.VocabularyStores;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Bounded, atomic store for static embedding models distilled from learned vocabulary
@@ -59,6 +64,8 @@ import org.apache.opennlp.grpc.vocabulary.store.VocabularyStores;
  * restart.
  */
 public final class StaticModelArtifactStore {
+
+  private static final Logger logger = LoggerFactory.getLogger(StaticModelArtifactStore.class);
 
   /** Default principal components kept when a request selects 0. */
   static final int DEFAULT_PCA_DIMS = 256;
@@ -212,6 +219,22 @@ public final class StaticModelArtifactStore {
   }
 
   /**
+   * Validates streaming-session model controls before corpus documents are accepted.
+   *
+   * @param plan Model controls whose vocabulary id is supplied by the session.
+   * @throws IllegalStateException If model training is disabled.
+   * @throws IllegalArgumentException If a control or teacher id is invalid.
+   */
+  public void validateTrainingPlan(StreamingTrainingModelPlan plan) {
+    requireEnabled();
+    if (plan == null) {
+      throw new IllegalArgumentException("model plan must not be null");
+    }
+    validateTrainingControls(plan.getTeacherId(), plan.getDisplayName(),
+        plan.getPcaDims(), plan.getProvenanceSummary());
+  }
+
+  /**
    * Describes the configured teachers.
    *
    * @return Descriptors in stable teacher-id order; {@code local} reflects whether the
@@ -254,6 +277,24 @@ public final class StaticModelArtifactStore {
   public StaticModelDescriptor trainStaticModel(
       TrainStaticModelRequest request, ModelDistiller.ProgressListener listener)
       throws IOException {
+    return trainStaticModel(request, listener, () -> false);
+  }
+
+  /**
+   * Distills and publishes while observing transport cancellation between durable stages.
+   *
+   * @param request Training controls.
+   * @param listener Progress listener.
+   * @param cancelled Cancellation probe.
+   * @return Published descriptor.
+   * @throws IOException If distillation, publication, or verification fails.
+   * @throws CancellationException If cancellation is observed before publication completes.
+   */
+  public StaticModelDescriptor trainStaticModel(TrainStaticModelRequest request,
+      ModelDistiller.ProgressListener listener, BooleanSupplier cancelled) throws IOException {
+    if (cancelled == null) {
+      throw new IllegalArgumentException("cancelled must not be null");
+    }
     requireEnabled();
     final TeacherConfiguration teacher = validateRequest(request);
     final int pcaDims = request.getPcaDims() == 0 ? DEFAULT_PCA_DIMS : request.getPcaDims();
@@ -263,22 +304,60 @@ public final class StaticModelArtifactStore {
 
     final Path scratch = Files.createTempDirectory("static-model-training-");
     try {
+      requireActive(cancelled);
       final ModelDistiller.Result result =
           trainer.train(teacher.reference(), scratch, pcaDims, terms, progress);
+      requireActive(cancelled);
       final String artifactId = ARTIFACT_ID_PREFIX + UUID.randomUUID();
       final StaticModelDescriptor descriptor =
           publish(artifactId, scratch, request, teacher, result);
-      final Path cached = materializeCache(artifactId, scratch);
-      registry.register(artifactId, StaticEmbeddingModel.load(cached),
-          descriptor.getArtifactHash());
-      models.put(artifactId, descriptor);
+      boolean registered = false;
+      try {
+        requireActive(cancelled);
+        final Path cached = materializeCache(artifactId, scratch);
+        requireActive(cancelled);
+        registry.register(artifactId, StaticEmbeddingModel.load(cached),
+            descriptor.getArtifactHash());
+        registered = true;
+        requireActive(cancelled);
+        models.put(artifactId, descriptor);
+        requireActive(cancelled);
+      } catch (IOException | RuntimeException e) {
+        models.remove(artifactId);
+        if (registered) {
+          registry.unregister(artifactId);
+        }
+        try {
+          deleteTree(cacheRoot.resolve(artifactId));
+        } catch (IOException cleanupFailure) {
+          e.addSuppressed(cleanupFailure);
+        }
+        try {
+          store.delete(MODELS_KIND, artifactId);
+        } catch (IOException cleanupFailure) {
+          e.addSuppressed(cleanupFailure);
+        }
+        throw e;
+      }
       final PublicationListener published = publicationListener;
       if (published != null) {
-        published.modelPublished(artifactId, descriptor.getVocabularyArtifactId());
+        try {
+          published.modelPublished(artifactId, descriptor.getVocabularyArtifactId());
+        } catch (RuntimeException e) {
+          logger.warn("Published static model '{}' but its lifecycle notification failed",
+              artifactId, e);
+        }
       }
       return descriptor;
     } finally {
       deleteTree(scratch);
+    }
+  }
+
+  /** Throws when the caller cancelled the training operation. */
+  private static void requireActive(BooleanSupplier cancelled) {
+    if (cancelled.getAsBoolean()) {
+      throw new CancellationException("Static model training is cancelled");
     }
   }
 
@@ -294,13 +373,14 @@ public final class StaticModelArtifactStore {
   public boolean deleteModel(String artifactId) throws IOException {
     requireEnabled();
     requireArtifactId(artifactId);
-    final StaticModelDescriptor removed = models.remove(artifactId);
-    if (removed == null) {
+    final StaticModelDescriptor existing = models.get(artifactId);
+    if (existing == null) {
       return false;
     }
-    registry.unregister(artifactId);
-    store.delete(MODELS_KIND, artifactId);
     deleteTree(cacheRoot.resolve(artifactId));
+    store.delete(MODELS_KIND, artifactId);
+    registry.unregister(artifactId);
+    models.remove(artifactId);
     return true;
   }
 
@@ -471,19 +551,26 @@ public final class StaticModelArtifactStore {
     if (request == null) {
       throw new IllegalArgumentException("training request must not be null");
     }
-    requireTrimmed(request.getDisplayName(), "model display_name");
-    requireTrimmed(request.getProvenanceSummary(), "model provenance_summary");
-    final TeacherConfiguration teacher = teachers.get(request.getTeacherId());
-    if (teacher == null) {
-      throw new IllegalArgumentException(
-          "Unknown teacher '" + request.getTeacherId() + "'");
-    }
-    if (request.getPcaDims() != 0
-        && (request.getPcaDims() < 1 || request.getPcaDims() > maxPcaDims)) {
-      throw new IllegalArgumentException("pca_dims must be 0 for the default or between 1 and "
-          + maxPcaDims + ", was " + request.getPcaDims());
-    }
+    final TeacherConfiguration teacher = validateTrainingControls(
+        request.getTeacherId(), request.getDisplayName(), request.getPcaDims(),
+        request.getProvenanceSummary());
     vocabularies.requireVocabulary(request.getVocabularyArtifactId());
+    return teacher;
+  }
+
+  /** Validates controls shared by unary and bidirectional training. */
+  private TeacherConfiguration validateTrainingControls(
+      String teacherId, String displayName, int pcaDims, String provenanceSummary) {
+    requireTrimmed(displayName, "model display_name");
+    requireTrimmed(provenanceSummary, "model provenance_summary");
+    final TeacherConfiguration teacher = teachers.get(teacherId);
+    if (teacher == null) {
+      throw new IllegalArgumentException("Unknown teacher '" + teacherId + "'");
+    }
+    if (pcaDims != 0 && (pcaDims < 1 || pcaDims > maxPcaDims)) {
+      throw new IllegalArgumentException("pca_dims must be 0 for the default or between 1 and "
+          + maxPcaDims + ", was " + pcaDims);
+    }
     return teacher;
   }
 

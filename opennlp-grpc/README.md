@@ -101,7 +101,7 @@ Natural Earth gazetteer (`PIPELINE_STEP_GEOCODE`, no configuration required, fil
 - **opennlp-grpc-integration-tests** - black-box integration tests that launch the
   shaded server and web application as separate processes and exercise analysis, search,
   and a remote TEI embedding backend over real network listeners
-- **examples** - v1 client stub-generation scaffolding (Python sample TBD)
+- **examples** - v1 client stub-generation scaffolding and a link to the runnable Python lifecycle client
 
 ## Build
 
@@ -378,6 +378,16 @@ The four RPCs:
 3. `ListStaticModels` lists every published model with its manifest hash and provenance.
 4. `DeleteStaticModel` removes the artifact and stops serving its model id.
 
+`StreamingTraining` is the bidirectional form for clients that want one bounded session instead
+of composing the analysis, vocabulary, model, and indexing RPCs themselves. Its first frame fixes
+the analysis and vocabulary controls plus optional model and index plans. Each following document
+gets a correlated document-shape analysis reply while the server retains only bounded source text
+and identity. Client half-close learns the vocabulary, optionally distills and publishes the model,
+then reanalyzes the accepted corpus with that model and publishes the index. The final update carries
+all published descriptors. Cancellation or a terminal-stage failure rolls back artifacts in reverse
+order. The model and index plans remain operator-gated: the dictionary must already be imported, the
+teacher must be allowlisted, and persistence requires `search.persist.root`.
+
 The bundled web UI's Trainer tab drives the whole flow in the browser: import a dictionary,
 learn a vocabulary from pasted documents, watch the distillation progress stream, and pick the
 served model in Analyze to index and search with it.
@@ -389,11 +399,11 @@ loudly.
 
 ## Build and explore a bounded legal-passage index
 
-The first search provider loads one immutable TurboQuant index fully into memory. It is intended
-for a bounded collection of passages, such as one opinion, one matter, or a curated local corpus.
-It is not a distributed search engine and does not expose remote index mutation. A later provider
-can implement the same ServiceLoader contract for another index implementation without changing
-the gRPC or browser contracts.
+The first startup search provider loads one immutable TurboQuant bundle fully into memory. The
+separate workspace API can create, replace, persist, seal, reindex, and delete bounded process-local
+indexes through gRPC. Neither mode is a distributed search engine. A later provider can implement
+the same ServiceLoader contract for another index implementation without changing the gRPC or
+browser contracts.
 
 Start with normalized UTF-8 JSON Lines in the `CasePassage` interchange shape. Each physical
 record has six string fields:
@@ -521,6 +531,16 @@ Search engines are provider instances behind one ServiceLoader SPI
 (`SearchIndexProviderFactory`). Each factory declares capabilities (vector, keyword, live,
 bundle, persistent) and registers a default instance named by its provider id; the
 configuration adds named instances with `search.provider.<instance-id>.type=<provider-id>`.
+Provider-specific options live below that instance, for example:
+
+```ini
+search.provider.compact.type=turbo_quant
+search.provider.compact.option.bits=4
+search.provider.compact.option.seed=1833
+```
+
+Each factory parses those strings once at startup into its typed immutable configuration and rejects
+unknown or invalid options before the server listens.
 `ListSearchProviders` (and `GET /api/v1/search-providers`) lists them, and
 `SearchProviderSelector.custom` accepts any listed instance id, with the standard enum values
 as shorthand for the built-in defaults. Index descriptors name their per-modality `legs`: a
@@ -529,8 +549,11 @@ provider, which records its analysis-chain identity so query-time analysis prova
 index-time analysis.
 
 Dynamic indexes have a wire-complete lifecycle. `PersistIndex` writes a checkpoint under the
-operator-configured `search.persist.root` (raw vectors are retained beside the descriptor, so
-accretion continues after a restart restores the index under the same id), and
+operator-configured `search.persist.root`. TurboQuant workspaces store immutable quantized vector
+segments and provider row references, not a second copy of every raw float vector. New documents
+append a bounded segment, so accretion continues after a restart without rehydrating raw vectors.
+The server-wide vector budget counts every live segment, including rows superseded by document
+replacement, which keeps repeated mutation bounded. The
 `search.persist.checkpoint_seconds` enables an auto-checkpoint that rewrites only changed
 indexes. `SealIndex` persists and marks an index immutable. `ReindexIndex` runs blue/green:
 it replays the source index's retained chunks through a newly selected embedding route,
@@ -551,6 +574,10 @@ documents never leave stale counts; a multiword term of the current vocabulary c
 one unit, and the drift statistics report how many accreted terms fall outside that
 vocabulary (the retrain meter). With a persistence root configured, each collection is one
 atomic `collection.pb` file with an integrity hash inside and the last write winning.
+`search.collection.max_distinct_terms` bounds the vocabulary and drift maps built during one
+recalculation (default 1,000,000, fixed ceiling 10,000,000). Drift descriptor rebuilds and subscriber
+callbacks run without holding the registry monitor, so a slow watcher cannot block collection
+mutation.
 `WatchCollection` is a server-streaming subscription: the first event is always a complete
 snapshot, and later events report drift threshold crossings, member index persistence, and
 model publication, each self-contained, so a reconnect simply resubscribes. The gateway

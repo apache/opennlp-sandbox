@@ -21,6 +21,9 @@ syntax = "proto3";
 package org.apache.opennlp.grpc.v1;
 
 import "google/protobuf/timestamp.proto";
+import "org/apache/opennlp/grpc/v1/opennlp_search.proto";
+import "org/apache/opennlp/grpc/v1/opennlp_service.proto";
+import "org/apache/opennlp/grpc/v1/opennlp_vocabulary.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "OpenNlpTrainingProto";
@@ -47,6 +50,120 @@ service OpenNlpModelTrainingService {
   // Deletes one published static model artifact and stops serving its
   // embedding model id.
   rpc DeleteStaticModel(DeleteStaticModelRequest) returns (DeleteStaticModelResponse);
+
+  // Runs one bounded document-to-index session. The first client frame fixes
+  // analysis, vocabulary, optional model, and optional index configuration.
+  // Every later frame carries one document and receives a correlated analysis
+  // result. Client half-close publishes the vocabulary, then optionally the
+  // model and index, while progress and the terminal descriptors stream back.
+  rpc StreamingTraining(stream StreamingTrainingRequest)
+      returns (stream StreamingTrainingUpdate);
+}
+
+// One frame in a bidirectional training session. Start must appear exactly once
+// as the first frame. Every later frame must carry one correlated document.
+message StreamingTrainingRequest {
+  oneof frame {
+    StreamingTrainingStart start = 1;
+    AnalyzeStreamDocument document = 2;
+  }
+}
+
+// Fixed configuration for one document-to-index session.
+message StreamingTrainingStart {
+  // Analysis returned for each accepted document. Index construction reuses its
+  // profile and options, replacing chunk embedding selections with the newly
+  // trained model and the index plan's chunk configurations.
+  AnalyzeStreamConfiguration analysis = 1;
+  // Vocabulary controls. The referenced dictionary must already exist.
+  LearnVocabularyStart vocabulary = 2;
+  // Optional model distillation after the vocabulary is published.
+  optional StreamingTrainingModelPlan model = 3;
+  // Optional dynamic index creation after model publication. Requires model.
+  optional StreamingTrainingIndexPlan index = 4;
+}
+
+// Distillation controls whose vocabulary identity comes from this session.
+message StreamingTrainingModelPlan {
+  string teacher_id = 1;
+  string display_name = 2;
+  uint32 pca_dims = 3;
+  string provenance_summary = 4;
+}
+
+// Dynamic index controls whose embedding model comes from this session.
+message StreamingTrainingIndexPlan {
+  string display_name = 1;
+  SearchProviderSelector provider = 2;
+  // Chunk configurations must omit embedding ids and selectors. The server
+  // injects the model published by this session.
+  repeated ChunkEmbedConfigEntry chunk_embed_configs = 3;
+  // Category chunk configurations follow the same model-injection rule.
+  repeated CategoryChunkConfigEntry category_chunk_configs = 4;
+  StreamingTrainingIndexDurability durability = 5;
+  // Optional logical name assigned only after the index is fully published.
+  optional string alias = 6;
+}
+
+// Lifetime requested for the terminal dynamic index.
+enum StreamingTrainingIndexDurability {
+  STREAMING_TRAINING_INDEX_DURABILITY_UNSPECIFIED = 0;
+  // Keeps the index for the current server process.
+  STREAMING_TRAINING_INDEX_DURABILITY_PROCESS_LOCAL = 1;
+  // Writes a mutable checkpoint that can be extended after restart.
+  STREAMING_TRAINING_INDEX_DURABILITY_PERSISTED = 2;
+  // Writes a checkpoint and makes the index immutable.
+  STREAMING_TRAINING_INDEX_DURABILITY_SEALED = 3;
+}
+
+// One server frame in a bidirectional training session.
+message StreamingTrainingUpdate {
+  oneof update {
+    StreamingTrainingAccepted accepted = 1;
+    StreamingTrainingDocumentUpdate document = 2;
+    StreamingTrainingProgress progress = 3;
+    StreamingTrainingCompleted completed = 4;
+  }
+}
+
+// Confirms session admission and the enforced corpus limits.
+message StreamingTrainingAccepted {
+  uint32 max_documents = 1;
+  uint32 max_corpus_bytes = 2;
+  bool model_training_enabled = 3;
+  bool indexing_enabled = 4;
+}
+
+// One correlated analysis result and the corpus totals after this frame. A
+// document-local analysis error does not contribute to the corpus totals.
+message StreamingTrainingDocumentUpdate {
+  AnalyzeStreamResponse result = 1;
+  uint32 accepted_documents = 2;
+  uint32 accepted_corpus_bytes = 3;
+}
+
+// Stage producing one progress message.
+enum StreamingTrainingStage {
+  STREAMING_TRAINING_STAGE_UNSPECIFIED = 0;
+  STREAMING_TRAINING_STAGE_ANALYSIS = 1;
+  STREAMING_TRAINING_STAGE_VOCABULARY = 2;
+  STREAMING_TRAINING_STAGE_MODEL = 3;
+  STREAMING_TRAINING_STAGE_INDEX = 4;
+}
+
+// Human-readable progress with a typed stage for clients that group updates.
+message StreamingTrainingProgress {
+  StreamingTrainingStage stage = 1;
+  string message = 2;
+}
+
+// Terminal descriptors from one successfully completed session.
+message StreamingTrainingCompleted {
+  VocabularyArtifactDescriptor vocabulary = 1;
+  optional StaticModelDescriptor model = 2;
+  optional IndexDocumentsResponse index = 3;
+  uint32 accepted_documents = 4;
+  uint32 accepted_corpus_bytes = 5;
 }
 
 // One operator-configured teacher a training request may reference.

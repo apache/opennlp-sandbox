@@ -23,13 +23,18 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.opennlp.grpc.v1.StaticModelDescriptor;
 import org.apache.opennlp.grpc.v1.TrainStaticModelRequest;
+import opennlp.embeddings.ModelDistiller;
 import org.apache.opennlp.grpc.vocabulary.DictionaryFormatRegistry;
 import org.apache.opennlp.grpc.vocabulary.UnknownVocabularyArtifactException;
 import org.apache.opennlp.grpc.vocabulary.VocabularyArtifactStore;
@@ -41,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class StaticModelArtifactStoreTest {
 
@@ -173,6 +179,104 @@ class StaticModelArtifactStoreTest {
     assertFalse(store.deleteModel(descriptor.getArtifactId()));
     assertFalse(Files.exists(
         temporaryDirectory.resolve("models").resolve(descriptor.getArtifactId())));
+  }
+
+  @Test
+  void failedArtifactDeletionKeepsTheModelRegisteredAndServing() throws Exception {
+    final DictionaryFormatRegistry formats = DictionaryFormatRegistry.discover();
+    final VocabularyArtifactStore vocabularies = enabledVocabularies(formats);
+    final String vocabularyId = TrainingTestSupport.vocabularyArtifact(formats, vocabularies);
+    final TrainedModelEmbeddingProvider registry =
+        new TrainedModelEmbeddingProvider(TrainingTestSupport.baseProvider());
+    final StaticModelArtifactStore store = trainingStore(Map.of(), vocabularies,
+        new TrainingTestSupport.RecordingTrainer(), registry);
+    final StaticModelDescriptor descriptor =
+        store.trainStaticModel(request(vocabularyId, "mini", 0), message -> { });
+    final Path artifact = temporaryDirectory.resolve("models")
+        .resolve(descriptor.getArtifactId());
+    assumeTrue(Files.getFileStore(artifact).supportsFileAttributeView("posix"));
+    final Set<PosixFilePermission> original = Files.getPosixFilePermissions(artifact);
+    Files.setPosixFilePermissions(artifact, Set.of(
+        PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_EXECUTE));
+    try {
+      assertThrows(IOException.class, () -> store.deleteModel(descriptor.getArtifactId()));
+      assertEquals(List.of(descriptor), store.models());
+      assertTrue(registry.supportsModel(descriptor.getArtifactId()));
+    } finally {
+      Files.setPosixFilePermissions(artifact, original);
+    }
+  }
+
+  @Test
+  void publicationNotificationFailureDoesNotTurnACommittedModelIntoAnRpcFailure()
+      throws Exception {
+    final DictionaryFormatRegistry formats = DictionaryFormatRegistry.discover();
+    final VocabularyArtifactStore vocabularies = enabledVocabularies(formats);
+    final String vocabularyId = TrainingTestSupport.vocabularyArtifact(formats, vocabularies);
+    final TrainedModelEmbeddingProvider registry =
+        new TrainedModelEmbeddingProvider(TrainingTestSupport.baseProvider());
+    final StaticModelArtifactStore store = trainingStore(Map.of(), vocabularies,
+        new TrainingTestSupport.RecordingTrainer(), registry);
+    store.setPublicationListener((artifactId, parentVocabularyId) -> {
+      throw new IllegalStateException("collection notification failed");
+    });
+
+    final StaticModelDescriptor descriptor = store.trainStaticModel(
+        request(vocabularyId, "mini", 0), message -> { });
+
+    assertEquals(List.of(descriptor), store.models());
+    assertTrue(registry.supportsModel(descriptor.getArtifactId()));
+  }
+
+  @Test
+  void servingFailureRollsBackTheNewDurableModelArtifact() throws Exception {
+    final DictionaryFormatRegistry formats = DictionaryFormatRegistry.discover();
+    final VocabularyArtifactStore vocabularies = enabledVocabularies(formats);
+    final String vocabularyId = TrainingTestSupport.vocabularyArtifact(formats, vocabularies);
+    final StaticModelTrainer invalidTrainer = (teacher, output, dimensions, terms, progress) -> {
+      Files.writeString(output.resolve("invalid-model.txt"), "not a static model");
+      return new ModelDistiller.Result("WordPiece", 1, 0, 3, 3, 1.0d);
+    };
+    final StaticModelArtifactStore store = trainingStore(Map.of(), vocabularies,
+        invalidTrainer,
+        new TrainedModelEmbeddingProvider(TrainingTestSupport.baseProvider()));
+
+    assertThrows(IOException.class, () -> store.trainStaticModel(
+        request(vocabularyId, "mini", 0), message -> { }));
+
+    final Path models = temporaryDirectory.resolve("models");
+    if (Files.exists(models)) {
+      try (var entries = Files.list(models)) {
+        assertTrue(entries.findAny().isEmpty());
+      }
+    }
+    assertTrue(store.models().isEmpty());
+  }
+
+  @Test
+  void cancellationAfterDistillationPreventsArtifactPublication() throws Exception {
+    final DictionaryFormatRegistry formats = DictionaryFormatRegistry.discover();
+    final VocabularyArtifactStore vocabularies = enabledVocabularies(formats);
+    final String vocabularyId = TrainingTestSupport.vocabularyArtifact(formats, vocabularies);
+    final AtomicBoolean cancelled = new AtomicBoolean();
+    final StaticModelTrainer trainer = (teacher, output, dimensions, terms, progress) -> {
+      TrainingTestSupport.writeStaticModelDirectory(output);
+      cancelled.set(true);
+      return new ModelDistiller.Result("WordPiece", 6, 0, 3, 3, 1.0d);
+    };
+    final StaticModelArtifactStore store = trainingStore(Map.of(), vocabularies, trainer,
+        new TrainedModelEmbeddingProvider(TrainingTestSupport.baseProvider()));
+
+    assertThrows(CancellationException.class, () -> store.trainStaticModel(
+        request(vocabularyId, "mini", 0), message -> { }, cancelled::get));
+
+    assertTrue(store.models().isEmpty());
+    final Path models = temporaryDirectory.resolve("models");
+    if (Files.exists(models)) {
+      try (var entries = Files.list(models)) {
+        assertTrue(entries.findAny().isEmpty());
+      }
+    }
   }
 
   private VocabularyArtifactStore enabledVocabularies(DictionaryFormatRegistry formats)

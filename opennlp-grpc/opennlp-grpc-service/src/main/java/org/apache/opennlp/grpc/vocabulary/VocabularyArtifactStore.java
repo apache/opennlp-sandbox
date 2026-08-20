@@ -164,8 +164,12 @@ public final class VocabularyArtifactStore {
             DEFAULT_MAX_CONCURRENT_WRITES, MAX_CONCURRENT_WRITES_LIMIT));
   }
 
-  /** @return Whether write and download operations have a configured artifact root. */
-  boolean writesEnabled() {
+  /**
+   * Returns whether write and download operations have a configured artifact root.
+   *
+   * @return Whether artifact writes are enabled.
+   */
+  public boolean writesEnabled() {
     return store != null;
   }
 
@@ -179,13 +183,21 @@ public final class VocabularyArtifactStore {
     return maxDictionaryEntries;
   }
 
-  /** @return Maximum documents accepted by one vocabulary build. */
-  int maxCorpusDocuments() {
+  /**
+   * Returns the maximum documents accepted by one vocabulary build.
+   *
+   * @return Per-build document limit.
+   */
+  public int maxCorpusDocuments() {
     return maxCorpusDocuments;
   }
 
-  /** @return Maximum UTF-8 corpus bytes accepted by one vocabulary build. */
-  int maxCorpusBytes() {
+  /**
+   * Returns the maximum UTF-8 corpus bytes accepted by one vocabulary build.
+   *
+   * @return Per-build UTF-8 byte limit.
+   */
+  public int maxCorpusBytes() {
     return maxCorpusBytes;
   }
 
@@ -289,7 +301,7 @@ public final class VocabularyArtifactStore {
    * @throws IOException If artifact reading or publication fails.
    * @throws IllegalArgumentException If the controls, dictionary id, or corpus are invalid.
    */
-  VocabularyArtifactDescriptor learnVocabulary(
+  public VocabularyArtifactDescriptor learnVocabulary(
       LearnVocabularyStart start, List<OpenNlpDocument> documents) throws IOException {
     requireEnabled();
     validateLearningStart(start);
@@ -374,7 +386,7 @@ public final class VocabularyArtifactStore {
    * @return Descriptor.
    * @throws IllegalArgumentException If the id is invalid or unknown.
    */
-  DictionaryArtifactDescriptor requireDictionary(String artifactId) {
+  public DictionaryArtifactDescriptor requireDictionary(String artifactId) {
     requireArtifactId(artifactId, "dictionary");
     final DictionaryArtifactDescriptor descriptor = dictionaries.get(artifactId);
     if (descriptor == null) {
@@ -399,6 +411,29 @@ public final class VocabularyArtifactStore {
           "Unknown vocabulary artifact '" + artifactId + "'");
     }
     return descriptor;
+  }
+
+  /**
+   * Deletes one published vocabulary artifact.
+   *
+   * <p>Durable storage is deleted before the in-process descriptor so a failed
+   * deletion never leaves a published artifact hidden only from this process.</p>
+   *
+   * @param artifactId Server-owned vocabulary artifact id.
+   * @return {@code true} when the vocabulary existed and was deleted.
+   * @throws IOException If durable deletion fails.
+   * @throws IllegalStateException If no artifact root is configured.
+   * @throws IllegalArgumentException If the artifact id is malformed.
+   */
+  public boolean deleteVocabulary(String artifactId) throws IOException {
+    requireEnabled();
+    requireArtifactId(artifactId, "vocabulary");
+    if (!vocabularies.containsKey(artifactId)) {
+      return false;
+    }
+    store.delete(VOCABULARIES_KIND, artifactId);
+    vocabularies.remove(artifactId);
+    return true;
   }
 
   /**

@@ -28,6 +28,7 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +44,8 @@ import org.apache.opennlp.grpc.v1.PersistedSearchChunk;
  *
  * <p>Each checkpoint is a directory named by its index id, holding the versioned
  * {@code search-index.properties} descriptor beside a {@code chunks.pb} stream of
- * length-delimited {@link PersistedSearchChunk} records with raw vectors. Writes stage
+ * length-delimited {@link PersistedSearchChunk} records and provider-owned immutable
+ * vector segments. Writes stage
  * into a hidden temporary directory and swap it in, so the last complete write wins and
  * readers never observe a partial checkpoint. Restore skips hidden directories left by
  * an interrupted swap and the reserved
@@ -58,10 +60,13 @@ public final class WorkspaceCheckpointStore {
   static final String DESCRIPTOR_FILE = "search-index.properties";
   /** Length-delimited chunk records filename. */
   static final String CHUNKS_FILE = "chunks.pb";
+  static final String VECTOR_SEGMENTS_DIR = "vector-segments";
+  static final int MAX_VECTOR_SEGMENTS = 10_000;
 
-  private static final int FORMAT_VERSION = 2;
+  private static final int FORMAT_VERSION = 3;
   private static final String KIND_CHECKPOINT = "checkpoint";
   private static final String KIND_SEALED = "sealed";
+  private static final String OLD_MARKER = "-old-";
   private static final int MAX_DESCRIPTOR_BYTES = 65_536;
   private static final long MAX_CHUNKS_FILE_BYTES = 512L * 1024 * 1024;
 
@@ -126,7 +131,22 @@ public final class WorkspaceCheckpointStore {
    * @param header Declared identity and integrity.
    * @param chunks Persisted chunk records in stored order.
    */
-  record RestoredCheckpoint(CheckpointHeader header, List<PersistedSearchChunk> chunks) {
+  record RestoredCheckpoint(CheckpointHeader header, List<PersistedSearchChunk> chunks,
+                            List<Path> vectorSegments) {
+  }
+
+  /** Writes one frozen provider-owned vector segment into its staging directory. */
+  @FunctionalInterface
+  interface VectorSegmentWriter {
+
+    /**
+     * Writes one segment.
+     *
+     * @param index Zero-based segment number.
+     * @param directory Empty segment directory.
+     * @throws IOException If the segment cannot be written.
+     */
+    void write(int index, Path directory) throws IOException;
   }
 
   /**
@@ -134,12 +154,23 @@ public final class WorkspaceCheckpointStore {
    *
    * @param header Checkpoint identity and integrity.
    * @param chunks Chunk records in snapshot order, at least one.
+   * @param vectorSegmentCount Number of provider vector segments.
+   * @param segmentWriter Provider segment writer.
    * @throws IOException If staging or the swap fails.
    */
-  void write(CheckpointHeader header, List<PersistedSearchChunk> chunks) throws IOException {
+  void write(CheckpointHeader header, List<PersistedSearchChunk> chunks,
+      int vectorSegmentCount, VectorSegmentWriter segmentWriter) throws IOException {
     if (chunks.isEmpty()) {
       throw new IOException("checkpoint for index '" + header.indexId()
           + "' must contain at least one chunk");
+    }
+    if (vectorSegmentCount < 1 || segmentWriter == null) {
+      throw new IOException("checkpoint for index '" + header.indexId()
+          + "' requires at least one provider vector segment");
+    }
+    if (vectorSegmentCount > MAX_VECTOR_SEGMENTS) {
+      throw new IOException("checkpoint vector.segment.count exceeds "
+          + MAX_VECTOR_SEGMENTS);
     }
     Files.createDirectories(root);
     final Path target = root.resolve(header.indexId());
@@ -151,6 +182,13 @@ public final class WorkspaceCheckpointStore {
         for (PersistedSearchChunk chunk : chunks) {
           chunk.writeDelimitedTo(output);
         }
+      }
+      final Path segmentsDirectory = staging.resolve(VECTOR_SEGMENTS_DIR);
+      Files.createDirectory(segmentsDirectory);
+      for (int index = 0; index < vectorSegmentCount; index++) {
+        final Path segment = segmentsDirectory.resolve(Integer.toString(index));
+        Files.createDirectory(segment);
+        segmentWriter.write(index, segment);
       }
       final Properties properties = new Properties();
       properties.setProperty("format.version", Integer.toString(FORMAT_VERSION));
@@ -166,6 +204,7 @@ public final class WorkspaceCheckpointStore {
       }
       properties.setProperty("dimension", Integer.toString(header.dimension()));
       properties.setProperty("size", Integer.toString(chunks.size()));
+      properties.setProperty("vector.segment.count", Integer.toString(vectorSegmentCount));
       properties.setProperty("content.sha256", header.contentHash());
       try (OutputStream output = Files.newOutputStream(staging.resolve(DESCRIPTOR_FILE))) {
         properties.store(output, "OpenNLP live search index checkpoint");
@@ -189,6 +228,7 @@ public final class WorkspaceCheckpointStore {
     if (!Files.isDirectory(root)) {
       return List.of();
     }
+    recoverInterruptedSwaps();
     final List<Path> directories = new ArrayList<>();
     try (DirectoryStream<Path> entries = Files.newDirectoryStream(root)) {
       for (Path entry : entries) {
@@ -260,6 +300,15 @@ public final class WorkspaceCheckpointStore {
     }
     final int dimension = positiveInt(properties, "dimension");
     final int size = positiveInt(properties, "size");
+    final int vectorSegmentCount = positiveInt(properties, "vector.segment.count");
+    if (size > DynamicSearchIndexRegistry.MAX_CHUNKS_PER_INDEX) {
+      throw new IOException("checkpoint size exceeds "
+          + DynamicSearchIndexRegistry.MAX_CHUNKS_PER_INDEX);
+    }
+    if (vectorSegmentCount > MAX_VECTOR_SEGMENTS) {
+      throw new IOException("checkpoint vector.segment.count exceeds "
+          + MAX_VECTOR_SEGMENTS);
+    }
     final String contentHash = require(properties, "content.sha256");
     try {
       SearchIndexRegistry.requireSha256(contentHash, "content.sha256");
@@ -297,11 +346,20 @@ public final class WorkspaceCheckpointStore {
       throw new IOException(chunksFile + " contains " + chunks.size()
           + " chunks; descriptor declares " + size);
     }
+    final List<Path> vectorSegments = new ArrayList<>(vectorSegmentCount);
+    final Path segmentsDirectory = directory.resolve(VECTOR_SEGMENTS_DIR);
+    for (int index = 0; index < vectorSegmentCount; index++) {
+      final Path segment = segmentsDirectory.resolve(Integer.toString(index));
+      if (!Files.isDirectory(segment)) {
+        throw new IOException("checkpoint " + directory + " lacks vector segment " + index);
+      }
+      vectorSegments.add(segment);
+    }
     return new RestoredCheckpoint(
         new CheckpointHeader(indexId, require(properties, "display.name"),
             require(properties, "provider.instance"), route.build(), dimension,
             KIND_SEALED.equals(kind), contentHash),
-        List.copyOf(chunks));
+        List.copyOf(chunks), List.copyOf(vectorSegments));
   }
 
   /**
@@ -315,18 +373,75 @@ public final class WorkspaceCheckpointStore {
     Path previous = null;
     if (Files.exists(target)) {
       previous = target.resolveSibling("." + target.getFileName() + "-old-" + UUID.randomUUID());
-      Files.move(target, previous);
+      Files.move(target, previous, StandardCopyOption.ATOMIC_MOVE);
     }
     try {
-      Files.move(staging, target);
+      Files.move(staging, target, StandardCopyOption.ATOMIC_MOVE);
     } catch (IOException e) {
       if (previous != null) {
-        Files.move(previous, target);
+        try {
+          Files.move(previous, target, StandardCopyOption.ATOMIC_MOVE);
+        } catch (IOException restoreFailure) {
+          e.addSuppressed(restoreFailure);
+        }
       }
       throw e;
     }
     if (previous != null) {
-      deleteRecursively(previous);
+      try {
+        deleteRecursively(previous);
+      } catch (IOException ignored) {
+        // The new checkpoint is already published. Restore removes this stale generation.
+      }
+    }
+  }
+
+  /**
+   * Recovers an old generation left after the previous target was moved aside but before
+   * its replacement was published. Old generations beside an already published target
+   * are stale cleanup work.
+   *
+   * @throws IOException If recovery of the authoritative generation fails.
+   */
+  private void recoverInterruptedSwaps() throws IOException {
+    final List<Path> oldGenerations = new ArrayList<>();
+    try (DirectoryStream<Path> entries = Files.newDirectoryStream(root)) {
+      for (Path entry : entries) {
+        if (Files.isDirectory(entry) && interruptedSwapIndexId(entry) != null) {
+          oldGenerations.add(entry);
+        }
+      }
+    }
+    oldGenerations.sort(java.util.Comparator.comparing(path -> path.getFileName().toString()));
+    for (Path oldGeneration : oldGenerations) {
+      final String indexId = interruptedSwapIndexId(oldGeneration);
+      final Path target = root.resolve(indexId);
+      if (Files.exists(target)) {
+        try {
+          deleteRecursively(oldGeneration);
+        } catch (IOException ignored) {
+          // The published target is authoritative; stale cleanup can be retried later.
+        }
+      } else {
+        Files.move(oldGeneration, target, StandardCopyOption.ATOMIC_MOVE);
+      }
+    }
+  }
+
+  /** Returns the index id encoded by one hidden old-generation directory. */
+  private static String interruptedSwapIndexId(Path directory) {
+    final String name = directory.getFileName().toString();
+    final int marker = name.lastIndexOf(OLD_MARKER);
+    if (!name.startsWith(".") || marker <= 1) {
+      return null;
+    }
+    try {
+      UUID.fromString(name.substring(marker + OLD_MARKER.length()));
+      final String indexId = name.substring(1, marker);
+      SearchIndexRegistry.requireStableId(indexId, "interrupted checkpoint index id");
+      return indexId;
+    } catch (IllegalArgumentException e) {
+      return null;
     }
   }
 

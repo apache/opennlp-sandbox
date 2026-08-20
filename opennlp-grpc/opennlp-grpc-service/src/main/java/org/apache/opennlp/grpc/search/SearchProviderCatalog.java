@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -44,6 +45,7 @@ public final class SearchProviderCatalog {
 
   private static final String PREFIX = "search.provider.";
   private static final String TYPE_SUFFIX = ".type";
+  private static final String OPTION_SEGMENT = ".option.";
 
   private final SortedMap<String, Instance> instances;
 
@@ -56,11 +58,23 @@ public final class SearchProviderCatalog {
    *
    * @param instanceId Stable configured instance identifier, unique on this server.
    * @param factory Provider implementation behind this instance.
+   * @param configured Typed provider configuration.
+   * @param capabilities Immutable capabilities captured once during discovery.
    * @param standard Standard shorthand selecting this instance, or {@code null} when the
    *     instance is only selectable by id.
    */
   public record Instance(
-      String instanceId, SearchIndexProviderFactory factory, StandardSearchProvider standard) {
+      String instanceId, SearchIndexProviderFactory factory,
+      SearchIndexProviderFactory.ConfiguredProvider configured,
+      Set<SearchProviderCapability> capabilities, StandardSearchProvider standard) {
+
+    /** Captures an immutable capability snapshot for this configured instance. */
+    public Instance {
+      capabilities = Set.copyOf(capabilities);
+      if (configured == null) {
+        throw new IllegalArgumentException("configured provider must not be null");
+      }
+    }
 
     /**
      * Returns the selector clients use to name this instance. Default instances of a
@@ -85,7 +99,7 @@ public final class SearchProviderCatalog {
      * @return {@code true} when the factory declares it.
      */
     public boolean has(SearchProviderCapability capability) {
-      return factory.capabilities().contains(capability);
+      return capabilities.contains(capability);
     }
   }
 
@@ -127,14 +141,17 @@ public final class SearchProviderCatalog {
       throw new IllegalArgumentException("factories must not be null");
     }
     final SortedMap<String, SearchIndexProviderFactory> byProviderId = new TreeMap<>();
+    final SortedMap<String, Set<SearchProviderCapability>> capabilitiesByProviderId =
+        new TreeMap<>();
     for (SearchIndexProviderFactory factory : factories) {
       if (factory == null) {
         throw new IllegalArgumentException("search provider factories must not contain null");
       }
       SearchIndexRegistry.requireStableId(factory.providerId(),
           factory.getClass().getName() + " search provider id");
-      if (factory.capabilities() == null || factory.capabilities().isEmpty()
-          || factory.capabilities().contains(
+      final Set<SearchProviderCapability> declared = factory.capabilities();
+      if (declared == null || declared.isEmpty()
+          || declared.contains(
               SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_UNSPECIFIED)) {
         throw new IllegalArgumentException("search provider '" + factory.providerId()
             + "' must declare at least one specified capability");
@@ -143,27 +160,63 @@ public final class SearchProviderCatalog {
         throw new IllegalArgumentException("search provider id '" + factory.providerId()
             + "' is declared more than once");
       }
+      capabilitiesByProviderId.put(factory.providerId(), Set.copyOf(declared));
     }
     final SortedMap<String, Instance> instances = new TreeMap<>();
     for (SearchIndexProviderFactory factory : byProviderId.values()) {
       instances.put(factory.providerId(),
-          new Instance(factory.providerId(), factory, standardFor(factory.providerId())));
+          new Instance(factory.providerId(), factory,
+              factory.configureInstance(factory.providerId(), Map.of()),
+              capabilitiesByProviderId.get(factory.providerId()),
+              standardFor(factory.providerId())));
     }
+    final SortedMap<String, String> configuredTypes = new TreeMap<>();
+    final SortedMap<String, SortedMap<String, String>> configuredOptions = new TreeMap<>();
     for (Map.Entry<String, String> entry : configuration.entrySet()) {
       final String key = entry.getKey();
       if (!key.startsWith(PREFIX)) {
         continue;
       }
       final String remainder = key.substring(PREFIX.length());
-      if (!remainder.endsWith(TYPE_SUFFIX)
-          || remainder.length() == TYPE_SUFFIX.length()) {
-        throw new IllegalArgumentException("unsupported search provider configuration key '"
-            + key + "'; instances are declared as " + PREFIX + "<instance-id>" + TYPE_SUFFIX);
+      if (remainder.endsWith(TYPE_SUFFIX)
+          && remainder.length() > TYPE_SUFFIX.length()) {
+        final String instanceId = remainder.substring(0,
+            remainder.length() - TYPE_SUFFIX.length());
+        SearchIndexRegistry.requireStableId(
+            instanceId, "configured search provider instance id");
+        if (configuredTypes.putIfAbsent(instanceId, entry.getValue()) != null) {
+          throw new IllegalArgumentException(
+              "search provider instance '" + instanceId + "' declares type more than once");
+        }
+        continue;
       }
-      final String instanceId = remainder.substring(0,
-          remainder.length() - TYPE_SUFFIX.length());
-      SearchIndexRegistry.requireStableId(instanceId, "configured search provider instance id");
-      final String providerId = entry.getValue();
+      final int optionAt = remainder.lastIndexOf(OPTION_SEGMENT);
+      if (optionAt > 0 && optionAt + OPTION_SEGMENT.length() < remainder.length()) {
+        final String instanceId = remainder.substring(0, optionAt);
+        final String option = remainder.substring(optionAt + OPTION_SEGMENT.length());
+        SearchIndexRegistry.requireStableId(
+            instanceId, "configured search provider instance id");
+        SearchIndexRegistry.requireStableId(option, "search provider option name");
+        configuredOptions.computeIfAbsent(instanceId, ignored -> new TreeMap<>())
+            .put(option, entry.getValue());
+        continue;
+      }
+      {
+        throw new IllegalArgumentException("unsupported search provider configuration key '"
+            + key + "'; use " + PREFIX + "<instance-id>" + TYPE_SUFFIX + " or "
+            + PREFIX + "<instance-id>" + OPTION_SEGMENT + "<option>");
+      }
+    }
+    for (Map.Entry<String, SortedMap<String, String>> options : configuredOptions.entrySet()) {
+      if (!configuredTypes.containsKey(options.getKey())) {
+        throw new IllegalArgumentException("search provider options for instance '"
+            + options.getKey() + "' require a matching type declaration");
+      }
+    }
+    for (Map.Entry<String, String> declaration : configuredTypes.entrySet()) {
+      final String instanceId = declaration.getKey();
+      final String providerId = declaration.getValue();
+      final String key = PREFIX + instanceId + TYPE_SUFFIX;
       if (providerId == null || providerId.isBlank()
           || !providerId.equals(providerId.trim())) {
         throw new IllegalArgumentException(key + " must be a nonblank trimmed provider id");
@@ -180,9 +233,11 @@ public final class SearchProviderCatalog {
             + "' shadows the default instance of provider '"
             + existing.factory().providerId() + "'");
       }
-      if (existing == null) {
-        instances.put(instanceId, new Instance(instanceId, factory, null));
-      }
+      final StandardSearchProvider standard = existing == null ? null : existing.standard();
+      instances.put(instanceId, new Instance(instanceId, factory,
+          factory.configureInstance(instanceId,
+              configuredOptions.getOrDefault(instanceId, new TreeMap<>())),
+          capabilitiesByProviderId.get(factory.providerId()), standard));
     }
     return new SearchProviderCatalog(instances);
   }
@@ -198,7 +253,7 @@ public final class SearchProviderCatalog {
       final SearchProviderInstance.Builder builder = SearchProviderInstance.newBuilder()
           .setInstanceId(instance.instanceId())
           .setProviderId(instance.factory().providerId());
-      instance.factory().capabilities().stream().sorted().forEach(builder::addCapabilities);
+      instance.capabilities().stream().sorted().forEach(builder::addCapabilities);
       if (instance.standard() != null) {
         builder.setStandard(instance.standard());
       }
