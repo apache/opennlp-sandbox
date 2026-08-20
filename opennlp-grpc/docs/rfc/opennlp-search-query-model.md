@@ -80,6 +80,16 @@ Two extensions:
    remote-backend pattern TEI established for embeddings. None of it is a
    dependency of the gRPC core; the core ships the SPI, the terms-layer
    keyword executor, flat float, and TurboQuant as defaults.
+3. **Logical indexes have legs.** A logical index is composed of
+   independently provided legs per modality: a vector leg (flat float,
+   TurboQuant) and a keyword leg (the terms-postings executor, Lucene).
+   Hybrid queries fuse across the legs of one logical index, which is what
+   makes providers genuinely swappable per modality. The index descriptor
+   names its legs and the provider instance behind each.
+
+Selector contract: `SearchProviderSelector.custom` is a configured instance
+id; the standard enum values are shorthand for the default instance of each
+built-in provider. Instance names are part of the client-visible contract.
 
 ## The language layer is ours
 
@@ -107,6 +117,38 @@ route's `vector_space_id` is `<model-id>-sha256-<manifest-hash>`). The loop:
 - The UI surfaces drift: N new terms since the serving model was distilled.
 - Retraining is explicit: distill a new model artifact, reindex into its new
   vector space as a tracked operation. No silent embedding drift, ever.
+
+## Collections and lifecycle RPCs
+
+The collection is the noun accretion scopes to: indexes belong to a
+collection, indexing feeds its term counts, vocabularies are cut from it,
+models train from those vocabularies, and drift is measured against it. The
+`CollectionDescriptor` is a protobuf wire model (member index ids, term
+ledger, current dictionary, vocabulary, and model artifact ids, drift stats,
+integrity hash) persisted as one local `collection.pb` file; lineage is the
+parent ids already carried on vocabulary and model descriptors.
+
+Every action the front end performs is a gRPC service, so the lifecycle is
+wire-complete:
+
+- **Aliases**: a logical name resolves to a current artifact id. Searches and
+  `EmbeddingSelector` accept either form; descriptors always answer with the
+  resolved hash.
+- **Reindex** is a first-class RPC, blue/green: build the new index in the
+  new vector space beside the old one, verify, then swap the alias. Reindex
+  replays the index's own retained source documents server-side, and
+  persisted bundles retain that source text, so replay survives restarts.
+  Vocabulary counts are recomputed from live index contents at cut time, so
+  replaced or deleted documents never leave stale counts.
+- **Persist** is explicit (a `PersistIndex` RPC), with an optional
+  auto-checkpoint interval. A persisted live index keeps raw vectors next to
+  the quantized form, so accretion continues across restarts; a separate
+  explicit seal turns one into an immutable bundle.
+- **Watch, not poll**: a server-streaming RPC emits collection events (drift
+  threshold crossed, index persisted, model published). Each event is a
+  self-contained descriptor snapshot, so consumers track no cursors, sessions,
+  or timers; the open stream is the subscription, and a reconnect simply
+  resubscribes and receives a fresh snapshot first.
 
 ## Compound query: a typed builder, not a parser
 
@@ -136,11 +178,21 @@ candidate set, or `LOGISTIC`), and then fuses like any other scored leg. Both
 roles read only the candidate's metadata `Struct` and perform no I/O, so they
 stay deterministic and provider-portable.
 
+Term and phrase leaf scores are pinned to per-query max normalization: each
+candidate's raw executor relevance is divided by the query's top score within
+that leg. This is portable across the terms-postings executor and Lucene, so
+the [0, 1] leaf contract holds on every provider. CEL expressions see the
+candidate's metadata only: no sibling leg scores, no index statistics, and no
+implicit clock; recency compares a metadata timestamp against a
+request-supplied `now`, keeping execution deterministic, and the cel-java
+version is pinned in the contract.
+
 The full normative score algebra lives as comments in `opennlp_query.proto`
 and is pinned by wire-contract and algebra tests; every provider must
 reproduce it. Reciprocal-rank fusion is the escape hatch for joining legs
-whose scales are not comparable (the classic hybrid case); a calculator leg
-is just one more entrant in that fusion.
+whose scales are not comparable (the classic hybrid case), or when per-query
+max normalization is distrusted; a calculator leg is just one more entrant in
+that fusion.
 
 ## Training recall telemetry
 
@@ -189,7 +241,9 @@ requests set exactly one of the two.
 2. `QueryNode` execution: validation (types, CEL checking, algebra rule 8),
    the terms-layer keyword executor OOTB, and hit-level matched spans for
    highlighting.
-3. Index persistence through the store seam (`indexes` kind).
+3. Index persistence as the existing bundle format written to a configured
+   local directory, plus the collection descriptor file and the lifecycle
+   RPCs (persist, seal, reindex, aliases, watch).
 4. `opennlp-grpc-search-lucene` as the first external provider module, mapped
    mechanically: join to BooleanQuery, boost to BoostQuery, semantic to
    KnnFloatVectorQuery.
