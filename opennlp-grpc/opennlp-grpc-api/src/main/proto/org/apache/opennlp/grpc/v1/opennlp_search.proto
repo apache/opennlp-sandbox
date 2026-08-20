@@ -37,6 +37,9 @@ option java_package = "org.apache.opennlp.grpc.v1";
 service OpenNlpSearchService {
   // Lists every static and dynamic search index currently owned by the server.
   rpc ListSearchIndexes(ListSearchIndexesRequest) returns (ListSearchIndexesResponse);
+  // Lists every configured search provider instance with its declared
+  // capabilities. Instance ids are valid in SearchProviderSelector.custom.
+  rpc ListSearchProviders(ListSearchProvidersRequest) returns (ListSearchProvidersResponse);
   // Embeds one document-shaped query through a configured backend serving the
   // index's model, vector space, and dimension, then returns up to top_k ranked,
   // document-shaped source passages.
@@ -99,6 +102,47 @@ message DeleteSearchIndexResponse {
 // indexes and the first bounded contract has no remote filtering or pagination.
 message ListSearchIndexesRequest {}
 
+// Input to ListSearchProviders. Empty because the server exposes only its
+// configured provider instances and the bounded contract has no filtering.
+message ListSearchProvidersRequest {}
+
+// The search provider instances configured on this server.
+message ListSearchProvidersResponse {
+  // Provider instances in stable instance-id order.
+  repeated SearchProviderInstance providers = 1;
+}
+
+// One configured search provider instance. The instance id is the value
+// accepted by SearchProviderSelector.custom; the standard enum values are
+// shorthand for the default instance of each built-in provider.
+message SearchProviderInstance {
+  // Stable configured instance identifier, unique on this server.
+  string instance_id = 1;
+  // Identifier of the provider implementation behind this instance.
+  string provider_id = 2;
+  // What this instance executes and how it stores index data.
+  repeated SearchProviderCapability capabilities = 3;
+  // Present when this instance is the default selected by the standard
+  // enum shorthand for its provider.
+  optional StandardSearchProvider standard = 4;
+}
+
+// One declared ability of a search provider instance.
+enum SearchProviderCapability {
+  // No capability was declared. Listed instances never use this value.
+  SEARCH_PROVIDER_CAPABILITY_UNSPECIFIED = 0;
+  // Executes vector similarity legs.
+  SEARCH_PROVIDER_CAPABILITY_VECTOR = 1;
+  // Executes analyzed keyword and phrase legs.
+  SEARCH_PROVIDER_CAPABILITY_KEYWORD = 2;
+  // Serves mutable live indexes published as atomic snapshots.
+  SEARCH_PROVIDER_CAPABILITY_LIVE = 3;
+  // Loads immutable startup index bundles.
+  SEARCH_PROVIDER_CAPABILITY_BUNDLE = 4;
+  // Persists index data beyond the server process.
+  SEARCH_PROVIDER_CAPABILITY_PERSISTENT = 5;
+}
+
 // The static and dynamic search indexes available on this server.
 message ListSearchIndexesResponse {
   // Index descriptors in stable index-id order.
@@ -138,6 +182,44 @@ message SearchIndexDescriptor {
   SearchIndexBuildDescriptor build = 12;
   // Largest serialized SearchIndexResponse emitted for this index.
   uint32 max_response_bytes = 13;
+  // Per-modality legs of this logical index and the provider instance behind
+  // each. Hybrid compound queries fuse across the legs of one logical index.
+  repeated SearchIndexLeg legs = 14;
+}
+
+// One independently provided modality of a logical index.
+message SearchIndexLeg {
+  // The modality this leg executes.
+  SearchLegKind kind = 1;
+  // Configured provider instance serving this leg.
+  string provider_instance_id = 2;
+  // Analysis chain that built and queries this leg. Set only on keyword legs,
+  // where it is the language-layer twin of the descriptor's embedding route:
+  // query-time analysis provably matches index-time analysis.
+  AnalysisChainDescriptor analysis_chain = 3;
+}
+
+// The modality of one search index leg.
+enum SearchLegKind {
+  // No modality was declared. Descriptor legs never use this value.
+  SEARCH_LEG_KIND_UNSPECIFIED = 0;
+  // Vector similarity over embedded chunks.
+  SEARCH_LEG_KIND_VECTOR = 1;
+  // Analyzed keyword and phrase matching over emitted text.
+  SEARCH_LEG_KIND_KEYWORD = 2;
+}
+
+// Identity of the analysis chain behind a keyword leg: tokenizer, normalizers,
+// and any learned vocabulary artifact, pinned so query-time analysis matches
+// index-time analysis.
+message AnalysisChainDescriptor {
+  // Stable identifier of the analysis chain implementation.
+  string chain_id = 1;
+  // Version of the chain implementation's analysis behavior.
+  string chain_version = 2;
+  // Lowercase SHA-256 digest of configurable chain artifacts, such as a
+  // learned vocabulary. Absent when the chain has no configurable artifacts.
+  optional string configuration_hash = 3;
 }
 
 // Reproducible bundle-build or dynamic-snapshot identity for one index.

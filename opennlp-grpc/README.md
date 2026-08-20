@@ -514,12 +514,23 @@ wire contract without code generation; `org.apache.opennlp.grpc.descriptors` rea
 into runtime descriptors, and the gRPC server serves the same descriptors through standard
 server reflection.
 
+Search engines are provider instances behind one ServiceLoader SPI
+(`SearchIndexProviderFactory`). Each factory declares capabilities (vector, keyword, live,
+bundle, persistent) and registers a default instance named by its provider id; the
+configuration adds named instances with `search.provider.<instance-id>.type=<provider-id>`.
+`ListSearchProviders` (and `GET /api/v1/search-providers`) lists them, and
+`SearchProviderSelector.custom` accepts any listed instance id, with the standard enum values
+as shorthand for the built-in defaults. Index descriptors name their per-modality `legs`: a
+vector leg (flat float or TurboQuant) and a keyword leg served by the built-in `terms`
+provider, which records its analysis-chain identity so query-time analysis provably matches
+index-time analysis.
+
 `IndexDocuments` also accepts analyzed `OpenNlpDocument` values whose chunk groups already carry
 embeddings. It creates or atomically extends a bounded index in server memory, so the browser
 never stores vectors or computes similarity. The optional `provider` selector fixes the vector
-storage at creation: the exact flat float provider (the default) or TurboQuant, which quantizes
-each published snapshot with a fixed bit width and seed; extending an index requires the same
-or an unset selector. `DeleteSearchIndex` releases that process-local
+storage at creation: the exact flat float provider (the default), TurboQuant, which quantizes
+each published snapshot with a fixed bit width and seed, or any configured instance of a
+live vector provider; extending an index requires the same instance or an unset selector. `DeleteSearchIndex` releases that process-local
 workspace. Dynamic indexing is enabled by default for the workbench and can be disabled with
 `search.dynamic.enabled=false`. Per-index document, serialized source-document, chunk, and
 dimension limits are combined with server-wide serialized-document and vector-memory ceilings.

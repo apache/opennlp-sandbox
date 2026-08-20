@@ -34,6 +34,7 @@ import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.SearchIndexBuildDescriptor;
 import org.apache.opennlp.grpc.v1.SearchIndexDescriptor;
 import org.apache.opennlp.grpc.v1.SearchMetric;
+import org.apache.opennlp.grpc.v1.SearchProviderCapability;
 import org.apache.opennlp.grpc.v1.SearchProviderSelector;
 import org.apache.opennlp.grpc.v1.StandardSearchProvider;
 
@@ -157,6 +158,11 @@ public final class SearchIndexRegistry implements AutoCloseable {
         if (factory == null) {
           throw new IllegalArgumentException("search index '" + id + "' names unknown provider '"
               + providerId + "'; available providers: " + byId.keySet());
+        }
+        if (!factory.capabilities().contains(
+            SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_BUNDLE)) {
+          throw new IllegalArgumentException("search index '" + id + "' names provider '"
+              + providerId + "', which does not load immutable bundles");
         }
         final SearchIndexBundleConfiguration bundle = new SearchIndexBundleConfiguration(
             id,
@@ -414,7 +420,7 @@ public final class SearchIndexRegistry implements AutoCloseable {
     return ids;
   }
 
-  private static void requireStableId(String value, String name) {
+  static void requireStableId(String value, String name) {
     if (!isStableId(value)) {
       throw new IllegalArgumentException(name + " must be a trimmed lower-case ASCII identifier "
           + "using letters, digits, dots, hyphens, or underscores, was '" + value + "'");

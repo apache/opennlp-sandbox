@@ -18,26 +18,20 @@
  */
 package org.apache.opennlp.grpc.search;
 
-import java.io.IOException;
 import java.util.Set;
 
-import opennlp.embeddings.index.TurboQuantIndex;
+import opennlp.embeddings.index.FlatFloatIndex;
 import opennlp.embeddings.index.VectorIndex;
 import org.apache.opennlp.grpc.v1.SearchProviderCapability;
 
-/** ServiceLoader factory for TurboQuant bundles and live vector legs. */
-public final class TurboQuantSearchIndexProviderFactory implements SearchIndexProviderFactory {
+/** ServiceLoader factory for exact in-memory flat float vector legs. */
+public final class FlatFloatSearchIndexProviderFactory implements SearchIndexProviderFactory {
 
   /** Stable configuration identifier for this provider. */
-  public static final String PROVIDER_ID = "turbo_quant";
-
-  /** Bit width used for every live TurboQuant leg. */
-  static final int TURBO_QUANT_BITS = 4;
-  /** Fixed rotation seed, so equal content quantizes identically across processes. */
-  static final long TURBO_QUANT_SEED = 1833L;
+  public static final String PROVIDER_ID = "flat_float";
 
   /** Public constructor required by {@link java.util.ServiceLoader}. */
-  public TurboQuantSearchIndexProviderFactory() {
+  public FlatFloatSearchIndexProviderFactory() {
   }
 
   /** {@inheritDoc} */
@@ -51,27 +45,12 @@ public final class TurboQuantSearchIndexProviderFactory implements SearchIndexPr
   public Set<SearchProviderCapability> capabilities() {
     return Set.of(
         SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_VECTOR,
-        SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_LIVE,
-        SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_BUNDLE,
-        SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_PERSISTENT);
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  public SearchIndexProvider load(SearchIndexBundleConfiguration configuration)
-      throws IOException {
-    return new TurboQuantSearchBundleLoader().load(configuration);
+        SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_LIVE);
   }
 
   /** {@inheritDoc} */
   @Override
   public VectorIndex createLiveVectorIndex(int dimension) {
-    return new TurboQuantIndex(dimension, TURBO_QUANT_BITS, TURBO_QUANT_SEED);
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  public String preparationIdentity() {
-    return "turbo_quant:" + TURBO_QUANT_BITS + ":" + TURBO_QUANT_SEED;
+    return new FlatFloatIndex(dimension);
   }
 }

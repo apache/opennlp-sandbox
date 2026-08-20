@@ -22,7 +22,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,7 +29,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import opennlp.embeddings.index.TurboQuantIndex;
 import opennlp.embeddings.index.VectorIndex;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
@@ -43,7 +41,10 @@ import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.SearchCorpusDescriptor;
 import org.apache.opennlp.grpc.v1.SearchIndexBuildDescriptor;
 import org.apache.opennlp.grpc.v1.SearchIndexDescriptor;
+import org.apache.opennlp.grpc.v1.SearchIndexLeg;
+import org.apache.opennlp.grpc.v1.SearchLegKind;
 import org.apache.opennlp.grpc.v1.SearchMetric;
+import org.apache.opennlp.grpc.v1.SearchProviderCapability;
 import org.apache.opennlp.grpc.v1.SearchProviderSelector;
 import org.apache.opennlp.grpc.v1.StandardEmbeddingBackend;
 import org.apache.opennlp.grpc.v1.StandardSearchProvider;
@@ -59,21 +60,30 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
   static final int MAX_VECTOR_DIMENSION = 65_536;
   static final long MAX_VECTOR_VALUES = 16_000_000;
   static final long MAX_SOURCE_BYTES = 128L * 1024 * 1024;
-  /** Bit width used for every dynamic TurboQuant index. */
-  static final int TURBO_QUANT_BITS = 4;
-  /** Fixed rotation seed, so equal content quantizes identically across processes. */
-  static final long TURBO_QUANT_SEED = 1833L;
 
   private final Map<String, DynamicIndex> indexes = new LinkedHashMap<>();
+  private final SearchProviderCatalog catalog;
+  private final SearchProviderCatalog.Instance keywordInstance;
   private final int maxIndexes;
   private final long maxVectorValues;
   private final long maxSourceBytes;
   private final boolean enabled;
   private boolean closed;
 
-  /** Creates an empty bounded dynamic registry. */
+  /** Creates an empty bounded dynamic registry over the discovered provider instances. */
   public DynamicSearchIndexRegistry() {
-    this(true, MAX_INDEXES, MAX_VECTOR_VALUES, MAX_SOURCE_BYTES);
+    this(SearchProviderCatalog.discover(), true, MAX_INDEXES, MAX_VECTOR_VALUES,
+        MAX_SOURCE_BYTES);
+  }
+
+  /**
+   * Creates an empty bounded dynamic registry over a configured provider catalog.
+   *
+   * @param catalog Configured search provider instances.
+   * @throws IllegalArgumentException If the catalog is {@code null}.
+   */
+  public DynamicSearchIndexRegistry(SearchProviderCatalog catalog) {
+    this(catalog, true, MAX_INDEXES, MAX_VECTOR_VALUES, MAX_SOURCE_BYTES);
   }
 
   /**
@@ -85,25 +95,32 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
    * @throws IllegalArgumentException If a limit is outside its fixed safety ceiling.
    */
   DynamicSearchIndexRegistry(int maxIndexes, long maxVectorValues, long maxSourceBytes) {
-    this(true, maxIndexes, maxVectorValues, maxSourceBytes);
+    this(SearchProviderCatalog.discover(), true, maxIndexes, maxVectorValues, maxSourceBytes);
   }
 
   /**
    * Creates a registry with explicit safety limits.
    *
+   * @param catalog Configured search provider instances.
    * @param enabled Whether mutation is enabled.
    * @param maxIndexes Maximum retained indexes.
    * @param maxVectorValues Maximum retained float values.
    * @param maxSourceBytes Maximum retained serialized document bytes.
-   * @throws IllegalArgumentException If a limit is outside its fixed safety ceiling.
+   * @throws IllegalArgumentException If the catalog is {@code null} or a limit is outside
+   *     its fixed safety ceiling.
    */
-  private DynamicSearchIndexRegistry(
+  private DynamicSearchIndexRegistry(SearchProviderCatalog catalog,
       boolean enabled, int maxIndexes, long maxVectorValues, long maxSourceBytes) {
+    if (catalog == null) {
+      throw new IllegalArgumentException("catalog must not be null");
+    }
     if (maxIndexes < 1 || maxIndexes > MAX_INDEXES || maxVectorValues < 1
         || maxVectorValues > MAX_VECTOR_VALUES || maxSourceBytes < 1
         || maxSourceBytes > MAX_SOURCE_BYTES) {
       throw new IllegalArgumentException("Dynamic search limits are outside their safety bounds");
     }
+    this.catalog = catalog;
+    this.keywordInstance = catalog.findOrNull(TermsSearchIndexProviderFactory.PROVIDER_ID);
     this.maxIndexes = maxIndexes;
     this.maxVectorValues = maxVectorValues;
     this.maxSourceBytes = maxSourceBytes;
@@ -116,7 +133,16 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
    * @return Disabled registry.
    */
   public static DynamicSearchIndexRegistry disabled() {
-    return new DynamicSearchIndexRegistry(false, 1, 1, 1);
+    return new DynamicSearchIndexRegistry(SearchProviderCatalog.discover(), false, 1, 1, 1);
+  }
+
+  /**
+   * Returns the provider catalog behind this registry.
+   *
+   * @return The configured catalog, never {@code null}.
+   */
+  SearchProviderCatalog catalog() {
+    return catalog;
   }
 
   /**
@@ -138,14 +164,14 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
           + MAX_DOCUMENTS_PER_REQUEST + " entries");
     }
     validateSelector(request.getEmbedding());
-    final StandardSearchProvider requestedProvider = selectedProvider(request);
+    final SearchProviderCatalog.Instance requestedInstance = resolveVectorInstance(request);
     final DynamicIndex existing = request.hasIndexId()
         ? requireDynamic(request.getIndexId()) : null;
-    if (existing != null && requestedProvider != null
-        && requestedProvider != existing.provider()) {
+    if (existing != null && requestedInstance != null
+        && !requestedInstance.instanceId().equals(existing.instance().instanceId())) {
       throw AnalysisException.failedPrecondition(
-          "IndexDocuments provider must match the existing dynamic index provider "
-              + existing.provider());
+          "IndexDocuments provider must match the existing dynamic index provider instance '"
+              + existing.instance().instanceId() + "'");
     }
     if (existing == null && indexes.size() >= maxIndexes) {
       throw AnalysisException.resourceExhausted("Dynamic search index count reached " + maxIndexes);
@@ -156,9 +182,8 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
     final List<IndexedChunk> additions = extract(request, existing);
     final DynamicIndex target = existing == null
         ? new DynamicIndex(indexId, displayName, additions.getFirst().route(),
-            requestedProvider == null
-                ? StandardSearchProvider.STANDARD_SEARCH_PROVIDER_FLAT_FLOAT
-                : requestedProvider)
+            requestedInstance == null ? defaultVectorInstance() : requestedInstance,
+            keywordInstance)
         : existing;
     final Snapshot candidate = target.prepare(request.getDocumentsList(), additions);
     validateGlobalBudget(existing, candidate);
@@ -346,28 +371,40 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
   }
 
   /**
-   * Resolves the requested vector storage provider for a dynamic index.
+   * Resolves the requested vector storage instance for a dynamic index.
    *
    * @param request Indexing request.
-   * @return The selected standard provider, or {@code null} when unset.
-   * @throws AnalysisException If the selector is custom or unspecified.
+   * @return The selected configured instance, or {@code null} when unset.
+   * @throws AnalysisException If the selector names no configured instance or the
+   *     instance does not serve live vector legs.
    */
-  private static StandardSearchProvider selectedProvider(IndexDocumentsRequest request) {
+  private SearchProviderCatalog.Instance resolveVectorInstance(IndexDocumentsRequest request) {
     if (!request.hasProvider()) {
       return null;
     }
-    final SearchProviderSelector selector = request.getProvider();
-    if (selector.hasCustom()) {
-      throw AnalysisException.invalidArgument(
-          "Dynamic indexes support only the standard flat float and TurboQuant providers");
+    final SearchProviderCatalog.Instance instance = catalog.resolve(request.getProvider());
+    if (!instance.has(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_VECTOR)
+        || !instance.has(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_LIVE)) {
+      throw AnalysisException.failedPrecondition("Search provider instance '"
+          + instance.instanceId() + "' does not serve live vector legs");
     }
-    return switch (selector.getStandard()) {
-      case STANDARD_SEARCH_PROVIDER_FLAT_FLOAT, STANDARD_SEARCH_PROVIDER_TURBO_QUANT ->
-          selector.getStandard();
-      case STANDARD_SEARCH_PROVIDER_UNSPECIFIED, UNRECOGNIZED -> throw
-          AnalysisException.invalidArgument(
-              "IndexDocuments provider.standard must be specified");
-    };
+    return instance;
+  }
+
+  /**
+   * Returns the default vector instance used when a request sets no provider.
+   *
+   * @return The flat float default instance.
+   * @throws IllegalStateException If the flat float provider is not on the classpath.
+   */
+  private SearchProviderCatalog.Instance defaultVectorInstance() {
+    final SearchProviderCatalog.Instance instance = catalog.defaultInstance(
+        StandardSearchProvider.STANDARD_SEARCH_PROVIDER_FLAT_FLOAT);
+    if (instance == null) {
+      throw new IllegalStateException(
+          "The default flat float search provider is not on the classpath");
+    }
+    return instance;
   }
 
   /**
@@ -614,7 +651,8 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
     private final String indexId;
     private final String displayName;
     private final EmbeddingRoute route;
-    private final StandardSearchProvider provider;
+    private final SearchProviderCatalog.Instance instance;
+    private final SearchProviderCatalog.Instance keywordInstance;
     private volatile Snapshot snapshot = new Snapshot(List.of(), 0, 0, 0,
         contentHash(List.of()), null);
 
@@ -624,19 +662,22 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
      * @param indexId Opaque identifier.
      * @param displayName User-facing name.
      * @param route Embedding route shared by all chunks.
-     * @param provider Vector storage provider fixed for the index lifetime.
+     * @param instance Vector storage instance fixed for the index lifetime.
+     * @param keywordInstance Keyword leg instance, or {@code null} when none is configured.
      */
     DynamicIndex(String indexId, String displayName, EmbeddingRoute route,
-        StandardSearchProvider provider) {
+        SearchProviderCatalog.Instance instance,
+        SearchProviderCatalog.Instance keywordInstance) {
       this.indexId = indexId;
       this.displayName = displayName;
       this.route = route;
-      this.provider = provider;
+      this.instance = instance;
+      this.keywordInstance = keywordInstance;
     }
 
-    /** @return The vector storage provider fixed at index creation. */
-    StandardSearchProvider provider() {
-      return provider;
+    /** @return The vector storage instance fixed at index creation. */
+    SearchProviderCatalog.Instance instance() {
+      return instance;
     }
 
     /**
@@ -674,29 +715,28 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
       }
       final List<IndexedChunk> chunks = List.copyOf(merged);
       return new Snapshot(chunks, documentCount, sourceDocumentBytes, vectorValues,
-          contentHash(chunks), quantize(chunks));
+          contentHash(chunks), buildVectorLeg(chunks));
     }
 
     /**
-     * Quantizes a snapshot's vectors when this index uses TurboQuant. Rebuilding on
-     * every publish keeps the frozen index immutable and matches the bounded chunk
-     * budget; freezing is the one expensive step.
+     * Builds the frozen vector leg for a snapshot through the index's provider instance.
+     * Rebuilding on every publish keeps the frozen leg immutable and matches the bounded
+     * chunk budget; freezing is the one expensive step.
      *
      * @param chunks Snapshot chunks.
-     * @return Frozen quantized index, or {@code null} for the flat provider.
+     * @return Frozen vector leg, or {@code null} for an empty snapshot.
      */
-    private VectorIndex quantize(List<IndexedChunk> chunks) {
-      if (provider != StandardSearchProvider.STANDARD_SEARCH_PROVIDER_TURBO_QUANT
-          || chunks.isEmpty()) {
+    private VectorIndex buildVectorLeg(List<IndexedChunk> chunks) {
+      if (chunks.isEmpty()) {
         return null;
       }
-      final TurboQuantIndex quantized = new TurboQuantIndex(
-          chunks.getFirst().vector().length, TURBO_QUANT_BITS, TURBO_QUANT_SEED);
+      final VectorIndex leg = instance.factory()
+          .createLiveVectorIndex(chunks.getFirst().vector().length);
       for (IndexedChunk chunk : chunks) {
-        quantized.add(chunk.record().chunkId(), chunk.vector());
+        leg.add(chunk.record().chunkId(), chunk.vector());
       }
-      quantized.freeze();
-      return quantized;
+      leg.freeze();
+      return leg;
     }
 
     /**
@@ -727,10 +767,10 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
     @Override
     public SearchIndexDescriptor descriptor() {
       final Snapshot current = snapshot;
-      return SearchIndexDescriptor.newBuilder()
+      final SearchIndexDescriptor.Builder descriptor = SearchIndexDescriptor.newBuilder()
           .setIndexId(indexId)
           .setDisplayName(displayName)
-          .setProvider(SearchProviderSelector.newBuilder().setStandard(provider))
+          .setProvider(instance.selector())
           .setEmbeddingRoute(route)
           .setDimension(dimension())
           .setMetric(SearchMetric.SEARCH_METRIC_COSINE)
@@ -746,9 +786,19 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
               .setBundleArtifactHash(current.contentHash())
               .setBuilderId("opennlp-grpc-workspace")
               .setBuilderVersion("1")
-              .setPreparationConfigHash(preparationHash(route, provider)))
-          .setMaxResponseBytes(4 * 1024 * 1024)
-          .build();
+              .setPreparationConfigHash(preparationHash(route,
+                  instance.factory().preparationIdentity())))
+          .setMaxResponseBytes(4 * 1024 * 1024);
+      descriptor.addLegs(SearchIndexLeg.newBuilder()
+          .setKind(SearchLegKind.SEARCH_LEG_KIND_VECTOR)
+          .setProviderInstanceId(instance.instanceId()));
+      if (keywordInstance != null) {
+        descriptor.addLegs(SearchIndexLeg.newBuilder()
+            .setKind(SearchLegKind.SEARCH_LEG_KIND_KEYWORD)
+            .setProviderInstanceId(keywordInstance.instanceId())
+            .setAnalysisChain(keywordInstance.factory().analysisChain()));
+      }
+      return descriptor.build();
     }
 
     /** {@inheritDoc} */
@@ -767,54 +817,26 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
       if (queryVector == null || queryVector.length != dimension()) {
         throw new IllegalArgumentException("queryVector must match the dynamic index dimension");
       }
-      if (current.quantized() != null) {
-        final Map<String, IndexedChunk> byChunkId = new LinkedHashMap<>();
-        for (IndexedChunk chunk : current.chunks()) {
-          byChunkId.put(chunk.record().chunkId(), chunk);
+      if (current.vectorLeg() == null) {
+        return List.of();
+      }
+      final Map<String, IndexedChunk> byChunkId = new LinkedHashMap<>();
+      for (IndexedChunk chunk : current.chunks()) {
+        byChunkId.put(chunk.record().chunkId(), chunk);
+      }
+      final List<SearchResult> results = new ArrayList<>();
+      for (VectorIndex.Hit hit : current.vectorLeg()
+          .topK(queryVector, Math.min(topK, current.chunks().size()))) {
+        final IndexedChunk chunk = byChunkId.get(hit.id());
+        if (chunk == null) {
+          throw new IllegalStateException(
+              "The vector leg returned an id absent from the snapshot: " + hit.id());
         }
-        final List<SearchResult> results = new ArrayList<>();
-        for (VectorIndex.Hit hit : current.quantized()
-            .topK(queryVector, Math.min(topK, current.chunks().size()))) {
-          final IndexedChunk chunk = byChunkId.get(hit.id());
-          if (chunk == null) {
-            throw new IllegalStateException(
-                "TurboQuant returned an id absent from the snapshot: " + hit.id());
-          }
-          // Quantized cosine can drift a few ulps past 1; clamp like the bundle loader.
-          results.add(new SearchResult(chunk.record(),
-              Math.max(-1, Math.min(1, hit.score()))));
-        }
-        return List.copyOf(results);
+        // Quantized cosine can drift a few ulps past 1; clamp like the bundle loader.
+        results.add(new SearchResult(chunk.record(),
+            Math.max(-1, Math.min(1, hit.score()))));
       }
-      return current.chunks().stream()
-          .map(chunk -> new SearchResult(chunk.record(), cosine(queryVector, chunk.vector())))
-          .sorted(Comparator.comparingDouble(SearchResult::score).reversed()
-              .thenComparing(result -> result.record().chunkId()))
-          .limit(topK)
-          .toList();
-    }
-
-    /**
-     * Computes cosine similarity for two nonzero vectors.
-     *
-     * @param left Query vector.
-     * @param right Indexed vector.
-     * @return Cosine similarity.
-     * @throws IllegalArgumentException If either vector has zero norm.
-     */
-    private static double cosine(float[] left, float[] right) {
-      double dot = 0;
-      double leftNorm = 0;
-      double rightNorm = 0;
-      for (int index = 0; index < left.length; index++) {
-        dot += (double) left[index] * right[index];
-        leftNorm += (double) left[index] * left[index];
-        rightNorm += (double) right[index] * right[index];
-      }
-      if (leftNorm == 0 || rightNorm == 0) {
-        throw new IllegalArgumentException("cosine vectors must not be zero");
-      }
-      return dot / (Math.sqrt(leftNorm) * Math.sqrt(rightNorm));
+      return List.copyOf(results);
     }
 
   }
@@ -825,7 +847,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
       long sourceDocumentBytes,
       long vectorValues,
       String contentHash,
-      VectorIndex quantized) {
+      VectorIndex vectorLeg) {
   }
 
   /**
@@ -870,23 +892,22 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
   }
 
   /**
-   * Hashes the embedding and vector-storage preparation identity. Flat indexes keep
-   * their pre-provider hash; TurboQuant appends its bit width and seed, which change
-   * every stored vector.
+   * Hashes the embedding and vector-storage preparation identity. Providers whose
+   * parameters change stored vectors, such as TurboQuant's bit width and seed, append
+   * their declared preparation identity.
    *
    * @param route Index embedding route.
-   * @param provider Vector storage provider.
+   * @param preparationIdentity Provider parameter identity, possibly empty.
    * @return Lowercase SHA-256 digest.
    */
-  private static String preparationHash(EmbeddingRoute route, StandardSearchProvider provider) {
+  private static String preparationHash(EmbeddingRoute route, String preparationIdentity) {
     final MessageDigest digest = sha256();
     digest.update(route.getModelId().getBytes(StandardCharsets.UTF_8));
     digest.update((byte) 0);
     digest.update(route.getVectorSpaceId().getBytes(StandardCharsets.UTF_8));
-    if (provider == StandardSearchProvider.STANDARD_SEARCH_PROVIDER_TURBO_QUANT) {
+    if (!preparationIdentity.isEmpty()) {
       digest.update((byte) 0);
-      digest.update(("turbo_quant:" + TURBO_QUANT_BITS + ":" + TURBO_QUANT_SEED)
-          .getBytes(StandardCharsets.UTF_8));
+      digest.update(preparationIdentity.getBytes(StandardCharsets.UTF_8));
     }
     return hex(digest.digest());
   }

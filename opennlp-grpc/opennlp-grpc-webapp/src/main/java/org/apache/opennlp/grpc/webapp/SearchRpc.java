@@ -23,6 +23,7 @@ import org.apache.opennlp.grpc.v1.DeleteSearchIndexResponse;
 import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
 import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesResponse;
+import org.apache.opennlp.grpc.v1.ListSearchProvidersResponse;
 import org.apache.opennlp.grpc.v1.SearchIndexRequest;
 import org.apache.opennlp.grpc.v1.SearchIndexResponse;
 
@@ -30,6 +31,9 @@ interface SearchRpc {
 
   /** @return Descriptors for the static and dynamic indexes on the gRPC server. */
   ListSearchIndexesResponse listSearchIndexes();
+
+  /** @return Configured search provider instances and their capabilities. */
+  ListSearchProvidersResponse listSearchProviders();
 
   /**
    * Searches one server-owned index.

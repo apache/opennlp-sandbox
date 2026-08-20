@@ -32,7 +32,11 @@ import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
 import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
 import org.apache.opennlp.grpc.v1.ListModelBundlesResponse;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesResponse;
+import org.apache.opennlp.grpc.v1.ListSearchProvidersResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.SearchProviderCapability;
+import org.apache.opennlp.grpc.v1.SearchProviderInstance;
+import org.apache.opennlp.grpc.v1.StandardSearchProvider;
 import org.apache.opennlp.grpc.v1.SearchHit;
 import org.apache.opennlp.grpc.v1.SearchIndexDescriptor;
 import org.apache.opennlp.grpc.v1.SearchIndexRequest;
@@ -54,6 +58,20 @@ class GrpcJsonSearchApiTest {
     assertTrue(response.bodyUtf8().contains("\"indexId\":\"" + INDEX_ID + "\""));
     assertTrue(response.bodyUtf8().contains("\"maxTopK\":25"));
     assertTrue(response.bodyUtf8().contains("\"maxResponseBytes\":1048576"));
+  }
+
+  @Test
+  void listsSearchProviderInstancesAsProtobufJson() {
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new StubSearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
+
+    WebHttpResponse response = api.handle("GET", "/api/v1/search-providers", new byte[0]);
+
+    assertEquals(200, response.status());
+    assertTrue(response.bodyUtf8().contains("\"instanceId\":\"flat_float\""));
+    assertTrue(response.bodyUtf8().contains("\"SEARCH_PROVIDER_CAPABILITY_VECTOR\""));
+    assertTrue(response.bodyUtf8().contains(
+        "\"standard\":\"STANDARD_SEARCH_PROVIDER_FLAT_FLOAT\""));
+    assertEquals(405, api.handle("POST", "/api/v1/search-providers", new byte[0]).status());
   }
 
   @Test
@@ -133,6 +151,18 @@ class GrpcJsonSearchApiTest {
   private static final class StubSearchRpc implements SearchRpc {
 
     private SearchIndexRequest lastSearch;
+
+    @Override
+    public ListSearchProvidersResponse listSearchProviders() {
+      return ListSearchProvidersResponse.newBuilder()
+          .addProviders(SearchProviderInstance.newBuilder()
+              .setInstanceId("flat_float")
+              .setProviderId("flat_float")
+              .addCapabilities(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_VECTOR)
+              .addCapabilities(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_LIVE)
+              .setStandard(StandardSearchProvider.STANDARD_SEARCH_PROVIDER_FLAT_FLOAT))
+          .build();
+    }
 
     @Override
     public ListSearchIndexesResponse listSearchIndexes() {

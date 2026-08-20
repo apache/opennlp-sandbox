@@ -122,6 +122,8 @@ final class GrpcJsonApi {
             ? decodeResponse(body) : methodNotAllowed();
         case "/api/v1/search-indexes" -> method.equals("GET")
             ? protobufJson(searchRpc.listSearchIndexes()) : methodNotAllowed();
+        case "/api/v1/search-providers" -> method.equals("GET")
+            ? protobufJson(searchRpc.listSearchProviders()) : methodNotAllowed();
         case "/api/v1/search" -> method.equals("POST")
             ? search(body) : methodNotAllowed();
         case "/api/v1/index-documents" -> method.equals("POST")

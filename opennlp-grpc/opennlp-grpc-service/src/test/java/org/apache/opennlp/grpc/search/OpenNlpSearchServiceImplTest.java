@@ -34,6 +34,10 @@ import org.apache.opennlp.grpc.v1.EmbeddingRoute;
 import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesRequest;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesResponse;
+import org.apache.opennlp.grpc.v1.ListSearchProvidersRequest;
+import org.apache.opennlp.grpc.v1.ListSearchProvidersResponse;
+import org.apache.opennlp.grpc.v1.SearchProviderCapability;
+import org.apache.opennlp.grpc.v1.SearchProviderInstance;
 import org.apache.opennlp.grpc.v1.CelFilterClause;
 import org.apache.opennlp.grpc.v1.JoinClause;
 import org.apache.opennlp.grpc.v1.JoinOperator;
@@ -69,6 +73,22 @@ class OpenNlpSearchServiceImplTest {
         .map(SearchIndexDescriptor::getIndexId).toList());
     assertTrue(observer.completed);
     assertNull(observer.error);
+  }
+
+  @Test
+  void listsConfiguredProviderInstancesWithCapabilities() {
+    final OpenNlpSearchServiceImpl service = service();
+    final CapturingObserver<ListSearchProvidersResponse> observer = new CapturingObserver<>();
+
+    service.listSearchProviders(ListSearchProvidersRequest.getDefaultInstance(), observer);
+
+    assertNull(observer.error);
+    assertTrue(observer.completed);
+    assertEquals(List.of("flat_float", "terms", "turbo_quant"),
+        observer.value.getProvidersList().stream()
+            .map(SearchProviderInstance::getInstanceId).toList());
+    assertTrue(observer.value.getProviders(0).getCapabilitiesList().contains(
+        SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_VECTOR));
   }
 
   @Test

@@ -19,6 +19,7 @@
 package org.apache.opennlp.grpc.search;
 
 import java.util.List;
+import java.util.Map;
 
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
@@ -34,6 +35,9 @@ import org.apache.opennlp.grpc.v1.EmbeddingBackendSelector;
 import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.SearchIndexDescriptor;
+import org.apache.opennlp.grpc.v1.SearchIndexLeg;
+import org.apache.opennlp.grpc.v1.SearchLegKind;
 import org.apache.opennlp.grpc.v1.SearchProviderSelector;
 import org.apache.opennlp.grpc.v1.StandardSearchProvider;
 import org.apache.opennlp.grpc.v1.StandardEmbeddingBackend;
@@ -218,19 +222,86 @@ class DynamicSearchIndexRegistryTest {
   }
 
   @Test
-  void rejectsCustomAndUnspecifiedDynamicProviders() {
+  void rejectsUnknownCustomAndUnspecifiedDynamicProviders() {
     final DynamicSearchIndexRegistry registry = new DynamicSearchIndexRegistry();
 
     final IndexDocumentsRequest custom = request(null, "doc-1", "alpha", 1, 0).toBuilder()
         .setProvider(SearchProviderSelector.newBuilder().setCustom("my-provider"))
         .build();
-    assertThrows(AnalysisException.class, () -> registry.index(custom));
+    final AnalysisException unknown =
+        assertThrows(AnalysisException.class, () -> registry.index(custom));
+    assertTrue(unknown.getMessage().contains("my-provider"));
+    assertTrue(unknown.getMessage().contains("flat_float"));
 
     final IndexDocumentsRequest unspecified = request(null, "doc-1", "alpha", 1, 0).toBuilder()
         .setProvider(SearchProviderSelector.getDefaultInstance())
         .build();
     assertThrows(AnalysisException.class, () -> registry.index(unspecified));
     assertTrue(registry.descriptors().isEmpty());
+  }
+
+  @Test
+  void acceptsConfiguredCustomProviderInstances() {
+    final SearchProviderCatalog catalog = SearchProviderCatalog.fromConfiguration(Map.of(
+        "search.provider.fast-workspace.type", "turbo_quant"));
+    final DynamicSearchIndexRegistry registry = new DynamicSearchIndexRegistry(catalog);
+
+    final IndexDocumentsRequest custom = request(null, "doc-1", "alpha", 1, 0).toBuilder()
+        .setProvider(SearchProviderSelector.newBuilder().setCustom("fast-workspace"))
+        .build();
+    final var created = registry.index(custom);
+
+    assertEquals("fast-workspace", created.getIndex().getProvider().getCustom());
+    final List<SearchResult> hits = registry.require(created.getIndex().getIndexId())
+        .search(new float[] {1, 0}, 1);
+    assertEquals("doc-1", hits.getFirst().record().documentId());
+
+    final IndexDocumentsRequest mismatch =
+        request(created.getIndex().getIndexId(), "doc-2", "beta", 0, 1).toBuilder()
+            .setProvider(SearchProviderSelector.newBuilder()
+                .setStandard(StandardSearchProvider.STANDARD_SEARCH_PROVIDER_TURBO_QUANT))
+            .build();
+    final AnalysisException failure =
+        assertThrows(AnalysisException.class, () -> registry.index(mismatch));
+    assertEquals(AnalysisException.FailureType.FAILED_PRECONDITION, failure.getFailureType());
+  }
+
+  @Test
+  void rejectsInstancesWithoutLiveVectorCapabilities() {
+    final DynamicSearchIndexRegistry registry = new DynamicSearchIndexRegistry();
+
+    final IndexDocumentsRequest keywordOnly = request(null, "doc-1", "alpha", 1, 0).toBuilder()
+        .setProvider(SearchProviderSelector.newBuilder()
+            .setCustom(TermsSearchIndexProviderFactory.PROVIDER_ID))
+        .build();
+
+    final AnalysisException failure =
+        assertThrows(AnalysisException.class, () -> registry.index(keywordOnly));
+    assertEquals(AnalysisException.FailureType.FAILED_PRECONDITION, failure.getFailureType());
+    assertTrue(failure.getMessage().contains("vector"));
+  }
+
+  @Test
+  void describesVectorAndKeywordLegsWithAnalysisChainIdentity() {
+    final DynamicSearchIndexRegistry registry = new DynamicSearchIndexRegistry();
+    final SearchIndexDescriptor descriptor =
+        registry.index(request(null, "doc-1", "alpha", 1, 0)).getIndex();
+
+    assertEquals(2, descriptor.getLegsCount());
+    final SearchIndexLeg vector = descriptor.getLegs(0);
+    assertEquals(SearchLegKind.SEARCH_LEG_KIND_VECTOR, vector.getKind());
+    assertEquals(FlatFloatSearchIndexProviderFactory.PROVIDER_ID,
+        vector.getProviderInstanceId());
+    assertFalse(vector.hasAnalysisChain());
+
+    final SearchIndexLeg keyword = descriptor.getLegs(1);
+    assertEquals(SearchLegKind.SEARCH_LEG_KIND_KEYWORD, keyword.getKind());
+    assertEquals(TermsSearchIndexProviderFactory.PROVIDER_ID,
+        keyword.getProviderInstanceId());
+    assertEquals(TermsSearchIndexProviderFactory.CHAIN_ID,
+        keyword.getAnalysisChain().getChainId());
+    assertEquals(TermsSearchIndexProviderFactory.CHAIN_VERSION,
+        keyword.getAnalysisChain().getChainVersion());
   }
 
   static IndexDocumentsRequest request(

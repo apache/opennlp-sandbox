@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.opennlp.grpc.processor.AnalysisException;
@@ -31,6 +32,7 @@ import org.apache.opennlp.grpc.v1.SearchCorpusDescriptor;
 import org.apache.opennlp.grpc.v1.SearchIndexDescriptor;
 import org.apache.opennlp.grpc.v1.SearchIndexBuildDescriptor;
 import org.apache.opennlp.grpc.v1.SearchMetric;
+import org.apache.opennlp.grpc.v1.SearchProviderCapability;
 import org.apache.opennlp.grpc.v1.SearchProviderSelector;
 import org.apache.opennlp.grpc.v1.StandardSearchProvider;
 import org.junit.jupiter.api.Test;
@@ -41,6 +43,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SearchIndexRegistryTest {
+
+  private static final Set<SearchProviderCapability> BUNDLE_CAPABILITIES = Set.of(
+      SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_VECTOR,
+      SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_BUNDLE);
 
   @Test
   void closesProvidersInReverseLoadOrder() {
@@ -61,6 +67,11 @@ class SearchIndexRegistryTest {
       @Override
       public String providerId() {
         return "test";
+      }
+
+      @Override
+      public Set<SearchProviderCapability> capabilities() {
+        return BUNDLE_CAPABILITIES;
       }
 
       @Override
@@ -199,6 +210,11 @@ class SearchIndexRegistryTest {
       }
 
       @Override
+      public Set<SearchProviderCapability> capabilities() {
+        return BUNDLE_CAPABILITIES;
+      }
+
+      @Override
       public SearchIndexProvider load(SearchIndexBundleConfiguration configuration) {
         received.set(configuration.providerOptions());
         return provider(descriptor(configuration.indexId()));
@@ -231,6 +247,11 @@ class SearchIndexRegistryTest {
       }
 
       @Override
+      public Set<SearchProviderCapability> capabilities() {
+        return BUNDLE_CAPABILITIES;
+      }
+
+      @Override
       public SearchIndexProvider load(SearchIndexBundleConfiguration configuration) {
         return provider(descriptor(configuration.indexId()));
       }
@@ -253,6 +274,33 @@ class SearchIndexRegistryTest {
     configuration.put("search.index.legal.provider", " test ");
     assertThrows(IllegalArgumentException.class,
         () -> SearchIndexRegistry.fromConfiguration(configuration, List.of(factory)));
+  }
+
+  @Test
+  void rejectsBundleConfigurationNamingANonBundleProvider() {
+    final SearchIndexProviderFactory factory = new SearchIndexProviderFactory() {
+      @Override
+      public String providerId() {
+        return "test";
+      }
+
+      @Override
+      public Set<SearchProviderCapability> capabilities() {
+        return Set.of(
+            SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_VECTOR,
+            SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_LIVE);
+      }
+    };
+    final Map<String, String> configuration = Map.of(
+        "search.indexes", "legal",
+        "search.index.legal.provider", "test",
+        "search.index.legal.directory", "/tmp/legal-index",
+        "search.index.legal.passages", "/tmp/legal-passages.jsonl");
+
+    final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        () -> SearchIndexRegistry.fromConfiguration(configuration, List.of(factory)));
+
+    assertTrue(exception.getMessage().contains("does not load immutable bundles"));
   }
 
   @Test

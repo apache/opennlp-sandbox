@@ -28,6 +28,8 @@ import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
 import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesRequest;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesResponse;
+import org.apache.opennlp.grpc.v1.ListSearchProvidersRequest;
+import org.apache.opennlp.grpc.v1.ListSearchProvidersResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpSearchServiceGrpc;
 import org.apache.opennlp.grpc.v1.SearchIndexRequest;
 import org.apache.opennlp.grpc.v1.SearchIndexResponse;
@@ -62,6 +64,12 @@ final class GrpcSearchRpc implements SearchRpc {
   @Override
   public ListSearchIndexesResponse listSearchIndexes() {
     return deadlineStub().listSearchIndexes(ListSearchIndexesRequest.getDefaultInstance());
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public ListSearchProvidersResponse listSearchProviders() {
+    return deadlineStub().listSearchProviders(ListSearchProvidersRequest.getDefaultInstance());
   }
 
   /** {@inheritDoc} */
