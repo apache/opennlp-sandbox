@@ -42,7 +42,11 @@ import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.search.DynamicSearchIndexRegistry;
 import org.apache.opennlp.grpc.search.OpenNlpSearchServiceImpl;
 import org.apache.opennlp.grpc.search.SearchIndexRegistry;
+import org.apache.opennlp.grpc.training.OpenNlpModelTrainingServiceImpl;
+import org.apache.opennlp.grpc.training.StaticModelArtifactStore;
+import org.apache.opennlp.grpc.training.StaticModelTrainer;
 import org.apache.opennlp.grpc.v1.OpenNlpAnalysisServiceGrpc;
+import org.apache.opennlp.grpc.v1.OpenNlpModelTrainingServiceGrpc;
 import org.apache.opennlp.grpc.v1.OpenNlpSearchServiceGrpc;
 import org.apache.opennlp.grpc.v1.OpenNlpVocabularyServiceGrpc;
 import org.apache.opennlp.grpc.v1.server.OpenNlpAnalysisServiceImpl;
@@ -189,6 +193,9 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     final DictionaryFormatRegistry dictionaryFormats = DictionaryFormatRegistry.discover();
     final VocabularyArtifactStore vocabularyArtifacts =
         VocabularyArtifactStore.fromConfiguration(configuration, dictionaryFormats);
+    final StaticModelArtifactStore staticModelArtifacts =
+        StaticModelArtifactStore.fromConfiguration(configuration, vocabularyArtifacts,
+            StaticModelTrainer.distiller(), modelBundleCache.getTrainedModelRegistry());
     final ProfileRegistry profileRegistry = modelBundleCache.createProfileRegistry();
     final BasicDocumentAnalyzer documentAnalyzer =
         new BasicDocumentAnalyzer(profileRegistry, modelBundleCache);
@@ -224,6 +231,9 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
         .addService(ServerInterceptors.intercept(
             new OpenNlpVocabularyServiceImpl(dictionaryFormats, vocabularyArtifacts),
             new EagerHeadersInterceptor()))
+        .addService(ServerInterceptors.intercept(
+            new OpenNlpModelTrainingServiceImpl(staticModelArtifacts),
+            new EagerHeadersInterceptor()))
         .addService(healthStatusManager.getHealthService())
         .maxInboundMessageSize(maxInboundMessageSize);
 
@@ -244,6 +254,9 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
         HealthCheckResponse.ServingStatus.SERVING);
     healthStatusManager.setStatus(
         OpenNlpVocabularyServiceGrpc.SERVICE_NAME,
+        HealthCheckResponse.ServingStatus.SERVING);
+    healthStatusManager.setStatus(
+        OpenNlpModelTrainingServiceGrpc.SERVICE_NAME,
         HealthCheckResponse.ServingStatus.SERVING);
     logger.info("Started OpenNlpGrpcServer on port {}", server.getPort());
 

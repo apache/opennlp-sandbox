@@ -22,15 +22,23 @@ import "./style.css";
 import {
   analyze,
   decodeAnalyzeResponsePb,
+  deleteStaticModel,
+  downloadVocabularyTsv,
   encodeAnalyzeResponsePb,
+  getDictionaryFormats,
   getHealth,
   getModelBundles,
   getSearchIndexes,
   getServiceInfo,
+  getStaticModels,
+  getTeachers,
   getUiExtensions,
+  importDictionary,
   indexDocuments,
+  learnVocabulary,
   deleteSearchIndex,
   searchIndex,
+  trainStaticModel,
   type AnalyzeRequest,
 } from "./api";
 import { withXrayNormalization } from "./analysis-config";
@@ -67,6 +75,15 @@ import {
   type UiExtension,
 } from "./ui-extensions";
 import { errorMessage, requiredElement } from "./ui-utils";
+import {
+  readDictionaryFormats,
+  readImportedDictionary,
+  readLearnedVocabulary,
+  readStaticModels,
+  readTeachers,
+  readTrainedModel,
+  VocabularyTrainerWorkbench,
+} from "./vocabulary-trainer";
 import { WorkbenchNavigation } from "./workbench-navigation";
 import { loadAliceDemo } from "./demo-data";
 import { jsonPresentation } from "./json-response";
@@ -129,6 +146,28 @@ const chunkProjectionView = new ChunkProjectionView((group, chunk, trigger) => {
   annotationDrawer.showChunk(group, chunk, trigger);
 });
 new WorkbenchNavigation();
+
+const vocabularyTrainer = new VocabularyTrainerWorkbench({
+  listDictionaryFormats: async () => readDictionaryFormats(await getDictionaryFormats()),
+  importDictionary: async (upload) => readImportedDictionary(await importDictionary(upload)),
+  learnVocabulary: async (upload) => readLearnedVocabulary(await learnVocabulary(upload)),
+  downloadVocabulary: (artifactId) => downloadVocabularyTsv(artifactId),
+  listTeachers: async () => readTeachers(await getTeachers()),
+  trainStaticModel: async (request, onProgress) =>
+    readTrainedModel(await trainStaticModel(request, onProgress)),
+  listStaticModels: async () => readStaticModels(await getStaticModels()),
+  deleteStaticModel: async (artifactId) => {
+    await deleteStaticModel(artifactId);
+    return true;
+  },
+}, {
+  onModelsChanged: (models) => analysisControls.setTrainedEmbeddingModels(
+    models.map((model) => ({
+      id: model.artifactId,
+      label: `${model.displayName} (trained)`,
+    }))),
+});
+void vocabularyTrainer.initialize();
 
 const semanticWorkbench = new SemanticWorkbench({
   index: async (request) => {

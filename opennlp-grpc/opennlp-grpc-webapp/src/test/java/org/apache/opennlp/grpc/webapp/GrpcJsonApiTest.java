@@ -34,7 +34,7 @@ class GrpcJsonApiTest {
 
   @Test
   void rendersServiceInfoAsProtobufJson() {
-    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc());
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
 
     WebHttpResponse response = api.handle("GET", "/api/v1/service-info", new byte[0]);
 
@@ -46,7 +46,7 @@ class GrpcJsonApiTest {
 
   @Test
   void parsesAnalyzeRequestAndRendersDocumentShape() {
-    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc());
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
     byte[] request = """
         {"document":{"docId":"one","rawText":"Hello world."}}
         """.getBytes(StandardCharsets.UTF_8);
@@ -61,7 +61,7 @@ class GrpcJsonApiTest {
 
   @Test
   void encodesAnalyzeResponseJsonAsProtobufBytes() throws Exception {
-    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc());
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
     byte[] json = """
         {"document":{"docId":"one","rawText":"Hello world."}}
         """.getBytes(StandardCharsets.UTF_8);
@@ -77,7 +77,7 @@ class GrpcJsonApiTest {
 
   @Test
   void decodesProtobufBytesBackToAnalyzeResponseJson() {
-    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc());
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
     byte[] bytes = AnalyzeDocumentResponse.newBuilder()
         .setDocument(OpenNlpDocument.newBuilder().setDocId("one").setRawText("Hello world."))
         .build()
@@ -93,7 +93,7 @@ class GrpcJsonApiTest {
 
   @Test
   void rejectsMalformedResponseBytesLoudly() {
-    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc());
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
 
     WebHttpResponse response = api.handle("POST", "/api/v1/response/decode",
         new byte[] {(byte) 0xFF, (byte) 0xFF, (byte) 0xFF});
@@ -105,7 +105,7 @@ class GrpcJsonApiTest {
 
   @Test
   void rejectsMalformedResponseJsonBeforeEncoding() {
-    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc());
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
 
     WebHttpResponse response = api.handle("POST", "/api/v1/response/encode",
         "not-json".getBytes(StandardCharsets.UTF_8));
@@ -116,7 +116,7 @@ class GrpcJsonApiTest {
 
   @Test
   void transcodeEndpointsRejectNonPostMethods() {
-    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc());
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
 
     assertEquals(405, api.handle("GET", "/api/v1/response/encode", new byte[0]).status());
     assertEquals(405, api.handle("GET", "/api/v1/response/decode", new byte[0]).status());
@@ -124,7 +124,7 @@ class GrpcJsonApiTest {
 
   @Test
   void rejectsMalformedJsonWithCanonicalErrorPayload() {
-    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc());
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
 
     WebHttpResponse response = api.handle("POST", "/api/v1/analyze",
         "not-json".getBytes(StandardCharsets.UTF_8));
@@ -136,7 +136,7 @@ class GrpcJsonApiTest {
 
   @Test
   void rejectsMalformedUtf8BeforeParsingProtobufJson() {
-    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc());
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
 
     WebHttpResponse response = api.handle("POST", "/api/v1/analyze",
         new byte[] {(byte) 0xc3, (byte) 0x28});
@@ -156,7 +156,7 @@ class GrpcJsonApiTest {
             .asRuntimeException();
       }
     };
-    GrpcJsonApi api = new GrpcJsonApi(unavailable, new EmptySearchRpc());
+    GrpcJsonApi api = new GrpcJsonApi(unavailable, new EmptySearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
 
     WebHttpResponse response = api.handle("POST", "/api/v1/analyze",
         "{\"document\":{\"rawText\":\"Hello\"}}".getBytes(StandardCharsets.UTF_8));
@@ -169,7 +169,7 @@ class GrpcJsonApiTest {
 
   @Test
   void enforcesMethodsAndKnownApiPaths() {
-    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc());
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new EmptySearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
 
     assertEquals(405,
         api.handle("GET", "/api/v1/analyze", new byte[0]).status());

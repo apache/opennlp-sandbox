@@ -19,9 +19,10 @@
 package org.apache.opennlp.grpc.vocabulary;
 
 /** Signals that a syntactically valid server-owned artifact id is not present. */
-final class UnknownVocabularyArtifactException extends IllegalArgumentException {
+public final class UnknownVocabularyArtifactException extends IllegalArgumentException {
 
-  private static final long serialVersionUID = 3896275213403298708L;
+  private static final long serialVersionUID = 4809193944378218391L;
+
 
   /**
    * Creates an exception for one unavailable server-owned artifact.

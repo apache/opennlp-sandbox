@@ -322,9 +322,10 @@ The four RPCs form one explicit artifact flow:
    downloaded table can be supplied to the OpenNLP embeddings `DistillModel` workflow as its terms
    input.
 
-This RPC learns and persists vocabulary counts. It does not run a teacher model or train embedding
-weights inside the long-running server. Distillation remains an explicit offline command so its
-teacher identity, licensing, resource use, and output location stay under operator control.
+This RPC learns and persists vocabulary counts; it does not itself run a teacher model. Turning
+a learned vocabulary into a static embedding model is the job of the training service below,
+which keeps teacher identity, licensing, resource use, and output location under operator
+control through an explicit teacher allowlist.
 
 Dictionary encodings are extensible without changing the wire contract. A provider implements
 `org.apache.opennlp.grpc.vocabulary.DictionaryFormatProvider`, returns a stable custom selector,
@@ -338,6 +339,53 @@ Provider jars go on the server classpath. Duplicate selectors, malformed descrip
 standard values, and unstable custom ids fail server startup. Artifact descriptors retain format,
 source and license metadata, SHA-256, byte size, term counts, learning controls, and creation time.
 Existing artifacts are verified before they are admitted again after restart.
+
+## Train a static embedding model from a learned vocabulary
+
+`org.apache.opennlp.grpc.v1.OpenNlpModelTrainingService` distills an operator-configured teacher
+into a Model2Vec-style static embedding model whose extra term rows come from one learned
+vocabulary artifact. The published model serves immediately as a registered embedding model, so
+one client flow covers the whole loop: import a dictionary, learn a vocabulary, train a model,
+analyze and index documents with it, and search them.
+
+Training shares `vocabulary.artifact_root` (models publish under a `models` kind through the
+same durable store seam, so a remote store scheme covers them too) and stays disabled until that
+root is configured. Teachers are an explicit allowlist; arbitrary references from clients are
+rejected:
+
+```ini
+training.teacher.potion.ref=minishlab/potion-base-8M
+training.teacher.potion.display_name=Potion base 8M
+training.teacher.local-bert.ref=/srv/opennlp/teachers/bert-mini
+training.max_pca_dims=512
+training.max_concurrent_trainings=1
+training.model_cache_dir=/srv/opennlp/trained-model-cache
+```
+
+A teacher reference is a local directory holding `tokenizer.json` and `onnx/model.onnx`, or a
+Hugging Face model id (`org/model`, or `org/model@revision` to pin), downloaded into a local
+cache on first use. `training.model_cache_dir` is the local directory verified models are
+served from; it defaults to a per-process temporary directory and is rebuilt from the durable
+store on startup.
+
+The four RPCs:
+
+1. `ListTeachers` returns the configured teachers plus the effective limits.
+2. `TrainStaticModel` names a teacher, a vocabulary artifact, and optional `pca_dims`
+   (0 selects the default of 256). It streams one update per distillation progress line; the
+   terminal update carries the published `StaticModelDescriptor`, whose `artifact_id` is also
+   the embedding model id accepted by `EmbeddingSelector.model_id`.
+3. `ListStaticModels` lists every published model with its manifest hash and provenance.
+4. `DeleteStaticModel` removes the artifact and stops serving its model id.
+
+The bundled web UI's Trainer tab drives the whole flow in the browser: import a dictionary,
+learn a vocabulary from pasted documents, watch the distillation progress stream, and pick the
+served model in Analyze to index and search with it.
+
+Every published model carries a manifest naming the exact size and SHA-256 of each model file;
+the descriptor's `artifact_hash` is the SHA-256 of that manifest. Models are re-verified against
+the manifest before they are served again after a restart, and a tampered artifact fails startup
+loudly.
 
 ## Build and explore a bounded legal-passage index
 

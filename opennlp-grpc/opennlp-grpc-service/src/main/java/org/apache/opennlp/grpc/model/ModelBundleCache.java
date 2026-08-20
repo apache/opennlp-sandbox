@@ -51,6 +51,7 @@ import opennlp.tools.util.StringUtil;
 import opennlp.tools.util.model.BaseModel;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.embedding.EmbeddingProviderFactory;
+import org.apache.opennlp.grpc.training.TrainedModelEmbeddingProvider;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.ComponentType;
@@ -114,6 +115,7 @@ public final class ModelBundleCache implements AutoCloseable {
   private final LemmatizerME lemmatizer;
   private final LanguageDetectorME languageDetector;
   private final EmbeddingProvider embeddingProvider;
+  private final TrainedModelEmbeddingProvider trainedModelRegistry;
   private final NameFinderRegistry nameFinderRegistry;
   private final DocCategorizerRegistry docCategorizerRegistry;
   private final SentimentRegistry sentimentRegistry;
@@ -197,12 +199,16 @@ public final class ModelBundleCache implements AutoCloseable {
     try {
       tokenizerRegistry = TokenizerRegistry.create(configuration);
       sentenceDetectorRegistry = SentenceDetectorRegistry.create(configuration);
-      embeddingProvider = EmbeddingProviderFactory.create(configuration);
+      // Trained models register into this wrapper at runtime, so every consumer of
+      // getEmbeddingProvider() resolves them without a restart.
+      embeddingProvider =
+          new TrainedModelEmbeddingProvider(EmbeddingProviderFactory.create(configuration));
       nameFinderRegistry = NameFinderRegistry.create(configuration, sentenceDetector);
       docCategorizerRegistry = DocCategorizerRegistry.create(configuration);
       sentimentRegistry = SentimentRegistry.create(configuration);
       chunkerRegistry = ChunkerRegistry.create(configuration);
       this.embeddingProvider = embeddingProvider;
+      this.trainedModelRegistry = (TrainedModelEmbeddingProvider) embeddingProvider;
       this.nameFinderRegistry = nameFinderRegistry;
       this.docCategorizerRegistry = docCategorizerRegistry;
       this.sentimentRegistry = sentimentRegistry;
@@ -394,6 +400,16 @@ public final class ModelBundleCache implements AutoCloseable {
    */
   public EmbeddingProvider getEmbeddingProvider() {
     return embeddingProvider;
+  }
+
+  /**
+   * Returns the registry that serves models trained at runtime in front of the
+   * configured embedding provider.
+   *
+   * @return The trained model registry. Never {@code null}.
+   */
+  public TrainedModelEmbeddingProvider getTrainedModelRegistry() {
+    return trainedModelRegistry;
   }
 
   /**

@@ -1,0 +1,149 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+syntax = "proto3";
+
+package org.apache.opennlp.grpc.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "OpenNlpTrainingProto";
+option java_package = "org.apache.opennlp.grpc.v1";
+
+// Distills operator-configured teacher models into static embedding models
+// whose extra term rows come from a learned vocabulary artifact, and serves
+// the published models for embedding, indexing, and search without a restart.
+// Write operations are disabled unless the operator configures a vocabulary
+// artifact root, and only configured teachers are accepted.
+service OpenNlpModelTrainingService {
+  // Lists the operator-configured teacher models available for distillation.
+  rpc ListTeachers(ListTeachersRequest) returns (ListTeachersResponse);
+
+  // Distills one teacher into a static embedding model with the terms of one
+  // vocabulary artifact as extra rows. Streams one update per distillation
+  // progress line; the final update carries the published model descriptor.
+  rpc TrainStaticModel(TrainStaticModelRequest)
+      returns (stream TrainStaticModelUpdate);
+
+  // Lists every published static model artifact this server can serve.
+  rpc ListStaticModels(ListStaticModelsRequest) returns (ListStaticModelsResponse);
+
+  // Deletes one published static model artifact and stops serving its
+  // embedding model id.
+  rpc DeleteStaticModel(DeleteStaticModelRequest) returns (DeleteStaticModelResponse);
+}
+
+// One operator-configured teacher a training request may reference.
+message TeacherDescriptor {
+  // Stable operator-chosen identifier used in TrainStaticModelRequest.
+  string teacher_id = 1;
+  // Human-readable name suitable for a teacher selector.
+  string display_name = 2;
+  // The configured teacher reference: a local model directory or a Hugging
+  // Face model id, optionally pinned as org/model@revision.
+  string reference = 3;
+  // True when the reference is a local directory that already exists.
+  bool local = 4;
+}
+
+message ListTeachersRequest {}
+
+message ListTeachersResponse {
+  // Teachers in stable teacher-id order.
+  repeated TeacherDescriptor teachers = 1;
+  // Whether training has an operator-configured artifact root.
+  bool writes_enabled = 2;
+  // Largest accepted TrainStaticModelRequest.pca_dims.
+  uint32 max_pca_dims = 3;
+  // Trainings admitted at once; later requests are rejected, not queued.
+  uint32 max_concurrent_trainings = 4;
+}
+
+// Controls for one distillation run.
+message TrainStaticModelRequest {
+  // Vocabulary artifact whose terms become the model's extra term rows.
+  string vocabulary_artifact_id = 1;
+  // One of the configured teacher ids from ListTeachers.
+  string teacher_id = 2;
+  // Human-readable name stored on the published model.
+  string display_name = 3;
+  // Principal components to keep; 0 selects the server default of 256.
+  uint32 pca_dims = 4;
+  // Operator-supplied provenance stored on the published model.
+  string provenance_summary = 5;
+}
+
+// One frame in a server-streamed training run.
+message TrainStaticModelUpdate {
+  oneof update {
+    // One human-readable distillation progress line.
+    string progress = 1;
+    // Terminal frame: the published, already-serving model.
+    StaticModelDescriptor model = 2;
+  }
+}
+
+// One immutable distilled static embedding model stored beneath the artifact
+// root and served as a registered embedding model.
+message StaticModelDescriptor {
+  // Server-owned artifact id. It is also the embedding model id accepted by
+  // EmbeddingSelector.model_id for analysis, indexing, and search.
+  string artifact_id = 1;
+  string display_name = 2;
+  // Vocabulary artifact whose terms were distilled as extra rows.
+  string vocabulary_artifact_id = 3;
+  // Teacher the model was distilled from.
+  string teacher_id = 4;
+  // Tokenizer family detected from the teacher, e.g. "wordpiece".
+  string family = 5;
+  // Number of float components in every produced vector.
+  uint32 dimension = 6;
+  // Subword vocabulary rows in the embedding table.
+  uint32 vocabulary_size = 7;
+  // Learned term rows appended after the subword rows.
+  uint32 term_count = 8;
+  // Variance kept by the PCA projection, in [0, 1]; 1 when PCA was skipped.
+  double explained_variance_ratio = 9;
+  // Lowercase SHA-256 of the artifact manifest, which lists the exact name,
+  // size, and SHA-256 of every published model file.
+  string artifact_hash = 10;
+  // Total bytes across all published model files.
+  uint64 byte_size = 11;
+  string provenance_summary = 12;
+  google.protobuf.Timestamp created_at = 13;
+}
+
+message ListStaticModelsRequest {}
+
+message ListStaticModelsResponse {
+  // Models in stable artifact-id order.
+  repeated StaticModelDescriptor models = 1;
+  // Whether training has an operator-configured artifact root.
+  bool writes_enabled = 2;
+}
+
+message DeleteStaticModelRequest {
+  string artifact_id = 1;
+}
+
+message DeleteStaticModelResponse {
+  string artifact_id = 1;
+  // True when the artifact existed and was deleted.
+  bool deleted = 2;
+}

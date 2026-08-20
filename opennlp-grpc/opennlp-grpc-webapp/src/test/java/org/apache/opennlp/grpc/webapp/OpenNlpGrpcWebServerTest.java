@@ -59,7 +59,8 @@ class OpenNlpGrpcWebServerTest {
     WebUiExtensionRegistry registry = new WebUiExtensionRegistry(List.of(testExtension()));
     try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
         new InetSocketAddress(InetAddress.getLoopbackAddress(), 0),
-        new TestAnalysisRpc(), new EmptySearchRpc(), registry, 128)) {
+        new TestAnalysisRpc(), new EmptySearchRpc(), new EmptyVocabularyRpc(),
+        new EmptyTrainingRpc(), registry, 128)) {
       server.start();
       HttpClient client = HttpClient.newHttpClient();
 
@@ -94,7 +95,8 @@ class OpenNlpGrpcWebServerTest {
     WebUiExtensionRegistry registry = new WebUiExtensionRegistry(List.of(testExtension()));
     try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
         new InetSocketAddress(InetAddress.getLoopbackAddress(), 0),
-        new TestAnalysisRpc(), new EmptySearchRpc(), registry, 4096)) {
+        new TestAnalysisRpc(), new EmptySearchRpc(), new EmptyVocabularyRpc(),
+        new EmptyTrainingRpc(), registry, 4096)) {
       server.start();
       HttpClient client = HttpClient.newHttpClient();
 
@@ -127,11 +129,38 @@ class OpenNlpGrpcWebServerTest {
   }
 
   @Test
+  void streamsTrainingUpdatesAsNdjsonOverHttp() throws Exception {
+    try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
+        new InetSocketAddress(InetAddress.getLoopbackAddress(), 0),
+        new TestAnalysisRpc(), new EmptySearchRpc(), new EmptyVocabularyRpc(),
+        new StreamingTrainingRpc(), new WebUiExtensionRegistry(List.of(testExtension())),
+        4096)) {
+      server.start();
+      HttpClient client = HttpClient.newHttpClient();
+
+      HttpRequest train = request(server, "/api/v1/train-static-model")
+          .header("Content-Type", "application/json")
+          .POST(HttpRequest.BodyPublishers.ofString(
+              "{\"vocabularyArtifactId\":\"vocabulary-1\",\"teacherId\":\"mini\","
+                  + "\"displayName\":\"m\",\"provenanceSummary\":\"p\"}"))
+          .build();
+      HttpResponse<String> streamed = client.send(train, HttpResponse.BodyHandlers.ofString());
+      assertEquals(200, streamed.statusCode());
+      assertEquals("application/x-ndjson; charset=utf-8",
+          streamed.headers().firstValue("content-type").orElseThrow());
+      String[] lines = streamed.body().split("\n");
+      assertEquals(2, lines.length);
+      assertTrue(lines[0].contains("\"progress\":\"distilling\""));
+      assertTrue(lines[1].contains("\"artifactId\":\"static-model-1\""));
+    }
+  }
+
+  @Test
   void servesSearchCatalogAndDocumentShapedHitsOverHttp() throws Exception {
     try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
         new InetSocketAddress(InetAddress.getLoopbackAddress(), 0),
-        new TestAnalysisRpc(), new TestSearchRpc(),
-        new WebUiExtensionRegistry(List.of(testExtension())), 512)) {
+        new TestAnalysisRpc(), new TestSearchRpc(), new EmptyVocabularyRpc(),
+        new EmptyTrainingRpc(), new WebUiExtensionRegistry(List.of(testExtension())), 512)) {
       server.start();
       HttpClient client = HttpClient.newHttpClient();
 
@@ -157,8 +186,8 @@ class OpenNlpGrpcWebServerTest {
   void rejectsOversizedBodiesAndUnsupportedMethods() throws Exception {
     try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
         new InetSocketAddress(InetAddress.getLoopbackAddress(), 0),
-        new TestAnalysisRpc(), new EmptySearchRpc(),
-        new WebUiExtensionRegistry(List.of(testExtension())), 16)) {
+        new TestAnalysisRpc(), new EmptySearchRpc(), new EmptyVocabularyRpc(),
+        new EmptyTrainingRpc(), new WebUiExtensionRegistry(List.of(testExtension())), 16)) {
       server.start();
       HttpClient client = HttpClient.newHttpClient();
 
@@ -198,8 +227,8 @@ class OpenNlpGrpcWebServerTest {
     // parameters and surrounding whitespace are stripped.
     try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
         new InetSocketAddress(InetAddress.getLoopbackAddress(), 0),
-        new TestAnalysisRpc(), new EmptySearchRpc(),
-        new WebUiExtensionRegistry(List.of(testExtension())), 128)) {
+        new TestAnalysisRpc(), new EmptySearchRpc(), new EmptyVocabularyRpc(),
+        new EmptyTrainingRpc(), new WebUiExtensionRegistry(List.of(testExtension())), 128)) {
       server.start();
       HttpClient client = HttpClient.newHttpClient();
 
@@ -219,8 +248,8 @@ class OpenNlpGrpcWebServerTest {
     };
     try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
         new InetSocketAddress(InetAddress.getLoopbackAddress(), 0),
-        failing, new EmptySearchRpc(),
-        new WebUiExtensionRegistry(List.of(testExtension())), 128)) {
+        failing, new EmptySearchRpc(), new EmptyVocabularyRpc(),
+        new EmptyTrainingRpc(), new WebUiExtensionRegistry(List.of(testExtension())), 128)) {
       server.start();
 
       HttpResponse<String> response = get(HttpClient.newHttpClient(), server,
@@ -327,6 +356,36 @@ class OpenNlpGrpcWebServerTest {
     @Override
     public DeleteSearchIndexResponse delete(DeleteSearchIndexRequest request) {
       return DeleteSearchIndexResponse.getDefaultInstance();
+    }
+  }
+
+  private static final class StreamingTrainingRpc implements TrainingRpc {
+
+    @Override
+    public org.apache.opennlp.grpc.v1.ListTeachersResponse listTeachers() {
+      return org.apache.opennlp.grpc.v1.ListTeachersResponse.getDefaultInstance();
+    }
+
+    @Override
+    public java.util.Iterator<org.apache.opennlp.grpc.v1.TrainStaticModelUpdate>
+        trainStaticModel(org.apache.opennlp.grpc.v1.TrainStaticModelRequest request) {
+      return List.of(
+          org.apache.opennlp.grpc.v1.TrainStaticModelUpdate.newBuilder()
+              .setProgress("distilling").build(),
+          org.apache.opennlp.grpc.v1.TrainStaticModelUpdate.newBuilder()
+              .setModel(org.apache.opennlp.grpc.v1.StaticModelDescriptor.newBuilder()
+                  .setArtifactId("static-model-1")).build()).iterator();
+    }
+
+    @Override
+    public org.apache.opennlp.grpc.v1.ListStaticModelsResponse listStaticModels() {
+      return org.apache.opennlp.grpc.v1.ListStaticModelsResponse.getDefaultInstance();
+    }
+
+    @Override
+    public org.apache.opennlp.grpc.v1.DeleteStaticModelResponse deleteStaticModel(
+        org.apache.opennlp.grpc.v1.DeleteStaticModelRequest request) {
+      return org.apache.opennlp.grpc.v1.DeleteStaticModelResponse.getDefaultInstance();
     }
   }
 }

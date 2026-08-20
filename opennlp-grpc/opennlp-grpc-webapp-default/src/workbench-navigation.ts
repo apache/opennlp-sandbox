@@ -19,7 +19,7 @@
 
 import { requiredElement } from "./ui-utils";
 
-type WorkbenchName = "analysis" | "corpus-search" | "session-search" | "models";
+type WorkbenchName = "analysis" | "corpus-search" | "session-search" | "models" | "trainer";
 
 export class WorkbenchNavigation {
   readonly #tabs = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-workbench-tab]"));
@@ -27,6 +27,7 @@ export class WorkbenchNavigation {
   readonly #corpusSearch = requiredElement<HTMLElement>("server-search");
   readonly #sessionSearch = requiredElement<HTMLElement>("session-search");
   readonly #models = requiredElement<HTMLElement>("model-data-workbench");
+  readonly #trainer = requiredElement<HTMLElement>("vocabulary-trainer");
 
   constructor() {
     for (const tab of this.#tabs) {
@@ -40,6 +41,7 @@ export class WorkbenchNavigation {
     this.#corpusSearch.hidden = name !== "corpus-search";
     this.#sessionSearch.hidden = name !== "session-search";
     this.#models.hidden = name !== "models";
+    this.#trainer.hidden = name !== "trainer";
     for (const tab of this.#tabs) {
       const selected = tab.dataset.workbenchTab === name;
       tab.setAttribute("aria-selected", String(selected));
@@ -64,5 +66,6 @@ export class WorkbenchNavigation {
 
 function workbenchName(value: string | undefined): WorkbenchName {
   return value === "corpus-search" || value === "session-search" || value === "models"
+      || value === "trainer"
     ? value : "analysis";
 }

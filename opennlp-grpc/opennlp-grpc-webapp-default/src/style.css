@@ -981,6 +981,66 @@ main { overflow: clip; margin-top: 1rem; }
   .capability-summary { grid-column: 1 / -1; }
 }
 
+.vocabulary-trainer {
+  margin-top: 0;
+  padding: clamp(1.3rem, 3vw, 2.2rem);
+  border: 1px solid #36516f;
+  border-radius: 1rem;
+  background: #101827;
+}
+.trainer-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 1.4rem; }
+.trainer-step { min-width: 0; padding: 1rem; border: 1px solid #303d53; border-radius: 0.7rem; background: #131e30; display: flex; flex-direction: column; gap: 0.45rem; }
+.trainer-step h4 { margin: 0 0 0.5rem; color: #edf4fc; font-size: 0.82rem; }
+.trainer-step label { color: #91a0b7; font-size: 0.68rem; }
+.trainer-step input, .trainer-step select, .trainer-step textarea {
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #304058;
+  border-radius: 0.45rem;
+  background: #101a2a;
+  color: #dce7f5;
+  font-size: 0.74rem;
+}
+.trainer-step textarea { resize: vertical; font-family: inherit; }
+.trainer-step button { margin-top: 0.35rem; }
+.trainer-inline { display: flex; gap: 0.8rem; }
+.trainer-inline > span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.trainer-progress-log {
+  min-height: 5rem;
+  max-height: 12rem;
+  overflow-y: auto;
+  margin-top: 0.5rem;
+  padding: 0.55rem;
+  border: 1px solid #304058;
+  border-radius: 0.45rem;
+  background: #0b1422;
+  color: #9fb4cf;
+  font-family: ui-monospace, monospace;
+  font-size: 0.66rem;
+  line-height: 1.5;
+}
+.trainer-models { margin-top: 1.4rem; padding: 1rem; border: 1px solid #303d53; border-radius: 0.7rem; background: #131e30; }
+.trainer-models h4 { margin: 0 0 0.5rem; color: #edf4fc; font-size: 0.82rem; }
+.trainer-models p { margin: 0 0 0.8rem; color: #91a0b7; font-size: 0.72rem; }
+.trainer-model-list { display: flex; flex-direction: column; gap: 0.45rem; }
+.trainer-model-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #304058;
+  border-radius: 0.5rem;
+  background: #101a2a;
+  color: #dce7f5;
+  font-size: 0.7rem;
+}
+.trainer-empty { margin: 0; color: #7d8da3; font-size: 0.72rem; }
+
+@media (max-width: 960px) {
+  .trainer-grid { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 560px) {
   .site-header, .hero, .service-panel, footer { width: min(100% - 2rem, 1180px); }
   .site-header {

@@ -106,6 +106,18 @@ public final class FileSystemVocabularyStore implements VocabularyStore {
     return new FileSystemArtifactWriter(staging, kindDirectory.resolve(id), id);
   }
 
+  /** {@inheritDoc} */
+  @Override
+  public boolean delete(String kind, String artifactId) throws IOException {
+    final Path directory = root.resolve(plainName(kind, "kind"))
+        .resolve(plainName(artifactId, "artifactId"));
+    if (!Files.isDirectory(directory, LinkOption.NOFOLLOW_LINKS)) {
+      return false;
+    }
+    deleteTree(directory);
+    return true;
+  }
+
   /** Creates and validates one real storage directory. */
   private static void createStorageDirectory(Path directory) throws IOException {
     Files.createDirectories(directory);

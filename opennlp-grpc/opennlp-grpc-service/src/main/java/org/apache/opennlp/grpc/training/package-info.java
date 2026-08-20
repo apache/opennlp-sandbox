@@ -16,31 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.opennlp.grpc.vocabulary.store;
 
-import java.io.IOException;
-import java.net.URI;
-import java.nio.file.Path;
-
-/** The {@link VocabularyStoreProvider} for {@code file} URIs. */
-public final class FileSystemVocabularyStoreProvider implements VocabularyStoreProvider {
-
-  /** Public no-arg constructor required by {@link java.util.ServiceLoader}. */
-  public FileSystemVocabularyStoreProvider() {
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  public String scheme() {
-    return "file";
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  public VocabularyStore open(URI root) throws IOException {
-    if (root == null) {
-      throw new IllegalArgumentException("root must not be null");
-    }
-    return new FileSystemVocabularyStore(Path.of(root));
-  }
-}
+/**
+ * Static model distillation over learned vocabulary artifacts. Models publish through
+ * the durable vocabulary store seam and serve immediately as registered embedding
+ * models; only operator-configured teachers are accepted, and callers never select
+ * server filesystem paths.
+ */
+package org.apache.opennlp.grpc.training;
