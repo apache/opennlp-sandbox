@@ -525,6 +525,20 @@ vector leg (flat float or TurboQuant) and a keyword leg served by the built-in `
 provider, which records its analysis-chain identity so query-time analysis provably matches
 index-time analysis.
 
+Dynamic indexes have a wire-complete lifecycle. `PersistIndex` writes a checkpoint under the
+operator-configured `search.persist.root` (raw vectors are retained beside the descriptor, so
+accretion continues after a restart restores the index under the same id), and
+`search.persist.checkpoint_seconds` enables an auto-checkpoint that rewrites only changed
+indexes. `SealIndex` persists and marks an index immutable. `ReindexIndex` runs blue/green:
+it replays the source index's retained chunks through a newly selected embedding route,
+builds the new index beside the old one, and swaps the requested alias only after the build
+succeeds. Aliases (`SetIndexAlias`, `DeleteIndexAlias`, `ListIndexAliases`) are logical names
+accepted wherever an index id is; responses always carry the resolved id. Persistence
+requires the index's provider instance to declare the persistent capability (TurboQuant
+does; flat float is in-memory only). The gateway serves all of it: `/api/v1/persist-index`,
+`/api/v1/seal-index`, `/api/v1/reindex-index`, `/api/v1/set-index-alias`,
+`/api/v1/delete-index-alias`, and `/api/v1/index-aliases`.
+
 `IndexDocuments` also accepts analyzed `OpenNlpDocument` values whose chunk groups already carry
 embeddings. It creates or atomically extends a bounded index in server memory, so the browser
 never stores vectors or computes similarity. The optional `provider` selector fixes the vector

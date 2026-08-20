@@ -18,6 +18,7 @@
  */
 package org.apache.opennlp.grpc.search;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -43,6 +44,7 @@ import org.apache.opennlp.grpc.v1.StandardSearchProvider;
 import org.apache.opennlp.grpc.v1.StandardEmbeddingBackend;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -302,6 +304,132 @@ class DynamicSearchIndexRegistryTest {
         keyword.getAnalysisChain().getChainId());
     assertEquals(TermsSearchIndexProviderFactory.CHAIN_VERSION,
         keyword.getAnalysisChain().getChainVersion());
+  }
+
+  @Test
+  void persistsAndRestoresATurboQuantWorkspaceAcrossRegistries(@TempDir Path root) {
+    final SearchProviderCatalog catalog = SearchProviderCatalog.discover();
+    final WorkspaceCheckpointStore store = new WorkspaceCheckpointStore(root);
+    final DynamicSearchIndexRegistry registry =
+        new DynamicSearchIndexRegistry(catalog, store);
+    final IndexDocumentsRequest turbo = request(null, "doc-1", "alpha", 1, 0).toBuilder()
+        .setProvider(SearchProviderSelector.newBuilder()
+            .setStandard(StandardSearchProvider.STANDARD_SEARCH_PROVIDER_TURBO_QUANT))
+        .build();
+    final String indexId = registry.index(turbo).getIndex().getIndexId();
+
+    final SearchIndexDescriptor persisted = registry.persist(indexId);
+    assertTrue(persisted.getPersisted());
+    registry.close();
+
+    final DynamicSearchIndexRegistry restored =
+        new DynamicSearchIndexRegistry(catalog, new WorkspaceCheckpointStore(root));
+    final SearchIndexDescriptor descriptor = restored.descriptors().getFirst();
+    assertEquals(indexId, descriptor.getIndexId());
+    assertTrue(descriptor.getPersisted());
+    assertFalse(descriptor.getImmutable());
+    assertEquals("doc-1", restored.require(indexId)
+        .search(new float[] {1, 0}, 1).getFirst().record().documentId());
+
+    final var extended = restored.index(request(indexId, "doc-2", "beta", 0, 1));
+    assertEquals(2, extended.getIndex().getSize());
+  }
+
+  @Test
+  void persistRequiresAPersistentProviderInstance(@TempDir Path root) {
+    final DynamicSearchIndexRegistry registry = new DynamicSearchIndexRegistry(
+        SearchProviderCatalog.discover(), new WorkspaceCheckpointStore(root));
+    final String indexId =
+        registry.index(request(null, "doc-1", "alpha", 1, 0)).getIndex().getIndexId();
+
+    final AnalysisException failure =
+        assertThrows(AnalysisException.class, () -> registry.persist(indexId));
+
+    assertEquals(AnalysisException.FailureType.FAILED_PRECONDITION, failure.getFailureType());
+    assertTrue(failure.getMessage().contains("persistent"));
+  }
+
+  @Test
+  void persistWithoutAConfiguredRootReportsFailedPrecondition() {
+    final DynamicSearchIndexRegistry registry = new DynamicSearchIndexRegistry();
+    final String indexId =
+        registry.index(request(null, "doc-1", "alpha", 1, 0)).getIndex().getIndexId();
+
+    final AnalysisException failure =
+        assertThrows(AnalysisException.class, () -> registry.persist(indexId));
+
+    assertEquals(AnalysisException.FailureType.FAILED_PRECONDITION, failure.getFailureType());
+    assertTrue(failure.getMessage().contains("search.persist.root"));
+  }
+
+  @Test
+  void sealedIndexesRejectMutationAndRestoreImmutable(@TempDir Path root) {
+    final SearchProviderCatalog catalog = SearchProviderCatalog.discover();
+    final DynamicSearchIndexRegistry registry =
+        new DynamicSearchIndexRegistry(catalog, new WorkspaceCheckpointStore(root));
+    final IndexDocumentsRequest turbo = request(null, "doc-1", "alpha", 1, 0).toBuilder()
+        .setProvider(SearchProviderSelector.newBuilder()
+            .setStandard(StandardSearchProvider.STANDARD_SEARCH_PROVIDER_TURBO_QUANT))
+        .build();
+    final String indexId = registry.index(turbo).getIndex().getIndexId();
+
+    final SearchIndexDescriptor sealed = registry.seal(indexId);
+    assertTrue(sealed.getImmutable());
+    assertTrue(sealed.getPersisted());
+    final AnalysisException mutation = assertThrows(AnalysisException.class,
+        () -> registry.index(request(indexId, "doc-2", "beta", 0, 1)));
+    assertEquals(AnalysisException.FailureType.FAILED_PRECONDITION, mutation.getFailureType());
+    registry.close();
+
+    final DynamicSearchIndexRegistry restored =
+        new DynamicSearchIndexRegistry(catalog, new WorkspaceCheckpointStore(root));
+    assertTrue(restored.descriptors().getFirst().getImmutable());
+    assertThrows(AnalysisException.class,
+        () -> restored.index(request(indexId, "doc-2", "beta", 0, 1)));
+    assertEquals("doc-1", restored.require(indexId)
+        .search(new float[] {1, 0}, 1).getFirst().record().documentId());
+  }
+
+  @Test
+  void deletingAPersistedIndexRemovesItsCheckpoint(@TempDir Path root) {
+    final SearchProviderCatalog catalog = SearchProviderCatalog.discover();
+    final DynamicSearchIndexRegistry registry =
+        new DynamicSearchIndexRegistry(catalog, new WorkspaceCheckpointStore(root));
+    final IndexDocumentsRequest turbo = request(null, "doc-1", "alpha", 1, 0).toBuilder()
+        .setProvider(SearchProviderSelector.newBuilder()
+            .setStandard(StandardSearchProvider.STANDARD_SEARCH_PROVIDER_TURBO_QUANT))
+        .build();
+    final String indexId = registry.index(turbo).getIndex().getIndexId();
+    registry.persist(indexId);
+
+    assertTrue(registry.delete(indexId));
+    registry.close();
+
+    final DynamicSearchIndexRegistry restored =
+        new DynamicSearchIndexRegistry(catalog, new WorkspaceCheckpointStore(root));
+    assertTrue(restored.descriptors().isEmpty());
+  }
+
+  @Test
+  void checkpointsRewritePersistedIndexesOnlyWhenContentChanged(@TempDir Path root) {
+    final SearchProviderCatalog catalog = SearchProviderCatalog.discover();
+    final DynamicSearchIndexRegistry registry =
+        new DynamicSearchIndexRegistry(catalog, new WorkspaceCheckpointStore(root));
+    final IndexDocumentsRequest turbo = request(null, "doc-1", "alpha", 1, 0).toBuilder()
+        .setProvider(SearchProviderSelector.newBuilder()
+            .setStandard(StandardSearchProvider.STANDARD_SEARCH_PROVIDER_TURBO_QUANT))
+        .build();
+    final String indexId = registry.index(turbo).getIndex().getIndexId();
+    registry.persist(indexId);
+
+    registry.index(request(indexId, "doc-2", "beta", 0, 1));
+    assertEquals(1, registry.checkpointPersistedIndexes());
+    assertEquals(0, registry.checkpointPersistedIndexes());
+    registry.close();
+
+    final DynamicSearchIndexRegistry restored =
+        new DynamicSearchIndexRegistry(catalog, new WorkspaceCheckpointStore(root));
+    assertEquals(2, restored.descriptors().getFirst().getSize());
   }
 
   static IndexDocumentsRequest request(

@@ -1,0 +1,57 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+syntax = "proto3";
+
+package org.apache.opennlp.grpc.v1;
+
+import "org/apache/opennlp/grpc/v1/opennlp_document.proto";
+import "org/apache/opennlp/grpc/v1/opennlp_search.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "OpenNlpSearchStorageProto";
+option java_package = "org.apache.opennlp.grpc.v1";
+
+// On-disk storage records for persisted live search indexes. A checkpoint
+// directory holds the versioned properties descriptor next to a chunks.pb
+// file of length-delimited PersistedSearchChunk records; the raw vectors are
+// retained so accretion continues across restarts, and the quantized form is
+// rebuilt deterministically on load from the provider's fixed parameters.
+
+// The complete alias set, persisted as one local file with last write wins.
+message PersistedIndexAliases {
+  // Aliases in stable alias order.
+  repeated IndexAlias aliases = 1;
+}
+
+// One persisted chunk of a live search index checkpoint.
+message PersistedSearchChunk {
+  // Stable identity of the source document.
+  string document_id = 1;
+  // Stable identity of the indexed chunk within the index.
+  string chunk_id = 2;
+  // Bounded source document served in search hits.
+  OpenNlpDocument source_document = 3;
+  // Authoritative span within source_document.raw_text.
+  AnnotationSpan source_span = 4;
+  // Exact text represented by the stored vector.
+  string emitted_text = 5;
+  // Resolved embedding route shared by every chunk of one index.
+  EmbeddingRoute route = 6;
+  // Raw embedding vector in the index's declared dimension.
+  repeated float vector = 7;
+}

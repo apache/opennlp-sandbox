@@ -18,6 +18,7 @@
  */
 package org.apache.opennlp.grpc.search;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -34,8 +35,23 @@ import org.apache.opennlp.grpc.v1.EmbeddingRoute;
 import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesRequest;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesResponse;
+import org.apache.opennlp.grpc.v1.DeleteIndexAliasRequest;
+import org.apache.opennlp.grpc.v1.DeleteIndexAliasResponse;
+import org.apache.opennlp.grpc.v1.ListIndexAliasesRequest;
+import org.apache.opennlp.grpc.v1.ListIndexAliasesResponse;
 import org.apache.opennlp.grpc.v1.ListSearchProvidersRequest;
 import org.apache.opennlp.grpc.v1.ListSearchProvidersResponse;
+import org.apache.opennlp.grpc.v1.EmbeddingSelector;
+import org.apache.opennlp.grpc.v1.PersistIndexRequest;
+import org.apache.opennlp.grpc.v1.PersistIndexResponse;
+import org.apache.opennlp.grpc.v1.ReindexIndexRequest;
+import org.apache.opennlp.grpc.v1.ReindexIndexResponse;
+import org.apache.opennlp.grpc.v1.SealIndexRequest;
+import org.apache.opennlp.grpc.v1.SealIndexResponse;
+import org.apache.opennlp.grpc.v1.SetIndexAliasRequest;
+import org.apache.opennlp.grpc.v1.SetIndexAliasResponse;
+import org.apache.opennlp.grpc.v1.SearchProviderSelector;
+import org.apache.opennlp.grpc.v1.StandardSearchProvider;
 import org.apache.opennlp.grpc.v1.SearchProviderCapability;
 import org.apache.opennlp.grpc.v1.SearchProviderInstance;
 import org.apache.opennlp.grpc.v1.CelFilterClause;
@@ -50,6 +66,7 @@ import org.apache.opennlp.grpc.v1.SearchIndexResponse;
 import org.apache.opennlp.grpc.v1.SemanticClause;
 import org.apache.opennlp.grpc.v1.TermClause;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -121,6 +138,221 @@ class OpenNlpSearchServiceImplTest {
         .setIndexId(indexId).build(), deleted);
     assertTrue(deleted.value.getDeleted());
     assertTrue(dynamicRegistry.descriptors().isEmpty());
+  }
+
+  @Test
+  void persistsAndSealsAWorkspaceThroughGrpcMethods(@TempDir Path root) {
+    final DynamicSearchIndexRegistry dynamicRegistry = new DynamicSearchIndexRegistry(
+        SearchProviderCatalog.discover(), new WorkspaceCheckpointStore(root));
+    final EmbeddingRoute workspaceRoute = EmbeddingRoute.newBuilder()
+        .setModelId("demo")
+        .setBackendId("static")
+        .setVectorSpaceId("demo-space")
+        .build();
+    final OpenNlpSearchServiceImpl service = new OpenNlpSearchServiceImpl(
+        new SearchIndexRegistry(List.of()),
+        dynamicRegistry,
+        new StubEmbeddingProvider(workspaceRoute, 2, List.of(workspaceRoute),
+            new float[] {1, 0}));
+    final CapturingObserver<IndexDocumentsResponse> indexed = new CapturingObserver<>();
+    service.indexDocuments(
+        DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha", 1, 0).toBuilder()
+            .setProvider(SearchProviderSelector.newBuilder()
+                .setStandard(StandardSearchProvider.STANDARD_SEARCH_PROVIDER_TURBO_QUANT))
+            .build(),
+        indexed);
+    final String indexId = indexed.value.getIndex().getIndexId();
+
+    final CapturingObserver<PersistIndexResponse> persisted = new CapturingObserver<>();
+    service.persistIndex(PersistIndexRequest.newBuilder().setIndexId(indexId).build(),
+        persisted);
+    assertNull(persisted.error);
+    assertTrue(persisted.value.getIndex().getPersisted());
+    assertFalse(persisted.value.getIndex().getImmutable());
+
+    final CapturingObserver<SealIndexResponse> sealed = new CapturingObserver<>();
+    service.sealIndex(SealIndexRequest.newBuilder().setIndexId(indexId).build(), sealed);
+    assertNull(sealed.error);
+    assertTrue(sealed.value.getIndex().getImmutable());
+
+    final CapturingObserver<IndexDocumentsResponse> mutation = new CapturingObserver<>();
+    service.indexDocuments(
+        DynamicSearchIndexRegistryTest.request(indexId, "doc-2", "beta", 0, 1), mutation);
+    assertEquals(Status.Code.FAILED_PRECONDITION,
+        Status.fromThrowable(mutation.error).getCode());
+  }
+
+  @Test
+  void persistingAFlatWorkspaceReportsTheMissingCapability(@TempDir Path root) {
+    final DynamicSearchIndexRegistry dynamicRegistry = new DynamicSearchIndexRegistry(
+        SearchProviderCatalog.discover(), new WorkspaceCheckpointStore(root));
+    final EmbeddingRoute workspaceRoute = EmbeddingRoute.newBuilder()
+        .setModelId("demo")
+        .setBackendId("static")
+        .setVectorSpaceId("demo-space")
+        .build();
+    final OpenNlpSearchServiceImpl service = new OpenNlpSearchServiceImpl(
+        new SearchIndexRegistry(List.of()),
+        dynamicRegistry,
+        new StubEmbeddingProvider(workspaceRoute, 2, List.of(workspaceRoute),
+            new float[] {1, 0}));
+    final CapturingObserver<IndexDocumentsResponse> indexed = new CapturingObserver<>();
+    service.indexDocuments(
+        DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha", 1, 0), indexed);
+
+    final CapturingObserver<PersistIndexResponse> persisted = new CapturingObserver<>();
+    service.persistIndex(PersistIndexRequest.newBuilder()
+        .setIndexId(indexed.value.getIndex().getIndexId()).build(), persisted);
+
+    assertEquals(Status.Code.FAILED_PRECONDITION,
+        Status.fromThrowable(persisted.error).getCode());
+  }
+
+  @Test
+  void aliasesResolveOnSearchAndSupportUpsertListAndDelete() {
+    final DynamicSearchIndexRegistry dynamicRegistry = new DynamicSearchIndexRegistry();
+    final EmbeddingRoute workspaceRoute = EmbeddingRoute.newBuilder()
+        .setModelId("demo")
+        .setBackendId("static")
+        .setVectorSpaceId("demo-space")
+        .build();
+    final OpenNlpSearchServiceImpl service = new OpenNlpSearchServiceImpl(
+        new SearchIndexRegistry(List.of()),
+        dynamicRegistry,
+        new StubEmbeddingProvider(workspaceRoute, 2, List.of(workspaceRoute),
+            new float[] {1, 0}),
+        IndexAliasRegistry.inMemory());
+    final CapturingObserver<IndexDocumentsResponse> indexed = new CapturingObserver<>();
+    service.indexDocuments(
+        DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha", 1, 0), indexed);
+    final String indexId = indexed.value.getIndex().getIndexId();
+
+    final CapturingObserver<SetIndexAliasResponse> set = new CapturingObserver<>();
+    service.setIndexAlias(SetIndexAliasRequest.newBuilder()
+        .setAlias("legal-current").setIndexId(indexId).build(), set);
+    assertNull(set.error);
+    assertEquals(indexId, set.value.getAlias().getIndexId());
+
+    final CapturingObserver<SearchIndexResponse> searched = new CapturingObserver<>();
+    service.searchIndex(request("legal-current", "alpha", 1), searched);
+    assertNull(searched.error);
+    assertEquals(indexId, searched.value.getIndex().getIndexId());
+    assertEquals("doc-1", searched.value.getHits(0).getDocumentId());
+
+    final CapturingObserver<ListIndexAliasesResponse> listed = new CapturingObserver<>();
+    service.listIndexAliases(ListIndexAliasesRequest.getDefaultInstance(), listed);
+    assertEquals(1, listed.value.getAliasesCount());
+
+    final CapturingObserver<DeleteIndexAliasResponse> deleted = new CapturingObserver<>();
+    service.deleteIndexAlias(DeleteIndexAliasRequest.newBuilder()
+        .setAlias("legal-current").build(), deleted);
+    assertTrue(deleted.value.getDeleted());
+
+    final CapturingObserver<SearchIndexResponse> missing = new CapturingObserver<>();
+    service.searchIndex(request("legal-current", "alpha", 1), missing);
+    assertEquals(Status.Code.NOT_FOUND, Status.fromThrowable(missing.error).getCode());
+  }
+
+  @Test
+  void rejectsAliasCollisionsAndUnknownAliasTargets() {
+    final DynamicSearchIndexRegistry dynamicRegistry = new DynamicSearchIndexRegistry();
+    final EmbeddingRoute workspaceRoute = EmbeddingRoute.newBuilder()
+        .setModelId("demo")
+        .setBackendId("static")
+        .setVectorSpaceId("demo-space")
+        .build();
+    final OpenNlpSearchServiceImpl service = new OpenNlpSearchServiceImpl(
+        new SearchIndexRegistry(List.of()),
+        dynamicRegistry,
+        new StubEmbeddingProvider(workspaceRoute, 2, List.of(workspaceRoute),
+            new float[] {1, 0}));
+    final CapturingObserver<IndexDocumentsResponse> indexed = new CapturingObserver<>();
+    service.indexDocuments(
+        DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha", 1, 0), indexed);
+    final String indexId = indexed.value.getIndex().getIndexId();
+
+    final CapturingObserver<SetIndexAliasResponse> collision = new CapturingObserver<>();
+    service.setIndexAlias(SetIndexAliasRequest.newBuilder()
+        .setAlias(indexId).setIndexId(indexId).build(), collision);
+    assertEquals(Status.Code.INVALID_ARGUMENT,
+        Status.fromThrowable(collision.error).getCode());
+
+    final CapturingObserver<SetIndexAliasResponse> unknown = new CapturingObserver<>();
+    service.setIndexAlias(SetIndexAliasRequest.newBuilder()
+        .setAlias("legal-current").setIndexId("missing-index").build(), unknown);
+    assertEquals(Status.Code.NOT_FOUND, Status.fromThrowable(unknown.error).getCode());
+  }
+
+  @Test
+  void reindexesAWorkspaceIntoANewVectorSpaceAndSwapsTheAlias() {
+    final DynamicSearchIndexRegistry dynamicRegistry = new DynamicSearchIndexRegistry();
+    final EmbeddingRoute newSpaceRoute = EmbeddingRoute.newBuilder()
+        .setModelId("demo")
+        .setBackendId("static")
+        .setVectorSpaceId("demo-space-v2")
+        .build();
+    final OpenNlpSearchServiceImpl service = new OpenNlpSearchServiceImpl(
+        new SearchIndexRegistry(List.of()),
+        dynamicRegistry,
+        new StubEmbeddingProvider(newSpaceRoute, 2, List.of(newSpaceRoute),
+            new float[] {0, 1}),
+        IndexAliasRegistry.inMemory());
+    final CapturingObserver<IndexDocumentsResponse> indexed = new CapturingObserver<>();
+    service.indexDocuments(
+        DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha", 1, 0), indexed);
+    final String sourceId = indexed.value.getIndex().getIndexId();
+    final CapturingObserver<SetIndexAliasResponse> aliased = new CapturingObserver<>();
+    service.setIndexAlias(SetIndexAliasRequest.newBuilder()
+        .setAlias("legal-current").setIndexId(sourceId).build(), aliased);
+
+    final CapturingObserver<ReindexIndexResponse> reindexed = new CapturingObserver<>();
+    service.reindexIndex(ReindexIndexRequest.newBuilder()
+        .setIndexId("legal-current")
+        .setEmbedding(EmbeddingSelector.newBuilder().setModelId("demo"))
+        .setAlias("legal-current")
+        .build(), reindexed);
+
+    assertNull(reindexed.error);
+    assertEquals(sourceId, reindexed.value.getSourceIndexId());
+    final SearchIndexDescriptor built = reindexed.value.getIndex();
+    assertFalse(built.getIndexId().equals(sourceId));
+    assertEquals("demo-space-v2", built.getEmbeddingRoute().getVectorSpaceId());
+    assertEquals(1, reindexed.value.getReindexedDocuments());
+    assertEquals(1, reindexed.value.getReindexedChunks());
+
+    final CapturingObserver<SearchIndexResponse> searched = new CapturingObserver<>();
+    service.searchIndex(request("legal-current", "alpha", 1), searched);
+    assertNull(searched.error);
+    assertEquals(built.getIndexId(), searched.value.getIndex().getIndexId());
+    assertEquals("doc-1", searched.value.getHits(0).getDocumentId());
+
+    final CapturingObserver<ListSearchIndexesResponse> listed = new CapturingObserver<>();
+    service.listSearchIndexes(ListSearchIndexesRequest.getDefaultInstance(), listed);
+    assertEquals(2, listed.value.getIndexesCount());
+    assertTrue(listed.value.getIndexesList().stream()
+        .anyMatch(descriptor -> descriptor.getIndexId().equals(sourceId)));
+  }
+
+  @Test
+  void reindexValidatesItsSelectorAndSource() {
+    final OpenNlpSearchServiceImpl service = new OpenNlpSearchServiceImpl(
+        new SearchIndexRegistry(List.of()),
+        new DynamicSearchIndexRegistry(),
+        new StubEmbeddingProvider(route(), 2));
+
+    final CapturingObserver<ReindexIndexResponse> missingSelector = new CapturingObserver<>();
+    service.reindexIndex(ReindexIndexRequest.newBuilder()
+        .setIndexId("workspace-unknown").build(), missingSelector);
+    assertEquals(Status.Code.INVALID_ARGUMENT,
+        Status.fromThrowable(missingSelector.error).getCode());
+
+    final CapturingObserver<ReindexIndexResponse> unknownSource = new CapturingObserver<>();
+    service.reindexIndex(ReindexIndexRequest.newBuilder()
+        .setIndexId("workspace-unknown")
+        .setEmbedding(EmbeddingSelector.newBuilder().setModelId("demo"))
+        .build(), unknownSource);
+    assertEquals(Status.Code.NOT_FOUND,
+        Status.fromThrowable(unknownSource.error).getCode());
   }
 
   @Test
@@ -591,7 +823,11 @@ class OpenNlpSearchServiceImplTest {
     public EmbeddingBatchResult embedBatchResolved(
         String modelId, String backendId, List<String> texts) {
       requestedBackend.set(backendId);
-      return new EmbeddingBatchResult(List.of(resultVector.clone()), resultRoute);
+      final List<float[]> vectors = new java.util.ArrayList<>(texts.size());
+      for (int index = 0; index < texts.size(); index++) {
+        vectors.add(resultVector.clone());
+      }
+      return new EmbeddingBatchResult(vectors, resultRoute);
     }
 
     @Override

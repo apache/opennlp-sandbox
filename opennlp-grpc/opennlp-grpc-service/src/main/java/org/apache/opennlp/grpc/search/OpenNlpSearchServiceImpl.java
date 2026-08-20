@@ -35,9 +35,23 @@ import org.apache.opennlp.grpc.search.query.CelQueryEvaluator;
 import org.apache.opennlp.grpc.search.query.CompoundQueryExecutor;
 import org.apache.opennlp.grpc.search.query.CompoundQueryValidator;
 import org.apache.opennlp.grpc.search.query.QueryCandidate;
+import org.apache.opennlp.grpc.v1.DeleteIndexAliasRequest;
+import org.apache.opennlp.grpc.v1.DeleteIndexAliasResponse;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexResponse;
+import org.apache.opennlp.grpc.v1.IndexAlias;
+import org.apache.opennlp.grpc.v1.ListIndexAliasesRequest;
+import org.apache.opennlp.grpc.v1.ListIndexAliasesResponse;
+import org.apache.opennlp.grpc.v1.PersistIndexRequest;
+import org.apache.opennlp.grpc.v1.PersistIndexResponse;
+import org.apache.opennlp.grpc.v1.ReindexIndexRequest;
+import org.apache.opennlp.grpc.v1.ReindexIndexResponse;
+import org.apache.opennlp.grpc.v1.SealIndexRequest;
+import org.apache.opennlp.grpc.v1.SealIndexResponse;
+import org.apache.opennlp.grpc.v1.SetIndexAliasRequest;
+import org.apache.opennlp.grpc.v1.SetIndexAliasResponse;
 import org.apache.opennlp.grpc.v1.EmbeddingRoute;
+import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
 import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesRequest;
@@ -67,6 +81,7 @@ public final class OpenNlpSearchServiceImpl
   private final SearchIndexRegistry registry;
   private final DynamicSearchIndexRegistry dynamicRegistry;
   private final EmbeddingProvider embeddingProvider;
+  private final IndexAliasRegistry aliasRegistry;
   private final Map<String, String> queryBackendByIndex;
   private final CompoundQueryExecutor compoundQueryExecutor =
       new CompoundQueryExecutor(CelQueryEvaluator.discover());
@@ -95,6 +110,27 @@ public final class OpenNlpSearchServiceImpl
       SearchIndexRegistry registry,
       DynamicSearchIndexRegistry dynamicRegistry,
       EmbeddingProvider embeddingProvider) {
+    this(registry, dynamicRegistry, embeddingProvider, IndexAliasRegistry.inMemory());
+  }
+
+  /**
+   * Creates a service over immutable and dynamic index registries with a configured
+   * alias registry.
+   *
+   * @param registry Startup-loaded immutable indexes.
+   * @param dynamicRegistry Bounded in-memory indexes owned by the server lifecycle.
+   * @param embeddingProvider Query embedding provider.
+   * @param aliasRegistry Logical alias registry.
+   * @throws IllegalArgumentException If an argument or index route is invalid.
+   */
+  public OpenNlpSearchServiceImpl(
+      SearchIndexRegistry registry,
+      DynamicSearchIndexRegistry dynamicRegistry,
+      EmbeddingProvider embeddingProvider,
+      IndexAliasRegistry aliasRegistry) {
+    if (aliasRegistry == null) {
+      throw new IllegalArgumentException("aliasRegistry must not be null");
+    }
     if (registry == null) {
       throw new IllegalArgumentException("registry must not be null");
     }
@@ -107,6 +143,7 @@ public final class OpenNlpSearchServiceImpl
     this.registry = registry;
     this.dynamicRegistry = dynamicRegistry;
     this.embeddingProvider = embeddingProvider;
+    this.aliasRegistry = aliasRegistry;
     final Map<String, String> selectedBackends = new TreeMap<>();
     for (SearchIndexDescriptor descriptor : registry.descriptors()) {
       final EmbeddingRoute selectedRoute = selectConfiguredRoute(descriptor, embeddingProvider);
@@ -189,6 +226,222 @@ public final class OpenNlpSearchServiceImpl
     } catch (RuntimeException e) {
       respondUnexpectedFailure("DeleteSearchIndex", e, responseObserver);
     }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void persistIndex(
+      PersistIndexRequest request, StreamObserver<PersistIndexResponse> responseObserver) {
+    try {
+      final String indexId = requireLifecycleIndexId("PersistIndex",
+          request == null ? null : request.getIndexId());
+      responseObserver.onNext(PersistIndexResponse.newBuilder()
+          .setIndex(dynamicRegistry.persist(indexId))
+          .build());
+      responseObserver.onCompleted();
+    } catch (AnalysisException e) {
+      respondAnalysisFailure("PersistIndex", e, responseObserver);
+    } catch (RuntimeException e) {
+      respondUnexpectedFailure("PersistIndex", e, responseObserver);
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void sealIndex(
+      SealIndexRequest request, StreamObserver<SealIndexResponse> responseObserver) {
+    try {
+      final String indexId = requireLifecycleIndexId("SealIndex",
+          request == null ? null : request.getIndexId());
+      responseObserver.onNext(SealIndexResponse.newBuilder()
+          .setIndex(dynamicRegistry.seal(indexId))
+          .build());
+      responseObserver.onCompleted();
+    } catch (AnalysisException e) {
+      respondAnalysisFailure("SealIndex", e, responseObserver);
+    } catch (RuntimeException e) {
+      respondUnexpectedFailure("SealIndex", e, responseObserver);
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void reindexIndex(
+      ReindexIndexRequest request, StreamObserver<ReindexIndexResponse> responseObserver) {
+    try {
+      final String sourceId = requireLifecycleIndexId("ReindexIndex",
+          request == null ? null : request.getIndexId());
+      DynamicSearchIndexRegistry.validateSelector(request.getEmbedding());
+      if (request.hasAlias()) {
+        try {
+          SearchIndexRegistry.requireStableId(request.getAlias(), "ReindexIndex alias");
+        } catch (IllegalArgumentException e) {
+          throw AnalysisException.invalidArgument(e.getMessage());
+        }
+        if (indexExists(request.getAlias())) {
+          throw AnalysisException.invalidArgument("ReindexIndex alias '" + request.getAlias()
+              + "' collides with an existing index id");
+        }
+      }
+      final List<DynamicSearchIndexRegistry.IndexedChunk> sourceChunks =
+          dynamicRegistry.retainedChunks(sourceId);
+      final List<DynamicSearchIndexRegistry.IndexedChunk> replayed =
+          replay(sourceChunks, request.getEmbedding());
+      final SearchIndexDescriptor built = dynamicRegistry.reindexInto(
+          sourceId, request.hasProvider() ? request.getProvider() : null, replayed);
+      if (request.hasAlias()) {
+        aliasRegistry.set(request.getAlias(), built.getIndexId());
+      }
+      responseObserver.onNext(ReindexIndexResponse.newBuilder()
+          .setIndex(built)
+          .setSourceIndexId(sourceId)
+          .setReindexedDocuments(Math.toIntExact(replayed.stream()
+              .map(chunk -> chunk.record().documentId()).distinct().count()))
+          .setReindexedChunks(replayed.size())
+          .build());
+      responseObserver.onCompleted();
+    } catch (AnalysisException e) {
+      respondAnalysisFailure("ReindexIndex", e, responseObserver);
+    } catch (RuntimeException e) {
+      respondUnexpectedFailure("ReindexIndex", e, responseObserver);
+    }
+  }
+
+  /**
+   * Re-embeds retained chunk texts through the newly selected route in bounded batches.
+   *
+   * @param sourceChunks Retained source chunks.
+   * @param embedding Requested embedding selection.
+   * @return Chunks carrying the new vectors and the resolved route.
+   * @throws AnalysisException If an embedding call fails.
+   */
+  private List<DynamicSearchIndexRegistry.IndexedChunk> replay(
+      List<DynamicSearchIndexRegistry.IndexedChunk> sourceChunks,
+      EmbeddingSelector embedding) {
+    final int batchSize = 16;
+    final List<DynamicSearchIndexRegistry.IndexedChunk> replayed =
+        new ArrayList<>(sourceChunks.size());
+    EmbeddingRoute resolvedRoute = null;
+    for (int start = 0; start < sourceChunks.size(); start += batchSize) {
+      final List<DynamicSearchIndexRegistry.IndexedChunk> batch =
+          sourceChunks.subList(start, Math.min(start + batchSize, sourceChunks.size()));
+      final List<String> texts = batch.stream()
+          .map(chunk -> chunk.record().emittedText()).toList();
+      final String backend = resolvedRoute == null
+          ? DynamicSearchIndexRegistry.selectedBackend(embedding)
+          : resolvedRoute.getBackendId();
+      final EmbeddingBatchResult embedded = embeddingProvider.embedBatchResolved(
+          embedding.getModelId(), backend, texts);
+      if (embedded == null || embedded.vectors() == null
+          || embedded.vectors().size() != texts.size()) {
+        throw new IllegalStateException(
+            "Embedding backend returned a mismatched reindex batch");
+      }
+      if (resolvedRoute == null) {
+        resolvedRoute = embedded.route();
+        if (resolvedRoute.getModelId().isBlank() || resolvedRoute.getBackendId().isBlank()
+            || resolvedRoute.getVectorSpaceId().isBlank()) {
+          throw new IllegalStateException(
+              "Embedding backend resolved an incomplete reindex route");
+        }
+      } else if (!resolvedRoute.getModelId().equals(embedded.route().getModelId())
+          || !resolvedRoute.getVectorSpaceId().equals(embedded.route().getVectorSpaceId())) {
+        throw new IllegalStateException(
+            "Embedding backend changed vector spaces during a reindex");
+      }
+      for (int index = 0; index < batch.size(); index++) {
+        replayed.add(new DynamicSearchIndexRegistry.IndexedChunk(
+            batch.get(index).record(), embedded.vectors().get(index), resolvedRoute));
+      }
+    }
+    return List.copyOf(replayed);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void setIndexAlias(
+      SetIndexAliasRequest request, StreamObserver<SetIndexAliasResponse> responseObserver) {
+    try {
+      if (request == null || request.getAlias().isBlank()) {
+        throw AnalysisException.invalidArgument("SetIndexAlias alias must not be blank");
+      }
+      if (request.getIndexId().isBlank()) {
+        throw AnalysisException.invalidArgument("SetIndexAlias index_id must not be blank");
+      }
+      if (indexExists(request.getAlias())) {
+        throw AnalysisException.invalidArgument("SetIndexAlias alias '" + request.getAlias()
+            + "' collides with an existing index id");
+      }
+      if (!indexExists(request.getIndexId())) {
+        throw AnalysisException.notFound("SetIndexAlias index_id names unknown index '"
+            + request.getIndexId() + "'");
+      }
+      final IndexAlias alias;
+      try {
+        alias = aliasRegistry.set(request.getAlias(), request.getIndexId());
+      } catch (IllegalArgumentException e) {
+        throw AnalysisException.invalidArgument("SetIndexAlias " + e.getMessage());
+      }
+      responseObserver.onNext(SetIndexAliasResponse.newBuilder().setAlias(alias).build());
+      responseObserver.onCompleted();
+    } catch (AnalysisException e) {
+      respondAnalysisFailure("SetIndexAlias", e, responseObserver);
+    } catch (RuntimeException e) {
+      respondUnexpectedFailure("SetIndexAlias", e, responseObserver);
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void deleteIndexAlias(
+      DeleteIndexAliasRequest request,
+      StreamObserver<DeleteIndexAliasResponse> responseObserver) {
+    try {
+      if (request == null || request.getAlias().isBlank()) {
+        throw AnalysisException.invalidArgument("DeleteIndexAlias alias must not be blank");
+      }
+      responseObserver.onNext(DeleteIndexAliasResponse.newBuilder()
+          .setAlias(request.getAlias())
+          .setDeleted(aliasRegistry.delete(request.getAlias()))
+          .build());
+      responseObserver.onCompleted();
+    } catch (AnalysisException e) {
+      respondAnalysisFailure("DeleteIndexAlias", e, responseObserver);
+    } catch (RuntimeException e) {
+      respondUnexpectedFailure("DeleteIndexAlias", e, responseObserver);
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void listIndexAliases(
+      ListIndexAliasesRequest request,
+      StreamObserver<ListIndexAliasesResponse> responseObserver) {
+    responseObserver.onNext(ListIndexAliasesResponse.newBuilder()
+        .addAllAliases(aliasRegistry.aliases())
+        .build());
+    responseObserver.onCompleted();
+  }
+
+  /**
+   * Validates and alias-resolves one lifecycle target, rejecting immutable startup
+   * bundles, which are already durable.
+   *
+   * @param operation RPC operation name.
+   * @param idOrAlias Requested index id or alias.
+   * @return The resolved dynamic index id.
+   * @throws AnalysisException If the id is blank or names a startup bundle.
+   */
+  private String requireLifecycleIndexId(String operation, String idOrAlias) {
+    if (idOrAlias == null || idOrAlias.isBlank()) {
+      throw AnalysisException.invalidArgument(operation + " index_id must not be blank");
+    }
+    final String indexId = aliasRegistry.resolve(idOrAlias);
+    if (registry.find(indexId) != null) {
+      throw AnalysisException.failedPrecondition(operation + " cannot target index '"
+          + indexId + "': startup bundles are already immutable and durable");
+    }
+    return indexId;
   }
 
   /** {@inheritDoc} */
@@ -403,15 +656,26 @@ public final class OpenNlpSearchServiceImpl
   }
 
   /**
-   * Resolves a provider from either registry.
+   * Resolves a provider from either registry after alias resolution.
    *
-   * @param indexId Opaque index identifier.
+   * @param idOrAlias Opaque index identifier or alias.
    * @return Matching provider.
-   * @throws AnalysisException If no provider has the identifier.
+   * @throws AnalysisException If no provider has the resolved identifier.
    */
-  private SearchIndexProvider findProvider(String indexId) {
+  private SearchIndexProvider findProvider(String idOrAlias) {
+    final String indexId = aliasRegistry.resolve(idOrAlias);
     final SearchIndexProvider immutable = registry.find(indexId);
     return immutable != null ? immutable : dynamicRegistry.require(indexId);
+  }
+
+  /**
+   * Tests whether an identifier names a configured or dynamic index.
+   *
+   * @param indexId Opaque index identifier.
+   * @return {@code true} when an index owns the identifier.
+   */
+  private boolean indexExists(String indexId) {
+    return registry.find(indexId) != null || dynamicRegistry.find(indexId) != null;
   }
 
   /**
