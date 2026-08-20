@@ -102,6 +102,28 @@ export interface TrainStaticModelRequest {
   provenanceSummary: string;
 }
 
+export interface ReindexIndexRequest {
+  /** Source index id or alias. */
+  indexId: string;
+  embedding: { modelId: string };
+  /** Vector storage for the new index; omitted keeps the source's instance. */
+  provider?: { standard?: string; custom?: string };
+  /** Alias swapped to the new index only after a successful build. */
+  alias?: string;
+}
+
+export interface SetCollectionRequest {
+  collectionId: string;
+  displayName: string;
+  /** Dynamic member index ids or aliases; stored resolved. */
+  memberIndexIds: string[];
+  dictionaryArtifactId?: string;
+  vocabularyArtifactId?: string;
+  modelArtifactId?: string;
+  /** Accreted new-term count that triggers the drift watch event; 0 disables. */
+  driftNewTermThreshold?: number;
+}
+
 export type Fetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
 export async function getHealth(fetcher: Fetcher = fetch): Promise<string> {
@@ -165,6 +187,92 @@ export function deleteSearchIndex(indexId: string, fetcher: Fetcher = fetch): Pr
     },
     fetcher,
   );
+}
+
+export function getSearchProviders(fetcher: Fetcher = fetch): Promise<unknown> {
+  return requestJson("/api/v1/search-providers", undefined, fetcher);
+}
+
+export function persistIndex(indexId: string, fetcher: Fetcher = fetch): Promise<unknown> {
+  return postJson("/api/v1/persist-index", { indexId }, fetcher);
+}
+
+export function sealIndex(indexId: string, fetcher: Fetcher = fetch): Promise<unknown> {
+  return postJson("/api/v1/seal-index", { indexId }, fetcher);
+}
+
+export function reindexIndex(
+  request: ReindexIndexRequest,
+  fetcher: Fetcher = fetch,
+): Promise<unknown> {
+  return postJson("/api/v1/reindex-index", request, fetcher);
+}
+
+export function setIndexAlias(
+  alias: string,
+  indexId: string,
+  fetcher: Fetcher = fetch,
+): Promise<unknown> {
+  return postJson("/api/v1/set-index-alias", { alias, indexId }, fetcher);
+}
+
+export function deleteIndexAlias(alias: string, fetcher: Fetcher = fetch): Promise<unknown> {
+  return postJson("/api/v1/delete-index-alias", { alias }, fetcher);
+}
+
+export function getIndexAliases(fetcher: Fetcher = fetch): Promise<unknown> {
+  return requestJson("/api/v1/index-aliases", undefined, fetcher);
+}
+
+export function setCollection(
+  request: SetCollectionRequest,
+  fetcher: Fetcher = fetch,
+): Promise<unknown> {
+  return postJson("/api/v1/set-collection", request, fetcher);
+}
+
+export function getCollection(collectionId: string, fetcher: Fetcher = fetch): Promise<unknown> {
+  return postJson("/api/v1/get-collection", { collectionId }, fetcher);
+}
+
+export function getCollections(fetcher: Fetcher = fetch): Promise<unknown> {
+  return requestJson("/api/v1/collections", undefined, fetcher);
+}
+
+export function deleteCollection(
+  collectionId: string,
+  fetcher: Fetcher = fetch,
+): Promise<unknown> {
+  return postJson("/api/v1/delete-collection", { collectionId }, fetcher);
+}
+
+/**
+ * Watches one collection over the gateway's NDJSON stream. Every event reaches
+ * {@code onEvent} as parsed JSON; the returned promise resolves when the
+ * bounded gateway watch lifetime ends, so callers reconnect for a fresh
+ * snapshot. An error line or a non-2xx response rejects.
+ */
+export async function watchCollection(
+  collectionId: string,
+  onEvent: (event: Record<string, unknown>) => void,
+  fetcher: Fetcher = fetch,
+): Promise<void> {
+  const response = await fetcher("/api/v1/watch-collection", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ collectionId }),
+  });
+  if (!response.ok) {
+    throw await responseError(response);
+  }
+  for await (const line of ndjsonLines(response)) {
+    const event = JSON.parse(line) as Record<string, unknown>;
+    if (typeof event.code === "string" && !event.kind) {
+      throw new Error(typeof event.message === "string" && event.message
+        ? event.message : event.code);
+    }
+    onEvent(event);
+  }
 }
 
 export function getDictionaryFormats(fetcher: Fetcher = fetch): Promise<unknown> {

@@ -51,6 +51,7 @@ const hit: SearchHit = {
   provenance: "Fixture",
   build: {},
   queryEmbeddingRoute: { modelId: "mini", backendId: "fallback", vectorSpaceId: "mini-v1" },
+  matchedSpans: [],
 };
 
 describe("server search view model", () => {

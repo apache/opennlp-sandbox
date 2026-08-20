@@ -248,7 +248,7 @@ export class ServerSearchWorkbench {
     if (hit.artifactHash) {
       addFact(this.#facts, "Model artifact", hit.artifactHash);
     }
-    if (hit.queryEmbeddingRoute.artifactHash) {
+    if (hit.queryEmbeddingRoute?.artifactHash) {
       addFact(this.#facts, "Query model artifact", hit.queryEmbeddingRoute.artifactHash);
     }
     if (hit.corpusArtifactHash) {
@@ -381,7 +381,9 @@ function configuredRouteLabel(hit: SearchHit): string {
 
 function queryRouteLabel(hit: SearchHit): string {
   const route = hit.queryEmbeddingRoute;
-  return `${route.backendId} / ${route.modelId} · ${route.vectorSpaceId}`;
+  return route
+    ? `${route.backendId} / ${route.modelId} · ${route.vectorSpaceId}`
+    : "None (keyword-only query)";
 }
 
 function offsetLabel(value: string): string {
