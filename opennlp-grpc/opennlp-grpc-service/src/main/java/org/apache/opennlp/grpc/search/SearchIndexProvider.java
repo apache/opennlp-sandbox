@@ -20,6 +20,7 @@ package org.apache.opennlp.grpc.search;
 
 import java.util.List;
 
+import org.apache.opennlp.grpc.search.query.QueryCandidate;
 import org.apache.opennlp.grpc.v1.SearchIndexDescriptor;
 
 /**
@@ -51,6 +52,20 @@ public interface SearchIndexProvider extends AutoCloseable {
    *     {@code null} values.
    */
   List<SearchResult> search(float[] queryVector, int topK);
+
+  /**
+   * Returns the retained candidates offered to compound query execution.
+   *
+   * <p>The default returns {@code null}: the index does not execute compound queries,
+   * and SearchIndex reports UNIMPLEMENTED for its typed query trees. Providers that
+   * retain records and raw vectors, such as the dynamic workspace indexes, return every
+   * candidate in stable index order.</p>
+   *
+   * @return Candidates in stable index order, or {@code null} when unsupported.
+   */
+  default List<QueryCandidate> queryCandidates() {
+    return null;
+  }
 
   /**
    * Releases provider-owned mapped files or native resources.

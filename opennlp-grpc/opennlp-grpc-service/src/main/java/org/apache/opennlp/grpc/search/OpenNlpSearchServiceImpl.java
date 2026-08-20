@@ -24,12 +24,17 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.apache.opennlp.grpc.embedding.EmbeddingBatchResult;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.search.query.CelQueryEvaluator;
+import org.apache.opennlp.grpc.search.query.CompoundQueryExecutor;
+import org.apache.opennlp.grpc.search.query.CompoundQueryValidator;
+import org.apache.opennlp.grpc.search.query.QueryCandidate;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexResponse;
 import org.apache.opennlp.grpc.v1.EmbeddingRoute;
@@ -38,6 +43,7 @@ import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesRequest;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpSearchServiceGrpc;
+import org.apache.opennlp.grpc.v1.QueryNode;
 import org.apache.opennlp.grpc.v1.SearchHit;
 import org.apache.opennlp.grpc.v1.SearchIndexDescriptor;
 import org.apache.opennlp.grpc.v1.SearchIndexRequest;
@@ -60,6 +66,8 @@ public final class OpenNlpSearchServiceImpl
   private final DynamicSearchIndexRegistry dynamicRegistry;
   private final EmbeddingProvider embeddingProvider;
   private final Map<String, String> queryBackendByIndex;
+  private final CompoundQueryExecutor compoundQueryExecutor =
+      new CompoundQueryExecutor(CelQueryEvaluator.discover());
 
   /**
    * Creates a service and verifies every index against the available embedding vector spaces.
@@ -177,6 +185,11 @@ public final class OpenNlpSearchServiceImpl
     try {
       final SearchIndexProvider provider = validateRequest(request);
       final SearchIndexDescriptor descriptor = provider.descriptor();
+      if (request.getQueryKindCase() == SearchIndexRequest.QueryKindCase.COMPOUND_QUERY) {
+        responseObserver.onNext(searchCompound(request, provider, descriptor));
+        responseObserver.onCompleted();
+        return;
+      }
       final EmbeddingRoute configuredRoute = descriptor.getEmbeddingRoute();
       final EmbeddingBatchResult embedding = embeddingProvider.embedBatchResolved(
           configuredRoute.getModelId(), queryBackend(descriptor),
@@ -186,11 +199,7 @@ public final class OpenNlpSearchServiceImpl
       final SearchIndexResponse.Builder response = SearchIndexResponse.newBuilder()
           .setIndex(descriptor)
           .setQueryEmbeddingRoute(embedding.route());
-      if (response.build().getSerializedSize() > descriptor.getMaxResponseBytes()) {
-        throw AnalysisException.failedPrecondition("Search index '" + descriptor.getIndexId()
-            + "' max_response_bytes " + descriptor.getMaxResponseBytes()
-            + " cannot contain the resolved query embedding route");
-      }
+      requireRouteBudget(response, descriptor);
       final List<SearchResult> results = provider.search(queryVector, request.getTopK());
       if (results == null || results.stream().anyMatch(java.util.Objects::isNull)) {
         throw new IllegalStateException("Search provider returned null results");
@@ -204,31 +213,101 @@ public final class OpenNlpSearchServiceImpl
           .limit(request.getTopK())
           .map(OpenNlpSearchServiceImpl::toHit)
           .toList();
-      for (SearchHit hit : rankedHits) {
-        response.addHits(hit);
-        if (response.build().getSerializedSize() > descriptor.getMaxResponseBytes()) {
-          response.removeHits(response.getHitsCount() - 1);
-          response.setTruncated(true);
-          while (response.build().getSerializedSize() > descriptor.getMaxResponseBytes()
-              && response.getHitsCount() > 0) {
-            response.removeHits(response.getHitsCount() - 1);
-          }
-          if (response.build().getSerializedSize() > descriptor.getMaxResponseBytes()) {
-            throw AnalysisException.failedPrecondition("Search index '"
-                + descriptor.getIndexId() + "' max_response_bytes "
-                + descriptor.getMaxResponseBytes()
-                + " cannot contain truncation metadata for the resolved route");
-          }
-          break;
-        }
-      }
-      responseObserver.onNext(response.build());
+      responseObserver.onNext(addHitsWithinBudget(response, descriptor, rankedHits));
       responseObserver.onCompleted();
     } catch (AnalysisException e) {
       respondAnalysisFailure("SearchIndex", e, responseObserver);
     } catch (RuntimeException e) {
       respondUnexpectedFailure("SearchIndex", e, responseObserver);
     }
+  }
+
+  /**
+   * Executes one compound query against a provider exposing its retained candidates.
+   *
+   * @param request Validated search request carrying a compound query.
+   * @param provider Resolved index provider.
+   * @param descriptor Provider descriptor.
+   * @return Complete search response within the index response budget.
+   * @throws AnalysisException If the index does not execute compound queries or a
+   *     clause fails.
+   */
+  private SearchIndexResponse searchCompound(
+      SearchIndexRequest request, SearchIndexProvider provider,
+      SearchIndexDescriptor descriptor) {
+    final List<QueryCandidate> candidates = provider.queryCandidates();
+    if (candidates == null) {
+      throw AnalysisException.unimplemented("Search index '" + descriptor.getIndexId()
+          + "' does not execute compound queries");
+    }
+    final AtomicReference<EmbeddingRoute> resolvedRoute = new AtomicReference<>();
+    final CompoundQueryExecutor.QueryEmbedder embedder = queryDocument -> {
+      final EmbeddingBatchResult embedding = embeddingProvider.embedBatchResolved(
+          descriptor.getEmbeddingRoute().getModelId(), queryBackend(descriptor),
+          List.of(queryDocument.getRawText()));
+      validateResolvedRoute(descriptor, embedding);
+      resolvedRoute.compareAndSet(null, embedding.route());
+      return embedding.vectors().getFirst();
+    };
+    final List<CompoundQueryExecutor.QueryHit> hits = compoundQueryExecutor.execute(
+        request.getCompoundQuery(), candidates, embedder, request.getTopK());
+    final SearchIndexResponse.Builder response = SearchIndexResponse.newBuilder()
+        .setIndex(descriptor);
+    if (resolvedRoute.get() != null) {
+      response.setQueryEmbeddingRoute(resolvedRoute.get());
+    }
+    requireRouteBudget(response, descriptor);
+    return addHitsWithinBudget(response, descriptor,
+        hits.stream().map(OpenNlpSearchServiceImpl::toHit).toList());
+  }
+
+  /**
+   * Verifies a response's fixed metadata fits the index response budget.
+   *
+   * @param response Response carrying only descriptor and route metadata.
+   * @param descriptor Index descriptor.
+   * @throws AnalysisException If the budget cannot contain the metadata.
+   */
+  private static void requireRouteBudget(
+      SearchIndexResponse.Builder response, SearchIndexDescriptor descriptor) {
+    if (response.build().getSerializedSize() > descriptor.getMaxResponseBytes()) {
+      throw AnalysisException.failedPrecondition("Search index '" + descriptor.getIndexId()
+          + "' max_response_bytes " + descriptor.getMaxResponseBytes()
+          + " cannot contain the resolved query embedding route");
+    }
+  }
+
+  /**
+   * Adds ranked hits until the index response budget is reached, marking truncation.
+   *
+   * @param response Response carrying descriptor and route metadata.
+   * @param descriptor Index descriptor.
+   * @param rankedHits Hits in final rank order.
+   * @return The complete response.
+   * @throws AnalysisException If the budget cannot even contain truncation metadata.
+   */
+  private static SearchIndexResponse addHitsWithinBudget(
+      SearchIndexResponse.Builder response, SearchIndexDescriptor descriptor,
+      List<SearchHit> rankedHits) {
+    for (SearchHit hit : rankedHits) {
+      response.addHits(hit);
+      if (response.build().getSerializedSize() > descriptor.getMaxResponseBytes()) {
+        response.removeHits(response.getHitsCount() - 1);
+        response.setTruncated(true);
+        while (response.build().getSerializedSize() > descriptor.getMaxResponseBytes()
+            && response.getHitsCount() > 0) {
+          response.removeHits(response.getHitsCount() - 1);
+        }
+        if (response.build().getSerializedSize() > descriptor.getMaxResponseBytes()) {
+          throw AnalysisException.failedPrecondition("Search index '"
+              + descriptor.getIndexId() + "' max_response_bytes "
+              + descriptor.getMaxResponseBytes()
+              + " cannot contain truncation metadata for the resolved route");
+        }
+        break;
+      }
+    }
+    return response.build();
   }
 
   /**
@@ -246,20 +325,68 @@ public final class OpenNlpSearchServiceImpl
       throw AnalysisException.invalidArgument("SearchIndex index_id must not be blank");
     }
     final SearchIndexProvider provider = findProvider(request.getIndexId());
-    if (!request.hasQuery() || request.getQuery().getRawText().isBlank()) {
-      throw AnalysisException.invalidArgument("SearchIndex query.raw_text must not be blank");
-    }
     final SearchIndexDescriptor descriptor = provider.descriptor();
+    switch (request.getQueryKindCase()) {
+      case QUERY -> {
+        if (request.getQuery().getRawText().isBlank()) {
+          throw AnalysisException.invalidArgument("SearchIndex query.raw_text must not be blank");
+        }
+        requireQueryBytes(request.getQuery().getRawText(), descriptor);
+      }
+      case COMPOUND_QUERY -> {
+        CompoundQueryValidator.validate(request.getCompoundQuery());
+        requireSemanticQueryBytes(request.getCompoundQuery(), descriptor);
+      }
+      case QUERYKIND_NOT_SET -> throw AnalysisException.invalidArgument(
+          "SearchIndex requires exactly one of query and compound_query");
+    }
     if (request.getTopK() < 1 || request.getTopK() > descriptor.getMaxTopK()) {
       throw AnalysisException.invalidArgument("SearchIndex top_k must be between 1 and "
           + descriptor.getMaxTopK() + ", was " + request.getTopK());
     }
-    final int queryBytes = request.getQuery().getRawText().getBytes(StandardCharsets.UTF_8).length;
+    return provider;
+  }
+
+  /**
+   * Enforces the index query byte bound on one query text.
+   *
+   * @param rawText Query text.
+   * @param descriptor Index descriptor.
+   * @throws AnalysisException If the text exceeds the bound.
+   */
+  private static void requireQueryBytes(String rawText, SearchIndexDescriptor descriptor) {
+    final int queryBytes = rawText.getBytes(StandardCharsets.UTF_8).length;
     if (queryBytes > descriptor.getMaxQueryBytes()) {
       throw AnalysisException.invalidArgument("SearchIndex query.raw_text uses " + queryBytes
           + " UTF-8 bytes, exceeding maximum " + descriptor.getMaxQueryBytes());
     }
-    return provider;
+  }
+
+  /**
+   * Enforces the index query byte bound on every semantic clause of a compound query.
+   *
+   * @param node Query node.
+   * @param descriptor Index descriptor.
+   * @throws AnalysisException If any semantic clause exceeds the bound.
+   */
+  private static void requireSemanticQueryBytes(
+      QueryNode node, SearchIndexDescriptor descriptor) {
+    switch (node.getKindCase()) {
+      case SEMANTIC -> requireQueryBytes(node.getSemantic().getDocument().getRawText(),
+          descriptor);
+      case JOIN -> {
+        for (QueryNode operand : node.getJoin().getOperandsList()) {
+          requireSemanticQueryBytes(operand, descriptor);
+        }
+        for (QueryNode exclusion : node.getJoin().getExclusionsList()) {
+          requireSemanticQueryBytes(exclusion, descriptor);
+        }
+      }
+      case BOOST -> requireSemanticQueryBytes(node.getBoost().getOperand(), descriptor);
+      case TERM, PHRASE, CEL_FILTER, CEL_CALCULATOR, KIND_NOT_SET -> {
+        // No embedded query text to bound.
+      }
+    }
   }
 
   /**
@@ -407,6 +534,25 @@ public final class OpenNlpSearchServiceImpl
         .setSourceDocument(record.sourceDocument())
         .setSourceSpan(record.sourceSpan())
         .setEmittedText(record.emittedText())
+        .build();
+  }
+
+  /**
+   * Converts one compound query result to its wire representation.
+   *
+   * @param hit Executor result.
+   * @return Search hit carrying the root algebra score and matched spans.
+   */
+  private static SearchHit toHit(CompoundQueryExecutor.QueryHit hit) {
+    final SearchRecord record = hit.candidate().record();
+    return SearchHit.newBuilder()
+        .setDocumentId(record.documentId())
+        .setChunkId(record.chunkId())
+        .setScore(hit.score())
+        .setSourceDocument(record.sourceDocument())
+        .setSourceSpan(record.sourceSpan())
+        .setEmittedText(record.emittedText())
+        .addAllMatchedSpans(hit.matchedSpans())
         .build();
   }
 }

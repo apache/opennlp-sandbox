@@ -72,6 +72,14 @@
                     <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
                     <pluginId>grpc-java</pluginId>
                     <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
+                    <!-- Ship the complete FileDescriptorSet inside the jar so non-Java
+                         consumers can load the contract without running protoc. The gRPC
+                         server additionally serves these descriptors through reflection. -->
+                    <writeDescriptorSet>true</writeDescriptorSet>
+                    <includeDependenciesInDescriptorSet>true</includeDependenciesInDescriptorSet>
+                    <includeSourceInfoInDescriptorSet>true</includeSourceInfoInDescriptorSet>
+                    <descriptorSetFileName>opennlp-grpc-v1.protobin</descriptorSetFileName>
+                    <descriptorSetOutputDirectory>${project.build.outputDirectory}/META-INF/opennlp/descriptors</descriptorSetOutputDirectory>
                 </configuration>
                 <executions>
                     <execution>

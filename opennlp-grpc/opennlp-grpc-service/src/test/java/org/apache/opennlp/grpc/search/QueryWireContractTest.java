@@ -23,6 +23,7 @@ import java.util.List;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import org.apache.opennlp.grpc.v1.OpenNlpQueryProto;
+import org.apache.opennlp.grpc.v1.OpenNlpSearchProto;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -112,6 +113,38 @@ class QueryWireContractTest {
     assertEquals(FieldDescriptor.JavaType.DOUBLE,
         boost.findFieldByName("weight").getJavaType());
     assertEquals("CelScore", boost.findFieldByName("calculator").getMessageType().getName());
+  }
+
+  @Test
+  void searchRequestCarriesExactlyOneQueryForm() {
+    final Descriptor request = OpenNlpSearchProto.getDescriptor()
+        .findMessageTypeByName("SearchIndexRequest");
+    assertNotNull(request);
+    assertEquals(1, request.getOneofs().size());
+    assertEquals("query_kind", request.getOneofs().getFirst().getName());
+    assertEquals(List.of("query", "compound_query"),
+        request.getOneofs().getFirst().getFields().stream()
+            .map(FieldDescriptor::getName).toList());
+    assertEquals("OpenNlpDocument",
+        request.findFieldByName("query").getMessageType().getName());
+    assertEquals("QueryNode",
+        request.findFieldByName("compound_query").getMessageType().getName());
+  }
+
+  @Test
+  void hitsCarryMatchedSpansForExactHighlighting() {
+    final Descriptor hit = OpenNlpSearchProto.getDescriptor()
+        .findMessageTypeByName("SearchHit");
+    final FieldDescriptor spans = hit.findFieldByName("matched_spans");
+    assertNotNull(spans);
+    assertTrue(spans.isRepeated());
+    assertEquals("MatchedSpan", spans.getMessageType().getName());
+
+    final Descriptor span = OpenNlpSearchProto.getDescriptor()
+        .findMessageTypeByName("MatchedSpan");
+    assertEquals(FieldDescriptor.JavaType.INT, span.findFieldByName("start").getJavaType());
+    assertEquals(FieldDescriptor.JavaType.INT, span.findFieldByName("end").getJavaType());
+    assertEquals(FieldDescriptor.JavaType.STRING, span.findFieldByName("term").getJavaType());
   }
 
   @Test

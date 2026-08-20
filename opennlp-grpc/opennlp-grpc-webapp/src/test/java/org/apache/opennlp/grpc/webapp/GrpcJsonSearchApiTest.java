@@ -73,6 +73,26 @@ class GrpcJsonSearchApiTest {
   }
 
   @Test
+  void parsesCompoundQueryRequestsAndRendersMatchedSpans() {
+    StubSearchRpc searchRpc = new StubSearchRpc();
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), searchRpc, new EmptyVocabularyRpc(), new EmptyTrainingRpc());
+    byte[] request = """
+        {"indexId":"%s","compoundQuery":{"join":{"operator":"JOIN_OPERATOR_AND",\
+        "operands":[{"term":{"text":"habeas"}},\
+        {"semantic":{"document":{"rawText":"habeas corpus"}}}]}},"topK":5}
+        """.formatted(INDEX_ID).getBytes(StandardCharsets.UTF_8);
+
+    WebHttpResponse response = api.handle("POST", "/api/v1/search", request);
+
+    assertEquals(200, response.status());
+    assertTrue(searchRpc.lastSearch.hasCompoundQuery());
+    assertEquals("habeas", searchRpc.lastSearch.getCompoundQuery().getJoin()
+        .getOperands(0).getTerm().getText());
+    assertTrue(response.bodyUtf8().contains(
+        "\"matchedSpans\":[{\"start\":4,\"end\":10,\"term\":\"habeas\"}]"));
+  }
+
+  @Test
   void rejectsMalformedSearchProtobufJson() {
     GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new StubSearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
 
@@ -112,6 +132,8 @@ class GrpcJsonSearchApiTest {
 
   private static final class StubSearchRpc implements SearchRpc {
 
+    private SearchIndexRequest lastSearch;
+
     @Override
     public ListSearchIndexesResponse listSearchIndexes() {
       return ListSearchIndexesResponse.newBuilder()
@@ -125,16 +147,22 @@ class GrpcJsonSearchApiTest {
 
     @Override
     public SearchIndexResponse search(SearchIndexRequest request) {
+      lastSearch = request;
+      final SearchHit.Builder hit = SearchHit.newBuilder()
+          .setDocumentId(DOCUMENT_ID)
+          .setChunkId(DOCUMENT_ID)
+          .setScore(0.75)
+          .setSourceDocument(OpenNlpDocument.newBuilder()
+              .setDocId(DOCUMENT_ID)
+              .setRawText("The writ must issue."));
+      if (request.hasCompoundQuery()) {
+        hit.addMatchedSpans(org.apache.opennlp.grpc.v1.MatchedSpan.newBuilder()
+            .setStart(4).setEnd(10).setTerm("habeas"));
+      }
       return SearchIndexResponse.newBuilder()
           .setIndex(SearchIndexDescriptor.newBuilder().setIndexId(request.getIndexId()))
           .setTruncated(true)
-          .addHits(SearchHit.newBuilder()
-              .setDocumentId(DOCUMENT_ID)
-              .setChunkId(DOCUMENT_ID)
-              .setScore(0.75)
-              .setSourceDocument(OpenNlpDocument.newBuilder()
-                  .setDocId(DOCUMENT_ID)
-                  .setRawText("The writ must issue.")))
+          .addHits(hit)
           .build();
     }
 
