@@ -18,12 +18,19 @@
  */
 
 import { readDocumentShape, type DocumentShapeView } from "./document-shape";
+import {
+  buildQueryNode,
+  clauseLabel,
+  type JoinMode,
+  type QueryClause,
+} from "./query-builder";
 import type { SearchHit, SearchIndex, SearchRequest, SearchResponse } from "./search-adapter";
-import { createSearchRequest } from "./search-adapter";
+import { createCompoundSearchRequest, createSearchRequest } from "./search-adapter";
 import {
   compareChunkText,
   documentAnalytics,
   hitAnnotations,
+  matchedSegments,
   scoreColor,
   searchResultStatus,
   SearchSelection,
@@ -72,9 +79,18 @@ export class ServerSearchWorkbench {
     terms: requiredElement<HTMLElement>("search-term-count"),
   };
   readonly #selection = new SearchSelection();
+  readonly #builderKind = requiredElement<HTMLSelectElement>("builder-kind");
+  readonly #builderText = requiredElement<HTMLInputElement>("builder-text");
+  readonly #builderMode = requiredElement<HTMLSelectElement>("builder-mode");
+  readonly #builderSlop = requiredElement<HTMLInputElement>("builder-slop");
+  readonly #builderAdd = requiredElement<HTMLButtonElement>("builder-add-button");
+  readonly #builderClauses = requiredElement<HTMLElement>("builder-clauses");
+  readonly #builderJoin = requiredElement<HTMLSelectElement>("builder-join");
+  readonly #builderClear = requiredElement<HTMLButtonElement>("builder-clear-button");
 
   #indexes: SearchIndex[] = [];
   #hits: SearchHit[] = [];
+  #clauses: QueryClause[] = [];
   #busy = false;
   #selectionGeneration = 0;
 
@@ -86,6 +102,15 @@ export class ServerSearchWorkbench {
       this.updateIndexDescription();
       this.updateControls();
     });
+    this.#builderKind.addEventListener("change", () => this.updateBuilderControls());
+    this.#builderAdd.addEventListener("click", () => this.addClause());
+    this.#builderClear.addEventListener("click", () => {
+      this.#clauses = [];
+      this.renderClauses();
+      this.updateControls();
+    });
+    this.updateBuilderControls();
+    this.renderClauses();
   }
 
   async initialize(): Promise<void> {
@@ -112,28 +137,103 @@ export class ServerSearchWorkbench {
     }
   }
 
+  private addClause(): void {
+    const text = this.#builderText.value.trim();
+    if (!text) {
+      this.setStatus("Enter clause text before adding it.", true);
+      return;
+    }
+    const kind = this.#builderKind.value;
+    if (kind === "term") {
+      this.#clauses.push({
+        kind: "term",
+        text,
+        mode: this.#builderMode.value === "all" ? "all" : "any",
+      });
+    } else if (kind === "phrase") {
+      const slop = Number.parseInt(this.#builderSlop.value, 10);
+      this.#clauses.push({
+        kind: "phrase",
+        text,
+        slop: Number.isFinite(slop) && slop >= 0 ? slop : 0,
+      });
+    } else {
+      this.#clauses.push({ kind: "semantic", text });
+    }
+    this.#builderText.value = "";
+    this.renderClauses();
+    this.updateControls();
+  }
+
+  private renderClauses(): void {
+    this.#builderClauses.replaceChildren();
+    if (this.#clauses.length === 0) {
+      this.#builderClauses.append(
+        emptyMessage("No clauses yet; the text query above runs as a single semantic clause."));
+      return;
+    }
+    this.#clauses.forEach((clause, position) => {
+      const chip = document.createElement("span");
+      chip.className = "builder-clause";
+      const label = document.createElement("span");
+      label.textContent = clauseLabel(clause);
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.setAttribute("aria-label", `Remove clause ${position + 1}`);
+      remove.textContent = "×";
+      remove.addEventListener("click", () => {
+        this.#clauses.splice(position, 1);
+        this.renderClauses();
+        this.updateControls();
+      });
+      chip.append(label, remove);
+      this.#builderClauses.append(chip);
+    });
+  }
+
+  private updateBuilderControls(): void {
+    const kind = this.#builderKind.value;
+    this.#builderMode.hidden = kind !== "term";
+    this.#builderSlop.hidden = kind !== "phrase";
+  }
+
   private async search(event: SubmitEvent): Promise<void> {
     event.preventDefault();
     const index = this.selectedIndex();
     const query = this.#query.value.trim();
+    const compound = this.#clauses.length > 0;
     const maximum = index?.maxTopK ?? 50;
     const topK = Math.min(maximum, Math.max(1, Number.parseInt(this.#topK.value, 10) || 8));
-    if (!index || !query || this.#busy) {
+    if (!index || (!query && !compound) || this.#busy) {
       return;
     }
-    const queryBytes = new TextEncoder().encode(query).length;
-    if (index.maxQueryBytes !== undefined && queryBytes > index.maxQueryBytes) {
-      this.setStatus(`The query is ${formatInteger(queryBytes)} UTF-8 bytes. This index accepts at most `
-        + `${formatInteger(index.maxQueryBytes)} bytes.`, true);
-      return;
+    let request: SearchRequest;
+    if (compound) {
+      try {
+        request = createCompoundSearchRequest(index.id,
+          buildQueryNode(this.#clauses, joinMode(this.#builderJoin.value)), topK);
+      } catch (error) {
+        this.setStatus(errorMessage(error, "The compound query is invalid."), true);
+        return;
+      }
+    } else {
+      const queryBytes = new TextEncoder().encode(query).length;
+      if (index.maxQueryBytes !== undefined && queryBytes > index.maxQueryBytes) {
+        this.setStatus(`The query is ${formatInteger(queryBytes)} UTF-8 bytes. This index accepts at most `
+          + `${formatInteger(index.maxQueryBytes)} bytes.`, true);
+        return;
+      }
+      request = createSearchRequest(index.id, query, topK);
     }
 
     this.#busy = true;
     this.#selectionGeneration++;
-    this.setStatus(`Searching ${index.label}.`);
+    this.setStatus(compound
+      ? `Executing the compound query against ${index.label}.`
+      : `Searching ${index.label}.`);
     this.updateControls();
     try {
-      const response = await this.#options.search(createSearchRequest(index.id, query, topK));
+      const response = await this.#options.search(request);
       this.#hits = response.hits;
       this.renderResults();
       this.setStatus(searchResultStatus(this.#hits.length, response.truncated));
@@ -228,7 +328,7 @@ export class ServerSearchWorkbench {
 
     const comparison = compareChunkText(highlight.selected, hit.emittedChunkText);
     this.#originalSpan.textContent = comparison.original;
-    this.#emittedChunk.textContent = comparison.emitted || "The server returned no emitted text.";
+    this.renderEmittedChunk(hit);
     this.#comparisonStatus.textContent = comparison.exact
       ? "The emitted chunk exactly matches the original source span."
       : "The emitted chunk differs from the original span, typically because of configured transformation.";
@@ -275,6 +375,27 @@ export class ServerSearchWorkbench {
     if (hit.sourceUri) {
       addFact(this.#facts, "Source", hit.sourceUri, hit.sourceUri);
     }
+  }
+
+  /** Renders the emitted chunk with keyword matches marked for highlighting. */
+  private renderEmittedChunk(hit: SearchHit): void {
+    const segments = matchedSegments(hit);
+    if (segments.length === 0) {
+      this.#emittedChunk.textContent = "The server returned no emitted text.";
+      return;
+    }
+    this.#emittedChunk.replaceChildren(...segments.map((segment) => {
+      if (!segment.matched) {
+        return document.createTextNode(segment.text);
+      }
+      const mark = document.createElement("mark");
+      mark.className = "matched-span";
+      mark.textContent = segment.text;
+      if (segment.term) {
+        mark.title = `Matched query term: ${segment.term}`;
+      }
+      return mark;
+    }));
   }
 
   private renderAnalysis(shape: DocumentShapeView, hit: SearchHit, loading: boolean): void {
@@ -329,7 +450,8 @@ export class ServerSearchWorkbench {
   }
 
   private updateControls(): void {
-    this.#searchButton.disabled = this.#busy || !this.selectedIndex() || !this.#query.value.trim();
+    this.#searchButton.disabled = this.#busy || !this.selectedIndex()
+      || (!this.#query.value.trim() && this.#clauses.length === 0);
     this.#indexSelect.disabled = this.#busy || this.#indexes.length === 0;
     this.#query.disabled = this.#busy || this.#indexes.length === 0;
     this.#topK.disabled = this.#busy || this.#indexes.length === 0;
@@ -407,4 +529,8 @@ function providerLabel(value: string): string {
 
 function previewText(value: string, limit: number): string {
   return ellipsizeCodePoints(collapseWhitespace(value), limit);
+}
+
+function joinMode(value: string): JoinMode {
+  return value === "or" || value === "rrf" ? value : "and";
 }

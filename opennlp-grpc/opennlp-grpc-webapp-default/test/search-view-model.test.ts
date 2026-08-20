@@ -24,6 +24,7 @@ import {
   annotationsIntersecting,
   compareChunkText,
   documentAnalytics,
+  matchedSegments,
   scoreColor,
   searchResultStatus,
   SearchSelection,
@@ -121,5 +122,25 @@ describe("server search view model", () => {
     expect(searchResultStatus(0, true)).toBe(
       "No scored chunks were returned. The server response byte limit truncated additional matches.",
     );
+  });
+
+  it("splits emitted text into plain and matched segments without double rendering", () => {
+    const spanned = {
+      ...hit,
+      emittedChunkText: "the writ of habeas corpus",
+      matchedSpans: [
+        { start: 12, end: 25, term: "habeas corpus" },
+        { start: 4, end: 8, term: "writ" },
+        { start: 5, end: 9, term: "overlap" },
+      ],
+    };
+
+    expect(matchedSegments(spanned)).toEqual([
+      { text: "the ", matched: false },
+      { text: "writ", matched: true, term: "writ" },
+      { text: " of ", matched: false },
+      { text: "habeas corpus", matched: true, term: "habeas corpus" },
+    ]);
+    expect(matchedSegments(hit)).toEqual([{ text: hit.emittedChunkText, matched: false }]);
   });
 });

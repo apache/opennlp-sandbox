@@ -283,6 +283,30 @@ export function readSearchResponse(response: unknown): SearchResponse {
   return { hits, truncated: envelope?.truncated === true };
 }
 
+/** One logical alias resolving to a current index id. */
+export interface IndexAliasView {
+  alias: string;
+  indexId: string;
+}
+
+/** Reads the index-aliases listing JSON defensively. */
+export function readIndexAliases(response: unknown): IndexAliasView[] {
+  const envelope = record(response);
+  const values = Array.isArray(envelope?.aliases) ? envelope.aliases : [];
+  return values.flatMap((value) => {
+    const entry = record(value);
+    const alias = text(entry?.alias);
+    const indexId = text(entry?.indexId);
+    return alias && indexId ? [{ alias, indexId }] : [];
+  });
+}
+
+/** Reads the single-index envelope returned by persist, seal, and reindex. */
+export function readIndexResponse(response: unknown): SearchIndex | undefined {
+  const envelope = record(response);
+  return readSearchIndexes({ indexes: envelope?.index ? [envelope.index] : [] })[0];
+}
+
 /** Reads matched spans, dropping any that do not fit the emitted text. */
 function readMatchedSpans(value: unknown, emittedText: string): MatchedSpan[] {
   const values = Array.isArray(value) ? value : [];
