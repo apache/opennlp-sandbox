@@ -66,6 +66,11 @@ message IndexDocumentsRequest {
   EmbeddingSelector embedding = 4;
   // Optional group-id filter. Empty selects every compatible embedded chunk group.
   repeated string chunk_group_ids = 5;
+  // Vector storage for a new index. Unset selects the exact flat float provider.
+  // Dynamic indexes accept the standard flat float and TurboQuant providers; the
+  // choice is fixed at creation, so extending an index requires the same or an
+  // unset selector.
+  SearchProviderSelector provider = 6;
 }
 
 // Result of atomically adding one request's documents to a dynamic index.
