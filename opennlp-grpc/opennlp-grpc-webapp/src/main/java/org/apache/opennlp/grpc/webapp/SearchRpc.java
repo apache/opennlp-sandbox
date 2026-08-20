@@ -18,8 +18,19 @@
  */
 package org.apache.opennlp.grpc.webapp;
 
+import java.util.Iterator;
+
+import org.apache.opennlp.grpc.v1.CollectionEvent;
+import org.apache.opennlp.grpc.v1.DeleteCollectionRequest;
+import org.apache.opennlp.grpc.v1.DeleteCollectionResponse;
 import org.apache.opennlp.grpc.v1.DeleteIndexAliasRequest;
 import org.apache.opennlp.grpc.v1.DeleteIndexAliasResponse;
+import org.apache.opennlp.grpc.v1.GetCollectionRequest;
+import org.apache.opennlp.grpc.v1.GetCollectionResponse;
+import org.apache.opennlp.grpc.v1.ListCollectionsResponse;
+import org.apache.opennlp.grpc.v1.SetCollectionRequest;
+import org.apache.opennlp.grpc.v1.SetCollectionResponse;
+import org.apache.opennlp.grpc.v1.WatchCollectionRequest;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexResponse;
 import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
@@ -112,4 +123,39 @@ interface SearchRpc {
    * @return Deletion result.
    */
   DeleteSearchIndexResponse delete(DeleteSearchIndexRequest request);
+
+  /**
+   * Creates or replaces one collection.
+   *
+   * @param request Complete configured collection state.
+   * @return Descriptor with its recomputed ledger and drift.
+   */
+  SetCollectionResponse setCollection(SetCollectionRequest request);
+
+  /**
+   * Reads one collection with its recomputed ledger and drift.
+   *
+   * @param request Collection id.
+   * @return The descriptor.
+   */
+  GetCollectionResponse getCollection(GetCollectionRequest request);
+
+  /** @return Every collection, without term ledgers. */
+  ListCollectionsResponse listCollections();
+
+  /**
+   * Deletes one collection.
+   *
+   * @param request Collection id.
+   * @return Whether the collection existed and was deleted.
+   */
+  DeleteCollectionResponse deleteCollection(DeleteCollectionRequest request);
+
+  /**
+   * Watches one collection's self-contained snapshot events.
+   *
+   * @param request Collection id.
+   * @return Events beginning with a snapshot, until the stream ends.
+   */
+  Iterator<CollectionEvent> watchCollection(WatchCollectionRequest request);
 }

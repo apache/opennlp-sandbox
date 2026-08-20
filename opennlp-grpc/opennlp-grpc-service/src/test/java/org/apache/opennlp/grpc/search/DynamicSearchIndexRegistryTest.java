@@ -423,8 +423,8 @@ class DynamicSearchIndexRegistryTest {
     registry.persist(indexId);
 
     registry.index(request(indexId, "doc-2", "beta", 0, 1));
-    assertEquals(1, registry.checkpointPersistedIndexes());
-    assertEquals(0, registry.checkpointPersistedIndexes());
+    assertEquals(List.of(indexId), registry.checkpointPersistedIndexes());
+    assertEquals(List.of(), registry.checkpointPersistedIndexes());
     registry.close();
 
     final DynamicSearchIndexRegistry restored =

@@ -22,6 +22,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Callable;
@@ -42,6 +43,7 @@ import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.search.DynamicSearchIndexRegistry;
 import org.apache.opennlp.grpc.search.IndexAliasRegistry;
 import org.apache.opennlp.grpc.search.OpenNlpSearchServiceImpl;
+import org.apache.opennlp.grpc.search.SearchCollectionRegistry;
 import org.apache.opennlp.grpc.search.SearchIndexRegistry;
 import org.apache.opennlp.grpc.search.SearchProviderCatalog;
 import org.apache.opennlp.grpc.search.WorkspaceCheckpointStore;
@@ -200,6 +202,14 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
         : DynamicSearchIndexRegistry.disabled();
     final IndexAliasRegistry indexAliasRegistry =
         IndexAliasRegistry.fromConfiguration(configuration);
+    final DictionaryFormatRegistry dictionaryFormats = DictionaryFormatRegistry.discover();
+    final VocabularyArtifactStore vocabularyArtifacts =
+        VocabularyArtifactStore.fromConfiguration(configuration, dictionaryFormats);
+    final SearchCollectionRegistry collectionRegistry =
+        SearchCollectionRegistry.fromConfiguration(configuration, dynamicSearchIndexRegistry,
+            artifactId -> vocabularyArtifacts.readVocabularyTermRows(artifactId).stream()
+                .map(VocabularyArtifactStore.TermRow::term)
+                .toList());
     final int checkpointSeconds = Integer.parseInt(configuration.getOrDefault(
         "search.persist.checkpoint_seconds", "0"));
     if (checkpointSeconds < 0) {
@@ -211,21 +221,24 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
           Thread.ofPlatform().name("opennlp-search-checkpoint").daemon().factory());
       checkpointScheduler.scheduleWithFixedDelay(() -> {
         try {
-          final int rewritten = dynamicSearchIndexRegistry.checkpointPersistedIndexes();
-          if (rewritten > 0) {
-            logger.info("Auto-checkpoint rewrote {} search index checkpoint(s)", rewritten);
+          final List<String> rewritten =
+              dynamicSearchIndexRegistry.checkpointPersistedIndexes();
+          for (String indexId : rewritten) {
+            collectionRegistry.notifyIndexPersisted(indexId);
+          }
+          if (!rewritten.isEmpty()) {
+            logger.info("Auto-checkpoint rewrote {} search index checkpoint(s)",
+                rewritten.size());
           }
         } catch (RuntimeException e) {
           logger.error("Auto-checkpoint of search indexes failed", e);
         }
       }, checkpointSeconds, checkpointSeconds, TimeUnit.SECONDS);
     }
-    final DictionaryFormatRegistry dictionaryFormats = DictionaryFormatRegistry.discover();
-    final VocabularyArtifactStore vocabularyArtifacts =
-        VocabularyArtifactStore.fromConfiguration(configuration, dictionaryFormats);
     final StaticModelArtifactStore staticModelArtifacts =
         StaticModelArtifactStore.fromConfiguration(configuration, vocabularyArtifacts,
             StaticModelTrainer.distiller(), modelBundleCache.getTrainedModelRegistry());
+    staticModelArtifacts.setPublicationListener(collectionRegistry::notifyModelPublished);
     final ProfileRegistry profileRegistry = modelBundleCache.createProfileRegistry();
     final BasicDocumentAnalyzer documentAnalyzer =
         new BasicDocumentAnalyzer(profileRegistry, modelBundleCache);
@@ -257,7 +270,8 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
                 searchIndexRegistry,
                 dynamicSearchIndexRegistry,
                 modelBundleCache.getEmbeddingProvider(),
-                indexAliasRegistry),
+                indexAliasRegistry,
+                collectionRegistry),
             new EagerHeadersInterceptor()))
         .addService(ServerInterceptors.intercept(
             new OpenNlpVocabularyServiceImpl(dictionaryFormats, vocabularyArtifacts),

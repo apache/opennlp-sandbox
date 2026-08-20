@@ -398,6 +398,35 @@ class OpenNlpGrpcWebServerTest {
     public DeleteSearchIndexResponse delete(DeleteSearchIndexRequest request) {
       return DeleteSearchIndexResponse.getDefaultInstance();
     }
+
+    @Override
+    public org.apache.opennlp.grpc.v1.SetCollectionResponse setCollection(
+        org.apache.opennlp.grpc.v1.SetCollectionRequest request) {
+      return org.apache.opennlp.grpc.v1.SetCollectionResponse.getDefaultInstance();
+    }
+
+    @Override
+    public org.apache.opennlp.grpc.v1.GetCollectionResponse getCollection(
+        org.apache.opennlp.grpc.v1.GetCollectionRequest request) {
+      return org.apache.opennlp.grpc.v1.GetCollectionResponse.getDefaultInstance();
+    }
+
+    @Override
+    public org.apache.opennlp.grpc.v1.ListCollectionsResponse listCollections() {
+      return org.apache.opennlp.grpc.v1.ListCollectionsResponse.getDefaultInstance();
+    }
+
+    @Override
+    public org.apache.opennlp.grpc.v1.DeleteCollectionResponse deleteCollection(
+        org.apache.opennlp.grpc.v1.DeleteCollectionRequest request) {
+      return org.apache.opennlp.grpc.v1.DeleteCollectionResponse.getDefaultInstance();
+    }
+
+    @Override
+    public java.util.Iterator<org.apache.opennlp.grpc.v1.CollectionEvent> watchCollection(
+        org.apache.opennlp.grpc.v1.WatchCollectionRequest request) {
+      return java.util.Collections.emptyIterator();
+    }
   }
 
   private static final class StreamingTrainingRpc implements TrainingRpc {

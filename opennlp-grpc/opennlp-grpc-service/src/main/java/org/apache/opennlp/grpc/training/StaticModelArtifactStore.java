@@ -91,6 +91,33 @@ public final class StaticModelArtifactStore {
   private final int maxConcurrentTrainings;
   private final Path cacheRoot;
   private final Map<String, StaticModelDescriptor> models = new ConcurrentHashMap<>();
+  private volatile PublicationListener publicationListener;
+
+  /**
+   * Receives one notification per successfully published model artifact.
+   *
+   * <p>Thread safety is implementation specific.</p>
+   */
+  @FunctionalInterface
+  public interface PublicationListener {
+
+    /**
+     * Called after one model artifact is published and served.
+     *
+     * @param modelArtifactId Published model artifact id.
+     * @param vocabularyArtifactId Vocabulary artifact the model was distilled from.
+     */
+    void modelPublished(String modelArtifactId, String vocabularyArtifactId);
+  }
+
+  /**
+   * Registers the listener notified after each successful model publication.
+   *
+   * @param listener Listener, or {@code null} to remove the current one.
+   */
+  public void setPublicationListener(PublicationListener listener) {
+    this.publicationListener = listener;
+  }
 
   /** Creates the store and loads, verifies, and registers every published model. */
   private StaticModelArtifactStore(
@@ -245,6 +272,10 @@ public final class StaticModelArtifactStore {
       registry.register(artifactId, StaticEmbeddingModel.load(cached),
           descriptor.getArtifactHash());
       models.put(artifactId, descriptor);
+      final PublicationListener published = publicationListener;
+      if (published != null) {
+        published.modelPublished(artifactId, descriptor.getVocabularyArtifactId());
+      }
       return descriptor;
     } finally {
       deleteTree(scratch);
@@ -424,30 +455,13 @@ public final class StaticModelArtifactStore {
 
   /** Reads the vocabulary's terms sorted by descending frequency for distillation. */
   private List<String> readVocabularyTerms(String vocabularyArtifactId) throws IOException {
-    final List<TermFrequency> terms = new ArrayList<>();
-    try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-        vocabularies.openVocabulary(vocabularyArtifactId), StandardCharsets.UTF_8))) {
-      String line;
-      while ((line = reader.readLine()) != null) {
-        final int firstTab = line.indexOf('\t');
-        final int secondTab = firstTab < 0 ? -1 : line.indexOf('\t', firstTab + 1);
-        if (firstTab <= 0 || secondTab < 0) {
-          throw new IOException("Corrupt vocabulary artifact '" + vocabularyArtifactId + "'");
-        }
-        final long count;
-        try {
-          count = Long.parseLong(line.substring(firstTab + 1, secondTab));
-        } catch (NumberFormatException e) {
-          throw new IOException("Corrupt vocabulary artifact '" + vocabularyArtifactId + "'", e);
-        }
-        terms.add(new TermFrequency(line.substring(0, firstTab), count));
-      }
-    }
-    terms.sort(Comparator.comparingLong(TermFrequency::count).reversed()
-        .thenComparing(TermFrequency::term));
-    final List<String> sorted = new ArrayList<>(terms.size());
-    for (TermFrequency term : terms) {
-      sorted.add(term.term());
+    final List<VocabularyArtifactStore.TermRow> rows =
+        new ArrayList<>(vocabularies.readVocabularyTermRows(vocabularyArtifactId));
+    rows.sort(Comparator.comparingLong(VocabularyArtifactStore.TermRow::count).reversed()
+        .thenComparing(VocabularyArtifactStore.TermRow::term));
+    final List<String> sorted = new ArrayList<>(rows.size());
+    for (VocabularyArtifactStore.TermRow row : rows) {
+      sorted.add(row.term());
     }
     return sorted;
   }
@@ -599,10 +613,6 @@ public final class StaticModelArtifactStore {
 
   /** One configured teacher. */
   private record TeacherConfiguration(String teacherId, String displayName, String reference) {
-  }
-
-  /** One term and its learned corpus frequency. */
-  private record TermFrequency(String term, long count) {
   }
 
   /** One parsed manifest line: file name, byte size, and SHA-256. */

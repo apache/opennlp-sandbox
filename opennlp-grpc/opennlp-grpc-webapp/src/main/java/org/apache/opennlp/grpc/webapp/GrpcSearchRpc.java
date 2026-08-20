@@ -19,11 +19,22 @@
 package org.apache.opennlp.grpc.webapp;
 
 import java.time.Duration;
+import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import io.grpc.Channel;
+import org.apache.opennlp.grpc.v1.CollectionEvent;
+import org.apache.opennlp.grpc.v1.DeleteCollectionRequest;
+import org.apache.opennlp.grpc.v1.DeleteCollectionResponse;
 import org.apache.opennlp.grpc.v1.DeleteIndexAliasRequest;
 import org.apache.opennlp.grpc.v1.DeleteIndexAliasResponse;
+import org.apache.opennlp.grpc.v1.GetCollectionRequest;
+import org.apache.opennlp.grpc.v1.GetCollectionResponse;
+import org.apache.opennlp.grpc.v1.ListCollectionsRequest;
+import org.apache.opennlp.grpc.v1.ListCollectionsResponse;
+import org.apache.opennlp.grpc.v1.SetCollectionRequest;
+import org.apache.opennlp.grpc.v1.SetCollectionResponse;
+import org.apache.opennlp.grpc.v1.WatchCollectionRequest;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexResponse;
 import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
@@ -136,6 +147,41 @@ final class GrpcSearchRpc implements SearchRpc {
   @Override
   public ListIndexAliasesResponse listAliases() {
     return deadlineStub().listIndexAliases(ListIndexAliasesRequest.getDefaultInstance());
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public SetCollectionResponse setCollection(SetCollectionRequest request) {
+    return deadlineStub().setCollection(request);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public GetCollectionResponse getCollection(GetCollectionRequest request) {
+    return deadlineStub().getCollection(request);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public ListCollectionsResponse listCollections() {
+    return deadlineStub().listCollections(ListCollectionsRequest.getDefaultInstance());
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public DeleteCollectionResponse deleteCollection(DeleteCollectionRequest request) {
+    return deadlineStub().deleteCollection(request);
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>The configured deadline bounds the gateway watch lifetime; the stream ends
+   * with DEADLINE_EXCEEDED and a reconnect receives a fresh snapshot first.</p>
+   */
+  @Override
+  public Iterator<CollectionEvent> watchCollection(WatchCollectionRequest request) {
+    return deadlineStub().watchCollection(request);
   }
 
   /** @return A stub carrying the configured deadline. */

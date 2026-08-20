@@ -83,6 +83,32 @@ service OpenNlpSearchService {
 
   // Lists every alias in stable alias order.
   rpc ListIndexAliases(ListIndexAliasesRequest) returns (ListIndexAliasesResponse);
+
+  // Creates or replaces one collection, the scope vocabulary accretion is
+  // measured over. Member index ids may be aliases and are stored resolved;
+  // every member must be a dynamic index. The complete configured state is
+  // replaced on every call and the last write wins.
+  rpc SetCollection(SetCollectionRequest) returns (SetCollectionResponse);
+
+  // Returns one collection with its term ledger and drift statistics
+  // recomputed from live member index contents.
+  rpc GetCollection(GetCollectionRequest) returns (GetCollectionResponse);
+
+  // Lists every collection with recomputed drift statistics. Term ledgers are
+  // omitted to bound the response; GetCollection returns them.
+  rpc ListCollections(ListCollectionsRequest) returns (ListCollectionsResponse);
+
+  // Deletes one collection and completes its open watch streams. Member
+  // indexes and referenced artifacts are unaffected.
+  rpc DeleteCollection(DeleteCollectionRequest) returns (DeleteCollectionResponse);
+
+  // Watches one collection. The open stream is the subscription: the first
+  // event is always a snapshot, later events report drift threshold
+  // crossings, member index persistence, and model publication. Every event
+  // carries a complete descriptor snapshot, so consumers track no cursors,
+  // sessions, or timers; a reconnect simply resubscribes and receives a
+  // fresh snapshot first.
+  rpc WatchCollection(WatchCollectionRequest) returns (stream CollectionEvent);
 }
 
 // Persists one dynamic index by its id.
@@ -169,6 +195,163 @@ message ListIndexAliasesRequest {}
 message ListIndexAliasesResponse {
   // Aliases in stable alias order.
   repeated IndexAlias aliases = 1;
+}
+
+// One collection: the scope vocabulary accretion is measured over. Indexes
+// belong to a collection, indexing feeds its term ledger, vocabularies are
+// cut from it, models train from those vocabularies, and drift is measured
+// against the current vocabulary artifact.
+message CollectionDescriptor {
+  // Stable caller-chosen collection identifier.
+  string collection_id = 1;
+  // Human-readable name suitable for a collection selector.
+  string display_name = 2;
+  // Resolved dynamic member index ids. A member deleted after it was added
+  // simply stops contributing to the ledger.
+  repeated string member_index_ids = 3;
+  // Dictionary artifact this collection's vocabularies are cut against.
+  optional string dictionary_artifact_id = 4;
+  // Vocabulary artifact drift is measured against.
+  optional string vocabulary_artifact_id = 5;
+  // Model artifact currently serving this collection's vector space.
+  optional string model_artifact_id = 6;
+  // Number of accreted new terms at which the watch stream reports
+  // COLLECTION_EVENT_KIND_DRIFT_THRESHOLD_CROSSED. Zero disables the event.
+  uint32 drift_new_term_threshold = 7;
+  // Analysis chain the term ledger is counted with, identical to the chain
+  // recorded on member keyword legs, so drift numbers are provably tied to
+  // the same analysis as querying.
+  AnalysisChainDescriptor analysis_chain = 8;
+  // Term ledger recomputed from the live emitted text of every member index
+  // chunk, ordered by descending occurrences with a lexicographic tie break.
+  // A term of the current vocabulary counts as one unit even when multiword.
+  // Bounded per response; omitted entirely by ListCollections.
+  repeated TermLedgerEntry term_ledger = 9;
+  // Number of distinct terms beyond the term_ledger response bound. The
+  // drift statistics always cover the complete ledger.
+  uint32 omitted_ledger_terms = 10;
+  // Drift of the complete ledger against the current vocabulary artifact.
+  CollectionDriftStats drift = 11;
+  // Lowercase SHA-256 of the persisted collection file with this field
+  // cleared. Empty when no persistence root is configured.
+  string integrity_hash = 12;
+}
+
+// One accreted term and its live occurrence count across member indexes.
+message TermLedgerEntry {
+  // Analyzed term text. Multiword vocabulary terms are one unit, joined by
+  // single spaces.
+  string term = 1;
+  // Occurrences across the emitted text of every live member index chunk.
+  uint64 occurrences = 2;
+  // True when the term is a row of the current vocabulary artifact.
+  bool in_vocabulary = 3;
+}
+
+// Drift of accreted member content against the current vocabulary artifact.
+// When the collection has no vocabulary artifact, every term is new.
+message CollectionDriftStats {
+  // Distinct terms in the complete ledger.
+  uint64 distinct_terms = 1;
+  // Total term occurrences in the complete ledger.
+  uint64 term_occurrences = 2;
+  // Distinct ledger terms absent from the current vocabulary.
+  uint64 new_terms = 3;
+  // Occurrences of ledger terms absent from the current vocabulary.
+  uint64 new_term_occurrences = 4;
+  // Fraction of occurrences hitting vocabulary terms, in [0, 1]. Zero when
+  // the collection has no vocabulary artifact or no content.
+  double vocabulary_coverage = 5;
+}
+
+// Creates or replaces one collection's complete configured state.
+message SetCollectionRequest {
+  // Stable caller-chosen collection identifier.
+  string collection_id = 1;
+  // Human-readable collection name. Required.
+  string display_name = 2;
+  // Dynamic member index ids or aliases. Stored resolved.
+  repeated string member_index_ids = 3;
+  // Dictionary artifact this collection's vocabularies are cut against.
+  optional string dictionary_artifact_id = 4;
+  // Vocabulary artifact drift is measured against. Must exist when set.
+  optional string vocabulary_artifact_id = 5;
+  // Model artifact currently serving this collection's vector space.
+  optional string model_artifact_id = 6;
+  // Accreted new-term count that triggers the drift watch event. Zero
+  // disables the event.
+  uint32 drift_new_term_threshold = 7;
+}
+
+// Confirms one collection upsert.
+message SetCollectionResponse {
+  // Descriptor after the write, with its recomputed ledger and drift.
+  CollectionDescriptor collection = 1;
+}
+
+// Reads one collection by its id.
+message GetCollectionRequest {
+  string collection_id = 1;
+}
+
+// One collection with its recomputed ledger and drift.
+message GetCollectionResponse {
+  CollectionDescriptor collection = 1;
+}
+
+// Input to ListCollections. Empty because the bounded contract has no
+// filtering or pagination.
+message ListCollectionsRequest {}
+
+// Every collection configured on this server.
+message ListCollectionsResponse {
+  // Descriptors without term ledgers, in stable collection-id order.
+  repeated CollectionDescriptor collections = 1;
+}
+
+// Deletes one collection by its id.
+message DeleteCollectionRequest {
+  string collection_id = 1;
+}
+
+// Confirms whether the collection existed and was deleted.
+message DeleteCollectionResponse {
+  string collection_id = 1;
+  bool deleted = 2;
+}
+
+// Subscribes to one collection's events.
+message WatchCollectionRequest {
+  string collection_id = 1;
+}
+
+// One self-contained collection event. The descriptor snapshot carries the
+// complete current state, so no event depends on any earlier event.
+message CollectionEvent {
+  // What this event reports.
+  CollectionEventKind kind = 1;
+  // Complete descriptor snapshot at emission, with ledger and drift.
+  CollectionDescriptor collection = 2;
+  // Member index the event reports on. Set for
+  // COLLECTION_EVENT_KIND_INDEX_PERSISTED.
+  optional string index_id = 3;
+  // Published model artifact the event reports on. Set for
+  // COLLECTION_EVENT_KIND_MODEL_PUBLISHED.
+  optional string model_artifact_id = 4;
+}
+
+// The kind of one collection event.
+enum CollectionEventKind {
+  // No kind was declared. Emitted events never use this value.
+  COLLECTION_EVENT_KIND_UNSPECIFIED = 0;
+  // The subscription's opening snapshot, also re-sent on reconnect.
+  COLLECTION_EVENT_KIND_SNAPSHOT = 1;
+  // Accreted new terms reached the configured threshold.
+  COLLECTION_EVENT_KIND_DRIFT_THRESHOLD_CROSSED = 2;
+  // A member index was persisted or sealed.
+  COLLECTION_EVENT_KIND_INDEX_PERSISTED = 3;
+  // A model artifact was published from this collection's vocabulary.
+  COLLECTION_EVENT_KIND_MODEL_PUBLISHED = 4;
 }
 
 // Adds analyzed document shapes to a bounded server-owned in-memory index.

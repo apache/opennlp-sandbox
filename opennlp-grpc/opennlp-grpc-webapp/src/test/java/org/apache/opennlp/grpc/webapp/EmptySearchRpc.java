@@ -18,6 +18,18 @@
  */
 package org.apache.opennlp.grpc.webapp;
 
+import java.util.Collections;
+import java.util.Iterator;
+
+import org.apache.opennlp.grpc.v1.CollectionEvent;
+import org.apache.opennlp.grpc.v1.DeleteCollectionRequest;
+import org.apache.opennlp.grpc.v1.DeleteCollectionResponse;
+import org.apache.opennlp.grpc.v1.GetCollectionRequest;
+import org.apache.opennlp.grpc.v1.GetCollectionResponse;
+import org.apache.opennlp.grpc.v1.ListCollectionsResponse;
+import org.apache.opennlp.grpc.v1.SetCollectionRequest;
+import org.apache.opennlp.grpc.v1.SetCollectionResponse;
+import org.apache.opennlp.grpc.v1.WatchCollectionRequest;
 import org.apache.opennlp.grpc.v1.DeleteIndexAliasRequest;
 import org.apache.opennlp.grpc.v1.DeleteIndexAliasResponse;
 import org.apache.opennlp.grpc.v1.ListIndexAliasesResponse;
@@ -93,5 +105,30 @@ final class EmptySearchRpc implements SearchRpc {
   @Override
   public ListIndexAliasesResponse listAliases() {
     return ListIndexAliasesResponse.getDefaultInstance();
+  }
+
+  @Override
+  public SetCollectionResponse setCollection(SetCollectionRequest request) {
+    return SetCollectionResponse.getDefaultInstance();
+  }
+
+  @Override
+  public GetCollectionResponse getCollection(GetCollectionRequest request) {
+    return GetCollectionResponse.getDefaultInstance();
+  }
+
+  @Override
+  public ListCollectionsResponse listCollections() {
+    return ListCollectionsResponse.getDefaultInstance();
+  }
+
+  @Override
+  public DeleteCollectionResponse deleteCollection(DeleteCollectionRequest request) {
+    return DeleteCollectionResponse.getDefaultInstance();
+  }
+
+  @Override
+  public Iterator<CollectionEvent> watchCollection(WatchCollectionRequest request) {
+    return Collections.emptyIterator();
   }
 }

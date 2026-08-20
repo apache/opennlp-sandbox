@@ -25,12 +25,11 @@ import opennlp.tools.util.StringUtil;
 /**
  * The pinned default analysis for keyword and phrase clauses over dynamic workspace
  * indexes: maximal runs of Unicode letters and digits, scanned by code point, lowercased
- * with {@link StringUtil#toLowerCase(CharSequence)}. Query text and indexed chunk text
- * pass through the same analysis, so a term means the same thing on both sides. Recorded
- * analysis-chain identity, including learned multiword vocabulary terms as one match
- * unit, arrives with the search provider SPI.
+ * with {@link StringUtil#toLowerCase(CharSequence)}. Query text, indexed chunk text, and
+ * collection term ledgers pass through the same analysis, so a term means the same thing
+ * everywhere the recorded analysis-chain identity appears.
  */
-final class QueryTermAnalyzer {
+public final class QueryTermAnalyzer {
 
   private QueryTermAnalyzer() {
   }
@@ -43,7 +42,7 @@ final class QueryTermAnalyzer {
    * @param end Exclusive end offset in UTF-16 code units of the analyzed text.
    * @param position Zero-based term index within the analyzed text.
    */
-  record Term(String text, int start, int end, int position) {
+  public record Term(String text, int start, int end, int position) {
   }
 
   /**
@@ -52,7 +51,7 @@ final class QueryTermAnalyzer {
    * @param text Text to analyze; {@code null} yields no terms.
    * @return Analyzed terms in document order.
    */
-  static List<Term> analyze(String text) {
+  public static List<Term> analyze(String text) {
     if (text == null || text.isEmpty()) {
       return List.of();
     }

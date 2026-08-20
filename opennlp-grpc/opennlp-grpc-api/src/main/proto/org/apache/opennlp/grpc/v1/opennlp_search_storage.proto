@@ -38,6 +38,16 @@ message PersistedIndexAliases {
   repeated IndexAlias aliases = 1;
 }
 
+// One collection descriptor, persisted as one local collection.pb file with
+// last write wins. The wrapped descriptor's integrity_hash is the lowercase
+// SHA-256 of this message's bytes with that field cleared.
+message PersistedCollection {
+  // Version of the persisted collection record contract.
+  uint32 format_version = 1;
+  // The collection state at the last write, including its ledger snapshot.
+  CollectionDescriptor collection = 2;
+}
+
 // One persisted chunk of a live search index checkpoint.
 message PersistedSearchChunk {
   // Stable identity of the source document.

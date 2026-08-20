@@ -27,6 +27,7 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.grpc.Status;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.opennlp.grpc.embedding.EmbeddingBatchResult;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
@@ -35,8 +36,19 @@ import org.apache.opennlp.grpc.search.query.CelQueryEvaluator;
 import org.apache.opennlp.grpc.search.query.CompoundQueryExecutor;
 import org.apache.opennlp.grpc.search.query.CompoundQueryValidator;
 import org.apache.opennlp.grpc.search.query.QueryCandidate;
+import org.apache.opennlp.grpc.v1.CollectionDescriptor;
+import org.apache.opennlp.grpc.v1.CollectionEvent;
+import org.apache.opennlp.grpc.v1.DeleteCollectionRequest;
+import org.apache.opennlp.grpc.v1.DeleteCollectionResponse;
 import org.apache.opennlp.grpc.v1.DeleteIndexAliasRequest;
 import org.apache.opennlp.grpc.v1.DeleteIndexAliasResponse;
+import org.apache.opennlp.grpc.v1.GetCollectionRequest;
+import org.apache.opennlp.grpc.v1.GetCollectionResponse;
+import org.apache.opennlp.grpc.v1.ListCollectionsRequest;
+import org.apache.opennlp.grpc.v1.ListCollectionsResponse;
+import org.apache.opennlp.grpc.v1.SetCollectionRequest;
+import org.apache.opennlp.grpc.v1.SetCollectionResponse;
+import org.apache.opennlp.grpc.v1.WatchCollectionRequest;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexResponse;
 import org.apache.opennlp.grpc.v1.IndexAlias;
@@ -65,6 +77,7 @@ import org.apache.opennlp.grpc.v1.SearchIndexDescriptor;
 import org.apache.opennlp.grpc.v1.SearchIndexRequest;
 import org.apache.opennlp.grpc.v1.SearchIndexResponse;
 import org.apache.opennlp.grpc.v1.server.GrpcStatusMapper;
+import org.apache.opennlp.grpc.vocabulary.UnknownVocabularyArtifactException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,6 +95,7 @@ public final class OpenNlpSearchServiceImpl
   private final DynamicSearchIndexRegistry dynamicRegistry;
   private final EmbeddingProvider embeddingProvider;
   private final IndexAliasRegistry aliasRegistry;
+  private final SearchCollectionRegistry collectionRegistry;
   private final Map<String, String> queryBackendByIndex;
   private final CompoundQueryExecutor compoundQueryExecutor =
       new CompoundQueryExecutor(CelQueryEvaluator.discover());
@@ -128,6 +142,31 @@ public final class OpenNlpSearchServiceImpl
       DynamicSearchIndexRegistry dynamicRegistry,
       EmbeddingProvider embeddingProvider,
       IndexAliasRegistry aliasRegistry) {
+    this(registry, dynamicRegistry, embeddingProvider, aliasRegistry,
+        dynamicRegistry == null ? null
+            : SearchCollectionRegistry.inMemory(dynamicRegistry, artifactId -> {
+              throw new IllegalArgumentException(
+                  "Unknown vocabulary artifact '" + artifactId + "'");
+            }));
+  }
+
+  /**
+   * Creates a service over immutable and dynamic index registries with configured
+   * alias and collection registries.
+   *
+   * @param registry Startup-loaded immutable indexes.
+   * @param dynamicRegistry Bounded in-memory indexes owned by the server lifecycle.
+   * @param embeddingProvider Query embedding provider.
+   * @param aliasRegistry Logical alias registry.
+   * @param collectionRegistry Collection registry over the dynamic indexes.
+   * @throws IllegalArgumentException If an argument or index route is invalid.
+   */
+  public OpenNlpSearchServiceImpl(
+      SearchIndexRegistry registry,
+      DynamicSearchIndexRegistry dynamicRegistry,
+      EmbeddingProvider embeddingProvider,
+      IndexAliasRegistry aliasRegistry,
+      SearchCollectionRegistry collectionRegistry) {
     if (aliasRegistry == null) {
       throw new IllegalArgumentException("aliasRegistry must not be null");
     }
@@ -140,10 +179,14 @@ public final class OpenNlpSearchServiceImpl
     if (dynamicRegistry == null) {
       throw new IllegalArgumentException("dynamicRegistry must not be null");
     }
+    if (collectionRegistry == null) {
+      throw new IllegalArgumentException("collectionRegistry must not be null");
+    }
     this.registry = registry;
     this.dynamicRegistry = dynamicRegistry;
     this.embeddingProvider = embeddingProvider;
     this.aliasRegistry = aliasRegistry;
+    this.collectionRegistry = collectionRegistry;
     final Map<String, String> selectedBackends = new TreeMap<>();
     for (SearchIndexDescriptor descriptor : registry.descriptors()) {
       final EmbeddingRoute selectedRoute = selectConfiguredRoute(descriptor, embeddingProvider);
@@ -193,7 +236,9 @@ public final class OpenNlpSearchServiceImpl
   public void indexDocuments(
       IndexDocumentsRequest request, StreamObserver<IndexDocumentsResponse> responseObserver) {
     try {
-      responseObserver.onNext(dynamicRegistry.index(request));
+      final IndexDocumentsResponse response = dynamicRegistry.index(request);
+      collectionRegistry.notifyIndexed(response.getIndex().getIndexId());
+      responseObserver.onNext(response);
       responseObserver.onCompleted();
     } catch (AnalysisException e) {
       respondAnalysisFailure("IndexDocuments", e, responseObserver);
@@ -235,8 +280,10 @@ public final class OpenNlpSearchServiceImpl
     try {
       final String indexId = requireLifecycleIndexId("PersistIndex",
           request == null ? null : request.getIndexId());
+      final SearchIndexDescriptor persisted = dynamicRegistry.persist(indexId);
+      collectionRegistry.notifyIndexPersisted(indexId);
       responseObserver.onNext(PersistIndexResponse.newBuilder()
-          .setIndex(dynamicRegistry.persist(indexId))
+          .setIndex(persisted)
           .build());
       responseObserver.onCompleted();
     } catch (AnalysisException e) {
@@ -253,8 +300,10 @@ public final class OpenNlpSearchServiceImpl
     try {
       final String indexId = requireLifecycleIndexId("SealIndex",
           request == null ? null : request.getIndexId());
+      final SearchIndexDescriptor sealed = dynamicRegistry.seal(indexId);
+      collectionRegistry.notifyIndexPersisted(indexId);
       responseObserver.onNext(SealIndexResponse.newBuilder()
-          .setIndex(dynamicRegistry.seal(indexId))
+          .setIndex(sealed)
           .build());
       responseObserver.onCompleted();
     } catch (AnalysisException e) {
@@ -421,6 +470,144 @@ public final class OpenNlpSearchServiceImpl
         .addAllAliases(aliasRegistry.aliases())
         .build());
     responseObserver.onCompleted();
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void setCollection(
+      SetCollectionRequest request, StreamObserver<SetCollectionResponse> responseObserver) {
+    try {
+      if (request == null || request.getCollectionId().isBlank()) {
+        throw AnalysisException.invalidArgument("SetCollection collection_id must not be blank");
+      }
+      final SetCollectionRequest.Builder resolved = request.toBuilder().clearMemberIndexIds();
+      for (String member : request.getMemberIndexIdsList()) {
+        if (member.isBlank()) {
+          throw AnalysisException.invalidArgument(
+              "SetCollection member index id must not be blank");
+        }
+        final String indexId = aliasRegistry.resolve(member);
+        if (registry.find(indexId) != null) {
+          throw AnalysisException.failedPrecondition("SetCollection member '" + indexId
+              + "' is a startup bundle; members must be dynamic indexes");
+        }
+        if (dynamicRegistry.find(indexId) == null) {
+          throw AnalysisException.notFound(
+              "SetCollection member names unknown index '" + indexId + "'");
+        }
+        resolved.addMemberIndexIds(indexId);
+      }
+      final CollectionDescriptor collection;
+      try {
+        collection = collectionRegistry.set(resolved.build());
+      } catch (UnknownVocabularyArtifactException e) {
+        throw AnalysisException.notFound("SetCollection " + e.getMessage());
+      } catch (IllegalArgumentException e) {
+        throw AnalysisException.invalidArgument("SetCollection " + e.getMessage());
+      }
+      responseObserver.onNext(SetCollectionResponse.newBuilder()
+          .setCollection(collection)
+          .build());
+      responseObserver.onCompleted();
+    } catch (AnalysisException e) {
+      respondAnalysisFailure("SetCollection", e, responseObserver);
+    } catch (RuntimeException e) {
+      respondUnexpectedFailure("SetCollection", e, responseObserver);
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void getCollection(
+      GetCollectionRequest request, StreamObserver<GetCollectionResponse> responseObserver) {
+    try {
+      if (request == null || request.getCollectionId().isBlank()) {
+        throw AnalysisException.invalidArgument("GetCollection collection_id must not be blank");
+      }
+      final CollectionDescriptor collection =
+          collectionRegistry.find(request.getCollectionId());
+      if (collection == null) {
+        throw AnalysisException.notFound("GetCollection names unknown collection '"
+            + request.getCollectionId() + "'");
+      }
+      responseObserver.onNext(GetCollectionResponse.newBuilder()
+          .setCollection(collection)
+          .build());
+      responseObserver.onCompleted();
+    } catch (AnalysisException e) {
+      respondAnalysisFailure("GetCollection", e, responseObserver);
+    } catch (RuntimeException e) {
+      respondUnexpectedFailure("GetCollection", e, responseObserver);
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void listCollections(
+      ListCollectionsRequest request,
+      StreamObserver<ListCollectionsResponse> responseObserver) {
+    try {
+      responseObserver.onNext(ListCollectionsResponse.newBuilder()
+          .addAllCollections(collectionRegistry.list())
+          .build());
+      responseObserver.onCompleted();
+    } catch (RuntimeException e) {
+      respondUnexpectedFailure("ListCollections", e, responseObserver);
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void deleteCollection(
+      DeleteCollectionRequest request,
+      StreamObserver<DeleteCollectionResponse> responseObserver) {
+    try {
+      if (request == null || request.getCollectionId().isBlank()) {
+        throw AnalysisException.invalidArgument(
+            "DeleteCollection collection_id must not be blank");
+      }
+      responseObserver.onNext(DeleteCollectionResponse.newBuilder()
+          .setCollectionId(request.getCollectionId())
+          .setDeleted(collectionRegistry.delete(request.getCollectionId()))
+          .build());
+      responseObserver.onCompleted();
+    } catch (AnalysisException e) {
+      respondAnalysisFailure("DeleteCollection", e, responseObserver);
+    } catch (RuntimeException e) {
+      respondUnexpectedFailure("DeleteCollection", e, responseObserver);
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void watchCollection(
+      WatchCollectionRequest request, StreamObserver<CollectionEvent> responseObserver) {
+    try {
+      if (request == null || request.getCollectionId().isBlank()) {
+        throw AnalysisException.invalidArgument(
+            "WatchCollection collection_id must not be blank");
+      }
+      final AtomicReference<SearchCollectionRegistry.Watch> subscription =
+          new AtomicReference<>();
+      if (responseObserver instanceof ServerCallStreamObserver<CollectionEvent> serverCall) {
+        serverCall.setOnCancelHandler(() -> {
+          final SearchCollectionRegistry.Watch watch = subscription.get();
+          if (watch != null) {
+            watch.close();
+          }
+        });
+      }
+      try {
+        subscription.set(collectionRegistry.watch(request.getCollectionId(),
+            responseObserver::onNext, responseObserver::onCompleted));
+      } catch (IllegalArgumentException e) {
+        throw AnalysisException.notFound("WatchCollection " + e.getMessage());
+      }
+    } catch (AnalysisException e) {
+      respondAnalysisFailure("WatchCollection", e, responseObserver);
+    } catch (RuntimeException e) {
+      respondUnexpectedFailure("WatchCollection", e, responseObserver);
+    }
   }
 
   /**

@@ -19,11 +19,31 @@
 package org.apache.opennlp.grpc.webapp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
+import org.apache.opennlp.grpc.v1.CollectionDescriptor;
+import org.apache.opennlp.grpc.v1.CollectionDriftStats;
+import org.apache.opennlp.grpc.v1.CollectionEvent;
+import org.apache.opennlp.grpc.v1.CollectionEventKind;
+import org.apache.opennlp.grpc.v1.DeleteCollectionRequest;
+import org.apache.opennlp.grpc.v1.DeleteCollectionResponse;
+import org.apache.opennlp.grpc.v1.GetCollectionRequest;
+import org.apache.opennlp.grpc.v1.GetCollectionResponse;
+import org.apache.opennlp.grpc.v1.ListCollectionsResponse;
+import org.apache.opennlp.grpc.v1.SetCollectionRequest;
+import org.apache.opennlp.grpc.v1.SetCollectionResponse;
+import org.apache.opennlp.grpc.v1.TermLedgerEntry;
+import org.apache.opennlp.grpc.v1.WatchCollectionRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexResponse;
@@ -159,6 +179,52 @@ class GrpcJsonSearchApiTest {
 
     assertEquals(405, api.handle("GET", "/api/v1/persist-index", new byte[0]).status());
     assertEquals(405, api.handle("POST", "/api/v1/index-aliases", new byte[0]).status());
+  }
+
+  @Test
+  void drivesTheCollectionLifecycleThroughProtobufJson() {
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new StubSearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
+
+    WebHttpResponse set = api.handle("POST", "/api/v1/set-collection", """
+        {"collectionId":"legal","displayName":"Legal corpus","memberIndexIds":["%s"]}
+        """.formatted(INDEX_ID).getBytes(StandardCharsets.UTF_8));
+    assertEquals(200, set.status());
+    assertTrue(set.bodyUtf8().contains("\"collectionId\":\"legal\""));
+
+    WebHttpResponse got = api.handle("POST", "/api/v1/get-collection",
+        "{\"collectionId\":\"legal\"}".getBytes(StandardCharsets.UTF_8));
+    assertEquals(200, got.status());
+    assertTrue(got.bodyUtf8().contains("\"termLedger\""));
+    assertTrue(got.bodyUtf8().contains("\"newTerms\":\"2\""));
+
+    WebHttpResponse listed = api.handle("GET", "/api/v1/collections", new byte[0]);
+    assertEquals(200, listed.status());
+    assertTrue(listed.bodyUtf8().contains("\"collectionId\":\"legal\""));
+
+    WebHttpResponse deleted = api.handle("POST", "/api/v1/delete-collection",
+        "{\"collectionId\":\"legal\"}".getBytes(StandardCharsets.UTF_8));
+    assertEquals(200, deleted.status());
+    assertTrue(deleted.bodyUtf8().contains("\"deleted\":true"));
+
+    assertEquals(405, api.handle("POST", "/api/v1/collections", new byte[0]).status());
+    assertEquals(405, api.handle("GET", "/api/v1/set-collection", new byte[0]).status());
+  }
+
+  @Test
+  void streamsCollectionWatchEventsAsNdjsonLinesUntilTheDeadline() throws IOException {
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new StubSearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
+    List<String> lines = new ArrayList<>();
+
+    WebHttpResponse buffered = api.watchCollection(
+        "{\"collectionId\":\"legal\"}".getBytes(StandardCharsets.UTF_8), lines::add);
+
+    // The stub ends the stream with DEADLINE_EXCEEDED after two events; the
+    // bounded gateway watch lifetime closes quietly and the client reconnects.
+    assertNull(buffered);
+    assertEquals(2, lines.size());
+    assertTrue(lines.get(0).contains("COLLECTION_EVENT_KIND_SNAPSHOT"));
+    assertTrue(lines.get(1).contains("COLLECTION_EVENT_KIND_INDEX_PERSISTED"));
+    assertTrue(lines.get(1).contains("\"indexId\":\"" + INDEX_ID + "\""));
   }
 
   @Test
@@ -315,6 +381,78 @@ class GrpcJsonSearchApiTest {
       return DeleteSearchIndexResponse.newBuilder()
           .setIndexId(request.getIndexId())
           .setDeleted(true)
+          .build();
+    }
+
+    @Override
+    public SetCollectionResponse setCollection(SetCollectionRequest request) {
+      return SetCollectionResponse.newBuilder()
+          .setCollection(collection(request.getCollectionId()))
+          .build();
+    }
+
+    @Override
+    public GetCollectionResponse getCollection(GetCollectionRequest request) {
+      return GetCollectionResponse.newBuilder()
+          .setCollection(collection(request.getCollectionId()))
+          .build();
+    }
+
+    @Override
+    public ListCollectionsResponse listCollections() {
+      return ListCollectionsResponse.newBuilder()
+          .addCollections(collection("legal").toBuilder().clearTermLedger())
+          .build();
+    }
+
+    @Override
+    public DeleteCollectionResponse deleteCollection(DeleteCollectionRequest request) {
+      return DeleteCollectionResponse.newBuilder()
+          .setCollectionId(request.getCollectionId())
+          .setDeleted(true)
+          .build();
+    }
+
+    @Override
+    public Iterator<CollectionEvent> watchCollection(WatchCollectionRequest request) {
+      final List<CollectionEvent> events = List.of(
+          CollectionEvent.newBuilder()
+              .setKind(CollectionEventKind.COLLECTION_EVENT_KIND_SNAPSHOT)
+              .setCollection(collection(request.getCollectionId()))
+              .build(),
+          CollectionEvent.newBuilder()
+              .setKind(CollectionEventKind.COLLECTION_EVENT_KIND_INDEX_PERSISTED)
+              .setCollection(collection(request.getCollectionId()))
+              .setIndexId(INDEX_ID)
+              .build());
+      final Iterator<CollectionEvent> delegate = events.iterator();
+      return new Iterator<>() {
+        @Override
+        public boolean hasNext() {
+          if (!delegate.hasNext()) {
+            throw new StatusRuntimeException(Status.DEADLINE_EXCEEDED);
+          }
+          return true;
+        }
+
+        @Override
+        public CollectionEvent next() {
+          return delegate.next();
+        }
+      };
+    }
+
+    private static CollectionDescriptor collection(String collectionId) {
+      return CollectionDescriptor.newBuilder()
+          .setCollectionId(collectionId)
+          .setDisplayName("Legal corpus")
+          .addMemberIndexIds(INDEX_ID)
+          .addTermLedger(TermLedgerEntry.newBuilder().setTerm("writ").setOccurrences(2))
+          .setDrift(CollectionDriftStats.newBuilder()
+              .setDistinctTerms(2)
+              .setTermOccurrences(3)
+              .setNewTerms(2)
+              .setNewTermOccurrences(3))
           .build();
     }
   }
