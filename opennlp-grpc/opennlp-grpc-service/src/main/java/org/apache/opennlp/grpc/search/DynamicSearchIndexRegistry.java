@@ -18,6 +18,8 @@
  */
 package org.apache.opennlp.grpc.search;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -38,6 +40,7 @@ import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
 import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.PersistedSearchChunk;
 import org.apache.opennlp.grpc.v1.SearchCorpusDescriptor;
 import org.apache.opennlp.grpc.v1.SearchIndexBuildDescriptor;
 import org.apache.opennlp.grpc.v1.SearchIndexDescriptor;
@@ -64,6 +67,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
   private final Map<String, DynamicIndex> indexes = new LinkedHashMap<>();
   private final SearchProviderCatalog catalog;
   private final SearchProviderCatalog.Instance keywordInstance;
+  private final WorkspaceCheckpointStore checkpointStore;
   private final int maxIndexes;
   private final long maxVectorValues;
   private final long maxSourceBytes;
@@ -72,7 +76,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
 
   /** Creates an empty bounded dynamic registry over the discovered provider instances. */
   public DynamicSearchIndexRegistry() {
-    this(SearchProviderCatalog.discover(), true, MAX_INDEXES, MAX_VECTOR_VALUES,
+    this(SearchProviderCatalog.discover(), null, true, MAX_INDEXES, MAX_VECTOR_VALUES,
         MAX_SOURCE_BYTES);
   }
 
@@ -83,7 +87,21 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
    * @throws IllegalArgumentException If the catalog is {@code null}.
    */
   public DynamicSearchIndexRegistry(SearchProviderCatalog catalog) {
-    this(catalog, true, MAX_INDEXES, MAX_VECTOR_VALUES, MAX_SOURCE_BYTES);
+    this(catalog, null, true, MAX_INDEXES, MAX_VECTOR_VALUES, MAX_SOURCE_BYTES);
+  }
+
+  /**
+   * Creates a bounded dynamic registry that restores and persists checkpoints.
+   *
+   * @param catalog Configured search provider instances.
+   * @param checkpointStore Checkpoint store, or {@code null} when persistence is not
+   *     configured.
+   * @throws IllegalArgumentException If the catalog is {@code null}.
+   * @throws IllegalStateException If a stored checkpoint cannot be restored.
+   */
+  public DynamicSearchIndexRegistry(
+      SearchProviderCatalog catalog, WorkspaceCheckpointStore checkpointStore) {
+    this(catalog, checkpointStore, true, MAX_INDEXES, MAX_VECTOR_VALUES, MAX_SOURCE_BYTES);
   }
 
   /**
@@ -95,21 +113,26 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
    * @throws IllegalArgumentException If a limit is outside its fixed safety ceiling.
    */
   DynamicSearchIndexRegistry(int maxIndexes, long maxVectorValues, long maxSourceBytes) {
-    this(SearchProviderCatalog.discover(), true, maxIndexes, maxVectorValues, maxSourceBytes);
+    this(SearchProviderCatalog.discover(), null, true, maxIndexes, maxVectorValues,
+        maxSourceBytes);
   }
 
   /**
-   * Creates a registry with explicit safety limits.
+   * Creates a registry with explicit safety limits and restores stored checkpoints.
    *
    * @param catalog Configured search provider instances.
+   * @param checkpointStore Checkpoint store, or {@code null} when persistence is not
+   *     configured.
    * @param enabled Whether mutation is enabled.
    * @param maxIndexes Maximum retained indexes.
    * @param maxVectorValues Maximum retained float values.
    * @param maxSourceBytes Maximum retained serialized document bytes.
    * @throws IllegalArgumentException If the catalog is {@code null} or a limit is outside
    *     its fixed safety ceiling.
+   * @throws IllegalStateException If a stored checkpoint cannot be restored.
    */
   private DynamicSearchIndexRegistry(SearchProviderCatalog catalog,
+      WorkspaceCheckpointStore checkpointStore,
       boolean enabled, int maxIndexes, long maxVectorValues, long maxSourceBytes) {
     if (catalog == null) {
       throw new IllegalArgumentException("catalog must not be null");
@@ -121,10 +144,14 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
     }
     this.catalog = catalog;
     this.keywordInstance = catalog.findOrNull(TermsSearchIndexProviderFactory.PROVIDER_ID);
+    this.checkpointStore = checkpointStore;
     this.maxIndexes = maxIndexes;
     this.maxVectorValues = maxVectorValues;
     this.maxSourceBytes = maxSourceBytes;
     this.enabled = enabled;
+    if (checkpointStore != null) {
+      restore();
+    }
   }
 
   /**
@@ -133,7 +160,8 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
    * @return Disabled registry.
    */
   public static DynamicSearchIndexRegistry disabled() {
-    return new DynamicSearchIndexRegistry(SearchProviderCatalog.discover(), false, 1, 1, 1);
+    return new DynamicSearchIndexRegistry(
+        SearchProviderCatalog.discover(), null, false, 1, 1, 1);
   }
 
   /**
@@ -167,6 +195,10 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
     final SearchProviderCatalog.Instance requestedInstance = resolveVectorInstance(request);
     final DynamicIndex existing = request.hasIndexId()
         ? requireDynamic(request.getIndexId()) : null;
+    if (existing != null && existing.sealed()) {
+      throw AnalysisException.failedPrecondition("Sealed search index '"
+          + existing.descriptor().getIndexId() + "' is immutable");
+    }
     if (existing != null && requestedInstance != null
         && !requestedInstance.instanceId().equals(existing.instance().instanceId())) {
       throw AnalysisException.failedPrecondition(
@@ -236,9 +268,193 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
     final DynamicIndex removed = indexes.remove(indexId);
     if (removed != null) {
       removed.close();
+      if (checkpointStore != null && removed.persisted()) {
+        try {
+          checkpointStore.delete(indexId);
+        } catch (IOException e) {
+          throw new UncheckedIOException(
+              "Failed to delete the checkpoint of index '" + indexId + "'", e);
+        }
+      }
       return true;
     }
     return false;
+  }
+
+  /**
+   * Persists one dynamic index as a checkpoint, replacing any previous checkpoint.
+   *
+   * @param indexId Opaque dynamic index identifier.
+   * @return The descriptor with {@code persisted} set.
+   * @throws AnalysisException If persistence is not configured, the index is unknown, or
+   *     its provider instance is not persistent.
+   */
+  public synchronized SearchIndexDescriptor persist(String indexId) {
+    requireOpen();
+    requireEnabled();
+    final DynamicIndex index = requireDynamic(indexId);
+    persist(index, index.sealed());
+    return index.descriptor();
+  }
+
+  /**
+   * Persists one dynamic index and marks it immutable.
+   *
+   * @param indexId Opaque dynamic index identifier.
+   * @return The descriptor, immutable and persisted.
+   * @throws AnalysisException If persistence is not configured, the index is unknown, or
+   *     its provider instance is not persistent.
+   */
+  public synchronized SearchIndexDescriptor seal(String indexId) {
+    requireOpen();
+    requireEnabled();
+    final DynamicIndex index = requireDynamic(indexId);
+    persist(index, true);
+    index.markSealed();
+    return index.descriptor();
+  }
+
+  /**
+   * Rewrites the checkpoint of every persisted index whose content changed since its
+   * last checkpoint. Sealed indexes never change and are skipped.
+   *
+   * @return Number of checkpoints rewritten.
+   */
+  public synchronized int checkpointPersistedIndexes() {
+    requireOpen();
+    int rewritten = 0;
+    for (DynamicIndex index : indexes.values()) {
+      if (index.persisted() && !index.sealed()
+          && !index.snapshot().contentHash().equals(index.lastPersistedContentHash())) {
+        persist(index, false);
+        rewritten++;
+      }
+    }
+    return rewritten;
+  }
+
+  /**
+   * Writes one index checkpoint and records the persisted content hash.
+   *
+   * @param index Index to persist.
+   * @param sealed Whether the checkpoint is written as sealed.
+   * @throws AnalysisException If persistence is not configured or the instance is not
+   *     persistent.
+   */
+  private void persist(DynamicIndex index, boolean sealed) {
+    if (checkpointStore == null) {
+      throw AnalysisException.failedPrecondition(
+          "Index persistence is not configured; set " + WorkspaceCheckpointStore.ROOT_KEY);
+    }
+    if (!index.instance().has(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_PERSISTENT)) {
+      throw AnalysisException.failedPrecondition("Search provider instance '"
+          + index.instance().instanceId() + "' is not persistent");
+    }
+    final Snapshot snapshot = index.snapshot();
+    final List<PersistedSearchChunk> chunks = new ArrayList<>(snapshot.chunks().size());
+    for (IndexedChunk chunk : snapshot.chunks()) {
+      chunks.add(toChunkProto(chunk));
+    }
+    final String indexId = index.descriptor().getIndexId();
+    try {
+      checkpointStore.write(new WorkspaceCheckpointStore.CheckpointHeader(
+          indexId, index.descriptor().getDisplayName(), index.instance().instanceId(),
+          index.route(), index.dimension(), sealed, snapshot.contentHash()), chunks);
+    } catch (IOException e) {
+      throw new UncheckedIOException(
+          "Failed to persist the checkpoint of index '" + indexId + "'", e);
+    }
+    index.markPersisted(snapshot.contentHash());
+  }
+
+  /**
+   * Restores every stored checkpoint into this registry.
+   *
+   * @throws IllegalStateException If a checkpoint is corrupt or names an unavailable
+   *     provider instance.
+   */
+  private void restore() {
+    final List<WorkspaceCheckpointStore.RestoredCheckpoint> checkpoints;
+    try {
+      checkpoints = checkpointStore.restoreAll();
+    } catch (IOException e) {
+      throw new IllegalStateException("Failed to restore search index checkpoints", e);
+    }
+    for (WorkspaceCheckpointStore.RestoredCheckpoint checkpoint : checkpoints) {
+      final WorkspaceCheckpointStore.CheckpointHeader header = checkpoint.header();
+      final SearchProviderCatalog.Instance instance =
+          catalog.findOrNull(header.providerInstanceId());
+      if (instance == null) {
+        throw new IllegalStateException("Checkpoint of index '" + header.indexId()
+            + "' names unavailable provider instance '" + header.providerInstanceId() + "'");
+      }
+      final List<IndexedChunk> chunks = new ArrayList<>(checkpoint.chunks().size());
+      for (PersistedSearchChunk chunk : checkpoint.chunks()) {
+        if (chunk.getVectorCount() != header.dimension()) {
+          throw new IllegalStateException("Checkpoint of index '" + header.indexId()
+              + "' contains a chunk whose vector dimension does not match "
+              + header.dimension());
+        }
+        chunks.add(fromChunkProto(chunk));
+      }
+      if (!contentHash(chunks).equals(header.contentHash())) {
+        throw new IllegalStateException("Checkpoint of index '" + header.indexId()
+            + "' does not match its declared content hash");
+      }
+      final DynamicIndex index = new DynamicIndex(header.indexId(), header.displayName(),
+          header.route(), instance, keywordInstance);
+      final Snapshot snapshot = index.prepare(List.of(), chunks);
+      validateGlobalBudget(null, snapshot);
+      index.publish(snapshot);
+      index.markPersisted(header.contentHash());
+      if (header.sealed()) {
+        index.markSealed();
+      }
+      indexes.put(header.indexId(), index);
+    }
+  }
+
+  /**
+   * Converts one in-memory chunk to its persisted record.
+   *
+   * @param chunk Snapshot chunk.
+   * @return Persisted chunk record.
+   */
+  private static PersistedSearchChunk toChunkProto(IndexedChunk chunk) {
+    final PersistedSearchChunk.Builder builder = PersistedSearchChunk.newBuilder()
+        .setDocumentId(chunk.record().documentId())
+        .setChunkId(chunk.record().chunkId())
+        .setSourceDocument(chunk.record().sourceDocument())
+        .setSourceSpan(chunk.record().sourceSpan())
+        .setEmittedText(chunk.record().emittedText())
+        .setRoute(chunk.route());
+    for (float value : chunk.vector()) {
+      builder.addVector(value);
+    }
+    return builder.build();
+  }
+
+  /**
+   * Converts one persisted record back to an in-memory chunk.
+   *
+   * @param chunk Persisted chunk record.
+   * @return Snapshot chunk.
+   * @throws IllegalStateException If the record shape is invalid.
+   */
+  private static IndexedChunk fromChunkProto(PersistedSearchChunk chunk) {
+    final float[] vector = new float[chunk.getVectorCount()];
+    for (int index = 0; index < vector.length; index++) {
+      vector[index] = chunk.getVector(index);
+    }
+    try {
+      return new IndexedChunk(
+          new SearchRecord(chunk.getDocumentId(), chunk.getChunkId(),
+              chunk.getSourceDocument(), chunk.getSourceSpan(), chunk.getEmittedText()),
+          vector, chunk.getRoute());
+    } catch (IllegalArgumentException e) {
+      throw new IllegalStateException("Checkpoint chunk '" + chunk.getChunkId()
+          + "' is invalid: " + e.getMessage(), e);
+    }
   }
 
   /** {@inheritDoc} */
@@ -655,6 +871,9 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
     private final SearchProviderCatalog.Instance keywordInstance;
     private volatile Snapshot snapshot = new Snapshot(List.of(), 0, 0, 0,
         contentHash(List.of()), null);
+    private volatile boolean persisted;
+    private volatile boolean sealed;
+    private volatile String lastPersistedContentHash;
 
     /**
      * Creates an unpublished dynamic index.
@@ -678,6 +897,36 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
     /** @return The vector storage instance fixed at index creation. */
     SearchProviderCatalog.Instance instance() {
       return instance;
+    }
+
+    /** @return Whether a checkpoint of this index exists. */
+    boolean persisted() {
+      return persisted;
+    }
+
+    /** @return Whether this index is sealed immutable. */
+    boolean sealed() {
+      return sealed;
+    }
+
+    /** @return Content hash of the last written checkpoint, or {@code null}. */
+    String lastPersistedContentHash() {
+      return lastPersistedContentHash;
+    }
+
+    /**
+     * Records one successfully written checkpoint.
+     *
+     * @param contentHash Content hash of the persisted snapshot.
+     */
+    void markPersisted(String contentHash) {
+      this.persisted = true;
+      this.lastPersistedContentHash = contentHash;
+    }
+
+    /** Marks this index sealed immutable. */
+    void markSealed() {
+      this.sealed = true;
     }
 
     /**
@@ -775,7 +1024,8 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
           .setDimension(dimension())
           .setMetric(SearchMetric.SEARCH_METRIC_COSINE)
           .setSize(current.chunks().size())
-          .setImmutable(false)
+          .setImmutable(sealed)
+          .setPersisted(persisted)
           .setCorpus(SearchCorpusDescriptor.newBuilder()
               .setTitle(displayName)
               .setProvenanceSummary("Server-owned in-memory workspace"))
