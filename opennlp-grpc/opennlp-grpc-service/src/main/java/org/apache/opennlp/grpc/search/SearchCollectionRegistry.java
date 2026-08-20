@@ -48,6 +48,8 @@ import org.apache.opennlp.grpc.v1.CollectionEventKind;
 import org.apache.opennlp.grpc.v1.PersistedCollection;
 import org.apache.opennlp.grpc.v1.SetCollectionRequest;
 import org.apache.opennlp.grpc.v1.TermLedgerEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Bounded registry of collections: the scope vocabulary accretion is measured over.
@@ -66,6 +68,8 @@ import org.apache.opennlp.grpc.v1.TermLedgerEntry;
  */
 public final class SearchCollectionRegistry {
 
+  private static final Logger logger = LoggerFactory.getLogger(SearchCollectionRegistry.class);
+
   /** Reserved subdirectory of the persistence root holding collection files. */
   public static final String COLLECTIONS_DIR = "collections";
 
@@ -80,6 +84,13 @@ public final class SearchCollectionRegistry {
 
   /** Largest term ledger carried by one descriptor; drift always covers everything. */
   static final int MAX_LEDGER_TERMS = 32_768;
+
+  /** Default maximum distinct terms counted while computing collection drift. */
+  static final int DEFAULT_MAX_DISTINCT_TERMS = 1_000_000;
+
+  private static final int MAX_DISTINCT_TERMS_LIMIT = 10_000_000;
+  private static final String MAX_DISTINCT_TERMS_KEY =
+      "search.collection.max_distinct_terms";
 
   private static final int FORMAT_VERSION = 1;
   private static final long MAX_FILE_BYTES = 16L * 1024 * 1024;
@@ -118,6 +129,24 @@ public final class SearchCollectionRegistry {
   private record Watcher(Consumer<CollectionEvent> events, Runnable completed) {
   }
 
+  /** Immutable callback work captured under the registry monitor and delivered after it. */
+  private record Delivery(StoredCollection stored, Watcher watcher, CollectionEvent event) {
+  }
+
+  /** Stable collection input captured before an expensive descriptor rebuild. */
+  private record DescriptionInput(
+      StoredCollection stored, CollectionDescriptor configured, String integrityHash) {
+  }
+
+  /** Stable notification input captured before an expensive descriptor rebuild. */
+  private record EventInput(
+      DescriptionInput description,
+      List<Watcher> watchers,
+      CollectionEventKind kind,
+      String indexId,
+      String modelArtifactId) {
+  }
+
   /** One collection's configured state and its live bookkeeping. */
   private static final class StoredCollection {
     private CollectionDescriptor configured;
@@ -129,19 +158,25 @@ public final class SearchCollectionRegistry {
   private final DynamicSearchIndexRegistry indexes;
   private final VocabularyTermsSource vocabularyTerms;
   private final Path directory;
+  private final int maxDistinctTerms;
   private final SortedMap<String, StoredCollection> collections = new TreeMap<>();
 
   private SearchCollectionRegistry(DynamicSearchIndexRegistry indexes,
-      VocabularyTermsSource vocabularyTerms, Path directory) {
+      VocabularyTermsSource vocabularyTerms, Path directory, int maxDistinctTerms) {
     if (indexes == null) {
       throw new IllegalArgumentException("indexes must not be null");
     }
     if (vocabularyTerms == null) {
       throw new IllegalArgumentException("vocabularyTerms must not be null");
     }
+    if (maxDistinctTerms < 1 || maxDistinctTerms > MAX_DISTINCT_TERMS_LIMIT) {
+      throw new IllegalArgumentException("maxDistinctTerms must be between 1 and "
+          + MAX_DISTINCT_TERMS_LIMIT);
+    }
     this.indexes = indexes;
     this.vocabularyTerms = vocabularyTerms;
     this.directory = directory;
+    this.maxDistinctTerms = maxDistinctTerms;
   }
 
   /**
@@ -154,7 +189,16 @@ public final class SearchCollectionRegistry {
    */
   public static SearchCollectionRegistry inMemory(
       DynamicSearchIndexRegistry indexes, VocabularyTermsSource vocabularyTerms) {
-    return new SearchCollectionRegistry(indexes, vocabularyTerms, null);
+    return new SearchCollectionRegistry(
+        indexes, vocabularyTerms, null, DEFAULT_MAX_DISTINCT_TERMS);
+  }
+
+  /** Creates an in-memory registry with a testable distinct-term bound. */
+  static SearchCollectionRegistry inMemory(
+      DynamicSearchIndexRegistry indexes,
+      VocabularyTermsSource vocabularyTerms,
+      int maxDistinctTerms) {
+    return new SearchCollectionRegistry(indexes, vocabularyTerms, null, maxDistinctTerms);
   }
 
   /**
@@ -174,7 +218,8 @@ public final class SearchCollectionRegistry {
       throw new IllegalArgumentException("directory must not be null");
     }
     final SearchCollectionRegistry registry =
-        new SearchCollectionRegistry(indexes, vocabularyTerms, directory);
+        new SearchCollectionRegistry(
+            indexes, vocabularyTerms, directory, DEFAULT_MAX_DISTINCT_TERMS);
     registry.load();
     return registry;
   }
@@ -194,11 +239,18 @@ public final class SearchCollectionRegistry {
     if (configuration == null) {
       throw new IllegalArgumentException("configuration must not be null");
     }
+    final int maxDistinctTerms = configuredPositiveInt(
+        configuration, MAX_DISTINCT_TERMS_KEY,
+        DEFAULT_MAX_DISTINCT_TERMS, MAX_DISTINCT_TERMS_LIMIT);
     final String root = configuration.get(WorkspaceCheckpointStore.ROOT_KEY);
     if (root == null || root.isBlank()) {
-      return inMemory(indexes, vocabularyTerms);
+      return new SearchCollectionRegistry(indexes, vocabularyTerms, null, maxDistinctTerms);
     }
-    return at(Path.of(root.trim()).resolve(COLLECTIONS_DIR), indexes, vocabularyTerms);
+    final SearchCollectionRegistry registry = new SearchCollectionRegistry(
+        indexes, vocabularyTerms, Path.of(root.trim()).resolve(COLLECTIONS_DIR),
+        maxDistinctTerms);
+    registry.load();
+    return registry;
   }
 
   /**
@@ -210,14 +262,16 @@ public final class SearchCollectionRegistry {
    *     vocabulary artifact is unknown, or a bound would be exceeded.
    * @throws UncheckedIOException If reading the vocabulary or writing the file fails.
    */
-  public synchronized CollectionDescriptor set(SetCollectionRequest request) {
+  public CollectionDescriptor set(SetCollectionRequest request) {
+    if (request == null) {
+      throw new IllegalArgumentException("request must not be null");
+    }
     SearchIndexRegistry.requireStableId(request.getCollectionId(), "collection id");
     if (request.getDisplayName().isBlank()) {
       throw new IllegalArgumentException("display_name must not be blank");
     }
-    if (!collections.containsKey(request.getCollectionId())
-        && collections.size() >= MAX_COLLECTIONS) {
-      throw new IllegalArgumentException("collection count reached " + MAX_COLLECTIONS);
+    synchronized (this) {
+      requireCollectionCapacity(request.getCollectionId());
     }
     if (request.getMemberIndexIdsCount() > MAX_MEMBER_INDEXES) {
       throw new IllegalArgumentException("member index count " + request.getMemberIndexIdsCount()
@@ -261,16 +315,26 @@ public final class SearchCollectionRegistry {
     final StoredCollection candidate = new StoredCollection();
     candidate.configured = next;
     candidate.lastNewTerms = computed.getDrift().getNewTerms();
-    write(candidate, computed);
-    final StoredCollection stored = collections.get(request.getCollectionId());
-    if (stored == null) {
-      collections.put(request.getCollectionId(), candidate);
-      return computed.toBuilder().setIntegrityHash(candidate.integrityHash).build();
+    synchronized (this) {
+      requireCollectionCapacity(request.getCollectionId());
+      write(candidate, computed);
+      final StoredCollection stored = collections.get(request.getCollectionId());
+      if (stored == null) {
+        collections.put(request.getCollectionId(), candidate);
+        return computed.toBuilder().setIntegrityHash(candidate.integrityHash).build();
+      }
+      stored.configured = candidate.configured;
+      stored.lastNewTerms = candidate.lastNewTerms;
+      stored.integrityHash = candidate.integrityHash;
+      return computed.toBuilder().setIntegrityHash(stored.integrityHash).build();
     }
-    stored.configured = candidate.configured;
-    stored.lastNewTerms = candidate.lastNewTerms;
-    stored.integrityHash = candidate.integrityHash;
-    return computed.toBuilder().setIntegrityHash(stored.integrityHash).build();
+  }
+
+  /** Rejects a new collection when the fixed registry capacity is exhausted. */
+  private void requireCollectionCapacity(String collectionId) {
+    if (!collections.containsKey(collectionId) && collections.size() >= MAX_COLLECTIONS) {
+      throw new IllegalArgumentException("collection count reached " + MAX_COLLECTIONS);
+    }
   }
 
   /**
@@ -280,10 +344,16 @@ public final class SearchCollectionRegistry {
    * @return The descriptor, or {@code null} when the id is unknown.
    * @throws UncheckedIOException If reading the vocabulary artifact fails.
    */
-  public synchronized CollectionDescriptor find(String collectionId) {
-    final StoredCollection stored =
-        collectionId == null ? null : collections.get(collectionId);
-    return stored == null ? null : describe(stored.configured, stored.integrityHash, true);
+  public CollectionDescriptor find(String collectionId) {
+    final DescriptionInput input;
+    synchronized (this) {
+      final StoredCollection stored =
+          collectionId == null ? null : collections.get(collectionId);
+      input = stored == null ? null
+          : new DescriptionInput(stored, stored.configured, stored.integrityHash);
+    }
+    return input == null ? null
+        : describe(input.configured(), input.integrityHash(), true);
   }
 
   /**
@@ -292,10 +362,17 @@ public final class SearchCollectionRegistry {
    * @return Immutable descriptors in stable collection-id order.
    * @throws UncheckedIOException If reading a vocabulary artifact fails.
    */
-  public synchronized List<CollectionDescriptor> list() {
-    final List<CollectionDescriptor> result = new ArrayList<>(collections.size());
-    for (StoredCollection stored : collections.values()) {
-      result.add(describe(stored.configured, stored.integrityHash, false));
+  public List<CollectionDescriptor> list() {
+    final List<DescriptionInput> inputs;
+    synchronized (this) {
+      inputs = collections.values().stream()
+          .map(stored -> new DescriptionInput(
+              stored, stored.configured, stored.integrityHash))
+          .toList();
+    }
+    final List<CollectionDescriptor> result = new ArrayList<>(inputs.size());
+    for (DescriptionInput input : inputs) {
+      result.add(describe(input.configured(), input.integrityHash(), false));
     }
     return List.copyOf(result);
   }
@@ -307,24 +384,28 @@ public final class SearchCollectionRegistry {
    * @return {@code true} when the collection existed and was removed.
    * @throws UncheckedIOException If removing the collection file fails.
    */
-  public synchronized boolean delete(String collectionId) {
-    final StoredCollection stored = collections.get(collectionId);
-    if (stored == null) {
-      return false;
-    }
-    if (directory != null) {
-      try {
-        WorkspaceCheckpointStore.deleteRecursively(directory.resolve(collectionId));
-      } catch (IOException e) {
-        throw new UncheckedIOException(
-          "Failed to delete collection '" + collectionId + "'", e);
+  public boolean delete(String collectionId) {
+    final List<Watcher> completed;
+    synchronized (this) {
+      final StoredCollection stored = collections.get(collectionId);
+      if (stored == null) {
+        return false;
       }
+      if (directory != null) {
+        try {
+          WorkspaceCheckpointStore.deleteRecursively(directory.resolve(collectionId));
+        } catch (IOException e) {
+          throw new UncheckedIOException(
+            "Failed to delete collection '" + collectionId + "'", e);
+        }
+      }
+      collections.remove(collectionId);
+      completed = List.copyOf(stored.watchers);
+      stored.watchers.clear();
     }
-    collections.remove(collectionId);
-    for (Watcher watcher : List.copyOf(stored.watchers)) {
+    for (Watcher watcher : completed) {
       watcher.completed().run();
     }
-    stored.watchers.clear();
     return true;
   }
 
@@ -332,25 +413,52 @@ public final class SearchCollectionRegistry {
    * Subscribes to one collection and delivers its snapshot event immediately.
    *
    * @param collectionId Stable collection id.
-   * @param events Receiver of every event, called under the registry lock.
+   * @param events Receiver of every event, called without the registry lock.
    * @param completed Called once when the collection is deleted.
    * @return Handle that unregisters the subscription.
    * @throws IllegalArgumentException If the collection is unknown.
    */
-  public synchronized Watch watch(String collectionId,
+  public Watch watch(String collectionId,
       Consumer<CollectionEvent> events, Runnable completed) {
-    final StoredCollection stored = collections.get(collectionId);
-    if (stored == null) {
-      throw new IllegalArgumentException("Unknown collection '" + collectionId + "'");
+    if (events == null || completed == null) {
+      throw new IllegalArgumentException("watch callbacks must not be null");
     }
-    final Watcher watcher = new Watcher(events, completed);
-    stored.watchers.add(watcher);
+    final StoredCollection stored;
+    final Watcher watcher;
+    DescriptionInput input;
+    synchronized (this) {
+      stored = collections.get(collectionId);
+      if (stored == null) {
+        throw new IllegalArgumentException("Unknown collection '" + collectionId + "'");
+      }
+      watcher = new Watcher(events, completed);
+      stored.watchers.add(watcher);
+      input = new DescriptionInput(stored, stored.configured, stored.integrityHash);
+    }
+    CollectionEvent snapshot;
+    while (true) {
+      snapshot = event(input.configured(), input.integrityHash(),
+          CollectionEventKind.COLLECTION_EVENT_KIND_SNAPSHOT, null, null);
+      synchronized (this) {
+        if (collections.get(collectionId) != stored || !stored.watchers.contains(watcher)) {
+          return () -> { };
+        }
+        if (stored.configured == input.configured()) {
+          break;
+        }
+        input = new DescriptionInput(stored, stored.configured, stored.integrityHash);
+      }
+    }
+    boolean delivered = false;
     try {
-      events.accept(event(stored, CollectionEventKind.COLLECTION_EVENT_KIND_SNAPSHOT,
-          null, null));
-    } catch (RuntimeException e) {
-      stored.watchers.remove(watcher);
-      throw e;
+      events.accept(snapshot);
+      delivered = true;
+    } finally {
+      if (!delivered) {
+        synchronized (this) {
+          stored.watchers.remove(watcher);
+        }
+      }
     }
     return () -> {
       synchronized (this) {
@@ -365,21 +473,43 @@ public final class SearchCollectionRegistry {
    *
    * @param indexId Dynamic index that accepted new documents.
    */
-  public synchronized void notifyIndexed(String indexId) {
-    for (StoredCollection stored : collections.values()) {
-      if (stored.configured.getDriftNewTermThreshold() == 0
-          || !stored.configured.getMemberIndexIdsList().contains(indexId)) {
-        continue;
-      }
-      final long threshold = stored.configured.getDriftNewTermThreshold();
-      final long newTerms = describe(stored.configured, "", false).getDrift().getNewTerms();
-      final boolean crossed = stored.lastNewTerms < threshold && newTerms >= threshold;
-      stored.lastNewTerms = newTerms;
-      if (crossed) {
-        emit(stored, CollectionEventKind.COLLECTION_EVENT_KIND_DRIFT_THRESHOLD_CROSSED,
-            null, null);
+  public void notifyIndexed(String indexId) {
+    final List<DescriptionInput> candidates;
+    synchronized (this) {
+      candidates = collections.values().stream()
+          .filter(stored -> stored.configured.getDriftNewTermThreshold() != 0
+              && stored.configured.getMemberIndexIdsList().contains(indexId))
+          .map(stored -> new DescriptionInput(
+              stored, stored.configured, stored.integrityHash))
+          .toList();
+    }
+    final Map<DescriptionInput, CollectionDescriptor> rebuilt = new LinkedHashMap<>();
+    for (DescriptionInput candidate : candidates) {
+      rebuilt.put(candidate,
+          describe(candidate.configured(), candidate.integrityHash(), true));
+    }
+    final List<Delivery> deliveries = new ArrayList<>();
+    synchronized (this) {
+      for (Map.Entry<DescriptionInput, CollectionDescriptor> entry : rebuilt.entrySet()) {
+        final DescriptionInput candidate = entry.getKey();
+        final StoredCollection stored = candidate.stored();
+        if (collections.get(candidate.configured().getCollectionId()) != stored
+            || stored.configured != candidate.configured()) {
+          continue;
+        }
+        final long threshold = stored.configured.getDriftNewTermThreshold();
+        final long newTerms = entry.getValue().getDrift().getNewTerms();
+        final boolean crossed = stored.lastNewTerms < threshold && newTerms >= threshold;
+        stored.lastNewTerms = newTerms;
+        if (crossed) {
+          captureDeliveries(deliveries, stored, CollectionEvent.newBuilder()
+              .setKind(CollectionEventKind.COLLECTION_EVENT_KIND_DRIFT_THRESHOLD_CROSSED)
+              .setCollection(entry.getValue())
+              .build());
+        }
       }
     }
+    deliver(deliveries);
   }
 
   /**
@@ -387,13 +517,18 @@ public final class SearchCollectionRegistry {
    *
    * @param indexId Dynamic index that was persisted or sealed.
    */
-  public synchronized void notifyIndexPersisted(String indexId) {
-    for (StoredCollection stored : collections.values()) {
-      if (stored.configured.getMemberIndexIdsList().contains(indexId)) {
-        emit(stored, CollectionEventKind.COLLECTION_EVENT_KIND_INDEX_PERSISTED,
-            indexId, null);
+  public void notifyIndexPersisted(String indexId) {
+    final List<EventInput> inputs = new ArrayList<>();
+    synchronized (this) {
+      for (StoredCollection stored : collections.values()) {
+        if (!stored.watchers.isEmpty()
+            && stored.configured.getMemberIndexIdsList().contains(indexId)) {
+          inputs.add(eventInput(stored,
+              CollectionEventKind.COLLECTION_EVENT_KIND_INDEX_PERSISTED, indexId, null));
+        }
       }
     }
+    deliver(rebuildEvents(inputs));
   }
 
   /**
@@ -403,37 +538,73 @@ public final class SearchCollectionRegistry {
    * @param modelArtifactId Published model artifact id.
    * @param vocabularyArtifactId The published model's parent vocabulary artifact id.
    */
-  public synchronized void notifyModelPublished(
+  public void notifyModelPublished(
       String modelArtifactId, String vocabularyArtifactId) {
-    for (StoredCollection stored : collections.values()) {
-      if (stored.configured.hasVocabularyArtifactId()
-          && stored.configured.getVocabularyArtifactId().equals(vocabularyArtifactId)) {
-        emit(stored, CollectionEventKind.COLLECTION_EVENT_KIND_MODEL_PUBLISHED,
-            null, modelArtifactId);
+    final List<EventInput> inputs = new ArrayList<>();
+    synchronized (this) {
+      for (StoredCollection stored : collections.values()) {
+        if (!stored.watchers.isEmpty() && stored.configured.hasVocabularyArtifactId()
+            && stored.configured.getVocabularyArtifactId().equals(vocabularyArtifactId)) {
+          inputs.add(eventInput(stored,
+              CollectionEventKind.COLLECTION_EVENT_KIND_MODEL_PUBLISHED,
+              null, modelArtifactId));
+        }
       }
+    }
+    deliver(rebuildEvents(inputs));
+  }
+
+  /** Captures one notification and its current watchers under the registry monitor. */
+  private EventInput eventInput(StoredCollection stored, CollectionEventKind kind,
+      String indexId, String modelArtifactId) {
+    return new EventInput(
+        new DescriptionInput(stored, stored.configured, stored.integrityHash),
+        List.copyOf(stored.watchers), kind, indexId, modelArtifactId);
+  }
+
+  /** Rebuilds notification descriptors without the registry monitor, then revalidates them. */
+  private List<Delivery> rebuildEvents(List<EventInput> inputs) {
+    final List<Delivery> deliveries = new ArrayList<>();
+    for (EventInput input : inputs) {
+      final DescriptionInput description = input.description();
+      final CollectionEvent event = event(description.configured(), description.integrityHash(),
+          input.kind(), input.indexId(), input.modelArtifactId());
+      synchronized (this) {
+        final StoredCollection stored = description.stored();
+        if (collections.get(description.configured().getCollectionId()) != stored
+            || stored.configured != description.configured()) {
+          continue;
+        }
+        for (Watcher watcher : input.watchers()) {
+          if (stored.watchers.contains(watcher)) {
+            deliveries.add(new Delivery(stored, watcher, event));
+          }
+        }
+      }
+    }
+    return deliveries;
+  }
+
+  /** Captures one already rebuilt event for every current watcher. */
+  private void captureDeliveries(
+      List<Delivery> deliveries, StoredCollection stored, CollectionEvent event) {
+    for (Watcher watcher : List.copyOf(stored.watchers)) {
+      deliveries.add(new Delivery(stored, watcher, event));
     }
   }
 
-  /**
-   * Delivers one event to every watcher of a collection.
-   *
-   * @param stored Collection whose watchers receive the event.
-   * @param kind Event kind.
-   * @param indexId Member index context, or {@code null}.
-   * @param modelArtifactId Model artifact context, or {@code null}.
-   */
-  private void emit(StoredCollection stored, CollectionEventKind kind,
-      String indexId, String modelArtifactId) {
-    if (stored.watchers.isEmpty()) {
-      return;
-    }
-    final CollectionEvent event = event(stored, kind, indexId, modelArtifactId);
-    for (Watcher watcher : List.copyOf(stored.watchers)) {
+  /** Runs captured subscriber code without holding the registry monitor. */
+  private void deliver(List<Delivery> deliveries) {
+    for (Delivery delivery : deliveries) {
       try {
-        watcher.events().accept(event);
-      } catch (RuntimeException e) {
-        // A subscriber that cancelled between events stops receiving them.
-        stored.watchers.remove(watcher);
+        delivery.watcher().events().accept(delivery.event());
+      } catch (RuntimeException subscriberFailure) {
+        // Subscriber callbacks are arbitrary transport code; one failed watcher is removed.
+        logger.debug("Collection watcher transport failed; removing subscriber",
+            subscriberFailure);
+        synchronized (this) {
+          delivery.stored().watchers.remove(delivery.watcher());
+        }
       }
     }
   }
@@ -447,11 +618,11 @@ public final class SearchCollectionRegistry {
    * @param modelArtifactId Model artifact context, or {@code null}.
    * @return The event.
    */
-  private CollectionEvent event(StoredCollection stored, CollectionEventKind kind,
-      String indexId, String modelArtifactId) {
+  private CollectionEvent event(CollectionDescriptor configured, String integrityHash,
+      CollectionEventKind kind, String indexId, String modelArtifactId) {
     final CollectionEvent.Builder event = CollectionEvent.newBuilder()
         .setKind(kind)
-        .setCollection(describe(stored.configured, stored.integrityHash, true));
+        .setCollection(describe(configured, integrityHash, true));
     if (indexId != null) {
       event.setIndexId(indexId);
     }
@@ -566,7 +737,7 @@ public final class SearchCollectionRegistry {
       if (indexes.find(memberId) == null) {
         continue;
       }
-      for (DynamicSearchIndexRegistry.IndexedChunk chunk : indexes.retainedChunks(memberId)) {
+      for (DynamicSearchIndexRegistry.RetainedChunk chunk : indexes.retainedChunks(memberId)) {
         final List<String> words = new ArrayList<>();
         for (QueryTermAnalyzer.Term term
             : QueryTermAnalyzer.analyze(chunk.record().emittedText())) {
@@ -574,9 +745,10 @@ public final class SearchCollectionRegistry {
         }
         int i = 0;
         while (i < words.size()) {
-          final int consumed = countMultiwordMatch(words, i, multiwordByFirst, counts);
+          final int consumed = countMultiwordMatch(
+              words, i, multiwordByFirst, counts, maxDistinctTerms);
           if (consumed == 0) {
-            counts.merge(words.get(i), 1L, Long::sum);
+            incrementTerm(counts, words.get(i), maxDistinctTerms);
             i++;
           } else {
             i += consumed;
@@ -597,7 +769,8 @@ public final class SearchCollectionRegistry {
    * @return The number of words consumed, zero when no term matches.
    */
   private static int countMultiwordMatch(List<String> words, int position,
-      Map<String, List<List<String>>> multiwordByFirst, Map<String, Long> counts) {
+      Map<String, List<List<String>>> multiwordByFirst, Map<String, Long> counts,
+      int maxDistinctTerms) {
     final List<List<String>> candidates = multiwordByFirst.get(words.get(position));
     if (candidates == null) {
       return 0;
@@ -605,11 +778,43 @@ public final class SearchCollectionRegistry {
     for (List<String> candidate : candidates) {
       if (position + candidate.size() <= words.size()
           && words.subList(position, position + candidate.size()).equals(candidate)) {
-        counts.merge(String.join(" ", candidate), 1L, Long::sum);
+        incrementTerm(counts, String.join(" ", candidate), maxDistinctTerms);
         return candidate.size();
       }
     }
     return 0;
+  }
+
+  /** Increments one term while enforcing the fixed-memory distinct-term contract. */
+  private static void incrementTerm(
+      Map<String, Long> counts, String term, int maxDistinctTerms) {
+    final Long existing = counts.get(term);
+    if (existing != null) {
+      counts.put(term, existing + 1);
+      return;
+    }
+    if (counts.size() >= maxDistinctTerms) {
+      throw org.apache.opennlp.grpc.processor.AnalysisException.resourceExhausted(
+          "Collection drift distinct terms exceed configured maximum " + maxDistinctTerms);
+    }
+    counts.put(term, 1L);
+  }
+
+  /** Parses one positive configured integer beneath a fixed ceiling. */
+  private static int configuredPositiveInt(
+      Map<String, String> configuration, String key, int defaultValue, int ceiling) {
+    final String value = configuration.get(key);
+    final int parsed;
+    try {
+      parsed = value == null ? defaultValue : Integer.parseInt(value);
+    } catch (NumberFormatException e) {
+      throw new IllegalArgumentException(key + " must be a positive integer", e);
+    }
+    if (parsed < 1 || parsed > ceiling) {
+      throw new IllegalArgumentException(key + " must be between 1 and " + ceiling
+          + ", was " + parsed);
+    }
+    return parsed;
   }
 
   /**

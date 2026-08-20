@@ -13,4 +13,9 @@ python -m grpc_tools.protoc \
   src/main/proto/org/apache/opennlp/grpc/v1/opennlp_service.proto
 ```
 
-A sample `AnalyzeDocument` client will be added here once the v1 Python workflow is finalized.
+For a runnable client covering bidirectional document analysis, vocabulary learning,
+optional model distillation, dynamic indexing, and search, see
+[`lifecycle_e2e.py`](../../opennlp-grpc-integration-tests/scripts/lifecycle_e2e.py).
+It loads the descriptor set packaged in the shaded server JAR and constructs requests
+dynamically, so it does not require checked-in generated Python sources. The integration
+test README documents the exact opt-in command and teacher configuration.

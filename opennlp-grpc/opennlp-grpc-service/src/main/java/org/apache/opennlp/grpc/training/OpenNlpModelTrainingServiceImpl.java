@@ -34,6 +34,8 @@ import org.apache.opennlp.grpc.v1.ListTeachersRequest;
 import org.apache.opennlp.grpc.v1.ListTeachersResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpModelTrainingServiceGrpc;
 import org.apache.opennlp.grpc.v1.StaticModelDescriptor;
+import org.apache.opennlp.grpc.v1.StreamingTrainingRequest;
+import org.apache.opennlp.grpc.v1.StreamingTrainingUpdate;
 import org.apache.opennlp.grpc.v1.TrainStaticModelRequest;
 import org.apache.opennlp.grpc.v1.TrainStaticModelUpdate;
 import org.apache.opennlp.grpc.vocabulary.UnknownVocabularyArtifactException;
@@ -49,6 +51,7 @@ public final class OpenNlpModelTrainingServiceImpl
 
   private final StaticModelArtifactStore store;
   private final Semaphore trainingPermits;
+  private final StreamingTrainingPipeline streamingPipeline;
 
   /**
    * Creates the service over one model artifact store.
@@ -57,11 +60,68 @@ public final class OpenNlpModelTrainingServiceImpl
    * @throws IllegalArgumentException If {@code store} is {@code null}.
    */
   public OpenNlpModelTrainingServiceImpl(StaticModelArtifactStore store) {
+    this(store, (StreamingTrainingPipeline) null);
+  }
+
+  /**
+   * Creates the service with bidirectional document-to-index orchestration enabled.
+   *
+   * @param store Bounded model store, possibly write-disabled.
+   * @param streamingPipeline Production streaming pipeline.
+   * @throws IllegalArgumentException If an argument is {@code null}.
+   */
+  public OpenNlpModelTrainingServiceImpl(
+      StaticModelArtifactStore store,
+      DefaultStreamingTrainingPipeline streamingPipeline) {
+    this(store, (StreamingTrainingPipeline) streamingPipeline);
+  }
+
+  /** Package-private seam for deterministic transport and admission tests. */
+  OpenNlpModelTrainingServiceImpl(
+      StaticModelArtifactStore store,
+      StreamingTrainingPipeline streamingPipeline) {
     if (store == null) {
       throw new IllegalArgumentException("store must not be null");
     }
     this.store = store;
+    this.streamingPipeline = streamingPipeline;
     this.trainingPermits = new Semaphore(store.maxConcurrentTrainings());
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public StreamObserver<StreamingTrainingRequest> streamingTraining(
+      StreamObserver<StreamingTrainingUpdate> responseObserver) {
+    if (streamingPipeline == null) {
+      responseObserver.onError(Status.FAILED_PRECONDITION.withDescription(
+          "StreamingTraining is not configured").asRuntimeException());
+      return ignoredObserver();
+    }
+    if (!trainingPermits.tryAcquire()) {
+      responseObserver.onError(Status.RESOURCE_EXHAUSTED.withDescription(
+          "concurrent trainings exceed configured maximum "
+              + store.maxConcurrentTrainings()).asRuntimeException());
+      return ignoredObserver();
+    }
+    return new StreamingTrainingSession(
+        streamingPipeline, responseObserver, trainingPermits::release);
+  }
+
+  /** Returns a sink used after an RPC is rejected before its first input frame. */
+  private static StreamObserver<StreamingTrainingRequest> ignoredObserver() {
+    return new StreamObserver<>() {
+      @Override
+      public void onNext(StreamingTrainingRequest request) {
+      }
+
+      @Override
+      public void onError(Throwable throwable) {
+      }
+
+      @Override
+      public void onCompleted() {
+      }
+    };
   }
 
   /** {@inheritDoc} */

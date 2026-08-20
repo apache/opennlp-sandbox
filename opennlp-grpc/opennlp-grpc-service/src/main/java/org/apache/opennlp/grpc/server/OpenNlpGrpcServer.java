@@ -47,6 +47,7 @@ import org.apache.opennlp.grpc.search.SearchCollectionRegistry;
 import org.apache.opennlp.grpc.search.SearchIndexRegistry;
 import org.apache.opennlp.grpc.search.SearchProviderCatalog;
 import org.apache.opennlp.grpc.search.WorkspaceCheckpointStore;
+import org.apache.opennlp.grpc.training.DefaultStreamingTrainingPipeline;
 import org.apache.opennlp.grpc.training.OpenNlpModelTrainingServiceImpl;
 import org.apache.opennlp.grpc.training.StaticModelArtifactStore;
 import org.apache.opennlp.grpc.training.StaticModelTrainer;
@@ -242,6 +243,13 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     final ProfileRegistry profileRegistry = modelBundleCache.createProfileRegistry();
     final BasicDocumentAnalyzer documentAnalyzer =
         new BasicDocumentAnalyzer(profileRegistry, modelBundleCache);
+    final DefaultStreamingTrainingPipeline streamingTraining =
+        new DefaultStreamingTrainingPipeline(
+            documentAnalyzer,
+            vocabularyArtifacts,
+            staticModelArtifacts,
+            dynamicSearchIndexRegistry,
+            indexAliasRegistry);
 
     // Run each RPC handler on a virtual thread, so a request that blocks on a remote backend
     // (TEI/OpenVINO), a streaming batch's latch, or native inference unmounts its carrier
@@ -277,7 +285,7 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
             new OpenNlpVocabularyServiceImpl(dictionaryFormats, vocabularyArtifacts),
             new EagerHeadersInterceptor()))
         .addService(ServerInterceptors.intercept(
-            new OpenNlpModelTrainingServiceImpl(staticModelArtifacts),
+            new OpenNlpModelTrainingServiceImpl(staticModelArtifacts, streamingTraining),
             new EagerHeadersInterceptor()))
         .addService(healthStatusManager.getHealthService())
         .maxInboundMessageSize(maxInboundMessageSize);

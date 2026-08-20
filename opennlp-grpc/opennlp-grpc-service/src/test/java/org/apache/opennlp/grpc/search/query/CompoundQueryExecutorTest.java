@@ -96,6 +96,34 @@ class CompoundQueryExecutorTest {
   }
 
   @Test
+  void delegatesKeywordLeavesToTheSelectedProviderIndex() {
+    final List<QueryCandidate> candidates = List.of(
+        candidate("first", "ignored", 1, 0),
+        candidate("second", "also ignored", 0, 1));
+    final KeywordQueryIndex replacement = new KeywordQueryIndex() {
+      @Override
+      public List<Hit> term(String text, TermMatchMode mode) {
+        return List.of(new Hit(candidates.get(1).record(), 0.25, List.of(
+            MatchedSpan.newBuilder().setStart(0).setEnd(4).setTerm("custom").build())));
+      }
+
+      @Override
+      public List<Hit> phrase(String text, int slop) {
+        return List.of();
+      }
+    };
+
+    final List<QueryHit> hits = WITHOUT_CEL.execute(
+        term("provider owned"), candidates, UNIT_X,
+        (query, topK) -> List.of(), replacement, 10);
+
+    assertEquals(1, hits.size());
+    assertEquals("second", hits.getFirst().candidate().record().documentId());
+    assertEquals(0.25, hits.getFirst().score(), 1e-9);
+    assertEquals("custom", hits.getFirst().matchedSpans().getFirst().getTerm());
+  }
+
+  @Test
   void termAllRequiresEveryAnalyzedTerm() {
     final List<QueryCandidate> candidates = List.of(
         candidate("both", "alpha beta", 1, 0),

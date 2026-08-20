@@ -164,6 +164,30 @@ class VocabularyArtifactStoreTest {
     assertThrows(java.io.IOException.class, () -> enabledStore(formats, Map.of()));
   }
 
+  @Test
+  void deletesPublishedVocabularyFromMemoryAndDurableStorage() throws Exception {
+    final DictionaryFormatRegistry formats = DictionaryFormatRegistry.discover();
+    final VocabularyArtifactStore store = enabledStore(formats, Map.of());
+    final DictionaryArtifactDescriptor dictionary = store.importDictionary(
+        importStart("Legal dictionary"), "liberty\tA right.\n".getBytes(StandardCharsets.UTF_8));
+    final VocabularyArtifactDescriptor vocabulary = store.learnVocabulary(
+        LearnVocabularyStart.newBuilder()
+            .setDictionaryArtifactId(dictionary.getArtifactId())
+            .setDisplayName("Legal vocabulary")
+            .setMinFrequency(1)
+            .setMaxTerms(20)
+            .setProvenanceSummary("Authored test corpus")
+            .build(),
+        List.of(document("Liberty matters.")));
+
+    assertTrue(store.deleteVocabulary(vocabulary.getArtifactId()));
+    assertThrows(UnknownVocabularyArtifactException.class,
+        () -> store.requireVocabulary(vocabulary.getArtifactId()));
+    assertFalse(Files.exists(temporaryDirectory.resolve("vocabularies")
+        .resolve(vocabulary.getArtifactId())));
+    assertFalse(store.deleteVocabulary(vocabulary.getArtifactId()));
+  }
+
   private VocabularyArtifactStore enabledStore(
       DictionaryFormatRegistry formats, Map<String, String> overrides) throws Exception {
     final java.util.HashMap<String, String> configuration = new java.util.HashMap<>(overrides);

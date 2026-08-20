@@ -333,7 +333,7 @@ public final class OpenNlpSearchServiceImpl
               + "' collides with an existing index id");
         }
       }
-      final List<DynamicSearchIndexRegistry.IndexedChunk> sourceChunks =
+      final List<DynamicSearchIndexRegistry.RetainedChunk> sourceChunks =
           dynamicRegistry.retainedChunks(sourceId);
       final List<DynamicSearchIndexRegistry.IndexedChunk> replayed =
           replay(sourceChunks, request.getEmbedding());
@@ -366,14 +366,14 @@ public final class OpenNlpSearchServiceImpl
    * @throws AnalysisException If an embedding call fails.
    */
   private List<DynamicSearchIndexRegistry.IndexedChunk> replay(
-      List<DynamicSearchIndexRegistry.IndexedChunk> sourceChunks,
+      List<DynamicSearchIndexRegistry.RetainedChunk> sourceChunks,
       EmbeddingSelector embedding) {
     final int batchSize = 16;
     final List<DynamicSearchIndexRegistry.IndexedChunk> replayed =
         new ArrayList<>(sourceChunks.size());
     EmbeddingRoute resolvedRoute = null;
     for (int start = 0; start < sourceChunks.size(); start += batchSize) {
-      final List<DynamicSearchIndexRegistry.IndexedChunk> batch =
+      final List<DynamicSearchIndexRegistry.RetainedChunk> batch =
           sourceChunks.subList(start, Math.min(start + batchSize, sourceChunks.size()));
       final List<String> texts = batch.stream()
           .map(chunk -> chunk.record().emittedText()).toList();
@@ -708,6 +708,14 @@ public final class OpenNlpSearchServiceImpl
       throw AnalysisException.unimplemented("Search index '" + descriptor.getIndexId()
           + "' does not execute compound queries");
     }
+    final org.apache.opennlp.grpc.search.query.KeywordQueryIndex keywordIndex =
+        provider.keywordQueryIndex();
+    if (keywordIndex == null
+        && org.apache.opennlp.grpc.search.query.CompoundQueryValidator
+            .containsKeywordClause(request.getCompoundQuery())) {
+      throw AnalysisException.unimplemented("Search index '" + descriptor.getIndexId()
+          + "' has no configured keyword query provider");
+    }
     final AtomicReference<EmbeddingRoute> resolvedRoute = new AtomicReference<>();
     final CompoundQueryExecutor.QueryEmbedder embedder = queryDocument -> {
       final EmbeddingBatchResult embedding = embeddingProvider.embedBatchResolved(
@@ -719,7 +727,7 @@ public final class OpenNlpSearchServiceImpl
     };
     final List<CompoundQueryExecutor.QueryHit> hits = compoundQueryExecutor.execute(
         request.getCompoundQuery(), candidates, embedder, provider::search,
-        request.getTopK());
+        keywordIndex, request.getTopK());
     final SearchIndexResponse.Builder response = SearchIndexResponse.newBuilder()
         .setIndex(descriptor);
     if (resolvedRoute.get() != null) {

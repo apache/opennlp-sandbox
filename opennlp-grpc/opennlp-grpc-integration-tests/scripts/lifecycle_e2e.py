@@ -110,6 +110,12 @@ class Api:
             path, request_serializer=serialize, response_deserializer=deserialize,
         )(iter(frames), timeout=timeout)
 
+    def bidi_stream(self, service: str, name: str, frames, timeout: float = 60.0):
+        path, serialize, deserialize = self._method(service, name)
+        return self.channel.stream_stream(
+            path, request_serializer=serialize, response_deserializer=deserialize,
+        )(iter(frames), timeout=timeout)
+
     def server_stream(self, service: str, name: str, request, timeout: float | None = None):
         path, serialize, deserialize = self._method(service, name)
         return self.channel.unary_stream(
@@ -200,6 +206,65 @@ def learn_vocabulary(api: Api, dictionary_id: str) -> str:
     return descriptor.artifact_id
 
 
+def streaming_training(api: Api, dictionary_id: str, teacher_id: str):
+    """Proves the one-RPC document-to-artifact workflow and correlated replies."""
+    frame_cls = api.message("StreamingTrainingRequest")
+    start_frame = frame_cls()
+    start = start_frame.start
+    start.vocabulary.dictionary_artifact_id = dictionary_id
+    start.vocabulary.display_name = "Streaming lifecycle vocabulary"
+    start.vocabulary.min_frequency = 1
+    start.vocabulary.max_terms = 10_000
+    start.vocabulary.provenance_summary = "lifecycle_e2e.py streaming fixture"
+    if teacher_id:
+        start.model.teacher_id = teacher_id
+        start.model.display_name = "Streaming lifecycle model"
+        start.model.provenance_summary = "lifecycle_e2e.py streaming distillation"
+        start.index.display_name = "Streaming lifecycle index"
+        start.index.provider.standard = api.enum(
+            "StandardSearchProvider", "STANDARD_SEARCH_PROVIDER_TURBO_QUANT")
+        chunks = start.index.chunk_embed_configs.add()
+        chunks.config_id = "sentences"
+        chunks.chunking.algorithm = "sentence"
+        start.index.durability = api.enum(
+            "StreamingTrainingIndexDurability",
+            "STREAMING_TRAINING_INDEX_DURABILITY_PROCESS_LOCAL")
+        start.index.alias = "streaming-current"
+    frames = [start_frame]
+    for sequence, text in enumerate(CORPUS, start=1):
+        frames.append(frame_cls(document=dict(
+            sequence=sequence,
+            document=dict(doc_id=f"streaming-{sequence}", raw_text=text),
+        )))
+    updates = list(api.bidi_stream(
+        "OpenNlpModelTrainingService", "StreamingTraining", frames, timeout=1800.0))
+    kinds = [update.WhichOneof("update") for update in updates]
+    check(kinds[0] == "accepted", f"first streaming update was {kinds[0]}")
+    document_updates = [update.document for update in updates
+                        if update.WhichOneof("update") == "document"]
+    check(len(document_updates) == len(CORPUS), "streaming document reply count")
+    check([update.result.sequence for update in document_updates] == [1, 2, 3],
+          "streaming document correlation sequence")
+    check(all(update.result.WhichOneof("result") == "ok"
+              for update in document_updates), "streaming analysis failure")
+    completions = [update.completed for update in updates
+                   if update.WhichOneof("update") == "completed"]
+    check(len(completions) == 1, "streaming training terminal update count")
+    completed = completions[0]
+    check(completed.accepted_documents == len(CORPUS),
+          "streaming accepted document count")
+    check(bool(completed.vocabulary.artifact_id), "streaming vocabulary was not published")
+    if teacher_id:
+        check(completed.HasField("model"), "streaming model was not published")
+        check(completed.HasField("index"), "streaming index was not published")
+        response = compound_query(api, "streaming-current",
+                                  min(3, completed.index.index.max_top_k))
+        check(len(response.hits) > 0, "streaming index query returned no hits")
+    step(f"StreamingTraining analyzed {len(document_updates)} documents and published "
+         f"vocabulary {completed.vocabulary.artifact_id}")
+    return completed
+
+
 def analyze(api: Api, doc_id: str, text: str, model: str):
     request = api.message("AnalyzeDocumentRequest")(
         document=dict(doc_id=doc_id, raw_text=text),
@@ -266,6 +331,7 @@ def main() -> int:
     step(f"provider instances: {', '.join(instance_ids)}")
 
     dictionary_id = import_dictionary(api)
+    streaming_training(api, dictionary_id, args.teacher_id)
     vocabulary_id = learn_vocabulary(api, dictionary_id)
 
     analyzed = [analyze(api, f"case-{index}", text, args.embedding_model)

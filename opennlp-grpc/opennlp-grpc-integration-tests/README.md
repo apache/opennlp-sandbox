@@ -83,7 +83,9 @@ without generated code: it spawns the server (stub TEI backend, vocabulary artif
 root, and search persistence root configured), extracts the `FileDescriptorSet` the
 shaded jar ships at `META-INF/opennlp/descriptors/opennlp-grpc-v1.protobin`, and runs
 `scripts/lifecycle_e2e.py`, a Python client that builds every request dynamically from
-those descriptors. The script imports a dictionary, learns a vocabulary, analyzes and
+those descriptors. The script first drives the bidirectional `StreamingTraining` RPC and checks
+admission, correlated document-shape replies, and its terminal vocabulary descriptor. It then
+learns a vocabulary separately, analyzes and
 indexes explicitly identified documents, aliases the workspace, scopes it into a
 collection, reads drift and persistence events from the `WatchCollection` stream,
 rebuilds blue/green with an alias swap, runs a compound query and checks its matched
@@ -97,6 +99,7 @@ OPENNLP_PYTHON_E2E=1 mvn -pl opennlp-grpc/opennlp-grpc-integration-tests verify
 
 Set `OPENNLP_E2E_TEACHER_REF` to a teacher model reference (for example
 `minishlab/potion-base-8M`) to additionally distill a static model through
-`TrainStaticModel`, observe the model publication on the watch stream, and reindex
+both `StreamingTraining` and `TrainStaticModel`, publish and query the streaming session's
+TurboQuant index, observe the later model publication on the watch stream, and reindex
 into the trained vector space; without it the rebuild replays through the serving
 embedding model and the training step is skipped.

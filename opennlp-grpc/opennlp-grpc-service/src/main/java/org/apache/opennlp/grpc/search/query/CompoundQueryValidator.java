@@ -88,6 +88,25 @@ public final class CompoundQueryValidator {
   }
 
   /**
+   * Reports whether a query tree contains a term or phrase leaf that requires a keyword
+   * provider.
+   *
+   * @param node Query tree to inspect.
+   * @return Whether keyword execution is required.
+   */
+  public static boolean containsKeywordClause(QueryNode node) {
+    return switch (node.getKindCase()) {
+      case TERM, PHRASE -> true;
+      case BOOST -> containsKeywordClause(node.getBoost().getOperand());
+      case JOIN -> node.getJoin().getOperandsList().stream()
+          .anyMatch(CompoundQueryValidator::containsKeywordClause)
+          || node.getJoin().getExclusionsList().stream()
+              .anyMatch(CompoundQueryValidator::containsKeywordClause);
+      case SEMANTIC, CEL_FILTER, CEL_CALCULATOR, KIND_NOT_SET -> false;
+    };
+  }
+
+  /**
    * Tests whether a node can produce candidates from content.
    *
    * @param node Query node.

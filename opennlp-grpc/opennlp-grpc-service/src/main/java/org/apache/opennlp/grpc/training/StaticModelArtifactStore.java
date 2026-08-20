@@ -44,6 +44,7 @@ import com.google.protobuf.Timestamp;
 import opennlp.embeddings.ModelDistiller;
 import opennlp.embeddings.StaticEmbeddingModel;
 import org.apache.opennlp.grpc.v1.StaticModelDescriptor;
+import org.apache.opennlp.grpc.v1.StreamingTrainingModelPlan;
 import org.apache.opennlp.grpc.v1.TeacherDescriptor;
 import org.apache.opennlp.grpc.v1.TrainStaticModelRequest;
 import org.apache.opennlp.grpc.vocabulary.VocabularyArtifactStore;
@@ -218,6 +219,22 @@ public final class StaticModelArtifactStore {
   }
 
   /**
+   * Validates streaming-session model controls before corpus documents are accepted.
+   *
+   * @param plan Model controls whose vocabulary id is supplied by the session.
+   * @throws IllegalStateException If model training is disabled.
+   * @throws IllegalArgumentException If a control or teacher id is invalid.
+   */
+  public void validateTrainingPlan(StreamingTrainingModelPlan plan) {
+    requireEnabled();
+    if (plan == null) {
+      throw new IllegalArgumentException("model plan must not be null");
+    }
+    validateTrainingControls(plan.getTeacherId(), plan.getDisplayName(),
+        plan.getPcaDims(), plan.getProvenanceSummary());
+  }
+
+  /**
    * Describes the configured teachers.
    *
    * @return Descriptors in stable teacher-id order; {@code local} reflects whether the
@@ -273,7 +290,7 @@ public final class StaticModelArtifactStore {
    * @throws IOException If distillation, publication, or verification fails.
    * @throws CancellationException If cancellation is observed before publication completes.
    */
-  StaticModelDescriptor trainStaticModel(TrainStaticModelRequest request,
+  public StaticModelDescriptor trainStaticModel(TrainStaticModelRequest request,
       ModelDistiller.ProgressListener listener, BooleanSupplier cancelled) throws IOException {
     if (cancelled == null) {
       throw new IllegalArgumentException("cancelled must not be null");
@@ -534,19 +551,26 @@ public final class StaticModelArtifactStore {
     if (request == null) {
       throw new IllegalArgumentException("training request must not be null");
     }
-    requireTrimmed(request.getDisplayName(), "model display_name");
-    requireTrimmed(request.getProvenanceSummary(), "model provenance_summary");
-    final TeacherConfiguration teacher = teachers.get(request.getTeacherId());
-    if (teacher == null) {
-      throw new IllegalArgumentException(
-          "Unknown teacher '" + request.getTeacherId() + "'");
-    }
-    if (request.getPcaDims() != 0
-        && (request.getPcaDims() < 1 || request.getPcaDims() > maxPcaDims)) {
-      throw new IllegalArgumentException("pca_dims must be 0 for the default or between 1 and "
-          + maxPcaDims + ", was " + request.getPcaDims());
-    }
+    final TeacherConfiguration teacher = validateTrainingControls(
+        request.getTeacherId(), request.getDisplayName(), request.getPcaDims(),
+        request.getProvenanceSummary());
     vocabularies.requireVocabulary(request.getVocabularyArtifactId());
+    return teacher;
+  }
+
+  /** Validates controls shared by unary and bidirectional training. */
+  private TeacherConfiguration validateTrainingControls(
+      String teacherId, String displayName, int pcaDims, String provenanceSummary) {
+    requireTrimmed(displayName, "model display_name");
+    requireTrimmed(provenanceSummary, "model provenance_summary");
+    final TeacherConfiguration teacher = teachers.get(teacherId);
+    if (teacher == null) {
+      throw new IllegalArgumentException("Unknown teacher '" + teacherId + "'");
+    }
+    if (pcaDims != 0 && (pcaDims < 1 || pcaDims > maxPcaDims)) {
+      throw new IllegalArgumentException("pca_dims must be 0 for the default or between 1 and "
+          + maxPcaDims + ", was " + pcaDims);
+    }
     return teacher;
   }
 
