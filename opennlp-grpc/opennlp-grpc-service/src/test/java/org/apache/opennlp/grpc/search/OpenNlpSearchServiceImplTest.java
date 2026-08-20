@@ -34,11 +34,17 @@ import org.apache.opennlp.grpc.v1.EmbeddingRoute;
 import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesRequest;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesResponse;
+import org.apache.opennlp.grpc.v1.CelFilterClause;
+import org.apache.opennlp.grpc.v1.JoinClause;
+import org.apache.opennlp.grpc.v1.JoinOperator;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.QueryNode;
 import org.apache.opennlp.grpc.v1.SearchIndexDescriptor;
 import org.apache.opennlp.grpc.v1.SearchIndexRequest;
 import org.apache.opennlp.grpc.v1.SearchIndexResponse;
+import org.apache.opennlp.grpc.v1.SemanticClause;
+import org.apache.opennlp.grpc.v1.TermClause;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -95,6 +101,133 @@ class OpenNlpSearchServiceImplTest {
         .setIndexId(indexId).build(), deleted);
     assertTrue(deleted.value.getDeleted());
     assertTrue(dynamicRegistry.descriptors().isEmpty());
+  }
+
+  @Test
+  void executesCompoundQueriesOverADynamicWorkspaceWithMatchedSpans() {
+    final DynamicSearchIndexRegistry dynamicRegistry = new DynamicSearchIndexRegistry();
+    final EmbeddingRoute workspaceRoute = EmbeddingRoute.newBuilder()
+        .setModelId("demo")
+        .setBackendId("static")
+        .setVectorSpaceId("demo-space")
+        .build();
+    final OpenNlpSearchServiceImpl service = new OpenNlpSearchServiceImpl(
+        new SearchIndexRegistry(List.of()),
+        dynamicRegistry,
+        new StubEmbeddingProvider(workspaceRoute, 2, List.of(workspaceRoute),
+            new float[] {1, 0}));
+    final CapturingObserver<IndexDocumentsResponse> indexed = new CapturingObserver<>();
+    service.indexDocuments(
+        DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha bravo", 1, 0), indexed);
+    assertNull(indexed.error);
+    final String indexId = indexed.value.getIndex().getIndexId();
+    service.indexDocuments(
+        DynamicSearchIndexRegistryTest.request(indexId, "doc-2", "charlie delta", 0, 1),
+        new CapturingObserver<>());
+
+    final QueryNode compound = QueryNode.newBuilder()
+        .setJoin(JoinClause.newBuilder()
+            .setOperator(JoinOperator.JOIN_OPERATOR_OR)
+            .addOperands(QueryNode.newBuilder()
+                .setSemantic(SemanticClause.newBuilder()
+                    .setDocument(OpenNlpDocument.newBuilder().setRawText("alpha"))))
+            .addOperands(QueryNode.newBuilder()
+                .setTerm(TermClause.newBuilder().setText("alpha"))))
+        .build();
+    final CapturingObserver<SearchIndexResponse> searched = new CapturingObserver<>();
+    service.searchIndex(compoundRequest(indexId, compound, 2), searched);
+
+    assertNull(searched.error);
+    assertEquals(2, searched.value.getHitsCount());
+    final var best = searched.value.getHits(0);
+    assertEquals("doc-1", best.getDocumentId());
+    assertEquals(1.0, best.getScore(), 1e-9);
+    assertEquals(1, best.getMatchedSpansCount());
+    assertEquals("alpha", best.getMatchedSpans(0).getTerm());
+    assertEquals(0, best.getMatchedSpans(0).getStart());
+    assertEquals(5, best.getMatchedSpans(0).getEnd());
+    assertTrue(searched.value.hasQueryEmbeddingRoute());
+    assertTrue(searched.value.getHits(1).getScore() >= 0
+        && searched.value.getHits(1).getScore() <= 1);
+  }
+
+  @Test
+  void compoundKeywordQueriesNeedNoEmbeddingRoute() {
+    final DynamicSearchIndexRegistry dynamicRegistry = new DynamicSearchIndexRegistry();
+    final EmbeddingRoute workspaceRoute = EmbeddingRoute.newBuilder()
+        .setModelId("demo")
+        .setBackendId("static")
+        .setVectorSpaceId("demo-space")
+        .build();
+    final OpenNlpSearchServiceImpl service = new OpenNlpSearchServiceImpl(
+        new SearchIndexRegistry(List.of()),
+        dynamicRegistry,
+        new StubEmbeddingProvider(workspaceRoute, 2, List.of(workspaceRoute),
+            new float[] {1, 0}));
+    final CapturingObserver<IndexDocumentsResponse> indexed = new CapturingObserver<>();
+    service.indexDocuments(
+        DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha bravo", 1, 0), indexed);
+    final String indexId = indexed.value.getIndex().getIndexId();
+
+    final QueryNode compound = QueryNode.newBuilder()
+        .setTerm(TermClause.newBuilder().setText("bravo"))
+        .build();
+    final CapturingObserver<SearchIndexResponse> searched = new CapturingObserver<>();
+    service.searchIndex(compoundRequest(indexId, compound, 1), searched);
+
+    assertNull(searched.error);
+    assertFalse(searched.value.hasQueryEmbeddingRoute());
+    assertEquals("bravo", searched.value.getHits(0).getMatchedSpans(0).getTerm());
+  }
+
+  @Test
+  void rejectsRequestsWithoutExactlyOneQueryForm() {
+    final OpenNlpSearchServiceImpl service = service(
+        provider(SearchIndexRegistryTest.descriptor("legal"), List.of()));
+
+    assertStatus(service, SearchIndexRequest.newBuilder()
+        .setIndexId("legal").setTopK(1).build(), Status.Code.INVALID_ARGUMENT);
+  }
+
+  @Test
+  void compoundQueriesOnIndexesWithoutCandidatesReportUnimplemented() {
+    final OpenNlpSearchServiceImpl service = service(
+        provider(SearchIndexRegistryTest.descriptor("legal"), List.of()));
+
+    final QueryNode compound = QueryNode.newBuilder()
+        .setTerm(TermClause.newBuilder().setText("alpha"))
+        .build();
+    assertStatus(service, compoundRequest("legal", compound, 1), Status.Code.UNIMPLEMENTED);
+  }
+
+  @Test
+  void celClausesWithoutAnInstalledEvaluatorReportUnimplemented() {
+    final DynamicSearchIndexRegistry dynamicRegistry = new DynamicSearchIndexRegistry();
+    final EmbeddingRoute workspaceRoute = EmbeddingRoute.newBuilder()
+        .setModelId("demo")
+        .setBackendId("static")
+        .setVectorSpaceId("demo-space")
+        .build();
+    final OpenNlpSearchServiceImpl service = new OpenNlpSearchServiceImpl(
+        new SearchIndexRegistry(List.of()),
+        dynamicRegistry,
+        new StubEmbeddingProvider(workspaceRoute, 2, List.of(workspaceRoute),
+            new float[] {1, 0}));
+    final CapturingObserver<IndexDocumentsResponse> indexed = new CapturingObserver<>();
+    service.indexDocuments(
+        DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha", 1, 0), indexed);
+    final String indexId = indexed.value.getIndex().getIndexId();
+
+    final QueryNode compound = QueryNode.newBuilder()
+        .setJoin(JoinClause.newBuilder()
+            .setOperator(JoinOperator.JOIN_OPERATOR_AND)
+            .addOperands(QueryNode.newBuilder()
+                .setTerm(TermClause.newBuilder().setText("alpha")))
+            .addOperands(QueryNode.newBuilder()
+                .setCelFilter(CelFilterClause.newBuilder()
+                    .setExpression("metadata.published == true"))))
+        .build();
+    assertStatus(service, compoundRequest(indexId, compound, 1), Status.Code.UNIMPLEMENTED);
   }
 
   @Test
@@ -345,6 +478,15 @@ class OpenNlpSearchServiceImplTest {
     return SearchIndexRequest.newBuilder()
         .setIndexId(indexId)
         .setQuery(OpenNlpDocument.newBuilder().setRawText(query))
+        .setTopK(topK)
+        .build();
+  }
+
+  private static SearchIndexRequest compoundRequest(
+      String indexId, QueryNode compound, int topK) {
+    return SearchIndexRequest.newBuilder()
+        .setIndexId(indexId)
+        .setCompoundQuery(compound)
         .setTopK(topK)
         .build();
   }

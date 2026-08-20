@@ -753,6 +753,15 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override
+    public List<org.apache.opennlp.grpc.search.query.QueryCandidate> queryCandidates() {
+      return snapshot.chunks().stream()
+          .map(chunk -> new org.apache.opennlp.grpc.search.query.QueryCandidate(
+              chunk.record(), chunk.vector()))
+          .toList();
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public List<SearchResult> search(float[] queryVector, int topK) {
       final Snapshot current = snapshot;
       if (queryVector == null || queryVector.length != dimension()) {
