@@ -30,6 +30,11 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
+import org.apache.opennlp.grpc.v1.CollectionEvent;
+import org.apache.opennlp.grpc.v1.DeleteCollectionRequest;
+import org.apache.opennlp.grpc.v1.GetCollectionRequest;
+import org.apache.opennlp.grpc.v1.SetCollectionRequest;
+import org.apache.opennlp.grpc.v1.WatchCollectionRequest;
 import org.apache.opennlp.grpc.v1.DeleteIndexAliasRequest;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
 import org.apache.opennlp.grpc.v1.PersistIndexRequest;
@@ -147,6 +152,14 @@ final class GrpcJsonApi {
             ? deleteIndexAlias(body) : methodNotAllowed();
         case "/api/v1/index-aliases" -> method.equals("GET")
             ? protobufJson(searchRpc.listAliases()) : methodNotAllowed();
+        case "/api/v1/set-collection" -> method.equals("POST")
+            ? setCollection(body) : methodNotAllowed();
+        case "/api/v1/get-collection" -> method.equals("POST")
+            ? getCollection(body) : methodNotAllowed();
+        case "/api/v1/collections" -> method.equals("GET")
+            ? protobufJson(searchRpc.listCollections()) : methodNotAllowed();
+        case "/api/v1/delete-collection" -> method.equals("POST")
+            ? deleteCollection(body) : methodNotAllowed();
         case "/api/v1/dictionary-formats" -> method.equals("GET")
             ? protobufJson(vocabularyRpc.listDictionaryFormats()) : methodNotAllowed();
         case "/api/v1/import-dictionary" -> method.equals("POST")
@@ -389,6 +402,100 @@ final class GrpcJsonApi {
   }
 
   /**
+   * Parses and forwards a collection upsert.
+   *
+   * @param body Protobuf JSON request body.
+   * @return Encoded collection descriptor or parse failure.
+   */
+  private WebHttpResponse setCollection(byte[] body) {
+    final SetCollectionRequest.Builder request = SetCollectionRequest.newBuilder();
+    final WebHttpResponse parseFailure = merge(body, request);
+    return parseFailure != null ? parseFailure
+        : protobufJson(searchRpc.setCollection(request.build()));
+  }
+
+  /**
+   * Parses and forwards a collection read.
+   *
+   * @param body Protobuf JSON request body.
+   * @return Encoded collection descriptor or parse failure.
+   */
+  private WebHttpResponse getCollection(byte[] body) {
+    final GetCollectionRequest.Builder request = GetCollectionRequest.newBuilder();
+    final WebHttpResponse parseFailure = merge(body, request);
+    return parseFailure != null ? parseFailure
+        : protobufJson(searchRpc.getCollection(request.build()));
+  }
+
+  /**
+   * Parses and forwards a collection deletion.
+   *
+   * @param body Protobuf JSON request body.
+   * @return Encoded deletion response or parse failure.
+   */
+  private WebHttpResponse deleteCollection(byte[] body) {
+    final DeleteCollectionRequest.Builder request = DeleteCollectionRequest.newBuilder();
+    final WebHttpResponse parseFailure = merge(body, request);
+    return parseFailure != null ? parseFailure
+        : protobufJson(searchRpc.deleteCollection(request.build()));
+  }
+
+  /**
+   * Watches one collection, streaming each event to the sink as an NDJSON line. This
+   * endpoint is dispatched by the HTTP handler rather than {@link #handle}, because the
+   * subscription outlives a buffered response. The adapter's deadline bounds the watch
+   * lifetime: a DEADLINE_EXCEEDED or CANCELLED end after streaming closes quietly, and
+   * the client reconnects for a fresh snapshot.
+   *
+   * @param body Protobuf JSON of one WatchCollectionRequest.
+   * @param sink Receives one protobuf JSON line per event; the first call commits the
+   *     streamed 200 response.
+   * @return A buffered failure to send instead, or {@code null} once streaming started
+   *     and finished (an unexpected late failure is appended as a final error line).
+   * @throws IOException If writing to the sink fails.
+   */
+  WebHttpResponse watchCollection(byte[] body, JsonLineSink sink) throws IOException {
+    final WatchCollectionRequest.Builder request = WatchCollectionRequest.newBuilder();
+    final WebHttpResponse parseFailure = merge(body, request);
+    if (parseFailure != null) {
+      return parseFailure;
+    }
+    boolean streamed = false;
+    try {
+      final java.util.Iterator<CollectionEvent> events =
+          searchRpc.watchCollection(request.build());
+      while (events.hasNext()) {
+        sink.update(printer.print(events.next()));
+        streamed = true;
+      }
+      return null;
+    } catch (StatusRuntimeException exception) {
+      final Status status = exception.getStatus();
+      if (streamed && (status.getCode() == Status.Code.DEADLINE_EXCEEDED
+          || status.getCode() == Status.Code.CANCELLED)) {
+        return null;
+      }
+      String message = status.getDescription();
+      if (message == null || message.isBlank()) {
+        message = status.getCode().name();
+      }
+      if (!streamed) {
+        return error(GrpcHttpStatusMapper.toHttpStatus(status.getCode()),
+            status.getCode(), message);
+      }
+      sink.update(errorJson(status.getCode(), message));
+      return null;
+    } catch (InvalidProtocolBufferException exception) {
+      final String message = "Could not encode the service response";
+      if (!streamed) {
+        return error(500, Status.Code.INTERNAL, message);
+      }
+      sink.update(errorJson(Status.Code.INTERNAL, message));
+      return null;
+    }
+  }
+
+  /**
    * Runs one distillation, streaming each update to the sink as an NDJSON line. This
    * endpoint is dispatched by the HTTP handler rather than {@link #handle}, because a
    * training run outlives a buffered response.
@@ -400,7 +507,7 @@ final class GrpcJsonApi {
    *     and finished (a late failure is appended as a final error line).
    * @throws IOException If writing to the sink fails.
    */
-  WebHttpResponse trainStaticModel(byte[] body, TrainingUpdateSink sink) throws IOException {
+  WebHttpResponse trainStaticModel(byte[] body, JsonLineSink sink) throws IOException {
     final TrainStaticModelRequest.Builder request = TrainStaticModelRequest.newBuilder();
     final WebHttpResponse parseFailure = merge(body, request);
     if (parseFailure != null) {
@@ -437,8 +544,8 @@ final class GrpcJsonApi {
     }
   }
 
-  /** Receives one streamed protobuf JSON line per training update. */
-  interface TrainingUpdateSink {
+  /** Receives one streamed protobuf JSON line of an NDJSON response. */
+  interface JsonLineSink {
 
     /**
      * Accepts one NDJSON line.

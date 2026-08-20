@@ -263,10 +263,14 @@ requests set exactly one of the two.
    with content-hash integrity, explicit `PersistIndex` and `SealIndex` with
    the optional `search.persist.checkpoint_seconds` auto-checkpoint, alias
    RPCs persisted as `aliases.pb` and resolved wherever an index id is
-   accepted, and blue/green `ReindexIndex` replaying retained chunks through
+   accepted, blue/green `ReindexIndex` replaying retained chunks through
    a newly selected embedding route with the alias swapping only after a
-   successful build. Remaining in this step: the collection descriptor file
-   and the watch stream.
+   successful build, the collection CRUD RPCs with per-collection
+   `collection.pb` files (term ledger and drift recomputed from live member
+   contents on every read, integrity hash inside, last write wins), and the
+   server-streaming `WatchCollection` whose self-contained snapshot events
+   report drift threshold crossings, member persistence, and model
+   publication. This step is complete.
 4. `opennlp-grpc-search-lucene` as the first external provider module, mapped
    mechanically: join to BooleanQuery, boost to BoostQuery, semantic to
    KnnFloatVectorQuery.

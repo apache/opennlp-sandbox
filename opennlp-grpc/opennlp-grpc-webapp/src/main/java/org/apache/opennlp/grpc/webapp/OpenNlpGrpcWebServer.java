@@ -148,6 +148,7 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
     private static final String JSON_MEDIA_TYPE = "application/json";
     private static final String NDJSON_CONTENT_TYPE = "application/x-ndjson; charset=utf-8";
     private static final String TRAIN_STATIC_MODEL_PATH = "/api/v1/train-static-model";
+    private static final String WATCH_COLLECTION_PATH = "/api/v1/watch-collection";
     private static final String METHOD_NOT_ALLOWED =
         "HTTP method is not allowed for this endpoint";
 
@@ -232,7 +233,16 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
                 METHOD_NOT_ALLOWED));
             return;
           }
-          streamTrainStaticModel(exchange, body);
+          streamNdjson(exchange, sink -> api.trainStaticModel(body, sink));
+          return;
+        }
+        if (rawPath.equals(WATCH_COLLECTION_PATH)) {
+          if (!method.equals(HTTP_POST)) {
+            send(exchange, GrpcJsonApi.error(405, Status.Code.UNIMPLEMENTED,
+                METHOD_NOT_ALLOWED));
+            return;
+          }
+          streamNdjson(exchange, sink -> api.watchCollection(body, sink));
           return;
         }
         WebHttpResponse response = rawPath.equals("/api/v1/ui-extensions")
@@ -255,21 +265,34 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
       send(exchange, new WebHttpResponse(200, resolved.contentType(), resolved.content()));
     }
 
+    /** One API call that streams its response through a JSON line sink. */
+    @FunctionalInterface
+    private interface NdjsonEndpoint {
+
+      /**
+       * Runs the call, streaming lines to the sink.
+       *
+       * @param sink Receives one protobuf JSON line per streamed message.
+       * @return A buffered failure to send instead, or {@code null} once streamed.
+       * @throws IOException If writing to the sink fails.
+       */
+      WebHttpResponse stream(GrpcJsonApi.JsonLineSink sink) throws IOException;
+    }
+
     /**
-     * Runs one training request, streaming each update as an NDJSON line so the
-     * browser sees distillation progress while the run is still going. The 200
-     * response commits on the first update; a failure before that is sent as a
-     * normal buffered JSON error, and a failure after it arrives as a final
-     * error line.
+     * Runs one streaming request, sending each message as an NDJSON line so the
+     * browser sees updates while the call is still going. The 200 response
+     * commits on the first line; a failure before that is sent as a normal
+     * buffered JSON error, and a failure after it arrives as a final error line.
      *
      * @param exchange The active HTTP exchange.
-     * @param body The request body.
+     * @param endpoint The streaming API call.
      * @throws IOException If the request or response body cannot be transferred.
      */
-    private void streamTrainStaticModel(HttpExchange exchange, byte[] body)
+    private void streamNdjson(HttpExchange exchange, NdjsonEndpoint endpoint)
         throws IOException {
       final java.io.OutputStream[] stream = new java.io.OutputStream[1];
-      final WebHttpResponse buffered = api.trainStaticModel(body, json -> {
+      final WebHttpResponse buffered = endpoint.stream(json -> {
         if (stream[0] == null) {
           exchange.getResponseHeaders().set("Content-Type", NDJSON_CONTENT_TYPE);
           exchange.sendResponseHeaders(200, 0);

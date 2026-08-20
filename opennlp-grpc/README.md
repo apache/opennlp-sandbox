@@ -539,6 +539,23 @@ does; flat float is in-memory only). The gateway serves all of it: `/api/v1/pers
 `/api/v1/seal-index`, `/api/v1/reindex-index`, `/api/v1/set-index-alias`,
 `/api/v1/delete-index-alias`, and `/api/v1/index-aliases`.
 
+Collections scope vocabulary accretion. A collection (`SetCollection`, `GetCollection`,
+`ListCollections`, `DeleteCollection`) names its dynamic member indexes (aliases accepted,
+stored resolved), its dictionary, vocabulary, and model artifact lineage, and an optional
+drift threshold. Its term ledger is recomputed on every read from the live emitted text of
+member chunks with the same analysis chain as the keyword legs, so replaced or deleted
+documents never leave stale counts; a multiword term of the current vocabulary counts as
+one unit, and the drift statistics report how many accreted terms fall outside that
+vocabulary (the retrain meter). With a persistence root configured, each collection is one
+atomic `collection.pb` file with an integrity hash inside and the last write winning.
+`WatchCollection` is a server-streaming subscription: the first event is always a complete
+snapshot, and later events report drift threshold crossings, member index persistence, and
+model publication, each self-contained, so a reconnect simply resubscribes. The gateway
+serves `/api/v1/set-collection`, `/api/v1/get-collection`, `/api/v1/collections`,
+`/api/v1/delete-collection`, and `POST /api/v1/watch-collection`, which streams events as
+NDJSON lines until the gateway's RPC deadline ends the watch and the client reconnects for
+a fresh snapshot.
+
 `IndexDocuments` also accepts analyzed `OpenNlpDocument` values whose chunk groups already carry
 embeddings. It creates or atomically extends a bounded index in server memory, so the browser
 never stores vectors or computes similarity. The optional `provider` selector fixes the vector
