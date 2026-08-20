@@ -26,6 +26,7 @@ import {
 } from "./query-builder";
 import type { SearchHit, SearchIndex, SearchRequest, SearchResponse } from "./search-adapter";
 import { createCompoundSearchRequest, createSearchRequest } from "./search-adapter";
+import { buildDocumentHeat, type HeatSegment } from "./search-heatmap";
 import {
   compareChunkText,
   documentAnalytics,
@@ -87,12 +88,17 @@ export class ServerSearchWorkbench {
   readonly #builderClauses = requiredElement<HTMLElement>("builder-clauses");
   readonly #builderJoin = requiredElement<HTMLSelectElement>("builder-join");
   readonly #builderClear = requiredElement<HTMLButtonElement>("builder-clear-button");
+  readonly #viewListButton = requiredElement<HTMLButtonElement>("server-view-list-button");
+  readonly #viewHeatmapButton = requiredElement<HTMLButtonElement>("server-view-heatmap-button");
+  readonly #heatmap = requiredElement<HTMLElement>("server-search-heatmap");
 
   #indexes: SearchIndex[] = [];
   #hits: SearchHit[] = [];
   #clauses: QueryClause[] = [];
   #busy = false;
   #selectionGeneration = 0;
+  #heatmapView = false;
+  #fullCoverage = true;
 
   constructor(options: ServerSearchWorkbenchOptions) {
     this.#options = options;
@@ -109,6 +115,8 @@ export class ServerSearchWorkbench {
       this.renderClauses();
       this.updateControls();
     });
+    this.#viewListButton.addEventListener("click", () => this.setHeatmapView(false));
+    this.#viewHeatmapButton.addEventListener("click", () => this.setHeatmapView(true));
     this.updateBuilderControls();
     this.renderClauses();
   }
@@ -203,7 +211,10 @@ export class ServerSearchWorkbench {
     const query = this.#query.value.trim();
     const compound = this.#clauses.length > 0;
     const maximum = index?.maxTopK ?? 50;
-    const topK = Math.min(maximum, Math.max(1, Number.parseInt(this.#topK.value, 10) || 8));
+    // The heatmap shades every chunk, so it always requests the index's full top_k.
+    const topK = this.#heatmapView
+      ? maximum
+      : Math.min(maximum, Math.max(1, Number.parseInt(this.#topK.value, 10) || 8));
     if (!index || (!query && !compound) || this.#busy) {
       return;
     }
@@ -235,7 +246,9 @@ export class ServerSearchWorkbench {
     try {
       const response = await this.#options.search(request);
       this.#hits = response.hits;
+      this.#fullCoverage = response.hits.length < topK || topK >= maximum;
       this.renderResults();
+      this.renderHeatmap();
       this.setStatus(searchResultStatus(this.#hits.length, response.truncated));
       if (this.#hits[0]) {
         await this.selectHit(this.#hits[0].id);
@@ -243,6 +256,7 @@ export class ServerSearchWorkbench {
     } catch (error) {
       this.#hits = [];
       this.renderResults();
+      this.renderHeatmap();
       this.setStatus(errorMessage(error, "Search failed."), true);
     } finally {
       this.#busy = false;
@@ -283,13 +297,100 @@ export class ServerSearchWorkbench {
     }));
   }
 
+  /** Switches between the ranked list and the document heatmap. */
+  private setHeatmapView(active: boolean): void {
+    if (this.#heatmapView === active) {
+      return;
+    }
+    this.#heatmapView = active;
+    this.#viewListButton.setAttribute("aria-pressed", String(!active));
+    this.#viewHeatmapButton.setAttribute("aria-pressed", String(active));
+    this.#results.hidden = active;
+    this.#heatmap.hidden = !active;
+    this.#topK.disabled = active || this.#busy || this.#indexes.length === 0;
+  }
+
+  /** Renders every returned chunk over its document's source text, shaded by score. */
+  private renderHeatmap(): void {
+    const documents = buildDocumentHeat(this.#hits);
+    if (documents.length === 0) {
+      this.#heatmap.replaceChildren(
+        emptyMessage("Run a query in heatmap view to shade every chunk of every document."));
+      return;
+    }
+    const rendered = documents.map((heat) => {
+      const article = document.createElement("article");
+      article.className = "heat-document";
+      const heading = document.createElement("div");
+      heading.className = "heat-document-heading";
+      const identity = document.createElement("h4");
+      identity.textContent = heat.documentId;
+      const chunks = document.createElement("small");
+      chunks.textContent = `${heat.chunkCount} scored ${heat.chunkCount === 1 ? "chunk" : "chunks"}`;
+      heading.append(identity, chunks, scoreBadge(heat.maxScore));
+      const text = document.createElement("p");
+      text.className = "heat-text";
+      text.append(...heat.segments.map((segment) => this.heatSegmentNode(segment)));
+      article.append(heading, text);
+      return article;
+    });
+    if (this.#fullCoverage) {
+      this.#heatmap.replaceChildren(...rendered);
+      return;
+    }
+    const note = document.createElement("p");
+    note.className = "heat-coverage-note";
+    note.textContent = "Only the requested top results are shaded. Search again in heatmap view "
+      + "to score every chunk.";
+    this.#heatmap.replaceChildren(note, ...rendered);
+  }
+
+  /** Builds one heat segment: plain gap text, or a selectable score-shaded chunk. */
+  private heatSegmentNode(segment: HeatSegment): Node {
+    if (segment.score === undefined || !segment.hitId) {
+      return document.createTextNode(segment.text);
+    }
+    const color = scoreColor(segment.score);
+    const chunk = document.createElement("button");
+    chunk.type = "button";
+    chunk.className = "heat-chunk";
+    chunk.dataset.hitId = segment.hitId;
+    chunk.style.backgroundColor = color.background;
+    chunk.style.color = color.foreground;
+    chunk.title = `${segment.chunkId} · score ${segment.score.toFixed(4)}`;
+    chunk.setAttribute("aria-pressed", "false");
+    chunk.setAttribute("aria-label",
+      `Chunk ${segment.chunkId}, cosine score ${segment.score.toFixed(4)}`);
+    chunk.addEventListener("click", () => void this.selectHit(segment.hitId ?? ""));
+    chunk.append(...matchedSegments({
+      emittedChunkText: segment.text,
+      matchedSpans: segment.matchedSpans,
+    }).map((part) => {
+      if (!part.matched) {
+        return document.createTextNode(part.text);
+      }
+      const mark = document.createElement("mark");
+      mark.className = "matched-span";
+      mark.textContent = part.text;
+      if (part.term) {
+        mark.title = `Matched query term: ${part.term}`;
+      }
+      return mark;
+    }));
+    return chunk;
+  }
+
   private async selectHit(id: string): Promise<void> {
     const hit = this.#selection.select(this.#hits, id);
     if (!hit) {
       return;
     }
     const generation = ++this.#selectionGeneration;
-    for (const button of this.#results.querySelectorAll<HTMLButtonElement>(".server-search-hit")) {
+    const selectable = [
+      ...this.#results.querySelectorAll<HTMLButtonElement>(".server-search-hit"),
+      ...this.#heatmap.querySelectorAll<HTMLButtonElement>(".heat-chunk"),
+    ];
+    for (const button of selectable) {
       button.setAttribute("aria-pressed", String(button.dataset.hitId === id));
     }
     this.renderHit(hit);
@@ -454,7 +555,7 @@ export class ServerSearchWorkbench {
       || (!this.#query.value.trim() && this.#clauses.length === 0);
     this.#indexSelect.disabled = this.#busy || this.#indexes.length === 0;
     this.#query.disabled = this.#busy || this.#indexes.length === 0;
-    this.#topK.disabled = this.#busy || this.#indexes.length === 0;
+    this.#topK.disabled = this.#heatmapView || this.#busy || this.#indexes.length === 0;
   }
 
   private setStatus(message: string, error = false): void {

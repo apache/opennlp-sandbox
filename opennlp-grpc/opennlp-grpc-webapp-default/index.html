@@ -384,10 +384,21 @@
             <section class="server-results-panel" aria-labelledby="server-results-heading">
               <div class="panel-heading">
                 <div><span>Ranked evidence</span><h4 id="server-results-heading">Search results</h4></div>
-                <small id="server-result-count">0 hits</small>
+                <div class="results-heading-tools">
+                  <div class="results-view-toggle" role="group" aria-label="Results view">
+                    <button id="server-view-list-button" type="button" aria-pressed="true">List</button>
+                    <button id="server-view-heatmap-button" type="button" aria-pressed="false">Heatmap</button>
+                  </div>
+                  <small id="server-result-count">0 hits</small>
+                </div>
               </div>
               <div id="server-search-results" aria-label="Server search results" class="server-search-results">
                 <p class="empty-message">Run a query to inspect scored source chunks.</p>
+              </div>
+              <div id="server-search-heatmap" aria-label="Document heatmap of scored chunks"
+                class="server-search-heatmap" hidden>
+                <p class="empty-message">Switch on the heatmap and run a query to shade every chunk of every
+                  document by its score.</p>
               </div>
             </section>
 

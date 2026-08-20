@@ -492,6 +492,20 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 .panel-heading h4 { margin: 0.25rem 0 0; color: #eef5fc; font-size: 0.9rem; }
 .panel-heading small { color: #7e8da4; font-size: 0.65rem; }
 .server-search-results { display: grid; overflow: auto; max-height: 52rem; gap: 0.45rem; padding: 0.7rem; }
+.results-heading-tools { display: flex; align-items: center; gap: 0.7rem; }
+.results-view-toggle { display: inline-flex; padding: 0.18rem; border: 1px solid #33435a; border-radius: 0.55rem; background: #101b2c; }
+.results-view-toggle button { min-height: 1.9rem; padding: 0.35rem 0.65rem; border: 0; border-radius: 0.4rem; background: transparent; color: #8e9db3; font-size: 0.62rem; font-weight: 800; }
+.results-view-toggle button[aria-pressed="true"] { background: #276fca; color: white; }
+.server-search-heatmap { display: grid; overflow: auto; max-height: 52rem; gap: 0.8rem; padding: 0.9rem; }
+.heat-document { border: 1px solid #253147; border-radius: 0.6rem; background: #101a2b; }
+.heat-document-heading { display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0.8rem; border-bottom: 1px solid #223048; }
+.heat-document-heading h4 { overflow: hidden; margin: 0; color: #edf4fc; font-size: 0.74rem; text-overflow: ellipsis; white-space: nowrap; }
+.heat-document-heading small { flex: 1; color: #74849c; font-size: 0.58rem; }
+.heat-text { margin: 0; padding: 0.8rem; color: #a8b5c8; font-size: 0.72rem; line-height: 1.9; white-space: pre-wrap; overflow-wrap: anywhere; }
+.heat-chunk { display: inline; margin: 0; padding: 0.08rem 0.14rem; border: 1px solid transparent; border-radius: 0.28rem; font: inherit; text-align: inherit; cursor: pointer; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.heat-chunk:hover { border-color: #67d5f5; }
+.heat-chunk[aria-pressed="true"] { border-color: #67d5f5; box-shadow: 0 0 0 1px #67d5f5; }
+.heat-coverage-note { margin: 0; padding: 0.6rem 0.8rem; border: 1px solid #4a3a22; border-radius: 0.5rem; background: #241b0e; color: #f3c89b; font-size: 0.64rem; }
 .server-search-hit { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.7rem; width: 100%; padding: 0.78rem; border: 1px solid transparent; border-radius: 0.6rem; background: #152137; color: inherit; text-align: left; }
 .server-search-hit:hover { border-color: #3a526f; background: #192943; }
 .server-search-hit[aria-pressed="true"] { border-color: #4a8fd7; background: #193354; box-shadow: inset 3px 0 0 #67d5f5; }
