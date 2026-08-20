@@ -54,6 +54,121 @@ service OpenNlpSearchService {
   // Deletes an in-memory index created through IndexDocuments. Immutable,
   // startup-loaded indexes cannot be deleted through this API.
   rpc DeleteSearchIndex(DeleteSearchIndexRequest) returns (DeleteSearchIndexResponse);
+
+  // Persists one dynamic index as a checkpoint under the operator-configured
+  // persistence root, retaining raw vectors so accretion continues across
+  // restarts. Reports FAILED_PRECONDITION when persistence is not configured
+  // or the index's provider instance does not declare the persistent
+  // capability, and NOT_FOUND for an unknown index.
+  rpc PersistIndex(PersistIndexRequest) returns (PersistIndexResponse);
+
+  // Persists one dynamic index and marks it immutable: further IndexDocuments
+  // calls report FAILED_PRECONDITION and the sealed index is restored as
+  // immutable after a restart. Reports the PersistIndex error contract.
+  rpc SealIndex(SealIndexRequest) returns (SealIndexResponse);
+
+  // Builds a new index beside an existing one, blue/green, by replaying the
+  // source index's retained chunks through a newly selected embedding route.
+  // The source index keeps serving unchanged; when the request names an
+  // alias, the alias swaps to the new index only after the build succeeds.
+  rpc ReindexIndex(ReindexIndexRequest) returns (ReindexIndexResponse);
+
+  // Creates or repoints one alias. Aliases are logical names accepted by
+  // SearchIndexRequest.index_id; descriptors always answer with the resolved
+  // index id. An alias must not collide with an existing index id.
+  rpc SetIndexAlias(SetIndexAliasRequest) returns (SetIndexAliasResponse);
+
+  // Deletes one alias. The index it pointed to is unaffected.
+  rpc DeleteIndexAlias(DeleteIndexAliasRequest) returns (DeleteIndexAliasResponse);
+
+  // Lists every alias in stable alias order.
+  rpc ListIndexAliases(ListIndexAliasesRequest) returns (ListIndexAliasesResponse);
+}
+
+// Persists one dynamic index by its id.
+message PersistIndexRequest {
+  string index_id = 1;
+}
+
+// Confirms one persisted checkpoint.
+message PersistIndexResponse {
+  // Descriptor after the checkpoint is written, with persisted set.
+  SearchIndexDescriptor index = 1;
+}
+
+// Seals one dynamic index by its id.
+message SealIndexRequest {
+  string index_id = 1;
+}
+
+// Confirms one sealed index.
+message SealIndexResponse {
+  // Descriptor after sealing, immutable and persisted.
+  SearchIndexDescriptor index = 1;
+}
+
+// Rebuilds one index's retained chunks under a new embedding selection.
+message ReindexIndexRequest {
+  // Source index id or alias. Required.
+  string index_id = 1;
+  // Embedding model and optional backend for the new index. Required.
+  EmbeddingSelector embedding = 2;
+  // Vector storage for the new index. Unset keeps the source index's
+  // provider instance.
+  SearchProviderSelector provider = 3;
+  // Alias to swap to the new index after a successful build. The alias may
+  // be new or may currently point at the source index.
+  optional string alias = 4;
+}
+
+// Result of one blue/green reindex build.
+message ReindexIndexResponse {
+  // Descriptor of the newly built index.
+  SearchIndexDescriptor index = 1;
+  // Id of the source index, which keeps serving unchanged.
+  string source_index_id = 2;
+  // Number of distinct documents replayed into the new index.
+  uint32 reindexed_documents = 3;
+  // Number of chunks replayed into the new index.
+  uint32 reindexed_chunks = 4;
+}
+
+// One logical alias resolving to a current index id.
+message IndexAlias {
+  string alias = 1;
+  string index_id = 2;
+}
+
+// Creates or repoints one alias.
+message SetIndexAliasRequest {
+  string alias = 1;
+  string index_id = 2;
+}
+
+// Confirms one alias upsert.
+message SetIndexAliasResponse {
+  IndexAlias alias = 1;
+}
+
+// Deletes one alias by name.
+message DeleteIndexAliasRequest {
+  string alias = 1;
+}
+
+// Confirms whether the alias existed and was deleted.
+message DeleteIndexAliasResponse {
+  string alias = 1;
+  bool deleted = 2;
+}
+
+// Input to ListIndexAliases. Empty because the bounded contract has no
+// filtering or pagination.
+message ListIndexAliasesRequest {}
+
+// Every alias configured on this server.
+message ListIndexAliasesResponse {
+  // Aliases in stable alias order.
+  repeated IndexAlias aliases = 1;
 }
 
 // Adds analyzed document shapes to a bounded server-owned in-memory index.
@@ -153,7 +268,8 @@ message ListSearchIndexesResponse {
 // to interpret its results.
 message SearchIndexDescriptor {
   // Server-owned identifier used in SearchIndexRequest.index_id. Dynamic ids
-  // remain valid only for the lifetime of their server process.
+  // remain valid only for the lifetime of their server process unless the
+  // index is persisted, in which case restarts restore it under the same id.
   string index_id = 1;
   // Human-readable name suitable for an index selector.
   string display_name = 2;
@@ -185,6 +301,9 @@ message SearchIndexDescriptor {
   // Per-modality legs of this logical index and the provider instance behind
   // each. Hybrid compound queries fuse across the legs of one logical index.
   repeated SearchIndexLeg legs = 14;
+  // True when a checkpoint of this index exists under the operator-configured
+  // persistence root, so the index survives a server restart.
+  bool persisted = 15;
 }
 
 // One independently provided modality of a logical index.
@@ -286,7 +405,8 @@ message SearchProviderSelector {
 // One query against a server-owned index: either a document-shaped semantic
 // query or a typed compound query tree. Exactly one form must be set.
 message SearchIndexRequest {
-  // Stable id from ListSearchIndexes. Required.
+  // Stable id from ListSearchIndexes, or an alias from ListIndexAliases.
+  // Required. The response descriptor always carries the resolved index id.
   string index_id = 1;
   oneof query_kind {
     // Document-shaped query. query.raw_text must be non-blank. The complete
