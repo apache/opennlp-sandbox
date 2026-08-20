@@ -34,6 +34,8 @@ import org.apache.opennlp.grpc.v1.EmbeddingBackendSelector;
 import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.SearchProviderSelector;
+import org.apache.opennlp.grpc.v1.StandardSearchProvider;
 import org.apache.opennlp.grpc.v1.StandardEmbeddingBackend;
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.junit.jupiter.api.Test;
@@ -171,6 +173,64 @@ class DynamicSearchIndexRegistryTest {
         .build();
 
     assertEquals(1, registry.index(typed).getIndex().getSize());
+  }
+
+  @Test
+  void buildsAndSearchesATurboQuantDynamicIndex() {
+    final DynamicSearchIndexRegistry registry = new DynamicSearchIndexRegistry();
+    final IndexDocumentsRequest turbo = request(null, "doc-1", "alpha", 1, 0).toBuilder()
+        .setProvider(SearchProviderSelector.newBuilder()
+            .setStandard(StandardSearchProvider.STANDARD_SEARCH_PROVIDER_TURBO_QUANT))
+        .build();
+    final var created = registry.index(turbo);
+
+    assertEquals(StandardSearchProvider.STANDARD_SEARCH_PROVIDER_TURBO_QUANT,
+        created.getIndex().getProvider().getStandard());
+    final String indexId = created.getIndex().getIndexId();
+    final var extended = registry.index(request(indexId, "doc-2", "beta", 0, 1));
+    assertEquals(2, extended.getIndex().getSize());
+    assertEquals(StandardSearchProvider.STANDARD_SEARCH_PROVIDER_TURBO_QUANT,
+        extended.getIndex().getProvider().getStandard());
+
+    final List<SearchResult> hits = registry.require(indexId)
+        .search(new float[] {1, 0}, 2);
+    assertEquals(2, hits.size());
+    assertEquals("doc-1", hits.getFirst().record().documentId());
+    assertTrue(hits.getFirst().score() > hits.getLast().score());
+    assertTrue(hits.getFirst().score() > 0.5);
+  }
+
+  @Test
+  void keepsTheProviderFixedAfterIndexCreation() {
+    final DynamicSearchIndexRegistry registry = new DynamicSearchIndexRegistry();
+    final var created = registry.index(request(null, "doc-1", "alpha", 1, 0));
+
+    final IndexDocumentsRequest mismatch =
+        request(created.getIndex().getIndexId(), "doc-2", "beta", 0, 1).toBuilder()
+            .setProvider(SearchProviderSelector.newBuilder()
+                .setStandard(StandardSearchProvider.STANDARD_SEARCH_PROVIDER_TURBO_QUANT))
+            .build();
+
+    final AnalysisException failure =
+        assertThrows(AnalysisException.class, () -> registry.index(mismatch));
+    assertEquals(AnalysisException.FailureType.FAILED_PRECONDITION, failure.getFailureType());
+    assertEquals(1, registry.require(created.getIndex().getIndexId()).descriptor().getSize());
+  }
+
+  @Test
+  void rejectsCustomAndUnspecifiedDynamicProviders() {
+    final DynamicSearchIndexRegistry registry = new DynamicSearchIndexRegistry();
+
+    final IndexDocumentsRequest custom = request(null, "doc-1", "alpha", 1, 0).toBuilder()
+        .setProvider(SearchProviderSelector.newBuilder().setCustom("my-provider"))
+        .build();
+    assertThrows(AnalysisException.class, () -> registry.index(custom));
+
+    final IndexDocumentsRequest unspecified = request(null, "doc-1", "alpha", 1, 0).toBuilder()
+        .setProvider(SearchProviderSelector.getDefaultInstance())
+        .build();
+    assertThrows(AnalysisException.class, () -> registry.index(unspecified));
+    assertTrue(registry.descriptors().isEmpty());
   }
 
   static IndexDocumentsRequest request(

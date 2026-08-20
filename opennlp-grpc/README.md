@@ -494,8 +494,11 @@ may fall back to another embedding backend only when model ID, vector-space ID, 
 remain compatible with the route that built the index.
 
 `IndexDocuments` also accepts analyzed `OpenNlpDocument` values whose chunk groups already carry
-embeddings. It creates or atomically extends a bounded flat index in server memory, so the browser
-never stores vectors or computes similarity. `DeleteSearchIndex` releases that process-local
+embeddings. It creates or atomically extends a bounded index in server memory, so the browser
+never stores vectors or computes similarity. The optional `provider` selector fixes the vector
+storage at creation: the exact flat float provider (the default) or TurboQuant, which quantizes
+each published snapshot with a fixed bit width and seed; extending an index requires the same
+or an unset selector. `DeleteSearchIndex` releases that process-local
 workspace. Dynamic indexing is enabled by default for the workbench and can be disabled with
 `search.dynamic.enabled=false`. Per-index document, serialized source-document, chunk, and
 dimension limits are combined with server-wide serialized-document and vector-memory ceilings.

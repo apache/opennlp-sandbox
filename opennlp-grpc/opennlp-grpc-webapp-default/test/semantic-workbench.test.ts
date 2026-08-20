@@ -48,6 +48,10 @@ describe("workspace search", () => {
     document.body.innerHTML = `
       <button id="add-to-index-button"></button>
       <button id="clear-index-button"></button>
+      <select id="workspace-provider-select">
+        <option value="STANDARD_SEARCH_PROVIDER_FLAT_FLOAT" selected></option>
+        <option value="STANDARD_SEARCH_PROVIDER_TURBO_QUANT"></option>
+      </select>
       <form id="semantic-search-form"><textarea id="semantic-query" disabled></textarea>
         <button id="search-button" type="submit" disabled></button></form>
       <span id="index-count"></span><p id="semantic-status"></p><div id="search-results"></div>

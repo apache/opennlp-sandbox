@@ -64,6 +64,7 @@ export class SemanticWorkbench {
   readonly #options: SemanticWorkbenchOptions;
   readonly #addButton = requiredElement<HTMLButtonElement>("add-to-index-button");
   readonly #clearButton = requiredElement<HTMLButtonElement>("clear-index-button");
+  readonly #providerSelect = requiredElement<HTMLSelectElement>("workspace-provider-select");
   readonly #searchForm = requiredElement<HTMLFormElement>("semantic-search-form");
   readonly #query = requiredElement<HTMLTextAreaElement>("semantic-query");
   readonly #searchButton = requiredElement<HTMLButtonElement>("search-button");
@@ -227,6 +228,8 @@ export class SemanticWorkbench {
     this.#workspace = await this.#options.index({
       ...(this.#workspace ? { indexId: this.#workspace.id } : {}),
       displayName: "Workbench index",
+      // The provider is fixed at creation; extensions inherit it by omitting it.
+      ...(this.#workspace ? {} : { provider: { standard: this.#providerSelect.value } }),
       documents: [document],
       embedding: { modelId: current.modelId },
       chunkGroupIds: current.groupIds,
@@ -444,6 +447,7 @@ export class SemanticWorkbench {
   }
 
   private updateControls(): void {
+    this.#providerSelect.disabled = Boolean(this.#workspace) || this.#busy;
     const indexable = Boolean(this.#current?.wireDocument && this.#current.modelId);
     const searchable = Boolean(this.#workspace) || indexable;
     this.#addButton.disabled = !indexable || this.#busy;

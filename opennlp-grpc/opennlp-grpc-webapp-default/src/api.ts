@@ -66,6 +66,8 @@ export interface IndexDocumentsRequest {
   documents: Array<Record<string, unknown>>;
   embedding: { modelId: string };
   chunkGroupIds?: string[];
+  /** Vector storage for a new dynamic index; omitted keeps the server default. */
+  provider?: { standard: string };
 }
 
 export interface ImportDictionaryUpload {

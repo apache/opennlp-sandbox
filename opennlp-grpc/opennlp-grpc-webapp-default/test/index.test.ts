@@ -101,7 +101,10 @@ describe("analysis playground markup", () => {
     expect(html).toContain('id="search-inspector"');
     expect(html).toContain('id="search-analytics" aria-label="Selected document analytics"');
     expect(html).toContain('On-the-fly workspace index');
-    expect(html).toContain('The browser renders server scores and never performs vector ranking');
+    expect(html).toContain('The browser renders server scores and');
+    expect(html).toContain('never performs vector ranking');
+    expect(html).toContain('workspace-provider-select');
+    expect(html).toContain('STANDARD_SEARCH_PROVIDER_TURBO_QUANT');
   });
 });
 

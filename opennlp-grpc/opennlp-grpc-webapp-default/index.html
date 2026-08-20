@@ -414,14 +414,20 @@
             <p class="local-mode-badge">Server memory</p>
             <h3 id="semantic-heading">On-the-fly workspace index</h3>
             <p>
-              Add analyzed documents, then let the gRPC service build and search a bounded in-memory flat index.
-              The browser renders server scores and never performs vector ranking.
+              Add analyzed documents, then let the gRPC service build and search a bounded in-memory index,
+              stored exact (flat float) or quantized (TurboQuant). The browser renders server scores and
+              never performs vector ranking.
             </p>
             <dl class="semantic-facts">
               <div><dt>Indexed chunks</dt><dd id="index-count">0</dd></div>
               <div><dt>Similarity</dt><dd>Cosine</dd></div>
               <div><dt>Storage</dt><dd>gRPC server memory</dd></div>
             </dl>
+            <label for="workspace-provider-select">Vector storage for the next new index</label>
+            <select id="workspace-provider-select">
+              <option value="STANDARD_SEARCH_PROVIDER_FLAT_FLOAT">Flat float (exact)</option>
+              <option value="STANDARD_SEARCH_PROVIDER_TURBO_QUANT">TurboQuant (quantized)</option>
+            </select>
           </div>
           <div class="semantic-console">
             <form id="semantic-search-form">
