@@ -163,13 +163,20 @@ Each metric attaches to a model artifact and an index snapshot by hash, so a
 recall curve is provenance-bound: this model version, this corpus size, this
 number. Exposure lands as an evaluation RPC after query execution.
 
-## Persistence
+## Persistence: deliberately minimal
 
-A live index that can persist serializes into the artifact store under an
-`indexes` kind: staged, hashed, committed atomically, verified on reload,
-exactly like trained models. `TurboQuantIndex.write/read` already exists;
-Lucene writes its directory into the staged tree; the filesystem store covers
-today and a remote scheme covers later without touching providers.
+Small immutable artifacts (dictionaries, vocabularies, trained models) stay
+on the durable store seam already built. Indexes do not: a live index
+persists by writing the existing on-disk search bundle format (the same
+directories, properties descriptor, and preparation snapshot the immutable
+loader already reads) into a plain configured local directory, and reloads
+through the existing loader. No generic storage interface for indexes, no
+storage cascades; JDK-native bookkeeping only. Collections follow suit: the
+CollectionDescriptor is a protobuf wire model persisted as one local file,
+last write wins, integrity hash inside, lineage carried by parent ids on the
+descriptors themselves. Durable platforms, replication, and remote index
+storage belong to the layer above; this service's energy goes to query
+semantics and ranking.
 
 ## Migration and build order
 
