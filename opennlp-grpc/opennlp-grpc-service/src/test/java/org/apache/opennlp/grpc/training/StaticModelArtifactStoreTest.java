@@ -123,7 +123,7 @@ class StaticModelArtifactStoreTest {
     assertThrows(IllegalArgumentException.class,
         () -> store.trainStaticModel(request(vocabularyId, "unknown", 0), message -> { }));
     assertThrows(UnknownVocabularyArtifactException.class,
-        () -> store.trainStaticModel(request("vocabulary-" + "0".repeat(36), "mini", 0),
+        () -> store.trainStaticModel(request("vocabulary-00000000-0000-0000-0000-000000000000", "mini", 0),
             message -> { }));
     assertThrows(IllegalArgumentException.class,
         () -> store.trainStaticModel(request(vocabularyId, "mini", 9), message -> { }));

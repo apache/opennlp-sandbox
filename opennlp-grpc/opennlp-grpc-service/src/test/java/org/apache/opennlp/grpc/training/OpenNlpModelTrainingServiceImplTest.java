@@ -103,7 +103,7 @@ class OpenNlpModelTrainingServiceImplTest {
     final Fixture fixture = fixture();
 
     assertEquals(Status.Code.NOT_FOUND,
-        trainStatus(fixture, request("vocabulary-" + "0".repeat(36), "mini")));
+        trainStatus(fixture, request("vocabulary-00000000-0000-0000-0000-000000000000", "mini")));
     assertEquals(Status.Code.INVALID_ARGUMENT,
         trainStatus(fixture, request(fixture.vocabularyId, "unknown")));
 

@@ -16,20 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.opennlp.grpc.vocabulary;
 
-/** Signals that a syntactically valid server-owned artifact id is not present. */
-public final class UnknownVocabularyArtifactException extends IllegalArgumentException {
-
-  private static final long serialVersionUID = 4809193944378218391L;
-
-
-  /**
-   * Creates an exception for one unavailable server-owned artifact.
-   *
-   * @param message Error description.
-   */
-  UnknownVocabularyArtifactException(String message) {
-    super(message);
-  }
-}
+/**
+ * Static model distillation over learned vocabulary artifacts. Models publish through
+ * the durable vocabulary store seam and serve immediately as registered embedding
+ * models; only operator-configured teachers are accepted, and callers never select
+ * server filesystem paths.
+ */
+package org.apache.opennlp.grpc.training;

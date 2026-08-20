@@ -29,8 +29,6 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -48,6 +46,7 @@ import org.apache.opennlp.grpc.v1.ImportDictionaryStart;
 import org.apache.opennlp.grpc.v1.LearnVocabularyStart;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.VocabularyArtifactDescriptor;
+import org.apache.opennlp.grpc.vocabulary.store.ArtifactDigests;
 import org.apache.opennlp.grpc.vocabulary.store.VocabularyStore;
 import org.apache.opennlp.grpc.vocabulary.store.VocabularyStores;
 
@@ -247,7 +246,8 @@ public final class VocabularyArtifactStore {
 
     final String artifactId = "dictionary-" + UUID.randomUUID();
     try (VocabularyStore.ArtifactWriter writer = store.write(DICTIONARIES_KIND, artifactId)) {
-      final HashingOutputStream data = new HashingOutputStream(writer.entry(DICTIONARY_DATA));
+      final ArtifactDigests.HashingOutputStream data =
+          new ArtifactDigests.HashingOutputStream(writer.entry(DICTIONARY_DATA));
       try (data) {
         writeDictionary(new ArrayList<>(decoded.values()), data);
       }
@@ -336,7 +336,8 @@ public final class VocabularyArtifactStore {
     try {
       TermCount.writeTsv(terms, scratch);
       try (VocabularyStore.ArtifactWriter writer = store.write(VOCABULARIES_KIND, artifactId)) {
-        final HashingOutputStream data = new HashingOutputStream(writer.entry(VOCABULARY_DATA));
+        final ArtifactDigests.HashingOutputStream data =
+            new ArtifactDigests.HashingOutputStream(writer.entry(VOCABULARY_DATA));
         try (data; InputStream input = Files.newInputStream(scratch)) {
           input.transferTo(data);
         }
@@ -390,7 +391,7 @@ public final class VocabularyArtifactStore {
    * @return Descriptor.
    * @throws IllegalArgumentException If the id is invalid or unknown.
    */
-  VocabularyArtifactDescriptor requireVocabulary(String artifactId) {
+  public VocabularyArtifactDescriptor requireVocabulary(String artifactId) {
     requireArtifactId(artifactId, "vocabulary");
     final VocabularyArtifactDescriptor descriptor = vocabularies.get(artifactId);
     if (descriptor == null) {
@@ -422,7 +423,7 @@ public final class VocabularyArtifactStore {
    * @throws IOException If opening or integrity verification fails.
    * @throws IllegalArgumentException If the artifact id is invalid or unknown.
    */
-  InputStream openVocabulary(String artifactId) throws IOException {
+  public InputStream openVocabulary(String artifactId) throws IOException {
     requireEnabled();
     final VocabularyArtifactDescriptor descriptor = requireVocabulary(artifactId);
     verify(VOCABULARIES_KIND, artifactId, VOCABULARY_DATA,
@@ -631,90 +632,17 @@ public final class VocabularyArtifactStore {
   /** Verifies byte size and SHA-256 for one published artifact data entry. */
   private void verify(String kind, String artifactId, String entryName,
       int expectedSize, String expectedHash) throws IOException {
-    final MessageDigest digest = newSha256();
-    long size = 0;
+    final ArtifactDigests.SizedDigest digest;
     try (InputStream input = store.read(kind, artifactId, entryName)) {
-      final byte[] buffer = new byte[8192];
-      int read;
-      while ((read = input.read(buffer)) >= 0) {
-        if (read > 0) {
-          digest.update(buffer, 0, read);
-          size += read;
-        }
-      }
+      digest = ArtifactDigests.digest(input);
     }
-    if (size != Integer.toUnsignedLong(expectedSize)) {
+    if (digest.size() != Integer.toUnsignedLong(expectedSize)) {
       throw new IOException("Artifact '" + artifactId + "' byte size mismatch: expected "
-          + Integer.toUnsignedLong(expectedSize) + ", found " + size);
+          + Integer.toUnsignedLong(expectedSize) + ", found " + digest.size());
     }
-    if (!hex(digest.digest()).equals(expectedHash)) {
+    if (!digest.hexDigest().equals(expectedHash)) {
       throw new IOException("Artifact '" + artifactId + "' SHA-256 mismatch");
     }
   }
 
-  /** Creates one SHA-256 digest. */
-  private static MessageDigest newSha256() {
-    try {
-      return MessageDigest.getInstance("SHA-256");
-    } catch (NoSuchAlgorithmException e) {
-      throw new IllegalStateException("JVM lacks SHA-256", e);
-    }
-  }
-
-  /** Encodes digest bytes as lowercase hexadecimal. */
-  private static String hex(byte[] bytes) {
-    final char[] alphabet = "0123456789abcdef".toCharArray();
-    final StringBuilder hex = new StringBuilder(bytes.length * 2);
-    for (byte value : bytes) {
-      hex.append(alphabet[(value >>> 4) & 0x0f]);
-      hex.append(alphabet[value & 0x0f]);
-    }
-    return hex.toString();
-  }
-
-  /** Counts and digests the exact bytes written through to one store entry. */
-  private static final class HashingOutputStream extends OutputStream {
-
-    private final OutputStream target;
-    private final MessageDigest digest = newSha256();
-    private long count;
-
-    private HashingOutputStream(OutputStream target) {
-      this.target = target;
-    }
-
-    @Override
-    public void write(int value) throws IOException {
-      target.write(value);
-      digest.update((byte) value);
-      count++;
-    }
-
-    @Override
-    public void write(byte[] buffer, int offset, int length) throws IOException {
-      target.write(buffer, offset, length);
-      digest.update(buffer, offset, length);
-      count += length;
-    }
-
-    @Override
-    public void flush() throws IOException {
-      target.flush();
-    }
-
-    @Override
-    public void close() throws IOException {
-      target.close();
-    }
-
-    /** @return Bytes written so far. */
-    long count() {
-      return count;
-    }
-
-    /** @return The lowercase hexadecimal SHA-256 of the bytes written so far. */
-    String hexDigest() {
-      return hex(digest.digest());
-    }
-  }
 }

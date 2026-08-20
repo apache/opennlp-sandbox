@@ -71,6 +71,17 @@ public interface VocabularyStore {
    */
   ArtifactWriter write(String kind, String artifactId) throws IOException;
 
+  /**
+   * Deletes one published artifact and every entry it holds.
+   *
+   * @param kind The artifact kind. Must be a plain name.
+   * @param artifactId The published artifact id. Must be a plain name.
+   * @return {@code true} when the artifact existed and was deleted.
+   * @throws IOException Thrown if deletion fails part way.
+   * @throws IllegalArgumentException Thrown if a name is not a plain name.
+   */
+  boolean delete(String kind, String artifactId) throws IOException;
+
   /** One staged artifact: entries accumulate invisibly until the atomic commit. */
   interface ArtifactWriter extends Closeable {
 
