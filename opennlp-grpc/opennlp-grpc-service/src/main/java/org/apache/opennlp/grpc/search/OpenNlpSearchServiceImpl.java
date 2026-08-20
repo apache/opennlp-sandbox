@@ -42,6 +42,8 @@ import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
 import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesRequest;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesResponse;
+import org.apache.opennlp.grpc.v1.ListSearchProvidersRequest;
+import org.apache.opennlp.grpc.v1.ListSearchProvidersResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpSearchServiceGrpc;
 import org.apache.opennlp.grpc.v1.QueryNode;
 import org.apache.opennlp.grpc.v1.SearchHit;
@@ -134,6 +136,17 @@ public final class OpenNlpSearchServiceImpl
     descriptors.sort(Comparator.comparing(SearchIndexDescriptor::getIndexId));
     responseObserver.onNext(ListSearchIndexesResponse.newBuilder()
         .addAllIndexes(descriptors)
+        .build());
+    responseObserver.onCompleted();
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void listSearchProviders(
+      ListSearchProvidersRequest request,
+      StreamObserver<ListSearchProvidersResponse> responseObserver) {
+    responseObserver.onNext(ListSearchProvidersResponse.newBuilder()
+        .addAllProviders(dynamicRegistry.catalog().instances())
         .build());
     responseObserver.onCompleted();
   }

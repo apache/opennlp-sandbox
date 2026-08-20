@@ -37,6 +37,7 @@ import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
 import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
 import org.apache.opennlp.grpc.v1.ListModelBundlesResponse;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesResponse;
+import org.apache.opennlp.grpc.v1.ListSearchProvidersResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.SearchHit;
 import org.apache.opennlp.grpc.v1.SearchIndexDescriptor;
@@ -319,6 +320,11 @@ class OpenNlpGrpcWebServerTest {
   }
 
   private static final class TestSearchRpc implements SearchRpc {
+
+    @Override
+    public ListSearchProvidersResponse listSearchProviders() {
+      return ListSearchProvidersResponse.getDefaultInstance();
+    }
 
     @Override
     public ListSearchIndexesResponse listSearchIndexes() {

@@ -237,7 +237,15 @@ shorthand for a lone semantic clause. The typed tree arrives as a new field;
 requests set exactly one of the two.
 
 1. Route the dynamic registry through the search provider SPI with capability
-   and instance declarations.
+   and instance declarations. Landed on this branch: capability declarations
+   on `SearchIndexProviderFactory`, the configured-instance catalog with
+   `search.provider.<id>.type` declarations, the `ListSearchProviders` RPC
+   and gateway route, instance-id resolution for
+   `SearchProviderSelector.custom`, per-modality `legs` on the index
+   descriptor, and the `terms` keyword leg's recorded analysis-chain
+   identity. Dynamic snapshots build their frozen vector legs through the
+   instance factories; startup bundle loading still resolves provider ids
+   directly and joins the catalog with the persistence step.
 2. `QueryNode` execution: validation (types, CEL checking, algebra rule 8),
    the terms-layer keyword executor OOTB, and hit-level matched spans for
    highlighting. Landed on this branch: the `query_kind` oneof on
