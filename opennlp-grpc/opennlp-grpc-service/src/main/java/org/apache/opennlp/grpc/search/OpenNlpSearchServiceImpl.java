@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.grpc.Status;
@@ -589,17 +590,31 @@ public final class OpenNlpSearchServiceImpl
       }
       final AtomicReference<SearchCollectionRegistry.Watch> subscription =
           new AtomicReference<>();
+      final AtomicBoolean cancelled = new AtomicBoolean();
       if (responseObserver instanceof ServerCallStreamObserver<CollectionEvent> serverCall) {
+        final ServerCallStreamObserver<CollectionEvent> observedCall = serverCall;
         serverCall.setOnCancelHandler(() -> {
-          final SearchCollectionRegistry.Watch watch = subscription.get();
+          cancelled.set(true);
+          final SearchCollectionRegistry.Watch watch = subscription.getAndSet(null);
           if (watch != null) {
             watch.close();
           }
         });
+        if (observedCall.isCancelled()) {
+          return;
+        }
       }
       try {
-        subscription.set(collectionRegistry.watch(request.getCollectionId(),
-            responseObserver::onNext, responseObserver::onCompleted));
+        final SearchCollectionRegistry.Watch watch = collectionRegistry.watch(
+            request.getCollectionId(), responseObserver::onNext, responseObserver::onCompleted);
+        if (cancelled.get()) {
+          watch.close();
+          return;
+        }
+        subscription.set(watch);
+        if (cancelled.get() && subscription.compareAndSet(watch, null)) {
+          watch.close();
+        }
       } catch (IllegalArgumentException e) {
         throw AnalysisException.notFound("WatchCollection " + e.getMessage());
       }
@@ -703,7 +718,8 @@ public final class OpenNlpSearchServiceImpl
       return embedding.vectors().getFirst();
     };
     final List<CompoundQueryExecutor.QueryHit> hits = compoundQueryExecutor.execute(
-        request.getCompoundQuery(), candidates, embedder, request.getTopK());
+        request.getCompoundQuery(), candidates, embedder, provider::search,
+        request.getTopK());
     final SearchIndexResponse.Builder response = SearchIndexResponse.newBuilder()
         .setIndex(descriptor);
     if (resolvedRoute.get() != null) {

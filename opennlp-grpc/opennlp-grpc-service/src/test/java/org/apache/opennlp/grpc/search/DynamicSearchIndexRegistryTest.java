@@ -18,9 +18,14 @@
  */
 package org.apache.opennlp.grpc.search;
 
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
@@ -48,8 +53,10 @@ import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class DynamicSearchIndexRegistryTest {
 
@@ -411,6 +418,31 @@ class DynamicSearchIndexRegistryTest {
   }
 
   @Test
+  void failedCheckpointDeletionKeepsTheLiveIndexRegistered(@TempDir Path root)
+      throws Exception {
+    final SearchProviderCatalog catalog = SearchProviderCatalog.discover();
+    final DynamicSearchIndexRegistry registry =
+        new DynamicSearchIndexRegistry(catalog, new WorkspaceCheckpointStore(root));
+    final IndexDocumentsRequest turbo = request(null, "doc-1", "alpha", 1, 0).toBuilder()
+        .setProvider(SearchProviderSelector.newBuilder()
+            .setStandard(StandardSearchProvider.STANDARD_SEARCH_PROVIDER_TURBO_QUANT))
+        .build();
+    final String indexId = registry.index(turbo).getIndex().getIndexId();
+    registry.persist(indexId);
+    final Path checkpoint = root.resolve(indexId);
+    assumeTrue(Files.getFileStore(checkpoint).supportsFileAttributeView("posix"));
+    final Set<PosixFilePermission> original = Files.getPosixFilePermissions(checkpoint);
+    Files.setPosixFilePermissions(checkpoint, Set.of(
+        PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_EXECUTE));
+    try {
+      assertThrows(UncheckedIOException.class, () -> registry.delete(indexId));
+      assertNotNull(registry.find(indexId));
+    } finally {
+      Files.setPosixFilePermissions(checkpoint, original);
+    }
+  }
+
+  @Test
   void checkpointsRewritePersistedIndexesOnlyWhenContentChanged(@TempDir Path root) {
     final SearchProviderCatalog catalog = SearchProviderCatalog.discover();
     final DynamicSearchIndexRegistry registry =
@@ -430,6 +462,59 @@ class DynamicSearchIndexRegistryTest {
     final DynamicSearchIndexRegistry restored =
         new DynamicSearchIndexRegistry(catalog, new WorkspaceCheckpointStore(root));
     assertEquals(2, restored.descriptors().getFirst().getSize());
+  }
+
+  @Test
+  void restoreRecoversTheLastCompleteCheckpointFromAnInterruptedSwap(@TempDir Path root)
+      throws Exception {
+    final SearchProviderCatalog catalog = SearchProviderCatalog.discover();
+    final DynamicSearchIndexRegistry registry = new DynamicSearchIndexRegistry(
+        catalog, new WorkspaceCheckpointStore(root));
+    final IndexDocumentsRequest turbo = request(null, "doc-1", "alpha", 1, 0).toBuilder()
+        .setProvider(SearchProviderSelector.newBuilder()
+            .setStandard(StandardSearchProvider.STANDARD_SEARCH_PROVIDER_TURBO_QUANT))
+        .build();
+    final String indexId = registry.index(turbo).getIndex().getIndexId();
+    registry.persist(indexId);
+    registry.close();
+    Files.move(root.resolve(indexId), root.resolve("." + indexId
+        + "-old-00000000-0000-0000-0000-000000000000"));
+
+    final DynamicSearchIndexRegistry restored = new DynamicSearchIndexRegistry(
+        catalog, new WorkspaceCheckpointStore(root));
+
+    assertEquals(List.of(indexId), restored.descriptors().stream()
+        .map(SearchIndexDescriptor::getIndexId).toList());
+  }
+
+  @Test
+  void restoreRejectsAProviderWithoutPersistentVectorCapabilities(@TempDir Path root)
+      throws Exception {
+    final SearchProviderCatalog catalog = SearchProviderCatalog.discover();
+    final DynamicSearchIndexRegistry registry = new DynamicSearchIndexRegistry(
+        catalog, new WorkspaceCheckpointStore(root));
+    final IndexDocumentsRequest turbo = request(null, "doc-1", "alpha", 1, 0).toBuilder()
+        .setProvider(SearchProviderSelector.newBuilder()
+            .setStandard(StandardSearchProvider.STANDARD_SEARCH_PROVIDER_TURBO_QUANT))
+        .build();
+    final String indexId = registry.index(turbo).getIndex().getIndexId();
+    registry.persist(indexId);
+    registry.close();
+    final Path descriptor = root.resolve(indexId)
+        .resolve(WorkspaceCheckpointStore.DESCRIPTOR_FILE);
+    final Properties properties = new Properties();
+    try (var input = Files.newInputStream(descriptor)) {
+      properties.load(input);
+    }
+    properties.setProperty("provider.instance", FlatFloatSearchIndexProviderFactory.PROVIDER_ID);
+    try (var output = Files.newOutputStream(descriptor)) {
+      properties.store(output, "tampered provider capability");
+    }
+
+    final IllegalStateException failure = assertThrows(IllegalStateException.class,
+        () -> new DynamicSearchIndexRegistry(catalog, new WorkspaceCheckpointStore(root)));
+
+    assertTrue(failure.getMessage().contains("persistent live vector"));
   }
 
   static IndexDocumentsRequest request(

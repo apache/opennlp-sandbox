@@ -19,9 +19,12 @@
 package org.apache.opennlp.grpc.training;
 
 import java.io.IOException;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.grpc.Status;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.opennlp.grpc.v1.DeleteStaticModelRequest;
 import org.apache.opennlp.grpc.v1.DeleteStaticModelResponse;
@@ -79,6 +82,16 @@ public final class OpenNlpModelTrainingServiceImpl
   public void trainStaticModel(
       TrainStaticModelRequest request,
       StreamObserver<TrainStaticModelUpdate> responseObserver) {
+    final AtomicBoolean cancelled = new AtomicBoolean();
+    final ServerCallStreamObserver<TrainStaticModelUpdate> serverCall =
+        responseObserver instanceof ServerCallStreamObserver<TrainStaticModelUpdate> call
+            ? call : null;
+    if (serverCall != null) {
+      serverCall.setOnCancelHandler(() -> cancelled.set(true));
+      if (serverCall.isCancelled()) {
+        return;
+      }
+    }
     if (!trainingPermits.tryAcquire()) {
       responseObserver.onError(Status.RESOURCE_EXHAUSTED.withDescription(
           "concurrent trainings exceed configured maximum "
@@ -87,13 +100,21 @@ public final class OpenNlpModelTrainingServiceImpl
     }
     try {
       final StaticModelDescriptor descriptor = store.trainStaticModel(request,
-          message -> responseObserver.onNext(TrainStaticModelUpdate.newBuilder()
-              .setProgress(message)
-              .build()));
+          message -> {
+            requireActive(serverCall, cancelled);
+            responseObserver.onNext(TrainStaticModelUpdate.newBuilder()
+                .setProgress(message)
+                .build());
+            requireActive(serverCall, cancelled);
+          }, () -> cancelled.get() || (serverCall != null && serverCall.isCancelled()));
+      requireActive(serverCall, cancelled);
       responseObserver.onNext(TrainStaticModelUpdate.newBuilder()
           .setModel(descriptor)
           .build());
+      requireActive(serverCall, cancelled);
       responseObserver.onCompleted();
+    } catch (CancellationException e) {
+      logger.info("TrainStaticModel cancelled by the client");
     } catch (UnknownVocabularyArtifactException e) {
       responseObserver.onError(Status.NOT_FOUND.withDescription(e.getMessage())
           .asRuntimeException());
@@ -109,6 +130,14 @@ public final class OpenNlpModelTrainingServiceImpl
           .asRuntimeException());
     } finally {
       trainingPermits.release();
+    }
+  }
+
+  private static void requireActive(
+      ServerCallStreamObserver<TrainStaticModelUpdate> serverCall,
+      AtomicBoolean cancelled) {
+    if (cancelled.get() || (serverCall != null && serverCall.isCancelled())) {
+      throw new CancellationException("TrainStaticModel call is cancelled");
     }
   }
 

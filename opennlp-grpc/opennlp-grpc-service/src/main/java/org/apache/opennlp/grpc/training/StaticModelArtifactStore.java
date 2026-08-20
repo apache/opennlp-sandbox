@@ -36,7 +36,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BooleanSupplier;
 
 import com.google.protobuf.Timestamp;
 import opennlp.embeddings.ModelDistiller;
@@ -48,6 +50,8 @@ import org.apache.opennlp.grpc.vocabulary.VocabularyArtifactStore;
 import org.apache.opennlp.grpc.vocabulary.store.ArtifactDigests;
 import org.apache.opennlp.grpc.vocabulary.store.VocabularyStore;
 import org.apache.opennlp.grpc.vocabulary.store.VocabularyStores;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Bounded, atomic store for static embedding models distilled from learned vocabulary
@@ -59,6 +63,8 @@ import org.apache.opennlp.grpc.vocabulary.store.VocabularyStores;
  * restart.
  */
 public final class StaticModelArtifactStore {
+
+  private static final Logger logger = LoggerFactory.getLogger(StaticModelArtifactStore.class);
 
   /** Default principal components kept when a request selects 0. */
   static final int DEFAULT_PCA_DIMS = 256;
@@ -254,6 +260,24 @@ public final class StaticModelArtifactStore {
   public StaticModelDescriptor trainStaticModel(
       TrainStaticModelRequest request, ModelDistiller.ProgressListener listener)
       throws IOException {
+    return trainStaticModel(request, listener, () -> false);
+  }
+
+  /**
+   * Distills and publishes while observing transport cancellation between durable stages.
+   *
+   * @param request Training controls.
+   * @param listener Progress listener.
+   * @param cancelled Cancellation probe.
+   * @return Published descriptor.
+   * @throws IOException If distillation, publication, or verification fails.
+   * @throws CancellationException If cancellation is observed before publication completes.
+   */
+  StaticModelDescriptor trainStaticModel(TrainStaticModelRequest request,
+      ModelDistiller.ProgressListener listener, BooleanSupplier cancelled) throws IOException {
+    if (cancelled == null) {
+      throw new IllegalArgumentException("cancelled must not be null");
+    }
     requireEnabled();
     final TeacherConfiguration teacher = validateRequest(request);
     final int pcaDims = request.getPcaDims() == 0 ? DEFAULT_PCA_DIMS : request.getPcaDims();
@@ -263,22 +287,60 @@ public final class StaticModelArtifactStore {
 
     final Path scratch = Files.createTempDirectory("static-model-training-");
     try {
+      requireActive(cancelled);
       final ModelDistiller.Result result =
           trainer.train(teacher.reference(), scratch, pcaDims, terms, progress);
+      requireActive(cancelled);
       final String artifactId = ARTIFACT_ID_PREFIX + UUID.randomUUID();
       final StaticModelDescriptor descriptor =
           publish(artifactId, scratch, request, teacher, result);
-      final Path cached = materializeCache(artifactId, scratch);
-      registry.register(artifactId, StaticEmbeddingModel.load(cached),
-          descriptor.getArtifactHash());
-      models.put(artifactId, descriptor);
+      boolean registered = false;
+      try {
+        requireActive(cancelled);
+        final Path cached = materializeCache(artifactId, scratch);
+        requireActive(cancelled);
+        registry.register(artifactId, StaticEmbeddingModel.load(cached),
+            descriptor.getArtifactHash());
+        registered = true;
+        requireActive(cancelled);
+        models.put(artifactId, descriptor);
+        requireActive(cancelled);
+      } catch (IOException | RuntimeException e) {
+        models.remove(artifactId);
+        if (registered) {
+          registry.unregister(artifactId);
+        }
+        try {
+          deleteTree(cacheRoot.resolve(artifactId));
+        } catch (IOException cleanupFailure) {
+          e.addSuppressed(cleanupFailure);
+        }
+        try {
+          store.delete(MODELS_KIND, artifactId);
+        } catch (IOException cleanupFailure) {
+          e.addSuppressed(cleanupFailure);
+        }
+        throw e;
+      }
       final PublicationListener published = publicationListener;
       if (published != null) {
-        published.modelPublished(artifactId, descriptor.getVocabularyArtifactId());
+        try {
+          published.modelPublished(artifactId, descriptor.getVocabularyArtifactId());
+        } catch (RuntimeException e) {
+          logger.warn("Published static model '{}' but its lifecycle notification failed",
+              artifactId, e);
+        }
       }
       return descriptor;
     } finally {
       deleteTree(scratch);
+    }
+  }
+
+  /** Throws when the caller cancelled the training operation. */
+  private static void requireActive(BooleanSupplier cancelled) {
+    if (cancelled.getAsBoolean()) {
+      throw new CancellationException("Static model training is cancelled");
     }
   }
 
@@ -294,13 +356,14 @@ public final class StaticModelArtifactStore {
   public boolean deleteModel(String artifactId) throws IOException {
     requireEnabled();
     requireArtifactId(artifactId);
-    final StaticModelDescriptor removed = models.remove(artifactId);
-    if (removed == null) {
+    final StaticModelDescriptor existing = models.get(artifactId);
+    if (existing == null) {
       return false;
     }
-    registry.unregister(artifactId);
-    store.delete(MODELS_KIND, artifactId);
     deleteTree(cacheRoot.resolve(artifactId));
+    store.delete(MODELS_KIND, artifactId);
+    registry.unregister(artifactId);
+    models.remove(artifactId);
     return true;
   }
 

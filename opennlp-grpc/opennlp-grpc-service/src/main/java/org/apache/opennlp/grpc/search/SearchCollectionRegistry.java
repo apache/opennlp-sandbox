@@ -258,11 +258,18 @@ public final class SearchCollectionRegistry {
     final CollectionDescriptor next = configured.build();
     // Resolving the vocabulary now validates the artifact before any state mutates.
     final CollectionDescriptor computed = describe(next, "", true);
-    final StoredCollection stored =
-        collections.computeIfAbsent(request.getCollectionId(), id -> new StoredCollection());
-    stored.configured = next;
-    stored.lastNewTerms = computed.getDrift().getNewTerms();
-    write(stored, computed);
+    final StoredCollection candidate = new StoredCollection();
+    candidate.configured = next;
+    candidate.lastNewTerms = computed.getDrift().getNewTerms();
+    write(candidate, computed);
+    final StoredCollection stored = collections.get(request.getCollectionId());
+    if (stored == null) {
+      collections.put(request.getCollectionId(), candidate);
+      return computed.toBuilder().setIntegrityHash(candidate.integrityHash).build();
+    }
+    stored.configured = candidate.configured;
+    stored.lastNewTerms = candidate.lastNewTerms;
+    stored.integrityHash = candidate.integrityHash;
     return computed.toBuilder().setIntegrityHash(stored.integrityHash).build();
   }
 
@@ -301,7 +308,7 @@ public final class SearchCollectionRegistry {
    * @throws UncheckedIOException If removing the collection file fails.
    */
   public synchronized boolean delete(String collectionId) {
-    final StoredCollection stored = collections.remove(collectionId);
+    final StoredCollection stored = collections.get(collectionId);
     if (stored == null) {
       return false;
     }
@@ -310,9 +317,10 @@ public final class SearchCollectionRegistry {
         WorkspaceCheckpointStore.deleteRecursively(directory.resolve(collectionId));
       } catch (IOException e) {
         throw new UncheckedIOException(
-            "Failed to delete collection '" + collectionId + "'", e);
+          "Failed to delete collection '" + collectionId + "'", e);
       }
     }
+    collections.remove(collectionId);
     for (Watcher watcher : List.copyOf(stored.watchers)) {
       watcher.completed().run();
     }
@@ -337,8 +345,13 @@ public final class SearchCollectionRegistry {
     }
     final Watcher watcher = new Watcher(events, completed);
     stored.watchers.add(watcher);
-    events.accept(event(stored, CollectionEventKind.COLLECTION_EVENT_KIND_SNAPSHOT,
-        null, null));
+    try {
+      events.accept(event(stored, CollectionEventKind.COLLECTION_EVENT_KIND_SNAPSHOT,
+          null, null));
+    } catch (RuntimeException e) {
+      stored.watchers.remove(watcher);
+      throw e;
+    }
     return () -> {
       synchronized (this) {
         stored.watchers.remove(watcher);

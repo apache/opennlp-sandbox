@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -56,11 +57,18 @@ public final class SearchProviderCatalog {
    *
    * @param instanceId Stable configured instance identifier, unique on this server.
    * @param factory Provider implementation behind this instance.
+   * @param capabilities Immutable capabilities captured once during discovery.
    * @param standard Standard shorthand selecting this instance, or {@code null} when the
    *     instance is only selectable by id.
    */
   public record Instance(
-      String instanceId, SearchIndexProviderFactory factory, StandardSearchProvider standard) {
+      String instanceId, SearchIndexProviderFactory factory,
+      Set<SearchProviderCapability> capabilities, StandardSearchProvider standard) {
+
+    /** Captures an immutable capability snapshot for this configured instance. */
+    public Instance {
+      capabilities = Set.copyOf(capabilities);
+    }
 
     /**
      * Returns the selector clients use to name this instance. Default instances of a
@@ -85,7 +93,7 @@ public final class SearchProviderCatalog {
      * @return {@code true} when the factory declares it.
      */
     public boolean has(SearchProviderCapability capability) {
-      return factory.capabilities().contains(capability);
+      return capabilities.contains(capability);
     }
   }
 
@@ -127,14 +135,17 @@ public final class SearchProviderCatalog {
       throw new IllegalArgumentException("factories must not be null");
     }
     final SortedMap<String, SearchIndexProviderFactory> byProviderId = new TreeMap<>();
+    final SortedMap<String, Set<SearchProviderCapability>> capabilitiesByProviderId =
+        new TreeMap<>();
     for (SearchIndexProviderFactory factory : factories) {
       if (factory == null) {
         throw new IllegalArgumentException("search provider factories must not contain null");
       }
       SearchIndexRegistry.requireStableId(factory.providerId(),
           factory.getClass().getName() + " search provider id");
-      if (factory.capabilities() == null || factory.capabilities().isEmpty()
-          || factory.capabilities().contains(
+      final Set<SearchProviderCapability> declared = factory.capabilities();
+      if (declared == null || declared.isEmpty()
+          || declared.contains(
               SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_UNSPECIFIED)) {
         throw new IllegalArgumentException("search provider '" + factory.providerId()
             + "' must declare at least one specified capability");
@@ -143,11 +154,14 @@ public final class SearchProviderCatalog {
         throw new IllegalArgumentException("search provider id '" + factory.providerId()
             + "' is declared more than once");
       }
+      capabilitiesByProviderId.put(factory.providerId(), Set.copyOf(declared));
     }
     final SortedMap<String, Instance> instances = new TreeMap<>();
     for (SearchIndexProviderFactory factory : byProviderId.values()) {
       instances.put(factory.providerId(),
-          new Instance(factory.providerId(), factory, standardFor(factory.providerId())));
+          new Instance(factory.providerId(), factory,
+              capabilitiesByProviderId.get(factory.providerId()),
+              standardFor(factory.providerId())));
     }
     for (Map.Entry<String, String> entry : configuration.entrySet()) {
       final String key = entry.getKey();
@@ -181,7 +195,8 @@ public final class SearchProviderCatalog {
             + existing.factory().providerId() + "'");
       }
       if (existing == null) {
-        instances.put(instanceId, new Instance(instanceId, factory, null));
+        instances.put(instanceId, new Instance(instanceId, factory,
+            capabilitiesByProviderId.get(factory.providerId()), null));
       }
     }
     return new SearchProviderCatalog(instances);
@@ -198,7 +213,7 @@ public final class SearchProviderCatalog {
       final SearchProviderInstance.Builder builder = SearchProviderInstance.newBuilder()
           .setInstanceId(instance.instanceId())
           .setProviderId(instance.factory().providerId());
-      instance.factory().capabilities().stream().sorted().forEach(builder::addCapabilities);
+      instance.capabilities().stream().sorted().forEach(builder::addCapabilities);
       if (instance.standard() != null) {
         builder.setStandard(instance.standard());
       }

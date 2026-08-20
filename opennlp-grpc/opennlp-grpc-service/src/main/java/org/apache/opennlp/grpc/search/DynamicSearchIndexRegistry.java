@@ -354,10 +354,9 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
     if (indexId == null || indexId.isBlank()) {
       throw AnalysisException.invalidArgument("DeleteSearchIndex index_id must not be blank");
     }
-    final DynamicIndex removed = indexes.remove(indexId);
-    if (removed != null) {
-      removed.close();
-      if (checkpointStore != null && removed.persisted()) {
+    final DynamicIndex existing = indexes.get(indexId);
+    if (existing != null) {
+      if (checkpointStore != null && existing.persisted()) {
         try {
           checkpointStore.delete(indexId);
         } catch (IOException e) {
@@ -365,6 +364,8 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
               "Failed to delete the checkpoint of index '" + indexId + "'", e);
         }
       }
+      indexes.remove(indexId);
+      existing.close();
       return true;
     }
     return false;
@@ -469,6 +470,10 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
     } catch (IOException e) {
       throw new IllegalStateException("Failed to restore search index checkpoints", e);
     }
+    if (checkpoints.size() > maxIndexes) {
+      throw new IllegalStateException("Stored checkpoint count " + checkpoints.size()
+          + " exceeds the configured dynamic index limit of " + maxIndexes);
+    }
     for (WorkspaceCheckpointStore.RestoredCheckpoint checkpoint : checkpoints) {
       final WorkspaceCheckpointStore.CheckpointHeader header = checkpoint.header();
       final SearchProviderCatalog.Instance instance =
@@ -477,6 +482,13 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
         throw new IllegalStateException("Checkpoint of index '" + header.indexId()
             + "' names unavailable provider instance '" + header.providerInstanceId() + "'");
       }
+      if (!instance.has(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_VECTOR)
+          || !instance.has(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_LIVE)
+          || !instance.has(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_PERSISTENT)) {
+        throw new IllegalStateException("Checkpoint of index '" + header.indexId()
+            + "' requires a persistent live vector provider instance, but '"
+            + header.providerInstanceId() + "' does not declare those capabilities");
+      }
       final List<IndexedChunk> chunks = new ArrayList<>(checkpoint.chunks().size());
       for (PersistedSearchChunk chunk : checkpoint.chunks()) {
         if (chunk.getVectorCount() != header.dimension()) {
@@ -484,7 +496,24 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
               + "' contains a chunk whose vector dimension does not match "
               + header.dimension());
         }
-        chunks.add(fromChunkProto(chunk));
+        final IndexedChunk restored = fromChunkProto(chunk);
+        if (!compatible(header.route(), restored.route())) {
+          throw new IllegalStateException("Checkpoint of index '" + header.indexId()
+              + "' contains a chunk whose embedding route is incompatible with its header");
+        }
+        double norm = 0;
+        for (float value : restored.vector()) {
+          if (!Float.isFinite(value)) {
+            throw new IllegalStateException("Checkpoint of index '" + header.indexId()
+                + "' contains a non-finite vector value");
+          }
+          norm += (double) value * value;
+        }
+        if (norm == 0) {
+          throw new IllegalStateException("Checkpoint of index '" + header.indexId()
+              + "' contains a zero vector");
+        }
+        chunks.add(restored);
       }
       if (!contentHash(chunks).equals(header.contentHash())) {
         throw new IllegalStateException("Checkpoint of index '" + header.indexId()

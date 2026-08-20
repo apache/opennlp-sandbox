@@ -19,10 +19,14 @@
 package org.apache.opennlp.grpc.training;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.ServerCallStreamObserver;
 import org.apache.opennlp.grpc.v1.DeleteStaticModelRequest;
 import org.apache.opennlp.grpc.v1.DeleteStaticModelResponse;
 import org.apache.opennlp.grpc.v1.ListStaticModelsRequest;
@@ -143,6 +147,40 @@ class OpenNlpModelTrainingServiceImplTest {
     assertFalse(again.values.getFirst().getDeleted());
   }
 
+  @Test
+  void cancellationStopsTrainingBeforePublication() throws Exception {
+    final DictionaryFormatRegistry formats = DictionaryFormatRegistry.discover();
+    final VocabularyArtifactStore vocabularies = VocabularyArtifactStore.fromConfiguration(
+        Map.of("vocabulary.artifact_root", temporaryDirectory.toString()), formats);
+    final String vocabularyId = TrainingTestSupport.vocabularyArtifact(formats, vocabularies);
+    final TrainedModelEmbeddingProvider registry =
+        new TrainedModelEmbeddingProvider(TrainingTestSupport.baseProvider());
+    final AtomicInteger iterations = new AtomicInteger();
+    final StaticModelTrainer trainer = (teacher, output, dimensions, terms, progress) -> {
+      for (int iteration = 0; iteration < 10; iteration++) {
+        iterations.incrementAndGet();
+        progress.progress("iteration " + iteration);
+      }
+      throw new AssertionError("cancelled training continued through every iteration");
+    };
+    final StaticModelArtifactStore store = StaticModelArtifactStore.fromConfiguration(
+        Map.of(
+            "vocabulary.artifact_root", temporaryDirectory.toString(),
+            "training.teacher.mini.ref", "minishlab/potion-base-8M"),
+        vocabularies, trainer, registry);
+    final OpenNlpModelTrainingServiceImpl service =
+        new OpenNlpModelTrainingServiceImpl(store);
+    final CancellingObserver updates = new CancellingObserver();
+
+    service.trainStaticModel(request(vocabularyId, "mini"), updates);
+
+    assertEquals(1, iterations.get());
+    assertEquals(1, updates.values.size());
+    assertFalse(updates.completed);
+    assertNull(updates.error);
+    assertTrue(store.models().isEmpty());
+  }
+
   private Status.Code trainStatus(Fixture fixture, TrainStaticModelRequest request) {
     final TrainingTestSupport.CapturingObserver<TrainStaticModelUpdate> updates =
         new TrainingTestSupport.CapturingObserver<>();
@@ -180,5 +218,69 @@ class OpenNlpModelTrainingServiceImplTest {
         .setDisplayName("Legal static model")
         .setProvenanceSummary("Authored test distillation")
         .build();
+  }
+
+  private static final class CancellingObserver
+      extends ServerCallStreamObserver<TrainStaticModelUpdate> {
+
+    private final List<TrainStaticModelUpdate> values = new ArrayList<>();
+    private boolean cancelled;
+    private boolean completed;
+    private Throwable error;
+    private Runnable cancelHandler;
+
+    @Override
+    public boolean isCancelled() {
+      return cancelled;
+    }
+
+    @Override
+    public void setOnCancelHandler(Runnable handler) {
+      cancelHandler = handler;
+    }
+
+    @Override
+    public void setCompression(String compression) {
+    }
+
+    @Override
+    public boolean isReady() {
+      return true;
+    }
+
+    @Override
+    public void setOnReadyHandler(Runnable handler) {
+    }
+
+    @Override
+    public void disableAutoInboundFlowControl() {
+    }
+
+    @Override
+    public void request(int count) {
+    }
+
+    @Override
+    public void setMessageCompression(boolean enable) {
+    }
+
+    @Override
+    public void onNext(TrainStaticModelUpdate value) {
+      values.add(value);
+      cancelled = true;
+      if (cancelHandler != null) {
+        cancelHandler.run();
+      }
+    }
+
+    @Override
+    public void onError(Throwable throwable) {
+      error = throwable;
+    }
+
+    @Override
+    public void onCompleted() {
+      completed = true;
+    }
   }
 }

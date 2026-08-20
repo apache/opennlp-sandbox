@@ -20,6 +20,8 @@ package org.apache.opennlp.grpc.search;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.opennlp.grpc.processor.AnalysisException;
 import org.apache.opennlp.grpc.v1.SearchProviderCapability;
@@ -175,5 +177,30 @@ class SearchProviderCatalogTest {
     assertEquals(TermsSearchIndexProviderFactory.CHAIN_ID, chain.getChainId());
     assertEquals(TermsSearchIndexProviderFactory.CHAIN_VERSION, chain.getChainVersion());
     assertTrue(!chain.hasConfigurationHash());
+  }
+
+  @Test
+  void snapshotsFactoryCapabilitiesExactlyOnceAtDiscovery() {
+    final AtomicInteger calls = new AtomicInteger();
+    final SearchIndexProviderFactory factory = new SearchIndexProviderFactory() {
+      @Override
+      public String providerId() {
+        return "stateful-test";
+      }
+
+      @Override
+      public Set<SearchProviderCapability> capabilities() {
+        calls.incrementAndGet();
+        return Set.of(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_VECTOR);
+      }
+    };
+
+    final SearchProviderCatalog catalog = SearchProviderCatalog.fromConfiguration(
+        Map.of(), List.of(factory));
+    catalog.instances();
+    catalog.find("stateful-test").has(
+        SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_VECTOR);
+
+    assertEquals(1, calls.get());
   }
 }

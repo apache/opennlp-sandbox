@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.search.SearchResult;
 import org.apache.opennlp.grpc.search.query.QueryTermAnalyzer.Term;
 import org.apache.opennlp.grpc.v1.BoostClause;
 import org.apache.opennlp.grpc.v1.CelScore;
@@ -79,6 +80,20 @@ public final class CompoundQueryExecutor {
     float[] embed(OpenNlpDocument queryDocument);
   }
 
+  /** Executes one semantic leaf through the index provider selected by the descriptor. */
+  @FunctionalInterface
+  public interface SemanticSearcher {
+
+    /**
+     * Searches the provider's vector leg.
+     *
+     * @param queryVector Embedded semantic query.
+     * @param topK Maximum returned results.
+     * @return Ranked provider results.
+     */
+    List<SearchResult> search(float[] queryVector, int topK);
+  }
+
   /**
    * One ranked compound query result.
    *
@@ -103,9 +118,33 @@ public final class CompoundQueryExecutor {
    */
   public List<QueryHit> execute(
       QueryNode root, List<QueryCandidate> candidates, QueryEmbedder embedder, int topK) {
+    return execute(root, candidates, embedder, (queryVector, limit) -> candidates.stream()
+        .map(candidate -> new SearchResult(candidate.record(),
+            cosine(queryVector, candidate.vector())))
+        .sorted(java.util.Comparator.comparingDouble(SearchResult::score).reversed())
+        .limit(limit)
+        .toList(), topK);
+  }
+
+  /**
+   * Executes one validated compound query, delegating semantic leaves to the selected
+   * index provider.
+   *
+   * @param root Root query node.
+   * @param candidates Index candidates in stable index order.
+   * @param embedder Embedder for semantic clauses.
+   * @param semanticSearcher Provider vector search for semantic clauses.
+   * @param topK Maximum hits to return, at least one.
+   * @return Ranked hits, largest score first.
+   * @throws AnalysisException If the tree is invalid, CEL support is missing, or a
+   *     clause fails to execute.
+   */
+  public List<QueryHit> execute(QueryNode root, List<QueryCandidate> candidates,
+      QueryEmbedder embedder, SemanticSearcher semanticSearcher, int topK) {
     CompoundQueryValidator.validate(root);
-    if (candidates == null || embedder == null) {
-      throw new IllegalArgumentException("candidates and embedder must not be null");
+    if (candidates == null || embedder == null || semanticSearcher == null) {
+      throw new IllegalArgumentException(
+          "candidates, embedder, and semanticSearcher must not be null");
     }
     if (topK < 1) {
       throw AnalysisException.invalidArgument("top_k must be positive, was " + topK);
@@ -117,7 +156,7 @@ public final class CompoundQueryExecutor {
     if (candidates.isEmpty()) {
       return List.of();
     }
-    final Context context = new Context(candidates, embedder);
+    final Context context = new Context(candidates, embedder, semanticSearcher);
     final NodeResult result = evaluate(root, context);
     final List<String> ranked = new ArrayList<>(result.scores().keySet());
     ranked.sort(Comparator
@@ -142,10 +181,13 @@ public final class CompoundQueryExecutor {
     private final Map<String, QueryCandidate> byChunkId = new LinkedHashMap<>();
     private final Map<String, List<Term>> termsByChunkId = new HashMap<>();
     private final QueryEmbedder embedder;
+    private final SemanticSearcher semanticSearcher;
 
-    Context(List<QueryCandidate> candidates, QueryEmbedder embedder) {
+    Context(List<QueryCandidate> candidates, QueryEmbedder embedder,
+        SemanticSearcher semanticSearcher) {
       this.candidates = candidates;
       this.embedder = embedder;
+      this.semanticSearcher = semanticSearcher;
       for (QueryCandidate candidate : candidates) {
         byChunkId.put(candidate.record().chunkId(), candidate);
       }
@@ -204,17 +246,32 @@ public final class CompoundQueryExecutor {
    */
   private NodeResult evaluateSemantic(OpenNlpDocument document, Context context) {
     final float[] query = context.embedder.embed(document);
-    final int dimension = context.candidates.getFirst().vector().length;
-    if (query == null || query.length != dimension) {
-      throw AnalysisException.failedPrecondition("Semantic clause embedding dimension "
-          + (query == null ? "null" : query.length) + " does not match index dimension "
-          + dimension);
+    if (query == null) {
+      throw AnalysisException.failedPrecondition(
+          "Semantic clause embedding provider returned a null vector");
     }
     final NodeResult result = NodeResult.empty();
-    for (QueryCandidate candidate : context.candidates) {
-      final double similarity = cosine(query, candidate.vector());
-      result.scores().put(candidate.record().chunkId(),
-          Math.min(1, Math.max(0, (similarity + 1) / 2)));
+    final List<SearchResult> searched =
+        context.semanticSearcher.search(query, context.candidates.size());
+    if (searched == null || searched.size() > context.candidates.size()) {
+      throw new IllegalStateException(
+          "Semantic search provider returned an invalid result count");
+    }
+    for (SearchResult searchedResult : searched) {
+      if (searchedResult == null || !Double.isFinite(searchedResult.score())
+          || searchedResult.score() < -1 || searchedResult.score() > 1) {
+        throw new IllegalStateException(
+            "Semantic search provider returned an invalid result");
+      }
+      final String chunkId = searchedResult.record().chunkId();
+      final QueryCandidate candidate = context.candidate(chunkId);
+      if (candidate == null || !candidate.record().equals(searchedResult.record())
+          || result.scores().containsKey(chunkId)) {
+        throw new IllegalStateException(
+            "Semantic search provider returned an unknown or duplicate candidate");
+      }
+      result.scores().put(chunkId,
+          Math.min(1, Math.max(0, (searchedResult.score() + 1) / 2)));
     }
     return result;
   }

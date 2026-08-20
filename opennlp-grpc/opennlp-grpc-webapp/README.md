@@ -37,8 +37,11 @@ The host exposes:
 - `GET /api/v1/model-bundles`
 - `GET /api/v1/ui-extensions`
 - `GET /api/v1/search-indexes`
+- `GET /api/v1/search-providers`
 - `POST /api/v1/analyze`
 - `POST /api/v1/search`
+- workspace index, alias, and collection lifecycle endpoints
+- dictionary import, vocabulary learning and download, and static-model lifecycle endpoints
 
 The service-info, model-bundle, analysis, and search endpoints use protobuf JSON for the gRPC
 message types. Analysis therefore retains the full `OpenNlpDocument` shape and typed annotation
@@ -49,8 +52,11 @@ bodies contain a stable gRPC status code and a message.
 
 Use `--help` for all options. The HTTP listener accepts loopback addresses by default. A
 non-loopback bind also requires `--allow-remote`, so deployment behind an authenticated TLS
-reverse proxy is an explicit operator choice. Use `--no-grpc-plaintext` when the gRPC target uses
-TLS. Process managers and tests can combine `--http-port 0` with `--bound-port-file PATH`. The
+reverse proxy is an explicit operator choice. The gateway has no authentication or authorization
+of its own and exposes state-changing operations, including artifact, model, index, alias, and
+collection deletion. Keep it on loopback or place it behind authentication and transport security.
+Use `--no-grpc-plaintext` when the gRPC target uses TLS. Process managers and tests can combine
+`--http-port 0` with `--bound-port-file PATH`. The
 webapp binds and retains the operating-system-assigned socket before it creates `PATH` with the
 decimal port and a trailing newline. The path must not already exist. This avoids the
 reserve-close-rebind race that occurs when a parent process probes for a free port.

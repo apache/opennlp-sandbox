@@ -389,11 +389,11 @@ loudly.
 
 ## Build and explore a bounded legal-passage index
 
-The first search provider loads one immutable TurboQuant index fully into memory. It is intended
-for a bounded collection of passages, such as one opinion, one matter, or a curated local corpus.
-It is not a distributed search engine and does not expose remote index mutation. A later provider
-can implement the same ServiceLoader contract for another index implementation without changing
-the gRPC or browser contracts.
+The first startup search provider loads one immutable TurboQuant bundle fully into memory. The
+separate workspace API can create, replace, persist, seal, reindex, and delete bounded process-local
+indexes through gRPC. Neither mode is a distributed search engine. A later provider can implement
+the same ServiceLoader contract for another index implementation without changing the gRPC or
+browser contracts.
 
 Start with normalized UTF-8 JSON Lines in the `CasePassage` interchange shape. Each physical
 record has six string fields:

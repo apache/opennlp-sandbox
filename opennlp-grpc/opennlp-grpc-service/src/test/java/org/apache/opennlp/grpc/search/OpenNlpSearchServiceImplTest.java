@@ -22,12 +22,15 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.grpc.Status;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.opennlp.grpc.embedding.EmbeddingBatchResult;
 import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.search.query.QueryCandidate;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
@@ -442,6 +445,45 @@ class OpenNlpSearchServiceImplTest {
     assertNull(searched.error);
     assertFalse(searched.value.hasQueryEmbeddingRoute());
     assertEquals("bravo", searched.value.getHits(0).getMatchedSpans(0).getTerm());
+  }
+
+  @Test
+  void compoundSemanticClausesUseTheSelectedProvidersVectorSearch() {
+    final SearchIndexDescriptor descriptor = SearchIndexRegistryTest.descriptor("legal");
+    final SearchResult providerFirst = result("provider-first", "chunk-b", 0.8);
+    final SearchResult providerSecond = result("raw-vector-first", "chunk-a", -0.8);
+    final AtomicInteger searches = new AtomicInteger();
+    final SearchIndexProvider provider = new SearchIndexProvider() {
+      @Override
+      public SearchIndexDescriptor descriptor() {
+        return descriptor;
+      }
+
+      @Override
+      public List<SearchResult> search(float[] queryVector, int topK) {
+        searches.incrementAndGet();
+        return List.of(providerFirst, providerSecond);
+      }
+
+      @Override
+      public List<QueryCandidate> queryCandidates() {
+        return List.of(
+            new QueryCandidate(providerSecond.record(), new float[] {1, 0, 0, 0}),
+            new QueryCandidate(providerFirst.record(), new float[] {-1, 0, 0, 0}));
+      }
+    };
+    final OpenNlpSearchServiceImpl service = service(provider);
+    final CapturingObserver<SearchIndexResponse> searched = new CapturingObserver<>();
+
+    service.searchIndex(compoundRequest("legal", QueryNode.newBuilder()
+        .setSemantic(SemanticClause.newBuilder()
+            .setDocument(OpenNlpDocument.newBuilder().setRawText("query")))
+        .build(), 2), searched);
+
+    assertNull(searched.error);
+    assertEquals(1, searches.get());
+    assertEquals(List.of("provider-first", "raw-vector-first"),
+        searched.value.getHitsList().stream().map(hit -> hit.getDocumentId()).toList());
   }
 
   @Test
@@ -866,6 +908,33 @@ class OpenNlpSearchServiceImplTest {
     assertEquals(Status.Code.NOT_FOUND, Status.fromThrowable(unknown.error).getCode());
   }
 
+  @Test
+  void watchDoesNotRegisterAfterImmediateTransportCancellation() {
+    final DynamicSearchIndexRegistry indexes = new DynamicSearchIndexRegistry();
+    final String indexId = indexes
+        .index(DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha", 1, 0))
+        .getIndex().getIndexId();
+    final SearchCollectionRegistry collections = SearchCollectionRegistry.inMemory(
+        indexes, artifactId -> List.of("alpha"));
+    collections.set(SetCollectionRequest.newBuilder()
+        .setCollectionId("legal")
+        .setDisplayName("Legal corpus")
+        .addMemberIndexIds(indexId)
+        .build());
+    final OpenNlpSearchServiceImpl service = new OpenNlpSearchServiceImpl(
+        new SearchIndexRegistry(List.of()), indexes,
+        new StubEmbeddingProvider(route(), 4), IndexAliasRegistry.inMemory(), collections);
+    final ImmediatelyCancelledObserver events = new ImmediatelyCancelledObserver();
+
+    service.watchCollection(WatchCollectionRequest.newBuilder()
+        .setCollectionId("legal").build(), events);
+    collections.notifyIndexPersisted(indexId);
+
+    assertTrue(events.values.isEmpty());
+    assertNull(events.error);
+    assertFalse(events.completed);
+  }
+
   private static OpenNlpSearchServiceImpl service(SearchIndexProvider... providers) {
     return new OpenNlpSearchServiceImpl(
         new SearchIndexRegistry(List.of(providers)), new StubEmbeddingProvider(route(), 4));
@@ -1025,6 +1094,64 @@ class OpenNlpSearchServiceImplTest {
         vector[0] = 1;
       }
       return vector;
+    }
+  }
+
+  private static final class ImmediatelyCancelledObserver
+      extends ServerCallStreamObserver<CollectionEvent> {
+
+    private final List<CollectionEvent> values = new ArrayList<>();
+    private Throwable error;
+    private boolean completed;
+
+    @Override
+    public boolean isCancelled() {
+      return true;
+    }
+
+    @Override
+    public void setOnCancelHandler(Runnable handler) {
+      handler.run();
+    }
+
+    @Override
+    public void setCompression(String compression) {
+    }
+
+    @Override
+    public boolean isReady() {
+      return false;
+    }
+
+    @Override
+    public void setOnReadyHandler(Runnable handler) {
+    }
+
+    @Override
+    public void disableAutoInboundFlowControl() {
+    }
+
+    @Override
+    public void request(int count) {
+    }
+
+    @Override
+    public void setMessageCompression(boolean enable) {
+    }
+
+    @Override
+    public void onNext(CollectionEvent value) {
+      values.add(value);
+    }
+
+    @Override
+    public void onError(Throwable throwable) {
+      error = throwable;
+    }
+
+    @Override
+    public void onCompleted() {
+      completed = true;
     }
   }
 

@@ -28,6 +28,7 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,6 +63,7 @@ public final class WorkspaceCheckpointStore {
   private static final int FORMAT_VERSION = 2;
   private static final String KIND_CHECKPOINT = "checkpoint";
   private static final String KIND_SEALED = "sealed";
+  private static final String OLD_MARKER = "-old-";
   private static final int MAX_DESCRIPTOR_BYTES = 65_536;
   private static final long MAX_CHUNKS_FILE_BYTES = 512L * 1024 * 1024;
 
@@ -189,6 +191,7 @@ public final class WorkspaceCheckpointStore {
     if (!Files.isDirectory(root)) {
       return List.of();
     }
+    recoverInterruptedSwaps();
     final List<Path> directories = new ArrayList<>();
     try (DirectoryStream<Path> entries = Files.newDirectoryStream(root)) {
       for (Path entry : entries) {
@@ -315,18 +318,75 @@ public final class WorkspaceCheckpointStore {
     Path previous = null;
     if (Files.exists(target)) {
       previous = target.resolveSibling("." + target.getFileName() + "-old-" + UUID.randomUUID());
-      Files.move(target, previous);
+      Files.move(target, previous, StandardCopyOption.ATOMIC_MOVE);
     }
     try {
-      Files.move(staging, target);
+      Files.move(staging, target, StandardCopyOption.ATOMIC_MOVE);
     } catch (IOException e) {
       if (previous != null) {
-        Files.move(previous, target);
+        try {
+          Files.move(previous, target, StandardCopyOption.ATOMIC_MOVE);
+        } catch (IOException restoreFailure) {
+          e.addSuppressed(restoreFailure);
+        }
       }
       throw e;
     }
     if (previous != null) {
-      deleteRecursively(previous);
+      try {
+        deleteRecursively(previous);
+      } catch (IOException ignored) {
+        // The new checkpoint is already published. Restore removes this stale generation.
+      }
+    }
+  }
+
+  /**
+   * Recovers an old generation left after the previous target was moved aside but before
+   * its replacement was published. Old generations beside an already published target
+   * are stale cleanup work.
+   *
+   * @throws IOException If recovery of the authoritative generation fails.
+   */
+  private void recoverInterruptedSwaps() throws IOException {
+    final List<Path> oldGenerations = new ArrayList<>();
+    try (DirectoryStream<Path> entries = Files.newDirectoryStream(root)) {
+      for (Path entry : entries) {
+        if (Files.isDirectory(entry) && interruptedSwapIndexId(entry) != null) {
+          oldGenerations.add(entry);
+        }
+      }
+    }
+    oldGenerations.sort(java.util.Comparator.comparing(path -> path.getFileName().toString()));
+    for (Path oldGeneration : oldGenerations) {
+      final String indexId = interruptedSwapIndexId(oldGeneration);
+      final Path target = root.resolve(indexId);
+      if (Files.exists(target)) {
+        try {
+          deleteRecursively(oldGeneration);
+        } catch (IOException ignored) {
+          // The published target is authoritative; stale cleanup can be retried later.
+        }
+      } else {
+        Files.move(oldGeneration, target, StandardCopyOption.ATOMIC_MOVE);
+      }
+    }
+  }
+
+  /** Returns the index id encoded by one hidden old-generation directory. */
+  private static String interruptedSwapIndexId(Path directory) {
+    final String name = directory.getFileName().toString();
+    final int marker = name.lastIndexOf(OLD_MARKER);
+    if (!name.startsWith(".") || marker <= 1) {
+      return null;
+    }
+    try {
+      UUID.fromString(name.substring(marker + OLD_MARKER.length()));
+      final String indexId = name.substring(1, marker);
+      SearchIndexRegistry.requireStableId(indexId, "interrupted checkpoint index id");
+      return indexId;
+    } catch (IllegalArgumentException e) {
+      return null;
     }
   }
 
