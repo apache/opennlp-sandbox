@@ -42,6 +42,7 @@ import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.search.DynamicSearchIndexRegistry;
 import org.apache.opennlp.grpc.search.OpenNlpSearchServiceImpl;
 import org.apache.opennlp.grpc.search.SearchIndexRegistry;
+import org.apache.opennlp.grpc.search.SearchProviderCatalog;
 import org.apache.opennlp.grpc.training.OpenNlpModelTrainingServiceImpl;
 import org.apache.opennlp.grpc.training.StaticModelArtifactStore;
 import org.apache.opennlp.grpc.training.StaticModelTrainer;
@@ -189,7 +190,8 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     this.modelBundleCache = new ModelBundleCache(configuration);
     this.searchIndexRegistry = SearchIndexRegistry.fromConfiguration(configuration);
     this.dynamicSearchIndexRegistry = enableDynamicSearch
-        ? new DynamicSearchIndexRegistry() : DynamicSearchIndexRegistry.disabled();
+        ? new DynamicSearchIndexRegistry(SearchProviderCatalog.fromConfiguration(configuration))
+        : DynamicSearchIndexRegistry.disabled();
     final DictionaryFormatRegistry dictionaryFormats = DictionaryFormatRegistry.discover();
     final VocabularyArtifactStore vocabularyArtifacts =
         VocabularyArtifactStore.fromConfiguration(configuration, dictionaryFormats);

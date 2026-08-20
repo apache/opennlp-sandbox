@@ -240,12 +240,22 @@ public final class SearchProviderCatalog {
    * @throws AnalysisException If the id names no configured instance.
    */
   public Instance find(String instanceId) {
-    final Instance instance = instanceId == null ? null : instances.get(instanceId);
+    final Instance instance = findOrNull(instanceId);
     if (instance == null) {
       throw AnalysisException.invalidArgument("Unknown search provider instance '"
           + instanceId + "'; configured instances: " + instances.keySet());
     }
     return instance;
+  }
+
+  /**
+   * Returns one configured instance without failing.
+   *
+   * @param instanceId Configured instance id.
+   * @return The matching instance, or {@code null} when the id is unknown.
+   */
+  Instance findOrNull(String instanceId) {
+    return instanceId == null ? null : instances.get(instanceId);
   }
 
   /**
