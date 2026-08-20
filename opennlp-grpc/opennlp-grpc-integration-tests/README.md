@@ -75,3 +75,28 @@ OPENNLP_OVMS_TARGET=localhost:19000 mvn -pl opennlp-grpc/opennlp-grpc-integratio
 ```
 
 Both opt-in suites can run in the same build by setting both environment variables.
+
+## Cross-language lifecycle e2e in Python (opt-in)
+
+`PythonLifecycleLiveIT` proves the wire contract carries the whole training lifecycle
+without generated code: it spawns the server (stub TEI backend, vocabulary artifact
+root, and search persistence root configured), extracts the `FileDescriptorSet` the
+shaded jar ships at `META-INF/opennlp/descriptors/opennlp-grpc-v1.protobin`, and runs
+`scripts/lifecycle_e2e.py`, a Python client that builds every request dynamically from
+those descriptors. The script imports a dictionary, learns a vocabulary, analyzes and
+indexes explicitly identified documents, aliases the workspace, scopes it into a
+collection, reads drift and persistence events from the `WatchCollection` stream,
+rebuilds blue/green with an alias swap, runs a compound query and checks its matched
+spans, seals the workspace, and cleans up.
+
+It needs [uv](https://docs.astral.sh/uv/) on the PATH and is opt-in:
+
+```bash
+OPENNLP_PYTHON_E2E=1 mvn -pl opennlp-grpc/opennlp-grpc-integration-tests verify
+```
+
+Set `OPENNLP_E2E_TEACHER_REF` to a teacher model reference (for example
+`minishlab/potion-base-8M`) to additionally distill a static model through
+`TrainStaticModel`, observe the model publication on the watch stream, and reindex
+into the trained vector space; without it the rebuild replays through the serving
+embedding model and the training step is skipped.
