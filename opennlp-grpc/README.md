@@ -378,6 +378,10 @@ The four RPCs:
 3. `ListStaticModels` lists every published model with its manifest hash and provenance.
 4. `DeleteStaticModel` removes the artifact and stops serving its model id.
 
+The bundled web UI's Trainer tab drives the whole flow in the browser: import a dictionary,
+learn a vocabulary from pasted documents, watch the distillation progress stream, and pick the
+served model in Analyze to index and search with it.
+
 Every published model carries a manifest naming the exact size and SHA-256 of each model file;
 the descriptor's `artifact_hash` is the SHA-256 of that manifest. Models are re-verified against
 the manifest before they are served again after a restart, and a tampered artifact fails startup

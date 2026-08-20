@@ -22,15 +22,23 @@ import { describe, expect, it, vi } from "vitest";
 import {
   analyze,
   decodeAnalyzeResponsePb,
+  deleteStaticModel,
+  downloadVocabularyTsv,
   encodeAnalyzeResponsePb,
+  getDictionaryFormats,
   getHealth,
   getModelBundles,
   getSearchIndexes,
   getServiceInfo,
   getUiExtensions,
+  getStaticModels,
+  getTeachers,
+  importDictionary,
   indexDocuments,
+  learnVocabulary,
   deleteSearchIndex,
   searchIndex,
+  trainStaticModel,
 } from "../src/api";
 
 describe("API client", () => {
@@ -156,5 +164,110 @@ describe("saved response transcoding", () => {
 
     await expect(decodeAnalyzeResponsePb(new ArrayBuffer(3), fetcher))
       .rejects.toThrow("Malformed protobuf response bytes");
+  });
+});
+
+describe("trainer API client", () => {
+  const jsonFetcher = vi.fn(async (input: RequestInfo | URL) =>
+    new Response(JSON.stringify({ url: String(input) }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    }));
+
+  it("uses the vocabulary and training endpoints", async () => {
+    await getDictionaryFormats(jsonFetcher);
+    await importDictionary({
+      start: {
+        format: { standard: "STANDARD_DICTIONARY_FORMAT_HEADWORD_LINES" },
+        displayName: "d",
+        provenanceSummary: "p",
+      },
+      data: "aGk=",
+    }, jsonFetcher);
+    await learnVocabulary({
+      start: {
+        dictionaryArtifactId: "dictionary-1",
+        displayName: "v",
+        minFrequency: 1,
+        maxTerms: 10,
+        provenanceSummary: "p",
+      },
+      documents: [{ rawText: "Liberty matters." }],
+    }, jsonFetcher);
+    await getTeachers(jsonFetcher);
+    await getStaticModels(jsonFetcher);
+    await deleteStaticModel("static-model-1", jsonFetcher);
+    const urls = jsonFetcher.mock.calls.map((call) => String(call[0]));
+    expect(urls).toEqual([
+      "/api/v1/dictionary-formats",
+      "/api/v1/import-dictionary",
+      "/api/v1/learn-vocabulary",
+      "/api/v1/teachers",
+      "/api/v1/static-models",
+      "/api/v1/delete-static-model",
+    ]);
+  });
+
+  it("downloads vocabulary TSV text", async () => {
+    const fetcher = vi.fn(async () => new Response("liberty\t3\tcorpus\n", {
+      status: 200,
+      headers: { "content-type": "text/tab-separated-values; charset=utf-8" },
+    }));
+
+    await expect(downloadVocabularyTsv("vocabulary-1", fetcher))
+      .resolves.toBe("liberty\t3\tcorpus\n");
+  });
+
+  it("streams training progress and resolves with the terminal model", async () => {
+    const body = [
+      "{\"progress\":\"resolving teacher\"}",
+      "{\"progress\":\"distilling\"}",
+      "{\"model\":{\"artifactId\":\"static-model-1\"}}",
+    ].join("\n") + "\n";
+    const fetcher = vi.fn(async () => new Response(body, {
+      status: 200,
+      headers: { "content-type": "application/x-ndjson; charset=utf-8" },
+    }));
+    const progress: string[] = [];
+
+    const model = await trainStaticModel({
+      vocabularyArtifactId: "vocabulary-1",
+      teacherId: "mini",
+      displayName: "m",
+      provenanceSummary: "p",
+    }, (message) => progress.push(message), fetcher);
+
+    expect(progress).toEqual(["resolving teacher", "distilling"]);
+    expect(model.artifactId).toBe("static-model-1");
+  });
+
+  it("rejects when the training stream ends with an error line", async () => {
+    const body = "{\"progress\":\"resolving teacher\"}\n"
+      + "{\"code\":\"INTERNAL\",\"message\":\"teacher crashed\"}\n";
+    const fetcher = vi.fn(async () => new Response(body, {
+      status: 200,
+      headers: { "content-type": "application/x-ndjson; charset=utf-8" },
+    }));
+
+    await expect(trainStaticModel({
+      vocabularyArtifactId: "vocabulary-1",
+      teacherId: "mini",
+      displayName: "m",
+      provenanceSummary: "p",
+    }, () => undefined, fetcher)).rejects.toThrow("teacher crashed");
+  });
+
+  it("rejects a pre-stream training failure with the gateway message", async () => {
+    const fetcher = vi.fn(async () => new Response(
+      JSON.stringify({ code: "NOT_FOUND", message: "Unknown vocabulary artifact" }),
+      { status: 404, headers: { "content-type": "application/json" } },
+    ));
+
+    await expect(trainStaticModel({
+      vocabularyArtifactId: "vocabulary-x",
+      teacherId: "mini",
+      displayName: "m",
+      provenanceSummary: "p",
+    }, () => undefined, fetcher)).rejects.toThrow("Unknown vocabulary artifact");
   });
 });

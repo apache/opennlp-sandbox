@@ -72,6 +72,24 @@ export class AnalysisControls {
     return this.#capabilities;
   }
 
+  /**
+   * Merges runtime-trained embedding models into the selector next to the
+   * startup-configured ones, keeping the current selection when it survives.
+   */
+  setTrainedEmbeddingModels(models: DiscoveryOption[]): void {
+    const selected = this.#embeddingModel.value;
+    const configured = this.#capabilities.embeddingModels;
+    const merged = [
+      ...configured,
+      ...models.filter((model) => !configured.some((option) => option.id === model.id)),
+    ];
+    this.populateEmbeddingModels(merged);
+    if (merged.some((option) => option.id === selected)) {
+      this.#embeddingModel.value = selected;
+    }
+    this.renderFeatures();
+  }
+
   request(text: string, includeChunks = true): AnalyzeRequest {
     const value = this.#profile.value;
     const profileId = withoutPrefix(value, "profile:");

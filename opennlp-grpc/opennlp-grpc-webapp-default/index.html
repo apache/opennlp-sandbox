@@ -44,6 +44,8 @@
           aria-controls="session-search" data-workbench-tab="session-search">Workspace search</button>
         <button id="models-workbench-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
           aria-controls="model-data-workbench" data-workbench-tab="models">Models &amp; data</button>
+        <button id="trainer-workbench-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+          aria-controls="vocabulary-trainer" data-workbench-tab="trainer">Trainer</button>
       </nav>
       <div id="service-status" role="status" aria-live="polite" class="service-status is-loading">
         <span class="status-dot" aria-hidden="true"></span>
@@ -481,6 +483,78 @@
             <p id="resource-install-status" class="form-status" role="status" aria-live="polite">
               Configure the installed paths, then restart the server to load the new capabilities.
             </p>
+          </section>
+        </section>
+        <section id="vocabulary-trainer" class="vocabulary-trainer" role="tabpanel"
+          aria-labelledby="trainer-workbench-tab" hidden>
+          <header class="model-data-heading">
+            <div>
+              <p class="section-kicker">Vocabulary to model</p>
+              <h3>Trainer</h3>
+              <p>
+                Import a dictionary, learn a vocabulary from your documents, and distill a
+                configured teacher into a static embedding model this server serves immediately.
+              </p>
+            </div>
+          </header>
+          <p id="trainer-status" class="form-status" role="status" aria-live="polite">
+            Loading the trainer catalog.
+          </p>
+          <div class="trainer-grid">
+            <section class="trainer-step">
+              <h4>1 · Import a dictionary</h4>
+              <label for="trainer-format-select">Format</label>
+              <select id="trainer-format-select" disabled></select>
+              <label for="trainer-dictionary-name">Display name</label>
+              <input id="trainer-dictionary-name" type="text" placeholder="Legal dictionary" />
+              <label for="trainer-dictionary-file">Dictionary file</label>
+              <input id="trainer-dictionary-file" type="file" />
+              <button id="trainer-import-button" type="button" disabled>Import dictionary</button>
+              <label for="trainer-dictionary-select">Imported dictionaries</label>
+              <select id="trainer-dictionary-select" disabled></select>
+            </section>
+            <section class="trainer-step">
+              <h4>2 · Learn a vocabulary</h4>
+              <label for="trainer-corpus">Corpus documents (blank line separates documents)</label>
+              <textarea id="trainer-corpus" rows="7"
+                placeholder="Paste corpus text; separate documents with a blank line."></textarea>
+              <label for="trainer-vocabulary-name">Display name</label>
+              <input id="trainer-vocabulary-name" type="text" placeholder="Legal vocabulary" />
+              <div class="trainer-inline">
+                <span>
+                  <label for="trainer-min-frequency">Min frequency</label>
+                  <input id="trainer-min-frequency" type="number" min="1" value="2" />
+                </span>
+                <span>
+                  <label for="trainer-max-terms">Max terms</label>
+                  <input id="trainer-max-terms" type="number" min="1" value="10000" />
+                </span>
+              </div>
+              <button id="trainer-learn-button" type="button" disabled>Learn vocabulary</button>
+              <label for="trainer-vocabulary-select">Learned vocabularies</label>
+              <select id="trainer-vocabulary-select" disabled></select>
+              <button id="trainer-download-tsv-button" type="button" class="secondary-button"
+                disabled>Download TSV</button>
+            </section>
+            <section class="trainer-step">
+              <h4>3 · Train a static model</h4>
+              <label for="trainer-teacher-select">Teacher</label>
+              <select id="trainer-teacher-select" disabled></select>
+              <label for="trainer-model-name">Display name</label>
+              <input id="trainer-model-name" type="text" placeholder="Legal static model" />
+              <label for="trainer-pca-dims">PCA dimensions (0 = server default)</label>
+              <input id="trainer-pca-dims" type="number" min="0" value="0" />
+              <button id="trainer-train-button" type="button" disabled>Train model</button>
+              <div id="trainer-progress-log" class="trainer-progress-log" aria-live="polite"></div>
+            </section>
+          </div>
+          <section class="trainer-models">
+            <h4>Trained models on this server</h4>
+            <p>
+              A trained model serves under its artifact id. Select it as the embedding model in
+              Analyze, index the analyzed documents in Workspace search, and search them there.
+            </p>
+            <div id="trainer-model-list" class="trainer-model-list"></div>
           </section>
         </section>
       </section>
