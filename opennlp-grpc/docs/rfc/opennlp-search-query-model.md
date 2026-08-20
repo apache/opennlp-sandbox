@@ -240,7 +240,12 @@ requests set exactly one of the two.
    and instance declarations.
 2. `QueryNode` execution: validation (types, CEL checking, algebra rule 8),
    the terms-layer keyword executor OOTB, and hit-level matched spans for
-   highlighting.
+   highlighting. Landed on this branch: the `query_kind` oneof on
+   `SearchIndexRequest`, structural validation, the algebra executor with
+   per-query max normalization and normalized reciprocal-rank fusion, the
+   code-point keyword and phrase executor with `MatchedSpan` hits, and the
+   `CelQueryEvaluator` ServiceLoader seam. Recorded analysis-chain identity
+   for keyword legs follows the provider SPI step.
 3. Index persistence as the existing bundle format written to a configured
    local directory, plus the collection descriptor file and the lifecycle
    RPCs (persist, seal, reindex, aliases, watch).

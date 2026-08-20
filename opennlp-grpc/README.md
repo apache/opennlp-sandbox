@@ -489,9 +489,30 @@ and response sizes remain bounded by the descriptor advertised to the browser.
 
 The search API is also available directly as
 `org.apache.opennlp.grpc.v1.OpenNlpSearchService`. `ListSearchIndexes` returns stable descriptors;
-`SearchIndex` accepts `index_id`, a complete `OpenNlpDocument` query, and `top_k`. Query routing
+`SearchIndex` accepts `index_id`, `top_k`, and exactly one of two query forms: a complete
+`OpenNlpDocument` `query` (shorthand for one semantic clause) or a typed `compound_query`
+tree from `opennlp_query.proto`. Query routing
 may fall back to another embedding backend only when model ID, vector-space ID, and dimension
 remain compatible with the route that built the index.
+
+A compound query composes semantic, `term`, and `phrase` clauses under `join` (AND, OR,
+exclusions, optional reciprocal-rank fusion) and `boost` nodes, plus two constrained CEL roles:
+a `cel_filter` that gates membership and a `cel_calculator` that scores from document metadata
+through a declared normalization. The normative score algebra is documented in
+`opennlp_query.proto` and pinned by tests: every score stays in `[0, 1]`, joins decide
+membership, boosts shape relevancy, and ranking ties break by chunk id then document id.
+Keyword and phrase legs analyze query text and indexed chunk text identically (code-point
+letter-and-digit terms, lowercased), and hits carry `matched_spans` locating each match in
+`emitted_text` by UTF-16 code unit for exact highlighting. Compound queries execute on the
+dynamic workspace indexes; a keyword-only tree needs no embedding backend at all. CEL clauses
+require an evaluator on the classpath through the `CelQueryEvaluator` ServiceLoader seam; the
+core ships none, and without one those clauses report `UNIMPLEMENTED`.
+
+The api jar also ships its complete `FileDescriptorSet` at
+`META-INF/opennlp/descriptors/opennlp-grpc-v1.protobin`, so non-Java consumers can load the
+wire contract without code generation; `org.apache.opennlp.grpc.descriptors` reads it back
+into runtime descriptors, and the gRPC server serves the same descriptors through standard
+server reflection.
 
 `IndexDocuments` also accepts analyzed `OpenNlpDocument` values whose chunk groups already carry
 embeddings. It creates or atomically extends a bounded index in server memory, so the browser
