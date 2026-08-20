@@ -142,6 +142,27 @@ reproduce it. Reciprocal-rank fusion is the escape hatch for joining legs
 whose scales are not comparable (the classic hybrid case); a calculator leg
 is just one more entrant in that fusion.
 
+## Training recall telemetry
+
+The accretion loop is measurable without labeled data, so the workflow can
+report the real quality of its own training as documents add up:
+
+1. **Quantization recall**: TurboQuant top-k against exact flat top-k over
+   the same vectors. Ground truth is free; the offline eval harness already
+   computes recall@k this way, and the server can run it over a live index.
+2. **Vocabulary coverage**: the fraction of an incoming document's terms that
+   hit learned term rows versus falling through to subword pieces. This is
+   the drift meter that motivates the explicit retrain step.
+3. **Student-vs-teacher agreement**: the distilled static model's top-k
+   against its own teacher's top-k on the accreted corpus. The teacher is
+   already configured and cached for training, so agreement is measurable
+   continuously, per model version, on the operator's actual documents
+   rather than a generic benchmark.
+
+Each metric attaches to a model artifact and an index snapshot by hash, so a
+recall curve is provenance-bound: this model version, this corpus size, this
+number. Exposure lands as an evaluation RPC after query execution.
+
 ## Persistence
 
 A live index that can persist serializes into the artifact store under an
