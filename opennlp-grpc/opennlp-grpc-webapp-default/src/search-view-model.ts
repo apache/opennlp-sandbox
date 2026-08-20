@@ -140,7 +140,9 @@ export interface MatchedSegment {
  * Spans are sorted by start; a span overlapping an earlier one is skipped so
  * segments never double-render text.
  */
-export function matchedSegments(hit: SearchHit): MatchedSegment[] {
+export function matchedSegments(
+  hit: Pick<SearchHit, "emittedChunkText" | "matchedSpans">,
+): MatchedSegment[] {
   const emitted = hit.emittedChunkText;
   if (hit.matchedSpans.length === 0) {
     return emitted ? [{ text: emitted, matched: false }] : [];

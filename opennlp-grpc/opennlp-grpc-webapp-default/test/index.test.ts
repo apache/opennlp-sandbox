@@ -96,6 +96,10 @@ describe("analysis playground markup", () => {
     expect(html).toContain('<label for="server-search-query">');
     expect(html).toContain('id="server-search-status" role="status" aria-live="polite"');
     expect(html).toContain('id="server-search-results" aria-label="Server search results"');
+    expect(html).toContain('role="group" aria-label="Results view"');
+    expect(html).toContain('id="server-view-list-button"');
+    expect(html).toContain('id="server-view-heatmap-button"');
+    expect(html).toContain('id="server-search-heatmap" aria-label="Document heatmap of scored chunks"');
     expect(html).toContain('id="score-legend" aria-label="Similarity score color scale from minus one to one"');
     expect(html).toContain('id="search-source-text"');
     expect(html).toContain('id="search-inspector"');

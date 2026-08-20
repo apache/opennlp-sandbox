@@ -497,6 +497,12 @@ scale, highlights the authoritative span in the original source text, compares i
 chunk text, and opens typed OpenNLP annotations for a selected source document. All remote query
 and response sizes remain bounded by the descriptor advertised to the browser.
 
+The results panel offers two views. The ranked list orders scored chunks best first. The
+heatmap view requests the index's full `max_top_k`, so on a bounded document set every chunk of
+every document is scored, and renders each document's source text with its chunk spans shaded
+on the same score scale, keyword matches marked inside. Selecting a shaded span opens it in the
+result inspector.
+
 The search API is also available directly as
 `org.apache.opennlp.grpc.v1.OpenNlpSearchService`. `ListSearchIndexes` returns stable descriptors;
 `SearchIndex` accepts `index_id`, `top_k`, and exactly one of two query forms: a complete
