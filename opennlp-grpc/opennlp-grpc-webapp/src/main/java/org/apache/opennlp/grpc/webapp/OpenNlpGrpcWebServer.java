@@ -54,6 +54,8 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
    * @param address The HTTP bind address.
    * @param analysisRpc The analysis service adapter.
    * @param searchRpc The search service adapter.
+   * @param vocabularyRpc The vocabulary service adapter.
+   * @param trainingRpc The model training service adapter.
    * @param extensionRegistry The static UI extensions.
    * @param maxRequestBytes The largest accepted request body.
    * @throws IOException If the HTTP listener cannot be created.
@@ -63,6 +65,8 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
       InetSocketAddress address,
       AnalysisRpc analysisRpc,
       SearchRpc searchRpc,
+      VocabularyRpc vocabularyRpc,
+      TrainingRpc trainingRpc,
       WebUiExtensionRegistry extensionRegistry,
       int maxRequestBytes) throws IOException {
     if (address == null) {
@@ -73,6 +77,12 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
     }
     if (searchRpc == null) {
       throw new IllegalArgumentException("searchRpc must not be null");
+    }
+    if (vocabularyRpc == null) {
+      throw new IllegalArgumentException("vocabularyRpc must not be null");
+    }
+    if (trainingRpc == null) {
+      throw new IllegalArgumentException("trainingRpc must not be null");
     }
     if (extensionRegistry == null) {
       throw new IllegalArgumentException("extensionRegistry must not be null");
@@ -85,7 +95,8 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
     this.executor = Executors.newVirtualThreadPerTaskExecutor();
     server.setExecutor(executor);
     server.createContext("/", new WebHandler(
-        new GrpcJsonApi(analysisRpc, searchRpc), new WebUiCatalogJson(extensionRegistry),
+        new GrpcJsonApi(analysisRpc, searchRpc, vocabularyRpc, trainingRpc),
+        new WebUiCatalogJson(extensionRegistry),
         new WebUiAssetResolver(extensionRegistry), maxRequestBytes));
   }
 
@@ -135,6 +146,8 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
     private static final String HTTP_HEAD = "HEAD";
     private static final String HTTP_POST = "POST";
     private static final String JSON_MEDIA_TYPE = "application/json";
+    private static final String NDJSON_CONTENT_TYPE = "application/x-ndjson; charset=utf-8";
+    private static final String TRAIN_STATIC_MODEL_PATH = "/api/v1/train-static-model";
     private static final String METHOD_NOT_ALLOWED =
         "HTTP method is not allowed for this endpoint";
 
@@ -213,6 +226,15 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
           }
         }
         exchange.getResponseHeaders().set("Cache-Control", "no-store");
+        if (rawPath.equals(TRAIN_STATIC_MODEL_PATH)) {
+          if (!method.equals(HTTP_POST)) {
+            send(exchange, GrpcJsonApi.error(405, Status.Code.UNIMPLEMENTED,
+                METHOD_NOT_ALLOWED));
+            return;
+          }
+          streamTrainStaticModel(exchange, body);
+          return;
+        }
         WebHttpResponse response = rawPath.equals("/api/v1/ui-extensions")
             ? catalog.handle(method) : api.handle(method, rawPath, body);
         send(exchange, response);
@@ -231,6 +253,37 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
       exchange.getResponseHeaders().set("Cache-Control", "no-cache");
       WebUiAsset resolved = asset.orElseThrow();
       send(exchange, new WebHttpResponse(200, resolved.contentType(), resolved.content()));
+    }
+
+    /**
+     * Runs one training request, streaming each update as an NDJSON line so the
+     * browser sees distillation progress while the run is still going. The 200
+     * response commits on the first update; a failure before that is sent as a
+     * normal buffered JSON error, and a failure after it arrives as a final
+     * error line.
+     *
+     * @param exchange The active HTTP exchange.
+     * @param body The request body.
+     * @throws IOException If the request or response body cannot be transferred.
+     */
+    private void streamTrainStaticModel(HttpExchange exchange, byte[] body)
+        throws IOException {
+      final java.io.OutputStream[] stream = new java.io.OutputStream[1];
+      final WebHttpResponse buffered = api.trainStaticModel(body, json -> {
+        if (stream[0] == null) {
+          exchange.getResponseHeaders().set("Content-Type", NDJSON_CONTENT_TYPE);
+          exchange.sendResponseHeaders(200, 0);
+          stream[0] = exchange.getResponseBody();
+        }
+        stream[0].write(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        stream[0].write('\n');
+        stream[0].flush();
+      });
+      if (buffered != null) {
+        send(exchange, buffered);
+      } else if (stream[0] != null) {
+        stream[0].close();
+      }
     }
 
     /**

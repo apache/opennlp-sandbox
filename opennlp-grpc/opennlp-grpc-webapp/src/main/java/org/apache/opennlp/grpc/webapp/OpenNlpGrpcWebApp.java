@@ -134,9 +134,11 @@ public final class OpenNlpGrpcWebApp implements Callable<Integer> {
     Duration requestTimeout = Duration.ofSeconds(requestTimeoutSeconds);
     GrpcAnalysisRpc analysisRpc = new GrpcAnalysisRpc(channel, requestTimeout);
     GrpcSearchRpc searchRpc = new GrpcSearchRpc(channel, requestTimeout);
+    GrpcVocabularyRpc vocabularyRpc = new GrpcVocabularyRpc(channel, requestTimeout);
+    GrpcTrainingRpc trainingRpc = new GrpcTrainingRpc(channel, requestTimeout);
     try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
         new InetSocketAddress(bindAddress, httpPort), analysisRpc, searchRpc,
-        registry, maxRequestBytes)) {
+        vocabularyRpc, trainingRpc, registry, maxRequestBytes)) {
       Thread shutdownHook = new Thread(() -> {
         server.stop();
         channel.shutdown();

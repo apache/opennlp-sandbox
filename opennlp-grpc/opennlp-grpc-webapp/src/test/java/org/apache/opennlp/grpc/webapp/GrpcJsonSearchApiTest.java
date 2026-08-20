@@ -46,7 +46,7 @@ class GrpcJsonSearchApiTest {
 
   @Test
   void listsSearchIndexesAsProtobufJson() {
-    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new StubSearchRpc());
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new StubSearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
 
     WebHttpResponse response = api.handle("GET", "/api/v1/search-indexes", new byte[0]);
 
@@ -58,7 +58,7 @@ class GrpcJsonSearchApiTest {
 
   @Test
   void parsesDocumentShapedSearchRequestAndRendersSourceHit() {
-    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new StubSearchRpc());
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new StubSearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
     byte[] request = """
         {"indexId":"%s","query":{"docId":"query-1","rawText":"habeas corpus"},"topK":7}
         """.formatted(INDEX_ID).getBytes(StandardCharsets.UTF_8);
@@ -74,7 +74,7 @@ class GrpcJsonSearchApiTest {
 
   @Test
   void rejectsMalformedSearchProtobufJson() {
-    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new StubSearchRpc());
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new StubSearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
 
     WebHttpResponse response = api.handle("POST", "/api/v1/search",
         "{\"indexId\":{\"bad\":true}}".getBytes(StandardCharsets.UTF_8));
@@ -86,7 +86,7 @@ class GrpcJsonSearchApiTest {
 
   @Test
   void enforcesSearchEndpointMethods() {
-    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new StubSearchRpc());
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new StubSearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
 
     assertEquals(405, api.handle("POST", "/api/v1/search-indexes", new byte[0]).status());
     assertEquals(405, api.handle("GET", "/api/v1/search", new byte[0]).status());
@@ -94,7 +94,7 @@ class GrpcJsonSearchApiTest {
 
   @Test
   void indexesAndDeletesAWorkspaceThroughProtobufJson() {
-    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new StubSearchRpc());
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new StubSearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
     byte[] indexRequest = """
         {"displayName":"Workbench","documents":[{"docId":"passage-1",\
         "rawText":"The writ must issue."}],"embedding":{"modelId":"demo"}}

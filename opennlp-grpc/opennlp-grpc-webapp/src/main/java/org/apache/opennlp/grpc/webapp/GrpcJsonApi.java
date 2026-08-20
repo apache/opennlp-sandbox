@@ -17,6 +17,7 @@
  */
 package org.apache.opennlp.grpc.webapp;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
@@ -30,13 +31,20 @@ import io.grpc.StatusRuntimeException;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
+import org.apache.opennlp.grpc.v1.DeleteStaticModelRequest;
+import org.apache.opennlp.grpc.v1.DownloadVocabularyRequest;
+import org.apache.opennlp.grpc.v1.ImportDictionaryUpload;
 import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
+import org.apache.opennlp.grpc.v1.LearnVocabularyUpload;
 import org.apache.opennlp.grpc.v1.SearchIndexRequest;
+import org.apache.opennlp.grpc.v1.TrainStaticModelRequest;
+import org.apache.opennlp.grpc.v1.TrainStaticModelUpdate;
 
 final class GrpcJsonApi {
 
   static final String JSON_CONTENT_TYPE = "application/json; charset=utf-8";
   static final String PROTOBUF_CONTENT_TYPE = "application/x-protobuf";
+  static final String TSV_CONTENT_TYPE = "text/tab-separated-values; charset=utf-8";
 
   private static final char[] HEX_DIGITS = "0123456789abcdef".toCharArray();
   private static final String INVALID_UTF8_MESSAGE = "Request body must contain valid UTF-8";
@@ -45,6 +53,8 @@ final class GrpcJsonApi {
 
   private final AnalysisRpc analysisRpc;
   private final SearchRpc searchRpc;
+  private final VocabularyRpc vocabularyRpc;
+  private final TrainingRpc trainingRpc;
   private final JsonFormat.Parser parser;
   private final JsonFormat.Printer printer;
 
@@ -53,17 +63,28 @@ final class GrpcJsonApi {
    *
    * @param analysisRpc The analysis service adapter.
    * @param searchRpc The search service adapter.
+   * @param vocabularyRpc The vocabulary service adapter.
+   * @param trainingRpc The model training service adapter.
    * @throws IllegalArgumentException If an argument is {@code null}.
    */
-  GrpcJsonApi(AnalysisRpc analysisRpc, SearchRpc searchRpc) {
+  GrpcJsonApi(AnalysisRpc analysisRpc, SearchRpc searchRpc,
+      VocabularyRpc vocabularyRpc, TrainingRpc trainingRpc) {
     if (analysisRpc == null) {
       throw new IllegalArgumentException("analysisRpc must not be null");
     }
     if (searchRpc == null) {
       throw new IllegalArgumentException("searchRpc must not be null");
     }
+    if (vocabularyRpc == null) {
+      throw new IllegalArgumentException("vocabularyRpc must not be null");
+    }
+    if (trainingRpc == null) {
+      throw new IllegalArgumentException("trainingRpc must not be null");
+    }
     this.analysisRpc = analysisRpc;
     this.searchRpc = searchRpc;
+    this.vocabularyRpc = vocabularyRpc;
+    this.trainingRpc = trainingRpc;
     this.parser = JsonFormat.parser();
     this.printer = JsonFormat.printer().omittingInsignificantWhitespace();
   }
@@ -107,6 +128,20 @@ final class GrpcJsonApi {
             ? indexDocuments(body) : methodNotAllowed();
         case "/api/v1/delete-search-index" -> method.equals("POST")
             ? deleteSearchIndex(body) : methodNotAllowed();
+        case "/api/v1/dictionary-formats" -> method.equals("GET")
+            ? protobufJson(vocabularyRpc.listDictionaryFormats()) : methodNotAllowed();
+        case "/api/v1/import-dictionary" -> method.equals("POST")
+            ? importDictionary(body) : methodNotAllowed();
+        case "/api/v1/learn-vocabulary" -> method.equals("POST")
+            ? learnVocabulary(body) : methodNotAllowed();
+        case "/api/v1/download-vocabulary" -> method.equals("POST")
+            ? downloadVocabulary(body) : methodNotAllowed();
+        case "/api/v1/teachers" -> method.equals("GET")
+            ? protobufJson(trainingRpc.listTeachers()) : methodNotAllowed();
+        case "/api/v1/static-models" -> method.equals("GET")
+            ? protobufJson(trainingRpc.listStaticModels()) : methodNotAllowed();
+        case "/api/v1/delete-static-model" -> method.equals("POST")
+            ? deleteStaticModel(body) : methodNotAllowed();
         default -> error(404, Status.Code.NOT_FOUND, "Unknown API endpoint");
       };
     } catch (StatusRuntimeException exception) {
@@ -222,6 +257,119 @@ final class GrpcJsonApi {
   }
 
   /**
+   * Parses and composes one complete dictionary import into the client stream.
+   *
+   * @param body Protobuf JSON request body.
+   * @return Encoded published dictionary descriptor or parse failure.
+   */
+  private WebHttpResponse importDictionary(byte[] body) {
+    final ImportDictionaryUpload.Builder upload = ImportDictionaryUpload.newBuilder();
+    final WebHttpResponse parseFailure = merge(body, upload);
+    return parseFailure != null ? parseFailure
+        : protobufJson(vocabularyRpc.importDictionary(upload.build()));
+  }
+
+  /**
+   * Parses and composes one complete vocabulary build into the client stream.
+   *
+   * @param body Protobuf JSON request body.
+   * @return Encoded published vocabulary descriptor or parse failure.
+   */
+  private WebHttpResponse learnVocabulary(byte[] body) {
+    final LearnVocabularyUpload.Builder upload = LearnVocabularyUpload.newBuilder();
+    final WebHttpResponse parseFailure = merge(body, upload);
+    return parseFailure != null ? parseFailure
+        : protobufJson(vocabularyRpc.learnVocabulary(upload.build()));
+  }
+
+  /**
+   * Downloads one vocabulary artifact as its exact TSV bytes.
+   *
+   * @param body Protobuf JSON request body.
+   * @return The TSV artifact or parse failure.
+   */
+  private WebHttpResponse downloadVocabulary(byte[] body) {
+    final DownloadVocabularyRequest.Builder request = DownloadVocabularyRequest.newBuilder();
+    final WebHttpResponse parseFailure = merge(body, request);
+    return parseFailure != null ? parseFailure : new WebHttpResponse(
+        200, TSV_CONTENT_TYPE, vocabularyRpc.downloadVocabulary(request.build()));
+  }
+
+  /**
+   * Parses and forwards one static model deletion request.
+   *
+   * @param body Protobuf JSON request body.
+   * @return Encoded deletion response or parse failure.
+   */
+  private WebHttpResponse deleteStaticModel(byte[] body) {
+    final DeleteStaticModelRequest.Builder request = DeleteStaticModelRequest.newBuilder();
+    final WebHttpResponse parseFailure = merge(body, request);
+    return parseFailure != null ? parseFailure
+        : protobufJson(trainingRpc.deleteStaticModel(request.build()));
+  }
+
+  /**
+   * Runs one distillation, streaming each update to the sink as an NDJSON line. This
+   * endpoint is dispatched by the HTTP handler rather than {@link #handle}, because a
+   * training run outlives a buffered response.
+   *
+   * @param body Protobuf JSON of one TrainStaticModelRequest.
+   * @param sink Receives one protobuf JSON line per update; the first call commits the
+   *     streamed 200 response.
+   * @return A buffered failure to send instead, or {@code null} once streaming started
+   *     and finished (a late failure is appended as a final error line).
+   * @throws IOException If writing to the sink fails.
+   */
+  WebHttpResponse trainStaticModel(byte[] body, TrainingUpdateSink sink) throws IOException {
+    final TrainStaticModelRequest.Builder request = TrainStaticModelRequest.newBuilder();
+    final WebHttpResponse parseFailure = merge(body, request);
+    if (parseFailure != null) {
+      return parseFailure;
+    }
+    boolean streamed = false;
+    try {
+      final java.util.Iterator<TrainStaticModelUpdate> updates =
+          trainingRpc.trainStaticModel(request.build());
+      while (updates.hasNext()) {
+        sink.update(printer.print(updates.next()));
+        streamed = true;
+      }
+      return null;
+    } catch (StatusRuntimeException exception) {
+      final Status status = exception.getStatus();
+      String message = status.getDescription();
+      if (message == null || message.isBlank()) {
+        message = status.getCode().name();
+      }
+      if (!streamed) {
+        return error(GrpcHttpStatusMapper.toHttpStatus(status.getCode()),
+            status.getCode(), message);
+      }
+      sink.update(errorJson(status.getCode(), message));
+      return null;
+    } catch (InvalidProtocolBufferException exception) {
+      final String message = "Could not encode the service response";
+      if (!streamed) {
+        return error(500, Status.Code.INTERNAL, message);
+      }
+      sink.update(errorJson(Status.Code.INTERNAL, message));
+      return null;
+    }
+  }
+
+  /** Receives one streamed protobuf JSON line per training update. */
+  interface TrainingUpdateSink {
+
+    /**
+     * Accepts one NDJSON line.
+     *
+     * @param json One protobuf JSON document, without a trailing newline.
+     * @throws IOException If the line cannot be written.
+     */
+    void update(String json) throws IOException;
+  }
+
+  /**
    * Decodes and merges protobuf JSON into a request builder.
    *
    * @param body Encoded request body.
@@ -287,9 +435,19 @@ final class GrpcJsonApi {
    * @return The encoded response.
    */
   static WebHttpResponse error(int httpStatus, Status.Code code, String message) {
-    String json = "{\"code\":\"" + escapeJson(code.name()) + "\",\"message\":\""
+    return WebHttpResponse.utf8(httpStatus, JSON_CONTENT_TYPE, errorJson(code, message));
+  }
+
+  /**
+   * Encodes one error as the common JSON error document.
+   *
+   * @param code The gRPC status code.
+   * @param message The caller-facing error message.
+   * @return The encoded JSON document.
+   */
+  private static String errorJson(Status.Code code, String message) {
+    return "{\"code\":\"" + escapeJson(code.name()) + "\",\"message\":\""
         + escapeJson(message) + "\"}";
-    return WebHttpResponse.utf8(httpStatus, JSON_CONTENT_TYPE, json);
   }
 
   /**

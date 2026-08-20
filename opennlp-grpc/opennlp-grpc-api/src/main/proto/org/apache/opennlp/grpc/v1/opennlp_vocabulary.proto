@@ -159,6 +159,21 @@ message VocabularyArtifactDescriptor {
   google.protobuf.Timestamp created_at = 12;
 }
 
+// One complete dictionary import in a single message. HTTP gateways accept this
+// shape and compose it into the ImportDictionary client stream.
+message ImportDictionaryUpload {
+  ImportDictionaryStart start = 1;
+  // Complete encoded dictionary bytes (base64 in protobuf JSON).
+  bytes data = 2;
+}
+
+// One complete vocabulary build in a single message. HTTP gateways accept this
+// shape and compose it into the LearnVocabulary client stream.
+message LearnVocabularyUpload {
+  LearnVocabularyStart start = 1;
+  repeated OpenNlpDocument documents = 2;
+}
+
 message DownloadVocabularyRequest {
   string artifact_id = 1;
 }
