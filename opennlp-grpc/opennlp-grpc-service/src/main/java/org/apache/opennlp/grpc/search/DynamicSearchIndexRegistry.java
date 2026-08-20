@@ -264,6 +264,84 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
   }
 
   /**
+   * Returns one dynamic index's retained chunks for server-side replay.
+   *
+   * @param indexId Opaque dynamic index identifier.
+   * @return Immutable chunks in snapshot order.
+   * @throws AnalysisException If the identifier is blank or unknown.
+   */
+  synchronized List<IndexedChunk> retainedChunks(String indexId) {
+    requireOpen();
+    return requireDynamic(indexId).snapshot().chunks();
+  }
+
+  /**
+   * Publishes a new index beside its source from replayed chunks, blue/green.
+   *
+   * @param sourceIndexId Source index whose display name and provider are inherited.
+   * @param selector Vector storage for the new index, or {@code null} to keep the
+   *     source index's instance.
+   * @param chunks Replayed chunks sharing one route and dimension, at least one.
+   * @return Descriptor of the newly published index.
+   * @throws AnalysisException If the source is unknown, the selector is invalid, a chunk
+   *     vector is invalid, or a bound would be exceeded.
+   */
+  synchronized SearchIndexDescriptor reindexInto(
+      String sourceIndexId, SearchProviderSelector selector, List<IndexedChunk> chunks) {
+    requireOpen();
+    requireEnabled();
+    final DynamicIndex source = requireDynamic(sourceIndexId);
+    if (chunks.isEmpty()) {
+      throw AnalysisException.failedPrecondition(
+          "ReindexIndex source '" + sourceIndexId + "' has no retained chunks");
+    }
+    SearchProviderCatalog.Instance instance = source.instance();
+    if (selector != null) {
+      instance = catalog.resolve(selector);
+      if (!instance.has(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_VECTOR)
+          || !instance.has(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_LIVE)) {
+        throw AnalysisException.failedPrecondition("Search provider instance '"
+            + instance.instanceId() + "' does not serve live vector legs");
+      }
+    }
+    if (indexes.size() >= maxIndexes) {
+      throw AnalysisException.resourceExhausted("Dynamic search index count reached " + maxIndexes);
+    }
+    final EmbeddingRoute route = chunks.getFirst().route();
+    final int dimension = chunks.getFirst().vector().length;
+    if (dimension < 1 || dimension > MAX_VECTOR_DIMENSION) {
+      throw AnalysisException.failedPrecondition(
+          "Replayed vectors must have a dimension between 1 and " + MAX_VECTOR_DIMENSION);
+    }
+    for (IndexedChunk chunk : chunks) {
+      if (chunk.vector().length != dimension || !compatible(route, chunk.route())) {
+        throw AnalysisException.failedPrecondition(
+            "Replayed chunks do not share one vector space and dimension");
+      }
+      double norm = 0;
+      for (float value : chunk.vector()) {
+        if (!Float.isFinite(value)) {
+          throw AnalysisException.failedPrecondition(
+              "Replayed chunk '" + chunk.record().chunkId()
+                  + "' contains a non-finite vector value");
+        }
+        norm += (double) value * value;
+      }
+      if (norm == 0) {
+        throw AnalysisException.failedPrecondition(
+            "Replayed chunk '" + chunk.record().chunkId() + "' has a zero vector");
+      }
+    }
+    final DynamicIndex target = new DynamicIndex(newIndexId(),
+        source.descriptor().getDisplayName(), route, instance, keywordInstance);
+    final Snapshot snapshot = target.prepare(List.of(), List.copyOf(chunks));
+    validateGlobalBudget(null, snapshot);
+    target.publish(snapshot);
+    indexes.put(target.descriptor().getIndexId(), target);
+    return target.descriptor();
+  }
+
+  /**
    * Deletes one dynamic index.
    *
    * @param indexId Opaque dynamic index identifier.
@@ -699,7 +777,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
    * @param selector Selector to validate.
    * @throws AnalysisException If the selector is ambiguous or incomplete.
    */
-  private static void validateSelector(EmbeddingSelector selector) {
+  static void validateSelector(EmbeddingSelector selector) {
     if (selector == null || selector.getModelId().isBlank()
         || !selector.getModelId().equals(selector.getModelId().trim())) {
       throw AnalysisException.invalidArgument(
@@ -720,7 +798,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
    * @return Backend identifier, or {@code null} when any compatible backend is allowed.
    * @throws AnalysisException If an explicitly selected backend is invalid.
    */
-  private static String selectedBackend(EmbeddingSelector selector) {
+  static String selectedBackend(EmbeddingSelector selector) {
     if (selector.hasBackendId()) {
       if (selector.getBackendId().isBlank()
           || !selector.getBackendId().equals(selector.getBackendId().trim())) {
@@ -871,7 +949,14 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
     }
   }
 
-  private record IndexedChunk(SearchRecord record, float[] vector, EmbeddingRoute route) {
+  /**
+   * One retained chunk: its search record, raw vector, and resolved route.
+   *
+   * @param record Validated search record.
+   * @param vector Raw embedding vector, shared and never mutated.
+   * @param route Resolved embedding route.
+   */
+  record IndexedChunk(SearchRecord record, float[] vector, EmbeddingRoute route) {
   }
 
   private static final class DynamicIndex implements SearchIndexProvider {

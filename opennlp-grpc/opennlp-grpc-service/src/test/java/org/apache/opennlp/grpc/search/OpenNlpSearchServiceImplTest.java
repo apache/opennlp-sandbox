@@ -41,8 +41,11 @@ import org.apache.opennlp.grpc.v1.ListIndexAliasesRequest;
 import org.apache.opennlp.grpc.v1.ListIndexAliasesResponse;
 import org.apache.opennlp.grpc.v1.ListSearchProvidersRequest;
 import org.apache.opennlp.grpc.v1.ListSearchProvidersResponse;
+import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.PersistIndexRequest;
 import org.apache.opennlp.grpc.v1.PersistIndexResponse;
+import org.apache.opennlp.grpc.v1.ReindexIndexRequest;
+import org.apache.opennlp.grpc.v1.ReindexIndexResponse;
 import org.apache.opennlp.grpc.v1.SealIndexRequest;
 import org.apache.opennlp.grpc.v1.SealIndexResponse;
 import org.apache.opennlp.grpc.v1.SetIndexAliasRequest;
@@ -278,6 +281,78 @@ class OpenNlpSearchServiceImplTest {
     service.setIndexAlias(SetIndexAliasRequest.newBuilder()
         .setAlias("legal-current").setIndexId("missing-index").build(), unknown);
     assertEquals(Status.Code.NOT_FOUND, Status.fromThrowable(unknown.error).getCode());
+  }
+
+  @Test
+  void reindexesAWorkspaceIntoANewVectorSpaceAndSwapsTheAlias() {
+    final DynamicSearchIndexRegistry dynamicRegistry = new DynamicSearchIndexRegistry();
+    final EmbeddingRoute newSpaceRoute = EmbeddingRoute.newBuilder()
+        .setModelId("demo")
+        .setBackendId("static")
+        .setVectorSpaceId("demo-space-v2")
+        .build();
+    final OpenNlpSearchServiceImpl service = new OpenNlpSearchServiceImpl(
+        new SearchIndexRegistry(List.of()),
+        dynamicRegistry,
+        new StubEmbeddingProvider(newSpaceRoute, 2, List.of(newSpaceRoute),
+            new float[] {0, 1}),
+        IndexAliasRegistry.inMemory());
+    final CapturingObserver<IndexDocumentsResponse> indexed = new CapturingObserver<>();
+    service.indexDocuments(
+        DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha", 1, 0), indexed);
+    final String sourceId = indexed.value.getIndex().getIndexId();
+    final CapturingObserver<SetIndexAliasResponse> aliased = new CapturingObserver<>();
+    service.setIndexAlias(SetIndexAliasRequest.newBuilder()
+        .setAlias("legal-current").setIndexId(sourceId).build(), aliased);
+
+    final CapturingObserver<ReindexIndexResponse> reindexed = new CapturingObserver<>();
+    service.reindexIndex(ReindexIndexRequest.newBuilder()
+        .setIndexId("legal-current")
+        .setEmbedding(EmbeddingSelector.newBuilder().setModelId("demo"))
+        .setAlias("legal-current")
+        .build(), reindexed);
+
+    assertNull(reindexed.error);
+    assertEquals(sourceId, reindexed.value.getSourceIndexId());
+    final SearchIndexDescriptor built = reindexed.value.getIndex();
+    assertFalse(built.getIndexId().equals(sourceId));
+    assertEquals("demo-space-v2", built.getEmbeddingRoute().getVectorSpaceId());
+    assertEquals(1, reindexed.value.getReindexedDocuments());
+    assertEquals(1, reindexed.value.getReindexedChunks());
+
+    final CapturingObserver<SearchIndexResponse> searched = new CapturingObserver<>();
+    service.searchIndex(request("legal-current", "alpha", 1), searched);
+    assertNull(searched.error);
+    assertEquals(built.getIndexId(), searched.value.getIndex().getIndexId());
+    assertEquals("doc-1", searched.value.getHits(0).getDocumentId());
+
+    final CapturingObserver<ListSearchIndexesResponse> listed = new CapturingObserver<>();
+    service.listSearchIndexes(ListSearchIndexesRequest.getDefaultInstance(), listed);
+    assertEquals(2, listed.value.getIndexesCount());
+    assertTrue(listed.value.getIndexesList().stream()
+        .anyMatch(descriptor -> descriptor.getIndexId().equals(sourceId)));
+  }
+
+  @Test
+  void reindexValidatesItsSelectorAndSource() {
+    final OpenNlpSearchServiceImpl service = new OpenNlpSearchServiceImpl(
+        new SearchIndexRegistry(List.of()),
+        new DynamicSearchIndexRegistry(),
+        new StubEmbeddingProvider(route(), 2));
+
+    final CapturingObserver<ReindexIndexResponse> missingSelector = new CapturingObserver<>();
+    service.reindexIndex(ReindexIndexRequest.newBuilder()
+        .setIndexId("workspace-unknown").build(), missingSelector);
+    assertEquals(Status.Code.INVALID_ARGUMENT,
+        Status.fromThrowable(missingSelector.error).getCode());
+
+    final CapturingObserver<ReindexIndexResponse> unknownSource = new CapturingObserver<>();
+    service.reindexIndex(ReindexIndexRequest.newBuilder()
+        .setIndexId("workspace-unknown")
+        .setEmbedding(EmbeddingSelector.newBuilder().setModelId("demo"))
+        .build(), unknownSource);
+    assertEquals(Status.Code.NOT_FOUND,
+        Status.fromThrowable(unknownSource.error).getCode());
   }
 
   @Test
@@ -748,7 +823,11 @@ class OpenNlpSearchServiceImplTest {
     public EmbeddingBatchResult embedBatchResolved(
         String modelId, String backendId, List<String> texts) {
       requestedBackend.set(backendId);
-      return new EmbeddingBatchResult(List.of(resultVector.clone()), resultRoute);
+      final List<float[]> vectors = new java.util.ArrayList<>(texts.size());
+      for (int index = 0; index < texts.size(); index++) {
+        vectors.add(resultVector.clone());
+      }
+      return new EmbeddingBatchResult(vectors, resultRoute);
     }
 
     @Override

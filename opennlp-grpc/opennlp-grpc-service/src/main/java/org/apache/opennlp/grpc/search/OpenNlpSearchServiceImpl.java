@@ -44,11 +44,14 @@ import org.apache.opennlp.grpc.v1.ListIndexAliasesRequest;
 import org.apache.opennlp.grpc.v1.ListIndexAliasesResponse;
 import org.apache.opennlp.grpc.v1.PersistIndexRequest;
 import org.apache.opennlp.grpc.v1.PersistIndexResponse;
+import org.apache.opennlp.grpc.v1.ReindexIndexRequest;
+import org.apache.opennlp.grpc.v1.ReindexIndexResponse;
 import org.apache.opennlp.grpc.v1.SealIndexRequest;
 import org.apache.opennlp.grpc.v1.SealIndexResponse;
 import org.apache.opennlp.grpc.v1.SetIndexAliasRequest;
 import org.apache.opennlp.grpc.v1.SetIndexAliasResponse;
 import org.apache.opennlp.grpc.v1.EmbeddingRoute;
+import org.apache.opennlp.grpc.v1.EmbeddingSelector;
 import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
 import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesRequest;
@@ -259,6 +262,99 @@ public final class OpenNlpSearchServiceImpl
     } catch (RuntimeException e) {
       respondUnexpectedFailure("SealIndex", e, responseObserver);
     }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void reindexIndex(
+      ReindexIndexRequest request, StreamObserver<ReindexIndexResponse> responseObserver) {
+    try {
+      final String sourceId = requireLifecycleIndexId("ReindexIndex",
+          request == null ? null : request.getIndexId());
+      DynamicSearchIndexRegistry.validateSelector(request.getEmbedding());
+      if (request.hasAlias()) {
+        try {
+          SearchIndexRegistry.requireStableId(request.getAlias(), "ReindexIndex alias");
+        } catch (IllegalArgumentException e) {
+          throw AnalysisException.invalidArgument(e.getMessage());
+        }
+        if (indexExists(request.getAlias())) {
+          throw AnalysisException.invalidArgument("ReindexIndex alias '" + request.getAlias()
+              + "' collides with an existing index id");
+        }
+      }
+      final List<DynamicSearchIndexRegistry.IndexedChunk> sourceChunks =
+          dynamicRegistry.retainedChunks(sourceId);
+      final List<DynamicSearchIndexRegistry.IndexedChunk> replayed =
+          replay(sourceChunks, request.getEmbedding());
+      final SearchIndexDescriptor built = dynamicRegistry.reindexInto(
+          sourceId, request.hasProvider() ? request.getProvider() : null, replayed);
+      if (request.hasAlias()) {
+        aliasRegistry.set(request.getAlias(), built.getIndexId());
+      }
+      responseObserver.onNext(ReindexIndexResponse.newBuilder()
+          .setIndex(built)
+          .setSourceIndexId(sourceId)
+          .setReindexedDocuments(Math.toIntExact(replayed.stream()
+              .map(chunk -> chunk.record().documentId()).distinct().count()))
+          .setReindexedChunks(replayed.size())
+          .build());
+      responseObserver.onCompleted();
+    } catch (AnalysisException e) {
+      respondAnalysisFailure("ReindexIndex", e, responseObserver);
+    } catch (RuntimeException e) {
+      respondUnexpectedFailure("ReindexIndex", e, responseObserver);
+    }
+  }
+
+  /**
+   * Re-embeds retained chunk texts through the newly selected route in bounded batches.
+   *
+   * @param sourceChunks Retained source chunks.
+   * @param embedding Requested embedding selection.
+   * @return Chunks carrying the new vectors and the resolved route.
+   * @throws AnalysisException If an embedding call fails.
+   */
+  private List<DynamicSearchIndexRegistry.IndexedChunk> replay(
+      List<DynamicSearchIndexRegistry.IndexedChunk> sourceChunks,
+      EmbeddingSelector embedding) {
+    final int batchSize = 16;
+    final List<DynamicSearchIndexRegistry.IndexedChunk> replayed =
+        new ArrayList<>(sourceChunks.size());
+    EmbeddingRoute resolvedRoute = null;
+    for (int start = 0; start < sourceChunks.size(); start += batchSize) {
+      final List<DynamicSearchIndexRegistry.IndexedChunk> batch =
+          sourceChunks.subList(start, Math.min(start + batchSize, sourceChunks.size()));
+      final List<String> texts = batch.stream()
+          .map(chunk -> chunk.record().emittedText()).toList();
+      final String backend = resolvedRoute == null
+          ? DynamicSearchIndexRegistry.selectedBackend(embedding)
+          : resolvedRoute.getBackendId();
+      final EmbeddingBatchResult embedded = embeddingProvider.embedBatchResolved(
+          embedding.getModelId(), backend, texts);
+      if (embedded == null || embedded.vectors() == null
+          || embedded.vectors().size() != texts.size()) {
+        throw new IllegalStateException(
+            "Embedding backend returned a mismatched reindex batch");
+      }
+      if (resolvedRoute == null) {
+        resolvedRoute = embedded.route();
+        if (resolvedRoute.getModelId().isBlank() || resolvedRoute.getBackendId().isBlank()
+            || resolvedRoute.getVectorSpaceId().isBlank()) {
+          throw new IllegalStateException(
+              "Embedding backend resolved an incomplete reindex route");
+        }
+      } else if (!resolvedRoute.getModelId().equals(embedded.route().getModelId())
+          || !resolvedRoute.getVectorSpaceId().equals(embedded.route().getVectorSpaceId())) {
+        throw new IllegalStateException(
+            "Embedding backend changed vector spaces during a reindex");
+      }
+      for (int index = 0; index < batch.size(); index++) {
+        replayed.add(new DynamicSearchIndexRegistry.IndexedChunk(
+            batch.get(index).record(), embedded.vectors().get(index), resolvedRoute));
+      }
+    }
+    return List.copyOf(replayed);
   }
 
   /** {@inheritDoc} */
