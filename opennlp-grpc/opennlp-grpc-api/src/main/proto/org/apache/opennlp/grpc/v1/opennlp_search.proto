@@ -20,6 +20,7 @@ syntax = "proto3";
 package org.apache.opennlp.grpc.v1;
 
 import "org/apache/opennlp/grpc/v1/opennlp_document.proto";
+import "org/apache/opennlp/grpc/v1/opennlp_query.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "OpenNlpSearchProto";
@@ -200,13 +201,22 @@ message SearchProviderSelector {
   }
 }
 
-// One natural-language query against a server-owned index.
+// One query against a server-owned index: either a document-shaped semantic
+// query or a typed compound query tree. Exactly one form must be set.
 message SearchIndexRequest {
   // Stable id from ListSearchIndexes. Required.
   string index_id = 1;
-  // Document-shaped query. query.raw_text must be non-blank. The complete shape
-  // preserves caller identity and metadata for future typed query annotations.
-  OpenNlpDocument query = 2;
+  oneof query_kind {
+    // Document-shaped query. query.raw_text must be non-blank. The complete
+    // shape preserves caller identity and metadata for future typed query
+    // annotations. Shorthand for a compound query of one semantic clause.
+    OpenNlpDocument query = 2;
+    // Typed compound query executed under the normative score algebra in
+    // opennlp_query.proto. Hits carry root scores in [0, 1] and matched spans
+    // from keyword legs. Reports UNIMPLEMENTED when the index does not
+    // execute compound queries or a CEL clause has no installed evaluator.
+    QueryNode compound_query = 4;
+  }
   // Maximum hits to return. Must be positive and no larger than the operator's
   // configured server maximum.
   int32 top_k = 3;
@@ -232,7 +242,9 @@ message SearchHit {
   string document_id = 1;
   // Stable identity of the indexed passage or chunk within the source corpus.
   string chunk_id = 2;
-  // Similarity under the index metric. Cosine indexes return a value in [-1, 1].
+  // Similarity under the index metric for document-shaped queries; cosine
+  // indexes return a value in [-1, 1]. Compound queries return the root score
+  // of the normative algebra, always in [0, 1].
   double score = 3;
   // Source text retained by the index bundle in the common OpenNlpDocument shape.
   // The corpus provenance describes offline normalization or other preparation.
@@ -246,4 +258,17 @@ message SearchHit {
   // Index, embedding, build, and corpus provenance are inherited from
   // SearchIndexResponse.index and are not repeated on every hit.
   reserved 7 to 9;
+  // Keyword and phrase matches contributing to this hit, for exact
+  // highlighting. Present only for compound queries with keyword legs.
+  repeated MatchedSpan matched_spans = 10;
+}
+
+// One keyword or phrase match within a hit's emitted text.
+message MatchedSpan {
+  // Inclusive start offset in UTF-16 code units within SearchHit.emitted_text.
+  uint32 start = 1;
+  // Exclusive end offset in UTF-16 code units within SearchHit.emitted_text.
+  uint32 end = 2;
+  // The analyzed query term or phrase text that matched this span.
+  string term = 3;
 }
