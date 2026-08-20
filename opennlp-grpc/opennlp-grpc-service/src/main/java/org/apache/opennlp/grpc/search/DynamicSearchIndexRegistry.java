@@ -407,19 +407,19 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
    * Rewrites the checkpoint of every persisted index whose content changed since its
    * last checkpoint. Sealed indexes never change and are skipped.
    *
-   * @return Number of checkpoints rewritten.
+   * @return Ids of the indexes whose checkpoints were rewritten.
    */
-  public synchronized int checkpointPersistedIndexes() {
+  public synchronized List<String> checkpointPersistedIndexes() {
     requireOpen();
-    int rewritten = 0;
+    final List<String> rewritten = new ArrayList<>();
     for (DynamicIndex index : indexes.values()) {
       if (index.persisted() && !index.sealed()
           && !index.snapshot().contentHash().equals(index.lastPersistedContentHash())) {
         persist(index, false);
-        rewritten++;
+        rewritten.add(index.descriptor().getIndexId());
       }
     }
-    return rewritten;
+    return List.copyOf(rewritten);
   }
 
   /**

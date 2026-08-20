@@ -19,6 +19,7 @@
 package org.apache.opennlp.grpc.search;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -54,6 +55,17 @@ import org.apache.opennlp.grpc.v1.SearchProviderSelector;
 import org.apache.opennlp.grpc.v1.StandardSearchProvider;
 import org.apache.opennlp.grpc.v1.SearchProviderCapability;
 import org.apache.opennlp.grpc.v1.SearchProviderInstance;
+import org.apache.opennlp.grpc.v1.CollectionEvent;
+import org.apache.opennlp.grpc.v1.CollectionEventKind;
+import org.apache.opennlp.grpc.v1.DeleteCollectionRequest;
+import org.apache.opennlp.grpc.v1.DeleteCollectionResponse;
+import org.apache.opennlp.grpc.v1.GetCollectionRequest;
+import org.apache.opennlp.grpc.v1.GetCollectionResponse;
+import org.apache.opennlp.grpc.v1.ListCollectionsRequest;
+import org.apache.opennlp.grpc.v1.ListCollectionsResponse;
+import org.apache.opennlp.grpc.v1.SetCollectionRequest;
+import org.apache.opennlp.grpc.v1.SetCollectionResponse;
+import org.apache.opennlp.grpc.v1.WatchCollectionRequest;
 import org.apache.opennlp.grpc.v1.CelFilterClause;
 import org.apache.opennlp.grpc.v1.JoinClause;
 import org.apache.opennlp.grpc.v1.JoinOperator;
@@ -687,6 +699,173 @@ class OpenNlpSearchServiceImplTest {
     assertEquals(Status.Code.INTERNAL, Status.fromThrowable(observer.error).getCode());
   }
 
+  @Test
+  void collectionsResolveMemberAliasesAndAnswerCrudCalls() {
+    final DynamicSearchIndexRegistry dynamicRegistry = new DynamicSearchIndexRegistry();
+    final EmbeddingRoute workspaceRoute = EmbeddingRoute.newBuilder()
+        .setModelId("demo")
+        .setBackendId("static")
+        .setVectorSpaceId("demo-space")
+        .build();
+    final OpenNlpSearchServiceImpl service = new OpenNlpSearchServiceImpl(
+        new SearchIndexRegistry(List.of()),
+        dynamicRegistry,
+        new StubEmbeddingProvider(workspaceRoute, 2, List.of(workspaceRoute),
+            new float[] {1, 0}),
+        IndexAliasRegistry.inMemory(),
+        SearchCollectionRegistry.inMemory(dynamicRegistry,
+            artifactId -> List.of("alpha")));
+    final CapturingObserver<IndexDocumentsResponse> indexed = new CapturingObserver<>();
+    service.indexDocuments(
+        DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha beta", 1, 0), indexed);
+    final String indexId = indexed.value.getIndex().getIndexId();
+    final CapturingObserver<SetIndexAliasResponse> aliased = new CapturingObserver<>();
+    service.setIndexAlias(SetIndexAliasRequest.newBuilder()
+        .setAlias("legal-current").setIndexId(indexId).build(), aliased);
+    assertNull(aliased.error);
+
+    final CapturingObserver<SetCollectionResponse> set = new CapturingObserver<>();
+    service.setCollection(SetCollectionRequest.newBuilder()
+        .setCollectionId("legal")
+        .setDisplayName("Legal corpus")
+        .addMemberIndexIds("legal-current")
+        .setVocabularyArtifactId("vocabulary-1")
+        .build(), set);
+    assertNull(set.error);
+    assertEquals(List.of(indexId), set.value.getCollection().getMemberIndexIdsList());
+
+    final CapturingObserver<GetCollectionResponse> got = new CapturingObserver<>();
+    service.getCollection(GetCollectionRequest.newBuilder()
+        .setCollectionId("legal").build(), got);
+    assertNull(got.error);
+    assertEquals(2, got.value.getCollection().getTermLedgerCount());
+    assertEquals(1, got.value.getCollection().getDrift().getNewTerms());
+    assertEquals(0.5, got.value.getCollection().getDrift().getVocabularyCoverage());
+
+    final CapturingObserver<ListCollectionsResponse> listed = new CapturingObserver<>();
+    service.listCollections(ListCollectionsRequest.getDefaultInstance(), listed);
+    assertNull(listed.error);
+    assertEquals(1, listed.value.getCollectionsCount());
+    assertEquals(0, listed.value.getCollections(0).getTermLedgerCount());
+
+    final CapturingObserver<GetCollectionResponse> missing = new CapturingObserver<>();
+    service.getCollection(GetCollectionRequest.newBuilder()
+        .setCollectionId("unknown").build(), missing);
+    assertEquals(Status.Code.NOT_FOUND, Status.fromThrowable(missing.error).getCode());
+
+    final CapturingObserver<SetCollectionResponse> unknownMember = new CapturingObserver<>();
+    service.setCollection(SetCollectionRequest.newBuilder()
+        .setCollectionId("broken")
+        .setDisplayName("Broken")
+        .addMemberIndexIds("missing-index")
+        .build(), unknownMember);
+    assertEquals(Status.Code.NOT_FOUND,
+        Status.fromThrowable(unknownMember.error).getCode());
+
+    final CapturingObserver<SetCollectionResponse> blank = new CapturingObserver<>();
+    service.setCollection(SetCollectionRequest.newBuilder()
+        .setDisplayName("Blank id").build(), blank);
+    assertEquals(Status.Code.INVALID_ARGUMENT, Status.fromThrowable(blank.error).getCode());
+
+    final CapturingObserver<DeleteCollectionResponse> deleted = new CapturingObserver<>();
+    service.deleteCollection(DeleteCollectionRequest.newBuilder()
+        .setCollectionId("legal").build(), deleted);
+    assertNull(deleted.error);
+    assertTrue(deleted.value.getDeleted());
+    final CapturingObserver<DeleteCollectionResponse> gone = new CapturingObserver<>();
+    service.deleteCollection(DeleteCollectionRequest.newBuilder()
+        .setCollectionId("legal").build(), gone);
+    assertFalse(gone.value.getDeleted());
+  }
+
+  @Test
+  void collectionsRejectStartupBundleMembers() {
+    final OpenNlpSearchServiceImpl service = service(
+        provider(SearchIndexRegistryTest.descriptor("static-1"), List.of()));
+
+    final CapturingObserver<SetCollectionResponse> rejected = new CapturingObserver<>();
+    service.setCollection(SetCollectionRequest.newBuilder()
+        .setCollectionId("legal")
+        .setDisplayName("Legal corpus")
+        .addMemberIndexIds("static-1")
+        .build(), rejected);
+
+    assertEquals(Status.Code.FAILED_PRECONDITION,
+        Status.fromThrowable(rejected.error).getCode());
+  }
+
+  @Test
+  void watchStreamsASnapshotFirstAndLifecycleEventsAfterwards(@TempDir Path root) {
+    final DynamicSearchIndexRegistry dynamicRegistry = new DynamicSearchIndexRegistry(
+        SearchProviderCatalog.discover(), new WorkspaceCheckpointStore(root));
+    final EmbeddingRoute workspaceRoute = EmbeddingRoute.newBuilder()
+        .setModelId("demo")
+        .setBackendId("static")
+        .setVectorSpaceId("demo-space")
+        .build();
+    final OpenNlpSearchServiceImpl service = new OpenNlpSearchServiceImpl(
+        new SearchIndexRegistry(List.of()),
+        dynamicRegistry,
+        new StubEmbeddingProvider(workspaceRoute, 2, List.of(workspaceRoute),
+            new float[] {1, 0}),
+        IndexAliasRegistry.inMemory(),
+        SearchCollectionRegistry.inMemory(dynamicRegistry,
+            artifactId -> List.of("alpha")));
+    final CapturingObserver<IndexDocumentsResponse> indexed = new CapturingObserver<>();
+    service.indexDocuments(
+        DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha", 1, 0).toBuilder()
+            .setProvider(SearchProviderSelector.newBuilder()
+                .setStandard(StandardSearchProvider.STANDARD_SEARCH_PROVIDER_TURBO_QUANT))
+            .build(),
+        indexed);
+    final String indexId = indexed.value.getIndex().getIndexId();
+    final CapturingObserver<SetCollectionResponse> set = new CapturingObserver<>();
+    service.setCollection(SetCollectionRequest.newBuilder()
+        .setCollectionId("legal")
+        .setDisplayName("Legal corpus")
+        .addMemberIndexIds(indexId)
+        .setVocabularyArtifactId("vocabulary-1")
+        .setDriftNewTermThreshold(1)
+        .build(), set);
+    assertNull(set.error);
+
+    final CollectingObserver<CollectionEvent> events = new CollectingObserver<>();
+    service.watchCollection(WatchCollectionRequest.newBuilder()
+        .setCollectionId("legal").build(), events);
+    assertEquals(1, events.values.size());
+    assertEquals(CollectionEventKind.COLLECTION_EVENT_KIND_SNAPSHOT,
+        events.values.get(0).getKind());
+
+    final CapturingObserver<PersistIndexResponse> persisted = new CapturingObserver<>();
+    service.persistIndex(PersistIndexRequest.newBuilder().setIndexId(indexId).build(),
+        persisted);
+    assertNull(persisted.error);
+    assertEquals(2, events.values.size());
+    assertEquals(CollectionEventKind.COLLECTION_EVENT_KIND_INDEX_PERSISTED,
+        events.values.get(1).getKind());
+    assertEquals(indexId, events.values.get(1).getIndexId());
+
+    final CapturingObserver<IndexDocumentsResponse> extended = new CapturingObserver<>();
+    service.indexDocuments(
+        DynamicSearchIndexRegistryTest.request(indexId, "doc-2", "beta", 0, 1), extended);
+    assertNull(extended.error);
+    assertEquals(3, events.values.size());
+    assertEquals(CollectionEventKind.COLLECTION_EVENT_KIND_DRIFT_THRESHOLD_CROSSED,
+        events.values.get(2).getKind());
+    assertEquals(1, events.values.get(2).getCollection().getDrift().getNewTerms());
+
+    final CapturingObserver<DeleteCollectionResponse> deleted = new CapturingObserver<>();
+    service.deleteCollection(DeleteCollectionRequest.newBuilder()
+        .setCollectionId("legal").build(), deleted);
+    assertNull(deleted.error);
+    assertTrue(events.completed);
+
+    final CollectingObserver<CollectionEvent> unknown = new CollectingObserver<>();
+    service.watchCollection(WatchCollectionRequest.newBuilder()
+        .setCollectionId("legal").build(), unknown);
+    assertEquals(Status.Code.NOT_FOUND, Status.fromThrowable(unknown.error).getCode());
+  }
+
   private static OpenNlpSearchServiceImpl service(SearchIndexProvider... providers) {
     return new OpenNlpSearchServiceImpl(
         new SearchIndexRegistry(List.of(providers)), new StubEmbeddingProvider(route(), 4));
@@ -846,6 +1025,28 @@ class OpenNlpSearchServiceImplTest {
         vector[0] = 1;
       }
       return vector;
+    }
+  }
+
+  private static final class CollectingObserver<T> implements StreamObserver<T> {
+
+    private final List<T> values = new ArrayList<>();
+    private Throwable error;
+    private boolean completed;
+
+    @Override
+    public void onNext(T value) {
+      values.add(value);
+    }
+
+    @Override
+    public void onError(Throwable error) {
+      this.error = error;
+    }
+
+    @Override
+    public void onCompleted() {
+      completed = true;
     }
   }
 

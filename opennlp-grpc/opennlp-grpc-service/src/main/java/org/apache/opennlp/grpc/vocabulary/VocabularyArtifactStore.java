@@ -431,6 +431,46 @@ public final class VocabularyArtifactStore {
     return store.read(VOCABULARIES_KIND, artifactId, VOCABULARY_DATA);
   }
 
+  /**
+   * One parsed vocabulary term row.
+   *
+   * @param term Term text; multiword terms are joined by single spaces.
+   * @param count Occurrence count recorded at learning time.
+   */
+  public record TermRow(String term, long count) {
+  }
+
+  /**
+   * Reads and parses the term rows of one learned vocabulary in stored order.
+   *
+   * @param artifactId Server-owned vocabulary artifact id.
+   * @return Immutable term rows in artifact order.
+   * @throws IOException If reading, integrity verification, or parsing fails.
+   * @throws IllegalArgumentException If the artifact id is invalid or unknown.
+   */
+  public List<TermRow> readVocabularyTermRows(String artifactId) throws IOException {
+    final List<TermRow> rows = new ArrayList<>();
+    try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+        openVocabulary(artifactId), StandardCharsets.UTF_8))) {
+      String line;
+      while ((line = reader.readLine()) != null) {
+        final int firstTab = line.indexOf('\t');
+        final int secondTab = firstTab < 0 ? -1 : line.indexOf('\t', firstTab + 1);
+        if (firstTab <= 0 || secondTab < 0) {
+          throw new IOException("Corrupt vocabulary artifact '" + artifactId + "'");
+        }
+        final long count;
+        try {
+          count = Long.parseLong(line.substring(firstTab + 1, secondTab));
+        } catch (NumberFormatException e) {
+          throw new IOException("Corrupt vocabulary artifact '" + artifactId + "'", e);
+        }
+        rows.add(new TermRow(line.substring(0, firstTab), count));
+      }
+    }
+    return List.copyOf(rows);
+  }
+
   /** Loads and verifies artifacts that were published before this process started. */
   private void loadExistingArtifacts() throws IOException {
     loadDictionaries();
