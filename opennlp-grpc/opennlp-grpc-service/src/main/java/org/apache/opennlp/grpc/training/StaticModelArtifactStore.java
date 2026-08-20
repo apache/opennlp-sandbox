@@ -163,17 +163,23 @@ public final class StaticModelArtifactStore {
         store == null ? null : cacheRoot(configuration));
   }
 
-  /** @return Whether training and model operations have a configured artifact root. */
+  /** Reports whether training is enabled.
+   *
+   * @return Whether training and model operations have a configured artifact root. */
   public boolean writesEnabled() {
     return store != null;
   }
 
-  /** @return Largest accepted {@code pca_dims}. */
+  /** Reports the configured PCA bound.
+   *
+   * @return Largest accepted {@code pca_dims}. */
   public int maxPcaDims() {
     return maxPcaDims;
   }
 
-  /** @return Trainings admitted at once. */
+  /** Reports the configured training admission bound.
+   *
+   * @return Trainings admitted at once. */
   public int maxConcurrentTrainings() {
     return maxConcurrentTrainings;
   }

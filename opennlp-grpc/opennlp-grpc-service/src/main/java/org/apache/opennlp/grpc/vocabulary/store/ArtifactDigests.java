@@ -135,12 +135,16 @@ public final class ArtifactDigests {
       target.close();
     }
 
-    /** @return Bytes written so far. */
+    /** Reports the running byte count.
+     *
+     * @return Bytes written so far. */
     public long count() {
       return count;
     }
 
-    /** @return The lowercase hexadecimal SHA-256 of the bytes written so far. */
+    /** Reports the running digest.
+     *
+     * @return The lowercase hexadecimal SHA-256 of the bytes written so far. */
     public String hexDigest() {
       return hex(digest.digest());
     }

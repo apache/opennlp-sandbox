@@ -229,11 +229,16 @@ public final class TrainedModelEmbeddingProvider implements EmbeddingProvider, A
     }
   }
 
-  /** Builds the single serving route of one trained model. */
+  /**
+   * Builds the single serving route of one trained model. The vector space id derives
+   * from the artifact hash, so an index built with the model stays queryable by exactly
+   * this artifact and never by a retrained model that happens to reuse a display name.
+   */
   private static EmbeddingRoute trainedRoute(String modelId, TrainedModel trained) {
     return EmbeddingRoute.newBuilder()
         .setModelId(modelId)
         .setBackendId(TRAINED_BACKEND_ID)
+        .setVectorSpaceId(modelId + "-sha256-" + trained.artifactHash())
         .setArtifactHash(trained.artifactHash())
         .setPrimary(true)
         .build();

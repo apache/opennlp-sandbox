@@ -25,6 +25,10 @@ import java.nio.file.Path;
 /** The {@link VocabularyStoreProvider} for {@code file} URIs. */
 public final class FileSystemVocabularyStoreProvider implements VocabularyStoreProvider {
 
+  /** Public no-arg constructor required by {@link java.util.ServiceLoader}. */
+  public FileSystemVocabularyStoreProvider() {
+  }
+
   /** {@inheritDoc} */
   @Override
   public String scheme() {

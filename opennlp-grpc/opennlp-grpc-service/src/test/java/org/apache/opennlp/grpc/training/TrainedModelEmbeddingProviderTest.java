@@ -71,6 +71,7 @@ class TrainedModelEmbeddingProviderTest {
     assertEquals(1, routes.size());
     assertEquals(MODEL_ID, routes.getFirst().getModelId());
     assertEquals("static", routes.getFirst().getBackendId());
+    assertEquals(MODEL_ID + "-sha256-" + HASH, routes.getFirst().getVectorSpaceId());
     assertEquals(HASH, routes.getFirst().getArtifactHash());
     assertTrue(routes.getFirst().getPrimary());
 
