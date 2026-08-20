@@ -46,6 +46,8 @@
           aria-controls="model-data-workbench" data-workbench-tab="models">Models &amp; data</button>
         <button id="trainer-workbench-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
           aria-controls="vocabulary-trainer" data-workbench-tab="trainer">Trainer</button>
+        <button id="lifecycle-workbench-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+          aria-controls="lifecycle-workbench" data-workbench-tab="lifecycle">Lifecycle</button>
       </nav>
       <div id="service-status" role="status" aria-live="polite" class="service-status is-loading">
         <span class="status-dot" aria-hidden="true"></span>
@@ -337,6 +339,42 @@
             </div>
             <button id="server-search-button" type="submit" disabled>Search index <span aria-hidden="true">→</span></button>
           </form>
+          <details id="compound-builder" class="compound-builder">
+            <summary>Compound query builder</summary>
+            <p class="builder-hint">
+              Compose semantic, term, and phrase clauses under one join. While clauses are
+              listed, the search runs the compound query and the text field above is ignored;
+              keyword matches return highlighted spans.
+            </p>
+            <div class="builder-controls">
+              <label for="builder-kind" class="visually-hidden">Clause kind</label>
+              <select id="builder-kind">
+                <option value="semantic">Semantic</option>
+                <option value="term">Term</option>
+                <option value="phrase">Phrase</option>
+              </select>
+              <label for="builder-text" class="visually-hidden">Clause text</label>
+              <input id="builder-text" type="text" placeholder="Clause text" />
+              <label for="builder-mode" class="visually-hidden">Term match mode</label>
+              <select id="builder-mode" hidden>
+                <option value="any">Match any term</option>
+                <option value="all">Match all terms</option>
+              </select>
+              <label for="builder-slop" class="visually-hidden">Phrase slop</label>
+              <input id="builder-slop" type="number" min="0" value="0" inputmode="numeric" hidden />
+              <button id="builder-add-button" type="button" class="secondary-button">Add clause</button>
+            </div>
+            <div id="builder-clauses" class="builder-clauses"></div>
+            <div class="builder-controls">
+              <label for="builder-join">Join</label>
+              <select id="builder-join">
+                <option value="and">All clauses (AND, mean score)</option>
+                <option value="or">Any clause (OR, maximum score)</option>
+                <option value="rrf">Any clause, reciprocal-rank fusion</option>
+              </select>
+              <button id="builder-clear-button" type="button" class="secondary-button">Clear clauses</button>
+            </div>
+          </details>
           <p id="server-index-description" class="index-description">Discovering server-configured indexes.</p>
           <p id="server-search-status" role="status" aria-live="polite" class="form-status">
             Search becomes available when the server reports an index.
@@ -562,6 +600,102 @@
             </p>
             <div id="trainer-model-list" class="trainer-model-list"></div>
           </section>
+        </section>
+        <section id="lifecycle-workbench" class="lifecycle-workbench" role="tabpanel"
+          aria-labelledby="lifecycle-workbench-tab" hidden>
+          <header class="model-data-heading">
+            <div>
+              <p class="section-kicker">Persist, watch drift, retrain, reindex</p>
+              <h3>Lifecycle</h3>
+              <p>
+                Checkpoint and seal dynamic workspaces, point logical aliases at the current
+                index, rebuild blue/green into a newly trained vector space, and group
+                workspaces into collections whose accreted term drift the server streams live.
+              </p>
+            </div>
+          </header>
+          <p id="lifecycle-status" class="form-status" role="status" aria-live="polite">
+            Loading the lifecycle catalog.
+          </p>
+          <div class="lifecycle-grid">
+            <section class="lifecycle-panel">
+              <h4>Workspaces</h4>
+              <label for="lifecycle-index-select">Dynamic workspace</label>
+              <select id="lifecycle-index-select" disabled></select>
+              <dl id="lifecycle-index-facts" class="search-hit-facts"></dl>
+              <div class="form-actions">
+                <button id="lifecycle-persist-button" type="button" disabled>Persist checkpoint</button>
+                <button id="lifecycle-seal-button" type="button" class="secondary-button"
+                  disabled>Seal immutable</button>
+                <button id="lifecycle-refresh-button" type="button" class="secondary-button">Refresh</button>
+              </div>
+              <h5>Aliases</h5>
+              <div class="lifecycle-inline">
+                <label for="lifecycle-alias-input" class="visually-hidden">Alias name</label>
+                <input id="lifecycle-alias-input" type="text" placeholder="legal-current" />
+                <button id="lifecycle-set-alias-button" type="button" disabled>Point at workspace</button>
+              </div>
+              <div id="lifecycle-alias-list" class="lifecycle-alias-list"></div>
+              <h5>Blue/green reindex</h5>
+              <label for="lifecycle-reindex-model">Embedding model for the new index</label>
+              <select id="lifecycle-reindex-model"></select>
+              <label for="lifecycle-reindex-provider">Vector storage</label>
+              <select id="lifecycle-reindex-provider"></select>
+              <label for="lifecycle-reindex-alias">Alias to swap after a successful build</label>
+              <input id="lifecycle-reindex-alias" type="text" placeholder="legal-current" />
+              <button id="lifecycle-reindex-button" type="button" disabled>Reindex blue/green</button>
+              <h5>Provider instances</h5>
+              <div id="lifecycle-provider-list" class="lifecycle-provider-list"></div>
+            </section>
+            <section class="lifecycle-panel">
+              <h4>Collections</h4>
+              <label for="collection-select">Collection</label>
+              <select id="collection-select"></select>
+              <div class="lifecycle-inline">
+                <span>
+                  <label for="collection-id">Collection id</label>
+                  <input id="collection-id" type="text" placeholder="legal" />
+                </span>
+                <span>
+                  <label for="collection-name">Display name</label>
+                  <input id="collection-name" type="text" placeholder="Legal corpus" />
+                </span>
+              </div>
+              <label for="collection-members">Member workspaces</label>
+              <select id="collection-members" multiple size="4"></select>
+              <div class="lifecycle-inline">
+                <span>
+                  <label for="collection-dictionary-id">Dictionary artifact id</label>
+                  <input id="collection-dictionary-id" type="text" placeholder="dictionary-…" />
+                </span>
+                <span>
+                  <label for="collection-vocabulary-id">Vocabulary artifact id</label>
+                  <input id="collection-vocabulary-id" type="text" placeholder="vocabulary-…" />
+                </span>
+              </div>
+              <label for="collection-model-id">Serving model artifact</label>
+              <select id="collection-model-id"></select>
+              <label for="collection-threshold">Drift new-term threshold (0 disables the event)</label>
+              <input id="collection-threshold" type="number" min="0" value="0" inputmode="numeric" />
+              <div class="form-actions">
+                <button id="collection-save-button" type="button">Save collection</button>
+                <button id="collection-delete-button" type="button" class="secondary-button">Delete</button>
+              </div>
+              <h5>Vocabulary drift</h5>
+              <div class="coverage-meter" role="img" aria-label="Vocabulary coverage">
+                <i id="collection-coverage-bar" style="width: 0%"></i>
+              </div>
+              <p id="collection-coverage-label" class="coverage-label">No collection selected.</p>
+              <dl id="collection-drift-stats" class="search-hit-facts"></dl>
+              <h5>Accreted term ledger</h5>
+              <div id="collection-ledger" class="collection-ledger"></div>
+              <h5>Watch stream</h5>
+              <p id="collection-watch-status" class="form-status" role="status" aria-live="polite">
+                Not watching a collection.
+              </p>
+              <div id="collection-event-log" class="collection-event-log" aria-live="polite"></div>
+            </section>
+          </div>
         </section>
       </section>
     </main>

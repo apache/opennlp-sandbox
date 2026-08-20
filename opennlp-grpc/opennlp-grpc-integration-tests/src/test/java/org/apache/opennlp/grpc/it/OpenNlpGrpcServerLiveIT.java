@@ -34,19 +34,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
 import io.grpc.Server;
-import io.grpc.ServerBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import opennlp.embeddings.corpus.CasePassage;
 import opennlp.embeddings.index.TurboQuantIndex;
-import org.apache.opennlp.grpc.tei.v1.EmbedGrpc;
-import org.apache.opennlp.grpc.tei.v1.EmbedRequest;
-import org.apache.opennlp.grpc.tei.v1.EmbedResponse;
-import org.apache.opennlp.grpc.tei.v1.InfoGrpc;
-import org.apache.opennlp.grpc.tei.v1.InfoRequest;
-import org.apache.opennlp.grpc.tei.v1.InfoResponse;
-import org.apache.opennlp.grpc.tei.v1.ModelType;
 import org.apache.opennlp.grpc.search.bundle.TurboQuantBundleDigest;
 import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
@@ -127,11 +119,7 @@ class OpenNlpGrpcServerLiveIT {
 
   @BeforeAll
   static void startTopology() throws Exception {
-    teiServer = ServerBuilder.forPort(0)
-        .addService(new StubTeiInfoService())
-        .addService(new StubTeiEmbedService())
-        .build()
-        .start();
+    teiServer = StubTeiBackend.start();
 
     final Properties config = new Properties();
     config.setProperty("server.max_text_bytes", "4096");
@@ -818,55 +806,4 @@ class OpenNlpGrpcServerLiveIT {
     return text.substring(span.getStart(), span.getEnd());
   }
 
-  /** TEI Info stub reporting an embedding model. */
-  private static final class StubTeiInfoService extends InfoGrpc.InfoImplBase {
-    @Override
-    public void info(InfoRequest request, StreamObserver<InfoResponse> observer) {
-      observer.onNext(InfoResponse.newBuilder()
-          .setVersion("live-it")
-          .setModelId("stub/live-model")
-          .setModelDtype("float32")
-          .setModelType(ModelType.MODEL_TYPE_EMBEDDING)
-          .build());
-      observer.onCompleted();
-    }
-  }
-
-  /** TEI Embed stub returning {@code [length(inputs), 1, 1]} for every request. */
-  private static final class StubTeiEmbedService extends EmbedGrpc.EmbedImplBase {
-    private static EmbedResponse embedding(EmbedRequest request) {
-      return EmbedResponse.newBuilder()
-          .addEmbeddings(request.getInputs().length())
-          .addEmbeddings(1f)
-          .addEmbeddings(1f)
-          .build();
-    }
-
-    @Override
-    public void embed(EmbedRequest request, StreamObserver<EmbedResponse> observer) {
-      observer.onNext(embedding(request));
-      observer.onCompleted();
-    }
-
-    @Override
-    public StreamObserver<EmbedRequest> embedStream(StreamObserver<EmbedResponse> observer) {
-      // The provider now batches via the bidi EmbedStream RPC; echo one response per request.
-      return new StreamObserver<>() {
-        @Override
-        public void onNext(EmbedRequest request) {
-          observer.onNext(embedding(request));
-        }
-
-        @Override
-        public void onError(Throwable t) {
-          observer.onError(t);
-        }
-
-        @Override
-        public void onCompleted() {
-          observer.onCompleted();
-        }
-      };
-    }
-  }
 }

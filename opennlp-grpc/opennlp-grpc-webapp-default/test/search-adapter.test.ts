@@ -19,7 +19,13 @@
 
 import { describe, expect, it } from "vitest";
 
-import { createSearchRequest, readSearchIndexes, readSearchResponse } from "../src/search-adapter";
+import {
+  createCompoundSearchRequest,
+  createSearchRequest,
+  readSearchIndexes,
+  readSearchProviderInstances,
+  readSearchResponse,
+} from "../src/search-adapter";
 
 function indexDescriptor(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -278,5 +284,68 @@ describe("server search API adapter", () => {
 
   it("retains the server response truncation signal independently of hits", () => {
     expect(readSearchResponse(searchResponse([], { truncated: true }))).toEqual({ hits: [], truncated: true });
+  });
+
+  it("creates a compound search request from a QueryNode tree", () => {
+    const node = { term: { text: "habeas corpus", mode: "TERM_MATCH_MODE_ALL" } };
+
+    expect(createCompoundSearchRequest("apache-guides", node, 5)).toEqual({
+      indexId: "apache-guides",
+      compoundQuery: node,
+      topK: 5,
+    });
+  });
+
+  it("reads matched spans and drops any outside the emitted text", () => {
+    const result = readSearchResponse(searchResponse([searchHit({
+      matchedSpans: [
+        { start: 0, end: 4, term: "open" },
+        { end: 7, term: "opennlp" },
+        { start: 3, end: 2, term: "backwards" },
+        { start: 0, end: 99, term: "overrun" },
+        { start: 0, end: 4, term: " " },
+      ],
+    })]));
+
+    expect(result.hits[0]?.matchedSpans).toEqual([
+      { start: 0, end: 4, term: "open" },
+      { start: 0, end: 7, term: "opennlp" },
+    ]);
+  });
+
+  it("accepts keyword-only compound responses that carry no query embedding route", () => {
+    const result = readSearchResponse({
+      index: indexDescriptor(),
+      hits: [searchHit({ matchedSpans: [{ start: 0, end: 7, term: "opennlp" }] })],
+    });
+
+    expect(result.hits).toHaveLength(1);
+    expect(result.hits[0]?.queryEmbeddingRoute).toBeUndefined();
+  });
+
+  it("reads provider instances with lowercased capabilities", () => {
+    const providers = readSearchProviderInstances({
+      providers: [
+        {
+          instanceId: "turbo_quant",
+          providerId: "turbo_quant",
+          capabilities: [
+            "SEARCH_PROVIDER_CAPABILITY_VECTOR",
+            "SEARCH_PROVIDER_CAPABILITY_LIVE",
+            "SEARCH_PROVIDER_CAPABILITY_PERSISTENT",
+            "SEARCH_PROVIDER_CAPABILITY_UNSPECIFIED",
+          ],
+          standard: "STANDARD_SEARCH_PROVIDER_TURBO_QUANT",
+        },
+        { instanceId: "", providerId: "broken" },
+      ],
+    });
+
+    expect(providers).toEqual([{
+      instanceId: "turbo_quant",
+      providerId: "turbo_quant",
+      capabilities: ["vector", "live", "persistent"],
+      standard: "STANDARD_SEARCH_PROVIDER_TURBO_QUANT",
+    }]);
   });
 });

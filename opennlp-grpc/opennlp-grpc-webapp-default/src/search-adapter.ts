@@ -59,12 +59,20 @@ export interface SearchEmbeddingRoute {
   artifactHash?: string;
 }
 
+/** One keyword or phrase match within a hit's emitted chunk text, UTF-16 units. */
+export interface MatchedSpan {
+  start: number;
+  end: number;
+  term: string;
+}
+
 /** Stable browser view of one source-mapped search hit. */
 export interface SearchHit {
   id: string;
   documentId: string;
   chunkId: string;
   score: number;
+  /** Absent for keyword-only compound queries, which embed nothing. */
   sourceDocument: Record<string, unknown>;
   sourceText: string;
   start: number;
@@ -84,7 +92,8 @@ export interface SearchHit {
   licenseUri?: string;
   corpusArtifactHash?: string;
   build: SearchIndexBuild;
-  queryEmbeddingRoute: SearchEmbeddingRoute;
+  queryEmbeddingRoute?: SearchEmbeddingRoute;
+  matchedSpans: MatchedSpan[];
 }
 
 export interface SearchResponse {
@@ -92,18 +101,68 @@ export interface SearchResponse {
   truncated: boolean;
 }
 
-/** Request body for `POST /api/v1/search`. */
+/** Request body for `POST /api/v1/search`; exactly one query form is set. */
 export interface SearchRequest {
   indexId: string;
-  query: {
+  query?: {
     docId?: string;
     rawText: string;
   };
+  compoundQuery?: Record<string, unknown>;
   topK: number;
 }
 
 export function createSearchRequest(indexId: string, query: string, topK: number): SearchRequest {
   return { indexId, query: { rawText: query }, topK };
+}
+
+/** Builds a compound search request from a protobuf JSON QueryNode tree. */
+export function createCompoundSearchRequest(
+  indexId: string,
+  compoundQuery: Record<string, unknown>,
+  topK: number,
+): SearchRequest {
+  return { indexId, compoundQuery, topK };
+}
+
+/** One configured search provider instance and its declared capabilities. */
+export interface SearchProviderInstance {
+  instanceId: string;
+  providerId: string;
+  /** Lowercased capability names, e.g. "vector", "keyword", "live", "persistent". */
+  capabilities: string[];
+  /** Standard enum shorthand when this instance is a built-in default. */
+  standard?: string;
+}
+
+/** Reads the search-providers listing JSON defensively. */
+export function readSearchProviderInstances(response: unknown): SearchProviderInstance[] {
+  const envelope = record(response);
+  const providers = Array.isArray(envelope?.providers) ? envelope.providers : [];
+  return providers.flatMap((value) => {
+    const instance = record(value);
+    const instanceId = text(instance?.instanceId);
+    const providerId = text(instance?.providerId);
+    if (!instance || !instanceId || !providerId) {
+      return [];
+    }
+    const capabilityValues = Array.isArray(instance.capabilities) ? instance.capabilities : [];
+    const capabilities = capabilityValues.flatMap((capability) => {
+      const name = text(capability);
+      return name.startsWith("SEARCH_PROVIDER_CAPABILITY_")
+          && name !== "SEARCH_PROVIDER_CAPABILITY_UNSPECIFIED"
+        ? [name.slice("SEARCH_PROVIDER_CAPABILITY_".length).toLowerCase()]
+        : [];
+    });
+    const standard = optionalText(instance.standard);
+    return [{
+      instanceId,
+      providerId,
+      capabilities,
+      ...(standard && standard !== "STANDARD_SEARCH_PROVIDER_UNSPECIFIED"
+        ? { standard } : {}),
+    }];
+  });
 }
 
 export function readSearchIndexes(response: unknown): SearchIndex[] {
@@ -162,9 +221,10 @@ export function readSearchIndexes(response: unknown): SearchIndex[] {
 export function readSearchResponse(response: unknown): SearchResponse {
   const envelope = record(response);
   const index = readSearchIndexes({ indexes: envelope?.index ? [envelope.index] : [] })[0];
+  // Keyword-only compound queries embed nothing and carry no query route.
   const queryEmbeddingRoute = readEmbeddingRoute(record(envelope?.queryEmbeddingRoute));
-  if (!index || !queryEmbeddingRoute || queryEmbeddingRoute.modelId !== index.modelId
-      || queryEmbeddingRoute.vectorSpaceId !== index.vectorSpaceId) {
+  if (!index || (queryEmbeddingRoute && (queryEmbeddingRoute.modelId !== index.modelId
+      || queryEmbeddingRoute.vectorSpaceId !== index.vectorSpaceId))) {
     return { hits: [], truncated: false };
   }
   const values = Array.isArray(envelope?.hits) ? envelope.hits : [];
@@ -215,11 +275,52 @@ export function readSearchResponse(response: unknown): SearchResponse {
         corpusArtifactHash: index.corpusArtifactHash,
         build: index.build,
         queryEmbeddingRoute,
+        matchedSpans: readMatchedSpans(hit.matchedSpans, emittedChunkText),
       },
     }];
   }).sort((left, right) => right.hit.score - left.hit.score || left.position - right.position)
     .map(({ hit }) => hit);
   return { hits, truncated: envelope?.truncated === true };
+}
+
+/** One logical alias resolving to a current index id. */
+export interface IndexAliasView {
+  alias: string;
+  indexId: string;
+}
+
+/** Reads the index-aliases listing JSON defensively. */
+export function readIndexAliases(response: unknown): IndexAliasView[] {
+  const envelope = record(response);
+  const values = Array.isArray(envelope?.aliases) ? envelope.aliases : [];
+  return values.flatMap((value) => {
+    const entry = record(value);
+    const alias = text(entry?.alias);
+    const indexId = text(entry?.indexId);
+    return alias && indexId ? [{ alias, indexId }] : [];
+  });
+}
+
+/** Reads the single-index envelope returned by persist, seal, and reindex. */
+export function readIndexResponse(response: unknown): SearchIndex | undefined {
+  const envelope = record(response);
+  return readSearchIndexes({ indexes: envelope?.index ? [envelope.index] : [] })[0];
+}
+
+/** Reads matched spans, dropping any that do not fit the emitted text. */
+function readMatchedSpans(value: unknown, emittedText: string): MatchedSpan[] {
+  const values = Array.isArray(value) ? value : [];
+  return values.flatMap((entry) => {
+    const span = record(entry);
+    const start = span?.start === undefined ? 0 : nonNegativeInteger(span.start);
+    const end = nonNegativeInteger(span?.end);
+    const term = nonBlankText(span?.term);
+    if (start === undefined || end === undefined || !term
+        || start >= end || end > emittedText.length) {
+      return [];
+    }
+    return [{ start, end, term }];
+  });
 }
 
 function providerIdentity(provider: Record<string, unknown> | undefined): string | undefined {

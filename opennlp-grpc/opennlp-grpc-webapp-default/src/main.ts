@@ -22,13 +22,19 @@ import "./style.css";
 import {
   analyze,
   decodeAnalyzeResponsePb,
+  deleteCollection,
+  deleteIndexAlias,
   deleteStaticModel,
   downloadVocabularyTsv,
   encodeAnalyzeResponsePb,
+  getCollection,
+  getCollections,
   getDictionaryFormats,
   getHealth,
+  getIndexAliases,
   getModelBundles,
   getSearchIndexes,
+  getSearchProviders,
   getServiceInfo,
   getStaticModels,
   getTeachers,
@@ -37,10 +43,18 @@ import {
   indexDocuments,
   learnVocabulary,
   deleteSearchIndex,
+  persistIndex,
+  reindexIndex,
   searchIndex,
+  sealIndex,
+  setCollection,
+  setIndexAlias,
   trainStaticModel,
+  watchCollection,
   type AnalyzeRequest,
 } from "./api";
+import { readCollectionEvent, readCollectionResponse, readCollections } from "./collection-adapter";
+import { LifecycleWorkbench } from "./lifecycle-workbench";
 import { withXrayNormalization } from "./analysis-config";
 import { AnalysisControls } from "./analysis-controls";
 import { AnnotationDrawer } from "./annotation-drawer";
@@ -65,7 +79,13 @@ import { readNormalizationXray, renderNormalizationXray } from "./normalization-
 import { isTermVectorLayer, renderTermVectorStack } from "./term-vector-stack";
 import { SemanticWorkbench, type ResultViewName } from "./semantic-workbench";
 import { ModelDataWorkbench } from "./model-data-workbench";
-import { readSearchIndexes, readSearchResponse } from "./search-adapter";
+import {
+  readIndexAliases,
+  readIndexResponse,
+  readSearchIndexes,
+  readSearchProviderInstances,
+  readSearchResponse,
+} from "./search-adapter";
 import { ServerSearchWorkbench } from "./server-search-workbench";
 import { asciiLowerCase, formatInteger } from "./text-utils";
 import {
@@ -194,6 +214,28 @@ const semanticWorkbench = new SemanticWorkbench({
   },
   selectAnnotation: selectAnnotationFromGraph,
 });
+
+const lifecycleWorkbench = new LifecycleWorkbench({
+  listIndexes: async () => readSearchIndexes(await getSearchIndexes()),
+  listProviders: async () => readSearchProviderInstances(await getSearchProviders()),
+  listAliases: async () => readIndexAliases(await getIndexAliases()),
+  persist: async (indexId) => readIndexResponse(await persistIndex(indexId)),
+  seal: async (indexId) => readIndexResponse(await sealIndex(indexId)),
+  reindex: async (request) => readIndexResponse(await reindexIndex(request)),
+  setAlias: async (alias, indexId) => { await setIndexAlias(alias, indexId); },
+  deleteAlias: async (alias) => { await deleteIndexAlias(alias); },
+  listStaticModels: async () => readStaticModels(await getStaticModels()),
+  listCollections: async () => readCollections(await getCollections()),
+  getCollection: async (collectionId) => readCollectionResponse(await getCollection(collectionId)),
+  setCollection: async (request) => readCollectionResponse(await setCollection(request)),
+  deleteCollection: async (collectionId) => {
+    const response = await deleteCollection(collectionId) as Record<string, unknown>;
+    return response.deleted === true;
+  },
+  watchCollection: (collectionId, onEvent) =>
+    watchCollection(collectionId, (event) => onEvent(readCollectionEvent(event))),
+});
+void lifecycleWorkbench.initialize();
 
 const serverSearchWorkbench = new ServerSearchWorkbench({
   listIndexes: async () => readSearchIndexes(await getSearchIndexes()),

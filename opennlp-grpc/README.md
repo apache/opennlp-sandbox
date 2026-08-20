@@ -512,7 +512,10 @@ The api jar also ships its complete `FileDescriptorSet` at
 `META-INF/opennlp/descriptors/opennlp-grpc-v1.protobin`, so non-Java consumers can load the
 wire contract without code generation; `org.apache.opennlp.grpc.descriptors` reads it back
 into runtime descriptors, and the gRPC server serves the same descriptors through standard
-server reflection.
+server reflection. The opt-in `PythonLifecycleLiveIT` in `opennlp-grpc-integration-tests`
+proves it: a Python client built purely from those descriptors drives the whole training
+lifecycle, from dictionary import through drift watching to the blue/green reindex and a
+compound query with matched spans.
 
 Search engines are provider instances behind one ServiceLoader SPI
 (`SearchIndexProviderFactory`). Each factory declares capabilities (vector, keyword, live,

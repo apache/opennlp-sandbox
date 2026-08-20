@@ -127,6 +127,44 @@ export function hitAnnotations(shape: DocumentShapeView, hit: SearchHit): Inters
   return span ? annotationsIntersecting(shape, span.start, span.end) : [];
 }
 
+/** One rendered segment of emitted text: plain, or a keyword match. */
+export interface MatchedSegment {
+  text: string;
+  matched: boolean;
+  /** The analyzed query term behind a matched segment. */
+  term?: string;
+}
+
+/**
+ * Splits emitted chunk text into plain and matched segments for highlighting.
+ * Spans are sorted by start; a span overlapping an earlier one is skipped so
+ * segments never double-render text.
+ */
+export function matchedSegments(hit: SearchHit): MatchedSegment[] {
+  const emitted = hit.emittedChunkText;
+  if (hit.matchedSpans.length === 0) {
+    return emitted ? [{ text: emitted, matched: false }] : [];
+  }
+  const ordered = [...hit.matchedSpans].sort((left, right) =>
+    left.start - right.start || left.end - right.end);
+  const segments: MatchedSegment[] = [];
+  let cursor = 0;
+  for (const span of ordered) {
+    if (span.start < cursor) {
+      continue;
+    }
+    if (span.start > cursor) {
+      segments.push({ text: emitted.slice(cursor, span.start), matched: false });
+    }
+    segments.push({ text: emitted.slice(span.start, span.end), matched: true, term: span.term });
+    cursor = span.end;
+  }
+  if (cursor < emitted.length) {
+    segments.push({ text: emitted.slice(cursor), matched: false });
+  }
+  return segments;
+}
+
 export class SearchSelection {
   selectedId?: string;
 
