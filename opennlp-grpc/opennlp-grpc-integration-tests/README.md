@@ -78,17 +78,19 @@ Both opt-in suites can run in the same build by setting both environment variabl
 
 ## Cross-language lifecycle e2e in Python (opt-in)
 
-`PythonLifecycleLiveIT` proves the wire contract carries the whole training lifecycle
-without generated code: it spawns the server (stub TEI backend, vocabulary artifact
-root, and search persistence root configured), extracts the `FileDescriptorSet` the
-shaded jar ships at `META-INF/opennlp/descriptors/opennlp-grpc-v1.protobin`, and runs
-`scripts/lifecycle_e2e.py`, a Python client that builds every request dynamically from
-those descriptors. The script first drives the bidirectional `StreamingTraining` RPC and checks
-admission, correlated document-shape replies, and its terminal vocabulary descriptor. It then
-learns a vocabulary separately, analyzes and
-indexes explicitly identified documents, aliases the workspace, scopes it into a
-collection, reads drift and persistence events from the `WatchCollection` stream,
-rebuilds blue/green with an alias swap, runs a compound query and checks its matched
+`PythonLifecycleLiveIT` proves two standard Python client styles against the
+packaged server. The generated-stub quickstart analyzes document shapes, creates a
+process-local TurboQuant index, and performs exhaustive server-side search. The
+descriptor-driven lifecycle client extracts the `FileDescriptorSet` from
+`META-INF/opennlp/descriptors/opennlp-grpc-v1.protobin` in the shaded jar and builds
+every request dynamically, proving the deployed wire contract is self-describing.
+
+Both clients run against a server spawned with a stub TEI backend, vocabulary
+artifact root, and search persistence root. The lifecycle client drives
+`StreamingTraining`, checks admission and correlated document-shape replies, learns
+a vocabulary separately, indexes explicitly identified documents, aliases and
+scopes the workspace into a collection, reads persistence events from
+`WatchCollection`, replaces the index blue-green, runs a compound query with matched
 spans, seals the workspace, and cleans up.
 
 It needs [uv](https://docs.astral.sh/uv/) on the PATH and is opt-in:
@@ -97,9 +99,13 @@ It needs [uv](https://docs.astral.sh/uv/) on the PATH and is opt-in:
 OPENNLP_PYTHON_E2E=1 mvn -pl opennlp-grpc/opennlp-grpc-integration-tests verify
 ```
 
-Set `OPENNLP_E2E_TEACHER_REF` to a teacher model reference (for example
-`minishlab/potion-base-8M`) to additionally distill a static model through
-both `StreamingTraining` and `TrainStaticModel`, publish and query the streaming session's
-TurboQuant index, observe the later model publication on the watch stream, and reindex
-into the trained vector space; without it the rebuild replays through the serving
-embedding model and the training step is skipped.
+Set `OPENNLP_E2E_TEACHER_REF` to a local teacher directory containing
+`tokenizer.json` and `onnx/model.onnx`, or to a compatible pinned Hugging Face
+model reference, to additionally distill a static model through both
+`StreamingTraining` and `TrainStaticModel`. The test then publishes and queries the
+streaming session's TurboQuant index, observes model publication on the watch
+stream, and reindexes into the trained vector space. Without it, the rebuild uses
+the serving embedding model and distillation is skipped.
+
+The readable clients and exact stub-generation commands live in the
+[Python quickstart](../examples/python-client/README.md).
