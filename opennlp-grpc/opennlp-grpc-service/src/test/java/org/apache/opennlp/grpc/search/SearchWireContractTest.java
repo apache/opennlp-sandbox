@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SearchWireContractTest {
@@ -152,7 +153,7 @@ class SearchWireContractTest {
   }
 
   @Test
-  void requestRetainsDocumentShapeAndBoundedTopK() {
+  void requestRetainsDocumentShapeAndTypedResultLimit() {
     final Descriptor descriptor = SearchIndexRequest.getDescriptor();
 
     assertField(descriptor, "index_id", FieldDescriptor.JavaType.STRING, 1);
@@ -179,21 +180,21 @@ class SearchWireContractTest {
     assertEquals("EmbeddingRoute",
         response.findFieldByName("query_embedding_route").getMessageType().getName());
     assertField(response, "truncated", FieldDescriptor.JavaType.BOOLEAN, 4);
-    assertEquals("OpenNlpDocument",
-        response.findFieldByName("source_documents").getMessageType().getName());
+    assertMessageField(response, "source_documents",
+        org.apache.opennlp.grpc.v1.OpenNlpDocument.getDescriptor(), 5);
     assertTrue(response.findFieldByName("source_documents").isRepeated());
 
     final Descriptor hit = SearchHit.getDescriptor();
     assertField(hit, "document_id", FieldDescriptor.JavaType.STRING, 1);
     assertField(hit, "chunk_id", FieldDescriptor.JavaType.STRING, 2);
     assertField(hit, "score", FieldDescriptor.JavaType.DOUBLE, 3);
-    assertEquals(null, hit.findFieldByName("source_document"));
-    assertEquals(null, hit.findFieldByNumber(4));
+    assertNull(hit.findFieldByName("source_document"));
+    assertNull(hit.findFieldByNumber(4));
     assertEquals("AnnotationSpan", hit.findFieldByName("source_span").getMessageType().getName());
     assertField(hit, "emitted_text", FieldDescriptor.JavaType.STRING, 6);
-    assertEquals(null, hit.findFieldByNumber(7));
-    assertEquals(null, hit.findFieldByNumber(8));
-    assertEquals(null, hit.findFieldByNumber(9));
+    assertNull(hit.findFieldByNumber(7));
+    assertNull(hit.findFieldByNumber(8));
+    assertNull(hit.findFieldByNumber(9));
     assertField(hit, "chunk_group_id", FieldDescriptor.JavaType.STRING, 11);
 
     assertMessageField(ListSearchIndexesResponse.getDescriptor(), "indexes",

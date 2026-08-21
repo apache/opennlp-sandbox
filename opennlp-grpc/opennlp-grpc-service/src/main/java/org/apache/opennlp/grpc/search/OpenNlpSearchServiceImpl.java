@@ -21,12 +21,14 @@ package org.apache.opennlp.grpc.search;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.google.protobuf.CodedOutputStream;
 import io.grpc.Status;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
@@ -653,8 +655,9 @@ public final class OpenNlpSearchServiceImpl
     try {
       final SearchIndexProvider provider = validateRequest(request);
       final SearchIndexDescriptor descriptor = provider.descriptor();
+      final int resultLimit = resultLimit(request, descriptor);
       if (request.getQueryKindCase() == SearchIndexRequest.QueryKindCase.COMPOUND_QUERY) {
-        responseObserver.onNext(searchCompound(request, provider, descriptor));
+        responseObserver.onNext(searchCompound(request, provider, descriptor, resultLimit));
         responseObserver.onCompleted();
         return;
       }
@@ -668,17 +671,17 @@ public final class OpenNlpSearchServiceImpl
           .setIndex(descriptor)
           .setQueryEmbeddingRoute(embedding.route());
       requireRouteBudget(response, descriptor);
-      final List<SearchResult> results = provider.search(queryVector, request.getTopK());
+      final List<SearchResult> results = provider.search(queryVector, resultLimit);
       if (results == null || results.stream().anyMatch(java.util.Objects::isNull)) {
         throw new IllegalStateException("Search provider returned null results");
       }
-      if (results.size() > request.getTopK()) {
+      if (results.size() > resultLimit) {
         throw new IllegalStateException("Search provider returned " + results.size()
-            + " results for top_k " + request.getTopK());
+            + " results for limit " + resultLimit);
       }
-      final List<SearchHit> rankedHits = results.stream()
+      final List<ResponseHit> rankedHits = results.stream()
           .sorted(STABLE_ORDER)
-          .limit(request.getTopK())
+          .limit(resultLimit)
           .map(OpenNlpSearchServiceImpl::toHit)
           .toList();
       responseObserver.onNext(addHitsWithinBudget(response, descriptor, rankedHits));
@@ -696,13 +699,14 @@ public final class OpenNlpSearchServiceImpl
    * @param request Validated search request carrying a compound query.
    * @param provider Resolved index provider.
    * @param descriptor Provider descriptor.
+   * @param resultLimit Validated maximum number of results.
    * @return Complete search response within the index response budget.
    * @throws AnalysisException If the index does not execute compound queries or a
    *     clause fails.
    */
   private SearchIndexResponse searchCompound(
       SearchIndexRequest request, SearchIndexProvider provider,
-      SearchIndexDescriptor descriptor) {
+      SearchIndexDescriptor descriptor, int resultLimit) {
     final List<QueryCandidate> candidates = provider.queryCandidates();
     if (candidates == null) {
       throw AnalysisException.unimplemented("Search index '" + descriptor.getIndexId()
@@ -727,7 +731,7 @@ public final class OpenNlpSearchServiceImpl
     };
     final List<CompoundQueryExecutor.QueryHit> hits = compoundQueryExecutor.execute(
         request.getCompoundQuery(), candidates, embedder, provider::search,
-        keywordIndex, request.getTopK());
+        keywordIndex, resultLimit);
     final SearchIndexResponse.Builder response = SearchIndexResponse.newBuilder()
         .setIndex(descriptor);
     if (resolvedRoute.get() != null) {
@@ -765,17 +769,30 @@ public final class OpenNlpSearchServiceImpl
    */
   private static SearchIndexResponse addHitsWithinBudget(
       SearchIndexResponse.Builder response, SearchIndexDescriptor descriptor,
-      List<SearchHit> rankedHits) {
-    for (SearchHit hit : rankedHits) {
-      response.addHits(hit);
-      if (response.build().getSerializedSize() > descriptor.getMaxResponseBytes()) {
-        response.removeHits(response.getHitsCount() - 1);
+      List<ResponseHit> rankedHits) {
+    final Map<String, org.apache.opennlp.grpc.v1.OpenNlpDocument> sources =
+        new LinkedHashMap<>();
+    int responseBytes = response.build().getSerializedSize();
+    final int truncatedBytes = CodedOutputStream.computeBoolSize(
+        SearchIndexResponse.TRUNCATED_FIELD_NUMBER, true);
+    for (int resultIndex = 0; resultIndex < rankedHits.size(); resultIndex++) {
+      final ResponseHit result = rankedHits.get(resultIndex);
+      final SearchHit hit = result.hit();
+      final var existingSource = sources.get(hit.getDocumentId());
+      final boolean addedSource = existingSource == null;
+      if (!addedSource && !existingSource.equals(result.sourceDocument())) {
+        throw new IllegalStateException("Search provider returned conflicting source documents for '"
+            + hit.getDocumentId() + "'");
+      }
+      final int addedBytes = CodedOutputStream.computeMessageSize(
+          SearchIndexResponse.HITS_FIELD_NUMBER, hit)
+          + (addedSource ? CodedOutputStream.computeMessageSize(
+              SearchIndexResponse.SOURCE_DOCUMENTS_FIELD_NUMBER, result.sourceDocument()) : 0);
+      final boolean finalResult = resultIndex + 1 == rankedHits.size();
+      final int byteLimit = descriptor.getMaxResponseBytes() - (finalResult ? 0 : truncatedBytes);
+      if (responseBytes + addedBytes > byteLimit) {
         response.setTruncated(true);
-        while (response.build().getSerializedSize() > descriptor.getMaxResponseBytes()
-            && response.getHitsCount() > 0) {
-          response.removeHits(response.getHitsCount() - 1);
-        }
-        if (response.build().getSerializedSize() > descriptor.getMaxResponseBytes()) {
+        if (responseBytes + truncatedBytes > descriptor.getMaxResponseBytes()) {
           throw AnalysisException.failedPrecondition("Search index '"
               + descriptor.getIndexId() + "' max_response_bytes "
               + descriptor.getMaxResponseBytes()
@@ -783,6 +800,12 @@ public final class OpenNlpSearchServiceImpl
         }
         break;
       }
+      if (addedSource) {
+        sources.put(hit.getDocumentId(), result.sourceDocument());
+        response.addSourceDocuments(result.sourceDocument());
+      }
+      response.addHits(hit);
+      responseBytes += addedBytes;
     }
     return response.build();
   }
@@ -817,11 +840,45 @@ public final class OpenNlpSearchServiceImpl
       case QUERYKIND_NOT_SET -> throw AnalysisException.invalidArgument(
           "SearchIndex requires exactly one of query and compound_query");
     }
-    if (request.getTopK() < 1 || request.getTopK() > descriptor.getMaxTopK()) {
-      throw AnalysisException.invalidArgument("SearchIndex top_k must be between 1 and "
-          + descriptor.getMaxTopK() + ", was " + request.getTopK());
-    }
     return provider;
+  }
+
+  /**
+   * Resolves the request's typed result limit.
+   *
+   * @param request Search request.
+   * @param descriptor Target index descriptor.
+   * @return Validated provider result limit.
+   * @throws AnalysisException If the selected limit violates the descriptor.
+   * @throws IllegalStateException If the descriptor advertises an unsafe exhaustive result.
+   */
+  private int resultLimit(
+      SearchIndexRequest request, SearchIndexDescriptor descriptor) {
+    return switch (request.getResultLimitCase()) {
+      case TOP_K -> {
+        if (request.getTopK() < 1 || request.getTopK() > descriptor.getMaxTopK()) {
+          throw AnalysisException.invalidArgument("SearchIndex top_k must be between 1 and "
+              + descriptor.getMaxTopK() + ", was " + request.getTopK());
+        }
+        yield request.getTopK();
+      }
+      case ALL_HITS -> {
+        if (!request.getAllHits()) {
+          throw AnalysisException.invalidArgument("SearchIndex all_hits must be true");
+        }
+        if (!descriptor.getSupportsAllHits()) {
+          throw AnalysisException.failedPrecondition("Search index '"
+              + descriptor.getIndexId() + "' does not support exhaustive results");
+        }
+        if (descriptor.getSize() > SearchIndexBundleConfiguration.MAX_ALL_HITS_LIMIT) {
+          throw new IllegalStateException("Search index '" + descriptor.getIndexId()
+              + "' advertises exhaustive results above the fixed safety ceiling");
+        }
+        yield Math.max(1, descriptor.getSize());
+      }
+      case RESULTLIMIT_NOT_SET -> throw AnalysisException.invalidArgument(
+          "SearchIndex requires exactly one of top_k and all_hits");
+    };
   }
 
   /**
@@ -1013,16 +1070,17 @@ public final class OpenNlpSearchServiceImpl
    * @param result Provider result.
    * @return Search hit.
    */
-  private static SearchHit toHit(SearchResult result) {
+  private static ResponseHit toHit(SearchResult result) {
     final SearchRecord record = result.record();
-    return SearchHit.newBuilder()
+    final SearchHit hit = SearchHit.newBuilder()
         .setDocumentId(record.documentId())
         .setChunkId(record.chunkId())
+        .setChunkGroupId(record.chunkGroupId())
         .setScore(result.score())
-        .setSourceDocument(record.sourceDocument())
         .setSourceSpan(record.sourceSpan())
         .setEmittedText(record.emittedText())
         .build();
+    return new ResponseHit(hit, record.sourceDocument());
   }
 
   /**
@@ -1031,16 +1089,27 @@ public final class OpenNlpSearchServiceImpl
    * @param hit Executor result.
    * @return Search hit carrying the root algebra score and matched spans.
    */
-  private static SearchHit toHit(CompoundQueryExecutor.QueryHit hit) {
+  private static ResponseHit toHit(CompoundQueryExecutor.QueryHit hit) {
     final SearchRecord record = hit.candidate().record();
-    return SearchHit.newBuilder()
+    final SearchHit wireHit = SearchHit.newBuilder()
         .setDocumentId(record.documentId())
         .setChunkId(record.chunkId())
+        .setChunkGroupId(record.chunkGroupId())
         .setScore(hit.score())
-        .setSourceDocument(record.sourceDocument())
         .setSourceSpan(record.sourceSpan())
         .setEmittedText(record.emittedText())
         .addAllMatchedSpans(hit.matchedSpans())
         .build();
+    return new ResponseHit(wireHit, record.sourceDocument());
+  }
+
+  /**
+   * One compact wire hit paired with its response-level source document.
+   *
+   * @param hit Compact ranked hit.
+   * @param sourceDocument Referenced source document.
+   */
+  private record ResponseHit(
+      SearchHit hit, org.apache.opennlp.grpc.v1.OpenNlpDocument sourceDocument) {
   }
 }

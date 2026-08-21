@@ -307,6 +307,17 @@ public final class SearchIndexRegistry implements AutoCloseable {
           + "' max_top_k exceeds fixed safety ceiling "
           + SearchIndexBundleConfiguration.MAX_TOP_K_LIMIT);
     }
+    if (descriptor.getSupportsAllHits()
+        && descriptor.getProvider().getStandard()
+            != StandardSearchProvider.STANDARD_SEARCH_PROVIDER_TURBO_QUANT) {
+      throw new IllegalArgumentException("search index '" + descriptor.getIndexId()
+          + "' advertises exhaustive results without the TurboQuant provider");
+    }
+    if (descriptor.getSupportsAllHits()
+        && descriptor.getSize() > SearchIndexBundleConfiguration.MAX_ALL_HITS_LIMIT) {
+      throw new IllegalArgumentException("search index '" + descriptor.getIndexId()
+          + "' exhaustive size exceeds the fixed safety ceiling");
+    }
     requireTrimmedText(descriptor.getEmbeddingRoute().getModelId(),
         "embedding_route.model_id");
     requireTrimmedText(descriptor.getEmbeddingRoute().getBackendId(),

@@ -54,7 +54,7 @@ import org.apache.opennlp.grpc.v1.StandardEmbeddingBackend;
 import org.apache.opennlp.grpc.v1.StandardSearchProvider;
 import org.apache.opennlp.grpc.search.query.KeywordQueryIndex;
 
-/** Bounded registry of flat, server-owned indexes created from analyzed document shapes. */
+/** Bounded registry of server-owned indexes created from analyzed document shapes. */
 public final class DynamicSearchIndexRegistry implements AutoCloseable {
 
   static final int MAX_INDEXES = 32;
@@ -65,6 +65,9 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
   static final int MAX_VECTOR_DIMENSION = 65_536;
   static final long MAX_VECTOR_VALUES = 16_000_000;
   static final long MAX_SOURCE_BYTES = 128L * 1024 * 1024;
+  private static final int DEFAULT_MAX_TOP_K = 1_000;
+  private static final int DEFAULT_MAX_QUERY_BYTES = 65_536;
+  private static final int DEFAULT_MAX_RESPONSE_BYTES = 32 * 1024 * 1024;
 
   private final Map<String, DynamicIndex> indexes = new LinkedHashMap<>();
   private final SearchProviderCatalog catalog;
@@ -639,6 +642,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
     final PersistedSearchChunk.Builder builder = PersistedSearchChunk.newBuilder()
         .setDocumentId(chunk.record().documentId())
         .setChunkId(chunk.record().chunkId())
+        .setChunkGroupId(chunk.record().chunkGroupId())
         .setSourceDocument(chunk.record().sourceDocument())
         .setSourceSpan(chunk.record().sourceSpan())
         .setEmittedText(chunk.record().emittedText())
@@ -665,6 +669,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
     try {
       return new StoredChunk(
           new SearchRecord(chunk.getDocumentId(), chunk.getChunkId(),
+              chunk.getChunkGroupId().isBlank() ? "default" : chunk.getChunkGroupId(),
               chunk.getSourceDocument(), chunk.getSourceSpan(), chunk.getEmittedText()),
           null, chunk.getRoute(), chunk.getVectorId(), chunk.getVectorSegment(),
           chunk.getVectorSha256());
@@ -780,7 +785,8 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
             final String emitted = chunk.hasTextContent()
                 ? chunk.getTextContent() : coveredText(document, chunk.getAnnotationSpan());
             additions.add(new IndexedChunk(
-                searchRecord(document, chunkId, chunk.getAnnotationSpan(), emitted),
+                searchRecord(document, chunkId, group.getGroupId(),
+                    chunk.getAnnotationSpan(), emitted),
                 toArray(embedding), embedding.getRoute()));
             selectedInDocument++;
             break;
@@ -860,6 +866,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
    *
    * @param document Source document.
    * @param chunkId Stable chunk identifier.
+   * @param chunkGroupId Stable projection identifier.
    * @param span Chunk span in the source document.
    * @param emittedText Exact text represented by the embedding.
    * @return Validated search record.
@@ -868,11 +875,12 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
   private static SearchRecord searchRecord(
       OpenNlpDocument document,
       String chunkId,
+      String chunkGroupId,
       org.apache.opennlp.grpc.v1.AnnotationSpan span,
       String emittedText) {
     try {
-      return new SearchRecord(document.getDocId(), chunkId, searchSource(document), span,
-          emittedText);
+      return new SearchRecord(document.getDocId(), chunkId, chunkGroupId,
+          searchSource(document), span, emittedText);
     } catch (IllegalArgumentException e) {
       throw AnalysisException.failedPrecondition(
           "Document '" + document.getDocId() + "' contains an invalid indexed chunk: "
@@ -1326,6 +1334,8 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
     @Override
     public SearchIndexDescriptor descriptor() {
       final Snapshot current = snapshot;
+      final boolean exhaustive = instance.standard()
+          == StandardSearchProvider.STANDARD_SEARCH_PROVIDER_TURBO_QUANT;
       final SearchIndexDescriptor.Builder descriptor = SearchIndexDescriptor.newBuilder()
           .setIndexId(indexId)
           .setDisplayName(displayName)
@@ -1339,8 +1349,10 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
           .setCorpus(SearchCorpusDescriptor.newBuilder()
               .setTitle(displayName)
               .setProvenanceSummary("Server-owned in-memory workspace"))
-          .setMaxTopK(Math.min(1000, Math.max(1, current.chunks().size())))
-          .setMaxQueryBytes(65_536)
+          .setMaxTopK(exhaustive
+              ? Math.max(1, current.chunks().size())
+              : Math.min(DEFAULT_MAX_TOP_K, Math.max(1, current.chunks().size())))
+          .setMaxQueryBytes(DEFAULT_MAX_QUERY_BYTES)
           .setBuild(SearchIndexBuildDescriptor.newBuilder()
               .setBundleFormatVersion(1)
               .setBundleArtifactHash(current.contentHash())
@@ -1348,7 +1360,8 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
               .setBuilderVersion("1")
               .setPreparationConfigHash(preparationHash(route,
                   instance.configured().preparationIdentity())))
-          .setMaxResponseBytes(4 * 1024 * 1024);
+          .setMaxResponseBytes(DEFAULT_MAX_RESPONSE_BYTES)
+          .setSupportsAllHits(exhaustive);
       descriptor.addLegs(SearchIndexLeg.newBuilder()
           .setKind(SearchLegKind.SEARCH_LEG_KIND_VECTOR)
           .setProviderInstanceId(instance.instanceId()));

@@ -184,22 +184,24 @@ class OpenNlpGrpcServerLiveIT {
     assertEquals("legal-demo", indexes.getIndexes(0).getIndexId());
     assertEquals("minilm-live-v1",
         indexes.getIndexes(0).getEmbeddingRoute().getVectorSpaceId());
+    assertTrue(indexes.getIndexes(0).getSupportsAllHits());
 
     final var response = searchClient.searchIndex(SearchIndexRequest.newBuilder()
         .setIndexId("legal-demo")
         .setQuery(OpenNlpDocument.newBuilder()
             .setDocId("live-query")
             .setRawText("remedy"))
-        .setTopK(2)
+        .setAllHits(true)
         .build());
 
     assertEquals("legal-demo", response.getIndex().getIndexId());
     assertEquals(2, response.getHitsCount());
+    assertEquals(2, response.getSourceDocumentsCount());
     assertEquals("remedy", response.getHits(0).getDocumentId());
     assertEquals(response.getHits(0).getDocumentId(),
-        response.getHits(0).getSourceDocument().getDocId());
+        response.getSourceDocuments(0).getDocId());
     assertEquals("A remedy follows a violation.",
-        response.getHits(0).getSourceDocument().getRawText());
+        response.getSourceDocuments(0).getRawText());
     assertEquals("minilm-live-v1", response.getQueryEmbeddingRoute().getVectorSpaceId());
   }
 
@@ -236,17 +238,20 @@ class OpenNlpGrpcServerLiveIT {
           HttpResponse.BodyHandlers.ofString());
       assertEquals(200, indexes.statusCode());
       assertTrue(indexes.body().contains("\"indexId\":\"legal-demo\""));
+      assertTrue(indexes.body().contains("\"supportsAllHits\":true"));
 
       final HttpResponse<String> search = http.send(HttpRequest.newBuilder(
           URI.create(webapp.baseUri() + "/api/v1/search"))
           .header("Content-Type", "application/json")
           .POST(HttpRequest.BodyPublishers.ofString("""
-              {"indexId":"legal-demo","query":{"docId":"web-query","rawText":"remedy"},"topK":2}
+              {"indexId":"legal-demo","query":{"docId":"web-query",\
+              "rawText":"remedy"},"allHits":true}
               """))
           .build(), HttpResponse.BodyHandlers.ofString());
       assertEquals(200, search.statusCode());
       assertTrue(search.body().contains("\"documentId\":\"remedy\""));
-      assertTrue(search.body().contains("\"rawText\":\"A remedy follows a violation.\""));
+      assertTrue(search.body().contains("\"rawText\":\"A remedy follows a violation.\""),
+          search.body());
     }
   }
 

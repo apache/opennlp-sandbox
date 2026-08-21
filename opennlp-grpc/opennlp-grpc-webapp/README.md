@@ -45,8 +45,9 @@ The host exposes:
 
 The service-info, model-bundle, analysis, and search endpoints use protobuf JSON for the gRPC
 message types. Analysis therefore retains the full `OpenNlpDocument` shape and typed annotation
-layers. Search requests use a document-shaped query, and hits retain their source document,
-authoritative span, emitted text, score, and index provenance. The host-specific UI extension
+layers. Search requests use a document-shaped query. Responses retain each referenced source
+document once, plus compact hits with authoritative spans, emitted text, scores, and index
+provenance. The host-specific UI extension
 endpoint returns the validated provider ID, title, and mount path for navigation. HTTP error
 bodies contain a stable gRPC status code and a message.
 

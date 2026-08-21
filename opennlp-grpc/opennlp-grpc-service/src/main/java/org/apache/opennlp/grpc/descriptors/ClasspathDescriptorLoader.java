@@ -98,16 +98,23 @@ public final class ClasspathDescriptorLoader implements DescriptorLoader {
    * @return Candidate binary class names.
    */
   private static List<String> candidateClassNames(String fullTypeName) {
-    final String[] parts = fullTypeName.split("\\.");
-    final List<String> candidates = new ArrayList<>(parts.length);
+    final List<String> parts = new ArrayList<>();
+    int partStart = 0;
+    for (int index = 0; index <= fullTypeName.length(); index++) {
+      if (index == fullTypeName.length() || fullTypeName.charAt(index) == '.') {
+        parts.add(fullTypeName.substring(partStart, index));
+        partStart = index + 1;
+      }
+    }
+    final List<String> candidates = new ArrayList<>(parts.size());
     candidates.add(fullTypeName);
-    for (int split = parts.length - 1; split >= 1; split--) {
+    for (int split = parts.size() - 1; split >= 1; split--) {
       final StringBuilder name = new StringBuilder();
-      for (int index = 0; index < parts.length; index++) {
+      for (int index = 0; index < parts.size(); index++) {
         if (index > 0) {
           name.append(index < split ? '.' : '$');
         }
-        name.append(parts[index]);
+        name.append(parts.get(index));
       }
       final String candidate = name.toString();
       if (!candidate.equals(fullTypeName)) {

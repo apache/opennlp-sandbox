@@ -30,6 +30,7 @@ import org.apache.opennlp.grpc.v1.OpenNlpDocument;
  *
  * @param documentId Stable source-document identifier.
  * @param chunkId Stable indexed-chunk identifier.
+ * @param chunkGroupId Stable chunk projection identity.
  * @param sourceDocument Source text retained by the bundle and its metadata.
  * @param sourceSpan Authoritative span in {@code sourceDocument.raw_text}.
  * @param emittedText Text emitted by offline chunk preparation and embedded into the index.
@@ -37,6 +38,7 @@ import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 public record SearchRecord(
     String documentId,
     String chunkId,
+    String chunkGroupId,
     OpenNlpDocument sourceDocument,
     AnnotationSpan sourceSpan,
     String emittedText) {
@@ -45,6 +47,7 @@ public record SearchRecord(
   public SearchRecord {
     requireText(documentId, "documentId");
     requireText(chunkId, "chunkId");
+    requireText(chunkGroupId, "chunkGroupId");
     if (sourceDocument == null) {
       throw new IllegalArgumentException("sourceDocument must not be null");
     }
@@ -64,6 +67,21 @@ public record SearchRecord(
     }
     validateSpan(sourceDocument, sourceSpan);
     requireText(emittedText, "emittedText");
+  }
+
+  /**
+   * Creates a record for a source format that does not name chunk projections.
+   *
+   * @param documentId Stable source-document identifier.
+   * @param chunkId Stable indexed-chunk identifier.
+   * @param sourceDocument Source text retained by the bundle and its metadata.
+   * @param sourceSpan Authoritative source span.
+   * @param emittedText Text represented by the indexed vector.
+   * @throws IllegalArgumentException If an identifier, document, span, or emitted text is invalid.
+   */
+  public SearchRecord(String documentId, String chunkId, OpenNlpDocument sourceDocument,
+      AnnotationSpan sourceSpan, String emittedText) {
+    this(documentId, chunkId, "default", sourceDocument, sourceSpan, emittedText);
   }
 
   private static void validateSpan(OpenNlpDocument document, AnnotationSpan span) {

@@ -211,6 +211,7 @@ class DynamicSearchIndexRegistryTest {
     assertEquals("doc-1", hits.getFirst().record().documentId());
     assertTrue(hits.getFirst().score() > hits.getLast().score());
     assertTrue(hits.getFirst().score() > 0.5);
+    assertEquals("sentence", hits.getFirst().record().chunkGroupId());
     assertEquals(0, registry.retainedRawVectorValues(indexId));
   }
 
