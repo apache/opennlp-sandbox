@@ -53,7 +53,9 @@ public record SearchIndexBundleConfiguration(
   /** Conservative default result limit. */
   public static final int DEFAULT_MAX_TOP_K = 50;
   /** Absolute safety ceiling for one remotely requested result count. */
-  public static final int MAX_TOP_K_LIMIT = 1_000;
+  public static final int MAX_TOP_K_LIMIT = 10_000;
+  /** Absolute safety ceiling for one exhaustive result. */
+  public static final int MAX_ALL_HITS_LIMIT = 10_000;
   /** Conservative default maximum query size in UTF-8 bytes. */
   public static final int DEFAULT_MAX_QUERY_BYTES = 16_384;
   /** Conservative default maximum serialized search response size. */

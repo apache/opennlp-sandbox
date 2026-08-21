@@ -101,7 +101,7 @@ Natural Earth gazetteer (`PIPELINE_STEP_GEOCODE`, no configuration required, fil
 - **opennlp-grpc-integration-tests** - black-box integration tests that launch the
   shaded server and web application as separate processes and exercise analysis, search,
   and a remote TEI embedding backend over real network listeners
-- **examples** - v1 client stub-generation scaffolding and a link to the runnable Python lifecycle client
+- **examples** - readable Python analysis, training, indexing, and search clients
 
 ## Build
 
@@ -280,6 +280,19 @@ The web host loads additional static interfaces through the `WebUiExtension` Ser
 See [opennlp-grpc-webapp/README.md](opennlp-grpc-webapp/README.md) for endpoints, security defaults,
 and command-line options.
 
+## Use the service from Python
+
+The [Python quickstart](examples/python-client/README.md) uses standard generated
+protobuf stubs and `grpcio`. Its first example analyzes typed document shapes,
+creates a process-local TurboQuant index in the Java server, and prints exhaustive
+server-ranked results. Its second example streams documents through vocabulary
+learning, static-model distillation, index publication, and search.
+
+These clients are intentionally small enough to adapt in a notebook or data
+pipeline. The black-box integration suite runs the first example against the
+packaged server and separately exercises the complete lifecycle through the
+shipped descriptor set.
+
 ## Import a dictionary and learn a vocabulary
 
 `org.apache.opennlp.grpc.v1.OpenNlpVocabularyService` exposes OpenNLP's existing vocabulary
@@ -354,19 +367,19 @@ root is configured. Teachers are an explicit allowlist; arbitrary references fro
 rejected:
 
 ```ini
-training.teacher.potion.ref=minishlab/potion-base-8M
-training.teacher.potion.display_name=Potion base 8M
-training.teacher.local-bert.ref=/srv/opennlp/teachers/bert-mini
+training.teacher.local-mini.ref=/srv/opennlp/teachers/local-mini
+training.teacher.local-mini.display_name=Local mini encoder
 training.max_pca_dims=512
 training.max_concurrent_trainings=1
 training.model_cache_dir=/srv/opennlp/trained-model-cache
 ```
 
-A teacher reference is a local directory holding `tokenizer.json` and `onnx/model.onnx`, or a
-Hugging Face model id (`org/model`, or `org/model@revision` to pin), downloaded into a local
-cache on first use. `training.model_cache_dir` is the local directory verified models are
-served from; it defaults to a per-process temporary directory and is rebuilt from the durable
-store on startup.
+A teacher reference is a local directory holding `tokenizer.json` and `onnx/model.onnx`, plus
+any external ONNX data and tokenizer model files needed by that export. It can instead be a
+Hugging Face model id (`org/model@revision` is recommended so the input is pinned), downloaded
+into a local cache on first use. `training.model_cache_dir` is the local directory verified
+models are served from; it defaults to a per-process temporary directory and is rebuilt from
+the durable store on startup.
 
 The four RPCs:
 
@@ -497,15 +510,19 @@ scale, highlights the authoritative span in the original source text, compares i
 chunk text, and opens typed OpenNLP annotations for a selected source document. All remote query
 and response sizes remain bounded by the descriptor advertised to the browser.
 
-The results panel offers two views. The ranked list orders scored chunks best first. The
-heatmap view requests the index's full `max_top_k`, so on a bounded document set every chunk of
-every document is scored, and renders each document's source text with its chunk spans shaded
-on the same score scale, keyword matches marked inside. Selecting a shaded span opens it in the
-result inspector.
+The results panel offers two views. The ranked list orders scored chunks best first. A TurboQuant
+index with at most 10,000 records advertises `supports_all_hits` independently of the ordinary
+`max_top_k` setting. The interactive workbenches send the typed `all_hits` request for such an
+index. The server
+returns every ranked chunk that fits `max_response_bytes`, reports truncation explicitly, and
+emits each referenced source document once rather than once per hit. Other providers remain
+bounded by `max_top_k`. The browser renders returned chunks on the same score scale and leaves
+unreturned chunks gray. Selecting a shaded span opens it in the result inspector.
 
 The search API is also available directly as
 `org.apache.opennlp.grpc.v1.OpenNlpSearchService`. `ListSearchIndexes` returns stable descriptors;
-`SearchIndex` accepts `index_id`, `top_k`, and exactly one of two query forms: a complete
+`SearchIndex` accepts `index_id`, exactly one result limit (`top_k` or capability-checked
+`all_hits`), and exactly one of two query forms: a complete
 `OpenNlpDocument` `query` (shorthand for one semantic clause) or a typed `compound_query`
 tree from `opennlp_query.proto`. Query routing
 may fall back to another embedding backend only when model ID, vector-space ID, and dimension

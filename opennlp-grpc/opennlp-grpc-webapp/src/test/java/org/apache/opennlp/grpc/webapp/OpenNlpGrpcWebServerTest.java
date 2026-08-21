@@ -379,13 +379,13 @@ class OpenNlpGrpcWebServerTest {
       assertEquals(3, request.getTopK());
       return SearchIndexResponse.newBuilder()
           .setIndex(SearchIndexDescriptor.newBuilder().setIndexId(request.getIndexId()))
+          .addSourceDocuments(OpenNlpDocument.newBuilder()
+              .setDocId(SEARCH_DOCUMENT_ID)
+              .setRawText("The writ must issue."))
           .addHits(SearchHit.newBuilder()
               .setDocumentId(SEARCH_DOCUMENT_ID)
               .setChunkId(SEARCH_DOCUMENT_ID)
-              .setScore(0.75)
-              .setSourceDocument(OpenNlpDocument.newBuilder()
-                  .setDocId(SEARCH_DOCUMENT_ID)
-                  .setRawText("The writ must issue.")))
+              .setScore(0.75))
           .build();
     }
 

@@ -158,6 +158,28 @@ class SearchIndexRegistryTest {
   }
 
   @Test
+  void validatesTheExhaustiveCapabilityIndependentlyOfMaxTopK() {
+    final SearchIndexDescriptor exhaustive = descriptor("exhaustive").toBuilder()
+        .setSize(2).setMaxTopK(1).setSupportsAllHits(true).build();
+    final SearchIndexRegistry registry = new SearchIndexRegistry(List.of(provider(exhaustive)));
+    assertTrue(registry.require("exhaustive").descriptor().getSupportsAllHits());
+
+    final SearchIndexDescriptor wrongProvider = exhaustive.toBuilder()
+        .setIndexId("flat")
+        .setProvider(SearchProviderSelector.newBuilder()
+            .setStandard(StandardSearchProvider.STANDARD_SEARCH_PROVIDER_FLAT_FLOAT))
+        .build();
+    final SearchIndexDescriptor tooLarge = exhaustive.toBuilder()
+        .setIndexId("too-large")
+        .setSize(SearchIndexBundleConfiguration.MAX_ALL_HITS_LIMIT + 1)
+        .build();
+    assertThrows(IllegalArgumentException.class,
+        () -> new SearchIndexRegistry(List.of(provider(wrongProvider))));
+    assertThrows(IllegalArgumentException.class,
+        () -> new SearchIndexRegistry(List.of(provider(tooLarge))));
+  }
+
+  @Test
   void rejectsUntrimmedDescriptorStringsAndCustomProviders() {
     final SearchIndexDescriptor untrimmedId = descriptor("legal").toBuilder()
         .setIndexId(" legal ").build();

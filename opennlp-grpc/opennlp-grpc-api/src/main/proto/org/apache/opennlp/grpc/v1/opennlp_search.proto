@@ -487,6 +487,9 @@ message SearchIndexDescriptor {
   // True when a checkpoint of this index exists under the operator-configured
   // persistence root, so the index survives a server restart.
   bool persisted = 15;
+  // True when this bounded index accepts all_hits and can return every ranked
+  // chunk. The complete result still remains subject to max_response_bytes.
+  bool supports_all_hits = 16;
 }
 
 // One independently provided modality of a logical index.
@@ -602,9 +605,15 @@ message SearchIndexRequest {
     // execute compound queries or a CEL clause has no installed evaluator.
     QueryNode compound_query = 4;
   }
-  // Maximum hits to return. Must be positive and no larger than the operator's
-  // configured server maximum.
-  int32 top_k = 3;
+  // Selects a bounded result count. Exactly one limit must be supplied.
+  oneof result_limit {
+    // Maximum hits to return. Must be positive and no larger than the index's
+    // advertised maximum.
+    int32 top_k = 3;
+    // Requests every indexed chunk in rank order. Must be true and is accepted
+    // only when SearchIndexDescriptor.supports_all_hits is true.
+    bool all_hits = 5;
+  }
 }
 
 // Ranked results for one server-owned index query.
@@ -619,11 +628,14 @@ message SearchIndexResponse {
   EmbeddingRoute query_embedding_route = 3;
   // True when ranked hits were omitted to stay within index.max_response_bytes.
   bool truncated = 4;
+  // Source documents referenced by hits, each present exactly once and ordered
+  // by first hit occurrence. This avoids repeating a large document per chunk.
+  repeated OpenNlpDocument source_documents = 5;
 }
 
 // One scored source passage from a static or dynamic search index.
 message SearchHit {
-  // Stable identity of the source document represented by source_document.
+  // Stable identity of one document in SearchIndexResponse.source_documents.
   string document_id = 1;
   // Stable identity of the indexed passage or chunk within the source corpus.
   string chunk_id = 2;
@@ -631,12 +643,9 @@ message SearchHit {
   // indexes return a value in [-1, 1]. Compound queries return the root score
   // of the normative algebra, always in [0, 1].
   double score = 3;
-  // Source text retained by the index bundle in the common OpenNlpDocument shape.
-  // The corpus provenance describes offline normalization or other preparation.
-  // raw_text may differ from emitted_text when later chunk transforms were applied.
-  OpenNlpDocument source_document = 4;
-  // Authoritative span within source_document.raw_text. Its units are named by
-  // source_document.offset_encoding.
+  reserved 4;
+  // Authoritative span within the referenced source document's raw_text. Its
+  // units are named by that document's offset_encoding.
   AnnotationSpan source_span = 5;
   // Exact text emitted by offline chunk preparation and embedded into the index.
   string emitted_text = 6;
@@ -646,6 +655,9 @@ message SearchHit {
   // Keyword and phrase matches contributing to this hit, for exact
   // highlighting. Present only for compound queries with keyword legs.
   repeated MatchedSpan matched_spans = 10;
+  // Typed chunk projection identity from OpenNlpDocument.chunk_embedding_groups.
+  // Static bundles without a named projection use "default".
+  string chunk_group_id = 11;
 }
 
 // One keyword or phrase match within a hit's emitted text.

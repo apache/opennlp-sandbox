@@ -28,6 +28,7 @@ function hit(overrides: Partial<SearchHit>): SearchHit {
     id: "doc-1/chunk-1",
     documentId: "doc-1",
     chunkId: "chunk-1",
+    chunkGroupId: "sentence-chunks",
     score: 0.5,
     sourceDocument: {},
     sourceText: SOURCE,

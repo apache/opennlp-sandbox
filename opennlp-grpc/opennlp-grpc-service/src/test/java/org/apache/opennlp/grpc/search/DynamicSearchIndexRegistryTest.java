@@ -211,7 +211,33 @@ class DynamicSearchIndexRegistryTest {
     assertEquals("doc-1", hits.getFirst().record().documentId());
     assertTrue(hits.getFirst().score() > hits.getLast().score());
     assertTrue(hits.getFirst().score() > 0.5);
+    assertEquals("sentence", hits.getFirst().record().chunkGroupId());
     assertEquals(0, registry.retainedRawVectorValues(indexId));
+  }
+
+  @Test
+  void turboQuantAdvertisesEveryBoundedChunkBeyondTheOldThousandHitCeiling() {
+    final DynamicSearchIndexRegistry registry = new DynamicSearchIndexRegistry();
+    final IndexDocumentsRequest base = request(null, "doc-1", "alpha", 1, 0);
+    final Chunk chunk = base.getDocuments(0).getChunkEmbeddingGroups(0).getChunks(0);
+    final ChunkEmbeddingGroup.Builder group = base.getDocuments(0)
+        .getChunkEmbeddingGroups(0).toBuilder().clearChunks();
+    for (int index = 0; index < 1_001; index++) {
+      group.addChunks(chunk);
+    }
+    final OpenNlpDocument document = base.getDocuments(0).toBuilder()
+        .setChunkEmbeddingGroups(0, group)
+        .build();
+    final IndexDocumentsRequest turbo = base.toBuilder()
+        .setDocuments(0, document)
+        .setProvider(SearchProviderSelector.newBuilder()
+            .setStandard(StandardSearchProvider.STANDARD_SEARCH_PROVIDER_TURBO_QUANT))
+        .build();
+
+    final SearchIndexDescriptor descriptor = registry.index(turbo).getIndex();
+
+    assertEquals(1_001, descriptor.getSize());
+    assertEquals(1_001, descriptor.getMaxTopK());
   }
 
   @Test

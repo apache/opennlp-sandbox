@@ -107,10 +107,13 @@ class GrpcJsonSearchApiTest {
   }
 
   @Test
-  void parsesDocumentShapedSearchRequestAndRendersSourceHit() {
-    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), new StubSearchRpc(), new EmptyVocabularyRpc(), new EmptyTrainingRpc());
+  void parsesExhaustiveDocumentSearchAndRendersDeduplicatedSource() {
+    StubSearchRpc searchRpc = new StubSearchRpc();
+    GrpcJsonApi api = new GrpcJsonApi(new StubAnalysisRpc(), searchRpc,
+        new EmptyVocabularyRpc(), new EmptyTrainingRpc());
     byte[] request = """
-        {"indexId":"%s","query":{"docId":"query-1","rawText":"habeas corpus"},"topK":7}
+        {"indexId":"%s","query":{"docId":"query-1",\
+        "rawText":"habeas corpus"},"allHits":true}
         """.formatted(INDEX_ID).getBytes(StandardCharsets.UTF_8);
 
     WebHttpResponse response = api.handle("POST", "/api/v1/search", request);
@@ -120,6 +123,7 @@ class GrpcJsonSearchApiTest {
     assertTrue(response.bodyUtf8().contains("\"score\":0.75"));
     assertTrue(response.bodyUtf8().contains("\"rawText\":\"The writ must issue.\""));
     assertTrue(response.bodyUtf8().contains("\"truncated\":true"));
+    assertTrue(searchRpc.lastSearch.getAllHits());
   }
 
   @Test
@@ -298,10 +302,7 @@ class GrpcJsonSearchApiTest {
       final SearchHit.Builder hit = SearchHit.newBuilder()
           .setDocumentId(DOCUMENT_ID)
           .setChunkId(DOCUMENT_ID)
-          .setScore(0.75)
-          .setSourceDocument(OpenNlpDocument.newBuilder()
-              .setDocId(DOCUMENT_ID)
-              .setRawText("The writ must issue."));
+          .setScore(0.75);
       if (request.hasCompoundQuery()) {
         hit.addMatchedSpans(org.apache.opennlp.grpc.v1.MatchedSpan.newBuilder()
             .setStart(4).setEnd(10).setTerm("habeas"));
@@ -309,6 +310,9 @@ class GrpcJsonSearchApiTest {
       return SearchIndexResponse.newBuilder()
           .setIndex(SearchIndexDescriptor.newBuilder().setIndexId(request.getIndexId()))
           .setTruncated(true)
+          .addSourceDocuments(OpenNlpDocument.newBuilder()
+              .setDocId(DOCUMENT_ID)
+              .setRawText("The writ must issue."))
           .addHits(hit)
           .build();
     }

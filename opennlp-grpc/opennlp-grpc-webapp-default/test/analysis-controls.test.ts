@@ -104,4 +104,32 @@ describe("analysis controls profile selection", () => {
     const select = document.getElementById("profile-select") as HTMLSelectElement;
     expect(select.value).toBe("max");
   });
+
+  it("keeps runtime-trained embedding models when discovery configures afterwards", () => {
+    const controls = new AnalysisControls(() => undefined);
+    controls.setTrainedEmbeddingModels([
+      { id: "static-model-1234", label: "Alice model2vec (trained)" },
+    ]);
+
+    controls.configure(serviceInfo(["en-embed"]), {
+      bundles: [
+        {
+          bundleId: "en-embed",
+          supportedLanguages: ["en"],
+          supportedSteps: ["PIPELINE_STEP_EMBED"],
+          models: [{
+            name: "minilm",
+            componentType: "COMPONENT_TYPE_EMBEDDER",
+            embeddingDimension: 384,
+            backendId: "tei",
+          }],
+        },
+      ],
+    });
+
+    const select = document.getElementById("embedding-model-select") as HTMLSelectElement;
+    const values = [...select.options].map((option) => option.value);
+    expect(values).toContain("minilm");
+    expect(values).toContain("static-model-1234");
+  });
 });

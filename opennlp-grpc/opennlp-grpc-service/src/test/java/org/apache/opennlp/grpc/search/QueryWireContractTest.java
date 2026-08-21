@@ -116,14 +116,18 @@ class QueryWireContractTest {
   }
 
   @Test
-  void searchRequestCarriesExactlyOneQueryForm() {
+  void searchRequestCarriesOneQueryFormAndOneResultLimit() {
     final Descriptor request = OpenNlpSearchProto.getDescriptor()
         .findMessageTypeByName("SearchIndexRequest");
     assertNotNull(request);
-    assertEquals(1, request.getOneofs().size());
+    assertEquals(2, request.getOneofs().size());
     assertEquals("query_kind", request.getOneofs().getFirst().getName());
     assertEquals(List.of("query", "compound_query"),
         request.getOneofs().getFirst().getFields().stream()
+            .map(FieldDescriptor::getName).toList());
+    assertEquals("result_limit", request.getOneofs().get(1).getName());
+    assertEquals(List.of("top_k", "all_hits"),
+        request.getOneofs().get(1).getFields().stream()
             .map(FieldDescriptor::getName).toList());
     assertEquals("OpenNlpDocument",
         request.findFieldByName("query").getMessageType().getName());

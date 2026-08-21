@@ -22,7 +22,14 @@ import type {
   ChunkProjectionGroup,
   ChunkProjectionItem,
 } from "./chunk-projection";
-import type { AnnotationEntry, AnnotationLayerView, AnnotationView } from "./document-shape";
+import type {
+  AnnotationEntry,
+  AnnotationLayerView,
+  AnnotationView,
+  DocumentShapeView,
+} from "./document-shape";
+import type { SearchHit } from "./search-adapter";
+import { annotationsIntersecting, hitAnnotations, sourceHighlight } from "./search-view-model";
 import { buildTermVectorStack, rankedTermVectors, summaryText } from "./term-vector-stack";
 import { asciiLowerCase } from "./text-utils";
 import { emptyMessage, requiredElement } from "./ui-utils";
@@ -114,6 +121,17 @@ export class AnnotationDrawer {
     this.open(trigger);
   }
 
+  /** Shows every positional annotation intersecting one browser-coordinate document span. */
+  showDocumentSpan(
+    shape: DocumentShapeView,
+    start: number,
+    end: number,
+    text: string,
+    trigger: HTMLElement,
+  ): void {
+    this.showAnnotations(text, start, end, annotationsIntersecting(shape, start, end), trigger);
+  }
+
   /** Pops out one term-vector layer as its full ranked term list. */
   showTermVectorList(layer: AnnotationLayerView, trigger?: HTMLElement): void {
     const ranked = rankedTermVectors(layer);
@@ -164,6 +182,44 @@ export class AnnotationDrawer {
     this.open(trigger);
   }
 
+  /** Shows one server-ranked chunk together with the document annotations it covers. */
+  showSearchHit(hit: SearchHit, shape: DocumentShapeView, trigger: HTMLElement): void {
+    const title = document.createElement("strong");
+    title.textContent = hit.emittedChunkText;
+    const facts = document.createElement("dl");
+    facts.className = "annotation-facts";
+    addFact(facts, "Cosine score", hit.score.toFixed(4));
+    addFact(facts, "Projection", hit.chunkGroupId);
+    addFact(facts, "Document span", `${hit.start}..${hit.end} (${hit.offsetEncoding})`);
+    addFact(facts, "Search provider", hit.providerId);
+    addFact(facts, "Index", hit.indexId);
+    addFact(facts, "Model", hit.modelId);
+    addFact(facts, "Serving backend", hit.backendId);
+    addFact(facts, "Vector space", hit.vectorSpaceId);
+    addOptionalFact(facts, "Model artifact", hit.artifactHash);
+    addFact(facts, "Corpus", hit.corpusTitle);
+    addFact(facts, "Provenance", hit.provenance);
+    addOptionalFact(facts, "Source", hit.sourceUri);
+    addOptionalFact(facts, "License", hit.licenseName);
+    addOptionalFact(facts, "License URI", hit.licenseUri);
+    addOptionalFact(facts, "Corpus artifact", hit.corpusArtifactHash);
+    addOptionalFact(facts, "Bundle artifact", hit.build.bundleArtifactHash);
+    addOptionalFact(facts, "Preparation", hit.build.preparationConfigHash);
+
+    const source = document.createElement("p");
+    source.className = "drawer-chunk-text";
+    source.textContent = sourceHighlight(hit).selected;
+    const entries = hitAnnotations(shape, hit)
+      .filter((entry) => entry.layer.valueType !== "Embedding");
+    const summary = document.createElement("p");
+    summary.textContent = entries.length === 0
+      ? "No positional annotations intersect this chunk."
+      : `${entries.length} typed ${entries.length === 1 ? "annotation intersects" : "annotations intersect"} this chunk.`;
+    this.#content.replaceChildren(title, facts, source, summary,
+      ...entries.map((entry) => annotationBlock(entry.layer, entry.annotation)));
+    this.open(trigger);
+  }
+
   private open(trigger?: HTMLElement): void {
     this.#returnFocus = trigger ?? activeElement();
     this.#drawer.hidden = false;
@@ -183,6 +239,12 @@ export class AnnotationDrawer {
       this.#returnFocus?.focus();
     }
     this.#returnFocus = undefined;
+  }
+}
+
+function addOptionalFact(container: HTMLDListElement, label: string, value: string | undefined): void {
+  if (value) {
+    addFact(container, label, value);
   }
 }
 

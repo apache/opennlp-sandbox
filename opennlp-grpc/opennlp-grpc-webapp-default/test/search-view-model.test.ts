@@ -36,6 +36,7 @@ const hit: SearchHit = {
   id: "doc-1/chunk-1",
   documentId: "doc-1",
   chunkId: "chunk-1",
+  chunkGroupId: "sentence-chunks",
   score: 0.8,
   sourceDocument: { rawText: "A😀 café in Paris.", offsetEncoding: "OFFSET_ENCODING_UTF8_BYTE" },
   sourceText: "A😀 café in Paris.",

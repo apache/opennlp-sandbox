@@ -20,6 +20,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  createAllHitsSearchRequest,
   createCompoundSearchRequest,
   createSearchRequest,
   readSearchIndexes,
@@ -76,11 +77,22 @@ function searchHit(overrides: Record<string, unknown> = {}): Record<string, unkn
     },
     sourceSpan: { start: 0, end: 7, space: "COORDINATE_SPACE_CHAR_DOCUMENT" },
     emittedText: "OpenNLP",
+    chunkGroupId: "sentence-chunks",
     ...overrides,
   };
 }
 
 function searchResponse(hits: Record<string, unknown>[], overrides: Record<string, unknown> = {}) {
+  const sources = new Map<string, unknown>();
+  const compactHits = hits.map((hit) => {
+    const source = hit.sourceDocument as Record<string, unknown> | undefined;
+    if (source && typeof source.docId === "string" && !sources.has(source.docId)) {
+      sources.set(source.docId, source);
+    }
+    const compact = { ...hit };
+    delete compact.sourceDocument;
+    return compact;
+  });
   return {
     index: indexDescriptor(),
     queryEmbeddingRoute: {
@@ -89,7 +101,8 @@ function searchResponse(hits: Record<string, unknown>[], overrides: Record<strin
       vectorSpaceId: "mini-v1",
       artifactHash: "sha256:query",
     },
-    hits,
+    sourceDocuments: [...sources.values()],
+    hits: compactHits,
     ...overrides,
   };
 }
@@ -107,6 +120,7 @@ describe("server search API adapter", () => {
       maxTopK: 25,
       maxQueryBytes: 8192,
       maxResponseBytes: 1048576,
+      supportsAllHits: false,
       immutable: true,
       corpusTitle: "Apache documentation",
       licenseName: "Apache-2.0",
@@ -141,6 +155,14 @@ describe("server search API adapter", () => {
       indexId: "apache-guides",
       query: { rawText: "Where is OpenNLP used?" },
       topK: 7,
+    });
+  });
+
+  it("creates an explicit exhaustive result request without a magic top-k value", () => {
+    expect(createAllHitsSearchRequest("apache-guides", "Where is OpenNLP used?")).toEqual({
+      indexId: "apache-guides",
+      query: { rawText: "Where is OpenNLP used?" },
+      allHits: true,
     });
   });
 
@@ -197,7 +219,13 @@ describe("server search API adapter", () => {
     ]));
 
     expect(result.hits.map((hit) => hit.id)).toEqual(["doc-a/chunk-a", "doc-b/chunk-b", "doc-c/chunk-c"]);
-    expect(result.hits[0]).toMatchObject({ score: 1, sourceText: "OpenNLP works.", start: 0, end: 7 });
+    expect(result.hits[0]).toMatchObject({
+      score: 1,
+      sourceText: "OpenNLP works.",
+      start: 0,
+      end: 7,
+      chunkGroupId: "sentence-chunks",
+    });
   });
 
   it("accepts a protobuf JSON source span whose zero start is omitted", () => {
@@ -314,10 +342,9 @@ describe("server search API adapter", () => {
   });
 
   it("accepts keyword-only compound responses that carry no query embedding route", () => {
-    const result = readSearchResponse({
-      index: indexDescriptor(),
-      hits: [searchHit({ matchedSpans: [{ start: 0, end: 7, term: "opennlp" }] })],
-    });
+    const result = readSearchResponse(searchResponse([
+      searchHit({ matchedSpans: [{ start: 0, end: 7, term: "opennlp" }] }),
+    ], { queryEmbeddingRoute: undefined }));
 
     expect(result.hits).toHaveLength(1);
     expect(result.hits[0]?.queryEmbeddingRoute).toBeUndefined();

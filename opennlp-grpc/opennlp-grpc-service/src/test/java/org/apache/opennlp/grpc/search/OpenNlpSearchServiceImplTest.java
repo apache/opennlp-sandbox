@@ -567,8 +567,92 @@ class OpenNlpSearchServiceImplTest {
     assertEquals(-0.5, observer.value.getHits(1).getScore());
     assertEquals("mini-v1", observer.value.getQueryEmbeddingRoute().getVectorSpaceId());
     assertEquals(observer.value.getHits(0).getDocumentId(),
-        observer.value.getHits(0).getSourceDocument().getDocId());
+        observer.value.getSourceDocuments(0).getDocId());
     assertEquals(descriptor, observer.value.getIndex());
+  }
+
+  @Test
+  void returnsEveryHitForAnExhaustiveTurboQuantIndex() {
+    final SearchIndexDescriptor descriptor = SearchIndexRegistryTest.descriptor("legal")
+        .toBuilder().setSize(3).setMaxTopK(3).setSupportsAllHits(true).build();
+    final SearchIndexProvider provider = provider(descriptor, List.of(
+        result("doc-a", "chunk-a", 0.9),
+        result("doc-b", "chunk-b", 0.8),
+        result("doc-c", "chunk-c", 0.7)));
+    final CapturingObserver<SearchIndexResponse> observer = new CapturingObserver<>();
+
+    service(provider).searchIndex(SearchIndexRequest.newBuilder()
+        .setIndexId("legal")
+        .setQuery(OpenNlpDocument.newBuilder().setRawText("query"))
+        .setAllHits(true)
+        .build(), observer);
+
+    assertNull(observer.error);
+    assertEquals(3, observer.value.getHitsCount());
+    assertFalse(observer.value.getTruncated());
+  }
+
+  @Test
+  void returnsTheTenThousandHitExhaustiveSafetyCeiling() {
+    final int resultCount = SearchIndexBundleConfiguration.MAX_ALL_HITS_LIMIT;
+    final SearchIndexDescriptor descriptor = SearchIndexRegistryTest.descriptor("legal")
+        .toBuilder()
+        .setSize(resultCount)
+        .setMaxTopK(1)
+        .setMaxResponseBytes(32 * 1024 * 1024)
+        .setSupportsAllHits(true)
+        .build();
+    final List<SearchResult> results = new ArrayList<>(resultCount);
+    for (int index = 0; index < resultCount; index++) {
+      results.add(result("doc", "chunk-" + index, 0.5, "Shared source"));
+    }
+    final CapturingObserver<SearchIndexResponse> observer = new CapturingObserver<>();
+
+    service(provider(descriptor, results)).searchIndex(SearchIndexRequest.newBuilder()
+        .setIndexId("legal")
+        .setQuery(OpenNlpDocument.newBuilder().setRawText("query"))
+        .setAllHits(true)
+        .build(), observer);
+
+    assertNull(observer.error);
+    assertEquals(resultCount, observer.value.getHitsCount());
+    assertEquals(1, observer.value.getSourceDocumentsCount());
+    assertFalse(observer.value.getTruncated());
+  }
+
+  @Test
+  void deduplicatesSourceDocumentsAcrossChunkHits() {
+    final String source = "One source document with two independently ranked chunks.";
+    final SearchIndexDescriptor descriptor = SearchIndexRegistryTest.descriptor("legal")
+        .toBuilder().setSize(2).setMaxTopK(2).build();
+    final SearchIndexProvider provider = provider(descriptor, List.of(
+        result("doc", "chunk-a", 0.9, source),
+        result("doc", "chunk-b", 0.8, source)));
+    final CapturingObserver<SearchIndexResponse> observer = new CapturingObserver<>();
+
+    service(provider).searchIndex(request("legal", "query", 2), observer);
+
+    assertNull(observer.error);
+    assertEquals(2, observer.value.getHitsCount());
+    assertEquals(1, observer.value.getSourceDocumentsCount());
+    assertEquals("doc", observer.value.getSourceDocuments(0).getDocId());
+    assertEquals("default", observer.value.getHits(0).getChunkGroupId());
+  }
+
+  @Test
+  void rejectsExhaustiveSearchWhenTheIndexDoesNotAdvertiseIt() {
+    final OpenNlpSearchServiceImpl service = service(
+        provider(SearchIndexRegistryTest.descriptor("legal"), List.of()));
+    final CapturingObserver<SearchIndexResponse> observer = new CapturingObserver<>();
+
+    service.searchIndex(SearchIndexRequest.newBuilder()
+        .setIndexId("legal")
+        .setQuery(OpenNlpDocument.newBuilder().setRawText("query"))
+        .setAllHits(true)
+        .build(), observer);
+
+    assertEquals(Status.Code.FAILED_PRECONDITION,
+        Status.fromThrowable(observer.error).getCode());
   }
 
   @Test

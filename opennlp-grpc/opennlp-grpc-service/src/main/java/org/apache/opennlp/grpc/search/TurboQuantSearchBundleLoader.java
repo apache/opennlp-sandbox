@@ -213,6 +213,7 @@ public final class TurboQuantSearchBundleLoader {
         .setMaxTopK(configuration.maxTopK())
         .setMaxQueryBytes(configuration.maxQueryBytes())
         .setMaxResponseBytes(configuration.maxResponseBytes())
+        .setSupportsAllHits(index.size() <= SearchIndexBundleConfiguration.MAX_ALL_HITS_LIMIT)
         .setBuild(build)
         .build();
     return new TurboQuantProvider(index, Map.copyOf(records), descriptor);

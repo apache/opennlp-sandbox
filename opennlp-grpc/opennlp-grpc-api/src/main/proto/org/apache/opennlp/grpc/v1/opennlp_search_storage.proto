@@ -72,4 +72,6 @@ message PersistedSearchChunk {
   optional uint32 vector_segment = 9;
   // SHA-256 of the original float vector, used for content provenance.
   optional bytes vector_sha256 = 10;
+  // Typed chunk projection identity retained across workspace restarts.
+  string chunk_group_id = 11;
 }

@@ -17,6 +17,11 @@ limitations under the License.
 
 # OpenNLP gRPC examples
 
-Legacy per-tool gRPC examples were removed. Generate client stubs from the v1 protos in `opennlp-grpc-api/src/main/proto/org/apache/opennlp/grpc/v1/`.
+- [Python quickstart](python-client/README.md): analyze typed documents, build a
+  process-local TurboQuant index, search it through the Java server, and then
+  extend the flow through vocabulary learning and static-model distillation.
+- [Protocol stub generation](../opennlp-grpc-api/README.md): generate clients for
+  other supported languages directly from the v1 protos.
 
-See [opennlp-grpc-api/README.md](../opennlp-grpc-api/README.md) for protoc commands.
+Legacy per-tool examples were removed. New examples use the document-centric v1
+contracts so one client can compose analysis, training, and search.

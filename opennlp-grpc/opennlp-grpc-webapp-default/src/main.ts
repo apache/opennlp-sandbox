@@ -212,6 +212,9 @@ const semanticWorkbench = new SemanticWorkbench({
     semanticWorkbench.setDocument(hit.documentId, shape, response);
     selectResultTab("document");
   },
+  inspectChunk: (hit, shape, trigger) => annotationDrawer.showSearchHit(hit, shape, trigger),
+  inspectSpan: (shape, start, end, text, trigger) =>
+    annotationDrawer.showDocumentSpan(shape, start, end, text, trigger),
   selectAnnotation: selectAnnotationFromGraph,
 });
 
