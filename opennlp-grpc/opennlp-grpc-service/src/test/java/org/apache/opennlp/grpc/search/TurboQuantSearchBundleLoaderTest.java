@@ -81,6 +81,25 @@ class TurboQuantSearchBundleLoaderTest {
   }
 
   @Test
+  void advertisesExhaustiveSearchIndependentlyOfTheOrdinaryTopKLimit() throws Exception {
+    final Path indexDir = index(List.of("p-one", "p-two"));
+    final Path passageFile = passages(List.of(passage("p-one"), passage("p-two")));
+    writeDescriptor(indexDir, properties());
+    final SearchIndexBundleConfiguration configuration = new SearchIndexBundleConfiguration(
+        "legal", indexDir, passageFile, 1,
+        SearchIndexBundleConfiguration.DEFAULT_MAX_QUERY_BYTES,
+        SearchIndexBundleConfiguration.DEFAULT_MAX_RESPONSE_BYTES,
+        2, SearchIndexBundleConfiguration.DEFAULT_MAX_SOURCE_DOCUMENT_BYTES,
+        SearchIndexBundleConfiguration.DEFAULT_MAX_EMITTED_TEXT_BYTES,
+        SearchIndexBundleConfiguration.DEFAULT_MAX_BUNDLE_BYTES, Map.of());
+
+    final SearchIndexProvider provider = load(configuration);
+
+    assertEquals(1, provider.descriptor().getMaxTopK());
+    assertTrue(provider.descriptor().getSupportsAllHits());
+  }
+
+  @Test
   void rejectsUnknownBundleVersion() throws Exception {
     final Path indexDir = index(List.of("p-one"));
     final Properties descriptor = properties();
