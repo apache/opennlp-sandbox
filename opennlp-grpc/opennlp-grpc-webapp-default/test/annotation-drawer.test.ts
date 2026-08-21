@@ -154,4 +154,65 @@ describe("annotation drawer", () => {
     expect(content.textContent).toContain("0.125000, -0.500000, 0.750000");
     expect(content.querySelector("pre")).toBeNull();
   });
+
+  it("shows a search chunk's score, provenance, and all intersecting typed annotations", () => {
+    const shape = readDocumentShape({
+      document: {
+        rawText: "Paris is lovely.",
+        offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
+        layers: { layers: [{
+          id: "opennlp:entities",
+          entityValues: { annotations: [{
+            annotationSpan: { start: 0, end: 5 },
+            entityType: "location",
+            text: "Paris",
+          }] },
+        }, {
+          id: "opennlp:pos",
+          wordTypeValues: { annotations: [{
+            annotationSpan: { start: 0, end: 5 },
+            word: "Paris",
+            tag: "NNP",
+          }] },
+        }] },
+      },
+    });
+    const drawer = new AnnotationDrawer();
+    const trigger = document.createElement("button");
+
+    drawer.showSearchHit({
+      id: "paris/paris:0:0",
+      documentId: "paris",
+      chunkId: "paris:0:0",
+      chunkGroupId: "sentence-chunks",
+      score: 0.9375,
+      sourceDocument: { docId: "paris", rawText: "Paris is lovely." },
+      sourceText: "Paris is lovely.",
+      start: 0,
+      end: 16,
+      offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
+      emittedChunkText: "Paris is lovely.",
+      modelId: "legal-mini",
+      backendId: "static",
+      vectorSpaceId: "legal-mini-space",
+      providerId: "STANDARD_SEARCH_PROVIDER_TURBO_QUANT",
+      indexId: "current-document",
+      corpusTitle: "Current document",
+      provenance: "Analyzed in this browser session",
+      licenseName: "CC0-1.0",
+      build: { bundleArtifactHash: "sha256:abcd" },
+      matchedSpans: [],
+    }, shape, trigger);
+
+    const content = document.getElementById("annotation-details-content")!;
+    expect(content.textContent).toContain("Cosine score");
+    expect(content.textContent).toContain("0.9375");
+    expect(content.textContent).toContain("sentence-chunks");
+    expect(content.textContent).toContain("legal-mini-space");
+    expect(content.textContent).toContain("CC0-1.0");
+    expect(content.textContent).toContain("opennlp:entities");
+    expect(content.textContent).toContain("location");
+    expect(content.textContent).toContain("opennlp:pos");
+    expect(content.textContent).toContain("NNP");
+  });
 });
