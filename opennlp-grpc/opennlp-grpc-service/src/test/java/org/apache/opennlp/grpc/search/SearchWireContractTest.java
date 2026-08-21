@@ -21,6 +21,7 @@ package org.apache.opennlp.grpc.search;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.MethodDescriptor;
+import com.google.protobuf.Descriptors.OneofDescriptor;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpSearchProto;
 import org.apache.opennlp.grpc.v1.SearchHit;
@@ -124,6 +125,7 @@ class SearchWireContractTest {
     assertField(descriptor, "max_response_bytes", FieldDescriptor.JavaType.INT, 13);
     assertEquals(FieldDescriptor.Type.UINT32,
         descriptor.findFieldByName("max_response_bytes").getType());
+    assertField(descriptor, "supports_all_hits", FieldDescriptor.JavaType.BOOLEAN, 16);
     assertNotNull(StandardSearchProvider.valueOf("STANDARD_SEARCH_PROVIDER_FLAT_FLOAT"));
     assertNotNull(StandardSearchProvider.valueOf("STANDARD_SEARCH_PROVIDER_TURBO_QUANT"));
 
@@ -156,6 +158,15 @@ class SearchWireContractTest {
     assertField(descriptor, "index_id", FieldDescriptor.JavaType.STRING, 1);
     assertEquals("OpenNlpDocument", descriptor.findFieldByName("query").getMessageType().getName());
     assertField(descriptor, "top_k", FieldDescriptor.JavaType.INT, 3);
+    assertField(descriptor, "all_hits", FieldDescriptor.JavaType.BOOLEAN, 5);
+    final OneofDescriptor resultLimit = descriptor.getOneofs().stream()
+        .filter(oneof -> oneof.getName().equals("result_limit"))
+        .findFirst().orElse(null);
+    assertNotNull(resultLimit);
+    assertEquals(resultLimit,
+        descriptor.findFieldByName("top_k").getContainingOneof());
+    assertEquals(resultLimit,
+        descriptor.findFieldByName("all_hits").getContainingOneof());
   }
 
   @Test
@@ -168,17 +179,22 @@ class SearchWireContractTest {
     assertEquals("EmbeddingRoute",
         response.findFieldByName("query_embedding_route").getMessageType().getName());
     assertField(response, "truncated", FieldDescriptor.JavaType.BOOLEAN, 4);
+    assertEquals("OpenNlpDocument",
+        response.findFieldByName("source_documents").getMessageType().getName());
+    assertTrue(response.findFieldByName("source_documents").isRepeated());
 
     final Descriptor hit = SearchHit.getDescriptor();
     assertField(hit, "document_id", FieldDescriptor.JavaType.STRING, 1);
     assertField(hit, "chunk_id", FieldDescriptor.JavaType.STRING, 2);
     assertField(hit, "score", FieldDescriptor.JavaType.DOUBLE, 3);
-    assertEquals("OpenNlpDocument", hit.findFieldByName("source_document").getMessageType().getName());
+    assertEquals(null, hit.findFieldByName("source_document"));
+    assertEquals(null, hit.findFieldByNumber(4));
     assertEquals("AnnotationSpan", hit.findFieldByName("source_span").getMessageType().getName());
     assertField(hit, "emitted_text", FieldDescriptor.JavaType.STRING, 6);
     assertEquals(null, hit.findFieldByNumber(7));
     assertEquals(null, hit.findFieldByNumber(8));
     assertEquals(null, hit.findFieldByNumber(9));
+    assertField(hit, "chunk_group_id", FieldDescriptor.JavaType.STRING, 11);
 
     assertMessageField(ListSearchIndexesResponse.getDescriptor(), "indexes",
         SearchIndexDescriptor.getDescriptor(), 1);
