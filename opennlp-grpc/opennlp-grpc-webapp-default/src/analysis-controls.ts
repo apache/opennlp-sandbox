@@ -43,6 +43,7 @@ export class AnalysisControls {
   readonly #onChange: () => void;
   #capabilities: AnalysisCapabilities = discoverAnalysisCapabilities(undefined, undefined);
   #customSteps = new Set<string>();
+  #trainedModels: DiscoveryOption[] = [];
 
   constructor(onChange: () => void) {
     this.#onChange = onChange;
@@ -64,7 +65,7 @@ export class AnalysisControls {
   configure(serviceValue: unknown, bundlesValue: unknown): AnalysisCapabilities {
     this.#capabilities = discoverAnalysisCapabilities(serviceValue, bundlesValue);
     this.populateProfiles(this.#capabilities.profiles);
-    this.populateEmbeddingModels(this.#capabilities.embeddingModels);
+    this.populateEmbeddingModels(this.mergedEmbeddingModels());
     this.populateModelList(this.#capabilities.bundles);
     this.#customSteps = new Set(this.#capabilities.maxSteps);
     this.renderFeatureOptions();
@@ -78,16 +79,27 @@ export class AnalysisControls {
    */
   setTrainedEmbeddingModels(models: DiscoveryOption[]): void {
     const selected = this.#embeddingModel.value;
-    const configured = this.#capabilities.embeddingModels;
-    const merged = [
-      ...configured,
-      ...models.filter((model) => !configured.some((option) => option.id === model.id)),
-    ];
+    this.#trainedModels = models;
+    const merged = this.mergedEmbeddingModels();
     this.populateEmbeddingModels(merged);
     if (merged.some((option) => option.id === selected)) {
       this.#embeddingModel.value = selected;
     }
     this.renderFeatures();
+  }
+
+  /**
+   * Combines the startup-configured embedding models with the runtime-trained
+   * ones, so a later {@link AnalysisControls#configure} call cannot drop models
+   * that arrived first through {@link AnalysisControls#setTrainedEmbeddingModels}.
+   */
+  private mergedEmbeddingModels(): DiscoveryOption[] {
+    const configured = this.#capabilities.embeddingModels;
+    return [
+      ...configured,
+      ...this.#trainedModels.filter(
+        (model) => !configured.some((option) => option.id === model.id)),
+    ];
   }
 
   request(text: string, includeChunks = true): AnalyzeRequest {
