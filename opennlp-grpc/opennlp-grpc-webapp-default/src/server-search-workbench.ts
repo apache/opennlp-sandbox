@@ -555,6 +555,9 @@ export class ServerSearchWorkbench {
       || (!this.#query.value.trim() && this.#clauses.length === 0);
     this.#indexSelect.disabled = this.#busy || this.#indexes.length === 0;
     this.#query.disabled = this.#busy || this.#indexes.length === 0;
+    // Compound clauses replace the free-text query, so the native required
+    // constraint must not block the form submit while clauses exist.
+    this.#query.required = this.#clauses.length === 0;
     this.#topK.disabled = this.#heatmapView || this.#busy || this.#indexes.length === 0;
   }
 
