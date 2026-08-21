@@ -18,6 +18,7 @@
  */
 
 import { toBrowserSpan } from "./offsets";
+import { asciiLowerCase } from "./text-utils";
 
 /** Stable browser view of one server-owned static or dynamic search index. */
 export interface SearchIndexBuild {
@@ -42,6 +43,7 @@ export interface SearchIndex {
   maxTopK?: number;
   maxQueryBytes?: number;
   maxResponseBytes?: number;
+  supportsAllHits: boolean;
   immutable: boolean;
   corpusTitle: string;
   provenance: string;
@@ -71,6 +73,7 @@ export interface SearchHit {
   id: string;
   documentId: string;
   chunkId: string;
+  chunkGroupId: string;
   score: number;
   /** Absent for keyword-only compound queries, which embed nothing. */
   sourceDocument: Record<string, unknown>;
@@ -102,18 +105,26 @@ export interface SearchResponse {
 }
 
 /** Request body for `POST /api/v1/search`; exactly one query form is set. */
-export interface SearchRequest {
+interface SearchRequestBase {
   indexId: string;
   query?: {
     docId?: string;
     rawText: string;
   };
   compoundQuery?: Record<string, unknown>;
-  topK: number;
 }
+
+export type SearchRequest = SearchRequestBase & (
+  { topK: number; allHits?: never } | { allHits: true; topK?: never }
+);
 
 export function createSearchRequest(indexId: string, query: string, topK: number): SearchRequest {
   return { indexId, query: { rawText: query }, topK };
+}
+
+/** Builds an exhaustive search request without assigning a sentinel top-k value. */
+export function createAllHitsSearchRequest(indexId: string, query: string): SearchRequest {
+  return { indexId, query: { rawText: query }, allHits: true };
 }
 
 /** Builds a compound search request from a protobuf JSON QueryNode tree. */
@@ -151,7 +162,7 @@ export function readSearchProviderInstances(response: unknown): SearchProviderIn
       const name = text(capability);
       return name.startsWith("SEARCH_PROVIDER_CAPABILITY_")
           && name !== "SEARCH_PROVIDER_CAPABILITY_UNSPECIFIED"
-        ? [name.slice("SEARCH_PROVIDER_CAPABILITY_".length).toLowerCase()]
+        ? [asciiLowerCase(name.slice("SEARCH_PROVIDER_CAPABILITY_".length))]
         : [];
     });
     const standard = optionalText(instance.standard);
@@ -200,6 +211,7 @@ export function readSearchIndexes(response: unknown): SearchIndex[] {
       maxTopK: positiveInteger(descriptor.maxTopK),
       maxQueryBytes: positiveInteger(descriptor.maxQueryBytes),
       maxResponseBytes: positiveInteger(descriptor.maxResponseBytes),
+      supportsAllHits: descriptor.supportsAllHits === true,
       immutable,
       corpusTitle: text(corpus?.title) || "Untitled corpus",
       provenance: text(corpus?.provenanceSummary),
@@ -228,21 +240,32 @@ export function readSearchResponse(response: unknown): SearchResponse {
     return { hits: [], truncated: false };
   }
   const values = Array.isArray(envelope?.hits) ? envelope.hits : [];
+  const sourceValues = Array.isArray(envelope?.sourceDocuments) ? envelope.sourceDocuments : [];
+  const sources = new Map<string, Record<string, unknown>>();
+  for (const value of sourceValues) {
+    const source = record(value);
+    const sourceId = nonBlankText(source?.docId);
+    if (!source || !sourceId || sources.has(sourceId)) {
+      return { hits: [], truncated: false };
+    }
+    sources.set(sourceId, source);
+  }
   const hits = values.flatMap((value, position) => {
     const hit = record(value);
-    const sourceDocument = record(hit?.sourceDocument);
+    const documentId = nonBlankText(hit?.documentId);
+    const sourceDocument = documentId ? sources.get(documentId) : undefined;
     const sourceSpan = record(hit?.sourceSpan);
     const sourceText = nonBlankText(sourceDocument?.rawText);
-    const documentId = nonBlankText(hit?.documentId);
-    const sourceDocumentId = nonBlankText(sourceDocument?.docId);
     const chunkId = nonBlankText(hit?.chunkId);
+    const chunkGroupId = nonBlankText(hit?.chunkGroupId);
     const emittedChunkText = nonBlankText(hit?.emittedText);
     const start = sourceSpan?.start === undefined ? 0 : nonNegativeInteger(sourceSpan.start);
     const end = nonNegativeInteger(sourceSpan?.end);
     const score = finiteNumber(hit?.score);
     const offsetEncoding = text(sourceDocument?.offsetEncoding);
-    if (!hit || !sourceDocument || !sourceText || !documentId || documentId !== sourceDocumentId
-        || !chunkId || !emittedChunkText || !validOffsetEncoding(offsetEncoding) || start === undefined
+    if (!hit || !sourceDocument || !sourceText || !documentId
+        || !chunkId || !chunkGroupId || !emittedChunkText
+        || !validOffsetEncoding(offsetEncoding) || start === undefined
         || end === undefined || sourceSpan?.space !== "COORDINATE_SPACE_CHAR_DOCUMENT"
         || !toBrowserSpan(sourceText, start, end, offsetEncoding)
         || score === undefined || score < -1 || score > 1) {
@@ -254,6 +277,7 @@ export function readSearchResponse(response: unknown): SearchResponse {
         id: `${documentId}/${chunkId}`,
         documentId,
         chunkId,
+        chunkGroupId,
         score,
         sourceDocument,
         sourceText,

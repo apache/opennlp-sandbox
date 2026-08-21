@@ -455,6 +455,7 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 .heatmap-mode button { min-height: 2.35rem; padding: 0.55rem 0.8rem; border: 0; border-radius: 0.45rem; background: transparent; color: #8e9db3; font-size: 0.68rem; font-weight: 800; }
 .heatmap-mode button[aria-pressed="true"] { background: #276fca; color: white; box-shadow: 0 5px 16px rgb(0 0 0 / 24%); }
 .heatmap-query-form label { display: block; margin-bottom: 0.35rem; color: #aebbd0; font-size: 0.65rem; font-weight: 750; }
+.heatmap-query-form select { width: 100%; min-height: 2.45rem; margin-bottom: 0.65rem; padding: 0.5rem 0.65rem; border: 1px solid #3a465c; border-radius: 0.55rem; background: #091322; color: #f4f7fb; }
 .heatmap-query-form > div { display: grid; grid-template-columns: minmax(8rem, 1fr) auto; gap: 0.55rem; }
 .heatmap-query-form input { min-width: 0; min-height: 2.55rem; padding: 0.6rem 0.75rem; border: 1px solid #3a465c; border-radius: 0.55rem; background: #091322; color: #f4f7fb; }
 .heatmap-query-form button { min-height: 2.55rem; padding: 0.6rem 0.9rem; border: 1px solid #3b91ee; border-radius: 0.55rem; background: #1769e0; color: white; font-size: 0.68rem; font-weight: 800; }
@@ -462,7 +463,20 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 .heatmap-status, .heatmap-selection { min-height: 2.5rem; margin: 0; padding: 0.7rem 1rem; color: #91a0b7; font-size: 0.68rem; line-height: 1.55; }
 .heatmap-status { border-bottom: 1px solid #253147; }
 .heatmap-status.is-error { color: #ff9ba8; }
-.document-heatmap { min-height: 18rem; flex: 1; }
+.document-heatmap { overflow-x: hidden; overflow-y: auto; min-height: 18rem; max-height: 58rem; flex: 1; padding: 1rem; }
+.document-heat-lane { min-width: 0; padding: 0.9rem; border: 1px solid #2b3950; border-radius: 0.75rem; background: #0a1422; }
+.document-heat-lane + .document-heat-lane { margin-top: 1rem; }
+.document-heat-lane h4 { margin: 0; color: #edf4ff; }
+.heat-coverage-note { margin: 0.35rem 0 0.8rem; color: #91a0b7; font-size: 0.72rem; }
+.heat-source { overflow-wrap: anywhere; padding: 1rem; border: 1px solid #26344a; border-radius: 0.65rem; background: #111b2a; color: #dce5f2; line-height: 1.85; white-space: pre-wrap; }
+.heat-source-segment { display: inline; margin: 0; padding: 0.08rem 0; border: 0; border-radius: 0.15rem; font: inherit; text-align: left; white-space: pre-wrap; }
+button.heat-source-segment { cursor: pointer; }
+.heat-source-segment.is-unscored, .heat-chunk-card.is-unscored { background: #293445; color: #bbc5d2; }
+.heat-chunk-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 0.65rem; margin-top: 0.8rem; }
+.heat-chunk-card { display: grid; min-width: 0; padding: 0.7rem; border: 1px solid rgb(255 255 255 / 16%); border-radius: 0.55rem; cursor: pointer; gap: 0.35rem; text-align: left; }
+.heat-chunk-card > span { overflow-wrap: anywhere; }
+.heat-chunk-card > strong, .heat-chunk-card > span:not(.heat-chunk-text) { font-size: 0.68rem; }
+.heat-chunk-text { line-height: 1.45; white-space: pre-wrap; }
 .heatmap-selection { border-top: 1px solid #253147; background: #0d1523; color: #b7c5d8; overflow-wrap: anywhere; }
 .graph-selection { min-height: 2.8rem; margin: 0; padding: 0.8rem 1rem; border-top: 1px solid #253147; color: #91a0b7; font-size: 0.68rem; }
 

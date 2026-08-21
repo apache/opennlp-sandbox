@@ -24,6 +24,9 @@ import type {
 } from "./api";
 import { requiredElement } from "./ui-utils";
 
+const CARRIAGE_RETURN = "\r";
+const LINE_FEED = "\n";
+
 export interface DictionaryFormatOption {
   id: string;
   label: string;
@@ -423,13 +426,55 @@ function asCount(value: unknown): number {
 /** Splits pasted corpus text into documents on blank lines. */
 export function corpusDocuments(text: string): Array<{ docId: string; rawText: string }> {
   const documents: Array<{ docId: string; rawText: string }> = [];
-  for (const block of text.split(/\n[ \t]*\n/)) {
+  for (const block of corpusBlocks(text)) {
     const rawText = block.trim();
     if (rawText) {
       documents.push({ docId: `trainer-doc-${documents.length + 1}`, rawText });
     }
   }
   return documents;
+}
+
+function corpusBlocks(text: string): string[] {
+  const blocks: string[] = [];
+  let block = "";
+  let cursor = 0;
+  while (cursor <= text.length) {
+    const start = cursor;
+    while (cursor < text.length && text.charAt(cursor) !== LINE_FEED
+        && text.charAt(cursor) !== CARRIAGE_RETURN) {
+      cursor++;
+    }
+    const line = text.slice(start, cursor);
+    if (isBlankCorpusLine(line)) {
+      if (block) {
+        blocks.push(block);
+        block = "";
+      }
+    } else {
+      block += block ? `\n${line}` : line;
+    }
+    if (cursor >= text.length) {
+      break;
+    }
+    if (text.charAt(cursor) === CARRIAGE_RETURN && text.charAt(cursor + 1) === LINE_FEED) {
+      cursor++;
+    }
+    cursor++;
+  }
+  if (block) {
+    blocks.push(block);
+  }
+  return blocks;
+}
+
+function isBlankCorpusLine(line: string): boolean {
+  for (const character of line) {
+    if (character !== " " && character !== "\t") {
+      return false;
+    }
+  }
+  return true;
 }
 
 /** Encodes bytes as base64 for the protobuf JSON bytes field. */

@@ -108,13 +108,18 @@ links every additional ServiceLoader extension when present.
 The Workspace search workbench uses chunk embeddings already present in the same document shape.
 The browser sends only document identity, source text, metadata, offset encoding, and selected chunk
 embedding groups to `IndexDocuments`; the gRPC server validates routes, spans, dimensions, and
-limits before atomically publishing a process-local flat index. The first query automatically adds
+limits before atomically publishing a process-local flat or TurboQuant index. The first query automatically adds
 the current document when needed, while the explicit Add button supports building a multi-document
 workspace. Queries go through `SearchIndex`, and only server-ranked scores return to the browser.
-Clearing the workspace calls `DeleteSearchIndex`. Query similarity and typed sentiment scores are shown as heatmaps. The
-graph view links the document to its layers and annotations, and annotation nodes open the same
-details used by the Document view. Visualization code is loaded only when a graph or heatmap is
-opened.
+Clearing the workspace calls `DeleteSearchIndex`. Query similarity and typed sentiment scores are
+shown inline over continuous source text. All chunk projections are selected by default and render
+as separate lanes; one projection can be selected when a narrower comparison is useful. Each lane
+uses its own process-local TurboQuant index and the typed exhaustive search request. Overlapping
+token windows remain individually selectable below the source projection, and unreturned chunks
+remain gray when the response-byte cap truncates a result. Selecting a scored chunk opens its
+score, offsets, route, provenance, and every intersecting non-vector annotation in the detail
+drawer. The graph view links the document to its layers and annotations, and annotation nodes open
+the same details used by the Document view. ECharts is loaded only when the graph is opened.
 
 The bundled Alice's Adventures in Wonderland demo exercises the long-document path without a
 network dependency. It is a deterministic gzip of the public-domain novel text with Project
@@ -141,7 +146,8 @@ capability and request shaping, `analysis-controls.ts` owns the associated form 
 `document-shape.ts` owns wire normalization, `chunk-projection.ts` owns chunk wire parsing, and
 `chunk-projection-view.ts` owns its DOM rendering. `annotation-drawer.ts` owns detail disclosure and
 focus restoration. `workbench-navigation.ts` owns the top-level tabs. `visualization-data.ts`
-creates renderer-neutral data, `charts.ts` is the Apache ECharts adapter,
+creates renderer-neutral data, `document-heatmap-view.ts` renders inline projection lanes, and
+`charts.ts` is the Apache ECharts graph adapter.
 `semantic-workbench.ts` coordinates server-owned workspace indexing, and
 `server-search-workbench.ts` coordinates immutable corpus search. Locale-independent cursor
 helpers in `text-utils.ts` own casing, whitespace, identifier splitting, and tooltip escaping.

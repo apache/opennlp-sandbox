@@ -25,7 +25,11 @@ import {
   type QueryClause,
 } from "./query-builder";
 import type { SearchHit, SearchIndex, SearchRequest, SearchResponse } from "./search-adapter";
-import { createCompoundSearchRequest, createSearchRequest } from "./search-adapter";
+import {
+  createAllHitsSearchRequest,
+  createCompoundSearchRequest,
+  createSearchRequest,
+} from "./search-adapter";
 import { buildDocumentHeat, type HeatSegment } from "./search-heatmap";
 import {
   compareChunkText,
@@ -211,7 +215,7 @@ export class ServerSearchWorkbench {
     const query = this.#query.value.trim();
     const compound = this.#clauses.length > 0;
     const maximum = index?.maxTopK ?? 50;
-    // The heatmap shades every chunk, so it always requests the index's full top_k.
+    // Exhaustive-capable providers use a typed request; other providers stay bounded by top_k.
     const topK = this.#heatmapView
       ? maximum
       : Math.min(maximum, Math.max(1, Number.parseInt(this.#topK.value, 10) || 8));
@@ -234,7 +238,9 @@ export class ServerSearchWorkbench {
           + `${formatInteger(index.maxQueryBytes)} bytes.`, true);
         return;
       }
-      request = createSearchRequest(index.id, query, topK);
+      request = this.#heatmapView && index.supportsAllHits
+        ? createAllHitsSearchRequest(index.id, query)
+        : createSearchRequest(index.id, query, topK);
     }
 
     this.#busy = true;
@@ -246,7 +252,9 @@ export class ServerSearchWorkbench {
     try {
       const response = await this.#options.search(request);
       this.#hits = response.hits;
-      this.#fullCoverage = response.hits.length < topK || topK >= maximum;
+      this.#fullCoverage = !response.truncated && (request.allHits === true
+        ? index.size !== undefined && response.hits.length === index.size
+        : response.hits.length < topK || index.size !== undefined && topK >= index.size);
       this.renderResults();
       this.renderHeatmap();
       this.setStatus(searchResultStatus(this.#hits.length, response.truncated));

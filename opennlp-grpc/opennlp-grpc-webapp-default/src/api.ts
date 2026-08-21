@@ -18,6 +18,7 @@
  */
 
 import type { SearchRequest } from "./search-adapter";
+import { splitOnCharacters } from "./text-utils";
 
 export interface AnalyzeRequest {
   document: {
@@ -359,7 +360,7 @@ export async function trainStaticModel(
 
 async function* ndjsonLines(response: Response): AsyncGenerator<string> {
   if (!response.body) {
-    for (const line of (await response.text()).split("\n")) {
+    for (const line of splitOnCharacters(await response.text(), "\n")) {
       if (line.trim()) {
         yield line;
       }

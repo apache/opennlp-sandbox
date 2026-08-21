@@ -342,10 +342,9 @@ describe("server search API adapter", () => {
   });
 
   it("accepts keyword-only compound responses that carry no query embedding route", () => {
-    const result = readSearchResponse({
-      index: indexDescriptor(),
-      hits: [searchHit({ matchedSpans: [{ start: 0, end: 7, term: "opennlp" }] })],
-    });
+    const result = readSearchResponse(searchResponse([
+      searchHit({ matchedSpans: [{ start: 0, end: 7, term: "opennlp" }] }),
+    ], { queryEmbeddingRoute: undefined }));
 
     expect(result.hits).toHaveLength(1);
     expect(result.hits[0]?.queryEmbeddingRoute).toBeUndefined();

@@ -253,6 +253,10 @@
                   <button id="heatmap-mode-sentiment" type="button" aria-pressed="false">Sentiment</button>
                 </div>
                 <form id="heatmap-query-form" class="heatmap-query-form">
+                  <label for="heatmap-projection-select">Chunk projection</label>
+                  <select id="heatmap-projection-select" disabled>
+                    <option value="ALL_PROJECTIONS">All projections, separate lanes</option>
+                  </select>
                   <label for="heatmap-query">Find related chunks in this document</label>
                   <div>
                     <input id="heatmap-query" type="search"
@@ -264,7 +268,7 @@
               <p id="heatmap-status" class="heatmap-status" role="status" aria-live="polite">
                 Analyze text with document embeddings to score its chunks.
               </p>
-              <div id="document-heatmap" class="chart-canvas document-heatmap" role="img"
+              <div id="document-heatmap" class="chart-canvas document-heatmap" role="region"
                 aria-label="Document score heatmap">Analyze a document to build its heatmap.</div>
               <p id="heatmap-selection" class="heatmap-selection" aria-live="polite">
                 Select a colored segment to inspect its text and score.

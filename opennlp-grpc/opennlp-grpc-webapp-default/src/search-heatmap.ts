@@ -19,6 +19,7 @@
 
 import { toBrowserSpan } from "./offsets";
 import type { MatchedSpan, SearchHit } from "./search-adapter";
+import { compareCodePoints } from "./text-utils";
 
 /** One run of source text: a scored chunk span, or an unscored gap between chunks. */
 export interface HeatSegment {
@@ -74,7 +75,7 @@ export function buildDocumentHeat(hits: SearchHit[]): DocumentHeat[] {
       return heat ? [heat] : [];
     })
     .sort((left, right) => right.maxScore - left.maxScore
-      || left.documentId.localeCompare(right.documentId));
+      || compareCodePoints(left.documentId, right.documentId));
 }
 
 /** Builds one document's heat, or nothing when no chunk maps onto its source. */
