@@ -75,6 +75,7 @@ describe("workspace search", () => {
       openDocument: vi.fn(),
       selectAnnotation: vi.fn(),
       inspectChunk: vi.fn(),
+      inspectSpan: vi.fn(),
     });
     const response = {
       document: {
@@ -188,6 +189,7 @@ describe("workspace search", () => {
       openDocument: vi.fn(),
       selectAnnotation: vi.fn(),
       inspectChunk,
+      inspectSpan: vi.fn(),
     });
     const response = {
       document: {
@@ -252,5 +254,38 @@ describe("workspace search", () => {
       expect.objectContaining({ rawText: text }),
       firstChunk,
     );
+  });
+
+  it("opens typed annotations when a sentiment segment is selected", async () => {
+    const inspectSpan = vi.fn();
+    const workbench = new SemanticWorkbench({
+      index: vi.fn(),
+      search: vi.fn(),
+      deleteIndex: vi.fn(),
+      openDocument: vi.fn(),
+      selectAnnotation: vi.fn(),
+      inspectChunk: vi.fn(),
+      inspectSpan,
+    });
+    const shape = {
+      rawText: "Lovely day.",
+      offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
+      layers: [{
+        id: "opennlp:sentiment",
+        title: "Sentiment",
+        scope: "POSITIONAL",
+        valueType: "Category",
+        standardIdentity: "opennlp:sentiment",
+        annotations: [{ start: 0, end: 11, label: "positive", score: 0.8, source: {} }],
+      }],
+    };
+    workbench.setDocument("Sentiment", shape);
+
+    document.getElementById("heatmap-mode-sentiment")?.click();
+    await vi.waitFor(() => expect(document.querySelector(".heat-chunk-card")).not.toBeNull());
+    const chunk = document.querySelector<HTMLButtonElement>(".heat-chunk-card")!;
+    chunk.click();
+
+    expect(inspectSpan).toHaveBeenCalledWith(shape, 0, 11, "Lovely day.", chunk);
   });
 });
