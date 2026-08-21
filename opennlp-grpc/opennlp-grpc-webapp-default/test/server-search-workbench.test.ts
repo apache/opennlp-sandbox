@@ -21,7 +21,7 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SearchIndex } from "../src/search-adapter";
 import { ServerSearchWorkbench } from "../src/server-search-workbench";
@@ -37,6 +37,7 @@ function testIndex(): SearchIndex {
     backendId: "static",
     vectorSpaceId: "space-test",
     metric: "METRIC_COSINE",
+    supportsAllHits: false,
     immutable: false,
     corpusTitle: "Test corpus",
     provenance: "Built by the workbench test",
@@ -82,5 +83,35 @@ describe("server search workbench compound queries", () => {
       '#builder-clauses button[aria-label="Remove clause 1"]');
     remove?.click();
     expect(query.required).toBe(true);
+  });
+
+  it("uses the explicit exhaustive contract for a TurboQuant heatmap", async () => {
+    document.body.innerHTML = html.replace(/^[\s\S]*<body[^>]*>/, "").replace(/<\/body>[\s\S]*$/, "");
+    const index = {
+      ...testIndex(),
+      size: 3,
+      maxTopK: 3,
+      supportsAllHits: true,
+      providerId: "STANDARD_SEARCH_PROVIDER_TURBO_QUANT",
+    };
+    const search = vi.fn().mockResolvedValue({ hits: [], truncated: false });
+    const workbench = new ServerSearchWorkbench({
+      listIndexes: () => Promise.resolve([index]),
+      search,
+      analyzeSource: () => Promise.reject(new Error("not exercised")),
+    });
+    await workbench.initialize();
+    document.getElementById("server-view-heatmap-button")?.click();
+    const query = document.getElementById("server-search-query") as HTMLInputElement;
+    query.value = "rabbit";
+    query.dispatchEvent(new Event("input", { bubbles: true }));
+    document.getElementById("server-search-form")
+      ?.dispatchEvent(new SubmitEvent("submit", { bubbles: true, cancelable: true }));
+
+    await vi.waitFor(() => expect(search).toHaveBeenCalledWith({
+      indexId: "workspace-test",
+      query: { rawText: "rabbit" },
+      allHits: true,
+    }));
   });
 });
