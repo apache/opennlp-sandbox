@@ -25,6 +25,12 @@ import java.util.concurrent.TimeUnit;
 import io.grpc.Channel;
 import org.apache.opennlp.grpc.v1.DeleteStaticModelRequest;
 import org.apache.opennlp.grpc.v1.DeleteStaticModelResponse;
+import org.apache.opennlp.grpc.v1.InstallModelRequest;
+import org.apache.opennlp.grpc.v1.InstallModelUpdate;
+import org.apache.opennlp.grpc.v1.ListInstalledModelsRequest;
+import org.apache.opennlp.grpc.v1.ListInstalledModelsResponse;
+import org.apache.opennlp.grpc.v1.ListModelCatalogRequest;
+import org.apache.opennlp.grpc.v1.ListModelCatalogResponse;
 import org.apache.opennlp.grpc.v1.ListStaticModelsRequest;
 import org.apache.opennlp.grpc.v1.ListStaticModelsResponse;
 import org.apache.opennlp.grpc.v1.ListTeachersRequest;
@@ -36,7 +42,8 @@ import org.apache.opennlp.grpc.v1.TrainStaticModelUpdate;
 final class GrpcTrainingRpc implements TrainingRpc {
 
   private final OpenNlpModelTrainingServiceGrpc.OpenNlpModelTrainingServiceBlockingStub stub;
-  private final long timeoutNanos;
+  private final long requestTimeoutNanos;
+  private final long longRunningTimeoutNanos;
 
   /**
    * Creates a blocking gRPC training adapter.
@@ -46,17 +53,26 @@ final class GrpcTrainingRpc implements TrainingRpc {
    * @throws IllegalArgumentException If an argument is {@code null} or the timeout is not positive.
    */
   GrpcTrainingRpc(Channel channel, Duration timeout) {
+    this(channel, timeout, timeout);
+  }
+
+  /**
+   * Creates an adapter with distinct discovery and long-running operation deadlines.
+   *
+   * @param channel The channel to the OpenNLP service.
+   * @param requestTimeout Deadline for discovery and short model operations.
+   * @param longRunningTimeout Deadline for distillation and catalog downloads.
+   * @throws IllegalArgumentException If an argument is {@code null} or a timeout is not positive.
+   */
+  GrpcTrainingRpc(Channel channel, Duration requestTimeout, Duration longRunningTimeout) {
     if (channel == null) {
       throw new IllegalArgumentException("channel must not be null");
     }
-    if (timeout == null) {
-      throw new IllegalArgumentException("timeout must not be null");
-    }
-    if (timeout.isZero() || timeout.isNegative()) {
-      throw new IllegalArgumentException("timeout must be positive");
-    }
+    requirePositive(requestTimeout, "requestTimeout");
+    requirePositive(longRunningTimeout, "longRunningTimeout");
     this.stub = OpenNlpModelTrainingServiceGrpc.newBlockingStub(channel);
-    this.timeoutNanos = timeout.toNanos();
+    this.requestTimeoutNanos = requestTimeout.toNanos();
+    this.longRunningTimeoutNanos = longRunningTimeout.toNanos();
   }
 
   /** {@inheritDoc} */
@@ -67,8 +83,26 @@ final class GrpcTrainingRpc implements TrainingRpc {
 
   /** {@inheritDoc} */
   @Override
+  public ListModelCatalogResponse listModelCatalog() {
+    return deadlineStub().listModelCatalog(ListModelCatalogRequest.getDefaultInstance());
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public ListInstalledModelsResponse listInstalledModels() {
+    return deadlineStub().listInstalledModels(ListInstalledModelsRequest.getDefaultInstance());
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Iterator<InstallModelUpdate> installModel(InstallModelRequest request) {
+    return longRunningStub().installModel(request);
+  }
+
+  /** {@inheritDoc} */
+  @Override
   public Iterator<TrainStaticModelUpdate> trainStaticModel(TrainStaticModelRequest request) {
-    return deadlineStub().trainStaticModel(request);
+    return longRunningStub().trainStaticModel(request);
   }
 
   /** {@inheritDoc} */
@@ -83,8 +117,32 @@ final class GrpcTrainingRpc implements TrainingRpc {
     return deadlineStub().deleteStaticModel(request);
   }
 
-  /** @return A stub carrying the configured deadline. */
+  /**
+   * Applies the configured request deadline.
+   *
+   * @return A stub carrying the request deadline.
+   */
   private OpenNlpModelTrainingServiceGrpc.OpenNlpModelTrainingServiceBlockingStub deadlineStub() {
-    return stub.withDeadlineAfter(timeoutNanos, TimeUnit.NANOSECONDS);
+    return stub.withDeadlineAfter(requestTimeoutNanos, TimeUnit.NANOSECONDS);
+  }
+
+  /**
+   * Applies the configured long-running deadline.
+   *
+   * @return A stub carrying the training and model-installation deadline.
+   */
+  private OpenNlpModelTrainingServiceGrpc.OpenNlpModelTrainingServiceBlockingStub
+      longRunningStub() {
+    return stub.withDeadlineAfter(longRunningTimeoutNanos, TimeUnit.NANOSECONDS);
+  }
+
+  /** Validates one configured deadline. */
+  private void requirePositive(Duration value, String name) {
+    if (value == null) {
+      throw new IllegalArgumentException(name + " must not be null");
+    }
+    if (value.isZero() || value.isNegative()) {
+      throw new IllegalArgumentException(name + " must be positive");
+    }
   }
 }

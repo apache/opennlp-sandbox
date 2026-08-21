@@ -47,6 +47,7 @@ import org.apache.opennlp.grpc.search.SearchCollectionRegistry;
 import org.apache.opennlp.grpc.search.SearchIndexRegistry;
 import org.apache.opennlp.grpc.search.SearchProviderCatalog;
 import org.apache.opennlp.grpc.search.WorkspaceCheckpointStore;
+import org.apache.opennlp.grpc.training.CatalogModelStore;
 import org.apache.opennlp.grpc.training.DefaultStreamingTrainingPipeline;
 import org.apache.opennlp.grpc.training.OpenNlpModelTrainingServiceImpl;
 import org.apache.opennlp.grpc.training.StaticModelArtifactStore;
@@ -239,6 +240,8 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
     final StaticModelArtifactStore staticModelArtifacts =
         StaticModelArtifactStore.fromConfiguration(configuration, vocabularyArtifacts,
             StaticModelTrainer.distiller(), modelBundleCache.getTrainedModelRegistry());
+    final CatalogModelStore catalogModels = CatalogModelStore.fromConfiguration(
+        configuration, staticModelArtifacts, modelBundleCache.getTrainedModelRegistry());
     staticModelArtifacts.setPublicationListener(collectionRegistry::notifyModelPublished);
     final ProfileRegistry profileRegistry = modelBundleCache.createProfileRegistry();
     final BasicDocumentAnalyzer documentAnalyzer =
@@ -285,7 +288,8 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
             new OpenNlpVocabularyServiceImpl(dictionaryFormats, vocabularyArtifacts),
             new EagerHeadersInterceptor()))
         .addService(ServerInterceptors.intercept(
-            new OpenNlpModelTrainingServiceImpl(staticModelArtifacts, streamingTraining),
+            new OpenNlpModelTrainingServiceImpl(
+                staticModelArtifacts, streamingTraining, catalogModels),
             new EagerHeadersInterceptor()))
         .addService(healthStatusManager.getHealthService())
         .maxInboundMessageSize(maxInboundMessageSize);

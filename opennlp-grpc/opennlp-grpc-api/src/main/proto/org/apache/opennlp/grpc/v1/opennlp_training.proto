@@ -58,6 +58,107 @@ service OpenNlpModelTrainingService {
   // model and index, while progress and the terminal descriptors stream back.
   rpc StreamingTraining(stream StreamingTrainingRequest)
       returns (stream StreamingTrainingUpdate);
+
+  // Lists the immutable, checksum-pinned models this build knows how to
+  // install. Model bytes and licenses are never bundled with the service.
+  rpc ListModelCatalog(ListModelCatalogRequest) returns (ListModelCatalogResponse);
+
+  // Lists models downloaded into this server node's configured catalog root.
+  rpc ListInstalledModels(ListInstalledModelsRequest)
+      returns (ListInstalledModelsResponse);
+
+  // Downloads and verifies one catalog model after the client explicitly
+  // acknowledges its pinned revision and license identity.
+  rpc InstallModel(InstallModelRequest) returns (stream InstallModelUpdate);
+}
+
+// How an installed catalog model participates in the service.
+enum ModelArtifactRole {
+  MODEL_ARTIFACT_ROLE_UNSPECIFIED = 0;
+  // ONNX teacher used by Model2Vec-style static model distillation.
+  MODEL_ARTIFACT_ROLE_DISTILLATION_TEACHER = 1;
+  // Ready-to-serve static embedding table.
+  MODEL_ARTIFACT_ROLE_STATIC_EMBEDDING = 2;
+}
+
+// One immutable entry in the server-owned model catalog. Source_uri is a
+// human-facing model page, not a caller-controlled download location.
+message ModelCatalogDescriptor {
+  string catalog_id = 1;
+  string display_name = 2;
+  ModelArtifactRole role = 3;
+  // Teacher id for a teacher, embedding model id for a static table.
+  string model_id = 4;
+  string source_uri = 5;
+  string revision = 6;
+  string license_name = 7;
+  string license_uri = 8;
+  uint64 byte_size = 9;
+  // Zero for a teacher whose output dimension is selected at distillation.
+  uint32 dimension = 10;
+  repeated string languages = 11;
+  string description = 12;
+}
+
+message ListModelCatalogRequest {}
+
+message ListModelCatalogResponse {
+  repeated ModelCatalogDescriptor models = 1;
+  bool installs_enabled = 2;
+}
+
+// One catalog model installed and verified on this server node.
+message InstalledModelDescriptor {
+  ModelCatalogDescriptor catalog = 1;
+  // SHA-256 over the ordered file names, sizes, and pinned file digests.
+  string artifact_hash = 2;
+  uint64 byte_size = 3;
+  google.protobuf.Timestamp installed_at = 4;
+  // True when the teacher or embedding route is active in this process.
+  bool loaded = 5;
+}
+
+message ListInstalledModelsRequest {}
+
+message ListInstalledModelsResponse {
+  repeated InstalledModelDescriptor models = 1;
+  bool installs_enabled = 2;
+}
+
+// Consent and immutable catalog identity for one installation request.
+message InstallModelRequest {
+  string catalog_id = 1;
+  string revision = 2;
+  string license_name = 3;
+  bool license_acknowledged = 4;
+}
+
+enum InstallModelStage {
+  INSTALL_MODEL_STAGE_UNSPECIFIED = 0;
+  INSTALL_MODEL_STAGE_VALIDATING = 1;
+  INSTALL_MODEL_STAGE_DOWNLOADING = 2;
+  INSTALL_MODEL_STAGE_VERIFYING = 3;
+  INSTALL_MODEL_STAGE_LOADING = 4;
+  INSTALL_MODEL_STAGE_PUBLISHED = 5;
+}
+
+// Bounded progress at catalog-file granularity. Byte counts advance only after
+// a complete file has passed its size and checksum checks.
+message InstallModelProgress {
+  InstallModelStage stage = 1;
+  string current_file = 2;
+  uint32 completed_files = 3;
+  uint32 total_files = 4;
+  uint64 completed_bytes = 5;
+  uint64 total_bytes = 6;
+  string message = 7;
+}
+
+message InstallModelUpdate {
+  oneof update {
+    InstallModelProgress progress = 1;
+    InstalledModelDescriptor model = 2;
+  }
 }
 
 // One frame in a bidirectional training session. Start must appear exactly once

@@ -44,6 +44,8 @@ import org.apache.opennlp.grpc.v1.SetIndexAliasRequest;
 import org.apache.opennlp.grpc.v1.DeleteStaticModelRequest;
 import org.apache.opennlp.grpc.v1.DownloadVocabularyRequest;
 import org.apache.opennlp.grpc.v1.ImportDictionaryUpload;
+import org.apache.opennlp.grpc.v1.InstallModelRequest;
+import org.apache.opennlp.grpc.v1.InstallModelUpdate;
 import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
 import org.apache.opennlp.grpc.v1.LearnVocabularyUpload;
 import org.apache.opennlp.grpc.v1.SearchIndexRequest;
@@ -170,6 +172,10 @@ final class GrpcJsonApi {
             ? downloadVocabulary(body) : methodNotAllowed();
         case "/api/v1/teachers" -> method.equals("GET")
             ? protobufJson(trainingRpc.listTeachers()) : methodNotAllowed();
+        case "/api/v1/model-catalog" -> method.equals("GET")
+            ? protobufJson(trainingRpc.listModelCatalog()) : methodNotAllowed();
+        case "/api/v1/installed-models" -> method.equals("GET")
+            ? protobufJson(trainingRpc.listInstalledModels()) : methodNotAllowed();
         case "/api/v1/static-models" -> method.equals("GET")
             ? protobufJson(trainingRpc.listStaticModels()) : methodNotAllowed();
         case "/api/v1/delete-static-model" -> method.equals("POST")
@@ -517,6 +523,51 @@ final class GrpcJsonApi {
     try {
       final java.util.Iterator<TrainStaticModelUpdate> updates =
           trainingRpc.trainStaticModel(request.build());
+      while (updates.hasNext()) {
+        sink.update(printer.print(updates.next()));
+        streamed = true;
+      }
+      return null;
+    } catch (StatusRuntimeException exception) {
+      final Status status = exception.getStatus();
+      String message = status.getDescription();
+      if (message == null || message.isBlank()) {
+        message = status.getCode().name();
+      }
+      if (!streamed) {
+        return error(GrpcHttpStatusMapper.toHttpStatus(status.getCode()),
+            status.getCode(), message);
+      }
+      sink.update(errorJson(status.getCode(), message));
+      return null;
+    } catch (InvalidProtocolBufferException exception) {
+      final String message = "Could not encode the service response";
+      if (!streamed) {
+        return error(500, Status.Code.INTERNAL, message);
+      }
+      sink.update(errorJson(Status.Code.INTERNAL, message));
+      return null;
+    }
+  }
+
+  /**
+   * Installs one pinned catalog model and streams file-level progress to the browser.
+   *
+   * @param body Protobuf JSON of one InstallModelRequest.
+   * @param sink Receives one protobuf JSON line per update.
+   * @return A buffered failure, or {@code null} after streaming.
+   * @throws IOException If writing to the sink fails.
+   */
+  WebHttpResponse installModel(byte[] body, JsonLineSink sink) throws IOException {
+    final InstallModelRequest.Builder request = InstallModelRequest.newBuilder();
+    final WebHttpResponse parseFailure = merge(body, request);
+    if (parseFailure != null) {
+      return parseFailure;
+    }
+    boolean streamed = false;
+    try {
+      final java.util.Iterator<InstallModelUpdate> updates =
+          trainingRpc.installModel(request.build());
       while (updates.hasNext()) {
         sink.update(printer.print(updates.next()));
         streamed = true;

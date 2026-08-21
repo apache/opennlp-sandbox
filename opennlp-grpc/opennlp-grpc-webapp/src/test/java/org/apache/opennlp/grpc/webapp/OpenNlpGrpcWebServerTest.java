@@ -153,6 +153,17 @@ class OpenNlpGrpcWebServerTest {
       assertEquals(2, lines.length);
       assertTrue(lines[0].contains("\"progress\":\"distilling\""));
       assertTrue(lines[1].contains("\"artifactId\":\"static-model-1\""));
+
+      HttpRequest install = request(server, "/api/v1/install-model")
+          .header("Content-Type", "application/json")
+          .POST(HttpRequest.BodyPublishers.ofString(
+              "{\"catalogId\":\"potion-base-8m\",\"revision\":\"revision-1\","
+                  + "\"licenseName\":\"MIT\",\"licenseAcknowledged\":true}"))
+          .build();
+      HttpResponse<String> installed = client.send(install, HttpResponse.BodyHandlers.ofString());
+      assertEquals(200, installed.statusCode());
+      assertTrue(installed.body().contains("INSTALL_MODEL_STAGE_DOWNLOADING"));
+      assertTrue(installed.body().contains("\"catalogId\":\"potion-base-8m\""));
     }
   }
 
@@ -434,6 +445,32 @@ class OpenNlpGrpcWebServerTest {
     @Override
     public org.apache.opennlp.grpc.v1.ListTeachersResponse listTeachers() {
       return org.apache.opennlp.grpc.v1.ListTeachersResponse.getDefaultInstance();
+    }
+
+    @Override
+    public org.apache.opennlp.grpc.v1.ListModelCatalogResponse listModelCatalog() {
+      return org.apache.opennlp.grpc.v1.ListModelCatalogResponse.getDefaultInstance();
+    }
+
+    @Override
+    public org.apache.opennlp.grpc.v1.ListInstalledModelsResponse listInstalledModels() {
+      return org.apache.opennlp.grpc.v1.ListInstalledModelsResponse.getDefaultInstance();
+    }
+
+    @Override
+    public java.util.Iterator<org.apache.opennlp.grpc.v1.InstallModelUpdate> installModel(
+        org.apache.opennlp.grpc.v1.InstallModelRequest request) {
+      return List.of(
+          org.apache.opennlp.grpc.v1.InstallModelUpdate.newBuilder()
+              .setProgress(org.apache.opennlp.grpc.v1.InstallModelProgress.newBuilder()
+                  .setStage(org.apache.opennlp.grpc.v1.InstallModelStage
+                      .INSTALL_MODEL_STAGE_DOWNLOADING))
+              .build(),
+          org.apache.opennlp.grpc.v1.InstallModelUpdate.newBuilder()
+              .setModel(org.apache.opennlp.grpc.v1.InstalledModelDescriptor.newBuilder()
+                  .setCatalog(org.apache.opennlp.grpc.v1.ModelCatalogDescriptor.newBuilder()
+                      .setCatalogId("potion-base-8m")))
+              .build()).iterator();
     }
 
     @Override

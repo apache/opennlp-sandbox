@@ -22,6 +22,10 @@ import java.util.Iterator;
 
 import org.apache.opennlp.grpc.v1.DeleteStaticModelRequest;
 import org.apache.opennlp.grpc.v1.DeleteStaticModelResponse;
+import org.apache.opennlp.grpc.v1.InstallModelRequest;
+import org.apache.opennlp.grpc.v1.InstallModelUpdate;
+import org.apache.opennlp.grpc.v1.ListInstalledModelsResponse;
+import org.apache.opennlp.grpc.v1.ListModelCatalogResponse;
 import org.apache.opennlp.grpc.v1.ListStaticModelsResponse;
 import org.apache.opennlp.grpc.v1.ListTeachersResponse;
 import org.apache.opennlp.grpc.v1.TrainStaticModelRequest;
@@ -31,6 +35,28 @@ interface TrainingRpc {
 
   /** @return The configured teachers and the effective training limits. */
   ListTeachersResponse listTeachers();
+
+  /**
+   * Lists the standard model catalog.
+   *
+   * @return The immutable catalog and node installation availability.
+   */
+  ListModelCatalogResponse listModelCatalog();
+
+  /**
+   * Lists installed models.
+   *
+   * @return Models installed and activated on this server node.
+   */
+  ListInstalledModelsResponse listInstalledModels();
+
+  /**
+   * Installs one acknowledged catalog model.
+   *
+   * @param request Pinned catalog identity and license acknowledgement.
+   * @return Progress and the terminal installed-model descriptor.
+   */
+  Iterator<InstallModelUpdate> installModel(InstallModelRequest request);
 
   /**
    * Starts one distillation and returns its blocking update stream.

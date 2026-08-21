@@ -23,6 +23,10 @@ import java.util.List;
 
 import org.apache.opennlp.grpc.v1.DeleteStaticModelRequest;
 import org.apache.opennlp.grpc.v1.DeleteStaticModelResponse;
+import org.apache.opennlp.grpc.v1.InstallModelRequest;
+import org.apache.opennlp.grpc.v1.InstallModelUpdate;
+import org.apache.opennlp.grpc.v1.ListInstalledModelsResponse;
+import org.apache.opennlp.grpc.v1.ListModelCatalogResponse;
 import org.apache.opennlp.grpc.v1.ListStaticModelsResponse;
 import org.apache.opennlp.grpc.v1.ListTeachersResponse;
 import org.apache.opennlp.grpc.v1.TrainStaticModelRequest;
@@ -34,6 +38,21 @@ final class EmptyTrainingRpc implements TrainingRpc {
   @Override
   public ListTeachersResponse listTeachers() {
     return ListTeachersResponse.getDefaultInstance();
+  }
+
+  @Override
+  public ListModelCatalogResponse listModelCatalog() {
+    return ListModelCatalogResponse.getDefaultInstance();
+  }
+
+  @Override
+  public ListInstalledModelsResponse listInstalledModels() {
+    return ListInstalledModelsResponse.getDefaultInstance();
+  }
+
+  @Override
+  public Iterator<InstallModelUpdate> installModel(InstallModelRequest request) {
+    return List.<InstallModelUpdate>of().iterator();
   }
 
   @Override

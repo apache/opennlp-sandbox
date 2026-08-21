@@ -28,6 +28,12 @@ import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.opennlp.grpc.v1.DeleteStaticModelRequest;
 import org.apache.opennlp.grpc.v1.DeleteStaticModelResponse;
+import org.apache.opennlp.grpc.v1.InstallModelRequest;
+import org.apache.opennlp.grpc.v1.InstallModelUpdate;
+import org.apache.opennlp.grpc.v1.ListInstalledModelsRequest;
+import org.apache.opennlp.grpc.v1.ListInstalledModelsResponse;
+import org.apache.opennlp.grpc.v1.ListModelCatalogRequest;
+import org.apache.opennlp.grpc.v1.ListModelCatalogResponse;
 import org.apache.opennlp.grpc.v1.ListStaticModelsRequest;
 import org.apache.opennlp.grpc.v1.ListStaticModelsResponse;
 import org.apache.opennlp.grpc.v1.ListTeachersRequest;
@@ -50,6 +56,7 @@ public final class OpenNlpModelTrainingServiceImpl
       LoggerFactory.getLogger(OpenNlpModelTrainingServiceImpl.class);
 
   private final StaticModelArtifactStore store;
+  private final CatalogModelStore catalogStore;
   private final Semaphore trainingPermits;
   private final StreamingTrainingPipeline streamingPipeline;
 
@@ -60,7 +67,22 @@ public final class OpenNlpModelTrainingServiceImpl
    * @throws IllegalArgumentException If {@code store} is {@code null}.
    */
   public OpenNlpModelTrainingServiceImpl(StaticModelArtifactStore store) {
-    this(store, (StreamingTrainingPipeline) null);
+    this(store, (StreamingTrainingPipeline) null, null);
+  }
+
+  /**
+   * Creates the service with node-local catalog installation enabled.
+   *
+   * @param store Bounded model store, possibly write-disabled.
+   * @param catalogStore Node-local catalog store.
+   * @throws IllegalArgumentException If {@code store} or {@code catalogStore} is {@code null}.
+   */
+  public OpenNlpModelTrainingServiceImpl(
+      StaticModelArtifactStore store, CatalogModelStore catalogStore) {
+    this(store, null, catalogStore);
+    if (catalogStore == null) {
+      throw new IllegalArgumentException("catalogStore must not be null");
+    }
   }
 
   /**
@@ -76,16 +98,122 @@ public final class OpenNlpModelTrainingServiceImpl
     this(store, (StreamingTrainingPipeline) streamingPipeline);
   }
 
+  /**
+   * Creates the complete training service with streaming orchestration and model catalog.
+   *
+   * @param store Bounded model store, possibly write-disabled.
+   * @param streamingPipeline Production streaming pipeline.
+   * @param catalogStore Node-local catalog store.
+   * @throws IllegalArgumentException If {@code store} or {@code catalogStore} is {@code null}.
+   */
+  public OpenNlpModelTrainingServiceImpl(
+      StaticModelArtifactStore store,
+      DefaultStreamingTrainingPipeline streamingPipeline,
+      CatalogModelStore catalogStore) {
+    this(store, (StreamingTrainingPipeline) streamingPipeline, catalogStore);
+    if (catalogStore == null) {
+      throw new IllegalArgumentException("catalogStore must not be null");
+    }
+  }
+
   /** Package-private seam for deterministic transport and admission tests. */
   OpenNlpModelTrainingServiceImpl(
       StaticModelArtifactStore store,
       StreamingTrainingPipeline streamingPipeline) {
+    this(store, streamingPipeline, null);
+  }
+
+  /** Package-private complete constructor for deterministic transport tests. */
+  OpenNlpModelTrainingServiceImpl(
+      StaticModelArtifactStore store,
+      StreamingTrainingPipeline streamingPipeline,
+      CatalogModelStore catalogStore) {
     if (store == null) {
       throw new IllegalArgumentException("store must not be null");
     }
     this.store = store;
+    this.catalogStore = catalogStore;
     this.streamingPipeline = streamingPipeline;
     this.trainingPermits = new Semaphore(store.maxConcurrentTrainings());
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void listModelCatalog(
+      ListModelCatalogRequest request,
+      StreamObserver<ListModelCatalogResponse> responseObserver) {
+    final ListModelCatalogResponse.Builder response = ListModelCatalogResponse.newBuilder();
+    if (catalogStore != null) {
+      response.addAllModels(catalogStore.catalogModels())
+          .setInstallsEnabled(catalogStore.installsEnabled());
+    }
+    responseObserver.onNext(response.build());
+    responseObserver.onCompleted();
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void listInstalledModels(
+      ListInstalledModelsRequest request,
+      StreamObserver<ListInstalledModelsResponse> responseObserver) {
+    final ListInstalledModelsResponse.Builder response =
+        ListInstalledModelsResponse.newBuilder();
+    if (catalogStore != null) {
+      response.addAllModels(catalogStore.installedModels())
+          .setInstallsEnabled(catalogStore.installsEnabled());
+    }
+    responseObserver.onNext(response.build());
+    responseObserver.onCompleted();
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void installModel(
+      InstallModelRequest request,
+      StreamObserver<InstallModelUpdate> responseObserver) {
+    if (catalogStore == null || !catalogStore.installsEnabled()) {
+      responseObserver.onError(Status.FAILED_PRECONDITION.withDescription(
+          CatalogModelStore.CATALOG_ROOT_KEY
+              + " is not configured; catalog installation is disabled")
+          .asRuntimeException());
+      return;
+    }
+    final AtomicBoolean cancelled = new AtomicBoolean();
+    final ServerCallStreamObserver<InstallModelUpdate> serverCall =
+        responseObserver instanceof ServerCallStreamObserver<InstallModelUpdate> call
+            ? call : null;
+    if (serverCall != null) {
+      serverCall.setOnCancelHandler(() -> cancelled.set(true));
+      if (serverCall.isCancelled()) {
+        return;
+      }
+    }
+    try {
+      final var installed = catalogStore.install(request, update -> {
+        requireActive(serverCall, cancelled);
+        responseObserver.onNext(InstallModelUpdate.newBuilder().setProgress(update).build());
+        requireActive(serverCall, cancelled);
+      }, () -> cancelled.get() || (serverCall != null && serverCall.isCancelled()));
+      requireActive(serverCall, cancelled);
+      responseObserver.onNext(InstallModelUpdate.newBuilder().setModel(installed).build());
+      requireActive(serverCall, cancelled);
+      responseObserver.onCompleted();
+    } catch (CancellationException e) {
+      logger.info("InstallModel cancelled by the client");
+    } catch (ConcurrentModelInstallException e) {
+      responseObserver.onError(Status.RESOURCE_EXHAUSTED.withDescription(e.getMessage())
+          .asRuntimeException());
+    } catch (IllegalArgumentException e) {
+      responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(e.getMessage())
+          .asRuntimeException());
+    } catch (IllegalStateException e) {
+      responseObserver.onError(Status.FAILED_PRECONDITION.withDescription(e.getMessage())
+          .asRuntimeException());
+    } catch (IOException e) {
+      logger.error("Catalog model installation failed", e);
+      responseObserver.onError(Status.INTERNAL.withDescription("Catalog model installation failed")
+          .withCause(e).asRuntimeException());
+    }
   }
 
   /** {@inheritDoc} */
@@ -184,7 +312,7 @@ public final class OpenNlpModelTrainingServiceImpl
     } catch (IllegalStateException e) {
       responseObserver.onError(Status.FAILED_PRECONDITION.withDescription(e.getMessage())
           .asRuntimeException());
-    } catch (IOException | RuntimeException e) {
+    } catch (IOException e) {
       logger.error("TrainStaticModel failed", e);
       responseObserver.onError(Status.INTERNAL.withDescription("TrainStaticModel failed")
           .asRuntimeException());
@@ -193,8 +321,8 @@ public final class OpenNlpModelTrainingServiceImpl
     }
   }
 
-  private static void requireActive(
-      ServerCallStreamObserver<TrainStaticModelUpdate> serverCall,
+  private static <T> void requireActive(
+      ServerCallStreamObserver<T> serverCall,
       AtomicBoolean cancelled) {
     if (cancelled.get() || (serverCall != null && serverCall.isCancelled())) {
       throw new CancellationException("TrainStaticModel call is cancelled");
@@ -231,7 +359,7 @@ public final class OpenNlpModelTrainingServiceImpl
     } catch (IllegalStateException e) {
       responseObserver.onError(Status.FAILED_PRECONDITION.withDescription(e.getMessage())
           .asRuntimeException());
-    } catch (IOException | RuntimeException e) {
+    } catch (IOException e) {
       logger.error("DeleteStaticModel failed", e);
       responseObserver.onError(Status.INTERNAL.withDescription("DeleteStaticModel failed")
           .asRuntimeException());

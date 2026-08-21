@@ -18,6 +18,7 @@
  */
 package org.apache.opennlp.grpc.training;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +33,12 @@ import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.opennlp.grpc.v1.DeleteStaticModelRequest;
 import org.apache.opennlp.grpc.v1.DeleteStaticModelResponse;
+import org.apache.opennlp.grpc.v1.InstallModelRequest;
+import org.apache.opennlp.grpc.v1.InstallModelUpdate;
+import org.apache.opennlp.grpc.v1.ListInstalledModelsRequest;
+import org.apache.opennlp.grpc.v1.ListInstalledModelsResponse;
+import org.apache.opennlp.grpc.v1.ListModelCatalogRequest;
+import org.apache.opennlp.grpc.v1.ListModelCatalogResponse;
 import org.apache.opennlp.grpc.v1.ListStaticModelsRequest;
 import org.apache.opennlp.grpc.v1.ListStaticModelsResponse;
 import org.apache.opennlp.grpc.v1.ListTeachersRequest;
@@ -51,12 +58,128 @@ import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OpenNlpModelTrainingServiceImplTest {
 
   @TempDir
   Path temporaryDirectory;
+
+  @Test
+  void rejectsNullCatalogStoreAtTheCatalogConstructorBoundary() throws Exception {
+    final TrainedModelEmbeddingProvider registry =
+        new TrainedModelEmbeddingProvider(TrainingTestSupport.baseProvider());
+    final StaticModelArtifactStore models = modelStore(Map.of(), registry);
+
+    final IllegalArgumentException twoArgumentFailure = assertThrows(
+        IllegalArgumentException.class,
+        () -> new OpenNlpModelTrainingServiceImpl(models, (CatalogModelStore) null));
+    final IllegalArgumentException completeFailure = assertThrows(
+        IllegalArgumentException.class,
+        () -> new OpenNlpModelTrainingServiceImpl(
+            models, (DefaultStreamingTrainingPipeline) null, null));
+
+    assertEquals("catalogStore must not be null", twoArgumentFailure.getMessage());
+    assertEquals("catalogStore must not be null", completeFailure.getMessage());
+  }
+
+  @Test
+  void listsTheStandardCatalogAndNodeLocalInstallState() throws Exception {
+    final TrainedModelEmbeddingProvider registry =
+        new TrainedModelEmbeddingProvider(TrainingTestSupport.baseProvider());
+    final StaticModelArtifactStore models = modelStore(Map.of(), registry);
+    final CatalogModelStore catalog = CatalogModelStore.fromConfiguration(
+        Map.of(), models, registry);
+    final OpenNlpModelTrainingServiceImpl service =
+        new OpenNlpModelTrainingServiceImpl(models, catalog);
+    final TrainingTestSupport.CapturingObserver<ListModelCatalogResponse> listed =
+        new TrainingTestSupport.CapturingObserver<>();
+    final TrainingTestSupport.CapturingObserver<ListInstalledModelsResponse> installed =
+        new TrainingTestSupport.CapturingObserver<>();
+
+    service.listModelCatalog(ListModelCatalogRequest.getDefaultInstance(), listed);
+    service.listInstalledModels(ListInstalledModelsRequest.getDefaultInstance(), installed);
+
+    assertEquals(4, listed.values.getFirst().getModelsCount());
+    assertFalse(listed.values.getFirst().getInstallsEnabled());
+    assertEquals(0, installed.values.getFirst().getModelsCount());
+    assertFalse(installed.values.getFirst().getInstallsEnabled());
+  }
+
+  @Test
+  void mapsDisabledCatalogInstallToFailedPrecondition() throws Exception {
+    final TrainedModelEmbeddingProvider registry =
+        new TrainedModelEmbeddingProvider(TrainingTestSupport.baseProvider());
+    final StaticModelArtifactStore models = modelStore(Map.of(), registry);
+    final CatalogModelStore catalog = CatalogModelStore.fromConfiguration(
+        Map.of(), models, registry);
+    final OpenNlpModelTrainingServiceImpl service =
+        new OpenNlpModelTrainingServiceImpl(models, catalog);
+    final var descriptor = catalog.catalogModels().getFirst();
+
+    final TrainingTestSupport.CapturingObserver<InstallModelUpdate> noConsent =
+        new TrainingTestSupport.CapturingObserver<>();
+    service.installModel(InstallModelRequest.newBuilder()
+        .setCatalogId(descriptor.getCatalogId())
+        .setRevision(descriptor.getRevision())
+        .setLicenseName(descriptor.getLicenseName())
+        .build(), noConsent);
+    assertEquals(Status.Code.FAILED_PRECONDITION,
+        ((StatusRuntimeException) noConsent.error).getStatus().getCode());
+  }
+
+  @Test
+  void mapsMissingCatalogConsentToInvalidArgumentBeforeDownloading() throws Exception {
+    final TrainedModelEmbeddingProvider registry =
+        new TrainedModelEmbeddingProvider(TrainingTestSupport.baseProvider());
+    final StaticModelArtifactStore models = modelStore(Map.of(), registry);
+    final CatalogModelStore catalog = CatalogModelStore.fromConfiguration(
+        Map.of(CatalogModelStore.CATALOG_ROOT_KEY, temporaryDirectory.toString()),
+        models, registry);
+    final OpenNlpModelTrainingServiceImpl service =
+        new OpenNlpModelTrainingServiceImpl(models, catalog);
+    final var descriptor = catalog.catalogModels().getFirst();
+    final TrainingTestSupport.CapturingObserver<InstallModelUpdate> response =
+        new TrainingTestSupport.CapturingObserver<>();
+
+    service.installModel(InstallModelRequest.newBuilder()
+        .setCatalogId(descriptor.getCatalogId())
+        .setRevision(descriptor.getRevision())
+        .setLicenseName(descriptor.getLicenseName())
+        .build(), response);
+
+    assertEquals(Status.Code.INVALID_ARGUMENT,
+        ((StatusRuntimeException) response.error).getStatus().getCode());
+  }
+
+  @Test
+  void doesNotExposeCatalogTransportDetailsToClients() throws Exception {
+    final TrainedModelEmbeddingProvider registry =
+        new TrainedModelEmbeddingProvider(TrainingTestSupport.baseProvider());
+    final StaticModelArtifactStore models = modelStore(Map.of(), registry);
+    final CatalogModel catalogModel = StandardModelCatalog.models().getFirst();
+    final CatalogModelStore catalog = new CatalogModelStore(
+        temporaryDirectory.resolve("catalog"), List.of(catalogModel), models, registry,
+        (file, target) -> {
+          throw new IOException("secret transport detail in " + target);
+        });
+    final OpenNlpModelTrainingServiceImpl service =
+        new OpenNlpModelTrainingServiceImpl(models, catalog);
+    final TrainingTestSupport.CapturingObserver<InstallModelUpdate> response =
+        new TrainingTestSupport.CapturingObserver<>();
+
+    service.installModel(InstallModelRequest.newBuilder()
+        .setCatalogId(catalogModel.descriptor().getCatalogId())
+        .setRevision(catalogModel.descriptor().getRevision())
+        .setLicenseName(catalogModel.descriptor().getLicenseName())
+        .setLicenseAcknowledged(true)
+        .build(), response);
+
+    final StatusRuntimeException failure = (StatusRuntimeException) response.error;
+    assertEquals(Status.Code.INTERNAL, failure.getStatus().getCode());
+    assertEquals("Catalog model installation failed", failure.getStatus().getDescription());
+  }
 
   @Test
   void listsTeachersEvenWhenWritesAreDisabled() throws Exception {
@@ -245,6 +368,15 @@ class OpenNlpModelTrainingServiceImplTest {
         new TrainingTestSupport.RecordingTrainer(),
         registry);
     return new Fixture(new OpenNlpModelTrainingServiceImpl(store), registry, vocabularyId);
+  }
+
+  private StaticModelArtifactStore modelStore(
+      Map<String, String> configuration, TrainedModelEmbeddingProvider registry)
+      throws Exception {
+    final DictionaryFormatRegistry formats = DictionaryFormatRegistry.discover();
+    return StaticModelArtifactStore.fromConfiguration(configuration,
+        VocabularyArtifactStore.fromConfiguration(configuration, formats),
+        new TrainingTestSupport.RecordingTrainer(), registry);
   }
 
   private record Fixture(

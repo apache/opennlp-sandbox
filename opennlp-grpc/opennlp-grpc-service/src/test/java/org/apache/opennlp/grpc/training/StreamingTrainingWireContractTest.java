@@ -35,7 +35,7 @@ class StreamingTrainingWireContractTest {
     final var service = OpenNlpTrainingProto.getDescriptor()
         .findServiceByName("OpenNlpModelTrainingService");
     assertNotNull(service);
-    assertEquals(5, service.getMethods().size());
+    assertEquals(8, service.getMethods().size());
     final MethodDescriptor method = service.findMethodByName("StreamingTraining");
     assertNotNull(method);
     assertTrue(method.isClientStreaming());
