@@ -445,6 +445,11 @@ enum Normalizer {
   NORMALIZER_EMOTICON_TO_EMOJI = 15;
   // Fold Unicode confusables to their skeleton form.
   NORMALIZER_CONFUSABLE_FOLD = 16;
+  // Collapse whitespace, unwrapping hard-wrapped lines: a run with at most one
+  // line break becomes a space, a run with two or more becomes one newline, and
+  // CRLF counts as one break. Fixed-column plain text joins into whole
+  // paragraphs while blank-line paragraph breaks survive.
+  NORMALIZER_WHITESPACE_PRESERVE_PARAGRAPHS = 17;
 }
 
 // OpenNLP-owned inference engines whose identifiers are stable parts of this API.
