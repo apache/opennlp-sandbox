@@ -74,6 +74,8 @@ final class Normalizers {
       case NORMALIZER_WHITESPACE -> builder.whitespace();
       case NORMALIZER_WHITESPACE_PRESERVE_LINE_BREAKS ->
           builder.whitespacePreservingLineBreaks();
+      case NORMALIZER_WHITESPACE_PRESERVE_PARAGRAPHS ->
+          builder.whitespacePreservingParagraphs();
       case NORMALIZER_QUOTES -> builder.quotes();
       case NORMALIZER_DASHES -> builder.dashes();
       case NORMALIZER_DIGITS -> builder.digits();

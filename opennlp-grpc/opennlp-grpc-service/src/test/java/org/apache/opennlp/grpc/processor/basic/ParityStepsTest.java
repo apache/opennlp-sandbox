@@ -111,6 +111,31 @@ class ParityStepsTest {
   }
 
   @Test
+  void normalizeUnwrapsHardWrappedLinesWhilePreservingParagraphs() {
+    // A single line break (or CRLF) is layout and unwraps to a space; the blank line
+    // separating paragraphs survives as one newline, and the alignment covers both texts.
+    final String rawText = "hard\nwrapped line.\r\n\r\nnext paragraph";
+    final OpenNlpDocument.Builder document = OpenNlpDocument.newBuilder().setRawText(rawText);
+    final NormalizationSpec spec = NormalizationSpec.newBuilder()
+        .addNormalizers(Normalizer.NORMALIZER_WHITESPACE_PRESERVE_PARAGRAPHS)
+        .build();
+    final List<ProcessingDiagnostic> diagnostics = new ArrayList<>();
+    ClassicStepRunner.normalize(rawText, spec, document, diagnostics);
+    assertEquals("hard wrapped line.\nnext paragraph",
+        document.getNormalization().getNormalizedText());
+    assertEquals(List.of("NORMALIZER_WHITESPACE_PRESERVE_PARAGRAPHS"),
+        document.getNormalization().getAppliedNormalizersList());
+    int original = 0;
+    int normalized = 0;
+    for (final AlignmentRun run : document.getNormalization().getAlignmentList()) {
+      original += run.getOriginalUnits();
+      normalized += run.getNormalizedUnits();
+    }
+    assertEquals(rawText.length(), original);
+    assertEquals(document.getNormalization().getNormalizedText().length(), normalized);
+  }
+
+  @Test
   void normalizeWithoutAlignmentWhenOpaqueNormalizerPermitted() {
     final OpenNlpDocument.Builder document = OpenNlpDocument.newBuilder().setRawText("Cafe" + cp(0x0301) + "");
     final NormalizationSpec spec = NormalizationSpec.newBuilder()

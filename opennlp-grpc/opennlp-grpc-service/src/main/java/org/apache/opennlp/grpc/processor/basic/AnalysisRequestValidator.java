@@ -417,6 +417,29 @@ final class AnalysisRequestValidator {
   private static final String MODEL_TOKENIZER_ENGINE = "model";
 
   /** Validates normalize request. */
+  /**
+   * Rejects a chain selecting more than one whitespace-collapsing normalizer, since each
+   * variant defines the complete whitespace treatment.
+   *
+   * @param normalizers Recognized normalizers in canonical order.
+   * @throws AnalysisException If two whitespace variants are combined.
+   */
+  private void requireOneWhitespaceVariant(List<Normalizer> normalizers) {
+    int variants = 0;
+    for (final Normalizer normalizer : normalizers) {
+      if (normalizer == Normalizer.NORMALIZER_WHITESPACE
+          || normalizer == Normalizer.NORMALIZER_WHITESPACE_PRESERVE_LINE_BREAKS
+          || normalizer == Normalizer.NORMALIZER_WHITESPACE_PRESERVE_PARAGRAPHS) {
+        variants++;
+      }
+    }
+    if (variants > 1) {
+      throw AnalysisException.invalidArgument(
+          "WHITESPACE, WHITESPACE_PRESERVE_LINE_BREAKS, and WHITESPACE_PRESERVE_PARAGRAPHS "
+              + "are mutually exclusive normalizers");
+    }
+  }
+
   private void validateNormalizeRequest(AnalysisProfile profile) {
     final boolean requested =
         PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_NORMALIZE);
@@ -437,11 +460,7 @@ final class AnalysisRequestValidator {
       throw AnalysisException.invalidArgument(
           "AnalysisProfile.normalization.normalizers contains no recognized normalizer");
     }
-    if (normalizers.contains(Normalizer.NORMALIZER_WHITESPACE)
-        && normalizers.contains(Normalizer.NORMALIZER_WHITESPACE_PRESERVE_LINE_BREAKS)) {
-      throw AnalysisException.invalidArgument(
-          "WHITESPACE and WHITESPACE_PRESERVE_LINE_BREAKS are mutually exclusive normalizers");
-    }
+    requireOneWhitespaceVariant(normalizers);
     final boolean requireAlignment = !spec.hasRequireAlignment() || spec.getRequireAlignment();
     if (requireAlignment && !Normalizers.allOffsetAware(normalizers)) {
       throw AnalysisException.invalidArgument(
@@ -674,12 +693,7 @@ final class AnalysisRequestValidator {
         throw AnalysisException.invalidArgument(
             "term layer '" + spec.getQualifier() + "' contains no recognized normalizer");
       }
-      if (normalizers.contains(Normalizer.NORMALIZER_WHITESPACE)
-          && normalizers.contains(
-              Normalizer.NORMALIZER_WHITESPACE_PRESERVE_LINE_BREAKS)) {
-        throw AnalysisException.invalidArgument(
-            "WHITESPACE and WHITESPACE_PRESERVE_LINE_BREAKS are mutually exclusive normalizers");
-      }
+      requireOneWhitespaceVariant(normalizers);
       if (normalizers.contains(Normalizer.NORMALIZER_CASE_FOLD)
           && normalizers.contains(Normalizer.NORMALIZER_FULL_CASE_FOLD)) {
         throw AnalysisException.invalidArgument(

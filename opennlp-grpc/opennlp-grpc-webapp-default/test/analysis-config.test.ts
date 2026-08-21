@@ -298,6 +298,16 @@ describe("x-ray normalization merge", () => {
     expect(merged.normalization?.requireAlignment).toBe(true);
   });
 
+  it("keeps a requested paragraph-preserving whitespace variant", () => {
+    const merged = withXrayNormalization({
+      steps: ["PIPELINE_STEP_NORMALIZE"],
+      normalization: { normalizers: ["NORMALIZER_WHITESPACE_PRESERVE_PARAGRAPHS"] },
+    });
+    const normalizers = merged.normalization?.normalizers ?? [];
+    expect(normalizers).toContain("NORMALIZER_WHITESPACE_PRESERVE_PARAGRAPHS");
+    expect(normalizers).not.toContain("NORMALIZER_WHITESPACE");
+  });
+
   it("adds the whitespace default when the profile requests neither variant", () => {
     const merged = withXrayNormalization({ steps: [] });
     expect(merged.steps[0]).toBe("PIPELINE_STEP_NORMALIZE");

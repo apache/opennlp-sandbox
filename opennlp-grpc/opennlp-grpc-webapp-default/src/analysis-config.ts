@@ -78,7 +78,10 @@ const OFFSET_AWARE_NORMALIZATION = [
 
 const XRAY_STEP = "PIPELINE_STEP_NORMALIZE";
 const XRAY_WHITESPACE = "NORMALIZER_WHITESPACE";
-const PRESERVING_WHITESPACE = "NORMALIZER_WHITESPACE_PRESERVE_LINE_BREAKS";
+const WHITESPACE_VARIANTS = [
+  "NORMALIZER_WHITESPACE_PRESERVE_LINE_BREAKS",
+  "NORMALIZER_WHITESPACE_PRESERVE_PARAGRAPHS",
+];
 
 /**
  * Merges the x-ray's normalization needs over whatever profile the analysis controls
@@ -93,7 +96,7 @@ export function withXrayNormalization(
   const steps = profile?.steps ?? [];
   const requested = profile?.normalization?.normalizers ?? [];
   const normalizers = new Set(["NORMALIZER_STRIP_INVISIBLE", ...requested]);
-  if (!normalizers.has(PRESERVING_WHITESPACE)) {
+  if (!WHITESPACE_VARIANTS.some((variant) => normalizers.has(variant))) {
     normalizers.add(XRAY_WHITESPACE);
   }
   return {

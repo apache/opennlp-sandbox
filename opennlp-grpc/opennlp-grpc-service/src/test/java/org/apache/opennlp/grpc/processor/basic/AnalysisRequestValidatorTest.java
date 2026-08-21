@@ -133,6 +133,32 @@ class AnalysisRequestValidatorTest {
         "mutually exclusive normalizers");
   }
 
+  @Test
+  void rejectsWhitespaceAndPreserveParagraphsTogether() {
+    assertRejected(
+        AnalysisProfile.newBuilder()
+            .addSteps(PipelineStep.PIPELINE_STEP_NORMALIZE)
+            .setNormalization(NormalizationSpec.newBuilder()
+                .addNormalizers(Normalizer.NORMALIZER_WHITESPACE)
+                .addNormalizers(Normalizer
+                    .NORMALIZER_WHITESPACE_PRESERVE_PARAGRAPHS)),
+        AnalysisException.FailureType.INVALID_ARGUMENT,
+        "mutually exclusive normalizers");
+  }
+
+  @Test
+  void rejectsBothPreservingWhitespaceVariantsTogether() {
+    assertRejected(
+        AnalysisProfile.newBuilder()
+            .addSteps(PipelineStep.PIPELINE_STEP_NORMALIZE)
+            .setNormalization(NormalizationSpec.newBuilder()
+                .addNormalizers(Normalizer.NORMALIZER_WHITESPACE_PRESERVE_LINE_BREAKS)
+                .addNormalizers(Normalizer
+                    .NORMALIZER_WHITESPACE_PRESERVE_PARAGRAPHS)),
+        AnalysisException.FailureType.INVALID_ARGUMENT,
+        "mutually exclusive normalizers");
+  }
+
   // ---------- Alignment requirement vs offset-opaque normalizers ----------
 
   @Test
