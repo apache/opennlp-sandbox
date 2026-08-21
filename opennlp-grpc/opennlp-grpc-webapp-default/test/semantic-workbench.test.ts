@@ -66,7 +66,13 @@ describe("workspace search", () => {
   });
 
   it("indexes the current document on the server when the first workspace query is submitted", async () => {
-    const index = vi.fn().mockResolvedValue(DYNAMIC_INDEX);
+    const index = vi.fn().mockResolvedValue({
+      ...DYNAMIC_INDEX,
+      providerId: "STANDARD_SEARCH_PROVIDER_TURBO_QUANT",
+      size: 10_000,
+      maxTopK: 10_000,
+      supportsAllHits: true,
+    });
     const search = vi.fn().mockResolvedValue({ hits: [], truncated: false });
     const workbench = new SemanticWorkbench({
       index,
@@ -98,6 +104,8 @@ describe("workspace search", () => {
       layers: [],
     }, response);
 
+    const provider = document.getElementById("workspace-provider-select") as HTMLSelectElement;
+    provider.value = "STANDARD_SEARCH_PROVIDER_TURBO_QUANT";
     const query = document.getElementById("semantic-query") as HTMLTextAreaElement;
     expect(query.disabled).toBe(false);
     query.value = "curious rabbit";
@@ -118,10 +126,11 @@ describe("workspace search", () => {
         }],
       }],
     }));
-    await vi.waitFor(() => expect(search).toHaveBeenCalledWith(expect.objectContaining({
+    await vi.waitFor(() => expect(search).toHaveBeenCalledWith({
       indexId: "workspace-one",
       query: { rawText: "curious rabbit" },
-    })));
+      allHits: true,
+    }));
   });
 
   it("searches every projection exhaustively with TurboQuant and renders selectable lanes", async () => {
@@ -182,10 +191,11 @@ describe("workspace search", () => {
       truncated: false,
     }));
     const inspectChunk = vi.fn();
+    const deleteIndex = vi.fn().mockResolvedValue(undefined);
     const workbench = new SemanticWorkbench({
       index,
       search,
-      deleteIndex: vi.fn(),
+      deleteIndex,
       openDocument: vi.fn(),
       selectAnnotation: vi.fn(),
       inspectChunk,
@@ -254,6 +264,15 @@ describe("workspace search", () => {
       expect.objectContaining({ rawText: text }),
       firstChunk,
     );
+
+    workbench.setDocument("Replacement", {
+      rawText: "Another document.",
+      offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
+      layers: [],
+    });
+    await vi.waitFor(() => expect(deleteIndex).toHaveBeenCalledTimes(2));
+    expect(deleteIndex).toHaveBeenCalledWith("sentence-index");
+    expect(deleteIndex).toHaveBeenCalledWith("token-index");
   });
 
   it("opens typed annotations when a sentiment segment is selected", async () => {
