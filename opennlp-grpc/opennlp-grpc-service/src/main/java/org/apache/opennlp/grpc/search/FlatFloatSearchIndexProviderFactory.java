@@ -24,7 +24,7 @@ import opennlp.embeddings.index.FlatFloatIndex;
 import opennlp.embeddings.index.VectorIndex;
 import org.apache.opennlp.grpc.v1.SearchProviderCapability;
 
-/** ServiceLoader factory for exact in-memory flat float vector legs. */
+/** ServiceLoader factory for exact in-memory flat float vector components. */
 public final class FlatFloatSearchIndexProviderFactory implements SearchIndexProviderFactory {
 
   /** Stable configuration identifier for this provider. */

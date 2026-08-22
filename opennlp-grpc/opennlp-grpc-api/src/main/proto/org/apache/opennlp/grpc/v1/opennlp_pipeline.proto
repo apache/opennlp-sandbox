@@ -376,12 +376,12 @@ message AnalysisProfile {
   optional string lattice_dictionary_id = 17;
 
   // Typed tokenizer selection. Setting both tokenizer fields is invalid.
-  // The standard arm covers OpenNLP-owned engines; custom selects a ServiceLoader
+  // The standard case covers OpenNLP-owned engines; custom selects a ServiceLoader
   // extension by its stable id.
   optional TokenizerSelector tokenizer = 18;
 
   // Sentence detector used by PIPELINE_STEP_SENTENCE_DETECT. Unset selects the
-  // bundle's SentenceDetectorME. The standard arm covers OpenNLP-owned engines;
+  // bundle's SentenceDetectorME. The standard case covers OpenNLP-owned engines;
   // custom selects a ServiceLoader extension by its stable id.
   optional SentenceDetectorSelector sentence_detector = 19;
 

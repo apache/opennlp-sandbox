@@ -55,7 +55,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/** Verifies offset conversion for the strongly typed document-layer value arms. */
+/** Verifies offset conversion for the strongly typed document-layer value cases. */
 class DocumentOffsetEncoderLayerTest {
 
   private static final String TEXT = "café John";

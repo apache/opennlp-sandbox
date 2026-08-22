@@ -353,7 +353,7 @@ export class SemanticWorkbench {
       detail.textContent = `${hit.modelId} · cosine ${hit.score.toFixed(4)}`;
       const preview = document.createElement("p");
       preview.className = "search-preview";
-      preview.textContent = textPreview(hit.emittedChunkText, 150);
+      preview.textContent = textPreview(hit.indexedChunkText, 150);
       body.append(title, detail, preview);
       const open = document.createElement("button");
       open.type = "button";

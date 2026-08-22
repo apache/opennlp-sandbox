@@ -42,7 +42,7 @@ import org.apache.opennlp.grpc.v1.GetCollectionResponse;
 import org.apache.opennlp.grpc.v1.ListCollectionsResponse;
 import org.apache.opennlp.grpc.v1.SetCollectionRequest;
 import org.apache.opennlp.grpc.v1.SetCollectionResponse;
-import org.apache.opennlp.grpc.v1.TermLedgerEntry;
+import org.apache.opennlp.grpc.v1.TermStatistic;
 import org.apache.opennlp.grpc.v1.WatchCollectionRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
@@ -198,7 +198,7 @@ class GrpcJsonSearchApiTest {
     WebHttpResponse got = api.handle("POST", "/api/v1/get-collection",
         "{\"collectionId\":\"legal\"}".getBytes(StandardCharsets.UTF_8));
     assertEquals(200, got.status());
-    assertTrue(got.bodyUtf8().contains("\"termLedger\""));
+    assertTrue(got.bodyUtf8().contains("\"termStatistics\""));
     assertTrue(got.bodyUtf8().contains("\"newTerms\":\"2\""));
 
     WebHttpResponse listed = api.handle("GET", "/api/v1/collections", new byte[0]);
@@ -405,7 +405,7 @@ class GrpcJsonSearchApiTest {
     @Override
     public ListCollectionsResponse listCollections() {
       return ListCollectionsResponse.newBuilder()
-          .addCollections(collection("legal").toBuilder().clearTermLedger())
+          .addCollections(collection("legal").toBuilder().clearTermStatistics())
           .build();
     }
 
@@ -451,7 +451,7 @@ class GrpcJsonSearchApiTest {
           .setCollectionId(collectionId)
           .setDisplayName("Legal corpus")
           .addMemberIndexIds(INDEX_ID)
-          .addTermLedger(TermLedgerEntry.newBuilder().setTerm("writ").setOccurrences(2))
+          .addTermStatistics(TermStatistic.newBuilder().setTerm("writ").setOccurrences(2))
           .setDrift(CollectionDriftStats.newBuilder()
               .setDistinctTerms(2)
               .setTermOccurrences(3)

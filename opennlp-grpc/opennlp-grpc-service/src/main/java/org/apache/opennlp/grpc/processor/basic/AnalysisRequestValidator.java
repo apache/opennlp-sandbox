@@ -646,7 +646,7 @@ final class AnalysisRequestValidator {
     if (profile.getTermDimensionsCount() > 0) {
       throw AnalysisException.invalidArgument(
           "term_profile and term_dimensions are mutually exclusive; the profile already "
-              + "defines its dimension ladder");
+              + "defines its term dimensions");
     }
     if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
       throw AnalysisException.failedPrecondition(

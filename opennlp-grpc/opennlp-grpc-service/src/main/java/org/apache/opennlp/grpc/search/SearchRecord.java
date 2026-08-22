@@ -33,7 +33,7 @@ import org.apache.opennlp.grpc.v1.OpenNlpDocument;
  * @param chunkGroupId Stable chunk projection identity.
  * @param sourceDocument Source text retained by the bundle and its metadata.
  * @param sourceSpan Authoritative span in {@code sourceDocument.raw_text}.
- * @param emittedText Text emitted by offline chunk preparation and embedded into the index.
+ * @param indexedText Text emitted by offline chunk preparation and embedded into the index.
  */
 public record SearchRecord(
     String documentId,
@@ -41,7 +41,7 @@ public record SearchRecord(
     String chunkGroupId,
     OpenNlpDocument sourceDocument,
     AnnotationSpan sourceSpan,
-    String emittedText) {
+    String indexedText) {
 
   /** Validates identifiers, text, coordinate space, and offset boundaries. */
   public SearchRecord {
@@ -66,7 +66,7 @@ public record SearchRecord(
           "sourceSpan.space must be COORDINATE_SPACE_CHAR_DOCUMENT");
     }
     validateSpan(sourceDocument, sourceSpan);
-    requireText(emittedText, "emittedText");
+    requireText(indexedText, "indexedText");
   }
 
   /**
@@ -76,12 +76,12 @@ public record SearchRecord(
    * @param chunkId Stable indexed-chunk identifier.
    * @param sourceDocument Source text retained by the bundle and its metadata.
    * @param sourceSpan Authoritative source span.
-   * @param emittedText Text represented by the indexed vector.
-   * @throws IllegalArgumentException If an identifier, document, span, or emitted text is invalid.
+   * @param indexedText Text represented by the indexed vector.
+   * @throws IllegalArgumentException If an identifier, document, span, or indexed text is invalid.
    */
   public SearchRecord(String documentId, String chunkId, OpenNlpDocument sourceDocument,
-      AnnotationSpan sourceSpan, String emittedText) {
-    this(documentId, chunkId, "default", sourceDocument, sourceSpan, emittedText);
+      AnnotationSpan sourceSpan, String indexedText) {
+    this(documentId, chunkId, "default", sourceDocument, sourceSpan, indexedText);
   }
 
   private static void validateSpan(OpenNlpDocument document, AnnotationSpan span) {

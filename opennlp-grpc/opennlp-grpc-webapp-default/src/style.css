@@ -1122,8 +1122,8 @@ main { overflow: clip; margin-top: 1rem; }
 }
 .coverage-meter i { display: block; height: 100%; background: #16835a; transition: width 0.3s ease; }
 .coverage-label { margin: 0.3rem 0 0; color: #91a0b7; font-size: 0.7rem; }
-.collection-ledger { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-.ledger-term {
+.collection-term-statistics { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.term-statistic {
   padding: 0.2rem 0.5rem;
   border: 1px solid #7a4a2b;
   border-radius: 999px;
@@ -1131,8 +1131,8 @@ main { overflow: clip; margin-top: 1rem; }
   color: #f3c89b;
   font-size: 0.66rem;
 }
-.ledger-term.is-known { border-color: #2d6a4f; background: #0d2018; color: #a9dbc3; }
-.ledger-more { color: #7d8da3; font-size: 0.66rem; align-self: center; }
+.term-statistic.is-known { border-color: #2d6a4f; background: #0d2018; color: #a9dbc3; }
+.statistics-more { color: #7d8da3; font-size: 0.66rem; align-self: center; }
 .collection-event-log {
   min-height: 3rem;
   max-height: 10rem;

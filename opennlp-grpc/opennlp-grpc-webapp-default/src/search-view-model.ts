@@ -36,7 +36,7 @@ export interface SourceHighlight {
 export interface ChunkComparison {
   exact: boolean;
   original: string;
-  emitted: string;
+  indexed: string;
 }
 
 export interface DocumentAnalytics {
@@ -85,8 +85,8 @@ export function sourceHighlight(hit: SearchHit): SourceHighlight {
   };
 }
 
-export function compareChunkText(original: string, emitted: string): ChunkComparison {
-  return { exact: original === emitted, original, emitted };
+export function compareChunkText(original: string, indexed: string): ChunkComparison {
+  return { exact: original === indexed, original, indexed };
 }
 
 export function searchResultStatus(hitCount: number, truncated: boolean): string {
@@ -127,7 +127,7 @@ export function hitAnnotations(shape: DocumentShapeView, hit: SearchHit): Inters
   return span ? annotationsIntersecting(shape, span.start, span.end) : [];
 }
 
-/** One rendered segment of emitted text: plain, or a keyword match. */
+/** One rendered segment of indexed text: plain, or a keyword match. */
 export interface MatchedSegment {
   text: string;
   matched: boolean;
@@ -136,16 +136,16 @@ export interface MatchedSegment {
 }
 
 /**
- * Splits emitted chunk text into plain and matched segments for highlighting.
+ * Splits indexed chunk text into plain and matched segments for highlighting.
  * Spans are sorted by start; a span overlapping an earlier one is skipped so
  * segments never double-render text.
  */
 export function matchedSegments(
-  hit: Pick<SearchHit, "emittedChunkText" | "matchedSpans">,
+  hit: Pick<SearchHit, "indexedChunkText" | "matchedSpans">,
 ): MatchedSegment[] {
-  const emitted = hit.emittedChunkText;
+  const indexed = hit.indexedChunkText;
   if (hit.matchedSpans.length === 0) {
-    return emitted ? [{ text: emitted, matched: false }] : [];
+    return indexed ? [{ text: indexed, matched: false }] : [];
   }
   const ordered = [...hit.matchedSpans].sort((left, right) =>
     left.start - right.start || left.end - right.end);
@@ -156,13 +156,13 @@ export function matchedSegments(
       continue;
     }
     if (span.start > cursor) {
-      segments.push({ text: emitted.slice(cursor, span.start), matched: false });
+      segments.push({ text: indexed.slice(cursor, span.start), matched: false });
     }
-    segments.push({ text: emitted.slice(span.start, span.end), matched: true, term: span.term });
+    segments.push({ text: indexed.slice(span.start, span.end), matched: true, term: span.term });
     cursor = span.end;
   }
-  if (cursor < emitted.length) {
-    segments.push({ text: emitted.slice(cursor), matched: false });
+  if (cursor < indexed.length) {
+    segments.push({ text: indexed.slice(cursor), matched: false });
   }
   return segments;
 }

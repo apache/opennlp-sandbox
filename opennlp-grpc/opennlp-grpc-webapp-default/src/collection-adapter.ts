@@ -28,7 +28,7 @@ export interface CollectionDrift {
 }
 
 /** One accreted term and its live occurrence count across member indexes. */
-export interface TermLedgerEntry {
+export interface TermStatistic {
   term: string;
   occurrences: number;
   inVocabulary: boolean;
@@ -44,8 +44,8 @@ export interface CollectionView {
   modelArtifactId?: string;
   driftNewTermThreshold: number;
   analysisChainId: string;
-  termLedger: TermLedgerEntry[];
-  omittedLedgerTerms: number;
+  termStatistics: TermStatistic[];
+  omittedTermCount: number;
   drift: CollectionDrift;
   integrityHash?: string;
 }
@@ -76,8 +76,8 @@ export function readCollection(value: unknown): CollectionView | undefined {
     modelArtifactId: optionalText(descriptor.modelArtifactId),
     driftNewTermThreshold: count(descriptor.driftNewTermThreshold),
     analysisChainId: text(chain?.chainId),
-    termLedger: readLedger(descriptor.termLedger),
-    omittedLedgerTerms: count(descriptor.omittedLedgerTerms),
+    termStatistics: readTermStatistics(descriptor.termStatistics),
+    omittedTermCount: count(descriptor.omittedTermCount),
     drift: {
       distinctTerms: count(drift?.distinctTerms),
       termOccurrences: count(drift?.termOccurrences),
@@ -135,18 +135,18 @@ function eventKind(value: string): CollectionEventView["kind"] | undefined {
   }
 }
 
-function readLedger(value: unknown): TermLedgerEntry[] {
+function readTermStatistics(value: unknown): TermStatistic[] {
   const values = Array.isArray(value) ? value : [];
   return values.flatMap((entry) => {
-    const ledgerEntry = record(entry);
-    const term = text(ledgerEntry?.term);
+    const statistic = record(entry);
+    const term = text(statistic?.term);
     if (!term) {
       return [];
     }
     return [{
       term,
-      occurrences: count(ledgerEntry?.occurrences),
-      inVocabulary: ledgerEntry?.inVocabulary === true,
+      occurrences: count(statistic?.occurrences),
+      inVocabulary: statistic?.inVocabulary === true,
     }];
   });
 }

@@ -219,7 +219,7 @@ def run(
         for rank, hit in enumerate(response.hits, start=1):
             print(
                 f"  {rank:>2}. {hit.score:+.4f}  "
-                f"{hit.document_id}/{hit.chunk_group_id}: {hit.emitted_text}"
+                f"{hit.document_id}/{hit.chunk_group_id}: {hit.indexed_text}"
             )
         if response.truncated:
             print("  Results were truncated by the server response-byte limit.")

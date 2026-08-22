@@ -56,7 +56,7 @@ interface PlacedChunk {
  * text as alternating gap and scored segments. Chunks are ordered by source
  * position; a chunk overlapping an earlier one is skipped so text never repeats.
  * Documents are ordered by their best chunk score, best first. Matched keyword
- * spans are kept only when the emitted chunk text equals the source slice, so a
+ * spans are kept only when the indexed chunk text equals the source slice, so a
  * span index is always valid inside its segment.
  */
 export function buildDocumentHeat(hits: SearchHit[]): DocumentHeat[] {
@@ -105,7 +105,7 @@ function documentHeat(documentId: string, hits: SearchHit[]): DocumentHeat | und
       score: chunk.hit.score,
       chunkId: chunk.hit.chunkId,
       hitId: chunk.hit.id,
-      matchedSpans: chunk.hit.emittedChunkText === text ? chunk.hit.matchedSpans : [],
+      matchedSpans: chunk.hit.indexedChunkText === text ? chunk.hit.matchedSpans : [],
     });
     maxScore = Math.max(maxScore, chunk.hit.score);
     chunkCount++;

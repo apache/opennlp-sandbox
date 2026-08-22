@@ -191,7 +191,7 @@ class SearchWireContractTest {
     assertNull(hit.findFieldByName("source_document"));
     assertNull(hit.findFieldByNumber(4));
     assertEquals("AnnotationSpan", hit.findFieldByName("source_span").getMessageType().getName());
-    assertField(hit, "emitted_text", FieldDescriptor.JavaType.STRING, 6);
+    assertField(hit, "indexed_text", FieldDescriptor.JavaType.STRING, 6);
     assertNull(hit.findFieldByNumber(7));
     assertNull(hit.findFieldByNumber(8));
     assertNull(hit.findFieldByNumber(9));

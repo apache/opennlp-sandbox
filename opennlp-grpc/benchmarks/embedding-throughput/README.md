@@ -76,7 +76,7 @@ Both Java harnesses are single files compiled against jars you already build her
 # In-process (classpath: opennlp-embeddings + its dependencies)
 java ConcurrentEmbedBench <model-dir> sentences.txt <threads> <warmup-s> <measure-s>
 
-# Server for the gRPC leg (put opennlp-grpc-backend-static and opennlp-embeddings
+# Server for the gRPC component (put opennlp-grpc-backend-static and opennlp-embeddings
 # on the classpath, plus an opennlp-models-sentdetect-* jar for sentence detection)
 #   bench-server.properties: model.embedder.potion.static.dir=<model-dir>
 java org.apache.opennlp.grpc.server.OpenNlpGrpcServer -p 7071 -c bench-server.properties

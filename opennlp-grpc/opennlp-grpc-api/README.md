@@ -29,7 +29,7 @@ remain part of the document contract. Tokens whose configured transformation pro
 an empty value are omitted from that qualified layer and from aggregates sourced from it.
 
 `AnalysisProfile.tokenizer` and `sentence_detector` use a strongly typed standard enum
-arm plus an open custom provider-id arm. Standard tokenizers cover model, UAX #29,
+case plus an open custom provider-id case. Standard tokenizers cover model, UAX #29,
 whitespace, simple, and lattice segmentation; standard sentence detection covers model
 and newline modes. Existing clients may continue sending `tokenizer_engine`. Servers
 advertise configured custom ids through `GetServiceInfo`.

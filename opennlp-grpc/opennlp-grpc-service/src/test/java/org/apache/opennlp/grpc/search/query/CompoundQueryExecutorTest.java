@@ -204,7 +204,7 @@ class CompoundQueryExecutorTest {
         candidates, UNIT_X, 10);
 
     final Map<String, Double> scores = scoresByDocument(hits);
-    // both: rank 1 on the x leg and rank 2 on the y leg.
+    // both: rank 1 on the x component and rank 2 on the y component.
     final double both = 1d / 61 + 1d / 62;
     final double onlyY = 1d / 61;
     assertEquals(1.0, scores.get("both"), 1e-9);

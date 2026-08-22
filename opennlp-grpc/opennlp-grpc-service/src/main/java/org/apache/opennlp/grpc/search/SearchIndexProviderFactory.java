@@ -31,7 +31,7 @@ import org.apache.opennlp.grpc.search.query.KeywordQueryIndex;
 import org.apache.opennlp.grpc.search.query.QueryCandidate;
 
 /**
- * Service-provider interface for search engines behind index legs and bundles.
+ * Service-provider interface for search engines behind index components and bundles.
  *
  * <p>Implementations are discovered once at server startup through {@link java.util.ServiceLoader}
  * and must be declared in
@@ -50,7 +50,7 @@ public interface SearchIndexProviderFactory {
   interface ConfiguredProvider {
 
     /**
-     * One restored provider-owned vector leg and its stable row identifiers.
+     * One restored provider-owned vector component and its stable row identifiers.
      *
      * @param index Restored frozen index.
      * @param ids Row identifiers in index order.
@@ -68,14 +68,14 @@ public interface SearchIndexProviderFactory {
     }
 
     /**
-     * Creates one live vector leg for this configured instance.
+     * Creates one live vector component for this configured instance.
      *
      * @param dimension Vector dimension.
      * @return New build-phase vector index.
      */
     default VectorIndex createLiveVectorIndex(int dimension) {
       throw new UnsupportedOperationException(
-          "configured search provider does not build live vector legs");
+          "configured search provider does not build live vector components");
     }
 
     /**
@@ -95,7 +95,7 @@ public interface SearchIndexProviderFactory {
      * @throws IOException If the segment cannot be written or has the wrong provider type.
      */
     default void writeLiveVectorIndex(VectorIndex index, Path directory) throws IOException {
-      throw new IOException("configured search provider does not persist live vector legs");
+      throw new IOException("configured search provider does not persist live vector components");
     }
 
     /**
@@ -106,7 +106,7 @@ public interface SearchIndexProviderFactory {
      * @throws IOException If the segment is unreadable or invalid.
      */
     default RestoredVectorIndex readLiveVectorIndex(Path directory) throws IOException {
-      throw new IOException("configured search provider does not restore live vector legs");
+      throw new IOException("configured search provider does not restore live vector components");
     }
 
     /**
@@ -128,7 +128,7 @@ public interface SearchIndexProviderFactory {
     }
 
     /**
-     * Creates the provider-owned keyword leg for one immutable candidate snapshot.
+     * Creates the provider-owned keyword component for one immutable candidate snapshot.
      *
      * @param candidates Candidate records.
      * @return Immutable keyword index.
@@ -214,11 +214,11 @@ public interface SearchIndexProviderFactory {
    *
    * @param dimension Number of float components in every added and queried vector, at least one.
    * @return A new empty build-phase vector index.
-   * @throws UnsupportedOperationException If this provider does not build live vector legs.
+   * @throws UnsupportedOperationException If this provider does not build live vector components.
    */
   default VectorIndex createLiveVectorIndex(int dimension) {
     throw new UnsupportedOperationException("search provider '" + providerId()
-        + "' does not build live vector legs");
+        + "' does not build live vector components");
   }
 
   /**
@@ -233,9 +233,9 @@ public interface SearchIndexProviderFactory {
   }
 
   /**
-   * Returns the analysis chain identity recorded on keyword legs served by this provider.
+   * Returns the analysis chain identity recorded on keyword components served by this provider.
    *
-   * @return The chain identity, or {@code null} for providers without a keyword leg.
+   * @return The chain identity, or {@code null} for providers without a keyword component.
    */
   default AnalysisChainDescriptor analysisChain() {
     return null;

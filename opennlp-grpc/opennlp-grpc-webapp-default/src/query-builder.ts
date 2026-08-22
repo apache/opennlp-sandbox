@@ -25,7 +25,7 @@ export type QueryClause =
 
 /**
  * How multiple clauses combine: every clause (AND, mean score), any clause
- * (OR, maximum score), or any clause fused by reciprocal rank for legs whose
+ * (OR, maximum score), or any clause fused by reciprocal rank for components whose
  * score scales are not comparable.
  */
 export type JoinMode = "and" | "or" | "rrf";

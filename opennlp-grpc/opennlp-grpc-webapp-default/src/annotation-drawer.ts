@@ -185,7 +185,7 @@ export class AnnotationDrawer {
   /** Shows one server-ranked chunk together with the document annotations it covers. */
   showSearchHit(hit: SearchHit, shape: DocumentShapeView, trigger: HTMLElement): void {
     const title = document.createElement("strong");
-    title.textContent = hit.emittedChunkText;
+    title.textContent = hit.indexedChunkText;
     const facts = document.createElement("dl");
     facts.className = "annotation-facts";
     addFact(facts, "Cosine score", hit.score.toFixed(4));

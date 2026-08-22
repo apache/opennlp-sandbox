@@ -178,8 +178,8 @@ public final class SearchIndexRegistry implements AutoCloseable {
                 SearchIndexBundleConfiguration.DEFAULT_MAX_RECORDS),
             positiveInt(configuration, prefix + "max_source_document_bytes",
                 SearchIndexBundleConfiguration.DEFAULT_MAX_SOURCE_DOCUMENT_BYTES),
-            positiveInt(configuration, prefix + "max_emitted_text_bytes",
-                SearchIndexBundleConfiguration.DEFAULT_MAX_EMITTED_TEXT_BYTES),
+            positiveInt(configuration, prefix + "max_indexed_text_bytes",
+                SearchIndexBundleConfiguration.DEFAULT_MAX_INDEXED_TEXT_BYTES),
             positiveInt(configuration, prefix + "max_bundle_bytes",
                 SearchIndexBundleConfiguration.DEFAULT_MAX_BUNDLE_BYTES),
             providerOptions(configuration, prefix));

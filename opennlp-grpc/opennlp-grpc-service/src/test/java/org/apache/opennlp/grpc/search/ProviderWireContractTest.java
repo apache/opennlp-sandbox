@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Pins the search provider contract's wire shapes: capability and instance
- * declarations listed through ListSearchProviders, and the per-modality legs
+ * declarations listed through ListSearchProviders, and the per-modality components
  * with a recorded analysis-chain identity on the index descriptor.
  */
 class ProviderWireContractTest {
@@ -83,28 +83,28 @@ class ProviderWireContractTest {
   }
 
   @Test
-  void indexDescriptorsNameTheirLegs() {
+  void indexDescriptorsNameTheirComponents() {
     final Descriptor descriptor = OpenNlpSearchProto.getDescriptor()
         .findMessageTypeByName("SearchIndexDescriptor");
-    final FieldDescriptor legs = descriptor.findFieldByName("legs");
-    assertNotNull(legs);
-    assertTrue(legs.isRepeated());
-    assertEquals("SearchIndexLeg", legs.getMessageType().getName());
+    final FieldDescriptor components = descriptor.findFieldByName("components");
+    assertNotNull(components);
+    assertTrue(components.isRepeated());
+    assertEquals("SearchIndexComponent", components.getMessageType().getName());
 
-    final Descriptor leg = OpenNlpSearchProto.getDescriptor()
-        .findMessageTypeByName("SearchIndexLeg");
-    final EnumDescriptor kind = leg.findFieldByName("kind").getEnumType();
-    assertEquals("SearchLegKind", kind.getName());
-    assertNotNull(kind.findValueByName("SEARCH_LEG_KIND_VECTOR"));
-    assertNotNull(kind.findValueByName("SEARCH_LEG_KIND_KEYWORD"));
+    final Descriptor component = OpenNlpSearchProto.getDescriptor()
+        .findMessageTypeByName("SearchIndexComponent");
+    final EnumDescriptor kind = component.findFieldByName("kind").getEnumType();
+    assertEquals("SearchComponentKind", kind.getName());
+    assertNotNull(kind.findValueByName("SEARCH_COMPONENT_KIND_VECTOR"));
+    assertNotNull(kind.findValueByName("SEARCH_COMPONENT_KIND_KEYWORD"));
     assertEquals(FieldDescriptor.JavaType.STRING,
-        leg.findFieldByName("provider_instance_id").getJavaType());
+        component.findFieldByName("provider_instance_id").getJavaType());
     assertEquals("AnalysisChainDescriptor",
-        leg.findFieldByName("analysis_chain").getMessageType().getName());
+        component.findFieldByName("analysis_chain").getMessageType().getName());
   }
 
   @Test
-  void keywordLegsRecordTheirAnalysisChainIdentity() {
+  void keywordComponentsRecordTheirAnalysisChainIdentity() {
     final Descriptor chain = OpenNlpSearchProto.getDescriptor()
         .findMessageTypeByName("AnalysisChainDescriptor");
     assertNotNull(chain);

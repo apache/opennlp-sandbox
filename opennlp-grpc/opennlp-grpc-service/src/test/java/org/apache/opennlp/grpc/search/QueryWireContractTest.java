@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Pins the compound query tree's wire shapes: the clause oneof, the
  * join-vs-boost split, and the two constrained CEL roles. The normative score
  * algebra is documented in opennlp_query.proto and pinned by executor tests
- * once execution lands.
+ * once execution is implemented.
  */
 class QueryWireContractTest {
 

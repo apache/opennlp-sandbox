@@ -32,7 +32,7 @@ public interface KeywordQueryIndex {
    *
    * @param record Matched source record.
    * @param score Normalized score in {@code [0, 1]}.
-   * @param matchedSpans Match locations in emitted text.
+   * @param matchedSpans Match locations in indexed text.
    */
   record Hit(SearchRecord record, double score, List<MatchedSpan> matchedSpans) {
 

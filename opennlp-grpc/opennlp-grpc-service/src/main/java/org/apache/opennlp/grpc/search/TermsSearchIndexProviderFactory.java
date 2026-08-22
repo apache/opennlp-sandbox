@@ -29,8 +29,8 @@ import org.apache.opennlp.grpc.v1.AnalysisChainDescriptor;
 import org.apache.opennlp.grpc.v1.SearchProviderCapability;
 
 /**
- * ServiceLoader factory for the built-in keyword leg executing term and phrase clauses
- * over retained emitted text.
+ * ServiceLoader factory for the built-in keyword component executing term and phrase clauses
+ * over retained indexed text.
  */
 public final class TermsSearchIndexProviderFactory implements SearchIndexProviderFactory {
 

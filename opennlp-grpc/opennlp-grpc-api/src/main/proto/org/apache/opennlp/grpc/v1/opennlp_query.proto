@@ -62,11 +62,11 @@ option java_package = "org.apache.opennlp.grpc.v1";
 // One node of the compound query tree.
 message QueryNode {
   oneof kind {
-    // Vector leg: embedded through the index's pinned embedding route.
+    // Vector component: embedded through the index's pinned embedding route.
     SemanticClause semantic = 1;
-    // Keyword leg: terms analyzed by the index's recorded analysis chain.
+    // Keyword component: terms analyzed by the index's recorded analysis chain.
     TermClause term = 2;
-    // Ordered keyword leg with bounded slop.
+    // Ordered keyword component with bounded slop.
     PhraseClause phrase = 3;
     // Membership composition: AND, OR, and exclusions.
     JoinClause join = 4;
@@ -74,7 +74,7 @@ message QueryNode {
     BoostClause boost = 5;
     // Membership predicate over document metadata; must type-check to bool.
     CelFilterClause cel_filter = 6;
-    // Scored leg over document metadata; must type-check to a number.
+    // Scored component over document metadata; must type-check to a number.
     CelCalculatorClause cel_calculator = 7;
   }
 }
@@ -137,7 +137,7 @@ enum JoinFusion {
   JOIN_FUSION_UNSPECIFIED = 0;
   // The operator's score algebra: mean for AND, maximum for OR.
   JOIN_FUSION_SCORE = 1;
-  // Summed reciprocal rank across operands, for legs with unlike scales.
+  // Summed reciprocal rank across operands, for components with unlike scales.
   JOIN_FUSION_RECIPROCAL_RANK = 2;
 }
 
@@ -159,7 +159,7 @@ message CelFilterClause {
   string expression = 1;
 }
 
-// Scored leg computed from document metadata. Matches every candidate a
+// Scored component computed from document metadata. Matches every candidate a
 // sibling clause admitted; see algebra rule 8.
 message CelCalculatorClause {
   CelScore score = 1;

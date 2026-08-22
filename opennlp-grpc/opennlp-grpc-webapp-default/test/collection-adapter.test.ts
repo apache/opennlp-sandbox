@@ -35,12 +35,12 @@ function collectionJson(overrides: Record<string, unknown> = {}): Record<string,
     modelArtifactId: "static-model-1",
     driftNewTermThreshold: 25,
     analysisChain: { chainId: "opennlp-terms-codepoint-lower", chainVersion: "1" },
-    termLedger: [
+    termStatistics: [
       { term: "habeas corpus", occurrences: "12", inVocabulary: true },
       { term: "writ", occurrences: 7, inVocabulary: false },
       { occurrences: 3 },
     ],
-    omittedLedgerTerms: 2,
+    omittedTermCount: 2,
     drift: {
       distinctTerms: "4",
       termOccurrences: "19",
@@ -65,7 +65,7 @@ describe("collection adapter", () => {
       modelArtifactId: "static-model-1",
       driftNewTermThreshold: 25,
       analysisChainId: "opennlp-terms-codepoint-lower",
-      omittedLedgerTerms: 2,
+      omittedTermCount: 2,
       integrityHash: "abc123",
       drift: {
         distinctTerms: 4,
@@ -75,7 +75,7 @@ describe("collection adapter", () => {
         vocabularyCoverage: 0.63,
       },
     });
-    expect(collection?.termLedger).toEqual([
+    expect(collection?.termStatistics).toEqual([
       { term: "habeas corpus", occurrences: 12, inVocabulary: true },
       { term: "writ", occurrences: 7, inVocabulary: false },
     ]);

@@ -61,7 +61,7 @@ export interface SearchEmbeddingRoute {
   artifactHash?: string;
 }
 
-/** One keyword or phrase match within a hit's emitted chunk text, UTF-16 units. */
+/** One keyword or phrase match within a hit's indexed chunk text, UTF-16 units. */
 export interface MatchedSpan {
   start: number;
   end: number;
@@ -81,7 +81,7 @@ export interface SearchHit {
   start: number;
   end: number;
   offsetEncoding: string;
-  emittedChunkText: string;
+  indexedChunkText: string;
   modelId: string;
   backendId: string;
   vectorSpaceId: string;
@@ -258,13 +258,13 @@ export function readSearchResponse(response: unknown): SearchResponse {
     const sourceText = nonBlankText(sourceDocument?.rawText);
     const chunkId = nonBlankText(hit?.chunkId);
     const chunkGroupId = nonBlankText(hit?.chunkGroupId);
-    const emittedChunkText = nonBlankText(hit?.emittedText);
+    const indexedChunkText = nonBlankText(hit?.indexedText);
     const start = sourceSpan?.start === undefined ? 0 : nonNegativeInteger(sourceSpan.start);
     const end = nonNegativeInteger(sourceSpan?.end);
     const score = finiteNumber(hit?.score);
     const offsetEncoding = text(sourceDocument?.offsetEncoding);
     if (!hit || !sourceDocument || !sourceText || !documentId
-        || !chunkId || !chunkGroupId || !emittedChunkText
+        || !chunkId || !chunkGroupId || !indexedChunkText
         || !validOffsetEncoding(offsetEncoding) || start === undefined
         || end === undefined || sourceSpan?.space !== "COORDINATE_SPACE_CHAR_DOCUMENT"
         || !toBrowserSpan(sourceText, start, end, offsetEncoding)
@@ -284,7 +284,7 @@ export function readSearchResponse(response: unknown): SearchResponse {
         start,
         end,
         offsetEncoding,
-        emittedChunkText,
+        indexedChunkText,
         modelId: index.modelId,
         backendId: index.backendId,
         vectorSpaceId: index.vectorSpaceId,
@@ -299,7 +299,7 @@ export function readSearchResponse(response: unknown): SearchResponse {
         corpusArtifactHash: index.corpusArtifactHash,
         build: index.build,
         queryEmbeddingRoute,
-        matchedSpans: readMatchedSpans(hit.matchedSpans, emittedChunkText),
+        matchedSpans: readMatchedSpans(hit.matchedSpans, indexedChunkText),
       },
     }];
   }).sort((left, right) => right.hit.score - left.hit.score || left.position - right.position)
@@ -331,8 +331,8 @@ export function readIndexResponse(response: unknown): SearchIndex | undefined {
   return readSearchIndexes({ indexes: envelope?.index ? [envelope.index] : [] })[0];
 }
 
-/** Reads matched spans, dropping any that do not fit the emitted text. */
-function readMatchedSpans(value: unknown, emittedText: string): MatchedSpan[] {
+/** Reads matched spans, dropping any that do not fit the indexed text. */
+function readMatchedSpans(value: unknown, indexedText: string): MatchedSpan[] {
   const values = Array.isArray(value) ? value : [];
   return values.flatMap((entry) => {
     const span = record(entry);
@@ -340,7 +340,7 @@ function readMatchedSpans(value: unknown, emittedText: string): MatchedSpan[] {
     const end = nonNegativeInteger(span?.end);
     const term = nonBlankText(span?.term);
     if (start === undefined || end === undefined || !term
-        || start >= end || end > emittedText.length) {
+        || start >= end || end > indexedText.length) {
       return [];
     }
     return [{ start, end, term }];

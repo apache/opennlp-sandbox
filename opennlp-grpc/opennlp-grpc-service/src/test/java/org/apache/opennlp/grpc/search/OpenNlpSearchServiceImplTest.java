@@ -864,7 +864,7 @@ class OpenNlpSearchServiceImplTest {
     service.getCollection(GetCollectionRequest.newBuilder()
         .setCollectionId("legal").build(), got);
     assertNull(got.error);
-    assertEquals(2, got.value.getCollection().getTermLedgerCount());
+    assertEquals(2, got.value.getCollection().getTermStatisticsCount());
     assertEquals(1, got.value.getCollection().getDrift().getNewTerms());
     assertEquals(0.5, got.value.getCollection().getDrift().getVocabularyCoverage());
 
@@ -872,7 +872,7 @@ class OpenNlpSearchServiceImplTest {
     service.listCollections(ListCollectionsRequest.getDefaultInstance(), listed);
     assertNull(listed.error);
     assertEquals(1, listed.value.getCollectionsCount());
-    assertEquals(0, listed.value.getCollections(0).getTermLedgerCount());
+    assertEquals(0, listed.value.getCollections(0).getTermStatisticsCount());
 
     final CapturingObserver<GetCollectionResponse> missing = new CapturingObserver<>();
     service.getCollection(GetCollectionRequest.newBuilder()

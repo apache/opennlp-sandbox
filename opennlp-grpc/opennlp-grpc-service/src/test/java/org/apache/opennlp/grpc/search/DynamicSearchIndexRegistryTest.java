@@ -42,8 +42,8 @@ import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
 import org.apache.opennlp.grpc.v1.OffsetEncoding;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.SearchIndexDescriptor;
-import org.apache.opennlp.grpc.v1.SearchIndexLeg;
-import org.apache.opennlp.grpc.v1.SearchLegKind;
+import org.apache.opennlp.grpc.v1.SearchIndexComponent;
+import org.apache.opennlp.grpc.v1.SearchComponentKind;
 import org.apache.opennlp.grpc.v1.SearchProviderSelector;
 import org.apache.opennlp.grpc.v1.StandardSearchProvider;
 import org.apache.opennlp.grpc.v1.StandardEmbeddingBackend;
@@ -254,7 +254,7 @@ class DynamicSearchIndexRegistryTest {
     final List<SearchResult> hits = registry.require(indexId)
         .search(new float[] {1, 0}, 10);
     assertEquals(1, hits.size());
-    assertEquals("replacement", hits.getFirst().record().emittedText());
+    assertEquals("replacement", hits.getFirst().record().indexedText());
     assertEquals(0, registry.retainedRawVectorValues(indexId));
   }
 
@@ -360,20 +360,20 @@ class DynamicSearchIndexRegistryTest {
   }
 
   @Test
-  void describesVectorAndKeywordLegsWithAnalysisChainIdentity() {
+  void describesVectorAndKeywordComponentsWithAnalysisChainIdentity() {
     final DynamicSearchIndexRegistry registry = new DynamicSearchIndexRegistry();
     final SearchIndexDescriptor descriptor =
         registry.index(request(null, "doc-1", "alpha", 1, 0)).getIndex();
 
-    assertEquals(2, descriptor.getLegsCount());
-    final SearchIndexLeg vector = descriptor.getLegs(0);
-    assertEquals(SearchLegKind.SEARCH_LEG_KIND_VECTOR, vector.getKind());
+    assertEquals(2, descriptor.getComponentsCount());
+    final SearchIndexComponent vector = descriptor.getComponents(0);
+    assertEquals(SearchComponentKind.SEARCH_COMPONENT_KIND_VECTOR, vector.getKind());
     assertEquals(FlatFloatSearchIndexProviderFactory.PROVIDER_ID,
         vector.getProviderInstanceId());
     assertFalse(vector.hasAnalysisChain());
 
-    final SearchIndexLeg keyword = descriptor.getLegs(1);
-    assertEquals(SearchLegKind.SEARCH_LEG_KIND_KEYWORD, keyword.getKind());
+    final SearchIndexComponent keyword = descriptor.getComponents(1);
+    assertEquals(SearchComponentKind.SEARCH_COMPONENT_KIND_KEYWORD, keyword.getKind());
     assertEquals(TermsSearchIndexProviderFactory.PROVIDER_ID,
         keyword.getProviderInstanceId());
     assertEquals(TermsSearchIndexProviderFactory.CHAIN_ID,

@@ -76,7 +76,7 @@ function searchHit(overrides: Record<string, unknown> = {}): Record<string, unkn
       offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
     },
     sourceSpan: { start: 0, end: 7, space: "COORDINATE_SPACE_CHAR_DOCUMENT" },
-    emittedText: "OpenNLP",
+    indexedText: "OpenNLP",
     chunkGroupId: "sentence-chunks",
     ...overrides,
   };
@@ -201,7 +201,7 @@ describe("server search API adapter", () => {
           offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
         },
         sourceSpan: { start: "6", end: "10", space: "COORDINATE_SPACE_CHAR_DOCUMENT" },
-        emittedText: "beta",
+        indexedText: "beta",
       }),
       searchHit({ score: 1 }),
       searchHit({
@@ -214,7 +214,7 @@ describe("server search API adapter", () => {
           offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
         },
         sourceSpan: { start: 0, end: 5, space: "COORDINATE_SPACE_CHAR_DOCUMENT" },
-        emittedText: "Delta",
+        indexedText: "Delta",
       }),
     ]));
 
@@ -234,7 +234,7 @@ describe("server search API adapter", () => {
     })]));
 
     expect(result.hits).toHaveLength(1);
-    expect(result.hits[0]).toMatchObject({ start: 0, end: 7, emittedChunkText: "OpenNLP" });
+    expect(result.hits[0]).toMatchObject({ start: 0, end: 7, indexedChunkText: "OpenNLP" });
   });
 
   it("rejects missing, unspecified, and unsupported offset encodings", () => {
@@ -264,14 +264,14 @@ describe("server search API adapter", () => {
     }
   });
 
-  it("rejects blank emitted text and mismatched query vector spaces", () => {
-    expect(readSearchResponse(searchResponse([searchHit({ emittedText: " \t" })])).hits).toEqual([]);
+  it("rejects blank indexed text and mismatched query vector spaces", () => {
+    expect(readSearchResponse(searchResponse([searchHit({ indexedText: " \t" })])).hits).toEqual([]);
     expect(readSearchResponse(searchResponse([searchHit()], {
       queryEmbeddingRoute: { modelId: "static-mini", backendId: "fallback", vectorSpaceId: "other-space" },
     })).hits).toEqual([]);
   });
 
-  it("preserves authoritative source and emitted whitespace", () => {
+  it("preserves authoritative source and indexed whitespace", () => {
     const result = readSearchResponse(searchResponse([searchHit({
       sourceDocument: {
         docId: "doc-a",
@@ -279,10 +279,10 @@ describe("server search API adapter", () => {
         offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
       },
       sourceSpan: { start: 2, end: 9, space: "COORDINATE_SPACE_CHAR_DOCUMENT" },
-      emittedText: " OpenNLP ",
+      indexedText: " OpenNLP ",
     })]));
 
-    expect(result.hits[0]).toMatchObject({ sourceText: "  OpenNLP works.", emittedChunkText: " OpenNLP " });
+    expect(result.hits[0]).toMatchObject({ sourceText: "  OpenNLP works.", indexedChunkText: " OpenNLP " });
   });
 
   it("rejects malformed hits that cannot map back to a source span", () => {
@@ -300,7 +300,7 @@ describe("server search API adapter", () => {
     expect(readSearchResponse(searchResponse([searchHit({
       sourceDocument: { docId: "doc-a", rawText: "A😀 end", offsetEncoding: "OFFSET_ENCODING_UTF8_BYTE" },
       sourceSpan: { start: 2, end: 5, space: "COORDINATE_SPACE_CHAR_DOCUMENT" },
-      emittedText: "broken",
+      indexedText: "broken",
     })])).hits).toEqual([]);
   });
 
@@ -324,7 +324,7 @@ describe("server search API adapter", () => {
     });
   });
 
-  it("reads matched spans and drops any outside the emitted text", () => {
+  it("reads matched spans and drops any outside the indexed text", () => {
     const result = readSearchResponse(searchResponse([searchHit({
       matchedSpans: [
         { start: 0, end: 4, term: "open" },

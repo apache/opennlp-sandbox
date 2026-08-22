@@ -582,7 +582,7 @@ final class ClassicStepRunner {
   /**
    * Computes per-token normalization layers ({@code Token.term_layers}) for the
    * character-level {@link Dimension}s named in AnalysisProfile.term_dimensions,
-   * using the library's cumulative Term ladder semantics. The validator has already
+   * using the library's cumulative term-layer semantics. The validator has already
    * checked the names.
    */
   static void computeTermLayers(

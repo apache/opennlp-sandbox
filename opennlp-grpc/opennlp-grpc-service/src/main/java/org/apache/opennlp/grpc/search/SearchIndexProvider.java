@@ -69,9 +69,9 @@ public interface SearchIndexProvider extends AutoCloseable {
   }
 
   /**
-   * Returns the provider-owned keyword leg used by compound query term and phrase leaves.
+   * Returns the provider-owned keyword component used by compound query term and phrase leaves.
    *
-   * @return Immutable keyword leg, or {@code null} when compound keyword execution is absent.
+   * @return Immutable keyword component, or {@code null} when compound keyword execution is absent.
    */
   default KeywordQueryIndex keywordQueryIndex() {
     return null;

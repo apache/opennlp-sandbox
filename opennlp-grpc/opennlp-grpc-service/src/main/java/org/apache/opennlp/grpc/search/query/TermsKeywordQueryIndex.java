@@ -38,7 +38,7 @@ public final class TermsKeywordQueryIndex implements KeywordQueryIndex {
   private final Map<String, List<Term>> termsByChunkId;
 
   /**
-   * Creates an immutable logical keyword leg over retained candidate records.
+   * Creates an immutable logical keyword component over retained candidate records.
    *
    * @param candidates Candidate records in index order.
    * @throws IllegalArgumentException If {@code candidates} is {@code null}.
@@ -52,7 +52,7 @@ public final class TermsKeywordQueryIndex implements KeywordQueryIndex {
     for (QueryCandidate candidate : copied) {
       final String chunkId = candidate.record().chunkId();
       if (analyzed.putIfAbsent(chunkId,
-          QueryTermAnalyzer.analyze(candidate.record().emittedText())) != null) {
+          QueryTermAnalyzer.analyze(candidate.record().indexedText())) != null) {
         throw new IllegalArgumentException("candidates contain duplicate chunk id '"
             + chunkId + "'");
       }
@@ -127,7 +127,7 @@ public final class TermsKeywordQueryIndex implements KeywordQueryIndex {
   }
 
   /**
-   * Returns the immutable analyzed terms of one retained emitted-text value.
+   * Returns the immutable analyzed terms of one retained indexed-text value.
    *
    * @param candidate Candidate to analyze.
    * @return Analyzed terms.
@@ -189,7 +189,7 @@ public final class TermsKeywordQueryIndex implements KeywordQueryIndex {
   }
 
   /**
-   * Builds one emitted-text match span.
+   * Builds one indexed-text match span.
    *
    * @param start Inclusive UTF-16 offset.
    * @param end Exclusive UTF-16 offset.

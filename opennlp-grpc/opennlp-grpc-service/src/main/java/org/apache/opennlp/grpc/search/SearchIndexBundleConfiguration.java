@@ -33,7 +33,7 @@ import java.util.TreeMap;
  * @param maxResponseBytes Largest serialized response emitted by the service.
  * @param maxRecords Largest record count accepted during startup.
  * @param maxSourceDocumentBytes Largest retained source document accepted during startup.
- * @param maxEmittedTextBytes Largest emitted chunk text accepted during startup.
+ * @param maxIndexedTextBytes Largest indexed chunk text accepted during startup.
  * @param maxBundleBytes Largest aggregate byte size of bundle files read at startup.
  * @param providerOptions Immutable provider-specific options from the explicit namespace.
  */
@@ -46,7 +46,7 @@ public record SearchIndexBundleConfiguration(
     int maxResponseBytes,
     int maxRecords,
     int maxSourceDocumentBytes,
-    int maxEmittedTextBytes,
+    int maxIndexedTextBytes,
     int maxBundleBytes,
     Map<String, String> providerOptions) {
 
@@ -66,8 +66,8 @@ public record SearchIndexBundleConfiguration(
   public static final int MAX_RECORDS_LIMIT = 10_000_000;
   /** Conservative default maximum retained source-document size. */
   public static final int DEFAULT_MAX_SOURCE_DOCUMENT_BYTES = 10_485_760;
-  /** Conservative default maximum emitted chunk size. */
-  public static final int DEFAULT_MAX_EMITTED_TEXT_BYTES = 1_048_576;
+  /** Conservative default maximum indexed chunk size. */
+  public static final int DEFAULT_MAX_INDEXED_TEXT_BYTES = 1_048_576;
   /** Conservative default aggregate byte limit for one bundle. */
   public static final int DEFAULT_MAX_BUNDLE_BYTES = 536_870_912;
 
@@ -86,7 +86,7 @@ public record SearchIndexBundleConfiguration(
         DEFAULT_MAX_RESPONSE_BYTES,
         DEFAULT_MAX_RECORDS,
         DEFAULT_MAX_SOURCE_DOCUMENT_BYTES,
-        DEFAULT_MAX_EMITTED_TEXT_BYTES,
+        DEFAULT_MAX_INDEXED_TEXT_BYTES,
         DEFAULT_MAX_BUNDLE_BYTES,
         Map.of());
   }
@@ -115,7 +115,7 @@ public record SearchIndexBundleConfiguration(
           + MAX_RECORDS_LIMIT);
     }
     requirePositive(maxSourceDocumentBytes, "maxSourceDocumentBytes");
-    requirePositive(maxEmittedTextBytes, "maxEmittedTextBytes");
+    requirePositive(maxIndexedTextBytes, "maxIndexedTextBytes");
     requirePositive(maxBundleBytes, "maxBundleBytes");
     if (providerOptions == null) {
       throw new IllegalArgumentException("providerOptions must not be null");

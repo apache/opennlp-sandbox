@@ -26,7 +26,7 @@ import opennlp.tools.util.StringUtil;
  * The pinned default analysis for keyword and phrase clauses over dynamic workspace
  * indexes: maximal runs of Unicode letters and digits, scanned by code point, lowercased
  * with {@link StringUtil#toLowerCase(CharSequence)}. Query text, indexed chunk text, and
- * collection term ledgers pass through the same analysis, so a term means the same thing
+ * collection term statistics pass through the same analysis, so a term means the same thing
  * everywhere the recorded analysis-chain identity appears.
  */
 public final class QueryTermAnalyzer {

@@ -32,7 +32,7 @@ import org.apache.opennlp.grpc.v1.CollectionDescriptor;
 import org.apache.opennlp.grpc.v1.CollectionEvent;
 import org.apache.opennlp.grpc.v1.CollectionEventKind;
 import org.apache.opennlp.grpc.v1.SetCollectionRequest;
-import org.apache.opennlp.grpc.v1.TermLedgerEntry;
+import org.apache.opennlp.grpc.v1.TermStatistic;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -51,7 +51,7 @@ class SearchCollectionRegistryTest {
       };
 
   @Test
-  void recomputesTheTermLedgerFromLiveMemberContents() {
+  void recomputesTheTermStatisticsFromLiveMemberContents() {
     final DynamicSearchIndexRegistry indexes = new DynamicSearchIndexRegistry();
     final String indexId = indexes
         .index(DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha beta alpha", 1, 0))
@@ -70,11 +70,11 @@ class SearchCollectionRegistryTest {
         created.getAnalysisChain().getChainId());
 
     final CollectionDescriptor descriptor = registry.find("legal");
-    assertEquals(List.of("alpha", "beta"), descriptor.getTermLedgerList().stream()
-        .map(TermLedgerEntry::getTerm).toList());
-    assertEquals(2, descriptor.getTermLedger(0).getOccurrences());
-    assertEquals(1, descriptor.getTermLedger(1).getOccurrences());
-    assertFalse(descriptor.getTermLedger(0).getInVocabulary());
+    assertEquals(List.of("alpha", "beta"), descriptor.getTermStatisticsList().stream()
+        .map(TermStatistic::getTerm).toList());
+    assertEquals(2, descriptor.getTermStatistics(0).getOccurrences());
+    assertEquals(1, descriptor.getTermStatistics(1).getOccurrences());
+    assertFalse(descriptor.getTermStatistics(0).getInVocabulary());
     assertEquals(2, descriptor.getDrift().getDistinctTerms());
     assertEquals(3, descriptor.getDrift().getTermOccurrences());
     assertEquals(2, descriptor.getDrift().getNewTerms());
@@ -105,13 +105,13 @@ class SearchCollectionRegistryTest {
         .build());
 
     final CollectionDescriptor descriptor = registry.find("legal");
-    final Map<String, TermLedgerEntry> ledger = descriptor.getTermLedgerList().stream()
-        .collect(java.util.stream.Collectors.toMap(TermLedgerEntry::getTerm, entry -> entry));
-    assertEquals(4, ledger.size());
-    assertTrue(ledger.get("habeas corpus").getInVocabulary());
-    assertTrue(ledger.get("writ").getInVocabulary());
-    assertFalse(ledger.get("the").getInVocabulary());
-    assertFalse(ledger.get("of").getInVocabulary());
+    final Map<String, TermStatistic> termStatistics = descriptor.getTermStatisticsList().stream()
+        .collect(java.util.stream.Collectors.toMap(TermStatistic::getTerm, entry -> entry));
+    assertEquals(4, termStatistics.size());
+    assertTrue(termStatistics.get("habeas corpus").getInVocabulary());
+    assertTrue(termStatistics.get("writ").getInVocabulary());
+    assertFalse(termStatistics.get("the").getInVocabulary());
+    assertFalse(termStatistics.get("of").getInVocabulary());
     assertEquals(4, descriptor.getDrift().getDistinctTerms());
     assertEquals(4, descriptor.getDrift().getTermOccurrences());
     assertEquals(2, descriptor.getDrift().getNewTerms());
@@ -287,7 +287,7 @@ class SearchCollectionRegistryTest {
     assertEquals(1, events.size());
     assertEquals(CollectionEventKind.COLLECTION_EVENT_KIND_SNAPSHOT, events.get(0).getKind());
     assertEquals("legal", events.get(0).getCollection().getCollectionId());
-    assertEquals(1, events.get(0).getCollection().getTermLedgerCount());
+    assertEquals(1, events.get(0).getCollection().getTermStatisticsCount());
 
     registry.notifyIndexPersisted(indexId);
     assertEquals(2, events.size());
@@ -353,7 +353,7 @@ class SearchCollectionRegistryTest {
   }
 
   @Test
-  void listsWithoutLedgersAndDeleteCompletesWatchers() {
+  void listsWithoutTermStatisticsAndDeleteCompletesWatchers() {
     final DynamicSearchIndexRegistry indexes = new DynamicSearchIndexRegistry();
     final String indexId = indexes
         .index(DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha beta", 1, 0))
@@ -368,8 +368,8 @@ class SearchCollectionRegistryTest {
 
     final List<CollectionDescriptor> listed = registry.list();
     assertEquals(1, listed.size());
-    assertEquals(0, listed.get(0).getTermLedgerCount());
-    assertEquals(2, listed.get(0).getOmittedLedgerTerms());
+    assertEquals(0, listed.get(0).getTermStatisticsCount());
+    assertEquals(2, listed.get(0).getOmittedTermCount());
     assertEquals(2, listed.get(0).getDrift().getDistinctTerms());
 
     final List<String> completions = new ArrayList<>();

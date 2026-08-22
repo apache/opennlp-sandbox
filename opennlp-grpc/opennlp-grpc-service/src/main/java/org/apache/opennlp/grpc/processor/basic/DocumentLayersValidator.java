@@ -62,14 +62,14 @@ final class DocumentLayersValidator {
         fail("layer '" + layer.getId() + "' has unspecified scope");
       }
       if (layer.getValuesCase() == AnnotationLayer.ValuesCase.VALUES_NOT_SET) {
-        fail("layer '" + layer.getId() + "' has no value arm");
+        fail("layer '" + layer.getId() + "' has no value case");
       }
       validateStandardValueArm(layer);
       validateLayer(layer, document.getRawText().length(), embeddingProvider);
     }
   }
 
-  /** Validates standard value arm. */
+  /** Validates standard value case. */
   private static void validateStandardValueArm(AnnotationLayer layer) {
     if (layer.getIdentity().getKindCase()
         != org.apache.opennlp.grpc.v1.LayerIdentity.KindCase.STANDARD) {
@@ -218,7 +218,7 @@ final class DocumentLayersValidator {
           annotation.getOccurrencesList().forEach(span -> span(span, textLength));
         });
       }
-      case VALUES_NOT_SET -> fail("layer value arm is missing");
+      case VALUES_NOT_SET -> fail("layer value case is missing");
     }
   }
 

@@ -378,7 +378,7 @@ public final class OpenNlpSearchServiceImpl
       final List<DynamicSearchIndexRegistry.RetainedChunk> batch =
           sourceChunks.subList(start, Math.min(start + batchSize, sourceChunks.size()));
       final List<String> texts = batch.stream()
-          .map(chunk -> chunk.record().emittedText()).toList();
+          .map(chunk -> chunk.record().indexedText()).toList();
       final String backend = resolvedRoute == null
           ? DynamicSearchIndexRegistry.selectedBackend(embedding)
           : resolvedRoute.getBackendId();
@@ -1078,7 +1078,7 @@ public final class OpenNlpSearchServiceImpl
         .setChunkGroupId(record.chunkGroupId())
         .setScore(result.score())
         .setSourceSpan(record.sourceSpan())
-        .setEmittedText(record.emittedText())
+        .setIndexedText(record.indexedText())
         .build();
     return new ResponseHit(hit, record.sourceDocument());
   }
@@ -1097,7 +1097,7 @@ public final class OpenNlpSearchServiceImpl
         .setChunkGroupId(record.chunkGroupId())
         .setScore(hit.score())
         .setSourceSpan(record.sourceSpan())
-        .setEmittedText(record.emittedText())
+        .setIndexedText(record.indexedText())
         .addAllMatchedSpans(hit.matchedSpans())
         .build();
     return new ResponseHit(wireHit, record.sourceDocument());

@@ -84,7 +84,7 @@ export class LifecycleWorkbench {
   readonly #driftStats = requiredElement<HTMLDListElement>("collection-drift-stats");
   readonly #coverageBar = requiredElement<HTMLElement>("collection-coverage-bar");
   readonly #coverageLabel = requiredElement<HTMLElement>("collection-coverage-label");
-  readonly #ledger = requiredElement<HTMLElement>("collection-ledger");
+  readonly #termStatistics = requiredElement<HTMLElement>("collection-term-statistics");
   readonly #watchStatus = requiredElement<HTMLElement>("collection-watch-status");
   readonly #eventLog = requiredElement<HTMLElement>("collection-event-log");
 
@@ -463,11 +463,11 @@ export class LifecycleWorkbench {
 
   private renderCollection(collection: CollectionView | undefined): void {
     this.#driftStats.replaceChildren();
-    this.#ledger.replaceChildren();
+    this.#termStatistics.replaceChildren();
     if (!collection) {
       this.#coverageBar.style.width = "0%";
       this.#coverageLabel.textContent = "No collection selected.";
-      this.#ledger.append(emptyMessage("Select or save a collection to see its term ledger."));
+      this.#termStatistics.append(emptyMessage("Select or save a collection to see its term statistics."));
       return;
     }
     const drift = collection.drift;
@@ -481,24 +481,24 @@ export class LifecycleWorkbench {
     this.#coverageLabel.textContent = collection.vocabularyArtifactId
       ? `${coverage}% of term occurrences hit vocabulary '${collection.vocabularyArtifactId}'.`
       : "No vocabulary artifact is configured; every accreted term counts as new.";
-    if (collection.termLedger.length === 0) {
-      this.#ledger.append(emptyMessage("The member indexes hold no analyzable terms yet."));
+    if (collection.termStatistics.length === 0) {
+      this.#termStatistics.append(emptyMessage("The member indexes hold no analyzable terms yet."));
       return;
     }
-    for (const entry of collection.termLedger.slice(0, 40)) {
+    for (const entry of collection.termStatistics.slice(0, 40)) {
       const chip = document.createElement("span");
-      chip.className = entry.inVocabulary ? "ledger-term is-known" : "ledger-term";
+      chip.className = entry.inVocabulary ? "term-statistic is-known" : "term-statistic";
       chip.textContent = `${entry.term} ×${formatInteger(entry.occurrences)}`;
       chip.title = entry.inVocabulary
         ? "A row of the current vocabulary" : "Accreted outside the current vocabulary";
-      this.#ledger.append(chip);
+      this.#termStatistics.append(chip);
     }
-    if (collection.termLedger.length > 40 || collection.omittedLedgerTerms > 0) {
+    if (collection.termStatistics.length > 40 || collection.omittedTermCount > 0) {
       const rest = document.createElement("span");
-      rest.className = "ledger-more";
-      rest.textContent = `+${formatInteger(Math.max(0, collection.termLedger.length - 40)
-        + collection.omittedLedgerTerms)} more`;
-      this.#ledger.append(rest);
+      rest.className = "statistics-more";
+      rest.textContent = `+${formatInteger(Math.max(0, collection.termStatistics.length - 40)
+        + collection.omittedTermCount)} more`;
+      this.#termStatistics.append(rest);
     }
   }
 

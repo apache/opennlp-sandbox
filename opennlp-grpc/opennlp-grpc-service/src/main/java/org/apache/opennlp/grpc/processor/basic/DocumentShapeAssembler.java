@@ -529,7 +529,7 @@ final class DocumentShapeAssembler {
 
   /**
    * Starts a layer with both its compatibility id and its strongly typed identity.
-   * Unknown ids remain first-class extension layers through the custom arm.
+   * Unknown ids remain first-class extension layers through the custom case.
    */
   static AnnotationLayer.Builder layer(String id) {
     final LayerIdentity.Builder identity = LayerIdentity.newBuilder();

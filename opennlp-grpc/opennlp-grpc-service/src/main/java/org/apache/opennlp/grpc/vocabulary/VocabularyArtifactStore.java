@@ -342,7 +342,7 @@ public final class VocabularyArtifactStore {
     }
     final long dictionaryTerms = terms.stream().filter(TermCount::fromDictionary).count();
     final String artifactId = "vocabulary-" + UUID.randomUUID();
-    // TermCount writes its interchange form to a file, so it lands in local scratch
+    // TermCount writes its interchange form to a file in local scratch
     // first and streams into the store from there.
     final Path scratch = Files.createTempFile("vocabulary-", ".tsv");
     try {

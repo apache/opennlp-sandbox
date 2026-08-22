@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Pins the collection wire shapes: the descriptor accretion scopes to, its
- * recomputed term ledger and drift statistics, the collection CRUD calls, the
+ * recomputed term statistics and drift statistics, the collection CRUD calls, the
  * server-streaming watch whose events are self-contained snapshots, and the
  * persisted collection storage record.
  */
@@ -93,7 +93,7 @@ class CollectionWireContractTest {
   }
 
   @Test
-  void descriptorsCarryLedgerDriftAndArtifactLineage() {
+  void descriptorsCarryTermStatisticsDriftAndArtifactLineage() {
     final Descriptor descriptor = OpenNlpSearchProto.getDescriptor()
         .findMessageTypeByName("CollectionDescriptor");
     assertNotNull(descriptor);
@@ -109,18 +109,18 @@ class CollectionWireContractTest {
         descriptor.findFieldByName("drift_new_term_threshold").getJavaType());
     assertEquals("AnalysisChainDescriptor",
         descriptor.findFieldByName("analysis_chain").getMessageType().getName());
-    final FieldDescriptor ledger = descriptor.findFieldByName("term_ledger");
-    assertTrue(ledger.isRepeated());
-    assertEquals("TermLedgerEntry", ledger.getMessageType().getName());
+    final FieldDescriptor termStatistics = descriptor.findFieldByName("term_statistics");
+    assertTrue(termStatistics.isRepeated());
+    assertEquals("TermStatistic", termStatistics.getMessageType().getName());
     assertEquals(FieldDescriptor.JavaType.INT,
-        descriptor.findFieldByName("omitted_ledger_terms").getJavaType());
+        descriptor.findFieldByName("omitted_term_count").getJavaType());
     assertEquals("CollectionDriftStats",
         descriptor.findFieldByName("drift").getMessageType().getName());
     assertEquals(FieldDescriptor.JavaType.STRING,
         descriptor.findFieldByName("integrity_hash").getJavaType());
 
     final Descriptor entry = OpenNlpSearchProto.getDescriptor()
-        .findMessageTypeByName("TermLedgerEntry");
+        .findMessageTypeByName("TermStatistic");
     assertEquals(FieldDescriptor.JavaType.STRING,
         entry.findFieldByName("term").getJavaType());
     assertEquals(FieldDescriptor.JavaType.LONG,

@@ -47,7 +47,7 @@ import org.apache.opennlp.grpc.v1.CollectionEvent;
 import org.apache.opennlp.grpc.v1.CollectionEventKind;
 import org.apache.opennlp.grpc.v1.PersistedCollection;
 import org.apache.opennlp.grpc.v1.SetCollectionRequest;
-import org.apache.opennlp.grpc.v1.TermLedgerEntry;
+import org.apache.opennlp.grpc.v1.TermStatistic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,9 +55,9 @@ import org.slf4j.LoggerFactory;
  * Bounded registry of collections: the scope vocabulary accretion is measured over.
  *
  * <p>A collection stores configured state only: its member index ids, artifact lineage,
- * and drift threshold. The term ledger and drift statistics are recomputed on every read
- * from the live emitted text of member index chunks, analyzed with the same chain as the
- * keyword legs, so replaced or deleted documents never leave stale counts. Terms of the
+ * and drift threshold. The term statistics and drift statistics are recomputed on every read
+ * from the live indexed text of member index chunks, analyzed with the same chain as the
+ * keyword components, so replaced or deleted documents never leave stale counts. Terms of the
  * current vocabulary artifact count as one unit by greedy longest match, mirroring how
  * vocabularies are learned.</p>
  *
@@ -82,8 +82,8 @@ public final class SearchCollectionRegistry {
   /** Fixed safety ceiling for one collection's member index count. */
   static final int MAX_MEMBER_INDEXES = 64;
 
-  /** Largest term ledger carried by one descriptor; drift always covers everything. */
-  static final int MAX_LEDGER_TERMS = 32_768;
+  /** Largest term statistics carried by one descriptor; drift always covers everything. */
+  static final int MAX_TERM_STATISTICS = 32_768;
 
   /** Default maximum distinct terms counted while computing collection drift. */
   static final int DEFAULT_MAX_DISTINCT_TERMS = 1_000_000;
@@ -257,7 +257,7 @@ public final class SearchCollectionRegistry {
    * Creates or replaces one collection's complete configured state.
    *
    * @param request Configured state with member index ids already resolved.
-   * @return Descriptor after the write, with its recomputed ledger and drift.
+   * @return Descriptor after the write, with its recomputed term statistics and drift.
    * @throws IllegalArgumentException If an identifier is invalid, a member index or the
    *     vocabulary artifact is unknown, or a bound would be exceeded.
    * @throws UncheckedIOException If reading the vocabulary or writing the file fails.
@@ -338,7 +338,7 @@ public final class SearchCollectionRegistry {
   }
 
   /**
-   * Returns one collection with its recomputed ledger and drift.
+   * Returns one collection with its recomputed term statistics and drift.
    *
    * @param collectionId Stable collection id.
    * @return The descriptor, or {@code null} when the id is unknown.
@@ -357,7 +357,7 @@ public final class SearchCollectionRegistry {
   }
 
   /**
-   * Returns every collection with recomputed drift and its ledger omitted.
+   * Returns every collection with recomputed drift and its term statistics omitted.
    *
    * @return Immutable descriptors in stable collection-id order.
    * @throws UncheckedIOException If reading a vocabulary artifact fails.
@@ -633,17 +633,17 @@ public final class SearchCollectionRegistry {
   }
 
   /**
-   * Builds one descriptor with its ledger and drift recomputed from live members.
+   * Builds one descriptor with its term statistics and drift recomputed from live members.
    *
    * @param configured Collection configuration to describe.
    * @param integrityHash Integrity hash of the last persisted form, or empty.
-   * @param includeLedger Whether the bounded ledger is carried; drift always covers
-   *     the complete ledger.
+   * @param includeTermStatistics Whether the bounded term statistics are carried; drift always
+   *     covers all terms.
    * @return The descriptor.
    * @throws UncheckedIOException If reading the vocabulary artifact fails.
    */
   private CollectionDescriptor describe(
-      CollectionDescriptor configured, String integrityHash, boolean includeLedger) {
+      CollectionDescriptor configured, String integrityHash, boolean includeTermStatistics) {
     final Set<String> vocabulary = vocabularyOf(configured);
     final Map<String, Long> counts = countUnits(configured, vocabulary);
 
@@ -672,20 +672,20 @@ public final class SearchCollectionRegistry {
             .setChainVersion(TermsSearchIndexProviderFactory.CHAIN_VERSION))
         .setDrift(drift)
         .setIntegrityHash(integrityHash);
-    if (includeLedger) {
+    if (includeTermStatistics) {
       final List<Map.Entry<String, Long>> ordered = new ArrayList<>(counts.entrySet());
       ordered.sort(Map.Entry.<String, Long>comparingByValue().reversed()
           .thenComparing(Map.Entry.comparingByKey()));
-      final int carried = Math.min(ordered.size(), MAX_LEDGER_TERMS);
+      final int carried = Math.min(ordered.size(), MAX_TERM_STATISTICS);
       for (Map.Entry<String, Long> entry : ordered.subList(0, carried)) {
-        descriptor.addTermLedger(TermLedgerEntry.newBuilder()
+        descriptor.addTermStatistics(TermStatistic.newBuilder()
             .setTerm(entry.getKey())
             .setOccurrences(entry.getValue())
             .setInVocabulary(vocabulary.contains(entry.getKey())));
       }
-      descriptor.setOmittedLedgerTerms(counts.size() - carried);
+      descriptor.setOmittedTermCount(counts.size() - carried);
     } else {
-      descriptor.setOmittedLedgerTerms(counts.size());
+      descriptor.setOmittedTermCount(counts.size());
     }
     return descriptor.build();
   }
@@ -711,7 +711,7 @@ public final class SearchCollectionRegistry {
   }
 
   /**
-   * Counts term units across the live emitted text of every member index chunk. A
+   * Counts term units across the live indexed text of every member index chunk. A
    * multiword vocabulary term consumes its words as one unit by greedy longest match,
    * mirroring how vocabularies are learned.
    *
@@ -740,7 +740,7 @@ public final class SearchCollectionRegistry {
       for (DynamicSearchIndexRegistry.RetainedChunk chunk : indexes.retainedChunks(memberId)) {
         final List<String> words = new ArrayList<>();
         for (QueryTermAnalyzer.Term term
-            : QueryTermAnalyzer.analyze(chunk.record().emittedText())) {
+            : QueryTermAnalyzer.analyze(chunk.record().indexedText())) {
           words.add(term.text());
         }
         int i = 0;
@@ -909,8 +909,8 @@ public final class SearchCollectionRegistry {
         final StoredCollection stored = new StoredCollection();
         stored.configured = descriptor.toBuilder()
             .clearAnalysisChain()
-            .clearTermLedger()
-            .clearOmittedLedgerTerms()
+            .clearTermStatistics()
+            .clearOmittedTermCount()
             .clearDrift()
             .clearIntegrityHash()
             .build();
@@ -927,7 +927,7 @@ public final class SearchCollectionRegistry {
    * Rewrites one collection file atomically when this registry is persisted.
    *
    * @param stored Collection whose integrity hash is updated after the write.
-   * @param computed Freshly described state, including its ledger snapshot.
+   * @param computed Freshly described state, including its term statistics snapshot.
    * @throws UncheckedIOException If the write fails.
    */
   private void write(StoredCollection stored, CollectionDescriptor computed) {

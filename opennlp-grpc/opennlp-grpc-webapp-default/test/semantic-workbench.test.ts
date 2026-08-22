@@ -171,7 +171,7 @@ describe("workspace search", () => {
       start,
       end,
       offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
-      emittedChunkText: text.slice(start, end),
+      indexedChunkText: text.slice(start, end),
       modelId: "demo-embedding",
       backendId: "static",
       vectorSpaceId: "demo-space",

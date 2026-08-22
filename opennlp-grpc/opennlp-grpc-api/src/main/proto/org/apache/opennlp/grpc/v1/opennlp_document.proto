@@ -72,7 +72,7 @@ message OpenNlpDocument {
   // PIPELINE_STEP_LEMMATIZE.
   optional DocumentAnalytics analytics = 6;
   // Opaque client-supplied metadata, echoed back verbatim. The server never
-  // writes first-class results here; it is a passthrough lane only.
+  // writes first-class results here; it is a passthrough field only.
   google.protobuf.Struct metadata = 7;
   // Sentence-level embeddings produced by PIPELINE_STEP_EMBED through the selected
   // embedding model. Document centroids live in document_centroids; chunk-attached
@@ -807,7 +807,7 @@ message AnnotationLayer {
     TermVectorAnnotationList term_vector_values = 18;
   }
   // Typed identity for this layer. Always populated by this server. Standard
-  // OpenNLP layers select the enum arm; extension layers select custom.
+  // OpenNLP layers select the enum case; extension layers select custom.
   LayerIdentity identity = 17;
 }
 

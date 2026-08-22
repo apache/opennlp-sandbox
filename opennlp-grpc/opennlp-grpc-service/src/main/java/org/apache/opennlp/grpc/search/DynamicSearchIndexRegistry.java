@@ -45,8 +45,8 @@ import org.apache.opennlp.grpc.v1.PersistedSearchChunk;
 import org.apache.opennlp.grpc.v1.SearchCorpusDescriptor;
 import org.apache.opennlp.grpc.v1.SearchIndexBuildDescriptor;
 import org.apache.opennlp.grpc.v1.SearchIndexDescriptor;
-import org.apache.opennlp.grpc.v1.SearchIndexLeg;
-import org.apache.opennlp.grpc.v1.SearchLegKind;
+import org.apache.opennlp.grpc.v1.SearchIndexComponent;
+import org.apache.opennlp.grpc.v1.SearchComponentKind;
 import org.apache.opennlp.grpc.v1.SearchMetric;
 import org.apache.opennlp.grpc.v1.SearchProviderCapability;
 import org.apache.opennlp.grpc.v1.SearchProviderSelector;
@@ -196,7 +196,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
     if (!instance.has(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_VECTOR)
         || !instance.has(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_LIVE)) {
       throw AnalysisException.failedPrecondition("Search provider instance '"
-          + instance.instanceId() + "' does not serve live vector legs");
+          + instance.instanceId() + "' does not serve live vector components");
     }
   }
 
@@ -381,7 +381,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
       if (!instance.has(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_VECTOR)
           || !instance.has(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_LIVE)) {
         throw AnalysisException.failedPrecondition("Search provider instance '"
-            + instance.instanceId() + "' does not serve live vector legs");
+            + instance.instanceId() + "' does not serve live vector components");
       }
     }
     if (indexes.size() >= maxIndexes) {
@@ -645,7 +645,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
         .setChunkGroupId(chunk.record().chunkGroupId())
         .setSourceDocument(chunk.record().sourceDocument())
         .setSourceSpan(chunk.record().sourceSpan())
-        .setEmittedText(chunk.record().emittedText())
+        .setIndexedText(chunk.record().indexedText())
         .setRoute(chunk.route())
         .setVectorId(chunk.vectorId())
         .setVectorSegment(chunk.vectorSegment())
@@ -670,7 +670,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
       return new StoredChunk(
           new SearchRecord(chunk.getDocumentId(), chunk.getChunkId(),
               chunk.getChunkGroupId().isBlank() ? "default" : chunk.getChunkGroupId(),
-              chunk.getSourceDocument(), chunk.getSourceSpan(), chunk.getEmittedText()),
+              chunk.getSourceDocument(), chunk.getSourceSpan(), chunk.getIndexedText()),
           null, chunk.getRoute(), chunk.getVectorId(), chunk.getVectorSegment(),
           chunk.getVectorSha256());
     } catch (IllegalArgumentException e) {
@@ -782,11 +782,11 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
             validateEmbedding(embedding, existing);
             final String chunkId = document.getDocId() + ":" + groupIndex
                 + ":" + chunkIndex;
-            final String emitted = chunk.hasTextContent()
+            final String indexedText = chunk.hasTextContent()
                 ? chunk.getTextContent() : coveredText(document, chunk.getAnnotationSpan());
             additions.add(new IndexedChunk(
                 searchRecord(document, chunkId, group.getGroupId(),
-                    chunk.getAnnotationSpan(), emitted),
+                    chunk.getAnnotationSpan(), indexedText),
                 toArray(embedding), embedding.getRoute()));
             selectedInDocument++;
             break;
@@ -815,7 +815,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
    * @param request Indexing request.
    * @return The selected configured instance, or {@code null} when unset.
    * @throws AnalysisException If the selector names no configured instance or the
-   *     instance does not serve live vector legs.
+   *     instance does not serve live vector components.
    */
   private SearchProviderCatalog.Instance resolveVectorInstance(IndexDocumentsRequest request) {
     if (!request.hasProvider()) {
@@ -825,7 +825,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
     if (!instance.has(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_VECTOR)
         || !instance.has(SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_LIVE)) {
       throw AnalysisException.failedPrecondition("Search provider instance '"
-          + instance.instanceId() + "' does not serve live vector legs");
+          + instance.instanceId() + "' does not serve live vector components");
     }
     return instance;
   }
@@ -868,7 +868,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
    * @param chunkId Stable chunk identifier.
    * @param chunkGroupId Stable projection identifier.
    * @param span Chunk span in the source document.
-   * @param emittedText Exact text represented by the embedding.
+   * @param indexedText Exact text represented by the embedding.
    * @return Validated search record.
    * @throws AnalysisException If the document shape is inconsistent.
    */
@@ -877,10 +877,10 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
       String chunkId,
       String chunkGroupId,
       org.apache.opennlp.grpc.v1.AnnotationSpan span,
-      String emittedText) {
+      String indexedText) {
     try {
       return new SearchRecord(document.getDocId(), chunkId, chunkGroupId,
-          searchSource(document), span, emittedText);
+          searchSource(document), span, indexedText);
     } catch (IllegalArgumentException e) {
       throw AnalysisException.failedPrecondition(
           "Document '" + document.getDocId() + "' contains an invalid indexed chunk: "
@@ -1029,7 +1029,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
   }
 
   /**
-   * Resolves a chunk span to source text when no emitted text is present.
+   * Resolves a chunk span to source text when no indexed text is present.
    *
    * @param document Source document.
    * @param span Chunk span.
@@ -1118,7 +1118,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
      * @param displayName User-facing name.
      * @param route Embedding route shared by all chunks.
      * @param instance Vector storage instance fixed for the index lifetime.
-     * @param keywordInstance Keyword leg instance, or {@code null} when none is configured.
+     * @param keywordInstance Keyword component instance, or {@code null} when none is configured.
      */
     DynamicIndex(String indexId, String displayName, EmbeddingRoute route,
         SearchProviderCatalog.Instance instance,
@@ -1208,20 +1208,20 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
               "Dynamic index provider vector segments reached "
                   + WorkspaceCheckpointStore.MAX_VECTOR_SEGMENTS);
         }
-        final VectorIndex leg = instance.configured()
+        final VectorIndex component = instance.configured()
             .createLiveVectorIndex(additions.getFirst().vector().length);
         final Set<String> ids = new HashSet<>();
         int row = 0;
         for (IndexedChunk addition : additions) {
           final String vectorId = "segment-" + segmentIndex + "-row-" + row;
-          leg.add(vectorId, addition.vector());
+          component.add(vectorId, addition.vector());
           ids.add(vectorId);
           merged.add(stored(addition, vectorId, segmentIndex, false));
           row++;
         }
-        leg.freeze();
+        component.freeze();
         final List<VectorSegment> appended = new ArrayList<>(snapshot.vectorSegments());
-        appended.add(new VectorSegment(leg, Set.copyOf(ids)));
+        appended.add(new VectorSegment(component, Set.copyOf(ids)));
         vectorSegments = List.copyOf(appended);
         vectorValues = snapshot.vectorValues()
             + additions.stream().mapToLong(chunk -> chunk.vector().length).sum();
@@ -1246,24 +1246,24 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
     }
 
     /**
-     * Builds one frozen leg from chunks that retain their raw vectors.
+     * Builds one frozen component from chunks that retain their raw vectors.
      *
      * @param chunks Published chunks with raw vectors.
      * @return Frozen provider vector segment.
      */
     private VectorSegment buildVectorSegment(List<StoredChunk> chunks) {
-      final VectorIndex leg = instance.configured()
+      final VectorIndex component = instance.configured()
           .createLiveVectorIndex(chunks.getFirst().rawVector().length);
       final Set<String> ids = new HashSet<>();
       for (StoredChunk chunk : chunks) {
-        leg.add(chunk.vectorId(), chunk.rawVector());
+        component.add(chunk.vectorId(), chunk.rawVector());
         ids.add(chunk.vectorId());
       }
-      leg.freeze();
-      return new VectorSegment(leg, Set.copyOf(ids));
+      component.freeze();
+      return new VectorSegment(component, Set.copyOf(ids));
     }
 
-    /** Builds the immutable keyword leg through its separately selected SPI instance. */
+    /** Builds the immutable keyword component through its separately selected SPI instance. */
     private KeywordQueryIndex buildKeywordLeg(List<StoredChunk> chunks) {
       if (keywordInstance == null) {
         return null;
@@ -1276,7 +1276,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
     }
 
     /**
-     * Rebuilds immutable non-vector legs around restored provider-owned segments.
+     * Rebuilds immutable non-vector components around restored provider-owned segments.
      *
      * @param chunks Restored active chunks.
      * @param vectorSegments Restored provider vector segments.
@@ -1362,12 +1362,12 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
                   instance.configured().preparationIdentity())))
           .setMaxResponseBytes(DEFAULT_MAX_RESPONSE_BYTES)
           .setSupportsAllHits(exhaustive);
-      descriptor.addLegs(SearchIndexLeg.newBuilder()
-          .setKind(SearchLegKind.SEARCH_LEG_KIND_VECTOR)
+      descriptor.addComponents(SearchIndexComponent.newBuilder()
+          .setKind(SearchComponentKind.SEARCH_COMPONENT_KIND_VECTOR)
           .setProviderInstanceId(instance.instanceId()));
       if (keywordInstance != null) {
-        descriptor.addLegs(SearchIndexLeg.newBuilder()
-            .setKind(SearchLegKind.SEARCH_LEG_KIND_KEYWORD)
+        descriptor.addComponents(SearchIndexComponent.newBuilder()
+            .setKind(SearchComponentKind.SEARCH_COMPONENT_KIND_KEYWORD)
             .setProviderInstanceId(keywordInstance.instanceId())
             .setAnalysisChain(keywordInstance.configured().analysisChain()));
       }
@@ -1435,7 +1435,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
       KeywordQueryIndex keywordLeg) {
   }
 
-  /** One immutable provider vector leg and the row ids it owns. */
+  /** One immutable provider vector component and the row ids it owns. */
   private record VectorSegment(VectorIndex index, Set<String> ids) {
   }
 
@@ -1478,7 +1478,7 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
       updateLengthPrefixed(digest, chunk.record().chunkId().getBytes(StandardCharsets.UTF_8));
       updateLengthPrefixed(digest, chunk.record().sourceDocument().toByteArray());
       updateLengthPrefixed(digest, chunk.record().sourceSpan().toByteArray());
-      updateLengthPrefixed(digest, chunk.record().emittedText().getBytes(StandardCharsets.UTF_8));
+      updateLengthPrefixed(digest, chunk.record().indexedText().getBytes(StandardCharsets.UTF_8));
       updateLengthPrefixed(digest, chunk.route().toByteArray());
       updateLengthPrefixed(digest, chunk.vectorSha256().toByteArray());
     }

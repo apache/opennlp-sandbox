@@ -90,11 +90,11 @@ service OpenNlpSearchService {
   // replaced on every call and the last write wins.
   rpc SetCollection(SetCollectionRequest) returns (SetCollectionResponse);
 
-  // Returns one collection with its term ledger and drift statistics
+  // Returns one collection with its term statistics and drift statistics
   // recomputed from live member index contents.
   rpc GetCollection(GetCollectionRequest) returns (GetCollectionResponse);
 
-  // Lists every collection with recomputed drift statistics. Term ledgers are
+  // Lists every collection with recomputed drift statistics. Term statistics are
   // omitted to bound the response; GetCollection returns them.
   rpc ListCollections(ListCollectionsRequest) returns (ListCollectionsResponse);
 
@@ -198,7 +198,7 @@ message ListIndexAliasesResponse {
 }
 
 // One collection: the scope vocabulary accretion is measured over. Indexes
-// belong to a collection, indexing feeds its term ledger, vocabularies are
+// belong to a collection, indexing feeds its term statistics, vocabularies are
 // cut from it, models train from those vocabularies, and drift is measured
 // against the current vocabulary artifact.
 message CollectionDescriptor {
@@ -207,7 +207,7 @@ message CollectionDescriptor {
   // Human-readable name suitable for a collection selector.
   string display_name = 2;
   // Resolved dynamic member index ids. A member deleted after it was added
-  // simply stops contributing to the ledger.
+  // simply stops contributing to the term statistics.
   repeated string member_index_ids = 3;
   // Dictionary artifact this collection's vocabularies are cut against.
   optional string dictionary_artifact_id = 4;
@@ -218,19 +218,19 @@ message CollectionDescriptor {
   // Number of accreted new terms at which the watch stream reports
   // COLLECTION_EVENT_KIND_DRIFT_THRESHOLD_CROSSED. Zero disables the event.
   uint32 drift_new_term_threshold = 7;
-  // Analysis chain the term ledger is counted with, identical to the chain
-  // recorded on member keyword legs, so drift numbers are provably tied to
+  // Analysis chain used to count the term statistics, identical to the chain
+  // recorded on member keyword components, so drift numbers are provably tied to
   // the same analysis as querying.
   AnalysisChainDescriptor analysis_chain = 8;
-  // Term ledger recomputed from the live emitted text of every member index
+  // Term statistics recomputed from the live indexed text of every member index
   // chunk, ordered by descending occurrences with a lexicographic tie break.
   // A term of the current vocabulary counts as one unit even when multiword.
   // Bounded per response; omitted entirely by ListCollections.
-  repeated TermLedgerEntry term_ledger = 9;
-  // Number of distinct terms beyond the term_ledger response bound. The
-  // drift statistics always cover the complete ledger.
-  uint32 omitted_ledger_terms = 10;
-  // Drift of the complete ledger against the current vocabulary artifact.
+  repeated TermStatistic term_statistics = 9;
+  // Number of distinct terms beyond the term_statistics response bound. The
+  // drift statistics always cover all terms.
+  uint32 omitted_term_count = 10;
+  // Drift across all terms against the current vocabulary artifact.
   CollectionDriftStats drift = 11;
   // Lowercase SHA-256 of the persisted collection file with this field
   // cleared. Empty when no persistence root is configured.
@@ -238,11 +238,11 @@ message CollectionDescriptor {
 }
 
 // One accreted term and its live occurrence count across member indexes.
-message TermLedgerEntry {
+message TermStatistic {
   // Analyzed term text. Multiword vocabulary terms are one unit, joined by
   // single spaces.
   string term = 1;
-  // Occurrences across the emitted text of every live member index chunk.
+  // Occurrences across the indexed text of every live member index chunk.
   uint64 occurrences = 2;
   // True when the term is a row of the current vocabulary artifact.
   bool in_vocabulary = 3;
@@ -251,13 +251,13 @@ message TermLedgerEntry {
 // Drift of accreted member content against the current vocabulary artifact.
 // When the collection has no vocabulary artifact, every term is new.
 message CollectionDriftStats {
-  // Distinct terms in the complete ledger.
+  // Distinct terms across all member indexes.
   uint64 distinct_terms = 1;
-  // Total term occurrences in the complete ledger.
+  // Total term occurrences across all member indexes.
   uint64 term_occurrences = 2;
-  // Distinct ledger terms absent from the current vocabulary.
+  // Distinct terms absent from the current vocabulary.
   uint64 new_terms = 3;
-  // Occurrences of ledger terms absent from the current vocabulary.
+  // Occurrences of terms absent from the current vocabulary.
   uint64 new_term_occurrences = 4;
   // Fraction of occurrences hitting vocabulary terms, in [0, 1]. Zero when
   // the collection has no vocabulary artifact or no content.
@@ -285,7 +285,7 @@ message SetCollectionRequest {
 
 // Confirms one collection upsert.
 message SetCollectionResponse {
-  // Descriptor after the write, with its recomputed ledger and drift.
+  // Descriptor after the write, with its recomputed term statistics and drift.
   CollectionDescriptor collection = 1;
 }
 
@@ -294,7 +294,7 @@ message GetCollectionRequest {
   string collection_id = 1;
 }
 
-// One collection with its recomputed ledger and drift.
+// One collection with its recomputed term statistics and drift.
 message GetCollectionResponse {
   CollectionDescriptor collection = 1;
 }
@@ -305,7 +305,7 @@ message ListCollectionsRequest {}
 
 // Every collection configured on this server.
 message ListCollectionsResponse {
-  // Descriptors without term ledgers, in stable collection-id order.
+  // Descriptors without term statistics, in stable collection-id order.
   repeated CollectionDescriptor collections = 1;
 }
 
@@ -330,7 +330,7 @@ message WatchCollectionRequest {
 message CollectionEvent {
   // What this event reports.
   CollectionEventKind kind = 1;
-  // Complete descriptor snapshot at emission, with ledger and drift.
+  // Complete descriptor snapshot at emission, with term statistics and drift.
   CollectionDescriptor collection = 2;
   // Member index the event reports on. Set for
   // COLLECTION_EVENT_KIND_INDEX_PERSISTED.
@@ -429,9 +429,9 @@ message SearchProviderInstance {
 enum SearchProviderCapability {
   // No capability was declared. Listed instances never use this value.
   SEARCH_PROVIDER_CAPABILITY_UNSPECIFIED = 0;
-  // Executes vector similarity legs.
+  // Executes vector similarity components.
   SEARCH_PROVIDER_CAPABILITY_VECTOR = 1;
-  // Executes analyzed keyword and phrase legs.
+  // Executes analyzed keyword and phrase components.
   SEARCH_PROVIDER_CAPABILITY_KEYWORD = 2;
   // Serves mutable live indexes published as atomic snapshots.
   SEARCH_PROVIDER_CAPABILITY_LIVE = 3;
@@ -481,9 +481,9 @@ message SearchIndexDescriptor {
   SearchIndexBuildDescriptor build = 12;
   // Largest serialized SearchIndexResponse emitted for this index.
   uint32 max_response_bytes = 13;
-  // Per-modality legs of this logical index and the provider instance behind
-  // each. Hybrid compound queries fuse across the legs of one logical index.
-  repeated SearchIndexLeg legs = 14;
+  // Per-modality components of this logical index and the provider instance behind
+  // each. Hybrid compound queries fuse across the components of one logical index.
+  repeated SearchIndexComponent components = 14;
   // True when a checkpoint of this index exists under the operator-configured
   // persistence root, so the index survives a server restart.
   bool persisted = 15;
@@ -493,28 +493,28 @@ message SearchIndexDescriptor {
 }
 
 // One independently provided modality of a logical index.
-message SearchIndexLeg {
-  // The modality this leg executes.
-  SearchLegKind kind = 1;
-  // Configured provider instance serving this leg.
+message SearchIndexComponent {
+  // The modality this component executes.
+  SearchComponentKind kind = 1;
+  // Configured provider instance serving this component.
   string provider_instance_id = 2;
-  // Analysis chain that built and queries this leg. Set only on keyword legs,
+  // Analysis chain that built and queries this component. Set only on keyword components,
   // where it is the language-layer twin of the descriptor's embedding route:
   // query-time analysis provably matches index-time analysis.
   AnalysisChainDescriptor analysis_chain = 3;
 }
 
-// The modality of one search index leg.
-enum SearchLegKind {
-  // No modality was declared. Descriptor legs never use this value.
-  SEARCH_LEG_KIND_UNSPECIFIED = 0;
+// The modality of one search index component.
+enum SearchComponentKind {
+  // No modality was declared. Descriptor components never use this value.
+  SEARCH_COMPONENT_KIND_UNSPECIFIED = 0;
   // Vector similarity over embedded chunks.
-  SEARCH_LEG_KIND_VECTOR = 1;
-  // Analyzed keyword and phrase matching over emitted text.
-  SEARCH_LEG_KIND_KEYWORD = 2;
+  SEARCH_COMPONENT_KIND_VECTOR = 1;
+  // Analyzed keyword and phrase matching over indexed text.
+  SEARCH_COMPONENT_KIND_KEYWORD = 2;
 }
 
-// Identity of the analysis chain behind a keyword leg: tokenizer, normalizers,
+// Identity of the analysis chain behind a keyword component: tokenizer, normalizers,
 // and any learned vocabulary artifact, pinned so query-time analysis matches
 // index-time analysis.
 message AnalysisChainDescriptor {
@@ -601,7 +601,7 @@ message SearchIndexRequest {
     OpenNlpDocument query = 2;
     // Typed compound query executed under the normative score algebra in
     // opennlp_query.proto. Hits carry root scores in [0, 1] and matched spans
-    // from keyword legs. Reports UNIMPLEMENTED when the index does not
+    // from keyword components. Reports UNIMPLEMENTED when the index does not
     // execute compound queries or a CEL clause has no installed evaluator.
     QueryNode compound_query = 4;
   }
@@ -648,23 +648,23 @@ message SearchHit {
   // units are named by that document's offset_encoding.
   AnnotationSpan source_span = 5;
   // Exact text emitted by offline chunk preparation and embedded into the index.
-  string emitted_text = 6;
+  string indexed_text = 6;
   // Index, embedding, build, and corpus provenance are inherited from
   // SearchIndexResponse.index and are not repeated on every hit.
   reserved 7 to 9;
   // Keyword and phrase matches contributing to this hit, for exact
-  // highlighting. Present only for compound queries with keyword legs.
+  // highlighting. Present only for compound queries with keyword components.
   repeated MatchedSpan matched_spans = 10;
   // Typed chunk projection identity from OpenNlpDocument.chunk_embedding_groups.
   // Static bundles without a named projection use "default".
   string chunk_group_id = 11;
 }
 
-// One keyword or phrase match within a hit's emitted text.
+// One keyword or phrase match within a hit's indexed text.
 message MatchedSpan {
-  // Inclusive start offset in UTF-16 code units within SearchHit.emitted_text.
+  // Inclusive start offset in UTF-16 code units within SearchHit.indexed_text.
   uint32 start = 1;
-  // Exclusive end offset in UTF-16 code units within SearchHit.emitted_text.
+  // Exclusive end offset in UTF-16 code units within SearchHit.indexed_text.
   uint32 end = 2;
   // The analyzed query term or phrase text that matched this span.
   string term = 3;

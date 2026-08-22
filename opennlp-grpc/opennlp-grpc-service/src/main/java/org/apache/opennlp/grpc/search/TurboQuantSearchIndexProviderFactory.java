@@ -29,13 +29,13 @@ import opennlp.embeddings.index.TurboQuantIndex;
 import opennlp.embeddings.index.VectorIndex;
 import org.apache.opennlp.grpc.v1.SearchProviderCapability;
 
-/** ServiceLoader factory for TurboQuant bundles and live vector legs. */
+/** ServiceLoader factory for TurboQuant bundles and live vector components. */
 public final class TurboQuantSearchIndexProviderFactory implements SearchIndexProviderFactory {
 
   /** Stable configuration identifier for this provider. */
   public static final String PROVIDER_ID = "turbo_quant";
 
-  /** Bit width used for every live TurboQuant leg. */
+  /** Bit width used for every live TurboQuant component. */
   static final int TURBO_QUANT_BITS = 4;
   /** Fixed rotation seed, so equal content quantizes identically across processes. */
   static final long TURBO_QUANT_SEED = 1833L;

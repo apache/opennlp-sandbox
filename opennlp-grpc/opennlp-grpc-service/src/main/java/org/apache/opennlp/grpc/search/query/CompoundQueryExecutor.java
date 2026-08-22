@@ -85,7 +85,7 @@ public final class CompoundQueryExecutor {
   public interface SemanticSearcher {
 
     /**
-     * Searches the provider's vector leg.
+     * Searches the provider's vector component.
      *
      * @param queryVector Embedded semantic query.
      * @param topK Maximum returned results.
@@ -99,7 +99,7 @@ public final class CompoundQueryExecutor {
    *
    * @param candidate The matched candidate.
    * @param score Root algebra score in [0, 1].
-   * @param matchedSpans Keyword and phrase matches in the candidate's emitted text,
+   * @param matchedSpans Keyword and phrase matches in the candidate's indexed text,
    *     ordered by start offset.
    */
   public record QueryHit(QueryCandidate candidate, double score, List<MatchedSpan> matchedSpans) {
@@ -152,8 +152,8 @@ public final class CompoundQueryExecutor {
    * @param root Root query node.
    * @param candidates Retained candidate metadata in stable order.
    * @param embedder Semantic query embedder.
-   * @param semanticSearcher Vector-leg provider.
-   * @param keywordIndex Keyword-leg provider.
+   * @param semanticSearcher Vector-component provider.
+   * @param keywordIndex Keyword-component provider.
    * @param topK Maximum returned hits.
    * @return Ranked compound hits.
    */
@@ -471,7 +471,7 @@ public final class CompoundQueryExecutor {
   }
 
   /**
-   * Scores one calculator leg over an admitted candidate set.
+   * Scores one calculator component over an admitted candidate set.
    *
    * @param calculator Calculator declaration.
    * @param membership Sibling-admitted chunk ids.
@@ -550,7 +550,7 @@ public final class CompoundQueryExecutor {
   }
 
   /**
-   * Divides raw leg scores by the query's top score within the leg.
+   * Divides raw component scores by the query's top score within the component.
    *
    * @param raw Raw scores per chunk id.
    * @param scores Destination map of scores in [0, 1].
@@ -671,8 +671,8 @@ public final class CompoundQueryExecutor {
   /**
    * Builds one matched span.
    *
-   * @param start Inclusive start offset in UTF-16 code units of the emitted text.
-   * @param end Exclusive end offset in UTF-16 code units of the emitted text.
+   * @param start Inclusive start offset in UTF-16 code units of the indexed text.
+   * @param end Exclusive end offset in UTF-16 code units of the indexed text.
    * @param term Matched analyzed term or phrase.
    * @return The wire span.
    */

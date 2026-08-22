@@ -489,7 +489,7 @@ search.index.legal-opinions.max_query_bytes=16384
 search.index.legal-opinions.max_response_bytes=8388608
 search.index.legal-opinions.max_records=100000
 search.index.legal-opinions.max_source_document_bytes=10485760
-search.index.legal-opinions.max_emitted_text_bytes=1048576
+search.index.legal-opinions.max_indexed_text_bytes=1048576
 search.index.legal-opinions.max_bundle_bytes=536870912
 ```
 
@@ -506,7 +506,7 @@ java -jar opennlp-grpc-webapp/target/opennlp-grpc-webapp-3.0.0-SNAPSHOT.jar \
 
 Open `http://127.0.0.1:7072/` and select **Corpus search**. The browser discovers index limits and
 provenance, sends a document-shaped query, maps cosine scores across a fixed red-neutral-green
-scale, highlights the authoritative span in the original source text, compares it with emitted
+scale, highlights the authoritative span in the original source text, compares it with indexed
 chunk text, and opens typed OpenNLP annotations for a selected source document. All remote query
 and response sizes remain bounded by the descriptor advertised to the browser.
 
@@ -534,9 +534,9 @@ a `cel_filter` that gates membership and a `cel_calculator` that scores from doc
 through a declared normalization. The normative score algebra is documented in
 `opennlp_query.proto` and pinned by tests: every score stays in `[0, 1]`, joins decide
 membership, boosts shape relevancy, and ranking ties break by chunk id then document id.
-Keyword and phrase legs analyze query text and indexed chunk text identically (code-point
+Keyword and phrase components analyze query text and indexed chunk text identically (code-point
 letter-and-digit terms, lowercased), and hits carry `matched_spans` locating each match in
-`emitted_text` by UTF-16 code unit for exact highlighting. Compound queries execute on the
+`indexed_text` by UTF-16 code unit for exact highlighting. Compound queries execute on the
 dynamic workspace indexes; a keyword-only tree needs no embedding backend at all. CEL clauses
 require an evaluator on the classpath through the `CelQueryEvaluator` ServiceLoader seam; the
 core ships none, and without one those clauses report `UNIMPLEMENTED`.
@@ -566,8 +566,8 @@ Each factory parses those strings once at startup into its typed immutable confi
 unknown or invalid options before the server listens.
 `ListSearchProviders` (and `GET /api/v1/search-providers`) lists them, and
 `SearchProviderSelector.custom` accepts any listed instance id, with the standard enum values
-as shorthand for the built-in defaults. Index descriptors name their per-modality `legs`: a
-vector leg (flat float or TurboQuant) and a keyword leg served by the built-in `terms`
+as shorthand for the built-in defaults. Index descriptors name their per-modality `components`: a
+vector component (flat float or TurboQuant) and a keyword component served by the built-in `terms`
 provider, which records its analysis-chain identity so query-time analysis provably matches
 index-time analysis.
 
@@ -591,8 +591,8 @@ does; flat float is in-memory only). The gateway serves all of it: `/api/v1/pers
 Collections scope vocabulary accretion. A collection (`SetCollection`, `GetCollection`,
 `ListCollections`, `DeleteCollection`) names its dynamic member indexes (aliases accepted,
 stored resolved), its dictionary, vocabulary, and model artifact lineage, and an optional
-drift threshold. Its term ledger is recomputed on every read from the live emitted text of
-member chunks with the same analysis chain as the keyword legs, so replaced or deleted
+drift threshold. Its term statistics are recomputed on every read from the live indexed text of
+member chunks with the same analysis chain as the keyword components, so replaced or deleted
 documents never leave stale counts; a multiword term of the current vocabulary counts as
 one unit, and the drift statistics report how many accreted terms fall outside that
 vocabulary (the retrain meter). With a persistence root configured, each collection is one
@@ -670,7 +670,7 @@ request instead of silently falling back.
 ### Unicode text analysis (model-free parity surfaces)
 
 These request surfaces expose the `opennlp-tools` Unicode stack (offset-aware
-normalization, UAX #29 word segmentation, per-token normalization ladders) on the
+normalization, UAX #29 word segmentation, per-token normalization layers) on the
 wire. They run entirely rule-based and need no operator-supplied models.
 
 | Feature | Request surface | Response surface | Notes |
@@ -680,7 +680,7 @@ wire. They run entirely rule-based and need no operator-supplied models.
 | Typed tokenizer choice | `AnalysisProfile.tokenizer.standard` | `OpenNlpDocument.sentences[].tokens` and `opennlp:tokens` | `MODEL` is the default. `UAX29` adds `Token.word_type`; `WHITESPACE` retains attached punctuation; `SIMPLE` splits character-class transitions; `LATTICE` selects the configured MeCab dictionary. The compatibility `tokenizer_engine` string remains accepted, but cannot be set with `tokenizer`. |
 | Typed sentence detector choice | `AnalysisProfile.sentence_detector.standard` | `OpenNlpDocument.sentences` and `opennlp:sentences` | `MODEL` is the default. `NEWLINE` treats each non-empty line as one sentence and needs no model. |
 | Per-token term layers | `AnalysisProfile.term_dimensions` (library `Dimension` names, e.g. `NFC`, `CASE_FOLD`, `FULL_CASE_FOLD`, `EMOJI_FOLD`) | `Token.term_layers` map | Requires `PIPELINE_STEP_TOKENIZE`. Character-level dimensions only: `ORIGINAL`, `STEM` and `LEMMA` are rejected (`PIPELINE_STEP_LEMMATIZE` owns lemmas). |
-| Per-language term profile | `AnalysisProfile.term_profile` (registry language, e.g. `"en"`, `"de"`) | `Token.term_layers` map carrying the profile's full ladder (including its `STEM` layer) | Requires `PIPELINE_STEP_TOKENIZE`. Mutually exclusive with `term_dimensions`; an unregistered language fails with `NOT_FOUND`. |
+| Per-language term profile | `AnalysisProfile.term_profile` (registry language, e.g. `"en"`, `"de"`) | `Token.term_layers` map carrying every layer in the profile (including its `STEM` layer) | Requires `PIPELINE_STEP_TOKENIZE`. Mutually exclusive with `term_dimensions`; an unregistered language fails with `NOT_FOUND`. |
 | Configurable term layers | `AnalysisProfile.term_layers` (`TermLayerSpec.qualifier`, typed `normalizers`, optional typed `stemmer`) | Qualified `STANDARD_LAYER_TERMS` layers and `Token.term_layers` entries | Requires `PIPELINE_STEP_TOKENIZE`. Each layer applies its normalizers in canonical order and then stems without an implicit case transform. Qualifiers must be non-blank and unique across every term layer the profile produces. Multiple entries can expose folded and case-preserving identities in one pass. Tokens that normalize to an empty value are omitted from that term layer and its aggregates. |
 | Aggregate term vectors | `PIPELINE_STEP_TERM_VECTOR` + `AnalysisProfile.term_vector` | Typed document layer `opennlp:term-vectors` | `source_layer` is a `LayerIdentity`: unset means `STANDARD_LAYER_TOKENS`; `LEMMAS`, `STEMS`, and qualified `TERMS` reuse the corresponding produced document layer as term identity. `FULL` includes one original-text occurrence span per token; `SCORING_ONLY` returns frequencies without spans. The result repeats the resolved source and mode as provenance. |
 
@@ -697,7 +697,7 @@ document shape.
 
 #### Custom segmentation engines (SPI)
 
-The `TokenizerSelector.custom` and `SentenceDetectorSelector.custom` arms select open
+The `TokenizerSelector.custom` and `SentenceDetectorSelector.custom` cases select open
 provider ids. Extension jars implement `TokenizerBackendFactory` or
 `SentenceDetectorBackendFactory` and register the implementation under the matching
 `META-INF/services/org.apache.opennlp.grpc.model.*BackendFactory` file. Each factory
@@ -1166,7 +1166,7 @@ then returns each strategy as a `chunk_embedding_groups` entry with embeddings
 attached inside each chunk. `ChunkEmbeddingGroup.strategy` reports the canonical typed
 strategy, including for legacy requests. The older string-valued `algorithm` field
 remains a compatibility input but cannot be set together with `strategy`. Standard
-sentence, token, semantic, and category identities use the enum arm; the custom arm
+sentence, token, semantic, and category identities use the enum case; the custom case
 keeps extension strategy ids open.
 
 #### Semantic chunking

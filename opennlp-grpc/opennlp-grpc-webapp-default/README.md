@@ -133,11 +133,11 @@ overview, and explicit complete-graph expansion is limited to 5,000 annotations.
 The immutable Corpus search lens is separate from the process-local Workspace search. It discovers
 immutable indexes from `GET /api/v1/search-indexes` and sends document-shaped queries to
 `POST /api/v1/search`. Search response parsing is isolated in `search-adapter.ts`. Each result
-keeps its numeric cosine score, authoritative source span, emitted chunk text, configured and
+keeps its numeric cosine score, authoritative source span, indexed chunk text, configured and
 actual query embedding routes, and corpus provenance. Discovered query and response byte caps are
 shown with the selected index, and server response truncation is reported as a bounded successful
 result. The inspector uses a fixed red-neutral-green scale over `[-1, 1]`, compares the original
-and emitted text, and lazily analyzes the selected source document when typed layers are not
+and indexed text, and lazily analyzes the selected source document when typed layers are not
 already present. Shared offset utilities reject invalid UTF-8 and UTF-16 boundaries and
 out-of-range code-point offsets.
 

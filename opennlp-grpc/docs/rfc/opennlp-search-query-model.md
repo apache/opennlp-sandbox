@@ -80,12 +80,12 @@ Two extensions:
    remote-backend pattern TEI established for embeddings. None of it is a
    dependency of the gRPC core; the core ships the SPI, the terms-layer
    keyword executor, flat float, and TurboQuant as defaults.
-3. **Logical indexes have legs.** A logical index is composed of
-   independently provided legs per modality: a vector leg (flat float,
-   TurboQuant) and a keyword leg (the terms-postings executor, Lucene).
-   Hybrid queries fuse across the legs of one logical index, which is what
+3. **Logical indexes have components.** A logical index is composed of
+   independently provided components per modality: a vector component (flat float,
+   TurboQuant) and a keyword component (the terms-postings executor, Lucene).
+   Hybrid queries fuse across the components of one logical index, which is what
    makes providers genuinely swappable per modality. The index descriptor
-   names its legs and the provider instance behind each.
+   names its components and the provider instance behind each.
 
 Selector contract: `SearchProviderSelector.custom` is a configured instance
 id; the standard enum values are shorthand for the default instance of each
@@ -100,7 +100,7 @@ the learned vocabulary artifact. Consequences:
 
 - A learned multiword vocabulary term is **one match unit** in both the
   Model2Vec term rows and the keyword postings. The same vocabulary drives
-  the semantic leg and the term leg.
+  the semantic component and the term component.
 - Offsets survive the whole stack (aligned normalization, term occurrence
   spans), so highlighting is exact and native; hits will carry matched spans.
 - The index descriptor records its **analysis chain identity** next to its
@@ -124,7 +124,7 @@ The collection is the noun accretion scopes to: indexes belong to a
 collection, indexing feeds its term counts, vocabularies are cut from it,
 models train from those vocabularies, and drift is measured against it. The
 `CollectionDescriptor` is a protobuf wire model (member index ids, term
-ledger, current dictionary, vocabulary, and model artifact ids, drift stats,
+term statistics, current dictionary, vocabulary, and model artifact ids, drift stats,
 integrity hash) persisted as one local `collection.pb` file; lineage is the
 parent ids already carried on vocabulary and model descriptors.
 
@@ -161,37 +161,37 @@ Clauses:
 
 | Clause | Role | Membership | Score |
 |---|---|---|---|
-| `semantic` | vector leg via the index's embedding route | similarity threshold-free top-k | `(cosine + 1) / 2` |
-| `term` | analyzed keyword leg (`ANY` or `ALL`) | analyzed-term match | executor relevance in [0, 1] |
+| `semantic` | vector component via the index's embedding route | similarity threshold-free top-k | `(cosine + 1) / 2` |
+| `term` | analyzed keyword component (`ANY` or `ALL`) | analyzed-term match | executor relevance in [0, 1] |
 | `phrase` | ordered terms with slop | in-order match | executor relevance in [0, 1] |
 | `join` | logical composition | AND / OR over operands, minus exclusions | mean (AND), max (OR), or reciprocal-rank fusion |
 | `boost` | relevancy shaping | operand's membership, unchanged | operand score times a static weight or a CEL calculator, clamped |
 | `cel_filter` | metadata predicate | expression must type-check to bool | never scores |
-| `cel_calculator` | metadata-derived scored leg | every candidate a sibling admitted | numeric expression through a declared normalization |
+| `cel_calculator` | metadata-derived scored component | every candidate a sibling admitted | numeric expression through a declared normalization |
 
 The join-vs-boost split is deliberate: a **join** decides membership and can
 never rescale relevancy; a **boost** shapes relevancy and can never gate
 recall. CEL follows the same split: the **filter** role must type-check to
 bool and only gates; the **calculator** role must type-check to a number,
 passes through an explicit normalization (`CLAMP`, `MINMAX` over the
-candidate set, or `LOGISTIC`), and then fuses like any other scored leg. Both
+candidate set, or `LOGISTIC`), and then fuses like any other scored component. Both
 roles read only the candidate's metadata `Struct` and perform no I/O, so they
 stay deterministic and provider-portable.
 
 Term and phrase leaf scores are pinned to per-query max normalization: each
 candidate's raw executor relevance is divided by the query's top score within
-that leg. This is portable across the terms-postings executor and Lucene, so
+that component. This is portable across the terms-postings executor and Lucene, so
 the [0, 1] leaf contract holds on every provider. CEL expressions see the
-candidate's metadata only: no sibling leg scores, no index statistics, and no
+candidate's metadata only: no sibling component scores, no index statistics, and no
 implicit clock; recency compares a metadata timestamp against a
 request-supplied `now`, keeping execution deterministic, and the cel-java
 version is pinned in the contract.
 
 The full normative score algebra lives as comments in `opennlp_query.proto`
 and is pinned by wire-contract and algebra tests; every provider must
-reproduce it. Reciprocal-rank fusion is the escape hatch for joining legs
+reproduce it. Reciprocal-rank fusion is the escape hatch for joining components
 whose scales are not comparable (the classic hybrid case), or when per-query
-max normalization is distrusted; a calculator leg is just one more entrant in
+max normalization is distrusted; a calculator component is just one more entrant in
 that fusion.
 
 ## Training recall telemetry
@@ -213,7 +213,7 @@ report the real quality of its own training as documents add up:
 
 Each metric attaches to a model artifact and an index snapshot by hash, so a
 recall curve is provenance-bound: this model version, this corpus size, this
-number. Exposure lands as an evaluation RPC after query execution.
+number. A later evaluation RPC can expose this after query execution.
 
 ## Persistence: deliberately minimal
 
@@ -237,26 +237,26 @@ shorthand for a lone semantic clause. The typed tree arrives as a new field;
 requests set exactly one of the two.
 
 1. Route the dynamic registry through the search provider SPI with capability
-   and instance declarations. Landed on this branch: capability declarations
+   and instance declarations. Available now: capability declarations
    on `SearchIndexProviderFactory`, the configured-instance catalog with
    `search.provider.<id>.type` declarations, the `ListSearchProviders` RPC
    and gateway route, instance-id resolution for
-   `SearchProviderSelector.custom`, per-modality `legs` on the index
-   descriptor, and the `terms` keyword leg's recorded analysis-chain
-   identity. Dynamic snapshots build their frozen vector legs through the
+   `SearchProviderSelector.custom`, per-modality `components` on the index
+   descriptor, and the `terms` keyword component's recorded analysis-chain
+   identity. Dynamic snapshots build their frozen vector components through the
    instance factories; startup bundle loading still resolves provider ids
    directly and joins the catalog with the persistence step.
 2. `QueryNode` execution: validation (types, CEL checking, algebra rule 8),
    the terms-layer keyword executor OOTB, and hit-level matched spans for
-   highlighting. Landed on this branch: the `query_kind` oneof on
+   highlighting. Available now: the `query_kind` oneof on
    `SearchIndexRequest`, structural validation, the algebra executor with
    per-query max normalization and normalized reciprocal-rank fusion, the
    code-point keyword and phrase executor with `MatchedSpan` hits, and the
    `CelQueryEvaluator` ServiceLoader seam. Recorded analysis-chain identity
-   for keyword legs follows the provider SPI step.
+   for keyword components follows the provider SPI step.
 3. Index persistence as the existing bundle format written to a configured
    local directory, plus the collection descriptor file and the lifecycle
-   RPCs (persist, seal, reindex, aliases, watch). Landed on this branch:
+   RPCs (persist, seal, reindex, aliases, watch). Available now:
    workspace checkpoints under `search.persist.root` (the bundle-style
    properties descriptor beside a `chunks.pb` stream retaining raw vectors,
    staged and swapped so the last complete write wins), restore at startup
@@ -266,7 +266,7 @@ requests set exactly one of the two.
    accepted, blue/green `ReindexIndex` replaying retained chunks through
    a newly selected embedding route with the alias swapping only after a
    successful build, the collection CRUD RPCs with per-collection
-   `collection.pb` files (term ledger and drift recomputed from live member
+   `collection.pb` files (term statistics and drift recomputed from live member
    contents on every read, integrity hash inside, last write wins), and the
    server-streaming `WatchCollection` whose self-contained snapshot events
    report drift threshold crossings, member persistence, and model
@@ -275,4 +275,4 @@ requests set exactly one of the two.
    mechanically: join to BooleanQuery, boost to BoostQuery, semantic to
    KnnFloatVectorQuery.
 
-Each step lands red tests first.
+Each step starts with failing tests.

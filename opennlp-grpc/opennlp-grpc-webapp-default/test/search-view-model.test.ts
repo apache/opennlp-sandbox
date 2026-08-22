@@ -43,7 +43,7 @@ const hit: SearchHit = {
   start: 1,
   end: 11,
   offsetEncoding: "OFFSET_ENCODING_UTF8_BYTE",
-  emittedChunkText: "😀 cafe",
+  indexedChunkText: "😀 cafe",
   modelId: "mini",
   backendId: "static",
   vectorSpaceId: "mini-v1",
@@ -69,9 +69,9 @@ describe("server search view model", () => {
     expect(sourceHighlight(hit)).toEqual({ before: "A", selected: "😀 café", after: " in Paris." });
   });
 
-  it("reports whether normalization changed the emitted chunk", () => {
-    expect(compareChunkText("café", "cafe")).toEqual({ exact: false, original: "café", emitted: "cafe" });
-    expect(compareChunkText("same", "same")).toEqual({ exact: true, original: "same", emitted: "same" });
+  it("reports whether normalization changed the indexed chunk", () => {
+    expect(compareChunkText("café", "cafe")).toEqual({ exact: false, original: "café", indexed: "cafe" });
+    expect(compareChunkText("same", "same")).toEqual({ exact: true, original: "same", indexed: "same" });
   });
 
   it("counts document analytics and finds annotations intersecting the selected source span", () => {
@@ -125,10 +125,10 @@ describe("server search view model", () => {
     );
   });
 
-  it("splits emitted text into plain and matched segments without double rendering", () => {
+  it("splits indexed text into plain and matched segments without double rendering", () => {
     const spanned = {
       ...hit,
-      emittedChunkText: "the writ of habeas corpus",
+      indexedChunkText: "the writ of habeas corpus",
       matchedSpans: [
         { start: 12, end: 25, term: "habeas corpus" },
         { start: 4, end: 8, term: "writ" },
@@ -142,6 +142,6 @@ describe("server search view model", () => {
       { text: " of ", matched: false },
       { text: "habeas corpus", matched: true, term: "habeas corpus" },
     ]);
-    expect(matchedSegments(hit)).toEqual([{ text: hit.emittedChunkText, matched: false }]);
+    expect(matchedSegments(hit)).toEqual([{ text: hit.indexedChunkText, matched: false }]);
   });
 });

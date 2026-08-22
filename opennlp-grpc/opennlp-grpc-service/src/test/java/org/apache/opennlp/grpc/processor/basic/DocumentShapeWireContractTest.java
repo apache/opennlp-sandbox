@@ -34,7 +34,7 @@ class DocumentShapeWireContractTest {
   @Test
   void firstClassResultsHaveDedicatedTypedLayerArms() {
     final Descriptor layer = AnnotationLayer.getDescriptor();
-    final Set<String> arms = layer.getOneofs().stream()
+    final Set<String> cases = layer.getOneofs().stream()
         .filter(oneof -> "values".equals(oneof.getName()))
         .flatMap(oneof -> oneof.getFields().stream())
         .map(field -> field.getName())
@@ -45,7 +45,7 @@ class DocumentShapeWireContractTest {
         "subword_values", "geo_values", "word_type_values", "entity_values",
         "syntactic_chunk_values", "stem_values", "lexical_expansion_values",
         "normalization_values", "analytics_values", "chunk_group_values",
-        "term_vector_values"), arms);
+        "term_vector_values"), cases);
     assertEquals("string", layer.findFieldByName("id").getType().name().toLowerCase());
   }
 

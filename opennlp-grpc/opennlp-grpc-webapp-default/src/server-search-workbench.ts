@@ -71,7 +71,7 @@ export class ServerSearchWorkbench {
   readonly #resultCount = requiredElement<HTMLElement>("server-result-count");
   readonly #sourceText = requiredElement<HTMLElement>("search-source-text");
   readonly #originalSpan = requiredElement<HTMLElement>("search-original-span");
-  readonly #emittedChunk = requiredElement<HTMLElement>("search-emitted-chunk");
+  readonly #indexedChunk = requiredElement<HTMLElement>("search-indexed-chunk");
   readonly #comparisonStatus = requiredElement<HTMLElement>("chunk-comparison-status");
   readonly #score = requiredElement<HTMLOutputElement>("selected-search-score");
   readonly #facts = requiredElement<HTMLDListElement>("search-hit-facts");
@@ -297,7 +297,7 @@ export class ServerSearchWorkbench {
       provenance.textContent = `${hit.documentId} · ${hit.corpusTitle}`;
       const preview = document.createElement("span");
       preview.className = "server-hit-preview";
-      preview.textContent = previewText(sourceHighlight(hit).selected || hit.emittedChunkText, 120);
+      preview.textContent = previewText(sourceHighlight(hit).selected || hit.indexedChunkText, 120);
       body.append(identity, provenance, preview);
       const score = scoreBadge(hit.score);
       button.append(rank, body, score);
@@ -371,7 +371,7 @@ export class ServerSearchWorkbench {
       `Chunk ${segment.chunkId}, cosine score ${segment.score.toFixed(4)}`);
     chunk.addEventListener("click", () => void this.selectHit(segment.hitId ?? ""));
     chunk.append(...matchedSegments({
-      emittedChunkText: segment.text,
+      indexedChunkText: segment.text,
       matchedSpans: segment.matchedSpans,
     }).map((part) => {
       if (!part.matched) {
@@ -435,12 +435,12 @@ export class ServerSearchWorkbench {
     this.#sourceText.replaceChildren(document.createTextNode(highlight.before), marker,
       document.createTextNode(highlight.after));
 
-    const comparison = compareChunkText(highlight.selected, hit.emittedChunkText);
+    const comparison = compareChunkText(highlight.selected, hit.indexedChunkText);
     this.#originalSpan.textContent = comparison.original;
-    this.renderEmittedChunk(hit);
+    this.renderIndexedChunk(hit);
     this.#comparisonStatus.textContent = comparison.exact
-      ? "The emitted chunk exactly matches the original source span."
-      : "The emitted chunk differs from the original span, typically because of configured transformation.";
+      ? "The indexed chunk exactly matches the original source span."
+      : "The indexed chunk differs from the original span, typically because of configured transformation.";
     this.#comparisonStatus.classList.toggle("is-different", !comparison.exact);
 
     this.#facts.replaceChildren();
@@ -486,14 +486,14 @@ export class ServerSearchWorkbench {
     }
   }
 
-  /** Renders the emitted chunk with keyword matches marked for highlighting. */
-  private renderEmittedChunk(hit: SearchHit): void {
+  /** Renders the indexed chunk with keyword matches marked for highlighting. */
+  private renderIndexedChunk(hit: SearchHit): void {
     const segments = matchedSegments(hit);
     if (segments.length === 0) {
-      this.#emittedChunk.textContent = "The server returned no emitted text.";
+      this.#indexedChunk.textContent = "The server returned no indexed text.";
       return;
     }
-    this.#emittedChunk.replaceChildren(...segments.map((segment) => {
+    this.#indexedChunk.replaceChildren(...segments.map((segment) => {
       if (!segment.matched) {
         return document.createTextNode(segment.text);
       }

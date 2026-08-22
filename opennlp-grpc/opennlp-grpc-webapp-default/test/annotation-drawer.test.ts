@@ -191,7 +191,7 @@ describe("annotation drawer", () => {
       start: 0,
       end: 16,
       offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
-      emittedChunkText: "Paris is lovely.",
+      indexedChunkText: "Paris is lovely.",
       modelId: "legal-mini",
       backendId: "static",
       vectorSpaceId: "legal-mini-space",

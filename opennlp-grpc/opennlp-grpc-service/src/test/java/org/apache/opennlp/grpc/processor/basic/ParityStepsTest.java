@@ -218,9 +218,9 @@ class ParityStepsTest {
     ClassicStepRunner.tokenizeUax29(rawText, document, new ArrayList<>());
     ClassicStepRunner.computeProfileTermLayers(document, "en", new ArrayList<>());
     final Token token = document.getSentences(0).getTokens(0);
-    // The English profile's ladder includes a stem layer; its value for "Running" is the
+    // The English profile includes a stem layer; its value for "Running" is the
     // Snowball stem of the case-folded form.
-    assertTrue(token.containsTermLayers("STEM"), "profile ladder should include STEM");
+    assertTrue(token.containsTermLayers("STEM"), "profile should include the STEM layer");
     assertEquals("run", token.getTermLayersOrThrow("STEM"));
   }
 

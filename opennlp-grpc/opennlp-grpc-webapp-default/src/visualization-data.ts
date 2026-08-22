@@ -39,7 +39,7 @@ export interface SimilarityHeatmapHit {
   offsetEncoding: string;
   start: number;
   end: number;
-  emittedChunkText: string;
+  indexedChunkText: string;
   score: number;
   modelId: string;
 }
@@ -91,7 +91,7 @@ export function buildSimilarityHeatmapRows(
     .map((hit) => ({
       start: hit.start,
       end: hit.end,
-      label: hit.emittedChunkText,
+      label: hit.indexedChunkText,
       score: hit.score,
       modelId: hit.modelId,
     }));

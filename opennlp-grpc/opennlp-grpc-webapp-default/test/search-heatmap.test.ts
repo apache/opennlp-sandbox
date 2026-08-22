@@ -35,7 +35,7 @@ function hit(overrides: Partial<SearchHit>): SearchHit {
     start: 0,
     end: 43,
     offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
-    emittedChunkText: SOURCE.slice(0, 43),
+    indexedChunkText: SOURCE.slice(0, 43),
     modelId: "model",
     backendId: "backend",
     vectorSpaceId: "space",
@@ -56,7 +56,7 @@ describe("buildDocumentHeat", () => {
       hit({ id: "b/1", documentId: "b", chunkId: "1", score: 0.9 }),
       hit({
         id: "a/2", documentId: "a", chunkId: "2", score: 0.7,
-        start: 44, end: 70, emittedChunkText: SOURCE.slice(44, 70),
+        start: 44, end: 70, indexedChunkText: SOURCE.slice(44, 70),
       }),
     ]);
     expect(documents.map((document) => document.documentId)).toEqual(["b", "a"]);
@@ -68,7 +68,7 @@ describe("buildDocumentHeat", () => {
     const documents = buildDocumentHeat([
       hit({
         id: "doc-1/late", chunkId: "late", score: 0.8,
-        start: 44, end: 70, emittedChunkText: SOURCE.slice(44, 70),
+        start: 44, end: 70, indexedChunkText: SOURCE.slice(44, 70),
       }),
       hit({ id: "doc-1/early", chunkId: "early", score: 0.3, start: 0, end: 43 }),
     ]);
@@ -87,7 +87,7 @@ describe("buildDocumentHeat", () => {
     expect(segments[2]?.score).toBe(0.8);
   });
 
-  it("keeps matched spans when the emitted text equals the source slice", () => {
+  it("keeps matched spans when the indexed text equals the source slice", () => {
     const documents = buildDocumentHeat([
       hit({ matchedSpans: [{ start: 12, end: 25, term: "habeas corpus" }] }),
     ]);
@@ -96,10 +96,10 @@ describe("buildDocumentHeat", () => {
     ]);
   });
 
-  it("drops matched spans when the emitted text was transformed", () => {
+  it("drops matched spans when the indexed text was transformed", () => {
     const documents = buildDocumentHeat([
       hit({
-        emittedChunkText: "the writ of habeas corpus protects liberty.",
+        indexedChunkText: "the writ of habeas corpus protects liberty.",
         matchedSpans: [{ start: 12, end: 25, term: "habeas corpus" }],
       }),
     ]);
@@ -112,7 +112,7 @@ describe("buildDocumentHeat", () => {
       hit({ id: "doc-1/one", chunkId: "one", score: 0.6, start: 0, end: 43 }),
       hit({
         id: "doc-1/two", chunkId: "two", score: 0.4,
-        start: 20, end: 70, emittedChunkText: SOURCE.slice(20, 70),
+        start: 20, end: 70, indexedChunkText: SOURCE.slice(20, 70),
       }),
     ]);
     const rendered = (documents[0]?.segments ?? []).map((segment) => segment.text).join("");
@@ -128,7 +128,7 @@ describe("buildDocumentHeat", () => {
         offsetEncoding: "OFFSET_ENCODING_UTF8_BYTE",
         start: 15,
         end: 30,
-        emittedChunkText: "Détail second.",
+        indexedChunkText: "Détail second.",
       }),
     ]);
     const segments = documents[0]?.segments ?? [];

@@ -53,7 +53,7 @@ public final class ChunkingStrategies {
    * Returns the canonical typed strategy identity for result provenance.
    *
    * @param spec The chunking specification to resolve.
-   * @return A standard enum arm for a built-in strategy or the open custom arm.
+   * @return A standard enum case for a built-in strategy or the open custom case.
    * @throws AnalysisException If the selection is absent, contradictory, or incomplete.
    */
   public static ChunkingStrategySelector selectedStrategy(ChunkingSpec spec) {
@@ -75,7 +75,7 @@ public final class ChunkingStrategies {
    * Returns a typed selector for one standard strategy.
    *
    * @param strategy The standard strategy to select.
-   * @return A selector carrying the standard enum arm.
+   * @return A selector carrying the standard enum case.
    */
   public static ChunkingStrategySelector standard(StandardChunkingStrategy strategy) {
     if (strategy == null) {

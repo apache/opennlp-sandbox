@@ -90,7 +90,7 @@ class TurboQuantSearchBundleLoaderTest {
         SearchIndexBundleConfiguration.DEFAULT_MAX_QUERY_BYTES,
         SearchIndexBundleConfiguration.DEFAULT_MAX_RESPONSE_BYTES,
         2, SearchIndexBundleConfiguration.DEFAULT_MAX_SOURCE_DOCUMENT_BYTES,
-        SearchIndexBundleConfiguration.DEFAULT_MAX_EMITTED_TEXT_BYTES,
+        SearchIndexBundleConfiguration.DEFAULT_MAX_INDEXED_TEXT_BYTES,
         SearchIndexBundleConfiguration.DEFAULT_MAX_BUNDLE_BYTES, Map.of());
 
     final SearchIndexProvider provider = load(configuration);
@@ -191,14 +191,14 @@ class TurboQuantSearchBundleLoaderTest {
         "p-long", "Case", "", "", "", "five!")));
     final SearchIndexBundleConfiguration sourceBound =
         configuration(oneRecordIndex, onePassage, 10, 4, 1_000);
-    final SearchIndexBundleConfiguration emittedBound =
+    final SearchIndexBundleConfiguration indexedTextBound =
         configuration(oneRecordIndex, onePassage, 10, 1_000, 4);
     assertEquals(4, sourceBound.maxSourceDocumentBytes());
-    assertEquals(4, emittedBound.maxEmittedTextBytes());
+    assertEquals(4, indexedTextBound.maxIndexedTextBytes());
     assertThrows(IOException.class,
         () -> load(sourceBound));
     assertThrows(IOException.class,
-        () -> load(emittedBound));
+        () -> load(indexedTextBound));
   }
 
   @Test
@@ -342,7 +342,7 @@ class TurboQuantSearchBundleLoaderTest {
   }
 
   private static SearchIndexBundleConfiguration configuration(
-      Path indexDir, Path passages, int maxRecords, int maxSourceBytes, int maxEmittedBytes) {
+      Path indexDir, Path passages, int maxRecords, int maxSourceBytes, int maxIndexedTextBytes) {
     return new SearchIndexBundleConfiguration(
         "legal",
         indexDir,
@@ -352,7 +352,7 @@ class TurboQuantSearchBundleLoaderTest {
         SearchIndexBundleConfiguration.DEFAULT_MAX_RESPONSE_BYTES,
         maxRecords,
         maxSourceBytes,
-        maxEmittedBytes,
+        maxIndexedTextBytes,
         SearchIndexBundleConfiguration.DEFAULT_MAX_BUNDLE_BYTES,
         Map.of());
   }

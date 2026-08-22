@@ -44,7 +44,7 @@ message PersistedIndexAliases {
 message PersistedCollection {
   // Version of the persisted collection record contract.
   uint32 format_version = 1;
-  // The collection state at the last write, including its ledger snapshot.
+  // The collection state at the last write, including its term statistics snapshot.
   CollectionDescriptor collection = 2;
 }
 
@@ -59,7 +59,7 @@ message PersistedSearchChunk {
   // Authoritative span within source_document.raw_text.
   AnnotationSpan source_span = 4;
   // Exact text represented by the stored vector.
-  string emitted_text = 5;
+  string indexed_text = 5;
   // Resolved embedding route shared by every chunk of one index.
   EmbeddingRoute route = 6;
   // Raw embedding vector in the index's declared dimension.

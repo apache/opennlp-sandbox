@@ -146,7 +146,7 @@ class LifecycleWireContractTest {
     assertEquals("AnnotationSpan",
         chunk.findFieldByName("source_span").getMessageType().getName());
     assertEquals(FieldDescriptor.JavaType.STRING,
-        chunk.findFieldByName("emitted_text").getJavaType());
+        chunk.findFieldByName("indexed_text").getJavaType());
     assertEquals("EmbeddingRoute",
         chunk.findFieldByName("route").getMessageType().getName());
     final FieldDescriptor vector = chunk.findFieldByName("vector");

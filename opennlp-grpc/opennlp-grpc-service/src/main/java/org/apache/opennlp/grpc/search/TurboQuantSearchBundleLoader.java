@@ -163,9 +163,9 @@ public final class TurboQuantSearchBundleLoader {
         throw new IOException("Passage '" + id + "' source document uses " + textBytes
             + " UTF-8 bytes, exceeding maximum " + configuration.maxSourceDocumentBytes());
       }
-      if (textBytes > configuration.maxEmittedTextBytes()) {
-        throw new IOException("Passage '" + id + "' emitted text uses " + textBytes
-            + " UTF-8 bytes, exceeding maximum " + configuration.maxEmittedTextBytes());
+      if (textBytes > configuration.maxIndexedTextBytes()) {
+        throw new IOException("Passage '" + id + "' indexed text uses " + textBytes
+            + " UTF-8 bytes, exceeding maximum " + configuration.maxIndexedTextBytes());
       }
       final OpenNlpDocument document = OpenNlpDocument.newBuilder()
           .setDocId(id)

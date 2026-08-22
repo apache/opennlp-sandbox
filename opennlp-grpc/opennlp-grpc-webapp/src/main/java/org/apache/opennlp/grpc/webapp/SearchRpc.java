@@ -128,19 +128,19 @@ interface SearchRpc {
    * Creates or replaces one collection.
    *
    * @param request Complete configured collection state.
-   * @return Descriptor with its recomputed ledger and drift.
+   * @return Descriptor with its recomputed term statistics and drift.
    */
   SetCollectionResponse setCollection(SetCollectionRequest request);
 
   /**
-   * Reads one collection with its recomputed ledger and drift.
+   * Reads one collection with its recomputed term statistics and drift.
    *
    * @param request Collection id.
    * @return The descriptor.
    */
   GetCollectionResponse getCollection(GetCollectionRequest request);
 
-  /** @return Every collection, without term ledgers. */
+  /** @return Every collection, without term statistics. */
   ListCollectionsResponse listCollections();
 
   /**
