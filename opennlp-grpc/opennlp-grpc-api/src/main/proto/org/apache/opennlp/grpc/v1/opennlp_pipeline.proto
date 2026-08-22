@@ -1,0 +1,657 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+syntax = "proto3";
+
+package org.apache.opennlp.grpc.v1;
+
+import "org/apache/opennlp/grpc/v1/opennlp_document.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "OpenNlpPipelineProto";
+option java_package = "org.apache.opennlp.grpc.v1";
+
+// Pipeline steps supported by AnalyzeDocument (and future streaming variants). A
+// profile lists the steps to run; the server runs them in a fixed execution order
+// regardless of list order. Steps have preconditions on earlier steps: an unmet
+// precondition fails the request with FAILED_PRECONDITION, and requesting a step
+// this server does not implement fails with UNIMPLEMENTED (see GetServiceInfo's
+// supported_steps for the implemented set).
+enum PipelineStep {
+  // Unset; ignored if it appears in a profile's step list.
+  PIPELINE_STEP_UNSPECIFIED = 0;
+  // Detect the document language. No preconditions; runs on raw text. Populates
+  // OpenNlpDocument.detected_language / language_confidence.
+  PIPELINE_STEP_LANGUAGE_DETECT = 1;
+  // Split the text into sentences. No preconditions. Backbone for EMBED, CHUNK,
+  // PARSE, and SENTIMENT (auto-added when those run).
+  PIPELINE_STEP_SENTENCE_DETECT = 2;
+  // Tokenize each sentence. Requires SENTENCE_DETECT.
+  PIPELINE_STEP_TOKENIZE = 3;
+  // Part-of-speech tag the tokens. Requires TOKENIZE. Emits tags converted to the
+  // requested AnalysisProfile.pos_tag_format, defaulting to the tagger's native
+  // tagset when the format is unset (see POSTagFormat).
+  PIPELINE_STEP_POS_TAG = 4;
+  // Named-entity recognition. Requires TOKENIZE.
+  PIPELINE_STEP_NER = 5;
+  // Segmentation-style chunking for embedding (token/sentence/semantic strategies).
+  // Auto-adds SENTENCE_DETECT, and TOKENIZE for the "token" algorithm.
+  PIPELINE_STEP_CHUNK = 6;
+  // Constituency parse each sentence. Requires TOKENIZE (and thus SENTENCE_DETECT).
+  PIPELINE_STEP_PARSE = 7;
+  // Lemmatize the tokens. Requires TOKENIZE and POS_TAG.
+  PIPELINE_STEP_LEMMATIZE = 8;
+  // Categorize the whole document. Requires TOKENIZE for classic (token-based)
+  // categorizers; raw-text (e.g. ONNX) categorizers need no tokens.
+  PIPELINE_STEP_DOC_CATEGORIZE = 9;
+  // Per-sentence sentiment as document categorization. Requires SENTENCE_DETECT,
+  // and TOKENIZE for token-based sentiment models.
+  PIPELINE_STEP_SENTIMENT = 10;
+  // Embed sentences/document with AnalysisOptions.embedding_model_id. Requires (and
+  // auto-adds) SENTENCE_DETECT.
+  PIPELINE_STEP_EMBED = 11;
+  // Classic shallow (syntactic) chunking with a ChunkerME model: groups each sentence's
+  // tokens into base phrases (NP, VP, ...) in AnnotatedSentence.syntactic_chunks. Distinct
+  // from CHUNK (which is segmentation for embedding). Requires POS_TAG (and thus TOKENIZE).
+  PIPELINE_STEP_SYNTACTIC_CHUNK = 12;
+  // Offset-aware text normalization. No preconditions; runs on raw text and
+  // populates OpenNlpDocument.normalization. Configure the normalizers with
+  // AnalysisProfile.normalization; requesting the step without a spec =>
+  // INVALID_ARGUMENT.
+  PIPELINE_STEP_NORMALIZE = 13;
+
+  // Encodes the whole document text into subword pieces (SentencePiece) against a
+  // configured subword model, reporting every piece with its vocabulary id and the
+  // exact span of original text it covers. Emitted only as the document-shape layer
+  // "opennlp:subwords"; independent of SENTENCE_DETECT and TOKENIZE, and does not
+  // change the word-token results. Select the model with
+  // AnalysisProfile.subword_model_id; no configured model => NOT_FOUND.
+  PIPELINE_STEP_SUBWORD_TOKENIZE = 14;
+
+  // Stems every word token with the stemmer selected by AnalysisProfile.stemmer,
+  // emitted only as the document-shape layer "opennlp:stems", span-aligned with the
+  // token layer. Annotation only: tokens and lemmas are untouched. Requires
+  // TOKENIZE; requesting it without => FAILED_PRECONDITION.
+  PIPELINE_STEP_STEM = 15;
+
+  // Expands every word token over a configured WordNet-style lexical knowledge base
+  // (synonyms, hypernyms), emitted only as the document-shape layer
+  // "opennlp:expansions": one scored label per expansion, anchored on the expanded
+  // token's span. The token's lemma is expanded when LEMMATIZE ran, otherwise its
+  // surface form. Requires TOKENIZE; requesting it without => FAILED_PRECONDITION.
+  // Select the knowledge base with AnalysisProfile.wordnet_lexicon_id; no configured
+  // lexicon => NOT_FOUND.
+  PIPELINE_STEP_EXPAND = 16;
+
+  // Geocodes the location-typed entities NER produced: resolves each mention against
+  // the library's bundled Natural Earth gazetteer, sets NamedEntity.geo on resolved
+  // entities, and emits the document-shape layer "opennlp:geo". An unresolvable
+  // mention is left without a resolution, never fabricated. Requires NER; requesting
+  // it without => FAILED_PRECONDITION.
+  PIPELINE_STEP_GEOCODE = 17;
+
+  // Aggregates one positional string-valued document layer into distinct terms with
+  // frequencies and optional original-text occurrence spans. Requires TOKENIZE; select
+  // tokens, lemmas, stems, or a qualified term-normalization layer with
+  // AnalysisProfile.term_vector.
+  PIPELINE_STEP_TERM_VECTOR = 18;
+}
+
+// Configuration for PIPELINE_STEP_TERM_VECTOR.
+message TermVectorSpec {
+  // Defaults to FULL.
+  TermVectorMode mode = 1;
+  // The positional document layer that defines term identity. Unset defaults to
+  // STANDARD_LAYER_TOKENS. Supported standard layers are TOKENS, LEMMAS, STEMS,
+  // and TERMS. TERMS requires its Dimension name in qualifier. The producing step
+  // and configuration must also be present in this profile.
+  LayerIdentity source_layer = 2;
+}
+
+// Produces one qualified STANDARD_LAYER_TERMS document layer from every word
+// token. Normalization runs per token in the enum's canonical order, then the
+// optional stemmer runs over that normalized value. The qualifier is both the
+// typed layer qualifier and the suffix of the stable layer id
+// "opennlp:terms:<qualifier>". Multiple entries let one analysis expose, for
+// example, folded and case-preserving BM25 identities in the same document.
+message TermLayerSpec {
+  // Caller-owned stable identity for this analyzer result. Must be non-blank
+  // and unique across all term layers produced by the profile.
+  string qualifier = 1;
+  // Per-token normalizers. They are deduplicated and applied in
+  // canonical enum order, independent of request order. A token whose final
+  // value is empty is omitted from this term layer and from aggregates sourced
+  // from it.
+  repeated Normalizer normalizers = 2;
+  // Optional final stemmer. Unlike the standalone STEM step, this receives
+  // exactly the output of normalizers with no implicit case folding.
+  optional StemmerSpec stemmer = 3;
+}
+
+// The stemmer families the STEM step can run. All but HUNSPELL are bundled
+// algorithms; HUNSPELL stems against an operator-supplied affix dictionary.
+// Configuration for PIPELINE_STEP_STEM.
+message StemmerSpec {
+  // The stemmer family to run. Unset selects SNOWBALL.
+  StemmerAlgorithm algorithm = 1;
+  // ISO 639-1 language code for SNOWBALL, LIGHT, and MINIMAL (e.g. "en", "de").
+  // Required for those algorithms (blank => INVALID_ARGUMENT); a language the
+  // selected family does not cover => NOT_FOUND. Ignored for PORTER and HUNSPELL.
+  optional string language = 2;
+  // For HUNSPELL: one of the dictionary ids configured on the server as
+  // model.hunspell.<id>.affix_path / model.hunspell.<id>.dictionary_path. Unset
+  // selects the sole configured dictionary; an unknown id, or no configured
+  // dictionary, => NOT_FOUND.
+  optional string hunspell_dictionary_id = 3;
+}
+
+// Configuration for a chunking strategy (used when the caller does not
+// supply a full AnalysisProfile for the entry).
+message ChunkingSpec {
+  // Compatibility selector for the chunking strategy. New clients should use strategy.
+  // Implemented values are "sentence", "token", and "semantic". Setting both fields
+  // => INVALID_ARGUMENT. An unknown non-blank value => UNIMPLEMENTED.
+  string algorithm = 1;
+  // For "token" chunking only: window size in TOKENS. Must be > 0 (else
+  // INVALID_ARGUMENT). Ignored by other algorithms.
+  int32 chunk_size = 2;
+  // For "token" chunking only: overlap between consecutive windows in TOKENS.
+  // Must satisfy 0 <= chunk_overlap < chunk_size (else INVALID_ARGUMENT). Defaults
+  // to 0 (no overlap).
+  int32 chunk_overlap = 3;
+  // Whether to normalize whitespace in each produced chunk before embedding.
+  bool clean_text = 4;
+  // When clean_text is true, URL substrings are preserved verbatim while surrounding
+  // whitespace is normalized.
+  bool preserve_urls = 5;
+  // For semantic chunking (topic boundaries via embeddings). When neither a strategy
+  // selector nor the legacy algorithm is set, its presence selects the "semantic"
+  // algorithm; setting it while a non-semantic strategy is selected => INVALID_ARGUMENT.
+  optional SemanticChunkingConfig semantic_config = 6;
+  // Strongly typed standard strategy or open extension id. When neither this selector
+  // nor the legacy algorithm is set, semantic_config selects SEMANTIC; with neither a
+  // selector/algorithm nor semantic_config present, the entry is rejected with
+  // INVALID_ARGUMENT. semantic_config together with a non-semantic strategy =>
+  // INVALID_ARGUMENT. CATEGORY is result-only here: request category grouping
+  // through CategoryChunkConfigEntry.
+  ChunkingStrategySelector strategy = 7;
+}
+
+// Tuning for "semantic" chunking, which places a chunk boundary between two
+// adjacent sentences when their embedding cosine similarity drops below a
+// threshold, then enforces min/max chunk sizes (merge small, then split large).
+message SemanticChunkingConfig {
+  // Absolute cosine-similarity boundary threshold. Used only when
+  // percentile_threshold is not set (<= 0). When it too is unset (<= 0), the
+  // server defaults to 0.5. A boundary is placed where similarity < threshold.
+  float similarity_threshold = 1;
+  // Percentile (1..99) of observed adjacent-sentence similarities to use as the
+  // boundary threshold. Takes PRECEDENCE over similarity_threshold when > 0. Must
+  // be < 100 (else INVALID_ARGUMENT).
+  int32 percentile_threshold = 2;
+  // Minimum sentences per chunk; chunks below this are merged into a neighbour.
+  // Defaults to 1 (no minimum) when unset/<= 0. May be violated by a split remainder.
+  int32 min_chunk_sentences = 3;
+  // Maximum sentences per chunk; larger chunks are split into windows of this size.
+  // Defaults to unbounded when unset/<= 0.
+  int32 max_chunk_sentences = 4;
+  // Embedding model used to detect semantic boundaries. When unset, the server
+  // uses the sole entry in ChunkEmbedConfigEntry.embedding_model_ids when exactly
+  // one id is present; otherwise semantic chunking is rejected with INVALID_ARGUMENT.
+  optional string semantic_embedding_model_id = 5;
+  // Typed semantic embedding selection. When set,
+  // model_id selects the logical model and backend optionally pins one route.
+  optional EmbeddingSelector semantic_embedding_selector = 6;
+}
+
+// Desired part-of-speech tagset for the response. When the requested format differs
+// from the tagger model's native tagset, the server converts tags using OpenNLP's
+// Penn/UD mapping tables. POS_TAG_FORMAT_CUSTOM is not supported.
+enum POSTagFormat {
+  // Unset; the tagger emits its model's native tagset.
+  POS_TAG_FORMAT_UNSPECIFIED = 0;
+  // Universal Dependencies tagset.
+  POS_TAG_FORMAT_UD = 1;
+  // Penn Treebank tagset.
+  POS_TAG_FORMAT_PENN = 2;
+  // A custom tagset. Not supported => UNIMPLEMENTED.
+  POS_TAG_FORMAT_CUSTOM = 3;
+}
+
+// Backend discovery and configuration are server deployment concerns, extensible
+// through the ServiceLoader SPI. Clients request logical models by open string id
+// and may optionally pin one advertised route with EmbeddingSelector.backend.
+// An unpinned selector uses priority and safe fallback. ModelDescriptor reports
+// every available route and every result reports the route that produced it.
+
+// OpenNLP-owned word-tokenizer engines. These values are stable protocol choices;
+// third-party engines use TokenizerSelector.custom so adding one does not require a
+// protocol release.
+enum StandardTokenizerEngine {
+  // Unset selects the bundle's TokenizerME, matching STANDARD_TOKENIZER_ENGINE_MODEL.
+  STANDARD_TOKENIZER_ENGINE_UNSPECIFIED = 0;
+  // Statistical TokenizerME backed by the profile's model bundle.
+  STANDARD_TOKENIZER_ENGINE_MODEL = 1;
+  // Rule-based Unicode UAX #29 tokenization with Token.word_type classification.
+  STANDARD_TOKENIZER_ENGINE_UAX29 = 2;
+  // Split only at whitespace, retaining attached punctuation.
+  STANDARD_TOKENIZER_ENGINE_WHITESPACE = 3;
+  // Split on whitespace and character-class transitions.
+  STANDARD_TOKENIZER_ENGINE_SIMPLE = 4;
+  // Viterbi segmentation over the selected MeCab-format lattice dictionary.
+  STANDARD_TOKENIZER_ENGINE_LATTICE = 5;
+}
+
+// Strongly typed selection for PIPELINE_STEP_TOKENIZE. Standard engines use the
+// enum; custom holds the stable id of a TokenizerBackendFactory discovered through
+// ServiceLoader. An unset selector defaults to MODEL.
+message TokenizerSelector {
+  // The selected standard tokenizer or extension id.
+  oneof kind {
+    // A tokenizer engine defined by this contract.
+    StandardTokenizerEngine standard = 1;
+    // The stable id of a ServiceLoader-provided tokenizer.
+    string custom = 2;
+  }
+}
+
+// OpenNLP-owned sentence-detector engines. Third-party engines use
+// SentenceDetectorSelector.custom.
+enum StandardSentenceDetectorEngine {
+  // Unset selects the bundle's SentenceDetectorME.
+  STANDARD_SENTENCE_DETECTOR_ENGINE_UNSPECIFIED = 0;
+  // Statistical SentenceDetectorME backed by the profile's model bundle.
+  STANDARD_SENTENCE_DETECTOR_ENGINE_MODEL = 1;
+  // Treat each non-empty line as one sentence.
+  STANDARD_SENTENCE_DETECTOR_ENGINE_NEWLINE = 2;
+}
+
+// Strongly typed selection for PIPELINE_STEP_SENTENCE_DETECT. Standard engines use
+// the enum; custom holds the stable id of a SentenceDetectorBackendFactory discovered
+// through ServiceLoader. An unset selector defaults to MODEL.
+message SentenceDetectorSelector {
+  // The selected standard detector or extension id.
+  oneof kind {
+    // A sentence-detector engine defined by this contract.
+    StandardSentenceDetectorEngine standard = 1;
+    // The stable id of a ServiceLoader-provided sentence detector.
+    string custom = 2;
+  }
+}
+
+// A named, reusable analysis configuration: which steps to run and which models
+// back them. A request may name a server-side profile by id (see
+// AnalyzeDocumentRequest.profile_id), inline a profile, or both (an inline profile
+// is merged field-by-field over the named one). When neither is given, the server
+// applies its default profile ("en-basic": SENTENCE_DETECT + TOKENIZE).
+message AnalysisProfile {
+  // Identifier of this profile (e.g. "en-basic"). Optional on an inline profile.
+  string profile_id = 1;
+  // The pipeline steps to run. Order here is advisory; the server runs implemented
+  // steps in its own fixed order and auto-adds backbone steps as needed.
+  repeated PipelineStep steps = 2;
+  // Selects a server-side model bundle to back the steps.
+  ModelBundleRef model_bundle = 3;
+  // Requested POS tagset. UNSPECIFIED selects the model's native tagset; UD and PENN
+  // convert when needed. CUSTOM => UNIMPLEMENTED.
+  POSTagFormat pos_tag_format = 4;
+  // Entity types to keep from NER. Empty means "all entity types the configured
+  // name finder(s) support". Blank values => INVALID_ARGUMENT; an unknown type =>
+  // NOT_FOUND.
+  repeated string ner_entity_types = 5;
+  // How NER picks among engines when a recognizer is served by more than one. Unset
+  // selects each recognizer's highest-priority engine (with fallback). See EnginePolicy.
+  EnginePolicy ner_engine_policy = 6;
+  // How syntactic chunking picks among engines when a chunker id is served by more than
+  // one. Unset selects the highest-priority engine (with fallback). See EnginePolicy.
+  EnginePolicy chunk_engine_policy = 7;
+  // How constituency parsing picks among engines when a parser id is served by more than
+  // one. Unlike span producers, a union returns one parse tree per engine rather than a
+  // merged tree (see AnnotatedSentence.parse_trees); MergeStrategy is ignored. See EnginePolicy.
+  EnginePolicy parse_engine_policy = 8;
+  // Normalizers for PIPELINE_STEP_NORMALIZE. Required when that step is requested.
+  NormalizationSpec normalization = 9;
+  // Open tokenizer selector. Unset or "model" selects the bundle's TokenizerME.
+  // "uax29" selects the rule-based
+  // Unicode UAX #29 word tokenizer, which needs no model and additionally
+  // populates Token.word_type. "lattice" selects Viterbi lattice segmentation over
+  // an operator-configured MeCab-format dictionary (select it with
+  // lattice_dictionary_id; none configured => NOT_FOUND). Any other value =>
+  // INVALID_ARGUMENT.
+  optional string tokenizer_engine = 10;
+  // Character-level normalization layers to compute per token into
+  // Token.term_layers, named by the library's Dimension enum (e.g. "NFC",
+  // "CASE_FOLD", "FULL_CASE_FOLD", "ACCENT_FOLD", "EMOJI_FOLD",
+  // "CONFUSABLE_FOLD"). Token-level dimensions ("STEM", "LEMMA") =>
+  // INVALID_ARGUMENT (PIPELINE_STEP_LEMMATIZE owns lemmas); an unknown name =>
+  // INVALID_ARGUMENT. Requires TOKENIZE.
+  repeated string term_dimensions = 11;
+  // A per-language normalization profile (the library's NormalizationProfiles
+  // registry, e.g. "en", "de"): computes Token.term_layers with the profile's
+  // matching analyzer, including its language-appropriate stemmer layer. Requires
+  // TOKENIZE. Mutually exclusive with term_dimensions => INVALID_ARGUMENT; a
+  // language with no registered profile => NOT_FOUND. The analyzer is built per
+  // request, so stateful stemmers are never shared across threads.
+  optional string term_profile = 12;
+  // Marks each token's Token.is_stopword against the library's bundled stopword list
+  // for this ISO 639 language code. Annotation, not removal: the server never drops
+  // tokens; consumers filter. Requires TOKENIZE; a language with no bundled list =>
+  // NOT_FOUND.
+  optional string stopword_language = 13;
+
+  // The subword model for PIPELINE_STEP_SUBWORD_TOKENIZE, one of the ids configured
+  // under model.subword.<id>.path on the server. Unset selects the configured
+  // default (model.subword.default_id) or the sole configured model; an unknown id,
+  // or no selectable model, => NOT_FOUND.
+  optional string subword_model_id = 14;
+
+  // Configuration for PIPELINE_STEP_STEM. Requesting the step with no spec runs
+  // the default (SNOWBALL), which then requires `language`.
+  StemmerSpec stemmer = 15;
+
+  // The lexical knowledge base for PIPELINE_STEP_EXPAND, one of the ids configured
+  // under model.wordnet.<id>.path (a WN-LMF file) on the server. Unset selects the
+  // configured default (model.wordnet.default_id) or the sole configured lexicon; an
+  // unknown id, or no selectable lexicon, => NOT_FOUND.
+  optional string wordnet_lexicon_id = 16;
+
+  // For tokenizer_engine "lattice": the MeCab-format dictionary to segment with, one
+  // of the ids configured under model.lattice.<id>.dir on the server. Unset selects
+  // the configured default (model.lattice.default_id) or the sole configured
+  // dictionary; an unknown id, or no selectable dictionary, => NOT_FOUND.
+  optional string lattice_dictionary_id = 17;
+
+  // Typed tokenizer selection. Setting both tokenizer fields is invalid.
+  // The standard case covers OpenNLP-owned engines; custom selects a ServiceLoader
+  // extension by its stable id.
+  optional TokenizerSelector tokenizer = 18;
+
+  // Sentence detector used by PIPELINE_STEP_SENTENCE_DETECT. Unset selects the
+  // bundle's SentenceDetectorME. The standard case covers OpenNLP-owned engines;
+  // custom selects a ServiceLoader extension by its stable id.
+  optional SentenceDetectorSelector sentence_detector = 19;
+
+  // Configuration for PIPELINE_STEP_TERM_VECTOR. Required when that step is selected.
+  TermVectorSpec term_vector = 20;
+
+  // Configurable per-token term identities rendered as qualified
+  // STANDARD_LAYER_TERMS document layers. Requires TOKENIZE. An entry must
+  // contain at least one normalizer or a stemmer.
+  repeated TermLayerSpec term_layers = 21;
+}
+
+// Configuration for PIPELINE_STEP_NORMALIZE: which normalizers run, in the order the
+// server applies them (the library's canonical builder order, not list order).
+message NormalizationSpec {
+  // The normalizers to apply. Empty while the step is requested => INVALID_ARGUMENT.
+  repeated Normalizer normalizers = 1;
+  // When true (the default), every requested normalizer must be offset-aware so the
+  // response carries a complete alignment; requesting an offset-opaque normalizer
+  // (NFC, NFKC, CASE_FOLD, ACCENT_FOLD, CONFUSABLE_FOLD) => INVALID_ARGUMENT.
+  // When false, opaque normalizers are permitted: the response carries
+  // normalized_text without alignment runs, plus a diagnostic.
+  optional bool require_alignment = 2;
+}
+
+// One normalizer of the library's TextNormalizer builder. The offset-aware
+// subset (everything except NFC, NFKC, CASE_FOLD, ACCENT_FOLD, CONFUSABLE_FOLD)
+// composes into an aligned pipeline that reports exact span mappings.
+enum Normalizer {
+  // No normalizer was selected.
+  NORMALIZER_UNSPECIFIED = 0;
+  // Remove invisible formatting characters.
+  NORMALIZER_STRIP_INVISIBLE = 1;
+  // Apply Unicode canonical composition.
+  NORMALIZER_NFC = 2;
+  // Apply Unicode compatibility composition.
+  NORMALIZER_NFKC = 3;
+  // Collapse whitespace, including line breaks.
+  NORMALIZER_WHITESPACE = 4;
+  // Collapse whitespace while retaining line breaks.
+  NORMALIZER_WHITESPACE_PRESERVE_LINE_BREAKS = 5;
+  // Normalize quotation-mark variants.
+  NORMALIZER_QUOTES = 6;
+  // Normalize dash variants.
+  NORMALIZER_DASHES = 7;
+  // Normalize digit variants.
+  NORMALIZER_DIGITS = 8;
+  // Normalize ellipsis variants.
+  NORMALIZER_ELLIPSIS = 9;
+  // Normalize bullet variants.
+  NORMALIZER_BULLETS = 10;
+  // Apply simple Unicode case folding.
+  NORMALIZER_CASE_FOLD = 11;
+  // Apply full Unicode case folding with length-changing mappings.
+  NORMALIZER_FULL_CASE_FOLD = 12;
+  // Remove accents through Unicode decomposition and mark removal.
+  NORMALIZER_ACCENT_FOLD = 13;
+  // Convert supported emoji to text emoticons.
+  NORMALIZER_EMOJI_TO_EMOTICON = 14;
+  // Convert supported text emoticons to emoji.
+  NORMALIZER_EMOTICON_TO_EMOJI = 15;
+  // Fold Unicode confusables to their skeleton form.
+  NORMALIZER_CONFUSABLE_FOLD = 16;
+  // Collapse whitespace, unwrapping hard-wrapped lines: a run with at most one
+  // line break becomes a space, a run with two or more becomes one newline, and
+  // CRLF counts as one break. Fixed-column plain text joins into whole
+  // paragraphs while blank-line paragraph breaks survive.
+  NORMALIZER_WHITESPACE_PRESERVE_PARAGRAPHS = 17;
+}
+
+// OpenNLP-owned inference engines whose identifiers are stable parts of this API.
+// ServiceLoader extensions use EngineSelector.custom so their namespace remains open.
+enum StandardInferenceEngine {
+  // No standard inference engine was selected.
+  STANDARD_INFERENCE_ENGINE_UNSPECIFIED = 0;
+  // The classic OpenNLP maximum-entropy runtime.
+  STANDARD_INFERENCE_ENGINE_OPENNLP_ME = 1;
+  // Local inference through ONNX Runtime.
+  STANDARD_INFERENCE_ENGINE_ONNX = 2;
+  // Local GPU inference through the CUDA backend.
+  STANDARD_INFERENCE_ENGINE_CUDA = 3;
+}
+
+// Selects either a standard OpenNLP inference engine or an extension-provided engine id.
+message EngineSelector {
+  // The selected standard engine or extension id.
+  oneof kind {
+    // An inference engine defined by this contract.
+    StandardInferenceEngine standard = 1;
+    // The stable id of a ServiceLoader-provided engine.
+    string custom = 2;
+  }
+}
+
+// Selects which engine(s) run for a span-producing capability (NER, chunking) when a
+// logical component is served by more than one provider, and how their outputs are
+// combined. The number of `selectors` or `engines` listed drives the behavior,
+// so the common cases need no mode flag:
+//   - empty  => run each component's highest-priority engine, falling back to the next on
+//               failure (the resilient default);
+//   - one    => pin that engine (no fallback); components it does not serve are skipped;
+//   - two or more => run all of the listed engines and UNION their output, each item tagged
+//               with its producer (see NamedEntity.sources / ChunkSpan.sources).
+// An engine id that is not registered for any component => NOT_FOUND. For parsing, which
+// produces trees rather than spans, `merge` is ignored and a union yields one tree per engine.
+message EnginePolicy {
+  // Compatibility field for engine/backend ids (e.g. "onnx", "opennlp-me"). New clients
+  // should use `selectors`. Setting both fields => INVALID_ARGUMENT.
+  repeated string engines = 1;
+  // How overlapping items from different providers are reconciled in the response.
+  MergeStrategy merge = 2;
+  // Strongly typed standard engines or open extension ids. See the message comment for how
+  // the count is interpreted. Setting both this field and `engines` => INVALID_ARGUMENT.
+  repeated EngineSelector selectors = 3;
+}
+
+// How a multi-engine union reconciles span items (entities, chunks) that more than one
+// provider reports. Ignored for parsing.
+enum MergeStrategy {
+  // Default: collapse items of the same type/tag whose spans overlap into one item, whose
+  // `sources` lists every provider that found it and whose canonical span comes from the
+  // highest-priority provider. Cross-provider agreement is visible at a glance.
+  MERGE_STRATEGY_UNSPECIFIED = 0;
+  // Keep every provider's item as its own with a single source; perform no cross-provider
+  // merging. Maximum detail, including disagreements.
+  MERGE_STRATEGY_RAW = 1;
+  // Same collapsing as the default; named explicitly for requests that want to be precise.
+  MERGE_STRATEGY_CONSENSUS = 2;
+}
+
+// References a server-side model bundle by id. Available bundle ids include
+// "en-basic" plus, when their models are configured, "en-ner", "en-doccat",
+// "en-sentiment", "en-parse". An unknown id => NOT_FOUND.
+message ModelBundleRef {
+  // The bundle id to use; blank selects the default bundle.
+  string bundle_id = 1;
+  // Per-component model pins by SHA-256 hash. Each entry must match a loaded artifact
+  // for the given component_type or the request fails with NOT_FOUND.
+  repeated ComponentModelRef component_models = 2;
+}
+
+// Binds a pipeline component to a specific model artifact (by SHA-256 hash).
+message ComponentModelRef {
+  // Which pipeline component this override targets.
+  ComponentType component_type = 1;
+  // SHA-256 hash identifying the model artifact to bind.
+  string model_hash = 2;
+}
+
+// The pipeline component an artifact provides. Parallels PipelineStep but names
+// the model role rather than the processing step.
+enum ComponentType {
+  // Unset/unknown component type.
+  COMPONENT_TYPE_UNSPECIFIED = 0;
+  // Language detector model.
+  COMPONENT_TYPE_LANGUAGE_DETECTOR = 1;
+  // Sentence detector model.
+  COMPONENT_TYPE_SENTENCE_DETECTOR = 2;
+  // Tokenizer model.
+  COMPONENT_TYPE_TOKENIZER = 3;
+  // Part-of-speech tagger model.
+  COMPONENT_TYPE_POS_TAGGER = 4;
+  // Named-entity (name finder) model.
+  COMPONENT_TYPE_NAME_FINDER = 5;
+  // Syntactic chunker model.
+  COMPONENT_TYPE_CHUNKER = 6;
+  // Constituency parser model.
+  COMPONENT_TYPE_PARSER = 7;
+  // Lemmatizer model.
+  COMPONENT_TYPE_LEMMATIZER = 8;
+  // Document categorizer model.
+  COMPONENT_TYPE_DOC_CATEGORIZER = 9;
+  // Sentiment (per-sentence categorizer) model.
+  COMPONENT_TYPE_SENTIMENT = 10;
+  // Embedding model.
+  COMPONENT_TYPE_EMBEDDER = 11;
+}
+
+// Per-request output and execution options, orthogonal to the profile (which says
+// what to run; these say how to render/bound it).
+message AnalysisOptions {
+  // When true, the server attaches model confidence scores where available (token
+  // pos_probability, entity/span/parse probabilities). When false they are omitted.
+  bool include_probabilities = 1;
+  // When omitted, the server defaults to true (clear adaptive data after each request).
+  optional bool clear_adaptive_data = 2;
+  // Field 3 carried an InferenceBackend enum in pre-release drafts. Backend
+  // selection is server configuration; see the comment above AnalysisProfile.
+  reserved 3;
+  reserved "inference_backend";
+  // Maximum allowed length of document.raw_text. When set and > 0, a longer text
+  // is rejected with INVALID_ARGUMENT. Length is measured in Java UTF-16 code units,
+  // unlike GetServiceInfoResponse.max_text_bytes, which reports the operator limit
+  // in UTF-8 bytes. A request-level value can only tighten the operator limit,
+  // never raise it.
+  optional int32 max_text_length = 4;
+  // The registered embedding model to use for PIPELINE_STEP_EMBED. The id is
+  // backend-agnostic; the server resolves it against the configured provider.
+  // Requires EMBED in the profile (else INVALID_ARGUMENT); an unknown id =>
+  // NOT_FOUND. Optional when exactly one embedding model is configured.
+  // Setting both this field and `embedding_selector` => INVALID_ARGUMENT.
+  optional string embedding_model_id = 5;
+  // Unit for response AnnotationSpan offsets. Unset => UTF-8 bytes (the default).
+  OffsetEncoding offset_encoding = 6;
+  // Parse representations to populate for PIPELINE_STEP_PARSE. Empty selects the default set
+  // (STRUCTURED + BRACKETED); listing fewer trims the response to just those views.
+  repeated ParseFormat parse_formats = 7;
+  // Typed embedding selection. When set, model_id
+  // selects the logical model and backend optionally pins one route.
+  // Setting both this field and `embedding_model_id` => INVALID_ARGUMENT.
+  optional EmbeddingSelector embedding_selector = 8;
+  // When true, PIPELINE_STEP_EMBED also returns the mean of the sentence vectors as
+  // one EMBEDDING_GRANULARITY_DOCUMENT result. Unset or false returns only the
+  // requested sentence vectors, avoiding an aggregate the caller does not need.
+  optional bool include_document_centroid = 9;
+  // Post-processing for the optional document centroid. Unset means NONE.
+  // Setting this while include_document_centroid is false is invalid.
+  VectorNormalization document_centroid_normalization = 10;
+}
+
+// Selects which view(s) of a constituency parse the server fills in ParseTree. Independent
+// representations of the same parse, so a client requests only what its language/use needs.
+enum ParseFormat {
+  // Unset; ignored. If the format list ends up empty, the server fills the default
+  // set (STRUCTURED + BRACKETED).
+  PARSE_FORMAT_UNSPECIFIED = 0;
+  // Populate ParseTree.root (the nested, navigable ParseNode tree).
+  PARSE_FORMAT_STRUCTURED = 1;
+  // Populate ParseTree.penn_treebank (the standard bracketed string).
+  PARSE_FORMAT_BRACKETED = 2;
+}
+
+// Describes one loaded model artifact within a bundle (see ListModelBundles).
+message ModelDescriptor {
+  // SHA-256 hash identifying the model artifact. Populated in ListModelBundles for
+  // artifacts whose hash is known at load time.
+  string hash = 1;
+  // Human-readable model name.
+  string name = 2;
+  // Single locale tag for the model, or "root" for a language-independent model
+  // (e.g. the language detector). Empty when the model's language is unknown to the
+  // server (operator-supplied NER/doccat/sentiment/parser models).
+  string locale = 3;
+  // The pipeline component this model provides.
+  ComponentType component_type = 4;
+  // Languages the model handles. Empty for language-independent models and for
+  // operator-supplied models whose language is unknown to the server.
+  repeated string languages = 5;
+  // The pipeline steps this model can serve.
+  repeated PipelineStep supported_steps = 6;
+  // Dimensionality of the vectors this model emits; 0 unless this is an embedding model.
+  int32 embedding_dimension = 7;
+  // Open identifier of the backend serving this model, e.g. "opennlp-me" for
+  // classic maxent models or "onnx"/"cuda" for the built-in ONNX backends.
+  // Third-party backends registered through the server SPI report their own ids.
+  string backend_id = 8;
+  // Every backend route that can serve this logical embedding model, in routing
+  // priority order. Empty for non-embedding models and older servers.
+  repeated EmbeddingRoute embedding_routes = 9;
+}
+
+// A loaded model bundle and its aggregate capabilities, as returned by
+// ListModelBundles. A bundle groups the models that back a set of pipeline steps.
+message ModelBundleInfo {
+  // The bundle's id (e.g. "en-basic", "en-ner"), usable in ModelBundleRef.bundle_id.
+  string bundle_id = 1;
+  // The model artifacts in this bundle.
+  repeated ModelDescriptor models = 2;
+  // Languages the bundle supports overall (driven by its backbone models).
+  repeated string supported_languages = 3;
+  // The pipeline steps this bundle can serve.
+  repeated PipelineStep supported_steps = 4;
+}

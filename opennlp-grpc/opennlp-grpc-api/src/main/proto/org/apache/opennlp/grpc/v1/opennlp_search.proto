@@ -1,0 +1,671 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+syntax = "proto3";
+
+package org.apache.opennlp.grpc.v1;
+
+import "org/apache/opennlp/grpc/v1/opennlp_document.proto";
+import "org/apache/opennlp/grpc/v1/opennlp_query.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "OpenNlpSearchProto";
+option java_package = "org.apache.opennlp.grpc.v1";
+
+// Search over immutable indexes loaded by the operator and bounded dynamic flat
+// indexes created from analyzed document shapes. Dynamic indexes live only for
+// the server process and can be disabled by the operator.
+//
+// SearchIndex reports INVALID_ARGUMENT for a blank query or invalid top_k,
+// NOT_FOUND for an unknown index, FAILED_PRECONDITION for an incompatible
+// embedding route or vector space, UNAVAILABLE for a retryable embedding backend
+// failure, and INTERNAL for an unexpected provider failure.
+service OpenNlpSearchService {
+  // Lists every static and dynamic search index currently owned by the server.
+  rpc ListSearchIndexes(ListSearchIndexesRequest) returns (ListSearchIndexesResponse);
+  // Lists every configured search provider instance with its declared
+  // capabilities. Instance ids are valid in SearchProviderSelector.custom.
+  rpc ListSearchProviders(ListSearchProvidersRequest) returns (ListSearchProvidersResponse);
+  // Embeds one document-shaped query through a configured backend serving the
+  // index's model, vector space, and dimension, then returns up to top_k ranked,
+  // document-shaped source passages.
+  rpc SearchIndex(SearchIndexRequest) returns (SearchIndexResponse);
+
+  // Creates or extends a bounded in-memory flat index from chunk embeddings
+  // already carried by OpenNlpDocument. When index_id is absent, the server
+  // creates an opaque workspace id. Dynamic indexing can be disabled by the
+  // operator and never mutates startup-loaded immutable indexes.
+  rpc IndexDocuments(IndexDocumentsRequest) returns (IndexDocumentsResponse);
+
+  // Deletes an in-memory index created through IndexDocuments. Immutable,
+  // startup-loaded indexes cannot be deleted through this API.
+  rpc DeleteSearchIndex(DeleteSearchIndexRequest) returns (DeleteSearchIndexResponse);
+
+  // Persists one dynamic index as a checkpoint under the operator-configured
+  // persistence root, retaining raw vectors so accretion continues across
+  // restarts. Reports FAILED_PRECONDITION when persistence is not configured
+  // or the index's provider instance does not declare the persistent
+  // capability, and NOT_FOUND for an unknown index.
+  rpc PersistIndex(PersistIndexRequest) returns (PersistIndexResponse);
+
+  // Persists one dynamic index and marks it immutable: further IndexDocuments
+  // calls report FAILED_PRECONDITION and the sealed index is restored as
+  // immutable after a restart. Reports the PersistIndex error contract.
+  rpc SealIndex(SealIndexRequest) returns (SealIndexResponse);
+
+  // Builds a new index beside an existing one, blue/green, by replaying the
+  // source index's retained chunks through a newly selected embedding route.
+  // The source index keeps serving unchanged; when the request names an
+  // alias, the alias swaps to the new index only after the build succeeds.
+  rpc ReindexIndex(ReindexIndexRequest) returns (ReindexIndexResponse);
+
+  // Creates or repoints one alias. Aliases are logical names accepted by
+  // SearchIndexRequest.index_id; descriptors always answer with the resolved
+  // index id. An alias must not collide with an existing index id.
+  rpc SetIndexAlias(SetIndexAliasRequest) returns (SetIndexAliasResponse);
+
+  // Deletes one alias. The index it pointed to is unaffected.
+  rpc DeleteIndexAlias(DeleteIndexAliasRequest) returns (DeleteIndexAliasResponse);
+
+  // Lists every alias in stable alias order.
+  rpc ListIndexAliases(ListIndexAliasesRequest) returns (ListIndexAliasesResponse);
+
+  // Creates or replaces one collection, the scope vocabulary accretion is
+  // measured over. Member index ids may be aliases and are stored resolved;
+  // every member must be a dynamic index. The complete configured state is
+  // replaced on every call and the last write wins.
+  rpc SetCollection(SetCollectionRequest) returns (SetCollectionResponse);
+
+  // Returns one collection with its term statistics and drift statistics
+  // recomputed from live member index contents.
+  rpc GetCollection(GetCollectionRequest) returns (GetCollectionResponse);
+
+  // Lists every collection with recomputed drift statistics. Term statistics are
+  // omitted to bound the response; GetCollection returns them.
+  rpc ListCollections(ListCollectionsRequest) returns (ListCollectionsResponse);
+
+  // Deletes one collection and completes its open watch streams. Member
+  // indexes and referenced artifacts are unaffected.
+  rpc DeleteCollection(DeleteCollectionRequest) returns (DeleteCollectionResponse);
+
+  // Watches one collection. The open stream is the subscription: the first
+  // event is always a snapshot, later events report drift threshold
+  // crossings, member index persistence, and model publication. Every event
+  // carries a complete descriptor snapshot, so consumers track no cursors,
+  // sessions, or timers; a reconnect simply resubscribes and receives a
+  // fresh snapshot first.
+  rpc WatchCollection(WatchCollectionRequest) returns (stream CollectionEvent);
+}
+
+// Persists one dynamic index by its id.
+message PersistIndexRequest {
+  string index_id = 1;
+}
+
+// Confirms one persisted checkpoint.
+message PersistIndexResponse {
+  // Descriptor after the checkpoint is written, with persisted set.
+  SearchIndexDescriptor index = 1;
+}
+
+// Seals one dynamic index by its id.
+message SealIndexRequest {
+  string index_id = 1;
+}
+
+// Confirms one sealed index.
+message SealIndexResponse {
+  // Descriptor after sealing, immutable and persisted.
+  SearchIndexDescriptor index = 1;
+}
+
+// Rebuilds one index's retained chunks under a new embedding selection.
+message ReindexIndexRequest {
+  // Source index id or alias. Required.
+  string index_id = 1;
+  // Embedding model and optional backend for the new index. Required.
+  EmbeddingSelector embedding = 2;
+  // Vector storage for the new index. Unset keeps the source index's
+  // provider instance.
+  SearchProviderSelector provider = 3;
+  // Alias to swap to the new index after a successful build. The alias may
+  // be new or may currently point at the source index.
+  optional string alias = 4;
+}
+
+// Result of one blue/green reindex build.
+message ReindexIndexResponse {
+  // Descriptor of the newly built index.
+  SearchIndexDescriptor index = 1;
+  // Id of the source index, which keeps serving unchanged.
+  string source_index_id = 2;
+  // Number of distinct documents replayed into the new index.
+  uint32 reindexed_documents = 3;
+  // Number of chunks replayed into the new index.
+  uint32 reindexed_chunks = 4;
+}
+
+// One logical alias resolving to a current index id.
+message IndexAlias {
+  string alias = 1;
+  string index_id = 2;
+}
+
+// Creates or repoints one alias.
+message SetIndexAliasRequest {
+  string alias = 1;
+  string index_id = 2;
+}
+
+// Confirms one alias upsert.
+message SetIndexAliasResponse {
+  IndexAlias alias = 1;
+}
+
+// Deletes one alias by name.
+message DeleteIndexAliasRequest {
+  string alias = 1;
+}
+
+// Confirms whether the alias existed and was deleted.
+message DeleteIndexAliasResponse {
+  string alias = 1;
+  bool deleted = 2;
+}
+
+// Input to ListIndexAliases. Empty because the bounded contract has no
+// filtering or pagination.
+message ListIndexAliasesRequest {}
+
+// Every alias configured on this server.
+message ListIndexAliasesResponse {
+  // Aliases in stable alias order.
+  repeated IndexAlias aliases = 1;
+}
+
+// One collection: the scope vocabulary accretion is measured over. Indexes
+// belong to a collection, indexing feeds its term statistics, vocabularies are
+// cut from it, models train from those vocabularies, and drift is measured
+// against the current vocabulary artifact.
+message CollectionDescriptor {
+  // Stable caller-chosen collection identifier.
+  string collection_id = 1;
+  // Human-readable name suitable for a collection selector.
+  string display_name = 2;
+  // Resolved dynamic member index ids. A member deleted after it was added
+  // simply stops contributing to the term statistics.
+  repeated string member_index_ids = 3;
+  // Dictionary artifact this collection's vocabularies are cut against.
+  optional string dictionary_artifact_id = 4;
+  // Vocabulary artifact drift is measured against.
+  optional string vocabulary_artifact_id = 5;
+  // Model artifact currently serving this collection's vector space.
+  optional string model_artifact_id = 6;
+  // Number of accreted new terms at which the watch stream reports
+  // COLLECTION_EVENT_KIND_DRIFT_THRESHOLD_CROSSED. Zero disables the event.
+  uint32 drift_new_term_threshold = 7;
+  // Analysis chain used to count the term statistics, identical to the chain
+  // recorded on member keyword components, so drift numbers are provably tied to
+  // the same analysis as querying.
+  AnalysisChainDescriptor analysis_chain = 8;
+  // Term statistics recomputed from the live indexed text of every member index
+  // chunk, ordered by descending occurrences with a lexicographic tie break.
+  // A term of the current vocabulary counts as one unit even when multiword.
+  // Bounded per response; omitted entirely by ListCollections.
+  repeated TermStatistic term_statistics = 9;
+  // Number of distinct terms beyond the term_statistics response bound. The
+  // drift statistics always cover all terms.
+  uint32 omitted_term_count = 10;
+  // Drift across all terms against the current vocabulary artifact.
+  CollectionDriftStats drift = 11;
+  // Lowercase SHA-256 of the persisted collection file with this field
+  // cleared. Empty when no persistence root is configured.
+  string integrity_hash = 12;
+}
+
+// One accreted term and its live occurrence count across member indexes.
+message TermStatistic {
+  // Analyzed term text. Multiword vocabulary terms are one unit, joined by
+  // single spaces.
+  string term = 1;
+  // Occurrences across the indexed text of every live member index chunk.
+  uint64 occurrences = 2;
+  // True when the term is a row of the current vocabulary artifact.
+  bool in_vocabulary = 3;
+}
+
+// Drift of accreted member content against the current vocabulary artifact.
+// When the collection has no vocabulary artifact, every term is new.
+message CollectionDriftStats {
+  // Distinct terms across all member indexes.
+  uint64 distinct_terms = 1;
+  // Total term occurrences across all member indexes.
+  uint64 term_occurrences = 2;
+  // Distinct terms absent from the current vocabulary.
+  uint64 new_terms = 3;
+  // Occurrences of terms absent from the current vocabulary.
+  uint64 new_term_occurrences = 4;
+  // Fraction of occurrences hitting vocabulary terms, in [0, 1]. Zero when
+  // the collection has no vocabulary artifact or no content.
+  double vocabulary_coverage = 5;
+}
+
+// Creates or replaces one collection's complete configured state.
+message SetCollectionRequest {
+  // Stable caller-chosen collection identifier.
+  string collection_id = 1;
+  // Human-readable collection name. Required.
+  string display_name = 2;
+  // Dynamic member index ids or aliases. Stored resolved.
+  repeated string member_index_ids = 3;
+  // Dictionary artifact this collection's vocabularies are cut against.
+  optional string dictionary_artifact_id = 4;
+  // Vocabulary artifact drift is measured against. Must exist when set.
+  optional string vocabulary_artifact_id = 5;
+  // Model artifact currently serving this collection's vector space.
+  optional string model_artifact_id = 6;
+  // Accreted new-term count that triggers the drift watch event. Zero
+  // disables the event.
+  uint32 drift_new_term_threshold = 7;
+}
+
+// Confirms one collection upsert.
+message SetCollectionResponse {
+  // Descriptor after the write, with its recomputed term statistics and drift.
+  CollectionDescriptor collection = 1;
+}
+
+// Reads one collection by its id.
+message GetCollectionRequest {
+  string collection_id = 1;
+}
+
+// One collection with its recomputed term statistics and drift.
+message GetCollectionResponse {
+  CollectionDescriptor collection = 1;
+}
+
+// Input to ListCollections. Empty because the bounded contract has no
+// filtering or pagination.
+message ListCollectionsRequest {}
+
+// Every collection configured on this server.
+message ListCollectionsResponse {
+  // Descriptors without term statistics, in stable collection-id order.
+  repeated CollectionDescriptor collections = 1;
+}
+
+// Deletes one collection by its id.
+message DeleteCollectionRequest {
+  string collection_id = 1;
+}
+
+// Confirms whether the collection existed and was deleted.
+message DeleteCollectionResponse {
+  string collection_id = 1;
+  bool deleted = 2;
+}
+
+// Subscribes to one collection's events.
+message WatchCollectionRequest {
+  string collection_id = 1;
+}
+
+// One self-contained collection event. The descriptor snapshot carries the
+// complete current state, so no event depends on any earlier event.
+message CollectionEvent {
+  // What this event reports.
+  CollectionEventKind kind = 1;
+  // Complete descriptor snapshot at emission, with term statistics and drift.
+  CollectionDescriptor collection = 2;
+  // Member index the event reports on. Set for
+  // COLLECTION_EVENT_KIND_INDEX_PERSISTED.
+  optional string index_id = 3;
+  // Published model artifact the event reports on. Set for
+  // COLLECTION_EVENT_KIND_MODEL_PUBLISHED.
+  optional string model_artifact_id = 4;
+}
+
+// The kind of one collection event.
+enum CollectionEventKind {
+  // No kind was declared. Emitted events never use this value.
+  COLLECTION_EVENT_KIND_UNSPECIFIED = 0;
+  // The subscription's opening snapshot, also re-sent on reconnect.
+  COLLECTION_EVENT_KIND_SNAPSHOT = 1;
+  // Accreted new terms reached the configured threshold.
+  COLLECTION_EVENT_KIND_DRIFT_THRESHOLD_CROSSED = 2;
+  // A member index was persisted or sealed.
+  COLLECTION_EVENT_KIND_INDEX_PERSISTED = 3;
+  // A model artifact was published from this collection's vocabulary.
+  COLLECTION_EVENT_KIND_MODEL_PUBLISHED = 4;
+}
+
+// Adds analyzed document shapes to a bounded server-owned in-memory index.
+// The service validates every selected chunk vector, route, span, and document
+// identity before publishing an atomic new index snapshot.
+message IndexDocumentsRequest {
+  // Existing dynamic index to extend. When absent, a new opaque id is created.
+  optional string index_id = 1;
+  // Human-readable label used only when creating an index.
+  string display_name = 2;
+  // Analyzed documents containing chunk_embedding_groups. At least one is required.
+  repeated OpenNlpDocument documents = 3;
+  // Embedding model and optional backend to select from each chunk.
+  EmbeddingSelector embedding = 4;
+  // Optional group-id filter. Empty selects every compatible embedded chunk group.
+  repeated string chunk_group_ids = 5;
+  // Vector storage for a new index. Unset selects the exact flat float provider.
+  // Dynamic indexes accept the standard flat float and TurboQuant providers; the
+  // choice is fixed at creation, so extending an index requires the same or an
+  // unset selector.
+  SearchProviderSelector provider = 6;
+}
+
+// Result of atomically adding one request's documents to a dynamic index.
+message IndexDocumentsResponse {
+  // Current descriptor after the new snapshot is published.
+  SearchIndexDescriptor index = 1;
+  // Number of documents accepted from this request.
+  uint32 indexed_documents = 2;
+  // Number of chunk vectors accepted from this request.
+  uint32 indexed_chunks = 3;
+}
+
+// Deletes one dynamic index by its opaque id.
+message DeleteSearchIndexRequest {
+  string index_id = 1;
+}
+
+// Confirms whether the dynamic index existed and was deleted.
+message DeleteSearchIndexResponse {
+  string index_id = 1;
+  bool deleted = 2;
+}
+
+// Input to ListSearchIndexes. Empty because the server exposes only configured
+// indexes and the first bounded contract has no remote filtering or pagination.
+message ListSearchIndexesRequest {}
+
+// Input to ListSearchProviders. Empty because the server exposes only its
+// configured provider instances and the bounded contract has no filtering.
+message ListSearchProvidersRequest {}
+
+// The search provider instances configured on this server.
+message ListSearchProvidersResponse {
+  // Provider instances in stable instance-id order.
+  repeated SearchProviderInstance providers = 1;
+}
+
+// One configured search provider instance. The instance id is the value
+// accepted by SearchProviderSelector.custom; the standard enum values are
+// shorthand for the default instance of each built-in provider.
+message SearchProviderInstance {
+  // Stable configured instance identifier, unique on this server.
+  string instance_id = 1;
+  // Identifier of the provider implementation behind this instance.
+  string provider_id = 2;
+  // What this instance executes and how it stores index data.
+  repeated SearchProviderCapability capabilities = 3;
+  // Present when this instance is the default selected by the standard
+  // enum shorthand for its provider.
+  optional StandardSearchProvider standard = 4;
+}
+
+// One declared ability of a search provider instance.
+enum SearchProviderCapability {
+  // No capability was declared. Listed instances never use this value.
+  SEARCH_PROVIDER_CAPABILITY_UNSPECIFIED = 0;
+  // Executes vector similarity components.
+  SEARCH_PROVIDER_CAPABILITY_VECTOR = 1;
+  // Executes analyzed keyword and phrase components.
+  SEARCH_PROVIDER_CAPABILITY_KEYWORD = 2;
+  // Serves mutable live indexes published as atomic snapshots.
+  SEARCH_PROVIDER_CAPABILITY_LIVE = 3;
+  // Loads immutable startup index bundles.
+  SEARCH_PROVIDER_CAPABILITY_BUNDLE = 4;
+  // Persists index data beyond the server process.
+  SEARCH_PROVIDER_CAPABILITY_PERSISTENT = 5;
+}
+
+// The static and dynamic search indexes available on this server.
+message ListSearchIndexesResponse {
+  // Index descriptors in stable index-id order.
+  repeated SearchIndexDescriptor indexes = 1;
+}
+
+// One server-owned vector index and the vector and corpus identities required
+// to interpret its results.
+message SearchIndexDescriptor {
+  // Server-owned identifier used in SearchIndexRequest.index_id. Dynamic ids
+  // remain valid only for the lifetime of their server process unless the
+  // index is persisted, in which case restarts restore it under the same id.
+  string index_id = 1;
+  // Human-readable name suitable for an index selector.
+  string display_name = 2;
+  // Search implementation that owns the stored vector data.
+  SearchProviderSelector provider = 3;
+  // Embedding route used to build the index. Query compatibility requires the
+  // same nonblank model_id and vector_space_id plus the declared dimension. A
+  // different backend may serve that same vector space at query time.
+  EmbeddingRoute embedding_route = 4;
+  // Number of float components in every indexed and query vector.
+  int32 dimension = 5;
+  // Similarity function used for ranking and the meaning of SearchHit.score.
+  SearchMetric metric = 6;
+  // Number of stored vectors and source records. Index implementations in this
+  // API are int-addressed, so the wire type deliberately has the same bound.
+  uint32 size = 7;
+  // True for operator-loaded indexes and false for process-local dynamic indexes.
+  bool immutable = 8;
+  // Corpus identity and provenance shared by every hit in this index.
+  SearchCorpusDescriptor corpus = 9;
+  // Largest top_k accepted for this index under the operator's configuration.
+  int32 max_top_k = 10;
+  // Largest UTF-8 encoded query.raw_text accepted for this index.
+  int32 max_query_bytes = 11;
+  // Reproducible build and bundle provenance.
+  SearchIndexBuildDescriptor build = 12;
+  // Largest serialized SearchIndexResponse emitted for this index.
+  uint32 max_response_bytes = 13;
+  // Per-modality components of this logical index and the provider instance behind
+  // each. Hybrid compound queries fuse across the components of one logical index.
+  repeated SearchIndexComponent components = 14;
+  // True when a checkpoint of this index exists under the operator-configured
+  // persistence root, so the index survives a server restart.
+  bool persisted = 15;
+  // True when this bounded index accepts all_hits and can return every ranked
+  // chunk. The complete result still remains subject to max_response_bytes.
+  bool supports_all_hits = 16;
+}
+
+// One independently provided modality of a logical index.
+message SearchIndexComponent {
+  // The modality this component executes.
+  SearchComponentKind kind = 1;
+  // Configured provider instance serving this component.
+  string provider_instance_id = 2;
+  // Analysis chain that built and queries this component. Set only on keyword components,
+  // where it is the language-layer twin of the descriptor's embedding route:
+  // query-time analysis provably matches index-time analysis.
+  AnalysisChainDescriptor analysis_chain = 3;
+}
+
+// The modality of one search index component.
+enum SearchComponentKind {
+  // No modality was declared. Descriptor components never use this value.
+  SEARCH_COMPONENT_KIND_UNSPECIFIED = 0;
+  // Vector similarity over embedded chunks.
+  SEARCH_COMPONENT_KIND_VECTOR = 1;
+  // Analyzed keyword and phrase matching over indexed text.
+  SEARCH_COMPONENT_KIND_KEYWORD = 2;
+}
+
+// Identity of the analysis chain behind a keyword component: tokenizer, normalizers,
+// and any learned vocabulary artifact, pinned so query-time analysis matches
+// index-time analysis.
+message AnalysisChainDescriptor {
+  // Stable identifier of the analysis chain implementation.
+  string chain_id = 1;
+  // Version of the chain implementation's analysis behavior.
+  string chain_version = 2;
+  // Lowercase SHA-256 digest of configurable chain artifacts, such as a
+  // learned vocabulary. Absent when the chain has no configurable artifacts.
+  optional string configuration_hash = 3;
+}
+
+// Reproducible bundle-build or dynamic-snapshot identity for one index.
+message SearchIndexBuildDescriptor {
+  // Version of the bundle or dynamic-snapshot descriptor contract.
+  uint32 bundle_format_version = 1;
+  // Lowercase SHA-256 digest identifying the bundle or complete dynamic snapshot.
+  string bundle_artifact_hash = 2;
+  // Stable identifier of the tool that built the bundle.
+  string builder_id = 3;
+  // Version of the builder implementation.
+  string builder_version = 4;
+  // Lowercase SHA-256 digest of canonical preparation and builder configuration.
+  string preparation_config_hash = 5;
+}
+
+// Corpus identity and provenance retained once on the index descriptor and inherited
+// by every returned hit through SearchIndexResponse.index.
+message SearchCorpusDescriptor {
+  // Human-readable corpus title.
+  string title = 1;
+  // Operator-supplied summary of origin, preparation, and licensing provenance.
+  string provenance_summary = 2;
+  // Optional stable URI for the source corpus or its provenance record.
+  optional string source_uri = 3;
+  // Optional SPDX identifier or human-readable license name for the indexed corpus.
+  optional string license_name = 4;
+  // Optional URI for the exact license terms governing the indexed corpus.
+  optional string license_uri = 5;
+  // Optional lowercase SHA-256 digest of the normalized corpus artifact used to
+  // construct the index bundle.
+  optional string artifact_hash = 6;
+}
+
+// Similarity function used by a search index.
+enum SearchMetric {
+  // No metric was supplied. Loaded index descriptors never use this value.
+  SEARCH_METRIC_UNSPECIFIED = 0;
+  // Cosine similarity, producing scores in [-1, 1].
+  SEARCH_METRIC_COSINE = 1;
+}
+
+// Search providers whose identifiers are stable parts of this API.
+enum StandardSearchProvider {
+  // No standard provider was selected.
+  STANDARD_SEARCH_PROVIDER_UNSPECIFIED = 0;
+  // OpenNLP's exact in-memory float-vector index implementation.
+  STANDARD_SEARCH_PROVIDER_FLAT_FLOAT = 1;
+  // OpenNLP's persisted TurboQuant index implementation.
+  STANDARD_SEARCH_PROVIDER_TURBO_QUANT = 2;
+}
+
+// Selects either a standard OpenNLP search provider or an extension-provided id.
+message SearchProviderSelector {
+  // The selected standard provider or open extension id.
+  oneof kind {
+    // A provider defined by this contract.
+    StandardSearchProvider standard = 1;
+    // Stable id of an extension-provided search implementation.
+    string custom = 2;
+  }
+}
+
+// One query against a server-owned index: either a document-shaped semantic
+// query or a typed compound query tree. Exactly one form must be set.
+message SearchIndexRequest {
+  // Stable id from ListSearchIndexes, or an alias from ListIndexAliases.
+  // Required. The response descriptor always carries the resolved index id.
+  string index_id = 1;
+  oneof query_kind {
+    // Document-shaped query. query.raw_text must be non-blank. The complete
+    // shape preserves caller identity and metadata for future typed query
+    // annotations. Shorthand for a compound query of one semantic clause.
+    OpenNlpDocument query = 2;
+    // Typed compound query executed under the normative score algebra in
+    // opennlp_query.proto. Hits carry root scores in [0, 1] and matched spans
+    // from keyword components. Reports UNIMPLEMENTED when the index does not
+    // execute compound queries or a CEL clause has no installed evaluator.
+    QueryNode compound_query = 4;
+  }
+  // Selects a bounded result count. Exactly one limit must be supplied.
+  oneof result_limit {
+    // Maximum hits to return. Must be positive and no larger than the index's
+    // advertised maximum.
+    int32 top_k = 3;
+    // Requests every indexed chunk in rank order. Must be true and is accepted
+    // only when SearchIndexDescriptor.supports_all_hits is true.
+    bool all_hits = 5;
+  }
+}
+
+// Ranked results for one server-owned index query.
+message SearchIndexResponse {
+  // Descriptor of the index that served this response.
+  SearchIndexDescriptor index = 1;
+  // Hits ordered by descending score with a deterministic tie break.
+  repeated SearchHit hits = 2;
+  // Actual route used to embed the query after route resolution. Its model id,
+  // vector space id, and dimension are checked against index.embedding_route;
+  // its backend id may differ from the backend used to build the index.
+  EmbeddingRoute query_embedding_route = 3;
+  // True when ranked hits were omitted to stay within index.max_response_bytes.
+  bool truncated = 4;
+  // Source documents referenced by hits, each present exactly once and ordered
+  // by first hit occurrence. This avoids repeating a large document per chunk.
+  repeated OpenNlpDocument source_documents = 5;
+}
+
+// One scored source passage from a static or dynamic search index.
+message SearchHit {
+  // Stable identity of one document in SearchIndexResponse.source_documents.
+  string document_id = 1;
+  // Stable identity of the indexed passage or chunk within the source corpus.
+  string chunk_id = 2;
+  // Similarity under the index metric for document-shaped queries; cosine
+  // indexes return a value in [-1, 1]. Compound queries return the root score
+  // of the normative algebra, always in [0, 1].
+  double score = 3;
+  reserved 4;
+  // Authoritative span within the referenced source document's raw_text. Its
+  // units are named by that document's offset_encoding.
+  AnnotationSpan source_span = 5;
+  // Exact text emitted by offline chunk preparation and embedded into the index.
+  string indexed_text = 6;
+  // Index, embedding, build, and corpus provenance are inherited from
+  // SearchIndexResponse.index and are not repeated on every hit.
+  reserved 7 to 9;
+  // Keyword and phrase matches contributing to this hit, for exact
+  // highlighting. Present only for compound queries with keyword components.
+  repeated MatchedSpan matched_spans = 10;
+  // Typed chunk projection identity from OpenNlpDocument.chunk_embedding_groups.
+  // Static bundles without a named projection use "default".
+  string chunk_group_id = 11;
+}
+
+// One keyword or phrase match within a hit's indexed text.
+message MatchedSpan {
+  // Inclusive start offset in UTF-16 code units within SearchHit.indexed_text.
+  uint32 start = 1;
+  // Exclusive end offset in UTF-16 code units within SearchHit.indexed_text.
+  uint32 end = 2;
+  // The analyzed query term or phrase text that matched this span.
+  string term = 3;
+}

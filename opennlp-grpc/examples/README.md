@@ -1,10 +1,10 @@
 <!--
 Licensed to the Apache Software Foundation (ASF) under one or more
-contributor license agreements. See the NOTICE file distributed with
+contributor license agreements.  See the NOTICE file distributed with
 this work for additional information regarding copyright ownership.
 The ASF licenses this file to You under the Apache License, Version 2.0
 (the "License"); you may not use this file except in compliance with
-the License. You may obtain a copy of the License at
+the License.  You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
@@ -15,19 +15,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Apache OpenNLP gRPC - Examples
+# OpenNLP gRPC examples
 
-This repository contains examples for the Apache OpenNLP gRPC project.
+- [Python quickstart](python-client/README.md): analyze typed documents, build a
+  process-local TurboQuant index, search it through the Java server, and then
+  extend the flow through vocabulary learning and static-model distillation.
+- [Protocol stub generation](../opennlp-grpc-api/README.md): generate clients for
+  other supported languages directly from the v1 protos.
 
-For other languages, generate the code stubs yourself, as shown here for Python:
-
-```bash
-python3 -m grpc_tools.protoc -I. --python_out=python --grpc_python_out=python opennlp.proto
-```
-
-## Documentation generation
-
-```powershell
-docker run --rm -v ${PWD}:/out -v ${PWD}:/protos pseudomuto/protoc-gen-doc --doc_opt=markdown,opennlp.md
-```
-The current version of the documentation can be found [here](opennlp)
+Legacy per-tool examples were removed. New examples use the document-centric v1
+contracts so one client can compose analysis, training, and search.

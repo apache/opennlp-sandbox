@@ -1,0 +1,367 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+syntax = "proto3";
+
+package org.apache.opennlp.grpc.v1;
+
+import "google/protobuf/timestamp.proto";
+import "org/apache/opennlp/grpc/v1/opennlp_search.proto";
+import "org/apache/opennlp/grpc/v1/opennlp_service.proto";
+import "org/apache/opennlp/grpc/v1/opennlp_vocabulary.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "OpenNlpTrainingProto";
+option java_package = "org.apache.opennlp.grpc.v1";
+
+// Distills operator-configured teacher models into static embedding models
+// whose extra term rows come from a learned vocabulary artifact, and serves
+// the published models for embedding, indexing, and search without a restart.
+// Write operations are disabled unless the operator configures a vocabulary
+// artifact root, and only configured teachers are accepted.
+service OpenNlpModelTrainingService {
+  // Lists the operator-configured teacher models available for distillation.
+  rpc ListTeachers(ListTeachersRequest) returns (ListTeachersResponse);
+
+  // Distills one teacher into a static embedding model with the terms of one
+  // vocabulary artifact as extra rows. Streams one update per distillation
+  // progress line; the final update carries the published model descriptor.
+  rpc TrainStaticModel(TrainStaticModelRequest)
+      returns (stream TrainStaticModelUpdate);
+
+  // Lists every published static model artifact this server can serve.
+  rpc ListStaticModels(ListStaticModelsRequest) returns (ListStaticModelsResponse);
+
+  // Deletes one published static model artifact and stops serving its
+  // embedding model id.
+  rpc DeleteStaticModel(DeleteStaticModelRequest) returns (DeleteStaticModelResponse);
+
+  // Runs one bounded document-to-index session. The first client frame fixes
+  // analysis, vocabulary, optional model, and optional index configuration.
+  // Every later frame carries one document and receives a correlated analysis
+  // result. Client half-close publishes the vocabulary, then optionally the
+  // model and index, while progress and the terminal descriptors stream back.
+  rpc StreamingTraining(stream StreamingTrainingRequest)
+      returns (stream StreamingTrainingUpdate);
+
+  // Lists the immutable, checksum-pinned models this build knows how to
+  // install. Model bytes and licenses are never bundled with the service.
+  rpc ListModelCatalog(ListModelCatalogRequest) returns (ListModelCatalogResponse);
+
+  // Lists models downloaded into this server node's configured catalog root.
+  rpc ListInstalledModels(ListInstalledModelsRequest)
+      returns (ListInstalledModelsResponse);
+
+  // Downloads and verifies one catalog model after the client explicitly
+  // acknowledges its pinned revision and license identity.
+  rpc InstallModel(InstallModelRequest) returns (stream InstallModelUpdate);
+}
+
+// How an installed catalog model participates in the service.
+enum ModelArtifactRole {
+  MODEL_ARTIFACT_ROLE_UNSPECIFIED = 0;
+  // ONNX teacher used by Model2Vec-style static model distillation.
+  MODEL_ARTIFACT_ROLE_DISTILLATION_TEACHER = 1;
+  // Ready-to-serve static embedding table.
+  MODEL_ARTIFACT_ROLE_STATIC_EMBEDDING = 2;
+}
+
+// One immutable entry in the server-owned model catalog. Source_uri is a
+// human-facing model page, not a caller-controlled download location.
+message ModelCatalogDescriptor {
+  string catalog_id = 1;
+  string display_name = 2;
+  ModelArtifactRole role = 3;
+  // Teacher id for a teacher, embedding model id for a static table.
+  string model_id = 4;
+  string source_uri = 5;
+  string revision = 6;
+  string license_name = 7;
+  string license_uri = 8;
+  uint64 byte_size = 9;
+  // Zero for a teacher whose output dimension is selected at distillation.
+  uint32 dimension = 10;
+  repeated string languages = 11;
+  string description = 12;
+}
+
+message ListModelCatalogRequest {}
+
+message ListModelCatalogResponse {
+  repeated ModelCatalogDescriptor models = 1;
+  bool installs_enabled = 2;
+}
+
+// One catalog model installed and verified on this server node.
+message InstalledModelDescriptor {
+  ModelCatalogDescriptor catalog = 1;
+  // SHA-256 over the ordered file names, sizes, and pinned file digests.
+  string artifact_hash = 2;
+  uint64 byte_size = 3;
+  google.protobuf.Timestamp installed_at = 4;
+  // True when the teacher or embedding route is active in this process.
+  bool loaded = 5;
+}
+
+message ListInstalledModelsRequest {}
+
+message ListInstalledModelsResponse {
+  repeated InstalledModelDescriptor models = 1;
+  bool installs_enabled = 2;
+}
+
+// Consent and immutable catalog identity for one installation request.
+message InstallModelRequest {
+  string catalog_id = 1;
+  string revision = 2;
+  string license_name = 3;
+  bool license_acknowledged = 4;
+}
+
+enum InstallModelStage {
+  INSTALL_MODEL_STAGE_UNSPECIFIED = 0;
+  INSTALL_MODEL_STAGE_VALIDATING = 1;
+  INSTALL_MODEL_STAGE_DOWNLOADING = 2;
+  INSTALL_MODEL_STAGE_VERIFYING = 3;
+  INSTALL_MODEL_STAGE_LOADING = 4;
+  INSTALL_MODEL_STAGE_PUBLISHED = 5;
+}
+
+// Bounded progress at catalog-file granularity. Byte counts advance only after
+// a complete file has passed its size and checksum checks.
+message InstallModelProgress {
+  InstallModelStage stage = 1;
+  string current_file = 2;
+  uint32 completed_files = 3;
+  uint32 total_files = 4;
+  uint64 completed_bytes = 5;
+  uint64 total_bytes = 6;
+  string message = 7;
+}
+
+message InstallModelUpdate {
+  oneof update {
+    InstallModelProgress progress = 1;
+    InstalledModelDescriptor model = 2;
+  }
+}
+
+// One frame in a bidirectional training session. Start must appear exactly once
+// as the first frame. Every later frame must carry one correlated document.
+message StreamingTrainingRequest {
+  oneof frame {
+    StreamingTrainingStart start = 1;
+    AnalyzeStreamDocument document = 2;
+  }
+}
+
+// Fixed configuration for one document-to-index session.
+message StreamingTrainingStart {
+  // Analysis returned for each accepted document. Index construction reuses its
+  // profile and options, replacing chunk embedding selections with the newly
+  // trained model and the index plan's chunk configurations.
+  AnalyzeStreamConfiguration analysis = 1;
+  // Vocabulary controls. The referenced dictionary must already exist.
+  LearnVocabularyStart vocabulary = 2;
+  // Optional model distillation after the vocabulary is published.
+  optional StreamingTrainingModelPlan model = 3;
+  // Optional dynamic index creation after model publication. Requires model.
+  optional StreamingTrainingIndexPlan index = 4;
+}
+
+// Distillation controls whose vocabulary identity comes from this session.
+message StreamingTrainingModelPlan {
+  string teacher_id = 1;
+  string display_name = 2;
+  uint32 pca_dims = 3;
+  string provenance_summary = 4;
+}
+
+// Dynamic index controls whose embedding model comes from this session.
+message StreamingTrainingIndexPlan {
+  string display_name = 1;
+  SearchProviderSelector provider = 2;
+  // Chunk configurations must omit embedding ids and selectors. The server
+  // injects the model published by this session.
+  repeated ChunkEmbedConfigEntry chunk_embed_configs = 3;
+  // Category chunk configurations follow the same model-injection rule.
+  repeated CategoryChunkConfigEntry category_chunk_configs = 4;
+  StreamingTrainingIndexDurability durability = 5;
+  // Optional logical name assigned only after the index is fully published.
+  optional string alias = 6;
+}
+
+// Lifetime requested for the terminal dynamic index.
+enum StreamingTrainingIndexDurability {
+  STREAMING_TRAINING_INDEX_DURABILITY_UNSPECIFIED = 0;
+  // Keeps the index for the current server process.
+  STREAMING_TRAINING_INDEX_DURABILITY_PROCESS_LOCAL = 1;
+  // Writes a mutable checkpoint that can be extended after restart.
+  STREAMING_TRAINING_INDEX_DURABILITY_PERSISTED = 2;
+  // Writes a checkpoint and makes the index immutable.
+  STREAMING_TRAINING_INDEX_DURABILITY_SEALED = 3;
+}
+
+// One server frame in a bidirectional training session.
+message StreamingTrainingUpdate {
+  oneof update {
+    StreamingTrainingAccepted accepted = 1;
+    StreamingTrainingDocumentUpdate document = 2;
+    StreamingTrainingProgress progress = 3;
+    StreamingTrainingCompleted completed = 4;
+  }
+}
+
+// Confirms session admission and the enforced corpus limits.
+message StreamingTrainingAccepted {
+  uint32 max_documents = 1;
+  uint32 max_corpus_bytes = 2;
+  bool model_training_enabled = 3;
+  bool indexing_enabled = 4;
+}
+
+// One correlated analysis result and the corpus totals after this frame. A
+// document-local analysis error does not contribute to the corpus totals.
+message StreamingTrainingDocumentUpdate {
+  AnalyzeStreamResponse result = 1;
+  uint32 accepted_documents = 2;
+  uint32 accepted_corpus_bytes = 3;
+}
+
+// Stage producing one progress message.
+enum StreamingTrainingStage {
+  STREAMING_TRAINING_STAGE_UNSPECIFIED = 0;
+  STREAMING_TRAINING_STAGE_ANALYSIS = 1;
+  STREAMING_TRAINING_STAGE_VOCABULARY = 2;
+  STREAMING_TRAINING_STAGE_MODEL = 3;
+  STREAMING_TRAINING_STAGE_INDEX = 4;
+}
+
+// Human-readable progress with a typed stage for clients that group updates.
+message StreamingTrainingProgress {
+  StreamingTrainingStage stage = 1;
+  string message = 2;
+}
+
+// Terminal descriptors from one successfully completed session.
+message StreamingTrainingCompleted {
+  VocabularyArtifactDescriptor vocabulary = 1;
+  optional StaticModelDescriptor model = 2;
+  optional IndexDocumentsResponse index = 3;
+  uint32 accepted_documents = 4;
+  uint32 accepted_corpus_bytes = 5;
+}
+
+// One operator-configured teacher a training request may reference.
+message TeacherDescriptor {
+  // Stable operator-chosen identifier used in TrainStaticModelRequest.
+  string teacher_id = 1;
+  // Human-readable name suitable for a teacher selector.
+  string display_name = 2;
+  // The configured teacher reference: a local model directory or a Hugging
+  // Face model id, optionally pinned as org/model@revision.
+  string reference = 3;
+  // True when the reference is a local directory that already exists.
+  bool local = 4;
+}
+
+message ListTeachersRequest {}
+
+message ListTeachersResponse {
+  // Teachers in stable teacher-id order.
+  repeated TeacherDescriptor teachers = 1;
+  // Whether training has an operator-configured artifact root.
+  bool writes_enabled = 2;
+  // Largest accepted TrainStaticModelRequest.pca_dims.
+  uint32 max_pca_dims = 3;
+  // Trainings admitted at once; later requests are rejected, not queued.
+  uint32 max_concurrent_trainings = 4;
+}
+
+// Controls for one distillation run.
+message TrainStaticModelRequest {
+  // Vocabulary artifact whose terms become the model's extra term rows.
+  string vocabulary_artifact_id = 1;
+  // One of the configured teacher ids from ListTeachers.
+  string teacher_id = 2;
+  // Human-readable name stored on the published model.
+  string display_name = 3;
+  // Principal components to keep; 0 selects the server default of 256.
+  uint32 pca_dims = 4;
+  // Operator-supplied provenance stored on the published model.
+  string provenance_summary = 5;
+}
+
+// One frame in a server-streamed training run.
+message TrainStaticModelUpdate {
+  oneof update {
+    // One human-readable distillation progress line.
+    string progress = 1;
+    // Terminal frame: the published, already-serving model.
+    StaticModelDescriptor model = 2;
+  }
+}
+
+// One immutable distilled static embedding model stored beneath the artifact
+// root and served as a registered embedding model.
+message StaticModelDescriptor {
+  // Server-owned artifact id. It is also the embedding model id accepted by
+  // EmbeddingSelector.model_id for analysis, indexing, and search.
+  string artifact_id = 1;
+  string display_name = 2;
+  // Vocabulary artifact whose terms were distilled as extra rows.
+  string vocabulary_artifact_id = 3;
+  // Teacher the model was distilled from.
+  string teacher_id = 4;
+  // Tokenizer family detected from the teacher, e.g. "wordpiece".
+  string family = 5;
+  // Number of float components in every produced vector.
+  uint32 dimension = 6;
+  // Subword vocabulary rows in the embedding table.
+  uint32 vocabulary_size = 7;
+  // Learned term rows appended after the subword rows.
+  uint32 term_count = 8;
+  // Variance kept by the PCA projection, in [0, 1]; 1 when PCA was skipped.
+  double explained_variance_ratio = 9;
+  // Lowercase SHA-256 of the artifact manifest, which lists the exact name,
+  // size, and SHA-256 of every published model file.
+  string artifact_hash = 10;
+  // Total bytes across all published model files.
+  uint64 byte_size = 11;
+  string provenance_summary = 12;
+  google.protobuf.Timestamp created_at = 13;
+}
+
+message ListStaticModelsRequest {}
+
+message ListStaticModelsResponse {
+  // Models in stable artifact-id order.
+  repeated StaticModelDescriptor models = 1;
+  // Whether training has an operator-configured artifact root.
+  bool writes_enabled = 2;
+}
+
+message DeleteStaticModelRequest {
+  string artifact_id = 1;
+}
+
+message DeleteStaticModelResponse {
+  string artifact_id = 1;
+  // True when the artifact existed and was deleted.
+  bool deleted = 2;
+}

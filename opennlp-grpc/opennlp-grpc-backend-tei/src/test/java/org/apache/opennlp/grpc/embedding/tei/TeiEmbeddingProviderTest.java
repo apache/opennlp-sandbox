@@ -1,0 +1,364 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+package org.apache.opennlp.grpc.embedding.tei;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import io.grpc.Server;
+import io.grpc.ServerBuilder;
+import io.grpc.Status;
+import io.grpc.stub.StreamObserver;
+import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.embedding.EmbeddingProviderFactory;
+import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.tei.v1.EmbedGrpc;
+import org.apache.opennlp.grpc.tei.v1.EmbedRequest;
+import org.apache.opennlp.grpc.tei.v1.EmbedResponse;
+import org.apache.opennlp.grpc.tei.v1.InfoGrpc;
+import org.apache.opennlp.grpc.tei.v1.InfoRequest;
+import org.apache.opennlp.grpc.tei.v1.InfoResponse;
+import org.apache.opennlp.grpc.tei.v1.ModelType;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * Exercises {@link TeiEmbeddingProvider} against an embedded gRPC server implementing
+ * the {@code tei.v1} surface. The stub returns deterministic vectors whose first
+ * component is the input length, which makes ordering verifiable.
+ */
+class TeiEmbeddingProviderTest {
+
+  private static final int DIMENSION = 3;
+
+  private static Server embeddingServer;
+  private static Server classifierServer;
+  private static Server invalidArgumentServer;
+  private static Server unavailableServer;
+  private static Server deadlineExceededServer;
+
+  @BeforeAll
+  static void startServers() throws IOException {
+    embeddingServer = ServerBuilder.forPort(0)
+        .addService(new StubInfoService(ModelType.MODEL_TYPE_EMBEDDING))
+        .addService(new StubEmbedService(null))
+        .build()
+        .start();
+    classifierServer = ServerBuilder.forPort(0)
+        .addService(new StubInfoService(ModelType.MODEL_TYPE_CLASSIFIER))
+        .addService(new StubEmbedService(null))
+        .build()
+        .start();
+    invalidArgumentServer = failingServer(Status.INVALID_ARGUMENT);
+    unavailableServer = failingServer(Status.UNAVAILABLE);
+    deadlineExceededServer = failingServer(Status.DEADLINE_EXCEEDED);
+  }
+
+  @AfterAll
+  static void stopServers() throws InterruptedException {
+    for (Server server : List.of(embeddingServer, classifierServer,
+        invalidArgumentServer, unavailableServer, deadlineExceededServer)) {
+      server.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+    }
+  }
+
+  /** Starts an embedding server whose Embed calls fail with the given status. */
+  private static Server failingServer(Status embedFailure) throws IOException {
+    return ServerBuilder.forPort(0)
+        .addService(new StubInfoService(ModelType.MODEL_TYPE_EMBEDDING))
+        .addService(new StubEmbedService(embedFailure))
+        .build()
+        .start();
+  }
+
+  @Test
+  void connectsAndDiscoversDimension() {
+    final TeiEmbeddingProvider provider = new TeiEmbeddingProvider(config("minilm"));
+    try {
+      assertTrue(provider.isAvailable());
+      assertEquals(Set.of("minilm"), provider.registeredModelIds());
+      assertEquals(DIMENSION, provider.embeddingDimension("minilm"));
+      assertEquals("minilm", provider.resolveModelId(null));
+      assertEquals(TeiEmbeddingBackendFactory.BACKEND_ID, provider.backendId());
+    } finally {
+      provider.close();
+    }
+  }
+
+  @Test
+  void embedReturnsServerVector() {
+    final TeiEmbeddingProvider provider = new TeiEmbeddingProvider(config("minilm"));
+    try {
+      final float[] vector = provider.embed("minilm", "hello");
+      assertEquals(DIMENSION, vector.length);
+      assertEquals(5f, vector[0]);
+    } finally {
+      provider.close();
+    }
+  }
+
+  @Test
+  void embedBatchPreservesInputOrder() {
+    final TeiEmbeddingProvider provider = new TeiEmbeddingProvider(config("minilm"));
+    try {
+      final List<float[]> vectors =
+          provider.embedBatch("minilm", List.of("a", "bb", "ccc", "dddd"));
+      assertEquals(4, vectors.size());
+      for (int i = 0; i < vectors.size(); i++) {
+        assertEquals(i + 1f, vectors.get(i)[0], "vector " + i + " out of order");
+      }
+    } finally {
+      provider.close();
+    }
+  }
+
+  @Test
+  void factoryAggregatesTeiThroughServiceLoader() throws Exception {
+    // The factory discovers the TEI backend via ServiceLoader and aggregates it into the composite
+    // provider; the TEI-configured model resolves to the TEI engine.
+    final EmbeddingProvider provider = EmbeddingProviderFactory.create(config("minilm"));
+    try {
+      assertTrue(provider.isAvailable());
+      assertTrue(provider.supportsModel("minilm"));
+      assertEquals(TeiEmbeddingBackendFactory.BACKEND_ID, provider.backendId("minilm"));
+    } finally {
+      if (provider instanceof AutoCloseable closeable) {
+        closeable.close();
+      }
+    }
+  }
+
+  @Test
+  void isInertWhenNoTargetConfigured() {
+    // No .tei.target keys: the provider must construct cleanly and report itself unavailable so
+    // the composite can aggregate it alongside other engines in a deploy that does not use TEI.
+    final TeiEmbeddingProvider provider = new TeiEmbeddingProvider(Map.of());
+    try {
+      assertFalse(provider.isAvailable());
+      assertTrue(provider.registeredModelIds().isEmpty());
+    } finally {
+      provider.close();
+    }
+  }
+
+  @Test
+  void foreignDefaultIdIsIgnoredNotRejected() {
+    // model.embedder.default_id is shared across engines; an id served by another engine
+    // must not fail this engine's startup. The composite validates the id against the
+    // union of engines, so a typo still fails loud there.
+    final TeiEmbeddingProvider provider = new TeiEmbeddingProvider(
+        Map.of("model.embedder.default_id", "served-by-another-engine"));
+    try {
+      assertFalse(provider.isAvailable());
+      assertNull(provider.resolveModelId(null));
+    } finally {
+      provider.close();
+    }
+  }
+
+  @Test
+  void orphanTeiSettingWithoutTargetFailsNamingTheMissingKey() {
+    // An id mentioned by a model.embedder.<id>.tei.* setting but lacking its .tei.target must
+    // fail startup instead of vanishing silently.
+    final AnalysisException e = assertThrows(AnalysisException.class,
+        () -> new TeiEmbeddingProvider(Map.of("model.embedder.minilm.tei.truncate", "false")));
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, e.getFailureType());
+    assertTrue(e.getMessage().contains("model.embedder.minilm.tei.target"), e.getMessage());
+  }
+
+  @Test
+  void rejectsNonEmbeddingModel() {    final Map<String, String> configuration = new HashMap<>();
+    configuration.put("model.embedder.minilm.tei.target",
+        "localhost:" + classifierServer.getPort());
+    configuration.put("model.embedder.tei.deadline_ms", "5000");
+    final AnalysisException e = assertThrows(AnalysisException.class,
+        () -> new TeiEmbeddingProvider(configuration));
+    assertEquals(AnalysisException.FailureType.FAILED_PRECONDITION, e.getFailureType());
+    assertTrue(e.getMessage().contains("CLASSIFIER"), e.getMessage());
+  }
+
+  @Test
+  void failsFastForUnreachableTarget() {
+    final Map<String, String> configuration = new HashMap<>();
+    configuration.put("model.embedder.minilm.tei.target", "localhost:1");
+    configuration.put("model.embedder.tei.deadline_ms", "2000");
+    final AnalysisException e = assertThrows(AnalysisException.class,
+        () -> new TeiEmbeddingProvider(configuration));
+    assertEquals(AnalysisException.FailureType.INTERNAL, e.getFailureType());
+  }
+
+  @Test
+  void rejectsUnknownModelId() {
+    final TeiEmbeddingProvider provider = new TeiEmbeddingProvider(config("minilm"));
+    try {
+      final AnalysisException e = assertThrows(AnalysisException.class,
+          () -> provider.embed("other", "text"));
+      assertEquals(AnalysisException.FailureType.NOT_FOUND, e.getFailureType());
+    } finally {
+      provider.close();
+    }
+  }
+
+  @Test
+  void remoteInvalidArgumentIsNotRetryable() {
+    // A deterministic remote rejection is a client error, not a transient fault: it must
+    // surface as INVALID_ARGUMENT and never be fallback-eligible.
+    final TeiEmbeddingProvider provider =
+        new TeiEmbeddingProvider(config(invalidArgumentServer, "minilm"));
+    try {
+      final AnalysisException e = assertThrows(AnalysisException.class,
+          () -> provider.embed("minilm", StubEmbedService.FAILURE_TRIGGER));
+      assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, e.getFailureType());
+    } finally {
+      provider.close();
+    }
+  }
+
+  @Test
+  void remoteUnavailableStaysRetryable() {
+    final TeiEmbeddingProvider provider =
+        new TeiEmbeddingProvider(config(unavailableServer, "minilm"));
+    try {
+      final AnalysisException e = assertThrows(AnalysisException.class,
+          () -> provider.embed("minilm", StubEmbedService.FAILURE_TRIGGER));
+      assertEquals(AnalysisException.FailureType.UNAVAILABLE, e.getFailureType());
+    } finally {
+      provider.close();
+    }
+  }
+
+  @Test
+  void remoteDeadlineExceededIsRetryable() {
+    // A remote deadline maps to UNAVAILABLE so the engine remains fallback-eligible.
+    final TeiEmbeddingProvider provider =
+        new TeiEmbeddingProvider(config(deadlineExceededServer, "minilm"));
+    try {
+      final AnalysisException e = assertThrows(AnalysisException.class,
+          () -> provider.embed("minilm", StubEmbedService.FAILURE_TRIGGER));
+      assertEquals(AnalysisException.FailureType.UNAVAILABLE, e.getFailureType());
+    } finally {
+      provider.close();
+    }
+  }
+
+  @Test
+  void rejectsInvalidDeadline() {
+    final Map<String, String> configuration = config("minilm");
+    configuration.put("model.embedder.tei.deadline_ms", "soon");
+    final AnalysisException e = assertThrows(AnalysisException.class,
+        () -> new TeiEmbeddingProvider(configuration));
+    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, e.getFailureType());
+  }
+
+  private static Map<String, String> config(String modelId) {
+    return config(embeddingServer, modelId);
+  }
+
+  private static Map<String, String> config(Server server, String modelId) {
+    final Map<String, String> configuration = new HashMap<>();
+    configuration.put("model.embedder." + modelId + ".tei.target",
+        "localhost:" + server.getPort());
+    configuration.put("model.embedder.tei.deadline_ms", "5000");
+    return configuration;
+  }
+
+  /** Info stub reporting a fixed model type. */
+  private static final class StubInfoService extends InfoGrpc.InfoImplBase {
+
+    private final ModelType modelType;
+
+    private StubInfoService(ModelType modelType) {
+      this.modelType = modelType;
+    }
+
+    @Override
+    public void info(InfoRequest request, StreamObserver<InfoResponse> observer) {
+      observer.onNext(InfoResponse.newBuilder()
+          .setVersion("test")
+          .setModelId("stub/test-model")
+          .setModelDtype("float32")
+          .setModelType(modelType)
+          .build());
+      observer.onCompleted();
+    }
+  }
+
+  /** Embed stub returning {@code [length(inputs), 1, 1]} for every request, unary and streamed;
+   * when {@code embedFailure} is set, calls for {@link #FAILURE_TRIGGER} fail with that status. */
+  private static final class StubEmbedService extends EmbedGrpc.EmbedImplBase {
+
+    /** Input text that triggers the configured failure (the construction probe uses another text). */
+    private static final String FAILURE_TRIGGER = "explode";
+
+    private final Status embedFailure;
+
+    private StubEmbedService(Status embedFailure) {
+      this.embedFailure = embedFailure;
+    }
+
+    private static EmbedResponse embedding(EmbedRequest request) {
+      return EmbedResponse.newBuilder()
+          .addEmbeddings(request.getInputs().length())
+          .addEmbeddings(1f)
+          .addEmbeddings(1f)
+          .build();
+    }
+
+    @Override
+    public void embed(EmbedRequest request, StreamObserver<EmbedResponse> observer) {
+      if (embedFailure != null && FAILURE_TRIGGER.equals(request.getInputs())) {
+        observer.onError(embedFailure.asRuntimeException());
+        return;
+      }
+      observer.onNext(embedding(request));
+      observer.onCompleted();
+    }
+
+    @Override
+    public StreamObserver<EmbedRequest> embedStream(StreamObserver<EmbedResponse> observer) {
+      // Echo one response per request, in order, mirroring TEI's request-ordered EmbedStream.
+      return new StreamObserver<>() {
+        @Override
+        public void onNext(EmbedRequest request) {
+          observer.onNext(embedding(request));
+        }
+
+        @Override
+        public void onError(Throwable t) {
+          observer.onError(t);
+        }
+
+        @Override
+        public void onCompleted() {
+          observer.onCompleted();
+        }
+      };
+    }
+  }
+}

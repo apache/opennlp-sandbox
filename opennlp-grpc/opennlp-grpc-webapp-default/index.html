@@ -1,0 +1,746 @@
+<!doctype html>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing,
+  software distributed under the License is distributed on an
+  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, either express or implied.  See the License for the
+  specific language governing permissions and limitations
+  under the License.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111827" />
+    <meta name="description" content="Explore the Apache OpenNLP gRPC service." />
+    <title>Apache OpenNLP gRPC</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#playground">Skip to playground</a>
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="Apache OpenNLP home">
+        <span class="brand-mark" aria-hidden="true">NLP</span>
+        <span>
+          <strong>Apache OpenNLP</strong>
+          <small>gRPC Workbench</small>
+        </span>
+      </a>
+      <nav class="site-nav" role="tablist" aria-label="Workbench navigation">
+        <button id="analysis-workbench-tab" type="button" role="tab" aria-selected="true"
+          aria-controls="analysis-workbench" data-workbench-tab="analysis">Analyze</button>
+        <button id="corpus-search-workbench-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+          aria-controls="server-search" data-workbench-tab="corpus-search">Corpus search</button>
+        <button id="session-search-workbench-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+          aria-controls="session-search" data-workbench-tab="session-search">Workspace search</button>
+        <button id="models-workbench-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+          aria-controls="model-data-workbench" data-workbench-tab="models">Models &amp; data</button>
+        <button id="trainer-workbench-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+          aria-controls="vocabulary-trainer" data-workbench-tab="trainer">Trainer</button>
+        <button id="lifecycle-workbench-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+          aria-controls="lifecycle-workbench" data-workbench-tab="lifecycle">Lifecycle</button>
+      </nav>
+      <div id="service-status" role="status" aria-live="polite" class="service-status is-loading">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span data-status-label>Connecting</span>
+      </div>
+    </header>
+
+    <main>
+      <section id="playground" class="playground" aria-labelledby="playground-heading">
+        <div class="workbench-heading">
+          <div>
+            <p class="section-kicker">Apache OpenNLP gRPC</p>
+            <h1 id="playground-heading">Document analysis workbench</h1>
+            <p id="service-description">
+              Connecting to the service and discovering the analysis features available on this instance.
+            </p>
+          </div>
+          <dl class="service-facts">
+            <div><dt>Service</dt><dd id="service-name">Discovering</dd></div>
+            <div><dt>Profiles</dt><dd id="profile-count">...</dd></div>
+            <div><dt>Bundles</dt><dd id="model-count">...</dd></div>
+          </dl>
+        </div>
+
+        <nav id="tool-navigation" class="tool-nav extension-switcher" aria-label="OpenNLP tools" hidden>
+          <a href="/" class="is-active" aria-current="page">
+            <span class="tool-icon" aria-hidden="true">AO</span>
+            <span><strong>Apache OpenNLP</strong><small>Default extension</small></span>
+          </a>
+        </nav>
+        <p id="tool-navigation-status" class="visually-hidden" role="status" aria-live="polite">
+          Discovering UI extensions.
+        </p>
+
+        <div id="analysis-workbench" class="workspace workspace-wide" role="tabpanel"
+          aria-labelledby="analysis-workbench-tab">
+          <form id="analysis-form" class="analysis-form analysis-composer">
+            <div class="field text-field">
+              <div class="label-row">
+                <label for="analysis-text">Document text</label>
+                <span id="character-count">0 characters</span>
+              </div>
+              <textarea id="analysis-text" name="text" rows="7" required
+                placeholder="Paste a paragraph, article, contract, or other document here."></textarea>
+            </div>
+
+            <div class="configuration-grid">
+              <div class="configuration-column">
+                <div class="field">
+                  <label for="profile-select">Feature preset</label>
+                  <select id="profile-select" name="profile">
+                    <option value="max" selected>All available features</option>
+                    <option value="custom">Choose features</option>
+                    <option value="automatic">Server automatic</option>
+                  </select>
+                  <small class="field-help">Combines every safely configured feature reported by this server.</small>
+                </div>
+                <div class="field">
+                  <label for="embedding-model-select">Embedding model</label>
+                  <select id="embedding-model-select" disabled>
+                    <option value="">No embedding model configured</option>
+                  </select>
+                  <small class="field-help">When available, vectors are attached to document and chunk output.</small>
+                </div>
+              </div>
+
+              <fieldset class="chunk-controls">
+                <legend>Chunk output</legend>
+                <p>Return either strategy or both in the same response.</p>
+                <label class="check-control" for="sentence-chunks">
+                  <input id="sentence-chunks" type="checkbox" checked />
+                  <span><strong>Sentence chunks</strong><small>One chunk per detected sentence</small></span>
+                </label>
+                <label class="check-control" for="token-chunks">
+                  <input id="token-chunks" type="checkbox" checked />
+                  <span><strong>Token windows</strong><small>Overlapping windows across the document</small></span>
+                </label>
+                <div class="token-window-fields">
+                  <label for="token-chunk-size">Window <input id="token-chunk-size" type="number"
+                    min="1" max="4096" value="96" inputmode="numeric" /></label>
+                  <label for="token-chunk-overlap">Overlap <input id="token-chunk-overlap" type="number"
+                    min="0" max="4095" value="12" inputmode="numeric" /></label>
+                </div>
+              </fieldset>
+
+              <div class="capability-summary">
+                <div>
+                  <span class="field-label">Enabled features</span>
+                  <ul id="enabled-feature-list" aria-label="Enabled analysis features">
+                    <li>Discovering</li>
+                  </ul>
+                </div>
+                <details>
+                  <summary>Loaded model bundles</summary>
+                  <ul id="model-list" aria-label="Available model bundles">
+                    <li>Discovering</li>
+                  </ul>
+                </details>
+              </div>
+            </div>
+
+            <fieldset class="feature-picker">
+              <legend>Analysis features</legend>
+              <p>Select any configured feature. Required backbone steps are added automatically.</p>
+              <div id="feature-options" class="feature-options" aria-label="Selectable analysis features">
+                <p class="empty-message">Discovering server features.</p>
+              </div>
+            </fieldset>
+
+            <div class="form-actions">
+              <button id="analyze-button" type="submit" disabled>
+                <span data-button-label>Analyze text</span>
+                <span aria-hidden="true">›</span>
+              </button>
+              <span class="sample-actions">
+                <button id="sample-button" type="button" class="secondary-button">Use short sample</button>
+                <button id="alice-sample-button" type="button" class="secondary-button">Load Alice novel</button>
+              </span>
+              <span class="checkbox-field">
+                <input id="normalization-xray-toggle" type="checkbox" name="normalization-xray" />
+                <label for="normalization-xray-toggle">Normalization X-ray</label>
+              </span>
+              <p id="form-status" role="status" aria-live="polite" class="form-status">
+                Connect to the service and enter text to begin.
+              </p>
+            </div>
+          </form>
+
+          <section class="response-panel" aria-labelledby="response-heading">
+            <div class="response-header">
+              <div>
+                <span class="response-label">Document shape</span>
+                <h3 id="response-heading">Analysis result</h3>
+              </div>
+              <div class="response-actions">
+                <button id="add-to-index-button" type="button" class="copy-button" disabled>Add to server workspace</button>
+                <button id="copy-button" type="button" class="copy-button" disabled>Copy JSON</button>
+                <button id="download-button" type="button" class="copy-button" disabled>Download JSON</button>
+                <button id="download-pb-button" type="button" class="copy-button" disabled>Download .pb</button>
+                <button id="load-response-button" type="button" class="copy-button">Load response</button>
+                <input id="load-response-input" type="file" accept=".json,.pb,application/json" hidden />
+
+              </div>
+            </div>
+            <div class="result-tabs" role="tablist" aria-label="Analysis result views">
+              <button id="document-tab" type="button" role="tab" aria-selected="true"
+                aria-controls="document-view" data-result-tab="document">Document</button>
+              <button id="chunks-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+                aria-controls="chunks-view" data-result-tab="chunks">Chunks</button>
+              <button id="heatmap-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+                aria-controls="heatmap-view" data-result-tab="heatmap">Heatmap</button>
+              <button id="graph-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+                aria-controls="graph-view" data-result-tab="graph">Graph</button>
+              <button id="json-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+                aria-controls="json-view" data-result-tab="json">Protobuf JSON</button>
+            </div>
+            <dl class="result-summary" aria-label="Document result summary">
+              <div><dt>Layers</dt><dd id="result-layer-count">0</dd></div>
+              <div><dt>Annotations</dt><dd id="result-annotation-count">0</dd></div>
+              <div><dt>Offsets</dt><dd id="result-offset-encoding">Not reported</dd></div>
+            </dl>
+            <div id="document-view" role="tabpanel" aria-labelledby="document-tab" class="document-view">
+              <div class="layer-browser">
+                <div class="layer-heading">
+                  <span>Layers</span>
+                  <small id="layer-summary">Analyze text to discover layers</small>
+                  <label for="layer-filter" class="visually-hidden">Filter annotation layers</label>
+                  <input id="layer-filter" type="search" placeholder="Filter layers" disabled />
+                </div>
+                <div id="layer-list" aria-label="Annotation layers" class="layer-list"></div>
+              </div>
+              <div class="annotation-canvas">
+                <p class="canvas-hint">All layers are overlaid by default. Click text to inspect every annotation
+                  covering it, or choose one layer to isolate that projection.</p>
+                <div id="document-window-controls" class="document-window-controls" hidden>
+                  <label id="document-window-label" for="document-window-position">
+                    Complete document
+                  </label>
+                  <input id="document-window-position" type="range" min="0" max="0" value="0" />
+                </div>
+                <div id="annotated-text" class="annotated-text" tabindex="0">No analysis yet.</div>
+                <section id="normalization-xray" class="normalization-xray" aria-label="Normalization X-ray" hidden>
+                </section>
+              </div>
+            </div>
+            <div id="chunks-view" role="tabpanel" aria-labelledby="chunks-tab" class="chunks-view" hidden>
+              <div class="visualization-heading">
+                <div><span>Chunk projections</span><small>Compare every requested strategy over the same document</small></div>
+                <p>Each column preserves its typed group identity, source span, and attached embedding count.</p>
+              </div>
+              <div id="chunk-projection" class="chunk-projection">
+                <p class="empty-message">Analyze text with a chunk strategy to compare its output.</p>
+              </div>
+            </div>
+            <div id="heatmap-view" role="tabpanel" aria-labelledby="heatmap-tab" class="visualization-view" hidden>
+              <div class="visualization-heading">
+                <div><span>Document heatmap</span><small>One projection, two typed score sources</small></div>
+                <p>Query ranking runs in the gRPC server. Sentiment reads the current document shape.</p>
+              </div>
+              <div class="heatmap-controls">
+                <div class="heatmap-mode" role="group" aria-label="Heatmap score source">
+                  <button id="heatmap-mode-query" type="button" aria-pressed="true">Query similarity</button>
+                  <button id="heatmap-mode-sentiment" type="button" aria-pressed="false">Sentiment</button>
+                </div>
+                <form id="heatmap-query-form" class="heatmap-query-form">
+                  <label for="heatmap-projection-select">Chunk projection</label>
+                  <select id="heatmap-projection-select" disabled>
+                    <option value="ALL_PROJECTIONS">All projections, separate lanes</option>
+                  </select>
+                  <label for="heatmap-query">Find related chunks in this document</label>
+                  <div>
+                    <input id="heatmap-query" type="search"
+                      placeholder="Try: individual liberty or separation of powers" disabled />
+                    <button id="heatmap-query-button" type="submit" disabled>Score chunks</button>
+                  </div>
+                </form>
+              </div>
+              <p id="heatmap-status" class="heatmap-status" role="status" aria-live="polite">
+                Analyze text with document embeddings to score its chunks.
+              </p>
+              <div id="document-heatmap" class="chart-canvas document-heatmap" role="region"
+                aria-label="Document score heatmap">Analyze a document to build its heatmap.</div>
+              <p id="heatmap-selection" class="heatmap-selection" aria-live="polite">
+                Select a colored segment to inspect its text and score.
+              </p>
+            </div>
+            <div id="graph-view" role="tabpanel" aria-labelledby="graph-tab" class="visualization-view" hidden>
+              <div class="visualization-heading">
+                <div><span>Document graph</span><small>Document, layer, and annotation relationships</small></div>
+                <div class="graph-heading-actions">
+                  <p>Pan, zoom, or select an annotation node to return to its typed layer.</p>
+                  <button id="graph-completeness" type="button" aria-pressed="false" hidden>
+                    Show complete graph
+                  </button>
+                </div>
+              </div>
+              <div id="document-graph" class="chart-canvas chart-canvas-graph" role="img"
+                aria-label="Document shape graph">Analyze a document to build its graph.</div>
+              <p id="graph-selection" class="graph-selection" aria-live="polite">No graph selection.</p>
+            </div>
+            <div id="json-view" role="tabpanel" aria-labelledby="json-tab" hidden>
+              <pre id="response-output" tabindex="0"><code>No analysis yet.</code></pre>
+            </div>
+          </section>
+        </div>
+
+        <div id="annotation-drawer-backdrop" class="drawer-backdrop" hidden></div>
+        <aside id="annotation-details" class="annotation-drawer" role="dialog" aria-modal="true"
+          aria-labelledby="annotation-details-heading" hidden>
+          <header>
+            <div>
+              <span>Typed annotation</span>
+              <h2 id="annotation-details-heading">Selection details</h2>
+            </div>
+            <button id="annotation-details-close" type="button" aria-label="Close annotation details">×</button>
+          </header>
+          <div id="annotation-details-content" class="annotation-details-content" aria-live="polite">
+            <p>Choose a highlighted span to inspect its annotation.</p>
+          </div>
+        </aside>
+
+        <section id="server-search" class="server-search-lens" role="tabpanel"
+          aria-labelledby="corpus-search-workbench-tab" hidden>
+          <div class="search-lens-heading">
+            <div>
+              <p class="section-kicker">Server-backed semantic search</p>
+              <h3 id="server-search-heading">Explore an immutable index</h3>
+              <p>Search a configured corpus, compare transformed chunks with their authoritative source spans,
+                and inspect the document evidence behind every score.</p>
+            </div>
+            <div id="score-legend" aria-label="Similarity score color scale from minus one to one"
+              class="score-legend">
+              <span>−1</span><i aria-hidden="true"></i><span>0</span><i aria-hidden="true"></i><span>+1</span>
+              <small>less similar&nbsp;&nbsp; cosine score &nbsp;&nbsp;more similar</small>
+            </div>
+          </div>
+
+          <form id="server-search-form" class="server-search-form">
+            <div class="field">
+              <label for="server-search-index">Search index</label>
+              <select id="server-search-index" required disabled>
+                <option value="">Discovering configured indexes</option>
+              </select>
+            </div>
+            <div class="field server-query-field">
+              <label for="server-search-query">Natural-language query</label>
+              <input id="server-search-query" type="search" required disabled
+                placeholder="What should this corpus help you find?" />
+            </div>
+            <div class="field top-k-field">
+              <label for="server-search-top-k">Results</label>
+              <input id="server-search-top-k" type="number" min="1" max="50" value="8" inputmode="numeric" />
+            </div>
+            <button id="server-search-button" type="submit" disabled>Search index <span aria-hidden="true">→</span></button>
+          </form>
+          <details id="compound-builder" class="compound-builder">
+            <summary>Compound query builder</summary>
+            <p class="builder-hint">
+              Compose semantic, term, and phrase clauses under one join. While clauses are
+              listed, the search runs the compound query and the text field above is ignored;
+              keyword matches return highlighted spans.
+            </p>
+            <div class="builder-controls">
+              <label for="builder-kind" class="visually-hidden">Clause kind</label>
+              <select id="builder-kind">
+                <option value="semantic">Semantic</option>
+                <option value="term">Term</option>
+                <option value="phrase">Phrase</option>
+              </select>
+              <label for="builder-text" class="visually-hidden">Clause text</label>
+              <input id="builder-text" type="text" placeholder="Clause text" />
+              <label for="builder-mode" class="visually-hidden">Term match mode</label>
+              <select id="builder-mode" hidden>
+                <option value="any">Match any term</option>
+                <option value="all">Match all terms</option>
+              </select>
+              <label for="builder-slop" class="visually-hidden">Phrase slop</label>
+              <input id="builder-slop" type="number" min="0" value="0" inputmode="numeric" hidden />
+              <button id="builder-add-button" type="button" class="secondary-button">Add clause</button>
+            </div>
+            <div id="builder-clauses" class="builder-clauses"></div>
+            <div class="builder-controls">
+              <label for="builder-join">Join</label>
+              <select id="builder-join">
+                <option value="and">All clauses (AND, mean score)</option>
+                <option value="or">Any clause (OR, maximum score)</option>
+                <option value="rrf">Any clause, reciprocal-rank fusion</option>
+              </select>
+              <button id="builder-clear-button" type="button" class="secondary-button">Clear clauses</button>
+            </div>
+          </details>
+          <p id="server-index-description" class="index-description">Discovering server-configured indexes.</p>
+          <p id="server-search-status" role="status" aria-live="polite" class="form-status">
+            Search becomes available when the server reports an index.
+          </p>
+
+          <div class="server-search-workspace">
+            <section class="server-results-panel" aria-labelledby="server-results-heading">
+              <div class="panel-heading">
+                <div><span>Ranked evidence</span><h4 id="server-results-heading">Search results</h4></div>
+                <div class="results-heading-tools">
+                  <div class="results-view-toggle" role="group" aria-label="Results view">
+                    <button id="server-view-list-button" type="button" aria-pressed="true">List</button>
+                    <button id="server-view-heatmap-button" type="button" aria-pressed="false">Heatmap</button>
+                  </div>
+                  <small id="server-result-count">0 hits</small>
+                </div>
+              </div>
+              <div id="server-search-results" aria-label="Server search results" class="server-search-results">
+                <p class="empty-message">Run a query to inspect scored source chunks.</p>
+              </div>
+              <div id="server-search-heatmap" aria-label="Document heatmap of scored chunks"
+                class="server-search-heatmap" hidden>
+                <p class="empty-message">Switch on the heatmap and run a query to shade every chunk of every
+                  document by its score.</p>
+              </div>
+            </section>
+
+            <section id="search-inspector" class="search-inspector" aria-labelledby="search-inspector-heading">
+              <div class="panel-heading">
+                <div><span>Selected evidence</span><h4 id="search-inspector-heading">Result inspector</h4></div>
+                <output id="selected-search-score" class="selected-score">No score</output>
+              </div>
+
+              <dl id="search-analytics" aria-label="Selected document analytics" class="search-analytics">
+                <div><dt>Sentences</dt><dd id="search-sentence-count">0</dd></div>
+                <div><dt>Tokens</dt><dd id="search-token-count">0</dd></div>
+                <div><dt>Entities</dt><dd id="search-entity-count">0</dd></div>
+                <div><dt>Chunks</dt><dd id="search-chunk-count">0</dd></div>
+                <div><dt>Terms</dt><dd id="search-term-count">0</dd></div>
+              </dl>
+
+              <div class="source-evidence">
+                <div class="evidence-heading">
+                  <span>Authoritative source</span>
+                  <small>Selected span is painted with its fixed score color.</small>
+                </div>
+                <div id="search-source-text" class="search-source-text" tabindex="0">
+                  Select a result to view its original document.
+                </div>
+              </div>
+
+              <div class="chunk-comparison" aria-label="Original and indexed chunk comparison">
+                <article>
+                  <span>Original source span</span>
+                  <pre id="search-original-span">No selection</pre>
+                </article>
+                <article>
+                  <span>Indexed chunk</span>
+                  <pre id="search-indexed-chunk">No selection</pre>
+                </article>
+              </div>
+              <p id="chunk-comparison-status" class="comparison-status">No chunk comparison yet.</p>
+
+              <div class="inspector-grid">
+                <div>
+                  <h5>Identity and provenance</h5>
+                  <dl id="search-hit-facts" class="search-hit-facts">
+                    <div><dt>Document</dt><dd>Not selected</dd></div>
+                  </dl>
+                </div>
+                <div>
+                  <h5>Intersecting annotations</h5>
+                  <div id="search-hit-annotations" class="search-hit-annotations" aria-live="polite">
+                    <p class="empty-message">Select a hit to inspect typed layers.</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section id="session-search" class="semantic-lab" role="tabpanel"
+          aria-labelledby="session-search-workbench-tab" hidden>
+          <div class="semantic-intro">
+            <p class="section-kicker">Dynamic gRPC search</p>
+            <p class="local-mode-badge">Server memory</p>
+            <h3 id="semantic-heading">On-the-fly workspace index</h3>
+            <p>
+              Add analyzed documents, then let the gRPC service build and search a bounded in-memory index,
+              stored exact (flat float) or quantized (TurboQuant). The browser renders server scores and
+              never performs vector ranking.
+            </p>
+            <dl class="semantic-facts">
+              <div><dt>Indexed chunks</dt><dd id="index-count">0</dd></div>
+              <div><dt>Similarity</dt><dd>Cosine</dd></div>
+              <div><dt>Storage</dt><dd>gRPC server memory</dd></div>
+            </dl>
+            <label for="workspace-provider-select">Vector storage for the next new index</label>
+            <select id="workspace-provider-select">
+              <option value="STANDARD_SEARCH_PROVIDER_FLAT_FLOAT">Flat float (exact)</option>
+              <option value="STANDARD_SEARCH_PROVIDER_TURBO_QUANT">TurboQuant (quantized)</option>
+            </select>
+          </div>
+          <div class="semantic-console">
+            <form id="semantic-search-form">
+              <label for="semantic-query">Semantic query</label>
+              <textarea id="semantic-query" rows="3" disabled
+                placeholder="Add an embedding-enabled document, then describe what you want to find."></textarea>
+              <div class="form-actions">
+                <button id="search-button" type="submit" disabled>Search workspace</button>
+                <button id="clear-index-button" type="button" class="secondary-button" disabled>Clear index</button>
+              </div>
+            </form>
+            <p id="semantic-status" class="form-status" role="status" aria-live="polite">
+              Analyze an embedding-enabled document, then add it to the server workspace.
+            </p>
+            <div id="search-results" class="search-results" aria-label="Semantic search results">
+              <p class="empty-message">No workspace search results yet.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="model-data-workbench" class="model-data-workbench" role="tabpanel"
+          aria-labelledby="models-workbench-tab" hidden>
+          <header class="model-data-heading">
+            <div>
+              <p class="section-kicker">Server capability inventory</p>
+              <h3>Models &amp; data</h3>
+              <p>See what this server can run now and what still needs an operator-provided resource.</p>
+            </div>
+            <strong id="resource-summary">Discovering resources</strong>
+          </header>
+          <div class="model-data-grid">
+            <section>
+              <h4>Pipeline readiness</h4>
+              <div id="resource-feature-list" class="resource-feature-list">
+                <p class="empty-message">Discovering server features.</p>
+              </div>
+            </section>
+            <section>
+              <h4>Loaded bundles</h4>
+              <ul id="resource-bundle-list" class="resource-bundle-list">
+                <li>Discovering model bundles.</li>
+              </ul>
+            </section>
+          </div>
+          <section class="resource-catalog-card">
+            <div>
+              <p class="section-kicker">Pinned model catalog</p>
+              <h4>Download verified models to this server node</h4>
+              <p>
+                Static tables become embedding providers immediately. Teacher models become
+                available to the Model2Vec-style trainer. No third-party model weights are bundled.
+              </p>
+            </div>
+            <div id="resource-model-catalog" class="resource-model-catalog">
+              <p class="empty-message">Loading the standard model catalog.</p>
+            </div>
+            <div class="downloaded-model-inventory">
+              <h5>Downloaded on this node</h5>
+              <div id="resource-installed-models" class="resource-installed-models">
+                <p class="empty-message">Loading the verified model inventory.</p>
+              </div>
+            </div>
+          </section>
+          <section class="resource-installer-card">
+            <div>
+              <span>Verified resource installer</span>
+              <h4>Download before server startup</h4>
+              <p>
+                The server CLI accepts an operator-approved HTTP(S) or file URI and requires a SHA-256 or
+                SHA-512 digest. Downloads are bounded, verified, staged, and installed atomically.
+              </p>
+            </div>
+            <pre id="resource-install-command">java -jar opennlp-grpc-server.jar install-resource \
+  --source https://example.invalid/resource.bin \
+  --checksum &lt;sha256-or-sha512&gt; \
+  --target /srv/opennlp/models</pre>
+            <button id="copy-resource-command" type="button" class="secondary-button">Copy command</button>
+            <p id="resource-install-status" class="form-status" role="status" aria-live="polite">
+              Configure the installed paths, then restart the server to load the new capabilities.
+            </p>
+          </section>
+        </section>
+        <section id="vocabulary-trainer" class="vocabulary-trainer" role="tabpanel"
+          aria-labelledby="trainer-workbench-tab" hidden>
+          <header class="model-data-heading">
+            <div>
+              <p class="section-kicker">Vocabulary to model</p>
+              <h3>Trainer</h3>
+              <p>
+                Import a dictionary, learn a vocabulary from your documents, and distill a
+                configured teacher into a static embedding model this server serves immediately.
+              </p>
+            </div>
+          </header>
+          <p id="trainer-status" class="form-status" role="status" aria-live="polite">
+            Loading the trainer catalog.
+          </p>
+          <div class="trainer-grid">
+            <section class="trainer-step">
+              <h4>1 · Import a dictionary</h4>
+              <label for="trainer-format-select">Format</label>
+              <select id="trainer-format-select" disabled></select>
+              <label for="trainer-dictionary-name">Display name</label>
+              <input id="trainer-dictionary-name" type="text" placeholder="Legal dictionary" />
+              <label for="trainer-dictionary-file">Dictionary file</label>
+              <input id="trainer-dictionary-file" type="file" />
+              <button id="trainer-import-button" type="button" disabled>Import dictionary</button>
+              <label for="trainer-dictionary-select">Imported dictionaries</label>
+              <select id="trainer-dictionary-select" disabled></select>
+            </section>
+            <section class="trainer-step">
+              <h4>2 · Learn a vocabulary</h4>
+              <label for="trainer-corpus">Corpus documents (blank line separates documents)</label>
+              <textarea id="trainer-corpus" rows="7"
+                placeholder="Paste corpus text; separate documents with a blank line."></textarea>
+              <p id="trainer-corpus-stats" class="trainer-corpus-stats" aria-live="polite">
+                Waiting for corpus input. Add text to preview the training batch.
+              </p>
+              <label for="trainer-vocabulary-name">Display name</label>
+              <input id="trainer-vocabulary-name" type="text" placeholder="Legal vocabulary" />
+              <div class="trainer-inline">
+                <span>
+                  <label for="trainer-min-frequency">Min frequency</label>
+                  <input id="trainer-min-frequency" type="number" min="1" value="2" />
+                </span>
+                <span>
+                  <label for="trainer-max-terms">Max terms</label>
+                  <input id="trainer-max-terms" type="number" min="1" value="10000" />
+                </span>
+              </div>
+              <button id="trainer-learn-button" type="button" disabled>Learn vocabulary</button>
+              <label for="trainer-vocabulary-select">Learned vocabularies</label>
+              <select id="trainer-vocabulary-select" disabled></select>
+              <button id="trainer-download-tsv-button" type="button" class="secondary-button"
+                disabled>Download TSV</button>
+            </section>
+            <section class="trainer-step">
+              <h4>3 · Train a static model</h4>
+              <label for="trainer-teacher-select">Teacher</label>
+              <select id="trainer-teacher-select" disabled></select>
+              <label for="trainer-model-name">Display name</label>
+              <input id="trainer-model-name" type="text" placeholder="Legal static model" />
+              <label for="trainer-pca-dims">PCA dimensions (0 = server default)</label>
+              <input id="trainer-pca-dims" type="number" min="0" value="0" />
+              <button id="trainer-train-button" type="button" disabled>Train model</button>
+              <div id="trainer-progress-log" class="trainer-progress-log" aria-live="polite"></div>
+            </section>
+          </div>
+          <section class="trainer-models">
+            <h4>Trained models on this server</h4>
+            <p>
+              A trained model serves under its artifact id. Select it as the embedding model in
+              Analyze, index the analyzed documents in Workspace search, and search them there.
+            </p>
+            <div id="trainer-model-list" class="trainer-model-list"></div>
+          </section>
+        </section>
+        <section id="lifecycle-workbench" class="lifecycle-workbench" role="tabpanel"
+          aria-labelledby="lifecycle-workbench-tab" hidden>
+          <header class="model-data-heading">
+            <div>
+              <p class="section-kicker">Persist, watch drift, retrain, reindex</p>
+              <h3>Lifecycle</h3>
+              <p>
+                Checkpoint and seal dynamic workspaces, point logical aliases at the current
+                index, rebuild blue/green into a newly trained vector space, and group
+                workspaces into collections whose accreted term drift the server streams live.
+              </p>
+            </div>
+          </header>
+          <p id="lifecycle-status" class="form-status" role="status" aria-live="polite">
+            Loading the lifecycle catalog.
+          </p>
+          <div class="lifecycle-grid">
+            <section class="lifecycle-panel">
+              <h4>Workspaces</h4>
+              <label for="lifecycle-index-select">Dynamic workspace</label>
+              <select id="lifecycle-index-select" disabled></select>
+              <dl id="lifecycle-index-facts" class="search-hit-facts"></dl>
+              <div class="form-actions">
+                <button id="lifecycle-persist-button" type="button" disabled>Persist checkpoint</button>
+                <button id="lifecycle-seal-button" type="button" class="secondary-button"
+                  disabled>Seal immutable</button>
+                <button id="lifecycle-refresh-button" type="button" class="secondary-button">Refresh</button>
+              </div>
+              <h5>Aliases</h5>
+              <div class="lifecycle-inline">
+                <label for="lifecycle-alias-input" class="visually-hidden">Alias name</label>
+                <input id="lifecycle-alias-input" type="text" placeholder="legal-current" />
+                <button id="lifecycle-set-alias-button" type="button" disabled>Point at workspace</button>
+              </div>
+              <div id="lifecycle-alias-list" class="lifecycle-alias-list"></div>
+              <h5>Blue/green reindex</h5>
+              <label for="lifecycle-reindex-model">Embedding model for the new index</label>
+              <select id="lifecycle-reindex-model"></select>
+              <label for="lifecycle-reindex-provider">Vector storage</label>
+              <select id="lifecycle-reindex-provider"></select>
+              <label for="lifecycle-reindex-alias">Alias to swap after a successful build</label>
+              <input id="lifecycle-reindex-alias" type="text" placeholder="legal-current" />
+              <button id="lifecycle-reindex-button" type="button" disabled>Reindex blue/green</button>
+              <h5>Provider instances</h5>
+              <div id="lifecycle-provider-list" class="lifecycle-provider-list"></div>
+            </section>
+            <section class="lifecycle-panel">
+              <h4>Collections</h4>
+              <label for="collection-select">Collection</label>
+              <select id="collection-select"></select>
+              <div class="lifecycle-inline">
+                <span>
+                  <label for="collection-id">Collection id</label>
+                  <input id="collection-id" type="text" placeholder="legal" />
+                </span>
+                <span>
+                  <label for="collection-name">Display name</label>
+                  <input id="collection-name" type="text" placeholder="Legal corpus" />
+                </span>
+              </div>
+              <label for="collection-members">Member workspaces</label>
+              <select id="collection-members" multiple size="4"></select>
+              <div class="lifecycle-inline">
+                <span>
+                  <label for="collection-dictionary-id">Dictionary artifact id</label>
+                  <input id="collection-dictionary-id" type="text" placeholder="dictionary-…" />
+                </span>
+                <span>
+                  <label for="collection-vocabulary-id">Vocabulary artifact id</label>
+                  <input id="collection-vocabulary-id" type="text" placeholder="vocabulary-…" />
+                </span>
+              </div>
+              <label for="collection-model-id">Serving model artifact</label>
+              <select id="collection-model-id"></select>
+              <label for="collection-threshold">Drift new-term threshold (0 disables the event)</label>
+              <input id="collection-threshold" type="number" min="0" value="0" inputmode="numeric" />
+              <div class="form-actions">
+                <button id="collection-save-button" type="button">Save collection</button>
+                <button id="collection-delete-button" type="button" class="secondary-button">Delete</button>
+              </div>
+              <h5>Vocabulary drift</h5>
+              <div class="coverage-meter" role="img" aria-label="Vocabulary coverage">
+                <i id="collection-coverage-bar" style="width: 0%"></i>
+              </div>
+              <p id="collection-coverage-label" class="coverage-label">No collection selected.</p>
+              <dl id="collection-drift-stats" class="search-hit-facts"></dl>
+              <h5>Accreted term statistics</h5>
+              <div id="collection-term-statistics" class="collection-term-statistics"></div>
+              <h5>Watch stream</h5>
+              <p id="collection-watch-status" class="form-status" role="status" aria-live="polite">
+                Not watching a collection.
+              </p>
+              <div id="collection-event-log" class="collection-event-log" aria-live="polite"></div>
+            </section>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer>
+      <p>Apache OpenNLP</p>
+      <p>Open source natural language processing for the JVM and beyond.</p>
+    </footer>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,111 @@
+# OpenNLP gRPC Integration Tests
+
+Black-box integration tests for the deployable `opennlp-grpc-server` artifact. The
+tests launch the shaded SNAPSHOT jar as a separate JVM process (with the
+`opennlp-grpc-backend-tei` module on its classpath) and exercise it over real network
+sockets:
+
+```
+test client --gRPC--> opennlp-grpc-server process --gRPC--> TEI embedding backend
+```
+
+## Default build (no Docker required)
+
+`OpenNlpGrpcServerLiveIT` runs in every `mvn verify`. It starts a stub TEI gRPC server
+inside the test JVM as the remote embedding backend and verifies service info, the
+model catalog (including `backend_id`), the bundled-model fallback (no model paths are
+configured, so the server loads its sentence detector and tokenizer from its own shaded
+jar), sentence embeddings, chunk+embed groups, and error mapping.
+
+Because the tests spawn the *packaged* jars, build the reactor first:
+
+```bash
+mvn -pl opennlp-grpc verify          # from the sandbox root, or simply:
+cd opennlp-grpc && mvn verify
+```
+
+The harness puts both remote backend jars (`opennlp-grpc-backend-tei`,
+`opennlp-grpc-backend-openvino`) on the spawned server's classpath, so every live test
+also exercises `ServiceLoader` discovery with multiple backends present.
+
+## Live tests against a real TEI server (opt-in)
+
+`RealTeiServerLiveIT` runs only when `OPENNLP_TEI_TARGET` is set. It asserts properties
+only a real embedding model can deliver: a substantial embedding dimension in the model
+catalog, L2-normalized vectors, and topical similarity ordering (related sentences are
+closer than unrelated ones).
+
+Start a real TEI server with the helper script, using either CPU or GPU:
+
+```bash
+./scripts/tei-server.sh start --cpu                  # default model: all-MiniLM-L6-v2
+./scripts/tei-server.sh start --gpu --port 18081     # requires nvidia-container-toolkit
+./scripts/tei-server.sh start --cpu --model BAAI/bge-base-en-v1.5
+```
+
+The script pulls the matching `-grpc` flavored TEI image, caches model downloads under
+`~/.cache/opennlp-grpc-it-tei-data`, and waits until TEI reports ready. Then:
+
+```bash
+OPENNLP_TEI_TARGET=localhost:18080 mvn -pl opennlp-grpc/opennlp-grpc-integration-tests verify
+```
+
+Tear down with:
+
+```bash
+./scripts/tei-server.sh stop
+```
+
+## Live tests against a real OpenVINO Model Server (opt-in)
+
+`RealOpenVinoServerLiveIT` runs only when `OPENNLP_OVMS_TARGET` is set and makes the
+same semantic assertions through the KServe v2 gRPC API.
+
+OVMS serves raw tensor models, so the helper script first exports the embedding model
+as a single OpenVINO graph (HuggingFace tokenizer fused via `openvino_tokenizers`, plus
+mean pooling and L2 normalization) with a string input. See the
+`opennlp-grpc-backend-openvino` README for details. Requires Docker and
+[uv](https://docs.astral.sh/uv/):
+
+```bash
+./scripts/ovms-server.sh prepare                  # one-time model export (~MiniLM default)
+./scripts/ovms-server.sh start --cpu              # or --gpu on Intel GPU hosts (no CUDA variant)
+OPENNLP_OVMS_TARGET=localhost:19000 mvn -pl opennlp-grpc/opennlp-grpc-integration-tests verify
+./scripts/ovms-server.sh stop
+```
+
+Both opt-in suites can run in the same build by setting both environment variables.
+
+## Cross-language lifecycle e2e in Python (opt-in)
+
+`PythonLifecycleLiveIT` proves two standard Python client styles against the
+packaged server. The generated-stub quickstart analyzes document shapes, creates a
+process-local TurboQuant index, and performs exhaustive server-side search. The
+descriptor-driven lifecycle client extracts the `FileDescriptorSet` from
+`META-INF/opennlp/descriptors/opennlp-grpc-v1.protobin` in the shaded jar and builds
+every request dynamically, proving the deployed wire contract is self-describing.
+
+Both clients run against a server spawned with a stub TEI backend, vocabulary
+artifact root, and search persistence root. The lifecycle client drives
+`StreamingTraining`, checks admission and correlated document-shape replies, learns
+a vocabulary separately, indexes explicitly identified documents, aliases and
+scopes the workspace into a collection, reads persistence events from
+`WatchCollection`, replaces the index blue-green, runs a compound query with matched
+spans, seals the workspace, and cleans up.
+
+It needs [uv](https://docs.astral.sh/uv/) on the PATH and is opt-in:
+
+```bash
+OPENNLP_PYTHON_E2E=1 mvn -pl opennlp-grpc/opennlp-grpc-integration-tests verify
+```
+
+Set `OPENNLP_E2E_TEACHER_REF` to a local teacher directory containing
+`tokenizer.json` and `onnx/model.onnx`, or to a compatible pinned Hugging Face
+model reference, to additionally distill a static model through both
+`StreamingTraining` and `TrainStaticModel`. The test then publishes and queries the
+streaming session's TurboQuant index, observes model publication on the watch
+stream, and reindexes into the trained vector space. Without it, the rebuild uses
+the serving embedding model and distillation is skipped.
+
+The readable clients and exact stub-generation commands live in the
+[Python quickstart](../examples/python-client/README.md).

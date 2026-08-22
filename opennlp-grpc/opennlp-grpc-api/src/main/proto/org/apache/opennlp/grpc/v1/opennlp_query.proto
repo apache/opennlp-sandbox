@@ -1,0 +1,186 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+syntax = "proto3";
+
+package org.apache.opennlp.grpc.v1;
+
+import "org/apache/opennlp/grpc/v1/opennlp_document.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "OpenNlpQueryProto";
+option java_package = "org.apache.opennlp.grpc.v1";
+
+// The compound search query: a strongly typed builder tree, not a parsed
+// string. Clients compose clauses; the server validates the tree before any
+// provider executes it, and every provider must reproduce the score algebra
+// below, so a query means the same thing on the in-process terms executor,
+// TurboQuant, Lucene, or a remote engine.
+//
+// Score algebra (normative):
+//   1. Every clause yields, per candidate, a membership decision and a score
+//      in [0, 1]. Leaf contracts: semantic scores are (cosine + 1) / 2; term
+//      and phrase scores are the executor's relevance normalized into [0, 1];
+//      a CEL calculator scores through its declared normalization.
+//   2. join with JOIN_OPERATOR_AND matches candidates matched by every
+//      operand; its score is the mean of the operand scores.
+//   3. join with JOIN_OPERATOR_OR matches candidates matched by any operand;
+//      its score is the maximum operand score.
+//   4. join.exclusions subtract membership and never contribute score.
+//   5. join with JOIN_FUSION_RECIPROCAL_RANK ranks by summed reciprocal rank
+//      (1 / (60 + rank)) across operands instead of rule 2 or 3 scores; use
+//      it when operand scales are not comparable.
+//   6. boost multiplies its operand's score by the resolved factor and clamps
+//      to [0, 1]. Boost never changes membership.
+//   7. cel_filter decides membership only and never contributes score.
+//   8. cel_calculator matches every candidate already admitted by a sibling
+//      clause; it is invalid as a query root or as the only scoring operand
+//      of a join, because it has no match semantics of its own.
+//   9. Final ranking orders by root score descending, ties broken by chunk id
+//      then document id, exactly as SearchIndexResponse hits are ordered.
+//
+// Analysis identity: term and phrase clauses are analyzed at query time by
+// the same recorded analysis chain (tokenizer, normalizers, stemmer, term
+// profile, vocabulary artifact) that built the index, so a learned multiword
+// vocabulary term is one match unit on both sides.
+
+// One node of the compound query tree.
+message QueryNode {
+  oneof kind {
+    // Vector component: embedded through the index's pinned embedding route.
+    SemanticClause semantic = 1;
+    // Keyword component: terms analyzed by the index's recorded analysis chain.
+    TermClause term = 2;
+    // Ordered keyword component with bounded slop.
+    PhraseClause phrase = 3;
+    // Membership composition: AND, OR, and exclusions.
+    JoinClause join = 4;
+    // Relevancy shaping: static weight or CEL calculator factor.
+    BoostClause boost = 5;
+    // Membership predicate over document metadata; must type-check to bool.
+    CelFilterClause cel_filter = 6;
+    // Scored component over document metadata; must type-check to a number.
+    CelCalculatorClause cel_calculator = 7;
+  }
+}
+
+// One natural-language query embedded via the index's embedding route. The
+// document shape preserves caller identity and future typed query annotations
+// exactly as AnalyzeDocument requests do.
+message SemanticClause {
+  OpenNlpDocument document = 1;
+}
+
+// Keyword text analyzed into index terms before matching.
+message TermClause {
+  string text = 1;
+  // How analyzed terms combine when the text yields more than one.
+  TermMatchMode mode = 2;
+}
+
+// Combination of the analyzed terms of one TermClause.
+enum TermMatchMode {
+  // Defaults to TERM_MATCH_MODE_ANY.
+  TERM_MATCH_MODE_UNSPECIFIED = 0;
+  // Any analyzed term matches; score favors candidates matching more terms.
+  TERM_MATCH_MODE_ANY = 1;
+  // Every analyzed term must match.
+  TERM_MATCH_MODE_ALL = 2;
+}
+
+// Ordered keyword text; matches when the analyzed terms appear in order
+// within the slop bound.
+message PhraseClause {
+  string text = 1;
+  // Extra positions tolerated between adjacent terms; 0 is an exact phrase.
+  uint32 slop = 2;
+}
+
+// Membership composition over child clauses.
+message JoinClause {
+  JoinOperator operator = 1;
+  // At least one operand is required.
+  repeated QueryNode operands = 2;
+  // Candidates matched by any exclusion are removed. Exclusions never score.
+  repeated QueryNode exclusions = 3;
+  // Score combination across operands; defaults to the operator's algebra.
+  JoinFusion fusion = 4;
+}
+
+// Membership operator of one join.
+enum JoinOperator {
+  JOIN_OPERATOR_UNSPECIFIED = 0;
+  // Every operand must match; score is the mean of operand scores.
+  JOIN_OPERATOR_AND = 1;
+  // Any operand may match; score is the maximum operand score.
+  JOIN_OPERATOR_OR = 2;
+}
+
+// Score combination across join operands.
+enum JoinFusion {
+  // Defaults to JOIN_FUSION_SCORE.
+  JOIN_FUSION_UNSPECIFIED = 0;
+  // The operator's score algebra: mean for AND, maximum for OR.
+  JOIN_FUSION_SCORE = 1;
+  // Summed reciprocal rank across operands, for components with unlike scales.
+  JOIN_FUSION_RECIPROCAL_RANK = 2;
+}
+
+// Relevancy shaping: multiplies the operand's score and clamps to [0, 1].
+message BoostClause {
+  QueryNode operand = 1;
+  oneof factor {
+    // Static multiplier. Must be finite and nonnegative.
+    double weight = 2;
+    // Per-candidate multiplier computed from document metadata.
+    CelScore calculator = 3;
+  }
+}
+
+// Membership predicate over document metadata. The expression is validated
+// to type-check to bool before execution; it reads the candidate's metadata
+// Struct as `metadata` and performs no I/O.
+message CelFilterClause {
+  string expression = 1;
+}
+
+// Scored component computed from document metadata. Matches every candidate a
+// sibling clause admitted; see algebra rule 8.
+message CelCalculatorClause {
+  CelScore score = 1;
+}
+
+// One CEL scoring expression and the normalization that maps its numeric
+// result into [0, 1]. The expression is validated to type-check to a number
+// before execution; it reads the candidate's metadata Struct as `metadata`
+// and performs no I/O.
+message CelScore {
+  string expression = 1;
+  ScoreNormalization normalization = 2;
+}
+
+// Maps a raw calculator result into [0, 1].
+enum ScoreNormalization {
+  SCORE_NORMALIZATION_UNSPECIFIED = 0;
+  // clamp(value, 0, 1).
+  SCORE_NORMALIZATION_CLAMP = 1;
+  // (value - min) / (max - min) over the candidate set; 0 when max equals min.
+  SCORE_NORMALIZATION_MINMAX = 2;
+  // 1 / (1 + e^-value).
+  SCORE_NORMALIZATION_LOGISTIC = 3;
+}

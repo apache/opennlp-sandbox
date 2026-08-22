@@ -1,0 +1,1072 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+syntax = "proto3";
+
+package org.apache.opennlp.grpc.v1;
+
+import "google/protobuf/struct.proto";
+
+option java_multiple_files = true;
+// Explicit outer classname: without it, protoc derives "OpennlpDocument" from
+// the filename, which collides with the OpenNlpDocument message on
+// case-insensitive filesystems (macOS, Windows).
+option java_outer_classname = "OpenNlpDocumentProto";
+option java_package = "org.apache.opennlp.grpc.v1";
+
+// The closed stemmer families supported by the service. Defined in the document
+// contract so typed stem annotations can retain their producer configuration.
+enum StemmerAlgorithm {
+  // No algorithm was selected.
+  STEMMER_ALGORITHM_UNSPECIFIED = 0;
+  // Language-specific Snowball stemming.
+  STEMMER_ALGORITHM_SNOWBALL = 1;
+  // The original English Porter stemming algorithm.
+  STEMMER_ALGORITHM_PORTER = 2;
+  // A language-specific light stemmer.
+  STEMMER_ALGORITHM_LIGHT = 3;
+  // A language-specific minimal stemmer.
+  STEMMER_ALGORITHM_MINIMAL = 4;
+  // Dictionary-driven Hunspell stemming.
+  STEMMER_ALGORITHM_HUNSPELL = 5;
+}
+
+// Canonical 1:1 NLP document: text in, annotations out.
+// The sentences list provides the shared base linguistic analysis
+// (computed once even when multiple chunk+embed groups are requested).
+message OpenNlpDocument {
+  // Caller-chosen document identifier. Opaque to the server; echoed back unchanged
+  // so a client can correlate the response with its request. May be empty.
+  string doc_id = 1;
+  // The full source text being analyzed. On the request side this is the only
+  // required field of the document (a missing/blank value is rejected with
+  // INVALID_ARGUMENT). All AnnotationSpan offsets in the response index into this
+  // text. Returned verbatim on the response.
+  string raw_text = 2;
+  // The language detected by PIPELINE_STEP_LANGUAGE_DETECT, as the predictor's code
+  // (the bundled OpenNLP detector emits ISO 639-3). Set only when that step ran.
+  optional string detected_language = 3;
+  // Confidence in detected_language, in [0,1]. Set only when LANGUAGE_DETECT ran.
+  optional float language_confidence = 4;
+  // The per-sentence linguistic analysis: one entry per detected sentence, each
+  // carrying its tokens and whatever annotations the requested steps produced.
+  // This is the shared base analysis, computed once and reused across every
+  // requested chunk+embedding group.
+  repeated AnnotatedSentence sentences = 5;
+  // Document-level aggregate statistics over the analyzed text. Populated when tokenization
+  // has run; POS-based densities require PIPELINE_STEP_POS_TAG and unique_lemma_count requires
+  // PIPELINE_STEP_LEMMATIZE.
+  optional DocumentAnalytics analytics = 6;
+  // Opaque client-supplied metadata, echoed back verbatim. The server never
+  // writes first-class results here; it is a passthrough field only.
+  google.protobuf.Struct metadata = 7;
+  // Sentence-level embeddings produced by PIPELINE_STEP_EMBED through the selected
+  // embedding model. Document centroids live in document_centroids; chunk-attached
+  // embeddings live inside chunk_embedding_groups.
+  repeated EmbeddingResult embeddings = 8;
+  // Whole-document classification from PIPELINE_STEP_DOC_CATEGORIZE. Set only when
+  // that step ran.
+  optional DocumentClassification classification = 9;
+
+  // Primary way to carry multiple independent chunk+embedding result groups
+  // from one analysis. Each group corresponds to one chunking strategy with
+  // its explicitly requested embedding models attached inside the chunks.
+  repeated ChunkEmbeddingGroup chunk_embedding_groups = 10;
+
+  // Unit of every AnnotationSpan start/end offset in this document (uniform).
+  // Echoes the requested AnalysisOptions.offset_encoding; defaults to UTF-8 bytes.
+  OffsetEncoding offset_encoding = 11;
+  // One document centroid per embedding model: the mean of the document's sentence-level
+  // embeddings for that model (granularity EMBEDDING_GRANULARITY_DOCUMENT), a single
+  // representative vector for the whole document. Set only when PIPELINE_STEP_EMBED produced
+  // sentence embeddings and AnalysisOptions.include_document_centroid is true.
+  repeated EmbeddingResult document_centroids = 12;
+  // Result of PIPELINE_STEP_NORMALIZE: the normalized text together with the
+  // alignment that maps spans between it and raw_text. Unset when the step did
+  // not run.
+  optional NormalizationResult normalization = 13;
+  // The document-shape view of every annotation this analysis
+  // produced: the same results as the fields above, rendered as named, typed
+  // annotation layers over raw_text. Servers at this version populate one layer
+  // per step that ran; a layer whose producing step did not run is absent.
+  // Spans use the document's offset_encoding, like every other span.
+  DocumentLayers layers = 14;
+}
+
+// One detected sentence and every annotation attached to it. Populated
+// incrementally as the requested pipeline steps run over this sentence.
+message AnnotatedSentence {
+  // Span of the sentence within the document text (from PIPELINE_STEP_SENTENCE_DETECT).
+  AnnotationSpan sentence_span = 1;
+  // The sentence's tokens in order (from PIPELINE_STEP_TOKENIZE). Carries any
+  // per-token POS tags and lemmas added by later steps.
+  repeated Token tokens = 2;
+  // Named entities found in this sentence (from PIPELINE_STEP_NER). Each entity's
+  // span indexes into the document text.
+  repeated NamedEntity entities = 3;
+  // Classic syntactic (shallow) chunks (from ChunkerME or similar), per sentence.
+  // Distinct from the strategy-driven Chunk in chunk_embedding_groups.
+  optional ChunkResult syntactic_chunks = 4;
+  // Constituency parse of this sentence (from PIPELINE_STEP_PARSE). The primary parse: the
+  // chosen engine's tree (default/pinned), or the highest-priority engine's tree under a union.
+  optional ParseTree parse_tree = 5;
+  // Winning sentiment category for this sentence (from PIPELINE_STEP_SENTIMENT,
+  // which is per-sentence document categorization): the argmax label of the
+  // configured sentiment categorizer. Set only when SENTIMENT ran.
+  optional string sentiment_label = 6;
+  // Score of the winning sentiment_label from the categorizer's score distribution,
+  // in [0,1]. Set only when SENTIMENT ran.
+  optional float sentiment_confidence = 7;
+  // All constituency parses when more than one engine ran (a union, see
+  // AnalysisProfile.parse_engine_policy with two or more engines), each tagged with its
+  // producer. Empty for the single-engine default/pin case, where `parse_tree` is the only
+  // parse; when populated, `parse_tree` repeats its primary (highest-priority) element.
+  repeated ParseTree parse_trees = 8;
+}
+
+// A single token, with the optional per-token annotations from POS tagging and
+// lemmatization.
+message Token {
+  // The token's surface text.
+  string text = 1;
+  // The token's span within the document text.
+  AnnotationSpan annotation_span = 2;
+  // Part-of-speech tag (from PIPELINE_STEP_POS_TAG). The tag reflects the requested
+  // AnalysisProfile.pos_tag_format: the server converts between the Penn and UD
+  // tagsets using OpenNLP's mapping tables, and an unset format defaults to the
+  // tagger model's native tagset (see POSTagFormat).
+  optional string pos_tag = 3;
+  // Lemma / dictionary form (from PIPELINE_STEP_LEMMATIZE, which requires POS_TAG).
+  optional string lemma = 4;
+  // Model confidence in pos_tag, in [0,1]. Populated only when the request set
+  // AnalysisOptions.include_probabilities = true.
+  optional float pos_probability = 5;
+  // UAX #29 word-token class (e.g. "ALPHANUMERIC", "NUMERIC", "IDEOGRAPHIC",
+  // "EMOJI"), populated only when the rule-based uax29 tokenizer engine ran
+  // (AnalysisProfile.tokenizer_engine = "uax29").
+  optional string word_type = 6;
+  // Per-token normalization layers, keyed by the library's character-level
+  // Dimension name (e.g. "FULL_CASE_FOLD" -> the fully case-folded form).
+  // Populated only for the dimensions the request listed in
+  // AnalysisProfile.term_dimensions; empty otherwise.
+  map<string, string> term_layers = 7;
+  // True when AnalysisProfile.stopword_language was set and the bundled list for that
+  // language contains this token. Absent/false otherwise.
+  bool is_stopword = 8;
+}
+
+// A named entity recognized by PIPELINE_STEP_NER.
+message NamedEntity {
+  // Span of the entity mention within the document text.
+  AnnotationSpan annotation_span = 1;
+  // Entity type/class, e.g. "person", "location". Drawn from the entity types the
+  // name finder is configured for (see AnalysisProfile.ner_entity_types).
+  string entity_type = 2;
+  // Model confidence in this entity, in [0,1]. Populated only when the request set
+  // AnalysisOptions.include_probabilities = true. When several providers contributed
+  // (see `sources`), this is the highest of their probabilities.
+  optional double probability = 3;
+  // The exact document text covered by `annotation_span`. Always populated, so a
+  // response is readable without re-resolving offsets, which matters when several
+  // providers recognized this entity at slightly different offsets (see `sources`).
+  string text = 4;
+  // Which recognizer(s)/engine(s) produced this entity. With one provider this holds
+  // a single source; under a multi-engine union (see AnalysisProfile.ner_engine_policy)
+  // it lists every provider that found this entity, so provenance and cross-provider
+  // agreement are explicit. Empty only on responses from servers that predate this field.
+  repeated EntitySource sources = 5;
+  // Field numbers 6 to 9 were skipped in pre-release drafts and never shipped.
+  reserved 6 to 9;
+  // Geocoding of a location-typed entity (from PIPELINE_STEP_GEOCODE): the resolved
+  // gazetteer entry and the resolution confidence. Unset when the step did not run,
+  // the entity is not location-typed, or the mention did not resolve.
+  optional GeoResolutionResult geo = 10;
+  // Reserved for further per-entity enrichment.
+  reserved 11 to 19;
+}
+
+// One geocoded place: the gazetteer entry a location mention resolved to, with the
+// resolution confidence. Field semantics mirror the library's GazetteerEntry.
+message GeoResolutionResult {
+  // The gazetteer that supplied the entry, e.g. "naturalearth".
+  string source = 1;
+  // The entry's stable id within its source.
+  string record_id = 2;
+  // The canonical place name of the entry.
+  string name = 3;
+  // Latitude of the representative point, in degrees.
+  double latitude = 4;
+  // Longitude of the representative point, in degrees.
+  double longitude = 5;
+  // ISO country code of the entry, when the source carries one.
+  optional string country_code = 6;
+  // Enclosing regions of the place, in the source's containment order.
+  repeated string containment = 7;
+  // Population of the place, when the source carries one; 0 otherwise.
+  int64 population = 8;
+  // The source's feature classification of the place, e.g. a city or a country.
+  optional string feature_class = 9;
+  // The geocoder's confidence in this resolution, in [0,1].
+  double confidence = 10;
+}
+
+// Provenance for a NamedEntity: one recognizer/engine that produced it. Under a
+// multi-engine NER union the same entity can be reported by several providers, each
+// with its own probability and (because providers tokenize differently) possibly its
+// own offsets; this records each contribution so the union stays understandable.
+message EntitySource {
+  // The logical recognizer id that emitted the entity (e.g. "person"), as configured.
+  string recognizer_id = 1;
+  // The engine/backend that served this recognizer (e.g. "opennlp-me", "onnx").
+  string engine = 2;
+  // This provider's confidence in the entity, in [0,1]. Populated only when the
+  // request set AnalysisOptions.include_probabilities = true.
+  optional double probability = 3;
+  // This provider's own span for the entity, when it differs from the enclosing
+  // NamedEntity's canonical span (providers may tokenize differently). Unset when it
+  // matches the canonical span.
+  optional AnnotationSpan annotation_span = 4;
+}
+
+// Offset range for an annotation. The coordinate space is explicit so future
+// token-relative indices can be represented without overloading field names.
+// v1 server responses use COORDINATE_SPACE_CHAR_DOCUMENT exclusively.
+message AnnotationSpan {
+  // Inclusive start offset. Measured in the unit named by the document's
+  // OffsetEncoding (default UTF-8 bytes), relative to what `space` indicates.
+  int32 start = 1;
+  // Exclusive end offset, in the same unit and space as `start`.
+  int32 end = 2;
+  // What the offsets are relative to. v1 responses always use
+  // COORDINATE_SPACE_CHAR_DOCUMENT (offsets into the document text).
+  CoordinateSpace space = 3;
+  // Optional annotation label carried on the span itself (rarely used; most
+  // typed annotations carry their type on the enclosing message instead).
+  optional string type = 4;
+  // Optional model confidence for this span, in [0,1].
+  optional double probability = 5;
+}
+
+// What an AnnotationSpan's start/end offsets are measured relative to. Orthogonal
+// to OffsetEncoding (which gives the unit). Only CHAR_DOCUMENT is emitted in v1;
+// TOKEN_SENTENCE is reserved for future token-relative coordinates.
+enum CoordinateSpace {
+  // Unset; treat as COORDINATE_SPACE_CHAR_DOCUMENT.
+  COORDINATE_SPACE_UNSPECIFIED = 0;
+  // Offsets index into the document text (the only space v1 emits).
+  COORDINATE_SPACE_CHAR_DOCUMENT = 1;
+  // Reserved: offsets as token indices within a sentence. Not emitted in v1.
+  COORDINATE_SPACE_TOKEN_SENTENCE = 2;
+}
+
+// Unit that AnnotationSpan.start/end are measured in. Orthogonal to
+// CoordinateSpace (which says what the offset is relative to). The wire
+// default is UTF-8 bytes, aligning with the protobuf encoding of raw_text so
+// non-JVM clients slice correctly without conversion.
+enum OffsetEncoding {
+  // Unset; the server treats this as OFFSET_ENCODING_UTF8_BYTE.
+  OFFSET_ENCODING_UNSPECIFIED = 0;
+  // Default; matches the raw_text protobuf wire bytes, so non-JVM clients slice without converting.
+  OFFSET_ENCODING_UTF8_BYTE = 1;
+  // Java/OpenNLP-native UTF-16 code units.
+  OFFSET_ENCODING_UTF16_CODE_UNIT = 2;
+  // Language-neutral Unicode codepoints.
+  OFFSET_ENCODING_UNICODE_CODE_POINT = 3;
+}
+
+// Document-level aggregate statistics over the analyzed text. The server populates
+// this message when tokenization produced at least one token. Sentence and token
+// counts are always available then. POS densities require PIPELINE_STEP_POS_TAG,
+// and unique_lemma_count requires PIPELINE_STEP_LEMMATIZE.
+message DocumentAnalytics {
+  // Total token count across all sentences.
+  int32 total_tokens = 1;
+  // Total number of detected sentences.
+  int32 total_sentences = 2;
+  // Fraction of POS-tagged tokens that are nouns, in [0,1].
+  float noun_density = 3;
+  // Fraction of POS-tagged tokens that are verbs, in [0,1].
+  float verb_density = 4;
+  // Fraction of POS-tagged tokens that are adjectives, in [0,1].
+  float adjective_density = 5;
+  // Fraction of POS-tagged tokens that are adverbs, in [0,1].
+  float adverb_density = 6;
+  // Fraction of POS-tagged tokens that are content (vs. function) words, in [0,1].
+  float content_word_ratio = 7;
+  // Number of distinct lemmas when lemmatization ran.
+  int32 unique_lemma_count = 8;
+  // Lexical density (content words / total tokens, tagged or not), in [0,1].
+  float lexical_density = 9;
+}
+
+// Lightweight result for classic syntactic (shallow) chunking (ChunkerME style)
+// attached to sentences. Distinct from the strategy-driven Chunk below.
+message ChunkResult {
+  // The syntactic chunks of the sentence, in order.
+  repeated ChunkSpan chunks = 1;
+}
+
+// One shallow-chunk span and its phrase tag.
+message ChunkSpan {
+  // Span of the chunk within the document text.
+  AnnotationSpan annotation_span = 1;
+  // Chunk/phrase tag, e.g. "NP", "VP" (the chunker model's tagset).
+  string chunk_tag = 2;
+  // The exact document text covered by `annotation_span`. Always populated, so a response is
+  // readable without re-resolving offsets, which matters when several providers chunked at
+  // slightly different offsets (see `sources`).
+  string text = 3;
+  // Which chunker(s)/engine(s) produced this chunk. With one provider this holds a single
+  // source; under a multi-engine union (see AnalysisProfile.chunk_engine_policy) it lists every
+  // provider that produced this chunk. Empty only on responses from servers predating this field.
+  repeated ChunkSource sources = 4;
+}
+
+// Provenance for a ChunkSpan: one chunker/engine that produced it. Under a multi-engine union
+// the same chunk can be reported by several providers, each with possibly its own offsets.
+message ChunkSource {
+  // The logical chunker id that produced the chunk (e.g. "default"), as configured.
+  string chunker_id = 1;
+  // The engine/backend that served this chunker (e.g. "opennlp-me").
+  string engine = 2;
+  // This provider's own span for the chunk, when it differs from the enclosing ChunkSpan's
+  // canonical span (providers may tokenize differently). Unset when it matches.
+  optional AnnotationSpan annotation_span = 3;
+}
+
+// A chunk produced by a chunking strategy. The strategy and the list of
+// embedding models are declared on the containing ChunkEmbeddingGroup.
+// Embeddings for the requested models are carried inside this chunk.
+message Chunk {
+  // Span of the chunk within the document text (authoritative bounds).
+  AnnotationSpan annotation_span = 1;
+  // Optional tag for the chunk. Unused by the built-in strategies (token/sentence/
+  // semantic), which leave it unset.
+  optional string chunk_tag = 2;
+  // The text of the chunk (for client convenience; authoritative bounds
+  // are given by annotation_span over the document raw_text).
+  optional string text_content = 3;
+  // One EmbeddingResult per embedding model requested for this group/strategy
+  // (ChunkEmbeddingGroup.embedding_model_ids), each granularity CHUNK_LEVEL.
+  // Empty when the group requested no embedding models.
+  repeated EmbeddingResult embeddings = 4;
+  // Optional navigation aid: indices into the document's sentences list for the
+  // sentences this chunk spans.
+  repeated int32 contained_sentence_indices = 5;
+}
+
+// OpenNLP-owned chunking strategies whose identities are stable parts of this API.
+// CATEGORY is produced by CategoryChunkConfigEntry and is not valid in ChunkingSpec.
+enum StandardChunkingStrategy {
+  // No standard strategy was selected.
+  STANDARD_CHUNKING_STRATEGY_UNSPECIFIED = 0;
+  // Produce one chunk per sentence.
+  STANDARD_CHUNKING_STRATEGY_SENTENCE = 1;
+  // Produce overlapping or disjoint token windows.
+  STANDARD_CHUNKING_STRATEGY_TOKEN = 2;
+  // Split at semantic boundaries derived from sentence embeddings.
+  STANDARD_CHUNKING_STRATEGY_SEMANTIC = 3;
+  // Group spans by document-category output.
+  STANDARD_CHUNKING_STRATEGY_CATEGORY = 4;
+}
+
+// Identifies either a standard OpenNLP chunking strategy or an extension strategy.
+message ChunkingStrategySelector {
+  // The selected standard strategy or extension id.
+  oneof kind {
+    // A strategy defined by this contract.
+    StandardChunkingStrategy standard = 1;
+    // The stable id of an extension-provided strategy.
+    string custom = 2;
+  }
+}
+
+// One chunking strategy's output: the chunks (with their embeddings inside)
+// plus traceability for the strategy and the exact embedding models that
+// were asked for this strategy in the request.
+message ChunkEmbeddingGroup {
+  // Identifies this group; mirrors the request's ChunkEmbedConfigEntry.config_id.
+  string group_id = 1;
+  // The config_id of the request entry that produced this group (traceability).
+  optional string chunk_config_id = 2;
+  // The embedding model ids whose vectors are attached to this group's chunks, exactly as
+  // named for this strategy in the request.
+  repeated string embedding_model_ids = 3;
+  // Echoes the request entry's result_set_name, if the caller supplied one.
+  optional string result_set_name = 4;
+  // The chunks this strategy produced, each carrying its per-model embeddings.
+  repeated Chunk chunks = 5;
+  // Typed per-group statistics (chunk count, token count, timing).
+  optional ChunkGroupStats stats = 6;
+  // Granularity of the embeddings in this group; always CHUNK_LEVEL.
+  optional EmbeddingGranularity granularity = 7;
+  // One centroid per embedding model in embedding_model_ids: the mean of this group's chunk
+  // vectors for that model (granularity EMBEDDING_GRANULARITY_GROUP_CENTROID), a single
+  // representative vector for the group. Empty when the group has no embedded chunks.
+  repeated EmbeddingResult centroids = 8;
+  // The canonical strategy that produced this group. Always populated by this server,
+  // including when the request used the legacy ChunkingSpec.algorithm string.
+  ChunkingStrategySelector strategy = 9;
+}
+
+// Typed per-group statistics/provenance (replaces an untyped metadata map).
+message ChunkGroupStats {
+  // Number of chunks in the group.
+  int32 chunk_count = 1;
+  // Distinct tokens across the group's chunks, deduplicated by character start
+  // offset (overlapping token-window chunks can share tokens).
+  int32 total_tokens = 2;
+  // Wall-clock time to build this group (chunking + embedding), in milliseconds.
+  int64 processing_time_ms = 3;
+}
+
+// A constituency (phrase-structure) parse of one sentence. The server populates the
+// representations the request selects via AnalysisOptions.parse_formats; an unselected
+// representation is left empty. The structured tree and the bracketed string are independent
+// views of the same parse, so a client takes whichever fits its language and use.
+message ParseTree {
+  // Structured, navigable tree (PARSE_FORMAT_STRUCTURED). Empty when not requested.
+  ParseNode root = 1;
+  // Standard bracketed (Penn-Treebank-style) form (PARSE_FORMAT_BRACKETED), as emitted by
+  // OpenNLP's Parse.show(), e.g. "(TOP (S (NP (DT The)(NN dog))(VP (VBD barked))))". The
+  // universal interchange/debug representation; every NLP toolkit can read it.
+  optional string penn_treebank = 2;
+  // The logical parser id that produced this tree (e.g. "default"), as configured.
+  string parser_id = 3;
+  // The engine/backend that served this parser (e.g. "opennlp-me").
+  string engine = 4;
+}
+
+// One node of a constituency parse. A nonterminal is a phrase (its label is a phrase tag such
+// as S/NP/VP and it has children); a terminal is a single token (its label is the POS tag, it
+// has no children, and token_index links it to the sentence's token list rather than repeating
+// the token text).
+message ParseNode {
+  // Phrase tag (e.g. S/NP/VP) on a nonterminal, or the POS tag on a terminal.
+  string label = 1;
+  // Span of document text this node covers.
+  AnnotationSpan span = 2;
+  // Child nodes, in order; empty for terminals.
+  repeated ParseNode children = 3;
+  // Model confidence for this node, in [0,1]. Set only when include_probabilities is true.
+  optional double probability = 4;
+  // Whether this node is a phrase or a single token. Explicit so clients switch on the kind
+  // instead of inferring "leaf == no children".
+  ParseNodeKind kind = 5;
+  // Terminals only: index into the enclosing AnnotatedSentence.tokens. Unset on nonterminals.
+  optional int32 token_index = 6;
+}
+
+// Whether a ParseNode is a phrase (nonterminal) or a single token (terminal).
+enum ParseNodeKind {
+  // Unset/unknown node kind.
+  PARSE_NODE_KIND_UNSPECIFIED = 0;
+  // A phrase / constituent: carries a phrase label and child nodes.
+  PARSE_NODE_KIND_NONTERMINAL = 1;
+  // A single token: a preterminal carrying the POS tag and a token_index.
+  PARSE_NODE_KIND_TERMINAL = 2;
+}
+
+// OpenNLP-owned embedding backends whose identifiers are stable parts of this API.
+// ServiceLoader extensions use EmbeddingBackendSelector.custom.
+enum StandardEmbeddingBackend {
+  // No standard backend was selected.
+  STANDARD_EMBEDDING_BACKEND_UNSPECIFIED = 0;
+  // Local inference through ONNX Runtime.
+  STANDARD_EMBEDDING_BACKEND_ONNX = 1;
+  // Local GPU inference through the CUDA backend.
+  STANDARD_EMBEDDING_BACKEND_CUDA = 2;
+  // Static lookup-table embeddings.
+  STANDARD_EMBEDDING_BACKEND_STATIC = 3;
+  // Remote Hugging Face Text Embeddings Inference.
+  STANDARD_EMBEDDING_BACKEND_TEI = 4;
+  // Remote OpenVINO Model Server inference.
+  STANDARD_EMBEDDING_BACKEND_OPENVINO = 5;
+}
+
+// Selects either a standard OpenNLP embedding backend or an extension-provided id.
+message EmbeddingBackendSelector {
+  // The selected standard backend or extension id.
+  oneof kind {
+    // A backend defined by this contract.
+    StandardEmbeddingBackend standard = 1;
+    // The stable id of a ServiceLoader-provided backend.
+    string custom = 2;
+  }
+}
+
+// Selects one logical embedding model and, optionally, one concrete backend route.
+// Model ids remain open strings because deployments own them. An absent backend choice
+// uses the server's primary route and permits safe fallback. A present choice pins that
+// route with no fallback.
+message EmbeddingSelector {
+  // The deployment-defined logical model id.
+  string model_id = 1;
+  // Compatibility input for an open backend id. New clients should use `backend`.
+  // Setting both fields => INVALID_ARGUMENT.
+  optional string backend_id = 2;
+  // Strongly typed standard backend or open ServiceLoader extension id. Setting this
+  // field together with `backend_id` => INVALID_ARGUMENT.
+  EmbeddingBackendSelector backend = 3;
+}
+
+// The concrete route that produced an embedding or can serve an embedding model.
+message EmbeddingRoute {
+  // The deployment-defined logical model id.
+  string model_id = 1;
+  // The concrete backend id that serves the model.
+  string backend_id = 2;
+  // Stable identity of the vector space, including weights, tokenization, pooling,
+  // and normalization semantics. Fallback is allowed only across matching ids.
+  string vector_space_id = 3;
+  // SHA-256 of the primary model artifact when the backend can report it.
+  optional string artifact_hash = 4;
+  // Server routing priority. Higher values are preferred.
+  int32 priority = 5;
+  // True for the route used by an unpinned request before any fallback occurs.
+  bool primary = 6;
+}
+
+// A single embedding vector and the span of text it was computed over.
+message EmbeddingResult {
+  // The registered embedding model that produced this vector (its backend-agnostic id).
+  string model_id = 1;
+  // The dense embedding vector. Its length matches the model's
+  // ModelDescriptor.embedding_dimension.
+  repeated float vector = 2;
+  // The span of document text this vector embeds (the sentence, chunk, or whole document).
+  AnnotationSpan source_span = 3;
+  // Whether this is a document-, sentence-, or chunk-level embedding.
+  EmbeddingGranularity granularity = 4;
+  // The actual backend route that produced this vector, including after fallback.
+  optional EmbeddingRoute route = 5;
+  // Post-processing applied after aggregating member vectors. Sentence and direct
+  // backend vectors leave this UNSPECIFIED because their normalization is part of
+  // the route's vector_space_id rather than a service-side aggregation step.
+  VectorNormalization vector_normalization = 6;
+}
+
+// Service-side normalization applied after vectors are aggregated.
+enum VectorNormalization {
+  // No explicit choice. On centroid requests this resolves to NONE.
+  VECTOR_NORMALIZATION_UNSPECIFIED = 0;
+  // Retain the element-wise arithmetic mean unchanged.
+  VECTOR_NORMALIZATION_NONE = 1;
+  // Scale the aggregate to unit Euclidean norm. A zero aggregate fails with
+  // FAILED_PRECONDITION because no unit direction exists.
+  VECTOR_NORMALIZATION_L2 = 2;
+}
+
+// The textual unit an embedding vector was computed over.
+enum EmbeddingGranularity {
+  // Unset/unknown granularity.
+  EMBEDDING_GRANULARITY_UNSPECIFIED = 0;
+  // The vector embeds the whole document.
+  EMBEDDING_GRANULARITY_DOCUMENT = 1;
+  // The vector embeds a single sentence.
+  EMBEDDING_GRANULARITY_SENTENCE = 2;
+  // The vector embeds a chunk produced by a chunking strategy (attached inside a
+  // ChunkEmbeddingGroup's chunks).
+  EMBEDDING_GRANULARITY_CHUNK_LEVEL = 3;
+  reserved 4 to 10;
+  // The mean (centroid) of a ChunkEmbeddingGroup's chunk vectors for one model, a single
+  // representative vector for the group, computed on CPU from the existing chunk vectors.
+  EMBEDDING_GRANULARITY_GROUP_CENTROID = 11;
+}
+
+// Result of PIPELINE_STEP_NORMALIZE. The alignment lets a client map any span
+// between raw_text and normalized_text without re-implementing the fold logic:
+// runs are contiguous and ordered, covering both texts exactly.
+message NormalizationResult {
+  // The normalized text produced by the requested normalizers, applied in order.
+  string normalized_text = 1;
+  // Ordered edit runs from raw_text to normalized_text. The units of both sides
+  // are the response's OffsetEncoding (UTF-8 bytes by default), converted by the
+  // server, so clients consume them in the same unit as every AnnotationSpan.
+  repeated AlignmentRun alignment = 2;
+  // The normalizers that were applied, in application order, using
+  // Normalizer enum value names.
+  repeated string applied_normalizers = 3;
+}
+
+// One run of a text alignment: `original_units` units of raw_text correspond to
+// `normalized_units` units of normalized_text. `equal` runs are copied through
+// unchanged; replace runs map as one block (a position inside one maps to the
+// whole block, matching the library's Alignment semantics).
+message AlignmentRun {
+  // Number of source-text units covered by this run.
+  int32 original_units = 1;
+  // Number of normalized-text units produced by this run.
+  int32 normalized_units = 2;
+  // Whether the source and normalized units are identical.
+  bool equal = 3;
+}
+
+// Whole-document categorization result from PIPELINE_STEP_DOC_CATEGORIZE:
+// a document categorizer's winning category and complete score distribution.
+message DocumentClassification {
+  // The winning category: argmax over category_scores, as decided by the categorizer model.
+  string best_category = 1;
+  // Per-category score distribution from the categorizer (typically probabilities
+  // summing to ~1). best_category is the highest-scoring key.
+  map<string, double> category_scores = 2;
+}
+
+// ============================ The document shape ============================
+//
+// The gRPC rendering of the OpenNLP 3.0 document container: the
+// analyzed text plus any number of named annotation layers, each layer a list of
+// annotations whose value type is fixed by the layer. Layer ids are namespaced
+// strings exactly as in the Java container ("opennlp:" prefixes every layer the
+// toolkit itself produces; other producers use their own prefix), so the key
+// space stays open while every annotation value stays strongly typed through
+// the oneof below.
+//
+// Layers the v1 server emits, each only when its producing step ran:
+//   opennlp:sentences   positional, string values: the covered sentence text.
+//   opennlp:tokens      positional, string values: the covered token text.
+//   opennlp:pos         positional, string values: the POS tag, one annotation
+//                       per token, span-aligned with opennlp:tokens.
+//   opennlp:lemmas      positional, string values: the lemma, span-aligned with
+//                       opennlp:tokens.
+//   opennlp:entities    positional, entity values: the complete NamedEntity,
+//                       including provider and geocoding provenance.
+//   opennlp:chunks      positional, syntactic-chunk values: each complete
+//                       ChunkSpan and its provider provenance.
+//   opennlp:parses      positional, tree values: every constituency parse of
+//                       each parsed sentence, with the primary first.
+//   opennlp:sentiment   positional, category values: per-sentence label and
+//                       score, the span covering the sentence.
+//   opennlp:language    document-scoped, category values: one annotation, the
+//                       detected language code and its confidence.
+//   opennlp:categories  document-scoped, category values: the whole
+//                       classification distribution, best category first.
+//   opennlp:embeddings  positional, embedding values: sentence vectors and, when
+//                       requested, the document centroid, told apart by granularity.
+//   opennlp:word-types  positional, word-type values: the closed UAX #29
+//                       DocumentWordType per token, present only for uax29.
+//   opennlp:stopwords   positional, string values: the covered text of each
+//                       token the stopword list matched.
+//   opennlp:terms:<DIMENSION>  positional, string values: the per-token
+//                       normalized form of one requested term dimension,
+//                       span-aligned with opennlp:tokens.
+//   opennlp:subwords    positional, subword values: the SentencePiece encoding
+//                       of the whole document text, each piece with its
+//                       vocabulary id (from PIPELINE_STEP_SUBWORD_TOKENIZE).
+//   opennlp:stems       positional, stem values: the stem and its complete
+//                       StemmerSpec provenance, span-aligned with tokens.
+//   opennlp:expansions  positional, lexical-expansion values: relation, depth,
+//                       sense rank, weight, and lexicon provenance per term.
+//   opennlp:geo         positional, geo values: the geocoded resolution of each
+//                       resolvable location entity, anchored on the mention's span
+//                       (from PIPELINE_STEP_GEOCODE).
+//   opennlp:normalization  document-scoped normalization values with alignment.
+//   opennlp:analytics   document-scoped typed DocumentAnalytics values.
+//   opennlp:chunk-groups  document-scoped strategy chunks, vectors, centroids,
+//                       routes, and statistics.
+//   opennlp:term-vectors document-scoped distinct terms, frequencies, occurrence
+//                       spans, and source-layer provenance.
+
+// The typed annotation layers of one analyzed document.
+message DocumentLayers {
+  // The layers, in the order their producing steps ran. Ids are unique: a layer
+  // appears at most once, mirroring the container's once-only add.
+  repeated AnnotationLayer layers = 1;
+}
+
+// Closed identities for layers that are part of the OpenNLP v1 contract. A
+// consumer can switch exhaustively over these values without parsing ids.
+enum StandardLayer {
+  // No standard layer was selected.
+  STANDARD_LAYER_UNSPECIFIED = 0;
+  // Sentence spans and covered text.
+  STANDARD_LAYER_SENTENCES = 1;
+  // Token spans and covered text.
+  STANDARD_LAYER_TOKENS = 2;
+  // Part-of-speech tags aligned with tokens.
+  STANDARD_LAYER_POS_TAGS = 3;
+  // Lemmas aligned with tokens.
+  STANDARD_LAYER_LEMMAS = 4;
+  // Named entities with model provenance.
+  STANDARD_LAYER_ENTITIES = 5;
+  // Shallow syntactic chunks.
+  STANDARD_LAYER_SYNTACTIC_CHUNKS = 6;
+  // Constituency parse trees.
+  STANDARD_LAYER_PARSES = 7;
+  // Sentence-level sentiment labels.
+  STANDARD_LAYER_SENTIMENT = 8;
+  // Whole-document language detection.
+  STANDARD_LAYER_LANGUAGE = 9;
+  // Whole-document category scores.
+  STANDARD_LAYER_CATEGORIES = 10;
+  // Dense vector embeddings.
+  STANDARD_LAYER_EMBEDDINGS = 11;
+  // Closed UAX 29 word-type classifications.
+  STANDARD_LAYER_WORD_TYPES = 12;
+  // Tokens matched by the stopword list.
+  STANDARD_LAYER_STOPWORDS = 13;
+  // Normalized per-token terms, qualified by dimension.
+  STANDARD_LAYER_TERMS = 14;
+  // SentencePiece subword annotations.
+  STANDARD_LAYER_SUBWORDS = 15;
+  // Token stems with stemmer provenance.
+  STANDARD_LAYER_STEMS = 16;
+  // Lexical expansions with lexicon provenance.
+  STANDARD_LAYER_EXPANSIONS = 17;
+  // Geocoded named-entity resolutions.
+  STANDARD_LAYER_GEO = 18;
+  // Whole-document normalized text and alignment.
+  STANDARD_LAYER_NORMALIZATION = 19;
+  // Whole-document analytic statistics.
+  STANDARD_LAYER_ANALYTICS = 20;
+  // Strategy-driven chunk and embedding groups.
+  STANDARD_LAYER_CHUNK_GROUPS = 21;
+  // Document-scoped aggregate term frequencies and optional occurrence spans.
+  STANDARD_LAYER_TERM_VECTORS = 22;
+}
+
+// How much each aggregate term vector records.
+enum TermVectorMode {
+  // Defaults to FULL.
+  TERM_VECTOR_MODE_UNSPECIFIED = 0;
+  // Frequency plus every occurrence span in the requested offset encoding.
+  TERM_VECTOR_MODE_FULL = 1;
+  // Frequency only, with no occurrence spans.
+  TERM_VECTOR_MODE_SCORING_ONLY = 2;
+}
+
+// Strong identity for one layer. OpenNLP-owned layers use the closed standard
+// enum. Extension layers use a globally namespaced custom id. A standard layer
+// family may carry a qualifier, for example FULL_CASE_FOLD on STANDARD_LAYER_TERMS.
+message LayerIdentity {
+  // The selected standard layer or extension id.
+  oneof kind {
+    // A layer defined by this contract.
+    StandardLayer standard = 1;
+    // A globally namespaced extension layer id.
+    string custom = 2;
+  }
+  // A stable discriminator within a standard layer family.
+  optional string qualifier = 3;
+}
+
+// One named annotation layer. The value type of every annotation in the layer
+// is fixed by which list the oneof carries, the wire form of the container's
+// LayerKey type parameter.
+message AnnotationLayer {
+  // The namespaced layer id, e.g. "opennlp:tokens". Retained as the stable wire
+  // key for compatibility and lookup; new consumers should dispatch on identity.
+  string id = 1;
+  // Whether annotations carry spans (positional) or whole-document values.
+  LayerScope scope = 2;
+  // The layer's annotations. Exactly one list is set, fixing the value type.
+  oneof values {
+    // Annotations whose value is a string (text, tag, type, or code).
+    StringAnnotationList string_values = 3;
+    // Annotations whose value is a scored label.
+    CategoryAnnotationList category_values = 4;
+    // Annotations whose value is a dense vector.
+    EmbeddingAnnotationList embedding_values = 5;
+    // Annotations whose value is a constituency parse tree.
+    TreeAnnotationList tree_values = 6;
+    // Annotations whose value is a subword piece with its vocabulary id.
+    SubwordAnnotationList subword_values = 7;
+    // Annotations whose value is a geocoded place.
+    GeoAnnotationList geo_values = 8;
+    // UAX 29 token classes, represented by a closed enum.
+    WordTypeAnnotationList word_type_values = 9;
+    // Named entities with complete source and geocoding provenance.
+    EntityAnnotationList entity_values = 10;
+    // Shallow chunks with their complete provider provenance.
+    SyntacticChunkAnnotationList syntactic_chunk_values = 11;
+    // Token stems together with their producing stemmer configuration.
+    StemAnnotationList stem_values = 12;
+    // Lexical expansions with relation, depth, sense, weight, and lexicon provenance.
+    LexicalExpansionAnnotationList lexical_expansion_values = 13;
+    // The document normalization and its offset alignment.
+    NormalizationAnnotationList normalization_values = 14;
+    // Typed document analytics.
+    AnalyticsAnnotationList analytics_values = 15;
+    // Strategy-driven chunks, embeddings, centroids, and statistics.
+    ChunkGroupAnnotationList chunk_group_values = 16;
+    // Aggregate term frequencies and occurrence offsets with source provenance.
+    TermVectorAnnotationList term_vector_values = 18;
+  }
+  // Typed identity for this layer. Always populated by this server. Standard
+  // OpenNLP layers select the enum case; extension layers select custom.
+  LayerIdentity identity = 17;
+}
+
+// Whether a layer's annotations are anchored to spans of the text or carry
+// whole-document values, mirroring the container's LayerKey.Scope.
+enum LayerScope {
+  // Unset; treat as LAYER_SCOPE_POSITIONAL.
+  LAYER_SCOPE_UNSPECIFIED = 0;
+  // Every annotation of the layer carries a span into the document text.
+  LAYER_SCOPE_POSITIONAL = 1;
+  // No annotation of the layer carries a span; values apply to the whole document.
+  LAYER_SCOPE_DOCUMENT = 2;
+}
+
+// The annotations of a string-valued layer.
+message StringAnnotationList {
+  // String annotations in layer order.
+  repeated StringAnnotation annotations = 1;
+}
+
+// One string-valued annotation: a value anchored to a span of the document text,
+// or a span-less value under a document-scoped layer.
+message StringAnnotation {
+  // The annotated span. Set exactly when the layer is positional.
+  optional AnnotationSpan span = 1;
+  // The annotation value. Never empty.
+  string value = 2;
+  // Model confidence in this annotation, in [0,1]. Populated only when the
+  // request set AnalysisOptions.include_probabilities = true and the producing
+  // step reports probabilities.
+  optional double probability = 3;
+}
+
+// The annotations of a scored-label layer.
+message CategoryAnnotationList {
+  // Scored labels in layer order.
+  repeated CategoryAnnotation annotations = 1;
+}
+
+// One scored label: a category decision anchored to a span, or a span-less
+// whole-document decision under a document-scoped layer.
+message CategoryAnnotation {
+  // The annotated span. Set exactly when the layer is positional.
+  optional AnnotationSpan span = 1;
+  // The label, e.g. a sentiment category, a document category, or a language code.
+  string label = 2;
+  // The label's score from the producing model, in [0,1].
+  double score = 3;
+}
+
+// The annotations of an embedding layer.
+message EmbeddingAnnotationList {
+  // Embeddings in layer order.
+  repeated EmbeddingAnnotation annotations = 1;
+}
+
+// One embedding vector anchored to the span of text it embeds.
+message EmbeddingAnnotation {
+  // The span the vector embeds (the sentence, or the whole document for a centroid).
+  optional AnnotationSpan span = 1;
+  // The registered embedding model that produced the vector.
+  string model_id = 2;
+  // The dense vector; its length matches the model's embedding dimension.
+  repeated float vector = 3;
+  // The textual unit the vector was computed over.
+  EmbeddingGranularity granularity = 4;
+  // The actual backend route that produced this vector.
+  optional EmbeddingRoute route = 5;
+  // Post-processing applied after aggregating member vectors.
+  VectorNormalization vector_normalization = 6;
+}
+
+// The annotations of a subword layer.
+message SubwordAnnotationList {
+  // Subword pieces in source order.
+  repeated SubwordAnnotation annotations = 1;
+}
+
+// One subword piece: the model's normalized piece text, its vocabulary id, and the
+// exact span of original text it covers. The piece is generally not a substring of
+// the input, because the model normalizes; the span always is the source location.
+message SubwordAnnotation {
+  // The span of original text the piece covers.
+  AnnotationSpan span = 1;
+  // The piece in the model's normalized form, e.g. "▁open".
+  string piece = 2;
+  // The piece's id in the model's vocabulary.
+  int32 vocabulary_id = 3;
+}
+
+// The annotations of a geocoding layer.
+message GeoAnnotationList {
+  // Resolved location mentions in source order.
+  repeated GeoAnnotation annotations = 1;
+}
+
+// One geocoded location mention: the resolved place anchored on the mention's span.
+message GeoAnnotation {
+  // The span of the location mention within the document text.
+  AnnotationSpan span = 1;
+  // The place the mention resolved to.
+  GeoResolutionResult resolution = 2;
+}
+
+// The annotations of a parse-tree layer.
+message TreeAnnotationList {
+  // Parsed sentences in source order.
+  repeated TreeAnnotation annotations = 1;
+}
+
+// One constituency parse anchored to the sentence it parses.
+message TreeAnnotation {
+  // The span of the parsed sentence.
+  AnnotationSpan span = 1;
+  // The parse, in the representations the request selected via parse_formats.
+  ParseTree tree = 2;
+  // Every additional parse when a multi-engine union ran. The primary remains in tree.
+  repeated ParseTree alternatives = 3;
+}
+
+// Closed UAX 29 word token classes from OpenNLP's tokenizer.
+enum DocumentWordType {
+  // No UAX 29 word type was determined.
+  DOCUMENT_WORD_TYPE_UNSPECIFIED = 0;
+  // Letters, or a combination of letters and numbers.
+  DOCUMENT_WORD_TYPE_ALPHANUMERIC = 1;
+  // A numeric token.
+  DOCUMENT_WORD_TYPE_NUMERIC = 2;
+  // A CJK ideographic token.
+  DOCUMENT_WORD_TYPE_IDEOGRAPHIC = 3;
+  // A Japanese hiragana token.
+  DOCUMENT_WORD_TYPE_HIRAGANA = 4;
+  // A Japanese katakana token.
+  DOCUMENT_WORD_TYPE_KATAKANA = 5;
+  // A Korean hangul token.
+  DOCUMENT_WORD_TYPE_HANGUL = 6;
+  // A token in a Southeast Asian script.
+  DOCUMENT_WORD_TYPE_SOUTHEAST_ASIAN = 7;
+  // An emoji token.
+  DOCUMENT_WORD_TYPE_EMOJI = 8;
+}
+
+// The annotations of a UAX 29 word-type layer.
+message WordTypeAnnotationList {
+  // Word types in source order.
+  repeated WordTypeAnnotation annotations = 1;
+}
+
+// One UAX 29 word type anchored to its token span.
+message WordTypeAnnotation {
+  // The classified token span.
+  AnnotationSpan span = 1;
+  // The token's closed UAX 29 word type.
+  DocumentWordType type = 2;
+}
+
+// The annotations of a named-entity layer.
+message EntityAnnotationList {
+  // Named entities in source order.
+  repeated NamedEntity annotations = 1;
+}
+
+// The annotations of a shallow syntactic-chunk layer.
+message SyntacticChunkAnnotationList {
+  // Syntactic chunks in source order.
+  repeated ChunkSpan annotations = 1;
+}
+
+// The annotations of a stem layer.
+message StemAnnotationList {
+  // Token stems in source order.
+  repeated StemAnnotation annotations = 1;
+}
+
+// One stem anchored to its source token with producer provenance.
+message StemAnnotation {
+  // The source token span.
+  AnnotationSpan span = 1;
+  // The stem produced for the token.
+  string stem = 2;
+  // The algorithm family that produced the stem.
+  StemmerAlgorithm algorithm = 3;
+  // The configured language for language-specific algorithms.
+  optional string language = 4;
+  // The configured dictionary id when Hunspell produced the stem.
+  optional string hunspell_dictionary_id = 5;
+}
+
+// The lexical relation between a source term and an expansion.
+enum LexicalExpansionKind {
+  // No lexical relation was specified.
+  LEXICAL_EXPANSION_KIND_UNSPECIFIED = 0;
+  // A term with the same or similar meaning.
+  LEXICAL_EXPANSION_KIND_SYNONYM = 1;
+  // A more general term.
+  LEXICAL_EXPANSION_KIND_HYPERNYM = 2;
+  // A more specific term.
+  LEXICAL_EXPANSION_KIND_HYPONYM = 3;
+}
+
+// The annotations of a lexical-expansion layer.
+message LexicalExpansionAnnotationList {
+  // Lexical expansions in source and traversal order.
+  repeated LexicalExpansionAnnotation annotations = 1;
+}
+
+// One lexicon-derived term related to a source span.
+message LexicalExpansionAnnotation {
+  // The source term span.
+  AnnotationSpan span = 1;
+  // The related term returned by the lexicon.
+  string term = 2;
+  // The lexical relation to the source term.
+  LexicalExpansionKind kind = 3;
+  // The graph distance from the source term.
+  int32 depth = 4;
+  // The one-based rank of the source sense used for this result.
+  int32 sense_rank = 5;
+  // The expansion weight assigned by the lexical expander.
+  double weight = 6;
+  // The configured lexicon that produced the expansion.
+  string lexicon_id = 7;
+}
+
+// The annotations of a document-normalization layer.
+message NormalizationAnnotationList {
+  // Normalization results, normally exactly one document-scoped value.
+  repeated NormalizationResult annotations = 1;
+}
+
+// The annotations of a document-analytics layer.
+message AnalyticsAnnotationList {
+  // Analytics results, normally exactly one document-scoped value.
+  repeated DocumentAnalytics annotations = 1;
+}
+
+// The annotations of a chunk-group layer.
+message ChunkGroupAnnotationList {
+  // Chunk groups in request order.
+  repeated ChunkEmbeddingGroup annotations = 1;
+}
+
+// Aggregate term vectors plus the configuration that produced them.
+message TermVectorAnnotationList {
+  // One entry per distinct term, in first-occurrence order.
+  repeated TermVectorAnnotation annotations = 1;
+  // Whether annotations retain occurrence spans or only frequencies.
+  TermVectorMode mode = 2;
+  // The positional document layer whose values defined term identity.
+  LayerIdentity source_layer = 3;
+}
+
+// One distinct term in a document, its frequency, and optional occurrence offsets.
+message TermVectorAnnotation {
+  // The exact identity under which occurrences were grouped. May be empty when
+  // the selected source normalization deliberately removes a token's entire value.
+  string term = 1;
+  // The number of source annotations grouped under this term. Always at least one.
+  int32 frequency = 2;
+  // Original-text occurrence spans in FULL mode; empty in SCORING_ONLY mode.
+  repeated AnnotationSpan occurrences = 3;
+}
