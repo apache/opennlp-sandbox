@@ -47,6 +47,7 @@ import org.apache.opennlp.grpc.search.SearchCollectionRegistry;
 import org.apache.opennlp.grpc.search.SearchIndexRegistry;
 import org.apache.opennlp.grpc.search.SearchProviderCatalog;
 import org.apache.opennlp.grpc.search.WorkspaceCheckpointStore;
+import org.apache.opennlp.grpc.training.CatalogModelBootstrap;
 import org.apache.opennlp.grpc.training.CatalogModelStore;
 import org.apache.opennlp.grpc.training.DefaultStreamingTrainingPipeline;
 import org.apache.opennlp.grpc.training.OpenNlpModelTrainingServiceImpl;
@@ -156,7 +157,8 @@ public class OpenNlpGrpcServer implements Callable<Integer> {
 
   /** Constructs and starts all configured services after public lifecycle guarding. */
   private void startConfigured() throws Exception {
-    final Map<String, String> configuration = loadConfiguration();
+    final Map<String, String> configuration =
+        CatalogModelBootstrap.prepare(loadConfiguration());
 
     final boolean enableReflection =
         Boolean.parseBoolean(

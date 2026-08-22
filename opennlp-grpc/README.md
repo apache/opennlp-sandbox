@@ -207,6 +207,8 @@ The standard catalog currently distinguishes these roles:
 | Catalog id | Upstream model | Role after installation |
 | --- | --- | --- |
 | `all-minilm-l6-v2-teacher` | `sentence-transformers/all-MiniLM-L6-v2` | Local ONNX teacher selectable by the Model2Vec-style trainer |
+| `gum-cc-by-4-parser` | OpenNLP model trained from the GUM academic and court trees | English constituency parser activated on the next server start |
+| `gum-cc-by-4-chunker` | OpenNLP model extracted from the same trained parser | English syntactic chunker activated on the next server start |
 | `potion-base-8m` | `minishlab/potion-base-8M` | Ready-to-serve 256-dimensional static embedding provider |
 | `potion-retrieval-32m` | `minishlab/potion-retrieval-32M` | Ready-to-serve 512-dimensional retrieval embedding provider |
 | `potion-multilingual-128m` | `minishlab/potion-multilingual-128M` | Ready-to-serve 256-dimensional multilingual embedding provider |
@@ -216,6 +218,10 @@ license identity in server-owned metadata. A static table joins the same embeddi
 as configured static, TEI, OpenVINO, and other ServiceLoader providers without restarting the
 process. A teacher does not become an embedding route. It becomes an allowed local input to
 `TrainStaticModel`, which distills a new static Model2Vec-style table from a learned vocabulary.
+Parser and chunker installations report that a restart is required. On the next start, the server
+verifies their catalog descriptors and exact bytes before adding their paths to the parser and
+chunker registries. The complete Java-only training process for those two demonstration models is
+in `examples/model-training/gum` and does not depend on Python, cTAKES, or an older OpenNLP model.
 
 Installation is intentionally node-local. In a replicated deployment, an operator or deployment
 controller calls `InstallModel` on each node, verifies `ListInstalledModels`, then admits that node
@@ -235,7 +241,8 @@ exact classpath command needed to start the static embedding provider. It also i
 and sentiment models, SentencePiece data, and Open English WordNet needed by the richer workbench
 profiles. Current Apache `opennlp-models-*` Maven dependencies provide language detection plus the
 English sentence, token, POS, and lemma models. Parser and syntactic chunker models remain explicit
-operator inputs because this script does not use the retired SourceForge 1.5 artifacts.
+operator-approved inputs, available from the standard catalog rather than the retired SourceForge
+1.5 artifacts.
 
 To create the embedding directory, follow
 `opennlp-extensions/opennlp-embeddings/TRAINING.md` in the corresponding OpenNLP checkout. The basic

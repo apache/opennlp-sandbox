@@ -44,7 +44,7 @@ const STATIC_MODEL = {
 };
 
 describe("model catalog readers", () => {
-  it("separates installable static tables from distillation teachers", () => {
+  it("reads every first-class catalog artifact role", () => {
     const result = readModelCatalog({ installsEnabled: true, models: [
       {
         catalogId: "teacher", displayName: "MiniLM", modelId: "mini",
@@ -58,10 +58,23 @@ describe("model catalog readers", () => {
         sourceUri: "https://example.test/static", revision: "static-revision",
         licenseName: "MIT", licenseUri: "https://opensource.org/license/mit",
       },
+      {
+        catalogId: "parser", displayName: "GUM parser", modelId: "gum",
+        role: "MODEL_ARTIFACT_ROLE_PARSER", byteSize: "30",
+        sourceUri: "https://example.test/parser", revision: "parser-revision",
+        licenseName: "CC-BY-4.0", licenseUri: "https://example.test/parser-license",
+      },
+      {
+        catalogId: "chunker", displayName: "GUM chunker", modelId: "gum",
+        role: "MODEL_ARTIFACT_ROLE_CHUNKER", byteSize: "40",
+        sourceUri: "https://example.test/chunker", revision: "chunker-revision",
+        licenseName: "CC-BY-4.0", licenseUri: "https://example.test/chunker-license",
+      },
     ] });
 
     expect(result.installsEnabled).toBe(true);
-    expect(result.models.map((model) => model.role)).toEqual(["teacher", "static"]);
+    expect(result.models.map((model) => model.role))
+      .toEqual(["teacher", "static", "parser", "chunker"]);
     expect(result.models[1]?.dimension).toBe(256);
     expect(readInstalledModels({ models: [{
       catalog: { catalogId: "static" }, artifactHash: "abc", byteSize: "20", loaded: true,
@@ -163,6 +176,39 @@ describe("model catalog workbench", () => {
     await workbench.initialize();
 
     expect(installed).toHaveBeenCalledWith(STATIC_MODEL.modelId, STATIC_MODEL.displayName);
+  });
+
+  it("explains that a newly installed parser needs a server restart", async () => {
+    const parser = {
+      ...STATIC_MODEL,
+      catalogId: "gum-parser",
+      displayName: "GUM parser",
+      role: "parser" as const,
+      modelId: "gum",
+      dimension: 0,
+      licenseName: "CC-BY-4.0",
+    };
+    const service = api();
+    service.listCatalog = vi.fn(async () => ({ models: [parser], installsEnabled: true }));
+    service.install = vi.fn(async () => ({
+      catalogId: parser.catalogId,
+      artifactHash: "abc",
+      byteSize: parser.byteSize,
+      installedAt: "now",
+      loaded: false,
+    }));
+    const workbench = new ModelDataWorkbench(service, {
+      onEmbeddingModelInstalled: vi.fn(),
+      onTeacherInstalled: vi.fn(),
+    });
+    await workbench.initialize();
+
+    document.querySelector<HTMLInputElement>("[data-catalog-consent]")!.click();
+    document.querySelector<HTMLButtonElement>("[data-catalog-install]")!.click();
+    await vi.waitFor(() => expect(service.install).toHaveBeenCalled());
+
+    expect(document.getElementById("resource-install-status")?.textContent)
+      .toContain("restart required");
   });
 
   it("renders the verified downloaded-model inventory", async () => {

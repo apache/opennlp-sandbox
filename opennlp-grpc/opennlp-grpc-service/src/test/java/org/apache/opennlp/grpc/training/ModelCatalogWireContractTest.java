@@ -103,6 +103,8 @@ class ModelCatalogWireContractTest {
         .getNumber());
     assertEquals(2, roles.findValueByName("MODEL_ARTIFACT_ROLE_STATIC_EMBEDDING")
         .getNumber());
+    assertEquals(3, roles.findValueByName("MODEL_ARTIFACT_ROLE_PARSER").getNumber());
+    assertEquals(4, roles.findValueByName("MODEL_ARTIFACT_ROLE_CHUNKER").getNumber());
 
     final EnumDescriptor stages = InstallModelStage.getDescriptor();
     assertEquals(0, stages.findValueByName("INSTALL_MODEL_STAGE_UNSPECIFIED").getNumber());

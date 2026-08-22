@@ -79,6 +79,10 @@ enum ModelArtifactRole {
   MODEL_ARTIFACT_ROLE_DISTILLATION_TEACHER = 1;
   // Ready-to-serve static embedding table.
   MODEL_ARTIFACT_ROLE_STATIC_EMBEDDING = 2;
+  // OpenNLP constituency parser model activated on the next server start.
+  MODEL_ARTIFACT_ROLE_PARSER = 3;
+  // OpenNLP syntactic chunker model activated on the next server start.
+  MODEL_ARTIFACT_ROLE_CHUNKER = 4;
 }
 
 // One immutable entry in the server-owned model catalog. Source_uri is a
@@ -87,7 +91,7 @@ message ModelCatalogDescriptor {
   string catalog_id = 1;
   string display_name = 2;
   ModelArtifactRole role = 3;
-  // Teacher id for a teacher, embedding model id for a static table.
+  // Runtime model id for this artifact role.
   string model_id = 4;
   string source_uri = 5;
   string revision = 6;
@@ -114,7 +118,8 @@ message InstalledModelDescriptor {
   string artifact_hash = 2;
   uint64 byte_size = 3;
   google.protobuf.Timestamp installed_at = 4;
-  // True when the teacher or embedding route is active in this process.
+  // True when this model is active in this process. Parser and chunker
+  // installations become active after a successful server restart.
   bool loaded = 5;
 }
 
