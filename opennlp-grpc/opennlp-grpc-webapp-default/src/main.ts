@@ -32,6 +32,8 @@ import {
   getDictionaryFormats,
   getHealth,
   getIndexAliases,
+  getInstalledModels,
+  getModelCatalog,
   getModelBundles,
   getSearchIndexes,
   getSearchProviders,
@@ -40,6 +42,7 @@ import {
   getTeachers,
   getUiExtensions,
   importDictionary,
+  installModel,
   indexDocuments,
   learnVocabulary,
   deleteSearchIndex,
@@ -78,7 +81,13 @@ import {
 import { readNormalizationXray, renderNormalizationXray } from "./normalization-xray";
 import { isTermVectorLayer, renderTermVectorStack } from "./term-vector-stack";
 import { SemanticWorkbench, type ResultViewName } from "./semantic-workbench";
-import { ModelDataWorkbench } from "./model-data-workbench";
+import {
+  ModelDataWorkbench,
+  readInstalledModel,
+  readInstalledModels,
+  readModelCatalog,
+  readModelInstallProgress,
+} from "./model-data-workbench";
 import {
   readIndexAliases,
   readIndexResponse,
@@ -161,7 +170,21 @@ let currentCombinedSegments: CombinedAnnotationSegment[] = [];
 
 const analysisControls = new AnalysisControls(updateFormState);
 const annotationDrawer = new AnnotationDrawer();
-const modelDataWorkbench = new ModelDataWorkbench();
+const catalogEmbeddingModels = new Map<string, string>();
+const trainedEmbeddingModels = new Map<string, string>();
+const modelDataWorkbench = new ModelDataWorkbench({
+  listCatalog: async () => readModelCatalog(await getModelCatalog()),
+  listInstalled: async () => readInstalledModels(await getInstalledModels()),
+  install: async (request, onProgress) => readInstalledModel(
+    await installModel(request, (progress) => onProgress(readModelInstallProgress(progress))),
+  ),
+}, {
+  onEmbeddingModelInstalled: (modelId, displayName) => {
+    catalogEmbeddingModels.set(modelId, `${displayName} (catalog)`);
+    publishRuntimeEmbeddingModels();
+  },
+  onTeacherInstalled: () => void vocabularyTrainer.initialize(),
+});
 const chunkProjectionView = new ChunkProjectionView((group, chunk, trigger) => {
   annotationDrawer.showChunk(group, chunk, trigger);
 });
@@ -181,13 +204,21 @@ const vocabularyTrainer = new VocabularyTrainerWorkbench({
     return true;
   },
 }, {
-  onModelsChanged: (models) => analysisControls.setTrainedEmbeddingModels(
-    models.map((model) => ({
-      id: model.artifactId,
-      label: `${model.displayName} (trained)`,
-    }))),
+  onModelsChanged: (models) => {
+    trainedEmbeddingModels.clear();
+    for (const model of models) {
+      trainedEmbeddingModels.set(model.artifactId, `${model.displayName} (trained)`);
+    }
+    publishRuntimeEmbeddingModels();
+  },
 });
 void vocabularyTrainer.initialize();
+void modelDataWorkbench.initialize();
+
+function publishRuntimeEmbeddingModels(): void {
+  const merged = new Map([...catalogEmbeddingModels, ...trainedEmbeddingModels]);
+  analysisControls.setTrainedEmbeddingModels(Array.from(merged, ([id, label]) => ({ id, label })));
+}
 
 const semanticWorkbench = new SemanticWorkbench({
   index: async (request) => {

@@ -38,6 +38,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.BooleanSupplier;
 
 import com.google.protobuf.Timestamp;
@@ -140,7 +141,7 @@ public final class StaticModelArtifactStore {
     this.vocabularies = vocabularies;
     this.trainer = trainer;
     this.registry = registry;
-    this.teachers = teachers;
+    this.teachers = new ConcurrentSkipListMap<>(teachers);
     this.maxPcaDims = maxPcaDims;
     this.maxConcurrentTrainings = maxConcurrentTrainings;
     this.cacheRoot = cacheRoot;
@@ -251,6 +252,27 @@ public final class StaticModelArtifactStore {
           .build());
     }
     return descriptors;
+  }
+
+  /**
+   * Registers one verified node-local catalog teacher for immediate distillation use.
+   *
+   * @param teacherId Stable teacher identifier.
+   * @param displayName User-facing teacher name.
+   * @param directory Verified local teacher directory.
+   * @throws IllegalArgumentException If an argument is invalid or the identifier is registered.
+   */
+  void registerCatalogTeacher(String teacherId, String displayName, Path directory) {
+    requireTrimmed(teacherId, "teacher_id");
+    requireTrimmed(displayName, "teacher display_name");
+    if (directory == null || !Files.isDirectory(directory, LinkOption.NOFOLLOW_LINKS)) {
+      throw new IllegalArgumentException("teacher directory must be an existing directory");
+    }
+    final TeacherConfiguration teacher = new TeacherConfiguration(
+        teacherId, displayName, directory.toAbsolutePath().normalize().toString());
+    if (teachers.putIfAbsent(teacherId, teacher) != null) {
+      throw new IllegalArgumentException("Teacher id '" + teacherId + "' is already registered");
+    }
   }
 
   /**

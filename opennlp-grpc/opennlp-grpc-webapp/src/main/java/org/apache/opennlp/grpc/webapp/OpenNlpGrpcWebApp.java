@@ -73,6 +73,10 @@ public final class OpenNlpGrpcWebApp implements Callable<Integer> {
       description = "Per-RPC deadline in seconds. Default: ${DEFAULT-VALUE}")
   private int requestTimeoutSeconds;
 
+  @Option(names = "--long-running-timeout-seconds", defaultValue = "1800",
+      description = "Training and catalog-install deadline in seconds. Default: ${DEFAULT-VALUE}")
+  private int longRunningTimeoutSeconds;
+
   @Option(names = "--max-request-bytes", defaultValue = "104857600",
       description = "Maximum JSON request body size. Default: ${DEFAULT-VALUE}")
   private int maxRequestBytes;
@@ -120,6 +124,9 @@ public final class OpenNlpGrpcWebApp implements Callable<Integer> {
     if (requestTimeoutSeconds < 1) {
       throw new IllegalArgumentException("request timeout must be positive");
     }
+    if (longRunningTimeoutSeconds < 1) {
+      throw new IllegalArgumentException("long-running timeout must be positive");
+    }
     if (grpcMaxInboundMessageBytes < 1) {
       throw new IllegalArgumentException("grpc max inbound message bytes must be positive");
     }
@@ -132,10 +139,12 @@ public final class OpenNlpGrpcWebApp implements Callable<Integer> {
         ? OpenNlpGrpcWebApp.class.getClassLoader() : contextClassLoader;
     WebUiExtensionRegistry registry = WebUiExtensionRegistry.load(extensionClassLoader);
     Duration requestTimeout = Duration.ofSeconds(requestTimeoutSeconds);
+    Duration longRunningTimeout = Duration.ofSeconds(longRunningTimeoutSeconds);
     GrpcAnalysisRpc analysisRpc = new GrpcAnalysisRpc(channel, requestTimeout);
     GrpcSearchRpc searchRpc = new GrpcSearchRpc(channel, requestTimeout);
     GrpcVocabularyRpc vocabularyRpc = new GrpcVocabularyRpc(channel, requestTimeout);
-    GrpcTrainingRpc trainingRpc = new GrpcTrainingRpc(channel, requestTimeout);
+    GrpcTrainingRpc trainingRpc = new GrpcTrainingRpc(
+        channel, requestTimeout, longRunningTimeout);
     try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
         new InetSocketAddress(bindAddress, httpPort), analysisRpc, searchRpc,
         vocabularyRpc, trainingRpc, registry, maxRequestBytes)) {

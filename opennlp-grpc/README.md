@@ -155,6 +155,10 @@ server.analysis_stream_workers=8
 # server cancels them. Models and provider resources close only after draining.
 server.shutdown_grace_seconds=5
 
+# Optional node-local root for checksum-pinned catalog downloads initiated by
+# the gRPC API or the Models & data workbench.
+model.catalog_root=/srv/opennlp/catalog-models
+
 # Optional explicit model overrides. When omitted, the language detector and the
 # en sentence-detector, tokenizer, POS tagger and lemmatizer load from the
 # classpath via the opennlp-models-* runtime deps.
@@ -188,6 +192,34 @@ resource atomically. Add the installed paths to the server configuration, such a
 `model.name_finder.person.path=/srv/opennlp/models/en-ner-person.bin`, then start or restart the
 server. The web workbench's **Models & data** tab reports which pipeline features are ready and
 which still need an operator-provided model or data resource.
+
+### Browse and install the standard model catalog
+
+When `model.catalog_root` is configured, the model training service exposes a small immutable
+catalog through `ListModelCatalog`, reports this node's verified downloads through
+`ListInstalledModels`, and streams file-level progress from `InstallModel`. The web workbench
+requires the user to review and acknowledge the catalog entry's license before it submits an
+installation. Model weights are downloaded from checksum-pinned revisions and are never bundled
+with the OpenNLP source or binary distribution.
+
+The standard catalog currently distinguishes these roles:
+
+| Catalog id | Upstream model | Role after installation |
+| --- | --- | --- |
+| `all-minilm-l6-v2-teacher` | `sentence-transformers/all-MiniLM-L6-v2` | Local ONNX teacher selectable by the Model2Vec-style trainer |
+| `potion-base-8m` | `minishlab/potion-base-8M` | Ready-to-serve 256-dimensional static embedding provider |
+| `potion-retrieval-32m` | `minishlab/potion-retrieval-32M` | Ready-to-serve 512-dimensional retrieval embedding provider |
+| `potion-multilingual-128m` | `minishlab/potion-multilingual-128M` | Ready-to-serve 256-dimensional multilingual embedding provider |
+
+Every entry fixes the upstream revision, file list, byte sizes, SHA-256 values, model page, and
+license identity in server-owned metadata. A static table joins the same embedding provider catalog
+as configured static, TEI, OpenVINO, and other ServiceLoader providers without restarting the
+process. A teacher does not become an embedding route. It becomes an allowed local input to
+`TrainStaticModel`, which distills a new static Model2Vec-style table from a learned vocabulary.
+
+Installation is intentionally node-local. In a replicated deployment, an operator or deployment
+controller calls `InstallModel` on each node, verifies `ListInstalledModels`, then admits that node
+to traffic. The service does not claim a distributed replication or consensus protocol.
 
 For the complete demonstration setup, use the checksum-pinned downloader. Its preferred embedding
 provider is a static table produced by OpenNLP's `DistillModel` command:
@@ -264,6 +296,10 @@ With the gRPC service running on its default port, start the separate web applic
 ```bash
 java -jar opennlp-grpc-webapp/target/opennlp-grpc-webapp-3.0.0-SNAPSHOT.jar
 ```
+
+The gateway uses a 30-second deadline for discovery and ordinary RPCs, and a separate
+30-minute deadline for static-model training and catalog installation. Override the latter with
+`--long-running-timeout-seconds` when model size or network throughput requires a different bound.
 
 Open `http://127.0.0.1:7072/`. The default TypeScript interface discovers configured profiles,
 models, resources, and supported pipeline steps. Its default preset requests the richest safe

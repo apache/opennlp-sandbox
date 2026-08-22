@@ -46,6 +46,7 @@ class OpenNlpGrpcWebAppTest {
     assertTrue(output.toString().contains("--grpc-target"));
     assertTrue(output.toString().contains("--grpc-max-inbound-message-bytes"));
     assertTrue(output.toString().contains("--max-request-bytes"));
+    assertTrue(output.toString().contains("--long-running-timeout-seconds"));
     assertTrue(output.toString().contains("--allow-remote"));
     assertTrue(output.toString().contains("--bound-port-file"));
   }
@@ -57,6 +58,14 @@ class OpenNlpGrpcWebAppTest {
         .getCommandSpec().findOption("--max-request-bytes");
 
     assertEquals("104857600", option.defaultValue());
+  }
+
+  @Test
+  void allowsThirtyMinutesForTrainingAndCatalogDownloadsByDefault() {
+    CommandLine.Model.OptionSpec option = new CommandLine(new OpenNlpGrpcWebApp())
+        .getCommandSpec().findOption("--long-running-timeout-seconds");
+
+    assertEquals("1800", option.defaultValue());
   }
 
   @Test

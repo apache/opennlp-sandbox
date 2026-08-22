@@ -103,6 +103,13 @@ export interface TrainStaticModelRequest {
   provenanceSummary: string;
 }
 
+export interface InstallModelRequest {
+  catalogId: string;
+  revision: string;
+  licenseName: string;
+  licenseAcknowledged: boolean;
+}
+
 export interface ReindexIndexRequest {
   /** Source index id or alias. */
   indexId: string;
@@ -318,6 +325,14 @@ export function getStaticModels(fetcher: Fetcher = fetch): Promise<unknown> {
   return requestJson("/api/v1/static-models", undefined, fetcher);
 }
 
+export function getModelCatalog(fetcher: Fetcher = fetch): Promise<unknown> {
+  return requestJson("/api/v1/model-catalog", undefined, fetcher);
+}
+
+export function getInstalledModels(fetcher: Fetcher = fetch): Promise<unknown> {
+  return requestJson("/api/v1/installed-models", undefined, fetcher);
+}
+
 export function deleteStaticModel(artifactId: string, fetcher: Fetcher = fetch): Promise<unknown> {
   return postJson("/api/v1/delete-static-model", { artifactId }, fetcher);
 }
@@ -354,6 +369,38 @@ export async function trainStaticModel(
   }
   if (!model) {
     throw new Error("The training stream ended without a model.");
+  }
+  return model;
+}
+
+/** Downloads one pinned catalog model and reports each server progress frame. */
+export async function installModel(
+  request: InstallModelRequest,
+  onProgress: (progress: Record<string, unknown>) => void,
+  fetcher: Fetcher = fetch,
+): Promise<Record<string, unknown>> {
+  const response = await fetcher("/api/v1/install-model", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  if (!response.ok) {
+    throw await responseError(response);
+  }
+  let model: Record<string, unknown> | undefined;
+  for await (const line of ndjsonLines(response)) {
+    const update = JSON.parse(line) as Record<string, unknown>;
+    if (update.progress && typeof update.progress === "object") {
+      onProgress(update.progress as Record<string, unknown>);
+    } else if (update.model && typeof update.model === "object") {
+      model = update.model as Record<string, unknown>;
+    } else if (typeof update.code === "string") {
+      throw new Error(typeof update.message === "string" && update.message
+        ? update.message : update.code);
+    }
+  }
+  if (!model) {
+    throw new Error("The installation stream ended without an installed model.");
   }
   return model;
 }

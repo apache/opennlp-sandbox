@@ -22,6 +22,7 @@ import type {
   LearnVocabularyUpload,
   TrainStaticModelRequest,
 } from "./api";
+import { formatInteger } from "./text-utils";
 import { requiredElement } from "./ui-utils";
 
 const CARRIAGE_RETURN = "\r";
@@ -45,6 +46,11 @@ export interface TrainedModelSummary {
   dimension: number;
   termCount: number;
   teacherId: string;
+  family: string;
+  vocabularySize: number;
+  explainedVarianceRatio: number;
+  artifactHash: string;
+  byteSize: number;
 }
 
 export interface TrainerApi {
@@ -86,6 +92,7 @@ export class VocabularyTrainerWorkbench {
   readonly #dictionarySelect = requiredElement<HTMLSelectElement>("trainer-dictionary-select");
 
   readonly #corpus = requiredElement<HTMLTextAreaElement>("trainer-corpus");
+  readonly #corpusStats = requiredElement<HTMLElement>("trainer-corpus-stats");
   readonly #vocabularyName = requiredElement<HTMLInputElement>("trainer-vocabulary-name");
   readonly #minFrequency = requiredElement<HTMLInputElement>("trainer-min-frequency");
   readonly #maxTerms = requiredElement<HTMLInputElement>("trainer-max-terms");
@@ -110,6 +117,8 @@ export class VocabularyTrainerWorkbench {
     this.#learnButton.addEventListener("click", () => void this.learnVocabulary());
     this.#downloadTsvButton.addEventListener("click", () => void this.downloadTsv());
     this.#trainButton.addEventListener("click", () => void this.train());
+    this.#corpus.addEventListener("input", () => this.renderCorpusStats());
+    this.renderCorpusStats();
   }
 
   /** Loads formats, teachers, and existing models; call once at startup. */
@@ -230,6 +239,10 @@ export class VocabularyTrainerWorkbench {
         provenanceSummary: "Distilled through the trainer workbench",
       }, (progress) => this.appendProgress(progress));
       this.appendProgress(`Published ${model.artifactId} (dimension ${model.dimension}).`);
+      this.appendProgress(`${formatInteger(model.vocabularySize)} tokenizer rows, `
+        + `${formatInteger(model.termCount)} learned term rows, `
+        + `${(model.explainedVarianceRatio * 100).toFixed(1)}% variance retained, `
+        + `${formatInteger(model.byteSize)} bytes published.`);
       await this.refreshModels();
       this.setStatus(`Model '${model.displayName}' is serving as embedding model `
         + `'${model.artifactId}'. Select it in Analyze, then index and search with it.`);
@@ -254,7 +267,8 @@ export class VocabularyTrainerWorkbench {
       row.className = "trainer-model-row";
       const label = document.createElement("span");
       label.textContent = `${model.displayName} · ${model.artifactId} `
-        + `· dim ${model.dimension} · ${model.termCount} terms · teacher ${model.teacherId}`;
+        + `· dim ${model.dimension} · ${formatInteger(model.termCount)} terms `
+        + `· ${model.family || "unknown tokenizer"} · teacher ${model.teacherId}`;
       const remove = document.createElement("button");
       remove.type = "button";
       remove.textContent = "Delete";
@@ -303,6 +317,14 @@ export class VocabularyTrainerWorkbench {
     this.#learnButton.disabled = !enabled;
     this.#downloadTsvButton.disabled = !enabled;
     this.#trainButton.disabled = !enabled;
+  }
+
+  private renderCorpusStats(): void {
+    const stats = corpusStats(this.#corpus.value);
+    this.#corpusStats.textContent = stats.documents === 0
+      ? "Waiting for corpus input. Add text to preview the training batch."
+      : `${stats.documents} ${stats.documents === 1 ? "document" : "documents"}, `
+        + `${stats.codePoints} Unicode code points, ${stats.utf8Bytes} UTF-8 bytes ready.`;
   }
 
   private setStatus(text: string, isError = false): void {
@@ -367,6 +389,11 @@ export function readTrainedModel(value: unknown): TrainedModelSummary {
     dimension: asCount(model.dimension),
     termCount: asCount(model.termCount),
     teacherId: typeof model.teacherId === "string" ? model.teacherId : "",
+    family: typeof model.family === "string" ? model.family : "",
+    vocabularySize: asCount(model.vocabularySize),
+    explainedVarianceRatio: asRatio(model.explainedVarianceRatio),
+    artifactHash: typeof model.artifactHash === "string" ? model.artifactHash : "",
+    byteSize: asCount(model.byteSize),
   };
 }
 
@@ -423,6 +450,11 @@ function asCount(value: unknown): number {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
 }
 
+function asRatio(value: unknown): number {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 && parsed <= 1 ? parsed : 0;
+}
+
 /** Splits pasted corpus text into documents on blank lines. */
 export function corpusDocuments(text: string): Array<{ docId: string; rawText: string }> {
   const documents: Array<{ docId: string; rawText: string }> = [];
@@ -433,6 +465,22 @@ export function corpusDocuments(text: string): Array<{ docId: string; rawText: s
     }
   }
   return documents;
+}
+
+/** Computes the client-visible corpus totals used before server submission. */
+export function corpusStats(text: string): {
+  documents: number; codePoints: number; utf8Bytes: number;
+} {
+  let codePoints = 0;
+  for (const ignored of text) {
+    void ignored;
+    codePoints++;
+  }
+  return {
+    documents: corpusDocuments(text).length,
+    codePoints,
+    utf8Bytes: new TextEncoder().encode(text).byteLength,
+  };
 }
 
 function corpusBlocks(text: string): string[] {

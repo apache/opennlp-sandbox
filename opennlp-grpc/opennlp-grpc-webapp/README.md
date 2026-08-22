@@ -28,6 +28,7 @@ The defaults are:
 - HTTP interface: `http://127.0.0.1:7072/`
 - gRPC target: `127.0.0.1:7071`
 - per-RPC deadline: 30 seconds
+- training and catalog-install deadline: 30 minutes
 - maximum JSON request body: 1 MiB
 
 The host exposes:
@@ -38,8 +39,11 @@ The host exposes:
 - `GET /api/v1/ui-extensions`
 - `GET /api/v1/search-indexes`
 - `GET /api/v1/search-providers`
+- `GET /api/v1/model-catalog`
+- `GET /api/v1/installed-models`
 - `POST /api/v1/analyze`
 - `POST /api/v1/search`
+- `POST /api/v1/install-model` (NDJSON progress stream)
 - workspace index, alias, and collection lifecycle endpoints
 - dictionary import, vocabulary learning and download, and static-model lifecycle endpoints
 

@@ -148,6 +148,7 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
     private static final String JSON_MEDIA_TYPE = "application/json";
     private static final String NDJSON_CONTENT_TYPE = "application/x-ndjson; charset=utf-8";
     private static final String TRAIN_STATIC_MODEL_PATH = "/api/v1/train-static-model";
+    private static final String INSTALL_MODEL_PATH = "/api/v1/install-model";
     private static final String WATCH_COLLECTION_PATH = "/api/v1/watch-collection";
     private static final String METHOD_NOT_ALLOWED =
         "HTTP method is not allowed for this endpoint";
@@ -234,6 +235,15 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
             return;
           }
           streamNdjson(exchange, sink -> api.trainStaticModel(body, sink));
+          return;
+        }
+        if (rawPath.equals(INSTALL_MODEL_PATH)) {
+          if (!method.equals(HTTP_POST)) {
+            send(exchange, GrpcJsonApi.error(405, Status.Code.UNIMPLEMENTED,
+                METHOD_NOT_ALLOWED));
+            return;
+          }
+          streamNdjson(exchange, sink -> api.installModel(body, sink));
           return;
         }
         if (rawPath.equals(WATCH_COLLECTION_PATH)) {

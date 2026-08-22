@@ -28,12 +28,15 @@ import {
   getDictionaryFormats,
   getHealth,
   getModelBundles,
+  getInstalledModels,
+  getModelCatalog,
   getSearchIndexes,
   getServiceInfo,
   getUiExtensions,
   getStaticModels,
   getTeachers,
   importDictionary,
+  installModel,
   indexDocuments,
   learnVocabulary,
   deleteSearchIndex,
@@ -196,6 +199,8 @@ describe("trainer API client", () => {
     }, jsonFetcher);
     await getTeachers(jsonFetcher);
     await getStaticModels(jsonFetcher);
+    await getModelCatalog(jsonFetcher);
+    await getInstalledModels(jsonFetcher);
     await deleteStaticModel("static-model-1", jsonFetcher);
     const urls = jsonFetcher.mock.calls.map((call) => String(call[0]));
     expect(urls).toEqual([
@@ -204,8 +209,29 @@ describe("trainer API client", () => {
       "/api/v1/learn-vocabulary",
       "/api/v1/teachers",
       "/api/v1/static-models",
+      "/api/v1/model-catalog",
+      "/api/v1/installed-models",
       "/api/v1/delete-static-model",
     ]);
+  });
+
+  it("streams model download progress and resolves with the installed descriptor", async () => {
+    const body = "{\"progress\":{\"stage\":\"INSTALL_MODEL_STAGE_DOWNLOADING\","
+      + "\"message\":\"Downloading\",\"completedBytes\":\"10\",\"totalBytes\":\"20\"}}\n"
+      + "{\"model\":{\"catalog\":{\"catalogId\":\"potion-base-8m\"},"
+      + "\"artifactHash\":\"abc\",\"loaded\":true}}\n";
+    const fetcher = vi.fn(async () => new Response(body, { status: 200 }));
+    const progress: unknown[] = [];
+
+    const installed = await installModel({
+      catalogId: "potion-base-8m",
+      revision: "revision-1",
+      licenseName: "MIT",
+      licenseAcknowledged: true,
+    }, (update) => progress.push(update), fetcher);
+
+    expect(progress).toHaveLength(1);
+    expect(installed.catalog).toEqual({ catalogId: "potion-base-8m" });
   });
 
   it("downloads vocabulary TSV text", async () => {

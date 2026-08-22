@@ -41,6 +41,11 @@ const MODEL: TrainedModelSummary = {
   dimension: 3,
   termCount: 12,
   teacherId: "mini",
+  family: "wordpiece",
+  vocabularySize: 30_522,
+  explainedVarianceRatio: 0.97,
+  artifactHash: "abc",
+  byteSize: 31_000_000,
 };
 
 describe("trainer readers", () => {
@@ -68,8 +73,12 @@ describe("trainer readers", () => {
 
     expect(readStaticModels({ models: [{
       artifactId: "static-model-1", displayName: "m", dimension: 3, termCount: "12", teacherId: "mini",
+      family: "wordpiece", vocabularySize: 30_522, explainedVarianceRatio: 0.97,
+      artifactHash: "abc", byteSize: "31000000",
     }] })).toEqual([{
       artifactId: "static-model-1", displayName: "m", dimension: 3, termCount: 12, teacherId: "mini",
+      family: "wordpiece", vocabularySize: 30_522, explainedVarianceRatio: 0.97,
+      artifactHash: "abc", byteSize: 31_000_000,
     }]);
     expect(() => readTrainedModel({})).toThrow(/invalid static model/);
     expect(readImportedDictionary({ artifactId: "dictionary-1", entryCount: 2 }))
@@ -101,6 +110,7 @@ describe("trainer workbench", () => {
       <button id="trainer-import-button"></button>
       <select id="trainer-dictionary-select"></select>
       <textarea id="trainer-corpus"></textarea>
+      <p id="trainer-corpus-stats"></p>
       <input id="trainer-vocabulary-name" />
       <input id="trainer-min-frequency" value="1" />
       <input id="trainer-max-terms" value="100" />
@@ -158,6 +168,22 @@ describe("trainer workbench", () => {
       .toBe(false);
   });
 
+  it("shows a waiting state and live corpus document and byte counts", async () => {
+    const trainer = new VocabularyTrainerWorkbench(stubApi(), { onModelsChanged: vi.fn() });
+    await trainer.initialize();
+    const corpus = document.getElementById("trainer-corpus") as HTMLTextAreaElement;
+
+    expect(document.getElementById("trainer-corpus-stats")?.textContent)
+      .toContain("Waiting for corpus input");
+    corpus.value = "Liberty.\n\n😀 justice.";
+    corpus.dispatchEvent(new Event("input"));
+
+    expect(document.getElementById("trainer-corpus-stats")?.textContent)
+      .toContain("2 documents");
+    expect(document.getElementById("trainer-corpus-stats")?.textContent)
+      .toContain("23 UTF-8 bytes");
+  });
+
   it("disables training when the server has no artifact root", async () => {
     const api = stubApi({
       listDictionaryFormats: vi.fn(async () => ({ formats: [], writesEnabled: false })),
@@ -200,6 +226,8 @@ describe("trainer workbench", () => {
     const log = document.getElementById("trainer-progress-log");
     expect(log?.textContent).toContain("resolving teacher");
     expect(log?.textContent).toContain("distilling");
+    expect(log?.textContent).toContain("30,522 tokenizer rows");
+    expect(log?.textContent).toContain("97.0% variance retained");
     expect(onModelsChanged).toHaveBeenLastCalledWith([MODEL]);
   });
 

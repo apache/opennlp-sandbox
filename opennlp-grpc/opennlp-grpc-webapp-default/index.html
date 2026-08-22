@@ -525,6 +525,25 @@
               </ul>
             </section>
           </div>
+          <section class="resource-catalog-card">
+            <div>
+              <p class="section-kicker">Pinned model catalog</p>
+              <h4>Download verified models to this server node</h4>
+              <p>
+                Static tables become embedding providers immediately. Teacher models become
+                available to the Model2Vec-style trainer. No third-party model weights are bundled.
+              </p>
+            </div>
+            <div id="resource-model-catalog" class="resource-model-catalog">
+              <p class="empty-message">Loading the standard model catalog.</p>
+            </div>
+            <div class="downloaded-model-inventory">
+              <h5>Downloaded on this node</h5>
+              <div id="resource-installed-models" class="resource-installed-models">
+                <p class="empty-message">Loading the verified model inventory.</p>
+              </div>
+            </div>
+          </section>
           <section class="resource-installer-card">
             <div>
               <span>Verified resource installer</span>
@@ -577,6 +596,9 @@
               <label for="trainer-corpus">Corpus documents (blank line separates documents)</label>
               <textarea id="trainer-corpus" rows="7"
                 placeholder="Paste corpus text; separate documents with a blank line."></textarea>
+              <p id="trainer-corpus-stats" class="trainer-corpus-stats" aria-live="polite">
+                Waiting for corpus input. Add text to preview the training batch.
+              </p>
               <label for="trainer-vocabulary-name">Display name</label>
               <input id="trainer-vocabulary-name" type="text" placeholder="Legal vocabulary" />
               <div class="trainer-inline">

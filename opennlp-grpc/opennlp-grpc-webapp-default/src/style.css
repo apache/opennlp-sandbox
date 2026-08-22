@@ -974,6 +974,31 @@ main { overflow: clip; margin-top: 1rem; }
 .resource-installer-card p { margin: 0; color: #8493a8; font-size: 0.66rem; line-height: 1.55; }
 .resource-installer-card pre { overflow-x: hidden; margin: 0; padding: 0.75rem; border-radius: 0.55rem; background: #0b1422; color: #c4d5e8; font: 0.62rem/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
 .resource-installer-card .form-status { grid-column: 1 / -1; margin: 0; }
+.resource-catalog-card { margin-top: 1rem; padding: 1rem; border: 1px solid #303d53; border-radius: 0.7rem; background: #131e30; }
+.resource-catalog-card h4 { margin: 0.25rem 0 0.4rem; color: #edf4fc; }
+.resource-catalog-card > div > p:last-child { margin: 0; color: #8493a8; font-size: 0.66rem; line-height: 1.55; }
+.resource-model-catalog { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 0.75rem; margin-top: 1rem; }
+.catalog-model-card { display: grid; align-content: start; gap: 0.6rem; min-width: 0; padding: 0.9rem; border: 1px solid #304058; border-radius: 0.6rem; background: #101a2a; }
+.catalog-model-card header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; align-items: start; }
+.catalog-model-card h5 { margin: 0; color: #edf4fc; font-size: 0.76rem; }
+.catalog-model-card p { margin: 0; color: #9cadc2; font-size: 0.63rem; line-height: 1.5; overflow-wrap: anywhere; }
+.catalog-model-references { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.catalog-model-card a { color: #67d5f5; font-size: 0.62rem; overflow-wrap: anywhere; }
+.catalog-role { padding: 0.2rem 0.4rem; border-radius: 999px; color: #a8dff0; background: #183249; font-size: 0.54rem; font-weight: 800; }
+.catalog-role.is-teacher { color: #e7c777; background: #382f1b; }
+.catalog-consent { display: flex; gap: 0.45rem; align-items: start; color: #b9c7d9; font-size: 0.61rem; line-height: 1.4; }
+.catalog-consent input { margin-top: 0.15rem; }
+.catalog-installed-state { color: #6ed3ae; font-size: 0.64rem; }
+.downloaded-model-inventory { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #303d53; }
+.downloaded-model-inventory h5 { margin: 0 0 0.7rem; color: #edf4fc; font-size: 0.76rem; }
+.resource-installed-models { display: grid; gap: 0.55rem; }
+.downloaded-model-row { display: grid; grid-template-columns: minmax(10rem, 1fr) auto; gap: 0.25rem 1rem; min-width: 0; padding: 0.7rem; border: 1px solid #304058; border-radius: 0.55rem; background: #101a2a; }
+.downloaded-model-row strong { color: #edf4fc; font-size: 0.68rem; }
+.downloaded-model-row span { color: #9cadc2; font-size: 0.62rem; }
+.downloaded-model-row .is-loaded { color: #6ed3ae; }
+.downloaded-model-row .is-not-loaded { color: #f3c97a; }
+.downloaded-model-row code { grid-column: 1 / -1; overflow-wrap: anywhere; color: #71849c; font-size: 0.58rem; }
+.trainer-corpus-stats { margin: -0.25rem 0 0.25rem; color: #7f98b7; font-size: 0.6rem; }
 
 .visually-hidden { position: absolute !important; overflow: hidden; width: 1px; height: 1px; padding: 0; border: 0; margin: -1px; clip: rect(0 0 0 0); white-space: nowrap; }
 

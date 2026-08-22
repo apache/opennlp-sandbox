@@ -29,8 +29,12 @@ import org.apache.opennlp.grpc.v1.DeleteStaticModelResponse;
 import org.apache.opennlp.grpc.v1.DictionaryArtifactDescriptor;
 import org.apache.opennlp.grpc.v1.DownloadVocabularyRequest;
 import org.apache.opennlp.grpc.v1.ImportDictionaryUpload;
+import org.apache.opennlp.grpc.v1.InstallModelRequest;
+import org.apache.opennlp.grpc.v1.InstallModelUpdate;
 import org.apache.opennlp.grpc.v1.LearnVocabularyUpload;
 import org.apache.opennlp.grpc.v1.ListDictionaryFormatsResponse;
+import org.apache.opennlp.grpc.v1.ListInstalledModelsResponse;
+import org.apache.opennlp.grpc.v1.ListModelCatalogResponse;
 import org.apache.opennlp.grpc.v1.ListStaticModelsResponse;
 import org.apache.opennlp.grpc.v1.ListTeachersResponse;
 import org.apache.opennlp.grpc.v1.StaticModelDescriptor;
@@ -107,6 +111,10 @@ class GrpcJsonVocabularyApiTest {
         .bodyUtf8().contains("\"teacherId\":\"mini\""));
     assertTrue(api.handle("GET", "/api/v1/static-models", new byte[0])
         .bodyUtf8().contains("\"artifactId\":\"static-model-1\""));
+    assertTrue(api.handle("GET", "/api/v1/model-catalog", new byte[0])
+        .bodyUtf8().contains("\"catalogId\":\"potion-base-8m\""));
+    assertTrue(api.handle("GET", "/api/v1/installed-models", new byte[0])
+        .bodyUtf8().contains("\"loaded\":true"));
   }
 
   @Test
@@ -134,6 +142,23 @@ class GrpcJsonVocabularyApiTest {
     assertTrue(lines.get(0).contains("\"progress\":\"resolving teacher\""));
     assertTrue(lines.get(1).contains("\"progress\":\"distilling\""));
     assertTrue(lines.get(2).contains("\"artifactId\":\"static-model-1\""));
+  }
+
+  @Test
+  void streamsModelInstallationProgressThenTheInstalledModel() throws Exception {
+    final GrpcJsonApi api = api(new StubVocabularyRpc(), new StubTrainingRpc());
+    final List<String> lines = new ArrayList<>();
+    final byte[] request = """
+        {"catalogId":"potion-base-8m","revision":"revision-1",
+         "licenseName":"MIT","licenseAcknowledged":true}
+        """.getBytes(StandardCharsets.UTF_8);
+
+    final WebHttpResponse buffered = api.installModel(request, lines::add);
+
+    assertNull(buffered);
+    assertEquals(2, lines.size());
+    assertTrue(lines.get(0).contains("INSTALL_MODEL_STAGE_DOWNLOADING"));
+    assertTrue(lines.get(1).contains("\"catalogId\":\"potion-base-8m\""));
   }
 
   @Test
@@ -236,6 +261,41 @@ class GrpcJsonVocabularyApiTest {
           .addTeachers(TeacherDescriptor.newBuilder().setTeacherId("mini"))
           .setWritesEnabled(true)
           .build();
+    }
+
+    @Override
+    public ListModelCatalogResponse listModelCatalog() {
+      return ListModelCatalogResponse.newBuilder()
+          .addModels(org.apache.opennlp.grpc.v1.ModelCatalogDescriptor.newBuilder()
+              .setCatalogId("potion-base-8m"))
+          .setInstallsEnabled(true)
+          .build();
+    }
+
+    @Override
+    public ListInstalledModelsResponse listInstalledModels() {
+      return ListInstalledModelsResponse.newBuilder()
+          .addModels(org.apache.opennlp.grpc.v1.InstalledModelDescriptor.newBuilder()
+              .setCatalog(org.apache.opennlp.grpc.v1.ModelCatalogDescriptor.newBuilder()
+                  .setCatalogId("potion-base-8m"))
+              .setLoaded(true))
+          .setInstallsEnabled(true)
+          .build();
+    }
+
+    @Override
+    public Iterator<InstallModelUpdate> installModel(InstallModelRequest request) {
+      return List.of(
+          InstallModelUpdate.newBuilder().setProgress(
+              org.apache.opennlp.grpc.v1.InstallModelProgress.newBuilder()
+                  .setStage(org.apache.opennlp.grpc.v1.InstallModelStage
+                      .INSTALL_MODEL_STAGE_DOWNLOADING))
+              .build(),
+          InstallModelUpdate.newBuilder().setModel(
+              org.apache.opennlp.grpc.v1.InstalledModelDescriptor.newBuilder()
+                  .setCatalog(org.apache.opennlp.grpc.v1.ModelCatalogDescriptor.newBuilder()
+                      .setCatalogId("potion-base-8m")))
+              .build()).iterator();
     }
 
     @Override
