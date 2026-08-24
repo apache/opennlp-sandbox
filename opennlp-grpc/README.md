@@ -316,13 +316,36 @@ The web host loads additional static interfaces through the `WebUiExtension` Ser
 See [opennlp-grpc-webapp/README.md](opennlp-grpc-webapp/README.md) for endpoints, security defaults,
 and command-line options.
 
-## Use the service from Python
+## Run the demonstration stack with Docker
+
+One container runs the server and the web application together, out of the box
+on Linux and on macOS Docker Desktop including Apple silicon:
+
+```bash
+mvn clean install
+cd docker
+docker compose up --build
+```
+
+Open `http://127.0.0.1:7072/` for the workbench; gRPC clients use
+`127.0.0.1:7071`. The container accepts the same `server.properties`
+configuration and carries the optional embedding backends on the classpath.
+See [docker/README.md](docker/README.md) for configuration, state, and
+security notes.
+
+## Use the service from Python, Node.js, or Java
 
 The [Python quickstart](examples/python-client/README.md) uses standard generated
 protobuf stubs and `grpcio`. Its first example analyzes typed document shapes,
 creates a process-local TurboQuant index in the Java server, and prints exhaustive
 server-ranked results. Its second example streams documents through vocabulary
 learning, static-model distillation, index publication, and search.
+
+The [Node.js quickstart](examples/node-client/README.md) and the
+[Java quickstart](examples/java-client/README.md) run the same analyze, index,
+and search flow with identical output: Node.js loads the v1 protos at runtime
+with no code generation, and Java uses the generated blocking stubs from
+`opennlp-grpc-api`.
 
 These clients are intentionally small enough to adapt in a notebook or data
 pipeline. The black-box integration suite runs the first example against the
