@@ -35,14 +35,6 @@
     
     <maven.download.plugin>1.13.0</maven.download.plugin>
   </properties>
-  <repositories>
-    <repository>
-      <id>maven.aksw.org</id>
-      <url>https://maven.aksw.org/repository/internal/</url>
-      <releases/>
-    </repository>
-  </repositories>
-
   <dependencies>
     <dependency>
       <groupId>org.apache.opennlp</groupId>
@@ -69,7 +61,7 @@
     <!-- End model resources -->
 
     <dependency>
-      <groupId>edu.mit</groupId>
+      <groupId>io.github.x-englishwordnet</groupId>
       <artifactId>jwi</artifactId>
       <version>${wordnet.version}</version>
     </dependency>
