@@ -101,17 +101,9 @@ button:focus-visible, textarea:focus-visible, select:focus-visible, a:focus-visi
 }
 
 .brand-mark {
-  display: grid;
-  place-items: center;
   width: 2.7rem;
   height: 2.7rem;
-  border-radius: 0.7rem 0.7rem 0.7rem 0.18rem;
-  background: linear-gradient(145deg, var(--blue), var(--cyan));
-  color: white;
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  box-shadow: 0 10px 25px rgb(23 105 224 / 25%);
+  object-fit: contain;
 }
 
 .brand strong, .brand small { display: block; }
