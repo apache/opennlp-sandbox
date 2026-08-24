@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -43,6 +44,7 @@ import org.apache.opennlp.grpc.v1.ListStaticModelsRequest;
 import org.apache.opennlp.grpc.v1.ListStaticModelsResponse;
 import org.apache.opennlp.grpc.v1.ListTeachersRequest;
 import org.apache.opennlp.grpc.v1.ListTeachersResponse;
+import org.apache.opennlp.grpc.v1.ModelArtifactRole;
 import org.apache.opennlp.grpc.v1.StaticModelDescriptor;
 import org.apache.opennlp.grpc.v1.StreamingTrainingModelPlan;
 import org.apache.opennlp.grpc.v1.StreamingTrainingRequest;
@@ -101,7 +103,15 @@ class OpenNlpModelTrainingServiceImplTest {
     service.listModelCatalog(ListModelCatalogRequest.getDefaultInstance(), listed);
     service.listInstalledModels(ListInstalledModelsRequest.getDefaultInstance(), installed);
 
-    assertEquals(4, listed.values.getFirst().getModelsCount());
+    assertEquals(6, listed.values.getFirst().getModelsCount());
+    assertEquals(Set.of(
+            ModelArtifactRole.MODEL_ARTIFACT_ROLE_DISTILLATION_TEACHER,
+            ModelArtifactRole.MODEL_ARTIFACT_ROLE_STATIC_EMBEDDING,
+            ModelArtifactRole.MODEL_ARTIFACT_ROLE_PARSER,
+            ModelArtifactRole.MODEL_ARTIFACT_ROLE_CHUNKER),
+        listed.values.getFirst().getModelsList().stream()
+            .map(model -> model.getRole())
+            .collect(java.util.stream.Collectors.toSet()));
     assertFalse(listed.values.getFirst().getInstallsEnabled());
     assertEquals(0, installed.values.getFirst().getModelsCount());
     assertFalse(installed.values.getFirst().getInstallsEnabled());

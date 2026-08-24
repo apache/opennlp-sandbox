@@ -29,23 +29,29 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class StandardModelCatalogTest {
 
   @Test
-  void catalogsThePinnedTeacherAndThreePublishedModel2VecTables() {
+  void catalogsPinnedEmbeddingParserAndChunkerModels() {
     final List<CatalogModel> models = StandardModelCatalog.models();
 
     assertEquals(List.of(
         "all-minilm-l6-v2-teacher",
+        "gum-cc-by-4-chunker",
+        "gum-cc-by-4-parser",
         "potion-base-8m",
         "potion-multilingual-128m",
         "potion-retrieval-32m"),
         models.stream().map(model -> model.descriptor().getCatalogId()).toList());
     assertEquals(ModelArtifactRole.MODEL_ARTIFACT_ROLE_DISTILLATION_TEACHER,
         models.getFirst().descriptor().getRole());
-    assertTrue(models.subList(1, models.size()).stream().allMatch(model ->
+    assertEquals(ModelArtifactRole.MODEL_ARTIFACT_ROLE_CHUNKER,
+        models.get(1).descriptor().getRole());
+    assertEquals(ModelArtifactRole.MODEL_ARTIFACT_ROLE_PARSER,
+        models.get(2).descriptor().getRole());
+    assertTrue(models.subList(3, models.size()).stream().allMatch(model ->
         model.descriptor().getRole()
             == ModelArtifactRole.MODEL_ARTIFACT_ROLE_STATIC_EMBEDDING));
-    assertEquals(256, models.get(1).descriptor().getDimension());
-    assertEquals(256, models.get(2).descriptor().getDimension());
-    assertEquals(512, models.get(3).descriptor().getDimension());
+    assertEquals(256, models.get(3).descriptor().getDimension());
+    assertEquals(256, models.get(4).descriptor().getDimension());
+    assertEquals(512, models.get(5).descriptor().getDimension());
   }
 
   @Test

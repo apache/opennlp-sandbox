@@ -118,6 +118,32 @@ class CatalogModelStoreTest {
   }
 
   @Test
+  void parserAndChunkerInstallationsWaitForAValidatedRestart() throws Exception {
+    for (ModelArtifactRole role : List.of(
+        ModelArtifactRole.MODEL_ARTIFACT_ROLE_PARSER,
+        ModelArtifactRole.MODEL_ARTIFACT_ROLE_CHUNKER)) {
+      final Path source = Files.createDirectories(
+          temporaryDirectory.resolve(role.name() + "-source"));
+      Files.write(source.resolve("model.bin"), new byte[] {1, 2, 3, 4});
+      final String modelId = role == ModelArtifactRole.MODEL_ARTIFACT_ROLE_PARSER
+          ? "catalog-parser" : "catalog-chunker";
+      final CatalogModel model = testModel(source, role, modelId);
+      final TrainedModelEmbeddingProvider registry = registry();
+      final List<InstallModelProgress> progress = new ArrayList<>();
+      final CatalogModelStore store = new CatalogModelStore(
+          temporaryDirectory.resolve(role.name() + "-catalog"), List.of(model),
+          trainingStore(registry), registry, copyingInstaller(source));
+
+      final InstalledModelDescriptor installed =
+          store.install(request(model), progress::add, () -> false);
+
+      assertFalse(installed.getLoaded());
+      assertTrue(progress.getLast().getMessage().contains("restart required"));
+      assertFalse(registry.supportsModel(model.descriptor().getModelId()));
+    }
+  }
+
+  @Test
   void consentAndPinnedIdentityAreRequiredBeforeAnyDownload() throws Exception {
     final Path source = Files.createDirectories(temporaryDirectory.resolve("identity-source"));
     TrainingTestSupport.writeStaticModelDirectory(source);

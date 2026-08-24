@@ -24,7 +24,7 @@ import {
 } from "./analysis-config";
 import { errorMessage, requiredElement } from "./ui-utils";
 
-export type ModelArtifactRole = "teacher" | "static";
+export type ModelArtifactRole = "teacher" | "static" | "parser" | "chunker";
 
 export interface ModelCatalogSummary {
   catalogId: string;
@@ -128,7 +128,9 @@ export class ModelDataWorkbench {
       heading.textContent = model?.displayName ?? installed.catalogId;
       const state = document.createElement("span");
       state.className = installed.loaded ? "is-loaded" : "is-not-loaded";
-      state.textContent = installed.loaded ? "Installed and active" : "Installed, not loaded";
+      state.textContent = installed.loaded
+        ? "Installed and active"
+        : restartRole(model?.role) ? "Installed, restart required" : "Installed, not loaded";
       const facts = document.createElement("span");
       facts.textContent = `${byteLabel(installed.byteSize)}`
         + (installed.installedAt ? ` · installed ${installed.installedAt}` : "");
@@ -200,7 +202,7 @@ export class ModelDataWorkbench {
       title.textContent = model.displayName;
       const role = document.createElement("span");
       role.className = `catalog-role is-${model.role}`;
-      role.textContent = model.role === "static" ? "Ready-to-serve static table" : "Training teacher";
+      role.textContent = roleLabel(model.role);
       header.append(title, role);
 
       const description = document.createElement("p");
@@ -228,7 +230,9 @@ export class ModelDataWorkbench {
       if (active) {
         const state = document.createElement("strong");
         state.className = "catalog-installed-state";
-        state.textContent = active.loaded ? "Installed and active" : "Installed, not loaded";
+        state.textContent = active.loaded
+          ? "Installed and active"
+          : restartRole(model.role) ? "Installed, restart required" : "Installed, not loaded";
         card.append(state);
       } else {
         const consent = document.createElement("label");
@@ -242,7 +246,7 @@ export class ModelDataWorkbench {
         const button = document.createElement("button");
         button.type = "button";
         button.dataset.catalogInstall = model.catalogId;
-        button.textContent = model.role === "static" ? "Download and activate" : "Download teacher";
+        button.textContent = installLabel(model.role);
         button.disabled = true;
         checkbox.disabled = !installsEnabled;
         checkbox.addEventListener("change", () => {
@@ -273,7 +277,9 @@ export class ModelDataWorkbench {
         licenseName: model.licenseName,
         licenseAcknowledged: true,
       }, (progress) => this.setStatus(progressStatus(model, progress)));
-      this.setStatus(`${model.displayName} is installed and active on this server node.`);
+      this.setStatus(installed.loaded
+        ? `${model.displayName} is installed and active on this server node.`
+        : `${model.displayName} is installed; restart required before it becomes active.`);
       if (model.role === "static" && installed.loaded) {
         this.#callbacks.onEmbeddingModelInstalled(model.modelId, model.displayName);
       } else if (model.role === "teacher" && installed.loaded) {
@@ -313,7 +319,9 @@ export function readModelCatalog(
     const modelId = requiredString(model.modelId, "catalog serving model id");
     const role: ModelArtifactRole | undefined =
       model.role === "MODEL_ARTIFACT_ROLE_DISTILLATION_TEACHER" ? "teacher"
-      : model.role === "MODEL_ARTIFACT_ROLE_STATIC_EMBEDDING" ? "static" : undefined;
+      : model.role === "MODEL_ARTIFACT_ROLE_STATIC_EMBEDDING" ? "static"
+      : model.role === "MODEL_ARTIFACT_ROLE_PARSER" ? "parser"
+      : model.role === "MODEL_ARTIFACT_ROLE_CHUNKER" ? "chunker" : undefined;
     if (!role) {
       throw new Error(`Catalog model '${catalogId}' has an unsupported role.`);
     }
@@ -409,6 +417,30 @@ function byteLabel(bytes: number): string {
     return `${(bytes / 1_024).toFixed(1)} KiB`;
   }
   return `${bytes} bytes`;
+}
+
+function restartRole(role: ModelArtifactRole | undefined): boolean {
+  return role === "parser" || role === "chunker";
+}
+
+function roleLabel(role: ModelArtifactRole): string {
+  if (role === "static") {
+    return "Ready-to-serve static table";
+  }
+  if (role === "teacher") {
+    return "Training teacher";
+  }
+  return role === "parser" ? "Constituency parser" : "Syntactic chunker";
+}
+
+function installLabel(role: ModelArtifactRole): string {
+  if (role === "static") {
+    return "Download and activate";
+  }
+  if (role === "teacher") {
+    return "Download teacher";
+  }
+  return role === "parser" ? "Download parser" : "Download chunker";
 }
 
 function timestampText(value: unknown): string {

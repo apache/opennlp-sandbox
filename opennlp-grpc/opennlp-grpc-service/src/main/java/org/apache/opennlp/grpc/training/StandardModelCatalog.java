@@ -35,6 +35,15 @@ final class StandardModelCatalog {
       "https://www.apache.org/licenses/LICENSE-2.0";
   private static final String MIT = "MIT";
   private static final String MIT_URI = "https://opensource.org/license/mit";
+  private static final String CC_BY_4_0 = "CC-BY-4.0";
+  private static final String GUM_REVISION = "22fdf87f9c71c96bcc771461d06e689b1f90020d";
+  private static final String GUM_RELEASE = "opennlp-grpc-gum-models-v1";
+  private static final String GUM_RELEASE_ROOT =
+      "https://github.com/ai-pipestream/opennlp-sandbox/releases/download/" + GUM_RELEASE;
+  private static final String GUM_SOURCE =
+      "https://github.com/ai-pipestream/opennlp-sandbox/releases/tag/" + GUM_RELEASE;
+  private static final String GUM_LICENSE =
+      "https://github.com/amir-zeldes/gum/blob/" + GUM_REVISION + "/LICENSE.md";
 
   private StandardModelCatalog() {
   }
@@ -51,6 +60,8 @@ final class StandardModelCatalog {
     models.add(catalog.potionBase());
     models.add(catalog.potionMultilingual());
     models.add(catalog.potionRetrieval());
+    models.add(catalog.gumChunker());
+    models.add(catalog.gumParser());
     models.sort(Comparator.comparing(model -> model.descriptor().getCatalogId()));
     return List.copyOf(models);
   }
@@ -117,6 +128,48 @@ final class StandardModelCatalog {
                 "14b5eb39cb4ce5666da8ad1f3dc6be4346e9b2d601c073302fa0a31bf7943397"),
             file(repository, revision, "tokenizer.json", 18_616_131,
                 "19f1909063da3cfe3bd83a782381f040dccea475f4816de11116444a73e1b6a1")));
+  }
+
+  /** Creates the current OpenNLP chunker trained from the CC BY 4.0 GUM subset. */
+  private CatalogModel gumChunker() {
+    return releaseModel("gum-cc-by-4-chunker", "GUM CC BY 4.0 English chunker",
+        ModelArtifactRole.MODEL_ARTIFACT_ROLE_CHUNKER, "gum-cc-by-4", 196_936,
+        "76ea0ba20807fafc9ae76113236da470707ab032a13cfa6626af40095caa5d16",
+        "en-gum-cc-by-4-chunker.bin",
+        "OpenNLP syntactic chunker trained from GUM academic and court trees; "
+            + "held-out phrase F1 0.9051");
+  }
+
+  /** Creates the current OpenNLP parser trained from the CC BY 4.0 GUM subset. */
+  private CatalogModel gumParser() {
+    return releaseModel("gum-cc-by-4-parser", "GUM CC BY 4.0 English parser",
+        ModelArtifactRole.MODEL_ARTIFACT_ROLE_PARSER, "gum-cc-by-4", 1_097_289,
+        "a28e1dc122eeb67a58a41a16c446dbbfc72cfce1fc05ddfdc93512be8c14e77d",
+        "en-gum-cc-by-4-parser.bin",
+        "OpenNLP constituency parser trained from GUM academic and court trees; "
+            + "held-out constituent F1 0.6750");
+  }
+
+  /** Creates one release-hosted OpenNLP model entry. */
+  private CatalogModel releaseModel(
+      String catalogId, String displayName, ModelArtifactRole role, String modelId,
+      long byteSize, String sha256, String fileName, String description) {
+    final CatalogFile file = new CatalogFile(Path.of(fileName),
+        URI.create(GUM_RELEASE_ROOT + "/" + fileName), byteSize, sha256);
+    final ModelCatalogDescriptor descriptor = ModelCatalogDescriptor.newBuilder()
+        .setCatalogId(catalogId)
+        .setDisplayName(displayName)
+        .setRole(role)
+        .setModelId(modelId)
+        .setSourceUri(GUM_SOURCE)
+        .setRevision(GUM_RELEASE + "+gum-" + GUM_REVISION)
+        .setLicenseName(CC_BY_4_0)
+        .setLicenseUri(GUM_LICENSE)
+        .setByteSize(byteSize)
+        .addLanguages("en")
+        .setDescription(description)
+        .build();
+    return new CatalogModel(descriptor, List.of(file));
   }
 
   /** Creates the common file list used by the WordPiece static models. */

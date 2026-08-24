@@ -97,9 +97,7 @@ public final class CatalogModelStore {
     if (configuration == null) {
       throw new IllegalArgumentException("configuration must not be null");
     }
-    final String configured = configuration.get(CATALOG_ROOT_KEY);
-    final Path root = configured == null || configured.isBlank()
-        ? null : Path.of(configured.trim()).toAbsolutePath().normalize();
+    final Path root = configuredRoot(configuration);
     return new CatalogModelStore(root, StandardModelCatalog.models(), trainingStore,
         embeddingRegistry, CatalogModelStore::installFile);
   }
@@ -284,7 +282,7 @@ public final class CatalogModelStore {
       verifyLayout(model, staging.path(), false);
       final String artifactHash = artifactHash(model);
       progress.accept(progress(model, InstallModelStage.INSTALL_MODEL_STAGE_LOADING,
-          "", completedFiles, completedBytes, "Loading the verified model"));
+          "", completedFiles, completedBytes, loadingMessage(model)));
       final StaticEmbeddingModel staticModel = model.descriptor().getRole()
           == ModelArtifactRole.MODEL_ARTIFACT_ROLE_STATIC_EMBEDDING
               ? StaticEmbeddingModel.load(staging.path()) : null;
@@ -294,7 +292,7 @@ public final class CatalogModelStore {
           .setArtifactHash(artifactHash)
           .setByteSize(model.descriptor().getByteSize())
           .setInstalledAt(now())
-          .setLoaded(true)
+          .setLoaded(!requiresRestart(model.descriptor().getRole()))
           .build();
       try (OutputStream output =
           Files.newOutputStream(staging.path().resolve(DESCRIPTOR_FILE))) {
@@ -319,7 +317,7 @@ public final class CatalogModelStore {
         throw e;
       }
       progress.accept(progress(model, InstallModelStage.INSTALL_MODEL_STAGE_PUBLISHED,
-          "", completedFiles, completedBytes, "Installed and activated " + catalogId));
+          "", completedFiles, completedBytes, publicationMessage(model)));
       return descriptor;
     }
   }
@@ -356,22 +354,14 @@ public final class CatalogModelStore {
         if (!Files.isDirectory(entry, LinkOption.NOFOLLOW_LINKS)) {
           throw new IOException("Catalog model entry is not a directory: " + entry);
         }
-        verifyLayout(model, entry, true);
-        final InstalledModelDescriptor descriptor;
-        try (InputStream input = Files.newInputStream(entry.resolve(DESCRIPTOR_FILE))) {
-          descriptor = InstalledModelDescriptor.parseFrom(input);
-        }
-        if (!descriptor.getCatalog().equals(model.descriptor())
-            || descriptor.getByteSize() != model.descriptor().getByteSize()
-            || !descriptor.getArtifactHash().equals(artifactHash(model))) {
-          throw new IOException("Installed catalog descriptor does not match '" + catalogId + "'");
-        }
+        final InstalledModelDescriptor descriptor = verifyInstalled(model, entry);
         final StaticEmbeddingModel staticModel = model.descriptor().getRole()
             == ModelArtifactRole.MODEL_ARTIFACT_ROLE_STATIC_EMBEDDING
                 ? StaticEmbeddingModel.load(entry) : null;
         verifyLoadedDimension(model, staticModel);
         activate(model, entry, descriptor.getArtifactHash(), staticModel);
-        installed.put(catalogId, descriptor);
+        installed.put(catalogId, requiresRestart(model.descriptor().getRole())
+            ? descriptor.toBuilder().setLoaded(true).build() : descriptor);
       }
     }
   }
@@ -386,7 +376,7 @@ public final class CatalogModelStore {
         == ModelArtifactRole.MODEL_ARTIFACT_ROLE_DISTILLATION_TEACHER) {
       trainingStore.registerCatalogTeacher(
           descriptor.getModelId(), descriptor.getDisplayName(), directory);
-    } else {
+    } else if (!requiresRestart(descriptor.getRole())) {
       throw new IllegalArgumentException("Unsupported catalog model role " + descriptor.getRole());
     }
   }
@@ -453,8 +443,15 @@ public final class CatalogModelStore {
     }
   }
 
-  /** Verifies that a model directory contains exactly its declared files. */
-  private static void verifyLayout(
+  /**
+   * Verifies that a model directory contains exactly its declared files.
+   *
+   * @param model Immutable catalog entry.
+   * @param directory Published or staged model directory.
+   * @param requireDescriptor Whether the installed descriptor must be present.
+   * @throws IOException If a file or the complete layout differs from the catalog.
+   */
+  static void verifyLayout(
       CatalogModel model, Path directory, boolean requireDescriptor) throws IOException {
     final Set<Path> expected = new HashSet<>();
     for (CatalogFile file : model.files()) {
@@ -485,8 +482,13 @@ public final class CatalogModelStore {
     }
   }
 
-  /** Computes the stable digest of a catalog entry's file identities. */
-  private static String artifactHash(CatalogModel model) {
+  /**
+   * Computes the stable digest of a catalog entry's file identities.
+   *
+   * @param model Immutable catalog entry.
+   * @return SHA-256 digest over ordered file metadata.
+   */
+  static String artifactHash(CatalogModel model) {
     final MessageDigest digest = ArtifactDigests.newSha256();
     for (CatalogFile file : model.files()) {
       final String line = portablePath(file.relativePath()) + "\t" + file.byteSize()
@@ -522,8 +524,13 @@ public final class CatalogModelStore {
     }
   }
 
-  /** Creates and validates the configured catalog root. */
-  private static void createRoot(Path root) throws IOException {
+  /**
+   * Creates and validates the configured catalog root.
+   *
+   * @param root Configured node-local root.
+   * @throws IOException If the root cannot be created or is not a regular directory.
+   */
+  static void createRoot(Path root) throws IOException {
     if (Files.exists(root, LinkOption.NOFOLLOW_LINKS) && Files.isSymbolicLink(root)) {
       throw new IOException("model.catalog_root must not be a symbolic link");
     }
@@ -531,6 +538,63 @@ public final class CatalogModelStore {
     if (!Files.isDirectory(root, LinkOption.NOFOLLOW_LINKS)) {
       throw new IOException("model.catalog_root is not a directory: " + root);
     }
+  }
+
+  /**
+   * Returns the normalized catalog root.
+   *
+   * @param configuration Server configuration.
+   * @return Catalog root, or {@code null} when installation is disabled.
+   */
+  static Path configuredRoot(Map<String, String> configuration) {
+    final String configured = configuration.get(CATALOG_ROOT_KEY);
+    return configured == null || configured.isBlank()
+        ? null : Path.of(configured.trim()).toAbsolutePath().normalize();
+  }
+
+  /**
+   * Reads and verifies one published installation descriptor and every declared file.
+   *
+   * @param model Immutable catalog entry.
+   * @param directory Published model directory.
+   * @return Verified installed descriptor.
+   * @throws IOException If the bytes, layout, or descriptor differ from the catalog.
+   */
+  static InstalledModelDescriptor verifyInstalled(CatalogModel model, Path directory)
+      throws IOException {
+    verifyLayout(model, directory, true);
+    final InstalledModelDescriptor descriptor;
+    try (InputStream input = Files.newInputStream(directory.resolve(DESCRIPTOR_FILE))) {
+      descriptor = InstalledModelDescriptor.parseFrom(input);
+    }
+    if (!descriptor.getCatalog().equals(model.descriptor())
+        || descriptor.getByteSize() != model.descriptor().getByteSize()
+        || !descriptor.getArtifactHash().equals(artifactHash(model))) {
+      throw new IOException("Installed catalog descriptor does not match '"
+          + model.descriptor().getCatalogId() + "'");
+    }
+    return descriptor;
+  }
+
+  /** Returns whether a role can only become active during server startup. */
+  private static boolean requiresRestart(ModelArtifactRole role) {
+    return role == ModelArtifactRole.MODEL_ARTIFACT_ROLE_PARSER
+        || role == ModelArtifactRole.MODEL_ARTIFACT_ROLE_CHUNKER;
+  }
+
+  /** Describes the role-specific loading phase without claiming early activation. */
+  private static String loadingMessage(CatalogModel model) {
+    return requiresRestart(model.descriptor().getRole())
+        ? "Preparing the verified model for restart activation"
+        : "Loading the verified model";
+  }
+
+  /** Describes publication and any required follow-up action. */
+  private static String publicationMessage(CatalogModel model) {
+    final String catalogId = model.descriptor().getCatalogId();
+    return requiresRestart(model.descriptor().getRole())
+        ? "Installed " + catalogId + "; restart required"
+        : "Installed and activated " + catalogId;
   }
 
   /** Requires this node to have catalog installation enabled. */

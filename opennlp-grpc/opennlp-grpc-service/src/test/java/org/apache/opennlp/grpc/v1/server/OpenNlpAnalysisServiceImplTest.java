@@ -18,6 +18,7 @@
 package org.apache.opennlp.grpc.v1.server;
 
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -36,9 +37,12 @@ import org.apache.opennlp.grpc.testing.StubSentenceDetectorBackendFactory;
 import org.apache.opennlp.grpc.testing.StubTokenizerBackendFactory;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
+import org.apache.opennlp.grpc.v1.ComponentType;
 import org.apache.opennlp.grpc.v1.ConfiguredResource;
 import org.apache.opennlp.grpc.v1.GetServiceInfoRequest;
 import org.apache.opennlp.grpc.v1.GetServiceInfoResponse;
+import org.apache.opennlp.grpc.v1.ListModelBundlesRequest;
+import org.apache.opennlp.grpc.v1.ListModelBundlesResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.StandardLayer;
 import org.apache.opennlp.grpc.v1.StandardResource;
@@ -50,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Tests the gRPC service boundary in {@link OpenNlpAnalysisServiceImpl}: that successful analyses
@@ -248,6 +253,33 @@ class OpenNlpAnalysisServiceImplTest {
     assertResource(observer.value, StandardResource.STANDARD_RESOURCE_WORDNET_LEXICON, "mini");
     assertTrue(observer.completed);
     assertNull(observer.error);
+  }
+
+  @Test
+  void modelBundlesAdvertiseConfiguredParserAndChunkerModels() {
+    final String parserPath = System.getProperty("parser.model.path");
+    final String chunkerPath = System.getProperty("chunker.model.path");
+    assumeTrue(parserPath != null && Files.isRegularFile(Path.of(parserPath))
+            && chunkerPath != null && Files.isRegularFile(Path.of(chunkerPath)),
+        "set parser.model.path and chunker.model.path to real OpenNLP models");
+
+    try (ModelBundleCache cache = new ModelBundleCache(Map.of(
+        "model.parser.gum-cc-by-4.path", parserPath,
+        "model.chunker.gum-cc-by-4.path", chunkerPath))) {
+      final CapturingObserver<ListModelBundlesResponse> observer = new CapturingObserver<>();
+
+      serviceWith(request -> AnalyzeDocumentResponse.getDefaultInstance(), cache)
+          .listModelBundles(ListModelBundlesRequest.getDefaultInstance(), observer);
+
+      assertTrue(observer.completed);
+      assertNull(observer.error);
+      final Set<ComponentType> componentTypes = observer.value.getBundlesList().stream()
+          .flatMap(bundle -> bundle.getModelsList().stream())
+          .map(model -> model.getComponentType())
+          .collect(java.util.stream.Collectors.toSet());
+      assertTrue(componentTypes.contains(ComponentType.COMPONENT_TYPE_PARSER));
+      assertTrue(componentTypes.contains(ComponentType.COMPONENT_TYPE_CHUNKER));
+    }
   }
 
   private static void assertResource(
