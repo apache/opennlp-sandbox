@@ -287,6 +287,10 @@ List of third-party dependencies grouped by their license type.
 
         * Java Architecture for XML Binding (javax.xml.bind:jaxb-api:2.2.12 - http://jaxb.java.net/)
 
+    Creative Commons Attribution 4.0 International Public License
+
+        * Java WordNet Interface (io.github.x-englishwordnet:jwi:2.4.0 - https://github.com/x-englishwordnet/jwi)
+
     Creative Commons Attribution Version 3.0 Unported
 
         * JVerbNet (edu.mit:jverbnet:1.2.0.1 - http://projects.csail.mit.edu/jverbnet/)
