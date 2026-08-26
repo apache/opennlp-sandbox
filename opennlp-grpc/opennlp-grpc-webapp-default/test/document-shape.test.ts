@@ -120,6 +120,42 @@ describe("document shape reader", () => {
     expect(result.layers[1]?.annotations[0]).toMatchObject({ label: "mini (3 dimensions)" });
   });
 
+  it("reads typed dependency arcs and entity relations", () => {
+    const result = readDocumentShape({
+      document: {
+        rawText: "Acme acquired Bolt.",
+        offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
+        layers: { layers: [
+          {
+            id: "opennlp:dependencies",
+            identity: { standard: "STANDARD_LAYER_DEPENDENCIES" },
+            dependencyValues: { annotations: [{
+              span: { start: 0, end: 4 },
+              headTokenIndex: 1,
+              dependentTokenIndex: 0,
+              relation: "nsubj",
+            }] },
+          },
+          {
+            id: "opennlp:relations",
+            identity: { standard: "STANDARD_LAYER_RELATIONS" },
+            relationValues: { annotations: [{
+              span: { start: 0, end: 18 },
+              type: "acquisition",
+              subjectEntityIndex: 0,
+              objectEntityIndex: 1,
+            }] },
+          },
+        ] },
+      },
+    });
+
+    expect(result.layers[0]).toMatchObject({ valueType: "Dependency" });
+    expect(result.layers[0]?.annotations[0]).toMatchObject({ label: "nsubj" });
+    expect(result.layers[1]).toMatchObject({ valueType: "Relation" });
+    expect(result.layers[1]?.annotations[0]).toMatchObject({ label: "acquisition" });
+  });
+
   it("reads entity annotation spans and display text from protobuf JSON", () => {
     const result = readDocumentShape({
       document: {

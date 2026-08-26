@@ -301,6 +301,22 @@ final class DocumentOffsetEncoder {
           }
           layer.setTermVectorValues(list.build());
         }
+        case DEPENDENCY_VALUES -> {
+          final var list = layer.getDependencyValues().toBuilder();
+          for (int a = 0; a < list.getAnnotationsCount(); a++) {
+            list.setAnnotations(a, list.getAnnotations(a).toBuilder()
+                .setSpan(remap(list.getAnnotations(a).getSpan(), mapper)).build());
+          }
+          layer.setDependencyValues(list.build());
+        }
+        case RELATION_VALUES -> {
+          final var list = layer.getRelationValues().toBuilder();
+          for (int a = 0; a < list.getAnnotationsCount(); a++) {
+            list.setAnnotations(a, list.getAnnotations(a).toBuilder()
+                .setSpan(remap(list.getAnnotations(a).getSpan(), mapper)).build());
+          }
+          layer.setRelationValues(list.build());
+        }
         default -> {
           // A layer without annotations carries no spans to remap.
         }

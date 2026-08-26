@@ -29,6 +29,8 @@ export const PIPELINE_ORDER = [
   "PIPELINE_STEP_NER",
   "PIPELINE_STEP_GEOCODE",
   "PIPELINE_STEP_POS_TAG",
+  "PIPELINE_STEP_DEPENDENCY_PARSE",
+  "PIPELINE_STEP_RELATION_EXTRACT",
   "PIPELINE_STEP_LEMMATIZE",
   "PIPELINE_STEP_STEM",
   "PIPELINE_STEP_TERM_VECTOR",
@@ -49,6 +51,8 @@ export const FEATURE_NAMES: Readonly<Record<string, string>> = {
   PIPELINE_STEP_NER: "Named entities",
   PIPELINE_STEP_GEOCODE: "Entity geocoding",
   PIPELINE_STEP_POS_TAG: "Part-of-speech tags",
+  PIPELINE_STEP_DEPENDENCY_PARSE: "Dependency arcs",
+  PIPELINE_STEP_RELATION_EXTRACT: "Entity relations",
   PIPELINE_STEP_LEMMATIZE: "Lemmas",
   PIPELINE_STEP_STEM: "Stems",
   PIPELINE_STEP_TERM_VECTOR: "Term vectors",
@@ -117,6 +121,7 @@ export interface AnalysisCapabilities {
   maxTextBytes?: number;
   subwordModelId?: string;
   wordnetLexiconId?: string;
+  dependencyParserId?: string;
   pipelineLanguages: DiscoveryOption[];
 }
 
@@ -143,6 +148,7 @@ export function discoverAnalysisCapabilities(
   const configured = new Set<string>();
   const languages: string[] = [];
   const embeddingModels = new Map<string, DiscoveryOption>();
+  const dependencyParserIds: string[] = [];
 
   for (const bundle of bundles) {
     for (const step of strings(bundle.supportedSteps)) {
@@ -154,7 +160,14 @@ export function discoverAnalysisCapabilities(
       }
     }
     for (const model of records(array(bundle.models))) {
-      if (string(model.componentType) !== "COMPONENT_TYPE_EMBEDDER") {
+      const componentType = string(model.componentType);
+      if (componentType === "COMPONENT_TYPE_DEPENDENCY_PARSER") {
+        const id = string(model.name);
+        if (id && !dependencyParserIds.includes(id)) {
+          dependencyParserIds.push(id);
+        }
+      }
+      if (componentType !== "COMPONENT_TYPE_EMBEDDER") {
         continue;
       }
       const id = string(model.name);
@@ -193,6 +206,17 @@ export function discoverAnalysisCapabilities(
   if (configured.has("PIPELINE_STEP_NER") && supported.includes("PIPELINE_STEP_GEOCODE")) {
     configured.add("PIPELINE_STEP_GEOCODE");
   }
+  const dependencyParserId = dependencyParserIds.length === 1
+    ? dependencyParserIds[0]
+    : undefined;
+  if (dependencyParserId && supported.includes("PIPELINE_STEP_DEPENDENCY_PARSE")) {
+    configured.add("PIPELINE_STEP_DEPENDENCY_PARSE");
+  }
+  if (configured.has("PIPELINE_STEP_NER")
+      && configured.has("PIPELINE_STEP_DEPENDENCY_PARSE")
+      && supported.includes("PIPELINE_STEP_RELATION_EXTRACT")) {
+    configured.add("PIPELINE_STEP_RELATION_EXTRACT");
+  }
 
   const maxSteps = PIPELINE_ORDER.filter((step) => supported.includes(step) && configured.has(step));
   return {
@@ -213,6 +237,7 @@ export function discoverAnalysisCapabilities(
     maxTextBytes: integer(service?.maxTextBytes),
     subwordModelId,
     wordnetLexiconId,
+    dependencyParserId,
   };
 }
 
@@ -297,6 +322,15 @@ function maximalProfile(
   if (steps.includes("PIPELINE_STEP_EXPAND") && capabilities.wordnetLexiconId) {
     profile.wordnetLexiconId = capabilities.wordnetLexiconId;
   }
+  if (steps.includes("PIPELINE_STEP_DEPENDENCY_PARSE") && capabilities.dependencyParserId) {
+    profile.dependencyParserId = capabilities.dependencyParserId;
+  }
+  if (steps.includes("PIPELINE_STEP_RELATION_EXTRACT")) {
+    profile.relationPatterns = [
+      { type: "subject-object", path: "<nsubj >obj" },
+      { type: "subject-oblique", path: "<nsubj >obl" },
+    ];
+  }
   return profile;
 }
 
@@ -305,6 +339,8 @@ const STEP_DEPENDENCIES: Readonly<Record<string, readonly string[]>> = {
   PIPELINE_STEP_NER: ["PIPELINE_STEP_TOKENIZE"],
   PIPELINE_STEP_GEOCODE: ["PIPELINE_STEP_NER"],
   PIPELINE_STEP_POS_TAG: ["PIPELINE_STEP_TOKENIZE"],
+  PIPELINE_STEP_DEPENDENCY_PARSE: ["PIPELINE_STEP_POS_TAG"],
+  PIPELINE_STEP_RELATION_EXTRACT: ["PIPELINE_STEP_NER", "PIPELINE_STEP_DEPENDENCY_PARSE"],
   PIPELINE_STEP_LEMMATIZE: ["PIPELINE_STEP_POS_TAG"],
   PIPELINE_STEP_STEM: ["PIPELINE_STEP_TOKENIZE"],
   PIPELINE_STEP_TERM_VECTOR: ["PIPELINE_STEP_TOKENIZE"],

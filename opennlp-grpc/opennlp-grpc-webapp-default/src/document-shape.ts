@@ -80,6 +80,8 @@ const VALUE_TYPES = new Map<string, string>([
   ["analyticsValues", "Analytics"],
   ["chunkGroupValues", "Chunk group"],
   ["termVectorValues", "Term vector"],
+  ["dependencyValues", "Dependency"],
+  ["relationValues", "Relation"],
 ]);
 
 export function readDocumentShape(response: unknown): DocumentShapeView {
@@ -296,7 +298,7 @@ function readAnnotation(
 function annotationLabel(annotation: Record<string, unknown>, index: number): string {
   for (const key of [
     "value", "label", "text", "stem", "term", "piece", "chunkTag", "entityType", "type",
-    "resultSetName", "groupId", "lexiconId", "algorithm",
+    "resultSetName", "groupId", "lexiconId", "algorithm", "relation",
   ]) {
     const value = optionalString(annotation[key]);
     if (value) {

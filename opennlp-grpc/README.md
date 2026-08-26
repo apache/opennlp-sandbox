@@ -85,7 +85,9 @@ tokenization over MeCab-format dictionaries
 `model.lattice.<id>.dir`), and geocoding of location entities against the bundled
 Natural Earth gazetteer (`PIPELINE_STEP_GEOCODE`, no configuration required, filling
 `NamedEntity.geo`), and aggregate term vectors from PR #1212
-(`PIPELINE_STEP_TERM_VECTOR`).
+(`PIPELINE_STEP_TERM_VECTOR`). Dependency parsing and rule-based relation extraction expose
+the helper stack's typed `opennlp:dependencies` and `opennlp:relations` layers when an
+operator supplies a dependency model.
 
 ## Modules
 
@@ -481,7 +483,9 @@ graph, and indexing operations.
 The Analyze workbench gives the output the full page width and provides Document, Chunks, Heatmap,
 Graph, and Protobuf JSON projections over the same response. Long source text and annotated output
 scroll vertically without a horizontal scrollbar. Selecting an annotation, graph node, or chunk
-opens details in a side drawer so the document does not collapse into a narrow column.
+opens details in a side drawer so the document does not collapse into a narrow column. The Graph
+projection switches between a layer overview, labeled dependency arcs, and an entity relation
+network when the corresponding typed layers are present.
 The Build index tab turns pasted documents into one guided analysis, vocabulary learning, static-model
 training, indexing, and search flow. It uses corpus-only vocabulary by default and can pair the
 corpus with an imported dictionary selected before the run.
@@ -878,6 +882,9 @@ dimension limits are combined with server-wide serialized-document and vector-me
 > `sentiment_confidence`), constituency parsing (`PIPELINE_STEP_PARSE`, filling
 > structured and/or bracketed parse views), classic shallow chunking
 > (`PIPELINE_STEP_SYNTACTIC_CHUNK`, filling `AnnotatedSentence.syntactic_chunks`),
+> dependency parsing (`PIPELINE_STEP_DEPENDENCY_PARSE`, filling the typed
+> `opennlp:dependencies` layer), dependency-path relation extraction
+> (`PIPELINE_STEP_RELATION_EXTRACT`, filling `opennlp:relations`),
 > sentence and document embeddings (`PIPELINE_STEP_EMBED`), segmentation chunking
 > (typed `sentence`, `token`, and `semantic` strategies via `chunk_embed_configs` or
 > `PIPELINE_STEP_CHUNK`), category-driven chunking via `category_chunk_configs`,
@@ -885,8 +892,9 @@ dimension limits are combined with server-wide serialized-document and vector-me
 > parse format
 > selection, and capability discovery through `GetServiceInfo` / `ListModelBundles`.
 > The default `en-basic` profile/bundle is always present; optional `en-ner`,
-> `en-doccat`, `en-sentiment`, `en-parse`, and `en-chunk` profiles/bundles are
-> advertised only when their operator-supplied models are configured, and the
+> `en-doccat`, `en-sentiment`, `en-parse`, and `en-chunk` profiles/bundles, plus the
+> `en-dependency` bundle, are advertised only when their operator-supplied models are
+> configured, and the
 > `en-embed` profile (sentence detect + tokenize + embed, riding the `en-basic`
 > bundle) is advertised only when an embedding model is configured. NER, syntactic
 > chunking, and parsing support multi-provider engine policy; embeddings support
@@ -1201,6 +1209,39 @@ detection and tokenization first.
 
 The immutable OpenNLP parser model is shared. Each analysis thread receives its own parser instance
 because the classic parser's inference state is not thread-safe.
+
+### Dependency parsing and relation extraction (optional)
+
+Dependency parsing adds one labeled, directed arc per token when a request runs
+`PIPELINE_STEP_DEPENDENCY_PARSE`. Models are operator-supplied:
+
+```ini
+model.dependency_parser.english.path=/path/to/en-dependency.bin
+model.dependency_parser.default_id=english
+```
+
+When at least one model is configured, the server advertises the `en-dependency` bundle with
+sentence detection, tokenization, POS tagging, and dependency parsing. Requests select a model
+with `AnalysisProfile.dependency_parser_id`, or use the configured default. The resulting typed
+`opennlp:dependencies` layer carries the parser id, backend id, source span, relation label, and
+head and dependent token indices. A head index of `-1` represents the sentence root.
+
+`PIPELINE_STEP_RELATION_EXTRACT` runs after named entity recognition and dependency parsing. It
+matches caller-provided dependency paths and writes typed edges between entity indices:
+
+```textproto
+steps: PIPELINE_STEP_NER
+steps: PIPELINE_STEP_DEPENDENCY_PARSE
+steps: PIPELINE_STEP_RELATION_EXTRACT
+relation_patterns {
+  type: "acquisition"
+  path: "<nsubj >obj"
+  trigger: "acquired"
+}
+```
+
+Each request may contain at most 128 patterns. The workbench's maximal profile uses neutral
+subject-object and subject-oblique patterns, then exposes the output as an entity relation network.
 
 ### Shallow (syntactic) chunking (optional)
 

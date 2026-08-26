@@ -55,6 +55,9 @@ public final class ProfileRegistry {
   /** Bundle id referenced by the parse profile. */
   public static final String PARSE_BUNDLE_ID = "en-parse";
 
+  /** Bundle id advertising configured dependency parsers. */
+  public static final String DEPENDENCY_BUNDLE_ID = "en-dependency";
+
   /** Id of the shallow-chunk profile, registered only when a chunker model is available. */
   public static final String CHUNK_PROFILE_ID = "en-chunk";
   /** Bundle id referenced by the shallow-chunk profile. */

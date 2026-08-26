@@ -65,6 +65,28 @@ export interface DocumentGraph {
   truncated: boolean;
 }
 
+export interface LinguisticGraphNode {
+  id: string;
+  label: string;
+  kind: "root" | "token" | "entity";
+  category?: string;
+  layerId?: string;
+  annotationIndex?: number;
+}
+
+export interface LinguisticGraphLink {
+  source: string;
+  target: string;
+  label: string;
+  layerId?: string;
+  annotationIndex?: number;
+}
+
+export interface LinguisticGraph {
+  nodes: LinguisticGraphNode[];
+  links: LinguisticGraphLink[];
+}
+
 export function buildHeatmapRows(shape: DocumentShapeView): HeatmapRows {
   const sentiment = shape.layers
     .filter((layer) => layer.valueType === "Category" && isSentimentLayer(layer.id, layer.standardIdentity))
@@ -151,8 +173,102 @@ export function buildDocumentGraph(shape: DocumentShapeView, maxAnnotations = 12
   return { nodes, links, truncated: availableAnnotations > annotationCount };
 }
 
+/** Builds the document-wide dependency forest over its aligned token layer. */
+export function buildDependencyGraph(shape: DocumentShapeView): LinguisticGraph {
+  const tokens = findLayer(shape, "STANDARD_LAYER_TOKENS", "tokens", "String");
+  const dependencies = findLayer(
+    shape, "STANDARD_LAYER_DEPENDENCIES", "dependencies", "Dependency");
+  if (!tokens || !dependencies) {
+    return { nodes: [], links: [] };
+  }
+  const nodes: LinguisticGraphNode[] = [{
+    id: "dependency-root",
+    label: "ROOT",
+    kind: "root",
+  }, ...tokens.annotations.map((token, index) => ({
+    id: `token:${index}`,
+    label: token.label,
+    kind: "token" as const,
+    layerId: tokens.id,
+    annotationIndex: index,
+  }))];
+  const links = dependencies.annotations.flatMap((annotation, annotationIndex) => {
+    const head = sourceNumber(annotation, "headTokenIndex");
+    const dependent = sourceNumber(annotation, "dependentTokenIndex");
+    const relation = sourceString(annotation, "relation");
+    if (head === undefined || dependent === undefined || !relation
+        || dependent < 0 || dependent >= tokens.annotations.length
+        || head >= tokens.annotations.length) {
+      return [];
+    }
+    return [{
+      source: head < 0 ? "dependency-root" : `token:${head}`,
+      target: `token:${dependent}`,
+      label: relation,
+      layerId: dependencies.id,
+      annotationIndex,
+    }];
+  });
+  return { nodes, links };
+}
+
+/** Builds a directed network over entity-layer indices referenced by relation results. */
+export function buildEntityRelationGraph(shape: DocumentShapeView): LinguisticGraph {
+  const entities = findLayer(shape, "STANDARD_LAYER_ENTITIES", "entities", "Named entity");
+  const relations = findLayer(shape, "STANDARD_LAYER_RELATIONS", "relations", "Relation");
+  if (!entities || !relations) {
+    return { nodes: [], links: [] };
+  }
+  const nodes = entities.annotations.map((entity, index) => ({
+    id: `entity:${index}`,
+    label: entity.label,
+    kind: "entity" as const,
+    category: sourceString(entity, "entityType") ?? "entity",
+    layerId: entities.id,
+    annotationIndex: index,
+  }));
+  const links = relations.annotations.flatMap((relation, annotationIndex) => {
+    const subject = sourceNumber(relation, "subjectEntityIndex");
+    const object = sourceNumber(relation, "objectEntityIndex");
+    const label = sourceString(relation, "type");
+    if (subject === undefined || object === undefined || !label
+        || subject < 0 || object < 0 || subject >= nodes.length || object >= nodes.length) {
+      return [];
+    }
+    return [{
+      source: `entity:${subject}`,
+      target: `entity:${object}`,
+      label,
+      layerId: relations.id,
+      annotationIndex,
+    }];
+  });
+  return { nodes, links };
+}
+
 function hasAnnotationSpan(annotation: AnnotationView): boolean {
   return annotation.start !== undefined && annotation.end !== undefined && annotation.end > annotation.start;
+}
+
+function findLayer(
+  shape: DocumentShapeView,
+  standardIdentity: string,
+  idFragment: string,
+  valueType: string,
+) {
+  return shape.layers.find((layer) => layer.standardIdentity === standardIdentity)
+    ?? shape.layers.find((layer) => layer.valueType === valueType
+      && asciiLowerCase(layer.id).includes(idFragment));
+}
+
+function sourceNumber(annotation: AnnotationView, key: string): number | undefined {
+  const value = annotation.source[key];
+  return typeof value === "number" && Number.isInteger(value) ? value : undefined;
+}
+
+function sourceString(annotation: AnnotationView, key: string): string | undefined {
+  const value = annotation.source[key];
+  return typeof value === "string" && value.trim() ? value : undefined;
 }
 
 function isSentimentLayer(id: string, standardIdentity: string | undefined): boolean {

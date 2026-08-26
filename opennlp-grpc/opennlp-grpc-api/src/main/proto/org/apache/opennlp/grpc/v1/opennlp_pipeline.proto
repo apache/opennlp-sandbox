@@ -109,6 +109,27 @@ enum PipelineStep {
   // tokens, lemmas, stems, or a qualified term-normalization layer with
   // AnalysisProfile.term_vector.
   PIPELINE_STEP_TERM_VECTOR = 18;
+
+  // Dependency-parse each sentence into one head arc per token. Requires POS_TAG
+  // (and therefore TOKENIZE and SENTENCE_DETECT). Results are emitted as the typed
+  // document-shape layer "opennlp:dependencies".
+  PIPELINE_STEP_DEPENDENCY_PARSE = 19;
+
+  // Match configured relation patterns between named entities over dependency paths.
+  // Requires NER and DEPENDENCY_PARSE. Results are emitted as the typed document-shape
+  // layer "opennlp:relations".
+  PIPELINE_STEP_RELATION_EXTRACT = 20;
+}
+
+// One dependency-path rule used by PIPELINE_STEP_RELATION_EXTRACT.
+message RelationPatternSpec {
+  // Relation label written to each matching result, for example "acquisition".
+  string type = 1;
+  // Space-separated dependency path from subject to object. Upward steps begin
+  // with '<' and downward steps begin with '>', for example "<nsubj >obj".
+  string path = 2;
+  // Optional lower-cased pivot token required for a match.
+  optional string trigger = 3;
 }
 
 // Configuration for PIPELINE_STEP_TERM_VECTOR.
@@ -398,6 +419,14 @@ message AnalysisProfile {
   // STANDARD_LAYER_TERMS document layers. Requires TOKENIZE. An entry must
   // contain at least one normalizer or a stemmer.
   repeated TermLayerSpec term_layers = 21;
+
+  // Logical dependency parser selected from model.dependency_parser.<id>.path.
+  // Unset selects model.dependency_parser.default_id or the sole configured model.
+  optional string dependency_parser_id = 23;
+
+  // Rules evaluated by PIPELINE_STEP_RELATION_EXTRACT. At least one is required
+  // when the step is selected.
+  repeated RelationPatternSpec relation_patterns = 24;
 }
 
 // Configuration for PIPELINE_STEP_NORMALIZE: which normalizers run, in the order the
@@ -564,6 +593,8 @@ enum ComponentType {
   COMPONENT_TYPE_SENTIMENT = 10;
   // Embedding model.
   COMPONENT_TYPE_EMBEDDER = 11;
+  // Dependency parser model.
+  COMPONENT_TYPE_DEPENDENCY_PARSER = 12;
 }
 
 // Per-request output and execution options, orthogonal to the profile (which says

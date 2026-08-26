@@ -45,7 +45,7 @@ class DocumentShapeWireContractTest {
         "subword_values", "geo_values", "word_type_values", "entity_values",
         "syntactic_chunk_values", "stem_values", "lexical_expansion_values",
         "normalization_values", "analytics_values", "chunk_group_values",
-        "term_vector_values"), cases);
+        "term_vector_values", "dependency_values", "relation_values"), cases);
     assertEquals("string", layer.findFieldByName("id").getType().name().toLowerCase());
   }
 
@@ -95,7 +95,8 @@ class DocumentShapeWireContractTest {
         "STANDARD_LAYER_TERMS", "STANDARD_LAYER_SUBWORDS", "STANDARD_LAYER_STEMS",
         "STANDARD_LAYER_EXPANSIONS", "STANDARD_LAYER_GEO", "STANDARD_LAYER_NORMALIZATION",
         "STANDARD_LAYER_ANALYTICS", "STANDARD_LAYER_CHUNK_GROUPS",
-        "STANDARD_LAYER_TERM_VECTORS"),
+        "STANDARD_LAYER_TERM_VECTORS", "STANDARD_LAYER_DEPENDENCIES",
+        "STANDARD_LAYER_RELATIONS"),
         standardLayer.getValues().stream()
             .map(value -> value.getName()).collect(Collectors.toSet()));
   }

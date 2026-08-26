@@ -42,12 +42,17 @@ import {
 import { collapseWhitespace, ellipsizeCodePoints } from "./text-utils";
 import { emptyMessage, requiredElement } from "./ui-utils";
 import {
+  buildDependencyGraph,
   buildDocumentGraph,
+  buildEntityRelationGraph,
   buildHeatmapRows,
   type DocumentGraph,
   type DocumentGraphNode,
   type HeatmapRow,
   type HeatmapRows,
+  type LinguisticGraph,
+  type LinguisticGraphLink,
+  type LinguisticGraphNode,
 } from "./visualization-data";
 
 export type ResultViewName = "document" | "chunks" | "heatmap" | "graph" | "json";
@@ -93,6 +98,7 @@ type IndexableCurrentDocument = CurrentDocument & {
 };
 
 type HeatmapMode = "query" | "sentiment";
+type GraphMode = "overview" | "dependencies" | "relations";
 
 const ALL_PROJECTIONS = "ALL_PROJECTIONS";
 const TURBO_QUANT_PROVIDER = "STANDARD_SEARCH_PROVIDER_TURBO_QUANT";
@@ -127,6 +133,9 @@ export class SemanticWorkbench {
   readonly #graphCanvas = requiredElement<HTMLElement>("document-graph");
   readonly #graphSelection = requiredElement<HTMLElement>("graph-selection");
   readonly #graphCompleteness = requiredElement<HTMLButtonElement>("graph-completeness");
+  readonly #graphOverview = requiredElement<HTMLButtonElement>("graph-mode-overview");
+  readonly #graphDependencies = requiredElement<HTMLButtonElement>("graph-mode-dependencies");
+  readonly #graphRelations = requiredElement<HTMLButtonElement>("graph-mode-relations");
 
   #current?: CurrentDocument;
   #workspace?: SearchIndex;
@@ -134,6 +143,8 @@ export class SemanticWorkbench {
   #heatmapLanes: DocumentHeatmapLane[] = [];
   #heatmaps: HeatmapRows = { semantic: [], sentiment: [] };
   #graph?: DocumentGraph;
+  #dependencyGraph: LinguisticGraph = { nodes: [], links: [] };
+  #relationGraph: LinguisticGraph = { nodes: [], links: [] };
   #graphChart?: ChartHandle;
   #busy = false;
   #nextDocumentId = 1;
@@ -141,6 +152,7 @@ export class SemanticWorkbench {
   #workspaceDocumentRevision = -1;
   #heatmapMode: HeatmapMode = "query";
   #graphComplete = false;
+  #graphMode: GraphMode = "overview";
   #activeView: ResultViewName = "document";
 
   constructor(options: SemanticWorkbenchOptions) {
@@ -156,6 +168,9 @@ export class SemanticWorkbench {
     this.#queryModeButton.addEventListener("click", () => this.selectHeatmapMode("query"));
     this.#sentimentModeButton.addEventListener("click", () => this.selectHeatmapMode("sentiment"));
     this.#graphCompleteness.addEventListener("click", () => this.toggleCompleteGraph());
+    this.#graphOverview.addEventListener("click", () => this.selectGraphMode("overview"));
+    this.#graphDependencies.addEventListener("click", () => this.selectGraphMode("dependencies"));
+    this.#graphRelations.addEventListener("click", () => this.selectGraphMode("relations"));
     window.addEventListener("resize", () => this.resize());
     this.updateControls();
   }
@@ -586,11 +601,32 @@ export class SemanticWorkbench {
   }
 
   private async renderGraph(): Promise<void> {
-    const { renderDocumentGraph } = await import("./charts");
+    const { renderDependencyGraph, renderDocumentGraph, renderEntityRelationGraph } =
+      await import("./charts");
     this.#graphChart?.dispose();
-    this.#graphChart = this.#graph
-      ? renderDocumentGraph(this.#graphCanvas, this.#graph, (node) => this.selectGraphNode(node))
-      : undefined;
+    if (this.#graphMode === "dependencies") {
+      this.#graphChart = renderDependencyGraph(
+        this.#graphCanvas, this.#dependencyGraph, (item) => this.selectLinguisticGraphItem(item));
+    } else if (this.#graphMode === "relations") {
+      this.#graphChart = renderEntityRelationGraph(
+        this.#graphCanvas, this.#relationGraph, (item) => this.selectLinguisticGraphItem(item));
+    } else {
+      this.#graphChart = this.#graph
+        ? renderDocumentGraph(this.#graphCanvas, this.#graph, (node) => this.selectGraphNode(node))
+        : undefined;
+    }
+  }
+
+  private selectGraphMode(mode: GraphMode): void {
+    if ((mode === "dependencies" && this.#dependencyGraph.links.length === 0)
+        || (mode === "relations" && this.#relationGraph.links.length === 0)) {
+      return;
+    }
+    this.#graphMode = mode;
+    this.updateGraphControls();
+    if (this.#activeView === "graph") {
+      void this.renderGraph();
+    }
   }
 
   private toggleCompleteGraph(): void {
@@ -617,17 +653,53 @@ export class SemanticWorkbench {
       this.#graphComplete = false;
     }
     this.#graph = buildDocumentGraph(shape, this.#graphComplete ? total : 120);
-    this.#graphCompleteness.hidden = total <= 120;
+    this.#dependencyGraph = buildDependencyGraph(shape);
+    this.#relationGraph = buildEntityRelationGraph(shape);
+    if ((this.#graphMode === "dependencies" && this.#dependencyGraph.links.length === 0)
+        || (this.#graphMode === "relations" && this.#relationGraph.links.length === 0)) {
+      this.#graphMode = "overview";
+    }
+    this.#graphCompleteness.hidden = this.#graphMode !== "overview" || total <= 120;
     this.#graphCompleteness.disabled = !completeAllowed;
     this.#graphCompleteness.setAttribute("aria-pressed", String(this.#graphComplete));
     this.#graphCompleteness.textContent = !completeAllowed
       ? "Complete graph limited for large documents"
       : this.#graphComplete ? "Show balanced overview" : "Show complete graph";
-    this.#graphSelection.textContent = this.#graph.truncated
-      ? completeAllowed
-        ? `Balanced overview of 120 of ${total} annotations across every layer. Select a node or show the complete graph.`
-        : `Balanced overview of 120 of ${total} annotations. The complete graph is intentionally bounded.`
-      : `Complete graph with ${total} annotations across ${shape.layers.length} layers. Select a node to inspect it.`;
+    this.updateGraphControls();
+  }
+
+  private updateGraphControls(): void {
+    this.#graphOverview.setAttribute("aria-pressed", String(this.#graphMode === "overview"));
+    this.#graphDependencies.setAttribute(
+      "aria-pressed", String(this.#graphMode === "dependencies"));
+    this.#graphRelations.setAttribute("aria-pressed", String(this.#graphMode === "relations"));
+    this.#graphDependencies.disabled = this.#dependencyGraph.links.length === 0;
+    this.#graphRelations.disabled = this.#relationGraph.links.length === 0;
+    this.#graphCompleteness.hidden = this.#graphMode !== "overview"
+      || this.#graph?.truncated !== true;
+    if (this.#graphMode === "dependencies") {
+      this.#graphSelection.textContent = `${this.#dependencyGraph.links.length} labeled dependency arcs. `
+        + "Select a token or arc to inspect its typed annotation.";
+    } else if (this.#graphMode === "relations") {
+      this.#graphSelection.textContent = `${this.#relationGraph.nodes.length} entities and `
+        + `${this.#relationGraph.links.length} typed relations. Select a node or edge to inspect it.`;
+    } else {
+      this.#graphSelection.textContent = this.graphOverviewSummary();
+    }
+  }
+
+  private graphOverviewSummary(): string {
+    const shape = this.#current?.shape;
+    if (!shape || !this.#graph) {
+      return "Analyze a document to build its graph.";
+    }
+    const total = this.annotationCount();
+    if (!this.#graph.truncated) {
+      return `Complete graph with ${total} annotations across ${shape.layers.length} layers. Select a node to inspect it.`;
+    }
+    return supportsCompleteGraph(total)
+      ? `Balanced overview of 120 of ${total} annotations across every layer. Select a node or show the complete graph.`
+      : `Balanced overview of 120 of ${total} annotations. The complete graph is intentionally bounded.`;
   }
 
   private annotationCount(): number {
@@ -642,6 +714,13 @@ export class SemanticWorkbench {
       : `${node.kind === "layer" ? "Layer" : "Annotation"}: ${node.label}`;
     if (node.layerId !== undefined && node.annotationIndex !== undefined) {
       this.#options.selectAnnotation(node.layerId, node.annotationIndex);
+    }
+  }
+
+  private selectLinguisticGraphItem(item: LinguisticGraphNode | LinguisticGraphLink): void {
+    this.#graphSelection.textContent = item.label;
+    if (item.layerId !== undefined && item.annotationIndex !== undefined) {
+      this.#options.selectAnnotation(item.layerId, item.annotationIndex);
     }
   }
 

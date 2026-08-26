@@ -38,6 +38,8 @@ export interface AnalyzeRequest {
       mode: string;
       sourceLayer: { standard: string; qualifier?: string };
     };
+    dependencyParserId?: string;
+    relationPatterns?: Array<{ type: string; path: string; trigger?: string }>;
     posTagFormat?: string;
     pipelineLanguage?: string;
   };

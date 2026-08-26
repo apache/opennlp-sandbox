@@ -141,8 +141,10 @@ uses its own process-local TurboQuant index and the typed exhaustive search requ
 token windows remain individually selectable below the source projection, and unreturned chunks
 remain gray when the response-byte cap truncates a result. Selecting a scored chunk opens its
 score, offsets, route, provenance, and every intersecting non-vector annotation in the detail
-drawer. The graph view links the document to its layers and annotations, and annotation nodes open
-the same details used by the Document view. ECharts is loaded only when the graph is opened.
+drawer. The graph view switches among the document layer overview, labeled dependency arcs over
+the token sequence, and a directed entity relation network. Selecting a token, entity, or edge
+opens the same typed details used by the Document view. Modes remain disabled until the server
+returns their typed layer. ECharts is loaded only when the graph is opened.
 
 The bundled Alice's Adventures in Wonderland demo exercises the long-document path without a
 network dependency. It is a deterministic gzip of the public-domain novel text with Project

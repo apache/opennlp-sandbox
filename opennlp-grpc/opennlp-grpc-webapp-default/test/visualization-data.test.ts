@@ -21,7 +21,9 @@ import { describe, expect, it } from "vitest";
 
 import { readDocumentShape } from "../src/document-shape";
 import {
+  buildDependencyGraph,
   buildDocumentGraph,
+  buildEntityRelationGraph,
   buildHeatmapRows,
   buildSimilarityHeatmapRows,
 } from "../src/visualization-data";
@@ -154,5 +156,65 @@ describe("visualization data", () => {
 
     expect(graph.nodes.filter((node) => node.kind === "annotation")).toHaveLength(5);
     expect(graph.truncated).toBe(false);
+  });
+
+  it("builds labeled dependency arcs over token nodes", () => {
+    const graph = buildDependencyGraph(readDocumentShape({ document: {
+      rawText: "Acme acquired Bolt",
+      offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
+      layers: { layers: [
+        { id: "opennlp:tokens", identity: { standard: "STANDARD_LAYER_TOKENS" },
+          stringValues: { annotations: [
+            { span: { start: 0, end: 4 }, value: "Acme" },
+            { span: { start: 5, end: 13 }, value: "acquired" },
+            { span: { start: 14, end: 18 }, value: "Bolt" },
+          ] } },
+        { id: "opennlp:dependencies", identity: { standard: "STANDARD_LAYER_DEPENDENCIES" },
+          dependencyValues: { annotations: [
+            { span: { start: 0, end: 4 }, headTokenIndex: 1, dependentTokenIndex: 0, relation: "nsubj" },
+            { span: { start: 5, end: 13 }, headTokenIndex: -1, dependentTokenIndex: 1, relation: "root" },
+            { span: { start: 14, end: 18 }, headTokenIndex: 1, dependentTokenIndex: 2, relation: "obj" },
+          ] } },
+      ] },
+    } }));
+
+    expect(graph.nodes.map((node) => node.label)).toEqual(["ROOT", "Acme", "acquired", "Bolt"]);
+    expect(graph.links).toMatchObject([
+      { source: "token:1", target: "token:0", label: "nsubj" },
+      { source: "dependency-root", target: "token:1", label: "root" },
+      { source: "token:1", target: "token:2", label: "obj" },
+    ]);
+    expect(graph.nodes[1]).toMatchObject({ layerId: "opennlp:tokens", annotationIndex: 0 });
+    expect(graph.links[0]).toMatchObject({
+      layerId: "opennlp:dependencies", annotationIndex: 0,
+    });
+  });
+
+  it("builds an entity network with typed relation edges", () => {
+    const graph = buildEntityRelationGraph(readDocumentShape({ document: {
+      rawText: "Acme acquired Bolt",
+      offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
+      layers: { layers: [
+        { id: "opennlp:entities", identity: { standard: "STANDARD_LAYER_ENTITIES" },
+          entityValues: { annotations: [
+            { annotationSpan: { start: 0, end: 4 }, text: "Acme", entityType: "organization" },
+            { annotationSpan: { start: 14, end: 18 }, text: "Bolt", entityType: "organization" },
+          ] } },
+        { id: "opennlp:relations", identity: { standard: "STANDARD_LAYER_RELATIONS" },
+          relationValues: { annotations: [{
+            span: { start: 0, end: 18 }, type: "acquisition",
+            subjectEntityIndex: 0, objectEntityIndex: 1,
+          }] } },
+      ] },
+    } }));
+
+    expect(graph.nodes).toMatchObject([
+      { label: "Acme", category: "organization", layerId: "opennlp:entities", annotationIndex: 0 },
+      { label: "Bolt", category: "organization", layerId: "opennlp:entities", annotationIndex: 1 },
+    ]);
+    expect(graph.links).toMatchObject([{
+      source: "entity:0", target: "entity:1", label: "acquisition",
+      layerId: "opennlp:relations", annotationIndex: 0,
+    }]);
   });
 });

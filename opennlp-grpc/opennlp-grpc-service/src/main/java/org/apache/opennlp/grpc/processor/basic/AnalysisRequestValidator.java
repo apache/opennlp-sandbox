@@ -30,6 +30,7 @@ import org.apache.opennlp.grpc.model.HunspellRegistry;
 import org.apache.opennlp.grpc.model.LatticeRegistry;
 import org.apache.opennlp.grpc.spi.model.DocCategorizerModel;
 import org.apache.opennlp.grpc.model.DocCategorizerRegistry;
+import org.apache.opennlp.grpc.model.DependencyParserRegistry;
 import org.apache.opennlp.grpc.model.ModelArtifactRegistry;
 import org.apache.opennlp.grpc.model.NameFinderRegistry;
 import org.apache.opennlp.grpc.model.ParserRegistry;
@@ -54,6 +55,7 @@ import org.apache.opennlp.grpc.v1.Normalizer;
 import org.apache.opennlp.grpc.v1.POSTagFormat;
 import org.apache.opennlp.grpc.v1.ParseFormat;
 import org.apache.opennlp.grpc.v1.PipelineStep;
+import org.apache.opennlp.grpc.v1.RelationPatternSpec;
 import org.apache.opennlp.grpc.v1.SentenceDetectorSelector;
 import org.apache.opennlp.grpc.v1.StandardSentenceDetectorEngine;
 import org.apache.opennlp.grpc.v1.StandardTokenizerEngine;
@@ -61,6 +63,7 @@ import org.apache.opennlp.grpc.v1.TermLayerSpec;
 import org.apache.opennlp.grpc.v1.TokenizerSelector;
 import org.apache.opennlp.grpc.v1.VectorNormalization;
 import opennlp.tools.sentdetect.SentenceDetector;
+import opennlp.tools.relation.RelationPattern;
 import opennlp.tools.tokenize.Tokenizer;
 
 /**
@@ -70,6 +73,11 @@ import opennlp.tools.tokenize.Tokenizer;
  */
 final class AnalysisRequestValidator {
 
+  private static final int MAX_RELATION_PATTERNS = 128;
+  private static final int MAX_RELATION_TYPE_LENGTH = 128;
+  private static final int MAX_RELATION_PATH_LENGTH = 1_024;
+  private static final int MAX_RELATION_TRIGGER_LENGTH = 128;
+
   private final EmbeddingProvider embeddingProvider;
   private final NameFinderRegistry nameFinderRegistry;
   private final DocCategorizerRegistry docCategorizerRegistry;
@@ -78,6 +86,7 @@ final class AnalysisRequestValidator {
   private final ChunkerRegistry chunkerRegistry;
   private final ModelArtifactRegistry artifactRegistry;
   private final SubwordRegistry subwordRegistry;
+  private final DependencyParserRegistry dependencyParserRegistry;
   private final HunspellRegistry hunspellRegistry;
   private final WordNetRegistry wordNetRegistry;
   private final LatticeRegistry latticeRegistry;
@@ -95,6 +104,7 @@ final class AnalysisRequestValidator {
    * @param chunkerRegistry The configured syntactic chunkers.
    * @param artifactRegistry The model-artifact registry.
    * @param subwordRegistry The configured subword models.
+   * @param dependencyParserRegistry The configured dependency parsers.
    * @param hunspellRegistry The configured Hunspell dictionaries.
    * @param wordNetRegistry The configured WordNet lexicons.
    * @param latticeRegistry The configured lattice tokenizers.
@@ -110,6 +120,7 @@ final class AnalysisRequestValidator {
       ChunkerRegistry chunkerRegistry,
       ModelArtifactRegistry artifactRegistry,
       SubwordRegistry subwordRegistry,
+      DependencyParserRegistry dependencyParserRegistry,
       HunspellRegistry hunspellRegistry,
       WordNetRegistry wordNetRegistry,
       LatticeRegistry latticeRegistry,
@@ -147,6 +158,10 @@ final class AnalysisRequestValidator {
       throw new IllegalArgumentException("subwordRegistry must not be null");
     }
     this.subwordRegistry = subwordRegistry;
+    if (dependencyParserRegistry == null) {
+      throw new IllegalArgumentException("dependencyParserRegistry must not be null");
+    }
+    this.dependencyParserRegistry = dependencyParserRegistry;
     if (hunspellRegistry == null) {
       throw new IllegalArgumentException("hunspellRegistry must not be null");
     }
@@ -188,6 +203,7 @@ final class AnalysisRequestValidator {
     validateOptions(request, profile);
     validateModelBundle(profile);
     validateStepDependencies(profile);
+    validateRelationRequest(profile);
     validateNerRequest(profile);
     validateDocCategorizeRequest(profile);
     validateSentimentRequest(profile);
@@ -203,6 +219,7 @@ final class AnalysisRequestValidator {
     validateTermVectorRequest(profile);
     validateStopwordLanguage(profile);
     validateSubwordRequest(profile);
+    validateDependencyParseRequest(profile);
     validateStemRequest(profile);
     validateExpandRequest(profile);
     validateEmbeddingRequest(request, profile);
@@ -226,6 +243,12 @@ final class AnalysisRequestValidator {
         PipelineStep.PIPELINE_STEP_TOKENIZE);
     requireStep(profile, PipelineStep.PIPELINE_STEP_EXPAND,
         PipelineStep.PIPELINE_STEP_TOKENIZE);
+    requireStep(profile, PipelineStep.PIPELINE_STEP_DEPENDENCY_PARSE,
+        PipelineStep.PIPELINE_STEP_POS_TAG);
+    requireStep(profile, PipelineStep.PIPELINE_STEP_RELATION_EXTRACT,
+        PipelineStep.PIPELINE_STEP_NER);
+    requireStep(profile, PipelineStep.PIPELINE_STEP_RELATION_EXTRACT,
+        PipelineStep.PIPELINE_STEP_DEPENDENCY_PARSE);
   }
 
   /** Rejects a requested step whose dependency the profile does not run. */
@@ -277,6 +300,51 @@ final class AnalysisRequestValidator {
   /** Rejects a subword request that no configured model can serve. */
   private void validateSubwordRequest(AnalysisProfile profile) {
     resolveSubwordModelId(profile);
+  }
+
+  /** Resolves the dependency parser selected by this profile. */
+  String resolveDependencyParserId(AnalysisProfile profile) {
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_DEPENDENCY_PARSE)) {
+      return null;
+    }
+    return dependencyParserRegistry.resolveModelId(
+        profile.hasDependencyParserId() ? profile.getDependencyParserId() : null);
+  }
+
+  /** Rejects a dependency parse that no configured model can serve. */
+  private void validateDependencyParseRequest(AnalysisProfile profile) {
+    resolveDependencyParserId(profile);
+  }
+
+  /** Validates every dependency-path relation rule before processing begins. */
+  private static void validateRelationRequest(AnalysisProfile profile) {
+    if (!PipelineStepPolicy.shouldRun(profile, PipelineStep.PIPELINE_STEP_RELATION_EXTRACT)) {
+      return;
+    }
+    if (profile.getRelationPatternsCount() == 0) {
+      throw AnalysisException.invalidArgument(
+          "PIPELINE_STEP_RELATION_EXTRACT requires at least one relation_patterns entry");
+    }
+    if (profile.getRelationPatternsCount() > MAX_RELATION_PATTERNS) {
+      throw AnalysisException.invalidArgument(
+          "relation_patterns may contain at most " + MAX_RELATION_PATTERNS + " entries");
+    }
+    for (RelationPatternSpec specification : profile.getRelationPatternsList()) {
+      if (specification.getType().length() > MAX_RELATION_TYPE_LENGTH
+          || specification.getPath().length() > MAX_RELATION_PATH_LENGTH
+          || (specification.hasTrigger()
+              && specification.getTrigger().length() > MAX_RELATION_TRIGGER_LENGTH)) {
+        throw AnalysisException.invalidArgument("Relation pattern field exceeds its size limit");
+      }
+      try {
+        new RelationPattern(
+            specification.getType(),
+            specification.getPath(),
+            specification.hasTrigger() ? specification.getTrigger() : null);
+      } catch (IllegalArgumentException e) {
+        throw AnalysisException.invalidArgument("Invalid relation pattern: " + e.getMessage());
+      }
+    }
   }
 
   /** Rejects a stem request whose spec is incomplete or unservable. */
@@ -976,6 +1044,7 @@ final class AnalysisRequestValidator {
         && !bundleId.equals(ProfileRegistry.DOCCAT_BUNDLE_ID)
         && !bundleId.equals(ProfileRegistry.SENTIMENT_BUNDLE_ID)
         && !bundleId.equals(ProfileRegistry.PARSE_BUNDLE_ID)
+        && !bundleId.equals(ProfileRegistry.DEPENDENCY_BUNDLE_ID)
         && !bundleId.equals(ProfileRegistry.CHUNK_BUNDLE_ID)) {
       throw AnalysisException.notFound(
           "Unknown model bundle '" + bundleId + "'; available bundles: "
@@ -986,6 +1055,8 @@ final class AnalysisRequestValidator {
               + (sentimentRegistry.isAvailable()
                   ? ", " + ProfileRegistry.SENTIMENT_BUNDLE_ID : "")
               + (parserRegistry.isAvailable() ? ", " + ProfileRegistry.PARSE_BUNDLE_ID : "")
+              + (dependencyParserRegistry.isAvailable()
+                  ? ", " + ProfileRegistry.DEPENDENCY_BUNDLE_ID : "")
               + (chunkerRegistry.isAvailable() ? ", " + ProfileRegistry.CHUNK_BUNDLE_ID : ""));
     }
     if (bundleId.equals(ProfileRegistry.NER_BUNDLE_ID) && !nameFinderRegistry.isAvailable()) {
@@ -1009,6 +1080,13 @@ final class AnalysisRequestValidator {
       throw AnalysisException.notFound(
           "Model bundle '" + ProfileRegistry.PARSE_BUNDLE_ID
               + "' requires a parser model; configure model.parser.<id>.path");
+    }
+    if (bundleId.equals(ProfileRegistry.DEPENDENCY_BUNDLE_ID)
+        && !dependencyParserRegistry.isAvailable()) {
+      throw AnalysisException.notFound(
+          "Model bundle '" + ProfileRegistry.DEPENDENCY_BUNDLE_ID
+              + "' requires a dependency parser; configure "
+              + "model.dependency_parser.<id>.path");
     }
     if (bundleId.equals(ProfileRegistry.CHUNK_BUNDLE_ID) && !chunkerRegistry.isAvailable()) {
       throw AnalysisException.notFound(

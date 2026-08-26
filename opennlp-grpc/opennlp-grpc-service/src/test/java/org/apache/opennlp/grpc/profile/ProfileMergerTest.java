@@ -21,6 +21,7 @@ import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.LayerIdentity;
 import org.apache.opennlp.grpc.v1.Normalizer;
 import org.apache.opennlp.grpc.v1.NormalizationSpec;
+import org.apache.opennlp.grpc.v1.RelationPatternSpec;
 import org.apache.opennlp.grpc.v1.SentenceDetectorSelector;
 import org.apache.opennlp.grpc.v1.StandardSentenceDetectorEngine;
 import org.apache.opennlp.grpc.v1.StandardTokenizerEngine;
@@ -96,6 +97,10 @@ class ProfileMergerTest {
         .addTermLayers(TermLayerSpec.newBuilder()
             .setQualifier("base")
             .addNormalizers(Normalizer.NORMALIZER_CASE_FOLD))
+        .setDependencyParserId("base-dependency")
+        .addRelationPatterns(RelationPatternSpec.newBuilder()
+            .setType("base")
+            .setPath("<nsubj >obj"))
         .build();
     final AnalysisProfile override = AnalysisProfile.newBuilder()
         .setNormalization(NormalizationSpec.newBuilder()
@@ -121,6 +126,10 @@ class ProfileMergerTest {
         .addTermLayers(TermLayerSpec.newBuilder()
             .setQualifier("override")
             .addNormalizers(Normalizer.NORMALIZER_FULL_CASE_FOLD))
+        .setDependencyParserId("override-dependency")
+        .addRelationPatterns(RelationPatternSpec.newBuilder()
+            .setType("override")
+            .setPath("<nsubj >obl"))
         .build();
 
     final AnalysisProfile merged = ProfileMerger.merge(base, override);
@@ -146,5 +155,7 @@ class ProfileMergerTest {
         merged.getTermVector().getSourceLayer().getStandard());
     assertEquals(1, merged.getTermLayersCount());
     assertEquals("override", merged.getTermLayers(0).getQualifier());
+    assertEquals("override-dependency", merged.getDependencyParserId());
+    assertEquals("override", merged.getRelationPatterns(0).getType());
   }
 }

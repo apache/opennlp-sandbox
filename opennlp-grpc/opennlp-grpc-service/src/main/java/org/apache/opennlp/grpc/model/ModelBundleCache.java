@@ -150,6 +150,7 @@ public final class ModelBundleCache implements AutoCloseable {
   // Optional subword tokenizers (operator-supplied via model.subword.<id>.path, not bundled).
   // The loaded SentencePiece tokenizers are thread-safe and shared; empty when none is configured.
   private final SubwordRegistry subwordRegistry;
+  private final DependencyParserRegistry dependencyParserRegistry;
   // Optional hunspell affix dictionaries for the STEM step (operator-supplied via
   // model.hunspell.<id>.affix_path/.dictionary_path, not bundled). The loaded stemmers are
   // thread-safe and shared; empty when none is configured.
@@ -184,6 +185,7 @@ public final class ModelBundleCache implements AutoCloseable {
     }
     // Loaded first: these registries hold no native resources, so they can never leak.
     this.subwordRegistry = SubwordRegistry.create(configuration);
+    this.dependencyParserRegistry = DependencyParserRegistry.create(configuration);
     this.hunspellRegistry = HunspellRegistry.create(configuration);
     this.wordNetRegistry = WordNetRegistry.create(configuration);
     this.latticeRegistry = LatticeRegistry.create(configuration);
@@ -486,6 +488,15 @@ public final class ModelBundleCache implements AutoCloseable {
    */
   public SubwordRegistry getSubwordRegistry() {
     return subwordRegistry;
+  }
+
+  /**
+   * Returns the registry of configured dependency parsers.
+   *
+   * @return The dependency parser registry, possibly empty. Never {@code null}.
+   */
+  public DependencyParserRegistry getDependencyParserRegistry() {
+    return dependencyParserRegistry;
   }
 
   /**
@@ -1303,6 +1314,10 @@ public final class ModelBundleCache implements AutoCloseable {
       catalog.put(ProfileRegistry.PARSE_BUNDLE_ID,
           buildParseBundleCatalog(sentenceHash, tokenizerHash));
     }
+    if (dependencyParserRegistry.isAvailable()) {
+      catalog.put(ProfileRegistry.DEPENDENCY_BUNDLE_ID,
+          buildDependencyBundleCatalog(sentenceHash, tokenizerHash, posHash));
+    }
     if (chunkerRegistry.isAvailable()) {
       catalog.put(ProfileRegistry.CHUNK_BUNDLE_ID,
           buildChunkBundleCatalog(sentenceHash, tokenizerHash, posHash));
@@ -1373,6 +1388,41 @@ public final class ModelBundleCache implements AutoCloseable {
             .setBackendId(OPENNLP_ME_BACKEND_ID)
             .build())
         .build();
+  }
+
+  /** Builds the dependency parser model bundle. */
+  private ModelBundleInfo buildDependencyBundleCatalog(
+      String sentenceHash, String tokenizerHash, String posHash) {
+    final ModelBundleInfo.Builder bundle = ModelBundleInfo.newBuilder()
+        .setBundleId(ProfileRegistry.DEPENDENCY_BUNDLE_ID)
+        .addSupportedLanguages(DEFAULT_LANGUAGE)
+        .addSupportedSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+        .addSupportedSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+        .addSupportedSteps(PipelineStep.PIPELINE_STEP_POS_TAG)
+        .addSupportedSteps(PipelineStep.PIPELINE_STEP_DEPENDENCY_PARSE)
+        .addModels(classicModelDescriptor(
+            SENTENCE_MODEL_NAME,
+            ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR,
+            DEFAULT_LANGUAGE,
+            sentenceHash))
+        .addModels(classicModelDescriptor(
+            TOKENIZER_MODEL_NAME,
+            ComponentType.COMPONENT_TYPE_TOKENIZER,
+            DEFAULT_LANGUAGE,
+            tokenizerHash))
+        .addModels(classicModelDescriptor(
+            POS_MODEL_NAME,
+            ComponentType.COMPONENT_TYPE_POS_TAGGER,
+            DEFAULT_LANGUAGE,
+            posHash));
+    for (String parserId : dependencyParserRegistry.ids()) {
+      bundle.addModels(ModelDescriptor.newBuilder()
+          .setName(parserId)
+          .setComponentType(ComponentType.COMPONENT_TYPE_DEPENDENCY_PARSER)
+          .addSupportedSteps(PipelineStep.PIPELINE_STEP_DEPENDENCY_PARSE)
+          .setBackendId(OPENNLP_ME_BACKEND_ID));
+    }
+    return bundle.build();
   }
 
   /** Builds the name-finder model bundle. */

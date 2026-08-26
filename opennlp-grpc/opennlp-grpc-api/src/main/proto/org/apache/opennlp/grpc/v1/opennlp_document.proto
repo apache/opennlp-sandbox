@@ -694,6 +694,10 @@ message DocumentClassification {
 //                       routes, and statistics.
 //   opennlp:term-vectors document-scoped distinct terms, frequencies, occurrence
 //                       spans, and source-layer provenance.
+//   opennlp:dependencies positional dependency arcs, one per token, referencing
+//                       head and dependent tokens by document token-layer index.
+//   opennlp:relations   positional relations between named entities, referencing
+//                       subject and object by document entity-layer index.
 
 // The typed annotation layers of one analyzed document.
 message DocumentLayers {
@@ -751,6 +755,10 @@ enum StandardLayer {
   STANDARD_LAYER_CHUNK_GROUPS = 21;
   // Document-scoped aggregate term frequencies and optional occurrence spans.
   STANDARD_LAYER_TERM_VECTORS = 22;
+  // Dependency arcs aligned with the token layer.
+  STANDARD_LAYER_DEPENDENCIES = 23;
+  // Extracted relations referencing the entity layer.
+  STANDARD_LAYER_RELATIONS = 24;
 }
 
 // How much each aggregate term vector records.
@@ -819,6 +827,10 @@ message AnnotationLayer {
     ChunkGroupAnnotationList chunk_group_values = 16;
     // Aggregate term frequencies and occurrence offsets with source provenance.
     TermVectorAnnotationList term_vector_values = 18;
+    // Dependency arcs aligned with the token layer.
+    DependencyAnnotationList dependency_values = 19;
+    // Extracted relations referencing the entity layer.
+    RelationAnnotationList relation_values = 20;
   }
   // Typed identity for this layer. Always populated by this server. Standard
   // OpenNLP layers select the enum case; extension layers select custom.
@@ -1084,4 +1096,39 @@ message TermVectorAnnotation {
   int32 frequency = 2;
   // Original-text occurrence spans in FULL mode; empty in SCORING_ONLY mode.
   repeated AnnotationSpan occurrences = 3;
+}
+
+// Dependency arcs for one document, in dependent-token order.
+message DependencyAnnotationList {
+  repeated DependencyAnnotation annotations = 1;
+  // Logical configured parser id that produced the arcs.
+  string parser_id = 2;
+  // Runtime engine that served the parser.
+  string engine = 3;
+}
+
+// One dependency arc anchored on its dependent token.
+message DependencyAnnotation {
+  AnnotationSpan span = 1;
+  // Index into STANDARD_LAYER_TOKENS, or -1 for the sentence root.
+  int32 head_token_index = 2;
+  // Index into STANDARD_LAYER_TOKENS for the dependent token.
+  int32 dependent_token_index = 3;
+  // Dependency relation label, for example "nsubj" or "obj".
+  string relation = 4;
+}
+
+// Relations extracted from ordered entity pairs.
+message RelationAnnotationList {
+  repeated RelationAnnotation annotations = 1;
+}
+
+// One relation anchored on the span covering its subject and object entities.
+message RelationAnnotation {
+  AnnotationSpan span = 1;
+  string type = 2;
+  // Index into STANDARD_LAYER_ENTITIES.
+  int32 subject_entity_index = 3;
+  // Index into STANDARD_LAYER_ENTITIES.
+  int32 object_entity_index = 4;
 }

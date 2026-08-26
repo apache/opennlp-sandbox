@@ -114,6 +114,12 @@ public final class ProfileMerger {
     if (override.getTermLayersCount() > 0) {
       builder.clearTermLayers().addAllTermLayers(override.getTermLayersList());
     }
+    if (override.hasDependencyParserId()) {
+      builder.setDependencyParserId(override.getDependencyParserId());
+    }
+    if (override.getRelationPatternsCount() > 0) {
+      builder.clearRelationPatterns().addAllRelationPatterns(override.getRelationPatternsList());
+    }
     return builder.build();
   }
 }

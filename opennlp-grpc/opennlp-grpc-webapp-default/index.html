@@ -350,13 +350,18 @@
             </div>
             <div id="graph-view" role="tabpanel" aria-labelledby="graph-tab" class="visualization-view" hidden>
               <div class="visualization-heading">
-                <div><span>Document graph</span><small>Document, layer, and annotation relationships</small></div>
+                <div><span>Document graph</span><small>Document, syntax, and entity relationships</small></div>
                 <div class="graph-heading-actions">
-                  <p>Pan, zoom, or select an annotation node to return to its typed layer.</p>
+                  <p>Pan, zoom, or select a node or edge to return to its typed layer.</p>
                   <button id="graph-completeness" type="button" aria-pressed="false" hidden>
                     Show complete graph
                   </button>
                 </div>
+              </div>
+              <div class="graph-mode" role="group" aria-label="Graph projection">
+                <button id="graph-mode-overview" type="button" aria-pressed="true">Layer overview</button>
+                <button id="graph-mode-dependencies" type="button" aria-pressed="false" disabled>Dependency arcs</button>
+                <button id="graph-mode-relations" type="button" aria-pressed="false" disabled>Entity network</button>
               </div>
               <div id="document-graph" class="chart-canvas chart-canvas-graph" role="img"
                 aria-label="Annotation graph">Analyze a document to build its graph.</div>

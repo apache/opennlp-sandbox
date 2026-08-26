@@ -550,6 +550,10 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 .graph-heading-actions p { max-width: 23rem; }
 .graph-heading-actions button { padding: 0.42rem 0.7rem; border: 1px solid var(--btn-edge); border-radius: 0.45rem; background: var(--surface-selected); color: var(--link-soft); font-size: 0.62rem; font-weight: 800; }
 .graph-heading-actions button[aria-pressed="true"] { background: var(--btn); color: white; }
+.graph-mode { display: inline-flex; align-self: flex-start; margin: 0.8rem 1rem 0; padding: 0.22rem; border: 1px solid var(--line-strong); border-radius: 0.65rem; background: var(--surface); }
+.graph-mode button { min-height: 2.35rem; padding: 0.55rem 0.8rem; border: 0; border-radius: 0.45rem; background: transparent; color: var(--muted); font-size: 0.68rem; font-weight: 800; }
+.graph-mode button[aria-pressed="true"] { background: var(--btn-toggle); color: white; box-shadow: 0 5px 16px rgb(0 0 0 / 24%); }
+.graph-mode button:disabled { opacity: 0.42; }
 .chart-canvas[data-chart-active="true"] { display: block; }
 .heatmap-controls { display: grid; grid-template-columns: auto minmax(18rem, 1fr); align-items: end; gap: 1rem; padding: 1rem; border-bottom: 1px solid var(--line-soft); background: var(--ground-deep); }
 .heatmap-mode { display: inline-flex; padding: 0.22rem; border: 1px solid var(--line-strong); border-radius: 0.65rem; background: var(--surface); }

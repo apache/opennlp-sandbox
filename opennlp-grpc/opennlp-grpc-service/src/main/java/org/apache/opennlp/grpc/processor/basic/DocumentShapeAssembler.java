@@ -574,6 +574,8 @@ final class DocumentShapeAssembler {
         case ANALYTICS_ID -> StandardLayer.STANDARD_LAYER_ANALYTICS;
         case CHUNK_GROUPS_ID -> StandardLayer.STANDARD_LAYER_CHUNK_GROUPS;
         case TERM_VECTORS_ID -> StandardLayer.STANDARD_LAYER_TERM_VECTORS;
+        case "opennlp:dependencies" -> StandardLayer.STANDARD_LAYER_DEPENDENCIES;
+        case "opennlp:relations" -> StandardLayer.STANDARD_LAYER_RELATIONS;
         default -> StandardLayer.STANDARD_LAYER_UNSPECIFIED;
       };
       if (standard == StandardLayer.STANDARD_LAYER_UNSPECIFIED) {

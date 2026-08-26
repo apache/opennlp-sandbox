@@ -43,6 +43,8 @@ final class DocumentLayersValidator {
       return;
     }
     final Set<String> ids = new HashSet<>();
+    final int tokenCount = annotationCount(document, "opennlp:tokens");
+    final int entityCount = annotationCount(document, "opennlp:entities");
     for (AnnotationLayer layer : document.getLayers().getLayersList()) {
       if (layer.getId().isBlank()) {
         fail("layer id must not be blank");
@@ -65,7 +67,8 @@ final class DocumentLayersValidator {
         fail("layer '" + layer.getId() + "' has no value case");
       }
       validateStandardValueArm(layer);
-      validateLayer(layer, document.getRawText().length(), embeddingProvider);
+      validateLayer(layer, document.getRawText().length(), tokenCount, entityCount,
+          embeddingProvider);
     }
   }
 
@@ -95,6 +98,8 @@ final class DocumentLayersValidator {
       case STANDARD_LAYER_ANALYTICS -> AnnotationLayer.ValuesCase.ANALYTICS_VALUES;
       case STANDARD_LAYER_CHUNK_GROUPS -> AnnotationLayer.ValuesCase.CHUNK_GROUP_VALUES;
       case STANDARD_LAYER_TERM_VECTORS -> AnnotationLayer.ValuesCase.TERM_VECTOR_VALUES;
+      case STANDARD_LAYER_DEPENDENCIES -> AnnotationLayer.ValuesCase.DEPENDENCY_VALUES;
+      case STANDARD_LAYER_RELATIONS -> AnnotationLayer.ValuesCase.RELATION_VALUES;
       case STANDARD_LAYER_UNSPECIFIED, UNRECOGNIZED -> {
         fail("standard layer identity must name a recognized layer");
         yield AnnotationLayer.ValuesCase.VALUES_NOT_SET;
@@ -108,7 +113,8 @@ final class DocumentLayersValidator {
 
   /** Validates layer. */
   private static void validateLayer(
-      AnnotationLayer layer, int textLength, EmbeddingProvider embeddingProvider) {
+      AnnotationLayer layer, int textLength, int tokenCount, int entityCount,
+      EmbeddingProvider embeddingProvider) {
     final boolean positional = layer.getScope() == LayerScope.LAYER_SCOPE_POSITIONAL;
     switch (layer.getValuesCase()) {
       case STRING_VALUES -> layer.getStringValues().getAnnotationsList().forEach(annotation -> {
@@ -218,8 +224,55 @@ final class DocumentLayersValidator {
           annotation.getOccurrencesList().forEach(span -> span(span, textLength));
         });
       }
+      case DEPENDENCY_VALUES -> {
+        final var values = layer.getDependencyValues();
+        nonBlank(values.getParserId(), "dependency parser id");
+        nonBlank(values.getEngine(), "dependency parser engine");
+        if (values.getAnnotationsCount() != tokenCount) {
+          fail("dependency layer must contain one arc per token");
+        }
+        final boolean[] dependents = new boolean[tokenCount];
+        values.getAnnotationsList().forEach(annotation -> {
+          requireSpan(annotation.getSpan(), positional, textLength);
+          nonBlank(annotation.getRelation(), "dependency relation");
+          final int dependent = annotation.getDependentTokenIndex();
+          final int head = annotation.getHeadTokenIndex();
+          if (dependent < 0 || dependent >= tokenCount || dependents[dependent]) {
+            fail("dependency layer has an invalid or duplicate dependent index " + dependent);
+          }
+          if (head < -1 || head >= tokenCount || head == dependent) {
+            fail("dependency layer has invalid head index " + head);
+          }
+          dependents[dependent] = true;
+        });
+      }
+      case RELATION_VALUES -> layer.getRelationValues().getAnnotationsList()
+          .forEach(annotation -> {
+            requireSpan(annotation.getSpan(), positional, textLength);
+            nonBlank(annotation.getType(), "relation type");
+            final int subject = annotation.getSubjectEntityIndex();
+            final int object = annotation.getObjectEntityIndex();
+            if (subject < 0 || subject >= entityCount || object < 0 || object >= entityCount
+                || subject == object) {
+              fail("relation layer has invalid entity indexes " + subject + ", " + object);
+            }
+          });
       case VALUES_NOT_SET -> fail("layer value case is missing");
     }
+  }
+
+  /** Counts annotations in the named layer, or returns zero when it is absent. */
+  private static int annotationCount(OpenNlpDocument document, String id) {
+    for (AnnotationLayer layer : document.getLayers().getLayersList()) {
+      if (id.equals(layer.getId())) {
+        return switch (layer.getValuesCase()) {
+          case STRING_VALUES -> layer.getStringValues().getAnnotationsCount();
+          case ENTITY_VALUES -> layer.getEntityValues().getAnnotationsCount();
+          default -> 0;
+        };
+      }
+    }
+    return 0;
   }
 
   /** Validates embedding. */

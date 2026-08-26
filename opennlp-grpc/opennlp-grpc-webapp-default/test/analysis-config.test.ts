@@ -32,6 +32,8 @@ const serviceInfo = {
     "PIPELINE_STEP_GEOCODE",
     "PIPELINE_STEP_SENTIMENT",
     "PIPELINE_STEP_POS_TAG",
+    "PIPELINE_STEP_DEPENDENCY_PARSE",
+    "PIPELINE_STEP_RELATION_EXTRACT",
     "PIPELINE_STEP_LEMMATIZE",
     "PIPELINE_STEP_STEM",
     "PIPELINE_STEP_TERM_VECTOR",
@@ -87,6 +89,20 @@ const bundlesInfo = {
       ],
       models: [],
     },
+    {
+      bundleId: "en-dependency",
+      supportedLanguages: ["en"],
+      supportedSteps: [
+        "PIPELINE_STEP_SENTENCE_DETECT",
+        "PIPELINE_STEP_TOKENIZE",
+        "PIPELINE_STEP_POS_TAG",
+        "PIPELINE_STEP_DEPENDENCY_PARSE",
+      ],
+      models: [{
+        name: "english-dependency",
+        componentType: "COMPONENT_TYPE_DEPENDENCY_PARSER",
+      }],
+    },
   ],
 };
 
@@ -106,6 +122,8 @@ describe("analysis capability planning", () => {
       "PIPELINE_STEP_NER",
       "PIPELINE_STEP_GEOCODE",
       "PIPELINE_STEP_POS_TAG",
+      "PIPELINE_STEP_DEPENDENCY_PARSE",
+      "PIPELINE_STEP_RELATION_EXTRACT",
       "PIPELINE_STEP_LEMMATIZE",
       "PIPELINE_STEP_STEM",
       "PIPELINE_STEP_TERM_VECTOR",
@@ -184,6 +202,11 @@ describe("analysis capability planning", () => {
     expect(request.profile?.stopwordLanguage).toBe("en");
     expect(request.profile?.subwordModelId).toBe("legal-sp");
     expect(request.profile?.wordnetLexiconId).toBe("wordnet");
+    expect(request.profile?.dependencyParserId).toBe("english-dependency");
+    expect(request.profile?.relationPatterns).toEqual([
+      { type: "subject-object", path: "<nsubj >obj" },
+      { type: "subject-oblique", path: "<nsubj >obl" },
+    ]);
     expect(request.options).toMatchObject({
       includeProbabilities: true,
       embeddingModelId: "legal-mini",

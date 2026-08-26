@@ -30,6 +30,7 @@ import org.apache.opennlp.grpc.v1.Normalizer;
 import org.apache.opennlp.grpc.v1.NormalizationSpec;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
+import org.apache.opennlp.grpc.v1.RelationPatternSpec;
 import org.apache.opennlp.grpc.v1.StandardLayer;
 import org.apache.opennlp.grpc.v1.TermLayerSpec;
 import org.apache.opennlp.grpc.v1.TermVectorSpec;
@@ -74,6 +75,88 @@ class AnalysisRequestValidatorTest {
   }
 
   // ---------- NORMALIZE spec/step pairing ----------
+
+  @Test
+  void dependencyParseRequiresPosTagging() {
+    assertRejected(
+        AnalysisProfile.newBuilder()
+            .addSteps(PipelineStep.PIPELINE_STEP_DEPENDENCY_PARSE),
+        AnalysisException.FailureType.FAILED_PRECONDITION,
+        "requires PIPELINE_STEP_POS_TAG");
+  }
+
+  @Test
+  void dependencyParseRequiresConfiguredModel() {
+    assertRejected(
+        AnalysisProfile.newBuilder()
+            .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+            .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+            .addSteps(PipelineStep.PIPELINE_STEP_POS_TAG)
+            .addSteps(PipelineStep.PIPELINE_STEP_DEPENDENCY_PARSE),
+        AnalysisException.FailureType.NOT_FOUND,
+        "No dependency parser");
+  }
+
+  @Test
+  void relationExtractionRequiresNerAndDependencyParse() {
+    assertRejected(
+        AnalysisProfile.newBuilder()
+            .addSteps(PipelineStep.PIPELINE_STEP_RELATION_EXTRACT)
+            .addRelationPatterns(RelationPatternSpec.newBuilder()
+                .setType("acquisition")
+                .setPath("<nsubj >obj")),
+        AnalysisException.FailureType.FAILED_PRECONDITION,
+        "requires PIPELINE_STEP_NER");
+  }
+
+  @Test
+  void relationExtractionRejectsMalformedPattern() {
+    assertRejected(
+        AnalysisProfile.newBuilder()
+            .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+            .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+            .addSteps(PipelineStep.PIPELINE_STEP_NER)
+            .addSteps(PipelineStep.PIPELINE_STEP_POS_TAG)
+            .addSteps(PipelineStep.PIPELINE_STEP_DEPENDENCY_PARSE)
+            .addSteps(PipelineStep.PIPELINE_STEP_RELATION_EXTRACT)
+            .addRelationPatterns(RelationPatternSpec.newBuilder()
+                .setType("acquisition")
+                .setPath(">obj <nsubj")),
+        AnalysisException.FailureType.INVALID_ARGUMENT,
+        "up steps must come before down steps");
+  }
+
+  @Test
+  void relationExtractionRequiresAtLeastOnePattern() {
+    assertRejected(
+        AnalysisProfile.newBuilder()
+            .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+            .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+            .addSteps(PipelineStep.PIPELINE_STEP_NER)
+            .addSteps(PipelineStep.PIPELINE_STEP_POS_TAG)
+            .addSteps(PipelineStep.PIPELINE_STEP_DEPENDENCY_PARSE)
+            .addSteps(PipelineStep.PIPELINE_STEP_RELATION_EXTRACT),
+        AnalysisException.FailureType.INVALID_ARGUMENT,
+        "at least one relation_patterns entry");
+  }
+
+  @Test
+  void relationExtractionBoundsPatternCount() {
+    final AnalysisProfile.Builder profile = AnalysisProfile.newBuilder()
+        .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+        .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+        .addSteps(PipelineStep.PIPELINE_STEP_NER)
+        .addSteps(PipelineStep.PIPELINE_STEP_POS_TAG)
+        .addSteps(PipelineStep.PIPELINE_STEP_DEPENDENCY_PARSE)
+        .addSteps(PipelineStep.PIPELINE_STEP_RELATION_EXTRACT);
+    for (int i = 0; i < 129; i++) {
+      profile.addRelationPatterns(RelationPatternSpec.newBuilder()
+          .setType("relation-" + i)
+          .setPath("<nsubj >obj"));
+    }
+
+    assertRejected(profile, AnalysisException.FailureType.INVALID_ARGUMENT, "at most 128");
+  }
 
   @Test
   void rejectsNormalizationSpecWithoutNormalizeStep() {
