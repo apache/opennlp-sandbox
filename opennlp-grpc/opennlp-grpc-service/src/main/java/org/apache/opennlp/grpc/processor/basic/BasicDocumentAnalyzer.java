@@ -224,10 +224,11 @@ public class BasicDocumentAnalyzer implements ProgressiveDocumentAnalyzer {
         branchExecutor,
         embeddingProvider,
         listener,
-        (branchRequest, steps) -> analyzeWithCleanup(
+        (branchRequest, steps, backbone) -> analyzeWithCleanup(
             branchRequest,
             new PreparedAnalysis(prepared.profile(), Set.copyOf(steps)),
-            rawText));
+            rawText,
+            backbone));
   }
 
   /** {@inheritDoc} */
@@ -282,8 +283,17 @@ public class BasicDocumentAnalyzer implements ProgressiveDocumentAnalyzer {
   /** Runs prepared analysis and releases decoder state owned by the calling worker. */
   private AnalyzeDocumentResponse analyzeWithCleanup(
       AnalyzeDocumentRequest request, PreparedAnalysis prepared, String rawText) {
+    return analyzeWithCleanup(request, prepared, rawText, null);
+  }
+
+  /** Runs prepared analysis from an optional backbone and releases worker decoder state. */
+  private AnalyzeDocumentResponse analyzeWithCleanup(
+      AnalyzeDocumentRequest request,
+      PreparedAnalysis prepared,
+      String rawText,
+      OpenNlpDocument backbone) {
     try {
-      return analyzePrepared(request, prepared, rawText);
+      return analyzePrepared(request, prepared, rawText, backbone);
     } finally {
       modelBundleCache.clearThreadLocalState();
     }
@@ -291,7 +301,10 @@ public class BasicDocumentAnalyzer implements ProgressiveDocumentAnalyzer {
 
   /** Runs a validated, prepared analysis. */
   private AnalyzeDocumentResponse analyzePrepared(
-      AnalyzeDocumentRequest request, PreparedAnalysis prepared, String rawText) {
+      AnalyzeDocumentRequest request,
+      PreparedAnalysis prepared,
+      String rawText,
+      OpenNlpDocument backbone) {
     final OpenNlpDocument input = request.getDocument();
     final AnalysisProfile profile = prepared.profile();
     final Set<PipelineStep> effectiveSteps = prepared.effectiveSteps();
@@ -303,11 +316,18 @@ public class BasicDocumentAnalyzer implements ProgressiveDocumentAnalyzer {
     // Layers produced directly by steps whose results live only in the document shape
     // (no classic response field), appended by the shape assembler after the built-ins.
     final List<AnnotationLayer> extraLayers = new ArrayList<>();
-    final OpenNlpDocument.Builder document = OpenNlpDocument.newBuilder()
-        .setDocId(input.getDocId())
-        .setRawText(rawText);
-    if (input.hasMetadata()) {
-      document.setMetadata(input.getMetadata());
+    final OpenNlpDocument.Builder document;
+    if (backbone == null) {
+      document = OpenNlpDocument.newBuilder()
+          .setDocId(input.getDocId())
+          .setRawText(rawText);
+      if (input.hasMetadata()) {
+        document.setMetadata(input.getMetadata());
+      }
+    } else {
+      document = backbone.toBuilder()
+          .clearLayers()
+          .clearAnalytics();
     }
 
     if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_LANGUAGE_DETECT)) {

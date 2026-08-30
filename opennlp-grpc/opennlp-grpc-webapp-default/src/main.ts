@@ -101,6 +101,7 @@ import {
   emptyProgressiveAnalysis,
   type ProgressiveAnalysisState,
 } from "./progressive-analysis";
+import { ProgressiveRenderQueue } from "./progressive-render-queue";
 import { isTermVectorLayer, renderTermVectorStack } from "./term-vector-stack";
 import { SemanticWorkbench, type ResultViewName } from "./semantic-workbench";
 import { initThemeToggle } from "./theme-toggle";
@@ -624,6 +625,8 @@ async function submitAnalysis(event: SubmitEvent): Promise<void> {
   copyButton.disabled = true;
   downloadButton.disabled = true;
   downloadPbButton.disabled = true;
+  const renderQueue = new ProgressiveRenderQueue(
+    (state) => renderProgressiveState(state, request));
   try {
     let progressive = emptyProgressiveAnalysis();
     let revealed = false;
@@ -632,13 +635,14 @@ async function submitAnalysis(event: SubmitEvent): Promise<void> {
       if (progressive.complete) {
         return;
       }
-      renderProgressiveState(progressive, request);
+      renderQueue.schedule(progressive);
       if (!revealed) {
         selectResultTab("document");
         revealAnalysisResult();
         revealed = true;
       }
     });
+    renderQueue.cancel();
     const shape = readDocumentShape(response);
     storeResponse(response, shape);
     currentRequest = request;
@@ -660,6 +664,7 @@ async function submitAnalysis(event: SubmitEvent): Promise<void> {
     responseOutput.textContent = "The analysis request did not complete.";
     setFormStatus(errorMessage(error, "Analysis failed. Please try again."), true);
   } finally {
+    renderQueue.cancel();
     setBusy(false);
   }
 }

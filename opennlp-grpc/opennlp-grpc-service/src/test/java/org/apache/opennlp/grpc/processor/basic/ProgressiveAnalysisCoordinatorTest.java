@@ -115,7 +115,7 @@ class ProgressiveAnalysisCoordinatorTest {
               return false;
             }
           },
-          (branchRequest, steps) -> {
+          (branchRequest, steps, backbone) -> {
             if (steps.contains(PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE)
                 || steps.contains(PipelineStep.PIPELINE_STEP_PARSE)) {
               bothBranchesStarted.countDown();
@@ -141,7 +141,7 @@ class ProgressiveAnalysisCoordinatorTest {
   }
 
   @Test
-  void documentCategoryBranchIncludesSentenceDetectionWhenItTokenizes()
+  void documentCategoryBranchReusesDetectedSentencesWhenItTokenizes()
       throws InterruptedException {
     final AnalyzeDocumentRequest request = AnalyzeDocumentRequest.newBuilder()
         .setDocument(OpenNlpDocument.newBuilder().setRawText(SHORT_TEXT).build())
@@ -153,6 +153,7 @@ class ProgressiveAnalysisCoordinatorTest {
     final CountDownLatch terminal = new CountDownLatch(1);
     final AtomicReference<RuntimeException> failure = new AtomicReference<>();
     final AtomicReference<Set<PipelineStep>> categorySteps = new AtomicReference<>();
+    final AtomicReference<OpenNlpDocument> categoryBackbone = new AtomicReference<>();
 
     try (var executor = Executors.newSingleThreadExecutor()) {
       ProgressiveAnalysisCoordinator.start(
@@ -164,9 +165,10 @@ class ProgressiveAnalysisCoordinatorTest {
           executor,
           null,
           listener(terminal, failure, new ArrayList<>()),
-          (branchRequest, steps) -> {
+          (branchRequest, steps, backbone) -> {
             if (steps.contains(PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE)) {
               categorySteps.set(steps);
+              categoryBackbone.set(backbone);
             }
             return base;
           });
@@ -175,7 +177,8 @@ class ProgressiveAnalysisCoordinatorTest {
     }
 
     assertNull(failure.get());
-    assertTrue(categorySteps.get().contains(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT));
+    assertFalse(categorySteps.get().contains(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT));
+    assertTrue(categoryBackbone.get().getSentencesCount() > 0);
   }
 
   @Test
@@ -204,7 +207,7 @@ class ProgressiveAnalysisCoordinatorTest {
           executor,
           null,
           listener(terminal, failure, new ArrayList<>()),
-          (branchRequest, steps) -> {
+          (branchRequest, steps, backbone) -> {
             if (steps.contains(PipelineStep.PIPELINE_STEP_RELATION_EXTRACT)) {
               graphSteps.set(steps);
             }
@@ -270,7 +273,7 @@ class ProgressiveAnalysisCoordinatorTest {
               return cancelled.get();
             }
           },
-          (branchRequest, steps) -> {
+          (branchRequest, steps, backbone) -> {
             if (isBackbone(steps)) {
               return base;
             }
@@ -326,7 +329,7 @@ class ProgressiveAnalysisCoordinatorTest {
           executor,
           null,
           listener(terminal, failure, new ArrayList<>()),
-          (branchRequest, steps) -> {
+          (branchRequest, steps, backbone) -> {
             if (isBackbone(steps)) {
               return base;
             }
@@ -389,7 +392,7 @@ class ProgressiveAnalysisCoordinatorTest {
           executor,
           null,
           listener(terminal, failure, new ArrayList<>()),
-          (branchRequest, steps) -> {
+          (branchRequest, steps, backbone) -> {
             if (steps.contains(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)) {
               sentenceDetectionRuns.incrementAndGet();
             }
@@ -436,7 +439,7 @@ class ProgressiveAnalysisCoordinatorTest {
           executor,
           null,
           listener(terminal, failure, new ArrayList<>()),
-          (branchRequest, steps) -> {
+          (branchRequest, steps, backbone) -> {
             if (isBackbone(steps)) {
               return base;
             }
@@ -497,7 +500,7 @@ class ProgressiveAnalysisCoordinatorTest {
           executor,
           null,
           listener(terminal, failure, batches),
-          (branchRequest, steps) -> {
+          (branchRequest, steps, backbone) -> {
             if (branchRequest.getCategoryChunkConfigsCount() > 0) {
               return responseWithChunkGroup(base, SENTIMENT_GROUP_ID);
             }
