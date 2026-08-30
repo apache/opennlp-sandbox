@@ -44,6 +44,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -175,6 +176,49 @@ class ProgressiveAnalysisCoordinatorTest {
 
     assertNull(failure.get());
     assertTrue(categorySteps.get().contains(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT));
+  }
+
+  @Test
+  void linguisticGraphBranchIncludesNerAndPosDependencies() throws InterruptedException {
+    final AnalyzeDocumentRequest request = AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setRawText(SHORT_TEXT).build())
+        .build();
+    final AnalyzeDocumentResponse base;
+    try (BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(Map.of())) {
+      base = analyzer.analyze(request);
+    }
+    final CountDownLatch terminal = new CountDownLatch(1);
+    final AtomicReference<RuntimeException> failure = new AtomicReference<>();
+    final AtomicReference<Set<PipelineStep>> graphSteps = new AtomicReference<>();
+
+    try (var executor = Executors.newSingleThreadExecutor()) {
+      ProgressiveAnalysisCoordinator.start(
+          request,
+          EnumSet.of(
+              PipelineStep.PIPELINE_STEP_SENTENCE_DETECT,
+              PipelineStep.PIPELINE_STEP_TOKENIZE,
+              PipelineStep.PIPELINE_STEP_NER,
+              PipelineStep.PIPELINE_STEP_POS_TAG,
+              PipelineStep.PIPELINE_STEP_DEPENDENCY_PARSE,
+              PipelineStep.PIPELINE_STEP_RELATION_EXTRACT),
+          executor,
+          null,
+          listener(terminal, failure, new ArrayList<>()),
+          (branchRequest, steps) -> {
+            if (steps.contains(PipelineStep.PIPELINE_STEP_RELATION_EXTRACT)) {
+              graphSteps.set(steps);
+            }
+            return base;
+          });
+
+      assertTrue(terminal.await(10, TimeUnit.SECONDS));
+    }
+
+    assertNull(failure.get());
+    assertNotNull(graphSteps.get());
+    assertTrue(graphSteps.get().contains(PipelineStep.PIPELINE_STEP_NER));
+    assertTrue(graphSteps.get().contains(PipelineStep.PIPELINE_STEP_POS_TAG));
+    assertTrue(graphSteps.get().contains(PipelineStep.PIPELINE_STEP_DEPENDENCY_PARSE));
   }
 
   @Test

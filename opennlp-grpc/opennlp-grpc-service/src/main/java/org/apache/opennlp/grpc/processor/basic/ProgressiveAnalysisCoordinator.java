@@ -64,9 +64,13 @@ final class ProgressiveAnalysisCoordinator {
   private static final String STEMS_LAYER_ID = "opennlp:stems";
   private static final String TERM_VECTORS_LAYER_ID = "opennlp:term-vectors";
   private static final String EXPANSIONS_LAYER_ID = "opennlp:expansions";
+  private static final String DEPENDENCIES_LAYER_ID = "opennlp:dependencies";
+  private static final String RELATIONS_LAYER_ID = "opennlp:relations";
   private static final List<String> EXTRA_LAYER_ORDER = List.of(
       SUBWORDS_LAYER_ID,
       GEO_LAYER_ID,
+      DEPENDENCIES_LAYER_ID,
+      RELATIONS_LAYER_ID,
       STEMS_LAYER_ID,
       TERM_VECTORS_LAYER_ID,
       EXPANSIONS_LAYER_ID);
@@ -80,6 +84,8 @@ final class ProgressiveAnalysisCoordinator {
       PipelineStep.PIPELINE_STEP_NER,
       PipelineStep.PIPELINE_STEP_GEOCODE,
       PipelineStep.PIPELINE_STEP_POS_TAG,
+      PipelineStep.PIPELINE_STEP_DEPENDENCY_PARSE,
+      PipelineStep.PIPELINE_STEP_RELATION_EXTRACT,
       PipelineStep.PIPELINE_STEP_LEMMATIZE,
       PipelineStep.PIPELINE_STEP_STEM,
       PipelineStep.PIPELINE_STEP_TERM_VECTOR,
@@ -255,6 +261,9 @@ final class ProgressiveAnalysisCoordinator {
         PipelineStep.PIPELINE_STEP_POS_TAG,
         PipelineStep.PIPELINE_STEP_LEMMATIZE,
         PipelineStep.PIPELINE_STEP_SYNTACTIC_CHUNK);
+    addBranch(branches, request, effectiveSteps, BranchKind.LINGUISTIC_GRAPH,
+        PipelineStep.PIPELINE_STEP_DEPENDENCY_PARSE,
+        PipelineStep.PIPELINE_STEP_RELATION_EXTRACT);
     addBranch(branches, request, effectiveSteps, BranchKind.TEXT_ENRICHMENT,
         PipelineStep.PIPELINE_STEP_STEM,
         PipelineStep.PIPELINE_STEP_TERM_VECTOR,
@@ -321,12 +330,13 @@ final class ProgressiveAnalysisCoordinator {
     final boolean tokenizationSelected =
         effectiveSteps.contains(PipelineStep.PIPELINE_STEP_TOKENIZE);
     final boolean needsSentences = switch (kind) {
-      case NER, POS, TEXT_ENRICHMENT, SENTIMENT, PARSE, EMBED, CHUNK -> true;
+      case NER, POS, LINGUISTIC_GRAPH, TEXT_ENRICHMENT, SENTIMENT, PARSE, EMBED,
+          CHUNK -> true;
       case DOCUMENT_CATEGORY -> tokenizationSelected;
       default -> false;
     };
     final boolean needsTokens = switch (kind) {
-      case NER, POS, TEXT_ENRICHMENT, PARSE -> true;
+      case NER, POS, LINGUISTIC_GRAPH, TEXT_ENRICHMENT, PARSE -> true;
       case SENTIMENT, DOCUMENT_CATEGORY, CHUNK ->
           tokenizationSelected;
       default -> false;
@@ -348,6 +358,14 @@ final class ProgressiveAnalysisCoordinator {
       }
       if (effectiveSteps.contains(PipelineStep.PIPELINE_STEP_LEMMATIZE)) {
         run.add(PipelineStep.PIPELINE_STEP_LEMMATIZE);
+      }
+    }
+    if (kind == BranchKind.LINGUISTIC_GRAPH) {
+      if (effectiveSteps.contains(PipelineStep.PIPELINE_STEP_NER)) {
+        run.add(PipelineStep.PIPELINE_STEP_NER);
+      }
+      if (effectiveSteps.contains(PipelineStep.PIPELINE_STEP_POS_TAG)) {
+        run.add(PipelineStep.PIPELINE_STEP_POS_TAG);
       }
     }
     return run;
@@ -462,6 +480,8 @@ final class ProgressiveAnalysisCoordinator {
           || id.equals("opennlp:lemmas")
           || id.equals("opennlp:chunks")
           || id.equals(ANALYTICS_LAYER_ID);
+      case LINGUISTIC_GRAPH -> id.equals(DEPENDENCIES_LAYER_ID)
+          || id.equals(RELATIONS_LAYER_ID);
       case TEXT_ENRICHMENT -> id.equals(STEMS_LAYER_ID)
           || id.equals(TERM_VECTORS_LAYER_ID)
           || id.equals(EXPANSIONS_LAYER_ID);
@@ -723,6 +743,7 @@ final class ProgressiveAnalysisCoordinator {
     SUBWORD,
     NER,
     POS,
+    LINGUISTIC_GRAPH,
     TEXT_ENRICHMENT,
     DOCUMENT_CATEGORY,
     SENTIMENT,
