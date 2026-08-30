@@ -363,6 +363,111 @@ class ProgressiveAnalysisCoordinatorTest {
   }
 
   @Test
+  void reusesTheBackboneAcrossIndependentBranches() throws InterruptedException {
+    final AnalyzeDocumentRequest request = AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setRawText(SHORT_TEXT).build())
+        .build();
+    final AnalyzeDocumentResponse base;
+    try (BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(Map.of())) {
+      base = analyzer.analyze(request);
+    }
+    final CountDownLatch terminal = new CountDownLatch(1);
+    final AtomicReference<RuntimeException> failure = new AtomicReference<>();
+    final AtomicInteger sentenceDetectionRuns = new AtomicInteger();
+    final AtomicInteger tokenizationRuns = new AtomicInteger();
+
+    try (var executor = Executors.newFixedThreadPool(4)) {
+      ProgressiveAnalysisCoordinator.start(
+          request,
+          EnumSet.of(
+              PipelineStep.PIPELINE_STEP_SENTENCE_DETECT,
+              PipelineStep.PIPELINE_STEP_TOKENIZE,
+              PipelineStep.PIPELINE_STEP_NER,
+              PipelineStep.PIPELINE_STEP_POS_TAG,
+              PipelineStep.PIPELINE_STEP_STEM,
+              PipelineStep.PIPELINE_STEP_PARSE),
+          executor,
+          null,
+          listener(terminal, failure, new ArrayList<>()),
+          (branchRequest, steps) -> {
+            if (steps.contains(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)) {
+              sentenceDetectionRuns.incrementAndGet();
+            }
+            if (steps.contains(PipelineStep.PIPELINE_STEP_TOKENIZE)) {
+              tokenizationRuns.incrementAndGet();
+            }
+            return base;
+          });
+
+      assertTrue(terminal.await(10, TimeUnit.SECONDS));
+    }
+
+    assertNull(failure.get());
+    assertEquals(1, sentenceDetectionRuns.get());
+    assertEquals(1, tokenizationRuns.get());
+  }
+
+  @Test
+  void startsNerAfterTheInitialBranchWindow() throws InterruptedException {
+    final AnalyzeDocumentRequest request = AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setRawText(SHORT_TEXT).build())
+        .build();
+    final AnalyzeDocumentResponse base;
+    try (BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(Map.of())) {
+      base = analyzer.analyze(request);
+    }
+    final CountDownLatch firstWindowStarted = new CountDownLatch(4);
+    final CountDownLatch releaseBranches = new CountDownLatch(1);
+    final CountDownLatch terminal = new CountDownLatch(1);
+    final AtomicBoolean nerStarted = new AtomicBoolean();
+    final AtomicReference<RuntimeException> failure = new AtomicReference<>();
+
+    try (var executor = Executors.newFixedThreadPool(8)) {
+      ProgressiveAnalysisCoordinator.start(
+          request,
+          EnumSet.of(
+              PipelineStep.PIPELINE_STEP_SENTENCE_DETECT,
+              PipelineStep.PIPELINE_STEP_TOKENIZE,
+              PipelineStep.PIPELINE_STEP_SUBWORD_TOKENIZE,
+              PipelineStep.PIPELINE_STEP_NER,
+              PipelineStep.PIPELINE_STEP_POS_TAG,
+              PipelineStep.PIPELINE_STEP_STEM,
+              PipelineStep.PIPELINE_STEP_DOC_CATEGORIZE),
+          executor,
+          null,
+          listener(terminal, failure, new ArrayList<>()),
+          (branchRequest, steps) -> {
+            if (isBackbone(steps)) {
+              return base;
+            }
+            if (steps.contains(PipelineStep.PIPELINE_STEP_NER)) {
+              nerStarted.set(true);
+            }
+            firstWindowStarted.countDown();
+            try {
+              if (!releaseBranches.await(5, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("initial branch window was not released");
+              }
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+              throw new IllegalStateException(BRANCH_WAIT_INTERRUPTED, e);
+            }
+            return base;
+          });
+
+      assertTrue(firstWindowStarted.await(5, TimeUnit.SECONDS));
+      assertFalse(nerStarted.get());
+      releaseBranches.countDown();
+      assertTrue(terminal.await(10, TimeUnit.SECONDS));
+    } finally {
+      releaseBranches.countDown();
+    }
+
+    assertNull(failure.get());
+    assertTrue(nerStarted.get());
+  }
+
+  @Test
   void chunkLayerUpdatesIncludeGroupsFromEveryCompletedBranch() throws InterruptedException {
     final AnalyzeDocumentRequest request = AnalyzeDocumentRequest.newBuilder()
         .setDocument(OpenNlpDocument.newBuilder().setRawText(SHORT_TEXT).build())
