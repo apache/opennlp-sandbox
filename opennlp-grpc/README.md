@@ -144,9 +144,9 @@ operator supplies a dependency model.
 The gRPC modules pin `opennlp.version` to `3.0.0-OPENNLP-1833-SNAPSHOT`, a local
 test coordinate produced by the `OPENNLP-1833-grpc-helper` branch of
 [apache/opennlp](https://github.com/apache/opennlp/tree/OPENNLP-1833-grpc-helper).
-That branch aggregates every open feature PR head (drafts included) on top of
-apache main and is never deployed anywhere, so build it once into your local
-Maven repository first:
+That branch aggregates every open JIRA-backed feature PR head (drafts included)
+on top of apache main and is never deployed anywhere, so build it once into your
+local Maven repository first:
 
 ```bash
 git clone https://github.com/apache/opennlp.git
