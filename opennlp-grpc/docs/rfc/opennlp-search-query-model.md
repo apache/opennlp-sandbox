@@ -107,20 +107,20 @@ the learned vocabulary artifact. Consequences:
   embedding route, the language-layer twin of the vector-space pin, so
   query-time analysis provably matches index-time analysis.
 
-## Vocabulary accretion vs model versioning
+## Vocabulary growth vs model versioning
 
 Vocabularies grow continuously; models version discretely; indexes pin to a
 model artifact hash as their vector space (already enforced: the trained
 route's `vector_space_id` is `<model-id>-sha256-<manifest-hash>`). The loop:
 
-- Indexing feeds term counts; the vocabulary accretes.
+- Indexing feeds term counts; the vocabulary grows.
 - The UI surfaces drift: N new terms since the serving model was distilled.
 - Retraining is explicit: distill a new model artifact, reindex into its new
   vector space as a tracked operation. No silent embedding drift, ever.
 
 ## Collections and lifecycle RPCs
 
-The collection is the noun accretion scopes to: indexes belong to a
+The collection is the noun drift tracking scopes to: indexes belong to a
 collection, indexing feeds its term counts, vocabularies are cut from it,
 models train from those vocabularies, and drift is measured against it. The
 `CollectionDescriptor` is a protobuf wire model (member index ids, term
@@ -142,8 +142,10 @@ wire-complete:
   replaced or deleted documents never leave stale counts.
 - **Persist** is explicit (a `PersistIndex` RPC), with an optional
   auto-checkpoint interval. A persisted live index keeps raw vectors next to
-  the quantized form, so accretion continues across restarts; a separate
-  explicit seal turns one into an immutable bundle.
+  the quantized form, so indexing continues across restarts; a separate
+  explicit seal marks the checkpoint read-only. A sealed index stays
+  searchable, aliasable and deletable; only the bundles configured at
+  startup are immutable in every sense.
 - **Watch, not poll**: a server-streaming RPC emits collection events (drift
   threshold crossed, index persisted, model published). Each event is a
   self-contained descriptor snapshot, so consumers track no cursors, sessions,
@@ -196,7 +198,7 @@ that fusion.
 
 ## Training recall telemetry
 
-The accretion loop is measurable without labeled data, so the workflow can
+The index-and-retrain loop is measurable without labeled data, so the workflow can
 report the real quality of its own training as documents add up:
 
 1. **Quantization recall**: TurboQuant top-k against exact flat top-k over
@@ -206,7 +208,7 @@ report the real quality of its own training as documents add up:
    hit learned term rows versus falling through to subword pieces. This is
    the drift meter that motivates the explicit retrain step.
 3. **Student-vs-teacher agreement**: the distilled static model's top-k
-   against its own teacher's top-k on the accreted corpus. The teacher is
+   against its own teacher's top-k on the indexed corpus. The teacher is
    already configured and cached for training, so agreement is measurable
    continuously, per model version, on the operator's actual documents
    rather than a generic benchmark.

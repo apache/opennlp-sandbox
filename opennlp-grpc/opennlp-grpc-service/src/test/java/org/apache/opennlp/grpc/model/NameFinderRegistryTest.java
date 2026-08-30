@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.testing.TinyNerModel;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -34,6 +34,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.apache.opennlp.grpc.spi.model.NerModel;
+import org.apache.opennlp.grpc.spi.model.NerBackendFactory;
+import org.apache.opennlp.grpc.spi.model.NerBackendContext;
 
 /**
  * Unit tests for {@link NameFinderRegistry}. The person model is trained in-memory from a
@@ -163,35 +166,14 @@ class NameFinderRegistryTest {
   }
 
   @Test
-  void rejectsDlConfigMissingRequiredAttribute() {
-    // path present but vocab/labels missing.
+  void dlKeysWithoutTheAddOnFailLoud() {
+    // The ONNX backend ships in the opennlp-grpc-dl add-on, absent from this module's
+    // classpath; configured DL models must fail startup, never silently vanish.
     final AnalysisException error = assertThrows(AnalysisException.class, () ->
         NameFinderRegistry.create(Map.of(
-            OnnxNerBackendFactory.KEY_DL_PREFIX + "person.path", "/tmp/model.onnx")));
-    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
-  }
-
-  @Test
-  void rejectsDlConfigUnsupportedBackend() {
-    final AnalysisException error = assertThrows(AnalysisException.class, () ->
-        NameFinderRegistry.create(Map.of(
-            OnnxNerBackendFactory.KEY_DL_PREFIX + "person.path", "/tmp/model.onnx",
-            OnnxNerBackendFactory.KEY_DL_PREFIX + "person.vocab", "/tmp/vocab.txt",
-            OnnxNerBackendFactory.KEY_DL_PREFIX + "person.labels", "/tmp/labels.txt",
-            OnnxNerBackendFactory.KEY_DL_PREFIX + "person.backend", "tpu")));
-    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
-  }
-
-  @Test
-  void rejectsDlConfigWithoutSentenceDetector() {
-    // A complete ONNX config still needs a sentence detector; create(config) supplies none.
-    final AnalysisException error = assertThrows(AnalysisException.class, () ->
-        NameFinderRegistry.create(Map.of(
-            OnnxNerBackendFactory.KEY_DL_PREFIX + "person.path", "/tmp/model.onnx",
-            OnnxNerBackendFactory.KEY_DL_PREFIX + "person.vocab", "/tmp/vocab.txt",
-            OnnxNerBackendFactory.KEY_DL_PREFIX + "person.labels", "/tmp/labels.txt")));
-    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
-    assertTrue(error.getMessage().contains("sentence detector"));
+            NameFinderRegistry.KEY_DL_PREFIX + "person.path", "/tmp/model.onnx")));
+    assertEquals(AnalysisException.FailureType.FAILED_PRECONDITION, error.getFailureType());
+    assertTrue(error.getMessage().contains("opennlp-grpc-dl"));
   }
 
   @Test

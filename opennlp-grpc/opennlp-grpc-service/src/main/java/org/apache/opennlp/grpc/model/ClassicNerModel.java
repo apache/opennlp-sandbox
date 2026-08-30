@@ -18,11 +18,19 @@
 package org.apache.opennlp.grpc.model;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
+import opennlp.tools.document.Annotation;
+import opennlp.tools.document.Document;
+import opennlp.tools.document.Layers;
+import opennlp.tools.namefind.NameFinderAnnotator;
 import opennlp.tools.namefind.NameFinderME;
+import opennlp.tools.namefind.TokenNameFinder;
 import opennlp.tools.util.Span;
+import org.apache.opennlp.grpc.spi.model.NerModel;
+import org.apache.opennlp.grpc.spi.model.NerSpans;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
@@ -119,14 +127,21 @@ final class ClassicNerModel implements NerModel {
     if (sentence.getTokensCount() == 0) {
       return List.of();
     }
-    final String[] tokens = tokenTexts(sentence);
-    final Span[] spans = nameFinder.find(tokens);
+    final AdaptiveDataPreservingFinder finder = new AdaptiveDataPreservingFinder();
+    final Document annotated = new NameFinderAnnotator(finder).annotate(document(sentence));
+    final Span[] spans = finder.spans();
+    final List<Annotation<String>> annotations = annotated.get(Layers.ENTITIES);
     final double[] probabilities = includeProbabilities ? nameFinder.probs(spans) : null;
     final List<NamedEntity> entities = new ArrayList<>(spans.length);
     for (int e = 0; e < spans.length; e++) {
+      final Span annotationSpan = annotations.get(e).span();
+      final int sentenceStart = sentence.getSentenceSpan().getStart();
       final NamedEntity.Builder entity = NamedEntity.newBuilder()
-          .setAnnotationSpan(tokenSpanToDocumentSpan(sentence, spans[e]))
-          .setEntityType(resolveEntityType(entityType, spans[e]));
+          .setAnnotationSpan(AnnotationSpan.newBuilder()
+              .setStart(sentenceStart + annotationSpan.getStart())
+              .setEnd(sentenceStart + annotationSpan.getEnd())
+              .setSpace(CoordinateSpace.COORDINATE_SPACE_CHAR_DOCUMENT))
+          .setEntityType(NerSpans.resolveEntityType(entityType, spans[e]));
       if (probabilities != null && e < probabilities.length) {
         entity.setProbability(probabilities[e]);
       }
@@ -135,42 +150,58 @@ final class ClassicNerModel implements NerModel {
     return entities;
   }
 
-  /** Returns sentence token text in order. */
-  private static String[] tokenTexts(AnnotatedSentence sentence) {
-    final String[] tokens = new String[sentence.getTokensCount()];
-    for (int t = 0; t < tokens.length; t++) {
-      tokens[t] = sentence.getTokens(t).getText();
+  /** Creates a sentence-local document with the layers required by the NER annotator. */
+  private Document document(AnnotatedSentence sentence) {
+    final int sentenceStart = sentence.getSentenceSpan().getStart();
+    final String text = sentenceText(sentence);
+    Document document = Document.of(text).with(Layers.SENTENCES,
+        List.of(new Annotation<>(new Span(0, text.length()), text)));
+    final List<Annotation<String>> tokens = new ArrayList<>(sentence.getTokensCount());
+    for (Token token : sentence.getTokensList()) {
+      tokens.add(new Annotation<>(new Span(
+          token.getAnnotationSpan().getStart() - sentenceStart,
+          token.getAnnotationSpan().getEnd() - sentenceStart), token.getText()));
     }
-    return tokens;
+    return document.with(Layers.TOKENS, tokens);
   }
 
-  /** Converts a token-index span to document offsets. */
-  private static AnnotationSpan tokenSpanToDocumentSpan(AnnotatedSentence sentence, Span tokenSpan) {
-    final int startToken = tokenSpan.getStart();
-    final int endToken = tokenSpan.getEnd();
-    if (startToken < 0 || endToken <= startToken || endToken > sentence.getTokensCount()) {
-      throw new IllegalStateException("Name finder span is out of token bounds: " + tokenSpan);
+  /** Reconstructs the covered sentence text from the token surfaces and their offsets. */
+  private String sentenceText(AnnotatedSentence sentence) {
+    final int sentenceStart = sentence.getSentenceSpan().getStart();
+    final int sentenceLength = sentence.getSentenceSpan().getEnd() - sentenceStart;
+    final char[] text = new char[sentenceLength];
+    Arrays.fill(text, ' ');
+    for (Token token : sentence.getTokensList()) {
+      final int tokenStart = token.getAnnotationSpan().getStart() - sentenceStart;
+      final int tokenLength = token.getAnnotationSpan().getEnd()
+          - token.getAnnotationSpan().getStart();
+      token.getText().getChars(
+          0, Math.min(token.getText().length(), tokenLength), text, tokenStart);
     }
-    final Token first = sentence.getTokens(startToken);
-    final Token last = sentence.getTokens(endToken - 1);
-    return AnnotationSpan.newBuilder()
-        .setStart(first.getAnnotationSpan().getStart())
-        .setEnd(last.getAnnotationSpan().getEnd())
-        .setSpace(CoordinateSpace.COORDINATE_SPACE_CHAR_DOCUMENT)
-        .build();
+    return new String(text);
   }
 
-  /**
-   * The authoritative entity type is the one the model emits on the span (set by
-   * multi-class models). Single-type models leave it unset, so we fall back to the
-   * configured type under which the finder was registered. This is the intended label for
-   * such models, not a guess.
-   */
-  private static String resolveEntityType(String configuredType, Span span) {
-    final String spanType = span.getType();
-    if (spanType != null && !spanType.isBlank()) {
-      return spanType;
+  /** Prevents the annotator from clearing adaptive state between sentences. */
+  private final class AdaptiveDataPreservingFinder implements TokenNameFinder {
+
+    private Span[] spans = new Span[0];
+
+    /** {@inheritDoc} */
+    @Override
+    public Span[] find(String[] tokens) {
+      spans = nameFinder.find(tokens);
+      return spans;
     }
-    return configuredType;
+
+    /** {@inheritDoc} */
+    @Override
+    public void clearAdaptiveData() {
+      // The resolver clears the wrapped model once after the complete document.
+    }
+
+    /** Returns the spans produced by the wrapped finder. */
+    private Span[] spans() {
+      return spans;
+    }
   }
 }

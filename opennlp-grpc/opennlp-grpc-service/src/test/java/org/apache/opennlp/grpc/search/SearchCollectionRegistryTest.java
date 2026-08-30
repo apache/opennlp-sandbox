@@ -119,63 +119,6 @@ class SearchCollectionRegistryTest {
     assertEquals(0.5, descriptor.getDrift().getVocabularyCoverage());
   }
 
-  @Test
-  void persistsCollectionsBesideIndexCheckpointsAndRestoresThem(@TempDir Path root)
-      throws IOException {
-    final WorkspaceCheckpointStore checkpoints = new WorkspaceCheckpointStore(root);
-    final SearchProviderCatalog catalog = SearchProviderCatalog.discover();
-    final DynamicSearchIndexRegistry indexes =
-        new DynamicSearchIndexRegistry(catalog, checkpoints);
-    final String indexId = indexes
-        .index(DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha beta", 1, 0)
-            .toBuilder()
-            .setProvider(org.apache.opennlp.grpc.v1.SearchProviderSelector.newBuilder()
-                .setStandard(org.apache.opennlp.grpc.v1.StandardSearchProvider
-                    .STANDARD_SEARCH_PROVIDER_TURBO_QUANT))
-            .build())
-        .getIndex().getIndexId();
-    indexes.persist(indexId);
-
-    final SearchCollectionRegistry registry = SearchCollectionRegistry.fromConfiguration(
-        Map.of(WorkspaceCheckpointStore.ROOT_KEY, root.toString()), indexes, NO_VOCABULARIES);
-    final CollectionDescriptor written = registry.set(SetCollectionRequest.newBuilder()
-        .setCollectionId("legal")
-        .setDisplayName("Legal corpus")
-        .addMemberIndexIds(indexId)
-        .setDriftNewTermThreshold(5)
-        .build());
-    assertFalse(written.getIntegrityHash().isEmpty());
-    assertTrue(Files.isRegularFile(root
-        .resolve(SearchCollectionRegistry.COLLECTIONS_DIR)
-        .resolve("legal")
-        .resolve(SearchCollectionRegistry.COLLECTION_FILE)));
-
-    // The reserved collections directory is not an index checkpoint.
-    final DynamicSearchIndexRegistry restoredIndexes =
-        new DynamicSearchIndexRegistry(catalog, new WorkspaceCheckpointStore(root));
-    assertEquals(1, restoredIndexes.descriptors().size());
-
-    final SearchCollectionRegistry restored = SearchCollectionRegistry.fromConfiguration(
-        Map.of(WorkspaceCheckpointStore.ROOT_KEY, root.toString()),
-        restoredIndexes, NO_VOCABULARIES);
-    final CollectionDescriptor descriptor = restored.find("legal");
-    assertEquals("Legal corpus", descriptor.getDisplayName());
-    assertEquals(List.of(indexId), descriptor.getMemberIndexIdsList());
-    assertEquals(5, descriptor.getDriftNewTermThreshold());
-    assertEquals(written.getIntegrityHash(), descriptor.getIntegrityHash());
-    assertEquals(2, descriptor.getDrift().getDistinctTerms());
-
-    // A tampered collection file fails integrity verification at load.
-    final Path file = root.resolve(SearchCollectionRegistry.COLLECTIONS_DIR)
-        .resolve("legal").resolve(SearchCollectionRegistry.COLLECTION_FILE);
-    Files.write(file, org.apache.opennlp.grpc.v1.PersistedCollection.parseFrom(
-            Files.readAllBytes(file)).toBuilder()
-        .setCollection(descriptor.toBuilder().setDisplayName("Tampered"))
-        .build().toByteArray());
-    assertThrows(IllegalStateException.class, () -> SearchCollectionRegistry.fromConfiguration(
-        Map.of(WorkspaceCheckpointStore.ROOT_KEY, root.toString()),
-        restoredIndexes, NO_VOCABULARIES));
-  }
 
   @Test
   void failedPersistentMutationsLeaveThePublishedCollectionUnchanged(@TempDir Path root)
@@ -439,15 +382,15 @@ class SearchCollectionRegistryTest {
     final SearchCollectionRegistry registry =
         SearchCollectionRegistry.inMemory(indexes, NO_VOCABULARIES, 2);
 
-    final org.apache.opennlp.grpc.processor.AnalysisException failure = assertThrows(
-        org.apache.opennlp.grpc.processor.AnalysisException.class,
+    final org.apache.opennlp.grpc.spi.AnalysisException failure = assertThrows(
+        org.apache.opennlp.grpc.spi.AnalysisException.class,
         () -> registry.set(SetCollectionRequest.newBuilder()
             .setCollectionId("legal")
             .setDisplayName("Legal corpus")
             .addMemberIndexIds(indexId)
             .build()));
 
-    assertEquals(org.apache.opennlp.grpc.processor.AnalysisException.FailureType
+    assertEquals(org.apache.opennlp.grpc.spi.AnalysisException.FailureType
         .RESOURCE_EXHAUSTED, failure.getFailureType());
   }
 

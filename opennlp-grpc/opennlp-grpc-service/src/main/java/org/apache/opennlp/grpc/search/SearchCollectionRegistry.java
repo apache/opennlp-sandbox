@@ -50,9 +50,10 @@ import org.apache.opennlp.grpc.v1.SetCollectionRequest;
 import org.apache.opennlp.grpc.v1.TermStatistic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 
 /**
- * Bounded registry of collections: the scope vocabulary accretion is measured over.
+ * Bounded registry of collections: the scope vocabulary drift is measured over.
  *
  * <p>A collection stores configured state only: its member index ids, artifact lineage,
  * and drift threshold. The term statistics and drift statistics are recomputed on every read
@@ -794,7 +795,7 @@ public final class SearchCollectionRegistry {
       return;
     }
     if (counts.size() >= maxDistinctTerms) {
-      throw org.apache.opennlp.grpc.processor.AnalysisException.resourceExhausted(
+      throw org.apache.opennlp.grpc.spi.AnalysisException.resourceExhausted(
           "Collection drift distinct terms exceed configured maximum " + maxDistinctTerms);
     }
     counts.put(term, 1L);

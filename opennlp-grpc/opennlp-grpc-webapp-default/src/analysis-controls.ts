@@ -27,18 +27,26 @@ import {
 } from "./analysis-config";
 import type { AnalyzeRequest } from "./api";
 import type { DiscoveryOption } from "./discovery";
+import type { CatalogFixer } from "./model-data-workbench";
 import { replaceCharacter, withoutPrefix } from "./text-utils";
 import { requiredElement } from "./ui-utils";
 
 export class AnalysisControls {
   readonly #profile = requiredElement<HTMLSelectElement>("profile-select");
   readonly #embeddingModel = requiredElement<HTMLSelectElement>("embedding-model-select");
+  readonly #pipelineLanguage = requiredElement<HTMLSelectElement>("pipeline-language-select");
+  readonly #posTagFormat = requiredElement<HTMLSelectElement>("pos-tag-format-select");
   readonly #sentenceChunks = requiredElement<HTMLInputElement>("sentence-chunks");
   readonly #tokenChunks = requiredElement<HTMLInputElement>("token-chunks");
   readonly #tokenChunkSize = requiredElement<HTMLInputElement>("token-chunk-size");
   readonly #tokenChunkOverlap = requiredElement<HTMLInputElement>("token-chunk-overlap");
   readonly #enabledFeatures = requiredElement<HTMLUListElement>("enabled-feature-list");
   readonly #featureOptions = requiredElement<HTMLDivElement>("feature-options");
+  /** The checklist wrapper; absent in unit fixtures that mount the grid alone. */
+  readonly #featurePicker = document.getElementById("feature-picker");
+  /** Where a browned-out feature explains itself; absent in fixtures that mount the grid alone. */
+  readonly #availability = document.getElementById("feature-availability");
+  #fixers = new Map<string, CatalogFixer[]>();
   readonly #modelList = requiredElement<HTMLUListElement>("model-list");
   readonly #onChange: () => void;
   #capabilities: AnalysisCapabilities = discoverAnalysisCapabilities(undefined, undefined);
@@ -53,6 +61,8 @@ export class AnalysisControls {
       this.#onChange();
     });
     this.#embeddingModel.addEventListener("change", () => this.renderFeatures());
+    this.#pipelineLanguage.addEventListener("change", () => this.#onChange());
+    this.#posTagFormat.addEventListener("change", () => this.#onChange());
     this.#sentenceChunks.addEventListener("change", () => this.changed());
     this.#tokenChunks.addEventListener("change", () => this.updateChunkControls());
     this.#tokenChunkSize.addEventListener("input", () => this.changed());
@@ -67,10 +77,25 @@ export class AnalysisControls {
     this.populateProfiles(this.#capabilities.profiles);
     this.populateEmbeddingModels(this.mergedEmbeddingModels());
     this.populateModelList(this.#capabilities.bundles);
+    this.populatePipelineLanguages(this.#capabilities.pipelineLanguages);
     this.#customSteps = new Set(this.#capabilities.maxSteps);
     this.renderFeatureOptions();
     this.renderFeatures();
     return this.#capabilities;
+  }
+
+  /** Offers the configured language pipelines beside automatic routing. */
+  private populatePipelineLanguages(pipelines: DiscoveryOption[]): void {
+    const selected = this.#pipelineLanguage.value;
+    this.#pipelineLanguage.replaceChildren();
+    this.#pipelineLanguage.add(new Option("Automatic (route by detected language)", ""));
+    for (const pipeline of pipelines) {
+      this.#pipelineLanguage.add(new Option(pipeline.label, pipeline.id));
+    }
+    this.#pipelineLanguage.disabled = pipelines.length === 0;
+    if (pipelines.some((pipeline) => pipeline.id === selected)) {
+      this.#pipelineLanguage.value = selected;
+    }
   }
 
   /**
@@ -86,6 +111,20 @@ export class AnalysisControls {
       this.#embeddingModel.value = selected;
     }
     this.renderFeatures();
+  }
+
+  /**
+   * Selects the given embedding model when the selector offers it.
+   *
+   * @return whether the model is offered and now selected
+   */
+  selectEmbeddingModel(modelId: string): boolean {
+    if (!this.mergedEmbeddingModels().some((option) => option.id === modelId)) {
+      return false;
+    }
+    this.#embeddingModel.value = modelId;
+    this.renderFeatures();
+    return true;
   }
 
   /**
@@ -124,6 +163,8 @@ export class AnalysisControls {
       tokenChunkSize: this.#tokenChunkSize.valueAsNumber,
       tokenChunkOverlap: this.#tokenChunkOverlap.valueAsNumber,
       embeddingModelId: this.#embeddingModel.value || undefined,
+      pipelineLanguage: this.#pipelineLanguage.value || undefined,
+      posTagFormat: this.#posTagFormat.value || undefined,
     }, this.#capabilities);
   }
 
@@ -155,10 +196,10 @@ export class AnalysisControls {
     this.#profile.replaceChildren(
       new Option("All available features", "max", true, true),
       new Option("Choose features", "custom"),
-      new Option("Server automatic", "automatic"),
+      new Option("Server default profile", "automatic"),
     );
     for (const option of options) {
-      this.#profile.add(new Option(`Profile: ${option.label}`, `profile:${option.id}`));
+      this.#profile.add(new Option(`Server profile: ${option.label}`, `profile:${option.id}`));
     }
   }
 
@@ -205,9 +246,9 @@ export class AnalysisControls {
         }
       }
     } else if (this.#profile.value === "automatic") {
-      labels.push("Server automatic profile");
+      labels.push("Server default profile");
     } else {
-      labels.push(`Named ${withoutPrefix(this.#profile.value, "profile:")} profile`);
+      labels.push(`Server profile '${withoutPrefix(this.#profile.value, "profile:")}'`);
     }
     if (this.#sentenceChunks.checked) {
       labels.push("Sentence chunks");
@@ -215,11 +256,84 @@ export class AnalysisControls {
     if (this.#tokenChunks.checked) {
       labels.push("Token windows");
     }
-    this.#enabledFeatures.replaceChildren(...labels.map(featureChip));
+    const unavailable = PIPELINE_ORDER.filter((step) =>
+      this.#capabilities.supportedSteps.includes(step) && !this.#capabilities.maxSteps.includes(step));
+    this.#enabledFeatures.replaceChildren(
+      ...labels.map(featureChip),
+      ...unavailable.map((step) => this.unavailableChip(step)));
+  }
+
+  /**
+   * Records which catalog entries would make each pipeline step ready, so a browned-out
+   * feature can offer the install instead of naming a configuration key.
+   */
+  setFeatureFixers(fixers: Map<string, CatalogFixer[]>): void {
+    this.#fixers = fixers;
+    this.renderFeatures();
+  }
+
+  /** A muted, clickable chip for a step this server build supports but cannot run yet. */
+  private unavailableChip(step: string): HTMLLIElement {
+    const item = document.createElement("li");
+    item.className = "feature-chip is-unavailable";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.unavailableStep = step;
+    button.textContent = featureLabel(step);
+    button.title = "Not available on this server. Select to see why.";
+    button.addEventListener("click", () => this.explain(step));
+    item.append(button);
+    return item;
+  }
+
+  /**
+   * Explains one unavailable step with a fixed shape: the reason, and one of three fixes.
+   * A catalog entry that unlocks it offers a jump that lands on that card; a supported
+   * step with no catalog entry names the operator setting; anything else is not in this
+   * build.
+   */
+  explain(step: string): void {
+    const panel = this.#availability;
+    if (!panel) {
+      return;
+    }
+    const label = featureLabel(step);
+    const fixers = this.#fixers.get(step) ?? [];
+    const supported = this.#capabilities.supportedSteps.includes(step);
+    panel.replaceChildren();
+    panel.hidden = false;
+    const heading = document.createElement("p");
+    heading.className = "feature-availability-title";
+    heading.textContent = `${label} is not available on this server.`;
+    const reason = document.createElement("p");
+    reason.textContent = `Reason: ${!supported
+      ? "this server build does not include it."
+      : "no model or resource that serves it is loaded."}`;
+    const fix = document.createElement("p");
+    panel.append(heading, reason, fix);
+    if (fixers.length > 0) {
+      fix.textContent = `Fix: install ${fixers.map((fixer) => fixer.displayName).join(" or ")}`
+        + " from the model catalog. ";
+      const jump = document.createElement("button");
+      jump.type = "button";
+      jump.className = "link-button";
+      jump.dataset.workbenchJump = "models";
+      jump.dataset.workbenchFocus = step;
+      jump.textContent = "Open Models & data";
+      fix.append(jump);
+    } else if (supported) {
+      fix.textContent = `Fix: ask the operator to set ${CONFIGURATION_KEYS[step] ?? "its model path"}`
+        + " in server.properties and restart.";
+    } else {
+      fix.textContent = "Fix: none from here; a different server build is needed.";
+    }
   }
 
   private renderFeatureOptions(): void {
     const mode = this.#profile.value;
+    if (this.#featurePicker) {
+      this.#featurePicker.hidden = mode !== "custom";
+    }
     const selectable = new Set(this.#capabilities.maxSteps);
     const supported = new Set(this.#capabilities.supportedSteps);
     const selected = mode === "max" ? selectable : this.#customSteps;
@@ -253,6 +367,33 @@ export class AnalysisControls {
     });
     this.#featureOptions.replaceChildren(...options);
   }
+}
+
+/**
+ * The operator setting that serves each step when no catalog entry can, transcribed from
+ * the service's own "not configured" errors.
+ */
+export const CONFIGURATION_KEYS: Readonly<Record<string, string>> = {
+  PIPELINE_STEP_NER: "model.name_finder.<entity_type>.path",
+  PIPELINE_STEP_GEOCODE: "a name finder, model.name_finder.<entity_type>.path",
+  PIPELINE_STEP_PARSE: "model.parser.<model_id>.path",
+  PIPELINE_STEP_SYNTACTIC_CHUNK: "model.chunker.<model_id>.path",
+  PIPELINE_STEP_SUBWORD_TOKENIZE: "model.subword.<model_id>.path",
+  PIPELINE_STEP_EXPAND: "model.wordnet.<model_id>.path",
+  PIPELINE_STEP_DOC_CATEGORIZE: "model.doccat.<model_id>.path",
+  PIPELINE_STEP_SENTIMENT: "model.sentiment.<model_id>.path or model.sentiment_dl.<model_id>.path",
+  PIPELINE_STEP_EMBED: "model.embedder.<model_id>.<backend>",
+  PIPELINE_STEP_CHUNK: "model.embedder.<model_id>.<backend>",
+  PIPELINE_STEP_SENTENCE_DETECT: "model.pipeline.<lang>.sentence_detector.path",
+  PIPELINE_STEP_TOKENIZE: "model.pipeline.<lang>.tokenizer.path",
+  PIPELINE_STEP_POS_TAG: "model.pipeline.<lang>.pos_tagger.path",
+  PIPELINE_STEP_LEMMATIZE: "model.pipeline.<lang>.lemmatizer.path",
+  PIPELINE_STEP_STEM: "a language pack, model.pipeline.<lang>.tokenizer.path",
+};
+
+/** The feature name a person reads for a pipeline step. */
+function featureLabel(step: string): string {
+  return FEATURE_NAMES[step] ?? readableStep(step);
 }
 
 function readableStep(step: string): string {

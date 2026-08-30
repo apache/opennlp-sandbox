@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "test": "tsc --noEmit && vitest run"
+    "test": "tsc --noEmit && vitest run",
+    "e2e": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "1.62.1",
     "@types/node": "22.16.0",
     "jsdom": "^26.1.0",
     "typescript": "7.0.2",

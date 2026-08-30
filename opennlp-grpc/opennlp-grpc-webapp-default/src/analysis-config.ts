@@ -56,7 +56,7 @@ export const FEATURE_NAMES: Readonly<Record<string, string>> = {
   PIPELINE_STEP_DOC_CATEGORIZE: "Document categories",
   PIPELINE_STEP_SENTIMENT: "Sentence sentiment",
   PIPELINE_STEP_PARSE: "Constituency parses",
-  PIPELINE_STEP_SYNTACTIC_CHUNK: "Syntactic chunks",
+  PIPELINE_STEP_SYNTACTIC_CHUNK: "Phrase chunks (shallow parse)",
   PIPELINE_STEP_EMBED: "Document embeddings",
 };
 
@@ -117,6 +117,7 @@ export interface AnalysisCapabilities {
   maxTextBytes?: number;
   subwordModelId?: string;
   wordnetLexiconId?: string;
+  pipelineLanguages: DiscoveryOption[];
 }
 
 export interface AnalysisSelection {
@@ -128,6 +129,8 @@ export interface AnalysisSelection {
   tokenChunkSize: number;
   tokenChunkOverlap: number;
   embeddingModelId?: string;
+  pipelineLanguage?: string;
+  posTagFormat?: string;
 }
 
 export function discoverAnalysisCapabilities(
@@ -195,6 +198,13 @@ export function discoverAnalysisCapabilities(
   return {
     profiles: options(strings(service?.availableProfileIds)),
     bundles: options(bundles.map((bundle) => string(bundle.bundleId))),
+    pipelineLanguages: bundles
+      .filter((bundle) => string(bundle.bundleId).startsWith("pipeline-"))
+      .map((bundle) => {
+        const language = strings(bundle.supportedLanguages)[0]
+          ?? string(bundle.bundleId).slice("pipeline-".length);
+        return { id: language, label: language };
+      }),
     embeddingModels: [...embeddingModels.values()],
     maxSteps,
     supportedSteps: PIPELINE_ORDER.filter((step) => supported.includes(step)),
@@ -238,6 +248,16 @@ export function buildAnalysisRequest(
     }
     if (selectedSteps.includes("PIPELINE_STEP_PARSE")) {
       request.options!.parseFormats = ["PARSE_FORMAT_STRUCTURED", "PARSE_FORMAT_BRACKETED"];
+    }
+    if (selection.posTagFormat && selectedSteps.includes("PIPELINE_STEP_POS_TAG")) {
+      request.profile!.posTagFormat = selection.posTagFormat;
+    }
+    if (selection.pipelineLanguage) {
+      request.profile!.pipelineLanguage = selection.pipelineLanguage;
+    }
+    if (selectedSteps.includes("PIPELINE_STEP_LANGUAGE_DETECT")) {
+      // Five ranked predictions keep the language chips informative without bloat.
+      request.options!.rankedLanguageCount = 5;
     }
   } else if (selection.mode === "profile" && selection.profileId) {
     request.profileId = selection.profileId;

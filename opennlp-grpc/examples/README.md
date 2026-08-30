@@ -24,6 +24,8 @@ limitations under the License.
   search flow with runtime proto loading and no code generation step.
 - [Java quickstart](java-client/README.md): the same flow as a standalone Maven
   project over the generated blocking stubs from `opennlp-grpc-api`.
+- [Go quickstart](go-client/README.md): the same flow with locally generated
+  `protoc-gen-go` stubs; `generate.sh` maps every proto in one step.
 - [Protocol stub generation](../opennlp-grpc-api/README.md): generate clients for
   other supported languages directly from the v1 protos.
 - Language-neutral HTTP: the optional
@@ -31,8 +33,8 @@ limitations under the License.
   contracts as a protobuf JSON gateway, so `curl` and any HTTP client work
   without gRPC tooling.
 
-The Python, Node.js, and Java quickstarts print identical output for the same
-server, so they double as a cross-language contract check.
+The Python, Node.js, Java, and Go quickstarts print identical output for the
+same server, so they double as a cross-language contract check.
 
 Legacy per-tool examples were removed. New examples use the document-centric v1
 contracts so one client can compose analysis, training, and search.

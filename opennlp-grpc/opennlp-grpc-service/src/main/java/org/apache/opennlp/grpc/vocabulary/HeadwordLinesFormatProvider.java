@@ -24,6 +24,8 @@ import java.io.InputStream;
 import org.apache.opennlp.grpc.v1.DictionaryFormatDescriptor;
 import org.apache.opennlp.grpc.v1.DictionaryFormatSelector;
 import org.apache.opennlp.grpc.v1.StandardDictionaryFormat;
+import org.apache.opennlp.grpc.spi.vocabulary.DictionaryFormatProvider;
+import org.apache.opennlp.grpc.spi.vocabulary.DictionaryEntryConsumer;
 
 /** Built-in UTF-8 one-headword-per-line dictionary provider. */
 public final class HeadwordLinesFormatProvider implements DictionaryFormatProvider {

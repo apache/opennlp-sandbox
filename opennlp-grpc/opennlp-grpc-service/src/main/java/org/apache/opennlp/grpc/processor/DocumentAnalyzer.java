@@ -21,6 +21,7 @@ package org.apache.opennlp.grpc.processor;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.AnalyzeStreamConfiguration;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 
 /**
  * Analyzes OpenNLP documents from typed pipeline requests.
@@ -36,7 +37,7 @@ public interface DocumentAnalyzer extends AutoCloseable {
    *
    * @return The analysis response with the annotated document. Never {@code null}.
    *
-   * @throws org.apache.opennlp.grpc.processor.AnalysisException If the request is invalid
+   * @throws org.apache.opennlp.grpc.spi.AnalysisException If the request is invalid
    *         or a required step fails.
    * @throws IllegalArgumentException If {@code request} is {@code null}.
    */

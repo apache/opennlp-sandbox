@@ -19,7 +19,7 @@ package org.apache.opennlp.grpc.processor.basic;
 
 import java.util.Map;
 
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.processor.PipelineStepPolicy;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.v1.AnalysisOptions;

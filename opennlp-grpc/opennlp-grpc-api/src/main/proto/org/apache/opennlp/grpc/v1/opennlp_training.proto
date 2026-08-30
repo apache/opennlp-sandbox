@@ -21,6 +21,7 @@ syntax = "proto3";
 package org.apache.opennlp.grpc.v1;
 
 import "google/protobuf/timestamp.proto";
+import "org/apache/opennlp/grpc/v1/opennlp_pipeline.proto";
 import "org/apache/opennlp/grpc/v1/opennlp_search.proto";
 import "org/apache/opennlp/grpc/v1/opennlp_service.proto";
 import "org/apache/opennlp/grpc/v1/opennlp_vocabulary.proto";
@@ -83,10 +84,56 @@ enum ModelArtifactRole {
   MODEL_ARTIFACT_ROLE_PARSER = 3;
   // OpenNLP syntactic chunker model activated on the next server start.
   MODEL_ARTIFACT_ROLE_CHUNKER = 4;
+  // OpenNLP sentence detector model activated on the next server start.
+  MODEL_ARTIFACT_ROLE_SENTENCE_DETECTOR = 5;
+  // OpenNLP tokenizer model activated on the next server start.
+  MODEL_ARTIFACT_ROLE_TOKENIZER = 6;
+  // OpenNLP part-of-speech tagger model activated on the next server start.
+  MODEL_ARTIFACT_ROLE_POS_TAGGER = 7;
+  // OpenNLP lemmatizer model activated on the next server start.
+  MODEL_ARTIFACT_ROLE_LEMMATIZER = 8;
+  // A classic name finder model serving one entity type; published as
+  // model.name_finder.<model_id>.path at the next restart.
+  MODEL_ARTIFACT_ROLE_NAME_FINDER = 9;
+  // A SentencePiece model serving subword tokenization; restart-only, published as
+  // model.subword.<model_id>.path.
+  MODEL_ARTIFACT_ROLE_SUBWORD_MODEL = 10;
+  // A WN-LMF lexicon serving lexical expansion; restart-only, published as
+  // model.wordnet.<model_id>.path.
+  MODEL_ARTIFACT_ROLE_WORDNET_LEXICON = 11;
+  // A classic document categorizer; restart-only, published as
+  // model.doccat.<model_id>.path.
+  MODEL_ARTIFACT_ROLE_DOC_CATEGORIZER = 12;
 }
 
 // One immutable entry in the server-owned model catalog. Source_uri is a
 // human-facing model page, not a caller-controlled download location.
+// The on-disk format of a catalog model's primary file, derived from the pinned file
+// names so a client can label a card without opening the artifact.
+enum ModelArtifactFormat {
+  MODEL_ARTIFACT_FORMAT_UNSPECIFIED = 0;
+  // Apache OpenNLP serialized model (.bin).
+  MODEL_ARTIFACT_FORMAT_OPENNLP_BIN = 1;
+  // ONNX graph (.onnx), served by an ONNX runtime backend.
+  MODEL_ARTIFACT_FORMAT_ONNX = 2;
+  // SentencePiece model (.model or .spm).
+  MODEL_ARTIFACT_FORMAT_SENTENCEPIECE = 3;
+  // WN-LMF lexicon (.xml, optionally gzipped).
+  MODEL_ARTIFACT_FORMAT_WN_LMF = 4;
+  // Safetensors weight file (.safetensors).
+  MODEL_ARTIFACT_FORMAT_SAFETENSORS = 5;
+}
+
+// One pinned file of a catalog model, as the installer verifies it.
+message CatalogFileDescriptor {
+  // Path relative to the model directory, with forward slashes.
+  string relative_path = 1;
+  // Exact size in bytes.
+  uint64 byte_size = 2;
+  // Lowercase hexadecimal SHA-256 of the file contents.
+  string sha256_hex = 3;
+}
+
 message ModelCatalogDescriptor {
   string catalog_id = 1;
   string display_name = 2;
@@ -102,6 +149,15 @@ message ModelCatalogDescriptor {
   uint32 dimension = 10;
   repeated string languages = 11;
   string description = 12;
+  // Format of the primary file, derived from the pinned file names.
+  ModelArtifactFormat format = 13;
+  // Pipeline steps this model makes available once active; empty for a teacher, which
+  // unlocks distillation rather than a step.
+  repeated PipelineStep unlocks = 14;
+  // True when the model serves only after a server restart publishes its path.
+  bool requires_restart = 15;
+  // The pinned files, so a client can show what an install writes.
+  repeated CatalogFileDescriptor files = 16;
 }
 
 message ListModelCatalogRequest {}
@@ -350,6 +406,16 @@ message StaticModelDescriptor {
   uint64 byte_size = 11;
   string provenance_summary = 12;
   google.protobuf.Timestamp created_at = 13;
+  // Where the teacher came from, recorded at distillation so the model carries its own
+  // lineage even if the teacher is later re-pinned or removed: a repository or path.
+  string teacher_reference = 14;
+  // The teacher's pinned revision, when the teacher came from the catalog.
+  string teacher_revision = 15;
+  // The license inherited from the teacher, as an SPDX identifier; empty when unknown.
+  string license_name = 16;
+  string license_uri = 17;
+  // Languages the teacher declares; empty when unknown.
+  repeated string languages = 18;
 }
 
 message ListStaticModelsRequest {}

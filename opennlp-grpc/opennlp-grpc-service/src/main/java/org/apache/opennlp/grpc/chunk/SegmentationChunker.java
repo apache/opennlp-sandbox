@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.opennlp.grpc.embedding.EmbeddingBackendSelections;
-import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.ChunkingSpec;
 import org.apache.opennlp.grpc.v1.EmbeddingSelector;

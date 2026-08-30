@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.opennlp.grpc.backend.RankedBackends.Registration;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

@@ -23,9 +23,10 @@ import java.util.List;
 import org.apache.opennlp.grpc.chunk.Centroids;
 import org.apache.opennlp.grpc.chunk.ChunkEmbedProcessor;
 import org.apache.opennlp.grpc.chunk.ChunkingStrategies;
-import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
-import org.apache.opennlp.grpc.embedding.EmbeddingBatchResult;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingBatchResult;
+import org.apache.opennlp.grpc.model.ClassicLanguagePipeline;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.profile.ProfileMerger;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
@@ -142,6 +143,7 @@ final class EmbedChunkStepRunner {
    * @param diagnostics          The diagnostic list to append to.
    */
   void runChunkEmbedConfigs(
+      ClassicLanguagePipeline pipeline,
       String rawText,
       OpenNlpDocument.Builder document,
       AnalyzeDocumentRequest request,
@@ -154,8 +156,8 @@ final class EmbedChunkStepRunner {
           "chunk_embed_configs requires sentence detection backbone");
     }
     for (ChunkEmbedConfigEntry entry : request.getChunkEmbedConfigsList()) {
-      ensureEntryBackbone(rawText, document, requestProfile, entry, includeProbabilities,
-          diagnostics);
+      ensureEntryBackbone(pipeline, rawText, document, requestProfile, entry,
+          includeProbabilities, diagnostics);
       final ChunkEmbeddingGroup group =
           ChunkEmbedProcessor.buildGroup(rawText, document.build(), entry, embeddingProvider);
       document.addChunkEmbeddingGroups(group);
@@ -169,6 +171,7 @@ final class EmbedChunkStepRunner {
    * steps on demand when the entry supplies its own profile.
    */
   private void ensureEntryBackbone(
+      ClassicLanguagePipeline pipeline,
       String rawText,
       OpenNlpDocument.Builder document,
       AnalysisProfile requestProfile,
@@ -183,15 +186,16 @@ final class EmbedChunkStepRunner {
         : ChunkingStrategies.SENTENCE;
 
     if (document.getSentencesCount() == 0) {
-      classicSteps.detectSentences(rawText, document, includeProbabilities, diagnostics);
+      classicSteps.detectSentences(pipeline, rawText, document, includeProbabilities,
+          diagnostics);
     }
     if (ChunkingStrategies.TOKEN.equals(algorithm) && !isTokenized(document)) {
-      classicSteps.tokenize(rawText, document, includeProbabilities, diagnostics);
+      classicSteps.tokenize(pipeline, rawText, document, includeProbabilities, diagnostics);
     }
     if (entry.hasProfile()
         && effectiveProfile.getStepsList().contains(PipelineStep.PIPELINE_STEP_TOKENIZE)
         && !isTokenized(document)) {
-      classicSteps.tokenize(rawText, document, includeProbabilities, diagnostics);
+      classicSteps.tokenize(pipeline, rawText, document, includeProbabilities, diagnostics);
     }
   }
 

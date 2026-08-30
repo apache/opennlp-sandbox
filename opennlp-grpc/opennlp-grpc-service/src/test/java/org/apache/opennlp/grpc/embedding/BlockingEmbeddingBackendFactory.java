@@ -22,6 +22,8 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingBackendFactory;
 
 /** Test backend whose embedding call can be held open while server shutdown begins. */
 public final class BlockingEmbeddingBackendFactory implements EmbeddingBackendFactory {

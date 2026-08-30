@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
@@ -29,6 +30,8 @@ import com.google.protobuf.util.JsonFormat;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
+import org.apache.opennlp.grpc.v1.AnalyzeDocumentEvent;
+import org.apache.opennlp.grpc.v1.FormatDocumentRequest;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.CollectionEvent;
 import org.apache.opennlp.grpc.v1.DeleteCollectionRequest;
@@ -44,6 +47,8 @@ import org.apache.opennlp.grpc.v1.SetIndexAliasRequest;
 import org.apache.opennlp.grpc.v1.DeleteStaticModelRequest;
 import org.apache.opennlp.grpc.v1.DownloadVocabularyRequest;
 import org.apache.opennlp.grpc.v1.ImportDictionaryUpload;
+import org.apache.opennlp.grpc.v1.AnalyzeStreamRequest;
+import org.apache.opennlp.grpc.v1.AnalyzeStreamResponse;
 import org.apache.opennlp.grpc.v1.InstallModelRequest;
 import org.apache.opennlp.grpc.v1.InstallModelUpdate;
 import org.apache.opennlp.grpc.v1.IndexDocumentsRequest;
@@ -128,6 +133,12 @@ final class GrpcJsonApi {
             ? protobufJson(analysisRpc.listModelBundles()) : methodNotAllowed();
         case "/api/v1/analyze" -> method.equals("POST")
             ? analyze(body) : methodNotAllowed();
+        case "/api/v1/analyze-protobuf" -> method.equals("POST")
+            ? analyzeProtobuf(body) : methodNotAllowed();
+        case "/api/v1/output-formats" -> method.equals("GET")
+            ? protobufJson(analysisRpc.listOutputFormats()) : methodNotAllowed();
+        case "/api/v1/format-document" -> method.equals("POST")
+            ? formatDocument(body) : methodNotAllowed();
         case "/api/v1/response/encode" -> method.equals("POST")
             ? encodeResponse(body) : methodNotAllowed();
         case "/api/v1/response/decode" -> method.equals("POST")
@@ -164,6 +175,10 @@ final class GrpcJsonApi {
             ? deleteCollection(body) : methodNotAllowed();
         case "/api/v1/dictionary-formats" -> method.equals("GET")
             ? protobufJson(vocabularyRpc.listDictionaryFormats()) : methodNotAllowed();
+        case "/api/v1/dictionaries" -> method.equals("GET")
+            ? protobufJson(vocabularyRpc.listDictionaries()) : methodNotAllowed();
+        case "/api/v1/vocabularies" -> method.equals("GET")
+            ? protobufJson(vocabularyRpc.listVocabularies()) : methodNotAllowed();
         case "/api/v1/import-dictionary" -> method.equals("POST")
             ? importDictionary(body) : methodNotAllowed();
         case "/api/v1/learn-vocabulary" -> method.equals("POST")
@@ -193,12 +208,24 @@ final class GrpcJsonApi {
     }
   }
 
-  /**
-   * Parses and forwards an analysis request.
-   *
-   * @param body The protobuf JSON request body.
-   * @return The encoded analysis response.
-   */
+  /** Renders one analyzed document into a deployed output format. */
+  private WebHttpResponse formatDocument(byte[] body) {
+    final FormatDocumentRequest.Builder request = FormatDocumentRequest.newBuilder();
+    final String json;
+    try {
+      json = decodeUtf8(body);
+    } catch (CharacterCodingException exception) {
+      return error(400, Status.Code.INVALID_ARGUMENT, INVALID_UTF8_MESSAGE);
+    }
+    try {
+      parser.merge(json, request);
+    } catch (InvalidProtocolBufferException exception) {
+      return error(400, Status.Code.INVALID_ARGUMENT,
+          MALFORMED_PROTOBUF_JSON_PREFIX + exception.getMessage());
+    }
+    return protobufJson(analysisRpc.formatDocument(request.build()));
+  }
+
   private WebHttpResponse analyze(byte[] body) {
     AnalyzeDocumentRequest.Builder request = AnalyzeDocumentRequest.newBuilder();
     final String json;
@@ -214,6 +241,22 @@ final class GrpcJsonApi {
           MALFORMED_PROTOBUF_JSON_PREFIX + exception.getMessage());
     }
     return protobufJson(analysisRpc.analyze(request.build()));
+  }
+
+  /**
+   * Analyzes one document and returns the serialized response instead of protobuf JSON.
+   * This is the {@code .pb} export for replies too large to print as JSON and re-upload
+   * for transcoding: the gateway never renders the response as text.
+   *
+   * @param body The protobuf JSON request body.
+   * @return The serialized {@link AnalyzeDocumentResponse}, or a parse failure.
+   */
+  private WebHttpResponse analyzeProtobuf(byte[] body) {
+    final AnalyzeDocumentRequest.Builder request = AnalyzeDocumentRequest.newBuilder();
+    final WebHttpResponse parseFailure = merge(body, request);
+    return parseFailure != null ? parseFailure
+        : new WebHttpResponse(200, PROTOBUF_CONTENT_TYPE,
+            analysisRpc.analyze(request.build()).toByteArray());
   }
 
   /**
@@ -548,6 +591,123 @@ final class GrpcJsonApi {
       sink.update(errorJson(Status.Code.INTERNAL, message));
       return null;
     }
+  }
+
+  /**
+   * Analyzes a batch of documents over one AnalyzeStream call, streaming each
+   * completion-ordered response to the browser as an NDJSON line.
+   *
+   * @param body A JSON array of AnalyzeStreamRequest frames: one configuration frame
+   *     first, then one frame per document, exactly as on the gRPC stream.
+   * @param sink Receives one protobuf JSON line per response.
+   * @return A buffered failure, or {@code null} after streaming.
+   * @throws IOException If writing to the sink fails.
+   */
+  WebHttpResponse analyzeStream(byte[] body, JsonLineSink sink) throws IOException {
+    final java.util.List<AnalyzeStreamRequest> frames;
+    try {
+      frames = parseStreamFrames(body);
+    } catch (InvalidProtocolBufferException exception) {
+      return error(400, Status.Code.INVALID_ARGUMENT,
+          MALFORMED_PROTOBUF_JSON_PREFIX + exception.getMessage());
+    } catch (java.nio.charset.CharacterCodingException exception) {
+      return error(400, Status.Code.INVALID_ARGUMENT, INVALID_UTF8_MESSAGE);
+    }
+    if (frames.isEmpty()) {
+      return error(400, Status.Code.INVALID_ARGUMENT,
+          "analyze-stream requires a configuration frame and at least one document frame");
+    }
+    boolean streamed = false;
+    try {
+      final java.util.Iterator<AnalyzeStreamResponse> responses =
+          analysisRpc.analyzeStream(frames);
+      while (responses.hasNext()) {
+        sink.update(printer.print(responses.next()));
+        streamed = true;
+      }
+      return null;
+    } catch (StatusRuntimeException exception) {
+      final Status status = exception.getStatus();
+      String message = status.getDescription();
+      if (message == null || message.isBlank()) {
+        message = status.getCode().name();
+      }
+      if (!streamed) {
+        return error(GrpcHttpStatusMapper.toHttpStatus(status.getCode()),
+            status.getCode(), message);
+      }
+      sink.update(errorJson(status.getCode(), message));
+      return null;
+    } catch (InvalidProtocolBufferException exception) {
+      final String message = "Could not encode the service response";
+      if (!streamed) {
+        return error(500, Status.Code.INTERNAL, message);
+      }
+      sink.update(errorJson(Status.Code.INTERNAL, message));
+      return null;
+    }
+  }
+
+  /**
+   * Analyzes one document and writes each ordered progressive event as an NDJSON line.
+   *
+   * @param body Protobuf JSON for one AnalyzeDocumentRequest.
+   * @param sink Receives one protobuf JSON line per event.
+   * @return A buffered failure, or {@code null} after streaming.
+   * @throws IOException If writing to the sink fails.
+   */
+  WebHttpResponse analyzeProgressively(byte[] body, JsonLineSink sink) throws IOException {
+    final AnalyzeDocumentRequest.Builder request = AnalyzeDocumentRequest.newBuilder();
+    final WebHttpResponse parseFailure = merge(body, request);
+    if (parseFailure != null) {
+      return parseFailure;
+    }
+    boolean streamed = false;
+    try {
+      try (AnalysisRpc.ProgressiveEvents events =
+          analysisRpc.analyzeProgressively(request.build())) {
+        while (events.hasNext()) {
+          sink.update(printer.print(events.next()));
+          streamed = true;
+        }
+      }
+      return null;
+    } catch (StatusRuntimeException exception) {
+      final Status status = exception.getStatus();
+      String message = status.getDescription();
+      if (message == null || message.isBlank()) {
+        message = status.getCode().name();
+      }
+      if (!streamed) {
+        return error(GrpcHttpStatusMapper.toHttpStatus(status.getCode()),
+            status.getCode(), message);
+      }
+      sink.update(errorJson(status.getCode(), message));
+      return null;
+    } catch (InvalidProtocolBufferException exception) {
+      final String message = "Could not encode the service response";
+      if (!streamed) {
+        return error(500, Status.Code.INTERNAL, message);
+      }
+      sink.update(errorJson(Status.Code.INTERNAL, message));
+      return null;
+    }
+  }
+
+  /** Parses the request body's JSON array into AnalyzeStream frames. */
+  private java.util.List<AnalyzeStreamRequest> parseStreamFrames(byte[] body)
+      throws InvalidProtocolBufferException, java.nio.charset.CharacterCodingException {
+    final com.google.protobuf.ListValue.Builder list =
+        com.google.protobuf.ListValue.newBuilder();
+    parser.merge(decodeUtf8(body), list);
+    final java.util.List<AnalyzeStreamRequest> frames =
+        new java.util.ArrayList<>(list.getValuesCount());
+    for (com.google.protobuf.Value value : list.getValuesList()) {
+      final AnalyzeStreamRequest.Builder frame = AnalyzeStreamRequest.newBuilder();
+      parser.merge(printer.print(value), frame);
+      frames.add(frame.build());
+    }
+    return frames;
   }
 
   /**

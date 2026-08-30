@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.opennlp.grpc.v1.DocumentClassification;
+import org.apache.opennlp.grpc.spi.model.DocCategorizerModel;
+import org.apache.opennlp.grpc.spi.model.DocCategorizerBackendFactory;
 
 /**
  * Test-only {@link DocCategorizerBackendFactory} registered via {@code META-INF/services},
@@ -36,6 +38,10 @@ public final class StubDocCategorizerBackendFactory implements DocCategorizerBac
   /** Contributes a model whose {@code id()} is the raw (un-normalized) value, to exercise that the
    * registry normalizes ids at registration so a mixed-case id is still found. */
   public static final String KEY_RAW_ID = "model.doccat_stub.raw_id";
+
+  /** Batched classification calls observed across every stub model, for analyzer tests. */
+  public static final java.util.concurrent.atomic.AtomicInteger BATCH_CALLS =
+      new java.util.concurrent.atomic.AtomicInteger();
 
   @Override
   public String factoryId() {
@@ -87,6 +93,13 @@ public final class StubDocCategorizerBackendFactory implements DocCategorizerBac
           .setBestCategory(category)
           .putCategoryScores(category, 1.0d)
           .build();
+    }
+
+    @Override
+    public List<DocumentClassification> classifyBatch(
+        List<String> documentTexts, List<String[]> documentTokens) {
+      BATCH_CALLS.incrementAndGet();
+      return DocCategorizerModel.super.classifyBatch(documentTexts, documentTokens);
     }
   }
 

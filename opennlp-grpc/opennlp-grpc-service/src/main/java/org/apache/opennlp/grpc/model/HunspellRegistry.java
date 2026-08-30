@@ -26,7 +26,7 @@ import java.util.Map;
 
 import opennlp.tools.stemmer.hunspell.HunspellDictionary;
 import opennlp.tools.stemmer.hunspell.HunspellStemmer;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 
 /**
  * Catalog of hunspell affix dictionaries for the STEM step, keyed by dictionary id.

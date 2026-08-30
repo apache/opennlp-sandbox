@@ -23,15 +23,18 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+
+import java.net.URI;
 
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
+import org.apache.opennlp.grpc.spi.catalog.CatalogFile;
+import org.apache.opennlp.grpc.spi.catalog.CatalogModel;
 import org.apache.opennlp.grpc.v1.DeleteStaticModelRequest;
 import org.apache.opennlp.grpc.v1.DeleteStaticModelResponse;
 import org.apache.opennlp.grpc.v1.InstallModelRequest;
@@ -40,6 +43,7 @@ import org.apache.opennlp.grpc.v1.ListInstalledModelsRequest;
 import org.apache.opennlp.grpc.v1.ListInstalledModelsResponse;
 import org.apache.opennlp.grpc.v1.ListModelCatalogRequest;
 import org.apache.opennlp.grpc.v1.ListModelCatalogResponse;
+import org.apache.opennlp.grpc.v1.ModelCatalogDescriptor;
 import org.apache.opennlp.grpc.v1.ListStaticModelsRequest;
 import org.apache.opennlp.grpc.v1.ListStaticModelsResponse;
 import org.apache.opennlp.grpc.v1.ListTeachersRequest;
@@ -87,12 +91,13 @@ class OpenNlpModelTrainingServiceImplTest {
   }
 
   @Test
-  void listsTheStandardCatalogAndNodeLocalInstallState() throws Exception {
+  void listsTheDiscoveredCatalogAndNodeLocalInstallState() throws Exception {
+    // The catalog is injected directly; the built-in entries ship in the
+    // opennlp-grpc-installer add-on and are covered by that module's tests.
     final TrainedModelEmbeddingProvider registry =
         new TrainedModelEmbeddingProvider(TrainingTestSupport.baseProvider());
     final StaticModelArtifactStore models = modelStore(Map.of(), registry);
-    final CatalogModelStore catalog = CatalogModelStore.fromConfiguration(
-        Map.of(), models, registry);
+    final CatalogModelStore catalog = disabledInstallCatalog(models, registry);
     final OpenNlpModelTrainingServiceImpl service =
         new OpenNlpModelTrainingServiceImpl(models, catalog);
     final TrainingTestSupport.CapturingObserver<ListModelCatalogResponse> listed =
@@ -103,15 +108,9 @@ class OpenNlpModelTrainingServiceImplTest {
     service.listModelCatalog(ListModelCatalogRequest.getDefaultInstance(), listed);
     service.listInstalledModels(ListInstalledModelsRequest.getDefaultInstance(), installed);
 
-    assertEquals(6, listed.values.getFirst().getModelsCount());
-    assertEquals(Set.of(
-            ModelArtifactRole.MODEL_ARTIFACT_ROLE_DISTILLATION_TEACHER,
-            ModelArtifactRole.MODEL_ARTIFACT_ROLE_STATIC_EMBEDDING,
-            ModelArtifactRole.MODEL_ARTIFACT_ROLE_PARSER,
-            ModelArtifactRole.MODEL_ARTIFACT_ROLE_CHUNKER),
-        listed.values.getFirst().getModelsList().stream()
-            .map(model -> model.getRole())
-            .collect(java.util.stream.Collectors.toSet()));
+    assertEquals(1, listed.values.getFirst().getModelsCount());
+    assertEquals(ModelArtifactRole.MODEL_ARTIFACT_ROLE_PARSER,
+        listed.values.getFirst().getModels(0).getRole());
     assertFalse(listed.values.getFirst().getInstallsEnabled());
     assertEquals(0, installed.values.getFirst().getModelsCount());
     assertFalse(installed.values.getFirst().getInstallsEnabled());
@@ -122,8 +121,7 @@ class OpenNlpModelTrainingServiceImplTest {
     final TrainedModelEmbeddingProvider registry =
         new TrainedModelEmbeddingProvider(TrainingTestSupport.baseProvider());
     final StaticModelArtifactStore models = modelStore(Map.of(), registry);
-    final CatalogModelStore catalog = CatalogModelStore.fromConfiguration(
-        Map.of(), models, registry);
+    final CatalogModelStore catalog = disabledInstallCatalog(models, registry);
     final OpenNlpModelTrainingServiceImpl service =
         new OpenNlpModelTrainingServiceImpl(models, catalog);
     final var descriptor = catalog.catalogModels().getFirst();
@@ -144,9 +142,11 @@ class OpenNlpModelTrainingServiceImplTest {
     final TrainedModelEmbeddingProvider registry =
         new TrainedModelEmbeddingProvider(TrainingTestSupport.baseProvider());
     final StaticModelArtifactStore models = modelStore(Map.of(), registry);
-    final CatalogModelStore catalog = CatalogModelStore.fromConfiguration(
-        Map.of(CatalogModelStore.CATALOG_ROOT_KEY, temporaryDirectory.toString()),
-        models, registry);
+    final CatalogModelStore catalog = new CatalogModelStore(
+        temporaryDirectory.resolve("catalog"), List.of(testCatalogModel()), models, registry,
+        (file, target) -> {
+          throw new IOException("download must not start without consent");
+        });
     final OpenNlpModelTrainingServiceImpl service =
         new OpenNlpModelTrainingServiceImpl(models, catalog);
     final var descriptor = catalog.catalogModels().getFirst();
@@ -168,7 +168,7 @@ class OpenNlpModelTrainingServiceImplTest {
     final TrainedModelEmbeddingProvider registry =
         new TrainedModelEmbeddingProvider(TrainingTestSupport.baseProvider());
     final StaticModelArtifactStore models = modelStore(Map.of(), registry);
-    final CatalogModel catalogModel = StandardModelCatalog.models().getFirst();
+    final CatalogModel catalogModel = testCatalogModel();
     final CatalogModelStore catalog = new CatalogModelStore(
         temporaryDirectory.resolve("catalog"), List.of(catalogModel), models, registry,
         (file, target) -> {
@@ -187,8 +187,12 @@ class OpenNlpModelTrainingServiceImplTest {
         .build(), response);
 
     final StatusRuntimeException failure = (StatusRuntimeException) response.error;
-    assertEquals(Status.Code.INTERNAL, failure.getStatus().getCode());
-    assertEquals("Catalog model installation failed", failure.getStatus().getDescription());
+    assertEquals(Status.Code.UNAVAILABLE, failure.getStatus().getCode());
+    assertTrue(failure.getStatus().getDescription().startsWith("Download of "),
+        failure.getStatus().getDescription());
+    assertTrue(failure.getStatus().getDescription().endsWith("from example.invalid failed"),
+        failure.getStatus().getDescription());
+    assertFalse(failure.getStatus().getDescription().contains("secret transport detail"));
   }
 
   @Test
@@ -514,5 +518,34 @@ class OpenNlpModelTrainingServiceImplTest {
     @Override
     public void deleteVocabulary(String artifactId) {
     }
+  }
+
+  /** Builds a one-entry catalog store with node-local installation disabled. */
+  private static CatalogModelStore disabledInstallCatalog(StaticModelArtifactStore models,
+      TrainedModelEmbeddingProvider registry) throws IOException {
+    return new CatalogModelStore(null, List.of(testCatalogModel()), models, registry,
+        (file, target) -> {
+          throw new IOException("installs are disabled in this fixture");
+        });
+  }
+
+  /** Builds one format-valid catalog entry so no test depends on the installer add-on. */
+  private static CatalogModel testCatalogModel() {
+    final CatalogFile file = new CatalogFile(Path.of("model.bin"),
+        URI.create("https://example.invalid/model.bin"), 4,
+        "9f64a747e1b97f131fabb6b447296c9b6f0201e79fb3c5356e6c77e89b6a806a");
+    return new CatalogModel(ModelCatalogDescriptor.newBuilder()
+        .setCatalogId("test-model-catalog")
+        .setDisplayName("Test model")
+        .setRole(ModelArtifactRole.MODEL_ARTIFACT_ROLE_PARSER)
+        .setModelId("test-model")
+        .setSourceUri("https://example.invalid/model")
+        .setRevision("0123456789abcdef0123456789abcdef01234567")
+        .setLicenseName("Test-License")
+        .setLicenseUri("https://example.invalid/license")
+        .setByteSize(4)
+        .addLanguages("en")
+        .setDescription("Test model")
+        .build(), List.of(file));
   }
 }

@@ -19,7 +19,7 @@ package org.apache.opennlp.grpc.model;
 
 import java.util.Map;
 
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,5 +51,21 @@ class WordNetRegistryTest {
     assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
     assertTrue(error.getMessage().contains(key),
         "the error must name the offending key: " + error.getMessage());
+  }
+
+  @Test
+  void loadsAGzippedLexicon(@org.junit.jupiter.api.io.TempDir java.nio.file.Path directory)
+      throws Exception {
+    final java.nio.file.Path plain = java.nio.file.Path.of(
+        WordNetRegistryTest.class.getResource("/wordnet/mini-wn-lmf.xml").toURI());
+    final java.nio.file.Path gzipped = directory.resolve("mini-wn-lmf.xml.gz");
+    try (var out = new java.util.zip.GZIPOutputStream(java.nio.file.Files.newOutputStream(gzipped))) {
+      java.nio.file.Files.copy(plain, out);
+    }
+
+    final WordNetRegistry registry = WordNetRegistry.create(
+        Map.of("model.wordnet.mini.path", gzipped.toString()));
+
+    assertEquals(java.util.Set.of("mini"), registry.lexiconIds());
   }
 }

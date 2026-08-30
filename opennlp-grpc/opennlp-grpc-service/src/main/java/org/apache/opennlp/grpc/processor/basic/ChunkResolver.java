@@ -25,7 +25,7 @@ import java.util.Map;
 
 import org.apache.opennlp.grpc.backend.RankedBackends;
 import org.apache.opennlp.grpc.backend.RankedBackends.Registration;
-import org.apache.opennlp.grpc.model.ChunkerModel;
+import org.apache.opennlp.grpc.spi.model.ChunkerModel;
 import org.apache.opennlp.grpc.model.ChunkerRegistry;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;

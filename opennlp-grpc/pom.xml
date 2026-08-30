@@ -34,13 +34,22 @@
 
     <modules>
         <module>opennlp-grpc-api</module>
+        <module>opennlp-grpc-spi</module>
         <module>opennlp-grpc-service</module>
         <module>opennlp-grpc-backend-tei</module>
         <module>opennlp-grpc-backend-openvino</module>
         <module>opennlp-grpc-backend-static</module>
+        <module>opennlp-grpc-dl</module>
+        <module>opennlp-grpc-installer</module>
+        <module>opennlp-grpc-search-turboquant</module>
+        <module>opennlp-grpc-store-s3</module>
+        <module>opennlp-grpc-search-lucene</module>
+        <module>opennlp-grpc-formats</module>
+        <module>opennlp-grpc-sink-grpc</module>
         <module>opennlp-grpc-webapp-api</module>
         <module>opennlp-grpc-webapp-default</module>
         <module>opennlp-grpc-webapp</module>
+        <module>opennlp-grpc-distr</module>
         <module>opennlp-grpc-integration-tests</module>
     </modules>
 
@@ -93,6 +102,13 @@
                         <exclude>examples/node-client/node_modules/**</exclude>
                         <!-- Build output of the standalone example project, which is not a reactor module. -->
                         <exclude>examples/java-client/target/**</exclude>
+                        <!-- Go module metadata carries no comments; generated stubs live in gen/. -->
+                        <exclude>examples/go-client/go.mod</exclude>
+                        <exclude>examples/go-client/go.sum</exclude>
+                        <exclude>examples/go-client/gen/**</exclude>
+                        <!-- GraalVM reachability metadata is JSON, which carries no comments. -->
+                        <exclude>docker/native/config/**</exclude>
+                        <exclude>docker/native/out/**</exclude>
                     </excludes>
                 </configuration>
             </plugin>

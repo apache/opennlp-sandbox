@@ -20,6 +20,7 @@ package org.apache.opennlp.grpc.processor;
 
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 
 /**
  * A document analyzer prepared for one fixed streaming configuration.

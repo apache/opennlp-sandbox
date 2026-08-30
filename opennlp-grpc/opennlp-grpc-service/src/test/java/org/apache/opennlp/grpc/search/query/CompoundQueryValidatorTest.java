@@ -17,7 +17,7 @@
  */
 package org.apache.opennlp.grpc.search.query;
 
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.v1.BoostClause;
 import org.apache.opennlp.grpc.v1.CelScore;
 import org.apache.opennlp.grpc.v1.JoinFusion;

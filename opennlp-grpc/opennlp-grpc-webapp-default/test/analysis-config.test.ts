@@ -118,6 +118,41 @@ describe("analysis capability planning", () => {
     expect(capabilities.wordnetLexiconId).toBe("wordnet");
   });
 
+  it("derives configured language pipelines from pipeline bundles", () => {
+    const capabilities = discoverAnalysisCapabilities(serviceInfo, {
+      bundles: [
+        { bundleId: "en-basic", supportedLanguages: ["en"], supportedSteps: [] },
+        { bundleId: "pipeline-de", supportedLanguages: ["de"], supportedSteps: [] },
+        { bundleId: "pipeline-fr", supportedLanguages: ["fr"], supportedSteps: [] },
+      ],
+    });
+
+    expect(capabilities.pipelineLanguages).toEqual([
+      { id: "de", label: "de" },
+      { id: "fr", label: "fr" },
+    ]);
+  });
+
+  it("carries the pipeline language, tag set, and ranked-language request", () => {
+    const request = buildAnalysisRequest(
+      "Die Katzen schlafen.",
+      {
+        mode: "max",
+        sentenceChunks: false,
+        tokenChunks: false,
+        tokenChunkSize: 96,
+        tokenChunkOverlap: 12,
+        pipelineLanguage: "de",
+        posTagFormat: "POS_TAG_FORMAT_UD",
+      },
+      discoverAnalysisCapabilities(serviceInfo, bundlesInfo),
+    );
+
+    expect(request.profile?.pipelineLanguage).toBe("de");
+    expect(request.profile?.posTagFormat).toBe("POS_TAG_FORMAT_UD");
+    expect(request.options?.rankedLanguageCount).toBe(5);
+  });
+
   it("turns every safe configured feature on and requests both chunk views", () => {
     const request = buildAnalysisRequest(
       "OpenNLP makes documents inspectable.",

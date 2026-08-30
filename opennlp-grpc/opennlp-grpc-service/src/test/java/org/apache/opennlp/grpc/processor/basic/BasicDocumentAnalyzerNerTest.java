@@ -23,7 +23,7 @@ import java.util.Map;
 
 import org.apache.opennlp.grpc.model.ClassicNerBackendFactory;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.testing.TinyNerModel;
 import org.apache.opennlp.grpc.v1.AnalysisOptions;
@@ -117,10 +117,9 @@ class BasicDocumentAnalyzerNerTest {
         assertEquals(1, entity.getSourcesCount());
         assertEquals("person", entity.getSources(0).getRecognizerId());
         assertEquals("opennlp-me", entity.getSources(0).getEngine());
-        if (entity.hasProbability()) {
-          assertTrue(entity.getProbability() > 0.0d);
-          assertEquals(entity.getProbability(), entity.getSources(0).getProbability(), 1e-9);
-        }
+        assertTrue(entity.hasProbability());
+        assertTrue(entity.getProbability() > 0.0d);
+        assertEquals(entity.getProbability(), entity.getSources(0).getProbability(), 1e-9);
         entityCount++;
       }
     }

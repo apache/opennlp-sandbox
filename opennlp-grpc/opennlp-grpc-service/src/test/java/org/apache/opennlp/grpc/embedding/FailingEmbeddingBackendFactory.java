@@ -19,7 +19,9 @@ package org.apache.opennlp.grpc.embedding;
 
 import java.util.Map;
 
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingBackendFactory;
 
 /** ServiceLoader test backend that can fail after earlier factories created providers. */
 public final class FailingEmbeddingBackendFactory implements EmbeddingBackendFactory {

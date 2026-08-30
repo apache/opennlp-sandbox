@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+   Licensed to the Apache Software Foundation (ASF) under one
+   or more contributor license agreements.  See the NOTICE file
+   distributed with this work for additional information
+   regarding copyright ownership.  The ASF licenses this file
+   to you under the Apache License, Version 2.0 (the
+   "License"); you may not use this file except in compliance
+   with the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing,
+   software distributed under the License is distributed on an
+   "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+   KIND, either express or implied.  See the License for the
+   specific language governing permissions and limitations
+   under the License.
+-->
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.apache.opennlp</groupId>
+        <artifactId>opennlp-grpc</artifactId>
+        <version>3.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>opennlp-grpc-dl</artifactId>
+    <name>Apache OpenNLP gRPC Backend :: ONNX Runtime</name>
+    <description>
+        ONNX Runtime inference add-on for the OpenNLP gRPC server: transformer
+        sentence embeddings (CPU and CUDA engines), the ONNX name finder, and the
+        ONNX document categorizer. The server discovers these backends through the
+        SPI when this jar is on the classpath; without it the server runs without
+        native inference.
+    </description>
+
+    <properties>
+        <!-- Must match the onnxruntime version managed by opennlp-dl and
+             opennlp-embeddings in ${opennlp.version}, which exclude it here. -->
+        <onnxruntime.version>1.29.0</onnxruntime.version>
+    </properties>
+
+    <dependencies>
+        <!-- SPI surface (backend factories, model carriers, AnalysisException).
+             Provided: at deploy time this jar sits on the server classpath. -->
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-grpc-spi</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- Generated protobuf message types used by the NER and doccat backends.
+             Provided for the same reason as the SPI jar. -->
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-grpc-api</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!--
+          ONNX inference (Maven Central artifact, not the sandbox DL4J module).
+          The onnxruntime jar is excluded here and supplied by exactly one of the
+          cpu/gpu profiles below, so the CPU and CUDA runtimes (which ship the same
+          ai.onnxruntime classes) can never coexist on the classpath.
+        -->
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-dl</artifactId>
+            <version>${opennlp.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.microsoft.onnxruntime</groupId>
+                    <artifactId>onnxruntime</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- The registry and analyzer tests exercise these backends through the server's
+             ServiceLoader aggregation, exactly as a deployment discovers them. -->
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-grpc-service</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <!--
+      Exactly one ONNX Runtime flavor is active at a time. The default cpu profile
+      is replaced by the gpu profile when building with -Dgpu (mirrors the
+      opennlp-dl / opennlp-dl-gpu split in the main OpenNLP repository).
+    -->
+    <profiles>
+        <profile>
+            <id>cpu</id>
+            <activation>
+                <property>
+                    <name>!gpu</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.microsoft.onnxruntime</groupId>
+                    <artifactId>onnxruntime</artifactId>
+                    <version>${onnxruntime.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>gpu</id>
+            <activation>
+                <property>
+                    <name>gpu</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.microsoft.onnxruntime</groupId>
+                    <artifactId>onnxruntime_gpu</artifactId>
+                    <version>${onnxruntime.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <!--
+          Opt-in (-Pdl-ner) end-to-end test of the ONNX name finder backend. Downloads the
+          ONNX export of dslim/bert-base-NER (MIT) from HuggingFace into target/ at build
+          time only; the model is never bundled into any artifact and is not redistributed.
+          Without this profile BasicDocumentAnalyzerDlNerTest skips (no model present).
+        -->
+        <profile>
+            <id>dl-ner</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.googlecode.maven-download-plugin</groupId>
+                        <artifactId>download-maven-plugin</artifactId>
+                        <version>1.13.0</version>
+                        <executions>
+                            <execution>
+                                <id>download-dl-ner-model</id>
+                                <phase>generate-test-resources</phase>
+                                <goals>
+                                    <goal>wget</goal>
+                                </goals>
+                                <configuration>
+                                    <url>https://huggingface.co/Xenova/bert-base-NER/resolve/main/onnx/model_quantized.onnx</url>
+                                    <outputDirectory>${project.build.directory}/dl-ner-model</outputDirectory>
+                                    <outputFileName>model.onnx</outputFileName>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>download-dl-ner-vocab</id>
+                                <phase>generate-test-resources</phase>
+                                <goals>
+                                    <goal>wget</goal>
+                                </goals>
+                                <configuration>
+                                    <url>https://huggingface.co/Xenova/bert-base-NER/resolve/main/vocab.txt</url>
+                                    <outputDirectory>${project.build.directory}/dl-ner-model</outputDirectory>
+                                    <outputFileName>vocab.txt</outputFileName>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <dl.ner.model.dir>${project.build.directory}/dl-ner-model</dl.ner.model.dir>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>

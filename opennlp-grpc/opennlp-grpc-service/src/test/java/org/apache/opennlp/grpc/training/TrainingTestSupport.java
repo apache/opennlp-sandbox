@@ -32,7 +32,7 @@ import java.util.Set;
 import com.google.protobuf.ByteString;
 import io.grpc.stub.StreamObserver;
 import opennlp.embeddings.ModelDistiller;
-import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.v1.DictionaryArtifactDescriptor;
 import org.apache.opennlp.grpc.v1.DictionaryFormatSelector;
 import org.apache.opennlp.grpc.v1.ImportDictionaryRequest;

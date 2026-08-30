@@ -28,6 +28,15 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
     image: opennlp-grpc-demo
+    # The stack runs fully hardened: read-only root filesystem, no Linux
+    # capabilities, and no privilege escalation. docker/test-image.sh asserts
+    # the image keeps working under exactly these flags.
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
     ports:
       - "127.0.0.1:7071:7071"
       - "127.0.0.1:7072:7072"

@@ -22,8 +22,8 @@ import java.util.List;
 
 import org.apache.opennlp.grpc.backend.RankedBackends;
 import org.apache.opennlp.grpc.backend.RankedBackends.Registration;
-import org.apache.opennlp.grpc.model.ParserModel;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.model.ParserModel;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.ParseTree;
 import org.slf4j.Logger;

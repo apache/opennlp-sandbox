@@ -19,7 +19,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { jsonPresentation } from "../src/json-response";
+import { jsonPresentation, LARGE_RESPONSE_MESSAGE } from "../src/json-response";
 
 describe("protobuf JSON presentation", () => {
   it("formats a small response for the inline JSON tab", () => {
@@ -34,7 +34,7 @@ describe("protobuf JSON presentation", () => {
 
     expect(jsonPresentation(response, 151_064, 527_430)).toEqual({
       inline: false,
-      text: "This response is too large to format safely in the browser. Use Copy JSON or Download JSON when you need the complete protobuf JSON.",
+      text: LARGE_RESPONSE_MESSAGE,
     });
   });
 });

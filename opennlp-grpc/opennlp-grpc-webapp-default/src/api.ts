@@ -38,9 +38,12 @@ export interface AnalyzeRequest {
       mode: string;
       sourceLayer: { standard: string; qualifier?: string };
     };
+    posTagFormat?: string;
+    pipelineLanguage?: string;
   };
   options?: {
     includeProbabilities?: boolean;
+    rankedLanguageCount?: number;
     embeddingModelId?: string;
     includeDocumentCentroid?: boolean;
     parseFormats?: string[];
@@ -86,7 +89,7 @@ export interface ImportDictionaryUpload {
 
 export interface LearnVocabularyUpload {
   start: {
-    dictionaryArtifactId: string;
+    dictionaryArtifactId?: string;
     displayName: string;
     minFrequency: number;
     maxTerms: number;
@@ -128,7 +131,7 @@ export interface SetCollectionRequest {
   dictionaryArtifactId?: string;
   vocabularyArtifactId?: string;
   modelArtifactId?: string;
-  /** Accreted new-term count that triggers the drift watch event; 0 disables. */
+  /** Out-of-vocabulary term count that triggers the drift watch event; 0 disables. */
   driftNewTermThreshold?: number;
 }
 
@@ -158,6 +161,15 @@ export function getSearchIndexes(fetcher: Fetcher = fetch): Promise<unknown> {
   return requestJson("/api/v1/search-indexes", undefined, fetcher);
 }
 
+export function getDictionaries(fetcher: Fetcher = fetch): Promise<unknown> {
+  return requestJson("/api/v1/dictionaries", undefined, fetcher);
+}
+
+/** Lists learned vocabulary artifacts that can seed a distillation or a collection watch. */
+export function getVocabularies(fetcher: Fetcher = fetch): Promise<unknown> {
+  return requestJson("/api/v1/vocabularies", undefined, fetcher);
+}
+
 export function searchIndex(request: SearchRequest, fetcher: Fetcher = fetch): Promise<unknown> {
   return requestJson(
     "/api/v1/search",
@@ -167,6 +179,8 @@ export function searchIndex(request: SearchRequest, fetcher: Fetcher = fetch): P
       body: JSON.stringify(request),
     },
     fetcher,
+    // A search is a read: retrying it after a dropped connection cannot duplicate anything.
+    true,
   );
 }
 
@@ -281,6 +295,70 @@ export async function watchCollection(
     }
     onEvent(event);
   }
+}
+
+/**
+ * Streams a batch analysis: posts the AnalyzeStream frame sequence (one
+ * configuration frame, then one frame per document) and yields each
+ * completion-ordered response line to the callback.
+ */
+export async function analyzeStream(
+  frames: Record<string, unknown>[],
+  onResponse: (response: Record<string, unknown>) => void,
+  fetcher: Fetcher = fetch,
+): Promise<void> {
+  const response = await fetcher("/api/v1/analyze-stream", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(frames),
+  });
+  if (!response.ok) {
+    throw await responseError(response);
+  }
+  for await (const line of ndjsonLines(response)) {
+    const event = JSON.parse(line) as Record<string, unknown>;
+    if (typeof event.code === "string" && !event.sequence && !event.ok && !event.error) {
+      throw new Error(typeof event.message === "string" && event.message
+        ? event.message : event.code);
+    }
+    onResponse(event);
+  }
+}
+
+/**
+ * Streams one document analysis and resolves with the terminal canonical response.
+ * Every earlier event reaches {@code onEvent} immediately so the caller can render
+ * completed layers while independent branches continue.
+ */
+export async function analyzeProgressively(
+  request: AnalyzeRequest,
+  onEvent: (event: Record<string, unknown>) => void,
+  fetcher: Fetcher = fetch,
+): Promise<Record<string, unknown>> {
+  const response = await fetcher("/api/v1/analyze-progressive", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  if (!response.ok) {
+    throw await responseError(response);
+  }
+  let complete: Record<string, unknown> | undefined;
+  for await (const line of ndjsonLines(response)) {
+    const event = JSON.parse(line) as Record<string, unknown>;
+    if (typeof event.code === "string" && !event.sequence) {
+      throw new Error(typeof event.message === "string" && event.message
+        ? event.message : event.code);
+    }
+    onEvent(event);
+    if (event.complete && typeof event.complete === "object") {
+      complete = event.complete as Record<string, unknown>;
+    }
+  }
+  if (!complete) {
+    throw new Error("The progressive analysis stream ended without a final response.");
+  }
+  return complete;
 }
 
 export function getDictionaryFormats(fetcher: Fetcher = fetch): Promise<unknown> {
@@ -450,6 +528,25 @@ export function analyze(request: AnalyzeRequest, fetcher: Fetcher = fetch): Prom
 }
 
 /**
+ * Analyzes one document and returns the serialized response bytes. The gateway never prints
+ * the reply as JSON, so a reply too large for the browser can still become a .pb file.
+ */
+export async function analyzeToProtobuf(
+  request: AnalyzeRequest,
+  fetcher: Fetcher = fetch,
+): Promise<ArrayBuffer> {
+  const response = await fetcher("/api/v1/analyze-protobuf", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  if (!response.ok) {
+    throw await responseError(response);
+  }
+  return response.arrayBuffer();
+}
+
+/**
  * Turns the stored response JSON into serialized protobuf bytes through the gateway, so
  * the browser can save a .pb file without a protobuf runtime of its own.
  */
@@ -496,8 +593,40 @@ function postJson(path: string, body: unknown, fetcher: Fetcher): Promise<unknow
   );
 }
 
-async function requestJson(path: string, init: RequestInit | undefined, fetcher: Fetcher): Promise<unknown> {
-  const response = await fetcher(path, init ?? { headers: { accept: "application/json" } });
+/** What the user reads when the browser could not reach the gateway at all. */
+export const NETWORK_FAILURE_MESSAGE =
+  "The server did not answer. Check the service status light and try again.";
+
+/**
+ * Fetches JSON, retrying once when the connection dropped before any response arrived.
+ *
+ * Reads (GET, or a POST the caller marks safe) are retried because the gateway closes idle
+ * keep-alive connections and a browser reusing one gets a network error, not a status. A
+ * mutating request is never retried; it fails with the plain network message instead.
+ */
+async function requestJson(
+  path: string,
+  init: RequestInit | undefined,
+  fetcher: Fetcher,
+  retrySafe: boolean = init === undefined || init.method === undefined || init.method === "GET",
+): Promise<unknown> {
+  const request = init ?? { headers: { accept: "application/json" } };
+  let response: Response;
+  try {
+    response = await fetcher(path, request);
+  } catch (error) {
+    if (!isNetworkFailure(error)) {
+      throw error;
+    }
+    if (!retrySafe) {
+      throw new Error(NETWORK_FAILURE_MESSAGE);
+    }
+    try {
+      response = await fetcher(path, request);
+    } catch (retryError) {
+      throw isNetworkFailure(retryError) ? new Error(NETWORK_FAILURE_MESSAGE) : retryError;
+    }
+  }
   if (!response.ok) {
     throw await responseError(response);
   }
@@ -506,6 +635,11 @@ async function requestJson(path: string, init: RequestInit | undefined, fetcher:
   } catch {
     throw new Error(`The service returned invalid JSON for ${path}.`);
   }
+}
+
+/** A fetch rejection before any response is a TypeError in every browser. */
+function isNetworkFailure(error: unknown): boolean {
+  return error instanceof TypeError;
 }
 
 async function responseError(response: Response): Promise<Error> {

@@ -237,3 +237,76 @@ export function isWhitespaceCodePoint(codePoint: number): boolean {
     || codePoint === 0x3000
     || codePoint === 0xfeff;
 }
+
+/**
+ * Splits blank-line-delimited text into trimmed, non-empty document blocks.
+ * A blank line is empty or holds only spaces and tabs; CRLF pairs count once.
+ */
+export function splitBlankLineDocuments(text: string): string[] {
+  const blocks: string[] = [];
+  let block = "";
+  let cursor = 0;
+  while (cursor <= text.length) {
+    const start = cursor;
+    while (cursor < text.length && text.charAt(cursor) !== "\n"
+        && text.charAt(cursor) !== "\r") {
+      cursor++;
+    }
+    const line = text.slice(start, cursor);
+    if (isBlankLine(line)) {
+      if (block) {
+        blocks.push(block);
+        block = "";
+      }
+    } else {
+      block += block ? `\n${line}` : line;
+    }
+    if (cursor >= text.length) {
+      break;
+    }
+    if (text.charAt(cursor) === "\r" && text.charAt(cursor + 1) === "\n") {
+      cursor++;
+    }
+    cursor++;
+  }
+  if (block) {
+    blocks.push(block);
+  }
+  return blocks.map((value) => value.trim()).filter((value) => value.length > 0);
+}
+
+/** Reports whether a line is empty or holds only spaces and tabs. */
+function isBlankLine(line: string): boolean {
+  for (const character of line) {
+    if (character !== " " && character !== "\t") {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Formats a protobuf JSON timestamp, given as an ISO-8601 string or as epoch
+ * seconds, as "YYYY-MM-DD HH:MM UTC"; empty when the value is unreadable.
+ */
+export function timestampLabel(value: string): string {
+  if (!value) {
+    return "";
+  }
+  const date = isDecimalDigits(value) ? new Date(Number(value) * 1000) : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  const iso = date.toISOString();
+  return `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`;
+}
+
+/** Reports whether a non-empty string holds only the ASCII digits 0-9. */
+function isDecimalDigits(value: string): boolean {
+  for (const character of value) {
+    if (character < "0" || character > "9") {
+      return false;
+    }
+  }
+  return value.length > 0;
+}

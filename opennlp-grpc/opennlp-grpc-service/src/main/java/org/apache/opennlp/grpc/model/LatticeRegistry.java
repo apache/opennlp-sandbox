@@ -26,7 +26,7 @@ import java.util.Map;
 
 import opennlp.tools.tokenize.lattice.LatticeTokenizer;
 import opennlp.tools.tokenize.lattice.MecabDictionary;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 
 /**
  * Catalog of lattice tokenizers over MeCab-format dictionaries, keyed by dictionary id.

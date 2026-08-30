@@ -15,6 +15,11 @@ v1 protobuf definitions and generated Java stubs for the document-centric OpenNL
 `AnalyzeStreamDocument` messages. Responses arrive in completion order and carry either
 the same `AnalyzeDocumentResponse` used by unary analysis or a per-document error.
 
+`AnalyzeDocumentProgressive` analyzes one document while returning ordered events. It
+first acknowledges the source document, then emits complete annotation-layer snapshots
+as independent analysis branches finish. A branch failure is an event and does not stop
+unrelated work. The terminal event contains the canonical `AnalyzeDocumentResponse`.
+
 Every produced annotation is available through `OpenNlpDocument.layers`. The payload
 type is selected by `AnnotationLayer.values`, and `LayerIdentity.kind` distinguishes a
 closed `StandardLayer` from an open namespaced custom id. Standard layer families use

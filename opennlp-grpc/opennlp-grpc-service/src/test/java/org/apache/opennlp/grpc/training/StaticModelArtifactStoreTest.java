@@ -78,6 +78,10 @@ class StaticModelArtifactStoreTest {
     assertEquals(64, descriptor.getArtifactHash().length());
     assertTrue(descriptor.getByteSize() > 0);
     assertEquals("minishlab/potion-base-8M", trainer.teacherReference);
+    // An operator-configured teacher carries only its reference.
+    assertEquals("minishlab/potion-base-8M", descriptor.getTeacherReference());
+    assertEquals("", descriptor.getLicenseName());
+    assertEquals(0, descriptor.getLanguagesCount());
     assertEquals(256, trainer.pcaDims);
     assertEquals("liberty", trainer.terms.getFirst());
     assertTrue(trainer.terms.contains("habeas corpus"));

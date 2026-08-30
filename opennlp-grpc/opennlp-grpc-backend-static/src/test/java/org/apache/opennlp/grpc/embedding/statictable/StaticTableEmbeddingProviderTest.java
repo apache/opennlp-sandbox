@@ -30,10 +30,10 @@ import java.util.ServiceLoader;
 import java.util.Set;
 
 import opennlp.embeddings.ModelQuantizer;
-import org.apache.opennlp.grpc.embedding.EmbeddingBackendFactory;
-import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
-import org.apache.opennlp.grpc.model.ModelArtifactHasher;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingBackendFactory;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.spi.ModelArtifactHasher;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 

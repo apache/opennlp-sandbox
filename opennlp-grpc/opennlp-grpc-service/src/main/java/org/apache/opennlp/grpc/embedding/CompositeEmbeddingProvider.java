@@ -24,10 +24,12 @@ import java.util.Set;
 import org.apache.opennlp.grpc.backend.RankedBackends;
 import org.apache.opennlp.grpc.backend.RankedBackends.Invocation;
 import org.apache.opennlp.grpc.backend.RankedBackends.Registration;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.v1.EmbeddingRoute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingBatchResult;
 
 /**
  * Aggregates every configured embedding backend into one provider, so several engines (in-process
@@ -45,6 +47,9 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
 
   /** Backend id of the aggregate itself; the per-model engine is reported by {@link #backendId(String)}. */
   static final String BACKEND_ID = "composite";
+
+  /** Artifact-hash prefix length in a derived vector space id. */
+  private static final int DERIVED_SPACE_HASH_CHARS = 16;
 
   private static final String KEY_PREFIX = "model.embedder.";
   private static final String KEY_DEFAULT_ID = KEY_PREFIX + "default_id";
@@ -282,16 +287,34 @@ public final class CompositeEmbeddingProvider implements EmbeddingProvider, Auto
         .setBackendId(engineId)
         .setPriority(registration.priority())
         .setPrimary(backends.primary(modelId).engineId().equals(engineId));
-    final String vectorSpaceId = configuration.get(
-        KEY_PREFIX + modelId + "." + engineId + ".vector_space_id");
-    if (vectorSpaceId != null && !vectorSpaceId.isBlank()) {
-      route.setVectorSpaceId(vectorSpaceId.trim());
-    }
     final String hash = registration.value().modelArtifactHash(modelId);
     if (hash != null && !hash.isBlank()) {
       route.setArtifactHash(hash);
     }
+    final String vectorSpaceId = configuration.get(
+        KEY_PREFIX + modelId + "." + engineId + ".vector_space_id");
+    route.setVectorSpaceId(vectorSpaceId != null && !vectorSpaceId.isBlank()
+        ? vectorSpaceId.trim() : derivedVectorSpaceId(modelId, engineId, hash));
     return route.build();
+  }
+
+  /**
+   * Derives the vector space of a route whose operator declared none, so every route is
+   * complete enough to index against. The derived space is deliberately narrow: it names
+   * one model artifact (or, without an artifact hash, one engine), so it never claims
+   * compatibility with vectors from a different artifact; operators declare a shared
+   * {@code vector_space_id} explicitly when several engines serve one space.
+   *
+   * @param modelId The logical model id.
+   * @param engineId The serving engine id.
+   * @param hash The model artifact hash, or {@code null} or blank when unknown.
+   * @return The derived vector space id.
+   */
+  static String derivedVectorSpaceId(String modelId, String engineId, String hash) {
+    if (hash != null && !hash.isBlank()) {
+      return modelId + "@" + hash.substring(0, Math.min(DERIVED_SPACE_HASH_CHARS, hash.length()));
+    }
+    return modelId + "@" + engineId;
   }
 
   /** {@inheritDoc} */

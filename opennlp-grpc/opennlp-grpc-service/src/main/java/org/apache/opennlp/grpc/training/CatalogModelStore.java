@@ -18,6 +18,8 @@
  */
 package org.apache.opennlp.grpc.training;
 
+import org.apache.opennlp.grpc.spi.catalog.CatalogFile;
+import org.apache.opennlp.grpc.spi.catalog.CatalogModel;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -44,6 +46,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 
 import com.google.protobuf.Timestamp;
 import opennlp.embeddings.StaticEmbeddingModel;
@@ -57,7 +60,8 @@ import org.apache.opennlp.grpc.v1.ModelCatalogDescriptor;
 import org.apache.opennlp.grpc.vocabulary.store.ArtifactDigests;
 
 /**
- * Node-local store for immutable models selected from {@link StandardModelCatalog}. It
+ * Node-local store for immutable models selected from the discovered model catalog
+ * (see {@link ModelCatalogs}). It
  * downloads only catalog-owned URIs, verifies exact sizes and SHA-256 values, publishes
  * atomically, and registers the model with training or embedding services.
  */
@@ -76,6 +80,10 @@ public final class CatalogModelStore {
   private final StaticModelArtifactStore trainingStore;
   private final TrainedModelEmbeddingProvider embeddingRegistry;
   private final CatalogFileInstaller fileInstaller;
+  private final LongSupplier usableBytes;
+
+  /** Free bytes an installation must leave behind on the catalog root. */
+  static final long FREE_SPACE_MARGIN_BYTES = 64L * 1024 * 1024;
   private final CatalogTreeDeleter treeDeleter;
   private final Map<String, InstalledModelDescriptor> installed = new ConcurrentHashMap<>();
   private final Semaphore installPermit = new Semaphore(1);
@@ -98,7 +106,7 @@ public final class CatalogModelStore {
       throw new IllegalArgumentException("configuration must not be null");
     }
     final Path root = configuredRoot(configuration);
-    return new CatalogModelStore(root, StandardModelCatalog.models(), trainingStore,
+    return new CatalogModelStore(root, ModelCatalogs.discover(), trainingStore,
         embeddingRegistry, CatalogModelStore::installFile);
   }
 
@@ -142,8 +150,22 @@ public final class CatalogModelStore {
       TrainedModelEmbeddingProvider embeddingRegistry,
       CatalogFileInstaller fileInstaller,
       CatalogTreeDeleter treeDeleter) throws IOException {
-    if (models == null || models.isEmpty() || models.size() > MAX_CATALOG_MODELS) {
-      throw new IllegalArgumentException("models must contain between 1 and "
+    this(root, models, trainingStore, embeddingRegistry, fileInstaller, treeDeleter,
+        root == null ? () -> Long.MAX_VALUE : () -> usableSpace(root));
+  }
+
+  CatalogModelStore(
+      Path root,
+      List<CatalogModel> models,
+      StaticModelArtifactStore trainingStore,
+      TrainedModelEmbeddingProvider embeddingRegistry,
+      CatalogFileInstaller fileInstaller,
+      CatalogTreeDeleter treeDeleter,
+      LongSupplier usableBytes) throws IOException {
+    // An empty catalog is legal: without the opennlp-grpc-installer add-on no provider
+    // contributes entries, and the store then lists nothing and refuses installs honestly.
+    if (models == null || models.size() > MAX_CATALOG_MODELS) {
+      throw new IllegalArgumentException("models must contain at most "
           + MAX_CATALOG_MODELS + " entries");
     }
     if (trainingStore == null) {
@@ -157,6 +179,9 @@ public final class CatalogModelStore {
     }
     if (treeDeleter == null) {
       throw new IllegalArgumentException("treeDeleter must not be null");
+    }
+    if (usableBytes == null) {
+      throw new IllegalArgumentException("usableBytes must not be null");
     }
     final Map<String, CatalogModel> byId = new TreeMap<>();
     for (CatalogModel model : models) {
@@ -172,6 +197,7 @@ public final class CatalogModelStore {
     this.embeddingRegistry = embeddingRegistry;
     this.fileInstaller = fileInstaller;
     this.treeDeleter = treeDeleter;
+    this.usableBytes = usableBytes;
     if (root != null) {
       createRoot(root);
       loadInstalled();
@@ -193,7 +219,7 @@ public final class CatalogModelStore {
    * @return Catalog entries in stable catalog-id order.
    */
   public List<ModelCatalogDescriptor> catalogModels() {
-    return catalog.values().stream().map(CatalogModel::descriptor)
+    return catalog.values().stream().map(CatalogRoles::describe)
         .sorted(Comparator.comparing(ModelCatalogDescriptor::getCatalogId)).toList();
   }
 
@@ -254,6 +280,8 @@ public final class CatalogModelStore {
         || Files.exists(root.resolve(catalogId), LinkOption.NOFOLLOW_LINKS)) {
       throw new IllegalStateException("Catalog model '" + catalogId + "' is already installed");
     }
+    requireFreeSlot(model);
+    requireFreeSpace(model);
     requireActive(cancelled);
     progress.accept(progress(model, InstallModelStage.INSTALL_MODEL_STAGE_VALIDATING,
         "", 0, 0, "Validated catalog identity and license acknowledgement"));
@@ -271,7 +299,15 @@ public final class CatalogModelStore {
         if (!target.startsWith(staging.path())) {
           throw new IOException("Catalog path escapes staging directory");
         }
-        fileInstaller.install(file, target);
+        try {
+          fileInstaller.install(file, target);
+        } catch (CatalogChecksumException e) {
+          throw e;
+        } catch (IOException e) {
+          // The source host is safe to show; the transport detail stays in the log.
+          throw new CatalogDownloadException("Download of " + portablePath(file.relativePath())
+              + " from " + file.source().getHost() + " failed", e);
+        }
         verifyFile(file, target);
         completedFiles++;
         completedBytes = Math.addExact(completedBytes, file.byteSize());
@@ -288,7 +324,7 @@ public final class CatalogModelStore {
               ? StaticEmbeddingModel.load(staging.path()) : null;
       verifyLoadedDimension(model, staticModel);
       final InstalledModelDescriptor descriptor = InstalledModelDescriptor.newBuilder()
-          .setCatalog(model.descriptor())
+          .setCatalog(CatalogRoles.describe(model))
           .setArtifactHash(artifactHash)
           .setByteSize(model.descriptor().getByteSize())
           .setInstalledAt(now())
@@ -326,7 +362,10 @@ public final class CatalogModelStore {
   private CatalogModel validateRequest(InstallModelRequest request) {
     final CatalogModel model = catalog.get(request.getCatalogId());
     if (model == null) {
-      throw new IllegalArgumentException("Unknown catalog_id '" + request.getCatalogId() + "'");
+      throw new IllegalArgumentException(catalog.isEmpty()
+          ? "Unknown catalog_id '" + request.getCatalogId() + "'; the model catalog is empty "
+              + "because no catalog provider (opennlp-grpc-installer) is on the classpath"
+          : "Unknown catalog_id '" + request.getCatalogId() + "'");
     }
     if (!request.getLicenseAcknowledged()) {
       throw new IllegalArgumentException("license_acknowledged must be true");
@@ -375,10 +414,24 @@ public final class CatalogModelStore {
     } else if (descriptor.getRole()
         == ModelArtifactRole.MODEL_ARTIFACT_ROLE_DISTILLATION_TEACHER) {
       trainingStore.registerCatalogTeacher(
-          descriptor.getModelId(), descriptor.getDisplayName(), directory);
+          descriptor.getModelId(), descriptor.getDisplayName(), directory,
+          new TeacherProvenance(descriptor.getSourceUri(), descriptor.getRevision(),
+              descriptor.getLicenseName(), descriptor.getLicenseUri(),
+              descriptor.getLanguagesList()));
     } else if (!requiresRestart(descriptor.getRole())) {
       throw new IllegalArgumentException("Unsupported catalog model role " + descriptor.getRole());
     }
+  }
+
+  /**
+   * Strips the fields a listing derives from the role and files, leaving the pinned entry.
+   *
+   * @param descriptor A catalog descriptor, bare or decorated.
+   * @return The descriptor without format, unlocks, restart flag, or files.
+   */
+  private static ModelCatalogDescriptor bare(ModelCatalogDescriptor descriptor) {
+    return descriptor.toBuilder().clearFormat().clearUnlocks().clearRequiresRestart()
+        .clearFiles().build();
   }
 
   /** Verifies that a loaded static table has its catalog dimension. */
@@ -438,7 +491,8 @@ public final class CatalogModelStore {
       final ArtifactDigests.SizedDigest actual = ArtifactDigests.digest(input);
       if (actual.size() != expected.byteSize()
           || !actual.hexDigest().equals(expected.sha256())) {
-        throw new IOException("Catalog file failed size or SHA-256 verification: " + file);
+        throw new CatalogChecksumException("Catalog file failed size or SHA-256 verification: "
+            + file.getFileName() + "; the download is corrupt or the source changed");
       }
     }
   }
@@ -567,7 +621,9 @@ public final class CatalogModelStore {
     try (InputStream input = Files.newInputStream(directory.resolve(DESCRIPTOR_FILE))) {
       descriptor = InstalledModelDescriptor.parseFrom(input);
     }
-    if (!descriptor.getCatalog().equals(model.descriptor())
+    // Records written before the listing carried derived fields hold the bare descriptor;
+    // both forms describe the same pinned entry, so the comparison ignores those fields.
+    if (!bare(descriptor.getCatalog()).equals(bare(model.descriptor()))
         || descriptor.getByteSize() != model.descriptor().getByteSize()
         || !descriptor.getArtifactHash().equals(artifactHash(model))) {
       throw new IOException("Installed catalog descriptor does not match '"
@@ -578,8 +634,65 @@ public final class CatalogModelStore {
 
   /** Returns whether a role can only become active during server startup. */
   private static boolean requiresRestart(ModelArtifactRole role) {
-    return role == ModelArtifactRole.MODEL_ARTIFACT_ROLE_PARSER
-        || role == ModelArtifactRole.MODEL_ARTIFACT_ROLE_CHUNKER;
+    return CatalogRoles.requiresRestart(role);
+  }
+
+  /**
+   * Refuses an installation whose restart slot another installed model already claims,
+   * since the next boot would otherwise refuse to start.
+   *
+   * @param model The entry about to be installed.
+   * @throws IllegalStateException If another installed catalog model publishes the same key.
+   */
+  private void requireFreeSlot(CatalogModel model) {
+    final String key = CatalogRoles.restartConfigurationKey(model.descriptor());
+    if (key == null) {
+      return;
+    }
+    for (InstalledModelDescriptor other : installed.values()) {
+      final String claimed = CatalogRoles.restartConfigurationKey(other.getCatalog());
+      if (key.equals(claimed)) {
+        throw new IllegalStateException("Pipeline slot '" + key + "' is already claimed by "
+            + "installed catalog model '" + other.getCatalog().getCatalogId()
+            + "'; uninstall it first");
+      }
+    }
+  }
+
+  /**
+   * Refuses an installation the catalog root cannot hold with a margin to spare.
+   *
+   * @param model The entry about to be installed.
+   * @throws InsufficientDiskSpaceException If the usable space is short.
+   */
+  private void requireFreeSpace(CatalogModel model) throws InsufficientDiskSpaceException {
+    final long needed = Math.addExact(model.descriptor().getByteSize(), FREE_SPACE_MARGIN_BYTES);
+    final long usable = usableBytes.getAsLong();
+    if (usable < needed) {
+      throw new InsufficientDiskSpaceException("Not enough free space on the model catalog "
+          + "root for '" + model.descriptor().getCatalogId() + "': needs "
+          + mebibytes(needed) + " MiB including a " + mebibytes(FREE_SPACE_MARGIN_BYTES)
+          + " MiB margin, has " + mebibytes(usable) + " MiB");
+    }
+  }
+
+  /** Whole mebibytes, rounded down. */
+  private static long mebibytes(long bytes) {
+    return bytes / (1024 * 1024);
+  }
+
+  /**
+   * Reads the usable space of the file store holding the catalog root.
+   *
+   * @param root The catalog root.
+   * @return Usable bytes, or {@code Long.MAX_VALUE} when the store cannot be read.
+   */
+  private static long usableSpace(Path root) {
+    try {
+      return Files.getFileStore(root).getUsableSpace();
+    } catch (IOException e) {
+      return Long.MAX_VALUE;
+    }
   }
 
   /** Describes the role-specific loading phase without claiming early activation. */
@@ -645,7 +758,7 @@ public final class CatalogModelStore {
   }
 
   /** Deletes a directory tree without following symbolic links. */
-  private static void deleteTree(Path tree) throws IOException {
+  static void deleteTree(Path tree) throws IOException {
     if (tree == null || !Files.exists(tree, LinkOption.NOFOLLOW_LINKS)) {
       return;
     }

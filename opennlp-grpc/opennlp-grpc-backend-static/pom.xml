@@ -40,7 +40,7 @@
              Provided: at deploy time this jar sits on the server classpath. -->
         <dependency>
             <groupId>org.apache.opennlp</groupId>
-            <artifactId>opennlp-grpc-service</artifactId>
+            <artifactId>opennlp-grpc-spi</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>

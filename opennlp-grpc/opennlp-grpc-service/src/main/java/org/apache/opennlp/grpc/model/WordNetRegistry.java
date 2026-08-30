@@ -26,13 +26,13 @@ import java.util.Map;
 
 import opennlp.wordnet.LexicalExpander;
 import opennlp.wordnet.WnLmfReader;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 
 /**
  * Catalog of lexical expanders over WordNet-style knowledge bases, keyed by lexicon id.
  *
  * <p>Lexicons are configured as {@code model.wordnet.<id>.path} entries naming a
- * WN-LMF file and are loaded eagerly at startup, so a bad path or malformed lexicon
+ * WN-LMF file, plain or gzipped, and are loaded eagerly at startup, so a bad path or malformed lexicon
  * fails the server start instead of the first request. The built
  * {@link LexicalExpander} is thread-safe and shared. When several lexicons are
  * configured, {@code model.wordnet.default_id} selects the one an unqualified request
@@ -54,6 +54,34 @@ public final class WordNetRegistry {
 
   private final Map<String, LexicalExpander> expanders;
   private final String defaultId;
+
+  /**
+   * Reads a WN-LMF lexicon, inflating it first when the file name ends in {@code .gz}
+   * so the distributed Open English WordNet archive is served as published.
+   *
+   * @param path The lexicon file.
+   * @return The parsed knowledge base.
+   * @throws IOException If the file cannot be read or parsed.
+   */
+  private static opennlp.tools.wordnet.LexicalKnowledgeBase readLexicon(Path path) throws IOException {
+    final String name = path.getFileName().toString();
+    if (!name.endsWith(".gz")) {
+      return WnLmfReader.read(path);
+    }
+    try (java.io.InputStream in = new java.util.zip.GZIPInputStream(
+        new java.io.BufferedInputStream(Files.newInputStream(path)))) {
+      return WnLmfReader.read(in, name);
+    }
+  }
+
+  /**
+   * Lists the configured lexicon ids.
+   *
+   * @return The ids in configuration order.
+   */
+  public java.util.Set<String> lexiconIds() {
+    return java.util.Collections.unmodifiableSet(expanders.keySet());
+  }
 
   private WordNetRegistry(Map<String, LexicalExpander> expanders, String defaultId) {
     this.expanders = expanders;
@@ -88,7 +116,7 @@ public final class WordNetRegistry {
             "Configured WordNet lexicon file not found: " + entry.getValue());
       }
       try {
-        expanders.put(id, LexicalExpander.builder(WnLmfReader.read(path)).build());
+        expanders.put(id, LexicalExpander.builder(readLexicon(path)).build());
       } catch (IOException | IllegalArgumentException e) {
         throw AnalysisException.invalidArgument(
             "Failed to load WordNet lexicon '" + id + "': " + e.getMessage());
@@ -150,7 +178,8 @@ public final class WordNetRegistry {
     }
     if (defaultId == null) {
       throw AnalysisException.notFound(expanders.isEmpty()
-          ? "No WordNet lexicon is configured on this server"
+          ? "PIPELINE_STEP_EXPAND requested but no WordNet lexicon is configured on this server; "
+              + "set model.wordnet.<id>.path"
           : "wordnet_lexicon_id is required when multiple lexicons are configured");
     }
     return defaultId;

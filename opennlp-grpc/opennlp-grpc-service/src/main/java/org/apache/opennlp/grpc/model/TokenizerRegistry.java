@@ -27,7 +27,8 @@ import java.util.TreeMap;
 
 import opennlp.tools.tokenize.Tokenizer;
 import opennlp.tools.util.StringUtil;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
+import org.apache.opennlp.grpc.spi.model.TokenizerBackendFactory;
 
 /** Discovers and owns custom tokenizer engines contributed through ServiceLoader. */
 public final class TokenizerRegistry implements AutoCloseable {

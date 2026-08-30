@@ -62,6 +62,10 @@ message OpenNlpDocument {
   optional string detected_language = 3;
   // Confidence in detected_language, in [0,1]. Set only when LANGUAGE_DETECT ran.
   optional float language_confidence = 4;
+  // Ranked language predictions, best first, with detected_language as the first
+  // entry. Set only when LANGUAGE_DETECT ran and
+  // AnalysisOptions.ranked_language_count > 0.
+  repeated LanguageScore ranked_languages = 15;
   // The per-sentence linguistic analysis: one entry per detected sentence, each
   // carrying its tokens and whatever annotations the requested steps produced.
   // This is the shared base analysis, computed once and reused across every
@@ -105,6 +109,14 @@ message OpenNlpDocument {
   // per step that ran; a layer whose producing step did not run is absent.
   // Spans use the document's offset_encoding, like every other span.
   DocumentLayers layers = 14;
+}
+
+// One ranked language prediction from PIPELINE_STEP_LANGUAGE_DETECT.
+message LanguageScore {
+  // The predictor's language code (the bundled OpenNLP detector emits ISO 639-3).
+  string language = 1;
+  // Confidence in [0,1].
+  float confidence = 2;
 }
 
 // One detected sentence and every annotation attached to it. Populated
@@ -651,8 +663,10 @@ message DocumentClassification {
 //                       each parsed sentence, with the primary first.
 //   opennlp:sentiment   positional, category values: per-sentence label and
 //                       score, the span covering the sentence.
-//   opennlp:language    document-scoped, category values: one annotation, the
-//                       detected language code and its confidence.
+//   opennlp:language    document-scoped, category values: the detected language
+//                       code and its confidence; with a positive
+//                       AnalysisOptions.ranked_language_count, the ranked
+//                       predictions best first.
 //   opennlp:categories  document-scoped, category values: the whole
 //                       classification distribution, best category first.
 //   opennlp:embeddings  positional, embedding values: sentence vectors and, when
@@ -889,6 +903,7 @@ message SubwordAnnotationList {
 // One subword piece: the model's normalized piece text, its vocabulary id, and the
 // exact span of original text it covers. The piece is generally not a substring of
 // the input, because the model normalizes; the span always is the source location.
+// A control or byte-fallback piece with no source surface has start equal to end.
 message SubwordAnnotation {
   // The span of original text the piece covers.
   AnnotationSpan span = 1;

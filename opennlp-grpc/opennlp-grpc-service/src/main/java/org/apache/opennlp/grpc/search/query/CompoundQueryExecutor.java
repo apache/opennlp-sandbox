@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.opennlp.grpc.processor.AnalysisException;
-import org.apache.opennlp.grpc.search.SearchResult;
+import org.apache.opennlp.grpc.spi.AnalysisException;
+import org.apache.opennlp.grpc.spi.search.SearchResult;
 import org.apache.opennlp.grpc.search.query.QueryTermAnalyzer.Term;
 import org.apache.opennlp.grpc.v1.BoostClause;
 import org.apache.opennlp.grpc.v1.CelScore;
@@ -39,6 +39,8 @@ import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.QueryNode;
 import org.apache.opennlp.grpc.v1.ScoreNormalization;
 import org.apache.opennlp.grpc.v1.TermMatchMode;
+import org.apache.opennlp.grpc.spi.search.QueryCandidate;
+import org.apache.opennlp.grpc.spi.search.KeywordQueryIndex;
 
 /**
  * Executes a validated compound query tree over one index's retained candidates under

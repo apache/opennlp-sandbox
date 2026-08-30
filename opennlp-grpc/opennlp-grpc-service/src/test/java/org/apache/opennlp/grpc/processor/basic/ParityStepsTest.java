@@ -228,9 +228,9 @@ class ParityStepsTest {
   void termProfileForUnknownLanguageFailsLoud() {
     final OpenNlpDocument.Builder document = documentWithSentence("text");
     ClassicStepRunner.tokenizeUax29("text", document, new ArrayList<>());
-    final org.apache.opennlp.grpc.processor.AnalysisException e =
+    final org.apache.opennlp.grpc.spi.AnalysisException e =
         org.junit.jupiter.api.Assertions.assertThrows(
-            org.apache.opennlp.grpc.processor.AnalysisException.class,
+            org.apache.opennlp.grpc.spi.AnalysisException.class,
             () -> ClassicStepRunner.computeProfileTermLayers(document, "zz", new ArrayList<>()));
     assertTrue(e.getMessage().contains("zz"));
   }

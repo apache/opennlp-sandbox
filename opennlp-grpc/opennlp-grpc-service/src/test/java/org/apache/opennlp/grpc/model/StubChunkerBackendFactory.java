@@ -23,6 +23,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.ChunkSpan;
+import org.apache.opennlp.grpc.spi.model.ChunkerModel;
+import org.apache.opennlp.grpc.spi.model.ChunkerBackendFactory;
 
 /**
  * Test-only {@link ChunkerBackendFactory} registered via {@code META-INF/services}. It is

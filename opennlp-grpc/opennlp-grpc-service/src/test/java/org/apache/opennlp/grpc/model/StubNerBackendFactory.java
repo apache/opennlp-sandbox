@@ -25,6 +25,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.NamedEntity;
+import org.apache.opennlp.grpc.spi.model.NerModel;
+import org.apache.opennlp.grpc.spi.model.NerBackendFactory;
+import org.apache.opennlp.grpc.spi.model.NerBackendContext;
 
 /**
  * Test-only {@link NerBackendFactory} registered via {@code META-INF/services}, proving an

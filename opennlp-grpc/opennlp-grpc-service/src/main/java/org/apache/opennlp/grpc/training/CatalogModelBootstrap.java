@@ -18,6 +18,7 @@
  */
 package org.apache.opennlp.grpc.training;
 
+import org.apache.opennlp.grpc.spi.catalog.CatalogModel;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -52,7 +53,7 @@ public final class CatalogModelBootstrap {
    */
   public static Map<String, String> prepare(Map<String, String> configuration)
       throws IOException {
-    return prepare(configuration, StandardModelCatalog.models());
+    return prepare(configuration, ModelCatalogs.discover());
   }
 
   /**
@@ -69,8 +70,10 @@ public final class CatalogModelBootstrap {
     if (configuration == null) {
       throw new IllegalArgumentException("configuration must not be null");
     }
-    if (models == null || models.isEmpty()) {
-      throw new IllegalArgumentException("models must not be null or empty");
+    // An empty catalog is legal: without the opennlp-grpc-installer add-on no provider
+    // contributes entries and there is nothing to verify or publish.
+    if (models == null) {
+      throw new IllegalArgumentException("models must not be null");
     }
     final Map<String, String> prepared = new TreeMap<>(configuration);
     final Path root = CatalogModelStore.configuredRoot(configuration);
@@ -125,24 +128,33 @@ public final class CatalogModelBootstrap {
    */
   private static void addRestartModel(
       Map<String, String> prepared, CatalogModel model, Path directory) {
-    final ModelArtifactRole role = model.descriptor().getRole();
-    final String prefix;
-    if (role == ModelArtifactRole.MODEL_ARTIFACT_ROLE_PARSER) {
-      prefix = "model.parser.";
-    } else if (role == ModelArtifactRole.MODEL_ARTIFACT_ROLE_CHUNKER) {
-      prefix = "model.chunker.";
-    } else {
+    final String key = restartConfigurationKey(model.descriptor());
+    if (key == null) {
       return;
     }
     if (model.files().size() != 1) {
-      throw new IllegalArgumentException(role + " catalog entries must contain one model file");
+      throw new IllegalArgumentException(model.descriptor().getRole()
+          + " catalog entries must contain one model file");
     }
-    final String key = prefix + model.descriptor().getModelId() + ".path";
     final String value = directory.resolve(model.files().getFirst().relativePath())
         .toAbsolutePath().normalize().toString();
     final String existing = prepared.putIfAbsent(key, value);
     if (existing != null && !existing.equals(value)) {
-      throw new IllegalArgumentException(key + " is already configured by the operator");
+      throw new IllegalArgumentException(key + " is already configured; a server serves one "
+          + "model per language pipeline slot, so uninstall the other model or remove the "
+          + "operator setting");
     }
+  }
+
+  /**
+   * Returns the startup configuration key one restart-only role publishes to, or
+   * {@code null} for roles that serve without a restart.
+   *
+   * @param descriptor The catalog descriptor.
+   * @return The configuration key, or {@code null}.
+   */
+  private static String restartConfigurationKey(
+      org.apache.opennlp.grpc.v1.ModelCatalogDescriptor descriptor) {
+    return CatalogRoles.restartConfigurationKey(descriptor);
   }
 }

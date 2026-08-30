@@ -26,6 +26,8 @@ import opennlp.tools.util.StringList;
 import org.apache.opennlp.grpc.v1.DictionaryFormatDescriptor;
 import org.apache.opennlp.grpc.v1.DictionaryFormatSelector;
 import org.apache.opennlp.grpc.v1.StandardDictionaryFormat;
+import org.apache.opennlp.grpc.spi.vocabulary.DictionaryFormatProvider;
+import org.apache.opennlp.grpc.spi.vocabulary.DictionaryEntryConsumer;
 
 /** Built-in provider for OpenNLP's serialized XML dictionary representation. */
 public final class OpenNlpXmlDictionaryFormatProvider implements DictionaryFormatProvider {

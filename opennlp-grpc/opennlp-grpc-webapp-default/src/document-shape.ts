@@ -73,7 +73,7 @@ const VALUE_TYPES = new Map<string, string>([
   ["geoValues", "Geographic result"],
   ["wordTypeValues", "Word type"],
   ["entityValues", "Named entity"],
-  ["syntacticChunkValues", "Syntactic chunk"],
+  ["syntacticChunkValues", "Phrase chunk"],
   ["stemValues", "Stem"],
   ["lexicalExpansionValues", "Lexical expansion"],
   ["normalizationValues", "Normalization"],
@@ -174,7 +174,56 @@ function boundaryEvents(
 /** Returns document-scoped annotations that cannot be projected onto a text span. */
 export function documentScopedAnnotations(shape: DocumentShapeView): AnnotationEntry[] {
   return shape.layers.flatMap((layer) => layer.annotations.flatMap((annotation) =>
-    hasUsableSpan(annotation, shape.rawText.length) ? [] : [{ layer, annotation }]));
+    layer.scope === "LAYER_SCOPE_POSITIONAL"
+      || hasUsableSpan(annotation, shape.rawText.length) ? [] : [{ layer, annotation }]));
+}
+
+export interface DocumentAnnotationChip extends AnnotationEntry {
+  /** Document-scoped annotations this chip stands for; above 1 only for collapsed category layers. */
+  totalCount: number;
+}
+
+/**
+ * Builds the document-wide chip list: category layers with several
+ * document-scoped predictions (sentiment, document categories) collapse into
+ * one chip carrying the most confident label, while every other layer keeps
+ * one chip per annotation.
+ */
+export function documentAnnotationChips(shape: DocumentShapeView): DocumentAnnotationChip[] {
+  const chips: DocumentAnnotationChip[] = [];
+  const collapsed = new Map<string, DocumentAnnotationChip>();
+  for (const { layer, annotation } of documentScopedAnnotations(shape)) {
+    if (layer.valueType !== "Category") {
+      chips.push({ layer, annotation, totalCount: 1 });
+      continue;
+    }
+    const existing = collapsed.get(layer.id);
+    if (!existing) {
+      const chip = { layer, annotation, totalCount: 1 };
+      collapsed.set(layer.id, chip);
+      chips.push(chip);
+      continue;
+    }
+    existing.totalCount++;
+    if (annotationConfidence(annotation) > annotationConfidence(existing.annotation)) {
+      existing.annotation = annotation;
+    }
+  }
+  return chips;
+}
+
+/** Returns an annotation's confidence: its probability, else its score, else 0. */
+export function annotationConfidence(annotation: AnnotationView): number {
+  return annotation.probability ?? annotation.score ?? 0;
+}
+
+/**
+ * Decides whether a layer belongs to the calm first-run overlay: entities and
+ * sentences only, so a fresh analysis does not open with every token boxed.
+ */
+export function isDefaultOverlayLayer(layer: AnnotationLayerView): boolean {
+  const identity = asciiLowerCase(`${layer.id} ${layer.standardIdentity ?? ""}`);
+  return identity.includes("entit") || identity.includes("sentence");
 }
 
 export function layerAccent(layer: AnnotationLayerView): LayerAccent {
@@ -210,7 +259,7 @@ function readLayer(
 
   return {
     id,
-    title: layerTitle(id),
+    title: layerTitle(id, optionalString(identity?.standard), optionalString(identity?.qualifier)),
     scope: stringValue(layer.scope),
     valueType: valueEntry?.[1] ?? "Unknown",
     standardIdentity: optionalString(identity?.standard),
@@ -266,10 +315,44 @@ function annotationLabel(annotation: Record<string, unknown>, index: number): st
   return `Annotation ${index + 1}`;
 }
 
-function layerTitle(id: string): string {
+const STANDARD_LAYER_PREFIX = "STANDARD_LAYER_";
+
+/** Titles for standard layers whose words do not read well when merely lower-cased. */
+const STANDARD_LAYER_TITLES: Record<string, string> = {
+  POS_TAGS: "POS tags",
+  SYNTACTIC_CHUNKS: "Phrase chunks",
+  GEO: "Geocoding",
+};
+
+/**
+ * Titles a layer from its declared standard identity, so "opennlp:pos" reads "POS tags" and
+ * the four term profiles read "Terms (stem)" rather than colliding with the stemmer's
+ * "Stems"; a layer without a standard identity is titled from its id.
+ */
+function layerTitle(id: string, standard?: string, qualifier?: string): string {
+  const standardName = standard?.startsWith(STANDARD_LAYER_PREFIX)
+    ? standard.slice(STANDARD_LAYER_PREFIX.length)
+    : undefined;
+  if (standardName && standardName !== "UNSPECIFIED") {
+    const title = STANDARD_LAYER_TITLES[standardName] ?? sentenceCase(standardName);
+    return qualifier ? `${title} (${asciiLowerCase(qualifier)})` : title;
+  }
+  return titleFromId(id);
+}
+
+/** "TERM_VECTORS" reads "Term vectors". */
+function sentenceCase(enumWords: string): string {
+  const words = splitOnCharacters(enumWords, "_").map(asciiLowerCase).join(" ");
+  return `${asciiUpperCase(words.charAt(0))}${words.slice(1)}`;
+}
+
+function titleFromId(id: string): string {
   const localName = id.includes(":") ? id.slice(id.lastIndexOf(":") + 1) : id;
   return splitOnCharacters(localName, "-_")
-    .map((part) => `${asciiUpperCase(part.charAt(0))}${part.slice(1)}`)
+    .map((part) => part.length <= 3 && part === asciiUpperCase(part)
+      // Short all-caps parts are acronyms (NFC, UD) and keep their casing.
+      ? part
+      : `${asciiUpperCase(part.charAt(0))}${asciiLowerCase(part.slice(1))}`)
     .join(" ") || id;
 }
 

@@ -18,7 +18,7 @@
 package org.apache.opennlp.grpc.v1.server;
 
 import io.grpc.Status;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.v1.GrpcStatusCode;
 
 /**

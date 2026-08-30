@@ -31,14 +31,23 @@ import opennlp.tools.postag.POSModel;
 import opennlp.tools.postag.POSSample;
 import opennlp.tools.postag.POSTaggerFactory;
 import opennlp.tools.postag.POSTaggerME;
+import opennlp.tools.sentdetect.SentenceDetectorFactory;
+import opennlp.tools.sentdetect.SentenceDetectorME;
+import opennlp.tools.sentdetect.SentenceModel;
+import opennlp.tools.sentdetect.SentenceSample;
+import opennlp.tools.tokenize.TokenSample;
+import opennlp.tools.tokenize.TokenizerFactory;
+import opennlp.tools.tokenize.TokenizerME;
+import opennlp.tools.tokenize.TokenizerModel;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.ObjectStreamUtils;
 import opennlp.tools.util.Parameters;
+import opennlp.tools.util.Span;
 import opennlp.tools.util.TrainingParameters;
 
 /**
- * Trains a tiny UD-tagged {@link POSModel} and a probe {@link LemmatizerModel} from in-memory
- * corpora, entirely offline. The probe lemmatizer maps the same token to a different lemma per
+ * Trains tiny classic pipeline models (sentence detector, tokenizer, UD-tagged
+ * {@link POSModel}, probe {@link LemmatizerModel}) from in-memory corpora, entirely offline. The probe lemmatizer maps the same token to a different lemma per
  * tagset ("cats"/NOUN to "cat", "cats"/NN to "cats-penn"), so a test can tell from the output
  * lemma alone which tagset the lemmatizer was fed. Fixtures for wiring assertions, not models
  * of any real-world quality.
@@ -108,6 +117,91 @@ public final class TinyPosLemmaModels {
         }
         corpus.add(new LemmaSample(tokens, UD_TAGS, udLemmas));
         corpus.add(new LemmaSample(tokens, pennTags, pennLemmas));
+      }
+    }
+    try (ObjectStream<LemmaSample> samples = ObjectStreamUtils.createObjectStream(corpus)) {
+      final LemmatizerModel model =
+          LemmatizerME.train("eng", samples, trainingParams(), new LemmatizerFactory());
+      model.serialize(target);
+    }
+    return target;
+  }
+
+  /**
+   * Trains a sentence model over two-sentence documents and serializes it to {@code target}.
+   *
+   * @param target Destination {@code .bin} path. Must not be {@code null}.
+   *
+   * @return {@code target}, for call-site convenience.
+   *
+   * @throws IOException If training or serialization fails.
+   */
+  public static Path trainSentenceModel(Path target) throws IOException {
+    final List<SentenceSample> corpus = new ArrayList<>();
+    for (int i = 0; i < 80; i++) {
+      corpus.add(new SentenceSample("The cats sleep. The dogs run.",
+          new Span(0, 15), new Span(16, 29)));
+      // The abbreviation periods supply the trainer's no-split outcome.
+      corpus.add(new SentenceSample("Dr. Cat naps. Dr. Dog runs.",
+          new Span(0, 13), new Span(14, 27)));
+    }
+    try (ObjectStream<SentenceSample> samples = ObjectStreamUtils.createObjectStream(corpus)) {
+      final SentenceModel model = SentenceDetectorME.train("eng", samples,
+          new SentenceDetectorFactory("eng", true, null, null), trainingParams());
+      model.serialize(target);
+    }
+    return target;
+  }
+
+  /**
+   * Trains a tokenizer model over the tiny corpus sentences and serializes it to
+   * {@code target}.
+   *
+   * @param target Destination {@code .bin} path. Must not be {@code null}.
+   *
+   * @return {@code target}, for call-site convenience.
+   *
+   * @throws IOException If training or serialization fails.
+   */
+  public static Path trainTokenizerModel(Path target) throws IOException {
+    final List<TokenSample> corpus = new ArrayList<>();
+    for (int i = 0; i < 80; i++) {
+      corpus.add(new TokenSample("The cats sleep.",
+          new Span[] {new Span(0, 3), new Span(4, 8), new Span(9, 14), new Span(14, 15)}));
+      corpus.add(new TokenSample("The dogs run.",
+          new Span[] {new Span(0, 3), new Span(4, 8), new Span(9, 12), new Span(12, 13)}));
+    }
+    try (ObjectStream<TokenSample> samples = ObjectStreamUtils.createObjectStream(corpus)) {
+      final TokenizerModel model =
+          TokenizerME.train(samples,
+          new TokenizerFactory("eng", null, false, null), trainingParams());
+      model.serialize(target);
+    }
+    return target;
+  }
+
+  /**
+   * Trains a marker lemmatizer that maps every UD-tagged token to
+   * {@code <token>-<marker>} and serializes it to {@code target}, so the predicted lemma
+   * alone reveals which pipeline's lemmatizer served a request.
+   *
+   * @param target Destination {@code .bin} path. Must not be {@code null}.
+   * @param marker The lemma suffix identifying this model. Must not be {@code null}.
+   *
+   * @return {@code target}, for call-site convenience.
+   *
+   * @throws IOException If training or serialization fails.
+   */
+  public static Path trainMarkerLemmaModel(Path target, String marker) throws IOException {
+    final List<LemmaSample> corpus = new ArrayList<>();
+    for (int i = 0; i < 80; i++) {
+      for (String[] tokens : TAGGED_SENTENCES) {
+        final String[] lemmas = new String[tokens.length];
+        for (int t = 0; t < tokens.length; t++) {
+          // Punctuation keeps its identity lemma so training sees two outcomes.
+          lemmas[t] = ".".equals(tokens[t]) ? "." : tokens[t] + "-" + marker;
+        }
+        corpus.add(new LemmaSample(tokens, UD_TAGS, lemmas));
       }
     }
     try (ObjectStream<LemmaSample> samples = ObjectStreamUtils.createObjectStream(corpus)) {

@@ -27,9 +27,11 @@ import java.util.List;
 import java.util.Map;
 
 import opennlp.tools.chunker.ChunkerME;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.opennlp.grpc.spi.model.ChunkerModel;
+import org.apache.opennlp.grpc.spi.model.ChunkerBackendFactory;
 
 /**
  * Built-in chunker backend for classic OpenNLP maxent chunkers. Reads

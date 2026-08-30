@@ -34,6 +34,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.apache.opennlp.grpc.spi.vocabulary.VocabularyStore;
 
 /**
  * The {@link VocabularyStore} over one local directory: staged artifacts live in a

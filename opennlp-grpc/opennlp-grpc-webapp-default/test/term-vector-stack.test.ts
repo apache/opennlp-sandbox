@@ -184,6 +184,8 @@ describe("term vector list pop-out", () => {
     const panel = document.getElementById("annotation-details")!;
     expect(panel.hidden).toBe(false);
     expect(panel.textContent).toContain("opennlp:term-vectors");
-    expect(panel.textContent).toContain('"frequency": 3');
+    const frequency = [...panel.querySelectorAll(".structured-fields > dt")]
+      .find((field) => field.textContent === "frequency");
+    expect(frequency?.nextElementSibling?.textContent).toBe("3");
   });
 });

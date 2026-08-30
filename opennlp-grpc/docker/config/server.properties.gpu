@@ -1,0 +1,32 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+# CUDA demonstration configuration: MiniLM sentence embeddings on the ONNX
+# Runtime CUDA execution provider. docker-compose.gpu.yml mounts the model
+# files read-only under /srv/opennlp/models from OPENNLP_GPU_MODELS.
+model.embedder.minilm-gpu.cuda.path=/srv/opennlp/models/minilm/model.onnx
+model.embedder.minilm-gpu.vocab.path=/srv/opennlp/models/minilm/vocab.txt
+model.embedder.minilm-gpu.lowercase=true
+model.embedder.minilm-gpu.pooling=mean
+model.embedder.default_id=minilm-gpu
+model.embedder.gpu_device_id=0
+
+# The demo node installs catalog models, keeps trainer artifacts and saves live indexes
+# under its state volume, so Models & data, Build index, Trainer and Lifecycle all work.
+model.catalog_root=/srv/opennlp/catalog
+vocabulary.artifact_root=/srv/opennlp/artifacts
+search.persist.root=/srv/opennlp/checkpoints

@@ -19,14 +19,25 @@
 
 import type { ReindexIndexRequest, SetCollectionRequest } from "./api";
 import type { CollectionEventView, CollectionView } from "./collection-adapter";
-import type { IndexAliasView, SearchIndex, SearchProviderInstance } from "./search-adapter";
-import { formatInteger } from "./text-utils";
-import { emptyMessage, errorMessage, requiredElement } from "./ui-utils";
-import type { TrainedModelSummary } from "./vocabulary-trainer";
+import {
+  indexStateLabel,
+  SCRATCH_INDEX_PREFIX,
+  type IndexAliasView,
+  type SearchIndex,
+  type SearchProviderInstance,
+  type SearchProviderListing,
+} from "./search-adapter";
+import { ellipsizeCodePoints, formatInteger } from "./text-utils";
+import { addFact, emptyMessage, errorMessage, requiredElement } from "./ui-utils";
+import type {
+  DictionaryArtifactSummary,
+  TrainedModelSummary,
+  VocabularyArtifactSummary,
+} from "./vocabulary-trainer";
 
 export interface LifecycleApi {
   listIndexes(): Promise<SearchIndex[]>;
-  listProviders(): Promise<SearchProviderInstance[]>;
+  listProviders(): Promise<SearchProviderListing>;
   listAliases(): Promise<IndexAliasView[]>;
   persist(indexId: string): Promise<SearchIndex | undefined>;
   seal(indexId: string): Promise<SearchIndex | undefined>;
@@ -34,6 +45,8 @@ export interface LifecycleApi {
   setAlias(alias: string, indexId: string): Promise<void>;
   deleteAlias(alias: string): Promise<void>;
   listStaticModels(): Promise<TrainedModelSummary[]>;
+  listDictionaries(): Promise<DictionaryArtifactSummary[]>;
+  listVocabularies(): Promise<VocabularyArtifactSummary[]>;
   listCollections(): Promise<CollectionView[]>;
   getCollection(collectionId: string): Promise<CollectionView | undefined>;
   setCollection(request: SetCollectionRequest): Promise<CollectionView | undefined>;
@@ -56,6 +69,10 @@ export class LifecycleWorkbench {
   readonly #api: LifecycleApi;
 
   readonly #status = requiredElement<HTMLElement>("lifecycle-status");
+  readonly #workspaceStatus = requiredElement<HTMLElement>("lifecycle-workspace-status");
+  readonly #aliasStatus = requiredElement<HTMLElement>("lifecycle-alias-status");
+  readonly #rebuildStatus = requiredElement<HTMLElement>("lifecycle-rebuild-status");
+  readonly #collectionStatus = requiredElement<HTMLElement>("collection-status");
   readonly #indexSelect = requiredElement<HTMLSelectElement>("lifecycle-index-select");
   readonly #refreshButton = requiredElement<HTMLButtonElement>("lifecycle-refresh-button");
   readonly #indexFacts = requiredElement<HTMLDListElement>("lifecycle-index-facts");
@@ -74,8 +91,8 @@ export class LifecycleWorkbench {
   readonly #collectionId = requiredElement<HTMLInputElement>("collection-id");
   readonly #collectionName = requiredElement<HTMLInputElement>("collection-name");
   readonly #collectionMembers = requiredElement<HTMLSelectElement>("collection-members");
-  readonly #collectionVocabulary = requiredElement<HTMLInputElement>("collection-vocabulary-id");
-  readonly #collectionDictionary = requiredElement<HTMLInputElement>("collection-dictionary-id");
+  readonly #collectionVocabulary = requiredElement<HTMLSelectElement>("collection-vocabulary-id");
+  readonly #collectionDictionary = requiredElement<HTMLSelectElement>("collection-dictionary-id");
   readonly #collectionModel = requiredElement<HTMLSelectElement>("collection-model-id");
   readonly #collectionThreshold = requiredElement<HTMLInputElement>("collection-threshold");
   readonly #collectionSaveButton = requiredElement<HTMLButtonElement>("collection-save-button");
@@ -91,6 +108,9 @@ export class LifecycleWorkbench {
   #indexes: SearchIndex[] = [];
   #busy = false;
   #watchGeneration = 0;
+  #listing: SearchProviderListing = {
+    providers: [], dynamicIndexingEnabled: true, persistenceConfigured: false,
+  };
 
   constructor(api: LifecycleApi) {
     this.#api = api;
@@ -115,37 +135,74 @@ export class LifecycleWorkbench {
 
   private async refresh(): Promise<void> {
     try {
-      const [indexes, providers, aliases, models, collections] = await Promise.all([
-        this.#api.listIndexes(),
-        this.#api.listProviders(),
-        this.#api.listAliases(),
-        this.#api.listStaticModels(),
-        this.#api.listCollections(),
-      ]);
-      this.#indexes = indexes.filter((index) => !index.immutable);
+      const [indexes, providers, aliases, models, collections, dictionaries, vocabularies] =
+        await Promise.all([
+          this.#api.listIndexes(),
+          this.#api.listProviders(),
+          this.#api.listAliases(),
+          this.#api.listStaticModels(),
+          this.#api.listCollections(),
+          this.#api.listDictionaries(),
+          this.#api.listVocabularies(),
+        ]);
+      // Read-only indexes stay listed: they are still searchable, can be aliased, and a
+      // person who just made one read-only should not watch it vanish.
+      this.#indexes = indexes.filter((index) => !index.label.startsWith(SCRATCH_INDEX_PREFIX));
+      this.#listing = providers;
       this.renderIndexOptions();
-      this.renderProviders(providers);
+      this.renderProviders(providers.providers);
+      this.renderAvailability();
       this.renderAliases(aliases);
       this.renderModels(models);
+      this.renderArtifactOptions(this.#collectionDictionary, "No dictionary",
+        dictionaries.map((dictionary) => ({
+          value: dictionary.artifactId,
+          label: `${dictionary.displayName} (${dictionary.entryCount} entries)`,
+        })));
+      this.renderArtifactOptions(this.#collectionVocabulary, "No vocabulary (coverage not measured)",
+        vocabularies.map((vocabulary) => ({
+          value: vocabulary.artifactId,
+          label: `${vocabulary.displayName} (${vocabulary.termCount} terms)`,
+        })));
       this.renderCollectionOptions(collections);
-      this.setStatus(this.#indexes.length === 0
-        ? "Index documents in Workspace search to create a dynamic workspace first."
-        : `${this.#indexes.length} dynamic ${this.#indexes.length === 1 ? "workspace" : "workspaces"} available.`);
+      if (this.#indexes.length === 0) {
+        this.setStatus("No live indexes yet. Build one from your documents, or analyze a document "
+          + "and add it to a live index. ");
+        this.#status.append(jumpButton("workflows", "Open Build index"), " ",
+          jumpButton("session-search", "Open Live index search"));
+      } else {
+        this.setStatus(`${this.#indexes.length} ${this.#indexes.length === 1 ? "index" : "indexes"} available.`);
+      }
     } catch (error) {
       this.setStatus(errorMessage(error, "Could not load the lifecycle catalog."), true);
     }
     this.updateControls();
   }
 
+  /** Fills one artifact picker from the server's list, keeping the current choice. */
+  private renderArtifactOptions(
+    select: HTMLSelectElement,
+    noneLabel: string,
+    options: Array<{ value: string; label: string }>,
+  ): void {
+    const selected = select.value;
+    select.replaceChildren(new Option(noneLabel, ""));
+    for (const option of options) {
+      select.add(new Option(option.label, option.value));
+    }
+    selectArtifact(select, selected);
+  }
+
   private renderIndexOptions(): void {
     const selected = this.#indexSelect.value;
     this.#indexSelect.replaceChildren();
     if (this.#indexes.length === 0) {
-      this.#indexSelect.add(new Option("No dynamic workspaces", ""));
+      this.#indexSelect.add(new Option("No live indexes", ""));
       this.#indexSelect.disabled = true;
     } else {
       for (const index of this.#indexes) {
-        this.#indexSelect.add(new Option(`${index.label} (${index.id})`, index.id));
+        this.#indexSelect.add(new Option(
+          `${index.label} (${index.id}) · ${indexStateLabel(index)}`, index.id));
       }
       this.#indexSelect.disabled = false;
       if (this.#indexes.some((index) => index.id === selected)) {
@@ -171,18 +228,18 @@ export class LifecycleWorkbench {
     }
     addFact(this.#indexFacts, "Provider", index.providerId);
     addFact(this.#indexFacts, "Embedding model", index.modelId);
-    addFact(this.#indexFacts, "Vector space", index.vectorSpaceId);
+    addFact(this.#indexFacts, "Vector space", ellipsizeCodePoints(index.vectorSpaceId, 24));
     addFact(this.#indexFacts, "Chunks", formatInteger(index.size ?? 0));
-    addFact(this.#indexFacts, "Sealed", index.immutable ? "yes" : "no");
+    addFact(this.#indexFacts, "State", indexStateLabel(index));
   }
 
   private renderProviders(providers: SearchProviderInstance[]): void {
     this.#providerList.replaceChildren();
     if (providers.length === 0) {
-      this.#providerList.append(emptyMessage("No provider instances reported."));
+      this.#providerList.append(emptyMessage("No vector storage reported."));
     }
     const keepSource = this.#reindexProvider.value;
-    this.#reindexProvider.replaceChildren(new Option("Keep the source provider", ""));
+    this.#reindexProvider.replaceChildren(new Option("Keep the current vector storage", ""));
     for (const provider of providers) {
       const row = document.createElement("div");
       row.className = "lifecycle-provider-row";
@@ -217,9 +274,9 @@ export class LifecycleWorkbench {
       remove.type = "button";
       remove.className = "secondary-button";
       remove.textContent = "Delete";
-      remove.addEventListener("click", () => void this.run(async () => {
+      remove.addEventListener("click", () => void this.run(this.#aliasStatus, async () => {
         await this.#api.deleteAlias(alias.alias);
-        this.setStatus(`Deleted alias '${alias.alias}'.`);
+        this.report(this.#aliasStatus, `Deleted alias '${alias.alias}'.`);
         await this.refresh();
       }));
       row.append(label, remove);
@@ -230,16 +287,18 @@ export class LifecycleWorkbench {
   private renderModels(models: TrainedModelSummary[]): void {
     const selectedReindex = this.#reindexModel.value;
     this.#reindexModel.replaceChildren();
-    const selectedCollection = this.#collectionModel.value;
-    this.#collectionModel.replaceChildren(new Option("No model artifact", ""));
-    for (const model of models) {
-      this.#reindexModel.add(new Option(`${model.displayName} (${model.artifactId})`,
-        model.artifactId));
-      this.#collectionModel.add(new Option(`${model.displayName} (${model.artifactId})`,
-        model.artifactId));
-    }
     if (models.length === 0) {
-      this.#reindexModel.add(new Option("Train a model first", ""));
+      this.#reindexModel.add(new Option("No trained model yet: distill one on the Trainer tab", ""));
+      this.#reindexModel.disabled = true;
+    } else {
+      this.#reindexModel.disabled = false;
+    }
+    const selectedCollection = this.#collectionModel.value;
+    this.#collectionModel.replaceChildren(new Option("No model selected", ""));
+    for (const model of models) {
+      const label = `${model.displayName} (${ellipsizeCodePoints(model.artifactId, 20)})`;
+      this.#reindexModel.add(new Option(label, model.artifactId));
+      this.#collectionModel.add(new Option(label, model.artifactId));
     }
     this.#reindexModel.value = selectedReindex;
     this.#collectionModel.value = selectedCollection;
@@ -251,16 +310,18 @@ export class LifecycleWorkbench {
   private async persistSelected(seal: boolean): Promise<void> {
     const index = this.selectedIndex();
     if (!index) {
-      this.setStatus("Select a dynamic workspace first.", true);
+      this.report(this.#workspaceStatus, "Select a live index first.", true);
       return;
     }
-    await this.run(async () => {
+    await this.run(this.#workspaceStatus, async () => {
       const updated = seal
         ? await this.#api.seal(index.id)
         : await this.#api.persist(index.id);
-      this.setStatus(seal
-        ? `Sealed '${index.label}'; it is now immutable and durable.`
-        : `Persisted '${index.label}' as a checkpoint (${formatInteger(updated?.size ?? 0)} chunks).`);
+      this.report(this.#workspaceStatus, seal
+        ? `Made '${index.label}' read-only and saved it to disk. It stays searchable. `
+        : `Saved '${index.label}' to disk (${formatInteger(updated?.size ?? 0)} chunks); `
+          + "it now survives a server restart. ");
+      this.#workspaceStatus.append(jumpButton("session-search", "Search it on Live index search"));
       await this.refresh();
     });
   }
@@ -269,13 +330,13 @@ export class LifecycleWorkbench {
     const index = this.selectedIndex();
     const alias = this.#aliasInput.value.trim();
     if (!index || !alias) {
-      this.setStatus("Select a workspace and enter an alias name.", true);
+      this.report(this.#aliasStatus, "Select a live index and enter an alias name.", true);
       return;
     }
-    await this.run(async () => {
+    await this.run(this.#aliasStatus, async () => {
       await this.#api.setAlias(alias, index.id);
       this.#aliasInput.value = "";
-      this.setStatus(`Alias '${alias}' now resolves to '${index.id}'.`);
+      this.report(this.#aliasStatus, `Alias '${alias}' now resolves to '${index.id}'.`);
       await this.refresh();
     });
   }
@@ -284,22 +345,26 @@ export class LifecycleWorkbench {
     const index = this.selectedIndex();
     const modelId = this.#reindexModel.value;
     if (!index || !modelId) {
-      this.setStatus("Select a workspace and a trained model to reindex into.", true);
+      this.report(this.#rebuildStatus,
+        "Select a live index and a distilled model to rebuild it with.", true);
       return;
     }
     const provider = this.#reindexProvider.value;
     const alias = this.#reindexAlias.value.trim();
-    await this.run(async () => {
-      this.setStatus(`The server is replaying '${index.label}' through '${modelId}'.`);
+    await this.run(this.#rebuildStatus, async () => {
+      this.report(this.#rebuildStatus,
+        `The server is rebuilding '${index.label}' with '${modelId}'. `
+        + "The current index keeps serving searches until the new one is ready.");
       const built = await this.#api.reindex({
         indexId: index.id,
         embedding: { modelId },
         ...(provider ? { provider: { custom: provider } } : {}),
         ...(alias ? { alias } : {}),
       });
-      this.setStatus(built
-        ? `Built '${built.id}' beside the source${alias ? ` and swapped alias '${alias}'` : ""}.`
-        : "The reindex build completed.");
+      this.report(this.#rebuildStatus, built
+        ? `Built '${built.id}' beside '${index.label}'`
+          + `${alias ? `, and alias '${alias}' now points at the new index` : ""}.`
+        : "The rebuild completed.");
       await this.refresh();
     });
   }
@@ -331,27 +396,30 @@ export class LifecycleWorkbench {
         option.selected = false;
       }
       this.renderCollection(undefined);
+      this.report(this.#collectionStatus, "");
       return;
     }
     try {
       const collection = await this.#api.getCollection(collectionId);
       if (!collection) {
-        this.setStatus(`Collection '${collectionId}' was not found.`, true);
+        this.report(this.#collectionStatus, `Collection '${collectionId}' was not found.`, true);
         return;
       }
       this.fillEditor(collection);
       this.renderCollection(collection);
       this.startWatch(collection.id);
+      this.report(this.#collectionStatus, `Opened collection '${collection.id}'.`);
     } catch (error) {
-      this.setStatus(errorMessage(error, "Could not load the collection."), true);
+      this.report(this.#collectionStatus,
+        errorMessage(error, "Could not load the collection."), true);
     }
   }
 
   private fillEditor(collection: CollectionView): void {
     this.#collectionId.value = collection.id;
     this.#collectionName.value = collection.displayName;
-    this.#collectionVocabulary.value = collection.vocabularyArtifactId ?? "";
-    this.#collectionDictionary.value = collection.dictionaryArtifactId ?? "";
+    selectArtifact(this.#collectionVocabulary, collection.vocabularyArtifactId ?? "");
+    selectArtifact(this.#collectionDictionary, collection.dictionaryArtifactId ?? "");
     this.#collectionModel.value = collection.modelArtifactId ?? "";
     if (this.#collectionModel.selectedIndex < 0) {
       this.#collectionModel.value = "";
@@ -367,14 +435,14 @@ export class LifecycleWorkbench {
     const collectionId = this.#collectionId.value.trim();
     const displayName = this.#collectionName.value.trim();
     if (!collectionId || !displayName) {
-      this.setStatus("A collection needs an id and a display name.", true);
+      this.report(this.#collectionStatus, "A collection needs an id and a display name.", true);
       return;
     }
     const vocabulary = this.#collectionVocabulary.value.trim();
     const dictionary = this.#collectionDictionary.value.trim();
     const model = this.#collectionModel.value;
     const threshold = Number.parseInt(this.#collectionThreshold.value, 10);
-    await this.run(async () => {
+    await this.run(this.#collectionStatus, async () => {
       const collection = await this.#api.setCollection({
         collectionId,
         displayName,
@@ -385,12 +453,17 @@ export class LifecycleWorkbench {
         ...(model ? { modelArtifactId: model } : {}),
         driftNewTermThreshold: Number.isFinite(threshold) && threshold > 0 ? threshold : 0,
       });
-      this.setStatus(`Saved collection '${collectionId}'.`);
+      this.report(this.#collectionStatus, `Saved collection '${collectionId}'.`);
       await this.refresh();
       this.#collectionSelect.value = collectionId;
       if (collection) {
         this.renderCollection(collection);
         this.startWatch(collection.id);
+      }
+    }, (message) => {
+      // The picked vocabulary was deleted since the list loaded; say where a new one comes from.
+      if (message.includes("vocabulary")) {
+        this.#collectionStatus.append(" ", jumpButton("trainer", "Learn a vocabulary on the Trainer tab"));
       }
     });
   }
@@ -398,18 +471,18 @@ export class LifecycleWorkbench {
   private async deleteCollection(): Promise<void> {
     const collectionId = this.#collectionSelect.value || this.#collectionId.value.trim();
     if (!collectionId) {
-      this.setStatus("Select a collection to delete.", true);
+      this.report(this.#collectionStatus, "Select a collection to delete.", true);
       return;
     }
-    await this.run(async () => {
+    await this.run(this.#collectionStatus, async () => {
       this.stopWatch();
       const deleted = await this.#api.deleteCollection(collectionId);
-      this.setStatus(deleted
-        ? `Deleted collection '${collectionId}'.`
-        : `Collection '${collectionId}' did not exist.`);
       this.#collectionSelect.value = "";
       await this.refresh();
       await this.openSelectedCollection();
+      this.report(this.#collectionStatus, deleted
+        ? `Deleted collection '${collectionId}'.`
+        : `Collection '${collectionId}' did not exist.`);
     });
   }
 
@@ -453,7 +526,7 @@ export class LifecycleWorkbench {
     }
     const entry = document.createElement("div");
     const description = event.kind === "drift"
-      ? `Drift threshold crossed: ${formatInteger(event.collection.drift.newTerms)} new terms.`
+      ? `Coverage alert: ${formatInteger(event.collection.drift.newTerms)} new terms.`
       : event.kind === "index-persisted"
         ? `Index persisted: ${event.indexId ?? "unknown"}.`
         : `Model published: ${event.modelArtifactId ?? "unknown"}.`;
@@ -478,9 +551,16 @@ export class LifecycleWorkbench {
     addFact(this.#driftStats, "Analysis chain", collection.analysisChainId || "Not reported");
     const coverage = Math.round(drift.vocabularyCoverage * 100);
     this.#coverageBar.style.width = `${coverage}%`;
-    this.#coverageLabel.textContent = collection.vocabularyArtifactId
-      ? `${coverage}% of term occurrences hit vocabulary '${collection.vocabularyArtifactId}'.`
-      : "No vocabulary artifact is configured; every accreted term counts as new.";
+    this.#coverageBar.parentElement?.classList.toggle("is-unmeasured", !collection.vocabularyArtifactId);
+    if (collection.vocabularyArtifactId) {
+      this.#coverageLabel.textContent =
+        `${coverage}% of term occurrences hit vocabulary '${collection.vocabularyArtifactId}'.`;
+    } else {
+      this.#coverageBar.style.width = "0%";
+      this.#coverageLabel.textContent = "Not measured: this collection has no vocabulary artifact, "
+        + "so there is nothing to cover. ";
+      this.#coverageLabel.append(jumpButton("trainer", "Learn one on the Trainer tab"));
+    }
     if (collection.termStatistics.length === 0) {
       this.#termStatistics.append(emptyMessage("The member indexes hold no analyzable terms yet."));
       return;
@@ -490,7 +570,7 @@ export class LifecycleWorkbench {
       chip.className = entry.inVocabulary ? "term-statistic is-known" : "term-statistic";
       chip.textContent = `${entry.term} ×${formatInteger(entry.occurrences)}`;
       chip.title = entry.inVocabulary
-        ? "A row of the current vocabulary" : "Accreted outside the current vocabulary";
+        ? "In the current vocabulary" : "Out of the current vocabulary";
       this.#termStatistics.append(chip);
     }
     if (collection.termStatistics.length > 40 || collection.omittedTermCount > 0) {
@@ -506,7 +586,15 @@ export class LifecycleWorkbench {
     return this.#indexes.find((index) => index.id === this.#indexSelect.value);
   }
 
-  private async run(work: () => Promise<void>): Promise<void> {
+  /**
+   * Runs one lifecycle action, reporting a failure to the status region that
+   * sits next to the controls that started it.
+   */
+  private async run(
+    region: HTMLElement,
+    work: () => Promise<void>,
+    onError?: (message: string) => void,
+  ): Promise<void> {
     if (this.#busy) {
       return;
     }
@@ -515,7 +603,9 @@ export class LifecycleWorkbench {
     try {
       await work();
     } catch (error) {
-      this.setStatus(errorMessage(error, "The lifecycle request failed."), true);
+      const message = errorMessage(error, "The lifecycle request failed.");
+      this.report(region, message, true);
+      onError?.(message);
     } finally {
       this.#busy = false;
       this.updateControls();
@@ -523,32 +613,85 @@ export class LifecycleWorkbench {
   }
 
   private updateControls(): void {
-    const hasIndex = Boolean(this.selectedIndex());
-    this.#persistButton.disabled = this.#busy || !hasIndex;
-    this.#sealButton.disabled = this.#busy || !hasIndex;
-    this.#setAliasButton.disabled = this.#busy || !hasIndex;
-    this.#reindexButton.disabled = this.#busy || !hasIndex;
+    const selected = this.selectedIndex();
+    const hasIndex = Boolean(selected);
+    const writable = hasIndex && !selected?.immutable;
+    const enabled = this.#listing.dynamicIndexingEnabled;
+    const canSave = this.#listing.persistenceConfigured;
+    this.#persistButton.disabled = this.#busy || !writable || !enabled || !canSave;
+    this.#sealButton.disabled = this.#busy || !writable || !enabled || !canSave;
+    this.#setAliasButton.disabled = this.#busy || !hasIndex || !enabled;
+    this.#reindexButton.disabled = this.#busy || !hasIndex || !enabled;
+    const reason = !enabled
+      ? "Live indexing is disabled by the server operator."
+      : !canSave ? "Saving to disk is not configured on this server: set search.persist.root."
+      : hasIndex && !writable ? "This index is already read-only." : "";
+    this.#persistButton.title = reason;
+    this.#sealButton.title = reason;
     this.#collectionSaveButton.disabled = this.#busy;
     this.#collectionDeleteButton.disabled = this.#busy;
     this.#refreshButton.disabled = this.#busy;
   }
 
-  private setStatus(message: string, error = false): void {
-    this.#status.textContent = message;
-    this.#status.classList.toggle("is-error", error);
+  /**
+   * Browns out the live-index panel when the server cannot serve it, saying why once
+   * instead of failing on every click.
+   */
+  private renderAvailability(): void {
+    const panel = this.#indexSelect.closest<HTMLElement>(".lifecycle-panel");
+    const disabled = !this.#listing.dynamicIndexingEnabled;
+    panel?.classList.toggle("is-unavailable", disabled);
+    if (disabled) {
+      this.report(this.#workspaceStatus,
+        "Live indexing is disabled by the server operator, so nothing here can be saved, "
+        + "made read-only, aliased, or rebuilt.", true);
+    } else if (!this.#listing.persistenceConfigured) {
+      this.report(this.#workspaceStatus,
+        "Saving to disk is not configured on this server (search.persist.root), so live "
+        + "indexes last until the next restart.");
+    }
   }
-}
 
-function addFact(list: HTMLDListElement, term: string, value: string): void {
-  const container = document.createElement("div");
-  const name = document.createElement("dt");
-  name.textContent = term;
-  const detail = document.createElement("dd");
-  detail.textContent = value;
-  container.append(name, detail);
-  list.append(container);
+  /** Reports catalog-level progress in the status line above both panels. */
+  private setStatus(message: string, error = false): void {
+    this.report(this.#status, message, error);
+  }
+
+  /** Writes one message into the given announced status region. */
+  private report(region: HTMLElement, message: string, error = false): void {
+    region.textContent = message;
+    region.classList.toggle("is-error", error);
+  }
 }
 
 function delay(millis: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, millis));
+}
+
+/** A link-styled button that jumps to another workbench. */
+function jumpButton(target: string, label: string): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "link-button";
+  button.dataset.workbenchJump = target;
+  button.textContent = label;
+  return button;
+}
+
+/**
+ * Selects one artifact id in a picker. An id the server no longer lists, which a saved
+ * collection can still carry, is kept as its own option so opening the collection does not
+ * silently drop it.
+ */
+function selectArtifact(select: HTMLSelectElement, artifactId: string): void {
+  select.value = artifactId;
+  if (select.selectedIndex >= 0) {
+    return;
+  }
+  if (!artifactId) {
+    select.value = "";
+    return;
+  }
+  select.add(new Option(`${artifactId} (not on this server)`, artifactId));
+  select.value = artifactId;
 }

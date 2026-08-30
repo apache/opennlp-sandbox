@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Pins the collection wire shapes: the descriptor accretion scopes to, its
+ * Pins the collection wire shapes: the descriptor drift tracking scopes to, its
  * recomputed term statistics and drift statistics, the collection CRUD calls, the
  * server-streaming watch whose events are self-contained snapshots, and the
  * persisted collection storage record.

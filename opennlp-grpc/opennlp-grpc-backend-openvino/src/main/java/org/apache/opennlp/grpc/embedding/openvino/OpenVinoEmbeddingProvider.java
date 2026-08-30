@@ -35,7 +35,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import opennlp.tools.util.StringUtil;
-import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.kserve.v2.GRPCInferenceServiceGrpc;
 import org.apache.opennlp.grpc.kserve.v2.InferTensorContents;
 import org.apache.opennlp.grpc.kserve.v2.ModelInferRequest;
@@ -43,7 +43,7 @@ import org.apache.opennlp.grpc.kserve.v2.ModelInferResponse;
 import org.apache.opennlp.grpc.kserve.v2.ModelMetadataRequest;
 import org.apache.opennlp.grpc.kserve.v2.ModelMetadataResponse;
 import org.apache.opennlp.grpc.kserve.v2.ModelReadyRequest;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

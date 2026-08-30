@@ -39,6 +39,7 @@ const DYNAMIC_INDEX: SearchIndex = {
   maxResponseBytes: 4_194_304,
   supportsAllHits: false,
   immutable: false,
+  persisted: false,
   corpusTitle: "Workbench index",
   provenance: "Server-owned in-memory workspace",
   build: {},
@@ -49,13 +50,16 @@ describe("workspace search", () => {
     document.body.innerHTML = `
       <button id="add-to-index-button"></button>
       <button id="clear-index-button"></button>
+      <select id="workspace-index-select">
+        <option value="" selected>New workspace (created on first add)</option>
+      </select>
       <select id="workspace-provider-select">
         <option value="STANDARD_SEARCH_PROVIDER_FLAT_FLOAT" selected></option>
         <option value="STANDARD_SEARCH_PROVIDER_TURBO_QUANT"></option>
       </select>
       <form id="semantic-search-form"><textarea id="semantic-query" disabled></textarea>
         <button id="search-button" type="submit" disabled></button></form>
-      <span id="index-count"></span><p id="semantic-status"></p><div id="search-results"></div>
+      <span id="index-count"></span><span id="index-storage"></span><p id="semantic-status"></p><div id="search-results"></div>
       <form id="heatmap-query-form"><input id="heatmap-query" />
         <button id="heatmap-query-button"></button></form>
       <select id="heatmap-projection-select"></select>
@@ -63,6 +67,123 @@ describe("workspace search", () => {
       <p id="heatmap-status"></p><div id="document-heatmap"></div><div id="heatmap-selection"></div>
       <div id="document-graph"></div><div id="graph-selection"></div>
       <button id="graph-completeness"></button>`;
+  });
+
+  it("browns out the tab when the operator disabled live indexing", () => {
+    const workbench = new SemanticWorkbench({
+      index: vi.fn(),
+      search: vi.fn(),
+      listIndexes: vi.fn(async () => []),
+      deleteIndex: vi.fn(),
+      openDocument: vi.fn(),
+      selectAnnotation: vi.fn(),
+      inspectChunk: vi.fn(),
+      inspectSpan: vi.fn(),
+    });
+    workbench.setAvailability(false);
+
+    expect((document.getElementById("search-button") as HTMLButtonElement).disabled).toBe(true);
+    expect((document.getElementById("add-to-index-button") as HTMLButtonElement).disabled).toBe(true);
+    expect(document.getElementById("semantic-status")!.textContent)
+      .toContain("Live indexing is disabled by the server operator");
+  });
+
+  it("reports the add-to-index outcome to the tab that pressed the button", async () => {
+    const outcomes: Array<[string, boolean]> = [];
+    const index = vi.fn().mockResolvedValue({ id: "live-1", label: "Workbench index", size: 3,
+      providerId: "flat_float", modelId: "demo-embedding", backendId: "static",
+      vectorSpaceId: "demo", metric: "cosine", supportsAllHits: true, immutable: false,
+      corpusTitle: "Workbench index", provenance: "test", build: {} });
+    const workbench = new SemanticWorkbench({
+      index,
+      search: vi.fn(),
+      listIndexes: vi.fn(async () => []),
+      deleteIndex: vi.fn(),
+      openDocument: vi.fn(),
+      selectAnnotation: vi.fn(),
+      inspectChunk: vi.fn(),
+      inspectSpan: vi.fn(),
+      onIndexed: (message, error) => outcomes.push([message, error]),
+    });
+    const button = document.getElementById("add-to-index-button") as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+
+    workbench.setDocument("Demo", {
+      rawText: "Alice followed the White Rabbit.",
+      offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
+      layers: [],
+    }, { document: {
+      rawText: "Alice followed the White Rabbit.",
+      offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
+      chunkEmbeddingGroups: [{ groupId: "sentence-chunks", embeddingModelIds: ["demo-embedding"] }],
+      layers: [],
+      sentences: [{ text: "Alice followed the White Rabbit." }],
+      embeddings: [{ modelId: "demo-embedding", vector: [0.1, 0.2] }],
+    } });
+    button.click();
+    await vi.waitFor(() => expect(index).toHaveBeenCalled());
+    await vi.waitFor(() => expect(outcomes.at(-1)?.[0]).toContain("Added to live index 'Workbench index'"));
+    expect(outcomes.at(-1)?.[1]).toBe(false);
+  });
+
+  it("asks before deleting a live index and tells other tabs afterwards", async () => {
+    const deleteIndex = vi.fn(async () => undefined);
+    const onWorkspacesChanged = vi.fn();
+    const answers: boolean[] = [false, true];
+    const workbench = new SemanticWorkbench({
+      index: vi.fn(),
+      search: vi.fn(),
+      listIndexes: vi.fn(async () => [{
+        id: "live-1", label: "Notes", providerId: "flat_float", modelId: "m", backendId: "static",
+        vectorSpaceId: "s", metric: "cosine", supportsAllHits: true, immutable: false,
+        persisted: true,
+        corpusTitle: "Notes", provenance: "test", build: {}, size: 2,
+      }]),
+      deleteIndex,
+      openDocument: vi.fn(),
+      selectAnnotation: vi.fn(),
+      inspectChunk: vi.fn(),
+      inspectSpan: vi.fn(),
+      confirmDelete: () => answers.shift() ?? false,
+      onWorkspacesChanged,
+    });
+    await workbench.initializeWorkspaces();
+    const picker = document.getElementById("workspace-index-select") as HTMLSelectElement;
+    // The picker says which state each index is in, from the descriptor's flags.
+    expect(picker.options[1]?.textContent).toBe("Notes · 2 chunks · Saved to disk");
+    picker.value = "live-1";
+    picker.dispatchEvent(new Event("change"));
+    await vi.waitFor(() => expect(document.getElementById("index-storage")!.textContent)
+      .toBe("Saved to disk"));
+    await vi.waitFor(() => expect(document.getElementById("semantic-status")!.textContent)
+      .toContain("Searching 'Notes'"));
+    const clear = document.getElementById("clear-index-button") as HTMLButtonElement;
+
+    clear.click();
+    expect(deleteIndex).not.toHaveBeenCalled();
+
+    clear.click();
+    await vi.waitFor(() => expect(deleteIndex).toHaveBeenCalledWith("live-1"));
+    await vi.waitFor(() => expect(onWorkspacesChanged).toHaveBeenCalled());
+  });
+
+  it("shows where a first live index comes from when the server has none", async () => {
+    const workbench = new SemanticWorkbench({
+      index: vi.fn(),
+      search: vi.fn(),
+      listIndexes: vi.fn(async () => []),
+      deleteIndex: vi.fn(),
+      openDocument: vi.fn(),
+      selectAnnotation: vi.fn(),
+      inspectChunk: vi.fn(),
+      inspectSpan: vi.fn(),
+    });
+    await workbench.initializeWorkspaces();
+
+    const results = document.getElementById("search-results")!;
+    expect(results.textContent).toContain("No live indexes yet");
+    expect(Array.from(results.querySelectorAll<HTMLElement>("[data-workbench-jump]"))
+      .map((jump) => jump.dataset.workbenchJump)).toEqual(["analysis", "workflows"]);
   });
 
   it("indexes the current document on the server when the first workspace query is submitted", async () => {
@@ -77,6 +198,7 @@ describe("workspace search", () => {
     const workbench = new SemanticWorkbench({
       index,
       search,
+      listIndexes: vi.fn(async () => []),
       deleteIndex: vi.fn(),
       openDocument: vi.fn(),
       selectAnnotation: vi.fn(),
@@ -195,6 +317,7 @@ describe("workspace search", () => {
     const workbench = new SemanticWorkbench({
       index,
       search,
+      listIndexes: vi.fn(async () => []),
       deleteIndex,
       openDocument: vi.fn(),
       selectAnnotation: vi.fn(),
@@ -280,6 +403,7 @@ describe("workspace search", () => {
     const workbench = new SemanticWorkbench({
       index: vi.fn(),
       search: vi.fn(),
+      listIndexes: vi.fn(async () => []),
       deleteIndex: vi.fn(),
       openDocument: vi.fn(),
       selectAnnotation: vi.fn(),
@@ -306,5 +430,45 @@ describe("workspace search", () => {
     chunk.click();
 
     expect(inspectSpan).toHaveBeenCalledWith(shape, 0, 11, "Lovely day.", chunk);
+  });
+
+  it("attaches search to a picked existing workspace without adding a document", async () => {
+    const search = vi.fn().mockResolvedValue({ hits: [], truncated: false });
+    const index = vi.fn();
+    const listIndexes = vi.fn(async () => [
+      { ...DYNAMIC_INDEX, size: 12 },
+      { ...DYNAMIC_INDEX, id: "heatmap-x", label: "Current document heatmap: Sentences" },
+      { ...DYNAMIC_INDEX, id: "sealed-one", immutable: true },
+    ]);
+    const workbench = new SemanticWorkbench({
+      index,
+      search,
+      listIndexes,
+      deleteIndex: vi.fn(),
+      openDocument: vi.fn(),
+      selectAnnotation: vi.fn(),
+      inspectChunk: vi.fn(),
+      inspectSpan: vi.fn(),
+    });
+    await workbench.initializeWorkspaces();
+
+    // Heatmap scratch indexes and immutable indexes stay out of the picker.
+    const picker = document.getElementById("workspace-index-select") as HTMLSelectElement;
+    expect([...picker.options].map((option) => option.value)).toEqual(["", "workspace-one"]);
+    picker.value = "workspace-one";
+    picker.dispatchEvent(new Event("change", { bubbles: true }));
+    await vi.waitFor(() => expect(document.getElementById("semantic-status")?.textContent)
+      .toContain("Searching 'Workbench index'"));
+
+    const query = document.getElementById("semantic-query") as HTMLTextAreaElement;
+    expect(query.disabled).toBe(false);
+    query.value = "termination clauses";
+    query.dispatchEvent(new Event("input", { bubbles: true }));
+    document.getElementById("semantic-search-form")!
+      .dispatchEvent(new SubmitEvent("submit", { bubbles: true, cancelable: true }));
+
+    await vi.waitFor(() => expect(search).toHaveBeenCalledWith(
+      expect.objectContaining({ indexId: "workspace-one" })));
+    expect(index).not.toHaveBeenCalled();
   });
 });

@@ -20,6 +20,7 @@ package org.apache.opennlp.grpc.embedding;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingProvider;
 
 /**
  * Test double that violates the {@link EmbeddingProvider#embedBatch} contract by returning

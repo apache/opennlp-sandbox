@@ -18,6 +18,7 @@
  */
 package org.apache.opennlp.grpc.training;
 
+import org.apache.opennlp.grpc.spi.catalog.CatalogFile;
 import java.io.IOException;
 import java.nio.file.Path;
 

@@ -30,12 +30,12 @@
     <artifactId>opennlp-grpc-service</artifactId>
     <name>Apache OpenNLP gRPC Server</name>
 
-    <properties>
-        <!-- Must match the onnxruntime version managed by opennlp-dl ${opennlp.version}. -->
-        <onnxruntime.version>1.25.0</onnxruntime.version>
-    </properties>
-
     <dependencies>
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-grpc-spi</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.opennlp</groupId>
             <artifactId>opennlp-grpc-api</artifactId>
@@ -60,11 +60,19 @@
             <groupId>org.apache.opennlp</groupId>
             <artifactId>opennlp-model-resolver</artifactId>
         </dependency>
-        <!-- Immutable vector indexes and the normalized legal-passage interchange contract. -->
+        <!-- Immutable vector indexes and the normalized legal-passage interchange contract.
+             The onnxruntime jar is excluded so the slim server carries no native inference
+             runtime; ONNX Runtime ships only in the opennlp-grpc-dl add-on. -->
         <dependency>
             <groupId>org.apache.opennlp</groupId>
             <artifactId>opennlp-embeddings</artifactId>
             <version>${opennlp.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.microsoft.onnxruntime</groupId>
+                    <artifactId>onnxruntime</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- SentencePiece subword tokenization for PIPELINE_STEP_SUBWORD_TOKENIZE. -->
         <dependency>
@@ -84,24 +92,6 @@
             <artifactId>opennlp-geo</artifactId>
             <version>${opennlp.version}</version>
         </dependency>
-        <!--
-          ONNX embeddings support (Maven Central artifact, not the sandbox DL4J module).
-          The onnxruntime jar is excluded here and supplied by exactly one of the
-          cpu/gpu profiles below, so the CPU and CUDA runtimes (which ship the same
-          ai.onnxruntime classes) can never coexist on the classpath.
-        -->
-        <dependency>
-            <groupId>org.apache.opennlp</groupId>
-            <artifactId>opennlp-dl</artifactId>
-            <version>${opennlp.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.microsoft.onnxruntime</groupId>
-                    <artifactId>onnxruntime</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
         <dependency>
             <groupId>org.apache.opennlp</groupId>
             <artifactId>opennlp-models-sentdetect-en</artifactId>
@@ -131,6 +121,12 @@
             <artifactId>opennlp-models-langdetect</artifactId>
             <version>${opennlp.models.version}</version>
             <scope>runtime</scope>
+        </dependency>
+        <!-- Canonical protobuf JSON rendering for the built-in protojson formatter. -->
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java-util</artifactId>
+            <version>${protobuf.version}</version>
         </dependency>
         <dependency>
             <groupId>info.picocli</groupId>
@@ -195,99 +191,31 @@
 
     </dependencies>
 
-    <!--
-      Exactly one ONNX Runtime flavor is active at a time. The default cpu profile
-      is replaced by the gpu profile when building with -Dgpu (mirrors the
-      opennlp-dl / opennlp-dl-gpu split in the main OpenNLP repository).
-    -->
-    <profiles>
-        <profile>
-            <id>cpu</id>
-            <activation>
-                <property>
-                    <name>!gpu</name>
-                </property>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.microsoft.onnxruntime</groupId>
-                    <artifactId>onnxruntime</artifactId>
-                    <version>${onnxruntime.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>gpu</id>
-            <activation>
-                <property>
-                    <name>gpu</name>
-                </property>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.microsoft.onnxruntime</groupId>
-                    <artifactId>onnxruntime_gpu</artifactId>
-                    <version>${onnxruntime.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-        <!--
-          Opt-in (-Pdl-ner) end-to-end test of the ONNX name finder backend. Downloads the
-          ONNX export of dslim/bert-base-NER (MIT) from HuggingFace into target/ at build
-          time only; the model is never bundled into any artifact and is not redistributed.
-          Without this profile BasicDocumentAnalyzerDlNerTest skips (no model present).
-        -->
-        <profile>
-            <id>dl-ner</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>com.googlecode.maven-download-plugin</groupId>
-                        <artifactId>download-maven-plugin</artifactId>
-                        <version>1.13.0</version>
-                        <executions>
-                            <execution>
-                                <id>download-dl-ner-model</id>
-                                <phase>generate-test-resources</phase>
-                                <goals>
-                                    <goal>wget</goal>
-                                </goals>
-                                <configuration>
-                                    <url>https://huggingface.co/Xenova/bert-base-NER/resolve/main/onnx/model_quantized.onnx</url>
-                                    <outputDirectory>${project.build.directory}/dl-ner-model</outputDirectory>
-                                    <outputFileName>model.onnx</outputFileName>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>download-dl-ner-vocab</id>
-                                <phase>generate-test-resources</phase>
-                                <goals>
-                                    <goal>wget</goal>
-                                </goals>
-                                <configuration>
-                                    <url>https://huggingface.co/Xenova/bert-base-NER/resolve/main/vocab.txt</url>
-                                    <outputDirectory>${project.build.directory}/dl-ner-model</outputDirectory>
-                                    <outputFileName>vocab.txt</outputFileName>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <systemPropertyVariables>
-                                <dl.ner.model.dir>${project.build.directory}/dl-ner-model</dl.ner.model.dir>
-                            </systemPropertyVariables>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
-
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.rat</groupId>
+                <artifactId>apache-rat-plugin</artifactId>
+                <configuration>
+                    <excludes combine.children="append">
+                        <!-- User-supplied input retained byte-for-byte as a regression fixture. -->
+                        <exclude>src/test/resources/document/vibe-coding-speech.txt</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <!-- Test jar so add-on modules can run the search registry and service tests
+                 that need their provider on the classpath, reusing these fixtures. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>

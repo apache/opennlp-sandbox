@@ -26,8 +26,8 @@ option java_multiple_files = true;
 option java_outer_classname = "OpenNlpServiceProto";
 option java_package = "org.apache.opennlp.grpc.v1";
 
-// The v1 document-centric OpenNLP analysis API: one unary RPC to analyze a
-// document, plus two capability-discovery RPCs.
+// The v1 document-centric OpenNLP analysis API: unary and progressive document
+// analysis, bulk streaming, embedding, discovery, and output formatting.
 //
 // Error model: failures are reported as gRPC status codes. AnalyzeDocument maps
 // validation/processing errors to INVALID_ARGUMENT (malformed/invalid request),
@@ -43,6 +43,13 @@ service OpenNlpAnalysisService {
   // diagnostics. See AnalyzeDocumentRequest / AnalyzeDocumentResponse and the
   // service-level error model above.
   rpc AnalyzeDocument(AnalyzeDocumentRequest) returns (AnalyzeDocumentResponse);
+  // Analyzes one document while emitting the initial document, atomic layer
+  // updates as independent pipeline branches finish, and the final canonical
+  // response. A failure confined to one branch is reported as an event so
+  // independent branches can continue. Invalid input or a failed backbone
+  // terminates the RPC with the same status as AnalyzeDocument.
+  rpc AnalyzeDocumentProgressive(AnalyzeDocumentRequest)
+      returns (stream AnalyzeDocumentEvent);
   // Reports server identity and capabilities: OpenNLP/API versions, the ids of the
   // profiles registered on the server, the pipeline steps this server implements,
   // loaded resources, and the operator text limit.
@@ -65,6 +72,16 @@ service OpenNlpAnalysisService {
   // stream with a status: INVALID_ARGUMENT (blank text, model switch), NOT_FOUND (unknown
   // model id, or no model id when several models are configured and none is the default).
   rpc EmbedText(stream EmbedTextRequest) returns (stream EmbedTextResponse);
+  // Lists the document output formats served by this instance. Formats are
+  // contributed by DocumentOutputFormatter providers discovered from the
+  // classpath; the list is empty when no formatter jar is deployed.
+  rpc ListOutputFormats(ListOutputFormatsRequest) returns (ListOutputFormatsResponse);
+  // Renders one analyzed document into a contributed output format. The document
+  // is one previously returned by AnalyzeDocument (or assembled by the caller in
+  // the same shape); no analysis runs here. Errors: NOT_FOUND (the format id names
+  // no deployed formatter; the message lists the available ids), INVALID_ARGUMENT
+  // (blank format id or missing document), INTERNAL (the formatter failed).
+  rpc FormatDocument(FormatDocumentRequest) returns (FormatDocumentResponse);
 }
 
 // Input to AnalyzeDocument. Supplies the document, selects which analysis to run
@@ -146,6 +163,51 @@ message AnalyzeDocumentResponse {
   // Per-step informational notes, warnings, or non-fatal errors. Fatal failures
   // are returned as a gRPC error status instead (see the service error model).
   repeated ProcessingDiagnostic diagnostics = 2;
+}
+
+// One ordered update from progressive analysis of a single document.
+message AnalyzeDocumentEvent {
+  // Monotonically increasing sequence within this RPC, beginning at one.
+  uint64 sequence = 1;
+  // The update carried by this event.
+  oneof update {
+    // Initial document identity, source text, metadata, and requested steps.
+    AnalysisStarted started = 2;
+    // Complete layers produced atomically by one finished pipeline branch.
+    AnalysisLayerBatch layers_ready = 3;
+    // Failure of one non-backbone branch. Independent branches continue.
+    AnalysisStepFailure step_failed = 4;
+    // Final canonical document and the complete diagnostic set.
+    AnalyzeDocumentResponse complete = 5;
+  }
+}
+
+// Initial state for one progressive analysis.
+message AnalysisStarted {
+  // Document identity, source text, and caller metadata before analysis.
+  OpenNlpDocument document = 1;
+  // Effective pipeline steps requested for the analysis.
+  repeated PipelineStep requested_steps = 2;
+}
+
+// Atomic layer update produced by one pipeline branch.
+message AnalysisLayerBatch {
+  // The branch's terminal pipeline step.
+  PipelineStep step = 1;
+  // Complete replacement values for the named layers produced by the branch.
+  repeated AnnotationLayer layers = 2;
+  // Diagnostics produced while running the branch.
+  repeated ProcessingDiagnostic diagnostics = 3;
+}
+
+// Failure of one non-backbone branch in a progressive analysis.
+message AnalysisStepFailure {
+  // The branch's terminal pipeline step.
+  PipelineStep step = 1;
+  // Canonical status code for the branch failure.
+  GrpcStatusCode code = 2;
+  // Human-readable failure description.
+  string message = 3;
 }
 
 // One frame sent by the client on an AnalyzeStream call. Exactly one
@@ -381,4 +443,44 @@ message EmbedTextResponse {
   repeated float vector = 2;
   // The actual backend route that produced this vector, including after fallback.
   EmbeddingRoute route = 3;
+}
+
+// Input to ListOutputFormats. Empty; reserved for future filters.
+message ListOutputFormatsRequest {
+}
+
+// The document output formats served by this instance, in stable format-id order.
+message ListOutputFormatsResponse {
+  // One entry per deployed formatter.
+  repeated OutputFormatDescriptor formats = 1;
+}
+
+// Identity and rendering metadata of one deployed document output format.
+message OutputFormatDescriptor {
+  // Stable lowercase format id used in FormatDocumentRequest, e.g. "tsv".
+  string format_id = 1;
+  // Human-readable format name, e.g. "Token TSV".
+  string display_name = 2;
+  // IANA media type of the rendered content, e.g. "text/tab-separated-values".
+  string media_type = 3;
+  // Conventional file extension without the dot, e.g. "tsv".
+  string file_extension = 4;
+}
+
+// Input to FormatDocument: one analyzed document and the format to render it in.
+message FormatDocumentRequest {
+  // The analyzed document to render, as returned by AnalyzeDocument.
+  OpenNlpDocument document = 1;
+  // The format id of a deployed formatter (see ListOutputFormats).
+  string format_id = 2;
+}
+
+// One rendered document.
+message FormatDocumentResponse {
+  // The rendered content. Text formats are UTF-8 encoded.
+  bytes content = 1;
+  // IANA media type of the content.
+  string media_type = 2;
+  // Conventional file extension without the dot.
+  string file_extension = 3;
 }

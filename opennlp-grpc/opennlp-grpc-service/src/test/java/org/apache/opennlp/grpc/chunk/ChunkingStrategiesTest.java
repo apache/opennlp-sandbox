@@ -19,7 +19,7 @@ package org.apache.opennlp.grpc.chunk;
 
 import java.util.List;
 
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.v1.ChunkingSpec;
 import org.apache.opennlp.grpc.v1.ChunkingStrategySelector;
 import org.apache.opennlp.grpc.v1.SemanticChunkingConfig;

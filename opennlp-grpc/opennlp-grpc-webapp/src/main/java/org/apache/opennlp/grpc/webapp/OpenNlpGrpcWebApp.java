@@ -73,6 +73,12 @@ public final class OpenNlpGrpcWebApp implements Callable<Integer> {
       description = "Per-RPC deadline in seconds. Default: ${DEFAULT-VALUE}")
   private int requestTimeoutSeconds;
 
+  @Option(names = "--request-timeout-per-megabyte-seconds", defaultValue = "120",
+      description = "Extra analysis and formatting deadline per mebibyte of submitted document"
+          + " text, capped by the long-running timeout; 0 disables scaling."
+          + " Default: ${DEFAULT-VALUE}")
+  private int requestTimeoutPerMegabyteSeconds;
+
   @Option(names = "--long-running-timeout-seconds", defaultValue = "1800",
       description = "Training and catalog-install deadline in seconds. Default: ${DEFAULT-VALUE}")
   private int longRunningTimeoutSeconds;
@@ -127,6 +133,9 @@ public final class OpenNlpGrpcWebApp implements Callable<Integer> {
     if (longRunningTimeoutSeconds < 1) {
       throw new IllegalArgumentException("long-running timeout must be positive");
     }
+    if (requestTimeoutPerMegabyteSeconds < 0) {
+      throw new IllegalArgumentException("request timeout per megabyte must not be negative");
+    }
     if (grpcMaxInboundMessageBytes < 1) {
       throw new IllegalArgumentException("grpc max inbound message bytes must be positive");
     }
@@ -140,8 +149,10 @@ public final class OpenNlpGrpcWebApp implements Callable<Integer> {
     WebUiExtensionRegistry registry = WebUiExtensionRegistry.load(extensionClassLoader);
     Duration requestTimeout = Duration.ofSeconds(requestTimeoutSeconds);
     Duration longRunningTimeout = Duration.ofSeconds(longRunningTimeoutSeconds);
-    GrpcAnalysisRpc analysisRpc = new GrpcAnalysisRpc(channel, requestTimeout);
-    GrpcSearchRpc searchRpc = new GrpcSearchRpc(channel, requestTimeout);
+    GrpcAnalysisRpc analysisRpc = new GrpcAnalysisRpc(channel, requestTimeout,
+        longRunningTimeout, Duration.ofSeconds(requestTimeoutPerMegabyteSeconds));
+    GrpcSearchRpc searchRpc = new GrpcSearchRpc(channel, requestTimeout, longRunningTimeout,
+        Duration.ofSeconds(requestTimeoutPerMegabyteSeconds));
     GrpcVocabularyRpc vocabularyRpc = new GrpcVocabularyRpc(channel, requestTimeout);
     GrpcTrainingRpc trainingRpc = new GrpcTrainingRpc(
         channel, requestTimeout, longRunningTimeout);

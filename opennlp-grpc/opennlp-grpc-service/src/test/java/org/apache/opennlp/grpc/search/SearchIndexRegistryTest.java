@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.v1.EmbeddingRoute;
 import org.apache.opennlp.grpc.v1.SearchCorpusDescriptor;
 import org.apache.opennlp.grpc.v1.SearchIndexDescriptor;
@@ -41,12 +41,29 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.apache.opennlp.grpc.spi.search.SearchIndexProvider;
+import org.apache.opennlp.grpc.spi.search.SearchResult;
+import org.apache.opennlp.grpc.spi.search.SearchIndexProviderFactory;
+import org.apache.opennlp.grpc.spi.search.SearchIndexBundleConfiguration;
 
 class SearchIndexRegistryTest {
 
   private static final Set<SearchProviderCapability> BUNDLE_CAPABILITIES = Set.of(
       SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_VECTOR,
       SearchProviderCapability.SEARCH_PROVIDER_CAPABILITY_BUNDLE);
+
+  @Test
+  void bundleDefaultTopKMatchesTheDynamicWorkspaceDefault() {
+    // Startup bundles and dynamic workspaces must not disagree on the default result
+    // depth; the per-index max_top_k setting raises it up to the fixed ceiling.
+    assertEquals(1_000, SearchIndexBundleConfiguration.DEFAULT_MAX_TOP_K);
+  }
+
+  @Test
+  void allowsFiftyThousandResultsWithinTheFixedSearchCeilings() {
+    assertEquals(50_000, SearchIndexBundleConfiguration.MAX_TOP_K_LIMIT);
+    assertEquals(50_000, SearchIndexBundleConfiguration.MAX_ALL_HITS_LIMIT);
+  }
 
   @Test
   void closesProvidersInReverseLoadOrder() {

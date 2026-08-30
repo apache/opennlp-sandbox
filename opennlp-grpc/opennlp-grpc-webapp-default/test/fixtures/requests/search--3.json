@@ -1,0 +1,31 @@
+{
+  "indexId": "legal-demo",
+  "compoundQuery": {
+    "join": {
+      "operator": "JOIN_OPERATOR_OR",
+      "operands": [
+        {
+          "semantic": {
+            "document": {
+              "rawText": "unlawful detention"
+            }
+          }
+        },
+        {
+          "term": {
+            "text": "habeas corpus",
+            "mode": "TERM_MATCH_MODE_ALL"
+          }
+        },
+        {
+          "phrase": {
+            "text": "writ of habeas corpus",
+            "slop": 1
+          }
+        }
+      ],
+      "fusion": "JOIN_FUSION_RECIPROCAL_RANK"
+    }
+  },
+  "topK": 5
+}

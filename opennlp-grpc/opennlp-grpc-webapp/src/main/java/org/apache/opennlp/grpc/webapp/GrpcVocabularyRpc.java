@@ -39,6 +39,10 @@ import org.apache.opennlp.grpc.v1.LearnVocabularyRequest;
 import org.apache.opennlp.grpc.v1.LearnVocabularyUpload;
 import org.apache.opennlp.grpc.v1.ListDictionaryFormatsRequest;
 import org.apache.opennlp.grpc.v1.ListDictionaryFormatsResponse;
+import org.apache.opennlp.grpc.v1.ListDictionariesRequest;
+import org.apache.opennlp.grpc.v1.ListDictionariesResponse;
+import org.apache.opennlp.grpc.v1.ListVocabulariesRequest;
+import org.apache.opennlp.grpc.v1.ListVocabulariesResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.OpenNlpVocabularyServiceGrpc;
 import org.apache.opennlp.grpc.v1.VocabularyArtifactChunk;
@@ -79,6 +83,20 @@ final class GrpcVocabularyRpc implements VocabularyRpc {
   public ListDictionaryFormatsResponse listDictionaryFormats() {
     return blockingStub.withDeadlineAfter(timeoutNanos, TimeUnit.NANOSECONDS)
         .listDictionaryFormats(ListDictionaryFormatsRequest.getDefaultInstance());
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public ListDictionariesResponse listDictionaries() {
+    return blockingStub.withDeadlineAfter(timeoutNanos, TimeUnit.NANOSECONDS)
+        .listDictionaries(ListDictionariesRequest.getDefaultInstance());
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public ListVocabulariesResponse listVocabularies() {
+    return blockingStub.withDeadlineAfter(timeoutNanos, TimeUnit.NANOSECONDS)
+        .listVocabularies(ListVocabulariesRequest.getDefaultInstance());
   }
 
   /** {@inheritDoc} */

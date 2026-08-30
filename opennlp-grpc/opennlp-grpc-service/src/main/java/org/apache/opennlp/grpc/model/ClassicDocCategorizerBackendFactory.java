@@ -28,9 +28,12 @@ import java.util.Map;
 
 import opennlp.tools.doccat.DoccatModel;
 import opennlp.tools.doccat.DocumentCategorizerME;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.opennlp.grpc.spi.model.DocCategorizerModel;
+import org.apache.opennlp.grpc.spi.model.OpenNlpDocCategorizerModel;
+import org.apache.opennlp.grpc.spi.model.DocCategorizerBackendFactory;
 
 /**
  * Built-in document categorization backend for classic OpenNLP maxent categorizers. Reads
@@ -79,7 +82,7 @@ public final class ClassicDocCategorizerBackendFactory implements DocCategorizer
     for (Map.Entry<String, String> entry : configuration.entrySet()) {
       final String key = entry.getKey();
       // The ONNX namespace is handled by its own backend; never read it here.
-      if (key.startsWith(OnnxDocCategorizerBackendFactory.KEY_DL_PREFIX)) {
+      if (key.startsWith(DocCategorizerRegistry.KEY_DL_PREFIX)) {
         continue;
       }
       // The default-model selector lives under this prefix but is not a model entry.

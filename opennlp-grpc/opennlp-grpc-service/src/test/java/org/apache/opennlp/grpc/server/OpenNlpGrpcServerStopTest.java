@@ -26,9 +26,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.opennlp.grpc.model.ModelBundleCache;
-import org.apache.opennlp.grpc.search.SearchIndexProvider;
+import org.apache.opennlp.grpc.spi.search.SearchIndexProvider;
 import org.apache.opennlp.grpc.search.SearchIndexRegistry;
-import org.apache.opennlp.grpc.search.SearchResult;
+import org.apache.opennlp.grpc.spi.search.SearchResult;
 import org.apache.opennlp.grpc.v1.EmbeddingRoute;
 import org.apache.opennlp.grpc.v1.SearchCorpusDescriptor;
 import org.apache.opennlp.grpc.v1.SearchIndexBuildDescriptor;

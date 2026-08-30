@@ -24,7 +24,7 @@ import java.util.Optional;
 
 import opennlp.tools.tokenize.Tokenizer;
 import opennlp.tools.util.Span;
-import org.apache.opennlp.grpc.model.TokenizerBackendFactory;
+import org.apache.opennlp.grpc.spi.model.TokenizerBackendFactory;
 
 /** Test-only custom tokenizer that treats a vertical bar as a token boundary. */
 public final class StubTokenizerBackendFactory implements TokenizerBackendFactory {

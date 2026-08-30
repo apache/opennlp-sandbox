@@ -84,6 +84,9 @@ public final class ProfileMerger {
     if (override.hasStopwordLanguage()) {
       builder.setStopwordLanguage(override.getStopwordLanguage());
     }
+    if (override.hasPipelineLanguage()) {
+      builder.setPipelineLanguage(override.getPipelineLanguage());
+    }
     if (override.hasSubwordModelId()) {
       builder.setSubwordModelId(override.getSubwordModelId());
     }

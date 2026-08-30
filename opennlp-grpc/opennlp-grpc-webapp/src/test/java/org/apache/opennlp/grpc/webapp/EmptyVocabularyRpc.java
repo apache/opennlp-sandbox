@@ -23,6 +23,8 @@ import org.apache.opennlp.grpc.v1.DownloadVocabularyRequest;
 import org.apache.opennlp.grpc.v1.ImportDictionaryUpload;
 import org.apache.opennlp.grpc.v1.LearnVocabularyUpload;
 import org.apache.opennlp.grpc.v1.ListDictionaryFormatsResponse;
+import org.apache.opennlp.grpc.v1.ListDictionariesResponse;
+import org.apache.opennlp.grpc.v1.ListVocabulariesResponse;
 import org.apache.opennlp.grpc.v1.VocabularyArtifactDescriptor;
 
 /** A write-disabled vocabulary adapter for tests that never exercise it. */
@@ -31,6 +33,16 @@ final class EmptyVocabularyRpc implements VocabularyRpc {
   @Override
   public ListDictionaryFormatsResponse listDictionaryFormats() {
     return ListDictionaryFormatsResponse.getDefaultInstance();
+  }
+
+  @Override
+  public ListDictionariesResponse listDictionaries() {
+    return ListDictionariesResponse.getDefaultInstance();
+  }
+
+  @Override
+  public ListVocabulariesResponse listVocabularies() {
+    return ListVocabulariesResponse.getDefaultInstance();
   }
 
   @Override

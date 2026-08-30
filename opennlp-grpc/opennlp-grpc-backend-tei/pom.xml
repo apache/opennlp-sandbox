@@ -39,7 +39,7 @@
              Provided: at deploy time this jar sits on the server classpath. -->
         <dependency>
             <groupId>org.apache.opennlp</groupId>
-            <artifactId>opennlp-grpc-service</artifactId>
+            <artifactId>opennlp-grpc-spi</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>
@@ -88,6 +88,13 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
             <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- The discovery test exercises the server's aggregate provider factory. -->
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-grpc-service</artifactId>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

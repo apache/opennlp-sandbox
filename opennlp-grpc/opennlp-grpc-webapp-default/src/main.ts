@@ -21,6 +21,9 @@ import "./style.css";
 
 import {
   analyze,
+  analyzeProgressively,
+  analyzeToProtobuf,
+  analyzeStream,
   decodeAnalyzeResponsePb,
   deleteCollection,
   deleteIndexAlias,
@@ -29,6 +32,8 @@ import {
   encodeAnalyzeResponsePb,
   getCollection,
   getCollections,
+  getDictionaries,
+  getVocabularies,
   getDictionaryFormats,
   getHealth,
   getIndexAliases,
@@ -56,15 +61,26 @@ import {
   watchCollection,
   type AnalyzeRequest,
 } from "./api";
+import {
+  buildStreamFrames,
+  readStreamResponse,
+  splitBatchDocuments,
+} from "./batch-analysis";
 import { readCollectionEvent, readCollectionResponse, readCollections } from "./collection-adapter";
 import { LifecycleWorkbench } from "./lifecycle-workbench";
-import { withXrayNormalization } from "./analysis-config";
+import {
+  buildAnalysisRequest,
+  withXrayNormalization,
+  type AnalysisCapabilities,
+} from "./analysis-config";
 import { AnalysisControls } from "./analysis-controls";
 import { AnnotationDrawer } from "./annotation-drawer";
 import { ChunkProjectionView } from "./chunk-projection-view";
+import { CorpusWorkflowWorkbench } from "./corpus-workflow";
 import {
   combinedAnnotationSegments,
-  documentScopedAnnotations,
+  documentAnnotationChips,
+  isDefaultOverlayLayer,
   layerAccent,
   readDocumentShape,
   summarizeDocumentShape,
@@ -79,8 +95,15 @@ import {
   pageForDocumentOffset,
 } from "./document-window";
 import { readNormalizationXray, renderNormalizationXray } from "./normalization-xray";
+import {
+  applyProgressiveEvent,
+  displayPipelineStep,
+  emptyProgressiveAnalysis,
+  type ProgressiveAnalysisState,
+} from "./progressive-analysis";
 import { isTermVectorLayer, renderTermVectorStack } from "./term-vector-stack";
 import { SemanticWorkbench, type ResultViewName } from "./semantic-workbench";
+import { initThemeToggle } from "./theme-toggle";
 import {
   ModelDataWorkbench,
   readInstalledModel,
@@ -93,19 +116,22 @@ import {
   readIndexResponse,
   readSearchIndexes,
   readSearchProviderInstances,
+  readSearchProviderListing,
   readSearchResponse,
 } from "./search-adapter";
 import { ServerSearchWorkbench } from "./server-search-workbench";
-import { asciiLowerCase, formatInteger } from "./text-utils";
+import { asciiLowerCase, collapseWhitespace, formatInteger } from "./text-utils";
 import {
   activeUiExtension,
   extensionInitials,
   readUiExtensions,
   type UiExtension,
 } from "./ui-extensions";
-import { errorMessage, requiredElement } from "./ui-utils";
+import { errorMessage, flashButtonLabel, requiredElement } from "./ui-utils";
 import {
   readDictionaryFormats,
+  readDictionaries,
+  readVocabularies,
   readImportedDictionary,
   readLearnedVocabulary,
   readStaticModels,
@@ -113,9 +139,14 @@ import {
   readTrainedModel,
   VocabularyTrainerWorkbench,
 } from "./vocabulary-trainer";
-import { WorkbenchNavigation } from "./workbench-navigation";
-import { loadAliceDemo } from "./demo-data";
-import { jsonPresentation } from "./json-response";
+import { tabTargetIndex, WorkbenchNavigation } from "./workbench-navigation";
+import { loadAliceDemo, loadPrideAndPrejudiceDemo } from "./demo-data";
+import {
+  jsonPresentation,
+  LARGE_COPY_MESSAGE,
+  LARGE_PB_MESSAGE,
+  SERVER_PB_MESSAGE,
+} from "./json-response";
 
 const sampleText =
   "Apache OpenNLP helps developers build applications that process natural language. " +
@@ -126,6 +157,7 @@ const textArea = requiredElement<HTMLTextAreaElement>("analysis-text");
 const analyzeButton = requiredElement<HTMLButtonElement>("analyze-button");
 const sampleButton = requiredElement<HTMLButtonElement>("sample-button");
 const aliceSampleButton = requiredElement<HTMLButtonElement>("alice-sample-button");
+const prideSampleButton = requiredElement<HTMLButtonElement>("pride-sample-button");
 const copyButton = requiredElement<HTMLButtonElement>("copy-button");
 const downloadButton = requiredElement<HTMLButtonElement>("download-button");
 const downloadPbButton = requiredElement<HTMLButtonElement>("download-pb-button");
@@ -138,6 +170,14 @@ const serviceDescription = requiredElement<HTMLElement>("service-description");
 const serviceName = requiredElement<HTMLElement>("service-name");
 const profileCount = requiredElement<HTMLElement>("profile-count");
 const modelCount = requiredElement<HTMLElement>("model-count");
+const pipelineLanguageCount = requiredElement<HTMLElement>("pipeline-language-count");
+const languageSummary = requiredElement<HTMLElement>("analysis-language-summary");
+const routedPipelineBadge = requiredElement<HTMLElement>("routed-pipeline-badge");
+const rankedLanguageChips = requiredElement<HTMLElement>("ranked-language-chips");
+const batchText = requiredElement<HTMLTextAreaElement>("batch-text");
+const batchButton = requiredElement<HTMLButtonElement>("batch-analyze-button");
+const batchStatus = requiredElement<HTMLElement>("batch-status");
+const batchResults = requiredElement<HTMLOListElement>("batch-results");
 const characterCount = requiredElement<HTMLElement>("character-count");
 const layerList = requiredElement<HTMLElement>("layer-list");
 const layerSummary = requiredElement<HTMLElement>("layer-summary");
@@ -153,6 +193,7 @@ const heatmapView = requiredElement<HTMLElement>("heatmap-view");
 const graphView = requiredElement<HTMLElement>("graph-view");
 const jsonView = requiredElement<HTMLElement>("json-view");
 const resultTabs = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-result-tab]"));
+const analysisResultPanel = requiredElement<HTMLElement>("analysis-result-panel");
 const layerFilter = requiredElement<HTMLInputElement>("layer-filter");
 const resultLayerCount = requiredElement<HTMLElement>("result-layer-count");
 const resultAnnotationCount = requiredElement<HTMLElement>("result-annotation-count");
@@ -160,13 +201,20 @@ const resultOffsetEncoding = requiredElement<HTMLElement>("result-offset-encodin
 const toolNavigation = requiredElement<HTMLElement>("tool-navigation");
 const toolNavigationStatus = requiredElement<HTMLElement>("tool-navigation-status");
 
+initThemeToggle(requiredElement<HTMLButtonElement>("theme-toggle"));
+
 let serviceAvailable = false;
 let busy = false;
 let currentJson = "";
 let currentResponse: unknown;
+/** The request behind the current response, so the server can re-run it for a large .pb. */
+let currentRequest: AnalyzeRequest | undefined;
 let currentShape: DocumentShapeView | undefined;
 let currentLayer: AnnotationLayerView | undefined;
 let currentCombinedSegments: CombinedAnnotationSegment[] = [];
+let currentHighlightSegments: CombinedAnnotationSegment[] = [];
+let currentOverlayKind: "all" | "highlights" = "all";
+let workflowCapabilities: AnalysisCapabilities | undefined;
 
 const analysisControls = new AnalysisControls(updateFormState);
 const annotationDrawer = new AnnotationDrawer();
@@ -184,14 +232,18 @@ const modelDataWorkbench = new ModelDataWorkbench({
     publishRuntimeEmbeddingModels();
   },
   onTeacherInstalled: () => void vocabularyTrainer.initialize(),
+  onCatalogLoaded: (fixers) => analysisControls.setFeatureFixers(fixers),
 });
 const chunkProjectionView = new ChunkProjectionView((group, chunk, trigger) => {
   annotationDrawer.showChunk(group, chunk, trigger);
 });
-new WorkbenchNavigation();
+const workbenchNavigation = new WorkbenchNavigation();
+workbenchNavigation.onFocus("models", (step) => modelDataWorkbench.focus(step));
 
 const vocabularyTrainer = new VocabularyTrainerWorkbench({
   listDictionaryFormats: async () => readDictionaryFormats(await getDictionaryFormats()),
+  listDictionaries: async () => readDictionaries(await getDictionaries()),
+  listVocabularies: async () => readVocabularies(await getVocabularies()),
   importDictionary: async (upload) => readImportedDictionary(await importDictionary(upload)),
   learnVocabulary: async (upload) => readLearnedVocabulary(await learnVocabulary(upload)),
   downloadVocabulary: (artifactId) => downloadVocabularyTsv(artifactId),
@@ -211,6 +263,13 @@ const vocabularyTrainer = new VocabularyTrainerWorkbench({
     }
     publishRuntimeEmbeddingModels();
   },
+  onUseInAnalyze: (model) => {
+    const selected = analysisControls.selectEmbeddingModel(model.artifactId);
+    workbenchNavigation.show("analysis");
+    setFormStatus(selected
+      ? `'${model.displayName}' is selected as the embedding model. Analyze text to use it.`
+      : `'${model.displayName}' is not offered as an embedding model on this server.`, !selected);
+  },
 });
 void vocabularyTrainer.initialize();
 void modelDataWorkbench.initialize();
@@ -221,17 +280,33 @@ function publishRuntimeEmbeddingModels(): void {
 }
 
 const semanticWorkbench = new SemanticWorkbench({
+  listIndexes: async () => readSearchIndexes(await getSearchIndexes()),
   index: async (request) => {
     const response = await indexDocuments(request) as Record<string, unknown>;
     const index = readSearchIndexes({ indexes: response.index ? [response.index] : [] })[0];
     if (!index) {
-      throw new Error("The server returned an invalid dynamic index descriptor.");
+      throw new Error("The server returned an invalid live index descriptor.");
     }
     return index;
   },
   search: async (request) => readSearchResponse(await searchIndex(request)),
   deleteIndex: async (indexId) => { await deleteSearchIndex(indexId); },
+  confirmDelete: (label) => window.confirm(`Delete the live index '${label}' on the server? `
+    + "Its indexed chunks are removed; the documents on this page are kept."),
+  onWorkspacesChanged: () => void lifecycleWorkbench.initialize(),
+  onIndexed: (message, error) => {
+    setFormStatus(message, error);
+    if (!error) {
+      const jump = document.createElement("button");
+      jump.type = "button";
+      jump.className = "link-button";
+      jump.dataset.workbenchJump = "session-search";
+      jump.textContent = "Search it on Live index search";
+      formStatus.append(" ", jump);
+    }
+  },
   openDocument: (hit) => {
+    workbenchNavigation.show("analysis");
     const shape = readDocumentShape(hit.sourceDocument);
     textArea.value = shape.rawText;
     updateFormState();
@@ -251,7 +326,7 @@ const semanticWorkbench = new SemanticWorkbench({
 
 const lifecycleWorkbench = new LifecycleWorkbench({
   listIndexes: async () => readSearchIndexes(await getSearchIndexes()),
-  listProviders: async () => readSearchProviderInstances(await getSearchProviders()),
+  listProviders: async () => readSearchProviderListing(await getSearchProviders()),
   listAliases: async () => readIndexAliases(await getIndexAliases()),
   persist: async (indexId) => readIndexResponse(await persistIndex(indexId)),
   seal: async (indexId) => readIndexResponse(await sealIndex(indexId)),
@@ -259,6 +334,8 @@ const lifecycleWorkbench = new LifecycleWorkbench({
   setAlias: async (alias, indexId) => { await setIndexAlias(alias, indexId); },
   deleteAlias: async (alias) => { await deleteIndexAlias(alias); },
   listStaticModels: async () => readStaticModels(await getStaticModels()),
+  listDictionaries: async () => readDictionaries(await getDictionaries()),
+  listVocabularies: async () => readVocabularies(await getVocabularies()),
   listCollections: async () => readCollections(await getCollections()),
   getCollection: async (collectionId) => readCollectionResponse(await getCollection(collectionId)),
   setCollection: async (request) => readCollectionResponse(await setCollection(request)),
@@ -270,6 +347,10 @@ const lifecycleWorkbench = new LifecycleWorkbench({
     watchCollection(collectionId, (event) => onEvent(readCollectionEvent(event))),
 });
 void lifecycleWorkbench.initialize();
+void getSearchProviders().then(
+  (listing) => semanticWorkbench.setAvailability(
+    readSearchProviderListing(listing).dynamicIndexingEnabled),
+  () => undefined);
 
 const serverSearchWorkbench = new ServerSearchWorkbench({
   listIndexes: async () => readSearchIndexes(await getSearchIndexes()),
@@ -283,6 +364,78 @@ const serverSearchWorkbench = new ServerSearchWorkbench({
   })),
 });
 
+const corpusWorkflow = new CorpusWorkflowWorkbench({
+  listDictionaries: async () => readDictionaries(await getDictionaries()),
+  listTeachers: async () => readTeachers(await getTeachers()),
+  listProviders: async () => readSearchProviderInstances(await getSearchProviders()),
+  analyze,
+  learnVocabulary: async (upload) => readLearnedVocabulary(await learnVocabulary(upload)),
+  trainStaticModel: async (request, onProgress) =>
+    readTrainedModel(await trainStaticModel(request, onProgress)),
+  index: async (request) => {
+    const response = await indexDocuments(request) as Record<string, unknown>;
+    const index = readSearchIndexes({ indexes: response.index ? [response.index] : [] })[0];
+    if (!index) {
+      throw new Error("The server returned an invalid built index descriptor.");
+    }
+    return index;
+  },
+  search: async (request) => readSearchResponse(await searchIndex(request)),
+}, {
+  createAnalysisRequest: (document, embeddingModelId) => {
+    if (!workflowCapabilities) {
+      throw new Error("Analysis capabilities are still loading.");
+    }
+    const request = buildAnalysisRequest(document.rawText, {
+      mode: "max",
+      sentenceChunks: Boolean(embeddingModelId),
+      tokenChunks: false,
+      tokenChunkSize: 96,
+      tokenChunkOverlap: 12,
+      embeddingModelId,
+    }, workflowCapabilities);
+    request.document.docId = document.docId;
+    return request;
+  },
+  onModelTrained: (model) => {
+    trainedEmbeddingModels.set(model.artifactId, `${model.displayName} (trained)`);
+    publishRuntimeEmbeddingModels();
+  },
+  defaultEmbeddingModel: () => {
+    const configured = workflowCapabilities?.embeddingModels[0];
+    if (configured) {
+      return { id: configured.id, label: configured.label };
+    }
+    const runtime = [...catalogEmbeddingModels, ...trainedEmbeddingModels][0];
+    return runtime ? { id: runtime[0], label: runtime[1] } : undefined;
+  },
+  onOpenAnalysis: (response, shape) => {
+    textArea.value = shape.rawText;
+    updateFormState();
+    storeResponse(response, shape);
+    chunkProjectionView.render(response);
+    renderDocumentShape(shape);
+    renderXray(response);
+    semanticWorkbench.setDocument("Built index document", shape, response);
+    selectResultTab("document");
+    workbenchNavigation.show("analysis");
+    revealAnalysisResult();
+  },
+  onIndexChanged: () => {
+    void serverSearchWorkbench.initialize();
+    void semanticWorkbench.initializeWorkspaces();
+    void lifecycleWorkbench.initialize();
+  },
+});
+void corpusWorkflow.initialize();
+document.getElementById("workflow-sample-button")?.addEventListener("click", () => {
+  void loadAliceDemo().then((novel) => {
+    const corpus = requiredElement<HTMLTextAreaElement>("workflow-corpus");
+    corpus.value = sampleDocuments(novel, 6);
+    corpus.dispatchEvent(new Event("input", { bubbles: true }));
+  }, (error) => setFormStatus(errorMessage(error, "The sample could not be loaded."), true));
+});
+
 textArea.addEventListener("input", updateFormState);
 sampleButton.addEventListener("click", () => {
   textArea.value = sampleText;
@@ -290,7 +443,13 @@ sampleButton.addEventListener("click", () => {
   textArea.focus();
 });
 aliceSampleButton.addEventListener("click", () => void loadAliceSample());
+prideSampleButton.addEventListener("click", () => void loadPrideSample());
 form.addEventListener("submit", submitAnalysis);
+batchText.addEventListener("input", () => {
+  batchButton.disabled = busy || !serviceAvailable
+      || splitBatchDocuments(batchText.value).length === 0;
+});
+batchButton.addEventListener("click", () => void submitBatch());
 copyButton.addEventListener("click", copyResponse);
 downloadButton.addEventListener("click", downloadResponse);
 downloadPbButton.addEventListener("click", () => void downloadResponsePb());
@@ -313,7 +472,7 @@ void initialize();
 async function initialize(): Promise<void> {
   void initializeToolNavigation();
   setServiceState("loading", "Connecting");
-  setFormStatus("Checking service capabilities and model bundles.");
+  setFormStatus("Checking service capabilities and model packs.");
 
   try {
     await getHealth();
@@ -330,15 +489,22 @@ async function initialize(): Promise<void> {
   serviceAvailable = true;
   setServiceState("ready", "Connected");
   void serverSearchWorkbench.initialize();
+  void semanticWorkbench.initializeWorkspaces().catch(() => {
+    // The picker keeps its "new live index" default when discovery is unavailable.
+  });
   const [infoResult, bundlesResult] = await Promise.allSettled([getServiceInfo(), getModelBundles()]);
   const serviceInfo = infoResult.status === "fulfilled" ? infoResult.value : undefined;
   const bundlesInfo = bundlesResult.status === "fulfilled" ? bundlesResult.value : undefined;
   const capabilities = analysisControls.configure(serviceInfo, bundlesInfo);
+  workflowCapabilities = capabilities;
   modelDataWorkbench.configure(capabilities);
   const profiles = capabilities.profiles;
   const bundles = capabilities.bundles;
   profileCount.textContent = String(profiles.length);
   modelCount.textContent = String(bundles.length);
+  const pipelineLanguages = capabilities.pipelineLanguages.map((pipeline) => pipeline.id);
+  pipelineLanguageCount.textContent =
+      [capabilities.language ?? "en", ...pipelineLanguages].join(", ");
   serviceName.textContent = discoverServiceName(serviceInfo);
 
   const discoveryErrors = [infoResult, bundlesResult].filter((result) => result.status === "rejected");
@@ -394,29 +560,99 @@ function renderToolNavigation(extensions: UiExtension[]): void {
   }));
 }
 
+/**
+ * Streams every pasted batch document through one AnalyzeStream call under the
+ * current configuration, rendering results in completion order as they arrive.
+ */
+async function submitBatch(): Promise<void> {
+  const documents = splitBatchDocuments(batchText.value);
+  if (documents.length === 0 || busy || !serviceAvailable) {
+    return;
+  }
+  batchResults.replaceChildren();
+  batchButton.disabled = true;
+  batchStatus.textContent = `Streaming ${documents.length} `
+      + `${documents.length === 1 ? "document" : "documents"}…`;
+  let arrivals = 0;
+  try {
+    const request = createAnalysisRequest("batch", false);
+    await analyzeStream(buildStreamFrames(documents, request), (response) => {
+      arrivals++;
+      const view = readStreamResponse(response, arrivals);
+      const item = document.createElement("li");
+      item.className = view.ok ? "batch-result" : "batch-result is-error";
+      item.textContent = `Document ${view.sequence}: ${view.summary}`;
+      batchResults.append(item);
+    });
+    batchStatus.textContent = `Analyzed ${arrivals} of ${documents.length} `
+        + `${documents.length === 1 ? "document" : "documents"} in completion order.`;
+  } catch (error) {
+    batchStatus.textContent = errorMessage(error, "The batch stream failed.");
+  } finally {
+    batchButton.disabled = splitBatchDocuments(batchText.value).length === 0;
+  }
+}
+
 async function submitAnalysis(event: SubmitEvent): Promise<void> {
   event.preventDefault();
   const text = textArea.value.trim();
   if (!text || busy || !serviceAvailable) {
     return;
   }
+  const request = createAnalysisRequest(text);
+  const textBytes = new TextEncoder().encode(text).length;
+  const limit = workflowCapabilities?.maxTextBytes;
+  if (limit && textBytes > limit) {
+    setFormStatus(`This document is ${mebibytes(textBytes)} MiB; the server accepts at most `
+      + `${mebibytes(limit)} MiB per request (server.max_text_bytes). Split it or use batch analysis.`, true);
+    return;
+  }
+  if (textBytes > LARGE_EMBEDDING_WARNING_BYTES && requestsEmbeddings(request)
+      && !window.confirm(`This document is ${mebibytes(textBytes)} MiB and embeddings are on. `
+        + "The reply can reach hundreds of megabytes and take a minute; the JSON view and Copy "
+        + "switch off past the browser's limit, and Download .pb re-runs the analysis on the "
+        + "server. Analyze anyway?")) {
+    return;
+  }
 
   setBusy(true);
-  setFormStatus("Analyzing text…");
-  responseOutput.textContent = "Waiting for the service response…";
+  setFormStatus("Starting progressive analysis…");
+  responseOutput.textContent = "Waiting for the first analysis layers…";
+  currentJson = "";
+  currentResponse = undefined;
+  currentRequest = request;
+  copyButton.disabled = true;
+  downloadButton.disabled = true;
+  downloadPbButton.disabled = true;
   try {
-    const response = await analyze(createAnalysisRequest(text));
+    let progressive = emptyProgressiveAnalysis();
+    let revealed = false;
+    const response = await analyzeProgressively(request, (streamEvent) => {
+      progressive = applyProgressiveEvent(progressive, streamEvent);
+      if (progressive.complete) {
+        return;
+      }
+      renderProgressiveState(progressive, request);
+      if (!revealed) {
+        selectResultTab("document");
+        revealAnalysisResult();
+        revealed = true;
+      }
+    });
     const shape = readDocumentShape(response);
     storeResponse(response, shape);
+    currentRequest = request;
     chunkProjectionView.render(response);
     renderDocumentShape(shape);
     renderXray(response);
     semanticWorkbench.setDocument(text, shape, response);
     selectResultTab("document");
     setFormStatus("Analysis complete.");
+    revealAnalysisResult();
   } catch (error) {
     currentJson = "";
     currentResponse = undefined;
+    currentRequest = undefined;
     copyButton.disabled = true;
     downloadButton.disabled = true;
     downloadPbButton.disabled = true;
@@ -425,6 +661,47 @@ async function submitAnalysis(event: SubmitEvent): Promise<void> {
     setFormStatus(errorMessage(error, "Analysis failed. Please try again."), true);
   } finally {
     setBusy(false);
+  }
+}
+
+/** Renders the currently available layer set without serializing a partial JSON reply. */
+function renderProgressiveState(
+  state: ProgressiveAnalysisState,
+  request: AnalyzeRequest,
+): void {
+  const shape = readDocumentShape(state.response);
+  const changed = new Set(state.updatedLayerIds);
+  currentResponse = state.response;
+  currentRequest = request;
+  renderDocumentShape(shape);
+  if (state.sequence === 1 || changed.has("opennlp:chunk-groups")) {
+    chunkProjectionView.render(state.response);
+  }
+  if (state.sequence === 1 || changed.has("opennlp:normalization")) {
+    renderXray(state.response);
+  }
+  if (state.sequence === 1 || changed.has("opennlp:language")) {
+    renderLanguageSummary(state.response);
+  }
+  const summary = summarizeDocumentShape(shape);
+  responseOutput.textContent = `Streaming progressive results: ${summary.layerCount} `
+    + `${summary.layerCount === 1 ? "layer" : "layers"} ready.`;
+  if (state.failures.length > 0) {
+    setFormStatus(state.failures[state.failures.length - 1]!, true);
+  } else if (state.lastStep) {
+    setFormStatus(`${displayPipelineStep(state.lastStep)} ready; other analysis continues.`);
+  } else {
+    setFormStatus("Document accepted; analysis branches are running.");
+  }
+}
+
+/**
+ * Brings the result panel into view after an analysis, so the answer is not
+ * left below the fold. jsdom has no scrollIntoView, hence the guard.
+ */
+function revealAnalysisResult(): void {
+  if (typeof analysisResultPanel.scrollIntoView === "function") {
+    analysisResultPanel.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
 
@@ -443,10 +720,26 @@ async function loadAliceSample(): Promise<void> {
   }
 }
 
+async function loadPrideSample(): Promise<void> {
+  prideSampleButton.disabled = true;
+  setFormStatus("Loading the compressed public-domain Pride and Prejudice demo.");
+  try {
+    textArea.value = await loadPrideAndPrejudiceDemo();
+    updateFormState();
+    textArea.focus();
+    setFormStatus("Pride and Prejudice loaded. All configured features are ready to run.");
+  } catch (error) {
+    setFormStatus(errorMessage(error, "Could not load the Pride and Prejudice demo."), true);
+  } finally {
+    prideSampleButton.disabled = false;
+  }
+}
+
 function renderDocumentShape(shape: DocumentShapeView): void {
   currentShape = shape;
   currentLayer = undefined;
   currentCombinedSegments = [];
+  currentHighlightSegments = [];
   layerList.replaceChildren();
   annotatedText.replaceChildren();
   annotationDrawer.reset();
@@ -465,8 +758,31 @@ function renderDocumentShape(shape: DocumentShapeView): void {
   }
   if (shape.layers.length === 0) {
     annotatedText.textContent = shape.rawText;
-    annotationDrawer.showMessage("This analysis returned no document-shape layers.");
+    annotationDrawer.showMessage("This analysis returned no annotation layers.");
     return;
+  }
+
+  // A calmer default view exists only when entities or sentences are a proper
+  // subset of the layers; otherwise Highlights and All would be the same view.
+  const highlightLayers = shape.layers.filter(isDefaultOverlayLayer);
+  const offerHighlights = highlightLayers.length > 0 && highlightLayers.length < shape.layers.length;
+  if (offerHighlights) {
+    const highlightsButton = document.createElement("button");
+    highlightsButton.type = "button";
+    highlightsButton.className = "layer-button";
+    highlightsButton.dataset.layerKind = "highlights";
+    highlightsButton.dataset.searchText = "highlights entities sentences";
+    highlightsButton.dataset.accent = "blue";
+    highlightsButton.setAttribute("aria-pressed", "false");
+    const highlightsName = document.createElement("span");
+    highlightsName.textContent = "Highlights";
+    const highlightsCount = document.createElement("small");
+    highlightsCount.textContent = String(highlightLayers
+      .reduce((total, layer) => total + layer.annotations.length, 0));
+    highlightsButton.append(highlightsName, highlightsCount);
+    highlightsButton.title = "Entities and sentences only; select All annotations for every layer";
+    highlightsButton.addEventListener("click", () => selectHighlightLayers(shape));
+    layerList.append(highlightsButton);
   }
 
   const allButton = document.createElement("button");
@@ -475,13 +791,13 @@ function renderDocumentShape(shape: DocumentShapeView): void {
   allButton.dataset.layerKind = "all";
   allButton.dataset.searchText = "all annotations combined";
   allButton.dataset.accent = "blue";
-  allButton.setAttribute("aria-pressed", "true");
+  allButton.setAttribute("aria-pressed", "false");
   const allName = document.createElement("span");
   allName.textContent = "All annotations";
   const allCount = document.createElement("small");
   allCount.textContent = String(summary.annotationCount);
   allButton.append(allName, allCount);
-  allButton.title = "Combined projection of every returned annotation layer";
+  allButton.title = "Every returned annotation layer combined";
   allButton.addEventListener("click", () => selectAllLayers(shape));
   layerList.append(allButton);
 
@@ -503,7 +819,11 @@ function renderDocumentShape(shape: DocumentShapeView): void {
     button.addEventListener("click", () => selectLayer(shape, layer));
     layerList.append(button);
   }
-  selectAllLayers(shape);
+  if (offerHighlights) {
+    selectHighlightLayers(shape);
+  } else {
+    selectAllLayers(shape);
+  }
 }
 
 function selectLayer(shape: DocumentShapeView, layer: AnnotationLayerView): void {
@@ -557,15 +877,41 @@ function selectLayer(shape: DocumentShapeView, layer: AnnotationLayerView): void
 }
 
 function selectAllLayers(shape: DocumentShapeView): void {
+  if (currentCombinedSegments.length === 0) {
+    currentCombinedSegments = combinedAnnotationSegments(shape);
+  }
+  renderCombinedOverlay(shape, "all", currentCombinedSegments,
+    "All typed annotations over document text");
+}
+
+/** Renders the calm default overlay: entity and sentence layers only. */
+function selectHighlightLayers(shape: DocumentShapeView): void {
+  if (currentHighlightSegments.length === 0) {
+    currentHighlightSegments = combinedAnnotationSegments({
+      ...shape,
+      layers: shape.layers.filter(isDefaultOverlayLayer),
+    });
+  }
+  renderCombinedOverlay(shape, "highlights", currentHighlightSegments,
+    "Entity and sentence annotations over document text");
+}
+
+function renderCombinedOverlay(
+  shape: DocumentShapeView,
+  kind: "all" | "highlights",
+  segments: CombinedAnnotationSegment[],
+  ariaLabel: string,
+): void {
   currentLayer = undefined;
+  currentOverlayKind = kind;
   for (const button of layerList.querySelectorAll<HTMLButtonElement>(".layer-button")) {
-    button.setAttribute("aria-pressed", String(button.dataset.layerKind === "all"));
+    button.setAttribute("aria-pressed", String(button.dataset.layerKind === kind));
   }
   annotatedText.replaceChildren();
   annotatedText.dataset.accent = "blue";
-  annotatedText.setAttribute("aria-label", "All typed annotations over document text");
+  annotatedText.setAttribute("aria-label", ariaLabel);
 
-  const documentEntries = documentScopedAnnotations(shape)
+  const documentEntries = documentAnnotationChips(shape)
     .filter((entry) => !isTermVectorLayer(entry.layer));
   const termVectorLayers = shape.layers
     .filter((layer) => isTermVectorLayer(layer) && layer.annotations.length > 0);
@@ -581,7 +927,16 @@ function selectAllLayers(shape: DocumentShapeView): void {
       chip.className = "document-annotation-chip";
       chip.dataset.accent = layerAccent(entry.layer);
       chip.textContent = `${entry.layer.title}: ${entry.annotation.label}`;
-      chip.addEventListener("click", () => annotationDrawer.showAnnotation(entry.layer, entry.annotation, chip));
+      if (entry.totalCount > 1) {
+        const distribution = document.createElement("small");
+        distribution.textContent = `top of ${entry.totalCount}`;
+        chip.append(" ", distribution);
+        chip.addEventListener("click",
+          () => annotationDrawer.showCategoryDistribution(entry.layer, chip));
+      } else {
+        chip.addEventListener("click",
+          () => annotationDrawer.showAnnotation(entry.layer, entry.annotation, chip));
+      }
       chips.append(chip);
     }
     scoped.append(heading, chips);
@@ -592,12 +947,9 @@ function selectAllLayers(shape: DocumentShapeView): void {
     annotatedText.append(scoped);
   }
 
-  if (currentCombinedSegments.length === 0) {
-    currentCombinedSegments = combinedAnnotationSegments(shape);
-  }
   const view = currentDocumentWindow(shape.rawText.length);
   let cursor = view.start;
-  for (const segment of currentCombinedSegments) {
+  for (const segment of segments) {
     if (segment.end <= view.start || segment.start >= view.end) {
       continue;
     }
@@ -682,6 +1034,8 @@ function renderCurrentDocumentWindow(): void {
   annotatedText.scrollTop = 0;
   if (currentLayer) {
     selectLayer(currentShape, currentLayer);
+  } else if (currentOverlayKind === "highlights") {
+    selectHighlightLayers(currentShape);
   } else {
     selectAllLayers(currentShape);
   }
@@ -711,6 +1065,8 @@ function filterLayerButtons(): void {
     const next = buttons.find((button) => !button.hidden);
     if (next?.dataset.layerKind === "all") {
       selectAllLayers(currentShape);
+    } else if (next?.dataset.layerKind === "highlights") {
+      selectHighlightLayers(currentShape);
     } else {
       const layer = currentShape.layers.find((candidate) => candidate.id === next?.dataset.layerId);
       if (layer) {
@@ -745,13 +1101,13 @@ function selectResultTab(tabName: ResultViewName): void {
 }
 
 function navigateResultTabs(event: KeyboardEvent): void {
-  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+  const currentIndex = resultTabs.indexOf(event.currentTarget as HTMLButtonElement);
+  const targetIndex = tabTargetIndex(event.key, currentIndex, resultTabs.length);
+  if (targetIndex === undefined) {
     return;
   }
   event.preventDefault();
-  const currentIndex = resultTabs.indexOf(event.currentTarget as HTMLButtonElement);
-  const direction = event.key === "ArrowRight" ? 1 : -1;
-  const next = resultTabs[(currentIndex + direction + resultTabs.length) % resultTabs.length];
+  const next = resultTabs[targetIndex];
   if (next) {
     selectResultTab(resultViewName(next.dataset.resultTab));
     next.focus();
@@ -784,12 +1140,13 @@ async function copyResponse(): Promise<void> {
   if (currentResponse === undefined) {
     return;
   }
+  if (!currentJson) {
+    setFormStatus(LARGE_COPY_MESSAGE, true);
+    return;
+  }
   try {
     await navigator.clipboard.writeText(storedJson());
-    copyButton.textContent = "Copied";
-    window.setTimeout(() => {
-      copyButton.textContent = "Copy JSON";
-    }, 1500);
+    flashButtonLabel(copyButton, "Copied");
   } catch {
     setFormStatus("Copy failed. Select the response text and copy it manually.", true);
     responseOutput.focus();
@@ -803,16 +1160,35 @@ function downloadResponse(): void {
   saveBlob(new Blob([storedJson()], { type: "application/json" }), "opennlp-analysis.json");
 }
 
-/** Saves the stored response as serialized protobuf, transcoded by the gateway. */
+/**
+ * Saves the response as serialized protobuf. A response the browser holds as JSON is
+ * transcoded by the gateway byte for byte; one past the browser's limit is re-run on the
+ * server, which streams the bytes without ever printing JSON.
+ */
 async function downloadResponsePb(): Promise<void> {
   if (currentResponse === undefined) {
     return;
   }
+  if (!currentJson && !currentRequest) {
+    setFormStatus(LARGE_PB_MESSAGE, true);
+    return;
+  }
+  downloadPbButton.disabled = true;
   try {
-    const bytes = await encodeAnalyzeResponsePb(storedJson());
-    saveBlob(new Blob([bytes], { type: "application/x-protobuf" }), "opennlp-analysis.pb");
+    if (currentJson) {
+      const bytes = await encodeAnalyzeResponsePb(storedJson());
+      saveBlob(new Blob([bytes], { type: "application/x-protobuf" }), "opennlp-analysis.pb");
+    } else if (currentRequest) {
+      setFormStatus(SERVER_PB_MESSAGE);
+      const bytes = await analyzeToProtobuf(currentRequest);
+      saveBlob(new Blob([bytes], { type: "application/x-protobuf" }), "opennlp-analysis.pb");
+      setFormStatus(`Saved opennlp-analysis.pb (${mebibytes(bytes.byteLength)} MiB) from a `
+        + "server-side re-run of the same request.");
+    }
   } catch (error) {
     setFormStatus(errorMessage(error, "The .pb download did not complete."), true);
+  } finally {
+    downloadPbButton.disabled = false;
   }
 }
 
@@ -842,6 +1218,8 @@ async function loadLocalResponse(file: File): Promise<void> {
 
 /** Presents a loaded response through the same views a live analysis uses. */
 function presentLoadedResponse(response: unknown, name: string): void {
+  // A file has no request behind it, so a large one cannot be re-run for a .pb.
+  currentRequest = undefined;
   const shape = readDocumentShape(response);
   textArea.value = shape.rawText;
   updateFormState();
@@ -854,8 +1232,65 @@ function presentLoadedResponse(response: unknown, name: string): void {
   setFormStatus(`Loaded ${name}.`);
 }
 
+/**
+ * Shows the detected-language chips (ranked, best first) and which classic pipeline
+ * served the request: the routing diagnostic when the server emitted one, otherwise
+ * the default models.
+ */
+function renderLanguageSummary(response: unknown): void {
+  const envelope = asRecordOrEmpty(response);
+  const document_ = asRecordOrEmpty(envelope.document);
+  rankedLanguageChips.replaceChildren();
+  const ranked = Array.isArray(document_.rankedLanguages) ? document_.rankedLanguages : [];
+  const detected = typeof document_.detectedLanguage === "string"
+    ? document_.detectedLanguage : undefined;
+  const predictions = ranked.length > 0
+    ? ranked
+    : detected
+      ? [{ language: detected, confidence: document_.languageConfidence }]
+      : [];
+  for (const value of predictions) {
+    const prediction = asRecordOrEmpty(value);
+    if (typeof prediction.language !== "string") {
+      continue;
+    }
+    const chip = window.document.createElement("span");
+    chip.className = "language-chip";
+    const confidence = typeof prediction.confidence === "number"
+      ? ` ${(prediction.confidence * 100).toFixed(1)}%` : "";
+    chip.textContent = `${prediction.language}${confidence}`;
+    rankedLanguageChips.append(chip);
+  }
+  const routing = routingDiagnostic(envelope);
+  routedPipelineBadge.textContent = routing
+    ?? (predictions.length > 0 ? "Default models" : "");
+  routedPipelineBadge.hidden = !routedPipelineBadge.textContent;
+  languageSummary.hidden =
+      predictions.length === 0 && routedPipelineBadge.hidden;
+}
+
+/** Returns the server's classic-pipeline routing diagnostic, when one was emitted. */
+function routingDiagnostic(envelope: Record<string, unknown>): string | undefined {
+  const diagnostics = Array.isArray(envelope.diagnostics) ? envelope.diagnostics : [];
+  for (const value of diagnostics) {
+    const message = asRecordOrEmpty(value).message;
+    if (typeof message === "string" && message.startsWith("Classic pipeline ")) {
+      return message;
+    }
+  }
+  return undefined;
+}
+
+/** Returns the value as a record, or an empty one. */
+function asRecordOrEmpty(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
 function storeResponse(response: unknown, shape: DocumentShapeView): void {
   currentResponse = response;
+  renderLanguageSummary(response);
   const summary = summarizeDocumentShape(shape);
   const presentation = jsonPresentation(response, shape.rawText.length, summary.annotationCount);
   currentJson = presentation.inline ? presentation.text : "";
@@ -863,6 +1298,20 @@ function storeResponse(response: unknown, shape: DocumentShapeView): void {
   copyButton.disabled = false;
   downloadButton.disabled = false;
   downloadPbButton.disabled = false;
+}
+
+/** Above this input size an analysis with embeddings asks before it runs. */
+const LARGE_EMBEDDING_WARNING_BYTES = 256 * 1024;
+
+/** Whether a request asks for document or chunk embeddings. */
+function requestsEmbeddings(request: AnalyzeRequest): boolean {
+  return Boolean(request.options?.embeddingModelId)
+    || (request.chunkEmbedConfigs?.length ?? 0) > 0;
+}
+
+/** Mebibytes with one decimal, for a size a person reads. */
+function mebibytes(bytes: number): string {
+  return (bytes / (1024 * 1024)).toFixed(1);
 }
 
 function storedJson(): string {
@@ -908,4 +1357,25 @@ function discoverServiceName(value: unknown): string {
     }
   }
   return "OpenNLP gRPC";
+}
+
+/**
+ * The first paragraphs of a novel as blank-line separated documents, enough to build a
+ * small index in seconds without pasting anything.
+ */
+function sampleDocuments(novel: string, paragraphs: number): string {
+  const chosen: string[] = [];
+  let start = 0;
+  while (chosen.length < paragraphs && start < novel.length) {
+    let end = novel.indexOf("\n\n", start);
+    if (end < 0) {
+      end = novel.length;
+    }
+    const paragraph = collapseWhitespace(novel.slice(start, end));
+    if (paragraph.length > 120) {
+      chosen.push(paragraph);
+    }
+    start = end + 2;
+  }
+  return chosen.join("\n\n");
 }

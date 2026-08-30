@@ -20,7 +20,7 @@ package org.apache.opennlp.grpc.embedding;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingProvider;
 
 /**
  * Tests {@link EmbeddingProviderFactory}: it discovers every embedding backend via
@@ -37,6 +38,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * ServiceLoader-registered {@link StubEmbeddingBackendFactory} stands in for a third-party engine.
  */
 class EmbeddingProviderFactoryTest {
+
+  @Test
+  void onnxPathWithoutTheAddOnFailsLoud() {
+    // The onnx/cuda engines ship in the opennlp-grpc-dl add-on, absent from this module's
+    // classpath; configured ONNX-family models must fail startup, never silently vanish.
+    final AnalysisException error = assertThrows(AnalysisException.class, () ->
+        EmbeddingProviderFactory.create(Map.of(
+            "model.embedder.m1.onnx.path", "/tmp/model.onnx",
+            "model.embedder.m1.vocab.path", "/tmp/vocab.txt")));
+    assertEquals(AnalysisException.FailureType.FAILED_PRECONDITION, error.getFailureType());
+    assertTrue(error.getMessage().contains("opennlp-grpc-dl"));
+  }
+
+  @Test
+  void cudaPathWithoutTheAddOnFailsLoud() {
+    final AnalysisException error = assertThrows(AnalysisException.class, () ->
+        EmbeddingProviderFactory.create(Map.of(
+            "model.embedder.m1.cuda.path", "/tmp/model.onnx",
+            "model.embedder.m1.vocab.path", "/tmp/vocab.txt")));
+    assertEquals(AnalysisException.FailureType.FAILED_PRECONDITION, error.getFailureType());
+    assertTrue(error.getMessage().contains("opennlp-grpc-dl"));
+  }
 
   @Test
   void aggregatesBackendsIntoComposite() {

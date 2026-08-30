@@ -28,9 +28,11 @@ import java.util.Set;
 import opennlp.tools.util.StringUtil;
 import org.apache.opennlp.grpc.backend.RankedBackends;
 import org.apache.opennlp.grpc.backend.RankedBackends.Registration;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.opennlp.grpc.spi.model.ChunkerModel;
+import org.apache.opennlp.grpc.spi.model.ChunkerBackendFactory;
 
 /**
  * Catalog of {@link ChunkerModel} chunkers grouped by logical id into a {@link RankedBackends}, so

@@ -20,6 +20,8 @@ package org.apache.opennlp.grpc.embedding;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingBackendFactory;
 
 /** ServiceLoader test backend that records whether its provider was closed. */
 public final class TrackingEmbeddingBackendFactory implements EmbeddingBackendFactory {

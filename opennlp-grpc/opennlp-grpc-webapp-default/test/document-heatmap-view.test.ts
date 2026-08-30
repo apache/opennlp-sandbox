@@ -33,6 +33,7 @@ function lanes(): DocumentHeatmapLane[] {
     id: "token-chunks",
     title: "Token windows",
     complete: true,
+    scoreLabel: "cosine",
     chunks: [
       { id: "window-1", start: 0, end: 31, text: TEXT.slice(0, 31), score: 0.8 },
       { id: "window-2", start: 19, end: TEXT.length, text: TEXT.slice(19), score: 0.2 },
@@ -63,6 +64,7 @@ describe("inline document heatmap", () => {
       id: "sentences",
       title: "Sentences",
       complete: false,
+      scoreLabel: "cosine",
       chunks: [
         { id: "sentence-1", start: 0, end: 18, text: TEXT.slice(0, 18), score: 0.6 },
         { id: "sentence-2", start: 19, end: TEXT.length, text: TEXT.slice(19) },
@@ -84,5 +86,28 @@ describe("inline document heatmap", () => {
 
     expect(Array.from(container.querySelectorAll(".document-heat-lane h4"))
       .map((heading) => heading.textContent)).toEqual(["Sentences", "Token windows"]);
+  });
+
+  it("labels each lane's scores with what they measure", () => {
+    const container = document.createElement("div");
+    const polarity: DocumentHeatmapLane[] = [{
+      id: "sentiment",
+      title: "Sentence sentiment",
+      complete: true,
+      scoreLabel: "polarity",
+      chunks: [
+        { id: "sentiment:0", start: 0, end: 18, text: TEXT.slice(0, 18), score: -0.884 },
+        { id: "sentiment:1", start: 19, end: TEXT.length, text: TEXT.slice(19) },
+      ],
+    }];
+
+    renderDocumentHeatmap(container, TEXT, polarity, () => undefined);
+
+    const cards = Array.from(container.querySelectorAll(".heat-chunk-card"));
+    expect(cards[0]?.textContent).toContain("Polarity -0.8840");
+    expect(cards[1]?.textContent).toContain("Not scored");
+    expect(container.textContent).not.toContain("Cosine");
+    const segment = container.querySelector<HTMLButtonElement>(".heat-source-segment");
+    expect(segment?.title).toBe("sentiment:0: polarity -0.8840");
   });
 });

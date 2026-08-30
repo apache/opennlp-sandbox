@@ -56,7 +56,7 @@ service OpenNlpSearchService {
   rpc DeleteSearchIndex(DeleteSearchIndexRequest) returns (DeleteSearchIndexResponse);
 
   // Persists one dynamic index as a checkpoint under the operator-configured
-  // persistence root, retaining raw vectors so accretion continues across
+  // persistence root, retaining raw vectors so indexing continues across
   // restarts. Reports FAILED_PRECONDITION when persistence is not configured
   // or the index's provider instance does not declare the persistent
   // capability, and NOT_FOUND for an unknown index.
@@ -84,7 +84,7 @@ service OpenNlpSearchService {
   // Lists every alias in stable alias order.
   rpc ListIndexAliases(ListIndexAliasesRequest) returns (ListIndexAliasesResponse);
 
-  // Creates or replaces one collection, the scope vocabulary accretion is
+  // Creates or replaces one collection, the scope vocabulary drift is
   // measured over. Member index ids may be aliases and are stored resolved;
   // every member must be a dynamic index. The complete configured state is
   // replaced on every call and the last write wins.
@@ -197,7 +197,7 @@ message ListIndexAliasesResponse {
   repeated IndexAlias aliases = 1;
 }
 
-// One collection: the scope vocabulary accretion is measured over. Indexes
+// One collection: the scope vocabulary drift is measured over. Indexes
 // belong to a collection, indexing feeds its term statistics, vocabularies are
 // cut from it, models train from those vocabularies, and drift is measured
 // against the current vocabulary artifact.
@@ -215,7 +215,7 @@ message CollectionDescriptor {
   optional string vocabulary_artifact_id = 5;
   // Model artifact currently serving this collection's vector space.
   optional string model_artifact_id = 6;
-  // Number of accreted new terms at which the watch stream reports
+  // Number of new out-of-vocabulary terms at which the watch stream reports
   // COLLECTION_EVENT_KIND_DRIFT_THRESHOLD_CROSSED. Zero disables the event.
   uint32 drift_new_term_threshold = 7;
   // Analysis chain used to count the term statistics, identical to the chain
@@ -237,7 +237,7 @@ message CollectionDescriptor {
   string integrity_hash = 12;
 }
 
-// One accreted term and its live occurrence count across member indexes.
+// One indexed term and its live occurrence count across member indexes.
 message TermStatistic {
   // Analyzed term text. Multiword vocabulary terms are one unit, joined by
   // single spaces.
@@ -248,7 +248,7 @@ message TermStatistic {
   bool in_vocabulary = 3;
 }
 
-// Drift of accreted member content against the current vocabulary artifact.
+// Drift of indexed member content against the current vocabulary artifact.
 // When the collection has no vocabulary artifact, every term is new.
 message CollectionDriftStats {
   // Distinct terms across all member indexes.
@@ -278,7 +278,7 @@ message SetCollectionRequest {
   optional string vocabulary_artifact_id = 5;
   // Model artifact currently serving this collection's vector space.
   optional string model_artifact_id = 6;
-  // Accreted new-term count that triggers the drift watch event. Zero
+  // Out-of-vocabulary term count that triggers the drift watch event. Zero
   // disables the event.
   uint32 drift_new_term_threshold = 7;
 }
@@ -346,7 +346,7 @@ enum CollectionEventKind {
   COLLECTION_EVENT_KIND_UNSPECIFIED = 0;
   // The subscription's opening snapshot, also re-sent on reconnect.
   COLLECTION_EVENT_KIND_SNAPSHOT = 1;
-  // Accreted new terms reached the configured threshold.
+  // New out-of-vocabulary terms reached the configured threshold.
   COLLECTION_EVENT_KIND_DRIFT_THRESHOLD_CROSSED = 2;
   // A member index was persisted or sealed.
   COLLECTION_EVENT_KIND_INDEX_PERSISTED = 3;
@@ -408,6 +408,11 @@ message ListSearchProvidersRequest {}
 message ListSearchProvidersResponse {
   // Provider instances in stable instance-id order.
   repeated SearchProviderInstance providers = 1;
+  // False when the operator disabled live indexing: every live-index RPC then fails
+  // with FAILED_PRECONDITION, and a client should say so before the first click.
+  bool dynamic_indexing_enabled = 2;
+  // True when search.persist.root is set, so live indexes can be saved to disk.
+  bool persistence_configured = 3;
 }
 
 // One configured search provider instance. The instance id is the value

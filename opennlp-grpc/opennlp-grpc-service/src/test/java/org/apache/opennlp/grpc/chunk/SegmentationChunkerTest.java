@@ -19,7 +19,7 @@ package org.apache.opennlp.grpc.chunk;
 
 import java.util.Map;
 
-import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.embedding.StubEmbeddingProvider;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;

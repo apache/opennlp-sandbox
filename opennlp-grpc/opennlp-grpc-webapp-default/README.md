@@ -22,7 +22,30 @@ For Java-only reactor work, skip all frontend goals with:
 mvn -Dfrontend.skip=true package
 ```
 
+## End-to-end tests
+
+`e2e/` holds a Playwright suite that drives a running server and gateway through a real browser:
+tab scoping and bridging, a complete analyze round trip onto the calm Highlights overlay, corpus
+search hit inspection, the Models & data readiness grid and catalog install states, the Trainer
+gating states and server-fed pickers, and the Lifecycle flow of saving, aliasing, collecting and
+making a live index read-only (the spec builds that index through the gateway and removes it
+afterwards). It is intentionally not part of the Maven build because it needs browser binaries
+and a live stack. Start the stack (for example the Docker demonstration image), then:
+
+```shell
+npx playwright install chromium   # once
+OPENNLP_E2E_BASE_URL=http://127.0.0.1:7072 npm run e2e
+```
+
+Tests that depend on optional server state, such as a configured read-only corpus index, skip
+with a reason instead of failing. Specs that leave artifacts behind on the server, the workflow
+build and learning a vocabulary, run only with `OPENNLP_E2E_WORKFLOW_WRITE=1`. `tsc --noEmit` type-checks the suite as part of `npm test`, so
+the Maven build still catches compile drift in the specs.
+
 The browser uses the same-origin HTTP facade. Analysis requests follow protobuf JSON exactly.
+The Analyze action consumes `/api/v1/analyze-progressive`, renders complete layers as their
+branches finish, and replaces the partial state with the terminal canonical response. Copy,
+download, semantic heatmap, and graph actions remain tied to that final response.
 The default feature preset builds an inline profile from features that the service reports as
 both supported and configured. For example:
 
@@ -155,6 +178,6 @@ helpers in `text-utils.ts` own casing, whitespace, identifier splitting, and too
 
 The runtime visualization dependency is Apache ECharts (Apache License 2.0), which brings zrender
 (BSD 3-Clause) and tslib (Zero-Clause BSD). Their required license text is packaged in the JAR.
-The build-only dependencies are Vite (MIT), Vitest (MIT), TypeScript (Apache License 2.0), and the
-Node type declarations (MIT). The frontend Maven plugin is Apache License 2.0. Node and npm are
+The build-only dependencies are Vite (MIT), Vitest (MIT), TypeScript (Apache License 2.0),
+Playwright Test (Apache License 2.0), and the Node type declarations (MIT). The frontend Maven plugin is Apache License 2.0. Node and npm are
 downloaded into `target/` for the build and are not packaged in the module JAR.

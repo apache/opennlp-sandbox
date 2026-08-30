@@ -20,7 +20,7 @@ package org.apache.opennlp.grpc.processor.basic;
 import java.util.List;
 
 import org.apache.opennlp.grpc.backend.RankedBackends;
-import org.apache.opennlp.grpc.model.ChunkerModel;
+import org.apache.opennlp.grpc.spi.model.ChunkerModel;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.ChunkResult;

@@ -127,6 +127,142 @@ describe("annotation drawer", () => {
     await vi.waitFor(() => expect(writeText).toHaveBeenCalledWith("[0.125,-0.5,0.75,0.25]"));
   });
 
+  it("restores the copy button label after the copied confirmation", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    vi.useFakeTimers();
+    try {
+      const drawer = new AnnotationDrawer();
+      drawer.showChunk({
+        id: "sentence-chunks",
+        title: "Sentence chunks",
+        strategy: "Sentence",
+        embeddingModelIds: ["legal-mini"],
+        chunks: [],
+      }, {
+        index: 1,
+        start: 0,
+        end: 14,
+        text: "We the People.",
+        embeddingCount: 1,
+        embeddings: [{
+          modelId: "legal-mini",
+          granularity: "EMBEDDING_GRANULARITY_CHUNK_LEVEL",
+          vector: [0.125, -0.5],
+        }],
+      }, document.createElement("button"));
+      const copy = Array.from(document.querySelectorAll("button"))
+        .find((button) => button.textContent === "Copy vector")!;
+
+      copy.click();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(copy.textContent).toBe("Copied");
+      vi.advanceTimersByTime(1500);
+      expect(copy.textContent).toBe("Copy vector");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("lists the engines that recognized an entity", () => {
+    const shape = readDocumentShape({
+      document: {
+        rawText: "Kansas City",
+        offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
+        layers: { layers: [{
+          id: "opennlp:entities",
+          entityValues: { annotations: [{
+            annotationSpan: { end: 11 },
+            entityType: "city",
+            sources: [
+              { recognizerId: "city", engine: "dictionary" },
+              { recognizerId: "city", engine: "onnx", probability: 0.91 },
+            ],
+          }] },
+        }] },
+      },
+    });
+    const layer = shape.layers[0]!;
+    const drawer = new AnnotationDrawer();
+
+    drawer.showAnnotation(layer, layer.annotations[0]!);
+
+    const content = document.getElementById("annotation-details-content")!;
+    expect(content.textContent).toContain("Recognized by");
+    expect(content.textContent).toContain("city (dictionary)");
+    expect(content.textContent).toContain("city (onnx)");
+  });
+
+  it("renders annotation JSON as compact structured fields", () => {
+    const shape = readDocumentShape({
+      document: {
+        rawText: "Paris",
+        offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
+        layers: { layers: [{
+          id: "opennlp:entities",
+          entityValues: { annotations: [{
+            annotationSpan: { start: 0, end: 5 },
+            entityType: "location",
+            text: "Paris",
+            sources: [{ recognizerId: "location", engine: "onnx", probability: 0.91 }],
+          }] },
+        }] },
+      },
+    });
+    const layer = shape.layers[0]!;
+    const drawer = new AnnotationDrawer();
+
+    drawer.showAnnotation(layer, layer.annotations[0]!);
+
+    const content = document.getElementById("annotation-details-content")!;
+    const value = content.querySelector(".structured-value")!;
+    expect(value).not.toBeNull();
+    expect(value.querySelectorAll(":scope > dl > dt")).toHaveLength(4);
+    expect(value.textContent).toContain("annotationSpan");
+    expect(value.textContent).toContain("start: 0");
+    expect(value.textContent).toContain("end: 5");
+    expect(value.textContent).toContain("1 item");
+    expect(content.querySelector("pre")).toBeNull();
+  });
+
+  it("summarizes a vector nested in JSON and copies the complete vector", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    const drawer = new AnnotationDrawer();
+
+    drawer.showAnnotation({
+      id: "custom:vector-result",
+      title: "Vector result",
+      scope: "LAYER_SCOPE_DOCUMENT",
+      valueType: "Analytics",
+      annotations: [],
+    }, {
+      label: "vector result",
+      source: {
+        method: "centroid",
+        vector: [0.125, -0.5, 0.75, 0.25],
+      },
+    });
+
+    const content = document.getElementById("annotation-details-content")!;
+    const summary = content.querySelector(".structured-vector")!;
+    expect(summary.textContent).toContain("4 values");
+    expect(summary.textContent).toContain("0.125, -0.5, 0.75");
+    expect(summary.textContent).not.toContain("0.25");
+    const copy = Array.from(summary.querySelectorAll("button"))
+      .find((button) => button.textContent === "Copy vector")!;
+    copy.click();
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalledWith("[0.125,-0.5,0.75,0.25]"));
+  });
+
   it("summarizes a sentence embedding instead of dumping its raw vector", () => {
     const shape = readDocumentShape({
       document: {

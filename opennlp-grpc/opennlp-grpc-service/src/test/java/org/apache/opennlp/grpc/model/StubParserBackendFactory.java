@@ -23,6 +23,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.ParseTree;
+import org.apache.opennlp.grpc.spi.model.ParserModel;
+import org.apache.opennlp.grpc.spi.model.ParserBackendFactory;
 
 /**
  * Test-only {@link ParserBackendFactory} registered via {@code META-INF/services}. It is

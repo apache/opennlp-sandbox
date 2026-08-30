@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import opennlp.subword.sentencepiece.SentencePieceTokenizer;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 
 /**
  * Catalog of subword tokenizers, keyed by model id.
@@ -148,7 +148,8 @@ public final class SubwordRegistry {
     }
     if (defaultId == null) {
       throw AnalysisException.notFound(tokenizers.isEmpty()
-          ? "No subword model is configured on this server"
+          ? "PIPELINE_STEP_SUBWORD_TOKENIZE requested but no subword model is configured on this "
+              + "server; set model.subword.<id>.path"
           : "subword_model_id is required when multiple subword models are configured");
     }
     return defaultId;

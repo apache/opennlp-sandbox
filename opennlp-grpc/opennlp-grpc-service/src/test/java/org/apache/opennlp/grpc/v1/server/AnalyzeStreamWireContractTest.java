@@ -85,6 +85,45 @@ class AnalyzeStreamWireContractTest {
     assertStringField(error, "message");
   }
 
+  @Test
+  void progressiveAnalysisStreamsAtomicLayerUpdatesBeforeTheCanonicalDocument() {
+    final var method = OpenNlpAnalysisServiceGrpc.getServiceDescriptor()
+        .getMethods().stream()
+        .filter(candidate -> candidate.getBareMethodName().equals("AnalyzeDocumentProgressive"))
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("AnalyzeDocumentProgressive method is missing"));
+
+    assertEquals(MethodType.SERVER_STREAMING, method.getType());
+    final FileDescriptor file = OpenNlpServiceProto.getDescriptor();
+    final var rpc = file.findServiceByName("OpenNlpAnalysisService")
+        .findMethodByName("AnalyzeDocumentProgressive");
+    assertNotNull(rpc);
+    assertEquals("AnalyzeDocumentRequest", rpc.getInputType().getName());
+    assertEquals("AnalyzeDocumentEvent", rpc.getOutputType().getName());
+
+    final Descriptor event = requiredMessage(file, "AnalyzeDocumentEvent");
+    final OneofDescriptor update = requiredOneof(event, "update");
+    assertEquals(FieldDescriptor.Type.UINT64, requiredField(event, "sequence").getType());
+    assertMessageField(event, update, "started", "AnalysisStarted");
+    assertMessageField(event, update, "layers_ready", "AnalysisLayerBatch");
+    assertMessageField(event, update, "step_failed", "AnalysisStepFailure");
+    assertMessageField(event, update, "complete", "AnalyzeDocumentResponse");
+
+    final Descriptor started = requiredMessage(file, "AnalysisStarted");
+    assertMessageField(started, null, "document", "OpenNlpDocument");
+    assertRepeatedEnumField(started, "requested_steps", "PipelineStep");
+
+    final Descriptor layers = requiredMessage(file, "AnalysisLayerBatch");
+    assertEnumField(layers, "step", "PipelineStep");
+    assertRepeatedMessageField(layers, "layers", "AnnotationLayer");
+    assertRepeatedMessageField(layers, "diagnostics", "ProcessingDiagnostic");
+
+    final Descriptor failure = requiredMessage(file, "AnalysisStepFailure");
+    assertEnumField(failure, "step", "PipelineStep");
+    assertEnumField(failure, "code", "GrpcStatusCode");
+    assertStringField(failure, "message");
+  }
+
   private static Descriptor requiredMessage(FileDescriptor file, String name) {
     final Descriptor descriptor = file.findMessageTypeByName(name);
     assertNotNull(descriptor, () -> "Missing message " + name);
@@ -118,6 +157,21 @@ class AnalyzeStreamWireContractTest {
     final FieldDescriptor field = requiredField(owner, name);
     assertEquals(FieldDescriptor.Type.MESSAGE, field.getType());
     assertEquals(typeName, field.getMessageType().getName());
+    assertTrue(field.isRepeated());
+  }
+
+  private static void assertEnumField(Descriptor owner, String name, String typeName) {
+    final FieldDescriptor field = requiredField(owner, name);
+    assertEquals(FieldDescriptor.Type.ENUM, field.getType());
+    assertEquals(typeName, field.getEnumType().getName());
+    assertFalse(field.isRepeated());
+  }
+
+  private static void assertRepeatedEnumField(
+      Descriptor owner, String name, String typeName) {
+    final FieldDescriptor field = requiredField(owner, name);
+    assertEquals(FieldDescriptor.Type.ENUM, field.getType());
+    assertEquals(typeName, field.getEnumType().getName());
     assertTrue(field.isRepeated());
   }
 

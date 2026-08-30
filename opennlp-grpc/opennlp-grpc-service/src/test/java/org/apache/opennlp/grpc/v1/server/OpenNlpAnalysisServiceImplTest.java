@@ -23,20 +23,29 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.processor.DocumentAnalyzer;
+import org.apache.opennlp.grpc.processor.basic.BasicDocumentAnalyzer;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.testing.StubSentenceDetectorBackendFactory;
 import org.apache.opennlp.grpc.testing.StubTokenizerBackendFactory;
+import org.apache.opennlp.grpc.v1.FormatDocumentRequest;
+import org.apache.opennlp.grpc.v1.FormatDocumentResponse;
+import org.apache.opennlp.grpc.v1.ListOutputFormatsRequest;
+import org.apache.opennlp.grpc.v1.ListOutputFormatsResponse;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
+import org.apache.opennlp.grpc.v1.AnalyzeDocumentEvent;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentResponse;
+import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.ComponentType;
 import org.apache.opennlp.grpc.v1.ConfiguredResource;
 import org.apache.opennlp.grpc.v1.GetServiceInfoRequest;
@@ -44,6 +53,7 @@ import org.apache.opennlp.grpc.v1.GetServiceInfoResponse;
 import org.apache.opennlp.grpc.v1.ListModelBundlesRequest;
 import org.apache.opennlp.grpc.v1.ListModelBundlesResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
+import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.apache.opennlp.grpc.v1.StandardLayer;
 import org.apache.opennlp.grpc.v1.StandardResource;
 import org.junit.jupiter.api.Test;
@@ -74,6 +84,67 @@ class OpenNlpAnalysisServiceImplTest {
         analyzer, ProfileRegistry.createDefault(), modelBundleCache, "test");
   }
 
+  @Test
+  void listsTheBuiltInOutputFormats() {
+    final OpenNlpAnalysisServiceImpl service = serviceWith(request -> {
+      throw new IllegalStateException("analysis must not run");
+    });
+    final CapturingObserver<ListOutputFormatsResponse> observer = new CapturingObserver<>();
+
+    service.listOutputFormats(ListOutputFormatsRequest.getDefaultInstance(), observer);
+
+    assertNull(observer.error);
+    assertEquals(List.of("proto", "protojson", "tsv"),
+        observer.value.getFormatsList().stream()
+            .map(format -> format.getFormatId()).toList());
+  }
+
+  @Test
+  void formatsADocumentThroughADeployedFormatter() {
+    final OpenNlpAnalysisServiceImpl service = serviceWith(request -> {
+      throw new IllegalStateException("analysis must not run");
+    });
+    final OpenNlpDocument document =
+        OpenNlpDocument.newBuilder().setDocId("doc-1").setRawText("Alpha.").build();
+    final CapturingObserver<FormatDocumentResponse> observer = new CapturingObserver<>();
+
+    service.formatDocument(FormatDocumentRequest.newBuilder()
+        .setDocument(document).setFormatId("proto").build(), observer);
+
+    assertNull(observer.error);
+    assertEquals("application/x-protobuf", observer.value.getMediaType());
+    assertEquals(document.toByteString(), observer.value.getContent());
+  }
+
+  @Test
+  void unknownOutputFormatMapsToNotFound() {
+    final OpenNlpAnalysisServiceImpl service = serviceWith(request -> {
+      throw new IllegalStateException("analysis must not run");
+    });
+    final CapturingObserver<FormatDocumentResponse> observer = new CapturingObserver<>();
+
+    service.formatDocument(FormatDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.getDefaultInstance())
+        .setFormatId("warc-missing").build(), observer);
+
+    assertEquals(Status.Code.NOT_FOUND,
+        Status.fromThrowable(observer.error).getCode());
+  }
+
+  @Test
+  void formatWithoutADocumentMapsToInvalidArgument() {
+    final OpenNlpAnalysisServiceImpl service = serviceWith(request -> {
+      throw new IllegalStateException("analysis must not run");
+    });
+    final CapturingObserver<FormatDocumentResponse> observer = new CapturingObserver<>();
+
+    service.formatDocument(FormatDocumentRequest.newBuilder()
+        .setFormatId("tsv").build(), observer);
+
+    assertEquals(Status.Code.INVALID_ARGUMENT,
+        Status.fromThrowable(observer.error).getCode());
+  }
+
   private static String resourcePath(String name) {
     try {
       return Path.of(OpenNlpAnalysisServiceImplTest.class.getResource(name).toURI()).toString();
@@ -98,6 +169,69 @@ class OpenNlpAnalysisServiceImplTest {
     assertNotNull(observer.value);
     assertTrue(observer.completed);
     assertNull(observer.error);
+  }
+
+  @Test
+  void progressiveAnalysisPublishesBackboneLayersBeforeTheCanonicalResponse()
+      throws InterruptedException {
+    final AnalyzeDocumentRequest request = AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder()
+            .setDocId("doc-progressive")
+            .setRawText("Hello world. A second sentence.")
+            .build())
+        .setProfile(AnalysisProfile.newBuilder()
+            .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+            .addSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+            .addSteps(PipelineStep.PIPELINE_STEP_POS_TAG)
+            .addSteps(PipelineStep.PIPELINE_STEP_LEMMATIZE)
+            .build())
+        .build();
+    final ListCapturingObserver<AnalyzeDocumentEvent> observer =
+        new ListCapturingObserver<>();
+
+    try (BasicDocumentAnalyzer analyzer = new BasicDocumentAnalyzer(Map.of())) {
+      serviceWith(analyzer).analyzeDocumentProgressive(request, observer);
+
+      assertTrue(observer.await(), "progressive analysis did not terminate");
+      assertNull(observer.error);
+      assertTrue(observer.completed);
+      assertTrue(observer.values.size() >= 3);
+      assertEquals(AnalyzeDocumentEvent.UpdateCase.STARTED,
+          observer.values.getFirst().getUpdateCase());
+      assertEquals(AnalyzeDocumentEvent.UpdateCase.COMPLETE,
+          observer.values.getLast().getUpdateCase());
+      for (int i = 0; i < observer.values.size(); i++) {
+        assertEquals(i + 1L, observer.values.get(i).getSequence());
+      }
+      final int completeIndex = observer.values.size() - 1;
+      final int backboneIndex = observer.values.stream()
+          .filter(event -> event.hasLayersReady())
+          .filter(event -> event.getLayersReady().getLayersList().stream()
+              .anyMatch(layer -> layer.getId().equals("opennlp:tokens")))
+          .mapToInt(observer.values::indexOf)
+          .findFirst()
+          .orElseThrow();
+      assertTrue(backboneIndex < completeIndex);
+      assertTrue(observer.values.stream()
+          .filter(event -> event.hasLayersReady())
+          .flatMap(event -> event.getLayersReady().getLayersList().stream())
+          .anyMatch(layer -> layer.getId().equals("opennlp:pos")));
+      assertEquals(2, observer.values.stream()
+          .filter(event -> event.hasLayersReady())
+          .flatMap(event -> event.getLayersReady().getLayersList().stream())
+          .filter(layer -> layer.getId().equals("opennlp:analytics"))
+          .count());
+      assertEquals(analyzer.analyze(request), observer.values.getLast().getComplete());
+    }
+  }
+
+  @Test
+  void progressiveAnalysisRejectsANullObserver() {
+    final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+        () -> serviceWith(request -> AnalyzeDocumentResponse.getDefaultInstance())
+            .analyzeDocumentProgressive(request(), null));
+
+    assertEquals("responseObserver must not be null", error.getMessage());
   }
 
   @Test
@@ -310,6 +444,35 @@ class OpenNlpAnalysisServiceImplTest {
     @Override
     public void onCompleted() {
       this.completed = true;
+    }
+  }
+
+  /** Captures every callback from an asynchronous response stream. */
+  private static final class ListCapturingObserver<T> implements StreamObserver<T> {
+    private final List<T> values = new java.util.concurrent.CopyOnWriteArrayList<>();
+    private final CountDownLatch terminal = new CountDownLatch(1);
+    private volatile Throwable error;
+    private volatile boolean completed;
+
+    @Override
+    public void onNext(T value) {
+      values.add(value);
+    }
+
+    @Override
+    public void onError(Throwable error) {
+      this.error = error;
+      terminal.countDown();
+    }
+
+    @Override
+    public void onCompleted() {
+      completed = true;
+      terminal.countDown();
+    }
+
+    private boolean await() throws InterruptedException {
+      return terminal.await(10, TimeUnit.SECONDS);
     }
   }
 }

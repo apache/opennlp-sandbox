@@ -39,7 +39,7 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import opennlp.embeddings.corpus.CasePassage;
 import opennlp.embeddings.index.TurboQuantIndex;
-import org.apache.opennlp.grpc.search.bundle.TurboQuantBundleDigest;
+import org.apache.opennlp.grpc.search.turboquant.TurboQuantBundleDigest;
 import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
 import org.apache.opennlp.grpc.v1.AnalyzeDocumentRequest;
@@ -229,7 +229,7 @@ class OpenNlpGrpcServerLiveIT {
           URI.create(webapp.baseUri() + "/")).GET().build(),
           HttpResponse.BodyHandlers.ofString());
       assertEquals(200, page.statusCode());
-      assertTrue(page.body().contains("Server-backed semantic search"));
+      assertTrue(page.body().contains("Search, then inspect the evidence behind every score"));
       assertTrue(page.body().contains("document-window-position"));
       assertTrue(page.body().contains("Download JSON"));
 

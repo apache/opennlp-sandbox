@@ -88,7 +88,7 @@ export function renderNormalizationXray(container: HTMLElement, view: Normalizat
   const heading = document.createElement("div");
   heading.className = "xray-heading";
   const title = document.createElement("strong");
-  title.textContent = "Normalization X-ray";
+  title.textContent = "Normalization alignment";
   const caption = document.createElement("small");
   caption.className = "xray-caption";
   const changed = view.runs.filter((run) => !run.equal).length;
@@ -141,8 +141,12 @@ function xrayPane(
     const text = side === "raw"
       ? view.rawText.slice(run.rawStart, run.rawEnd)
       : view.normalizedText.slice(run.normStart, run.normEnd);
-    const segment = document.createElement("button");
-    segment.type = "button";
+    // A span, not a button: buttons are atomic inline blocks that cannot wrap
+    // across lines, which scrambles the pane's reading order for multi-line
+    // runs. A span fragments with the text flow, so both panes read exactly
+    // like their underlying text.
+    const segment = document.createElement("span");
+    segment.tabIndex = 0;
     segment.className = run.equal ? "xray-segment is-equal" : "xray-segment is-replaced";
     segment.dataset.runIndex = String(index);
     segment.textContent = text;
@@ -153,10 +157,10 @@ function xrayPane(
     const state = run.equal ? "unchanged" : "replaced";
     segment.title = `Run ${index + 1}, ${state}`;
     segment.setAttribute("aria-label", `${label}, run ${index + 1}, ${state}: ${text || "no text"}`);
-    segment.addEventListener("mouseover", () => activateRun(panes, index));
-    segment.addEventListener("mouseleave", () => activateRun(panes, undefined));
-    segment.addEventListener("focus", () => activateRun(panes, index));
-    segment.addEventListener("blur", () => activateRun(panes, undefined));
+    segment.addEventListener("mouseover", () => activateRun(panes, index, segment));
+    segment.addEventListener("mouseleave", () => activateRun(panes, undefined, segment));
+    segment.addEventListener("focus", () => activateRun(panes, index, segment));
+    segment.addEventListener("blur", () => activateRun(panes, undefined, segment));
     body.append(segment);
   });
 
@@ -164,9 +168,16 @@ function xrayPane(
   return pane;
 }
 
-function activateRun(panes: HTMLElement, index: number | undefined): void {
+function activateRun(panes: HTMLElement, index: number | undefined, origin: HTMLElement): void {
   for (const segment of panes.querySelectorAll<HTMLElement>(".xray-segment")) {
-    segment.classList.toggle("is-active", index !== undefined && segment.dataset.runIndex === String(index));
+    const active = index !== undefined && segment.dataset.runIndex === String(index);
+    segment.classList.toggle("is-active", active);
+    // Both panes scroll independently, so bring the counterpart run into view
+    // whenever one side is highlighted; without this the paired highlight can
+    // sit outside the other pane's viewport.
+    if (active && segment !== origin && typeof segment.scrollIntoView === "function") {
+      segment.scrollIntoView({ block: "nearest" });
+    }
   }
 }
 

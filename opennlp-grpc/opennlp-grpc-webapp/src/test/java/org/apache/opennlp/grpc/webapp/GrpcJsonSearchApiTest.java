@@ -464,6 +464,23 @@ class GrpcJsonSearchApiTest {
   private static final class StubAnalysisRpc implements AnalysisRpc {
 
     @Override
+    public org.apache.opennlp.grpc.v1.ListOutputFormatsResponse listOutputFormats() {
+      return org.apache.opennlp.grpc.v1.ListOutputFormatsResponse.getDefaultInstance();
+    }
+
+    @Override
+    public org.apache.opennlp.grpc.v1.FormatDocumentResponse formatDocument(
+        org.apache.opennlp.grpc.v1.FormatDocumentRequest request) {
+      return org.apache.opennlp.grpc.v1.FormatDocumentResponse.getDefaultInstance();
+    }
+    @Override
+    public java.util.Iterator<org.apache.opennlp.grpc.v1.AnalyzeStreamResponse> analyzeStream(
+        java.util.List<org.apache.opennlp.grpc.v1.AnalyzeStreamRequest> frames) {
+      return java.util.Collections.emptyIterator();
+    }
+
+
+    @Override
     public GetServiceInfoResponse getServiceInfo() {
       return GetServiceInfoResponse.getDefaultInstance();
     }

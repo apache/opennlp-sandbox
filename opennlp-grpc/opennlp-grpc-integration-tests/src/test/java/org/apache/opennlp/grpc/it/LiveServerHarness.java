@@ -36,7 +36,7 @@ import org.apache.opennlp.grpc.v1.OpenNlpVocabularyServiceGrpc;
 
 /**
  * Spawns the shaded {@code opennlp-grpc-server} SNAPSHOT jar as a separate JVM process
- * (with the TEI and OpenVINO backend modules on its classpath) and provides a blocking
+ * (with the TurboQuant, TEI, and OpenVINO add-on modules on its classpath) and provides a blocking
  * client to it.
  *
  * <p>The jar locations are injected by the failsafe configuration via the
@@ -92,6 +92,7 @@ final class LiveServerHarness implements AutoCloseable {
     final Path log = Files.createTempFile("opennlp-grpc-live-it-", ".log");
     final String javaBin = Path.of(System.getProperty("java.home"), "bin", "java").toString();
     final StringBuilder classpath = new StringBuilder(requiredJar("opennlp.grpc.server.jar"))
+        .append(File.pathSeparator).append(requiredJar("opennlp.grpc.turboquant.jar"))
         .append(File.pathSeparator).append(requiredJar("opennlp.grpc.tei.backend.jar"))
         .append(File.pathSeparator).append(requiredJar("opennlp.grpc.openvino.backend.jar"));
     for (Path extensionJar : extensionJars) {

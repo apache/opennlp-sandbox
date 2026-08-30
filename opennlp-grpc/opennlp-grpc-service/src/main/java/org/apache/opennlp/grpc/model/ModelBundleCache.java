@@ -24,19 +24,25 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.MissingResourceException;
 import java.util.Properties;
+import java.util.TreeMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import opennlp.tools.langdetect.LanguageDetectorME;
 import opennlp.tools.langdetect.LanguageDetectorModel;
+import opennlp.tools.lemmatizer.DictionaryLemmatizer;
+import opennlp.tools.lemmatizer.Lemmatizer;
 import opennlp.tools.lemmatizer.LemmatizerME;
 import opennlp.tools.lemmatizer.LemmatizerModel;
 import opennlp.tools.postag.POSModel;
@@ -49,11 +55,11 @@ import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.tokenize.TokenizerModel;
 import opennlp.tools.util.StringUtil;
 import opennlp.tools.util.model.BaseModel;
-import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.embedding.EmbeddingProviderFactory;
 import org.apache.opennlp.grpc.training.TrainedModelEmbeddingProvider;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.v1.ComponentType;
 import org.apache.opennlp.grpc.v1.ConfiguredResource;
 import org.apache.opennlp.grpc.v1.ModelBundleInfo;
@@ -63,6 +69,9 @@ import org.apache.opennlp.grpc.v1.ResourceIdentity;
 import org.apache.opennlp.grpc.v1.StandardResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.opennlp.grpc.spi.model.NerModel;
+import org.apache.opennlp.grpc.spi.ModelArtifactHasher;
+import org.apache.opennlp.grpc.spi.model.DocCategorizerModel;
 
 /**
  * Loads shared thread-safe {@code *ME} singletons once at startup.
@@ -90,7 +99,16 @@ public final class ModelBundleCache implements AutoCloseable {
   private static final String KEY_TOKENIZER_PATH = "model.tokenizer.path";
   private static final String KEY_POS_TAGGER_PATH = "model.pos_tagger.path";
   private static final String KEY_LEMMATIZER_PATH = "model.lemmatizer.path";
+  private static final String KEY_LEMMATIZER_DICTIONARY = "model.lemmatizer.dictionary";
+  private static final String DICTIONARY_LEMMATIZER_NAME = "lemmatizer-dictionary";
   private static final String KEY_LANGDETECT_PATH = "model.language_detector.path";
+  /** Prefix of per-language classic pipeline model sets: {@code model.pipeline.<lang>.*}. */
+  public static final String KEY_PIPELINE_PREFIX = "model.pipeline.";
+  private static final String PIPELINE_SENTDETECT_SUFFIX = ".sentence_detector.path";
+  private static final String PIPELINE_TOKENIZER_SUFFIX = ".tokenizer.path";
+  private static final String PIPELINE_POS_SUFFIX = ".pos_tagger.path";
+  private static final String PIPELINE_LEMMATIZER_SUFFIX = ".lemmatizer.path";
+  private static final String PIPELINE_BUNDLE_PREFIX = "pipeline-";
 
   /** Backend id reported for models served by the classic OpenNLP maxent runtime. */
   private static final String OPENNLP_ME_BACKEND_ID = "opennlp-me";
@@ -106,13 +124,14 @@ public final class ModelBundleCache implements AutoCloseable {
 
   private final Map<String, ModelBundleInfo> bundles;
   private final ModelArtifactRegistry artifactRegistry;
-  // The *Model artifacts and thread-safe *ME decoders are shared. Each decoder keeps
-  // caller-specific result state internally and releases it after each document.
-  private final POSModel posModel;
-  private final SentenceDetectorME sentenceDetector;
-  private final TokenizerME tokenizer;
-  private final POSTaggerME posTagger;
-  private final LemmatizerME lemmatizer;
+  // The classic pipelines share their *Model artifacts and thread-safe *ME decoders.
+  // Each decoder keeps caller-specific result state internally and releases it after
+  // each document.
+  private final ClassicLanguagePipeline defaultPipeline;
+  // Configured model.pipeline.<lang> sets keyed by normalized language, plus an index
+  // from each language's ISO 639-3 code (the language detector's alphabet) to that key.
+  private final Map<String, ClassicLanguagePipeline> languagePipelines;
+  private final Map<String, String> pipelineLanguageAliases;
   private final LanguageDetectorME languageDetector;
   private final EmbeddingProvider embeddingProvider;
   private final TrainedModelEmbeddingProvider trainedModelRegistry;
@@ -175,15 +194,30 @@ public final class ModelBundleCache implements AutoCloseable {
         KEY_TOKENIZER_PATH, BUNDLED_TOKENIZER_MODEL_FRAGMENT, "tokenizer", TokenizerModel::new);
     final LoadedArtifact<POSModel> loadedPos = loadModel(configuration,
         KEY_POS_TAGGER_PATH, BUNDLED_POS_MODEL_FRAGMENT, "POS tagger", POSModel::new);
-    final LoadedArtifact<LemmatizerModel> loadedLemma = loadModel(configuration,
-        KEY_LEMMATIZER_PATH, BUNDLED_LEMMATIZER_MODEL_FRAGMENT, "lemmatizer", LemmatizerModel::new);
+    final LoadedLemmatizer loadedLemmatizer = loadLemmatizer(configuration);
     final LoadedArtifact<LanguageDetectorModel> loadedLangDetect =
         loadLanguageDetectorModel(configuration);
-    this.sentenceDetector = new SentenceDetectorME(loadedSentence.model());
-    this.tokenizer = new TokenizerME(loadedTokenizer.model());
-    this.posModel = loadedPos.model();
-    this.posTagger = new POSTaggerME(posModel);
-    this.lemmatizer = new LemmatizerME(loadedLemma.model());
+    final POSModel defaultPosModel = loadedPos.model();
+    this.defaultPipeline = new ClassicLanguagePipeline("",
+        new SentenceDetectorME(loadedSentence.model()),
+        new TokenizerME(loadedTokenizer.model()),
+        defaultPosModel,
+        new POSTaggerME(defaultPosModel),
+        loadedLemmatizer.lemmatizer(),
+        loadedLemmatizer.statistical());
+    final Map<String, LoadedPipeline> loadedPipelines = loadLanguagePipelines(configuration);
+    final Map<String, ClassicLanguagePipeline> pipelines = new TreeMap<>();
+    final Map<String, String> aliases = new TreeMap<>();
+    for (Map.Entry<String, LoadedPipeline> entry : loadedPipelines.entrySet()) {
+      pipelines.put(entry.getKey(), entry.getValue().pipeline());
+      aliases.put(entry.getKey(), entry.getKey());
+      final String iso3 = iso3Code(entry.getKey());
+      if (iso3 != null) {
+        aliases.putIfAbsent(iso3, entry.getKey());
+      }
+    }
+    this.languagePipelines = Map.copyOf(pipelines);
+    this.pipelineLanguageAliases = Map.copyOf(aliases);
     this.languageDetector = new LanguageDetectorME(loadedLangDetect.model());
     // The embedding provider and the three registries may hold native resources (ONNX sessions,
     // remote connections). If a later load fails, release the ones already created so a failed
@@ -203,7 +237,8 @@ public final class ModelBundleCache implements AutoCloseable {
       // getEmbeddingProvider() resolves them without a restart.
       embeddingProvider =
           new TrainedModelEmbeddingProvider(EmbeddingProviderFactory.create(configuration));
-      nameFinderRegistry = NameFinderRegistry.create(configuration, sentenceDetector);
+      nameFinderRegistry =
+          NameFinderRegistry.create(configuration, defaultPipeline.sentenceDetector());
       docCategorizerRegistry = DocCategorizerRegistry.create(configuration);
       sentimentRegistry = SentimentRegistry.create(configuration);
       chunkerRegistry = ChunkerRegistry.create(configuration);
@@ -216,12 +251,13 @@ public final class ModelBundleCache implements AutoCloseable {
       this.tokenizerRegistry = tokenizerRegistry;
       this.sentenceDetectorRegistry = sentenceDetectorRegistry;
       this.parserRegistry = ParserRegistry.create(configuration);
-      this.bundles = buildBundleCatalog(
+      this.bundles = withPipelineBundles(buildBundleCatalog(
           loadedLangDetect.hash(), loadedSentence.hash(), loadedTokenizer.hash(),
-          loadedPos.hash(), loadedLemma.hash());
+          loadedPos.hash(), loadedLemmatizer.hash(), loadedLemmatizer.name()),
+          loadedPipelines);
       this.artifactRegistry = buildArtifactRegistry(
           loadedLangDetect.hash(), loadedSentence.hash(), loadedTokenizer.hash(),
-          loadedPos.hash(), loadedLemma.hash());
+          loadedPos.hash(), loadedLemmatizer.hash(), loadedLemmatizer.name());
       constructed = true;
     } finally {
       if (!constructed) {
@@ -243,7 +279,7 @@ public final class ModelBundleCache implements AutoCloseable {
    * @return The sentence detector. Never {@code null}.
    */
   public SentenceDetectorME getSentenceDetector() {
-    return sentenceDetector;
+    return defaultPipeline.sentenceDetector();
   }
 
   /**
@@ -252,7 +288,7 @@ public final class ModelBundleCache implements AutoCloseable {
    * @return The tokenizer. Never {@code null}.
    */
   public TokenizerME getTokenizer() {
-    return tokenizer;
+    return defaultPipeline.tokenizer();
   }
 
   /**
@@ -261,7 +297,7 @@ public final class ModelBundleCache implements AutoCloseable {
    * @return The POS tagger. Never {@code null}.
    */
   public POSTaggerME getPosTagger() {
-    return posTagger;
+    return defaultPipeline.posTagger();
   }
 
   /**
@@ -274,18 +310,7 @@ public final class ModelBundleCache implements AutoCloseable {
    * @throws AnalysisException If {@code requestedFormat} is {@code CUSTOM}.
    */
   public POSTaggerME createPosTagger(org.apache.opennlp.grpc.v1.POSTagFormat requestedFormat) {
-    if (requestedFormat == org.apache.opennlp.grpc.v1.POSTagFormat.POS_TAG_FORMAT_CUSTOM) {
-      throw AnalysisException.unimplemented(
-          "pos_tag_format CUSTOM requires a client-supplied tag mapping; not supported");
-    }
-    final POSTagFormat outputFormat = switch (requestedFormat) {
-      case POS_TAG_FORMAT_UD -> POSTagFormat.UD;
-      case POS_TAG_FORMAT_PENN -> POSTagFormat.PENN;
-      case POS_TAG_FORMAT_UNSPECIFIED, UNRECOGNIZED ->
-          POSTagFormatMapper.guessFormat(posModel);
-      default -> POSTagFormatMapper.guessFormat(posModel);
-    };
-    return new POSTaggerME(posModel, outputFormat);
+    return defaultPipeline.createPosTagger(requestedFormat);
   }
 
   /**
@@ -298,21 +323,18 @@ public final class ModelBundleCache implements AutoCloseable {
    * @return {@code true} when {@link #createPosTagger} with {@code requestedFormat} converts tags.
    */
   public boolean convertsPosTagFormat(org.apache.opennlp.grpc.v1.POSTagFormat requestedFormat) {
-    final POSTagFormat nativeFormat = POSTagFormatMapper.guessFormat(posModel);
-    return switch (requestedFormat) {
-      case POS_TAG_FORMAT_UD -> nativeFormat != POSTagFormat.UD;
-      case POS_TAG_FORMAT_PENN -> nativeFormat != POSTagFormat.PENN;
-      default -> false;
-    };
+    return defaultPipeline.convertsPosTagFormat(requestedFormat);
   }
 
   /**
-   * Returns the shared lemmatizer. Always available through the bundled default when unconfigured.
+   * Returns the shared lemmatizer: the dictionary lemmatizer when
+   * {@code model.lemmatizer.dictionary} is configured, otherwise the statistical decoder,
+   * always available through the bundled default when unconfigured.
    *
    * @return The lemmatizer. Never {@code null}.
    */
-  public LemmatizerME getLemmatizer() {
-    return lemmatizer;
+  public Lemmatizer getLemmatizer() {
+    return defaultPipeline.lemmatizer();
   }
 
   /**
@@ -329,10 +351,10 @@ public final class ModelBundleCache implements AutoCloseable {
    * Releases caller-specific decoder state after one document finishes on the current thread.
    */
   public void clearThreadLocalState() {
-    sentenceDetector.clearThreadLocalState();
-    tokenizer.clearThreadLocalState();
-    posTagger.clearThreadLocalState();
-    lemmatizer.clearThreadLocalState();
+    defaultPipeline.clearThreadLocalState();
+    for (ClassicLanguagePipeline pipeline : languagePipelines.values()) {
+      pipeline.clearThreadLocalState();
+    }
     nameFinderRegistry.clearThreadLocalState();
     chunkerRegistry.clearThreadLocalState();
     parserRegistry.clearThreadLocalState();
@@ -669,6 +691,245 @@ public final class ModelBundleCache implements AutoCloseable {
    * {@code model.properties} descriptors of the model jars on the classpath, then the
    * binary bundled inside the shaded server jar.
    */
+  /**
+   * Returns the default classic pipeline, serving every request no configured language
+   * pipeline matches.
+   *
+   * @return The default pipeline. Never {@code null}.
+   */
+  public ClassicLanguagePipeline defaultPipeline() {
+    return defaultPipeline;
+  }
+
+  /**
+   * Returns the configured classic pipeline languages.
+   *
+   * @return The normalized language codes in sorted order, possibly empty. Never
+   *     {@code null}.
+   */
+  public List<String> pipelineLanguages() {
+    return List.copyOf(languagePipelines.keySet());
+  }
+
+  /**
+   * Resolves a configured classic pipeline by language code: the configured code itself
+   * or its ISO 639-3 form, which is what the language detector reports.
+   *
+   * @param language The language code to resolve. May be {@code null}.
+   *
+   * @return The matching pipeline, or {@code null} when none is configured for
+   *     {@code language}.
+   */
+  public ClassicLanguagePipeline pipelineFor(String language) {
+    if (language == null || language.isBlank()) {
+      return null;
+    }
+    final String key = pipelineLanguageAliases.get(StringUtil.toLowerCase(language.trim()));
+    return key == null ? null : languagePipelines.get(key);
+  }
+
+  /** One loaded language pipeline with the artifact identities its bundle reports. */
+  private record LoadedPipeline(ClassicLanguagePipeline pipeline,
+      String sentenceName, String sentenceHash, String tokenizerName, String tokenizerHash,
+      String posName, String posHash, String lemmatizerName, String lemmatizerHash) {
+  }
+
+  /**
+   * Loads every configured {@code model.pipeline.<lang>.*} model set. A language that
+   * configures some but not all four pipeline models fails loud.
+   */
+  private Map<String, LoadedPipeline> loadLanguagePipelines(Map<String, String> configuration) {
+    final Map<String, Map<String, String>> byLanguage = new TreeMap<>();
+    for (Map.Entry<String, String> entry : configuration.entrySet()) {
+      final String key = entry.getKey();
+      if (!key.startsWith(KEY_PIPELINE_PREFIX)) {
+        continue;
+      }
+      final int languageEnd = key.indexOf('.', KEY_PIPELINE_PREFIX.length());
+      if (languageEnd < 0) {
+        throw AnalysisException.invalidArgument(
+            "Invalid pipeline configuration key '" + key + "'");
+      }
+      final String language = StringUtil.toLowerCase(
+          key.substring(KEY_PIPELINE_PREFIX.length(), languageEnd).trim());
+      if (language.isEmpty()) {
+        throw AnalysisException.invalidArgument(
+            "Invalid pipeline configuration key '" + key + "'; language must not be blank");
+      }
+      byLanguage.computeIfAbsent(language, ignored -> new TreeMap<>())
+          .put(key.substring(languageEnd + 1), entry.getValue());
+    }
+    final Map<String, LoadedPipeline> pipelines = new TreeMap<>();
+    for (Map.Entry<String, Map<String, String>> entry : byLanguage.entrySet()) {
+      pipelines.put(entry.getKey(), loadLanguagePipeline(entry.getKey(), entry.getValue()));
+    }
+    return pipelines;
+  }
+
+  /** Loads the four models of one language pipeline. */
+  private LoadedPipeline loadLanguagePipeline(String language, Map<String, String> slots) {
+    final String sentencePath = requiredPipelinePath(
+        language, slots, PIPELINE_SENTDETECT_SUFFIX.substring(1));
+    final String tokenizerPath = requiredPipelinePath(
+        language, slots, PIPELINE_TOKENIZER_SUFFIX.substring(1));
+    final String posPath = requiredPipelinePath(
+        language, slots, PIPELINE_POS_SUFFIX.substring(1));
+    final String lemmatizerPath = requiredPipelinePath(
+        language, slots, PIPELINE_LEMMATIZER_SUFFIX.substring(1));
+    final LoadedArtifact<SentenceModel> sentence = loadPipelineModel(
+        language, "sentence detector", sentencePath, SentenceModel::new);
+    final LoadedArtifact<TokenizerModel> tokenizer = loadPipelineModel(
+        language, "tokenizer", tokenizerPath, TokenizerModel::new);
+    final LoadedArtifact<POSModel> pos = loadPipelineModel(
+        language, "POS tagger", posPath, POSModel::new);
+    final LoadedArtifact<LemmatizerModel> lemma = loadPipelineModel(
+        language, "lemmatizer", lemmatizerPath, LemmatizerModel::new);
+    final LemmatizerME statistical = new LemmatizerME(lemma.model());
+    final ClassicLanguagePipeline pipeline = new ClassicLanguagePipeline(language,
+        new SentenceDetectorME(sentence.model()),
+        new TokenizerME(tokenizer.model()),
+        pos.model(), new POSTaggerME(pos.model()),
+        statistical, statistical);
+    logger.info("Loaded classic pipeline for language '{}'", language);
+    return new LoadedPipeline(pipeline,
+        fileName(sentencePath), sentence.hash(),
+        fileName(tokenizerPath), tokenizer.hash(),
+        fileName(posPath), pos.hash(),
+        fileName(lemmatizerPath), lemma.hash());
+  }
+
+  /** Returns one required pipeline slot path, failing loud when it is absent or blank. */
+  private static String requiredPipelinePath(
+      String language, Map<String, String> slots, String slotKey) {
+    final String path = slots.get(slotKey);
+    if (path == null || path.isBlank()) {
+      throw AnalysisException.invalidArgument("Pipeline '" + language
+          + "' is missing " + KEY_PIPELINE_PREFIX + language + "." + slotKey
+          + "; a pipeline configures all four classic models");
+    }
+    return path.trim();
+  }
+
+  /** Loads one pipeline model from its configured file. */
+  private <M extends BaseModel> LoadedArtifact<M> loadPipelineModel(
+      String language, String description, String path, ModelReader<M> reader) {
+    try {
+      final byte[] bytes = Files.readAllBytes(Path.of(path));
+      return new LoadedArtifact<>(reader.read(new ByteArrayInputStream(bytes)),
+          ModelArtifactHasher.sha256Hex(bytes));
+    } catch (NoSuchFileException | FileNotFoundException e) {
+      throw AnalysisException.notFound("Pipeline '" + language + "' " + description
+          + " model file not found: " + path);
+    } catch (IOException e) {
+      throw AnalysisException.internal("Failed to load pipeline '" + language + "' "
+          + description + " model from " + path, e);
+    }
+  }
+
+  /** Returns the file name of a configured path, for bundle reporting. */
+  private static String fileName(String path) {
+    return Path.of(path).getFileName().toString();
+  }
+
+  /** Returns the ISO 639-3 form of a language code, or {@code null} when unknown. */
+  private static String iso3Code(String language) {
+    try {
+      final String iso3 = new Locale(language).getISO3Language();
+      return iso3.isEmpty() ? null : StringUtil.toLowerCase(iso3);
+    } catch (MissingResourceException e) {
+      return null;
+    }
+  }
+
+  /** Adds one advertised bundle per configured language pipeline. */
+  private Map<String, ModelBundleInfo> withPipelineBundles(
+      Map<String, ModelBundleInfo> catalog, Map<String, LoadedPipeline> loadedPipelines) {
+    if (loadedPipelines.isEmpty()) {
+      return catalog;
+    }
+    final Map<String, ModelBundleInfo> extended = new TreeMap<>(catalog);
+    for (Map.Entry<String, LoadedPipeline> entry : loadedPipelines.entrySet()) {
+      final String language = entry.getKey();
+      final LoadedPipeline loaded = entry.getValue();
+      extended.put(PIPELINE_BUNDLE_PREFIX + language, ModelBundleInfo.newBuilder()
+          .setBundleId(PIPELINE_BUNDLE_PREFIX + language)
+          .addSupportedLanguages(language)
+          .addSupportedSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+          .addSupportedSteps(PipelineStep.PIPELINE_STEP_TOKENIZE)
+          .addSupportedSteps(PipelineStep.PIPELINE_STEP_POS_TAG)
+          .addSupportedSteps(PipelineStep.PIPELINE_STEP_LEMMATIZE)
+          .addModels(classicModelDescriptor(loaded.sentenceName(),
+              ComponentType.COMPONENT_TYPE_SENTENCE_DETECTOR, language, loaded.sentenceHash()))
+          .addModels(classicModelDescriptor(loaded.tokenizerName(),
+              ComponentType.COMPONENT_TYPE_TOKENIZER, language, loaded.tokenizerHash()))
+          .addModels(classicModelDescriptor(loaded.posName(),
+              ComponentType.COMPONENT_TYPE_POS_TAGGER, language, loaded.posHash()))
+          .addModels(classicModelDescriptor(loaded.lemmatizerName(),
+              ComponentType.COMPONENT_TYPE_LEMMATIZER, language, loaded.lemmatizerHash()))
+          .build());
+    }
+    return Map.copyOf(extended);
+  }
+
+  /**
+   * The lemmatizer serving PIPELINE_STEP_LEMMATIZE with its reporting identity.
+   *
+   * @param lemmatizer The lemmatizer to serve. Never {@code null}.
+   * @param statistical The statistical decoder when it backs {@code lemmatizer}, or
+   *     {@code null} for a dictionary lemmatizer.
+   * @param hash The lowercase hex SHA-256 digest of the source artifact.
+   * @param name The artifact name reported in the bundle catalog.
+   */
+  private record LoadedLemmatizer(
+      Lemmatizer lemmatizer, LemmatizerME statistical, String hash, String name) {
+  }
+
+  /**
+   * Loads the configured lemmatizer: the tab-separated dictionary named by
+   * {@code model.lemmatizer.dictionary}, or the statistical model named by
+   * {@code model.lemmatizer.path} (falling back to the bundled English model).
+   * Configuring both sources fails loud.
+   */
+  private LoadedLemmatizer loadLemmatizer(Map<String, String> configuration) {
+    final String dictionaryPath = configuration.get(KEY_LEMMATIZER_DICTIONARY);
+    final String modelPath = configuration.get(KEY_LEMMATIZER_PATH);
+    final boolean dictionaryConfigured = dictionaryPath != null && !dictionaryPath.isBlank();
+    if (dictionaryConfigured && modelPath != null && !modelPath.isBlank()) {
+      throw AnalysisException.invalidArgument(KEY_LEMMATIZER_PATH + " and "
+          + KEY_LEMMATIZER_DICTIONARY + " are mutually exclusive; configure one lemmatizer "
+          + "source");
+    }
+    if (!dictionaryConfigured) {
+      final LoadedArtifact<LemmatizerModel> loaded = loadModel(configuration,
+          KEY_LEMMATIZER_PATH, BUNDLED_LEMMATIZER_MODEL_FRAGMENT, "lemmatizer",
+          LemmatizerModel::new);
+      final LemmatizerME statistical = new LemmatizerME(loaded.model());
+      return new LoadedLemmatizer(statistical, statistical, loaded.hash(),
+          "opennlp-models-lemmatizer-" + DEFAULT_LANGUAGE);
+    }
+    final byte[] bytes;
+    try {
+      bytes = Files.readAllBytes(Path.of(dictionaryPath));
+    } catch (NoSuchFileException | FileNotFoundException e) {
+      throw AnalysisException.notFound(
+          "Lemmatizer dictionary file not found: " + dictionaryPath);
+    } catch (IOException e) {
+      throw AnalysisException.internal(
+          "Failed to read lemmatizer dictionary " + dictionaryPath, e);
+    }
+    try {
+      final DictionaryLemmatizer dictionary =
+          new DictionaryLemmatizer(new ByteArrayInputStream(bytes));
+      logger.info("Loaded dictionary lemmatizer from {} ({} entries)",
+          dictionaryPath, dictionary.getDictMap().size());
+      return new LoadedLemmatizer(dictionary, null,
+          ModelArtifactHasher.sha256Hex(bytes), DICTIONARY_LEMMATIZER_NAME);
+    } catch (IOException | RuntimeException e) {
+      throw AnalysisException.invalidArgument("Lemmatizer dictionary " + dictionaryPath
+          + " is not a valid word<TAB>postag<TAB>lemma file: " + e.getMessage());
+    }
+  }
+
   private LoadedArtifact<LanguageDetectorModel> loadLanguageDetectorModel(
       Map<String, String> configuration) {
     try {
@@ -842,7 +1103,8 @@ public final class ModelBundleCache implements AutoCloseable {
       String sentenceHash,
       String tokenizerHash,
       String posHash,
-      String lemmaHash) {
+      String lemmaHash,
+      String lemmaName) {
     final ModelArtifactRegistry.Builder builder = ModelArtifactRegistry.builder()
         .register(ComponentType.COMPONENT_TYPE_LANGUAGE_DETECTOR, langDetectHash,
             "opennlp-models-langdetect")
@@ -852,8 +1114,7 @@ public final class ModelBundleCache implements AutoCloseable {
             TOKENIZER_MODEL_NAME)
         .register(ComponentType.COMPONENT_TYPE_POS_TAGGER, posHash,
             POS_MODEL_NAME)
-        .register(ComponentType.COMPONENT_TYPE_LEMMATIZER, lemmaHash,
-            "opennlp-models-lemmatizer-" + DEFAULT_LANGUAGE);
+        .register(ComponentType.COMPONENT_TYPE_LEMMATIZER, lemmaHash, lemmaName);
     for (String modelId : embeddingProvider.registeredModelIds()) {
       final String hash = embeddingProvider.modelArtifactHash(modelId);
       if (hash != null && !hash.isBlank()) {
@@ -970,7 +1231,8 @@ public final class ModelBundleCache implements AutoCloseable {
       String sentenceHash,
       String tokenizerHash,
       String posHash,
-      String lemmaHash) {
+      String lemmaHash,
+      String lemmaName) {
     final ModelBundleInfo.Builder bundle = ModelBundleInfo.newBuilder()
         .setBundleId(ProfileRegistry.DEFAULT_BUNDLE_ID)
         .addSupportedLanguages(DEFAULT_LANGUAGE)
@@ -1000,7 +1262,7 @@ public final class ModelBundleCache implements AutoCloseable {
             DEFAULT_LANGUAGE,
             posHash))
         .addModels(classicModelDescriptor(
-            "opennlp-models-lemmatizer-" + DEFAULT_LANGUAGE,
+            lemmaName,
             ComponentType.COMPONENT_TYPE_LEMMATIZER,
             DEFAULT_LANGUAGE,
             lemmaHash));

@@ -20,7 +20,7 @@ package org.apache.opennlp.grpc.model;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.ParseTree;
 import org.junit.jupiter.api.Test;
@@ -28,6 +28,8 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.apache.opennlp.grpc.spi.model.ParserModel;
+import org.apache.opennlp.grpc.spi.model.ParserBackendFactory;
 
 /**
  * Unit tests for {@link ParserRegistry}'s factory-discovery policy: duplicate factory ids and

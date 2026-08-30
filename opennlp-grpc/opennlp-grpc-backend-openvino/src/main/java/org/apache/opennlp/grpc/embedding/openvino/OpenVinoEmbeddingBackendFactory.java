@@ -19,8 +19,8 @@ package org.apache.opennlp.grpc.embedding.openvino;
 
 import java.util.Map;
 
-import org.apache.opennlp.grpc.embedding.EmbeddingBackendFactory;
-import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingBackendFactory;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingProvider;
 
 /**
  * {@link EmbeddingBackendFactory} for OpenVINO Model Server (and other KServe v2

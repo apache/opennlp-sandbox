@@ -20,7 +20,7 @@ package org.apache.opennlp.grpc.search.query;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.search.query.CompoundQueryExecutor.QueryHit;
 import org.apache.opennlp.grpc.v1.JoinFusion;
 import org.apache.opennlp.grpc.v1.MatchedSpan;
@@ -44,6 +44,8 @@ import static org.apache.opennlp.grpc.search.query.QueryTestSupport.term;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.apache.opennlp.grpc.spi.search.QueryCandidate;
+import org.apache.opennlp.grpc.spi.search.KeywordQueryIndex;
 
 /** Pins the normative score algebra, the terms executor, and the CEL seam. */
 class CompoundQueryExecutorTest {

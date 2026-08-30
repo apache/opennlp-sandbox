@@ -17,7 +17,7 @@
  * under the License.
  */
 
-/** Drift of accreted member content against the current vocabulary artifact. */
+/** Drift of indexed member content against the current vocabulary artifact. */
 export interface CollectionDrift {
   distinctTerms: number;
   termOccurrences: number;
@@ -27,7 +27,7 @@ export interface CollectionDrift {
   vocabularyCoverage: number;
 }
 
-/** One accreted term and its live occurrence count across member indexes. */
+/** One indexed term and its live occurrence count across member indexes. */
 export interface TermStatistic {
   term: string;
   occurrences: number;

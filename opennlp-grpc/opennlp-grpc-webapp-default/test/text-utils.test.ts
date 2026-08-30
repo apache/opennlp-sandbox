@@ -31,6 +31,7 @@ import {
   replaceCharacter,
   splitOnCharacters,
   splitWords,
+  timestampLabel,
   withoutPrefix,
 } from "../src/text-utils";
 
@@ -72,5 +73,12 @@ describe("locale-independent cursor text helpers", () => {
   it("ellipsizes without splitting supplementary characters", () => {
     expect(ellipsizeCodePoints("A😀BC", 3)).toBe("A😀…");
     expect(ellipsizeCodePoints("A😀B", 3)).toBe("A😀B");
+  });
+
+  it("formats ISO and epoch-second timestamps and rejects unreadable ones", () => {
+    expect(timestampLabel("2026-08-20T14:05:30Z")).toBe("2026-08-20 14:05 UTC");
+    expect(timestampLabel("1755698730")).toBe("2025-08-20 14:05 UTC");
+    expect(timestampLabel("")).toBe("");
+    expect(timestampLabel("not a date")).toBe("");
   });
 });

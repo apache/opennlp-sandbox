@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

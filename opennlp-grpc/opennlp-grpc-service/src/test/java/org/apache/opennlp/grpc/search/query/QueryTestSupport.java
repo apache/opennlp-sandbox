@@ -19,7 +19,7 @@ package org.apache.opennlp.grpc.search.query;
 
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
-import org.apache.opennlp.grpc.search.SearchRecord;
+import org.apache.opennlp.grpc.spi.search.SearchRecord;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.BoostClause;
 import org.apache.opennlp.grpc.v1.CelCalculatorClause;
@@ -37,6 +37,7 @@ import org.apache.opennlp.grpc.v1.ScoreNormalization;
 import org.apache.opennlp.grpc.v1.SemanticClause;
 import org.apache.opennlp.grpc.v1.TermClause;
 import org.apache.opennlp.grpc.v1.TermMatchMode;
+import org.apache.opennlp.grpc.spi.search.QueryCandidate;
 
 /** Builders shared by the compound query engine tests. */
 final class QueryTestSupport {

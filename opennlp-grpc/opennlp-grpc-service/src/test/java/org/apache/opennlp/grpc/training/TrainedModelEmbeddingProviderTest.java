@@ -22,7 +22,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import opennlp.embeddings.StaticEmbeddingModel;
-import org.apache.opennlp.grpc.embedding.EmbeddingBatchResult;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingBatchResult;
 import org.apache.opennlp.grpc.v1.EmbeddingRoute;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

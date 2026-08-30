@@ -22,7 +22,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.testing.TinySentimentModel;
 import org.apache.opennlp.grpc.v1.DocumentClassification;
 import org.junit.jupiter.api.BeforeAll;
@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.apache.opennlp.grpc.spi.model.DocCategorizerModel;
 
 /**
  * Unit tests for {@link SentimentRegistry}. The polarity model is trained in-memory from a
@@ -131,12 +132,14 @@ class SentimentRegistryTest {
   }
 
   @Test
-  void rejectsDlConfigMissingRequiredAttribute() {
-    // path present but vocab/categories missing.
+  void dlKeysWithoutTheAddOnFailLoud() {
+    // The ONNX backend ships in the opennlp-grpc-dl add-on, absent from this module's
+    // classpath; the error names the aliased sentiment namespace, not the canonical one.
     final AnalysisException error = assertThrows(AnalysisException.class, () ->
         SentimentRegistry.create(Map.of(
             SentimentRegistry.KEY_DL_PREFIX + "polarity.path", "/tmp/model.onnx")));
-    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+    assertEquals(AnalysisException.FailureType.FAILED_PRECONDITION, error.getFailureType());
+    assertTrue(error.getMessage().contains("model.sentiment_dl."));
   }
 
   @Test

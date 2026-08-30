@@ -24,7 +24,7 @@ import org.apache.opennlp.grpc.embedding.CompositeEmbeddingProvider;
 import org.apache.opennlp.grpc.embedding.MiscountingEmbeddingProvider;
 import org.apache.opennlp.grpc.embedding.StubEmbeddingProvider;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;

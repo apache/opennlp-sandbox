@@ -56,6 +56,17 @@ const shape = readDocumentShape({
   },
 });
 
+/** A document whose only layer is a sentiment layer carrying the given category annotations. */
+function sentimentShape(annotations: Array<{ span: { start: number; end: number }; label: string; score: number }>) {
+  return readDocumentShape({
+    document: {
+      rawText: "OpenNLP works. Search is useful.",
+      offsetEncoding: "OFFSET_ENCODING_UTF16_CODE_UNIT",
+      layers: { layers: [{ id: "opennlp:sentiment", categoryValues: { annotations } }] },
+    },
+  });
+}
+
 describe("visualization data", () => {
   it("leaves semantic ranking to the server and reads typed sentiment rows", () => {
     const rows = buildHeatmapRows(shape);
@@ -66,6 +77,27 @@ describe("visualization data", () => {
       { start: 15, end: 24, score: -0.7, category: "negative" },
       { start: 25, end: 32, score: 0, category: "neutral" },
     ]);
+  });
+
+  it("reads ordinal star labels as signed polarity instead of raw confidence", () => {
+    const rows = buildHeatmapRows(sentimentShape([
+      { span: { start: 0, end: 7 }, label: "1_star", score: 0.884 },
+      { span: { start: 8, end: 14 }, label: "3 stars", score: 0.6 },
+      { span: { start: 15, end: 24 }, label: "5_stars", score: 0.89 },
+      { span: { start: 25, end: 32 }, label: "2-stars", score: 0.5 },
+    ])).sentiment;
+
+    expect(rows.map((row) => row.score)).toEqual([-0.884, 0, 0.89, -0.25]);
+    expect(rows.map((row) => row.category)).toEqual(["1_star", "3 stars", "5_stars", "2-stars"]);
+  });
+
+  it("scores a label of unknown shape as neutral rather than trusting its confidence", () => {
+    const rows = buildHeatmapRows(sentimentShape([
+      { span: { start: 0, end: 14 }, label: "LABEL_0", score: 0.97 },
+      { span: { start: 15, end: 32 }, label: "6_stars", score: 0.97 },
+    ])).sentiment;
+
+    expect(rows.map((row) => row.score)).toEqual([0, 0]);
   });
 
   it("maps only server-ranked chunks from the current document into the shared heatmap", () => {

@@ -74,7 +74,9 @@ start() {
   if [[ "${DEVICE}" == "gpu" ]]; then
     image="openvino/model_server:${OVMS_VERSION}-gpu"
     device_args=(--device /dev/dri --group-add "$(stat -c '%g' /dev/dri/render* | head -n 1)")
-    ovms_args=(--target_device GPU)
+    # HETERO, not plain GPU: the fused openvino_tokenizers string operations
+    # only compile on CPU, while the transformer layers run on the GPU.
+    ovms_args=(--target_device HETERO:GPU,CPU)
   fi
 
   echo "Starting OVMS (${DEVICE}) on localhost:${GRPC_PORT} (gRPC) serving '${SERVED_MODEL_NAME}'"

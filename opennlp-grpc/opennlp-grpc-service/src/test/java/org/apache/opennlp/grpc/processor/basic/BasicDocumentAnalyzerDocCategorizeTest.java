@@ -25,7 +25,7 @@ import org.apache.opennlp.grpc.model.ClassicDocCategorizerBackendFactory;
 import org.apache.opennlp.grpc.model.DocCategorizerRegistry;
 import org.apache.opennlp.grpc.model.ModelBundleCache;
 import org.apache.opennlp.grpc.model.StubDocCategorizerBackendFactory;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.testing.TinyDoccatModel;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;

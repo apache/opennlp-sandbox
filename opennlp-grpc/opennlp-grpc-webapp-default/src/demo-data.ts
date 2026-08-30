@@ -21,31 +21,81 @@ import type { Fetcher } from "./api";
 
 type Decompressor = (stream: ReadableStream<Uint8Array>) => ReadableStream<Uint8Array>;
 
-const ALICE_PATH = "./data/alice-in-wonderland.txt.gz";
-const ALICE_COMPRESSED_BYTES = 53_192;
-const ALICE_TEXT_BYTES = 151_064;
+/** One bundled public-domain novel: its gzip asset and the pinned sizes and markers proving integrity. */
+interface NovelDemo {
+  readonly title: string;
+  readonly path: string;
+  readonly compressedBytes: number;
+  readonly textBytes: number;
+  readonly markers: readonly string[];
+}
 
-/** Loads the pinned public-domain Alice demo through a bounded gzip decoder. */
+const ALICE: NovelDemo = {
+  title: "Alice",
+  path: "./data/alice-in-wonderland.txt.gz",
+  compressedBytes: 53_192,
+  textBytes: 151_064,
+  markers: ["Alice’s Adventures in Wonderland", "CHAPTER XII."],
+};
+
+const PRIDE_AND_PREJUDICE: NovelDemo = {
+  title: "Pride and Prejudice",
+  path: "./data/pride-and-prejudice.txt.gz",
+  compressedBytes: 241_846,
+  textBytes: 694_478,
+  markers: ["It is a truth universally acknowledged", "CHAPTER LXI."],
+};
+
+/**
+ * Loads the bundled Alice’s Adventures in Wonderland text.
+ *
+ * @param fetcher The fetch implementation, injectable for tests.
+ * @param decompress The gzip decompressor, injectable for tests.
+ * @returns The decoded novel text.
+ */
 export async function loadAliceDemo(
   fetcher: Fetcher = fetch,
   decompress: Decompressor = gzipStream,
 ): Promise<string> {
-  const response = await fetcher(ALICE_PATH, { headers: { accept: "application/gzip" } });
+  return loadNovelDemo(ALICE, fetcher, decompress);
+}
+
+/**
+ * Loads the bundled Pride and Prejudice text.
+ *
+ * @param fetcher The fetch implementation, injectable for tests.
+ * @param decompress The gzip decompressor, injectable for tests.
+ * @returns The decoded novel text.
+ */
+export async function loadPrideAndPrejudiceDemo(
+  fetcher: Fetcher = fetch,
+  decompress: Decompressor = gzipStream,
+): Promise<string> {
+  return loadNovelDemo(PRIDE_AND_PREJUDICE, fetcher, decompress);
+}
+
+/** Fetches, bounds, decompresses, and verifies one bundled novel. */
+async function loadNovelDemo(
+  novel: NovelDemo,
+  fetcher: Fetcher,
+  decompress: Decompressor,
+): Promise<string> {
+  const response = await fetcher(novel.path, { headers: { accept: "application/gzip" } });
   if (!response.ok) {
-    throw new Error(`Could not load the Alice demo (${response.status}).`);
+    throw new Error(`Could not load the ${novel.title} demo (${response.status}).`);
   }
   const compressed = await response.arrayBuffer();
-  if (compressed.byteLength !== ALICE_COMPRESSED_BYTES) {
-    throw new Error("The compressed Alice demo has an unexpected size.");
+  if (compressed.byteLength !== novel.compressedBytes) {
+    throw new Error(`The compressed ${novel.title} demo has an unexpected size.`);
   }
   const stream = new Blob([compressed]).stream() as ReadableStream<Uint8Array>;
   const decoded = await new Response(decompress(stream)).arrayBuffer();
-  if (decoded.byteLength !== ALICE_TEXT_BYTES) {
-    throw new Error("The decompressed Alice demo has an unexpected size.");
+  if (decoded.byteLength !== novel.textBytes) {
+    throw new Error(`The decompressed ${novel.title} demo has an unexpected size.`);
   }
   const text = new TextDecoder("utf-8", { fatal: true }).decode(decoded);
-  if (!text.includes("Alice’s Adventures in Wonderland") || !text.includes("CHAPTER XII.")) {
-    throw new Error("The decompressed Alice demo did not contain the expected text.");
+  if (!novel.markers.every((marker) => text.includes(marker))) {
+    throw new Error(`The decompressed ${novel.title} demo did not contain the expected text.`);
   }
   return text;
 }

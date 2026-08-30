@@ -33,7 +33,7 @@ import java.util.UUID;
 
 import com.google.protobuf.ByteString;
 import opennlp.embeddings.index.VectorIndex;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.v1.ChunkEmbeddingGroup;
 import org.apache.opennlp.grpc.v1.EmbeddingResult;
 import org.apache.opennlp.grpc.v1.EmbeddingRoute;
@@ -52,7 +52,12 @@ import org.apache.opennlp.grpc.v1.SearchProviderCapability;
 import org.apache.opennlp.grpc.v1.SearchProviderSelector;
 import org.apache.opennlp.grpc.v1.StandardEmbeddingBackend;
 import org.apache.opennlp.grpc.v1.StandardSearchProvider;
-import org.apache.opennlp.grpc.search.query.KeywordQueryIndex;
+import org.apache.opennlp.grpc.spi.search.KeywordQueryIndex;
+import org.apache.opennlp.grpc.spi.search.SearchResult;
+import org.apache.opennlp.grpc.spi.search.SearchRecord;
+import org.apache.opennlp.grpc.spi.search.SearchIndexProvider;
+import org.apache.opennlp.grpc.spi.search.SearchIndexProviderFactory;
+import org.apache.opennlp.grpc.spi.search.QueryCandidate;
 
 /** Bounded registry of server-owned indexes created from analyzed document shapes. */
 public final class DynamicSearchIndexRegistry implements AutoCloseable {
@@ -176,6 +181,15 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
    */
   public boolean isEnabled() {
     return enabled;
+  }
+
+  /**
+   * Reports whether live indexes can be saved to disk.
+   *
+   * @return {@code true} when a checkpoint root is configured.
+   */
+  public boolean isPersistenceConfigured() {
+    return checkpointStore != null;
   }
 
   /**
@@ -661,17 +675,33 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
   /**
    * Converts one persisted record back to an in-memory chunk.
    *
+   * <p>A provider that retains raw vectors writes them into the record, and they come back
+   * here so the index can keep rebuilding its single exact segment after a restart. Their
+   * digest must match the one the record carries.</p>
+   *
    * @param chunk Persisted chunk record.
    * @return Snapshot chunk.
-   * @throws IllegalStateException If the record shape is invalid.
+   * @throws IllegalStateException If the record shape is invalid or a retained vector does
+   *     not match its digest.
    */
   private static StoredChunk storedFromChunkProto(PersistedSearchChunk chunk) {
+    float[] rawVector = null;
+    if (chunk.getVectorCount() > 0) {
+      rawVector = new float[chunk.getVectorCount()];
+      for (int i = 0; i < rawVector.length; i++) {
+        rawVector[i] = chunk.getVector(i);
+      }
+      if (!ByteString.copyFrom(vectorSha256(rawVector)).equals(chunk.getVectorSha256())) {
+        throw new IllegalStateException("Checkpoint chunk '" + chunk.getChunkId()
+            + "' carries a retained vector that does not match its digest");
+      }
+    }
     try {
       return new StoredChunk(
           new SearchRecord(chunk.getDocumentId(), chunk.getChunkId(),
               chunk.getChunkGroupId().isBlank() ? "default" : chunk.getChunkGroupId(),
               chunk.getSourceDocument(), chunk.getSourceSpan(), chunk.getIndexedText()),
-          null, chunk.getRoute(), chunk.getVectorId(), chunk.getVectorSegment(),
+          rawVector, chunk.getRoute(), chunk.getVectorId(), chunk.getVectorSegment(),
           chunk.getVectorSha256());
     } catch (IllegalArgumentException e) {
       throw new IllegalStateException("Checkpoint chunk '" + chunk.getChunkId()
@@ -1268,8 +1298,8 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
       if (keywordInstance == null) {
         return null;
       }
-      final List<org.apache.opennlp.grpc.search.query.QueryCandidate> candidates = chunks.stream()
-          .map(chunk -> new org.apache.opennlp.grpc.search.query.QueryCandidate(
+      final List<org.apache.opennlp.grpc.spi.search.QueryCandidate> candidates = chunks.stream()
+          .map(chunk -> new org.apache.opennlp.grpc.spi.search.QueryCandidate(
               chunk.record(), chunk.rawVector()))
           .toList();
       return keywordInstance.configured().createKeywordQueryIndex(candidates);
@@ -1376,9 +1406,9 @@ public final class DynamicSearchIndexRegistry implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override
-    public List<org.apache.opennlp.grpc.search.query.QueryCandidate> queryCandidates() {
+    public List<org.apache.opennlp.grpc.spi.search.QueryCandidate> queryCandidates() {
       return snapshot.chunks().stream()
-          .map(chunk -> new org.apache.opennlp.grpc.search.query.QueryCandidate(
+          .map(chunk -> new org.apache.opennlp.grpc.spi.search.QueryCandidate(
               chunk.record(), chunk.rawVector()))
           .toList();
     }

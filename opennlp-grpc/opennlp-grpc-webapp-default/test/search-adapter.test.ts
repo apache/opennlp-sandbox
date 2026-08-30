@@ -22,10 +22,14 @@ import { describe, expect, it } from "vitest";
 import {
   createAllHitsSearchRequest,
   createCompoundSearchRequest,
+  createIndexDocumentsRequest,
   createSearchRequest,
+  indexStateLabel,
   readSearchIndexes,
   readSearchProviderInstances,
+  readSearchProviderListing,
   readSearchResponse,
+  supportsKeywordClauses,
 } from "../src/search-adapter";
 
 function indexDescriptor(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -122,6 +126,7 @@ describe("server search API adapter", () => {
       maxResponseBytes: 1048576,
       supportsAllHits: false,
       immutable: true,
+      persisted: false,
       corpusTitle: "Apache documentation",
       licenseName: "Apache-2.0",
       corpusArtifactHash: "sha256:corpus",
@@ -148,6 +153,53 @@ describe("server search API adapter", () => {
     ];
 
     expect(readSearchIndexes({ indexes: invalid })).toEqual([]);
+  });
+
+  it("reads the server-wide live indexing and persistence flags beside the providers", () => {
+    const listing = readSearchProviderListing({
+      providers: [{ instanceId: "flat_float", providerId: "flat_float", capabilities: [] }],
+      dynamicIndexingEnabled: false,
+      persistenceConfigured: true,
+    });
+    expect(listing.providers.map((provider) => provider.instanceId)).toEqual(["flat_float"]);
+    expect(listing.dynamicIndexingEnabled).toBe(false);
+    expect(listing.persistenceConfigured).toBe(true);
+    // An older gateway omits both flags: live indexing on, nothing saved to disk.
+    expect(readSearchProviderListing({ providers: [] }))
+      .toMatchObject({ dynamicIndexingEnabled: true, persistenceConfigured: false });
+  });
+
+  it("reads the components an index executes and whether keyword clauses can run", () => {
+    const [index] = readSearchIndexes({ indexes: [{
+      indexId: "bundle-1",
+      displayName: "Bundle",
+      provider: { standard: "STANDARD_SEARCH_PROVIDER_TURBO_QUANT" },
+      embeddingRoute: { modelId: "m", backendId: "static", vectorSpaceId: "s" },
+      metric: "SEARCH_METRIC_COSINE",
+      immutable: true,
+      components: [
+        { kind: "SEARCH_COMPONENT_KIND_VECTOR", providerInstanceId: "turbo_quant" },
+        { kind: "SEARCH_COMPONENT_KIND_KEYWORD", providerInstanceId: "terms" },
+      ],
+    }] });
+    expect(index?.components).toEqual([
+      { kind: "vector", providerInstanceId: "turbo_quant" },
+      { kind: "keyword", providerInstanceId: "terms" },
+    ]);
+    expect(supportsKeywordClauses(index!)).toBe(true);
+    expect(supportsKeywordClauses({ ...index!, components: [index!.components![0]!] })).toBe(false);
+    expect(supportsKeywordClauses({ ...index!, components: undefined })).toBe(true);
+  });
+
+  it("names a new live index from the field, falling back to the workbench default", () => {
+    const named = createIndexDocumentsRequest(undefined, "STANDARD_SEARCH_PROVIDER_FLAT_FLOAT",
+      { docId: "d" }, "m", [], "  Case notes ");
+    expect(named.displayName).toBe("Case notes");
+    const unnamed = createIndexDocumentsRequest("live-1", "STANDARD_SEARCH_PROVIDER_FLAT_FLOAT",
+      { docId: "d" }, "m", [], "   ");
+    expect(unnamed.displayName).toBe("Workbench index");
+    expect(unnamed.indexId).toBe("live-1");
+    expect(unnamed.provider).toBeUndefined();
   });
 
   it("creates a protobuf JSON search request with a document-shaped query", () => {
@@ -374,5 +426,21 @@ describe("server search API adapter", () => {
       capabilities: ["vector", "live", "persistent"],
       standard: "STANDARD_SEARCH_PROVIDER_TURBO_QUANT",
     }]);
+  });
+});
+
+describe("indexStateLabel", () => {
+  it("names the three live index states from the descriptor flags", () => {
+    expect(indexStateLabel({ immutable: false, persisted: false })).toBe("In memory");
+    expect(indexStateLabel({ immutable: false, persisted: true })).toBe("Saved to disk");
+    expect(indexStateLabel({ immutable: true, persisted: true })).toBe("Read-only");
+    // A read-only index is always on disk; the flag pair the server never emits still reads right.
+    expect(indexStateLabel({ immutable: true, persisted: false })).toBe("Read-only");
+  });
+
+  it("maps persisted from the descriptor and defaults it to false", () => {
+    expect(readSearchIndexes({ indexes: [indexDescriptor({ persisted: true })] })[0]?.persisted)
+      .toBe(true);
+    expect(readSearchIndexes({ indexes: [indexDescriptor()] })[0]?.persisted).toBe(false);
   });
 });

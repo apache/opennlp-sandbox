@@ -22,11 +22,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 
-import opennlp.tools.util.StringUtil;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.opennlp.grpc.spi.model.DocCategorizerModel;
+import org.apache.opennlp.grpc.spi.model.ModelConfigSupport;
+import org.apache.opennlp.grpc.spi.model.DocCategorizerBackendFactory;
 
 /**
  * Catalog of {@link DocCategorizerModel} document classifiers, keyed by model id.
@@ -52,6 +55,17 @@ public final class DocCategorizerRegistry implements AutoCloseable {
   /** Configuration key selecting the default document categorizer when several are configured. */
   public static final String KEY_DEFAULT_ID = "model." + DEFAULT_NAMESPACE + ".default_id";
 
+  /**
+   * Prefix for ONNX document categorizer entries in the canonical namespace
+   * ({@code model.doccat_dl.<id>.<attr>}). The keys are parsed by the ONNX backend shipped in
+   * the {@code opennlp-grpc-dl} add-on; the registry itself only verifies the namespace is
+   * claimed by a discovered backend.
+   */
+  public static final String KEY_DL_PREFIX = "model." + DEFAULT_NAMESPACE + "_dl.";
+
+  /** Factory id under which the ONNX add-on registers its backends. */
+  static final String DL_FACTORY_ID = "onnx";
+
   private static final Logger logger = LoggerFactory.getLogger(DocCategorizerRegistry.class);
 
   private final String namespace;
@@ -74,7 +88,7 @@ public final class DocCategorizerRegistry implements AutoCloseable {
    * @return The normalized id, or {@code null} if {@code id} is {@code null}.
    */
   public static String normalize(String id) {
-    return id == null ? null : StringUtil.toLowerCase(id.trim());
+    return ModelConfigSupport.normalize(id);
   }
 
   /**
@@ -157,6 +171,7 @@ public final class DocCategorizerRegistry implements AutoCloseable {
           }
         }
       }
+      requireDlBackendWhenConfigured(namespace, canonical, seenFactories.keySet());
     } catch (RuntimeException e) {
       // A factory that throws after earlier factories loaded models must not leak the native
       // sessions those models hold; the half-built registry can never be closed by the caller.
@@ -176,6 +191,30 @@ public final class DocCategorizerRegistry implements AutoCloseable {
     }
     return new DocCategorizerRegistry(
         namespace, modelsById, defaultId == null || defaultId.isEmpty() ? null : defaultId);
+  }
+
+  /**
+   * Fails loud when {@code model.<namespace>_dl.*} keys are configured but no discovered backend
+   * claims the ONNX namespace, instead of silently ignoring the models the operator asked for.
+   *
+   * @param namespace The original configuration namespace token, for the error message.
+   * @param canonical The canonicalized configuration.
+   * @param factoryIds The ids of the discovered backend factories.
+   *
+   * @throws AnalysisException {@code FAILED_PRECONDITION} if ONNX keys exist with no backend.
+   */
+  private static void requireDlBackendWhenConfigured(
+      String namespace, Map<String, String> canonical, Set<String> factoryIds) {
+    if (factoryIds.contains(DL_FACTORY_ID)) {
+      return;
+    }
+    for (String key : canonical.keySet()) {
+      if (key.startsWith(KEY_DL_PREFIX)) {
+        throw AnalysisException.failedPrecondition(
+            "model." + namespace + "_dl.* is configured but no ONNX document categorizer "
+                + "backend is on the classpath; add the opennlp-grpc-dl jar (cpu or gpu flavor)");
+      }
+    }
   }
 
   /**

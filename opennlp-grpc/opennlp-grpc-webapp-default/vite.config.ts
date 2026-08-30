@@ -17,10 +17,14 @@
  * under the License.
  */
 
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   base: "./",
+  test: {
+    // Unit tests only; e2e/ belongs to the Playwright runner (npm run e2e).
+    include: ["test/**/*.test.ts"],
+  },
   build: {
     outDir: "target/generated-resources/META-INF/opennlp-grpc-ui/default",
     emptyOutDir: true,

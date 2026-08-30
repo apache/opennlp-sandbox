@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import static org.apache.opennlp.grpc.search.query.QueryTestSupport.candidate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.apache.opennlp.grpc.spi.search.QueryCandidate;
 
 class TermsKeywordQueryIndexTest {
 

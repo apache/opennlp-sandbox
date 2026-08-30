@@ -33,6 +33,8 @@ export interface DocumentHeatmapLane {
   id: string;
   title: string;
   complete: boolean;
+  /** What a chunk's score measures, shown beside the number: "cosine" or "polarity". */
+  scoreLabel: string;
   chunks: DocumentHeatmapChunk[];
 }
 
@@ -67,19 +69,20 @@ function renderLane(
     + (lane.complete ? "Complete server result." : "Coverage is partial; unreturned chunks remain gray.");
   const source = document.createElement("div");
   source.className = "heat-source";
-  source.append(...sourceSegments(sourceText, lane.chunks, select));
+  source.append(...sourceSegments(sourceText, lane, select));
   const cards = document.createElement("div");
   cards.className = "heat-chunk-list";
-  cards.append(...lane.chunks.map((chunk, index) => chunkCard(chunk, index, select)));
+  cards.append(...lane.chunks.map((chunk, index) => chunkCard(chunk, index, lane.scoreLabel, select)));
   section.append(heading, coverage, source, cards);
   return section;
 }
 
 function sourceSegments(
   sourceText: string,
-  chunks: DocumentHeatmapChunk[],
+  lane: DocumentHeatmapLane,
   select: DocumentHeatmapSelection,
 ): HTMLElement[] {
+  const chunks = lane.chunks;
   const boundaries = new Set<number>([0, sourceText.length]);
   for (const chunk of chunks) {
     if (validSpan(chunk, sourceText.length)) {
@@ -101,7 +104,7 @@ function sourceSegments(
     if (segment instanceof HTMLButtonElement && selected) {
       segment.type = "button";
       applyScore(segment, selected.score);
-      segment.title = `${selected.id}: cosine ${selected.score?.toFixed(4)}`;
+      segment.title = `${selected.id}: ${lane.scoreLabel} ${selected.score?.toFixed(4)}`;
       segment.addEventListener("click", () => select(selected, segment));
     }
     elements.push(segment);
@@ -112,6 +115,7 @@ function sourceSegments(
 function chunkCard(
   chunk: DocumentHeatmapChunk,
   index: number,
+  scoreLabel: string,
   select: DocumentHeatmapSelection,
 ): HTMLButtonElement {
   const button = document.createElement("button");
@@ -125,7 +129,9 @@ function chunkCard(
   const label = document.createElement("strong");
   label.textContent = `Chunk ${index + 1}`;
   const score = document.createElement("span");
-  score.textContent = chunk.score === undefined ? "Not returned" : `Cosine ${chunk.score.toFixed(4)}`;
+  score.textContent = chunk.score === undefined
+    ? "Not scored"
+    : `${capitalize(scoreLabel)} ${chunk.score.toFixed(4)}`;
   const text = document.createElement("span");
   text.className = "heat-chunk-text";
   text.textContent = chunk.text;
@@ -163,4 +169,9 @@ function applyScore(element: HTMLElement, value: number | undefined): void {
   const color = scoreColor(value);
   element.style.backgroundColor = color.background;
   element.style.color = color.foreground;
+}
+
+/** Upper-cases the first ASCII letter of a score label for the card text. */
+function capitalize(label: string): string {
+  return label.length === 0 ? label : label.charAt(0).toUpperCase() + label.slice(1);
 }

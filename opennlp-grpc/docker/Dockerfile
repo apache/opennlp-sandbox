@@ -24,19 +24,20 @@
 # bundled language detector and English models load from the shaded jar.
 FROM eclipse-temurin:21-jre-noble
 
+LABEL org.opencontainers.image.title="Apache OpenNLP gRPC demonstration stack" \
+  org.opencontainers.image.description="OpenNLP gRPC server with the JSON gateway and browser workbench" \
+  org.opencontainers.image.licenses="Apache-2.0" \
+  org.opencontainers.image.source="https://github.com/apache/opennlp-sandbox"
+
 RUN useradd --system --create-home --home-dir /home/opennlp opennlp \
-  && mkdir -p /opt/opennlp /srv/opennlp \
+  && mkdir -p /opt/opennlp/backends /srv/opennlp \
   && chown -R opennlp:opennlp /opt/opennlp /srv/opennlp
 
-COPY --chown=opennlp:opennlp opennlp-grpc-service/target/opennlp-grpc-server-*.jar /opt/opennlp/
+COPY --chown=opennlp:opennlp opennlp-grpc-distr/target/opennlp-grpc-server-all-*.jar /opt/opennlp/
 COPY --chown=opennlp:opennlp opennlp-grpc-webapp/target/opennlp-grpc-webapp-*.jar /opt/opennlp/
-# Optional embedding backends (static tables, TEI, OpenVINO) ride along so an
-# operator can enable them through server.properties alone; unconfigured
-# providers register nothing.
-COPY --chown=opennlp:opennlp opennlp-grpc-backend-static/target/opennlp-grpc-backend-static-*.jar \
-  opennlp-grpc-backend-tei/target/opennlp-grpc-backend-tei-*.jar \
-  opennlp-grpc-backend-openvino/target/opennlp-grpc-backend-openvino-*.jar \
-  /opt/opennlp/backends/
+# The server-all assembly already bundles every in-tree add-on (ONNX Runtime,
+# static tables, TEI, OpenVINO); /opt/opennlp/backends stays as the drop-in
+# point for third-party add-on jars mounted or copied by operators.
 COPY --chown=opennlp:opennlp --chmod=0755 docker/start-demo.sh /opt/opennlp/start-demo.sh
 
 # Persistent server-owned state (models, vocabulary artifacts, persisted

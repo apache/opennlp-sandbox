@@ -24,7 +24,7 @@ import java.util.Optional;
 
 import opennlp.tools.sentdetect.SentenceDetector;
 import opennlp.tools.util.Span;
-import org.apache.opennlp.grpc.model.SentenceDetectorBackendFactory;
+import org.apache.opennlp.grpc.spi.model.SentenceDetectorBackendFactory;
 
 /** Test-only custom sentence detector that treats a vertical bar as a boundary. */
 public final class StubSentenceDetectorBackendFactory implements SentenceDetectorBackendFactory {

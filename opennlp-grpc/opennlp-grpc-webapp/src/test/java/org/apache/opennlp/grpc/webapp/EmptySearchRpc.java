@@ -50,7 +50,7 @@ import org.apache.opennlp.grpc.v1.DeleteSearchIndexResponse;
 import org.apache.opennlp.grpc.v1.SearchIndexRequest;
 import org.apache.opennlp.grpc.v1.SearchIndexResponse;
 
-final class EmptySearchRpc implements SearchRpc {
+class EmptySearchRpc implements SearchRpc {
 
   @Override
   public ListSearchIndexesResponse listSearchIndexes() {

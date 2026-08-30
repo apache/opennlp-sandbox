@@ -56,6 +56,24 @@ class OpenNlpGrpcWebServerTest {
   private static final String SEARCH_DOCUMENT_ID = "passage-1";
 
   @Test
+  void keepsIdleKeepAliveConnectionsWellPastAHumanPause() throws Exception {
+    // The JDK server reads the property once, when it first starts; the gateway sets it
+    // at run time before creating its first server (not in a static initializer, which a
+    // native image may run at build time), so a browser reusing a pooled connection after
+    // a pause is still served.
+    System.clearProperty(OpenNlpGrpcWebServer.IDLE_INTERVAL_PROPERTY);
+    try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
+        new InetSocketAddress(InetAddress.getLoopbackAddress(), 0),
+        new TestAnalysisRpc(), new EmptySearchRpc(), new EmptyVocabularyRpc(),
+        new EmptyTrainingRpc(), new WebUiExtensionRegistry(List.of()), 128)) {
+      assertEquals(Long.toString(OpenNlpGrpcWebServer.IDLE_INTERVAL_SECONDS),
+          System.getProperty(OpenNlpGrpcWebServer.IDLE_INTERVAL_PROPERTY));
+    }
+    assertTrue(OpenNlpGrpcWebServer.IDLE_INTERVAL_SECONDS >= 600,
+        "ten minutes is the least a reader pauses for");
+  }
+
+  @Test
   void servesHealthApiAndSpiAssetsOverHttp() throws Exception {
     WebUiExtensionRegistry registry = new WebUiExtensionRegistry(List.of(testExtension()));
     try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
@@ -88,6 +106,69 @@ class OpenNlpGrpcWebServerTest {
           HttpResponse.BodyHandlers.ofString());
       assertEquals(200, analysis.statusCode());
       assertTrue(analysis.body().contains("\"docId\":\"http\""));
+    }
+  }
+
+  @Test
+  void streamsBatchAnalysisAsNdjson() throws Exception {
+    WebUiExtensionRegistry registry = new WebUiExtensionRegistry(List.of(testExtension()));
+    try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
+        new InetSocketAddress(InetAddress.getLoopbackAddress(), 0),
+        new TestAnalysisRpc(), new EmptySearchRpc(), new EmptyVocabularyRpc(),
+        new EmptyTrainingRpc(), registry, 4096)) {
+      server.start();
+      HttpClient client = HttpClient.newHttpClient();
+
+      // The body is the AnalyzeStream frame sequence: one configuration frame,
+      // then one frame per document.
+      final String frames = "["
+          + "{\"configuration\":{\"profile\":{\"steps\":[\"PIPELINE_STEP_SENTENCE_DETECT\"]}}},"
+          + "{\"document\":{\"sequence\":\"1\",\"document\":{\"docId\":\"a\",\"rawText\":\"Hello\"}}},"
+          + "{\"document\":{\"sequence\":\"2\",\"document\":{\"docId\":\"b\",\"rawText\":\"World\"}}}"
+          + "]";
+      HttpRequest analyzeStream = request(server, "/api/v1/analyze-stream")
+          .header("Content-Type", "application/json")
+          .POST(HttpRequest.BodyPublishers.ofString(frames))
+          .build();
+      HttpResponse<String> response = client.send(analyzeStream,
+          HttpResponse.BodyHandlers.ofString());
+
+      assertEquals(200, response.statusCode());
+      String[] lines = response.body().strip().split("\n");
+      assertEquals(2, lines.length);
+      assertTrue(lines[0].contains("\"sequence\": \"1\"") || lines[0].contains("\"sequence\":\"1\""));
+      assertTrue(lines[0].contains("\"docId\": \"a\"") || lines[0].contains("\"docId\":\"a\""));
+      assertTrue(lines[1].contains("\"docId\": \"b\"") || lines[1].contains("\"docId\":\"b\""));
+    }
+  }
+
+  @Test
+  void streamsProgressiveAnalysisAsNdjson() throws Exception {
+    WebUiExtensionRegistry registry = new WebUiExtensionRegistry(List.of(testExtension()));
+    try (OpenNlpGrpcWebServer server = new OpenNlpGrpcWebServer(
+        new InetSocketAddress(InetAddress.getLoopbackAddress(), 0),
+        new TestAnalysisRpc(), new EmptySearchRpc(), new EmptyVocabularyRpc(),
+        new EmptyTrainingRpc(), registry, 4096)) {
+      server.start();
+      HttpClient client = HttpClient.newHttpClient();
+
+      HttpRequest analyze = request(server, "/api/v1/analyze-progressive")
+          .header("Content-Type", "application/json")
+          .POST(HttpRequest.BodyPublishers.ofString(
+              "{\"document\":{\"docId\":\"progressive\",\"rawText\":\"Hello\"}}"))
+          .build();
+      HttpResponse<String> response = client.send(analyze,
+          HttpResponse.BodyHandlers.ofString());
+
+      assertEquals(200, response.statusCode());
+      assertEquals("application/x-ndjson; charset=utf-8",
+          response.headers().firstValue("content-type").orElseThrow());
+      String[] lines = response.body().strip().split("\n");
+      assertTrue(lines.length >= 2);
+      assertTrue(lines[0].contains("\"started\""));
+      assertTrue(lines[lines.length - 1].contains("\"complete\""));
+      assertTrue(lines[lines.length - 1].contains("\"docId\": \"progressive\"")
+          || lines[lines.length - 1].contains("\"docId\":\"progressive\""));
     }
   }
 
@@ -315,6 +396,17 @@ class OpenNlpGrpcWebServerTest {
   private static class TestAnalysisRpc implements AnalysisRpc {
 
     @Override
+    public org.apache.opennlp.grpc.v1.ListOutputFormatsResponse listOutputFormats() {
+      return org.apache.opennlp.grpc.v1.ListOutputFormatsResponse.getDefaultInstance();
+    }
+
+    @Override
+    public org.apache.opennlp.grpc.v1.FormatDocumentResponse formatDocument(
+        org.apache.opennlp.grpc.v1.FormatDocumentRequest request) {
+      return org.apache.opennlp.grpc.v1.FormatDocumentResponse.getDefaultInstance();
+    }
+
+    @Override
     public GetServiceInfoResponse getServiceInfo() {
       return GetServiceInfoResponse.newBuilder().setApiVersion("v1").build();
     }
@@ -327,6 +419,20 @@ class OpenNlpGrpcWebServerTest {
     @Override
     public AnalyzeDocumentResponse analyze(AnalyzeDocumentRequest request) {
       return AnalyzeDocumentResponse.newBuilder().setDocument(request.getDocument()).build();
+    }
+
+    @Override
+    public java.util.Iterator<org.apache.opennlp.grpc.v1.AnalyzeStreamResponse> analyzeStream(
+        java.util.List<org.apache.opennlp.grpc.v1.AnalyzeStreamRequest> frames) {
+      // Echo every document frame in order, as the real stream would for tiny inputs.
+      return frames.stream()
+          .filter(org.apache.opennlp.grpc.v1.AnalyzeStreamRequest::hasDocument)
+          .map(frame -> org.apache.opennlp.grpc.v1.AnalyzeStreamResponse.newBuilder()
+              .setSequence(frame.getDocument().getSequence())
+              .setOk(AnalyzeDocumentResponse.newBuilder()
+                  .setDocument(frame.getDocument().getDocument()))
+              .build())
+          .iterator();
     }
   }
 

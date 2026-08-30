@@ -46,18 +46,20 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Black-box contract for ServiceLoader providers outside the server artifact. */
 class ExternalEmbeddingProviderLiveIT {
 
   private static final String SERVICE =
-      "META-INF/services/org.apache.opennlp.grpc.embedding.EmbeddingBackendFactory";
+      "META-INF/services/org.apache.opennlp.grpc.spi.embedding.EmbeddingBackendFactory";
 
   @Test
   void shadedServerPreservesServicesAndLoadsExternalProviderJar() throws Exception {
     final Path serverJar = requiredServerJar();
-    assertBuiltInServicesMerged(serverJar);
+    assertSlimServerCarriesNoDlEngines(serverJar);
+    assertBuiltInServicesMerged(requiredServerAllJar());
     final Path extensionJar = buildExternalProviderJar(serverJar);
 
     final Properties configuration = new Properties();
@@ -97,16 +99,39 @@ class ExternalEmbeddingProviderLiveIT {
     }
   }
 
-  private static void assertBuiltInServicesMerged(Path serverJar) throws IOException {
+  /**
+   * Pins the slim/add-on split: the slim server jar ships no embedding engines of its own,
+   * so every embedding backend it serves arrived through a ServiceLoader jar like the one
+   * this test builds.
+   */
+  private static void assertSlimServerCarriesNoDlEngines(Path serverJar) throws IOException {
     try (JarFile jar = new JarFile(serverJar.toFile())) {
+      assertNull(jar.getJarEntry(SERVICE),
+          "the slim server jar must not register embedding engines of its own");
+    }
+  }
+
+  /**
+   * Asserts the server-all assembly merged the registration files contributed by the
+   * separate add-on modules into one descriptor, the contract the shade
+   * ServicesResourceTransformer provides.
+   */
+  private static void assertBuiltInServicesMerged(Path serverAllJar) throws IOException {
+    try (JarFile jar = new JarFile(serverAllJar.toFile())) {
       final JarEntry descriptor = jar.getJarEntry(SERVICE);
-      assertNotNull(descriptor, "shaded server has no embedding service descriptor");
+      assertNotNull(descriptor, "server-all has no embedding service descriptor");
       try (InputStream input = jar.getInputStream(descriptor)) {
         final String providers = new String(input.readAllBytes(), StandardCharsets.UTF_8);
         assertTrue(providers.contains(
-            "org.apache.opennlp.grpc.embedding.onnx.OnnxEmbeddingBackendFactory"));
+            "org.apache.opennlp.grpc.dl.embedding.onnx.OnnxEmbeddingBackendFactory"));
         assertTrue(providers.contains(
-            "org.apache.opennlp.grpc.embedding.cuda.CudaEmbeddingBackendFactory"));
+            "org.apache.opennlp.grpc.dl.embedding.cuda.CudaEmbeddingBackendFactory"));
+        assertTrue(providers.contains(
+            "org.apache.opennlp.grpc.embedding.statictable.StaticTableEmbeddingBackendFactory"));
+        assertTrue(providers.contains(
+            "org.apache.opennlp.grpc.embedding.tei.TeiEmbeddingBackendFactory"));
+        assertTrue(providers.contains(
+            "org.apache.opennlp.grpc.embedding.openvino.OpenVinoEmbeddingBackendFactory"));
       }
     }
   }
@@ -148,8 +173,8 @@ class ExternalEmbeddingProviderLiveIT {
 
         import java.util.Map;
         import java.util.Set;
-        import org.apache.opennlp.grpc.embedding.EmbeddingBackendFactory;
-        import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
+        import org.apache.opennlp.grpc.spi.embedding.EmbeddingBackendFactory;
+        import org.apache.opennlp.grpc.spi.embedding.EmbeddingProvider;
 
         public final class ExternalFactory implements EmbeddingBackendFactory {
           public ExternalFactory() {
@@ -200,11 +225,22 @@ class ExternalEmbeddingProviderLiveIT {
         """;
   }
 
+  /** The slim server jar under test. */
   private static Path requiredServerJar() {
-    final String configured = System.getProperty("opennlp.grpc.server.jar");
-    assertNotNull(configured, "opennlp.grpc.server.jar is not configured");
-    final Path serverJar = Path.of(configured);
-    assertTrue(Files.isRegularFile(serverJar), "server jar does not exist: " + serverJar);
-    return serverJar;
+    return requiredJar("opennlp.grpc.server.jar");
+  }
+
+  /** The everything-in-one server assembly under test. */
+  private static Path requiredServerAllJar() {
+    return requiredJar("opennlp.grpc.server.all.jar");
+  }
+
+  /** Resolves a jar path from a system property and asserts the file exists. */
+  private static Path requiredJar(String property) {
+    final String configured = System.getProperty(property);
+    assertNotNull(configured, property + " is not configured");
+    final Path jar = Path.of(configured);
+    assertTrue(Files.isRegularFile(jar), "jar does not exist: " + jar);
+    return jar;
   }
 }

@@ -24,11 +24,11 @@ import java.util.Set;
 
 import org.apache.opennlp.grpc.chunk.ChunkEmbedProcessor;
 import org.apache.opennlp.grpc.embedding.EmbeddingBackendSelections;
-import org.apache.opennlp.grpc.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingProvider;
 import org.apache.opennlp.grpc.model.ChunkerRegistry;
 import org.apache.opennlp.grpc.model.HunspellRegistry;
 import org.apache.opennlp.grpc.model.LatticeRegistry;
-import org.apache.opennlp.grpc.model.DocCategorizerModel;
+import org.apache.opennlp.grpc.spi.model.DocCategorizerModel;
 import org.apache.opennlp.grpc.model.DocCategorizerRegistry;
 import org.apache.opennlp.grpc.model.ModelArtifactRegistry;
 import org.apache.opennlp.grpc.model.NameFinderRegistry;
@@ -38,7 +38,7 @@ import org.apache.opennlp.grpc.model.SentimentRegistry;
 import org.apache.opennlp.grpc.model.SubwordRegistry;
 import org.apache.opennlp.grpc.model.TokenizerRegistry;
 import org.apache.opennlp.grpc.model.WordNetRegistry;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.processor.PipelineStepPolicy;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.v1.AnalysisOptions;
@@ -886,7 +886,8 @@ final class AnalysisRequestValidator {
     }
     if (!embeddingProvider.isAvailable()) {
       throw AnalysisException.notFound(
-          "PIPELINE_STEP_EMBED requested but no embedding models are configured on this server");
+          "PIPELINE_STEP_EMBED requested but no embedding models are configured on this server; "
+              + "configure a model.embedder.<id>.<backend> entry");
     }
     final String modelId = resolveEmbeddingModelId(request, profile);
     if (modelId == null || modelId.isBlank()) {

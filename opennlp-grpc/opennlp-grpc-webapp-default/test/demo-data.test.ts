@@ -19,7 +19,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 
-import { loadAliceDemo } from "../src/demo-data";
+import { loadAliceDemo, loadPrideAndPrejudiceDemo } from "../src/demo-data";
 
 describe("compressed demo data", () => {
   it("loads the pinned gzip resource through a bounded decompression path", async () => {
@@ -40,6 +40,32 @@ describe("compressed demo data", () => {
       headers: { accept: "application/gzip" },
     });
     expect(result).toBe(text);
+  });
+
+  it("loads the pinned Pride and Prejudice resource the same way", async () => {
+    const prefix = new TextEncoder().encode(
+      "It is a truth universally acknowledged\nCHAPTER LXI.\n",
+    );
+    const decoded = new Uint8Array(694_478).fill("x".charCodeAt(0));
+    decoded.set(prefix);
+    const fetcher = vi.fn().mockResolvedValue(new Response(new Uint8Array(241_846), {
+      status: 200,
+    }));
+    const result = await loadPrideAndPrejudiceDemo(fetcher,
+      () => new Blob([decoded]).stream() as ReadableStream<Uint8Array>);
+    expect(fetcher).toHaveBeenCalledWith("./data/pride-and-prejudice.txt.gz", {
+      headers: { accept: "application/gzip" },
+    });
+    expect(result).toBe(new TextDecoder().decode(decoded));
+  });
+
+  it("rejects a Pride and Prejudice artifact missing its closing chapter", async () => {
+    const decoded = new Uint8Array(694_478).fill("x".charCodeAt(0));
+    decoded.set(new TextEncoder().encode("It is a truth universally acknowledged\n"));
+    const fetcher = vi.fn().mockResolvedValue(new Response(new Uint8Array(241_846), { status: 200 }));
+    await expect(loadPrideAndPrejudiceDemo(fetcher,
+      () => new Blob([decoded]).stream() as ReadableStream<Uint8Array>))
+      .rejects.toThrow("expected text");
   });
 
   it("rejects an unexpected decompressed artifact", async () => {

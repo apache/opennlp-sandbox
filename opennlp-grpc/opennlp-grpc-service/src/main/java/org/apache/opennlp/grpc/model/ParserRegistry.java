@@ -28,7 +28,9 @@ import java.util.Set;
 import opennlp.tools.util.StringUtil;
 import org.apache.opennlp.grpc.backend.RankedBackends;
 import org.apache.opennlp.grpc.backend.RankedBackends.Registration;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
+import org.apache.opennlp.grpc.spi.model.ParserModel;
+import org.apache.opennlp.grpc.spi.model.ParserBackendFactory;
 
 /**
  * Catalog of {@link ParserModel} parsers grouped by logical id into a {@link RankedBackends}, so the

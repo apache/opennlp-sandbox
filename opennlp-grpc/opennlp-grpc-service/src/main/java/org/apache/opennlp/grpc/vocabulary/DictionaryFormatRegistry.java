@@ -29,6 +29,7 @@ import java.util.TreeMap;
 import org.apache.opennlp.grpc.v1.DictionaryFormatDescriptor;
 import org.apache.opennlp.grpc.v1.DictionaryFormatSelector;
 import org.apache.opennlp.grpc.v1.StandardDictionaryFormat;
+import org.apache.opennlp.grpc.spi.vocabulary.DictionaryFormatProvider;
 
 /** Immutable registry of dictionary format providers discovered at server startup. */
 public final class DictionaryFormatRegistry {

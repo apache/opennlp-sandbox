@@ -28,7 +28,7 @@ import opennlp.tools.document.Document;
 import opennlp.tools.document.LayerKey;
 import opennlp.tools.document.Layers;
 import opennlp.tools.util.Span;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnalyticsAnnotationList;
 import org.apache.opennlp.grpc.v1.AnnotationLayer;
@@ -44,6 +44,7 @@ import org.apache.opennlp.grpc.v1.EmbeddingAnnotationList;
 import org.apache.opennlp.grpc.v1.EmbeddingResult;
 import org.apache.opennlp.grpc.v1.EntityAnnotationList;
 import org.apache.opennlp.grpc.v1.LayerIdentity;
+import org.apache.opennlp.grpc.v1.LanguageScore;
 import org.apache.opennlp.grpc.v1.LayerScope;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.NormalizationAnnotationList;
@@ -393,15 +394,29 @@ final class DocumentShapeAssembler {
     if (!document.hasDetectedLanguage()) {
       return;
     }
-    container.with(LANGUAGE, List.of(Annotation.of(document.getDetectedLanguage())));
+    // The ranked predictions, when requested, carry the detected language as their first
+    // entry; without them the layer keeps its single best-prediction annotation.
+    final CategoryAnnotationList.Builder categories = CategoryAnnotationList.newBuilder();
+    final List<Annotation<String>> labels = new ArrayList<>();
+    if (document.getRankedLanguagesCount() > 0) {
+      for (LanguageScore score : document.getRankedLanguagesList()) {
+        categories.addAnnotations(CategoryAnnotation.newBuilder()
+            .setLabel(score.getLanguage())
+            .setScore(score.getConfidence())
+            .build());
+        labels.add(Annotation.of(score.getLanguage()));
+      }
+    } else {
+      categories.addAnnotations(CategoryAnnotation.newBuilder()
+          .setLabel(document.getDetectedLanguage())
+          .setScore(document.getLanguageConfidence())
+          .build());
+      labels.add(Annotation.of(document.getDetectedLanguage()));
+    }
+    container.with(LANGUAGE, labels);
     layers.addLayers(layer(LANGUAGE.id())
         .setScope(LayerScope.LAYER_SCOPE_DOCUMENT)
-        .setCategoryValues(CategoryAnnotationList.newBuilder()
-            .addAnnotations(CategoryAnnotation.newBuilder()
-                .setLabel(document.getDetectedLanguage())
-                .setScore(document.getLanguageConfidence())
-                .build())
-            .build())
+        .setCategoryValues(categories.build())
         .build());
   }
 

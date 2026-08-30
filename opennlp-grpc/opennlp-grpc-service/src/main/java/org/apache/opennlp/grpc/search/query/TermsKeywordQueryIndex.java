@@ -26,10 +26,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.search.query.QueryTermAnalyzer.Term;
 import org.apache.opennlp.grpc.v1.MatchedSpan;
 import org.apache.opennlp.grpc.v1.TermMatchMode;
+import org.apache.opennlp.grpc.spi.search.QueryCandidate;
+import org.apache.opennlp.grpc.spi.search.KeywordQueryIndex;
 
 /** Built-in locale-independent code-point term and phrase execution. */
 public final class TermsKeywordQueryIndex implements KeywordQueryIndex {

@@ -22,8 +22,13 @@ import type {
   LearnVocabularyUpload,
   TrainStaticModelRequest,
 } from "./api";
-import { formatInteger } from "./text-utils";
-import { requiredElement } from "./ui-utils";
+import {
+  ellipsizeCodePoints,
+  formatInteger,
+  splitBlankLineDocuments,
+  timestampLabel,
+} from "./text-utils";
+import { flashButtonLabel, requiredElement } from "./ui-utils";
 
 const CARRIAGE_RETURN = "\r";
 const LINE_FEED = "\n";
@@ -32,6 +37,20 @@ export interface DictionaryFormatOption {
   id: string;
   label: string;
   custom: boolean;
+}
+
+export interface DictionaryArtifactSummary {
+  artifactId: string;
+  displayName: string;
+  entryCount: number;
+}
+
+export interface VocabularyArtifactSummary {
+  artifactId: string;
+  displayName: string;
+  termCount: number;
+  /** The dictionary the vocabulary was seeded from, when it had one. */
+  dictionaryArtifactId?: string;
 }
 
 export interface TeacherOption {
@@ -51,10 +70,19 @@ export interface TrainedModelSummary {
   explainedVarianceRatio: number;
   artifactHash: string;
   byteSize: number;
+  /** ISO-8601 creation time from the server, or empty when not reported. */
+  createdAt: string;
+  /** Where the teacher came from, as the server recorded it at distillation. */
+  teacherReference: string;
+  /** The license inherited from the teacher, empty when the server did not know it. */
+  licenseName: string;
+  languages: string[];
 }
 
 export interface TrainerApi {
   listDictionaryFormats(): Promise<{ formats: DictionaryFormatOption[]; writesEnabled: boolean }>;
+  listDictionaries(): Promise<DictionaryArtifactSummary[]>;
+  listVocabularies(): Promise<VocabularyArtifactSummary[]>;
   importDictionary(upload: ImportDictionaryUpload): Promise<{ artifactId: string; displayName: string; entryCount: number }>;
   learnVocabulary(upload: LearnVocabularyUpload): Promise<{
     artifactId: string; displayName: string; termCount: number;
@@ -73,6 +101,8 @@ export interface TrainerApi {
 export interface TrainerCallbacks {
   /** Fired after training or deletion changes the served model catalog. */
   onModelsChanged(models: TrainedModelSummary[]): void;
+  /** Fired when the user asks to select a trained model on the Analyze tab. */
+  onUseInAnalyze(model: TrainedModelSummary): void;
 }
 
 /**
@@ -108,6 +138,7 @@ export class VocabularyTrainerWorkbench {
   readonly #modelList = requiredElement<HTMLElement>("trainer-model-list");
 
   #writesEnabled = false;
+  #hasTeacher = false;
   #busy = false;
 
   constructor(api: TrainerApi, callbacks: TrainerCallbacks) {
@@ -117,6 +148,7 @@ export class VocabularyTrainerWorkbench {
     this.#learnButton.addEventListener("click", () => void this.learnVocabulary());
     this.#downloadTsvButton.addEventListener("click", () => void this.downloadTsv());
     this.#trainButton.addEventListener("click", () => void this.train());
+    this.#vocabularySelect.addEventListener("change", () => this.updateControls());
     this.#corpus.addEventListener("input", () => this.renderCorpusStats());
     this.renderCorpusStats();
   }
@@ -124,10 +156,12 @@ export class VocabularyTrainerWorkbench {
   /** Loads formats, teachers, and existing models; call once at startup. */
   async initialize(): Promise<void> {
     try {
-      const [formats, teachers, models] = await Promise.all([
+      const [formats, teachers, models, dictionaries, vocabularies] = await Promise.all([
         this.#api.listDictionaryFormats(),
         this.#api.listTeachers(),
         this.#api.listStaticModels(),
+        this.#api.listDictionaries(),
+        this.#api.listVocabularies(),
       ]);
       this.#writesEnabled = formats.writesEnabled && teachers.writesEnabled;
       populate(this.#formatSelect, formats.formats.map((format) => ({
@@ -136,22 +170,57 @@ export class VocabularyTrainerWorkbench {
       })), "No formats available");
       populate(this.#teacherSelect, teachers.teachers.map((teacher) => ({
         value: teacher.id,
-        label: `${teacher.label} (${teacher.reference})`,
+        label: teacher.label,
+        title: teacher.reference,
       })), "No teachers configured");
       this.renderModels(models);
+      this.#hasTeacher = teachers.teachers.length > 0;
       if (!this.#writesEnabled) {
-        this.setStatus(
-          "Training is disabled: the server has no vocabulary artifact root or no teachers.",
-          true,
-        );
-      } else if (teachers.teachers.length === 0) {
-        this.setStatus("No teachers are configured; add training.teacher entries.", true);
+        this.setStatus("Learning and distilling are off on this server: it has no writable "
+          + "artifact root (vocabulary.artifact_root).", true);
+      } else if (!this.#hasTeacher) {
+        this.setStatus("No teacher model is installed, so nothing can be distilled yet. ", true);
+        const jump = document.createElement("button");
+        jump.type = "button";
+        jump.className = "link-button";
+        jump.dataset.workbenchJump = "models";
+        jump.textContent = "Install a teacher on Models & data";
+        this.#status.append(jump);
       } else {
-        this.setStatus("Import a dictionary to start the vocabulary-to-model flow.");
+        this.setStatus("Paste corpus text to learn a vocabulary. A dictionary is optional.");
       }
+      this.renderDictionaryOptions(dictionaries);
+      this.renderVocabularyOptions(vocabularies);
       this.updateControls();
     } catch (error) {
       this.setStatus(message(error, "Could not load the trainer catalog."), true);
+    }
+  }
+
+  /** Offers every dictionary already on the server behind the corpus-only default. */
+  private renderDictionaryOptions(dictionaries: DictionaryArtifactSummary[]): void {
+    const selected = this.#dictionarySelect.value;
+    this.#dictionarySelect.replaceChildren(new Option("Corpus terms only", ""));
+    for (const dictionary of dictionaries) {
+      this.#dictionarySelect.add(new Option(
+        `${dictionary.displayName} (${dictionary.entryCount} entries)`, dictionary.artifactId));
+    }
+    this.#dictionarySelect.value = selected;
+    if (this.#dictionarySelect.selectedIndex < 0) {
+      this.#dictionarySelect.value = "";
+    }
+    this.#dictionarySelect.disabled = false;
+  }
+
+  /** Offers every vocabulary already on the server, so a restart does not hide them. */
+  private renderVocabularyOptions(vocabularies: VocabularyArtifactSummary[]): void {
+    const selected = this.#vocabularySelect.value;
+    populate(this.#vocabularySelect, vocabularies.map((vocabulary) => ({
+      value: vocabulary.artifactId,
+      label: `${vocabulary.displayName} (${vocabulary.termCount} terms)`,
+    })), "No vocabularies learned yet");
+    if (vocabularies.some((vocabulary) => vocabulary.artifactId === selected)) {
+      this.#vocabularySelect.value = selected;
     }
   }
 
@@ -180,10 +249,6 @@ export class VocabularyTrainerWorkbench {
 
   private async learnVocabulary(): Promise<void> {
     const dictionaryArtifactId = this.#dictionarySelect.value;
-    if (!dictionaryArtifactId) {
-      this.setStatus("Import and select a dictionary first.", true);
-      return;
-    }
     const documents = corpusDocuments(this.#corpus.value);
     if (documents.length === 0) {
       this.setStatus("Paste at least one corpus document (blank lines separate documents).", true);
@@ -193,7 +258,7 @@ export class VocabularyTrainerWorkbench {
     await this.run("The server is learning the vocabulary.", async () => {
       const vocabulary = await this.#api.learnVocabulary({
         start: {
-          dictionaryArtifactId,
+          ...(dictionaryArtifactId ? { dictionaryArtifactId } : {}),
           displayName,
           minFrequency: boundedInt(this.#minFrequency.value, 1),
           maxTerms: boundedInt(this.#maxTerms.value, 10_000),
@@ -228,9 +293,9 @@ export class VocabularyTrainerWorkbench {
       this.setStatus("Learn a vocabulary and select a teacher first.", true);
       return;
     }
-    const displayName = this.#modelName.value.trim() || "Trainer static model";
+    const displayName = this.#modelName.value.trim() || "Trainer static embedding model";
     this.#progressLog.replaceChildren();
-    await this.run("The server is distilling the static model.", async () => {
+    await this.run("The server is distilling the static embedding model.", async () => {
       const model = await this.#api.trainStaticModel({
         vocabularyArtifactId,
         teacherId,
@@ -265,15 +330,36 @@ export class VocabularyTrainerWorkbench {
     for (const model of models) {
       const row = document.createElement("div");
       row.className = "trainer-model-row";
-      const label = document.createElement("span");
-      label.textContent = `${model.displayName} · ${model.artifactId} `
-        + `· dim ${model.dimension} · ${formatInteger(model.termCount)} terms `
-        + `· ${model.family || "unknown tokenizer"} · teacher ${model.teacherId}`;
+      const identity = document.createElement("span");
+      identity.className = "trainer-model-identity";
+      const name = document.createElement("strong");
+      name.textContent = model.displayName;
+      const facts = document.createElement("small");
+      const created = timestampLabel(model.createdAt);
+      facts.textContent = `${model.dimension}-dim · ${formatInteger(model.termCount)} terms `
+        + `· tokenizer ${model.family || "unknown"} · distilled from ${model.teacherId}`
+        + (model.licenseName ? ` · ${model.licenseName}` : " · license not recorded")
+        + (model.languages.length > 0 ? ` · ${model.languages.join(", ")}` : "")
+        + (created ? ` · distilled ${created}` : "");
+      const shortId = document.createElement("code");
+      shortId.textContent = ellipsizeCodePoints(model.artifactId, 20);
+      shortId.title = model.artifactId;
+      identity.append(name, facts, shortId);
+      const use = document.createElement("button");
+      use.type = "button";
+      use.textContent = "Use in Analyze";
+      use.addEventListener("click", () => this.#callbacks.onUseInAnalyze(model));
+      const copy = document.createElement("button");
+      copy.type = "button";
+      copy.className = "secondary-button";
+      copy.textContent = "Copy id";
+      copy.addEventListener("click", () => void copyText(copy, model.artifactId));
       const remove = document.createElement("button");
       remove.type = "button";
+      remove.className = "secondary-button";
       remove.textContent = "Delete";
       remove.addEventListener("click", () => void this.deleteModel(model.artifactId));
-      row.append(label, remove);
+      row.append(identity, use, copy, remove);
       this.#modelList.append(row);
     }
     this.#callbacks.onModelsChanged(models);
@@ -315,8 +401,13 @@ export class VocabularyTrainerWorkbench {
     const enabled = this.#writesEnabled && !this.#busy;
     this.#importButton.disabled = !enabled;
     this.#learnButton.disabled = !enabled;
-    this.#downloadTsvButton.disabled = !enabled;
-    this.#trainButton.disabled = !enabled;
+    const vocabularySelected = this.#vocabularySelect.value !== "";
+    this.#downloadTsvButton.disabled = !enabled || !vocabularySelected;
+    this.#downloadTsvButton.title = vocabularySelected
+      ? ""
+      : "Learn and select a vocabulary first; the TSV export needs one.";
+    this.#trainButton.disabled = !enabled || !this.#hasTeacher;
+    this.#trainButton.title = this.#hasTeacher ? "" : "Install a teacher model first.";
   }
 
   private renderCorpusStats(): void {
@@ -354,6 +445,40 @@ export function readDictionaryFormats(
     }
   }
   return { formats, writesEnabled: body.writesEnabled === true };
+}
+
+/** Reads imported dictionary artifacts available for paired vocabulary learning. */
+export function readDictionaries(value: unknown): DictionaryArtifactSummary[] {
+  return asArray(asRecord(value).dictionaries).flatMap((entry) => {
+    const dictionary = asRecord(entry);
+    if (typeof dictionary.artifactId !== "string" || !dictionary.artifactId) {
+      return [];
+    }
+    return [{
+      artifactId: dictionary.artifactId,
+      displayName: typeof dictionary.displayName === "string" && dictionary.displayName
+        ? dictionary.displayName : dictionary.artifactId,
+      entryCount: asCount(dictionary.entryCount),
+    }];
+  });
+}
+
+/** Reads learned vocabulary artifacts available for distillation or a collection watch. */
+export function readVocabularies(value: unknown): VocabularyArtifactSummary[] {
+  return asArray(asRecord(value).vocabularies).flatMap((entry) => {
+    const vocabulary = asRecord(entry);
+    if (typeof vocabulary.artifactId !== "string" || !vocabulary.artifactId) {
+      return [];
+    }
+    return [{
+      artifactId: vocabulary.artifactId,
+      displayName: typeof vocabulary.displayName === "string" && vocabulary.displayName
+        ? vocabulary.displayName : vocabulary.artifactId,
+      termCount: asCount(vocabulary.termCount),
+      ...(typeof vocabulary.dictionaryArtifactId === "string" && vocabulary.dictionaryArtifactId
+        ? { dictionaryArtifactId: vocabulary.dictionaryArtifactId } : {}),
+    }];
+  });
 }
 
 /** Reads the gateway's teachers JSON defensively. */
@@ -394,6 +519,11 @@ export function readTrainedModel(value: unknown): TrainedModelSummary {
     explainedVarianceRatio: asRatio(model.explainedVarianceRatio),
     artifactHash: typeof model.artifactHash === "string" ? model.artifactHash : "",
     byteSize: asCount(model.byteSize),
+    createdAt: typeof model.createdAt === "string" ? model.createdAt : "",
+    teacherReference: typeof model.teacherReference === "string" ? model.teacherReference : "",
+    licenseName: typeof model.licenseName === "string" ? model.licenseName : "",
+    languages: Array.isArray(model.languages)
+      ? model.languages.filter((item): item is string => typeof item === "string") : [],
   };
 }
 
@@ -457,14 +587,8 @@ function asRatio(value: unknown): number {
 
 /** Splits pasted corpus text into documents on blank lines. */
 export function corpusDocuments(text: string): Array<{ docId: string; rawText: string }> {
-  const documents: Array<{ docId: string; rawText: string }> = [];
-  for (const block of corpusBlocks(text)) {
-    const rawText = block.trim();
-    if (rawText) {
-      documents.push({ docId: `trainer-doc-${documents.length + 1}`, rawText });
-    }
-  }
-  return documents;
+  return splitBlankLineDocuments(text).map((rawText, index) => (
+    { docId: `trainer-doc-${index + 1}`, rawText }));
 }
 
 /** Computes the client-visible corpus totals used before server submission. */
@@ -483,47 +607,7 @@ export function corpusStats(text: string): {
   };
 }
 
-function corpusBlocks(text: string): string[] {
-  const blocks: string[] = [];
-  let block = "";
-  let cursor = 0;
-  while (cursor <= text.length) {
-    const start = cursor;
-    while (cursor < text.length && text.charAt(cursor) !== LINE_FEED
-        && text.charAt(cursor) !== CARRIAGE_RETURN) {
-      cursor++;
-    }
-    const line = text.slice(start, cursor);
-    if (isBlankCorpusLine(line)) {
-      if (block) {
-        blocks.push(block);
-        block = "";
-      }
-    } else {
-      block += block ? `\n${line}` : line;
-    }
-    if (cursor >= text.length) {
-      break;
-    }
-    if (text.charAt(cursor) === CARRIAGE_RETURN && text.charAt(cursor + 1) === LINE_FEED) {
-      cursor++;
-    }
-    cursor++;
-  }
-  if (block) {
-    blocks.push(block);
-  }
-  return blocks;
-}
 
-function isBlankCorpusLine(line: string): boolean {
-  for (const character of line) {
-    if (character !== " " && character !== "\t") {
-      return false;
-    }
-  }
-  return true;
-}
 
 /** Encodes bytes as base64 for the protobuf JSON bytes field. */
 export function base64(buffer: ArrayBuffer): string {
@@ -548,7 +632,7 @@ function boundedInt(value: string, fallback: number): number {
 
 function populate(
   select: HTMLSelectElement,
-  options: Array<{ value: string; label: string }>,
+  options: Array<{ value: string; label: string; title?: string }>,
   emptyLabel: string,
 ): void {
   select.replaceChildren();
@@ -558,7 +642,11 @@ function populate(
     return;
   }
   for (const option of options) {
-    select.add(new Option(option.label, option.value));
+    const element = new Option(option.label, option.value);
+    if (option.title) {
+      element.title = option.title;
+    }
+    select.add(element);
   }
   select.disabled = false;
 }
@@ -570,6 +658,16 @@ function addOption(select: HTMLSelectElement, value: string, label: string): voi
   select.add(new Option(label, value));
   select.value = value;
   select.disabled = false;
+}
+
+/** Copies text to the clipboard, reporting the outcome transiently on the pressed button. */
+async function copyText(button: HTMLButtonElement, text: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text);
+    flashButtonLabel(button, "Copied");
+  } catch {
+    flashButtonLabel(button, "Copy failed");
+  }
 }
 
 function saveTextFile(name: string, text: string): void {

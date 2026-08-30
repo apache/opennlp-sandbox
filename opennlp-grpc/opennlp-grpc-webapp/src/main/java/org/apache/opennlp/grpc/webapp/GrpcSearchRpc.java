@@ -61,15 +61,37 @@ final class GrpcSearchRpc implements SearchRpc {
 
   private final OpenNlpSearchServiceGrpc.OpenNlpSearchServiceBlockingStub stub;
   private final long timeoutNanos;
+  private final long ceilingNanos;
+  private final long timeoutPerMebibyteNanos;
 
   /**
-   * Creates a blocking gRPC search adapter.
+   * Creates a blocking gRPC search adapter whose deadlines never scale with input size.
    *
    * @param channel The channel to the OpenNLP service.
    * @param timeout The deadline applied to every call.
    * @throws IllegalArgumentException If an argument is {@code null} or the timeout is not positive.
    */
   GrpcSearchRpc(Channel channel, Duration timeout) {
+    this(channel, timeout, timeout, Duration.ZERO);
+  }
+
+  /**
+   * Creates a blocking gRPC search adapter.
+   *
+   * <p>Indexing carries a deadline of {@code timeout} plus {@code timeoutPerMebibyte} for
+   * every mebibyte of documents it submits, never exceeding {@code ceiling}: indexing a
+   * novel's chunks with embeddings costs at least as much as analyzing it, so it gets the
+   * same allowance analysis does. Every other call keeps the base deadline.</p>
+   *
+   * @param channel The channel to the OpenNLP service.
+   * @param timeout The base deadline applied to every call.
+   * @param ceiling The largest deadline an indexing call is ever granted.
+   * @param timeoutPerMebibyte The extra indexing deadline per mebibyte of submitted documents;
+   *     zero disables scaling.
+   * @throws IllegalArgumentException If an argument is {@code null}, a timeout is not
+   *     positive, or the per-mebibyte allowance is negative.
+   */
+  GrpcSearchRpc(Channel channel, Duration timeout, Duration ceiling, Duration timeoutPerMebibyte) {
     if (channel == null) {
       throw new IllegalArgumentException("channel must not be null");
     }
@@ -79,8 +101,22 @@ final class GrpcSearchRpc implements SearchRpc {
     if (timeout.isZero() || timeout.isNegative()) {
       throw new IllegalArgumentException("timeout must be positive");
     }
+    if (ceiling == null) {
+      throw new IllegalArgumentException("ceiling must not be null");
+    }
+    if (ceiling.isZero() || ceiling.isNegative()) {
+      throw new IllegalArgumentException("ceiling must be positive");
+    }
+    if (timeoutPerMebibyte == null) {
+      throw new IllegalArgumentException("timeoutPerMebibyte must not be null");
+    }
+    if (timeoutPerMebibyte.isNegative()) {
+      throw new IllegalArgumentException("timeoutPerMebibyte must not be negative");
+    }
     this.stub = OpenNlpSearchServiceGrpc.newBlockingStub(channel);
     this.timeoutNanos = timeout.toNanos();
+    this.ceilingNanos = ceiling.toNanos();
+    this.timeoutPerMebibyteNanos = timeoutPerMebibyte.toNanos();
   }
 
   /** {@inheritDoc} */
@@ -104,7 +140,8 @@ final class GrpcSearchRpc implements SearchRpc {
   /** {@inheritDoc} */
   @Override
   public IndexDocumentsResponse index(IndexDocumentsRequest request) {
-    return deadlineStub().indexDocuments(request);
+    return stub.withDeadlineAfter(indexDeadlineNanos(request.getSerializedSize()),
+        TimeUnit.NANOSECONDS).indexDocuments(request);
   }
 
   /** {@inheritDoc} */
@@ -182,6 +219,17 @@ final class GrpcSearchRpc implements SearchRpc {
   @Override
   public Iterator<CollectionEvent> watchCollection(WatchCollectionRequest request) {
     return deadlineStub().watchCollection(request);
+  }
+
+  /**
+   * Computes the deadline an indexing call of the given size receives.
+   *
+   * @param inputBytes The serialized size of the indexing request.
+   * @return The base deadline plus the per-mebibyte allowance, capped at the ceiling.
+   */
+  long indexDeadlineNanos(long inputBytes) {
+    return GrpcAnalysisRpc.scaledDeadlineNanos(
+        timeoutNanos, timeoutPerMebibyteNanos, ceilingNanos, inputBytes);
   }
 
   /** @return A stub carrying the configured deadline. */

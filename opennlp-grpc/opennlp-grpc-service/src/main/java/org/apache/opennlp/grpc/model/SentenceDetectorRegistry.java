@@ -27,7 +27,8 @@ import java.util.TreeMap;
 
 import opennlp.tools.sentdetect.SentenceDetector;
 import opennlp.tools.util.StringUtil;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
+import org.apache.opennlp.grpc.spi.model.SentenceDetectorBackendFactory;
 
 /** Discovers and owns custom sentence detectors contributed through ServiceLoader. */
 public final class SentenceDetectorRegistry implements AutoCloseable {

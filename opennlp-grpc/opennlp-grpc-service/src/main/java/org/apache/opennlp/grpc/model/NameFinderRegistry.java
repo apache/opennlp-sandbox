@@ -26,12 +26,15 @@ import java.util.ServiceLoader;
 import java.util.Set;
 
 import opennlp.tools.sentdetect.SentenceDetector;
-import opennlp.tools.util.StringUtil;
 import org.apache.opennlp.grpc.backend.RankedBackends;
 import org.apache.opennlp.grpc.backend.RankedBackends.Registration;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.opennlp.grpc.spi.model.ModelConfigSupport;
+import org.apache.opennlp.grpc.spi.model.NerModel;
+import org.apache.opennlp.grpc.spi.model.NerBackendFactory;
+import org.apache.opennlp.grpc.spi.model.NerBackendContext;
 
 /**
  * Catalog of {@link NerModel} recognizers. A recognizer is identified by a logical
@@ -52,6 +55,16 @@ import org.slf4j.LoggerFactory;
  * ONNX models are stateless.</p>
  */
 public final class NameFinderRegistry implements AutoCloseable {
+
+  /**
+   * Prefix for ONNX name finder entries ({@code model.name_finder_dl.<id>.<attr>}). The keys
+   * are parsed by the ONNX backend shipped in the {@code opennlp-grpc-dl} add-on; the registry
+   * itself only verifies the namespace is claimed by a discovered backend.
+   */
+  public static final String KEY_DL_PREFIX = "model.name_finder_dl.";
+
+  /** Factory id under which the ONNX add-on registers its backends. */
+  static final String DL_FACTORY_ID = "onnx";
 
   private static final Logger logger = LoggerFactory.getLogger(NameFinderRegistry.class);
 
@@ -81,7 +94,7 @@ public final class NameFinderRegistry implements AutoCloseable {
    * @return The normalized value, or {@code null} if {@code value} is {@code null}.
    */
   public static String normalize(String value) {
-    return value == null ? null : StringUtil.toLowerCase(value.trim());
+    return ModelConfigSupport.normalize(value);
   }
 
   /**
@@ -94,14 +107,30 @@ public final class NameFinderRegistry implements AutoCloseable {
    * @throws AnalysisException {@code INVALID_ARGUMENT} if {@code rawValue} is not an integer.
    */
   public static int parsePriority(String key, String rawValue) {
-    if (rawValue == null || rawValue.isBlank()) {
-      return 0;
+    return ModelConfigSupport.parsePriority(key, rawValue);
+  }
+
+  /**
+   * Fails loud when {@code model.name_finder_dl.*} keys are configured but no discovered
+   * backend claims the ONNX namespace, instead of silently ignoring the models the operator
+   * asked for.
+   *
+   * @param configuration The server configuration.
+   * @param factoryIds The ids of the discovered backend factories.
+   *
+   * @throws AnalysisException {@code FAILED_PRECONDITION} if ONNX keys exist with no backend.
+   */
+  private static void requireDlBackendWhenConfigured(
+      Map<String, String> configuration, Set<String> factoryIds) {
+    if (factoryIds.contains(DL_FACTORY_ID)) {
+      return;
     }
-    try {
-      return Integer.parseInt(rawValue.trim());
-    } catch (NumberFormatException e) {
-      throw AnalysisException.invalidArgument(
-          key + " must be an integer, was '" + rawValue + "'");
+    for (String key : configuration.keySet()) {
+      if (key.startsWith(KEY_DL_PREFIX)) {
+        throw AnalysisException.failedPrecondition(
+            KEY_DL_PREFIX + "* is configured but no ONNX name finder backend is on the "
+                + "classpath; add the opennlp-grpc-dl jar (cpu or gpu flavor)");
+      }
     }
   }
 
@@ -189,6 +218,7 @@ public final class NameFinderRegistry implements AutoCloseable {
           }
         }
       }
+      requireDlBackendWhenConfigured(configuration, seenFactories.keySet());
       return new NameFinderRegistry(builder.build(), recognizerIdsByType, knownEngines);
     } catch (RuntimeException e) {
       // A factory that throws after earlier factories loaded models must not leak the native

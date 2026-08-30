@@ -26,6 +26,7 @@ import {
 } from "./query-builder";
 import type { SearchHit, SearchIndex, SearchRequest, SearchResponse } from "./search-adapter";
 import {
+  supportsKeywordClauses,
   createAllHitsSearchRequest,
   createCompoundSearchRequest,
   createSearchRequest,
@@ -49,7 +50,9 @@ import {
   replaceCharacter,
   withoutPrefix,
 } from "./text-utils";
-import { emptyMessage, errorMessage, requiredElement } from "./ui-utils";
+import { addFact, emptyMessage, errorMessage, requiredElement } from "./ui-utils";
+
+const SEARCH_TOP_K_LIMIT = 50_000;
 
 export interface ServerSearchWorkbenchOptions {
   listIndexes(): Promise<SearchIndex[]>;
@@ -70,6 +73,7 @@ export class ServerSearchWorkbench {
   readonly #results = requiredElement<HTMLElement>("server-search-results");
   readonly #resultCount = requiredElement<HTMLElement>("server-result-count");
   readonly #sourceText = requiredElement<HTMLElement>("search-source-text");
+  readonly #originalPanel = requiredElement<HTMLElement>("search-original-panel");
   readonly #originalSpan = requiredElement<HTMLElement>("search-original-span");
   readonly #indexedChunk = requiredElement<HTMLElement>("search-indexed-chunk");
   readonly #comparisonStatus = requiredElement<HTMLElement>("chunk-comparison-status");
@@ -114,6 +118,14 @@ export class ServerSearchWorkbench {
     });
     this.#builderKind.addEventListener("change", () => this.updateBuilderControls());
     this.#builderAdd.addEventListener("click", () => this.addClause());
+    // The clause input sits outside the search form, so Enter would otherwise
+    // be dropped; it adds the drafted clause exactly as the button does.
+    this.#builderText.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        this.addClause();
+      }
+    });
     this.#builderClear.addEventListener("click", () => {
       this.#clauses = [];
       this.renderClauses();
@@ -132,7 +144,8 @@ export class ServerSearchWorkbench {
       if (this.#indexes.length === 0) {
         this.#indexSelect.add(new Option("No server indexes configured", ""));
         this.setStatus("The service is available, but it did not report a configured search index.");
-        this.#indexDescription.textContent = "An operator must configure an immutable index bundle at startup.";
+        this.#indexDescription.textContent = "No index exists yet. Build one from your own documents, or ask the operator to configure a read-only index. ";
+        this.#indexDescription.append(jumpButton("workflows", "Open Build index"));
         return;
       }
       for (const index of this.#indexes) {
@@ -209,12 +222,49 @@ export class ServerSearchWorkbench {
     this.#builderSlop.hidden = kind !== "phrase";
   }
 
+  /**
+   * Offers only the clause kinds the selected index can execute: an index with no keyword
+   * component runs semantic clauses alone, and the builder says so instead of letting the
+   * search fail.
+   */
+  private updateClauseKinds(): void {
+    const index = this.selectedIndex();
+    const keyword = index === undefined || supportsKeywordClauses(index);
+    for (const option of Array.from(this.#builderKind.options)) {
+      if (option.value === "term" || option.value === "phrase") {
+        option.disabled = !keyword;
+      }
+    }
+    if (!keyword && this.#builderKind.value !== "semantic") {
+      this.#builderKind.value = "semantic";
+      this.updateBuilderControls();
+    }
+    this.#builderKind.title = keyword ? "" : "This index has no keyword component, so only semantic clauses run.";
+  }
+
+  /**
+   * Writes a search failure to the status line with the jump that resolves it: a missing
+   * index points at where indexes are built and saved, a missing embedding model at the
+   * catalog.
+   */
+  private explainFailure(message: string): void {
+    this.setStatus(message, true);
+    const lower = asciiLowerCase(message);
+    if (lower.includes("unknown search index") || lower.includes("unknown index")) {
+      this.#status.append(" ", jumpButton("workflows", "Build an index"), " ",
+        jumpButton("lifecycle", "Save one to disk on Lifecycle"));
+    } else if (lower.includes("embedding model") || lower.includes("vector space")
+        || lower.includes("not loaded")) {
+      this.#status.append(" ", jumpButton("models", "Install a model on Models & data"));
+    }
+  }
+
   private async search(event: SubmitEvent): Promise<void> {
     event.preventDefault();
     const index = this.selectedIndex();
     const query = this.#query.value.trim();
     const compound = this.#clauses.length > 0;
-    const maximum = index?.maxTopK ?? 50;
+    const maximum = Math.min(index?.maxTopK ?? SEARCH_TOP_K_LIMIT, SEARCH_TOP_K_LIMIT);
     // Exhaustive-capable providers use a typed request; other providers stay bounded by top_k.
     const topK = this.#heatmapView
       ? maximum
@@ -228,7 +278,7 @@ export class ServerSearchWorkbench {
         request = createCompoundSearchRequest(index.id,
           buildQueryNode(this.#clauses, joinMode(this.#builderJoin.value)), topK);
       } catch (error) {
-        this.setStatus(errorMessage(error, "The compound query is invalid."), true);
+        this.setStatus(errorMessage(error, "The advanced search clauses are invalid."), true);
         return;
       }
     } else {
@@ -246,7 +296,7 @@ export class ServerSearchWorkbench {
     this.#busy = true;
     this.#selectionGeneration++;
     this.setStatus(compound
-      ? `Executing the compound query against ${index.label}.`
+      ? `Running the advanced search against ${index.label}.`
       : `Searching ${index.label}.`);
     this.updateControls();
     try {
@@ -265,7 +315,7 @@ export class ServerSearchWorkbench {
       this.#hits = [];
       this.renderResults();
       this.renderHeatmap();
-      this.setStatus(errorMessage(error, "Search failed."), true);
+      this.explainFailure(errorMessage(error, "Search failed."));
     } finally {
       this.#busy = false;
       this.updateControls();
@@ -292,9 +342,9 @@ export class ServerSearchWorkbench {
       const body = document.createElement("span");
       body.className = "server-hit-body";
       const identity = document.createElement("strong");
-      identity.textContent = hit.chunkId;
+      identity.textContent = hit.documentId;
       const provenance = document.createElement("small");
-      provenance.textContent = `${hit.documentId} · ${hit.corpusTitle}`;
+      provenance.textContent = `chunk ${ellipsizeCodePoints(hit.chunkId, 24)} · ${hit.corpusTitle}`;
       const preview = document.createElement("span");
       preview.className = "server-hit-preview";
       preview.textContent = previewText(sourceHighlight(hit).selected || hit.indexedChunkText, 120);
@@ -414,9 +464,18 @@ export class ServerSearchWorkbench {
       }
     } catch {
       if (generation === this.#selectionGeneration && this.#selection.selectedId === hit.id) {
-        this.#annotations.replaceChildren(emptyMessage("Typed annotation analysis is unavailable for this source."));
+        this.renderAnalysisUnavailable();
       }
     }
+  }
+
+  /** Marks the analytics counters unavailable so a stalled ellipsis never suggests loading. */
+  private renderAnalysisUnavailable(): void {
+    for (const element of Object.values(this.#analytics)) {
+      element.textContent = "n/a";
+    }
+    this.#annotations.replaceChildren(
+      emptyMessage("Typed annotation analysis is unavailable for this source."));
   }
 
   private renderHit(hit: SearchHit): void {
@@ -436,11 +495,15 @@ export class ServerSearchWorkbench {
       document.createTextNode(highlight.after));
 
     const comparison = compareChunkText(highlight.selected, hit.indexedChunkText);
+    // A byte-identical chunk collapses to one panel; the note explains the missing copy.
+    this.#originalPanel.hidden = comparison.exact;
+    this.#originalPanel.parentElement?.classList.toggle("is-single", comparison.exact);
     this.#originalSpan.textContent = comparison.original;
     this.renderIndexedChunk(hit);
     this.#comparisonStatus.textContent = comparison.exact
-      ? "The indexed chunk exactly matches the original source span."
-      : "The indexed chunk differs from the original span, typically because of configured transformation.";
+      ? "The indexed chunk exactly matches the original source span, so it is shown once."
+      : "The indexed chunk differs from the original span, usually because normalization was "
+        + "applied before indexing.";
     this.#comparisonStatus.classList.toggle("is-different", !comparison.exact);
 
     this.#facts.replaceChildren();
@@ -464,10 +527,10 @@ export class ServerSearchWorkbench {
       addFact(this.#facts, "Corpus artifact", hit.corpusArtifactHash);
     }
     if (hit.build.bundleArtifactHash) {
-      addFact(this.#facts, "Index bundle", hit.build.bundleArtifactHash);
+      addFact(this.#facts, "Index artifact", hit.build.bundleArtifactHash);
     }
     if (hit.build.bundleFormatVersion !== undefined) {
-      addFact(this.#facts, "Bundle format", String(hit.build.bundleFormatVersion));
+      addFact(this.#facts, "Index format", String(hit.build.bundleFormatVersion));
     }
     if (hit.build.builderId) {
       const builder = [hit.build.builderId, hit.build.builderVersion].filter(Boolean).join(" ");
@@ -537,7 +600,7 @@ export class ServerSearchWorkbench {
     if (!index) {
       return;
     }
-    const limit = index.maxTopK ?? 50;
+    const limit = Math.min(index.maxTopK ?? SEARCH_TOP_K_LIMIT, SEARCH_TOP_K_LIMIT);
     this.#topK.max = String(limit);
     if (Number(this.#topK.value) > limit) {
       this.#topK.value = String(limit);
@@ -551,7 +614,10 @@ export class ServerSearchWorkbench {
       : ` · ${formatInteger(index.maxResponseBytes)} response bytes max`;
     this.#indexDescription.textContent = `${index.corpusTitle} · ${size} · ${dimension} · ${metricLabel(index.metric)}`
       + `${license}${queryLimit}${responseLimit}. `
-      + (index.provenance || "No provenance summary was reported.");
+      + (index.provenance || "No provenance summary was reported.")
+      + (supportsKeywordClauses(index) ? ""
+        : " This index has no keyword component, so Advanced search runs semantic clauses only.");
+    this.updateClauseKinds();
   }
 
   private selectedIndex(): SearchIndex | undefined {
@@ -590,25 +656,6 @@ function scoreBadge(score: number): HTMLSpanElement {
   return badge;
 }
 
-function addFact(list: HTMLDListElement, term: string, value: string, href?: string): void {
-  const container = document.createElement("div");
-  const name = document.createElement("dt");
-  name.textContent = term;
-  const detail = document.createElement("dd");
-  if (href) {
-    const link = document.createElement("a");
-    link.href = href;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = value;
-    detail.append(link);
-  } else {
-    detail.textContent = value;
-  }
-  container.append(name, detail);
-  list.append(container);
-}
-
 function configuredRouteLabel(hit: SearchHit): string {
   return `${hit.backendId} / ${hit.modelId} · ${hit.vectorSpaceId}`;
 }
@@ -645,4 +692,14 @@ function previewText(value: string, limit: number): string {
 
 function joinMode(value: string): JoinMode {
   return value === "or" || value === "rrf" ? value : "and";
+}
+
+/** A link-styled button that jumps to another workbench. */
+function jumpButton(target: string, label: string): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "link-button";
+  button.dataset.workbenchJump = target;
+  button.textContent = label;
+  return button;
 }

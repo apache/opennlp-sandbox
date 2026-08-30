@@ -42,6 +42,7 @@ The host exposes:
 - `GET /api/v1/model-catalog`
 - `GET /api/v1/installed-models`
 - `POST /api/v1/analyze`
+- `POST /api/v1/analyze-progressive` (NDJSON layer-event stream)
 - `POST /api/v1/search`
 - `POST /api/v1/install-model` (NDJSON progress stream)
 - workspace index, alias, and collection lifecycle endpoints
@@ -49,7 +50,10 @@ The host exposes:
 
 The service-info, model-bundle, analysis, and search endpoints use protobuf JSON for the gRPC
 message types. Analysis therefore retains the full `OpenNlpDocument` shape and typed annotation
-layers. Search requests use a document-shaped query. Responses retain each referenced source
+layers. The progressive endpoint writes one `AnalyzeDocumentEvent` per NDJSON line and flushes
+each line immediately. Its final event carries the same canonical response shape as unary
+analysis. Closing the HTTP response cancels the underlying gRPC stream. Search requests use a
+document-shaped query. Responses retain each referenced source
 document once, plus compact hits with authoritative spans, indexed text, scores, and index
 provenance. The host-specific UI extension
 endpoint returns the validated provider ID, title, and mount path for navigation. HTTP error

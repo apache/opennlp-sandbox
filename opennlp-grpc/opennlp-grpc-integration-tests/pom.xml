@@ -45,6 +45,14 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- Digest helpers for building the TurboQuant bundle fixture; at runtime the
+             add-on jar joins the live server classpath like any dropped-in backend. -->
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-grpc-search-turboquant</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
         <!-- Client stubs for the v1 API under test. -->
         <dependency>
             <groupId>org.apache.opennlp</groupId>
@@ -120,7 +128,9 @@
                 <configuration>
                     <systemPropertyVariables>
                         <opennlp.grpc.server.jar>${project.basedir}/../opennlp-grpc-service/target/opennlp-grpc-server-${project.version}.jar</opennlp.grpc.server.jar>
+                        <opennlp.grpc.server.all.jar>${project.basedir}/../opennlp-grpc-distr/target/opennlp-grpc-server-all-${project.version}.jar</opennlp.grpc.server.all.jar>
                         <opennlp.grpc.webapp.jar>${project.basedir}/../opennlp-grpc-webapp/target/opennlp-grpc-webapp-${project.version}.jar</opennlp.grpc.webapp.jar>
+                        <opennlp.grpc.turboquant.jar>${project.basedir}/../opennlp-grpc-search-turboquant/target/opennlp-grpc-search-turboquant-${project.version}.jar</opennlp.grpc.turboquant.jar>
                         <opennlp.grpc.tei.backend.jar>${project.basedir}/../opennlp-grpc-backend-tei/target/opennlp-grpc-backend-tei-${project.version}.jar</opennlp.grpc.tei.backend.jar>
                         <opennlp.grpc.openvino.backend.jar>${project.basedir}/../opennlp-grpc-backend-openvino/target/opennlp-grpc-backend-openvino-${project.version}.jar</opennlp.grpc.openvino.backend.jar>
                     </systemPropertyVariables>

@@ -24,6 +24,7 @@ import opennlp.tools.parser.Parser;
 import opennlp.tools.parser.ParserFactory;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.ParseTree;
+import org.apache.opennlp.grpc.spi.model.ParserModel;
 
 /**
  * A {@link ParserModel} backed by a classic OpenNLP constituency parser. OpenNLP's parser is

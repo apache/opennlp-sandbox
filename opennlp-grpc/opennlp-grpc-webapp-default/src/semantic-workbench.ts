@@ -30,7 +30,10 @@ import { supportsCompleteGraph } from "./document-window";
 import { toBrowserSpan } from "./offsets";
 import {
   createAllHitsSearchRequest,
+  createIndexDocumentsRequest,
   createSearchRequest,
+  indexStateLabel,
+  SCRATCH_INDEX_PREFIX,
   type SearchHit,
   type SearchIndex,
   type SearchRequest,
@@ -52,6 +55,7 @@ export type ResultViewName = "document" | "chunks" | "heatmap" | "graph" | "json
 export interface SemanticWorkbenchOptions {
   index(request: IndexDocumentsRequest): Promise<SearchIndex>;
   search(request: SearchRequest): Promise<SearchResponse>;
+  listIndexes(): Promise<SearchIndex[]>;
   deleteIndex(indexId: string): Promise<void>;
   openDocument(hit: SearchHit): void;
   inspectChunk(hit: SearchHit, shape: DocumentShapeView, trigger: HTMLElement): void;
@@ -63,6 +67,15 @@ export interface SemanticWorkbenchOptions {
     trigger: HTMLElement,
   ): void;
   selectAnnotation(layerId: string, annotationIndex: number): void;
+  /**
+   * Receives the outcome of "Add to live index", which is pressed on the Analyze tab; when
+   * absent the outcome is written to this tab's own status line.
+   */
+  onIndexed?(message: string, error: boolean): void;
+  /** Asks before a live index is deleted on the server; absent means no confirmation. */
+  confirmDelete?(label: string): boolean;
+  /** Runs after this tab created or deleted a live index, so other tabs can refresh. */
+  onWorkspacesChanged?(): void;
 }
 
 interface CurrentDocument {
@@ -83,17 +96,23 @@ type HeatmapMode = "query" | "sentiment";
 
 const ALL_PROJECTIONS = "ALL_PROJECTIONS";
 const TURBO_QUANT_PROVIDER = "STANDARD_SEARCH_PROVIDER_TURBO_QUANT";
+/** Display-name prefix marking the short-lived heatmap indexes this tab creates. */
+const HEATMAP_INDEX_PREFIX = SCRATCH_INDEX_PREFIX;
 
 /** Coordinates server-owned, in-memory workspace indexing and query rendering. */
 export class SemanticWorkbench {
   readonly #options: SemanticWorkbenchOptions;
   readonly #addButton = requiredElement<HTMLButtonElement>("add-to-index-button");
   readonly #clearButton = requiredElement<HTMLButtonElement>("clear-index-button");
+  readonly #workspaceSelect = requiredElement<HTMLSelectElement>("workspace-index-select");
   readonly #providerSelect = requiredElement<HTMLSelectElement>("workspace-provider-select");
+  /** The name a new live index gets; absent in fixtures that mount the search form alone. */
+  readonly #nameInput = document.getElementById("workspace-name-input") as HTMLInputElement | null;
   readonly #searchForm = requiredElement<HTMLFormElement>("semantic-search-form");
   readonly #query = requiredElement<HTMLTextAreaElement>("semantic-query");
   readonly #searchButton = requiredElement<HTMLButtonElement>("search-button");
   readonly #indexCount = requiredElement<HTMLElement>("index-count");
+  readonly #indexStorage = requiredElement<HTMLElement>("index-storage");
   readonly #status = requiredElement<HTMLElement>("semantic-status");
   readonly #results = requiredElement<HTMLElement>("search-results");
   readonly #heatmapQueryForm = requiredElement<HTMLFormElement>("heatmap-query-form");
@@ -128,6 +147,7 @@ export class SemanticWorkbench {
     this.#options = options;
     this.#addButton.addEventListener("click", () => void this.addCurrentDocument());
     this.#clearButton.addEventListener("click", () => void this.clear());
+    this.#workspaceSelect.addEventListener("change", () => void this.attachSelectedWorkspace());
     this.#searchForm.addEventListener("submit", (event) => void this.search(event));
     this.#query.addEventListener("input", () => this.updateControls());
     this.#heatmapQueryForm.addEventListener("submit", (event) => void this.searchHeatmap(event));
@@ -165,6 +185,87 @@ export class SemanticWorkbench {
     this.updateControls();
   }
 
+  /** Loads the server's existing dynamic workspaces into the picker; call once at startup. */
+  async initializeWorkspaces(): Promise<void> {
+    await this.refreshWorkspaces(true);
+  }
+
+  /**
+   * Repopulates the picker with every writable live index on the server, keeping the
+   * attached one selected when it still exists. An explicit refresh (another tab changed
+   * the indexes) also detaches an index that vanished; the quiet refresh after an add does
+   * not, since the add itself is the source of truth for that moment.
+   */
+  private async refreshWorkspaces(detachMissing = false): Promise<void> {
+    const indexes = await this.#options.listIndexes();
+    const workspaces = indexes.filter((index) => !index.immutable
+      && !index.label.startsWith(HEATMAP_INDEX_PREFIX));
+    const selected = this.#workspace?.id ?? this.#workspaceSelect.value;
+    this.#workspaceSelect.replaceChildren(
+      new Option("New live index (created on first add)", ""));
+    for (const workspace of workspaces) {
+      const size = workspace.size ?? 0;
+      this.#workspaceSelect.add(new Option(
+        `${workspace.label} · ${size} ${size === 1 ? "chunk" : "chunks"} · ${indexStateLabel(workspace)}`,
+        workspace.id));
+    }
+    const stillExists = workspaces.some((workspace) => workspace.id === selected);
+    this.#workspaceSelect.value = stillExists ? selected : "";
+    if (detachMissing && this.#workspace && !stillExists) {
+      // The attached index was deleted or made read-only elsewhere; searching it would fail.
+      this.#workspace = undefined;
+      this.#workspaceDocumentRevision = -1;
+      this.updateControls();
+    }
+    if (workspaces.length === 0 && !this.#current && this.#results.childElementCount <= 1) {
+      this.renderFirstRun();
+    }
+  }
+
+  /** The first-run state: what a live index is, and the two places one comes from. */
+  private renderFirstRun(): void {
+    const message = emptyMessage("No live indexes yet. Analyze a document with an embedding "
+      + "model and press Add to live index, or build one from your own documents. ");
+    message.append(jumpButton("analysis", "Open Analyze"), " ", jumpButton("workflows", "Open Build index"));
+    this.#results.replaceChildren(message);
+  }
+
+  /** Refreshes the picker after an index change without surfacing discovery errors. */
+  private refreshWorkspacesQuietly(): void {
+    void this.refreshWorkspaces().catch(() => {
+      // The picker keeps its current options when discovery is unavailable.
+    });
+  }
+
+  /** Attaches search to the picked existing workspace, or detaches back to a new one. */
+  private async attachSelectedWorkspace(): Promise<void> {
+    const id = this.#workspaceSelect.value;
+    if (!id) {
+      this.#workspace = undefined;
+      this.#workspaceDocumentRevision = -1;
+      this.setStatus("Nothing selected. The next add creates a new live index.");
+      this.updateControls();
+      return;
+    }
+    try {
+      const indexes = await this.#options.listIndexes();
+      const workspace = indexes.find((index) => index.id === id);
+      if (!workspace) {
+        throw new Error("The selected live index no longer exists on the server.");
+      }
+      this.#workspace = workspace;
+      // The attached workspace is searched as it stands; the current document
+      // only joins it through an explicit "Add to live index".
+      this.#workspaceDocumentRevision = this.#documentRevision;
+      const size = workspace.size ?? 0;
+      this.setStatus(`Searching '${workspace.label}': `
+        + `${size} ${size === 1 ? "chunk is" : "chunks are"} searchable.`);
+    } catch (error) {
+      this.setStatus(error instanceof Error ? error.message : "Could not select the live index.", true);
+    }
+    this.updateControls();
+  }
+
   show(view: ResultViewName): void {
     this.#activeView = view;
     if (view === "heatmap") {
@@ -177,25 +278,39 @@ export class SemanticWorkbench {
   private async addCurrentDocument(): Promise<void> {
     const current = this.#current;
     if (!isIndexableCurrentDocument(current) || this.#busy) {
-      this.setStatus("This result has no indexed chunk embeddings. Select an embedding model and chunk strategy.", true);
+      this.reportIndexing("This result has no chunk embeddings to index. Select an embedding "
+        + "model and a chunk strategy, then analyze again.", true);
       return;
     }
     this.#busy = true;
-    this.setStatus("Sending the analyzed document shape to the gRPC workspace index.");
+    this.reportIndexing("Sending the analyzed document to the live index.", false);
     this.updateControls();
     try {
       const workspace = await this.indexCurrentDocument(current);
-      this.setStatus(`Indexed by the gRPC server. ${workspace.size ?? 0} chunks available.`);
+      this.reportIndexing(`Added to live index '${workspace.label}': ${workspace.size ?? 0} chunks `
+        + "are searchable.", false);
     } catch (error) {
-      this.setStatus(error instanceof Error ? error.message : "Server-side indexing failed.", true);
+      this.reportIndexing(error instanceof Error ? error.message : "Server-side indexing failed.", true);
     } finally {
       this.#busy = false;
       this.updateControls();
     }
   }
 
+  /** Routes an indexing outcome to the tab whose button started it. */
+  private reportIndexing(message: string, error: boolean): void {
+    if (this.#options.onIndexed) {
+      this.#options.onIndexed(message, error);
+    }
+    this.setStatus(message, error);
+  }
+
   private async clear(): Promise<void> {
     if ((!this.#workspace && this.#heatmapWorkspaces.size === 0) || this.#busy) {
+      return;
+    }
+    if (this.#workspace && this.#options.confirmDelete
+        && !this.#options.confirmDelete(this.#workspace.label)) {
       return;
     }
     this.#busy = true;
@@ -207,10 +322,12 @@ export class SemanticWorkbench {
       this.#workspace = undefined;
       this.#workspaceDocumentRevision = -1;
       await this.deleteHeatmapIndexes();
-      this.#results.replaceChildren(emptyMessage("No workspace search results yet."));
-      this.setStatus("The gRPC server deleted the workspace index.");
+      this.#results.replaceChildren(emptyMessage("No live index search results yet."));
+      this.setStatus("The server deleted the live index.");
+      this.refreshWorkspacesQuietly();
+      this.#options.onWorkspacesChanged?.();
     } catch (error) {
-      this.setStatus(error instanceof Error ? error.message : "Could not delete the workspace index.", true);
+      this.setStatus(error instanceof Error ? error.message : "Could not delete the live index.", true);
     } finally {
       this.#busy = false;
       this.updateControls();
@@ -235,9 +352,9 @@ export class SemanticWorkbench {
       }
       const workspace = this.#workspace;
       if (!workspace) {
-        throw new Error("No server workspace is available for this query.");
+        throw new Error("No live index is available for this query.");
       }
-      this.setStatus("The gRPC server is embedding and searching the workspace query.");
+      this.setStatus("The server is embedding the query and searching the live index.");
       const response = await this.#options.search(workspace.supportsAllHits
         ? createAllHitsSearchRequest(workspace.id, query)
         : createSearchRequest(workspace.id, query, Math.min(50, workspace.maxTopK ?? 50)));
@@ -247,7 +364,7 @@ export class SemanticWorkbench {
         ? "The server returned no compatible chunks."
         : `${response.hits.length} server-ranked chunks returned. Heatmap updated.`);
     } catch (error) {
-      this.setStatus(error instanceof Error ? error.message : "Workspace query failed.", true);
+      this.setStatus(error instanceof Error ? error.message : "Live index search failed.", true);
     } finally {
       this.#busy = false;
       this.updateControls();
@@ -259,16 +376,12 @@ export class SemanticWorkbench {
     if (typeof document.docId !== "string" || !document.docId.trim()) {
       document.docId = `workbench-document-${this.#nextDocumentId++}`;
     }
-    this.#workspace = await this.#options.index({
-      ...(this.#workspace ? { indexId: this.#workspace.id } : {}),
-      displayName: "Workbench index",
-      // The provider is fixed at creation; extensions inherit it by omitting it.
-      ...(this.#workspace ? {} : { provider: { standard: this.#providerSelect.value } }),
-      documents: [document],
-      embedding: { modelId: current.modelId },
-      chunkGroupIds: current.groupIds,
-    });
+    this.#workspace = await this.#options.index(createIndexDocumentsRequest(
+      this.#workspace?.id, this.#providerSelect.value, document, current.modelId,
+      current.groupIds, this.#nameInput?.value ?? ""));
     this.#workspaceDocumentRevision = this.#documentRevision;
+    this.refreshWorkspacesQuietly();
+    this.#options.onWorkspacesChanged?.();
     return this.#workspace;
   }
 
@@ -337,7 +450,7 @@ export class SemanticWorkbench {
 
   private renderSearchResults(hits: SearchHit[]): void {
     if (hits.length === 0) {
-      this.#results.replaceChildren(emptyMessage("No compatible vectors were found in the server workspace."));
+      this.#results.replaceChildren(emptyMessage("No compatible vectors were found in the live index."));
       return;
     }
     this.#results.replaceChildren(...hits.map((hit, index) => {
@@ -433,7 +546,7 @@ export class SemanticWorkbench {
   private populateProjectionOptions(): void {
     const all = document.createElement("option");
     all.value = ALL_PROJECTIONS;
-    all.textContent = "All projections, separate lanes";
+    all.textContent = "All chunk groups, separate lanes";
     const options = this.#current?.projections.map((group) => {
       const option = document.createElement("option");
       option.value = group.id;
@@ -536,10 +649,30 @@ export class SemanticWorkbench {
     this.#graphChart?.resize();
   }
 
+  /**
+   * Browns out the tab when the operator disabled live indexing, saying so once instead
+   * of letting every add and search fail with the same server error.
+   */
+  setAvailability(dynamicIndexingEnabled: boolean): void {
+    this.#available = dynamicIndexingEnabled;
+    if (!dynamicIndexingEnabled) {
+      this.setStatus("Live indexing is disabled by the server operator, so documents cannot be "
+        + "added or searched here. Read-only indexes are still searched on the Corpus search tab.",
+        true);
+    }
+    this.updateControls();
+  }
+
+  #available = true;
+
   private updateControls(): void {
-    this.#providerSelect.disabled = Boolean(this.#workspace) || this.#busy;
-    const indexable = Boolean(this.#current?.wireDocument && this.#current.modelId);
-    const searchable = Boolean(this.#workspace) || indexable;
+    this.#indexStorage.textContent = this.#workspace
+      ? indexStateLabel(this.#workspace) : "In memory once created";
+    this.#workspaceSelect.disabled = this.#busy || !this.#available;
+    this.#providerSelect.disabled = Boolean(this.#workspace) || this.#busy || !this.#available;
+    const indexable = this.#available
+      && Boolean(this.#current?.wireDocument && this.#current.modelId);
+    const searchable = this.#available && (Boolean(this.#workspace) || indexable);
     this.#addButton.disabled = !indexable || this.#busy;
     this.#clearButton.disabled = (!this.#workspace && this.#heatmapWorkspaces.size === 0) || this.#busy;
     this.#searchButton.disabled = !searchable || !this.#query.value.trim() || this.#busy;
@@ -666,6 +799,7 @@ function projectionLane(
     id: group.id,
     title: `${group.title} (${group.strategy})`,
     complete: !response.truncated && scored === chunks.length && scored === expected,
+    scoreLabel: "cosine",
     chunks,
   };
 }
@@ -675,6 +809,7 @@ function sentimentLane(rows: HeatmapRow[]): DocumentHeatmapLane {
     id: "sentiment",
     title: "Sentence sentiment",
     complete: true,
+    scoreLabel: "polarity",
     chunks: rows.map((row, index) => ({
       id: `sentiment:${index}`,
       start: row.start,
@@ -687,4 +822,14 @@ function sentimentLane(rows: HeatmapRow[]): DocumentHeatmapLane {
 
 function spanKey(start: number, end: number): string {
   return `${start}:${end}`;
+}
+
+/** A link-styled button that jumps to another workbench. */
+function jumpButton(target: string, label: string): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "link-button";
+  button.dataset.workbenchJump = target;
+  button.textContent = label;
+  return button;
 }

@@ -1,0 +1,7 @@
+{
+  "indexId": "legal-demo",
+  "query": {
+    "rawText": "writ of habeas corpus"
+  },
+  "topK": 5
+}

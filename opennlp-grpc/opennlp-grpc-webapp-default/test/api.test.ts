@@ -21,6 +21,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   analyze,
+  analyzeProgressively,
+  analyzeToProtobuf,
   decodeAnalyzeResponsePb,
   deleteStaticModel,
   downloadVocabularyTsv,
@@ -42,6 +44,7 @@ import {
   deleteSearchIndex,
   searchIndex,
   trainStaticModel,
+  NETWORK_FAILURE_MESSAGE,
 } from "../src/api";
 
 describe("API client", () => {
@@ -115,6 +118,37 @@ describe("API client", () => {
     });
   });
 
+  it("retries a read once when the connection dropped, then explains a second failure", async () => {
+    let calls = 0;
+    const flaky = vi.fn(async () => {
+      calls++;
+      if (calls === 1) {
+        throw new TypeError("Failed to fetch");
+      }
+      return new Response(JSON.stringify({ indexes: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    await expect(getSearchIndexes(flaky)).resolves.toEqual({ indexes: [] });
+    expect(flaky).toHaveBeenCalledTimes(2);
+
+    const dead = vi.fn(async () => {
+      throw new TypeError("Failed to fetch");
+    });
+    await expect(searchIndex({ indexId: "x", query: { rawText: "q" }, topK: 1 }, dead))
+      .rejects.toThrow(NETWORK_FAILURE_MESSAGE);
+    expect(dead).toHaveBeenCalledTimes(2);
+  });
+
+  it("never retries a mutating request after a network failure", async () => {
+    const dead = vi.fn(async () => {
+      throw new TypeError("Failed to fetch");
+    });
+    await expect(deleteSearchIndex("x", dead)).rejects.toThrow(NETWORK_FAILURE_MESSAGE);
+    expect(dead).toHaveBeenCalledTimes(1);
+  });
+
   it("surfaces a useful server error", async () => {
     const fetcher = vi.fn(async () =>
       new Response(JSON.stringify({ message: "No compatible model" }), {
@@ -125,6 +159,69 @@ describe("API client", () => {
     );
 
     await expect(getModelBundles(fetcher)).rejects.toThrow("No compatible model");
+  });
+});
+
+describe("server-side protobuf analysis", () => {
+  it("posts the request JSON and returns the serialized response bytes", async () => {
+    const bytes = new Uint8Array([10, 2, 8, 1]);
+    const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("/api/v1/analyze-protobuf");
+      expect(init?.method).toBe("POST");
+      expect(init?.body).toBe('{"document":{"rawText":"Hello"}}');
+      return new Response(bytes, {
+        status: 200,
+        headers: { "content-type": "application/x-protobuf" },
+      });
+    });
+
+    const encoded = await analyzeToProtobuf({ document: { rawText: "Hello" } }, fetcher);
+
+    expect(new Uint8Array(encoded)).toEqual(bytes);
+  });
+
+  it("surfaces the gateway error when the server-side analysis fails", async () => {
+    const fetcher = vi.fn(async () => new Response(
+      JSON.stringify({ code: "RESOURCE_EXHAUSTED", message: "Document too large" }),
+      { status: 429, headers: { "content-type": "application/json" } }));
+
+    await expect(analyzeToProtobuf({ document: { rawText: "Hello" } }, fetcher))
+      .rejects.toThrow("Document too large");
+  });
+});
+
+describe("progressive analysis", () => {
+  it("delivers NDJSON events as each network chunk completes", async () => {
+    const encoder = new TextEncoder();
+    const chunks = [
+      '{"sequence":"1","started":{"document":{"rawText":"Hello"}}}\n'
+        + '{"sequence":"2","layersReady":{"step":"PIPELINE_STEP_TOKENIZE",',
+      '"layers":[{"id":"opennlp:tokens"}]}}\n'
+        + '{"sequence":"3","complete":{"document":{"rawText":"Hello"}}}\n',
+    ];
+    const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("/api/v1/analyze-progressive");
+      expect(init?.body).toBe('{"document":{"rawText":"Hello"}}');
+      return new Response(new ReadableStream({
+        start(controller) {
+          for (const chunk of chunks) {
+            controller.enqueue(encoder.encode(chunk));
+          }
+          controller.close();
+        },
+      }), { status: 200 });
+    });
+    const events: Record<string, unknown>[] = [];
+
+    const response = await analyzeProgressively(
+      { document: { rawText: "Hello" } },
+      (event) => events.push(event),
+      fetcher,
+    );
+
+    expect(events).toHaveLength(3);
+    expect(events[1]).toHaveProperty("layersReady.layers.0.id", "opennlp:tokens");
+    expect(response).toEqual({ document: { rawText: "Hello" } });
   });
 });
 

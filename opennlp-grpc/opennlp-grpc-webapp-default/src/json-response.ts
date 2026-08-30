@@ -19,8 +19,25 @@
 
 const MAX_INLINE_TEXT_LENGTH = 100_000;
 const MAX_INLINE_ANNOTATIONS = 100_000;
-const LARGE_RESPONSE_MESSAGE = "This response is too large to format safely in the browser. "
-  + "Use Copy JSON or Download JSON when you need the complete protobuf JSON.";
+/** Shown in place of the JSON when the response is past the inline threshold. */
+export const LARGE_RESPONSE_MESSAGE = "This response is too large to format safely in the browser. "
+  + "Download JSON writes it to a file without formatting it.";
+
+/** Why Copy JSON refuses a response past the threshold. */
+export const LARGE_COPY_MESSAGE = "This response is too large to copy through the clipboard; "
+  + "use Download JSON instead.";
+
+/**
+ * Why Download .pb refuses a response past the threshold when it was opened from a file: the
+ * browser would re-upload the whole JSON to the gateway for transcoding, the gateway caps
+ * request bodies, and there is no request to re-run on the server.
+ */
+export const LARGE_PB_MESSAGE = "This response is too large to transcode through the browser, "
+  + "and it was opened from a file, so there is no request the server could re-run for the .pb.";
+
+/** Shown while the server re-runs an analysis whose reply is too large to transcode locally. */
+export const SERVER_PB_MESSAGE = "The reply is too large to transcode in the browser, so the "
+  + "server is re-running the analysis and streaming the .pb directly…";
 
 export interface JsonPresentation {
   inline: boolean;

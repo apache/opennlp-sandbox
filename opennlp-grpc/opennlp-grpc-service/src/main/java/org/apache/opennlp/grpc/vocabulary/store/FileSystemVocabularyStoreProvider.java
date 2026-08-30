@@ -21,6 +21,8 @@ package org.apache.opennlp.grpc.vocabulary.store;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
+import org.apache.opennlp.grpc.spi.vocabulary.VocabularyStoreProvider;
+import org.apache.opennlp.grpc.spi.vocabulary.VocabularyStore;
 
 /** The {@link VocabularyStoreProvider} for {@code file} URIs. */
 public final class FileSystemVocabularyStoreProvider implements VocabularyStoreProvider {

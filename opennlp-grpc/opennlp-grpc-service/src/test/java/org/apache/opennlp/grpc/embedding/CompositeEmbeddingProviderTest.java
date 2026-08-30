@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingProvider;
 
 /**
  * Tests {@link CompositeEmbeddingProvider}'s multi-engine routing: the same logical model served
@@ -176,6 +177,30 @@ class CompositeEmbeddingProviderTest {
 
     assertEquals("fast", composite.backendId("minilm"));
     assertEquals("fast-hash", composite.modelArtifactHash("minilm"));
+  }
+
+  @Test
+  void undeclaredVectorSpaceDerivesFromTheArtifact() {
+    // A single-engine model without a declared space still advertises a complete route,
+    // narrow to its own artifact so it never claims compatibility it cannot prove.
+    final CompositeEmbeddingProvider composite = new CompositeEmbeddingProvider(
+        List.of(providerWithHash("fast", "0123456789abcdef0123456789abcdef", FAST_VECTOR)),
+        Map.of());
+
+    assertEquals("minilm@0123456789abcdef",
+        composite.routesForModel("minilm").getFirst().getVectorSpaceId());
+    assertEquals("minilm@fast",
+        CompositeEmbeddingProvider.derivedVectorSpaceId("minilm", "fast", null));
+  }
+
+  @Test
+  void declaredVectorSpaceWinsOverTheDerivedOne() {
+    final CompositeEmbeddingProvider composite = new CompositeEmbeddingProvider(
+        List.of(providerWithHash("fast", "fast-hash", FAST_VECTOR)),
+        Map.of("model.embedder.minilm.fast.vector_space_id", "minilm-v1"));
+
+    assertEquals("minilm-v1",
+        composite.routesForModel("minilm").getFirst().getVectorSpaceId());
   }
 
   @Test

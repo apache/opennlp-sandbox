@@ -25,24 +25,33 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import opennlp.tools.util.StringUtil;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingProvider;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingBackendFactory;
 
 /**
  * Creates the aggregate {@link EmbeddingProvider} for the gRPC server.
  *
  * <p>Backends are discovered through the {@link EmbeddingBackendFactory} service provider
- * interface via {@link ServiceLoader}; the server ships {@code onnx} (ONNX Runtime on CPU) and
- * {@code cuda} (ONNX Runtime with the CUDA execution provider; requires a server built with the
- * {@code gpu} Maven flavor), and additional backends (remote TEI, OpenVINO, ...) register from
- * their own jars. <b>Every</b> configured backend is loaded and the providers are aggregated into
+ * interface via {@link ServiceLoader}; the {@code onnx} (ONNX Runtime on CPU) and {@code cuda}
+ * (ONNX Runtime with the CUDA execution provider) engines register from the
+ * {@code opennlp-grpc-dl} add-on jar, and additional backends (remote TEI, OpenVINO, ...)
+ * register from their own jars. <b>Every</b> configured backend is loaded and the providers are aggregated into
  * a {@link CompositeEmbeddingProvider}, so several engines serve embeddings at once and a model id
  * can be served by more than one engine with priority/fallback (see that class).</p>
  */
 public final class EmbeddingProviderFactory {
 
   private static final Logger logger = LoggerFactory.getLogger(EmbeddingProviderFactory.class);
+
+  /** Namespace shared by all embedding engines: {@code model.embedder.<id>.<engine suffix>}. */
+  private static final String KEY_PREFIX = "model.embedder.";
+
+  /** Engine-specific model path suffixes served only by the {@code opennlp-grpc-dl} add-on. */
+  private static final Map<String, String> DL_PATH_SUFFIXES =
+      Map.of(".onnx.path", "onnx", ".cuda.path", "cuda");
 
   private EmbeddingProviderFactory() {
   }
@@ -63,6 +72,7 @@ public final class EmbeddingProviderFactory {
       throw new IllegalArgumentException("configuration must not be null");
     }
     final SortedMap<String, EmbeddingBackendFactory> factories = discoverFactories();
+    requireDlBackendsWhenConfigured(configuration, factories);
     final List<EmbeddingProvider> available = new ArrayList<>();
     for (EmbeddingBackendFactory factory : factories.values()) {
       EmbeddingProvider provider = null;
@@ -88,6 +98,32 @@ public final class EmbeddingProviderFactory {
       }
     }
     return new CompositeEmbeddingProvider(available, configuration);
+  }
+
+  /**
+   * Fails loud when an ONNX-family model path is configured but the engine that serves it was
+   * not discovered, instead of silently ignoring the model the operator asked for.
+   *
+   * @param configuration The server configuration.
+   * @param factories The discovered backend factories, keyed by backend id.
+   *
+   * @throws AnalysisException {@code FAILED_PRECONDITION} if an {@code .onnx.path} or
+   *     {@code .cuda.path} entry exists and the matching engine is missing.
+   */
+  private static void requireDlBackendsWhenConfigured(
+      Map<String, String> configuration, SortedMap<String, EmbeddingBackendFactory> factories) {
+    for (String key : configuration.keySet()) {
+      if (!key.startsWith(KEY_PREFIX)) {
+        continue;
+      }
+      for (Map.Entry<String, String> engine : DL_PATH_SUFFIXES.entrySet()) {
+        if (key.endsWith(engine.getKey()) && !factories.containsKey(engine.getValue())) {
+          throw AnalysisException.failedPrecondition(
+              key + " is configured but the '" + engine.getValue() + "' embedding backend is "
+                  + "not on the classpath; add the opennlp-grpc-dl jar (cpu or gpu flavor)");
+        }
+      }
+    }
   }
 
   /** Closes every provider while preserving later cleanup. */

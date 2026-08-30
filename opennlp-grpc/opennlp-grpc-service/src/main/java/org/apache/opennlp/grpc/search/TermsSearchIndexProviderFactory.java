@@ -22,11 +22,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.opennlp.grpc.search.query.KeywordQueryIndex;
-import org.apache.opennlp.grpc.search.query.QueryCandidate;
+import org.apache.opennlp.grpc.spi.search.KeywordQueryIndex;
+import org.apache.opennlp.grpc.spi.search.QueryCandidate;
 import org.apache.opennlp.grpc.search.query.TermsKeywordQueryIndex;
 import org.apache.opennlp.grpc.v1.AnalysisChainDescriptor;
 import org.apache.opennlp.grpc.v1.SearchProviderCapability;
+import org.apache.opennlp.grpc.spi.search.SearchIndexProviderFactory;
 
 /**
  * ServiceLoader factory for the built-in keyword component executing term and phrase clauses

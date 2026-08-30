@@ -25,6 +25,8 @@ import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.apache.opennlp.grpc.spi.search.SearchResult;
+import org.apache.opennlp.grpc.spi.search.SearchRecord;
 
 class SearchRecordTest {
 

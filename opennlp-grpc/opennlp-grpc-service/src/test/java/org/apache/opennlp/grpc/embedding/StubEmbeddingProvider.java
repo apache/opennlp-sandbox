@@ -20,6 +20,7 @@ package org.apache.opennlp.grpc.embedding;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
+import org.apache.opennlp.grpc.spi.embedding.EmbeddingProvider;
 
 /**
  * Test double returning deterministic or caller-supplied vectors.

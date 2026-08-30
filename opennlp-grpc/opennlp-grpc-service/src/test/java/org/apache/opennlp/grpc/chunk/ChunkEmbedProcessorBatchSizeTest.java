@@ -18,7 +18,7 @@
 package org.apache.opennlp.grpc.chunk;
 
 import org.apache.opennlp.grpc.embedding.MiscountingEmbeddingProvider;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.ChunkEmbedConfigEntry;

@@ -41,8 +41,10 @@ class VocabularyWireContractTest {
     final var service = OpenNlpVocabularyProto.getDescriptor()
         .findServiceByName("OpenNlpVocabularyService");
     assertNotNull(service);
-    assertEquals(4, service.getMethods().size());
+    assertEquals(6, service.getMethods().size());
     assertMethod(service.findMethodByName("ListDictionaryFormats"), false, false);
+    assertMethod(service.findMethodByName("ListDictionaries"), false, false);
+    assertMethod(service.findMethodByName("ListVocabularies"), false, false);
     assertMethod(service.findMethodByName("ImportDictionary"), true, false);
     assertMethod(service.findMethodByName("LearnVocabulary"), true, false);
     assertMethod(service.findMethodByName("DownloadVocabulary"), false, true);

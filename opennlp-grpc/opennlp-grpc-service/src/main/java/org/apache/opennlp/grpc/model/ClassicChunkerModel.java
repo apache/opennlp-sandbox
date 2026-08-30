@@ -26,6 +26,7 @@ import org.apache.opennlp.grpc.v1.AnnotatedSentence;
 import org.apache.opennlp.grpc.v1.AnnotationSpan;
 import org.apache.opennlp.grpc.v1.ChunkSpan;
 import org.apache.opennlp.grpc.v1.CoordinateSpace;
+import org.apache.opennlp.grpc.spi.model.ChunkerModel;
 
 /**
  * A {@link ChunkerModel} backed by a classic OpenNLP {@link ChunkerME}. {@code ChunkerME} is

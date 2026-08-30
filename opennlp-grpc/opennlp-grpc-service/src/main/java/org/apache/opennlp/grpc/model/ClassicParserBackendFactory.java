@@ -26,9 +26,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.opennlp.grpc.spi.model.ParserModel;
+import org.apache.opennlp.grpc.spi.model.ParserBackendFactory;
 
 /**
  * Built-in parser backend for classic OpenNLP constituency parsers. Reads

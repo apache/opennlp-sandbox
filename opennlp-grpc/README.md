@@ -19,6 +19,10 @@ limitations under the License.
 
 Document-centric gRPC API for Apache OpenNLP inference. Design RFC: [docs/rfc/opennlp-grpc-design.md](docs/rfc/opennlp-grpc-design.md).
 
+New here? [QUICKSTART.md](QUICKSTART.md) goes from a clean checkout to
+analyzing, training, and searching in a few minutes, in the browser and from
+Python, Node.js, Java, or Go.
+
 ## The document shape
 
 Every `AnalyzeDocument` response also renders its results as the OpenNLP 3.0
@@ -87,17 +91,47 @@ Natural Earth gazetteer (`PIPELINE_STEP_GEOCODE`, no configuration required, fil
 
 - **opennlp-grpc-api** - v1 analysis, document-shape, and immutable-search protos
   (`org.apache.opennlp.grpc.v1`) plus generated stubs
-- **opennlp-grpc-service** - `OpenNlpGrpcServer`, analysis, search, and vocabulary services, the
-  search and dictionary-format SPIs, and the bounded TurboQuant bundle builder
+- **opennlp-grpc-spi** - the ServiceLoader contracts (`org.apache.opennlp.grpc.spi.*`) and
+  carrier types that add-on backends compile against; deliberately small
+- **opennlp-grpc-service** - `OpenNlpGrpcServer`, analysis, search, and vocabulary services,
+  and the registries that discover SPI backends; its slim `opennlp-grpc-server` jar carries
+  no native inference runtime and no quantized search provider
 - **opennlp-grpc-backend-tei** - optional remote embedding backend for HuggingFace Text
   Embeddings Inference (TEI) gRPC endpoints
 - **opennlp-grpc-backend-openvino** - optional remote embedding backend for OpenVINO
   Model Server and other KServe v2 compatible inference servers
 - **opennlp-grpc-backend-static** - optional in-process embedding backend serving static
   (non-contextual) embedding tables through the `opennlp-embeddings` extension module
+- **opennlp-grpc-dl** - optional ONNX Runtime inference add-on: transformer sentence
+  embeddings (CPU and CUDA engines), the ONNX name finder, and the ONNX document
+  categorizer; built in the cpu (default) or gpu (`-Dgpu`) flavor
+- **opennlp-grpc-installer** - optional model download add-on: the built-in installable
+  model catalog (metadata only) contributed through the catalog SPI, and the standalone
+  `install-resource` CLI; without it the server serves an empty catalog and refuses
+  installs honestly
+- **opennlp-grpc-search-turboquant** - optional quantized vector search add-on: the
+  TurboQuant provider (live workspaces, persistence, exhaustive immutable bundles) and
+  the offline bundle builder CLI; without it the flat-float and terms providers still
+  serve dynamic search
+- **opennlp-grpc-store-s3** - optional S3 vocabulary artifact store, discovered by the
+  `s3` scheme of `vocabulary.artifact_root`; its `-all` jar bundles the AWS SDK for
+  single-file classpath drop-in (not part of `opennlp-grpc-server-all`)
+- **opennlp-grpc-search-lucene** - optional Lucene keyword component (`lucene`
+  provider): BM25-scored term and phrase execution for compound queries; its `-all`
+  jar bundles Lucene for single-file classpath drop-in (not part of
+  `opennlp-grpc-server-all`)
+- **opennlp-grpc-formats** - optional hand-written document output formats (CoNLL-U,
+  RFC 4180 CSV, Markdown report, WARC) contributed through the format SPI; no
+  third-party dependency, bundled in `opennlp-grpc-server-all`
+- **opennlp-grpc-sink-grpc** - optional gRPC document sink: streams every analyzed
+  document (optionally with a rendering) to a downstream receiver implementing the
+  `OpenNlpDocumentSinkService` contract in any protobuf language; bundled in
+  `opennlp-grpc-server-all`
 - **opennlp-grpc-webapp-api** - typed ServiceLoader API for static browser interface extensions
 - **opennlp-grpc-webapp-default** - default TypeScript analysis and semantic-search workbench
 - **opennlp-grpc-webapp** - optional standalone HTTP host and protobuf JSON gateway
+- **opennlp-grpc-distr** - everything-in-one `opennlp-grpc-server-all` jar (the slim server
+  plus every in-tree add-on) used by the docker images and the demos
 - **opennlp-grpc-integration-tests** - black-box integration tests that launch the
   shaded server and web application as separate processes and exercise analysis, search,
   and a remote TEI embedding backend over real network listeners
@@ -131,8 +165,20 @@ Once the depended-on PRs merge to apache main, the pin reverts to plain
 ## Run the server
 
 ```bash
-java -jar opennlp-grpc-service/target/opennlp-grpc-server-3.0.0-SNAPSHOT.jar
+java -jar opennlp-grpc-distr/target/opennlp-grpc-server-all-3.0.0-SNAPSHOT.jar
 ```
+
+`opennlp-grpc-server-all` bundles every in-tree add-on. The slim
+`opennlp-grpc-service/target/opennlp-grpc-server-3.0.0-SNAPSHOT.jar` serves the same APIs
+without any native inference runtime; add-on jars are dropped on the classpath instead:
+
+```bash
+java -cp "opennlp-grpc-server-3.0.0-SNAPSHOT.jar:backends/*" \
+  org.apache.opennlp.grpc.server.OpenNlpGrpcServer
+```
+
+Configuring an add-on's models without its jar on the classpath fails startup with
+`FAILED_PRECONDITION` naming the missing add-on, never a silently missing model.
 
 Options:
 
@@ -167,6 +213,20 @@ model.catalog_root=/srv/opennlp/catalog-models
 # model.tokenizer.path=/path/to/en-token.bin
 # model.pos_tagger.path=/path/to/en-pos.bin
 # model.lemmatizer.path=/path/to/en-lemmas.bin
+# Alternative to the statistical lemmatizer model: an OpenNLP
+# word<TAB>postag<TAB>lemma dictionary. The two lemmatizer sources are mutually
+# exclusive; the dictionary's tags must match the POS tagger's native tagset.
+# model.lemmatizer.dictionary=/path/to/lemmas.tsv
+
+# Additional per-language classic pipelines beside the default models. Each
+# language configures all four models; requests route to a pipeline when the
+# detected language matches (ISO 639-1 or 639-3), or explicitly through
+# AnalysisProfile.pipeline_language. Installed catalog language packs publish
+# these keys automatically.
+# model.pipeline.de.sentence_detector.path=/path/to/opennlp-de-ud-gsd-sentence.bin
+# model.pipeline.de.tokenizer.path=/path/to/opennlp-de-ud-gsd-tokens.bin
+# model.pipeline.de.pos_tagger.path=/path/to/opennlp-de-ud-gsd-pos.bin
+# model.pipeline.de.lemmatizer.path=/path/to/opennlp-de-ud-gsd-lemmas.bin
 ```
 
 By default no configuration is required: the server loads the bundled language
@@ -176,10 +236,13 @@ executable jar, the models merged into the jar by the build are used directly; w
 running from a regular classpath (e.g. via Maven), they are discovered from the
 `opennlp-models-*` runtime dependencies.
 
-Install additional operator-approved models or data with the same executable before startup:
+Install additional operator-approved models or data before startup with the installer
+add-on's standalone CLI (bundled in `opennlp-grpc-server-all`; also usable from the
+plain `opennlp-grpc-installer` jar plus its dependencies):
 
 ```bash
-java -jar opennlp-grpc-service/target/opennlp-grpc-server-3.0.0-SNAPSHOT.jar \
+java -cp opennlp-grpc-distr/target/opennlp-grpc-server-all-3.0.0-SNAPSHOT.jar \
+  org.apache.opennlp.grpc.installer.OpenNlpGrpcInstaller \
   install-resource \
   --source https://example.invalid/en-ner-person.bin \
   --checksum <sha256-or-sha512> \
@@ -195,12 +258,21 @@ which still need an operator-provided model or data resource.
 
 ### Browse and install the standard model catalog
 
-When `model.catalog_root` is configured, the model training service exposes a small immutable
+The catalog itself ships in the `opennlp-grpc-installer` add-on (bundled in
+`opennlp-grpc-server-all` and the docker images) and is discovered through the
+`org.apache.opennlp.grpc.spi.catalog.ModelCatalogProvider` SPI; without the add-on the
+server serves an empty catalog and an install attempt fails naming the missing jar.
+When `model.catalog_root` is configured, the model training service exposes the discovered
 catalog through `ListModelCatalog`, reports this node's verified downloads through
 `ListInstalledModels`, and streams file-level progress from `InstallModel`. The web workbench
 requires the user to review and acknowledge the catalog entry's license before it submits an
 installation. Model weights are downloaded from checksum-pinned revisions and are never bundled
 with the OpenNLP source or binary distribution.
+
+The catalog also offers the seven classic OpenNLP 1.5 English name finders (person,
+location, organization, date, money, percentage, time; Apache-2.0). Installing one publishes
+`model.name_finder.<type>.path` at the next restart, after which `PIPELINE_STEP_NER` serves
+that entity type.
 
 The standard catalog currently distinguishes these roles:
 
@@ -212,6 +284,20 @@ The standard catalog currently distinguishes these roles:
 | `potion-base-8m` | `minishlab/potion-base-8M` | Ready-to-serve 256-dimensional static embedding provider |
 | `potion-retrieval-32m` | `minishlab/potion-retrieval-32M` | Ready-to-serve 512-dimensional retrieval embedding provider |
 | `potion-multilingual-128m` | `minishlab/potion-multilingual-128M` | Ready-to-serve 256-dimensional multilingual embedding provider |
+| `paraphrase-multilingual-minilm-l12-v2-teacher` | `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` | Multilingual ONNX teacher (50+ languages) selectable by the Model2Vec-style trainer |
+| `de-ud-gsd-*`, `fr-ud-gsd-*`, `es-ud-gsd-*` | Apache OpenNLP UD 1.3 releases | German, French, and Spanish sentence detector, tokenizer, POS tagger, and lemmatizer packs, verified against the published Apache checksums and activated on the next server start |
+
+The complete flow from a stock server to German analysis and German semantic search is
+walked through in [docs/tutorials/german-end-to-end.md](docs/tutorials/german-end-to-end.md).
+
+An installed UD pack model publishes into its language's pipeline slot
+(`model.pipeline.<lang>.sentence_detector.path` and the tokenizer, POS tagger, and lemmatizer
+equivalents) on the next start, so packs for different languages coexist beside the bundled
+English default; a second model for one language's slot fails loud at startup. Each loaded
+pipeline is advertised as bundle `pipeline-<lang>`, requests route to it automatically when
+`PIPELINE_STEP_LANGUAGE_DETECT` reports that language, and
+`AnalysisProfile.pipeline_language` selects one explicitly (an unknown code returns
+`NOT_FOUND` naming the configured pipelines).
 
 Every entry fixes the upstream revision, file list, byte sizes, SHA-256 values, model page, and
 license identity in server-owned metadata. A static table joins the same embedding provider catalog
@@ -296,6 +382,82 @@ routing, or use distinct logical ids when clients should select them explicitly.
 `./demo-model-download.sh --help` for deadline, priority, TEI normalization/truncation, and OpenVINO
 tensor-name options. Remote providers are contacted and validated when the gRPC server starts.
 
+## Export analyzed documents
+
+The reply of `AnalyzeDocument` is itself the first output format: `FormatDocument`
+renders one analyzed document into any format contributed through the
+`org.apache.opennlp.grpc.spi.format.OutputFormatter` SPI, and `ListOutputFormats`
+lists what the running server can render. The server ships `proto` (the reply's
+binary protobuf bytes), `protojson` (canonical protobuf JSON), and `tsv` (one token
+per row); the `opennlp-grpc-formats` add-on (bundled in `opennlp-grpc-server-all`
+and the docker images) adds `conllu`, `csv`, `markdown`, and `warc`, all written by
+hand with no third-party dependency. The gateway exposes the same pair as
+`GET /api/v1/output-formats` and `POST /api/v1/format-document`.
+
+An unknown format id fails with `NOT_FOUND` naming the available ids; further
+formats are one `OutputFormatter` implementation plus a ServiceLoader registration
+in a jar on the server classpath. The SPI is generic over the reply type, so future
+reply families (search results, catalogs) can grow their own formatter sets without
+new plumbing.
+
+## Stream analyzed documents to a sink
+
+Sinks are the push counterpart of output formats: the server tees every document the
+analysis service produces (unary and streaming) into destinations contributed through
+the `org.apache.opennlp.grpc.spi.sink.DocumentSinkProvider` SPI. A sink failure is
+logged and isolated, never failing the analysis that produced the document.
+
+The `opennlp-grpc-sink-grpc` add-on (bundled in `opennlp-grpc-server-all` and the
+docker images) streams to a downstream receiver over one client-streaming call:
+
+```ini
+sink.archive.provider=grpc
+sink.archive.target=localhost:9091
+# Optional: attach a deployed output format's rendering to every item.
+sink.archive.format=conllu
+```
+
+The receiver implements the one-RPC `OpenNlpDocumentSinkService` contract
+(`opennlp_sink.proto`) in any protobuf language: generate a Python, Go, or Java
+server stub, accept the `StreamDocuments` stream, and reply with a summary when the
+sender half-closes at shutdown. Like the JSON gateway, the sink channel carries no
+credentials, so targets belong on loopback or a trusted network. An instance naming
+an unknown provider fails startup listing the available sink ids.
+
+### Catalog roles, unlock tags, and install failures
+
+Every catalog entry now says what it unlocks. `ModelCatalogDescriptor` carries the artifact
+`format` (derived from the pinned file names: OpenNLP `.bin`, ONNX, SentencePiece, WN-LMF,
+safetensors), the pipeline steps it `unlocks`, whether it `requires_restart`, and its pinned
+`files`; the workbench renders these as tags on each card and uses them to route a
+browned-out feature on the Analyze tab to the card that fixes it. Three roles joined the
+classic ones: `SUBWORD_MODEL` (published as `model.subword.<id>.path`), `WORDNET_LEXICON`
+(`model.wordnet.<id>.path`, plain or gzipped WN-LMF), and `DOC_CATEGORIZER`
+(`model.doccat.<id>.path`). The standard catalog offers the T5 small SentencePiece model
+and Open English WordNet 2024 for the first two.
+
+An install refuses up front when the catalog root lacks the model's size plus a 64 MiB
+margin (`RESOURCE_EXHAUSTED`), when another installed model already claims the same
+restart slot (`FAILED_PRECONDITION`, naming the occupant), when a download fails
+(`UNAVAILABLE`, naming the file and host), or when a downloaded file fails its pinned
+SHA-256 (`FAILED_PRECONDITION`); nothing is published in any of these cases.
+`ListSearchProviders` also reports whether live indexing is enabled and whether
+`search.persist.root` is set, so the search tabs brown out with the reason instead of
+failing per click.
+
+### Gateway deadlines scale with input size
+
+The gateway's per-RPC deadline (`--request-timeout-seconds`, default 30) covers a
+sentence, not a novel. Analysis, formatting and indexing calls therefore add
+`--request-timeout-per-megabyte-seconds` (default 120) for every mebibyte of document text
+they submit, never exceeding `--long-running-timeout-seconds` (default 1800); pass `0` to
+disable the scaling.
+
+The gateway also keeps idle HTTP keep-alive connections open for 15 minutes instead of the
+JDK's 30 seconds, so a browser that pauses on a result does not get a bare network failure
+on its next request; set `-Dsun.net.httpserver.idleInterval=<seconds>` to choose another
+value.
+
 ## Run the optional web application
 
 With the gRPC service running on its default port, start the separate web application:
@@ -312,13 +474,17 @@ Open `http://127.0.0.1:7072/`. The default TypeScript interface discovers config
 models, resources, and supported pipeline steps. Its default preset requests the richest safe
 combination that is actually available, while named profiles and automatic server selection remain
 available. Sentence and token-window chunking can be enabled independently or together. The
-same-origin gateway returns the complete `AnalyzeDocumentResponse`, including the document shape,
-typed layers, and chunk groups.
+Analyze action uses the same-origin progressive NDJSON gateway. It renders complete typed layers
+as they arrive, then installs the terminal `AnalyzeDocumentResponse` for copy, download, heatmap,
+graph, and indexing operations.
 
 The Analyze workbench gives the output the full page width and provides Document, Chunks, Heatmap,
 Graph, and Protobuf JSON projections over the same response. Long source text and annotated output
 scroll vertically without a horizontal scrollbar. Selecting an annotation, graph node, or chunk
 opens details in a side drawer so the document does not collapse into a narrow column.
+The Build index tab turns pasted documents into one guided analysis, vocabulary learning, static-model
+training, indexing, and search flow. It uses corpus-only vocabulary by default and can pair the
+corpus with an imported dictionary selected before the run.
 The web host loads additional static interfaces through the `WebUiExtension` ServiceLoader API.
 See [opennlp-grpc-webapp/README.md](opennlp-grpc-webapp/README.md) for endpoints, security defaults,
 and command-line options.
@@ -340,7 +506,7 @@ configuration and carries the optional embedding backends on the classpath.
 See [docker/README.md](docker/README.md) for configuration, state, and
 security notes.
 
-## Use the service from Python, Node.js, or Java
+## Use the service from Python, Node.js, Java, or Go
 
 The [Python quickstart](examples/python-client/README.md) uses standard generated
 protobuf stubs and `grpcio`. Its first example analyzes typed document shapes,
@@ -348,11 +514,12 @@ creates a process-local TurboQuant index in the Java server, and prints exhausti
 server-ranked results. Its second example streams documents through vocabulary
 learning, static-model distillation, index publication, and search.
 
-The [Node.js quickstart](examples/node-client/README.md) and the
-[Java quickstart](examples/java-client/README.md) run the same analyze, index,
+The [Node.js quickstart](examples/node-client/README.md), the
+[Java quickstart](examples/java-client/README.md), and the
+[Go quickstart](examples/go-client/README.md) run the same analyze, index,
 and search flow with identical output: Node.js loads the v1 protos at runtime
-with no code generation, and Java uses the generated blocking stubs from
-`opennlp-grpc-api`.
+with no code generation, Java uses the generated blocking stubs from
+`opennlp-grpc-api`, and Go generates its stubs locally with one script.
 
 These clients are intentionally small enough to adapt in a notebook or data
 pipeline. The black-box integration suite runs the first example against the
@@ -380,24 +547,32 @@ vocabulary.max_concurrent_writes=1
 durable store. A plain path or a `file` URI uses the built-in filesystem store, which
 stages each artifact and publishes it with one atomic directory move. Other schemes
 resolve through the `VocabularyStoreProvider` ServiceLoader interface in
-`org.apache.opennlp.grpc.vocabulary.store`, so a remote tier such as S3 plugs in by
+`org.apache.opennlp.grpc.spi.vocabulary`, so a remote tier such as S3 plugs in by
 adding the JAR that provides its scheme to the classpath; the service itself carries
 no cloud dependency. A scheme with no provider on the classpath fails loud at startup.
+The `opennlp-grpc-store-s3` add-on provides the `s3` scheme: set
+`vocabulary.artifact_root=s3://bucket/prefix` and drop its self-contained
+`opennlp-grpc-store-s3-<version>-all.jar` (AWS SDK bundled) on the server classpath;
+region and credentials resolve through the standard AWS chain.
 
 The defaults shown above are conservative per-operation caps. `max_concurrent_writes` is shared by
 dictionary imports and vocabulary builds, so multiple client streams cannot multiply their bounded
 working sets without an explicit operator choice. Values are validated against fixed safety
 ceilings at startup.
 
-The four RPCs form one explicit artifact flow:
+The six RPCs form one explicit artifact flow:
 
 1. `ListDictionaryFormats` returns built-in and extension formats plus the effective limits.
-2. `ImportDictionary` accepts a start frame followed by bounded encoded byte frames. The built-ins
+2. `ListDictionaries` returns the imported dictionary artifacts available for vocabulary learning.
+3. `ListVocabularies` returns the learned vocabulary artifacts, in artifact-id order, that a
+   distillation or a collection's coverage watch can name.
+4. `ImportDictionary` accepts a start frame followed by bounded encoded byte frames. The built-ins
    accept UTF-8 headword-and-definition TSV, one UTF-8 headword per line, and OpenNLP dictionary
    XML. The server publishes a normalized, hashed dictionary artifact atomically.
-3. `LearnVocabulary` accepts a start frame followed by `OpenNlpDocument` values. Each document's
-   `raw_text` contributes corpus counts, and the imported dictionary preserves required headwords.
-4. `DownloadVocabulary` streams the exact hashed UTF-8 `term<TAB>count<TAB>source` artifact. The
+5. `LearnVocabulary` accepts a start frame followed by `OpenNlpDocument` values. Each document's
+   `raw_text` contributes corpus counts. An optional imported dictionary preserves required
+   headwords alongside those corpus terms.
+6. `DownloadVocabulary` streams the exact hashed UTF-8 `term<TAB>count<TAB>source` artifact. The
    downloaded table can be supplied to the OpenNLP embeddings `DistillModel` workflow as its terms
    input.
 
@@ -407,11 +582,11 @@ which keeps teacher identity, licensing, resource use, and output location under
 control through an explicit teacher allowlist.
 
 Dictionary encodings are extensible without changing the wire contract. A provider implements
-`org.apache.opennlp.grpc.vocabulary.DictionaryFormatProvider`, returns a stable custom selector,
+`org.apache.opennlp.grpc.spi.vocabulary.DictionaryFormatProvider`, returns a stable custom selector,
 and registers its class in:
 
 ```text
-META-INF/services/org.apache.opennlp.grpc.vocabulary.DictionaryFormatProvider
+META-INF/services/org.apache.opennlp.grpc.spi.vocabulary.DictionaryFormatProvider
 ```
 
 Provider jars go on the server classpath. Duplicate selectors, malformed descriptors, unspecified
@@ -467,9 +642,9 @@ all published descriptors. Cancellation or a terminal-stage failure rolls back a
 order. The model and index plans remain operator-gated: the dictionary must already be imported, the
 teacher must be allowlisted, and persistence requires `search.persist.root`.
 
-The bundled web UI's Trainer tab drives the whole flow in the browser: import a dictionary,
-learn a vocabulary from pasted documents, watch the distillation progress stream, and pick the
-served model in Analyze to index and search with it.
+The bundled web UI's Trainer tab drives the whole flow in the browser: optionally import a
+dictionary, learn a vocabulary from pasted documents, watch the distillation progress stream,
+and pick the served model in Analyze to index and search with it.
 
 Every published model carries a manifest naming the exact size and SHA-256 of each model file;
 the descriptor's `artifact_hash` is the SHA-256 of that manifest. Models are re-verified against
@@ -517,8 +692,8 @@ Build a new bundle. The command refuses to replace an existing output path, snap
 files before embedding, and enforces record, input, query, batch, and output limits:
 
 ```bash
-java -cp opennlp-grpc-service/target/opennlp-grpc-server-3.0.0-SNAPSHOT.jar \
-  org.apache.opennlp.grpc.search.bundle.TurboQuantSearchBundleCommand \
+java -cp opennlp-grpc-distr/target/opennlp-grpc-server-all-3.0.0-SNAPSHOT.jar \
+  org.apache.opennlp.grpc.search.turboquant.TurboQuantSearchBundleCommand \
   --server-config /srv/opennlp/legal/server.properties \
   --passages /srv/opennlp/legal/passages.jsonl \
   --preparation-config /srv/opennlp/legal/preparation.properties \
@@ -550,7 +725,7 @@ search.dynamic.enabled=true
 search.index.legal-opinions.provider=turbo_quant
 search.index.legal-opinions.directory=/srv/opennlp/legal/legal-index-v1
 search.index.legal-opinions.passages=/srv/opennlp/legal/legal-index-v1/passages.jsonl
-search.index.legal-opinions.max_top_k=50
+search.index.legal-opinions.max_top_k=50000
 search.index.legal-opinions.max_query_bytes=16384
 search.index.legal-opinions.max_response_bytes=8388608
 search.index.legal-opinions.max_records=100000
@@ -563,7 +738,7 @@ Start the gRPC server with that file, then start the web application on its sepa
 port:
 
 ```bash
-java -jar opennlp-grpc-service/target/opennlp-grpc-server-3.0.0-SNAPSHOT.jar \
+java -jar opennlp-grpc-distr/target/opennlp-grpc-server-all-3.0.0-SNAPSHOT.jar \
   --config /srv/opennlp/legal/server.properties
 
 java -jar opennlp-grpc-webapp/target/opennlp-grpc-webapp-3.0.0-SNAPSHOT.jar \
@@ -577,7 +752,7 @@ chunk text, and opens typed OpenNLP annotations for a selected source document. 
 and response sizes remain bounded by the descriptor advertised to the browser.
 
 The results panel offers two views. The ranked list orders scored chunks best first. A TurboQuant
-index with at most 10,000 records advertises `supports_all_hits` independently of the ordinary
+index with at most 50,000 records advertises `supports_all_hits` independently of the ordinary
 `max_top_k` setting. The interactive workbenches send the typed `all_hits` request for such an
 index. The server
 returns every ranked chunk that fits `max_response_bytes`, reports truncation explicitly, and
@@ -603,7 +778,7 @@ membership, boosts shape relevancy, and ranking ties break by chunk id then docu
 Keyword and phrase components analyze query text and indexed chunk text identically (code-point
 letter-and-digit terms, lowercased), and hits carry `matched_spans` locating each match in
 `indexed_text` by UTF-16 code unit for exact highlighting. Compound queries execute on the
-dynamic workspace indexes; a keyword-only tree needs no embedding backend at all. CEL clauses
+live indexes; a keyword-only tree needs no embedding backend at all. CEL clauses
 require an evaluator on the classpath through the `CelQueryEvaluator` ServiceLoader seam; the
 core ships none, and without one those clauses report `UNIMPLEMENTED`.
 
@@ -640,7 +815,7 @@ index-time analysis.
 Dynamic indexes have a wire-complete lifecycle. `PersistIndex` writes a checkpoint under the
 operator-configured `search.persist.root`. TurboQuant workspaces store immutable quantized vector
 segments and provider row references, not a second copy of every raw float vector. New documents
-append a bounded segment, so accretion continues after a restart without rehydrating raw vectors.
+append a bounded segment, so indexing continues after a restart without rehydrating raw vectors.
 The server-wide vector budget counts every live segment, including rows superseded by document
 replacement, which keeps repeated mutation bounded. The
 `search.persist.checkpoint_seconds` enables an auto-checkpoint that rewrites only changed
@@ -654,13 +829,13 @@ does; flat float is in-memory only). The gateway serves all of it: `/api/v1/pers
 `/api/v1/seal-index`, `/api/v1/reindex-index`, `/api/v1/set-index-alias`,
 `/api/v1/delete-index-alias`, and `/api/v1/index-aliases`.
 
-Collections scope vocabulary accretion. A collection (`SetCollection`, `GetCollection`,
+Collections scope vocabulary coverage. A collection (`SetCollection`, `GetCollection`,
 `ListCollections`, `DeleteCollection`) names its dynamic member indexes (aliases accepted,
 stored resolved), its dictionary, vocabulary, and model artifact lineage, and an optional
 drift threshold. Its term statistics are recomputed on every read from the live indexed text of
 member chunks with the same analysis chain as the keyword components, so replaced or deleted
 documents never leave stale counts; a multiword term of the current vocabulary counts as
-one unit, and the drift statistics report how many accreted terms fall outside that
+one unit, and the drift statistics report how many indexed terms fall outside that
 vocabulary (the retrain meter). With a persistence root configured, each collection is one
 atomic `collection.pb` file with an integrity hash inside and the last write winning.
 `search.collection.max_distinct_terms` bounds the vocabulary and drift maps built during one
@@ -678,7 +853,9 @@ a fresh snapshot.
 `IndexDocuments` also accepts analyzed `OpenNlpDocument` values whose chunk groups already carry
 embeddings. It creates or atomically extends a bounded index in server memory, so the browser
 never stores vectors or computes similarity. The optional `provider` selector fixes the vector
-storage at creation: the exact flat float provider (the default), TurboQuant, which quantizes
+storage at creation: the exact flat float provider (the default), TurboQuant (from the
+`opennlp-grpc-search-turboquant` add-on, bundled in `opennlp-grpc-server-all` and the
+docker images), which quantizes
 each published snapshot with a fixed bit width and seed, or any configured instance of a
 live vector provider; extending an index requires the same instance or an unset selector. `DeleteSearchIndex` releases that process-local
 workspace. Dynamic indexing is enabled by default for the workbench and can be disabled with
@@ -686,7 +863,10 @@ workspace. Dynamic indexing is enabled by default for the workbench and can be d
 dimension limits are combined with server-wide serialized-document and vector-memory ceilings.
 
 > v1 note: this slice implements language detection (`PIPELINE_STEP_LANGUAGE_DETECT`,
-> filling `detected_language` with an ISO 639-3 code plus `language_confidence`),
+> filling `detected_language` with an ISO 639-3 code plus `language_confidence`;
+> a positive `AnalysisOptions.ranked_language_count` additionally fills
+> `OpenNlpDocument.ranked_languages` and the `opennlp:language` layer with that many
+> ranked predictions, best first),
 > sentence detection, tokenization, named entity recognition (`PIPELINE_STEP_NER`,
 > filling `AnnotatedSentence.entities`), POS tagging (`PIPELINE_STEP_POS_TAG`,
 > filling `Token.pos_tag`, converted to the requested
@@ -766,7 +946,7 @@ document shape.
 The `TokenizerSelector.custom` and `SentenceDetectorSelector.custom` cases select open
 provider ids. Extension jars implement `TokenizerBackendFactory` or
 `SentenceDetectorBackendFactory` and register the implementation under the matching
-`META-INF/services/org.apache.opennlp.grpc.model.*BackendFactory` file. Each factory
+`META-INF/services/org.apache.opennlp.grpc.spi.model.*BackendFactory` file. Each factory
 receives the complete server configuration and may return an empty result when it is not
 configured. Returned engines must be safe for concurrent calls. Stateful OpenNLP
 implementations can meet that requirement with a thread-local delegate.
@@ -795,6 +975,25 @@ model.name_finder.organization.path=/path/to/en-ner-organization.bin
 model.name_finder.location.path=/path/to/en-ner-location.bin
 ```
 
+Two model-free backends serve entities from user-supplied files, so NER works without any
+trained model. A dictionary name finder takes either a serialized OpenNLP dictionary (its XML
+declares case sensitivity) or a plain wordlist with one entry per line, matched
+case-insensitively; a regex name finder takes one Java regular expression per line, with blank
+and `#` comment lines ignored:
+
+```ini
+# Every "Kansas City"-style entry in the wordlist becomes a city entity.
+model.name_finder_dictionary.city.path=/srv/opennlp/dictionaries/cities.txt
+# Every INV-[0-9]+ match becomes an invoice entity with its exact span.
+model.name_finder_regex.invoice.path=/srv/opennlp/patterns/invoice.regex
+```
+
+Dictionary, regex, classic, and ONNX recognizers share the entity-type namespace and the
+`opennlp:entities` layer; the same type served by several engines participates in priority and
+`EnginePolicy` routing under the open engine ids `dictionary` and `regex`. Every file-backed
+namespace accepts a `.priority` key beside `.path` for that routing, and because a dictionary or
+regex match is deterministic, it reports probability 1 when the request asks for probabilities.
+
 Request NER by adding `PIPELINE_STEP_NER` to the analysis profile (or use the
 built-in `en-ner` profile / `en-ner` bundle when models are configured). Optionally
 restrict which configured types run:
@@ -821,6 +1020,9 @@ in submission order, and it is released when the stream ends.
 > tokenization and may perform best with a matching tokenizer override.
 
 #### ONNX name finder models (optional)
+
+Served by the `opennlp-grpc-dl` add-on (bundled in `opennlp-grpc-server-all` and the docker
+images); without it, these keys fail startup with `FAILED_PRECONDITION`.
 
 Transformer NER models exported to ONNX are registered under a separate namespace.
 Each model needs the ONNX file, its wordpiece vocabulary, and a labels file (one BIO
@@ -851,7 +1053,7 @@ profile downloads the ONNX export of `dslim/bert-base-NER` (MIT) from HuggingFac
 `target/` at build time and runs `BasicDocumentAnalyzerDlNerTest`:
 
 ```bash
-mvn -pl opennlp-grpc/opennlp-grpc-service -Pdl-ner test -Dtest=BasicDocumentAnalyzerDlNerTest
+mvn -pl opennlp-grpc/opennlp-grpc-dl -Pdl-ner test -Dtest=BasicDocumentAnalyzerDlNerTest
 ```
 
 The model is fetched at build time only. It is never bundled into a built artifact and is
@@ -863,8 +1065,8 @@ Name finder backends are discovered through `java.util.ServiceLoader`, mirroring
 embedding SPI: the built-in classic (`opennlp-me`) and ONNX (`onnx`/`cuda`) backends are
 themselves regular consumers of it. To add another backend (a remote NER service, a custom
 model format, any inference runtime in any language), ship a jar that implements
-`org.apache.opennlp.grpc.model.NerBackendFactory`, registers it in
-`META-INF/services/org.apache.opennlp.grpc.model.NerBackendFactory`, and put that jar on the
+`org.apache.opennlp.grpc.spi.model.NerBackendFactory`, registers it in
+`META-INF/services/org.apache.opennlp.grpc.spi.model.NerBackendFactory`, and put that jar on the
 server classpath. Each factory parses its own configuration namespace and returns
 `NerModel` recognizers; the `NameFinderRegistry` aggregates the models from every backend, so
 several backends are active at once. A backend that needs the server's sentence detector
@@ -890,6 +1092,10 @@ once over the document's tokens and stores one `DocumentClassification`.
 
 #### ONNX document categorizer models (optional)
 
+Served by the `opennlp-grpc-dl` add-on (bundled in `opennlp-grpc-server-all` and the docker
+images); without it, these keys (and the aliased `model.sentiment_dl.*`) fail startup with
+`FAILED_PRECONDITION`.
+
 Transformer classifiers exported to ONNX are registered under a separate namespace. Each model
 needs the ONNX file, its wordpiece vocabulary, and a categories file (one category per line,
 line number = output index):
@@ -903,9 +1109,15 @@ model.doccat_dl.sentiment.backend=onnx          # onnx (default, CPU) | cuda
 model.doccat_dl.sentiment.gpu_device_id=0       # only with backend=cuda
 ```
 
-These are served by `opennlp-dl`'s `DocumentCategorizerDL`, which splits and re-tokenizes the
-raw document text internally, and are reported in the catalog with `backend_id` `onnx` or
-`cuda`. They participate in `DOC_CATEGORIZE` exactly like classic models, except that, because
+These are served by the add-on's own batched ONNX classifier, which tokenizes the raw
+document text internally, feeds only the inputs the model declares (so DistilBERT exports
+without `token_type_ids` load like BERT exports), windows long inputs and averages their
+scores, and classifies a whole document's sentences in a few inference calls. They are
+reported in the catalog with `backend_id` `onnx` or `cuda`. An optional
+`lowercase=false` keeps case for cased vocabularies. On the `cuda` backend prefer the
+fp32 export over an int8 `model_quantized.onnx`: ONNX Runtime's CUDA provider cannot run
+most quantized operators and partitions them to the CPU, which turned a 1 ms/sentence
+model into a 10 ms/sentence one in testing. They participate in `DOC_CATEGORIZE` exactly like classic models, except that, because
 they consume the raw text, they need no upstream `TOKENIZE` and run under a `DOC_CATEGORIZE`-only
 profile (classic maxent categorizers still require `TOKENIZE`).
 
@@ -1012,7 +1224,9 @@ Each chunk carries its document span and the chunker's phrase tag (`chunk_tag`).
 
 ### Embedding models (optional)
 
-Register ONNX sentence-transformer models in the server config:
+Register ONNX sentence-transformer models in the server config (the `onnx` and `cuda`
+engines ship in the `opennlp-grpc-dl` add-on, bundled in `opennlp-grpc-server-all` and the
+docker images; configuring them without it fails startup with `FAILED_PRECONDITION`):
 
 ```ini
 model.embedder.default_id=sentence-transformers
@@ -1053,6 +1267,15 @@ model.embedder.sentence-transformers.onnx.vector_space_id=minilm-v1
 model.embedder.sentence-transformers.cuda.vector_space_id=minilm-v1
 ```
 
+When `vector_space_id` is omitted the server derives one from the model id and the
+artifact hash (for example `sentence-transformers@6fd5d72fe4589f18`), so every route is
+complete enough to index into a workspace; the derived space is deliberately narrow to
+one artifact. Declare the id explicitly, as above, whenever several engines must share
+one space for fallback.
+
+```ini
+```
+
 `ListModelBundles` reports every `EmbeddingRoute`, including its backend id, priority,
 vector-space id, primary status, and artifact hash when known. Each embedding response
 also reports the route that actually produced the vector, including after fallback.
@@ -1085,8 +1308,12 @@ Build with the GPU flavor, which replaces the `onnxruntime` jar with
 the server at CUDA:
 
 ```bash
-mvn -pl opennlp-grpc/opennlp-grpc-service -Dgpu package
+mvn -pl opennlp-grpc/opennlp-grpc-distr -am -Dgpu package
 ```
+
+The `-Dgpu` switch selects the flavor of the `opennlp-grpc-dl` add-on (and of the
+`opennlp-grpc-server-all` assembly built from it); build only the add-on jar with
+`mvn -pl opennlp-grpc/opennlp-grpc-dl -Dgpu package`.
 
 ```ini
 model.embedder.gpu_device_id=0
@@ -1194,8 +1421,8 @@ Embedding backends are discovered through `java.util.ServiceLoader`; the TEI and
 OpenVINO modules above are regular consumers of this SPI. To add another backend
 (DJL, a custom native runtime, or any other remote inference service in any language),
 ship a jar that implements
-`org.apache.opennlp.grpc.embedding.EmbeddingBackendFactory`, registers it in
-`META-INF/services/org.apache.opennlp.grpc.embedding.EmbeddingBackendFactory`, and put
+`org.apache.opennlp.grpc.spi.embedding.EmbeddingBackendFactory`, registers it in
+`META-INF/services/org.apache.opennlp.grpc.spi.embedding.EmbeddingBackendFactory`, and put
 that jar on the server classpath. Its configured models join the aggregate provider
 without any server change. Clients can leave route choice to priority/fallback or pin
 the backend's open id through `EmbeddingSelector.backend.custom`. The shaded server merges
@@ -1269,6 +1496,13 @@ entities, POS tags, lemmas, document classification, per-sentence sentiment, par
 syntactic chunks, embeddings, and chunk/embedding groups. `AnalyzeDocumentResponse`
 also includes per-step diagnostics; invalid requests fail with precise gRPC status codes
 instead of returning partial results.
+
+For one long document, `AnalyzeDocumentProgressive` returns a server stream. The service
+finishes the language, normalization, sentence, and token backbone first, then runs independent
+model branches concurrently with at most four admitted per request. Each completed branch emits
+complete typed layer snapshots. NER, parsing, sentiment, categorization, chunking, and embeddings
+can therefore arrive independently. A non-backbone branch failure is reported as an event while
+the other branches continue. The last event carries the canonical response and diagnostics.
 
 For bulk analysis, `AnalyzeStream` runs the same `DocumentAnalyzer` and returns the
 same `AnalyzeDocumentResponse` shape. The first request frame carries one

@@ -18,12 +18,11 @@
 package org.apache.opennlp.grpc.model;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.testing.TinyDoccatModel;
 import org.apache.opennlp.grpc.v1.DocumentClassification;
 import org.junit.jupiter.api.BeforeAll;
@@ -35,6 +34,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.apache.opennlp.grpc.spi.model.DocCategorizerModel;
+import org.apache.opennlp.grpc.spi.model.DocCategorizerBackendFactory;
 
 /**
  * Unit tests for {@link DocCategorizerRegistry}. The topic model is trained in-memory from a
@@ -154,38 +155,14 @@ class DocCategorizerRegistryTest {
   }
 
   @Test
-  void rejectsDlConfigWithBlankId() {
+  void dlKeysWithoutTheAddOnFailLoud() {
+    // The ONNX backend ships in the opennlp-grpc-dl add-on, absent from this module's
+    // classpath; configured DL models must fail startup, never silently vanish.
     final AnalysisException error = assertThrows(AnalysisException.class, () ->
         DocCategorizerRegistry.create(Map.of(
-            OnnxDocCategorizerBackendFactory.KEY_DL_PREFIX + " .path", "/tmp/model.onnx")));
-    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
-  }
-
-  @Test
-  void rejectsDlCategoriesFileWithBlankLine() throws IOException {
-    // A blank line would leave a gap in the line-number->category index map (and an NPE at load);
-    // it must be rejected with a clear config error before any ONNX session is created.
-    final Path model = Files.writeString(modelDir.resolve("m.onnx"), "stub");
-    final Path vocab = Files.writeString(modelDir.resolve("v.txt"), "[CLS]\n[SEP]\n");
-    final Path categories = Files.writeString(modelDir.resolve("cats.txt"), "weather\n\nfinance\n");
-    final String prefix = OnnxDocCategorizerBackendFactory.KEY_DL_PREFIX + "topic.";
-
-    final AnalysisException error = assertThrows(AnalysisException.class, () ->
-        DocCategorizerRegistry.create(Map.of(
-            prefix + "path", model.toString(),
-            prefix + "vocab", vocab.toString(),
-            prefix + "categories", categories.toString())));
-    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
-    assertTrue(error.getMessage().contains("blank line"));
-  }
-
-  @Test
-  void rejectsDlConfigMissingRequiredAttribute() {
-    // path present but vocab/categories missing.
-    final AnalysisException error = assertThrows(AnalysisException.class, () ->
-        DocCategorizerRegistry.create(Map.of(
-            OnnxDocCategorizerBackendFactory.KEY_DL_PREFIX + "topic.path", "/tmp/model.onnx")));
-    assertEquals(AnalysisException.FailureType.INVALID_ARGUMENT, error.getFailureType());
+            DocCategorizerRegistry.KEY_DL_PREFIX + "topic.path", "/tmp/model.onnx")));
+    assertEquals(AnalysisException.FailureType.FAILED_PRECONDITION, error.getFailureType());
+    assertTrue(error.getMessage().contains("opennlp-grpc-dl"));
   }
 
   @Test

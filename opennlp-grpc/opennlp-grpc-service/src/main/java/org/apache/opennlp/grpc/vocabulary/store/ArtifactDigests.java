@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import org.apache.opennlp.grpc.spi.vocabulary.VocabularyStore;
 
 /** SHA-256 helpers shared by the artifact stores built over a {@link VocabularyStore}. */
 public final class ArtifactDigests {

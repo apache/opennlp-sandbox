@@ -25,13 +25,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.apache.opennlp.grpc.model.ModelBundleCache.ClasspathArtifact;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.apache.opennlp.grpc.spi.ModelArtifactHasher;
 
 /**
  * Tests {@link ModelBundleCache}'s classpath artifact resolution against an isolated

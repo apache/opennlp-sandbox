@@ -18,6 +18,8 @@
  */
 package org.apache.opennlp.grpc.training;
 
+import org.apache.opennlp.grpc.spi.catalog.CatalogFile;
+import org.apache.opennlp.grpc.spi.catalog.CatalogModel;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -43,6 +45,51 @@ class CatalogModelBootstrapTest {
 
   @TempDir
   Path temporaryDirectory;
+
+  @Test
+  void emptyCatalogPreparesConfigurationUnchanged() throws Exception {
+    // Without the opennlp-grpc-installer add-on no provider contributes entries; startup
+    // proceeds with the operator configuration untouched.
+    final Map<String, String> configuration = Map.of(CatalogModelStore.CATALOG_ROOT_KEY,
+        temporaryDirectory.resolve("empty-catalog").toString());
+
+    assertEquals(configuration, CatalogModelBootstrap.prepare(configuration, List.of()));
+  }
+
+  @Test
+  void addsVerifiedNameFinderPathsKeyedByEntityType() throws Exception {
+    final Path root = temporaryDirectory.resolve("ner-catalog");
+    final CatalogModel person = model(modelSource("person"), "person",
+        ModelArtifactRole.MODEL_ARTIFACT_ROLE_NAME_FINDER);
+    install(root, List.of(person), person);
+
+    final Map<String, String> prepared = CatalogModelBootstrap.prepare(
+        Map.of(CatalogModelStore.CATALOG_ROOT_KEY, root.toString()), List.of(person));
+
+    assertEquals(installedPath(root, person), prepared.get("model.name_finder.person.path"));
+  }
+
+  @Test
+  void addsVerifiedSubwordWordnetAndDoccatPaths() throws Exception {
+    final Path root = temporaryDirectory.resolve("resource-catalog");
+    final CatalogModel subword = model(modelSource("spiece"), "spiece",
+        ModelArtifactRole.MODEL_ARTIFACT_ROLE_SUBWORD_MODEL);
+    final CatalogModel wordnet = model(modelSource("oewn"), "oewn",
+        ModelArtifactRole.MODEL_ARTIFACT_ROLE_WORDNET_LEXICON);
+    final CatalogModel doccat = model(modelSource("topics"), "topics",
+        ModelArtifactRole.MODEL_ARTIFACT_ROLE_DOC_CATEGORIZER);
+    install(root, List.of(subword, wordnet, doccat), subword);
+    install(root, List.of(subword, wordnet, doccat), wordnet);
+    install(root, List.of(subword, wordnet, doccat), doccat);
+
+    final Map<String, String> prepared = CatalogModelBootstrap.prepare(
+        Map.of(CatalogModelStore.CATALOG_ROOT_KEY, root.toString()),
+        List.of(subword, wordnet, doccat));
+
+    assertEquals(installedPath(root, subword), prepared.get("model.subword.spiece.path"));
+    assertEquals(installedPath(root, wordnet), prepared.get("model.wordnet.oewn.path"));
+    assertEquals(installedPath(root, doccat), prepared.get("model.doccat.topics.path"));
+  }
 
   @Test
   void addsVerifiedParserAndChunkerPathsBeforeRegistryConstruction() throws Exception {
@@ -103,6 +150,91 @@ class CatalogModelBootstrapTest {
     return model;
   }
 
+  @Test
+  void addsVerifiedLanguagePipelinePathsForAnInstalledLanguagePack() throws Exception {
+    final Path root = temporaryDirectory.resolve("ud-catalog");
+    final CatalogModel sentence = model(modelSource("de-sentence"), "de-sentence",
+        ModelArtifactRole.MODEL_ARTIFACT_ROLE_SENTENCE_DETECTOR, "de");
+    final CatalogModel tokenizer = model(modelSource("de-tokenizer"), "de-tokenizer",
+        ModelArtifactRole.MODEL_ARTIFACT_ROLE_TOKENIZER, "de");
+    final CatalogModel pos = model(modelSource("de-pos"), "de-pos",
+        ModelArtifactRole.MODEL_ARTIFACT_ROLE_POS_TAGGER, "de");
+    final CatalogModel lemmatizer = model(modelSource("de-lemmatizer"), "de-lemmatizer",
+        ModelArtifactRole.MODEL_ARTIFACT_ROLE_LEMMATIZER, "de");
+    final List<CatalogModel> catalog = List.of(sentence, tokenizer, pos, lemmatizer);
+    for (CatalogModel model : catalog) {
+      install(root, catalog, model);
+    }
+
+    final Map<String, String> prepared = CatalogModelBootstrap.prepare(
+        Map.of(CatalogModelStore.CATALOG_ROOT_KEY, root.toString()), catalog);
+
+    assertEquals(installedPath(root, sentence),
+        prepared.get("model.pipeline.de.sentence_detector.path"));
+    assertEquals(installedPath(root, tokenizer),
+        prepared.get("model.pipeline.de.tokenizer.path"));
+    assertEquals(installedPath(root, pos),
+        prepared.get("model.pipeline.de.pos_tagger.path"));
+    assertEquals(installedPath(root, lemmatizer),
+        prepared.get("model.pipeline.de.lemmatizer.path"));
+  }
+
+  @Test
+  void installedLanguagePacksCoexistAcrossLanguages() throws Exception {
+    final Path root = temporaryDirectory.resolve("multi-language-catalog");
+    final CatalogModel german = model(modelSource("de-sentence"), "de-sentence",
+        ModelArtifactRole.MODEL_ARTIFACT_ROLE_SENTENCE_DETECTOR, "de");
+    final CatalogModel french = model(modelSource("fr-sentence"), "fr-sentence",
+        ModelArtifactRole.MODEL_ARTIFACT_ROLE_SENTENCE_DETECTOR, "fr");
+    final List<CatalogModel> catalog = List.of(german, french);
+    install(root, catalog, german);
+    install(root, catalog, french);
+
+    final Map<String, String> prepared = CatalogModelBootstrap.prepare(
+        Map.of(CatalogModelStore.CATALOG_ROOT_KEY, root.toString()), catalog);
+
+    assertEquals(installedPath(root, german),
+        prepared.get("model.pipeline.de.sentence_detector.path"));
+    assertEquals(installedPath(root, french),
+        prepared.get("model.pipeline.fr.sentence_detector.path"));
+  }
+
+  @Test
+  void refusesASecondModelForOneLanguagePipelineSlot() throws Exception {
+    final Path root = temporaryDirectory.resolve("slot-collision-catalog");
+    final CatalogModel first = model(modelSource("de-sentence"), "de-sentence",
+        ModelArtifactRole.MODEL_ARTIFACT_ROLE_SENTENCE_DETECTOR, "de");
+    final CatalogModel second = model(modelSource("de-sentence-2"), "de-sentence-2",
+        ModelArtifactRole.MODEL_ARTIFACT_ROLE_SENTENCE_DETECTOR, "de");
+    final List<CatalogModel> catalog = List.of(first, second);
+    install(root, catalog, first);
+
+    // The store guards the slot at install time, so a live node never reaches the boot
+    // conflict; the second install is refused naming the slot and its occupant.
+    final IllegalStateException refused = assertThrows(IllegalStateException.class,
+        () -> install(root, catalog, second));
+    assertTrue(refused.getMessage().contains("model.pipeline.de.sentence_detector.path"),
+        refused.getMessage());
+    assertTrue(refused.getMessage().contains("de-sentence-catalog"), refused.getMessage());
+
+    // A root assembled from two nodes can still hold both; the bootstrap refuses to boot it.
+    final Path other = temporaryDirectory.resolve("slot-collision-other");
+    install(other, catalog, second);
+    Files.move(other.resolve(second.descriptor().getCatalogId()),
+        root.resolve(second.descriptor().getCatalogId()));
+
+    final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
+        () -> CatalogModelBootstrap.prepare(
+            Map.of(CatalogModelStore.CATALOG_ROOT_KEY, root.toString()), catalog));
+
+    assertTrue(failure.getMessage().contains("already configured"));
+  }
+
+  private static String installedPath(Path root, CatalogModel model) {
+    return root.resolve(model.descriptor().getCatalogId()).resolve("model.bin")
+        .toAbsolutePath().normalize().toString();
+  }
+
   private void install(Path root, List<CatalogModel> models, CatalogModel model)
       throws Exception {
     final TrainedModelEmbeddingProvider registry =
@@ -140,6 +272,11 @@ class CatalogModelBootstrapTest {
 
   private static CatalogModel model(
       Path source, String modelId, ModelArtifactRole role) throws IOException {
+    return model(source, modelId, role, "en");
+  }
+
+  private static CatalogModel model(
+      Path source, String modelId, ModelArtifactRole role, String language) throws IOException {
     final Path modelFile = source.resolve("model.bin");
     final ArtifactDigests.SizedDigest digest;
     try (InputStream input = Files.newInputStream(modelFile)) {
@@ -157,7 +294,7 @@ class CatalogModelBootstrapTest {
         .setLicenseName("Test-License")
         .setLicenseUri("https://example.invalid/license")
         .setByteSize(digest.size())
-        .addLanguages("en")
+        .addLanguages(language)
         .setDescription("Test model")
         .build(), List.of(file));
   }

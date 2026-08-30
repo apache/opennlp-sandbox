@@ -17,6 +17,7 @@
  * under the License.
  */
 
+import type { IndexDocumentsRequest } from "./api";
 import { toBrowserSpan } from "./offsets";
 import { asciiLowerCase } from "./text-utils";
 
@@ -45,6 +46,8 @@ export interface SearchIndex {
   maxResponseBytes?: number;
   supportsAllHits: boolean;
   immutable: boolean;
+  /** True when a checkpoint of the index exists on disk, so it survives a server restart. */
+  persisted: boolean;
   corpusTitle: string;
   provenance: string;
   sourceUri?: string;
@@ -52,6 +55,23 @@ export interface SearchIndex {
   licenseUri?: string;
   corpusArtifactHash?: string;
   build: SearchIndexBuild;
+  /** The modalities the index executes; absent when the server did not report them. */
+  components?: SearchIndexComponent[];
+}
+
+/** One search modality an index executes, and which provider instance serves it. */
+export interface SearchIndexComponent {
+  kind: "vector" | "keyword" | "unspecified";
+  providerInstanceId: string;
+}
+
+/**
+ * Whether an index can run keyword (term and phrase) clauses. An index whose components
+ * were not reported is given the benefit of the doubt.
+ */
+export function supportsKeywordClauses(index: SearchIndex): boolean {
+  return index.components === undefined
+    || index.components.some((component) => component.kind === "keyword");
 }
 
 export interface SearchEmbeddingRoute {
@@ -127,6 +147,29 @@ export function createAllHitsSearchRequest(indexId: string, query: string): Sear
   return { indexId, query: { rawText: query }, allHits: true };
 }
 
+/**
+ * Builds the request that adds one analyzed document to a live index. A new index names
+ * its vector storage; an extension of an existing index inherits the storage it was created
+ * with by omitting the provider.
+ */
+export function createIndexDocumentsRequest(
+  existingIndexId: string | undefined,
+  providerStandard: string,
+  document: Record<string, unknown>,
+  modelId: string,
+  chunkGroupIds: string[],
+  displayName: string = "Workbench index",
+): IndexDocumentsRequest {
+  return {
+    ...(existingIndexId ? { indexId: existingIndexId } : {}),
+    displayName: displayName.trim() || "Workbench index",
+    ...(existingIndexId ? {} : { provider: { standard: providerStandard } }),
+    documents: [document],
+    embedding: { modelId },
+    chunkGroupIds,
+  };
+}
+
 /** Builds a compound search request from a protobuf JSON QueryNode tree. */
 export function createCompoundSearchRequest(
   indexId: string,
@@ -144,6 +187,34 @@ export interface SearchProviderInstance {
   capabilities: string[];
   /** Standard enum shorthand when this instance is a built-in default. */
   standard?: string;
+}
+
+/**
+ * Display-name prefix of the scratch indexes the Analyze tab's heatmap builds for one
+ * document; the lifecycle and live index pickers hide them.
+ */
+export const SCRATCH_INDEX_PREFIX = "Current document heatmap:";
+
+/** The provider listing plus the two server-wide facts every search tab gates on. */
+export interface SearchProviderListing {
+  providers: SearchProviderInstance[];
+  /** False when the operator disabled live indexing; every live-index call then fails. */
+  dynamicIndexingEnabled: boolean;
+  /** True when live indexes can be saved to disk (search.persist.root is set). */
+  persistenceConfigured: boolean;
+}
+
+/**
+ * Reads the whole search-providers reply. A reply from a gateway that predates the flags
+ * reads as enabled and not persistable, which matches what such a server did.
+ */
+export function readSearchProviderListing(response: unknown): SearchProviderListing {
+  const envelope = record(response);
+  return {
+    providers: readSearchProviderInstances(response),
+    dynamicIndexingEnabled: envelope?.dynamicIndexingEnabled !== false,
+    persistenceConfigured: envelope?.persistenceConfigured === true,
+  };
 }
 
 /** Reads the search-providers listing JSON defensively. */
@@ -213,6 +284,9 @@ export function readSearchIndexes(response: unknown): SearchIndex[] {
       maxResponseBytes: positiveInteger(descriptor.maxResponseBytes),
       supportsAllHits: descriptor.supportsAllHits === true,
       immutable,
+      persisted: descriptor.persisted === true,
+      ...(Array.isArray(descriptor.components)
+        ? { components: readComponents(descriptor.components) } : {}),
       corpusTitle: text(corpus?.title) || "Untitled corpus",
       provenance: text(corpus?.provenanceSummary),
       sourceUri: safeUri(corpus?.sourceUri),
@@ -419,4 +493,35 @@ function safeUri(value: unknown): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+/** Reads the components list of a descriptor; entries without a kind are unspecified. */
+function readComponents(values: unknown[]): SearchIndexComponent[] {
+  return values.flatMap((value) => {
+    const component = record(value);
+    if (!component) {
+      return [];
+    }
+    const kind = text(component.kind);
+    return [{
+      kind: kind === "SEARCH_COMPONENT_KIND_VECTOR" ? "vector"
+        : kind === "SEARCH_COMPONENT_KIND_KEYWORD" ? "keyword" : "unspecified",
+      providerInstanceId: text(component.providerInstanceId),
+    }];
+  });
+}
+
+/** The three states a live index passes through, as the pickers label them. */
+export type IndexStateLabel = "In memory" | "Saved to disk" | "Read-only";
+
+/**
+ * Labels an index's state from the descriptor's two flags: a read-only index is always on
+ * disk, a saved one is on disk and still accepts documents, and the rest live in server
+ * memory only until the process ends.
+ */
+export function indexStateLabel(index: Pick<SearchIndex, "immutable" | "persisted">): IndexStateLabel {
+  if (index.immutable) {
+    return "Read-only";
+  }
+  return index.persisted ? "Saved to disk" : "In memory";
 }

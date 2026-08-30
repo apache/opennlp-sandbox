@@ -17,6 +17,8 @@
  */
 package org.apache.opennlp.grpc.processor.basic;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -24,7 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.apache.opennlp.grpc.model.ModelBundleCache;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.v1.AnalysisOptions;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
@@ -37,6 +39,8 @@ import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.PipelineStep;
 import org.apache.opennlp.grpc.v1.SubwordAnnotation;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -51,6 +55,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class BasicDocumentAnalyzerSubwordTest {
 
   private static final String TEXT = "The cats sat on the mats.";
+  /**
+   * Reads one public-domain chapter fixture (Pride and Prejudice or Alice's Adventures in
+   * Wonderland), multi-paragraph regression texts for the subword layer.
+   */
+  private static String novelFixture(String resource) {
+    try (InputStream input = BasicDocumentAnalyzerSubwordTest.class
+        .getResourceAsStream(resource)) {
+      if (input == null) {
+        throw new IllegalStateException("Novel regression fixture is missing");
+      }
+      return new String(input.readAllBytes(), StandardCharsets.UTF_8);
+    } catch (IOException e) {
+      throw new IllegalStateException("Could not read novel regression fixture", e);
+    }
+  }
 
   private static String fixtureModelPath() {
     try {
@@ -117,6 +136,23 @@ class BasicDocumentAnalyzerSubwordTest {
     assertEquals(0, response.getDocument().getSentencesCount());
     assertTrue(response.getDiagnosticsList().stream()
         .anyMatch(d -> d.getStep() == PipelineStep.PIPELINE_STEP_SUBWORD_TOKENIZE));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {
+      "/document/pride-and-prejudice-chapter-1.txt",
+      "/document/alice-in-wonderland-chapter-1.txt"})
+  void subwordLayerPreservesPiecesWithoutSourceSurface(String resource) {
+    final String novel = novelFixture(resource);
+    final AnalyzeDocumentResponse response =
+        analyzerWithSubwordModel().analyze(request(novel, subwordProfile(null)));
+
+    final AnnotationLayer subwords = layer(response, "opennlp:subwords").orElseThrow();
+    assertTrue(subwords.getSubwordValues().getAnnotationsList().stream()
+        .anyMatch(annotation -> annotation.getSpan().getStart()
+            == annotation.getSpan().getEnd()),
+        "fixture did not exercise a model piece without source surface");
+    assertEquals(novel, response.getDocument().getRawText());
   }
 
   @Test

@@ -43,7 +43,7 @@ import opennlp.tools.stemmer.light.SwedishMinimalStemmer;
 import opennlp.tools.stemmer.snowball.SnowballStemmer;
 import opennlp.tools.util.StringUtil;
 import org.apache.opennlp.grpc.model.HunspellRegistry;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.v1.StemmerAlgorithm;
 import org.apache.opennlp.grpc.v1.StemmerSpec;
 

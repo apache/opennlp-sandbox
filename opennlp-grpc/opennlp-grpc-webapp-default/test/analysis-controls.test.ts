@@ -27,11 +27,14 @@ function mountControlsDom(): void {
   document.body.innerHTML = `
     <select id="profile-select"></select>
     <select id="embedding-model-select"></select>
+    <select id="pipeline-language-select"></select>
+    <select id="pos-tag-format-select"><option value=""></option></select>
     <input id="sentence-chunks" type="checkbox" />
     <input id="token-chunks" type="checkbox" />
     <input id="token-chunk-size" type="number" value="96" />
     <input id="token-chunk-overlap" type="number" value="12" />
     <ul id="enabled-feature-list"></ul>
+    <div id="feature-availability" hidden></div>
     <div id="feature-options"></div>
     <ul id="model-list"></ul>`;
 }
@@ -131,5 +134,60 @@ describe("analysis controls profile selection", () => {
     const values = [...select.options].map((option) => option.value);
     expect(values).toContain("minilm");
     expect(values).toContain("static-model-1234");
+  });
+
+  it("selects an offered embedding model programmatically and rejects unknown ids", () => {
+    const controls = new AnalysisControls(() => undefined);
+    controls.setTrainedEmbeddingModels([
+      { id: "static-model-1234", label: "Alice model2vec (trained)" },
+    ]);
+    const select = document.getElementById("embedding-model-select") as HTMLSelectElement;
+
+    expect(controls.selectEmbeddingModel("static-model-1234")).toBe(true);
+    expect(select.value).toBe("static-model-1234");
+    expect(controls.selectEmbeddingModel("static-model-missing")).toBe(false);
+    expect(select.value).toBe("static-model-1234");
+  });
+
+  it("browns out supported features without a model and explains each with its fix", () => {
+    const controls = new AnalysisControls(() => undefined);
+    controls.configure({
+      availableProfileIds: ["en-basic"],
+      supportedSteps: ["PIPELINE_STEP_TOKENIZE", "PIPELINE_STEP_NER", "PIPELINE_STEP_PARSE"],
+    }, {
+      bundles: [{
+        bundleId: "en-basic",
+        supportedLanguages: ["en"],
+        supportedSteps: ["PIPELINE_STEP_TOKENIZE"],
+      }],
+    });
+    controls.setFeatureFixers(new Map([
+      ["PIPELINE_STEP_NER", [{ catalogId: "en-ner-15-person", displayName: "English person names" }]],
+    ]));
+
+    const chips = Array.from(document.querySelectorAll<HTMLButtonElement>(
+      "#enabled-feature-list .is-unavailable button"));
+    expect(chips.map((chip) => chip.dataset.unavailableStep))
+      .toEqual(["PIPELINE_STEP_NER", "PIPELINE_STEP_PARSE"]);
+    expect(chips.map((chip) => chip.textContent)).toEqual(["Named entities", "Constituency parses"]);
+    const panel = document.getElementById("feature-availability")!;
+    expect(panel.hidden).toBe(true);
+
+    chips[0]!.click();
+    expect(panel.hidden).toBe(false);
+    expect(panel.textContent).toContain("Named entities is not available on this server.");
+    expect(panel.textContent).toContain("no model or resource that serves it is loaded");
+    expect(panel.textContent).toContain("install English person names from the model catalog");
+    const jump = panel.querySelector<HTMLElement>("[data-workbench-jump]")!;
+    expect(jump.dataset.workbenchJump).toBe("models");
+    expect(jump.dataset.workbenchFocus).toBe("PIPELINE_STEP_NER");
+
+    chips[1]!.click();
+    expect(panel.textContent).toContain("ask the operator to set model.parser.<model_id>.path");
+    expect(panel.querySelector("[data-workbench-jump]")).toBeNull();
+
+    controls.explain("PIPELINE_STEP_GEOCODE");
+    expect(panel.textContent).toContain("this server build does not include it");
+    expect(panel.textContent).toContain("a different server build is needed");
   });
 });

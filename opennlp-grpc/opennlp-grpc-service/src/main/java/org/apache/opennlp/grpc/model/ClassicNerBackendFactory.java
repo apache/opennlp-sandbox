@@ -24,15 +24,18 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import opennlp.tools.namefind.NameFinderME;
 import opennlp.tools.namefind.TokenNameFinderModel;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.opennlp.grpc.spi.model.NerModel;
+import org.apache.opennlp.grpc.spi.model.NerBackendFactory;
+import org.apache.opennlp.grpc.spi.model.NerBackendContext;
+import org.apache.opennlp.grpc.spi.ModelArtifactHasher;
 
 /**
  * Built-in NER backend for classic OpenNLP maxent name finders. Reads
@@ -61,24 +64,19 @@ public final class ClassicNerBackendFactory implements NerBackendFactory {
     return FACTORY_ID;
   }
 
-  /** Suffix completing a per-type priority key: {@code model.name_finder.<type>.priority}. */
-  public static final String KEY_PRIORITY_SUFFIX = ".priority";
-
   /** {@inheritDoc} */
   @Override
   public List<NerModel> create(Map<String, String> configuration, NerBackendContext context) {
-    final Map<String, ClassicEntry> entries = parseConfiguredPaths(configuration);
+    // The ONNX namespace is handled by its own backend; never read it here.
+    final Map<String, NerPathConfig.Entry> entries = NerPathConfig.parse(configuration,
+        KEY_PREFIX, "Name finder", List.of(NameFinderRegistry.KEY_DL_PREFIX));
     final List<NerModel> models = new ArrayList<>(entries.size());
-    for (Map.Entry<String, ClassicEntry> entry : entries.entrySet()) {
+    for (Map.Entry<String, NerPathConfig.Entry> entry : entries.entrySet()) {
       final LoadedClassicNer loaded = loadNameFinder(entry.getKey(), entry.getValue().path());
       models.add(new ClassicNerModel(entry.getKey(), loaded.nameFinder(),
           entry.getValue().priority(), loaded.artifactHash()));
     }
     return models;
-  }
-
-  /** One classic recognizer's loaded configuration. */
-  private record ClassicEntry(String path, int priority) {
   }
 
   /**
@@ -88,39 +86,6 @@ public final class ClassicNerBackendFactory implements NerBackendFactory {
    * @param artifactHash The lowercase hex SHA-256 digest of the model file.
    */
   private record LoadedClassicNer(NameFinderME nameFinder, String artifactHash) {
-  }
-
-  /** Parses configured paths. */
-  private static Map<String, ClassicEntry> parseConfiguredPaths(Map<String, String> configuration) {
-    final Map<String, ClassicEntry> entries = new LinkedHashMap<>();
-    for (Map.Entry<String, String> entry : configuration.entrySet()) {
-      final String key = entry.getKey();
-      // The ONNX namespace is handled by its own backend; never read it here.
-      if (key.startsWith(OnnxNerBackendFactory.KEY_DL_PREFIX)) {
-        continue;
-      }
-      if (!key.startsWith(KEY_PREFIX) || !key.endsWith(KEY_SUFFIX)) {
-        continue;
-      }
-      final String base = key.substring(0, key.length() - KEY_SUFFIX.length());
-      final String entityType = NameFinderRegistry.normalize(base.substring(KEY_PREFIX.length()));
-      if (entityType.isEmpty()) {
-        throw AnalysisException.invalidArgument(
-            "Invalid name finder configuration key '" + key + "'; entity type must not be blank");
-      }
-      final String path = entry.getValue();
-      if (path == null || path.isBlank()) {
-        throw AnalysisException.invalidArgument(
-            "Name finder path for entity type '" + entityType + "' must not be blank");
-      }
-      final int priority = NameFinderRegistry.parsePriority(
-          base + KEY_PRIORITY_SUFFIX, configuration.get(base + KEY_PRIORITY_SUFFIX));
-      if (entries.putIfAbsent(entityType, new ClassicEntry(path.trim(), priority)) != null) {
-        throw AnalysisException.invalidArgument(
-            "Duplicate name finder configuration for entity type '" + entityType + "'");
-      }
-    }
-    return entries;
   }
 
   /** Loads name finder. */

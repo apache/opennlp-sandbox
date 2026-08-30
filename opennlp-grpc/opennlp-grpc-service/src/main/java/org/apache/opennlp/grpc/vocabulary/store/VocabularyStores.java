@@ -25,6 +25,8 @@ import java.nio.file.Path;
 import java.util.ServiceLoader;
 
 import opennlp.tools.util.StringUtil;
+import org.apache.opennlp.grpc.spi.vocabulary.VocabularyStore;
+import org.apache.opennlp.grpc.spi.vocabulary.VocabularyStoreProvider;
 
 /** Resolves the configured artifact root to a {@link VocabularyStore} by URI scheme. */
 public final class VocabularyStores {

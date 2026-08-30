@@ -19,6 +19,8 @@ package org.apache.opennlp.grpc.model;
 
 import java.util.List;
 import java.util.Map;
+import org.apache.opennlp.grpc.spi.model.DocCategorizerModel;
+import org.apache.opennlp.grpc.spi.model.DocCategorizerBackendFactory;
 
 /**
  * Catalog of sentence-level sentiment classifiers, keyed by model id.
@@ -63,7 +65,7 @@ public final class SentimentRegistry implements AutoCloseable {
    *
    * @return A registry, possibly empty when no sentiment model is configured.
    *
-   * @throws org.apache.opennlp.grpc.processor.AnalysisException If a backend's configuration is
+   * @throws org.apache.opennlp.grpc.spi.AnalysisException If a backend's configuration is
    *     invalid, a model fails to load, or {@code model.sentiment.default_id} names an unknown
    *     model.
    */

@@ -26,7 +26,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import opennlp.tools.util.StringUtil;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.v1.ComponentModelRef;
 import org.apache.opennlp.grpc.v1.ComponentType;
 

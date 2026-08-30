@@ -209,6 +209,17 @@ public final class OpenNlpModelTrainingServiceImpl
     } catch (IllegalStateException e) {
       responseObserver.onError(Status.FAILED_PRECONDITION.withDescription(e.getMessage())
           .asRuntimeException());
+    } catch (InsufficientDiskSpaceException e) {
+      responseObserver.onError(Status.RESOURCE_EXHAUSTED.withDescription(e.getMessage())
+          .asRuntimeException());
+    } catch (CatalogChecksumException e) {
+      logger.warn("Catalog model failed verification", e);
+      responseObserver.onError(Status.FAILED_PRECONDITION.withDescription(e.getMessage())
+          .asRuntimeException());
+    } catch (CatalogDownloadException e) {
+      logger.warn("Catalog model download failed", e);
+      responseObserver.onError(Status.UNAVAILABLE.withDescription(e.getMessage())
+          .asRuntimeException());
     } catch (IOException e) {
       logger.error("Catalog model installation failed", e);
       responseObserver.onError(Status.INTERNAL.withDescription("Catalog model installation failed")

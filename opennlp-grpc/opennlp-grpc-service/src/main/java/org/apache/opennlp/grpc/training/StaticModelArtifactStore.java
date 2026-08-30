@@ -50,7 +50,7 @@ import org.apache.opennlp.grpc.v1.TeacherDescriptor;
 import org.apache.opennlp.grpc.v1.TrainStaticModelRequest;
 import org.apache.opennlp.grpc.vocabulary.VocabularyArtifactStore;
 import org.apache.opennlp.grpc.vocabulary.store.ArtifactDigests;
-import org.apache.opennlp.grpc.vocabulary.store.VocabularyStore;
+import org.apache.opennlp.grpc.spi.vocabulary.VocabularyStore;
 import org.apache.opennlp.grpc.vocabulary.store.VocabularyStores;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -263,13 +263,32 @@ public final class StaticModelArtifactStore {
    * @throws IllegalArgumentException If an argument is invalid or the identifier is registered.
    */
   void registerCatalogTeacher(String teacherId, String displayName, Path directory) {
+    registerCatalogTeacher(teacherId, displayName, directory,
+        TeacherProvenance.unknown(directory == null ? "" : directory.toString()));
+  }
+
+  /**
+   * Registers a verified catalog teacher together with what the catalog knows about it,
+   * so every model distilled from it records the teacher's origin and license.
+   *
+   * @param teacherId Stable teacher identifier.
+   * @param displayName User-facing teacher name.
+   * @param directory Verified local teacher directory.
+   * @param provenance The teacher's origin, revision, license and languages.
+   * @throws IllegalArgumentException If an argument is invalid or the identifier is registered.
+   */
+  void registerCatalogTeacher(
+      String teacherId, String displayName, Path directory, TeacherProvenance provenance) {
     requireTrimmed(teacherId, "teacher_id");
     requireTrimmed(displayName, "teacher display_name");
     if (directory == null || !Files.isDirectory(directory, LinkOption.NOFOLLOW_LINKS)) {
       throw new IllegalArgumentException("teacher directory must be an existing directory");
     }
+    if (provenance == null) {
+      throw new IllegalArgumentException("provenance must not be null");
+    }
     final TeacherConfiguration teacher = new TeacherConfiguration(
-        teacherId, displayName, directory.toAbsolutePath().normalize().toString());
+        teacherId, displayName, directory.toAbsolutePath().normalize().toString(), provenance);
     if (teachers.putIfAbsent(teacherId, teacher) != null) {
       throw new IllegalArgumentException("Teacher id '" + teacherId + "' is already registered");
     }
@@ -450,6 +469,11 @@ public final class StaticModelArtifactStore {
           .setByteSize(totalBytes)
           .setProvenanceSummary(request.getProvenanceSummary())
           .setCreatedAt(now())
+          .setTeacherReference(teacher.provenance().reference())
+          .setTeacherRevision(teacher.provenance().revision())
+          .setLicenseName(teacher.provenance().licenseName())
+          .setLicenseUri(teacher.provenance().licenseUri())
+          .addAllLanguages(teacher.provenance().languages())
           .build();
       try (OutputStream out = writer.entry(MODEL_DESCRIPTOR)) {
         descriptor.writeTo(out);
@@ -720,8 +744,29 @@ public final class StaticModelArtifactStore {
     return Timestamp.newBuilder().setSeconds(now.getEpochSecond()).setNanos(now.getNano()).build();
   }
 
-  /** One configured teacher. */
-  private record TeacherConfiguration(String teacherId, String displayName, String reference) {
+  /**
+   * Reports what is known about a registered teacher's origin.
+   *
+   * @param teacherId The teacher identifier.
+   * @return Its provenance.
+   * @throws IllegalArgumentException If no teacher has that identifier.
+   */
+  TeacherProvenance teacherProvenance(String teacherId) {
+    final TeacherConfiguration teacher = teachers.get(teacherId);
+    if (teacher == null) {
+      throw new IllegalArgumentException("Unknown teacher '" + teacherId + "'");
+    }
+    return teacher.provenance();
+  }
+
+  /** One configured teacher and what is known about its origin. */
+  private record TeacherConfiguration(
+      String teacherId, String displayName, String reference, TeacherProvenance provenance) {
+
+    /** An operator-configured teacher: its path is all that is known. */
+    TeacherConfiguration(String teacherId, String displayName, String reference) {
+      this(teacherId, displayName, reference, TeacherProvenance.unknown(reference));
+    }
   }
 
   /** One parsed manifest line: file name, byte size, and SHA-256. */

@@ -43,6 +43,30 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenNlpGrpcWebServer.class);
   private static final String TEXT_CONTENT_TYPE = "text/plain; charset=utf-8";
 
+  /**
+   * System property the JDK HTTP server reads, once, for how long an idle keep-alive
+   * connection stays open, in seconds. Its default of 30 is shorter than a person reading
+   * a result: a browser that reuses a connection the server has just closed reports a bare
+   * network failure ("Failed to fetch") instead of a status, so the gateway raises it
+   * before the first server is created. An operator who sets the property explicitly wins.
+   */
+  static final String IDLE_INTERVAL_PROPERTY = "sun.net.httpserver.idleInterval";
+
+  /** Idle seconds a keep-alive connection survives unless the operator chose otherwise. */
+  static final long IDLE_INTERVAL_SECONDS = 900;
+
+  /**
+   * Raises the keep-alive idle interval unless the operator set it. This runs from the
+   * constructor rather than a static initializer on purpose: a native image may simulate
+   * a static initializer at build time, and a property written then never reaches the
+   * running process.
+   */
+  static void applyKeepAliveDefault() {
+    if (System.getProperty(IDLE_INTERVAL_PROPERTY) == null) {
+      System.setProperty(IDLE_INTERVAL_PROPERTY, Long.toString(IDLE_INTERVAL_SECONDS));
+    }
+  }
+
   private final HttpServer server;
   private final ExecutorService executor;
   private final CountDownLatch terminated = new CountDownLatch(1);
@@ -91,6 +115,7 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
       throw new IllegalArgumentException(
           "maxRequestBytes must be between 1 and " + (Integer.MAX_VALUE - 1));
     }
+    applyKeepAliveDefault();
     this.server = HttpServer.create(address, 0);
     this.executor = Executors.newVirtualThreadPerTaskExecutor();
     server.setExecutor(executor);
@@ -149,6 +174,8 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
     private static final String NDJSON_CONTENT_TYPE = "application/x-ndjson; charset=utf-8";
     private static final String TRAIN_STATIC_MODEL_PATH = "/api/v1/train-static-model";
     private static final String INSTALL_MODEL_PATH = "/api/v1/install-model";
+    private static final String ANALYZE_STREAM_PATH = "/api/v1/analyze-stream";
+    private static final String ANALYZE_PROGRESSIVE_PATH = "/api/v1/analyze-progressive";
     private static final String WATCH_COLLECTION_PATH = "/api/v1/watch-collection";
     private static final String METHOD_NOT_ALLOWED =
         "HTTP method is not allowed for this endpoint";
@@ -235,6 +262,24 @@ final class OpenNlpGrpcWebServer implements AutoCloseable {
             return;
           }
           streamNdjson(exchange, sink -> api.trainStaticModel(body, sink));
+          return;
+        }
+        if (rawPath.equals(ANALYZE_STREAM_PATH)) {
+          if (!method.equals(HTTP_POST)) {
+            send(exchange, GrpcJsonApi.error(405, Status.Code.UNIMPLEMENTED,
+                METHOD_NOT_ALLOWED));
+            return;
+          }
+          streamNdjson(exchange, sink -> api.analyzeStream(body, sink));
+          return;
+        }
+        if (rawPath.equals(ANALYZE_PROGRESSIVE_PATH)) {
+          if (!method.equals(HTTP_POST)) {
+            send(exchange, GrpcJsonApi.error(405, Status.Code.UNIMPLEMENTED,
+                METHOD_NOT_ALLOWED));
+            return;
+          }
+          streamNdjson(exchange, sink -> api.analyzeProgressively(body, sink));
           return;
         }
         if (rawPath.equals(INSTALL_MODEL_PATH)) {

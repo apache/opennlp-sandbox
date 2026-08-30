@@ -38,6 +38,10 @@ import org.apache.opennlp.grpc.v1.LearnVocabularyRequest;
 import org.apache.opennlp.grpc.v1.LearnVocabularyStart;
 import org.apache.opennlp.grpc.v1.ListDictionaryFormatsRequest;
 import org.apache.opennlp.grpc.v1.ListDictionaryFormatsResponse;
+import org.apache.opennlp.grpc.v1.ListDictionariesRequest;
+import org.apache.opennlp.grpc.v1.ListDictionariesResponse;
+import org.apache.opennlp.grpc.v1.ListVocabulariesRequest;
+import org.apache.opennlp.grpc.v1.ListVocabulariesResponse;
 import org.apache.opennlp.grpc.v1.OpenNlpDocument;
 import org.apache.opennlp.grpc.v1.OpenNlpVocabularyServiceGrpc;
 import org.apache.opennlp.grpc.v1.VocabularyArtifactChunk;
@@ -93,6 +97,28 @@ public final class OpenNlpVocabularyServiceImpl
         .setMaxCorpusBytes(store.maxCorpusBytes())
         .setMaxVocabularyTerms(store.maxVocabularyTerms())
         .setMaxConcurrentWrites(store.maxConcurrentWrites())
+        .build());
+    responseObserver.onCompleted();
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void listDictionaries(
+      ListDictionariesRequest request,
+      StreamObserver<ListDictionariesResponse> responseObserver) {
+    responseObserver.onNext(ListDictionariesResponse.newBuilder()
+        .addAllDictionaries(store.listDictionaries())
+        .build());
+    responseObserver.onCompleted();
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void listVocabularies(
+      ListVocabulariesRequest request,
+      StreamObserver<ListVocabulariesResponse> responseObserver) {
+    responseObserver.onNext(ListVocabulariesResponse.newBuilder()
+        .addAllVocabularies(store.listVocabularies())
         .build());
     responseObserver.onCompleted();
   }
@@ -300,7 +326,9 @@ public final class OpenNlpVocabularyServiceImpl
           return;
         }
         try {
-          store.requireDictionary(candidate.getDictionaryArtifactId());
+          if (!candidate.getDictionaryArtifactId().isEmpty()) {
+            store.requireDictionary(candidate.getDictionaryArtifactId());
+          }
           if (!admission.acquire()) {
             fail(responseObserver, admission, Status.RESOURCE_EXHAUSTED.withDescription(
                 "concurrent vocabulary writes exceed configured maximum "

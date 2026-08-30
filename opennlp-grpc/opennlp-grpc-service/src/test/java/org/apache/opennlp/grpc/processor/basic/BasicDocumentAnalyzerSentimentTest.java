@@ -22,8 +22,9 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import org.apache.opennlp.grpc.model.ModelBundleCache;
+import org.apache.opennlp.grpc.model.StubDocCategorizerBackendFactory;
 import org.apache.opennlp.grpc.model.SentimentRegistry;
-import org.apache.opennlp.grpc.processor.AnalysisException;
+import org.apache.opennlp.grpc.spi.AnalysisException;
 import org.apache.opennlp.grpc.profile.ProfileRegistry;
 import org.apache.opennlp.grpc.testing.TinySentimentModel;
 import org.apache.opennlp.grpc.v1.AnalysisProfile;
@@ -139,6 +140,29 @@ class BasicDocumentAnalyzerSentimentTest {
       assertEquals("neutral", sentence.getSentimentLabel());
       assertEquals(0, sentence.getTokensCount());
     }
+  }
+
+  @Test
+  void scoresEverySentenceThroughOneBatchedClassification() {
+    // A document's sentences reach the model as one classifyBatch call, so a transformer
+    // backend can batch inference instead of paying one call per sentence.
+    final ModelBundleCache modelBundleCache =
+        new ModelBundleCache(Map.of("model.sentiment_stub.category", "neutral"));
+    final BasicDocumentAnalyzer analyzer =
+        new BasicDocumentAnalyzer(ProfileRegistry.createDefault(false, false, true),
+            modelBundleCache);
+    final int before = StubDocCategorizerBackendFactory.BATCH_CALLS.get();
+
+    final AnalyzeDocumentResponse response = analyzer.analyze(AnalyzeDocumentRequest.newBuilder()
+        .setDocument(OpenNlpDocument.newBuilder().setRawText(MIXED_TEXT).build())
+        .setProfile(AnalysisProfile.newBuilder()
+            .addSteps(PipelineStep.PIPELINE_STEP_SENTENCE_DETECT)
+            .addSteps(PipelineStep.PIPELINE_STEP_SENTIMENT)
+            .build())
+        .build());
+
+    assertEquals(1, StubDocCategorizerBackendFactory.BATCH_CALLS.get() - before);
+    assertEquals(2, response.getDocument().getSentencesCount());
   }
 
   @Test

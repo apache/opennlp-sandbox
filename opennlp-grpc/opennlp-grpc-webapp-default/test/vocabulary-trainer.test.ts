@@ -46,6 +46,10 @@ const MODEL: TrainedModelSummary = {
   explainedVarianceRatio: 0.97,
   artifactHash: "abc",
   byteSize: 31_000_000,
+  createdAt: "2026-08-20T14:00:00Z",
+  teacherReference: "minishlab/potion-base-8M",
+  licenseName: "MIT",
+  languages: ["en"],
 };
 
 describe("trainer readers", () => {
@@ -74,11 +78,12 @@ describe("trainer readers", () => {
     expect(readStaticModels({ models: [{
       artifactId: "static-model-1", displayName: "m", dimension: 3, termCount: "12", teacherId: "mini",
       family: "wordpiece", vocabularySize: 30_522, explainedVarianceRatio: 0.97,
-      artifactHash: "abc", byteSize: "31000000",
+      artifactHash: "abc", byteSize: "31000000", createdAt: "2026-08-20T14:00:00Z",
     }] })).toEqual([{
       artifactId: "static-model-1", displayName: "m", dimension: 3, termCount: 12, teacherId: "mini",
       family: "wordpiece", vocabularySize: 30_522, explainedVarianceRatio: 0.97,
-      artifactHash: "abc", byteSize: 31_000_000,
+      artifactHash: "abc", byteSize: 31_000_000, createdAt: "2026-08-20T14:00:00Z",
+      teacherReference: "", licenseName: "", languages: [],
     }]);
     expect(() => readTrainedModel({})).toThrow(/invalid static model/);
     expect(readImportedDictionary({ artifactId: "dictionary-1", entryCount: 2 }))
@@ -139,6 +144,8 @@ describe("trainer workbench", () => {
         termCount: 5, dictionaryTermCount: 2, corpusTermCount: 3,
       })),
       downloadVocabulary: vi.fn(async () => "liberty\t3\tcorpus\n"),
+      listDictionaries: vi.fn(async () => []),
+      listVocabularies: vi.fn(async () => []),
       listTeachers: vi.fn(async () => ({
         teachers: [{ id: "mini", label: "Mini", reference: "org/mini" }],
         writesEnabled: true,
@@ -156,7 +163,7 @@ describe("trainer workbench", () => {
 
   it("initializes the catalog and reports existing models", async () => {
     const onModelsChanged = vi.fn();
-    const trainer = new VocabularyTrainerWorkbench(stubApi(), { onModelsChanged });
+    const trainer = new VocabularyTrainerWorkbench(stubApi(), { onModelsChanged, onUseInAnalyze: vi.fn() });
 
     await trainer.initialize();
 
@@ -168,8 +175,38 @@ describe("trainer workbench", () => {
       .toBe(false);
   });
 
+  it("names teachers without their filesystem reference, kept as a tooltip", async () => {
+    const trainer = new VocabularyTrainerWorkbench(stubApi(), {
+      onModelsChanged: vi.fn(), onUseInAnalyze: vi.fn(),
+    });
+    await trainer.initialize();
+
+    const option = (document.getElementById("trainer-teacher-select") as HTMLSelectElement)
+      .options[0]!;
+    expect(option.textContent).toBe("Mini");
+    expect(option.title).toBe("org/mini");
+  });
+
+  it("renders trained models with their name, training time, and a Use in Analyze action", async () => {
+    const onUseInAnalyze = vi.fn();
+    const trainer = new VocabularyTrainerWorkbench(stubApi(), {
+      onModelsChanged: vi.fn(), onUseInAnalyze,
+    });
+    await trainer.initialize();
+
+    const row = document.querySelector(".trainer-model-row")!;
+    expect(row.querySelector("strong")?.textContent).toBe("Legal static model");
+    expect(row.textContent).toContain("distilled 2026-08-20 14:00 UTC");
+    expect(row.textContent).toContain("· MIT · en");
+    expect(row.querySelector("code")?.textContent).toBe("static-model-1");
+    const use = [...row.querySelectorAll("button")]
+      .find((button) => button.textContent === "Use in Analyze")!;
+    use.click();
+    expect(onUseInAnalyze).toHaveBeenCalledWith(MODEL);
+  });
+
   it("shows a waiting state and live corpus document and byte counts", async () => {
-    const trainer = new VocabularyTrainerWorkbench(stubApi(), { onModelsChanged: vi.fn() });
+    const trainer = new VocabularyTrainerWorkbench(stubApi(), { onModelsChanged: vi.fn(), onUseInAnalyze: vi.fn() });
     await trainer.initialize();
     const corpus = document.getElementById("trainer-corpus") as HTMLTextAreaElement;
 
@@ -184,17 +221,34 @@ describe("trainer workbench", () => {
       .toContain("23 UTF-8 bytes");
   });
 
+  it("disables distilling and points at the catalog when no teacher is installed", async () => {
+    const api = stubApi({
+      listDictionaryFormats: vi.fn(async () => ({ formats: [], writesEnabled: true })),
+      listTeachers: vi.fn(async () => ({ teachers: [], writesEnabled: true })),
+      listStaticModels: vi.fn(async () => []),
+    });
+    const trainer = new VocabularyTrainerWorkbench(api, { onModelsChanged: vi.fn(), onUseInAnalyze: vi.fn() });
+
+    await trainer.initialize();
+
+    const status = document.getElementById("trainer-status")!;
+    expect(status.textContent).toContain("No teacher model is installed");
+    expect(status.querySelector<HTMLElement>("[data-workbench-jump]")?.dataset.workbenchJump).toBe("models");
+    expect((document.getElementById("trainer-train-button") as HTMLButtonElement).disabled).toBe(true);
+    expect((document.getElementById("trainer-learn-button") as HTMLButtonElement).disabled).toBe(false);
+  });
+
   it("disables training when the server has no artifact root", async () => {
     const api = stubApi({
       listDictionaryFormats: vi.fn(async () => ({ formats: [], writesEnabled: false })),
       listTeachers: vi.fn(async () => ({ teachers: [], writesEnabled: false })),
       listStaticModels: vi.fn(async () => []),
     });
-    const trainer = new VocabularyTrainerWorkbench(api, { onModelsChanged: vi.fn() });
+    const trainer = new VocabularyTrainerWorkbench(api, { onModelsChanged: vi.fn(), onUseInAnalyze: vi.fn() });
 
     await trainer.initialize();
 
-    expect(document.getElementById("trainer-status")?.textContent).toContain("disabled");
+    expect(document.getElementById("trainer-status")?.textContent).toContain("artifact root");
     expect((document.getElementById("trainer-train-button") as HTMLButtonElement).disabled)
       .toBe(true);
   });
@@ -202,7 +256,7 @@ describe("trainer workbench", () => {
   it("learns a vocabulary and trains a model with streamed progress", async () => {
     const api = stubApi();
     const onModelsChanged = vi.fn();
-    const trainer = new VocabularyTrainerWorkbench(api, { onModelsChanged });
+    const trainer = new VocabularyTrainerWorkbench(api, { onModelsChanged, onUseInAnalyze: vi.fn() });
     await trainer.initialize();
 
     const dictionarySelect =
@@ -231,13 +285,77 @@ describe("trainer workbench", () => {
     expect(onModelsChanged).toHaveBeenLastCalledWith([MODEL]);
   });
 
+  it("learns directly from the corpus when no optional dictionary is selected", async () => {
+    const api = stubApi();
+    const trainer = new VocabularyTrainerWorkbench(api, {
+      onModelsChanged: vi.fn(), onUseInAnalyze: vi.fn(),
+    });
+    await trainer.initialize();
+    (document.getElementById("trainer-corpus") as HTMLTextAreaElement).value =
+      "Liberty matters.\n\nHabeas corpus endures.";
+
+    (document.getElementById("trainer-learn-button") as HTMLButtonElement).click();
+
+    await vi.waitFor(() => expect(api.learnVocabulary).toHaveBeenCalled());
+    const start = vi.mocked(api.learnVocabulary).mock.calls[0]?.[0].start;
+    expect(start?.dictionaryArtifactId).toBeUndefined();
+    expect(document.getElementById("trainer-status")?.textContent).toContain("Learned 5 terms");
+  });
+
+  it("restores the Copy id label after confirming the copy", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    const trainer = new VocabularyTrainerWorkbench(stubApi(), {
+      onModelsChanged: vi.fn(), onUseInAnalyze: vi.fn(),
+    });
+    await trainer.initialize();
+    const copy = [...document.querySelectorAll(".trainer-model-row button")]
+      .find((button) => button.textContent === "Copy id") as HTMLButtonElement;
+    vi.useFakeTimers();
+    try {
+      copy.click();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(writeText).toHaveBeenCalledWith("static-model-1");
+      expect(copy.textContent).toBe("Copied");
+      vi.advanceTimersByTime(1500);
+      expect(copy.textContent).toBe("Copy id");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("disables the TSV export with a reason until a vocabulary is selected", async () => {
+    const trainer = new VocabularyTrainerWorkbench(stubApi(), {
+      onModelsChanged: vi.fn(), onUseInAnalyze: vi.fn(),
+    });
+    await trainer.initialize();
+    const button = document.getElementById("trainer-download-tsv-button") as HTMLButtonElement;
+
+    expect(button.disabled).toBe(true);
+    expect(button.title).toContain("vocabulary");
+
+    const vocabularySelect =
+      document.getElementById("trainer-vocabulary-select") as HTMLSelectElement;
+    vocabularySelect.add(new Option("Legal vocabulary", "vocabulary-1"));
+    vocabularySelect.value = "vocabulary-1";
+    vocabularySelect.dispatchEvent(new Event("change"));
+
+    expect(button.disabled).toBe(false);
+    expect(button.title).toBe("");
+  });
+
   it("surfaces training failures in the status line", async () => {
     const api = stubApi({
       trainStaticModel: vi.fn(async () => {
         throw new Error("Unknown teacher 'other'");
       }),
     });
-    const trainer = new VocabularyTrainerWorkbench(api, { onModelsChanged: vi.fn() });
+    const trainer = new VocabularyTrainerWorkbench(api, { onModelsChanged: vi.fn(), onUseInAnalyze: vi.fn() });
     await trainer.initialize();
     const vocabularySelect =
       document.getElementById("trainer-vocabulary-select") as HTMLSelectElement;
@@ -250,5 +368,27 @@ describe("trainer workbench", () => {
       expect(document.getElementById("trainer-status")?.textContent)
         .toContain("Unknown teacher 'other'");
     });
+  });
+  it("lists the dictionaries and vocabularies already on the server at startup", async () => {
+    const workbench = new VocabularyTrainerWorkbench(stubApi({
+      listDictionaries: vi.fn(async () => [
+        { artifactId: "dictionary-legal", displayName: "Legal dictionary", entryCount: 80 },
+      ]),
+      listVocabularies: vi.fn(async () => [
+        { artifactId: "vocabulary-legal", displayName: "Legal vocabulary", termCount: 4812 },
+      ]),
+    }), { onModelsChanged: vi.fn(), onUseInAnalyze: vi.fn() });
+    await workbench.initialize();
+
+    const dictionaries = document.getElementById("trainer-dictionary-select") as HTMLSelectElement;
+    expect(Array.from(dictionaries.options).map((option) => option.textContent))
+      .toEqual(["Corpus terms only", "Legal dictionary (80 entries)"]);
+    const vocabularies = document.getElementById("trainer-vocabulary-select") as HTMLSelectElement;
+    expect(Array.from(vocabularies.options).map((option) => option.textContent))
+      .toEqual(["Legal vocabulary (4812 terms)"]);
+    expect(vocabularies.disabled).toBe(false);
+    // A vocabulary learned on an earlier run is exportable without learning it again.
+    expect((document.getElementById("trainer-download-tsv-button") as HTMLButtonElement).disabled)
+      .toBe(false);
   });
 });

@@ -159,6 +159,16 @@ function isSentimentLayer(id: string, standardIdentity: string | undefined): boo
   return asciiLowerCase(`${id} ${standardIdentity ?? ""}`).includes("sentiment");
 }
 
+/**
+ * Maps a categorizer label and its confidence to a signed polarity in [-1, 1].
+ *
+ * Polar labels (containing "negative", "neutral" or "positive") keep the confidence as the
+ * magnitude. Ordinal star labels such as "1_star" or "5 stars" place the rank on a five-point
+ * scale, so one star is fully negative, three stars neutral and five stars fully positive,
+ * scaled by the confidence. A label of unknown shape scores 0: the confidence alone says
+ * nothing about direction, and rendering it as polarity painted the most negative sentences
+ * green.
+ */
 function signedSentimentScore(label: string, score: number): number {
   const category = asciiLowerCase(label);
   const magnitude = Math.min(1, Math.abs(score));
@@ -171,7 +181,53 @@ function signedSentimentScore(label: string, score: number): number {
   if (category.includes("positive")) {
     return magnitude;
   }
-  return Math.max(-1, Math.min(1, score));
+  const stars = starRank(category);
+  if (stars !== undefined) {
+    return ((stars - STAR_SCALE_MIDPOINT) / STAR_SCALE_MIDPOINT_DISTANCE) * magnitude;
+  }
+  return 0;
+}
+
+const STAR_SCALE_MIN = 1;
+const STAR_SCALE_MAX = 5;
+const STAR_SCALE_MIDPOINT = 3;
+const STAR_SCALE_MIDPOINT_DISTANCE = STAR_SCALE_MAX - STAR_SCALE_MIDPOINT;
+
+/**
+ * Reads the rank out of a lower-cased ordinal label like "1_star", "5 stars" or "2-stars":
+ * one to five ASCII digits, an optional separator, then the word "star". Returns undefined
+ * for any other shape.
+ */
+function starRank(category: string): number | undefined {
+  let index = 0;
+  while (index < category.length && category.charCodeAt(index) === SPACE_CODE) {
+    index++;
+  }
+  const digitStart = index;
+  while (index < category.length && isAsciiDigit(category.charCodeAt(index))) {
+    index++;
+  }
+  if (index === digitStart) {
+    return undefined;
+  }
+  const rank = Number(category.slice(digitStart, index));
+  if (index < category.length && isSeparator(category.charCodeAt(index))) {
+    index++;
+  }
+  if (!category.startsWith("star", index)) {
+    return undefined;
+  }
+  return rank >= STAR_SCALE_MIN && rank <= STAR_SCALE_MAX ? rank : undefined;
+}
+
+const SPACE_CODE = 0x20;
+
+function isAsciiDigit(code: number): boolean {
+  return code >= 0x30 && code <= 0x39;
+}
+
+function isSeparator(code: number): boolean {
+  return code === SPACE_CODE || code === 0x5f || code === 0x2d;
 }
 
 function preview(value: string, limit: number): string {
