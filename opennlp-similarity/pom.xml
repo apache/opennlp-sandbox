@@ -27,7 +27,7 @@
   <properties>
     <jakarta.bind-api.version>4.0.5</jakarta.bind-api.version>
     <jakarta.mail.version>2.1.4</jakarta.mail.version>
-    <org.json.version>20260719</org.json.version>
+    <org.json.version>20260814</org.json.version>
 
     <lucene.version>10.5.1</lucene.version>
     <solr.version>9.10.1</solr.version>
@@ -37,7 +37,7 @@
     <dl4j.version>1.0.0-M2.1</dl4j.version>
     <hdf5.version>1.14.3-1.5.10</hdf5.version>
     <javacpp.version>1.5.14</javacpp.version>
-    <openblas.version>0.3.31-1.5.13</openblas.version>
+    <openblas.version>0.3.34-1.5.14</openblas.version>
     <httpclient.version>4.5.14</httpclient.version>
   </properties>
 
@@ -477,7 +477,8 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>-Xmx2048m -Dfile.encoding=UTF-8</argLine>
-          <forkCount>${opennlp.forkCount}</forkCount>
+          <!-- Concurrent JVMs corrupt the shared parse cache. -->
+          <forkCount>1</forkCount>
           <reuseForks>false</reuseForks>
           <failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
           <excludes>

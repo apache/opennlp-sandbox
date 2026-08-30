@@ -15,7 +15,7 @@ List of third-party dependencies grouped by their license type.
         * annotations-api (org.apache.tomcat:annotations-api:6.0.53 - http://tomcat.apache.org/)
         * Apache Commons CLI (commons-cli:commons-cli:1.11.0 - https://commons.apache.org/proper/commons-cli/)
         * Apache Commons Codec (commons-codec:commons-codec:1.22.1 - https://commons.apache.org/proper/commons-codec/)
-        * Apache Commons Collections (org.apache.commons:commons-collections4:4.5.0 - https://commons.apache.org/proper/commons-collections/)
+        * Apache Commons Collections (org.apache.commons:commons-collections4:4.6.0 - https://commons.apache.org/proper/commons-collections/)
         * Apache Commons Compress (org.apache.commons:commons-compress:1.28.0 - https://commons.apache.org/proper/commons-compress/)
         * Apache Commons Exec (org.apache.commons:commons-exec:1.5.0 - https://commons.apache.org/proper/commons-exec/)
         * Apache Commons IO (commons-io:commons-io:2.22.0 - https://commons.apache.org/proper/commons-io/)
@@ -121,12 +121,12 @@ List of third-party dependencies grouped by their license type.
         * J2ObjC Annotations (com.google.j2objc:j2objc-annotations:3.1 - https://github.com/google/j2objc/)
         * jackson (org.nd4j:jackson:1.0.0-M2.1 - http://deeplearning4j.konduit.ai/nd4j/nd4j-shade/jackson/)
         * Jackson-annotations (com.fasterxml.jackson.core:jackson-annotations:2.21 - https://github.com/FasterXML/jackson)
-        * Jackson-core (com.fasterxml.jackson.core:jackson-core:2.21.5 - https://github.com/FasterXML/jackson-core)
-        * jackson-databind (com.fasterxml.jackson.core:jackson-databind:2.21.5 - https://github.com/FasterXML/jackson)
-        * Jackson dataformat: CBOR (com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.21.5 - https://github.com/FasterXML/jackson-dataformats-binary)
-        * Jackson dataformat: Smile (com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.21.5 - https://github.com/FasterXML/jackson-dataformats-binary)
-        * Jackson module: Jakarta XML Bind Annotations (jakarta.xml.bind) (com.fasterxml.jackson.module:jackson-module-jakarta-xmlbind-annotations:2.21.5 - https://github.com/FasterXML/jackson-modules-base)
-        * Jackson module: Old JAXB Annotations (javax.xml.bind) (com.fasterxml.jackson.module:jackson-module-jaxb-annotations:2.21.5 - https://github.com/FasterXML/jackson-modules-base)
+        * Jackson-core (com.fasterxml.jackson.core:jackson-core:2.22.2 - https://github.com/FasterXML/jackson-core)
+        * jackson-databind (com.fasterxml.jackson.core:jackson-databind:2.22.2 - https://github.com/FasterXML/jackson)
+        * Jackson dataformat: CBOR (com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.22.2 - https://github.com/FasterXML/jackson-dataformats-binary)
+        * Jackson dataformat: Smile (com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.22.2 - https://github.com/FasterXML/jackson-dataformats-binary)
+        * Jackson module: Jakarta XML Bind Annotations (jakarta.xml.bind) (com.fasterxml.jackson.module:jackson-module-jakarta-xmlbind-annotations:2.22.2 - https://github.com/FasterXML/jackson-modules-base)
+        * Jackson module: Old JAXB Annotations (javax.xml.bind) (com.fasterxml.jackson.module:jackson-module-jaxb-annotations:2.22.2 - https://github.com/FasterXML/jackson-modules-base)
         * Jakarta Bean Validation API (jakarta.validation:jakarta.validation-api:2.0.2 - https://beanvalidation.org)
         * Jakarta Bean Validation API (jakarta.validation:jakarta.validation-api:3.0.2 - https://beanvalidation.org)
         * Jakarta Dependency Injection (jakarta.inject:jakarta.inject-api:2.0.1 - https://github.com/eclipse-ee4j/injection-api)
@@ -236,7 +236,7 @@ List of third-party dependencies grouped by their license type.
 
         * JavaCPP (org.bytedeco:javacpp:1.5.14 - http://bytedeco.org/javacpp/)
         * JavaCPP Presets for HDF5 (org.bytedeco:hdf5:1.14.3-1.5.10 - http://bytedeco.org/javacpp-presets/hdf5/)
-        * JavaCPP Presets for OpenBLAS (org.bytedeco:openblas:0.3.31-1.5.13 - http://bytedeco.org/javacpp-presets/openblas/)
+        * JavaCPP Presets for OpenBLAS (org.bytedeco:openblas:0.3.34-1.5.14 - http://bytedeco.org/javacpp-presets/openblas/)
 
     Apache License, Version 2.0, LGPL 2.1, MPL 1.1
 
@@ -293,6 +293,10 @@ List of third-party dependencies grouped by their license type.
     Common Development and Distribution License (CDDL) v1.1, The GNU General Public License (GPL), Version 2, With Classpath Exception
 
         * Java Architecture for XML Binding (javax.xml.bind:jaxb-api:2.2.12 - http://jaxb.java.net/)
+
+    Creative Commons Attribution 4.0 International Public License
+
+        * Java WordNet Interface (io.github.x-englishwordnet:jwi:2.4.0 - https://github.com/x-englishwordnet/jwi)
 
     Creative Commons Attribution Version 3.0 Unported
 
@@ -399,7 +403,7 @@ List of third-party dependencies grouped by their license type.
     Public Domain
 
         * Alice's Adventures in Wonderland (Lewis Carroll, 1865)
-        * JSON in Java (org.json:json:20260719 - https://github.com/douglascrockford/JSON-java)
+        * JSON in Java (org.json:json:20260814 - https://github.com/douglascrockford/JSON-java)
 
     The Apache Software License, version 2.0
 

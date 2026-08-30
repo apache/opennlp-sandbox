@@ -100,13 +100,37 @@ class WSDisambiguatorMETest extends AbstractDisambiguatorTest {
     assertNotNull(wsdME, "Checking the disambiguator");
   }
 
-  /*
-   * Tests disambiguating only one word : The ambiguous word "please"
-   */
+  // "We need to discuss an important topic, please write to me soon."
+  // Tags are fixed: the reading of "please" selects the path under test.
+  private static final String[] PLEASE_TOKENS = {
+      "We", "need", "to", "discuss", "an", "important", "topic", ",",
+      "please", "write", "to", "me", "soon", "."};
+  private static final String[] PLEASE_LEMMAS = {
+      "we", "need", "to", "discuss", "a", "important", "topic", ",",
+      "please", "write", "to", "i", "soon", "."};
+  private static final String[] PLEASE_TAGS = {
+      "PRP", "VB", "RP", "VB", "DT", "JJ", "NN", ".",
+      null, "VB", "IN", "PRP", "RB", "."};
+  private static final int PLEASE_INDEX = 8;
+
+  private static String[] pleaseTags(String targetTag) {
+    String[] tags = PLEASE_TAGS.clone();
+    tags[PLEASE_INDEX] = targetTag;
+    return tags;
+  }
+
+  // "please.r" does not match the trained "please.v": exercises the WordNet fallback.
   @Test
-  void testDisambiguateOneWord() {
-    String sense = wsdME.disambiguate(sentence1, tags1, lemmas1, 8);
+  void testDisambiguateOneWordAsAdverb() {
+    String sense = wsdME.disambiguate(PLEASE_TOKENS, pleaseTags("UH"), PLEASE_LEMMAS, PLEASE_INDEX);
     assertEquals("WORDNET please%4:02:00::", sense, "Check 'please' sense ID");
+  }
+
+  // "please.v" matches the trained model: exercises the maxent model.
+  @Test
+  void testDisambiguateOneWordAsVerb() {
+    String sense = wsdME.disambiguate(PLEASE_TOKENS, pleaseTags("VB"), PLEASE_LEMMAS, PLEASE_INDEX);
+    assertEquals("WORDNET please%2:37:00::", sense, "Check 'please' sense ID");
   }
 
   /*

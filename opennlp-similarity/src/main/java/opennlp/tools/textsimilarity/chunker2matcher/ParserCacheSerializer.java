@@ -35,11 +35,10 @@ package opennlp.tools.textsimilarity.chunker2matcher;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.invoke.MethodHandles;
@@ -65,6 +64,10 @@ public class ParserCacheSerializer {
   private static final String PARSE_CACHE_FILE_NAME = "sentence_parseObject.dat";
   private static final String PARSE_CACHE_FILE_NAME_CSV = "sentence_parseObject.csv";
 
+  // Written outside the source tree: forked JVMs racing on a tracked file corrupt it.
+  private static final String CACHE_DIR_PROPERTY = "opennlp.similarity.parseCacheDir";
+  private static final String DEFAULT_CACHE_DIR = "target";
+
   public static void writeObject(Object objectToSerialize) {
     if (JAVA_OBJECT_SERIALIZATION) {
       String filename = RESOURCE_DIR + PARSE_CACHE_FILE_NAME;
@@ -79,7 +82,16 @@ public class ParserCacheSerializer {
       Map<String, String[][]> sentence_parseObject = (Map<String, String[][]>) objectToSerialize;
       final List<String> keys = new ArrayList<>(sentence_parseObject.keySet());
 
-      final Path p = Path.of(RESOURCE_DIR + PARSE_CACHE_FILE_NAME_CSV);
+      final Path p = cacheOutputFile();
+      try {
+        final Path dir = p.getParent();
+        if (dir != null) {
+          Files.createDirectories(dir);
+        }
+      } catch (IOException e) {
+        LOG.error("Cannot create parse cache directory for {}: {}", p, e.getMessage());
+        return;
+      }
       try (CSVWriter writer = new CSVWriter(Files.newBufferedWriter(p, StandardCharsets.UTF_8,
               StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))) {
         for (String k : keys) {
@@ -110,20 +122,13 @@ public class ParserCacheSerializer {
       }
       return data;
     } else {
-      List<String[]> lines;
-      final String fileName = RESOURCE_DIR + PARSE_CACHE_FILE_NAME_CSV;
-      
-      try (CSVReader reader = new CSVReader(new FileReader(fileName), ',')) {
-        lines = reader.readAll();
-      } catch (FileNotFoundException e) {
-        if (JAVA_OBJECT_SERIALIZATION)
-          LOG.warn("Cannot find cache file");
-        return null;
-      } catch (IOException ioe) {
-        LOG.error(ioe.getMessage(), ioe);
-        return null;
-      }
+      final List<String[]> lines = readCsvLines();
+      // Never null: callers dereference this without a check.
       Map<String, String[][]> sentence_parseObject = new HashMap<>();
+      if (lines == null) {
+        LOG.warn("Cannot find parse cache file {} on the classpath or on disk", PARSE_CACHE_FILE_NAME_CSV);
+        return sentence_parseObject;
+      }
       for (int i = 0; i < lines.size() - 3; i += 4) {
         String key = lines.get(i)[0];
         String[][] value = new String[][] { lines.get(i + 1), lines.get(i + 2),
@@ -132,5 +137,34 @@ public class ParserCacheSerializer {
       }
       return sentence_parseObject;
     }
+  }
+
+  // Classpath copy wins, so the working directory cannot affect the result.
+  private static List<String[]> readCsvLines() {
+    try (InputStream is = ParserCacheSerializer.class.getResourceAsStream("/" + PARSE_CACHE_FILE_NAME_CSV)) {
+      if (is != null) {
+        try (CSVReader reader = new CSVReader(new InputStreamReader(is, StandardCharsets.UTF_8), ',')) {
+          return reader.readAll();
+        }
+      }
+    } catch (IOException ioe) {
+      LOG.error(ioe.getMessage(), ioe);
+    }
+    // Fall back to an earlier run, then the legacy in-tree location.
+    for (Path p : List.of(cacheOutputFile(), Path.of(RESOURCE_DIR + PARSE_CACHE_FILE_NAME_CSV))) {
+      if (!Files.isReadable(p)) {
+        continue;
+      }
+      try (CSVReader reader = new CSVReader(Files.newBufferedReader(p, StandardCharsets.UTF_8), ',')) {
+        return reader.readAll();
+      } catch (IOException ioe) {
+        LOG.error(ioe.getMessage(), ioe);
+      }
+    }
+    return null;
+  }
+
+  private static Path cacheOutputFile() {
+    return Path.of(System.getProperty(CACHE_DIR_PROPERTY, DEFAULT_CACHE_DIR), PARSE_CACHE_FILE_NAME_CSV);
   }
 }

@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.xml.XMLConstants;
@@ -305,9 +306,13 @@ public class SemcorReaderExtended {
 
     if (tempFolder.isDirectory()) {
       listOfFiles = tempFolder.listFiles();
-      for (File file : listOfFiles) {
-        List<WSDSample> list = getSemcorOneFileData(directory + file.getName(), wordTag);
-        result.addAll(list);
+      if (listOfFiles != null) {
+        // listFiles() order is filesystem-dependent; sample order fixes the model's word tag.
+        Arrays.sort(listOfFiles);
+        for (File file : listOfFiles) {
+          List<WSDSample> list = getSemcorOneFileData(directory + file.getName(), wordTag);
+          result.addAll(list);
+        }
       }
     }
 
