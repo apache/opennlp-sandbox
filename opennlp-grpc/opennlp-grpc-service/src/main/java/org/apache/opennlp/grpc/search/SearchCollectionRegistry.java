@@ -514,15 +514,15 @@ public final class SearchCollectionRegistry {
   }
 
   /**
-   * Drops one index from every collection that lists it as a member, for use when the
-   * index itself is deleted, so no stored collection names an index the write API
-   * would reject. A collection left without members stays, with no members.
+   * Drops one index from every collection that lists it as a member.
    *
    * @param indexId Dynamic index that was deleted.
    * @return The ids of the collections that changed, in stable order.
+   * @throws IllegalArgumentException If {@code indexId} is not a stable identifier.
    * @throws UncheckedIOException If rewriting a collection fails.
    */
   public List<String> removeMember(String indexId) {
+    SearchIndexRegistry.requireStableId(indexId, "index id");
     final List<DescriptionInput> candidates;
     synchronized (this) {
       candidates = collections.values().stream()

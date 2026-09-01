@@ -78,5 +78,7 @@ class IndexAliasRegistryTest {
 
     assertThrows(IllegalArgumentException.class, () -> registry.set("Bad Alias", "workspace-1"));
     assertThrows(IllegalArgumentException.class, () -> registry.set("alias", " padded "));
+    assertThrows(IllegalArgumentException.class, () -> registry.deleteByIndex(null));
+    assertThrows(IllegalArgumentException.class, () -> registry.deleteByIndex("bad index"));
   }
 }

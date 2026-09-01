@@ -142,8 +142,10 @@ public final class IndexAliasRegistry {
    *
    * @param indexId Index id the aliases point at.
    * @return The removed alias names in stable order; empty when none pointed at the index.
+   * @throws IllegalArgumentException If {@code indexId} is not a stable identifier.
    */
   public synchronized List<String> deleteByIndex(String indexId) {
+    SearchIndexRegistry.requireStableId(indexId, "index id");
     final List<String> removed = new ArrayList<>();
     for (Map.Entry<String, String> entry : aliases.entrySet()) {
       if (entry.getValue().equals(indexId)) {

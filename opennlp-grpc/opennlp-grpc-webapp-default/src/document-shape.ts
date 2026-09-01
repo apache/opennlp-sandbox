@@ -64,7 +64,7 @@ export interface DocumentShapeSummary {
   emptyLayerIds: string[];
 }
 
-export interface RawDocumentShapeCounts {
+interface RawDocumentShapeCounts {
   layerCount: number;
   annotationCount: number;
 }

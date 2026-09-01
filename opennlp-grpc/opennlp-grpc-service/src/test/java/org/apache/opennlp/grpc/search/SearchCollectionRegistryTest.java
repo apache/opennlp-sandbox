@@ -205,6 +205,8 @@ class SearchCollectionRegistryTest {
         () -> registry.watch("legal", null, () -> { }));
     assertThrows(IllegalArgumentException.class,
         () -> registry.watch("legal", event -> { }, null));
+    assertThrows(IllegalArgumentException.class, () -> registry.removeMember(null));
+    assertThrows(IllegalArgumentException.class, () -> registry.removeMember("bad index"));
   }
 
   @Test

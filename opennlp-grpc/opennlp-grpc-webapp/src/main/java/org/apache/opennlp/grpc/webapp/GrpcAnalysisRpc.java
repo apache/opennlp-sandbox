@@ -149,12 +149,7 @@ final class GrpcAnalysisRpc implements AnalysisRpc {
         .analyzeDocument(request);
   }
 
-  /**
-   * {@inheritDoc} The call runs under the stream ceiling rather than the size-scaled unary
-   * deadline: a server-streaming reply lasts as long as the browser takes to consume it, and
-   * a document the server finishes in seconds would otherwise be cut off while the page is
-   * still drawing earlier events.
-   */
+  /** {@inheritDoc} Uses the long-running stream deadline for the complete response. */
   @Override
   public ProgressiveEvents analyzeProgressively(AnalyzeDocumentRequest request) {
     final Context.CancellableContext context = Context.current().withCancellation();
