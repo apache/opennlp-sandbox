@@ -696,13 +696,6 @@ public final class ModelBundleCache implements AutoCloseable {
   }
 
   /**
-   * Loads the language detector model. It needs custom resolution because the generic
-   * classpath provider is keyed by language, while this model is language-independent
-   * ({@code model.language=root} in its descriptor): explicit path first, then the
-   * {@code model.properties} descriptors of the model jars on the classpath, then the
-   * binary bundled inside the shaded server jar.
-   */
-  /**
    * Returns the default classic pipeline, serving every request no configured language
    * pipeline matches.
    *
@@ -845,7 +838,7 @@ public final class ModelBundleCache implements AutoCloseable {
   /** Returns the ISO 639-3 form of a language code, or {@code null} when unknown. */
   private static String iso3Code(String language) {
     try {
-      final String iso3 = new Locale(language).getISO3Language();
+      final String iso3 = Locale.of(language).getISO3Language();
       return iso3.isEmpty() ? null : StringUtil.toLowerCase(iso3);
     } catch (MissingResourceException e) {
       return null;
@@ -941,6 +934,13 @@ public final class ModelBundleCache implements AutoCloseable {
     }
   }
 
+  /**
+   * Loads the language detector model. It needs custom resolution because the generic
+   * classpath provider is keyed by language, while this model is language-independent
+   * ({@code model.language=root} in its descriptor): explicit path first, then the
+   * {@code model.properties} descriptors of the model jars on the classpath, then the
+   * binary bundled inside the shaded server jar.
+   */
   private LoadedArtifact<LanguageDetectorModel> loadLanguageDetectorModel(
       Map<String, String> configuration) {
     try {

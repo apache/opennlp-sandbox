@@ -484,7 +484,6 @@ final class AnalysisRequestValidator {
   static final String LATTICE_TOKENIZER_ENGINE = "lattice";
   private static final String MODEL_TOKENIZER_ENGINE = "model";
 
-  /** Validates normalize request. */
   /**
    * Rejects a chain selecting more than one whitespace-collapsing normalizer, since each
    * variant defines the complete whitespace treatment.

@@ -139,6 +139,18 @@ operator supplies a dependency model.
   and a remote TEI embedding backend over real network listeners
 - **examples** - readable Python analysis, training, indexing, and search clients
 
+## Branch boundaries
+
+- `OPENNLP-1833-grpc-expansion` in `apache/opennlp-sandbox` is the canonical server
+  and frontend branch. Service, gateway, webapp, deployment, and sandbox-specific
+  adapter work lands there directly.
+- `OPENNLP-1833-grpc-helper` in `apache/opennlp` is a generated build dependency:
+  current apache main plus every open JIRA-backed feature PR head, including drafts.
+  It carries only the snapshot version stamp and integration repairs associated with
+  those JIRA branches. It is not a service-development branch.
+- The former query, search UI, webapp, docview, and graph branches are historical
+  consolidation inputs. Do not add new work to them.
+
 ## Build
 
 The gRPC modules pin `opennlp.version` to `3.0.0-OPENNLP-1833-SNAPSHOT`, a local
